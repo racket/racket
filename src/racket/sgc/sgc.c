@@ -249,14 +249,14 @@
 #ifdef DOS_FAR_POINTERS
 # include <dos.h>
 # include <alloc.h>
-# define PTR_TO_INT(v) (((((long)FP_SEG(v)) & 0xFFFF) << 4) + FP_OFF(v))
+# define PTR_TO_INT(v) (((((intptr_t)FP_SEG(v)) & 0xFFFF) << 4) + FP_OFF(v))
 # define INT_TO_PTR(v) ((void *)((((v) >> 4) << 16) + ((v) & 0xF)))
 # if !PROVIDE_MALLOC_AND_FREE
 #  define MALLOC farmalloc
 #  define FREE farfree
 # endif
 #else
-# define PTR_TO_INT(v) ((unsigned long)(v))
+# define PTR_TO_INT(v) ((uintptr_t)(v))
 # define INT_TO_PTR(v) ((void *)(v))
 # if !PROVIDE_MALLOC_AND_FREE
 #  define MALLOC malloc
@@ -444,7 +444,7 @@
 
 #if PAD_BOUNDARY_BYTES
 /* Pad start & end must be a multiple of DOUBLE_SIZE */
-# define PAD_START_SIZE (2 * sizeof(long))
+# define PAD_START_SIZE (2 * sizeof(intptr_t))
 # define PAD_END_SIZE PAD_START_SIZE
 # define PAD_PATTERN 0x7c8c9cAc
 # define PAD_FILL_PATTERN 0xc7
@@ -481,9 +481,9 @@ enum {
 
 typedef struct BlockOfMemory {
   struct Finalizer *finalizers;
-  unsigned long start;
-  unsigned long end;
-  unsigned long top;
+  uintptr_t start;
+  uintptr_t end;
+  uintptr_t top;
   short size;
   short atomic;
   short elem_per_block;
@@ -494,10 +494,10 @@ typedef struct BlockOfMemory {
   int *positions; /* maps displacement in ptrs => position in objects */
   struct BlockOfMemory *next;
 #if STAMP_AND_REMEMBER_SOURCE
-  long make_time;
-  long use_time;
-  unsigned long low_marker;
-  unsigned long high_marker;
+  intptr_t make_time;
+  intptr_t use_time;
+  uintptr_t low_marker;
+  uintptr_t high_marker;
 #endif
   unsigned char free[1];
 } BlockOfMemory;
@@ -551,8 +551,8 @@ typedef struct BlockOfMemory {
 
 typedef struct MemoryChunk {
   struct Finalizer *finalizers;
-  unsigned long start;
-  unsigned long end;
+  uintptr_t start;
+  uintptr_t end;
   struct MemoryChunk *next;
 #if KEEP_PREV_PTR
   struct MemoryChunk **prev_ptr;
@@ -560,8 +560,8 @@ typedef struct MemoryChunk {
   short atomic;
   short marked;
 #if STAMP_AND_REMEMBER_SOURCE
-  long make_time;
-  unsigned long marker;
+  intptr_t make_time;
+  uintptr_t marker;
 #endif
 #if KEEP_CHUNK_SET_NO
   int set_no;
@@ -571,8 +571,8 @@ typedef struct MemoryChunk {
 
 /* If this changes size from 2 ptrs, change LOG_SECTOR_PAGEREC_SIZE */
 typedef struct {
-  long kind;  /* sector_kind_other, etc. */
-  unsigned long start; /* Sector start; may not be accurate if the segment
+  intptr_t kind;  /* sector_kind_other, etc. */
+  uintptr_t start; /* Sector start; may not be accurate if the segment
                           is deallocated, but 0 => not in any sector */
 } SectorPage;
 
@@ -580,9 +580,9 @@ typedef struct {
 # include "../utils/splay.c"
 
 typedef struct SectorFreepage {
-  long size; 
-  unsigned long start; /* Sector start */
-  unsigned long end; /* start of next */
+  intptr_t size; 
+  uintptr_t start; /* Sector start */
+  uintptr_t end; /* start of next */
   Tree by_start;
   Tree by_end;
   Tree by_start_per_size;
@@ -664,7 +664,7 @@ typedef struct GC_Set {
   BlockOfMemory **block_ends;
   MemoryChunk **othersptr;
 #if DUMP_BLOCK_COUNTS
-  unsigned long total;
+  uintptr_t total;
 #endif
 #if ALLOW_TRACE_COUNT
   GC_count_tracer count_tracer;
@@ -750,31 +750,31 @@ static DisappearingLink *disappearing, *late_disappearing;
 static Finalizer *queued_finalizers, *last_queued_finalizer;
 static int num_queued_finalizers;
 
-static unsigned long sector_low_plausible, sector_high_plausible;
-static unsigned long low_plausible, high_plausible;
+static uintptr_t sector_low_plausible, sector_high_plausible;
+static uintptr_t low_plausible, high_plausible;
 
 void *GC_stackbottom;
 
-static long mem_use, mem_limit = FIRST_GC_LIMIT;
+static intptr_t mem_use, mem_limit = FIRST_GC_LIMIT;
 #if USE_GC_FREE_SPACE_DIVISOR
 int GC_free_space_divisor = 4;
 #endif
 
-static long mem_real_use, mem_uncollectable_use;
+static intptr_t mem_real_use, mem_uncollectable_use;
 
-static long sector_mem_use, sector_admin_mem_use, sector_free_mem_use;
-static long manage_mem_use, manage_real_mem_use;
+static intptr_t sector_mem_use, sector_admin_mem_use, sector_free_mem_use;
+static intptr_t manage_mem_use, manage_real_mem_use;
 
-static long collect_mem_use;
+static intptr_t collect_mem_use;
 
-static long num_sector_allocs, num_sector_frees;
+static intptr_t num_sector_allocs, num_sector_frees;
 
 #if ALLOW_TRACE_COUNT
-static long mem_traced;
+static intptr_t mem_traced;
 #endif
 
-static long num_chunks;
-static long num_blocks;
+static intptr_t num_chunks;
+static intptr_t num_blocks;
 
 GC_collect_start_callback_Proc GC_collect_start_callback;
 GC_collect_end_callback_Proc GC_collect_end_callback;
@@ -794,16 +794,16 @@ GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback
 }
 
 
-static long roots_count;
-static long roots_size;
-static unsigned long *roots;
+static intptr_t roots_count;
+static intptr_t roots_size;
+static uintptr_t *roots;
 
 #if STAMP_AND_REMEMBER_SOURCE
-static long stamp_clock = 0;
+static intptr_t stamp_clock = 0;
 #endif
 
-static long *size_index_map; /* (1/PTR_SIZE)th of requested size to alloc index */
-static long *size_map; /* alloc index to alloc size */
+static intptr_t *size_index_map; /* (1/PTR_SIZE)th of requested size to alloc index */
+static intptr_t *size_map; /* alloc index to alloc size */
 
 #if CHECK_COLLECTING
 static int collecting_now;
@@ -834,10 +834,10 @@ static SectorPage ***sector_pagetablesss[1 << 16];
 # define GET_SECTOR_PAGETABLES(p) sector_pagetables = create_sector_pagetables(p)
 # define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p)
 static void *malloc_plain_sector(int count);
-inline static SectorPage **create_sector_pagetables(unsigned long p) {
-  unsigned long pos;
+inline static SectorPage **create_sector_pagetables(uintptr_t p) {
+  uintptr_t pos;
   SectorPage ***sector_pagetabless, **sector_pagetables;
-  pos = ((unsigned long)p >> 48) & ((1 << 16) - 1);
+  pos = ((uintptr_t)p >> 48) & ((1 << 16) - 1);
   sector_pagetabless = sector_pagetablesss[pos];
   if (!sector_pagetabless) {
     int c = (sizeof(SectorPage **) << 16) >> LOG_SECTOR_SEGMENT_SIZE;
@@ -846,7 +846,7 @@ inline static SectorPage **create_sector_pagetables(unsigned long p) {
     sector_pagetablesss[pos] = sector_pagetabless;
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
   }
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  pos = ((uintptr_t)p >> 32) & ((1 << 16) - 1);
   sector_pagetables = sector_pagetabless[pos];
   if (!sector_pagetables) {
     int c = (SECTOR_LOOKUP_PAGESETBITS + LOG_PTR_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
@@ -860,14 +860,14 @@ inline static SectorPage **create_sector_pagetables(unsigned long p) {
   }
   return sector_pagetables;
 }
-inline static SectorPage **get_sector_pagetables(unsigned long p) {
-  unsigned long pos;
+inline static SectorPage **get_sector_pagetables(uintptr_t p) {
+  uintptr_t pos;
   SectorPage ***sector_pagetabless;
-  pos = ((unsigned long)p >> 48) & ((1 << 16) - 1);
+  pos = ((uintptr_t)p >> 48) & ((1 << 16) - 1);
   sector_pagetabless = sector_pagetablesss[pos];
   if (!sector_pagetabless)
     return NULL;
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  pos = ((uintptr_t)p >> 32) & ((1 << 16) - 1);
   return sector_pagetabless[pos];
 }
 #else
@@ -901,7 +901,7 @@ static SectorPage **sector_pagetables;
 static void *platform_plain_sector(int count)
 {
   caddr_t cur_brk = (caddr_t)sbrk(0);
-  long lsbs = (unsigned long)cur_brk & TABLE_LO_MASK;
+  intptr_t lsbs = (uintptr_t)cur_brk & TABLE_LO_MASK;
   void *result;
     
   if (lsbs != 0) {
@@ -982,7 +982,7 @@ static void *platform_plain_sector(int count)
   static void *preallocptr;
 
   if (!prealloced) {
-    unsigned long d;
+    uintptr_t d;
 
     if (count <= (SECTOR_SEGMENT_GROUP_SIZE-1))
       prealloced = SECTOR_SEGMENT_GROUP_SIZE-1;
@@ -991,7 +991,7 @@ static void *platform_plain_sector(int count)
 
     preallocptr = MALLOC((prealloced + 1) << LOG_SECTOR_SEGMENT_SIZE);
 
-    d = ((unsigned long)preallocptr) & TABLE_LO_MASK;
+    d = ((uintptr_t)preallocptr) & TABLE_LO_MASK;
     if (d)
       preallocptr = ((char *)preallocptr) + (SECTOR_SEGMENT_SIZE - d);
   }
@@ -1006,12 +1006,12 @@ static void *platform_plain_sector(int count)
   }
 
   {
-    unsigned long d;
+    uintptr_t d;
     void *r;
 
     r = MALLOC((count + 1) << LOG_SECTOR_SEGMENT_SIZE);
 
-    d = ((unsigned long)r) & TABLE_LO_MASK;
+    d = ((uintptr_t)r) & TABLE_LO_MASK;
     if (d)
       r = ((char *)r) + (SECTOR_SEGMENT_SIZE - d);
 
@@ -1036,9 +1036,9 @@ static void *malloc_plain_sector(int count)
   return m;
 }
 
-static void register_sector(void *naya, int need, long kind)
+static void register_sector(void *naya, int need, intptr_t kind)
 {
-  unsigned long ns, orig_ns;
+  uintptr_t ns, orig_ns;
   int pagetableindex, pageindex, i;
   SectorPage *pagetable;
   DECL_SECTOR_PAGETABLES;
@@ -1075,9 +1075,9 @@ static void register_sector(void *naya, int need, long kind)
   }
 }
 
-static void *malloc_sector(long size, long kind, int no_new)
+static void *malloc_sector(intptr_t size, intptr_t kind, int no_new)
 {
-  long need;
+  intptr_t need;
   void *naya;
 #if !RELEASE_UNUSED_SECTORS
   SectorFreepage *fp;
@@ -1131,7 +1131,7 @@ static void *malloc_sector(long size, long kind, int no_new)
     if (fp->size > need) {
       /* Move freepage info and shrink */
       SectorFreepage *naya;
-      unsigned long nfp;
+      uintptr_t nfp;
       nfp = fp->start + (need << LOG_SECTOR_SEGMENT_SIZE);
       naya = (SectorFreepage *)INT_TO_PTR(nfp);
       naya->size = fp->size - need;
@@ -1158,7 +1158,7 @@ static void *malloc_sector(long size, long kind, int no_new)
 
 static void free_sector(void *p)
 {
-  unsigned long s = PTR_TO_INT(p), t;
+  uintptr_t s = PTR_TO_INT(p), t;
   int c = 0;
 #if !RELEASE_UNUSED_SECTORS
   SectorFreepage *fp, *ifp;
@@ -1170,8 +1170,8 @@ static void free_sector(void *p)
   t = s;
   while(1) {
     DECL_SECTOR_PAGETABLES;
-    long pagetableindex = SECTOR_LOOKUP_PAGETABLE(t);
-    long pageindex = SECTOR_LOOKUP_PAGEPOS(t);
+    intptr_t pagetableindex = SECTOR_LOOKUP_PAGETABLE(t);
+    intptr_t pageindex = SECTOR_LOOKUP_PAGEPOS(t);
     GET_SECTOR_PAGETABLES(t);
     if (sector_pagetables[pagetableindex]
 	&& (sector_pagetables[pagetableindex][pageindex].start == s)) {
@@ -1229,9 +1229,9 @@ static void free_sector(void *p)
 static int is_sector_segment(void *p)
 {
   DECL_SECTOR_PAGETABLES;
-  unsigned long s = PTR_TO_INT(p);
-  long pagetableindex = SECTOR_LOOKUP_PAGETABLE(s);
-  long pageindex = SECTOR_LOOKUP_PAGEPOS(s);
+  uintptr_t s = PTR_TO_INT(p);
+  intptr_t pagetableindex = SECTOR_LOOKUP_PAGETABLE(s);
+  intptr_t pageindex = SECTOR_LOOKUP_PAGEPOS(s);
 
   FIND_SECTOR_PAGETABLES(p);
   if (!sector_pagetables) return 0;
@@ -1255,7 +1255,7 @@ static void prepare_collect_temp()
 #endif
 }
 
-static void *realloc_collect_temp(void *v, long oldsize, long newsize)
+static void *realloc_collect_temp(void *v, intptr_t oldsize, intptr_t newsize)
 {
 #if GET_MEM_VIA_SBRK
   void *naya;
@@ -1296,11 +1296,11 @@ static void *realloc_collect_temp(void *v, long oldsize, long newsize)
 #endif
 }
 
-static void free_collect_temp(void *v, long oldsize)
+static void free_collect_temp(void *v, intptr_t oldsize)
 {
 #if GET_MEM_VIA_SBRK
   if (!(--c_refcount)) {
-    collect_mem_use = (unsigned long)(sbrk(0)) - (unsigned long)save_brk;
+    collect_mem_use = (uintptr_t)(sbrk(0)) - (uintptr_t)save_brk;
     brk(save_brk);
   }
 #elif GET_MEM_VIA_MMAP
@@ -1315,9 +1315,9 @@ static void free_collect_temp(void *v, long oldsize)
 typedef struct {
   struct ManagedBlock *next;
   struct ManagedBlock *prev;
-  long count;
-  long size; /* Use size to find bucket */
-  unsigned long end;
+  intptr_t count;
+  intptr_t size; /* Use size to find bucket */
+  uintptr_t end;
 } ManagedBlockHeader;
 
 typedef struct ManagedBlock {
@@ -1326,9 +1326,9 @@ typedef struct ManagedBlock {
 } ManagedBlock;
 
 typedef struct {
-  long size;
-  long perblock;
-  long offset;
+  intptr_t size;
+  intptr_t perblock;
+  intptr_t offset;
   ManagedBlock *block;
 } ManagedBucket;
 
@@ -1339,13 +1339,13 @@ typedef struct {
 
 static Managed *managed;
 
-static void *malloc_managed(long size)
+static void *malloc_managed(intptr_t size)
 {
   /* A naive strategy is sufficient here.
      There will be many disappearing links, many
      finalizations, and very little of anything else. */
   int i, j;
-  long perblock, offset;
+  intptr_t perblock, offset;
   ManagedBlock *mb;
   
   if (size & PTR_SIZE)
@@ -1378,7 +1378,7 @@ static void *malloc_managed(long size)
       managed->buckets[i].perblock = (SECTOR_SEGMENT_SIZE - sizeof(ManagedBlockHeader) - c) / size;
       managed->buckets[i].offset = c + sizeof(ManagedBlockHeader);
     } else {
-      long l = size + sizeof(ManagedBlockHeader) + PTR_SIZE;
+      intptr_t l = size + sizeof(ManagedBlockHeader) + PTR_SIZE;
       mb = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0);
       manage_real_mem_use += l;
       managed->buckets[i].block = mb;
@@ -1401,7 +1401,7 @@ static void *malloc_managed(long size)
   while ((mb->head.count == perblock) && mb->head.next)
     mb = mb->head.next;
   if (mb->head.count == perblock) {
-    long l = offset + size * perblock;
+    intptr_t l = offset + size * perblock;
     mb->head.next = (ManagedBlock *)malloc_sector(l, sector_kind_managed, 0);
     manage_real_mem_use += l;
     mb->head.next->head.prev = mb;
@@ -1430,7 +1430,7 @@ static void *malloc_managed(long size)
 static void free_managed(void *s)
 {
   int i;
-  unsigned long p;
+  uintptr_t p;
   ManagedBucket *bucket;
   ManagedBlock *mb;
 
@@ -1488,10 +1488,10 @@ static void free_managed(void *s)
 static void init_size_map()
 {
   int i, j, find_half;
-  long k, next;
+  intptr_t k, next;
 
-  size_index_map = (long *)malloc_sector(MAX_COMMON_SIZE, sector_kind_other, 0);
-  size_map = (long *)malloc_sector(NUM_COMMON_SIZE * sizeof(long), sector_kind_other, 0);
+  size_index_map = (intptr_t *)malloc_sector(MAX_COMMON_SIZE, sector_kind_other, 0);
+  size_map = (intptr_t *)malloc_sector(NUM_COMMON_SIZE * sizeof(intptr_t), sector_kind_other, 0);
 
   /* This is two loops instead of one to avoid a gcc 2.92.2 -O2 x86 bug: */
   for (i = 0; i < 8; i++) {
@@ -1540,17 +1540,17 @@ static void init_size_map()
 void GC_add_roots(void *start, void *end)
 {
   if (roots_count >= roots_size) {
-    unsigned long *naya;
+    uintptr_t *naya;
 
-    mem_real_use -= (sizeof(unsigned long) * roots_size);
+    mem_real_use -= (sizeof(uintptr_t) * roots_size);
 
     roots_size = roots_size ? 2 * roots_size : 500;
-    naya = (unsigned long *)malloc_managed(sizeof(unsigned long) * (roots_size + 1));
+    naya = (uintptr_t *)malloc_managed(sizeof(uintptr_t) * (roots_size + 1));
 
-    mem_real_use += (sizeof(unsigned long) * roots_size);
+    mem_real_use += (sizeof(uintptr_t) * roots_size);
 
     memcpy((void *)naya, (void *)roots, 
-	   sizeof(unsigned long) * roots_count);
+	   sizeof(uintptr_t) * roots_count);
 
     if (roots)
       free_managed(roots);
@@ -1677,7 +1677,7 @@ static void *find_ptr(void *d, int *_size,
 		      MemoryChunk **_chunk,
 		      int find_anyway)
 {
-  unsigned long p = PTR_TO_INT(d);
+  uintptr_t p = PTR_TO_INT(d);
   DECL_SECTOR_PAGETABLES;
 
   FIND_SECTOR_PAGETABLES(p);
@@ -1689,7 +1689,7 @@ static void *find_ptr(void *d, int *_size,
     SectorPage *pagetable = sector_pagetables[SECTOR_LOOKUP_PAGETABLE(p)];
     if (pagetable) {
       SectorPage *page = pagetable + SECTOR_LOOKUP_PAGEPOS(p);
-      long kind = page->kind;
+      intptr_t kind = page->kind;
 
       if (kind == sector_kind_block) {
 	/* Found common block: */
@@ -1699,7 +1699,7 @@ static void *find_ptr(void *d, int *_size,
 	  int diff = p - block->start;
 	  int pos = (diff / size), apos;
 	  int bit;
-	  unsigned long result;
+	  uintptr_t result;
 	  
 	  apos = POS_TO_UNMARK_INDEX(pos);
 	  bit = POS_TO_UNMARK_BIT(pos);
@@ -1822,7 +1822,7 @@ GC_Set *GC_set(void *d)
 }
 
 #if DUMP_BLOCK_MAPS
-static unsigned long trace_stack_start, trace_stack_end, trace_reg_start, trace_reg_end;
+static uintptr_t trace_stack_start, trace_stack_end, trace_reg_start, trace_reg_end;
 #endif
 
 #if DUMP_SECTOR_MAP
@@ -1834,7 +1834,7 @@ static void dump_sector_map(char *prefix)
   {
     int i, j;
     int c = 0;
-    unsigned long was_sec = 0;
+    uintptr_t was_sec = 0;
     int was_kind = 0;
 
     for (i = 0; i < (1 << SECTOR_LOOKUP_PAGESETBITS); i++) {
@@ -1842,7 +1842,7 @@ static void dump_sector_map(char *prefix)
       pagetable = sector_pagetables[i];
       if (pagetable) {
 	for (j = 0; j < SECTOR_LOOKUP_PAGESIZE; j++) {
-	  long kind;
+	  intptr_t kind;
 	  kind = pagetable[j].kind;
 	  if (kind != sector_kind_free) {
 	    char *same_sec, *diff_sec;
@@ -1932,7 +1932,7 @@ void GC_dump(void)
 #if DUMP_BLOCK_COUNTS
   {
     int i, j;
-    unsigned long total;
+    uintptr_t total;
     
 #if DUMP_BLOCK_MAPS
     FPRINTF(STDERR, "roots: ======================================\n");
@@ -1966,7 +1966,7 @@ void GC_dump(void)
 	  FPRINTF(STDERR, "%d:", block->size);
 
 #if DUMP_BLOCK_MAPS
-	  FPRINTF(STDERR, "[%lx]", block->start - (unsigned long)block);
+	  FPRINTF(STDERR, "[%lx]", block->start - (uintptr_t)block);
 #endif
 
 	  while (block) {
@@ -1992,7 +1992,7 @@ void GC_dump(void)
 #if STAMP_AND_REMEMBER_SOURCE
 		    "@%ld-%ld:%lx-%lx" 
 #endif
-		    , (unsigned long)block, counter
+		    , (uintptr_t)block, counter
 #if STAMP_AND_REMEMBER_SOURCE
 		    , block->make_time, 
 		    block->use_time,
@@ -2017,11 +2017,11 @@ void GC_dump(void)
 	int counter = 0;
 	
 	for (c = *(cs->othersptr); c; c = cnext) {
-	  unsigned long size = c->end - c->start;
+	  uintptr_t size = c->end - c->start;
 	  FPRINTF(STDERR, "%ld:", size);
 
 #if DUMP_BLOCK_MAPS
-	  FPRINTF(STDERR, "[%lx]", c->start - (unsigned long)c);
+	  FPRINTF(STDERR, "[%lx]", c->start - (uintptr_t)c);
 #endif
 	  
 	  cnext = c->next;
@@ -2037,7 +2037,7 @@ void GC_dump(void)
 #if STAMP_AND_REMEMBER_SOURCE
 		      "@%ld:%lx" 
 #endif
-		      , (unsigned long)t
+		      , (uintptr_t)t
 #if STAMP_AND_REMEMBER_SOURCE
 		      , t->make_time,
 		      t->marker
@@ -2106,7 +2106,7 @@ void GC_dump(void)
   FPRINTF(STDERR, "End Map\n");
 }
 
-long GC_get_memory_use()
+intptr_t GC_get_memory_use()
 {
   return mem_real_use;
 }
@@ -2120,7 +2120,7 @@ static void *zero_ptr;
 
 #if CHECK_WATCH_FOR_PTR_ALLOC
 void *GC_watch_for_ptr = NULL;
-#define UNHIDE_WATCH(p) ((void *)~((unsigned long)p))
+#define UNHIDE_WATCH(p) ((void *)~((uintptr_t)p))
 static int findings;
 
 #if USE_WATCH_FOUND_FUNC
@@ -2133,18 +2133,18 @@ void GC_found_watch()
 #endif
 
 #if PAD_BOUNDARY_BYTES
-static void set_pad(void *p, long s, long os)
+static void set_pad(void *p, intptr_t s, intptr_t os)
 {
-  long diff;
+  intptr_t diff;
 
   /* Set start & end pad: */
-  *(long*)p = PAD_PATTERN;
-  *(long*)(((char *)p) + s - PAD_END_SIZE) = PAD_PATTERN;
-  *(long*)(((char *)p) + s - PAD_END_SIZE + sizeof(long)) = PAD_PATTERN;
+  *(intptr_t*)p = PAD_PATTERN;
+  *(intptr_t*)(((char *)p) + s - PAD_END_SIZE) = PAD_PATTERN;
+  *(intptr_t*)(((char *)p) + s - PAD_END_SIZE + sizeof(intptr_t)) = PAD_PATTERN;
   
   /* Keep difference of given - requested: */
   diff = (s - os - PAD_START_SIZE - PAD_END_SIZE);
-  ((long *)p)[1] = diff;
+  ((intptr_t *)p)[1] = diff;
   
   if (diff) {
     unsigned char *ps = ((unsigned char *)p) + os + PAD_START_SIZE;
@@ -2199,7 +2199,7 @@ static int num_newblock_allocs_stat;
 #endif
 
 static void *do_malloc(SET_NO_BACKINFO
-		       unsigned long size, 
+		       uintptr_t size, 
 		       BlockOfMemory **common,
 		       MemoryChunk **othersptr,
 		       int flags)
@@ -2207,12 +2207,12 @@ static void *do_malloc(SET_NO_BACKINFO
   BlockOfMemory **find, *block;
   BlockOfMemory **common_ends;
   void *s;
-  long c;
-  unsigned long p;
-  long sizeElemBit;
+  intptr_t c;
+  uintptr_t p;
+  intptr_t sizeElemBit;
   int i, cpos, elem_per_block, extra_alignment;
 #if PAD_BOUNDARY_BYTES
-  long origsize;
+  intptr_t origsize;
 #endif
 
 #if CHECK_COLLECTING
@@ -2288,7 +2288,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
 	  if (!(flags & do_malloc_ATOMIC)) {
 	    void **p = (void **)zp;
-	    unsigned long sz = size >> LOG_PTR_SIZE;
+	    uintptr_t sz = size >> LOG_PTR_SIZE;
 	    for (; sz--; p++)
 	      *p = 0;
 	  }
@@ -2385,7 +2385,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
     if (!(flags & do_malloc_ATOMIC)) {
       void **p = (void **)&c->data;
-      unsigned long sz = size >> LOG_PTR_SIZE;
+      uintptr_t sz = size >> LOG_PTR_SIZE;
       for (; sz--; p++)
 	*p = 0;
     }
@@ -2538,7 +2538,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
   if (!(flags & do_malloc_ATOMIC)) {
     void **p = (void **)s;
-    unsigned long sz = size >> LOG_PTR_SIZE;
+    uintptr_t sz = size >> LOG_PTR_SIZE;
     for (; sz--; p++)
       *p = 0;
   }
@@ -2695,7 +2695,7 @@ void *realloc(void *p, size_t size)
 void *calloc(size_t n, size_t size)
 {
   void *p;
-  long c;
+  intptr_t c;
 
   c = n * size;
   p = malloc(c);
@@ -2892,7 +2892,7 @@ void GC_for_each_element(GC_Set *set,
 	int pos = POS_TO_FREE_INDEX(j);
 	
 	if (IS_MARKED(block->free[pos] & bit)) {
-	  unsigned long p;
+	  uintptr_t p;
 	  void *s;
 	  
 	  p = block->start + (block->size * j);
@@ -2947,7 +2947,7 @@ static void free_chunk(MemoryChunk *k, MemoryChunk **prev, GC_Set *set)
   
 #if PRINT && 0
   FPRINTF(STDERR, "free chunk: %ld (%ld) %d %d\n", 
-	  (unsigned long)k, k->end - k->start,
+	  (uintptr_t)k, k->end - k->start,
 	  set->atomic, set->uncollectable);
 #endif
   
@@ -2987,7 +2987,7 @@ void GC_free(void *p)
   if (!found) {
 # if CHECK_FREES
     char b[256];
-    sprintf(b, "GC_free failed! %lx\n", (long)p);
+    sprintf(b, "GC_free failed! %lx\n", (intptr_t)p);
     free_error(b);
 # endif
     return;
@@ -3004,13 +3004,13 @@ void GC_free(void *p)
 # if CHECK_FREES
       if (block->free[pos] & fbit) {
 	char b[256];
-	sprintf(b, "Block element already free! %lx\n", (long)p);
+	sprintf(b, "Block element already free! %lx\n", (intptr_t)p);
 	return;
       }
 #   if EXTRA_FREE_CHECKS
       if (block->set_no != 4) {
 	char b[256];
-	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (long)p);
+	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
 	free_error(b);
 	return;
       }
@@ -3038,7 +3038,7 @@ void GC_free(void *p)
 	int size;
 #  if PAD_BOUNDARY_BYTES
 	size = block->size - PAD_START_SIZE - PAD_END_SIZE;
-	((long *)found)[1] = 0; /* 0 extra */
+	((intptr_t *)found)[1] = 0; /* 0 extra */
 #  else
 	size = block->size;
 #  endif
@@ -3062,7 +3062,7 @@ void GC_free(void *p)
 # if CHECK_FREES && EXTRA_FREE_CHECKS
       if (chunk->set_no != 4) {
 	char b[256];
-	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (long)p);
+	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
 	free_error(b);
 	return;
       }
@@ -3077,7 +3077,7 @@ void GC_free(void *p)
   else {
     char b[256];
     sprintf(b, "GC_free on block interior! %lx != %lx\n", 
-	    (long)p, (long)PAD_FORWARD(found));
+	    (intptr_t)p, (intptr_t)PAD_FORWARD(found));
     free_error(b);
   }
 # endif
@@ -3087,7 +3087,7 @@ void GC_free(void *p)
 /******************************************************************/
 
 #if CHECK
-static long cmn_count, chk_count;
+static intptr_t cmn_count, chk_count;
 #endif
 
 #if ALLOW_TRACE_COUNT
@@ -3109,12 +3109,12 @@ static int trace_path_buffer_pos;
 #endif
 
 #if PAD_BOUNDARY_BYTES
-static void bad_pad(char *where, void *s, int type, long sz, long diff, long offset, 
-		    long pd, long expect)
+static void bad_pad(char *where, void *s, int type, intptr_t sz, intptr_t diff, intptr_t offset, 
+		    intptr_t pd, intptr_t expect)
 {
   FPRINTF(STDERR,
 	  "pad %s violation at %lx <%d>, len %ld (diff %ld+%ld): %lx != %lx\n", 
-	  where, (unsigned long)s, type, sz, diff, offset, pd, expect);
+	  where, (uintptr_t)s, type, sz, diff, offset, pd, expect);
 }
 #endif
 
@@ -3130,22 +3130,22 @@ static void collect_init_chunk(MemoryChunk *c, int uncollectable, int ty)
     /* Test padding: */
     {
       void *s = INT_TO_PTR(c->start);
-      long pd, sz, diff;
+      intptr_t pd, sz, diff;
       sz = c->end - c->start;
-      diff = ((long *)s)[1];
-      pd = *(long *)s;
+      diff = ((intptr_t *)s)[1];
+      pd = *(intptr_t *)s;
       if (pd != PAD_PATTERN)
 	bad_pad("start", s, ty, sz, diff, 0, pd, PAD_PATTERN);
-      pd = *(long *)INT_TO_PTR(c->end - PAD_END_SIZE);
+      pd = *(intptr_t *)INT_TO_PTR(c->end - PAD_END_SIZE);
       if (pd != PAD_PATTERN)
 	bad_pad("end1", s, ty, sz, diff, 0, pd, PAD_PATTERN);
-      pd = *(long *)INT_TO_PTR(c->end - PAD_END_SIZE + sizeof(long));
+      pd = *(intptr_t *)INT_TO_PTR(c->end - PAD_END_SIZE + sizeof(intptr_t));
       if (pd != PAD_PATTERN)
 	bad_pad("end2", s, ty, sz, diff, 0, pd, PAD_PATTERN);
       if (diff) {
 	/* Given was bigger than requested; check extra bytes: */
 	unsigned char *ps = ((unsigned char *)s) + sz - PAD_END_SIZE - diff;
-	long d = 0;
+	intptr_t d = 0;
 	while (d < diff) {
 	  if (*ps != PAD_FILL_PATTERN) {
 	    bad_pad("extra", s, ty, sz, diff, d, *ps, PAD_FILL_PATTERN);
@@ -3183,8 +3183,8 @@ static int num_finishes_stat;
 
 static void collect_finish_chunk(MemoryChunk **c, GC_Set *set)
 {
-  unsigned long local_low_plausible;
-  unsigned long local_high_plausible;
+  uintptr_t local_low_plausible;
+  uintptr_t local_high_plausible;
 
   local_low_plausible = low_plausible;
   local_high_plausible = high_plausible;
@@ -3237,26 +3237,26 @@ static void collect_init_common(BlockOfMemory **blocks, int uncollectable, int t
 #if PAD_BOUNDARY_BYTES
       /* Test padding: */
       {
-	unsigned long p;
-	long size = size_map[i];
+	uintptr_t p;
+	intptr_t size = size_map[i];
 	
 	for (p = block->start; p < block->top; p += size) {
 	  void *s = INT_TO_PTR(p);
-	  long pd, diff;
-	  pd = *(long *)s;
-	  diff = ((long *)s)[1];
+	  intptr_t pd, diff;
+	  pd = *(intptr_t *)s;
+	  diff = ((intptr_t *)s)[1];
 	  if (pd != PAD_PATTERN)
 	    bad_pad("start", s, ty, size, diff, 0, pd, PAD_PATTERN);
-	  pd = *(long *)INT_TO_PTR(p + size - PAD_END_SIZE);
+	  pd = *(intptr_t *)INT_TO_PTR(p + size - PAD_END_SIZE);
 	  if (pd != PAD_PATTERN)
 	    bad_pad("end1", s, ty, size, diff, 0, pd, PAD_PATTERN);
-	  pd = *(long *)INT_TO_PTR(p + size - PAD_END_SIZE + sizeof(long));
+	  pd = *(intptr_t *)INT_TO_PTR(p + size - PAD_END_SIZE + sizeof(intptr_t));
 	  if (pd != PAD_PATTERN)
 	    bad_pad("end2", s, ty, size, diff, 0, pd, PAD_PATTERN);
 	  if (diff) {
 	    /* Given was bigger than requested; check extra bytes: */
 	    unsigned char *ps = ((unsigned char *)s) + size - PAD_END_SIZE - diff;
-	    long d = 0;
+	    intptr_t d = 0;
 	    while (d < diff) {
 	      if (*ps != PAD_FILL_PATTERN) {
 		bad_pad("extra", s, ty, size, diff, d, *ps, PAD_FILL_PATTERN);
@@ -3309,8 +3309,8 @@ static void collect_finish_common(BlockOfMemory **blocks,
 #if KEEP_BLOCKS_FOREVER
   int kept;
 #endif
-  unsigned long local_low_plausible;
-  unsigned long local_high_plausible;
+  uintptr_t local_low_plausible;
+  uintptr_t local_high_plausible;
 
   local_low_plausible = low_plausible;
   local_high_plausible = high_plausible;
@@ -3319,7 +3319,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
     BlockOfMemory **prev = &blocks[i];
     BlockOfMemory *block = *prev;
 #if CHECK
-    long size = size_map[i];
+    intptr_t size = size_map[i];
 #endif
 
 #if KEEP_BLOCKS_FOREVER
@@ -3342,7 +3342,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
 
 #if ALLOW_SET_FINALIZER
       if (set->finalizer) {
-	unsigned long s;
+	uintptr_t s;
 	int j;
 	for (j = 0, s = block->start; s < block->top; s += block->size, j++) {
 	  int pos = POS_TO_UNMARK_INDEX(j);
@@ -3402,7 +3402,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
 
 	/* Push down block->top if it's easy */
 	{
-	  unsigned long dt = (unfree << LOG_FREE_BIT_PER_ELEM) * (unsigned long)block->size;
+	  uintptr_t dt = (unfree << LOG_FREE_BIT_PER_ELEM) * (uintptr_t)block->size;
 	  if (block->top > block->start + dt) {
 	    int k;
 	    FINISH_STATISTIC(num_finish_blockadjust_stat++);
@@ -3438,7 +3438,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
 
 static int collect_stack_count;
 static int collect_stack_size;
-static unsigned long *collect_stack;
+static uintptr_t *collect_stack;
 
 #define INITIAL_COLLECT_STACK_SIZE 8192
 
@@ -3452,20 +3452,20 @@ static unsigned long *collect_stack;
 # define COLLECT_STACK_FRAME_SIZE 2
 #endif
 
-static void push_collect(unsigned long start, unsigned long end, unsigned long src)
+static void push_collect(uintptr_t start, uintptr_t end, uintptr_t src)
 {
   if (collect_stack_count >= collect_stack_size) {
-    long oldsize;
+    intptr_t oldsize;
 
     if (collect_stack)
-      oldsize = sizeof(unsigned long) * (collect_stack_size + (COLLECT_STACK_FRAME_SIZE - 1));
+      oldsize = sizeof(uintptr_t) * (collect_stack_size + (COLLECT_STACK_FRAME_SIZE - 1));
     else
       oldsize = 0;
 
     collect_stack_size = collect_stack_size ? 2 * collect_stack_size : 500;
-    collect_stack = (unsigned long *)realloc_collect_temp(collect_stack, 
+    collect_stack = (uintptr_t *)realloc_collect_temp(collect_stack, 
 							  oldsize, 
-							  sizeof(unsigned long) 
+							  sizeof(uintptr_t) 
 							  * (collect_stack_size + (COLLECT_STACK_FRAME_SIZE - 1)));
     /* fprintf(stderr, "grow push stack: %d\n", collect_stack_size); */
   }
@@ -3500,7 +3500,7 @@ static void push_collect(unsigned long start, unsigned long end, unsigned long s
 
 typedef struct {
   int count, size;
-  unsigned long *stack;
+  uintptr_t *stack;
 } TraceStack;
 
 static void init_trace_stack(TraceStack *s)
@@ -3512,23 +3512,23 @@ static void init_trace_stack(TraceStack *s)
 static void done_trace_stack(TraceStack *s)
 {
   if (s->stack)
-    free_collect_temp(s->stack, sizeof(unsigned long)*(s->size + 1));
+    free_collect_temp(s->stack, sizeof(uintptr_t)*(s->size + 1));
 }
 
-static void push_trace_stack(unsigned long v, TraceStack *s)
+static void push_trace_stack(uintptr_t v, TraceStack *s)
 {
   if (s->count >= s->size) {
-    long oldsize;
+    intptr_t oldsize;
 
     if (s->stack)
-      oldsize = sizeof(unsigned long)*(s->size + 1);
+      oldsize = sizeof(uintptr_t)*(s->size + 1);
     else
       oldsize = 0;
 
     s->size = s->size ? 2 * s->size : 500;
-    s->stack = (unsigned long *)realloc_collect_temp(s->stack,
+    s->stack = (uintptr_t *)realloc_collect_temp(s->stack,
 						     oldsize,
-						     sizeof(unsigned long)*(s->size + 1));
+						     sizeof(uintptr_t)*(s->size + 1));
   }
 
   s->stack[s->count++] = v;
@@ -3536,9 +3536,9 @@ static void push_trace_stack(unsigned long v, TraceStack *s)
 
 #define PUSH_TS(v, s) \
   if (s.count < s.size) { \
-    s.stack[s.count++] = (unsigned long)(v); \
+    s.stack[s.count++] = (uintptr_t)(v); \
   } else \
-    push_trace_stack((unsigned long)(v), &s);
+    push_trace_stack((uintptr_t)(v), &s);
 
 #define POP_TS(s) (s.stack[--s.count])
 
@@ -3601,8 +3601,8 @@ static int num_chunkmarks_stat;
 
 static void prepare_stack_collect()
 {
-  unsigned long s, e;
-  unsigned long source;
+  uintptr_t s, e;
+  uintptr_t source;
 #if KEEP_DETAIL_PATH
   source = collect_stack[--collect_stack_count];
 #else
@@ -3645,7 +3645,7 @@ static jmp_buf buf;
 
 static void push_stack(void *stack_now)
 {
-  unsigned long start, end;
+  uintptr_t start, end;
 
   start = PTR_TO_INT(GC_stackbottom);
   end = PTR_TO_INT(stack_now);
@@ -3687,7 +3687,7 @@ static void push_stack(void *stack_now)
 static void push_locked_chunk(MemoryChunk *c, int atomic)
 {
   for (; c; c = c->next) {
-    unsigned long size = (c->end - c->start);
+    uintptr_t size = (c->end - c->start);
     mem_use += size;
     collect_trace_count += size;
     if (!atomic) {
@@ -3704,9 +3704,9 @@ static void push_locked_common(BlockOfMemory **blocks, int atomic)
     BlockOfMemory *block = blocks[i];
     
     for (; block; block = block->next) {
-      unsigned long size = block->size;
-      unsigned long start = block->start;
-      unsigned long top = block->top;
+      uintptr_t size = block->size;
+      uintptr_t start = block->start;
+      uintptr_t top = block->top;
       int j;
       
       for (j = 0; start < top; start += size, j++) {
@@ -3804,9 +3804,9 @@ static void push_uncollectable_common(BlockOfMemory **blocks, GC_Set *set)
       BlockOfMemory *block = blocks[i];
       
       while (block) {
-	unsigned long size = block->size;
-	unsigned long start = block->start;
-	unsigned long top = block->top;
+	uintptr_t size = block->size;
+	uintptr_t start = block->start;
+	uintptr_t top = block->top;
 	int j;
 	
 	for (j = 0; start < top; start += size, j++) {
@@ -3856,11 +3856,11 @@ static void push_uncollectable_common(BlockOfMemory **blocks, GC_Set *set)
 }
 
 
-static void push_collect_ignore(unsigned long s, unsigned long e, 
-				unsigned long a)
+static void push_collect_ignore(uintptr_t s, uintptr_t e, 
+				uintptr_t a)
 /* Like PUSH_COLLECT, but immediate references to `a' are avoided */
 {
-  unsigned long push_from = s;
+  uintptr_t push_from = s;
 
 #if PAD_BOUNDARY_BYTES
   a = PTR_TO_INT(PAD_FORWARD(INT_TO_PTR(a)));
@@ -3868,7 +3868,7 @@ static void push_collect_ignore(unsigned long s, unsigned long e,
 
   for (; s < e; s += PTR_ALIGNMENT) {
     void *d = *(void **)INT_TO_PTR(s);
-    unsigned long p = PTR_TO_INT(d);
+    uintptr_t p = PTR_TO_INT(d);
 
     if (p == a) {
       if (push_from != s) {
@@ -3890,7 +3890,7 @@ static void mark_chunks_for_finalizations(MemoryChunk *c)
 
     if (fn) {
       /* Always mark data associated with finalization: */
-      unsigned long p = PTR_TO_INT(&fn->data);
+      uintptr_t p = PTR_TO_INT(&fn->data);
       PUSH_COLLECT(p, p + PTR_SIZE, 0);
 
       /* If not eager, mark data reachable from finalized block: */
@@ -3916,7 +3916,7 @@ static void mark_common_for_finalizations(BlockOfMemory **blocks, int atomic)
     for (; block; block = block->next) {
       Finalizer *fn = block->finalizers;
       for (; fn ; fn = fn->next) {
-	unsigned long p;
+	uintptr_t p;
 	  
 	/* Always mark data associated with finalization: */
 	p = PTR_TO_INT(&fn->data);
@@ -3963,7 +3963,7 @@ static void enqueue_fn(Finalizer *fn)
 {
   /* DO NOT COLLECT FROM collect_stack DURING THIS PROCEDURE */
 
-  unsigned long p;
+  uintptr_t p;
 
   num_queued_finalizers++;
 
@@ -4001,7 +4001,7 @@ static void queue_chunk_finalizeable(MemoryChunk *c, int eager_level)
 
 	if (eager_level) {
 	  /* Always mark data associated with finalization: */
-	  unsigned long p = PTR_TO_INT(&fn->data);
+	  uintptr_t p = PTR_TO_INT(&fn->data);
 	  PUSH_COLLECT(p, p + PTR_SIZE, 0);
 	}
       }
@@ -4031,7 +4031,7 @@ static void queue_common_finalizeable(BlockOfMemory **blocks, int eager_level)
 	bit = POS_TO_UNMARK_BIT(pos);
 	
 	if (NOT_MARKED(block->free[apos] & bit)) {
-	  unsigned long p;
+	  uintptr_t p;
 	
 	  if (fn->eager_level == eager_level) {
 	    if (fn->prev)
@@ -4138,7 +4138,7 @@ static void do_disappear_and_finals()
 
   /* Mark data in (not-yet-finalized) queued finalizable */
   for (fn = queued_finalizers; fn; fn = fn->next) {
-    unsigned long p;
+    uintptr_t p;
 
     p = PTR_TO_INT(&fn->u.watch);
     PUSH_COLLECT(p, p + PTR_SIZE, 0);
@@ -4213,7 +4213,7 @@ static void do_disappear_and_finals()
 
 static int compare_roots(const void *a, const void *b)
 {
-  if (*(unsigned long *)a < *(unsigned long *)b)
+  if (*(uintptr_t *)a < *(uintptr_t *)b)
     return -1;
   else
     return 1;
@@ -4232,7 +4232,7 @@ static void sort_and_merge_roots()
     return;
   counter = 5;
 
-  qsort(roots, roots_count >> 1, 2 * sizeof(unsigned long), compare_roots);
+  qsort(roots, roots_count >> 1, 2 * sizeof(uintptr_t), compare_roots);
   offset = 0;
   top = roots_count;
   for (i = 2; i < top; i += 2) {
@@ -4293,16 +4293,16 @@ static int traced_from_roots, traced_from_stack, traced_from_uncollectable, trac
 #endif
 
 #if 0
-extern long scheme_get_milliseconds(void);
+extern intptr_t scheme_get_milliseconds(void);
 # define GETTIME() scheme_get_milliseconds()
 #else
-extern long scheme_get_process_milliseconds(void);
+extern intptr_t scheme_get_process_milliseconds(void);
 # define GETTIME() scheme_get_process_milliseconds()
 #endif
 
 #if TIME
 # define PRINTTIME(x) FPRINTF x
-static long started, rightnow, old;
+static intptr_t started, rightnow, old;
 # define INITTIME() (started = GETTIME())
 # define GETTIMEREL() (rightnow = GETTIME(), old = started, started = rightnow, rightnow - old)
 #else
@@ -4313,7 +4313,7 @@ static long started, rightnow, old;
 /* Immitate Boehm's private GC call; used by Racket */
 void GC_push_all_stack(void *sp, void *ep)
 {
-  unsigned long s, e;
+  uintptr_t s, e;
 
   s = PTR_TO_INT(sp);
   e = PTR_TO_INT(ep);
@@ -4329,26 +4329,26 @@ void GC_flush_mark_stack()
 }
 
 #if PRINT_INFO_PER_GC
-static long last_gc_end;
+static intptr_t last_gc_end;
 #endif
 
 static void do_GC_gcollect(void *stack_now)
 {
-  long root_marked;
+  intptr_t root_marked;
   int j;
 
 #if PRINT_INFO_PER_GC
-  long orig_mem_use = mem_use;
-  long start_time;
+  intptr_t orig_mem_use = mem_use;
+  intptr_t start_time;
   start_time = GETTIME();
   FPRINTF(STDERR, "gc at %ld (%ld): %ld after %ld msecs\n",
 	  mem_use, sector_mem_use, 
 # if GET_MEM_VIA_SBRK
-	  (long)sbrk(0),
+	  (intptr_t)sbrk(0),
 # elif defined(WIN32) && AUTO_STATIC_ROOTS_IF_POSSIBLE
 	  total_memory_use(),
 # else
-	  (long)0,
+	  (intptr_t)0,
 # endif
 	  start_time - last_gc_end);
 # if SHOW_SECTOR_MAPS_AT_GC
@@ -4443,9 +4443,9 @@ static void do_GC_gcollect(void *stack_now)
   if (collect_stack_size < INITIAL_COLLECT_STACK_SIZE)
     collect_stack_size = INITIAL_COLLECT_STACK_SIZE;
   collect_stack_count = 0;
-  collect_stack = (unsigned long *)realloc_collect_temp(NULL,
+  collect_stack = (uintptr_t *)realloc_collect_temp(NULL,
 							0,
-							sizeof(unsigned long) 
+							sizeof(uintptr_t) 
 							* (collect_stack_size + 2));
 
   for (j = 0; j < roots_count; j += 2) {
@@ -4461,8 +4461,8 @@ static void do_GC_gcollect(void *stack_now)
     collect_start_disable_mark_skip = collect_stack_count;
     skip_mark_at_first = GC_inital_root_skip;
 # endif
-    collect_stack[collect_stack_count++] = (unsigned long)&GC_initial_trace_root;
-    collect_stack[collect_stack_count++] = ((unsigned long)&GC_initial_trace_root) + 1;
+    collect_stack[collect_stack_count++] = (uintptr_t)&GC_initial_trace_root;
+    collect_stack[collect_stack_count++] = ((uintptr_t)&GC_initial_trace_root) + 1;
 # if KEEP_DETAIL_PATH
     collect_stack[collect_stack_count++] = 0;
 # endif
@@ -4606,7 +4606,7 @@ static void do_GC_gcollect(void *stack_now)
 
   if (mem_use) {
 # if USE_GC_FREE_SPACE_DIVISOR
-    long root_size;
+    intptr_t root_size;
 
     if (roots_count)
       root_size = roots[1] - roots[0];
@@ -4619,7 +4619,7 @@ static void do_GC_gcollect(void *stack_now)
 # endif
   }
 
-  free_collect_temp(collect_stack, sizeof(unsigned long) * (collect_stack_size + 1));
+  free_collect_temp(collect_stack, sizeof(uintptr_t) * (collect_stack_size + 1));
 
 # if ALLOW_TRACE_COUNT
   done_trace_stack(&collect_trace_stack);
@@ -4637,7 +4637,7 @@ static void do_GC_gcollect(void *stack_now)
 #if PRINT_INFO_PER_GC
   FPRINTF(STDERR, "done  %ld (%ld); recovered %ld in %ld msecs\n",
 	  mem_use, sector_mem_use, orig_mem_use - mem_use,
-	  (long)GETTIME() - start_time);
+	  (intptr_t)GETTIME() - start_time);
 # if SHOW_SECTOR_MAPS_AT_GC
   dump_sector_map("                            ");
 # endif
@@ -4736,7 +4736,7 @@ static void do_GC_gcollect(void *stack_now)
 
 void GC_gcollect(void)
 {
-  long dummy;
+  intptr_t dummy;
 
   if (!sector_mem_use)
     return;
@@ -4809,7 +4809,7 @@ void GC_trace_path(void)
 #endif
 }
 
-void GC_store_path(void *v, unsigned long src, void *path_data)
+void GC_store_path(void *v, uintptr_t src, void *path_data)
 {
   /* Note: a trace path of the form X->X->Y->Z->... (with two Xs)
      indicates an off-by-one stack source. */
@@ -4833,7 +4833,7 @@ void GC_store_path(void *v, unsigned long src, void *path_data)
   }
 
   if (len) {
-    unsigned long prev = 0;
+    uintptr_t prev = 0;
 
     trace_path_buffer[trace_path_buffer_pos++] = (void *)(len + 2);
     trace_path_buffer[trace_path_buffer_pos++] = current_trace_source;
@@ -4846,14 +4846,14 @@ void GC_store_path(void *v, unsigned long src, void *path_data)
 	/* See if we have offset information in the original trace info.
 	   (It might be missing because KEEP_DETAIL might be turned off, or
             PUSH_COLLECT had 0 for its third argument.) */
-	unsigned long diff;
+	uintptr_t diff;
 	if (s->stack[i + 1])
-	  diff = ((unsigned long)s->stack[i + 1]) - prev;
+	  diff = ((uintptr_t)s->stack[i + 1]) - prev;
 	else
 	  diff = 0;
 	trace_path_buffer[trace_path_buffer_pos - 3] = (void *)diff;
       }
-      prev = (unsigned long)s->stack[i];
+      prev = (uintptr_t)s->stack[i];
     }
 
     trace_path_buffer[trace_path_buffer_pos - 1] = (void *)(src - prev);
@@ -4873,9 +4873,9 @@ void **GC_get_next_path(void **prev, int *len)
   if (!prev)
     p = trace_path_buffer;
   else
-    p = prev + (2 * (((long *)prev)[-1]));
+    p = prev + (2 * (((intptr_t *)prev)[-1]));
     
-  *len = *(long *)p;
+  *len = *(intptr_t *)p;
   if (!*len)
     return NULL;
 
@@ -4971,11 +4971,11 @@ static void sgc_fprintf(int ignored, const char *c, ...)
       case 'd':
       case 'x':
 	{
-	  long v;
+	  intptr_t v;
 	  int d, i;
 
 	  if (islong) {
-	    v = va_arg(args, long);
+	    v = va_arg(args, intptr_t);
 	  } else {
 	    v = va_arg(args, int);
 	  }

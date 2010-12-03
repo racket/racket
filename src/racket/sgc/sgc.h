@@ -24,7 +24,7 @@ void *GC_base(void *);
 
 void GC_dump(void);
 
-long GC_get_memory_use();
+intptr_t GC_get_memory_use();
 
 void GC_end_stubborn_change(void *);
 
@@ -61,7 +61,7 @@ void GC_register_eager_finalizer(void *p, int level, void (*f)(void *p, void *da
 				 void **olddata);
 
 typedef void (*GC_count_tracer)(void *v, int);
-typedef void (*GC_path_tracer)(void *v, unsigned long src, void *pdata);
+typedef void (*GC_path_tracer)(void *v, uintptr_t src, void *pdata);
 typedef void (*GC_trace_init)(void);
 typedef void (*GC_trace_done)(void);
 typedef void (*GC_set_elem_finalizer)(void *p);
@@ -85,7 +85,7 @@ void GC_for_each_element(struct GC_Set *set,
 int GC_trace_count(int *stack, int *roots, int *uncollectable, int *final);
 void GC_trace_path(void);
 
-void GC_store_path(void *v, unsigned long src, void *path_data);
+void GC_store_path(void *v, uintptr_t src, void *path_data);
 void **GC_get_next_path(void **prev, int *len);
 void GC_clear_paths();
 

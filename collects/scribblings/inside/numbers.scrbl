@@ -37,7 +37,7 @@ Returns @cpp{1} if @var{n} is an inexact number, @scheme[0] otherwise
 (@var{n} need not be a number).}
 
 @function[(Scheme_Object* scheme_make_bignum
-           [long v])]{
+           [intptr_t v])]{
 
 Creates a bignum representing the integer @var{v}. This can create a
 bignum that otherwise fits into a fixnum.  This must only be used to
@@ -47,7 +47,7 @@ normalized numbers can be used with procedures that are not specific
 to bignums.}
 
 @function[(Scheme_Object* scheme_make_bignum_from_unsigned
-           [unsigned-long v])]{
+           [uintptr_t v])]{
 
 Like @cpp{scheme_make_bignum}, but works on unsigned integers.}
 

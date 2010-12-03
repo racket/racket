@@ -308,7 +308,7 @@ Scheme_Env *scheme_engine_instance_init() {
   os_platform_init();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("#if 0\nengine_instance_init @ %ld\n", scheme_get_process_milliseconds());
+  printf("#if 0\nengine_instance_init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
 #endif
 
   scheme_starting_up = 1;
@@ -464,7 +464,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   Scheme_Env *env;
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("place_init @ %ld\n", scheme_get_process_milliseconds());
+  printf("place_init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
 #endif
   scheme_set_current_os_thread_stack_base(stack_base);
 
@@ -480,7 +480,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   init_toplevel_local_offsets_hashtable_caches();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("pre-process @ %ld\n", scheme_get_process_milliseconds());
+  printf("pre-process @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
 #endif
 
   scheme_make_thread(stack_base);
@@ -499,7 +499,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_module_resolver();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("process @ %ld\n", scheme_get_process_milliseconds());
+  printf("process @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
 #endif
 
   /* error handling and buffers */
@@ -564,7 +564,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   --scheme_current_thread->suspend_break; /* created with breaks suspended */
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("done @ %ld\n#endif\n", scheme_get_process_milliseconds());
+  printf("done @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n#endif\n", scheme_get_process_milliseconds());
 #endif
 
   return env;
@@ -598,7 +598,7 @@ static void make_kernel_env(void)
 {
   Scheme_Env *env;
 #ifdef TIME_STARTUP_PROCESS
-  long startt;
+  intptr_t startt;
 #endif
 
   env = make_empty_inited_env(GLOBAL_TABLE_SIZE);
@@ -611,10 +611,10 @@ static void make_kernel_env(void)
   builtin_ref_counter = 0;
 
 #ifdef TIME_STARTUP_PROCESS
-   printf("init @ %ld\n", scheme_get_process_milliseconds());
+   printf("init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
 # define MZTIMEIT(n, f) (MARK_START_TIME(), f, DONE_TIME(n))
 # define MARK_START_TIME() startt = scheme_get_process_milliseconds()
-# define DONE_TIME(n) (printf(#n ": %ld\n", (long)(scheme_get_process_milliseconds() - startt)))
+# define DONE_TIME(n) (printf(#n ": %" PRINTF_INTPTR_SIZE_PREFIX "d\n", (intptr_t)(scheme_get_process_milliseconds() - startt)))
 #else
 # define MZTIMEIT(n, f) f
 # define MARK_START_TIME() /**/
@@ -1401,7 +1401,7 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   Scheme_Object **t;
   Scheme_Bucket **bs;
   Scheme_Env *kenv;
-  long i;
+  intptr_t i;
   int j;
 
   t = MALLOC_N(Scheme_Object *, (builtin_ref_counter + 1));
@@ -1439,7 +1439,7 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
   Scheme_Hash_Table*result;
   Scheme_Bucket **bs;
   Scheme_Env *kenv;
-  long i;
+  intptr_t i;
   int j;
 
   result = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -1473,7 +1473,7 @@ const char *scheme_look_for_primitive(void *code)
   Scheme_Bucket_Table *ht;
   Scheme_Bucket **bs;
   Scheme_Env *kenv;
-  long i;
+  intptr_t i;
   int j;
 
   for (j = 0; j < 4; j++) {
@@ -2799,7 +2799,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
   Scheme_Object *find_id_sym = NULL, *rename_insp = NULL;
   Scheme_Env *genv;
-  long phase;
+  intptr_t phase;
 
   /* Need to know the phase being compiled */
   phase = env->genv->phase;
@@ -5550,7 +5550,7 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
   Scheme_Comp_Env *env;
   Scheme_Object *local_mark, *mark, *data, *pr, *form;
   Scheme_Object *orig_form, *req_form;
-  long phase;
+  intptr_t phase;
 
   if (!SCHEME_STXP(argv[1]))
     scheme_wrong_type("syntax-local-lift-require", "syntax", 1, argc, argv);

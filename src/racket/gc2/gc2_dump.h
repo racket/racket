@@ -9,7 +9,7 @@ typedef char *(*GC_get_xtagged_name_proc)(void *p);
 typedef void (*GC_for_each_found_proc)(void *p);
 
 typedef void (*GC_print_tagged_value_proc)(const char *prefix, 
-					   void *v, int xtagged, unsigned long diff, int max_w,
+					   void *v, int xtagged, uintptr_t diff, int max_w,
 					   const char *suffix);
 
 GC2_EXTERN void GC_dump_with_traces(int flags,
@@ -21,7 +21,7 @@ GC2_EXTERN void GC_dump_with_traces(int flags,
 				    int path_length_limit);
 
 GC2_EXTERN void GC_dump_variable_stack(void **var_stack,
-                                       long delta,
+                                       intptr_t delta,
                                        void *limit,
                                        void *stack_mem,
                                        GC_get_type_name_proc get_type_name,

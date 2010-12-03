@@ -4,7 +4,7 @@
 /**********************************************************************/
 
 Scheme_Object *
-X(scheme_make_sized_offset, _string)(Xchar *chars, long d, long len, int copy)
+X(scheme_make_sized_offset, _string)(Xchar *chars, intptr_t d, intptr_t len, int copy)
 {
   Scheme_Object *str;
 
@@ -30,13 +30,13 @@ X(scheme_make_sized_offset, _string)(Xchar *chars, long d, long len, int copy)
 }
 
 Scheme_Object *
-X(scheme_make_sized, _string)(Xchar *chars, long len, int copy)
+X(scheme_make_sized, _string)(Xchar *chars, intptr_t len, int copy)
 {
   return X(scheme_make_sized_offset, _string)(chars, 0, len, copy);
 }
 
 Scheme_Object *
-X(scheme_make_immutable_sized, _string)(Xchar *chars, long len, int copy)
+X(scheme_make_immutable_sized, _string)(Xchar *chars, intptr_t len, int copy)
 {
   Scheme_Object *s;
   
@@ -59,11 +59,11 @@ X(scheme_make, _string)(const Xchar *chars)
 }
 
 Scheme_Object *
-X(scheme_alloc, _string)(long size, Xchar fill)
+X(scheme_alloc, _string)(intptr_t size, Xchar fill)
 {
   Scheme_Object *str;
   Xchar *s;
-  long i;
+  intptr_t i;
   
   if (size < 0) {
     str = scheme_make_integer(size);
@@ -89,11 +89,11 @@ X(scheme_alloc, _string)(long size, Xchar fill)
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC) && defined(GENERATING_BYTE)
 Scheme_Object *
-X(scheme_alloc_shared, _string)(long size, Xchar fill)
+X(scheme_alloc_shared, _string)(intptr_t size, Xchar fill)
 {
   Scheme_Object *str;
   Xchar *s;
-  long i;
+  intptr_t i;
   void *original_gc;
   
   if (size < 0) {
@@ -137,7 +137,7 @@ X__(string_p) (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 X_(make, string) (int argc, Scheme_Object *argv[])
 {
-  long len;
+  intptr_t len;
   Xchar fill;
   Scheme_Object *str;
 
@@ -180,7 +180,7 @@ X__(string) (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 X_(make_shared, string) (int argc, Scheme_Object *argv[])
 {
-  long len;
+  intptr_t len;
   Xchar fill;
   Scheme_Object *str;
 
@@ -232,7 +232,7 @@ X__(string_length) (int argc, Scheme_Object *argv[])
 Scheme_Object *
 X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
 {
-  long i, len;
+  intptr_t i, len;
   int c;
   Xchar *str;
 
@@ -256,7 +256,7 @@ X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
 Scheme_Object *
 X_(scheme_checked, string_set) (int argc, Scheme_Object *argv[])
 {
-  long i, len;
+  intptr_t i, len;
   Xchar *str;
   
   if (!SCHEME_MUTABLE_X_STRINGP(argv[0]))
@@ -283,7 +283,7 @@ X_(scheme_checked, string_set) (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 X__(substring) (int argc, Scheme_Object *argv[])
 {
-  long start, finish;
+  intptr_t start, finish;
   Xchar *chars;
   Scheme_Object *str;
 
@@ -307,7 +307,7 @@ X__(string_append) (int argc, Scheme_Object *argv[])
   Scheme_Object *naya, *s;
   Xchar *chars;
   int i;
-  long len;
+  intptr_t len;
 
   len = 0;
   for (i = 0; i < argc; i++) {
@@ -426,8 +426,8 @@ static Scheme_Object *
 X__(string_copy_bang)(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *s1, *s2;
-  long istart, ifinish;
-  long ostart, ofinish;
+  intptr_t istart, ifinish;
+  intptr_t ostart, ofinish;
 
   s1 = argv[0];
   if (!SCHEME_MUTABLE_X_STRINGP(s1))

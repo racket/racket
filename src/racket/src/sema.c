@@ -211,7 +211,7 @@ void scheme_init_sema_places() {
   scheme_system_idle_channel = scheme_make_channel();
 }
 
-Scheme_Object *scheme_make_sema(long v)
+Scheme_Object *scheme_make_sema(intptr_t v)
 {
   Scheme_Sema *sema;
 
@@ -225,7 +225,7 @@ Scheme_Object *scheme_make_sema(long v)
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p)
 {
-  long v;
+  intptr_t v;
 
   if (n) {
     if (!SCHEME_INTP(p[0])) {

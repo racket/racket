@@ -880,6 +880,23 @@ AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF([void *])
+
+AC_TYPE_INTPTR_T
+AC_TYPE_UINTPTR_T
+
+if test "${endianness}" = "unknown" ; then
+  if test "${enable_bigendian}" = "yes" ; then
+    endianness=big
+  else
+    echo configure: warning: cannot determine endianness, assuming little
+  fi
+fi
+
+if test "${endianness}" = "big" ; then
+  AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
+fi
+
 
 [ msg="for stack direction" ]
 AC_MSG_CHECKING($msg)

@@ -176,7 +176,7 @@ inline static int custodian_member_owner_set(NewGC *gc, void *cust, int set)
   return 0;
 }
 
-inline static void account_memory(NewGC *gc, int set, long amount)
+inline static void account_memory(NewGC *gc, int set, intptr_t amount)
 {
   gc->owner_table[set]->memory_use += amount;
 }
@@ -211,10 +211,10 @@ inline static void clean_up_owner_table(NewGC *gc)
     }
 }
 
-inline static unsigned long custodian_usage(NewGC*gc, void *custodian)
+inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
 {
   OTEntry **owner_table;
-  unsigned long retval = 0;
+  uintptr_t retval = 0;
   int i;
 
   if(!gc->really_doing_accounting) {
@@ -427,7 +427,7 @@ static void BTC_do_accounting(NewGC *gc)
   clear_stack_pages(gc);
 }
 
-inline static void BTC_add_account_hook(int type,void *c1,void *c2,unsigned long b)
+inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
 {
   NewGC *gc = GC_get_GC();
   AccountHook *work;
@@ -493,7 +493,7 @@ inline static void clean_up_account_hooks(NewGC *gc)
   }
 }
 
-static unsigned long custodian_super_require(NewGC *gc, void *c)
+static uintptr_t custodian_super_require(NewGC *gc, void *c)
 {
   int set = ((Scheme_Custodian *)c)->gc_owner_set;
   const int table_size = gc->owner_table_size;
@@ -508,7 +508,7 @@ static unsigned long custodian_super_require(NewGC *gc, void *c)
   }
 
   if (!owner_table[set]->required_set) {
-    unsigned long req = 0, r;
+    uintptr_t req = 0, r;
     AccountHook *work = gc->hooks;
 
     while(work) {
@@ -553,13 +553,13 @@ inline static void BTC_run_account_hooks(NewGC *gc)
   }
 }
 
-static unsigned long custodian_single_time_limit(NewGC *gc, int set)
+static uintptr_t custodian_single_time_limit(NewGC *gc, int set)
 {
   OTEntry **owner_table = gc->owner_table;
   const int table_size = gc->owner_table_size;
 
   if (!set)
-    return (unsigned long)(long)-1;
+    return (uintptr_t)(intptr_t)-1;
 
   if (gc->reset_limits) {
     int i;
@@ -571,7 +571,7 @@ static unsigned long custodian_single_time_limit(NewGC *gc, int set)
 
   if (!owner_table[set]->limit_set) {
     /* Check for limits on this custodian or one of its ancestors: */
-    unsigned long limit = (unsigned long)(long)-1;
+    uintptr_t limit = (uintptr_t)-1;
     Scheme_Custodian *orig = (Scheme_Custodian *) owner_table[set]->originator, *c;
     AccountHook *work = gc->hooks;
 
@@ -600,7 +600,7 @@ static unsigned long custodian_single_time_limit(NewGC *gc, int set)
   return owner_table[set]->single_time_limit;
 }
 
-long BTC_get_memory_use(NewGC* gc, void *o)
+intptr_t BTC_get_memory_use(NewGC* gc, void *o)
 {
   Scheme_Object *arg = (Scheme_Object*)o;
   if(SAME_TYPE(SCHEME_TYPE(arg), scheme_custodian_type)) {

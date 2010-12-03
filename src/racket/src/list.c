@@ -1268,7 +1268,7 @@ reverse_prim (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
 {
-  long i, k;
+  intptr_t i, k;
   Scheme_Object *lst, *index, *bnindex;
 
   if (SCHEME_BIGNUMP(argv[1])) {
@@ -1705,7 +1705,7 @@ static int compare_equal(void *v1, void *v2)
   return !scheme_equal((Scheme_Object *)v1, (Scheme_Object *)v2);
 }
 
-static void make_hash_indices_for_equal(void *v, long *_stk_h1, long *_stk_h2)
+static void make_hash_indices_for_equal(void *v, intptr_t *_stk_h1, intptr_t *_stk_h2)
 {
   if (_stk_h1)
     *_stk_h1 = scheme_equal_hash_key((Scheme_Object *)v);
@@ -1718,7 +1718,7 @@ static int compare_eqv(void *v1, void *v2)
   return !scheme_eqv((Scheme_Object *)v1, (Scheme_Object *)v2);
 }
 
-static void make_hash_indices_for_eqv(void *v, long *_stk_h1, long *_stk_h2)
+static void make_hash_indices_for_eqv(void *v, intptr_t *_stk_h1, intptr_t *_stk_h2)
 {
   if (_stk_h1)
     *_stk_h1 = scheme_eqv_hash_key((Scheme_Object *)v);
@@ -2393,7 +2393,7 @@ static Scheme_Object *do_map_hash_table(int argc,
   } else {
     Scheme_Object *ik, *iv;
     Scheme_Hash_Tree *hash;
-    long pos;
+    intptr_t pos;
 
     hash = (Scheme_Hash_Tree *)obj;
 
@@ -3018,7 +3018,7 @@ Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
 
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
 
   if (SCHEME_INTP(argv[0]))
     return argv[0];
@@ -3026,7 +3026,7 @@ static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])
 #ifdef MZ_PRECISE_GC
   v = scheme_hash_key(argv[0]);
 #else
-  v = ((long)argv[0]) >> 2;
+  v = ((intptr_t)argv[0]) >> 2;
 #endif
 
   return scheme_make_integer(v);
@@ -3034,7 +3034,7 @@ static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
 
   if (SCHEME_INTP(argv[0]))
     return argv[0];
@@ -3046,7 +3046,7 @@ static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
 
   v = scheme_equal_hash_key2(argv[0]);
 
@@ -3055,7 +3055,7 @@ static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
 
   if (SCHEME_INTP(argv[0]))
     return argv[0];
@@ -3322,7 +3322,7 @@ static int mark_ephemerons()
 	    e->next = be;
 	    be = e;
 	  }
-	  mix += ((long)e >> 5) + ((long)e >> 2);
+	  mix += ((intptr_t)e >> 5) + ((intptr_t)e >> 2);
 	} else {
 	  did_one = 1;
 	  ever_done = 1;

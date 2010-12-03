@@ -407,7 +407,7 @@ same value. The @var{cells} argument should be obtained from
 should be used by only one thread.}
 
 @function[(Scheme_Object* scheme_make_sema
-           [long v])]{
+           [intptr_t v])]{
 
 Creates a new semaphore.}
 

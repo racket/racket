@@ -28,7 +28,7 @@ typedef struct MMU {
   AllocCacheBlock *alloc_caches[2];
   Page_Range *page_range;
 #endif
-  long memory_allocated;
+  intptr_t memory_allocated;
   size_t os_pagesize;
   NewGC *gc;
 } MMU;
@@ -232,10 +232,10 @@ static size_t mmu_memory_allocated(MMU *mmu) {
    The gc calls mmu_memory_allocated_inc for 
    pages that are going to be adopted from another place.
 */
-static void mmu_memory_allocated_inc(MMU *mmu, long amt) {
+static void mmu_memory_allocated_inc(MMU *mmu, intptr_t amt) {
   mmu->memory_allocated += amt;
 }
-static void mmu_memory_allocated_dec(MMU *mmu, long amt) {
+static void mmu_memory_allocated_dec(MMU *mmu, intptr_t amt) {
   mmu->memory_allocated -= amt;
 }
 

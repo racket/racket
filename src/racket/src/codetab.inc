@@ -23,11 +23,11 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 THREAD_LOCAL_DECL(static void **codetab_tree);
 THREAD_LOCAL_DECL(static int during_set);
 
-static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned long addr, int clearing);
+static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing);
 
-static void *find_symbol(unsigned long v)
+static void *find_symbol(uintptr_t v)
 {
-  unsigned long k;
+  uintptr_t k;
   void **t = codetab_tree, *val;
   int offset = (JIT_WORD_SIZE * 8);
   
@@ -55,15 +55,15 @@ static void **malloc_node()
 
   /* Set low bit in each of STARTS and GCABLE so that they're not confused
      for pointers: */
-  ((unsigned long *)v)[NODE_STARTS_OFFSET] = 0x1;
-  ((unsigned long *)v)[NODE_GCABLE_OFFSET] = 0x1;
+  ((uintptr_t *)v)[NODE_STARTS_OFFSET] = 0x1;
+  ((uintptr_t *)v)[NODE_GCABLE_OFFSET] = 0x1;
 
   return v;
 }
 
-static void add_symbol(unsigned long start, unsigned long end, void *value, int gc_able)
+static void add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_able)
 {
-  unsigned long k1, k2, split_t_start = 0, split_t_end = 0, i;
+  uintptr_t k1, k2, split_t_start = 0, split_t_end = 0, i;
   int m;
   int offset = (JIT_WORD_SIZE * 8), split_offset = 0;
   void **t1, **t2, **split_t, *val1, *val2;
@@ -121,15 +121,15 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
 
   /* Mark start bit: */
   m = (1 << (k1 - NODE_HEADER_SIZE + 1));
-  ((unsigned long *)t1)[NODE_STARTS_OFFSET] |= m;
+  ((uintptr_t *)t1)[NODE_STARTS_OFFSET] |= m;
 #ifndef MZ_PRECISE_GC
   /* GCABLE flag indicates whether to check for GC later */
   if (gc_able)
-    ((unsigned long *)t1)[NODE_GCABLE_OFFSET] |= m;
+    ((uintptr_t *)t1)[NODE_GCABLE_OFFSET] |= m;
 #else
   /* GCABLE flag indicates whether it's been GCed: */
   if (!value)
-    ((unsigned long *)t1)[NODE_GCABLE_OFFSET] |= m;
+    ((uintptr_t *)t1)[NODE_GCABLE_OFFSET] |= m;
 #endif
 
   /* Fill in start and end: */
@@ -180,7 +180,7 @@ static void add_symbol(unsigned long start, unsigned long end, void *value, int 
 #endif
 }
 
-static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned long addr, int clearing)
+static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing)
   /* If MZ_PRECISE_GC, then offset and addr are not used. */
 {
   int i, m, j;
@@ -191,13 +191,13 @@ static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned 
 
   for (i = ((start >> offset) & KEY_MASK); i < KEY_COUNT; i++) {
     m = (1 << (i + 1));
-    if (((unsigned long *)t)[NODE_STARTS_OFFSET] & m) {
+    if (((uintptr_t *)t)[NODE_STARTS_OFFSET] & m) {
       clearing = 0;
-      if (((unsigned long *)t)[NODE_GCABLE_OFFSET] & m) {
+      if (((uintptr_t *)t)[NODE_GCABLE_OFFSET] & m) {
 	/* GCable pointer starts here */
 #ifndef MZ_PRECISE_GC
 	/* Conservative GC: GCable flag means use GC_is_marked */
-	p = (void *)(addr + ((unsigned long)i << offset));
+	p = (void *)(addr + ((uintptr_t)i << offset));
 	if (!GC_is_marked(p))
 	  clearing = 1;
 #else
@@ -206,8 +206,8 @@ static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned 
 #endif
 	if (clearing) {
 	  /* Collected... */
-	  ((unsigned long *)t)[NODE_STARTS_OFFSET] -= m;
-	  ((unsigned long *)t)[NODE_GCABLE_OFFSET] -= m;
+	  ((uintptr_t *)t)[NODE_STARTS_OFFSET] -= m;
+	  ((uintptr_t *)t)[NODE_GCABLE_OFFSET] -= m;
 	}
       } else {
 #ifdef MZ_PRECISE_GC
@@ -228,7 +228,7 @@ static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned 
 	subt = (void **)val;
 	clearing = do_clear_symbols(subt, start,
 				    offset - LOG_KEY_SIZE,
-				    (addr + ((unsigned long)i << offset)),
+				    (addr + ((uintptr_t)i << offset)),
 				    clearing);
 	if (!during_set) {
 	  /* If the branch is empty, then drop it. */
@@ -304,7 +304,7 @@ int GC_is_marked(void *p)
   }
 }
 
-void check(int j, int delta, int i, void *expect, unsigned long addr)
+void check(int j, int delta, int i, void *expect, uintptr_t addr)
 {
   void *got;
 

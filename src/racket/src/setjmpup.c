@@ -29,9 +29,9 @@
 #include "schgc.h"
 
 #ifdef STACK_GROWS_UP
-# define DEEPPOS(b) ((unsigned long)(b)->stack_from+(unsigned long)(b)->stack_size)
+# define DEEPPOS(b) ((uintptr_t)(b)->stack_from+(uintptr_t)(b)->stack_size)
 #else
-# define DEEPPOS(b) ((unsigned long)(b)->stack_from)
+# define DEEPPOS(b) ((uintptr_t)(b)->stack_from)
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -76,7 +76,7 @@ extern void *scheme_malloc_stack(size_t);
 
 typedef struct CopiedStack {
   void *_stack_copy; /* The actual data */
-  long size;
+  intptr_t size;
   int pushed;
   struct CopiedStack **next, **prev;
 } CopiedStack;
@@ -174,7 +174,7 @@ static void remove_cs(void *_cs, void *unused)
   --scheme_num_copied_stacks;
 }
 
-static void *make_stack_copy_rec(long size)
+static void *make_stack_copy_rec(intptr_t size)
 {
   CopiedStack *cs, **lk;
 
@@ -217,7 +217,7 @@ static void set_copy(void *s_c, void *c)
 # define set_copy(s_c, c) s_c = c
 
 THREAD_LOCAL_DECL(static void *stack_copy_cache[STACK_COPY_CACHE_SIZE]);
-THREAD_LOCAL_DECL(static long stack_copy_size_cache[STACK_COPY_CACHE_SIZE]);
+THREAD_LOCAL_DECL(static intptr_t stack_copy_size_cache[STACK_COPY_CACHE_SIZE]);
 THREAD_LOCAL_DECL(static int scc_pos);
 #define SCC_OK_EXTRA_AMT 100
 
@@ -246,12 +246,12 @@ void scheme_flush_stack_copy_cache(void)
 /* This function must not be inlined! */
 void MZ_NO_INLINE scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STACK_ARG_DECL)
 {
-  long size, msize;
+  intptr_t size, msize;
   void *here;
 
   here = &size;
 
-  size = (long)here XFORM_OK_MINUS (long)start;
+  size = (intptr_t)here XFORM_OK_MINUS (intptr_t)start;
 #ifdef STACK_GROWS_UP
   b->stack_from = start;
 #else
@@ -273,8 +273,8 @@ void MZ_NO_INLINE scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *star
     set_copy(b->stack_copy, MALLOC_STACK(size));
 #else
     /* b is a pointer into the middle of `base'; bad for precise gc: */
-    unsigned long diff;
-    diff = (unsigned long)b XFORM_OK_MINUS (unsigned long)base;
+    uintptr_t diff;
+    diff = (uintptr_t)b XFORM_OK_MINUS (uintptr_t)base;
     b = NULL;
 
     copy = NULL;
@@ -321,19 +321,19 @@ void MZ_NO_INLINE scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *star
 	 size);
 }
 
-MZ_DO_NOT_INLINE(void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev));
+MZ_DO_NOT_INLINE(void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, intptr_t *prev));
 
-void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
+void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, intptr_t *prev)
 {
   GC_CAN_IGNORE Scheme_Jumpup_Buf *c;
-  long top_delta = 0, bottom_delta = 0, size;
+  intptr_t top_delta = 0, bottom_delta = 0, size;
   void *cfrom, *cto;
 
   if (!ok) {
-    unsigned long z;
-    long junk[200];
+    uintptr_t z;
+    intptr_t junk[200];
 
-    z = (unsigned long)&junk[0];
+    z = (uintptr_t)&junk[0];
 
     scheme_uncopy_stack(STK_COMP(z, DEEPPOS(b)), b, junk);
   }
@@ -354,13 +354,13 @@ void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 
     if (c->cont) {
 #ifdef STACK_GROWS_UP
-      top_delta = (((unsigned long)c->cont->buf.stack_from
+      top_delta = (((uintptr_t)c->cont->buf.stack_from
 		    + c->cont->buf.stack_size)
-		   - (unsigned long)c->stack_from);
+		   - (uintptr_t)c->stack_from);
 #else
-      bottom_delta = ((unsigned long)c->stack_from 
+      bottom_delta = ((uintptr_t)c->stack_from 
 		      + c->stack_size
-		      - (unsigned long)c->cont->buf.stack_from);
+		      - (uintptr_t)c->cont->buf.stack_from);
       top_delta = bottom_delta;
 #endif
       c = &c->cont->buf;
@@ -382,9 +382,9 @@ void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 START_XFORM_SKIP;
 #endif
 
-static long find_same(char *p, char *low, long max_size)
+static intptr_t find_same(char *p, char *low, intptr_t max_size)
 {
-  long cnt = 0;
+  intptr_t cnt = 0;
 
   /* We assume a max possible amount of the current stack that should
      not be shared with the saved stack. This is ok (or not) in the same
@@ -428,10 +428,10 @@ static long find_same(char *p, char *low, long max_size)
 static void *align_var_stack(void **vs, void *s)
 {
   void **nvs, **next;
-  long i, cnt;
+  intptr_t i, cnt;
   void *a;
   
-  while (STK_COMP((unsigned long)vs, (unsigned long)s)) {
+  while (STK_COMP((uintptr_t)vs, (uintptr_t)s)) {
     vs = (void **)(*vs);
   }
 
@@ -444,14 +444,14 @@ static void *align_var_stack(void **vs, void *s)
   nvs = *vs;
   while (nvs) {
     next = NULL;
-    cnt = ((long *)nvs)[1];
+    cnt = ((intptr_t *)nvs)[1];
     for (i = 0; i < cnt; i++) {
       a = nvs[i+2];
       if (!a) {
 	a = nvs[i+3];
 	i += 2;
       }
-      if (STK_COMP((unsigned long)a, (unsigned long)s)) {
+      if (STK_COMP((uintptr_t)a, (uintptr_t)s)) {
 	/* We need nvs to update part of copied stack! */
 	vs = nvs;
 	s = (void *)vs;
@@ -466,16 +466,16 @@ static void *align_var_stack(void **vs, void *s)
 }
 #define ALIGN_VAR_STACK(vs, s) s = align_var_stack(vs, s)
 
-static void *shift_var_stack(void *s, long delta)
+static void *shift_var_stack(void *s, intptr_t delta)
 {
 #ifdef STACK_GROWS_UP
   return s;
 #else
   void **vs = (void **)((char *)s + delta);
-  long cnt;
+  intptr_t cnt;
   
   /* Set s past end of vs: */
-  cnt = ((long *)vs)[1];
+  cnt = ((intptr_t *)vs)[1];
   return (void *)((void **)s + cnt + 2);
 #endif
 }
@@ -492,7 +492,7 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
 			     void * volatile start, struct Scheme_Cont *c)
 {
   int local;
-  long disguised_b;
+  intptr_t disguised_b;
 
 #ifdef MZ_USE_JIT
   scheme_flush_stack_cache();
@@ -516,7 +516,7 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
          Unfortunately, I can't quite convince myself that this
          assumption is definitely correct. I think it's likely correct,
          but watch out. */
-      long same_size;
+      intptr_t same_size;
       START_XFORM_SKIP;
       same_size = find_same(get_copy(c->buf.stack_copy), c->buf.stack_from, c->buf.stack_size);
       b->cont = c;
@@ -536,7 +536,7 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
 
     /* b is a pointer into the middle of `base', which bad for precise
      gc, so we hide it. */
-    disguised_b = (long)b;
+    disguised_b = (intptr_t)b;
     b = NULL;
 
     scheme_copy_stack((Scheme_Jumpup_Buf *)disguised_b, base, start GC_VAR_STACK_ARG);
@@ -565,7 +565,7 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
 #endif
 
   if (stack_boundary != cur_end) {
-    long new_size, delta;
+    intptr_t new_size, delta;
     Scheme_Overflow_Jmp *naya;
     void *copy, *base;
 
@@ -575,7 +575,7 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
     base = (char *)stack_boundary;
 # else
     delta = 0;
-    new_size = (long)stack_boundary - (long)jmp->cont.stack_from;
+    new_size = (intptr_t)stack_boundary - (intptr_t)jmp->cont.stack_from;
     base = jmp->cont.stack_from;
 # endif
 
@@ -610,14 +610,14 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
 
 void scheme_longjmpup(Scheme_Jumpup_Buf *b)
 {
-  long z;
-  long junk[200];
+  intptr_t z;
+  intptr_t junk[200];
 
 #ifdef MZ_USE_JIT
   scheme_flush_stack_cache();
 #endif
 
-  scheme_uncopy_stack(STK_COMP((unsigned long)&z, DEEPPOS(b)), b, junk);
+  scheme_uncopy_stack(STK_COMP((uintptr_t)&z, DEEPPOS(b)), b, junk);
 }
 
 void scheme_init_jmpup_buf(Scheme_Jumpup_Buf *b)

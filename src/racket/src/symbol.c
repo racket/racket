@@ -58,7 +58,7 @@ SHARED_OK static Scheme_Hash_Table *symbol_table = NULL;
 SHARED_OK static Scheme_Hash_Table *keyword_table = NULL;
 SHARED_OK static Scheme_Hash_Table *parallel_symbol_table = NULL;
 
-SHARED_OK static unsigned long scheme_max_symbol_length;
+SHARED_OK static uintptr_t scheme_max_symbol_length;
 
 /* globals */
 SHARED_OK int scheme_case_sensitive = 1;
@@ -83,7 +83,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[]);
 
 /**************************************************************************/
 
-typedef unsigned long hash_v_t;
+typedef uintptr_t hash_v_t;
 #define HASH_SEED  0xF0E1D2C3
 
 #define SYMTAB_LOST_CELL scheme_false
@@ -104,7 +104,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 				    Scheme_Object *naya)
 {
   hash_v_t h, h2;
-  unsigned long mask;
+  uintptr_t mask;
   Scheme_Object *bucket;
 
   /* WARNING: key may be GC-misaligned... */
@@ -346,7 +346,7 @@ scheme_init_symbol (Scheme_Env *env)
   GLOBAL_IMMED_PRIM("gensym",                     gensym,                           0, 1, env);
 }
 
-unsigned long scheme_get_max_symbol_length() {
+uintptr_t scheme_get_max_symbol_length() {
   /* x86, x86_64, and powerpc support aligned_atomic_loads_and_stores */
   return scheme_max_symbol_length;
 }
@@ -392,7 +392,7 @@ Scheme_Object *
 scheme_make_exact_char_symbol(const mzchar *name, unsigned int len)
 {
   char buf[64], *bs;
-  long blen;
+  intptr_t blen;
   bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
   return make_a_symbol(bs, blen, 0x1);
 }
@@ -491,7 +491,7 @@ Scheme_Object *
 scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
 {
   char buf[64], *bs;
-  long blen;
+  intptr_t blen;
   bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
   return intern_exact_symbol_in_table(enum_symbol, 0, bs, blen);
 }
@@ -509,7 +509,7 @@ scheme_intern_exact_keyword(const char *name, unsigned int len)
 Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int len)
 {
   char buf[64], *bs;
-  long blen;
+  intptr_t blen;
   Scheme_Object *s;
   bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
   s = intern_exact_symbol_in_table(enum_keyword, 0, bs, blen);
@@ -527,7 +527,7 @@ scheme_intern_symbol(const char *name)
      is good enough to normalize the case. */
 {
   if (!scheme_case_sensitive) {
-      unsigned long i, len;
+    uintptr_t i, len;
     char *naya;
     char on_stack[MAX_SYMBOL_SIZE];
 
@@ -647,7 +647,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *length
 
   if (!has_space && !has_special && (!pipe_quote || !has_pipe) && !has_upper) {
     mzchar cbuf[100], *cs;
-    long clen;
+    intptr_t clen;
     dz = 0;
     cs = scheme_utf8_decode_to_buffer_len((unsigned char *)s, len, cbuf, 100, &clen);
     if (cs
@@ -771,7 +771,7 @@ static Scheme_Object *
 string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[])
 {
   char buf[64], *bs;
-  long blen;
+  intptr_t blen;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_type("string->unreadable-symbol", "string", 0, argc, argv);
@@ -789,7 +789,7 @@ symbol_to_string_prim (int argc, Scheme_Object *argv[])
   Scheme_Object *sym, *str;
   GC_CAN_IGNORE unsigned char *s;
   GC_CAN_IGNORE mzchar *s2;
-  long len, i;
+  intptr_t len, i;
 
   sym = argv[0];
 

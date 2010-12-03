@@ -116,6 +116,8 @@ Aliases for basic integer types. The @scheme[_byte] aliases correspond
 to @scheme[_int8]. The @scheme[_short] and @scheme[_word] aliases
 correspond to @scheme[_int16]. The @scheme[_int] aliases correspond to
 @scheme[_int32]. The @scheme[_long] aliases correspond to either
+@scheme[_int32] or @scheme[_int64], depending on the platform. Similarly,
+the @scheme[_intptr] aliases correspond to either
 @scheme[_int32] or @scheme[_int64], depending on the platform.}
 
 @defthing*[([_fixnum ctype?]
@@ -123,7 +125,7 @@ correspond to @scheme[_int16]. The @scheme[_int] aliases correspond to
 
 For cases where speed matters and where you know that the integer is
 small enough, the types @scheme[_fixnum] and @scheme[_ufixnum] are
-similar to @scheme[_long] and @scheme[_ulong] but assume that the
+similar to @scheme[_intptr] and @scheme[_uintptr] but assume that the
 quantities fit in Racket's immediate integers (i.e., not bignums).}
 
 @defthing*[([_fixint ctype?]

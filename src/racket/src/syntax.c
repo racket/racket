@@ -1028,7 +1028,7 @@ define_values_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 static Scheme_Object *
 define_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
-  long cnt = 0;
+  intptr_t cnt = 0;
   Scheme_Object *vars = SCHEME_CAR(data), *l, *a;
   Scheme_Object *val = SCHEME_CDR(data), *vec;
 

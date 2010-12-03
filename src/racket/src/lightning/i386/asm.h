@@ -162,22 +162,22 @@ typedef _uc		jit_insn;
 /* memory subformats - urgh! */
 
 #ifdef JIT_X86_64
-# define _r_D(	R, D	  )	(_Mrm(_b00,_rN(R),_b100 ),_SIB(0,_b100,_b101)	     ,_jit_I((long)(D)))
-# define _r_Q(	R, D	  )	(_qMrm(_b00,_rN(R),_b100 ),_SIB(0,_b100,_b101)        ,_jit_I((long)(D)))
+# define _r_D(	R, D	  )	(_Mrm(_b00,_rN(R),_b100 ),_SIB(0,_b100,_b101)	     ,_jit_I((intptr_t)(D)))
+# define _r_Q(	R, D	  )	(_qMrm(_b00,_rN(R),_b100 ),_SIB(0,_b100,_b101)        ,_jit_I((intptr_t)(D)))
 #else
-# define _r_D(	R, D	  )	(_Mrm(_b00,_rN(R),_b101 )		             ,_jit_I((long)(D)))
+# define _r_D(	R, D	  )	(_Mrm(_b00,_rN(R),_b101 )		             ,_jit_I((intptr_t)(D)))
 # define _r_Q(R, D) _r_D(R, D)
 #endif
 #define _r_0B(	R,   B    )	(_Mrm(_b00,_rN(R),_r4(B))			           )
 #define _r_0BIS(R,   B,I,S)	(_Mrm(_b00,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_r4(B))      )
-#define _r_1B(	R, D,B    )	(_Mrm(_b01,_rN(R),_r4(B))		             ,_jit_B((long)(D)))
-#define _r_1BIS(R, D,B,I,S)	(_Mrm(_b01,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_r4(B)),_jit_B((long)(D)))
-#define _r_4B(	R, D,B    )	(_Mrm(_b10,_rN(R),_r4(B))		             ,_jit_I((long)(D)))
-#define _r_4IS( R, D,I,S)	(_Mrm(_b00,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_b101 ),_jit_I((long)(D)))
-#define _r_4BIS(R, D,B,I,S)	(_Mrm(_b10,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_r4(B)),_jit_I((long)(D)))
-#define _r_8B(	R, D,B    )	(_qMrm(_b10,_rN(R),_r8(B))		             ,_jit_I((long)(D)))
-#define _r_8IS( R, D,I,S)	(_qMrm(_b00,_rN(R),_b100 ),_SIB(_SCL(S),_r8(I),_b101 ),_jit_I((long)(D)))
-#define _r_8BIS(R, D,B,I,S)	(_qMrm(_b10,_rN(R),_b100 ),_SIB(_SCL(S),_r8(I),_r8(B)),_jit_I((long)(D)))
+#define _r_1B(	R, D,B    )	(_Mrm(_b01,_rN(R),_r4(B))		             ,_jit_B((intptr_t)(D)))
+#define _r_1BIS(R, D,B,I,S)	(_Mrm(_b01,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_r4(B)),_jit_B((intptr_t)(D)))
+#define _r_4B(	R, D,B    )	(_Mrm(_b10,_rN(R),_r4(B))		             ,_jit_I((intptr_t)(D)))
+#define _r_4IS( R, D,I,S)	(_Mrm(_b00,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_b101 ),_jit_I((intptr_t)(D)))
+#define _r_4BIS(R, D,B,I,S)	(_Mrm(_b10,_rN(R),_b100 ),_SIB(_SCL(S),_r4(I),_r4(B)),_jit_I((intptr_t)(D)))
+#define _r_8B(	R, D,B    )	(_qMrm(_b10,_rN(R),_r8(B))		             ,_jit_I((intptr_t)(D)))
+#define _r_8IS( R, D,I,S)	(_qMrm(_b00,_rN(R),_b100 ),_SIB(_SCL(S),_r8(I),_b101 ),_jit_I((intptr_t)(D)))
+#define _r_8BIS(R, D,B,I,S)	(_qMrm(_b10,_rN(R),_b100 ),_SIB(_SCL(S),_r8(I),_r8(B)),_jit_I((intptr_t)(D)))
 
 #define _r_DB(  R, D,B    )	((_s0P(D) && (B != _EBP) ? _r_0B  (R,  B    ) : (_s8P(D) ? _r_1B(  R,D,B    ) : _r_4B(  R,D,B    ))))
 #define _r_DBIS(R, D,B,I,S)	((_s0P(D)		 ? _r_0BIS(R,  B,I,S) : (_s8P(D) ? _r_1BIS(R,D,B,I,S) : _r_4BIS(R,D,B,I,S))))
@@ -409,14 +409,14 @@ typedef _uc		jit_insn;
 #ifdef JIT_X86_64
 # define CALLm(D,B,I,S)	                (MOVQir((D), JIT_REXTMP), CALQsr(JIT_REXTMP))
 #else
-# define CALLm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D32	(0xe8			,(long)(D)		) : \
+# define CALLm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D32	(0xe8			,(intptr_t)(D)		) : \
 								JITFAIL("illegal mode in direct jump"))
 #endif
 
 #define CALLsr(R)			_O_Mrm	(0xff	,_b11,_b010,_r4(R)			)
 #define CALQsr(R)                       _qO_Mrm (0xff	,_b11,_b010,_r8(R))
 
-#define CALLsm(D,B,I,S)			_O_r_X	(0xff	     ,_b010	,(long)(D),B,I,S		)
+#define CALLsm(D,B,I,S)			_O_r_X	(0xff	     ,_b010	,(intptr_t)(D),B,I,S		)
 
 #define CBW_()				_O		(0x98								)
 #define CLC_()				_O		(0xf8								)
@@ -531,7 +531,7 @@ typedef _uc		jit_insn;
 #define INVLPGm(MD, MB, MI, MS)		_OO_r_X		(0x0f01		     ,_b111		,MD,MB,MI,MS		)
 
 
-#define JCCSim(CC,D,B,I,S)		((_r0P(B) && _r0P(I)) ? _O_D8	(0x70|(CC)		,(long)(D)		) : \
+#define JCCSim(CC,D,B,I,S)		((_r0P(B) && _r0P(I)) ? _O_D8	(0x70|(CC)		,(intptr_t)(D)		) : \
 								JITFAIL("illegal mode in conditional jump"))
 
 #define JOSm(D,B,I,S)			JCCSim(0x0,D,B,I,S)
@@ -570,16 +570,16 @@ typedef _uc		jit_insn;
 #ifdef SUPPORT_TINY_JUMPS
 # define JCCim_base(CC,nCC,D,B,I,S) ((_r0P(B) && _r0P(I)) ? (_jitl.tiny_jumps \
                                                                  ? _O_D8(0x70|(CC), D) \
-                                                                 : _OO_D32	(0x0f80|(CC)		,(long)(D)		)) : \
+                                                                 : _OO_D32	(0x0f80|(CC)		,(intptr_t)(D)		)) : \
 								JITFAIL("illegal mode in conditional jump"))
 #else
-# define JCCim_base(CC,nCC,D,B,I,S) (_OO_D32	(0x0f80|(CC)		,(long)(D)		))
+# define JCCim_base(CC,nCC,D,B,I,S) (_OO_D32	(0x0f80|(CC)		,(intptr_t)(D)		))
 #endif
 
 #ifdef JIT_X86_64
 # define JCCim(CC,nCC,D,B,I,S) (!_jitl.long_jumps \
                                 ? JCCim_base(CC,nCC,D,B,I,S)            \
-                                : (_O_D8(0x70|(nCC), _jit_UL(_jit.x.pc) + 13), JMPm((long)D, 0, 0, 0)))
+                                : (_O_D8(0x70|(nCC), _jit_UL(_jit.x.pc) + 13), JMPm((intptr_t)D, 0, 0, 0)))
 #else
 # define JCCim(CC,nCC,D,B,I,S)	JCCim_base(CC,nCC,D,B,I,S)
 #endif
@@ -616,16 +616,16 @@ typedef _uc		jit_insn;
 #define JCm(D,B,I,S) JBm(D,B,I,S)
 #define JNCm(D,B,I,S) JNBm(D,B,I,S)
 
-#define JMPSm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D8	(0xeb			,(long)(D)		) : \
+#define JMPSm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D8	(0xeb			,(intptr_t)(D)		) : \
 								JITFAIL("illegal mode in short jump"))
 
 #ifdef SUPPORT_TINY_JUMPS
 # define JMPm_base(D,B,I,S)             ((_r0P(B) && _r0P(I)) ? (_jitl.tiny_jumps \
                                                                  ? _O_D8(0xeB, D) \
-                                                                 : _O_D32	(0xe9			,(long)(D)		)) : \
+                                                                 : _O_D32	(0xe9			,(intptr_t)(D)		)) : \
 								JITFAIL("illegal mode in direct jump"))
 #else
-# define JMPm_base(D,B,I,S)  (_O_D32(0xe9			,(long)(D)		))
+# define JMPm_base(D,B,I,S)  (_O_D32(0xe9			,(intptr_t)(D)		))
 #endif
 
 #ifdef JIT_X86_64
@@ -638,7 +638,7 @@ typedef _uc		jit_insn;
 
 #define JMPsr(R)			_O_Mrm	(0xff	,_b11,_b100,_r4(R)			)
 
-#define JMPsm(D,B,I,S)			_O_r_X	(0xff	     ,_b100	,(long)(D),B,I,S		)
+#define JMPsm(D,B,I,S)			_O_r_X	(0xff	     ,_b100	,(intptr_t)(D),B,I,S		)
 
 
 #define LAHF_()				_O		(0x9f								)

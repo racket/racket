@@ -71,7 +71,7 @@ static MZ_MARK_STACK_TYPE ts_ ## id(Scheme_Object* g19, Scheme_Object* g20) \
     return id(g19, g20); \
 }
 #define define_ts_Sl_s(id, src_type) \
-static Scheme_Object* ts_ ## id(Scheme_Object** g21, long g22) \
+static Scheme_Object* ts_ ## id(Scheme_Object** g21, intptr_t g22) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
@@ -80,7 +80,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object** g21, long g22) \
     return id(g21, g22); \
 }
 #define define_ts_l_s(id, src_type) \
-static Scheme_Object* ts_ ## id(long g23) \
+static Scheme_Object* ts_ ## id(intptr_t g23) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
@@ -125,7 +125,7 @@ static void ts_ ## id(Scheme_Bucket* g32) \
      id(g32); \
 }
 #define define_ts_sl_s(id, src_type) \
-static Scheme_Object* ts_ ## id(Scheme_Object* g33, long g34) \
+static Scheme_Object* ts_ ## id(Scheme_Object* g33, intptr_t g34) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \

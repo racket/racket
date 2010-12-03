@@ -21,7 +21,7 @@
 static void page_range_compact(Page_Range *pr);
 static void page_range_reset(Page_Range *pr);
 static void page_range_flush(Page_Range *pr, int writeable);
-static int page_range_add_worker(Page_Range *pr, void *_start, unsigned long len);
+static int page_range_add_worker(Page_Range *pr, void *_start, uintptr_t len);
 
 
 static Page_Range *page_range_create()
@@ -35,7 +35,7 @@ static Page_Range *page_range_create()
   return pr;
 }
 
-static void page_range_add(Page_Range *pr, void *_start, unsigned long len, int writeable)
+static void page_range_add(Page_Range *pr, void *_start, uintptr_t len, int writeable)
 {
   GC_MP_CNT_INC(mp_pr_add_cnt);
   if (!page_range_add_worker(pr, _start, len)) {
@@ -77,7 +77,7 @@ static void page_range_flush(Page_Range *pr, int writeable)
 static void page_range_compact(Page_Range *pr)
 {
   Range *work, *next;
-  unsigned long start, len;
+  uintptr_t start, len;
 
   for (work = pr->range_start; work; work = next) {
     next = work->next;
@@ -104,7 +104,7 @@ static void page_range_reset(Page_Range *pr)
   pr->range_start = NULL;
 }
 
-static int try_extend(Range *r, unsigned long start, unsigned long len)
+static int try_extend(Range *r, uintptr_t start, uintptr_t len)
 {
   if (!r)
     return 0;
@@ -122,9 +122,9 @@ static int try_extend(Range *r, unsigned long start, unsigned long len)
   return 0;
  }
 
-static int page_range_add_worker(Page_Range *pr, void *_start, unsigned long len)
+static int page_range_add_worker(Page_Range *pr, void *_start, uintptr_t len)
 {
-  unsigned long start = (unsigned long)_start;
+  uintptr_t start = (uintptr_t)_start;
   Range *r, *range_root = pr->range_root;
 
   range_root = range_splay(start, range_root);

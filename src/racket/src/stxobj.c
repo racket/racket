@@ -687,7 +687,7 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
 }
 
 Scheme_Object *scheme_make_stx_w_offset(Scheme_Object *val, 
-					long line, long col, long pos, long span,
+					intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					Scheme_Object *src,
 					Scheme_Object *props)
 {
@@ -731,7 +731,7 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
   Scheme_Object *ne, *oe, *e1, *e2;
   Scheme_Object *certs;
   Scheme_Object *wraps, *modinfo_cache;
-  long lazy_prefix;
+  intptr_t lazy_prefix;
 
   if (nstx->props) {
     if (SAME_OBJ(nstx->props, STX_SRCTAG)) {
@@ -1069,7 +1069,7 @@ Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m)
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *wraps;
   Scheme_Object *certs;
-  long lp;
+  intptr_t lp;
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     lp = stx->u.lazy_prefix;
@@ -1976,7 +1976,7 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *wraps;
   Scheme_Object *certs;
-  long lp;
+  intptr_t lp;
 
   if (STX_KEY(stx) & STX_SUBSTX_FLAG)
     preemptive_chunk(stx);
@@ -2005,7 +2005,7 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
   return (Scheme_Object *)stx;
 }
 
-void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i)
+void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, intptr_t i)
 {
   Scheme_Object *stx;
   int c;
@@ -2022,7 +2022,7 @@ void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i)
   } 
 }
 
-Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)
+Scheme_Object *scheme_delayed_rename(Scheme_Object **o, intptr_t i)
 {
   Scheme_Object *rename;
   Resolve_Prefix *rp;
@@ -2256,7 +2256,7 @@ void scheme_install_free_id_rename(Scheme_Object *id,
   }
 }
 
-Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
+Scheme_Object *scheme_stx_phase_shift_as_rename(intptr_t shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
 						Scheme_Hash_Table *export_registry)
 {
   if (shift || new_midx || export_registry) {
@@ -2284,7 +2284,7 @@ Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_m
     return NULL;
 }
 
-Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, long shift,
+Scheme_Object *scheme_stx_phase_shift(Scheme_Object *stx, intptr_t shift,
 				      Scheme_Object *old_midx, Scheme_Object *new_midx,
 				      Scheme_Hash_Table *export_registry)
 /* Shifts the phase on a syntax object in a module. A 0 shift might be
@@ -2588,7 +2588,7 @@ static Scheme_Object *propagate_wraps(Scheme_Object *o,
     if (SAME_OBJ(stx->wraps, p1)) {
       /* So, we can use owner_wraps directly instead of building
 	 new wraps. */
-      long lp;
+      intptr_t lp;
 
       if (STX_KEY(stx) & STX_SUBSTX_FLAG)
 	lp = stx->u.lazy_prefix + len;
@@ -5156,7 +5156,7 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
   return SAME_OBJ(a, b);
 }
 
-int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase)
+int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, intptr_t phase)
 {
   return scheme_stx_module_eq2(a, b, scheme_make_integer(phase), NULL);
 }
@@ -5818,7 +5818,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   Scheme_Lexical_Rib *did_rib = NULL;
   Scheme_Hash_Table *skip_ribs_ht = NULL, *prev_skip_ribs_ht;
   int copy_on_write, no_rib_mutation = 1, rib_count = 0;
-  long size, vsize, psize, i, j, pos;
+  intptr_t size, vsize, psize, i, j, pos;
 
   /* Although it makes no sense to simplify the rename table itself,
      we can simplify it in the context of a particular wrap suffix.
@@ -8779,7 +8779,7 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
   if (val) {
     Scheme_Object *wraps, *modinfo_cache;
     Scheme_Object *certs;
-    long lazy_prefix;
+    intptr_t lazy_prefix;
 
     l = CONS(CONS(key, val), l);
 
@@ -8867,7 +8867,7 @@ Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)
     Scheme_Stx *stx = (Scheme_Stx *)to;
     Scheme_Object *wraps, *modinfo_cache;
     Scheme_Object *certs;
-    long lazy_prefix;
+    intptr_t lazy_prefix;
 
     wraps = stx->wraps;
     if (STX_KEY(stx) & STX_SUBSTX_FLAG) {
@@ -8926,7 +8926,7 @@ static Scheme_Object *extract_phase(const char *who, int pos, int argc, Scheme_O
       scheme_wrong_type(who, "exact integer or #f", pos, argc, argv);
   } else {
     Scheme_Thread *p = scheme_current_thread;
-    long ph;
+    intptr_t ph;
     ph = (p->current_local_env
           ? p->current_local_env->genv->phase
           : (use_shift

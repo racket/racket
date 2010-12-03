@@ -238,7 +238,7 @@ START_XFORM_SKIP;
 # endif
 
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-extern long _tls_index;
+extern intptr_t _tls_index;
 static __declspec(thread) void *tls_space;
 #endif
 

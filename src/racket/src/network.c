@@ -97,9 +97,9 @@ extern int scheme_stupid_windows_machine;
 #define TCP_BUFFER_SIZE 4096
 
 #ifdef USE_UNIX_SOCKETS_TCP
-typedef long tcp_t;
+typedef intptr_t tcp_t;
 # define INVALID_SOCKET (-1)
-static void closesocket(long s) {
+static void closesocket(intptr_t s) {
   int cr;
   do { 
     cr = close(s);
@@ -438,7 +438,7 @@ HANDLE ready_sema;
 int ready_fd;
 # endif
 
-static long getaddrinfo_in_thread(void *data)
+static intptr_t getaddrinfo_in_thread(void *data)
   XFORM_SKIP_PROC
 {
   int ok;
@@ -576,7 +576,7 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 # ifdef USE_WINSOCK_TCP
   {
     DWORD id;
-    long th;
+    intptr_t th;
     
     ready_sema = CreateSemaphore(NULL, 0, 1, NULL);
     th = _beginthreadex(NULL, 5000, 
@@ -1063,8 +1063,8 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
   return 0;
 }
 
-static long tcp_get_string(Scheme_Input_Port *port, 
-			   char *buffer, long offset, long size,
+static intptr_t tcp_get_string(Scheme_Input_Port *port, 
+			   char *buffer, intptr_t offset, intptr_t size,
 			   int nonblock,
 			   Scheme_Object *unless)
 {
@@ -1232,8 +1232,8 @@ tcp_in_buffer_mode(Scheme_Port *p, int mode)
   }
 }
 
-static long tcp_do_write_string(Scheme_Output_Port *port, 
-				const char *s, long offset, long len, 
+static intptr_t tcp_do_write_string(Scheme_Output_Port *port, 
+				const char *s, intptr_t offset, intptr_t len, 
 				int rarely_block, int enable_break)
 {
   /* We've already checked for buffering before we got here. */
@@ -1245,7 +1245,7 @@ static long tcp_do_write_string(Scheme_Output_Port *port,
 
   Scheme_Tcp *data;
   int errid, would_block = 0;
-  long sent;
+  intptr_t sent;
 
   data = (Scheme_Tcp *)port->port_data;
 
@@ -1342,8 +1342,8 @@ static int tcp_flush(Scheme_Output_Port *port,
   }
 }
 
-static long tcp_write_string(Scheme_Output_Port *port, 
-			     const char *s, long offset, long len, 
+static intptr_t tcp_write_string(Scheme_Output_Port *port, 
+			     const char *s, intptr_t offset, intptr_t len, 
 			     int rarely_block, int enable_break)
 {
   Scheme_Tcp *data;
@@ -2457,7 +2457,7 @@ static void tcp_accept_evt_needs_wakeup(Scheme_Object *ae, void *fds)
   tcp_accept_needs_wakeup(SCHEME_PTR1_VAL(ae), fds);
 }
 
-int scheme_get_port_socket(Scheme_Object *p, long *_s)
+int scheme_get_port_socket(Scheme_Object *p, intptr_t *_s)
 {
 #ifdef USE_TCP
   tcp_t s = 0;
@@ -2484,14 +2484,14 @@ int scheme_get_port_socket(Scheme_Object *p, long *_s)
   }
 
   if (s_ok) {
-    *_s = (long)s;
+    *_s = (intptr_t)s;
     return 1;
   } else
     return 0;
 #endif
 }
 
-void scheme_socket_to_ports(long s, const char *name, int takeover,
+void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
                             Scheme_Object **_inp, Scheme_Object **_outp)
 {
   Scheme_Tcp *tcp;
@@ -2884,10 +2884,10 @@ static void udp_send_needs_wakeup(Scheme_Object *_udp, void *fds)
 #endif
 
 static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
-				     char *bstr, long start, long end,
+				     char *bstr, intptr_t start, intptr_t end,
 				     char *dest_addr, int dest_addr_len, int can_block)
 {
-  long x;
+  intptr_t x;
   int errid = 0;
 
   while (1) {
@@ -2955,7 +2955,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 #ifdef UDP_IS_SUPPORTED
   Scheme_UDP *udp;
   char *address = "";
-  long start, end;
+  intptr_t start, end;
   int delta, err;
   unsigned short origid, id;
   GC_CAN_IGNORE struct mz_addrinfo *udp_dest_addr;
@@ -3116,11 +3116,11 @@ static void udp_recv_needs_wakeup(Scheme_Object *_udp, void *fds)
 
 #endif
 
-static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, long start, long end, 
+static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t start, intptr_t end, 
 		       int can_block, Scheme_Object **v)
 {
 #ifdef UDP_IS_SUPPORTED
-  long x;
+  intptr_t x;
   int errid = 0;
   char src_addr[MZ_SOCK_NAME_MAX_LEN];
   unsigned int asize = sizeof(src_addr);
@@ -3219,7 +3219,7 @@ static Scheme_Object *udp_recv(const char *name, int argc, Scheme_Object *argv[]
 			       int can_block, Scheme_UDP_Evt *fill_evt)
 {
   Scheme_UDP *udp;
-  long start, end;
+  intptr_t start, end;
   Scheme_Object *v[3];
 
   udp = (Scheme_UDP *)argv[0];

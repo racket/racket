@@ -725,7 +725,7 @@ thread_val {
 }
 
 runstack_val {
-  long *s = (long *)p;
+  intptr_t *s = (intptr_t *)p;
  mark:
   void **a, **b;
   a = (void **)s + 4 + s[2];

@@ -695,7 +695,7 @@ using @cpp{scheme_free_immobile_box}.}
 
 Frees an immobile box allocated with @cpp{scheme_malloc_immobile_box}.}
 
-@function[(void* scheme_malloc_code [long size])]{
+@function[(void* scheme_malloc_code [intptr_t size])]{
 
 Allocates non-collectable memory to hold executable machine code. Use
 this function instead of @cpp{malloc} to ensure that the allocated
@@ -708,7 +708,7 @@ Frees memory allocated with @cpp{scheme_malloc_code}.}
 
 @function[(void scheme_register_extension_global
            [void* ptr]
-           [long size])]{
+           [intptr_t size])]{
 
 Registers an extension's global variable that can contain Racket
  pointers. The address of the global is given in @var{ptr}, and its
@@ -834,7 +834,7 @@ The @var{tls_index} argument must be @cpp{0}. It is currently
 
 @function[(void scheme_register_static
            [void* ptr]
-           [long size])]{
+           [intptr_t size])]{
 
 Like @cpp{scheme_register_extension_global}, for use in embedding
  applications in situations where the collector does not automatically

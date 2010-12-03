@@ -21,7 +21,7 @@ decoding errors.
            [mzchar* us]
            [int dstart]
            [int dend]
-           [long* ipos]
+           [intptr_t* ipos]
            [char utf16]
            [int permissive])]{
 
@@ -69,7 +69,7 @@ This function does not allocate or trigger garbage collection.}
            [mzchar* us]
            [int dstart]
            [int dend]
-           [long* ipos]
+           [intptr_t* ipos]
            [char utf16]
            [int permissive])]{
 
@@ -128,7 +128,7 @@ Like @cpp{scheme_utf8_decode_all} with @var{permissive} as @cpp{0},
            [int len]
            [mzchar* buf]
            [int blen]
-           [long* ulen])]{
+           [intptr_t* ulen])]{
 
 Like @cpp{scheme_utf8_decode_to_buffer}, but the length of the
  result (not including the terminator) is placed into @var{ulen} if
@@ -208,7 +208,7 @@ Like @cpp{scheme_utf8_encode_all}, but the length of @var{buf} is
            [int len]
            [char* buf]
            [int blen]
-           [long* rlen])]{
+           [intptr_t* rlen])]{
 
 Like @cpp{scheme_utf8_encode_to_buffer}, but the length of the
  resulting encoding (not including a nul terminator) is reported in
@@ -221,7 +221,7 @@ Like @cpp{scheme_utf8_encode_to_buffer}, but the length of the
            [int end]
            [unsigned-short* buf]
            [int bufsize]
-           [long* ulen]
+           [intptr_t* ulen]
            [int term_size])]{
 
 Converts a UCS-4 encoding (the indicated range of @var{text}) to a
@@ -241,7 +241,7 @@ A result buffer is allocated if @var{buf} is not long enough (as
            [int end]
            [mzchar* buf]
            [int bufsize]
-           [long* ulen]
+           [intptr_t* ulen]
            [int term_size])]{
 
 Converts a UTF-16 encoding (the indicated range of @var{text}) to a

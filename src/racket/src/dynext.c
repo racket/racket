@@ -117,7 +117,7 @@ FIXME_LATER static Scheme_Hash_Table *fullpath_loaded_extensions; /* hash on ful
 #endif
 
 /* For precise GC, make a proc ptr look like a fixnum: */
-#define mzPROC_TO_HASH_OBJ(f) ((Scheme_Object *)(((long)f) | 0x1))
+#define mzPROC_TO_HASH_OBJ(f) ((Scheme_Object *)(((intptr_t)f) | 0x1))
 
 void scheme_init_dynamic_extension(Scheme_Env *env)
 {
@@ -434,7 +434,7 @@ static Scheme_Object *do_load_extension(const char *filename,
 
       if (n && SCHEME_SYMBOLP(n)) {
 	char *s, *t;
-	long len, slen;
+	intptr_t len, slen;
 	
 	t = "module `";
 	len = strlen(t);
@@ -464,7 +464,7 @@ static Scheme_Object *do_load_extension(const char *filename,
 #endif
 }
 
-void scheme_register_extension_global(void *ptr, long size)
+void scheme_register_extension_global(void *ptr, intptr_t size)
   XFORM_SKIP_PROC
 {
   GC_add_roots((char *)ptr, (char *)(((char *)ptr) + size + 1));

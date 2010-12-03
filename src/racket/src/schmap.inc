@@ -39,7 +39,7 @@ DO_MAP(int argc, Scheme_Object *argv[])
       size = l;
     else if (size != l) {
       char *argstr;
-      long alen;
+      intptr_t alen;
       
       argstr = scheme_make_args_string("", -1, argc, argv, &alen);
       
@@ -52,7 +52,7 @@ DO_MAP(int argc, Scheme_Object *argv[])
 
   if (SCHEME_FALSEP(scheme_get_or_check_arity(argv[0], argc - 1))) {
     char *s;
-    long aelen;
+    intptr_t aelen;
 
     s = scheme_make_arity_expect_string(argv[0], argc - 1, NULL, &aelen);
 

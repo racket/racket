@@ -12,7 +12,7 @@
 */
 
 #define Tree Fnl
-#define Splay_Item(t) ((unsigned long)t->p)
+#define Splay_Item(t) ((intptr_t)t->p)
 #define Set_Splay_Item(t, v) (t)->p = (void *)v
 #define splay fnl_splay
 #define splay_insert fnl_splay_insert
@@ -36,7 +36,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
   }
 
-  gc->splayed_finalizers = fnl_splay((unsigned long)p, gc->splayed_finalizers);
+  gc->splayed_finalizers = fnl_splay((intptr_t)p, gc->splayed_finalizers);
   fnl = gc->splayed_finalizers;
   if (fnl && (fnl->p == p)) {
     if (oldf) *oldf = fnl->f;
@@ -55,7 +55,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
         fnl->next->prev = fnl->prev;
 
       --gc->num_fnls;
-      gc->splayed_finalizers = fnl_splay_delete((unsigned long)p, gc->splayed_finalizers);
+      gc->splayed_finalizers = fnl_splay_delete((intptr_t)p, gc->splayed_finalizers);
     }
     return;
   }
@@ -94,19 +94,19 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     if (tagged) {
       if (m->type != MTYPE_TAGGED) {
         GCPRINT(GCOUTF, "Not tagged: %lx (%d)\n", 
-            (long)p, m->type);
+            (intptr_t)p, m->type);
         CRASH(4);
       }
     } else {
       if (m->type != MTYPE_XTAGGED) {
         GCPRINT(GCOUTF, "Not xtagged: %lx (%d)\n", 
-            (long)p, m->type);
+            (intptr_t)p, m->type);
         CRASH(5);
       }
       if (m->flags & MFLAG_BIGBLOCK)
         fnl->size = m->u.size;
       else
-        fnl->size = ((long *)p)[-1];
+        fnl->size = ((intptr_t *)p)[-1];
     }
   }
 #endif
@@ -119,7 +119,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   }
   gc->finalizers = fnl;
 
-  gc->splayed_finalizers = fnl_splay_insert((unsigned long)p, fnl, gc->splayed_finalizers);
+  gc->splayed_finalizers = fnl_splay_insert((intptr_t)p, fnl, gc->splayed_finalizers);
 
   gc->num_fnls++;
 }
@@ -135,7 +135,7 @@ static void reset_finalizer_tree(GCTYPE *gc)
 
   for (fnl = gc->finalizers; fnl; fnl = fnl->next) {
     fnl->prev = prev;
-    gc->splayed_finalizers = fnl_splay_insert((unsigned long)fnl->p, fnl, gc->splayed_finalizers);
+    gc->splayed_finalizers = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_finalizers);
     prev = fnl;
   }
 }

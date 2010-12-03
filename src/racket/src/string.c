@@ -55,7 +55,7 @@
 #include "schustr.inc"
 
 #ifdef USE_ICONV_DLL
-typedef long iconv_t;
+typedef intptr_t iconv_t;
 typedef int *(*errno_proc_t)();
 typedef size_t (*iconv_proc_t)(iconv_t cd,
 			       char **inbuf, size_t *inbytesleft,
@@ -327,16 +327,16 @@ static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char
 
 XFORM_NONGCING static int utf8_decode_x(const unsigned char *s, int start, int end,
 					unsigned int *us, int dstart, int dend,
-					long *ipos, long *jpos,
+					intptr_t *ipos, intptr_t *jpos,
 					char compact, char utf16,
 					int *state, int might_continue, int permissive);
 XFORM_NONGCING static int utf8_encode_x(const unsigned int *us, int start, int end,
 					unsigned char *s, int dstart, int dend,
-					long *_ipos, long *_opos, char utf16);
+					intptr_t *_ipos, intptr_t *_opos, char utf16);
 
 static char *string_to_from_locale(int to_bytes,
 				   char *in, int delta, int len,
-				   long *olen, int perm,
+				   intptr_t *olen, int perm,
 				   int *no_cvt);
 
 #define portable_isspace(x) (((x) < 128) && isspace(x))
@@ -883,9 +883,9 @@ void scheme_init_string_places(void) {
 /*                     UTF-8 char constructors                        */
 /**********************************************************************/
 
-Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, long d, long len)
+Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, intptr_t d, intptr_t len)
 {
-  long ulen;
+  intptr_t ulen;
   mzchar *us;
 
   if (len) {
@@ -906,13 +906,13 @@ Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, long d, long le
 }
 
 Scheme_Object *
-scheme_make_sized_utf8_string(char *chars, long len)
+scheme_make_sized_utf8_string(char *chars, intptr_t len)
 {
   return scheme_make_sized_offset_utf8_string(chars, 0, len);
 }
 
 Scheme_Object *
-scheme_make_immutable_sized_utf8_string(char *chars, long len)
+scheme_make_immutable_sized_utf8_string(char *chars, intptr_t len)
 {
   Scheme_Object *s;
 
@@ -941,7 +941,7 @@ scheme_make_locale_string(const char *chars)
 
 void scheme_out_of_string_range(const char *name, const char *which,
 				Scheme_Object *i, Scheme_Object *s,
-				long start, long len)
+				intptr_t start, intptr_t len)
 {
   int is_byte;
 
@@ -970,9 +970,9 @@ void scheme_out_of_string_range(const char *name, const char *which,
   }
 }
 
-long scheme_extract_index(const char *name, int pos, int argc, Scheme_Object **argv, long top, int false_ok)
+intptr_t scheme_extract_index(const char *name, int pos, int argc, Scheme_Object **argv, intptr_t top, int false_ok)
 {
-  long i;
+  intptr_t i;
   int is_top = 0;
 
   if (SCHEME_INTP(argv[pos])) {
@@ -996,10 +996,10 @@ long scheme_extract_index(const char *name, int pos, int argc, Scheme_Object **a
 
 void scheme_get_substring_indices(const char *name, Scheme_Object *str,
                                   int argc, Scheme_Object **argv,
-                                  int spos, int fpos, long *_start, long *_finish)
+                                  int spos, int fpos, intptr_t *_start, intptr_t *_finish)
 {
-  long len;
-  long start, finish;
+  intptr_t len;
+  intptr_t start, finish;
 
   if (SCHEME_CHAPERONE_VECTORP(str))
     len = SCHEME_VEC_SIZE(str);
@@ -1030,15 +1030,15 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
 
 void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
                                      int argc, Scheme_Object **argv,
-                                     int spos, int fpos, long *_start, long *_finish, long len)
+                                     int spos, int fpos, intptr_t *_start, intptr_t *_finish, intptr_t len)
 {
   if (argc > spos) {
     if (SCHEME_INTP(argv[spos])) {
-      long start = SCHEME_INT_VAL(argv[spos]);
+      intptr_t start = SCHEME_INT_VAL(argv[spos]);
       if ((start >= 0) && (start < len)) {
         *_start = start;
         if (argc > fpos) {
-          long finish = SCHEME_INT_VAL(argv[fpos]);
+          intptr_t finish = SCHEME_INT_VAL(argv[fpos]);
           if ((finish >= start) && (finish <= len)) {
             *_finish = finish;
             return;
@@ -1191,7 +1191,7 @@ GEN_BYTE_STRING_COMP(byte_string_gt, "bytes>?", mz_strcmp, >)
 static Scheme_Object *
 do_byte_string_to_char_string(const char *who,
 			      Scheme_Object *bstr,
-			      long istart, long ifinish,
+			      intptr_t istart, intptr_t ifinish,
 			      int perm, int as_locale)
 {
   int i, ulen;
@@ -1232,11 +1232,11 @@ do_byte_string_to_char_string(const char *who,
 static Scheme_Object *
 do_byte_string_to_char_string_locale(const char *who,
 				     Scheme_Object *bstr,
-				     long istart, long ifinish,
+				     intptr_t istart, intptr_t ifinish,
 				     int perm)
 {
   char *us;
-  long olen;
+  intptr_t olen;
 
   reset_locale();
   if (!iconv_ready) init_iconv();
@@ -1273,7 +1273,7 @@ static Scheme_Object *
 do_string_to_vector(const char *who, int mode, int argc, Scheme_Object *argv[])
 {
   int permc;
-  long istart, ifinish;
+  intptr_t istart, ifinish;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_type(who, "byte string", 0, argc, argv);
@@ -1298,7 +1298,7 @@ do_string_to_vector(const char *who, int mode, int argc, Scheme_Object *argv[])
     /* Latin-1 */
     mzchar *us;
     unsigned char *s;
-    long i, len;
+    intptr_t i, len;
     len = ifinish - istart;
     s = (unsigned char *)SCHEME_BYTE_STR_VAL(argv[0]);
     us = (mzchar *)scheme_malloc_atomic((len + 1) * sizeof(mzchar));
@@ -1342,7 +1342,7 @@ Scheme_Object *scheme_byte_string_to_char_string_locale(Scheme_Object *o)
 
 /************************* string->bytes *************************/
 
-static Scheme_Object *do_char_string_to_byte_string(Scheme_Object *s, long istart, long ifinish, 
+static Scheme_Object *do_char_string_to_byte_string(Scheme_Object *s, intptr_t istart, intptr_t ifinish, 
 						    int as_locale)
 {
   char *bs;
@@ -1363,11 +1363,11 @@ static Scheme_Object *do_char_string_to_byte_string(Scheme_Object *s, long istar
 static Scheme_Object *
 do_char_string_to_byte_string_locale(const char *who,
 				     Scheme_Object *cstr,
-				     long istart, long ifinish,
+				     intptr_t istart, intptr_t ifinish,
 				     int perm)
 {
   char *s;
-  long olen;
+  intptr_t olen;
 
   reset_locale();
   if (!iconv_ready) init_iconv();
@@ -1414,7 +1414,7 @@ Scheme_Object *scheme_char_string_to_byte_string_locale(Scheme_Object *s)
 static Scheme_Object *do_chars_to_bytes(const char *who, int mode,
 					int argc, Scheme_Object *argv[])
 {
-  long istart, ifinish;
+  intptr_t istart, ifinish;
   int permc;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -1439,7 +1439,7 @@ static Scheme_Object *do_chars_to_bytes(const char *who, int mode,
     /* Latin-1 */
     mzchar *us;
     unsigned char *s;
-    long i, len;
+    intptr_t i, len;
     len = ifinish - istart;
     us = SCHEME_CHAR_STR_VAL(argv[0]);
     s = (unsigned char *)scheme_malloc_atomic(len + 1);
@@ -1479,7 +1479,7 @@ static Scheme_Object *char_string_to_byte_string_latin1(int argc, Scheme_Object 
 
 static Scheme_Object *char_string_utf8_length (int argc, Scheme_Object *argv[])
 {
-  long istart, ifinish, len;
+  intptr_t istart, ifinish, len;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_type("string-utf-8-length", "string", 0, argc, argv);
@@ -1497,7 +1497,7 @@ static Scheme_Object *
 byte_string_utf8_length (int argc, Scheme_Object *argv[])
 {
   int len, perm;
-  long istart, ifinish;
+  intptr_t istart, ifinish;
   char *chars;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
@@ -1529,7 +1529,7 @@ byte_string_utf8_length (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 byte_string_utf8_index(int argc, Scheme_Object *argv[])
 {
-  long istart, ifinish, pos = -1, opos, ipos;
+  intptr_t istart, ifinish, pos = -1, opos, ipos;
   int result, perm;
   char *chars;
 
@@ -1575,7 +1575,7 @@ byte_string_utf8_index(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 byte_string_utf8_ref(int argc, Scheme_Object *argv[])
 {
-  long istart, ifinish, pos = -1, opos, ipos;
+  intptr_t istart, ifinish, pos = -1, opos, ipos;
   char *chars;
   unsigned int us[1];
   Scheme_Object *perm;
@@ -1735,7 +1735,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
   }
   if (used != argc) {
     char *args;
-    long alen;
+    intptr_t alen;
 
     args = scheme_make_args_string("", -1, argc, argv, &alen);
 
@@ -1753,7 +1753,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
   if (num_err || char_err) {
     int pos = (num_err ? num_err : char_err) - 1;
     char *args, *bstr;
-    long alen;
+    intptr_t alen;
     int blen;
     char *type = (num_err ? "exact-number" : "character");
     Scheme_Object *bad = argv[pos];
@@ -1831,7 +1831,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
 	break;
       case '.':
 	{
-	  long len;
+	  intptr_t len;
 	  char *s;
           len = scheme_get_print_width();
           i++;
@@ -1898,7 +1898,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
   }
 }
 
-char *scheme_format(mzchar *format, int flen, int argc, Scheme_Object **argv, long *rlen)
+char *scheme_format(mzchar *format, int flen, int argc, Scheme_Object **argv, intptr_t *rlen)
 {
   Scheme_Object *port;
   port = scheme_make_byte_string_output_port();
@@ -1912,10 +1912,10 @@ void scheme_printf(mzchar *format, int flen, int argc, Scheme_Object **argv)
 		   format, flen, 0, 0, argc, argv);
 }
 
-char *scheme_format_utf8(char *format, int flen, int argc, Scheme_Object **argv, long *rlen)
+char *scheme_format_utf8(char *format, int flen, int argc, Scheme_Object **argv, intptr_t *rlen)
 {
   mzchar *s;
-  long srlen;
+  intptr_t srlen;
   if (flen == -1)
     flen = strlen(format);
   s = scheme_utf8_decode_to_buffer_len((unsigned char *)format, flen, NULL, 0, &srlen);
@@ -1928,7 +1928,7 @@ char *scheme_format_utf8(char *format, int flen, int argc, Scheme_Object **argv,
 void scheme_printf_utf8(char *format, int flen, int argc, Scheme_Object **argv)
 {
   mzchar *s;
-  long srlen;
+  intptr_t srlen;
   if (flen == -1)
     flen = strlen(format);
   s = scheme_utf8_decode_to_buffer_len((unsigned char *)format, flen, NULL, 0, &srlen);
@@ -1942,7 +1942,7 @@ format(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port;
   char *s;
-  long len;
+  intptr_t len;
 
   port = scheme_make_byte_string_output_port();
 
@@ -2248,9 +2248,9 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
 }
 
 #ifndef DOS_FILE_SYSTEM
-static int sch_unix_putenv(const char *var, const char *val, const long varlen, const long vallen) {
+static int sch_unix_putenv(const char *var, const char *val, const intptr_t varlen, const intptr_t vallen) {
   char *buffer;
-  long total_length;
+  intptr_t total_length;
   total_length = varlen + vallen + 2;
 
 #ifdef MZ_PRECISE_GC
@@ -2620,7 +2620,7 @@ static char *do_convert(iconv_t cd,
 			   not included in iolen or *oolen */
 			int extra,
 			/* these two report actual read/wrote sizes: */
-			long *oilen, long *oolen,
+			intptr_t *oilen, intptr_t *oolen,
 			/* status is set to
 			   0 for complete,
 			   -1 for partial input,
@@ -2711,7 +2711,7 @@ static char *do_convert(iconv_t cd,
       } else {
 	/* UTF-8 -> UCS-4 */
 	/* We assume that out + od is mzchar-aligned */
-	long ipos, opos;
+	intptr_t ipos, opos;
 
 	r = utf8_decode_x((unsigned char *)in, id + dip, iilen,
 			  (unsigned int *)out, (od + dop) >> 2, iolen >> 2,
@@ -2804,14 +2804,14 @@ static char *do_convert(iconv_t cd,
 
 static char *string_to_from_locale(int to_bytes,
 				   char *in, int delta, int len,
-				   long *olen, int perm,
+				   intptr_t *olen, int perm,
 				   int *no_cvt)
      /* Call this function only when iconv is available, and only when
 	reset_locale() has been called */
 {
   Scheme_Object *parts = scheme_null, *one;
   char *c;
-  long clen, used;
+  intptr_t clen, used;
   int status;
   iconv_t cd;
 
@@ -2907,7 +2907,7 @@ static char *locale_recase(int to_up,
 			   char *in, int id, int iilen,
 			   /* iolen, in contrast, includes the terminator */
 			   char *out, int od, int iolen,
-			   long *oolen)
+			   intptr_t *oolen)
      /* Assumes that reset_locale() has been called */
 {
 #ifdef NO_MBTOWC_FUNCTIONS
@@ -3017,7 +3017,7 @@ int mz_locale_strcoll(char *s1, int d1, int l1, char *s2, int d2, int l2, int cv
      /* The s1 and s2 arguments are actually UCS-4.
         Assumes that reset_locale() has been called. */
 {
-  long clen1, clen2, used1, used2, origl1, origl2;
+  intptr_t clen1, clen2, used1, used2, origl1, origl2;
   char *c1, *c2, buf1[MZ_SC_BUF_SIZE], buf2[MZ_SC_BUF_SIZE];
   char case_buf1[MZ_SC_BUF_SIZE], case_buf2[MZ_SC_BUF_SIZE];
   int status, got_more;
@@ -3190,7 +3190,7 @@ int mz_native_strcoll(char *s1, int d1, int l1, char *s2, int d2, int l2, int cv
 
 typedef int (*strcoll_proc)(char *s1, int d1, int l1, char *s2, int d2, int l2, int cvt_case);
 
-int do_locale_comp(const char *who, const mzchar *us1, long ul1, const mzchar *us2, long ul2, int cvt_case)
+int do_locale_comp(const char *who, const mzchar *us1, intptr_t ul1, const mzchar *us2, intptr_t ul2, int cvt_case)
 {
   int xl1;
   int v, endres, utf16 = 0;
@@ -3263,11 +3263,11 @@ int do_locale_comp(const char *who, const mzchar *us1, long ul1, const mzchar *u
 }
 
 
-mzchar *do_locale_recase(int to_up, mzchar *in, int delta, int len, long *olen)
+mzchar *do_locale_recase(int to_up, mzchar *in, int delta, int len, intptr_t *olen)
 {
   Scheme_Object *parts = scheme_null;
   char *c, buf[MZ_SC_BUF_SIZE], case_buf[MZ_SC_BUF_SIZE];
-  long clen, used;
+  intptr_t clen, used;
   int status;
 
   while (len) {
@@ -3324,7 +3324,7 @@ mzchar *do_locale_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 }
 
 #ifdef MACOS_UNICODE_SUPPORT
-mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
+mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, intptr_t *olen)
      /* The in argument is actually UTF-16. */
 {
   CFMutableStringRef mstr;
@@ -3358,7 +3358,7 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 #endif
 
 #ifdef WINDOWS_UNICODE_SUPPORT
-mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
+mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, intptr_t *olen)
      /* The in argument is actually UTF-16. */
 {
   char *result;
@@ -3377,11 +3377,11 @@ mzchar *do_native_recase(int to_up, mzchar *in, int delta, int len, long *olen)
 }
 #endif
 
-typedef mzchar *(*recase_proc)(int to_up, mzchar *in, int delta, int len, long *olen);
+typedef mzchar *(*recase_proc)(int to_up, mzchar *in, int delta, int len, intptr_t *olen);
 
-static Scheme_Object *mz_recase(const char *who, int to_up, mzchar *us, long ulen)
+static Scheme_Object *mz_recase(const char *who, int to_up, mzchar *us, intptr_t ulen)
 {
-  long ulen1;
+  intptr_t ulen1;
   int utf16 = 0, i, delta = 0;
   mzchar *us1;
   recase_proc mz_do_recase = do_locale_recase;
@@ -3448,7 +3448,7 @@ static Scheme_Object *mz_recase(const char *who, int to_up, mzchar *us, long ule
 static Scheme_Object *
 unicode_recase(const char *who, int to_up, int argc, Scheme_Object *argv[])
 {
-  long len;
+  intptr_t len;
   mzchar *chars;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -3719,7 +3719,7 @@ static Scheme_Object *string_foldcase (int argc, Scheme_Object *argv[])
 
 static mzchar get_composition(mzchar a, mzchar b)
 {
-  unsigned long key = (a << 16) | b;
+  uintptr_t key = (a << 16) | b;
   int pos = (COMPOSE_TABLE_SIZE >> 1), new_pos;
   int below_len = pos;
   int above_len = (COMPOSE_TABLE_SIZE - pos - 1);
@@ -4439,8 +4439,8 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
 {
   char *r, *instr;
   int status;
-  long amt_read, amt_wrote;
-  long istart, ifinish, ostart, ofinish;
+  intptr_t amt_read, amt_wrote;
+  intptr_t istart, ifinish, ostart, ofinish;
   Scheme_Object *a[3], *status_sym;
   Scheme_Converter *c;
 
@@ -4567,7 +4567,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
   } else if (c->kind != mzICONV_KIND) {
     /* UTF-8 -> UTF-{8,16} "identity" converter, but maybe permissive */
     if (instr) {
-      long _ostart, _ofinish;
+      intptr_t _ostart, _ofinish;
       int utf16;
 
       if (c->kind == mzUTF8_TO_UTF16_KIND) {
@@ -4707,7 +4707,7 @@ byte_converter_p(int argc, Scheme_Object *argv[])
 
 static int utf8_decode_x(const unsigned char *s, int start, int end,
 			 unsigned int *us, int dstart, int dend,
-			 long *ipos, long *jpos,
+			 intptr_t *ipos, intptr_t *jpos,
 			 char compact, char utf16, int *_state,
 			 int might_continue, int permissive)
      /* Results:
@@ -5062,7 +5062,7 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 
 int scheme_utf8_decode(const unsigned char *s, int start, int end,
 		       unsigned int *us, int dstart, int dend,
-		       long *ipos, char utf16, int permissive)
+		       intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
 		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
@@ -5070,10 +5070,10 @@ int scheme_utf8_decode(const unsigned char *s, int start, int end,
 
 int scheme_utf8_decode_as_prefix(const unsigned char *s, int start, int end,
 				 unsigned int *us, int dstart, int dend,
-				 long *ipos, char utf16, int permissive)
+				 intptr_t *ipos, char utf16, int permissive)
      /* Always returns number of read characters, not error codes. */
 {
-  long opos;
+  intptr_t opos;
   utf8_decode_x(s, start, end, us, dstart, dend,
 		ipos, &opos, utf16, utf16, NULL, 1, permissive);
   return opos - dstart;
@@ -5104,7 +5104,7 @@ int scheme_utf8_decode_prefix(const unsigned char *s, int len, unsigned int *us,
 }
 
 mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len,
-					 mzchar *buf, int blen, long *_ulen)
+					 mzchar *buf, int blen, intptr_t *_ulen)
 {
   int ulen;
 
@@ -5127,14 +5127,14 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len,
 mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, int len,
 				     mzchar *buf, int blen)
 {
-  long ulen;
+  intptr_t ulen;
   return scheme_utf8_decode_to_buffer_len(s, len, buf, blen, &ulen);
 }
 
 int scheme_utf8_decode_count(const unsigned char *s, int start, int end,
 			     int *_state, int might_continue, int permissive)
 {
-  long pos = 0;
+  intptr_t pos = 0;
 
   if (!_state || !*_state) {
     /* Try fast path (all ASCII): */
@@ -5158,7 +5158,7 @@ int scheme_utf8_decode_count(const unsigned char *s, int start, int end,
 
 static int utf8_encode_x(const unsigned int *us, int start, int end,
 			 unsigned char *s, int dstart, int dend,
-			 long *_ipos, long *_opos, char utf16)
+			 intptr_t *_ipos, intptr_t *_opos, char utf16)
   /* Results:
         -1 => input ended in the middle of an encoding - only when utf16 and _opos
 	non-negative => reports number of bytes/code-units produced */
@@ -5326,7 +5326,7 @@ int scheme_utf8_encode_all(const unsigned int *us, int len, unsigned char *s)
 
 char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
 				       char *buf, int blen,
-				       long *_slen)
+				       intptr_t *_slen)
 {
   int slen;
 
@@ -5358,13 +5358,13 @@ char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
 char *scheme_utf8_encode_to_buffer(const mzchar *s, int len,
 				   char *buf, int blen)
 {
-  long slen;
+  intptr_t slen;
   return scheme_utf8_encode_to_buffer_len(s, len, buf, blen, &slen);
 }
 
 unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 				     unsigned short *buf, int bufsize,
-				     long *ulen, int term_size)
+				     intptr_t *ulen, int term_size)
 {
   mzchar v;
   int extra, i, j;
@@ -5397,7 +5397,7 @@ unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 
 mzchar *scheme_utf16_to_ucs4(const unsigned short *text, int start, int end,
 			     mzchar *buf, int bufsize,
-			     long *ulen, int term_size)
+			     intptr_t *ulen, int term_size)
 {
   int wc;
   int i, j;
@@ -5436,11 +5436,11 @@ mzchar *scheme_utf16_to_ucs4(const unsigned short *text, int start, int end,
 
 #if defined(MACINTOSH_EVENTS) && !defined(OS_X)
 # include <Gestalt.h>
-extern long scheme_this_ip(void);
+extern intptr_t scheme_this_ip(void);
 static void machine_details(char *s)
 {
    OSErr err;
-   long lng;
+   intptr_t lng;
    char sysvers[30];
    char machine_name[256];
 
@@ -5587,7 +5587,7 @@ void machine_details(char *buff)
       /* Try running it. */
       if (try_subproc(subprocess_proc, uname_locations[i])) {
 	Scheme_Object *sout, *sin, *serr;
-	long c;
+	intptr_t c;
 
 	sout = scheme_current_thread->ku.multiple.array[1];
 	sin = scheme_current_thread->ku.multiple.array[2];

@@ -64,25 +64,25 @@ Like @cpp{scheme_display}, but the printing is truncated to @var{n} bytes.
 
 @function[(void scheme_write_byte_string
            [char* str]
-           [long len]
+           [intptr_t len]
            [Scheme_Object* port])]{
 
 Writes @var{len} bytes of @var{str} to the given output port.}
 
 @function[(void scheme_write_char_string
            [mzchar* str]
-           [long len]
+           [intptr_t len]
            [Scheme_Object* port])]{
 
 Writes @var{len} characters of @var{str} to the given output port.}
 
 
-@function[(long scheme_put_byte_string
+@function[(intptr_t scheme_put_byte_string
            [const-char* who]
            [Scheme_Object* port]
            [char* str]
-           [long d]
-           [long len]
+           [intptr_t d]
+           [intptr_t len]
            [int rarely_block])]{
 
 Writes @var{len} bytes of @var{str}, starting with the @var{d}th
@@ -105,19 +105,19 @@ The result is @cpp{-1} if no bytes are written from @var{str} and
 unflushed bytes remain in the internal buffer. Otherwise, the return
 value is the number of written characters.}
 
-@function[(long scheme_put_char_string
+@function[(intptr_t scheme_put_char_string
            [const-char* who]
            [Scheme_Object* port]
            [char* str]
-           [long d]
-           [long len])]{
+           [intptr_t d]
+           [intptr_t len])]{
 
 Like @cpp{scheme_put_byte_string}, but for a @cpp{mzchar} string, and
 without the non-blocking option.}
 
 @function[(char* scheme_write_to_string
            [Scheme_Object* obj]
-           [long* len])]{
+           [intptr_t* len])]{
 
 Prints the Racket value @var{obj} using @scheme[write] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
@@ -125,7 +125,7 @@ set to the length of the bytes string.}
 
 @function[(void scheme_write_to_string_w_max
            [Scheme_Object* obj]
-           [long* len]
+           [intptr_t* len]
            [int n])]{
 
 Like @cpp{scheme_write_to_string}, but the string is truncated to
@@ -134,7 +134,7 @@ Like @cpp{scheme_write_to_string}, but the string is truncated to
 
 @function[(char* scheme_display_to_string
            [Scheme_Object* obj]
-           [long* len])]{
+           [intptr_t* len])]{
 
 Prints the Racket value @var{obj} using @scheme[display] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
@@ -143,7 +143,7 @@ set to the length of the string.}
 
 @function[(void scheme_display_to_string_w_max
            [Scheme_Object* obj]
-           [long* len]
+           [intptr_t* len]
            [int n])]{
 
 Like @cpp{scheme_display_to_string}, but the string is truncated to
@@ -198,12 +198,12 @@ Like @cpp{scheme_peek_byte}, but with a skip count.  The result can be @cpp{EOF}
 Like @cpp{scheme_peekc}, but with a skip count.  The result can be @cpp{EOF}.}
 
 
-@function[(long scheme_get_byte_string
+@function[(intptr_t scheme_get_byte_string
            [const-char* who]
            [Scheme_Object* port]
            [char* buffer]
            [int offset]
-           [long size]
+           [intptr_t size]
            [int only_avail]
            [int peek]
            [Scheme_Object* peek_skip])]{
@@ -233,12 +233,12 @@ multiple blocking reads to skip bytes.
 If @var{peek} is zero, then @var{peek_skip} should be either
 @cpp{NULL} (which means zero) or the fixnum zero.}
 
-@function[(long scheme_get_char_string
+@function[(intptr_t scheme_get_char_string
            [const-char* who]
            [Scheme_Object* port]
            [char* buffer]
            [int offset]
-           [long size]
+           [intptr_t size]
            [int peek]
            [Scheme_Object* peek_skip])]{
 
@@ -246,9 +246,9 @@ Like @cpp{scheme_get_byte_string}, but for characters (by decoding
 bytes as UTF-8), and without the non-blocking option.}
 
 
-@function[(long scheme_get_bytes
+@function[(intptr_t scheme_get_bytes
            [Scheme_Object* port]
-           [long size]
+           [intptr_t size]
            [char* buffer]
            [int offset])]{
 
@@ -292,13 +292,13 @@ file descriptors(s) the given input port reads from. (@var{fds} is
 sortof a pointer to an @cppi{fd_set} struct; see
 @secref["blockednonmainel"].)}
 
-@function[(long scheme_tell
+@function[(intptr_t scheme_tell
            [Scheme_Object* port])]{
 
 Returns the current read position of the given input port, or the
  current file position of the given output port.}
 
-@function[(long scheme_tell_line
+@function[(intptr_t scheme_tell_line
            [Scheme_Object* port])]{
 
 Returns the current read line of the given input port. If lines are
@@ -310,9 +310,9 @@ not counted, -1 is returned.}
 Turns on line-counting for the given input port. To get accurate line
 counts, call this function immediately after creating a port.}
 
-@function[(long scheme_set_file_position
+@function[(intptr_t scheme_set_file_position
            [Scheme_Object* port]
-           [long pos])]{
+           [intptr_t pos])]{
 
 Sets the file position of the given input or output port (from the
 start of the file). If the port does not support position setting, an
@@ -330,7 +330,7 @@ Closes the given output port.}
 
 @function[(int scheme_get_port_file_descriptor
            [Scheme_Object* port]
-           [long* fd])]{
+           [intptr_t* fd])]{
 
 Fills @cpp{*@var{fd}} with a file-descriptor value for @var{port} if
 one is available (i.e., the port is a file-stream port and it is not
@@ -338,16 +338,16 @@ closed). The result is non-zero if the file-descriptor value is
 available, zero otherwise. Under Windows, a ``file dscriptor'' is a
 file @cpp{HANDLE}.}
 
-@function[(long scheme_get_port_fd
+@function[(intptr_t scheme_get_port_fd
            [Scheme_Object* port])]{
 
 Like @cpp{scheme_get_port_file_descriptor}, but a file
  descriptor or @cpp{HANDLE} is returned directly, and the result is
  @cpp{-1} if no file descriptor or @cpp{HANDLE} is available.}
 
-@function[(long scheme_get_port_socket
+@function[(intptr_t scheme_get_port_socket
            [Scheme_Object* port]
-           [long* s])]{
+           [intptr_t* s])]{
 
 Fills @cpp{*@var{s}} with a socket value for @var{port} if one is
 available (i.e., the port is a TCP port and it is not closed). The
@@ -389,11 +389,11 @@ Although the return type of @cpp{scheme_make_input_port} is
 
 The functions are as follows.
 
- @subfunction[(long get_bytes_fun
+ @subfunction[(intptr_t get_bytes_fun
                [Scheme_Input_Port* port]
                [char* buffer]
-               [long offset]
-               [long size]
+               [intptr_t offset]
+               [intptr_t size]
                [int nonblock]
                [Scheme_Object* unless])]{
  
@@ -441,11 +441,11 @@ The functions are as follows.
     @var{get_bytes_fun} must return after immediately reading data,
     without allowing a Racket thread swap.}
 
- @subfunction[(long peek_bytes_fun
+ @subfunction[(intptr_t peek_bytes_fun
                [Scheme_Input_Port* port]
                [char* buffer]
-               [long offset]
-               [long size]
+               [intptr_t offset]
+               [intptr_t size]
                [Scheme_Object* skip]
                [int nonblock]
                [Scheme_Object* unless_evt])]{
@@ -471,7 +471,7 @@ The functions are as follows.
 
  @subfunction[(int peeked_read_fun
                [Scheme_Input_Port* port]
-               [long amount]
+               [intptr_t amount]
                [Scheme_Object* unless_evt]
                [Scheme_Object* target_ch])]{
 
@@ -539,11 +539,11 @@ Although the return type of @cpp{scheme_make_output_port} is
 
 The functions are as follows.
 
- @subfunction[(long write_bytes_evt_fun
+ @subfunction[(intptr_t write_bytes_evt_fun
                [Scheme_Output_Port* port]
                [const-char* buffer]
-               [long offset]
-               [long size])]{
+               [intptr_t offset]
+               [intptr_t size])]{
 
     Returns an event that writes up to @var{size} bytes atomically
     when event is chosen in a synchronization. Supply @cpp{NULL} if
@@ -552,11 +552,11 @@ The functions are as follows.
     implementation in terms of @cpp{write_bytes_fun} (with
     @var{rarely_block} as @cpp{2}).}
 
- @subfunction[(long write_bytes_fun
+ @subfunction[(intptr_t write_bytes_fun
                [Scheme_Output_Port* port]
                [const-char* buffer]
-               [long offset]
-               [long size]
+               [intptr_t offset]
+               [intptr_t size]
                [int rarely_block]
                [int enable_break])]{
 
@@ -723,7 +723,7 @@ If @var{read_too} is non-zero, the function produces multiple values
 
 
 @function[(void scheme_socket_to_ports
-           [long s]
+           [intptr_t s]
            [const-char* name]
            [int close]
            [Scheme_Object** inp]
@@ -755,7 +755,7 @@ Returns (in a newly allocated byte string) all data that has been
 
 @function[(char* scheme_get_sized_byte_string_output
            [Scheme_Object* port]
-           [long* len])]{
+           [intptr_t* len])]{
 
 Returns (in a newly allocated byte string) all data that has been
  written to the given string output port so far and fills in
@@ -862,7 +862,7 @@ Like @cpp{scheme_make_path}, but the string is not copied.}
 
 @function[(Scheme_Object* scheme_make_sized_path
            [char* bytes]
-           [long len]
+           [intptr_t len]
            [int copy])]{
 
 Makes a path whose byte form has size @var{len}. A copy of @var{bytes}
@@ -873,8 +873,8 @@ nul-terminated length of @var{bytes} is used for the length.}
 
 @function[(Scheme_Object* scheme_make_sized_offset_path
            [char* bytes]
-           [long d]
-           [long len]
+           [intptr_t d]
+           [intptr_t len]
            [int copy])]{
 
 Like @cpp{scheme_make_sized_path}, except the @var{len} bytes start
@@ -893,7 +893,7 @@ information (via the @cpp{vRefNum} and @cpp{parID} fields),
 @function[(int scheme_mac_path_to_spec
            [const-char* filename]
            [FSSpec* spec]
-           [long* type])]{
+           [intptr_t* type])]{
 
 Mac OS X only: Converts a pathname into an @cppi{FSSpec} record
 (defined by Mac OS X), returning @cpp{1} if successful and @cpp{0}
@@ -933,7 +933,7 @@ fails.}
            [int flen]
            [int argc]
            [Scheme_Object** argv]
-           [long* rlen])]{
+           [intptr_t* rlen])]{
 
 Creates a string like Racket's @scheme[format] procedure, using the
 format string @var{format} (of length @var{flen}) and the extra
@@ -956,7 +956,7 @@ and the extra arguments specified in @var{argc} and @var{argv}.}
            [int flen]
            [int argc]
            [Scheme_Object** argv]
-           [long* rlen])]{
+           [intptr_t* rlen])]{
 
 Like @cpp{scheme_format}, but takes a UTF-8-encoding byte string.}
 

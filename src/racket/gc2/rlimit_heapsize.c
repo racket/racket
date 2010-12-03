@@ -4,7 +4,7 @@
 # include <sys/resource.h>
 # include <unistd.h>
 
-typedef unsigned long size_type;
+typedef uintptr_t size_type;
 
 static size_type determine_max_heap_size(void) 
 {
@@ -16,7 +16,7 @@ static size_type determine_max_heap_size(void)
   getrlimit(RLIMIT_DATA, &rlim);
 #endif
 
-  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : rlim.rlim_cur;
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (uintptr_t)-1 : rlim.rlim_cur;
 }
 
 #endif

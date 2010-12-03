@@ -1174,7 +1174,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     /* prop:procedure guard: */
     Scheme_Object *orig_v = v;
     if (SCHEME_INTP(v) || SCHEME_BIGNUMP(v)) {
-      long pos;
+      intptr_t pos;
 
       if (SCHEME_INTP(v))
 	pos = SCHEME_INT_VAL(v);
@@ -1216,7 +1216,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
     t->proc_attr = v;
 
     if (SCHEME_INTP(v)) {
-      long pos;
+      intptr_t pos;
       pos = SCHEME_INT_VAL(orig_v);
       if (!t->immutables || !t->immutables[pos]) {
         scheme_arg_mismatch("make-struct-type", 

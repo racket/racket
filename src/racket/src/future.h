@@ -15,7 +15,7 @@ typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
 #define scheme_false 0x0
 #define START_XFORM_SKIP
 #define END_XFORM_SKIP 
-#define MZ_MARK_STACK_TYPE long
+#define MZ_MARK_STACK_TYPE intptr_t
 #define Scheme_Native_Closure_Data void
 typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
 void scheme_add_global(char *name, int arity, Scheme_Env *env);
@@ -62,7 +62,7 @@ typedef struct future_t {
   const char *source_of_request;
   int source_type;
 
-  unsigned long alloc_retval;
+  uintptr_t alloc_retval;
   int alloc_retval_counter;
 
   /* For logging the future's execution time */
@@ -76,14 +76,14 @@ typedef struct future_t {
   Scheme_Object **arg_S0;
   Scheme_Bucket *arg_b0;
   int arg_i0;
-  long arg_l0;
+  intptr_t arg_l0;
   size_t arg_z0;
   Scheme_Native_Closure_Data *arg_n0;
   Scheme_Object *arg_s1;
   const Scheme_Object *arg_t1;
   Scheme_Object **arg_S1;
   int arg_i1;
-  long arg_l1;
+  intptr_t arg_l1;
   Scheme_Object *arg_s2;
   Scheme_Object **arg_S2;
   int arg_i2;
@@ -137,7 +137,7 @@ extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 															}
 
 extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
-extern unsigned long scheme_rtcall_alloc(const char *who, int src_type);
+extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 
 #else 

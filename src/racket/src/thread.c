@@ -111,17 +111,17 @@ extern HANDLE scheme_break_semaphore;
 static int swapping = 0;
 #endif
 
-extern void scheme_gmp_tls_init(long *s);
-extern void *scheme_gmp_tls_load(long *s);
-extern void scheme_gmp_tls_unload(long *s, void *p);
-extern void scheme_gmp_tls_snapshot(long *s, long *save);
-extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free);
+extern void scheme_gmp_tls_init(intptr_t *s);
+extern void *scheme_gmp_tls_load(intptr_t *s);
+extern void scheme_gmp_tls_unload(intptr_t *s, void *p);
+extern void scheme_gmp_tls_snapshot(intptr_t *s, intptr_t *save);
+extern void scheme_gmp_tls_restore_snapshot(intptr_t *s, void *data, intptr_t *save, int do_free);
 
 static void check_ready_break();
 
 THREAD_LOCAL_DECL(extern int scheme_num_read_syntax_objects);
-THREAD_LOCAL_DECL(extern long scheme_hash_request_count);
-THREAD_LOCAL_DECL(extern long scheme_hash_iteration_count);
+THREAD_LOCAL_DECL(extern intptr_t scheme_hash_request_count);
+THREAD_LOCAL_DECL(extern intptr_t scheme_hash_iteration_count);
 #ifdef MZ_USE_JIT
 extern int scheme_jit_malloced;
 #else
@@ -145,7 +145,7 @@ THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_first_thread = NULL);
 
 XFORM_NONGCING Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
-XFORM_NONGCING long scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
+XFORM_NONGCING intptr_t scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
 XFORM_NONGCING Scheme_Object **scheme_get_multiple_array() { return scheme_current_thread->ku.multiple.array; }
 XFORM_NONGCING void scheme_set_current_thread_ran_some() { scheme_current_thread->ran_some = 1; }
 
@@ -190,13 +190,13 @@ ROSYM Scheme_Object *scheme_parameterization_key;
 ROSYM Scheme_Object *scheme_exn_handler_key;
 ROSYM Scheme_Object *scheme_break_enabled_key;
 
-THREAD_LOCAL_DECL(long scheme_total_gc_time);
-THREAD_LOCAL_DECL(static long start_this_gc_time);
-THREAD_LOCAL_DECL(static long end_this_gc_time);
+THREAD_LOCAL_DECL(intptr_t scheme_total_gc_time);
+THREAD_LOCAL_DECL(static intptr_t start_this_gc_time);
+THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
-static void inform_GC(int major_gc, long pre_used, long post_used);
+static void inform_GC(int major_gc, intptr_t pre_used, intptr_t post_used);
 #endif
 
 THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
@@ -242,7 +242,7 @@ THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
 
 
 #ifdef MZ_PRECISE_GC
-extern long GC_get_memory_use(void *c);
+extern intptr_t GC_get_memory_use(void *c);
 #else
 extern MZ_DLLIMPORT long GC_get_memory_use();
 #endif
@@ -436,7 +436,7 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 #endif
 
 #ifdef MZ_PRECISE_GC
-unsigned long scheme_get_current_thread_stack_start(void);
+uintptr_t scheme_get_current_thread_stack_start(void);
 #endif
 
 SHARED_OK Scheme_Object *initial_cmdline_vec;
@@ -929,7 +929,7 @@ static Scheme_Object *collect_garbage(int c, Scheme_Object *p[])
 static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 {
   Scheme_Object *arg = NULL;
-  long retval = 0;
+  intptr_t retval = 0;
 
   if (argc) {
     if(SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
@@ -981,7 +981,7 @@ static void adjust_limit_table(Scheme_Custodian *c)
 
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 {
-  long lim;
+  intptr_t lim;
   Scheme_Custodian *c1, *c2, *cx;
 
   if(NOT_SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
@@ -1031,7 +1031,7 @@ static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 
 static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
 {
-  long lim;
+  intptr_t lim;
   
   if (NOT_SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
     scheme_wrong_type("custodian-limit-memory", "custodian", 0, argc, args);
@@ -2008,7 +2008,7 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
   scheduled_kills = scheme_make_pair((Scheme_Object *)c, scheduled_kills);
   scheme_fuel_counter = 0;
-  scheme_jit_stack_boundary = (unsigned long)-1;
+  scheme_jit_stack_boundary = (uintptr_t)-1;
 }
 
 static void check_scheduled_kills()
@@ -2504,25 +2504,25 @@ void *scheme_tls_get(int pos)
     return p->user_tls[pos];
 }
 
-Scheme_Object **scheme_alloc_runstack(long len)
+Scheme_Object **scheme_alloc_runstack(intptr_t len)
   XFORM_SKIP_PROC
 {
 #ifdef MZ_PRECISE_GC
-  long sz;
+  intptr_t sz;
   void **p;
   sz = sizeof(Scheme_Object*) * (len + 4);
   p = (void **)GC_malloc_tagged_allow_interior(sz);
   *(Scheme_Type *)(void *)p = scheme_rt_runstack;
-  ((long *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
-  ((long *)(void *)p)[2] = 0;
-  ((long *)(void *)p)[3] = len;
+  ((intptr_t *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
+  ((intptr_t *)(void *)p)[2] = 0;
+  ((intptr_t *)(void *)p)[3] = len;
   return (Scheme_Object **)(p + 4);
 #else
   return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
 #endif
 }
 
-void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long end)
+void scheme_set_runstack_limits(Scheme_Object **rs, intptr_t len, intptr_t start, intptr_t end)
   XFORM_SKIP_PROC
 /* With 3m, we can tell the GC not to scan the unused parts, and we
    can have the fixup function zero out the unused parts; that avoids
@@ -2530,10 +2530,10 @@ void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long e
    GC. For CGC, we have to just clear out the unused part. */
 {
 #ifdef MZ_PRECISE_GC
-  if (((long *)(void *)rs)[-2] != start)
-    ((long *)(void *)rs)[-2] = start;
-  if (((long *)(void *)rs)[-1] != end)
-    ((long *)(void *)rs)[-1] = end;
+  if (((intptr_t *)(void *)rs)[-2] != start)
+    ((intptr_t *)(void *)rs)[-2] = start;
+  if (((intptr_t *)(void *)rs)[-1] != end)
+    ((intptr_t *)(void *)rs)[-1] = end;
 #else
   memset(rs, 0, start * sizeof(Scheme_Object *));
   memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
@@ -2545,7 +2545,7 @@ void *scheme_register_process_global(const char *key, void *val)
   void *old_val = NULL;
   char *key2;
   Proc_Global_Rec *pg;
-  long len;
+  intptr_t len;
 
 #if defined(MZ_USE_MZRT)
   if (process_global_lock)
@@ -2657,7 +2657,7 @@ static void do_swap_thread()
     }
 
     {
-      long cpm;
+      intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
@@ -2670,7 +2670,7 @@ static void do_swap_thread()
     Scheme_Thread *new_thread = swap_target;
 
     {
-      long cpm;
+      intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
     }
@@ -2983,7 +2983,7 @@ static void start_child(Scheme_Thread * volatile child,
     }
 
     {
-      long cpm;
+      intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->current_start_process_msec = cpm;
     }
@@ -3879,7 +3879,7 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
      though (if the break handler performs bignum arithmetic), so
      that's why we save and restore an old snapshot. */
   mz_jmp_buf *savebuf, newbuf;
-  long save[4];
+  intptr_t save[4];
 
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
@@ -4032,7 +4032,7 @@ void scheme_break_thread(Scheme_Thread *p)
   if (p == scheme_current_thread) {
     if (scheme_can_break(p)) {
       scheme_fuel_counter = 0;
-      scheme_jit_stack_boundary = (unsigned long)-1;
+      scheme_jit_stack_boundary = (uintptr_t)-1;
     }
   }
   scheme_weak_resume_thread(p);
@@ -7139,7 +7139,7 @@ Scheme_Env *scheme_get_env(Scheme_Config *c)
 Scheme_Object *scheme_make_namespace(int argc, Scheme_Object *argv[])
 {
   Scheme_Env *genv, *env;
-  long phase;
+  intptr_t phase;
 
   genv = scheme_get_env(NULL);
   env = scheme_make_empty_env();
@@ -7670,12 +7670,12 @@ static void prepare_thread_for_GC(Scheme_Object *t)
   if (!p->nestee) {
     Scheme_Saved_Stack *saved;
 # define RUNSTACK_TUNE(x) /* x   - Used for performance tuning */
-    RUNSTACK_TUNE( long size; );
+    RUNSTACK_TUNE( intptr_t size; );
 
     if ((!p->runstack_owner
          || (p == *p->runstack_owner))
         && p->runstack_start) {
-      long rs_end;
+      intptr_t rs_end;
       Scheme_Object **rs_start;
 
       /* If there's a meta-prompt, we can also zero out past the unused part */
@@ -7731,7 +7731,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
 
     /* release unused cont mark stack segments */
     if (p->cont_mark_stack)
-      segcount = ((long)(p->cont_mark_stack - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
+      segcount = ((intptr_t)(p->cont_mark_stack - 1) >> SCHEME_LOG_MARK_SEGMENT_SIZE) + 1;
     else
       segcount = 0;
     for (i = segcount; i < p->cont_mark_seg_count; i++) {
@@ -7741,11 +7741,11 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       p->cont_mark_seg_count = segcount;
       
     /* zero unused part of last mark stack segment */
-    segpos = ((long)p->cont_mark_stack >> SCHEME_LOG_MARK_SEGMENT_SIZE);
+    segpos = ((intptr_t)p->cont_mark_stack >> SCHEME_LOG_MARK_SEGMENT_SIZE);
     
     if (segpos < p->cont_mark_seg_count) {
       Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[segpos];
-      int stackpos = ((long)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK);
+      int stackpos = ((intptr_t)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK);
       if (seg) {
         for (i = stackpos; i < SCHEME_MARK_SEGMENT_SIZE; i++) {
           if (seg[i].key) {
@@ -7766,10 +7766,10 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       for (pos = 0; pos < p->cont_mark_stack_bottom; pos++) {
         Scheme_Cont_Mark *seg;
         int stackpos;
-        segpos = ((long)pos >> SCHEME_LOG_MARK_SEGMENT_SIZE);
+        segpos = ((intptr_t)pos >> SCHEME_LOG_MARK_SEGMENT_SIZE);
         seg = p->cont_mark_stack_segments[segpos];
         if (seg) {
-          stackpos = ((long)pos & SCHEME_MARK_SEGMENT_MASK);
+          stackpos = ((intptr_t)pos & SCHEME_MARK_SEGMENT_MASK);
           seg[stackpos].key = NULL;
           seg[stackpos].val = NULL;
           seg[stackpos].cache = NULL;
@@ -7840,7 +7840,7 @@ static void get_ready_for_GC()
 #endif
 
   scheme_fuel_counter = 0;
-  scheme_jit_stack_boundary = (unsigned long)-1;
+  scheme_jit_stack_boundary = (uintptr_t)-1;
 
 #ifdef WINDOWS_PROCESSES
   scheme_suspend_remembered_threads();
@@ -7891,7 +7891,7 @@ static void done_with_GC()
 }
 
 #ifdef MZ_PRECISE_GC
-static void inform_GC(int major_gc, long pre_used, long post_used)
+static void inform_GC(int major_gc, intptr_t pre_used, intptr_t post_used)
 {
   Scheme_Logger *logger = scheme_get_main_logger();
   if (logger) {
@@ -7899,7 +7899,7 @@ static void inform_GC(int major_gc, long pre_used, long post_used)
        based on the max value-print width, and we may not be at a
        point where parameters are available. */
     char buf[128];
-    long buflen;
+    intptr_t buflen;
 
     sprintf(buf,
             "GC [%s] at %ld bytes; %ld collected in %ld msec",
@@ -7958,7 +7958,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     case 4:
       {
 	/* Stack size: */
-	long sz = 0;
+	intptr_t sz = 0;
 
 	if (MZTHREAD_STILL_RUNNING(t->running)) {
 	  Scheme_Overflow *overflow;
@@ -7970,10 +7970,10 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 	    stk_start = t->stack_start;
 	    stk_end = (void *)&stk_end;
 #         ifdef STACK_GROWS_UP
-	    sz = (long)stk_end XFORM_OK_MINUS (long)stk_start;
+	    sz = (intptr_t)stk_end XFORM_OK_MINUS (intptr_t)stk_start;
 #         endif
 #         ifdef STACK_GROWS_DOWN
-	    sz = (long)stk_start XFORM_OK_MINUS (long)stk_end;
+	    sz = (intptr_t)stk_start XFORM_OK_MINUS (intptr_t)stk_end;
 #         endif
 	  } else {
 	    if (t->jmpup_buf.stack_copy)
@@ -7999,9 +7999,9 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 	  
 	  /* Mark stack */
 	  if (t == scheme_current_thread) {
-	    sz += ((long)scheme_current_cont_mark_pos >> 1) * sizeof(Scheme_Cont_Mark);
+	    sz += ((intptr_t)scheme_current_cont_mark_pos >> 1) * sizeof(Scheme_Cont_Mark);
 	  } else {
-	    sz += ((long)t->cont_mark_pos >> 1) * sizeof(Scheme_Cont_Mark);
+	    sz += ((intptr_t)t->cont_mark_pos >> 1) * sizeof(Scheme_Cont_Mark);
 	  }
 	}
 
@@ -8029,7 +8029,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
       break;
     }
   } else {
-    long cpuend, end, gcend;
+    intptr_t cpuend, end, gcend;
 
     cpuend = scheme_get_process_milliseconds();
     end = scheme_get_milliseconds();
@@ -8079,7 +8079,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
    Meanwhile, scheme_gmp_tls_unload, etc., attach to the pool to the
    owning thread as needed for GC. */
 
-void *scheme_malloc_gmp(unsigned long amt, void **mem_pool)
+void *scheme_malloc_gmp(uintptr_t amt, void **mem_pool)
 {
   void *p, *mp;
 
@@ -8127,11 +8127,11 @@ Scheme_Jumpup_Buf_Holder *scheme_new_jmpupbuf_holder(void)
 }
 
 #ifdef MZ_PRECISE_GC
-unsigned long scheme_get_current_thread_stack_start(void)
+uintptr_t scheme_get_current_thread_stack_start(void)
 {
   Scheme_Thread *p;
   p = scheme_current_thread;
-  return (unsigned long)p->stack_start;
+  return (uintptr_t)p->stack_start;
 }
 #endif
 

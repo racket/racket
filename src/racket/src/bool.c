@@ -52,8 +52,8 @@ static Scheme_Object *chaperone_of (int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonator_of (int argc, Scheme_Object *argv[]);
 
 typedef struct Equal_Info {
-  long depth; /* always odd, so it looks like a fixnum */
-  long car_depth; /* always odd => fixnum */
+  intptr_t depth; /* always odd, so it looks like a fixnum */
+  intptr_t car_depth; /* always odd => fixnum */
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
@@ -434,7 +434,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       return 1;
     return vector_equal(obj1, obj2, eql);
   } else if (SCHEME_FLVECTORP(obj1)) {
-    long l1, l2, i;
+    intptr_t l1, l2, i;
     l1 = SCHEME_FLVEC_SIZE(obj1);
     l2 = SCHEME_FLVEC_SIZE(obj2);
     if (l1 == l2) {

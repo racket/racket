@@ -106,7 +106,7 @@ case SIG_Sl_s:
   {
      prim_Sl_s f = (prim_Sl_s)future->prim_func;
      GC_CAN_IGNORE Scheme_Object* retval;
-     JIT_TS_LOCALIZE(Scheme_Object**, arg_S0); JIT_TS_LOCALIZE(long, arg_l1);
+     JIT_TS_LOCALIZE(Scheme_Object**, arg_S0); JIT_TS_LOCALIZE(intptr_t, arg_l1);
      
      future->arg_S0 = NULL;
      retval = 
@@ -119,7 +119,7 @@ case SIG_l_s:
   {
      prim_l_s f = (prim_l_s)future->prim_func;
      GC_CAN_IGNORE Scheme_Object* retval;
-     JIT_TS_LOCALIZE(long, arg_l0);
+     JIT_TS_LOCALIZE(intptr_t, arg_l0);
      
      
      retval = 
@@ -184,7 +184,7 @@ case SIG_sl_s:
   {
      prim_sl_s f = (prim_sl_s)future->prim_func;
      GC_CAN_IGNORE Scheme_Object* retval;
-     JIT_TS_LOCALIZE(Scheme_Object*, arg_s0); JIT_TS_LOCALIZE(long, arg_l1);
+     JIT_TS_LOCALIZE(Scheme_Object*, arg_s0); JIT_TS_LOCALIZE(intptr_t, arg_l1);
      
      future->arg_s0 = NULL;
      retval = 

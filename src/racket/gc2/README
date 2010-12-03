@@ -39,7 +39,7 @@ global points to a value of the form
 
      struct {
         void *next_frame;
-        long frame_size;
+        intptr_t frame_size;
         void **pointers[...];
      }
 
@@ -153,8 +153,8 @@ Racket allocates the following kinds of memory objects:
  * Weak Array - The object has the following structure:
 
      struct {
-       long gc_private[4];
-       long array[...];
+       intptr_t gc_private[4];
+       intptr_t array[...];
      }
 
    The gc_private array contains collector-private values that are

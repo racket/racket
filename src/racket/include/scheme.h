@@ -71,13 +71,19 @@
 # define FUEL_AUTODECEREMENTS
 #endif
 
-#ifdef SIZEOF_LONG
-# if SIZEOF_LONG == 8
+#ifdef SIZEOF_VOID_P
+# if SIZEOF_VOID_P == 8
 #  define SIXTY_FOUR_BIT_INTEGERS
 #  ifdef USE_LONG_LONG_FOR_BIGDIG
-     Don ot specify USE_LONG_LONG_FOR_BIGDIG on a platform with
+     Do not specify USE_LONG_LONG_FOR_BIGDIG on a platform with
      64-bit integers
 #  endif
+# endif
+#endif
+
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define SIXTY_FOUR_BIT_LONGS
 # endif
 #endif
 
@@ -252,12 +258,12 @@ typedef struct Scheme_Simple_Object
 
   union
     {
-      struct { mzchar *string_val; int tag_val; } char_str_val;
-      struct { char *string_val; int tag_val; } byte_str_val;
+      struct { mzchar *string_val; intptr_t tag_val; } char_str_val;
+      struct { char *string_val; intptr_t tag_val; } byte_str_val;
       struct { void *ptr1, *ptr2; } two_ptr_val;
       struct { int int1; int int2; } two_int_val;
       struct { void *ptr; int pint; } ptr_int_val;
-      struct { void *ptr; long pint; } ptr_long_val;
+      struct { void *ptr; intptr_t pint; } ptr_long_val;
       struct { struct Scheme_Object *car, *cdr; } pair_val;
       struct { mzshort len; mzshort *vec; } svector_val;
       struct { void *val; Scheme_Object *type; } cptr_val;
@@ -272,7 +278,7 @@ typedef struct {
   union {
     mzchar char_val;
     Scheme_Object *ptr_value;
-    long int_val;
+    intptr_t int_val;
     Scheme_Object *ptr_val;
   } u;
 } Scheme_Small_Object;
@@ -292,13 +298,13 @@ typedef struct {
 
 typedef struct Scheme_Symbol {
   Scheme_Inclhash_Object iso; /* 1 in low bit of keyex indicates uninterned */
-  int len;
+  intptr_t len;
   char s[4]; /* Really, a number of chars to match `len' */
 } Scheme_Symbol;
 
 typedef struct Scheme_Vector {
   Scheme_Inclhash_Object iso; /* 1 in low bit of keyex indicates immutable */
-  int size;
+  intptr_t size;
   Scheme_Object *els[1];
 } Scheme_Vector;
 
@@ -310,7 +316,7 @@ typedef struct Scheme_Vector {
 
 typedef struct Scheme_Double_Vector {
   Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
-  long size;
+  intptr_t size;
   double els[1];
 } Scheme_Double_Vector;
 
@@ -318,8 +324,8 @@ typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
 
 typedef int (*Scheme_Equal_Proc)(Scheme_Object *obj1, Scheme_Object *obj2, void *cycle_data);
-typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, long base, void *cycle_data);
-typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data);
+typedef intptr_t (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, intptr_t base, void *cycle_data);
+typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data);
 
 /* This file defines all the built-in types */
 #ifdef INCLUDE_WITHOUT_PATHS
@@ -328,17 +334,8 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 # include "../src/stypes.h"
 #endif
 
-/* This rather elaborate pair of NO-OPS is used to persuade the     */
-/* MSVC compiler that we really do want to convert between pointers */
-/* and integers. */
-
-#if defined(_MSC_VER)
-# define OBJ_TO_LONG(ptr) ((long)(_W64 long)(ptr))
-# define LONG_TO_OBJ(l)   ((Scheme_Object *)(void *)(_W64 long)(long)(l))
-#else
-# define OBJ_TO_LONG(ptr) ((long)(ptr))
-# define LONG_TO_OBJ(l) ((Scheme_Object *)(void *)(long)(l))
-#endif
+#define OBJ_TO_LONG(ptr) ((intptr_t)(ptr))
+#define LONG_TO_OBJ(l) ((Scheme_Object *)(void *)(intptr_t)(l))
 
 /* Scheme Objects are always aligned on 2-byte boundaries, so  */
 /* words of type Scheme_Object * will always have zero in the  */
@@ -520,7 +517,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_KEYWORD_VAL(obj) SCHEME_SYM_VAL(obj)
 #define SCHEME_KEYWORD_LEN(obj) SCHEME_SYM_LEN(obj)
 
-#define SCHEME_SYMSTR_OFFSET(obj) ((unsigned long)SCHEME_SYM_VAL(obj)-(unsigned long)(obj))
+#define SCHEME_SYMSTR_OFFSET(obj) ((uintptr_t)SCHEME_SYM_VAL(obj)-(uintptr_t)(obj))
 
 /* return a `char *' pointing to the string or the symbol name */
 #define SCHEME_STRSYM_VAL(obj) (SCHEME_SYMBOLP(obj) ? SCHEME_SYM_VAL(obj) : SCHEME_CHAR_STR_VAL(obj))
@@ -569,7 +566,7 @@ typedef struct Scheme_Cptr
 typedef struct Scheme_Offset_Cptr
 {
   Scheme_Cptr cptr; 
-  long offset;
+  intptr_t offset;
 } Scheme_Offset_Cptr;
 
 #define SCHEME_CPTR_VAL(obj) (((Scheme_Cptr *)(obj))->val)
@@ -800,14 +797,14 @@ typedef struct {
 typedef struct Scheme_Hash_Table
 {
   Scheme_Inclhash_Object iso; /* 0x1 flag => marshal as #t (hack for stxobj bytecode) */
-  int size; /* power of 2 */
-  int count;
+  intptr_t size; /* power of 2 */
+  intptr_t count;
   Scheme_Object **keys;
   Scheme_Object **vals;
-  void (*make_hash_indices)(void *v, long *h1, long *h2);
+  void (*make_hash_indices)(void *v, intptr_t *h1, intptr_t *h2);
   int (*compare)(void *v1, void *v2);
   Scheme_Object *mutex;
-  int mcount; /* number of non-NULL keys, >= count (which is non-NULL vals) */
+  intptr_t mcount; /* number of non-NULL keys, >= count (which is non-NULL vals) */
 } Scheme_Hash_Table;
 
 typedef struct Scheme_Hash_Tree Scheme_Hash_Tree;
@@ -822,12 +819,12 @@ typedef struct Scheme_Bucket
 typedef struct Scheme_Bucket_Table
 {
   Scheme_Object so;
-  int size; /* power of 2 */
-  int count;
+  intptr_t size; /* power of 2 */
+  intptr_t count;
   Scheme_Bucket **buckets;
   char weak; /* 1 => normal weak, 2 => late weak */
   char with_home;
-  void (*make_hash_indices)(void *v, long *h1, long *h2);
+  void (*make_hash_indices)(void *v, intptr_t *h1, intptr_t *h2);
   int (*compare)(void *v1, void *v2);
   Scheme_Object *mutex;
 } Scheme_Bucket_Table;
@@ -850,7 +847,7 @@ typedef struct Scheme_Env Scheme_Env;
 /*========================================================================*/
 
 #ifdef USE_MZ_SETJMP
-typedef long mz_pre_jmp_buf[8];
+typedef intptr_t mz_pre_jmp_buf[8];
 #else
 # define mz_pre_jmp_buf jmp_buf
 #endif
@@ -858,7 +855,7 @@ typedef long mz_pre_jmp_buf[8];
 #ifdef MZ_USE_JIT
 typedef struct { 
   mz_pre_jmp_buf jb; 
-  unsigned long stack_frame; /* declared as `long' to hide pointer from 3m xform */
+  uintptr_t stack_frame; /* declared as `uintptr_t' to hide pointer from 3m xform */
 } mz_one_jit_jmp_buf;
 typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
 #else
@@ -868,8 +865,8 @@ typedef mz_one_jit_jmp_buf mz_jit_jmp_buf[1];
 #ifdef MZ_PRECISE_GC
 typedef struct {
   mz_jit_jmp_buf jb;
-  long gcvs; /* declared as `long' to hide pointer from 3m xform */
-  long gcvs_cnt;
+  intptr_t gcvs; /* declared as `intptr_t' to hide pointer from 3m xform */
+  intptr_t gcvs_cnt;
 } mz_jmp_buf;
 #else
 # define mz_jmp_buf mz_jit_jmp_buf
@@ -879,7 +876,7 @@ typedef struct {
 /* Intialize a Scheme_Jumpup_Buf record before using it */
 typedef struct Scheme_Jumpup_Buf {
   void *stack_from, *stack_copy;
-  long stack_size, stack_max_size;
+  intptr_t stack_size, stack_max_size;
   struct Scheme_Cont *cont; /* for sharing continuation tails */
   mz_jmp_buf buf;
 #ifdef MZ_PRECISE_GC
@@ -903,9 +900,9 @@ typedef struct Scheme_Continuation_Jump_State {
 
 /* A mark position is in odd number, so that it can be
    viewed as a pointer (i.e., a fixnum): */
-#define MZ_MARK_POS_TYPE long
+#define MZ_MARK_POS_TYPE intptr_t
 /* A mark "pointer" is an offset into the stack: */
-#define MZ_MARK_STACK_TYPE long
+#define MZ_MARK_STACK_TYPE intptr_t
 
 typedef struct Scheme_Cont_Frame_Data {
   MZ_MARK_POS_TYPE cont_mark_pos;
@@ -968,13 +965,13 @@ typedef struct Scheme_Thread {
 
   Scheme_Object **runstack;
   Scheme_Object **runstack_start;
-  long runstack_size;
+  intptr_t runstack_size;
   struct Scheme_Saved_Stack *runstack_saved;
   Scheme_Object **runstack_tmp_keep;
 
   Scheme_Object **spare_runstack;   /* in case of bouncing, we keep a recently
                                        released runstack; it's dropped on GC, though */
-  long spare_runstack_size;
+  intptr_t spare_runstack_size;
 
   struct Scheme_Thread **runstack_owner;
   struct Scheme_Saved_Stack *runstack_swapped;
@@ -982,9 +979,9 @@ typedef struct Scheme_Thread {
   MZ_MARK_POS_TYPE cont_mark_pos;     /* depth of the continuation chain */
   MZ_MARK_STACK_TYPE cont_mark_stack; /* current mark stack position */
   struct Scheme_Cont_Mark **cont_mark_stack_segments;
-  int cont_mark_seg_count;
-  int cont_mark_stack_bottom; /* for restored delimited continuations */
-  int cont_mark_pos_bottom;   /* for splicing cont marks in meta continuations */
+  intptr_t cont_mark_seg_count;
+  intptr_t cont_mark_stack_bottom; /* for restored delimited continuations */
+  intptr_t cont_mark_pos_bottom;   /* for splicing cont marks in meta continuations */
 
   struct Scheme_Thread **cont_mark_stack_owner;
   struct Scheme_Cont_Mark *cont_mark_stack_swapped;
@@ -994,7 +991,7 @@ typedef struct Scheme_Thread {
   struct Scheme_Meta_Continuation *meta_continuation;
   struct Scheme_Prompt *acting_barrier_prompt;
 
-  long engine_weight;
+  intptr_t engine_weight;
 
   void *stack_start; /* This is the C stack base of the thread, which 
                         corresponds to the starting stack address for
@@ -1042,7 +1039,7 @@ typedef struct Scheme_Thread {
   Scheme_Object *current_local_modidx;
   Scheme_Env *current_local_menv;
   Scheme_Object *current_local_bindings;
-  int current_phase_shift;
+  intptr_t current_phase_shift;
 
   struct Scheme_Marshal_Tables *current_mt;
 
@@ -1070,15 +1067,15 @@ typedef struct Scheme_Thread {
     struct {
       Scheme_Object *tail_rator;
       Scheme_Object **tail_rands;
-      long tail_num_rands;
+      intptr_t tail_num_rands;
     } apply;
     struct {
       Scheme_Object **array;
-      long count;
+      intptr_t count;
     } multiple;
     struct {
       void *p1, *p2, *p3, *p4, *p5;
-      long i1, i2, i3, i4;
+      intptr_t i1, i2, i3, i4;
     } k;
   } ku;
 
@@ -1101,11 +1098,11 @@ typedef struct Scheme_Thread {
   int user_tls_size;
 
   /* save thread-specific GMP state: */
-  long gmp_tls[6];
+  intptr_t gmp_tls[6];
   void *gmp_tls_data;
 
-  long accum_process_msec;
-  long current_start_process_msec;
+  intptr_t accum_process_msec;
+  intptr_t current_start_process_msec;
 
   struct Scheme_Thread_Custodian_Hop *mr_hop;
   Scheme_Custodian_Reference *mref;
@@ -1300,16 +1297,16 @@ typedef struct Scheme_Input_Port Scheme_Input_Port;
 typedef struct Scheme_Output_Port Scheme_Output_Port;
 typedef struct Scheme_Port Scheme_Port;
 
-typedef long (*Scheme_Get_String_Fun)(Scheme_Input_Port *port,
-				      char *buffer, long offset, long size,
+typedef intptr_t (*Scheme_Get_String_Fun)(Scheme_Input_Port *port,
+				      char *buffer, intptr_t offset, intptr_t size,
 				      int nonblock, Scheme_Object *unless);
-typedef long (*Scheme_Peek_String_Fun)(Scheme_Input_Port *port,
-				       char *buffer, long offset, long size,
+typedef intptr_t (*Scheme_Peek_String_Fun)(Scheme_Input_Port *port,
+				       char *buffer, intptr_t offset, intptr_t size,
 				       Scheme_Object *skip,
 				       int nonblock, Scheme_Object *unless);
 typedef Scheme_Object *(*Scheme_Progress_Evt_Fun)(Scheme_Input_Port *port);
 typedef int (*Scheme_Peeked_Read_Fun)(Scheme_Input_Port *port,
-				      long amount,
+				      intptr_t amount,
 				      Scheme_Object *unless_evt,
 				      Scheme_Object *target_ch);
 typedef int (*Scheme_In_Ready_Fun)(Scheme_Input_Port *port);
@@ -1321,9 +1318,9 @@ typedef void (*Scheme_Count_Lines_Fun)(Scheme_Port *);
 typedef int (*Scheme_Buffer_Mode_Fun)(Scheme_Port *, int m);
 
 typedef Scheme_Object *(*Scheme_Write_String_Evt_Fun)(Scheme_Output_Port *,
-						      const char *str, long offset, long size);
-typedef long (*Scheme_Write_String_Fun)(Scheme_Output_Port *,
-					const char *str, long offset, long size,
+						      const char *str, intptr_t offset, intptr_t size);
+typedef intptr_t (*Scheme_Write_String_Fun)(Scheme_Output_Port *,
+					const char *str, intptr_t offset, intptr_t size,
 					int rarely_block, int enable_break);
 typedef int (*Scheme_Out_Ready_Fun)(Scheme_Output_Port *port);
 typedef void (*Scheme_Close_Output_Fun)(Scheme_Output_Port *port);
@@ -1336,8 +1333,8 @@ struct Scheme_Port
 {
   Scheme_Object so;
   char count_lines, was_cr;
-  long position, readpos, lineNumber, charsSinceNewline;
-  long column, oldColumn; /* column tracking with one tab/newline ungetc */
+  intptr_t position, readpos, lineNumber, charsSinceNewline;
+  intptr_t column, oldColumn; /* column tracking with one tab/newline ungetc */
   int utf8state;
   Scheme_Location_Fun location_fun;
   Scheme_Count_Lines_Fun count_lines_fun;
@@ -1383,7 +1380,7 @@ struct Scheme_Output_Port
   Scheme_Need_Wakeup_Output_Fun need_wakeup_fun;
   Scheme_Write_Special_Evt_Fun write_special_evt_fun;
   Scheme_Write_Special_Fun write_special_fun;
-  long pos;
+  intptr_t pos;
   Scheme_Object *name;
   Scheme_Object *display_handler;
   Scheme_Object *write_handler;
@@ -1431,7 +1428,7 @@ typedef struct Scheme_Logger Scheme_Logger;
 /*                               modules                                  */
 /*========================================================================*/
 
-typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
+typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, intptr_t phase_shift,
 				   Scheme_Object *self_modidx, void *data);
 
 /*========================================================================*/
@@ -1574,11 +1571,11 @@ MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
 #ifdef MZ_PRECISE_GC
 /* Need to make sure that a __gc_var_stack__ is always available where
    setjmp & longjmp are used. */
-# define scheme_longjmp(b, v) (((long *)(void*)((b).gcvs))[1] = (b).gcvs_cnt, \
+# define scheme_longjmp(b, v) (((intptr_t *)(void*)((b).gcvs))[1] = (b).gcvs_cnt, \
                                GC_variable_stack = (void **)(void*)(b).gcvs, \
                                scheme_jit_longjmp((b).jb, v))
-# define scheme_setjmp(b)     ((b).gcvs = (long)__gc_var_stack__, \
-                               (b).gcvs_cnt = (long)(__gc_var_stack__[1]), \
+# define scheme_setjmp(b)     ((b).gcvs = (intptr_t)__gc_var_stack__, \
+                               (b).gcvs_cnt = (intptr_t)(__gc_var_stack__[1]), \
                                scheme_jit_setjmp((b).jb))
 #else
 # define scheme_longjmp(b, v) scheme_jit_longjmp(b, v)
@@ -1715,7 +1712,7 @@ typedef void (*Scheme_On_Atomic_Timeout_Proc)(int must_give_up);
 #if SCHEME_DIRECT_EMBEDDED
 
 #if defined(_IBMR2)
-MZ_EXTERN long scheme_stackbottom;
+MZ_EXTERN intptr_t scheme_stackbottom;
 #endif
 
 MZ_EXTERN int scheme_defining_primitives;
@@ -1747,7 +1744,7 @@ THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_current_thread);
 THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_first_thread);
 #endif
 XFORM_NONGCING MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
-XFORM_NONGCING MZ_EXTERN long scheme_get_multiple_count();
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_get_multiple_count();
 XFORM_NONGCING MZ_EXTERN Scheme_Object **scheme_get_multiple_array();
 XFORM_NONGCING MZ_EXTERN void scheme_set_current_thread_ran_some();
 
@@ -1763,7 +1760,7 @@ typedef void (*scheme_console_printf_t)(char *str, ...);
 MZ_EXTERN scheme_console_printf_t scheme_console_printf;
 MZ_EXTERN scheme_console_printf_t scheme_get_console_printf();
 MZ_EXTERN void scheme_set_console_printf(scheme_console_printf_t p);
-typedef void (*scheme_console_output_t)(char *str, long len);
+typedef void (*scheme_console_output_t)(char *str, intptr_t len);
 MZ_EXTERN scheme_console_output_t scheme_console_output;
 MZ_EXTERN void scheme_set_console_output(scheme_console_output_t p);
 MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
@@ -1840,7 +1837,7 @@ MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int 
 MZ_EXTERN void scheme_register_tls_space(void *tls_space, int _tls_index);
 #endif
 
-MZ_EXTERN void scheme_register_static(void *ptr, long size);
+MZ_EXTERN void scheme_register_static(void *ptr, intptr_t size);
 #if defined(MUST_REGISTER_GLOBALS) || defined(GC_MIGHT_USE_REGISTERED_STATICS)
 # define MZ_REGISTER_STATIC(x)  scheme_register_static((void *)&x, sizeof(x))
 #else

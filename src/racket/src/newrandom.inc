@@ -19,7 +19,7 @@
 */
 
 /* maximum value for random_integer: min(S48_MAX_FIXNUM_VALUE, m1) */
-#define m_max (((long)1 << 31) - 1)
+#define m_max (((intptr_t)1 << 31) - 1)
 
 /* The Generator
    =============
@@ -44,11 +44,11 @@
 
 static double mrg32k3a(Scheme_Random_State *s) { /* (double), in {0..m1-1} */
   double x10, x20, y;
-  long   k10, k20;
+  intptr_t   k10, k20;
 
   /* component 1 */
   x10  = a12*(s->x11) - a13n*(s->x12);
-  k10  = (long)(x10 / m1);
+  k10  = (intptr_t)(x10 / m1);
   x10 -= k10 * m1;
   if (x10 < 0.0)
     x10 += m1;
@@ -58,7 +58,7 @@ static double mrg32k3a(Scheme_Random_State *s) { /* (double), in {0..m1-1} */
 
   /* component 2 */
   x20  = a21*(s->x20) - a23n*(s->x22);
-  k20  = (long)(x20 / m2);
+  k20  = (intptr_t)(x20 / m2);
   x20 -= k20 * m2;
   if (x20 < 0.0)
     x20 += m2;
@@ -84,7 +84,7 @@ static Scheme_Object *pack_rand_state(Scheme_Object *vec, Scheme_Random_State *s
   }
 #define REF(r, i, top) \
   { \
-    unsigned long l; \
+    uintptr_t l; \
     if (!scheme_get_unsigned_int_val(SCHEME_VEC_ELS(vec)[i],  &l)) \
       return NULL; \
     if (l > top - 1) \
@@ -115,12 +115,12 @@ static Scheme_Object *unpack_rand_state(Scheme_Random_State *s)
   Scheme_Object *result;
 
   /* make and fill a Scheme vector with the numbers */
-  result = scheme_make_vector((long)6, NULL);
+  result = scheme_make_vector((intptr_t)6, NULL);
 
 #define SET(i, x) \
   { \
     Scheme_Object *o; \
-    o = scheme_make_integer_value_from_unsigned((unsigned long)x); \
+    o = scheme_make_integer_value_from_unsigned((uintptr_t)x); \
     SCHEME_VEC_ELS(result)[i] = o; \
   }
 
@@ -196,12 +196,12 @@ static void sch_srand(unsigned int x, Scheme_Random_State *s)
 
 /**************************************************/
 
-static unsigned long sch_int_rand(unsigned long n, Scheme_Random_State *rs)
+static uintptr_t sch_int_rand(uintptr_t n, Scheme_Random_State *rs)
 {
   double  x, q, qn, xq;
 
   /* generate result in {0..n-1} using the rejection method */
-  q  = (double)( (unsigned long)(m1 / (double)n) );
+  q  = (double)( (uintptr_t)(m1 / (double)n) );
   qn = q * n;
   do {
     x = mrg32k3a(rs);
@@ -209,7 +209,7 @@ static unsigned long sch_int_rand(unsigned long n, Scheme_Random_State *rs)
   xq = x / q;
 
   /* return result */
-  return (unsigned long)xq;
+  return (uintptr_t)xq;
 }
 
 static double sch_double_rand(Scheme_Random_State *rs)
@@ -219,7 +219,7 @@ static double sch_double_rand(Scheme_Random_State *rs)
   return (x + 1.0) * norm;
 }
 
-Scheme_Object *scheme_make_random_state(long seed)
+Scheme_Object *scheme_make_random_state(intptr_t seed)
 {
   Scheme_Random_State *s;
 

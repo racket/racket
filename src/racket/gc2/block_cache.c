@@ -17,7 +17,7 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
 
 static Page_Range *page_range_create();
 static void page_range_flush(Page_Range *pr, int writeable);
-static void page_range_add(Page_Range *pr, void *_start, unsigned long len, int writeable);
+static void page_range_add(Page_Range *pr, void *_start, uintptr_t len, int writeable);
 
 
 #ifdef BC_ASSERTS
@@ -29,10 +29,10 @@ typedef struct block_desc {
   GCList gclist;
   void *block;
   void *free;
-  long size;
-  long used;
-  long totalcnt;
-  long freecnt;
+  intptr_t size;
+  intptr_t used;
+  intptr_t totalcnt;
+  intptr_t freecnt;
   struct block_group *group;
 } block_desc;
 
@@ -88,9 +88,9 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
   /* printf("ALLOC BLOCK %p-%p size %li %li %li %p\n", bd->block, bd->block + bd->size, bd->size, APAGE_SIZE, bd->size / APAGE_SIZE, bd->free); */
   /* free unaligned portion */
   {
-    long diff = ps -r;
+    intptr_t diff = ps -r;
     if (diff) {
-      long enddiff = APAGE_SIZE - diff;
+      intptr_t enddiff = APAGE_SIZE - diff;
       os_free_pages(r, diff);
       os_free_pages(r + BC_BLOCK_SIZE - enddiff, enddiff);
       bd->block = ps;

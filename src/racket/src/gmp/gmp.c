@@ -22,7 +22,7 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "gmplonglong.h"
 
-extern void *scheme_malloc_gmp(unsigned long, void **mem_pool);
+extern void *scheme_malloc_gmp(uintptr_t, void **mem_pool);
 extern void scheme_free_gmp(void *, void **mem_pool);
 THREAD_LOCAL_DECL(static void *gmp_mem_pool);
 #define MALLOC(amt) scheme_malloc_gmp(amt, &gmp_mem_pool)
@@ -75,7 +75,7 @@ THREAD_LOCAL_DECL(static void *gmp_mem_pool);
 /* static int gmp_errno = 0; */
 
 #define SCHEME_BIGNUM_USE_FUEL(n) scheme_bignum_use_fuel(n)
-extern void scheme_bignum_use_fuel(long n);
+extern void scheme_bignum_use_fuel(intptr_t n);
 
 /* Compare OP1_PTR/OP1_SIZE with OP2_PTR/OP2_SIZE.
    There are no restrictions on the relative sizes of
@@ -5683,8 +5683,8 @@ unsigned char __clz_tab[] =
 
 typedef struct gmp_tmp_stack tmp_stack;
 
-THREAD_LOCAL_DECL(static unsigned long max_total_allocation);
-THREAD_LOCAL_DECL(static unsigned long current_total_allocation);
+THREAD_LOCAL_DECL(static uintptr_t max_total_allocation);
+THREAD_LOCAL_DECL(static uintptr_t current_total_allocation);
 
 THREAD_LOCAL_DECL(static tmp_stack gmp_tmp_xxx);
 THREAD_LOCAL_DECL(static tmp_stack *gmp_tmp_current = 0);
@@ -5788,43 +5788,43 @@ void scheme_init_gmp_places() {
   REGISTER_SO(gmp_mem_pool);
 }
 
-void scheme_gmp_tls_init(long *s) 
+void scheme_gmp_tls_init(intptr_t *s) 
 {
   s[0] = 0;
   s[1] = 0;
-  s[2] = (long)&gmp_tmp_xxx;
+  s[2] = (intptr_t)&gmp_tmp_xxx;
   ((tmp_marker *)(s + 3))->which_chunk = &gmp_tmp_xxx;
   ((tmp_marker *)(s + 3))->alloc_point = &gmp_tmp_xxx;
 }
 
-void *scheme_gmp_tls_load(long *s) 
+void *scheme_gmp_tls_load(intptr_t *s) 
 {
-  s[0] = (long)current_total_allocation;
-  s[1] = (long)max_total_allocation;
-  s[2] = (long)gmp_tmp_current;
+  s[0] = (intptr_t)current_total_allocation;
+  s[1] = (intptr_t)max_total_allocation;
+  s[2] = (intptr_t)gmp_tmp_current;
   return gmp_mem_pool;
 }
 
-void scheme_gmp_tls_unload(long *s, void *data)
+void scheme_gmp_tls_unload(intptr_t *s, void *data)
 {
-  current_total_allocation = (unsigned long)s[0];
-  max_total_allocation = (unsigned long)s[1];
+  current_total_allocation = (uintptr_t)s[0];
+  max_total_allocation = (uintptr_t)s[1];
   gmp_tmp_current = (tmp_stack *)s[2];
   s[0] = 0;
   gmp_mem_pool = data;
 }
 
-void scheme_gmp_tls_snapshot(long *s, long *save)
+void scheme_gmp_tls_snapshot(intptr_t *s, intptr_t *save)
 {
   save[0] = s[3];
   save[1] = s[4];
   __gmp_tmp_mark((tmp_marker *)(s + 3));
 }
 
-void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free)
+void scheme_gmp_tls_restore_snapshot(intptr_t *s, void *data, intptr_t *save, int do_free)
 {
   /* silence gcc "may be used uninitialized in this function" warnings */
-  long other[6] = {0,0,0,0,0,0};
+  intptr_t other[6] = {0,0,0,0,0,0};
   void *other_data;
 
   if (do_free == 2) {
@@ -5850,15 +5850,15 @@ void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_fre
 
 #else
 
-void scheme_gmp_tls_init(long *s) 
+void scheme_gmp_tls_init(intptr_t *s) 
 {
 }
 
-void scheme_gmp_tls_load(long *s) 
+void scheme_gmp_tls_load(intptr_t *s) 
 {
 }
 
-void scheme_gmp_tls_unload(long *s)
+void scheme_gmp_tls_unload(intptr_t *s)
 {
 }
 

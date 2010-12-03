@@ -560,6 +560,8 @@
 
 #define USE_WINSOCK_TCP
 
+#define PRINTF_INTPTR_SIZE_PREFIX "I"
+
 /* MS Visual C++ likes underscore prefixes */
 #if defined(_MSC_VER)
 # define MSC_IZE(x) _ ## x

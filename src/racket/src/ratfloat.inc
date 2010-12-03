@@ -31,7 +31,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
   if (ns || ds) {
     /* Quick path doesn't necessarily work. The more general
        way is adpated from Gambit-C 4.1. */
-    long nl, dl, p, shift;
+    intptr_t nl, dl, p, shift;
     Scheme_Object *a[2], *n, *d;
     FP_TYPE res;
 

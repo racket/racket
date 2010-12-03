@@ -81,8 +81,8 @@ types:
 
  @item{@cppdef{scheme_integer_type} --- fixnum integers, which are
  identified via the tag bit rather than following a pointer to this
- @cpp{Scheme_Type} value; @cppdef{SCHEME_INT_VAL} extracts the integer;
- test for this type with @cppdef{SCHEME_INTP}}
+ @cpp{Scheme_Type} value; @cppdef{SCHEME_INT_VAL} extracts the integer 
+ to an @cpp{intptr_t}; test for this type with @cppdef{SCHEME_INTP}}
 
  @item{@cppdef{scheme_double_type} --- flonum inexact numbers;
  @cppdef{SCHEME_FLOAT_VAL} or @cppdef{SCHEME_DBL_VAL} extracts the
@@ -340,18 +340,18 @@ Returns the character value. This is a macro that directly accesses
 Returns the character value, assuming that @var{ch} is less than 256. (This is a macro.)}
 
 @function[(Scheme_Object* scheme_make_integer
-           [long i])]{
+           [intptr_t i])]{
 
 Returns the integer value; @var{i} must fit in a fixnum. (This is a macro.)}
 
 @function[(Scheme_Object* scheme_make_integer_value
-           [long i])]{
+           [intptr_t i])]{
 
 Returns the integer value. If @var{i} does not fit in a fixnum,
  a bignum is returned.}
 
 @function[(Scheme_Object* scheme_make_integer_value_from_unsigned
-           [unsigned-long i])]{
+           [uintptr_t i])]{
 
 Like @cpp{scheme_make_integer_value}, but for unsigned integers.}
 
@@ -367,35 +367,35 @@ Like @cpp{scheme_make_integer_value}, but for @cpp{mzlonglong}
 Like @cpp{scheme_make_integer_value_from_long_long}, but for unsigned integers.}
 
 @function[(Scheme_Object* scheme_make_integer_value_from_long_halves
-           [unsigned-long hi]
-           [unsigned-long lo])]{
+           [uintptr_t hi]
+           [uintptr_t lo])]{
 
-Creates an integer given the high and low @cpp{long}s of a signed
+Creates an integer given the high and low @cpp{intptr_t}s of a signed
  integer. Note that on 64-bit platforms where @cpp{long long} is the
- same as @cpp{long}, the resulting integer has 128 bits. (See also
+ same as @cpp{intptr_t}, the resulting integer has 128 bits. (See also
  @secref["im:intsize"].)}
 
 @function[(Scheme_Object* scheme_make_integer_value_from_unsigned_long_halves
-           [unsigned-long hi]
-           [unsigned-long lo])]{
+           [uintptr_t hi]
+           [uintptr_t lo])]{
 
-Creates an integer given the high and low @cpp{long}s of an unsigned
+Creates an integer given the high and low @cpp{intptr_t}s of an unsigned
  integer. Note that on 64-bit platforms where @cpp{long long} is the
- same as @cpp{long}, the resulting integer has 128 bits.}
+ same as @cpp{intptr_t}, the resulting integer has 128 bits.}
 
 @function[(int scheme_get_int_val
            [Scheme_Object* o]
-           [long* i])]{
+           [intptr_t* i])]{
 
 Extracts the integer value. Unlike the @cppi{SCHEME_INT_VAL} macro,
- this procedure will extract an integer that fits in a @cpp{long} from
- a Racket bignum. If @var{o} fits in a @cpp{long}, the extracted
+ this procedure will extract an integer that fits in a @cpp{intptr_t} from
+ a Racket bignum. If @var{o} fits in a @cpp{intptr_t}, the extracted
  integer is placed in @var{*i} and 1 is returned; otherwise, 0 is
  returned and @var{*i} is unmodified.}
 
 @function[(int scheme_get_unsigned_int_val
            [Scheme_Object* o]
-           [unsigned-long* i])]{
+           [uintptr_t* i])]{
 
 Like @cpp{scheme_get_int_val}, but for unsigned integers.}
 
@@ -450,7 +450,7 @@ Like @cpp{scheme_make_byte_string}, but the string is not copied.}
 
 @function[(Scheme_Object* scheme_make_sized_byte_string
            [char* bytes]
-           [long len]
+           [intptr_t len]
            [int copy])]{
 
 Makes a byte string value with size @var{len}. A copy of @var{bytes}
@@ -463,8 +463,8 @@ Makes a byte string value with size @var{len}. A copy of @var{bytes}
 
 @function[(Scheme_Object* scheme_make_sized_offset_byte_string
            [char* bytes]
-           [long d]
-           [long len]
+           [intptr_t d]
+           [intptr_t len]
            [int copy])]{
 
 Like @cpp{scheme_make_sized_byte_string}, except the @var{len}
@@ -472,7 +472,7 @@ Like @cpp{scheme_make_sized_byte_string}, except the @var{len}
  non-zero, then @var{copy} must be non-zero.}
 
 @function[(Scheme_Object* scheme_alloc_byte_string
-           [long size]
+           [intptr_t size]
            [char fill])]{
 
 Allocates a new Racket byte string.}
@@ -502,7 +502,7 @@ Makes a Racket string from a nul-terminated byte string that is a
 
 @function[(Scheme_Object* scheme_make_sized_utf8_string
            [char* bytes]
-           [long len])]{
+           [intptr_t len])]{
 
 Makes a string value, based on @var{len} UTF-8-encoding bytes (so the
  resulting string is @var{len} characters or less). The string
@@ -513,8 +513,8 @@ Makes a string value, based on @var{len} UTF-8-encoding bytes (so the
 
 @function[(Scheme_Object* scheme_make_sized_offset_utf8_string
            [char* bytes]
-           [long d]
-           [long len])]{
+           [intptr_t d]
+           [intptr_t len])]{
 
 Like @cpp{scheme_make_sized_char_string}, except the @var{len} characters
  start from position @var{d} in @var{bytes}.}
@@ -533,7 +533,7 @@ Like @cpp{scheme_make_char_string}, but the string is not copied.}
 
 @function[(Scheme_Object* scheme_make_sized_char_string
            [mzchar* chars]
-           [long len]
+           [intptr_t len]
            [int copy])]{
 
 Makes a string value with size @var{len}. A copy of @var{chars} is
@@ -546,8 +546,8 @@ Makes a string value with size @var{len}. A copy of @var{chars} is
 
 @function[(Scheme_Object* scheme_make_sized_offset_char_string
            [mzchar* chars]
-           [long d]
-           [long len]
+           [intptr_t d]
+           [intptr_t len]
            [int copy])]{
 
 Like @cpp{scheme_make_sized_char_string}, except the @var{len}
@@ -555,7 +555,7 @@ Like @cpp{scheme_make_sized_char_string}, except the @var{len}
  non-zero, then @var{copy} must be non-zero.}
 
 @function[(Scheme_Object* scheme_alloc_char_string
-           [long size]
+           [intptr_t size]
            [mzchar fill])]{
 
 Allocates a new Racket string.}
@@ -636,7 +636,7 @@ Like @cpp{scheme_intern_exact_keyword}, but given a character array
  instead of a UTF-8-encoding byte array.}
 
 @function[(Scheme_Object* scheme_make_vector
-           [long size]
+           [intptr_t size]
            [Scheme_Object* fill])]{
 
 Allocates a new vector.}
@@ -685,7 +685,7 @@ referencing memory managed by the garbage collector.}
 
 @function[(Scheme_Object* scheme_make_offset_cptr
            [void* ptr]
-           [long offset]
+           [intptr_t offset]
            [const-Scheme_Object* typetag])]{
 
 Creates a C-pointer object that encapsulates both @var{ptr} and @var{offset}.
@@ -699,7 +699,7 @@ Creates a C-pointer object that encapsulates both @var{ptr} and @var{offset}.
 
 @function[(Scheme_Object* scheme_make_offset_external_cptr
            [void* ptr]
-           [long offset]
+           [intptr_t offset]
            [const-Scheme_Object* typetag])]{
 
  Like @cpp{scheme_make_offset_cptr}, but @var{ptr} is never treated as
@@ -767,10 +767,10 @@ follows:
  typedef int (*Scheme_Equal_Proc)(Scheme_Object* obj1,
                                   Scheme_Object* obj2,
                                   void* cycle_data);
- typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object* obj, 
-                                          long base,
+ typedef intptr_t (*Scheme_Primary_Hash_Proc)(Scheme_Object* obj, 
+                                          intptr_t base,
                                           void* cycle_data);
- typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object* obj,
+ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object* obj,
                                            void* cycle_data);
 }
 

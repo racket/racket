@@ -19,6 +19,22 @@
 /* The size of a `long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
+/* The size of a `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
+/* Whether `intptr_t' is available. */
+#undef HAVE_INTPTR_T
+
+/* Whether `uintptr_t' is available. */
+#undef HAVE_UINTPTR_T
+
+#ifndef HAVE_INTPTR_T
+typedef long intptr_t;
+#endif
+#ifndef HAVE_UINTPTR_T
+typedef unsigned long uintptr_t;
+#endif
+
 /* Endianness. */
 #undef SCHEME_BIG_ENDIAN
 
@@ -31,10 +47,10 @@
 /* Whether getaddrinfo works. */
 #undef HAVE_GETADDRINFO
 
-/* Whether __attribute__ ((noinline)) works */
+/* Whether __attribute__ ((noinline)) works. */
 #undef MZ_USE_NOINLINE
 
-/* Whether pthread_rwlock is availabale: */
+/* Whether pthread_rwlock is available. */
 #undef HAVE_PTHREAD_RWLOCK
 
 /* Enable futures and/or places (but not with sgc): */
@@ -43,10 +59,10 @@
 #undef MZ_USE_PLACES
 #endif
 
-/* Configure use of pthreads for the user-thread timer: */
+/* Configure use of pthreads for the user-thread timer. */
 #undef USE_PTHREAD_INSTEAD_OF_ITIMER
 
-/* Enable GC2 Places Testing: */
+/* Enable GC2 Places Testing. */
 #undef GC2_PLACES_TESTING
 
 #endif

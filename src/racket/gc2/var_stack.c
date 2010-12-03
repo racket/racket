@@ -1,7 +1,7 @@
 
-void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_mem, struct NewGC *gc)
+void GC_X_variable_stack(void **var_stack, intptr_t delta, void *limit, void *stack_mem, struct NewGC *gc)
 {
-  long size, count;
+  intptr_t size, count;
   void ***p, **a;
 
 #if TIME
@@ -11,7 +11,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
   while (var_stack) {
     var_stack = (void **)((char *)var_stack + delta);
 
-    size = *(long *)(var_stack + 1);
+    size = *(intptr_t *)(var_stack + 1);
     p = (void ***)(var_stack + 2);
 
 #if CHECKS
@@ -28,7 +28,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
 	a = *p;
 	if (!a) {
 	  /* Array */
-	  count = ((long *)p)[2];
+	  count = ((intptr_t *)p)[2];
 	  a = ((void ***)p)[1];
 	  p += 2;
 	  size -= 2;
@@ -57,7 +57,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
       a = *p;
       if (!a) {
 	/* Array */
-	count = ((long *)p)[2];
+	count = ((intptr_t *)p)[2];
 	a = ((void ***)p)[1];
 	p += 2;
 	size -= 2;

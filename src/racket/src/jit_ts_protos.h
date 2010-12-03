@@ -23,11 +23,11 @@ Scheme_Object* scheme_rtcall_tt_s(const char *who, int src_type, prim_tt_s f, co
 typedef MZ_MARK_STACK_TYPE (*prim_ss_m)(Scheme_Object*, Scheme_Object*);
 MZ_MARK_STACK_TYPE scheme_rtcall_ss_m(const char *who, int src_type, prim_ss_m f, Scheme_Object* g151, Scheme_Object* g152);
 #define SIG_Sl_s 13
-typedef Scheme_Object* (*prim_Sl_s)(Scheme_Object**, long);
-Scheme_Object* scheme_rtcall_Sl_s(const char *who, int src_type, prim_Sl_s f, Scheme_Object** g153, long g154);
+typedef Scheme_Object* (*prim_Sl_s)(Scheme_Object**, intptr_t);
+Scheme_Object* scheme_rtcall_Sl_s(const char *who, int src_type, prim_Sl_s f, Scheme_Object** g153, intptr_t g154);
 #define SIG_l_s 14
-typedef Scheme_Object* (*prim_l_s)(long);
-Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, long g155);
+typedef Scheme_Object* (*prim_l_s)(intptr_t);
+Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, intptr_t g155);
 #define SIG_bsi_v 15
 typedef void (*prim_bsi_v)(Scheme_Bucket*, Scheme_Object*, int);
 void scheme_rtcall_bsi_v(const char *who, int src_type, prim_bsi_v f, Scheme_Bucket* g156, Scheme_Object* g157, int g158);
@@ -41,8 +41,8 @@ void scheme_rtcall_ss_v(const char *who, int src_type, prim_ss_v f, Scheme_Objec
 typedef void (*prim_b_v)(Scheme_Bucket*);
 void scheme_rtcall_b_v(const char *who, int src_type, prim_b_v f, Scheme_Bucket* g164);
 #define SIG_sl_s 19
-typedef Scheme_Object* (*prim_sl_s)(Scheme_Object*, long);
-Scheme_Object* scheme_rtcall_sl_s(const char *who, int src_type, prim_sl_s f, Scheme_Object* g165, long g166);
+typedef Scheme_Object* (*prim_sl_s)(Scheme_Object*, intptr_t);
+Scheme_Object* scheme_rtcall_sl_s(const char *who, int src_type, prim_sl_s f, Scheme_Object* g165, intptr_t g166);
 #define SIG_iS_s 20
 typedef Scheme_Object* (*prim_iS_s)(int, Scheme_Object**);
 Scheme_Object* scheme_rtcall_iS_s(const char *who, int src_type, prim_iS_s f, int g167, Scheme_Object** g168);

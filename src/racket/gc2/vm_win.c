@@ -102,7 +102,7 @@ static void os_protect_pages(void *p, size_t len, int writeable)
 }
 
 #ifndef DONT_NEED_MAX_HEAP_SIZE
-typedef unsigned long size_type;
+typedef uintptr_t size_type;
 
 typedef BOOL (WINAPI * QueryInformationJobObject_Proc)(HANDLE hJob,
     JOBOBJECTINFOCLASS JobObjectInfoClass,

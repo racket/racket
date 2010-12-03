@@ -24,7 +24,7 @@ static AllocCacheBlock *alloc_cache_create() {
 
 static int alloc_cache_block_compare(const void *a, const void *b)
 {
-  if ((unsigned long)((AllocCacheBlock *)a)->start < (unsigned long)((AllocCacheBlock *)b)->start)
+  if ((uintptr_t)((AllocCacheBlock *)a)->start < (uintptr_t)((AllocCacheBlock *)b)->start)
     return -1;
   else
     return 1;
@@ -61,7 +61,7 @@ inline static void *alloc_cache_find_pages(AllocCacheBlock *blockfree, size_t le
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
     if (blockfree[i].len == len) {
       r = blockfree[i].start;
-      if (!alignment || !((unsigned long)r & (alignment - 1))) {
+      if (!alignment || !((uintptr_t)r & (alignment - 1))) {
         blockfree[i].start = NULL;
         blockfree[i].len = 0;
         if (!blockfree[i].zeroed && !dirty_ok)
@@ -76,7 +76,7 @@ inline static void *alloc_cache_find_pages(AllocCacheBlock *blockfree, size_t le
     if (blockfree[i].len > len) {
       /* Align at start? */
       r = blockfree[i].start;
-      if (!alignment || !((unsigned long)r & (alignment - 1))) {
+      if (!alignment || !((uintptr_t)r & (alignment - 1))) {
         blockfree[i].start += len;
         blockfree[i].len -= len;
         if (!blockfree[i].zeroed && !dirty_ok)
@@ -86,7 +86,7 @@ inline static void *alloc_cache_find_pages(AllocCacheBlock *blockfree, size_t le
 
       /* Align at end? */
       r = blockfree[i].start + (blockfree[i].len - len);
-      if (!((unsigned long)r & (alignment - 1))) {
+      if (!((uintptr_t)r & (alignment - 1))) {
         blockfree[i].len -= len;
         if (!blockfree[i].zeroed && !dirty_ok)
           memset(r, 0, len);
@@ -186,8 +186,8 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
 
     if (alignment) {
       /* We allocated too large so we can choose the alignment. */
-      char *real_r    = (char*)(((unsigned long)r + (alignment - 1)) & (~(alignment - 1)));
-      long pre_extra  = real_r - r;
+      char *real_r    = (char*)(((uintptr_t)r + (alignment - 1)) & (~(alignment - 1)));
+      intptr_t pre_extra  = real_r - r;
 
       /* in front extra */
       if (pre_extra) { 

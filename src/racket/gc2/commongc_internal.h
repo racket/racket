@@ -1,12 +1,12 @@
 typedef short Type_Tag;
 
 typedef struct Roots {
-  long count;
-  long size;
+  intptr_t count;
+  intptr_t size;
   /* roots is a array of longs, logically grouped into start and end pairs.
    * [ start0, end0, start1, end1, ... ]
    */ 
-  unsigned long *roots;
+  uintptr_t *roots;
   int nothing_new;
 } Roots;
 
@@ -16,7 +16,7 @@ typedef struct Roots {
 typedef struct GC_Weak_Array {
   Type_Tag type;
   short keyex;
-  long count;
+  intptr_t count;
   void *replace_val;
   struct GC_Weak_Array *next;
   void *data[1]; /* must be the 5th longword! */
@@ -58,7 +58,7 @@ typedef struct finalizer {
   GC_finalization_proc f;
   void *data;
 #if CHECKS
-  long size;
+  intptr_t size;
 #endif
   struct finalizer *next;
   /* Patched after GC: */

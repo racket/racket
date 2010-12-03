@@ -47,6 +47,7 @@ typedef struct {
     _us                  *us_pc;
     _ui                  *ui_pc;
     _ul                  *ul_pc;
+    _sl                  *sl_pc;
     jit_code             code;
   }                       x;
   struct jit_fp		 *fp;
@@ -76,8 +77,8 @@ static jit_state 			_jit;
 #define	jit_get_label()			(_jit.x.pc)
 #define	jit_forward()			(_jit.x.pc)
 
-#define	jit_field(struc, f)		( ((long) (&((struc *) 8)->f) ) - 8)
-#define	jit_ptr_field(struc_p, f)	( ((long) (&((struc_p) 8)->f) ) - 8)
+#define	jit_field(struc, f)		( ((intptr_t) (&((struc *) 8)->f) ) - 8)
+#define	jit_ptr_field(struc_p, f)	( ((intptr_t) (&((struc_p) 8)->f) ) - 8)
 
 /* realignment via N-byte no-ops */
 
@@ -147,14 +148,14 @@ static jit_state 			_jit;
 #define jit_xorr_ul(d, s1, s2)		jit_xorr_l((d), (s1), (s2))
 
 #define jit_addr_p(d, s1, s2)		jit_addr_ul((d), (s1), 	      (s2))
-#define jit_addi_p(d, rs, is)		jit_addi_ul((d), (rs), (long) (is))
+#define jit_addi_p(d, rs, is)		jit_addi_ul((d), (rs), (intptr_t) (is))
 #define jit_movr_p(d, rs)		jit_movr_ul((d),              (rs))
 #define jit_subr_p(d, s1, s2)		jit_subr_ul((d), (s1),        (s2))
-#define jit_subi_p(d, rs, is)		jit_subi_ul((d), (rs), (long) (is))
-#define jit_rsbi_p(d, rs, is)		jit_rsbi_ul((d), (rs), (long) (is))
+#define jit_subi_p(d, rs, is)		jit_subi_ul((d), (rs), (intptr_t) (is))
+#define jit_rsbi_p(d, rs, is)		jit_rsbi_ul((d), (rs), (intptr_t) (is))
 
 #ifndef jit_movi_p
-#define jit_movi_p(d, is)		(jit_movi_ul((d),       (long) (is)), _jit.x.pc)
+#define jit_movi_p(d, is)		(jit_movi_ul((d),       (intptr_t) (is)), _jit.x.pc)
 #endif
 
 #define jit_patch(pv)        		jit_patch_at ((pv), (_jit.x.pc))
@@ -229,7 +230,7 @@ static jit_state 			_jit;
 #define jit_extr_s_i(d, rs)		(jit_lshi_i((d), (rs), 16), jit_rshi_i((d), (d), 16))
 #endif
 
-#ifdef jit_addi_l /* sizeof(long) != sizeof(int) */
+#ifdef jit_addi_l /* sizeof(intptr_t) != sizeof(int) */
 #ifndef jit_extr_c_l
 #define jit_extr_c_l(d, rs)		(jit_lshi_l((d), (rs), 56), jit_rshi_l((d), (d), 56))
 #endif
@@ -469,7 +470,7 @@ static void jit_check_arg_count(int n) {
 #endif
 #endif
 
-/* Removed the long == int cases, because they aren't the same
+/* Removed the intptr_t == int cases, because they aren't the same
    for x86_64, and we want to catch missing ones. */
 
 #endif /* __lightning_core_common_h_ */

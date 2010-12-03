@@ -239,7 +239,9 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{d} : an integer}
 
- @item{@FormatD{ld} : a @cpp{long} integer}
+ @item{@FormatD{gd} : a @cpp{long} integer}
+
+ @item{@FormatD{ld} : a @cpp{intptr_t} integer}
 
  @item{@FormatD{f} : a floating-point @cpp{double}}
 
@@ -249,11 +251,11 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{S} : a Racket symbol (a @cpp{Scheme_Object*})}
 
- @item{@FormatD{t} : a @cpp{char} string with a @cpp{long} size (two
+ @item{@FormatD{t} : a @cpp{char} string with a @cpp{intptr_t} size (two
  arguments), possibly containing a non-terminating nul byte, and
  possibly without a nul-terminator}
 
- @item{@FormatD{u} : a @cpp{mzchar} string with a @cpp{long} size (two
+ @item{@FormatD{u} : a @cpp{mzchar} string with a @cpp{intptr_t} size (two
  arguments), possibly containing a non-terminating nul character, and
  possibly without a nul-terminator}
 
@@ -384,7 +386,7 @@ is filled with the length of the returned string.}
            [int which]
            [int argc]
            [Scheme_Object** argv]
-           [long* len])]{
+           [intptr_t* len])]{
 
 Converts an array of Racket values into a byte string, skipping the
 array element indicated by @var{which}. This function is used to

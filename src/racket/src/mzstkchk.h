@@ -9,10 +9,10 @@
 #endif
 
 #ifdef SPAWN_NEW_STACK
-  unsigned long _stk_pos;
+  uintptr_t _stk_pos;
 
-  _stk_pos = (unsigned long)&_stk_pos;
-  if (STK_COMP(SCHEME_PLUS_STACK_DELTA(_stk_pos), (unsigned long)SCHEME_CURRENT_PROCESS->stack_end)
+  _stk_pos = (uintptr_t)&_stk_pos;
+  if (STK_COMP(SCHEME_PLUS_STACK_DELTA(_stk_pos), (uintptr_t)SCHEME_CURRENT_PROCESS->stack_end)
       && !scheme_no_stack_overflow)
 #else
 # ifdef USE_STACKAVAIL
@@ -22,9 +22,9 @@
      || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
      || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
      || defined(PALM_FIND_STACK_BOUNDS)
-  unsigned long _stk_pos;
+  uintptr_t _stk_pos;
 
-  _stk_pos = (unsigned long)&_stk_pos;
+  _stk_pos = (uintptr_t)&_stk_pos;
 
 if (STK_COMP(SCHEME_PLUS_STACK_DELTA(_stk_pos), SCHEME_STACK_BOUNDARY)
       && !scheme_no_stack_overflow)

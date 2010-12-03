@@ -31,8 +31,8 @@ typedef int (*Fixup_Proc)(void *obj);
 typedef int (*Fixup2_Proc)(void *obj, struct NewGC *);
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
-typedef void (*GC_collect_inform_callback_Proc)(int major_gc, long pre_used, long post_used);
-typedef unsigned long (*GC_get_thread_stack_base_Proc)(void);
+typedef void (*GC_collect_inform_callback_Proc)(int major_gc, intptr_t pre_used, intptr_t post_used);
+typedef uintptr_t (*GC_get_thread_stack_base_Proc)(void);
 /* 
    Types of the traversal procs (supplied by Racket); see overview in README
    for information about traversals. The return value is the size of
@@ -68,14 +68,14 @@ extern "C" {
 /* Administration                                                          */
 /***************************************************************************/
 
-GC2_EXTERN void GC_set_get_thread_stack_base(unsigned long (*)(void));
+GC2_EXTERN void GC_set_get_thread_stack_base(uintptr_t (*)(void));
 /* 
    Sets callback called by GC to get the base for stack traversal in the current
    thread (see README). The returned address must not be in the middle
    of a variable-stack record. */
 
 GC2_EXTERN void GC_set_stack_base(void *base);
-GC2_EXTERN unsigned long GC_get_stack_base(void);
+GC2_EXTERN uintptr_t GC_get_stack_base(void);
 /*
    Called by Racket to set/get value used for stack base when
    GC_get_thread_stack_base is null. This is mainly useful for getting
@@ -130,14 +130,14 @@ GC2_EXTERN void GC_dump(void);
 /*
    Dumps memory state info to stderr. */
 
-GC2_EXTERN long GC_get_memory_use(void *c);
+GC2_EXTERN intptr_t GC_get_memory_use(void *c);
 /*
    Returns the number of currently-allocated bytes (speficilly for
    custodian c, as much as the GC's accounting makes possible). */
 
 #define MZACCT_REQUIRE		0
 #define MZACCT_LIMIT		1
-GC2_EXTERN int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2);
+GC2_EXTERN int GC_set_account_hook(int type, void *c1, uintptr_t b, void *c2);
 /*
   Set a memory-accounting property. Returns 0 for failure (i.e., not
   supported). */
@@ -256,7 +256,7 @@ GC2_EXTERN void GC_free_immobile_box(void **b);
    Allocate (or free) a non-GCed box containing a pointer to a GCed
    value.  The pointer is stored as the first longword of the box. */
 
-GC2_EXTERN long GC_malloc_stays_put_threshold();
+GC2_EXTERN intptr_t GC_malloc_stays_put_threshold();
 /*
    Returns a minimum size for which allocations generate
    objects that never move, and where pointers are allowed
@@ -354,20 +354,20 @@ GC2_EXTERN void GC_fixup2(void *p, struct NewGC *gc);
    implementation, and are *not* part of the "official" interface. */
 
 GC2_EXTERN void GC_mark_variable_stack(void **var_stack,
-				       long delta,
+				       intptr_t delta,
 				       void *limit,
                                        void *stack_mem);
 GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
-					long delta,
+					intptr_t delta,
 					void *limit,
                                         void *stack_mem);
 GC2_EXTERN void GC_mark2_variable_stack(void **var_stack,
-                                        long delta,
+                                        intptr_t delta,
                                         void *limit,
                                         void *stack_mem,
                                         struct NewGC *gc);
 GC2_EXTERN void GC_fixup2_variable_stack(void **var_stack,
-                                         long delta,
+                                         intptr_t delta,
                                          void *limit,
                                          void *stack_mem,
                                          struct NewGC *gc);
@@ -426,17 +426,17 @@ GC2_EXTERN void GC_switch_back_from_master(void *gc);
    Switches to back to gc from the master GC
 */
 
-GC2_EXTERN long GC_alloc_alignment();
+GC2_EXTERN intptr_t GC_alloc_alignment();
 /*
    Guaranteeed alignment for nusery pages. Returns a constant, and
    can be called from any thread.
 */
 
-GC2_EXTERN unsigned long GC_make_jit_nursery_page(int count);
+GC2_EXTERN uintptr_t GC_make_jit_nursery_page(int count);
 /*
    Obtains nursery pages from the GC for thread local allocation;
    resulting space is count times the allocation alignment.
-   The result is an unsigned long because it's not a valid
+   The result is an uintptr_t because it's not a valid
    pointer to a GCable object. The result becomes invalid (i.e. it's collected)
    with the next GC.
 */

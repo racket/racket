@@ -38,12 +38,12 @@ SHARED_OK static char **type_names;
 SHARED_OK static Scheme_Type maxtype, allocmax;
 
 #ifdef MEMORY_COUNTING_ON
-SHARED_OK long scheme_type_table_count;
+SHARED_OK intptr_t scheme_type_table_count;
 #endif
 
 static void init_type_arrays()
 {
-  long n;
+  intptr_t n;
 
   REGISTER_SO(type_names);
   REGISTER_SO(scheme_type_readers);
@@ -295,7 +295,7 @@ Scheme_Type scheme_make_type(const char *name)
   if (maxtype == allocmax) {
     /* Expand arrays */
     void *naya;
-    long n;
+    intptr_t n;
     
     allocmax += 20;
 
@@ -455,7 +455,7 @@ static void MARK_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
      out. */
   if (buf->stack_copy)
     GC_mark2_variable_stack(buf->gc_var_stack,
-                            (long)buf->stack_copy - (long)buf->stack_from,
+                            (intptr_t)buf->stack_copy - (intptr_t)buf->stack_from,
                             /* FIXME: stack direction */
                             (char *)buf->stack_copy + buf->stack_size,
                             buf->stack_copy,
@@ -473,7 +473,7 @@ static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
 
   if (buf->stack_copy)
     GC_fixup2_variable_stack(buf->gc_var_stack,
-                             (long)new_stack - (long)buf->stack_from,
+                             (intptr_t)new_stack - (intptr_t)buf->stack_from,
                              /* FIXME: stack direction */
                              (char *)new_stack + buf->stack_size,
                              new_stack,

@@ -58,7 +58,7 @@ THREAD_LOCAL_DECL(static int dgc_size);
 # if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
 pthread_key_t scheme_thread_local_key;
 # elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
-unsigned long scheme_tls_delta;
+uintptr_t scheme_tls_delta;
 int scheme_tls_index;
 # elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS_FUNC)
 DWORD scheme_thread_local_key;
@@ -68,8 +68,8 @@ SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 #endif
 
 extern int scheme_num_copied_stacks;
-SHARED_OK static unsigned long scheme_primordial_os_thread_stack_base;
-THREAD_LOCAL_DECL(static unsigned long scheme_os_thread_stack_base);
+SHARED_OK static uintptr_t scheme_primordial_os_thread_stack_base;
+THREAD_LOCAL_DECL(static uintptr_t scheme_os_thread_stack_base);
 #ifdef USE_THREAD_LOCAL
 SHARED_OK Thread_Local_Variables *scheme_vars; /* for debugging */
 #endif
@@ -112,8 +112,8 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
   scheme_register_traversers();
 #endif
 
-  scheme_primordial_os_thread_stack_base  = (unsigned long) base;
-  scheme_os_thread_stack_base             = (unsigned long) base;
+  scheme_primordial_os_thread_stack_base  = (uintptr_t) base;
+  scheme_os_thread_stack_base             = (uintptr_t) base;
 
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   GC_set_stack_base(base);
@@ -138,10 +138,10 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 
 void scheme_set_current_os_thread_stack_base(void *base)
 {
-  scheme_os_thread_stack_base = (unsigned long) base;
+  scheme_os_thread_stack_base = (uintptr_t) base;
 }
 
-unsigned long scheme_get_current_os_thread_stack_base()
+uintptr_t scheme_get_current_os_thread_stack_base()
 {
   return scheme_os_thread_stack_base;
 }
@@ -242,7 +242,7 @@ static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
 {
-  scheme_tls_delta = (unsigned long)tls_space;
+  scheme_tls_delta = (uintptr_t)tls_space;
   scheme_tls_index = tls_index;
 }
 Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_PROC
@@ -266,7 +266,7 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
 
     __asm { mov ecx, FS:[0x2C]
             mov base, ecx }
-    scheme_tls_delta -= (unsigned long)base[scheme_tls_index];
+    scheme_tls_delta -= (uintptr_t)base[scheme_tls_index];
     scheme_tls_index *= sizeof(void*);
   }
 #endif
@@ -285,23 +285,23 @@ void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics) XFO
 
 #ifdef USE_STACK_BOUNDARY_VAR
   if (deepest) {
-    scheme_stack_boundary = (unsigned long)deepest;
+    scheme_stack_boundary = (uintptr_t)deepest;
   }
 #endif
 }
 
-extern unsigned long scheme_get_stack_base() XFORM_SKIP_PROC
+extern uintptr_t scheme_get_stack_base() XFORM_SKIP_PROC
 {
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
   if (GC_stackbottom)
-    return (unsigned long)GC_stackbottom;
+    return (uintptr_t)GC_stackbottom;
   else {
     struct GC_stack_base b;
     GC_get_stack_base(&b);
-    return (unsigned long)b.mem_base;
+    return (uintptr_t)b.mem_base;
   }
 #else
-  return (unsigned long)GC_get_stack_base();
+  return (uintptr_t)GC_get_stack_base();
 #endif
 }
 
@@ -485,7 +485,7 @@ char *
 scheme_strdup(const char *str)
 {
   char *naya;
-  long len;
+  intptr_t len;
 
   len = strlen(str) + 1;
   naya = (char *)scheme_malloc_atomic (len * sizeof (char));
@@ -498,7 +498,7 @@ char *
 scheme_strdup_eternal(const char *str)
 {
   char *naya;
-  long len;
+  intptr_t len;
 
   len = strlen(str) + 1;
   naya = (char *)scheme_malloc_eternal(len * sizeof (char));
@@ -532,7 +532,7 @@ Scheme_Object *scheme_make_external_cptr(GC_CAN_IGNORE void *cptr, Scheme_Object
   return o;
 }
 
-Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *typetag)
+Scheme_Object *scheme_make_offset_cptr(void *cptr, intptr_t offset, Scheme_Object *typetag)
 {
   Scheme_Object *o;
 
@@ -546,7 +546,7 @@ Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *t
   return o;
 }
 
-Scheme_Object *scheme_make_offset_external_cptr(GC_CAN_IGNORE void *cptr, long offset, Scheme_Object *typetag)
+Scheme_Object *scheme_make_offset_external_cptr(GC_CAN_IGNORE void *cptr, intptr_t offset, Scheme_Object *typetag)
 {
   Scheme_Object *o;
   o = scheme_make_offset_cptr(NULL, offset, typetag);
@@ -659,7 +659,7 @@ void *scheme_malloc_uncollectable(size_t size_in_bytes)
 }
 #endif
 
-void scheme_register_static(void *ptr, long size) XFORM_SKIP_PROC
+void scheme_register_static(void *ptr, intptr_t size) XFORM_SKIP_PROC
 {
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   /* Always register for precise and Senora GC: */
@@ -679,11 +679,11 @@ struct GC_Set *tagged, *real_tagged, *tagged_atomic, *tagged_eternal, *tagged_un
 struct GC_Set *tagged_while_counting;
 
 static void trace_count(void *, int);
-static void trace_path(void *, unsigned long, void *);
+static void trace_path(void *, uintptr_t, void *);
 static void trace_init(void);
 static void trace_done(void);
 static void trace_stack_count(void *, int);
-static void trace_stack_path(void *, unsigned long, void *);
+static void trace_stack_path(void *, uintptr_t, void *);
 static void finalize_object(void *);
 
 #define TRACE_FUNCTIONS trace_init, trace_done, trace_count, trace_path
@@ -786,23 +786,23 @@ void *scheme_malloc_uncollectable_tagged(size_t s)
 START_XFORM_SKIP;
 #endif
 
-/* Max of desired alignment and 2 * sizeof(long): */
+/* Max of desired alignment and 2 * sizeof(intptr_t): */
 #define CODE_HEADER_SIZE 16
 
 
-THREAD_LOCAL_DECL(long scheme_code_page_total);
+THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
 
 #if defined(MZ_JIT_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
 #endif
 
 #define LOG_CODE_MALLOC(lvl, s) /* if (lvl > 1) s */
-#define CODE_PAGE_OF(p) ((void *)(((unsigned long)p) & ~(page_size - 1)))
+#define CODE_PAGE_OF(p) ((void *)(((uintptr_t)p) & ~(page_size - 1)))
 
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
 struct free_list_entry {
-  long size; /* size of elements in this bucket */
+  intptr_t size; /* size of elements in this bucket */
   void *elems; /* doubly linked list for free blocks */
   int count; /* number of items in `elems' */
 };
@@ -810,12 +810,12 @@ struct free_list_entry {
 THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
 THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
-static long get_page_size()
+static intptr_t get_page_size()
 {
 # ifdef PAGESIZE
-  const long page_size = PAGESIZE;
+  const intptr_t page_size = PAGESIZE;
 # else
-  SHARED_OK static unsigned long page_size = -1;
+  SHARED_OK static uintptr_t page_size = -1;
   if (page_size == -1) {
 #  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
     SYSTEM_INFO info;
@@ -830,7 +830,7 @@ static long get_page_size()
   return page_size;
 }
 
-static void *malloc_page(long size)
+static void *malloc_page(intptr_t size)
 {
   void *r;
 
@@ -866,7 +866,7 @@ static void *malloc_page(long size)
   return r;
 }
 
-static void free_page(void *p, long size)
+static void free_page(void *p, intptr_t size)
 {
 #ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
   VirtualFree(p, 0, MEM_RELEASE);
@@ -877,10 +877,10 @@ static void free_page(void *p, long size)
 
 static void init_free_list()
 {
-  long page_size = get_page_size();
+  intptr_t page_size = get_page_size();
   int pos = 0;
   int cnt = 2;
-  long last_v = page_size, v;
+  intptr_t last_v = page_size, v;
 
   /* Compute size that fits 2 objects per page, then 3 per page, etc.
      Keeping CODE_HEADER_SIZE alignment gives us a small number of
@@ -903,7 +903,7 @@ static void init_free_list()
   free_list_bucket_count = pos;
 }
 
-static long free_list_find_bucket(long size)
+static intptr_t free_list_find_bucket(intptr_t size)
 {
   /* binary search */
   int lo = 0, hi = free_list_bucket_count - 1, mid;
@@ -924,11 +924,11 @@ static long free_list_find_bucket(long size)
 }
 #endif
 
-void *scheme_malloc_code(long size)
+void *scheme_malloc_code(intptr_t size)
 {
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
-  long size2, bucket, sz, page_size;
+  intptr_t size2, bucket, sz, page_size;
   void *p, *pg, *prev;
 
   if (size < CODE_HEADER_SIZE) {
@@ -951,7 +951,7 @@ void *scheme_malloc_code(long size)
     sz = (sz + page_size - 1) & ~(page_size - 1);
     pg = malloc_page(sz);
     scheme_code_page_total += sz;
-    *(long *)pg = sz;
+    *(intptr_t *)pg = sz;
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
                               pg, size + CODE_HEADER_SIZE, scheme_code_page_total));
     p = ((char *)pg) + CODE_HEADER_SIZE;
@@ -978,8 +978,8 @@ void *scheme_malloc_code(long size)
         free_list[bucket].elems = p;
         count++;
       }
-      ((long *)pg)[0] = bucket; /* first long of page indicates bucket */
-      ((long *)pg)[1] = 0; /* second long indicates number of allocated on page */
+      ((intptr_t *)pg)[0] = bucket; /* first intptr_t of page indicates bucket */
+      ((intptr_t *)pg)[1] = 0; /* second intptr_t indicates number of allocated on page */
       free_list[bucket].count = count;
     }
 
@@ -989,7 +989,7 @@ void *scheme_malloc_code(long size)
     --free_list[bucket].count;
     if (prev)
       ((void **)prev)[1] = NULL;
-    ((long *)CODE_PAGE_OF(p))[1] += 1;
+    ((intptr_t *)CODE_PAGE_OF(p))[1] += 1;
 
     LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
   }
@@ -1003,13 +1003,13 @@ void *scheme_malloc_code(long size)
 void scheme_free_code(void *p)
 {
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
-  long size, size2, bucket, page_size;
+  intptr_t size, size2, bucket, page_size;
   int per_page, n;
   void *prev;
 
   page_size = get_page_size();
 
-  size = *(long *)CODE_PAGE_OF(p);
+  size = *(intptr_t *)CODE_PAGE_OF(p);
   
   if (size >= page_size) {
     /* it was a large object on its own page(s) */
@@ -1032,14 +1032,14 @@ void scheme_free_code(void *p)
 
     /* decrement alloc count for this page: */
     per_page = (page_size - CODE_HEADER_SIZE) / size2;
-    n = ((long *)CODE_PAGE_OF(p))[1];
+    n = ((intptr_t *)CODE_PAGE_OF(p))[1];
     /* double-check: */
     if ((n < 1) || (n > per_page)) {
       printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
       abort();
     }
     n--;
-    ((long *)CODE_PAGE_OF(p))[1] = n;
+    ((intptr_t *)CODE_PAGE_OF(p))[1] = n;
 
     /* add to free list: */
     prev = free_list[bucket].elems;
@@ -1055,7 +1055,7 @@ void scheme_free_code(void *p)
     if ((n == 0) && ((free_list[bucket].count - per_page) >= (per_page / 2))) {
       /* remove same-page elements from free list, then free page */
       int i;
-      long sz;
+      intptr_t sz;
       void *pg;
 
       sz = page_size - size2;
@@ -1093,10 +1093,10 @@ void scheme_free_code(void *p)
    with scheme_malloc_gcable_code() --- but only in CGC mode. */
 
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
-static unsigned long jit_prev_page = 0, jit_prev_length = 0;
+static uintptr_t jit_prev_page = 0, jit_prev_length = 0;
 #endif
 
-void *scheme_malloc_gcable_code(long size)
+void *scheme_malloc_gcable_code(intptr_t size)
 {
   void *p;
   p = scheme_malloc(size);
@@ -1104,14 +1104,14 @@ void *scheme_malloc_gcable_code(long size)
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   {
     /* [This chunk of code moved from our copy of GNU lightning to here.] */
-    unsigned long page, length, page_size;
+    uintptr_t page, length, page_size;
     void *end;
 
     page_size = get_page_size();
     
     end = ((char *)p) + size;
 
-    page = (long) p & ~(page_size - 1);
+    page = (intptr_t) p & ~(page_size - 1);
     length = ((char *) end - (char *) page + page_size - 1) & ~(page_size - 1);
     
     /* Simple-minded attempt at optimizing the common case where a single
@@ -1307,7 +1307,7 @@ static void add_finalizer(void *v, void (*f)(void*,void*), void *data,
     if (oldf != do_next_finalization) {
       /* This happens if an extenal use of GC_ routines conflicts with us. */
       scheme_warning("warning: non-Racket finalization on object dropped! %lx %lx",
-                     (long)oldf, (long)olddata);
+                     (intptr_t)oldf, (intptr_t)olddata);
     } else {
       *fns_ptr = *(Finalizations **)olddata;
       save_fns_ptr = (Finalizations **)olddata;
@@ -1461,11 +1461,11 @@ void scheme_collect_garbage(void)
   GC_gcollect();
 }
 
-unsigned long scheme_get_deeper_address(void)
+uintptr_t scheme_get_deeper_address(void)
 {
   int v, *vp;
   vp = &v;
-  return (unsigned long)vp;
+  return (uintptr_t)vp;
 }
 
 /************************************************************************/
@@ -1486,14 +1486,14 @@ extern "C"
 #ifdef USE_TAGGED_ALLOCATION
 #define NUM_TYPE_SLOTS (_scheme_last_type_ + 5) /* extra space for externally defined */
 
-static long scheme_memory_count[NUM_TYPE_SLOTS];
-static long scheme_memory_actual_count[NUM_TYPE_SLOTS];
-static long scheme_memory_size[NUM_TYPE_SLOTS];
-static long scheme_memory_actual_size[NUM_TYPE_SLOTS];
-static unsigned long scheme_memory_hi[NUM_TYPE_SLOTS];
-static unsigned long scheme_memory_lo[NUM_TYPE_SLOTS];
-static long scheme_envunbox_count, scheme_envunbox_size;
-static long bad_seeds;
+static intptr_t scheme_memory_count[NUM_TYPE_SLOTS];
+static intptr_t scheme_memory_actual_count[NUM_TYPE_SLOTS];
+static intptr_t scheme_memory_size[NUM_TYPE_SLOTS];
+static intptr_t scheme_memory_actual_size[NUM_TYPE_SLOTS];
+static uintptr_t scheme_memory_hi[NUM_TYPE_SLOTS];
+static uintptr_t scheme_memory_lo[NUM_TYPE_SLOTS];
+static intptr_t scheme_envunbox_count, scheme_envunbox_size;
+static intptr_t bad_seeds;
 static Scheme_Hash_Table *smc_ht;
 static int trace_path_type;
 
@@ -1567,7 +1567,7 @@ static void trace_count(void *p, int size)
   }
 
   {
-    unsigned long s = (unsigned long)p;
+    uintptr_t s = (uintptr_t)p;
     scheme_memory_actual_count[which]++;
     scheme_memory_actual_size[which] += size;
     if (!scheme_memory_lo[which] || (s < scheme_memory_lo[which]))
@@ -1582,14 +1582,14 @@ static void trace_stack_count(void *p, int size)
   /* Do nothing */
 }
 
-static void trace_path(void *p, unsigned long src, void *path_data)
+static void trace_path(void *p, uintptr_t src, void *path_data)
 {
   if ((trace_path_type > -1)
       && ((int)SCHEME_TYPE((Scheme_Object *)p) == trace_path_type))
     GC_store_path(p, src, path_data);
 }
 
-static void trace_stack_path(void *p, unsigned long src, void *path_data)
+static void trace_stack_path(void *p, uintptr_t src, void *path_data)
 {
   if (trace_path_type == -2)
     GC_store_path(p, src, path_data);
@@ -1729,12 +1729,12 @@ static int check_home(Scheme_Object *o)
 }
 
 static void print_tagged_value(const char *prefix, 
-			       void *v, int xtagged, unsigned long diff, int max_w,
+			       void *v, int xtagged, uintptr_t diff, int max_w,
 			       const char *suffix)
 {
   char buffer[256];
   char *type, *sep, diffstr[30];
-  long len;
+  intptr_t len;
   
   sep = "";
   
@@ -1854,7 +1854,7 @@ static void print_tagged_value(const char *prefix,
       type = t2;
     } else if (!scheme_strncmp(type, "#<syntax-code", 13)) {
       char *t2, *t3;
-      long len2, len3;
+      intptr_t len2, len3;
 
       t2 = scheme_write_to_string_w_max(SCHEME_IPTR_VAL(v), &len2, 32);
       
@@ -1872,7 +1872,7 @@ static void print_tagged_value(const char *prefix,
     } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_rt_meta_cont)) {
       Scheme_Meta_Continuation *mc = (Scheme_Meta_Continuation *)v;
       Scheme_Object *pt;
-      long len2, len3;
+      intptr_t len2, len3;
       char *t2, *t3;
 
       pt = mc->prompt_tag;
@@ -1893,7 +1893,7 @@ static void print_tagged_value(const char *prefix,
 #endif
     } else if (!scheme_strncmp(type, "#<syntax", 8)) {
       char *t2, *t3;
-      long len2, len3;
+      intptr_t len2, len3;
 
       t2 = scheme_write_to_string_w_max(SCHEME_STX_VAL(v), &len2, 32);
       
@@ -2068,9 +2068,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   {
     int i;
     int stack_c, roots_c, uncollectable_c, final_c;
-    long total_count = 0, total_size = 0;
-    long total_actual_count = 0, total_actual_size = 0;
-    long traced;
+    intptr_t total_count = 0, total_size = 0;
+    intptr_t total_actual_count = 0, total_actual_size = 0;
+    intptr_t traced;
     int no_walk = 0;
 
     no_walk = 1 /* (!c || !SAME_OBJ(p[0], scheme_true)) */;
@@ -2245,7 +2245,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       flags |= GC_DUMP_SHOW_FINALS;
 
     if (!strcmp("peek", s) && (c == 3)) {
-      long n;
+      intptr_t n;
       scheme_end_atomic();
       if (scheme_get_int_val(p[1], &n)) {
 	if (GC_is_tagged_start((void *)n)) {
@@ -2270,7 +2270,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
     if (!strcmp("addr", s) && (c == 2)) {
       scheme_end_atomic();      
-      return scheme_make_integer_value((long)p[1]);
+      return scheme_make_integer_value((intptr_t)p[1]);
     }
   } else if (c && SCHEME_INTP(p[0])) {
     trace_for_tag = SCHEME_INT_VAL(p[0]);
@@ -2278,7 +2278,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   } else if (c && SCHEME_THREADP(p[0])) {
     Scheme_Thread *t = (Scheme_Thread *)p[0];
     void **var_stack, *limit;
-    long delta;
+    intptr_t delta;
 
     scheme_console_printf("Thread: %p\n", t);
     if (t->running) {
@@ -2290,7 +2290,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       } else {
         scheme_console_printf(" swapped out\n");
         var_stack = (void **)t->jmpup_buf.gc_var_stack;
-        delta = (long)t->jmpup_buf.stack_copy - (long)t->jmpup_buf.stack_from;
+        delta = (intptr_t)t->jmpup_buf.stack_copy - (intptr_t)t->jmpup_buf.stack_from;
         /* FIXME: stack direction */
         limit = (char *)t->jmpup_buf.stack_copy + t->jmpup_buf.stack_size;
       }
@@ -2358,7 +2358,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 	scheme_console_printf("$%s", ps[0]);
       for (i = 1, j = 2; i < l; i++, j += 2) {
 	void *v = ps[j];
-	unsigned long diff = (unsigned long)ps[j + 1];
+	uintptr_t diff = (uintptr_t)ps[j + 1];
 	struct GC_Set *home;
 
 	home = GC_set(v);
@@ -2425,7 +2425,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
 #ifdef MEMORY_COUNTING_ON
 
-long scheme_count_closure(Scheme_Object **o, mzshort len, Scheme_Hash_Table *ht)
+intptr_t scheme_count_closure(Scheme_Object **o, mzshort len, Scheme_Hash_Table *ht)
 {
 #if 0
   int i;
@@ -2466,7 +2466,7 @@ void scheme_check_home(Scheme_Object *root)
       && (home != tagged_atomic)
       && (home != tagged_uncollectable)
       && (home != tagged_eternal)) {
-    scheme_console_printf("Check: bad Scheme object: %lx\n", (unsigned long)root);
+    scheme_console_printf("Check: bad Scheme object: %lx\n", (uintptr_t)root);
   }
 }
 #endif
@@ -2475,10 +2475,10 @@ void scheme_check_home(Scheme_Object *root)
 #define FORCE_KNOWN_SUBPARTS 1
 #define CAN_TRACE_HOME 1
 
-long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
+intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 {
   Scheme_Type type;
-  long s = sizeof(Scheme_Simple_Object), e = 0;
+  intptr_t s = sizeof(Scheme_Simple_Object), e = 0;
   int need_align = 0;
   struct GC_Set *home;
 
@@ -2499,7 +2499,7 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
       && (home != tagged_atomic)
       && (home != tagged_uncollectable)
       && (home != tagged_eternal)) {
-    scheme_console_printf("Bad Scheme object: %lx\n", (unsigned long)root);
+    scheme_console_printf("Bad Scheme object: %lx\n", (uintptr_t)root);
     return 0;
   }
 #endif
@@ -2924,11 +2924,11 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
   return s;
 }
 
-long scheme_count_envbox(Scheme_Object *root, Scheme_Hash_Table *ht)
+intptr_t scheme_count_envbox(Scheme_Object *root, Scheme_Hash_Table *ht)
 {
 #if CAN_TRACE_HOME
   if (GC_set(root) != envunbox) {
-    scheme_console_printf("Bad envunbox object: %lx\n", (unsigned long)root);
+    scheme_console_printf("Bad envunbox object: %lx\n", (uintptr_t)root);
     return 0;
   }
 #endif

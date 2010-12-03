@@ -119,7 +119,7 @@ typedef struct Place_Start_Data {
 
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
 {
-  long status;
+  intptr_t status;
 
   if (SCHEME_INTP(argv[0])) {
     status = SCHEME_INT_VAL(argv[0]);
@@ -609,7 +609,7 @@ typedef struct {
   Scheme_Place   *waiting_place; 
   int            *wake_fd;
   int             ready;
-  long            rc;
+  intptr_t            rc;
 } proc_thread_wait_data;
 
 
@@ -618,7 +618,7 @@ static void *mz_proc_thread_wait_worker(void *data) {
   proc_thread_wait_data *wd = (proc_thread_wait_data*) data;
 
   rc = mz_proc_thread_wait(wd->proc_thread);
-  wd->rc = (long) rc;
+  wd->rc = (intptr_t) rc;
   wd->ready = 1;
   scheme_signal_received_at(wd->wake_fd);
   return NULL;
@@ -663,7 +663,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
     mz_proc_thread_detach(worker_thread);
     scheme_block_until(place_wait_ready, NULL, (Scheme_Object *) wd, 0);
 
-    rc = scheme_make_integer((long)wd->rc);
+    rc = scheme_make_integer((intptr_t)wd->rc);
     free(wd);
     return rc;
   }
@@ -671,7 +671,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
   {
     void *rcvoid;
     rcvoid = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
-    return scheme_make_integer((long) rcvoid);
+    return scheme_make_integer((intptr_t) rcvoid);
   }
 # endif
 }
@@ -806,8 +806,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
     case scheme_vector_type:
       {
         Scheme_Object *vec;
-        long i;
-        long size = SCHEME_VEC_SIZE(so);
+        intptr_t i;
+        intptr_t size = SCHEME_VEC_SIZE(so);
         vec = scheme_make_vector(size, 0);
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
@@ -824,8 +824,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       }
       else {
         Scheme_Vector *vec;
-        long i;
-        long size = SCHEME_FXVEC_SIZE(so);
+        intptr_t i;
+        intptr_t size = SCHEME_FXVEC_SIZE(so);
         vec = scheme_alloc_fxvector(size);
 
         for (i = 0; i < size; i++) {
@@ -840,8 +840,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       }
       else {
         Scheme_Double_Vector *vec;
-        long i;
-        long size = SCHEME_FLVEC_SIZE(so);
+        intptr_t i;
+        intptr_t size = SCHEME_FLVEC_SIZE(so);
         vec = scheme_alloc_flvector(size);
 
         for (i = 0; i < size; i++) {
@@ -857,7 +857,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Struct_Type *stype = st->stype;
         Scheme_Struct_Type *ptype = stype->parent_types[stype->name_pos - 1];
         Scheme_Object *nprefab_key;
-        long size = stype->num_slots;
+        intptr_t size = stype->num_slots;
         int local_slots = stype->num_slots - (ptype ? ptype->num_slots : 0);
         int i = 0;
 
@@ -889,7 +889,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Serialized_Structure *st = (Scheme_Serialized_Structure*)so;
         Scheme_Struct_Type *stype;
         Scheme_Structure *nst;
-        long size;
+        intptr_t size;
         int i = 0;
       
         size = st->num_slots;
@@ -973,7 +973,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Scheme_Object *place_main;
   Scheme_Object *a[2], *channel;
   mzrt_thread_id ptid;
-  long rc = 0;
+  intptr_t rc = 0;
   ptid = mz_proc_thread_self();
   
   place_data = (Place_Start_Data *) data_arg;
@@ -1109,8 +1109,8 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object *so)
       break;
     case scheme_vector_type:
       {
-        long i;
-        long size = SCHEME_VEC_SIZE(so);
+        intptr_t i;
+        intptr_t size = SCHEME_VEC_SIZE(so);
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
           tmp = scheme_places_deserialize_worker(SCHEME_VEC_ELS(so)[i]);
@@ -1127,7 +1127,7 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object *so)
         Scheme_Serialized_Structure *st = (Scheme_Serialized_Structure*)so;
         Scheme_Struct_Type *stype;
         Scheme_Structure *nst;
-        long size;
+        intptr_t size;
         int i = 0;
       
         size = st->num_slots;
@@ -1289,8 +1289,8 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
       break;
     case scheme_vector_type:
       {
-        long i;
-        long size = SCHEME_VEC_SIZE(so);
+        intptr_t i;
+        intptr_t size = SCHEME_VEC_SIZE(so);
         for (i = 0; i <size ; i++) {
           force_hash_worker(SCHEME_VEC_ELS(so)[i], ht);
         }
@@ -1300,8 +1300,8 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
       {
         Scheme_Structure *st = (Scheme_Structure*)so;
         Scheme_Struct_Type *stype = st->stype;
-        long i;
-        long size = stype->num_slots;
+        intptr_t i;
+        intptr_t size = stype->num_slots;
 
         if (stype->prefab_key)
           force_hash_worker((Scheme_Object*)stype->prefab_key, ht);

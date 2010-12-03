@@ -302,7 +302,7 @@ scheme_add1 (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (SCHEME_INTP(o)) {
-    long v;
+    intptr_t v;
     v = SCHEME_INT_VAL(o);
     if (v < 0x3FFFFFFF)
       return scheme_make_integer(v + 1);
@@ -337,7 +337,7 @@ scheme_sub1 (int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
 
   if (SCHEME_INTP(o)) {
-    long v;
+    intptr_t v;
     v = SCHEME_INT_VAL(o);
     if (v > -(0x3FFFFFFF))
       return scheme_make_integer(SCHEME_INT_VAL(o) - 1);
@@ -376,16 +376,16 @@ scheme_sub1 (int argc, Scheme_Object *argv[])
 #define FS_MULTIPLY(x,y) scheme_make_float(x * y)
 #define FS_DIVIDE(x,y) scheme_make_float((float)x / (float)y)
 
-static Scheme_Object *ADD_slow(long a, long b)
+static Scheme_Object *ADD_slow(intptr_t a, intptr_t b)
 {
   Small_Bignum sa, sb;
   return scheme_bignum_add(scheme_make_small_bignum(a, &sa),
                            scheme_make_small_bignum(b, &sb));
 }
 
-static Scheme_Object *ADD(long a, long b)
+static Scheme_Object *ADD(intptr_t a, intptr_t b)
 {
-  long r;
+  intptr_t r;
   Scheme_Object *o;
 
   r = a + b;
@@ -399,16 +399,16 @@ static Scheme_Object *ADD(long a, long b)
     return ADD_slow(a, b);
 }
 
-static Scheme_Object *SUBTRACT_slow(long a, long b)
+static Scheme_Object *SUBTRACT_slow(intptr_t a, intptr_t b)
 {
   Small_Bignum sa, sb;
   return scheme_bignum_subtract(scheme_make_small_bignum(a, &sa),
                                 scheme_make_small_bignum(b, &sb));  
 }
 
-static Scheme_Object *SUBTRACT(long a, long b)
+static Scheme_Object *SUBTRACT(intptr_t a, intptr_t b)
 {
-  long r;
+  intptr_t r;
   Scheme_Object *o;
 
   r = a - b;
@@ -422,9 +422,9 @@ static Scheme_Object *SUBTRACT(long a, long b)
     return SUBTRACT_slow(a, b);
 }
 
-static Scheme_Object *MULTIPLY(long a, long b)
+static Scheme_Object *MULTIPLY(intptr_t a, intptr_t b)
 {
-  long r;
+  intptr_t r;
   Scheme_Object *o;
 
   if (!b)
@@ -559,7 +559,7 @@ scheme_abs(int argc, Scheme_Object *argv[])
   o = argv[0];
 
   if (SCHEME_INTP(o)) {
-    long n = SCHEME_INT_VAL(o);
+    intptr_t n = SCHEME_INT_VAL(o);
     return scheme_make_integer_value(ABS(n));
   } 
   t = _SCHEME_TYPE(o);
@@ -729,7 +729,7 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     return zeroi;
 
   if (SCHEME_INTP(n1) && SCHEME_INTP(n2)) {
-    long a, b, na, nb, v;
+    intptr_t a, b, na, nb, v;
     int neg1, neg2;
 
     a = SCHEME_INT_VAL(n1);
@@ -955,7 +955,7 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
 #define UNSAFE_FX(name, op, fold)                            \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   long v;                                                   \
+   intptr_t v;                                                   \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
    v = SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]);   \
    return scheme_make_integer(v);                            \
@@ -970,7 +970,7 @@ UNSAFE_FX(unsafe_fx_rem, %, rem_prim)
 static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 {
   int neg1, neg2;
-  long v, v1, av1, v2, av2;
+  intptr_t v, v1, av1, v2, av2;
   if (scheme_current_thread->constant_folding) return scheme_modulo(argc, argv);
 
   v1 = SCHEME_INT_VAL(argv[0]);
@@ -997,7 +997,7 @@ static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_fx_abs(int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
   if (scheme_current_thread->constant_folding) return scheme_abs(argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   if (v < 0) v = -v;

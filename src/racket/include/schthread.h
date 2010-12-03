@@ -80,7 +80,7 @@ typedef struct {
   void *orig_result;
 } Stack_Cache_Elem;
 
-typedef long rxpos;
+typedef intptr_t rxpos;
 
 struct gmp_tmp_stack
 {
@@ -90,7 +90,7 @@ struct gmp_tmp_stack
 };
 
 #ifndef MZ_PRECISE_GC
-typedef long objhead;
+typedef intptr_t objhead;
 #endif
 
 /* **************************************** */
@@ -106,21 +106,21 @@ typedef long objhead;
 typedef struct Thread_Local_Variables {
   void **GC_variable_stack_;
   struct NewGC *GC_instance_;
-  unsigned long GC_gen0_alloc_page_ptr_;
-  unsigned long GC_gen0_alloc_page_end_;
+  uintptr_t GC_gen0_alloc_page_ptr_;
+  uintptr_t GC_gen0_alloc_page_end_;
   int GC_gen0_alloc_only_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
   struct Scheme_Hash_Table *toplevels_ht_;
   struct Scheme_Hash_Table *locals_ht_[2];
   volatile int scheme_fuel_counter_;
-  unsigned long scheme_stack_boundary_;
-  unsigned long volatile scheme_jit_stack_boundary_;
+  uintptr_t scheme_stack_boundary_;
+  uintptr_t volatile scheme_jit_stack_boundary_;
   volatile int scheme_future_need_gc_pause_;
   int scheme_use_rtcall_;
   int in_jit_critical_section_;
   void *jit_buffer_cache_;
-  long jit_buffer_cache_size_;
+  intptr_t jit_buffer_cache_size_;
   int jit_buffer_cache_registered_;
   struct Scheme_Object *quick_stx_;
   int scheme_continuation_application_count_;
@@ -144,7 +144,7 @@ typedef struct Thread_Local_Variables {
   void **codetab_tree_;
   int during_set_;
   Stack_Cache_Elem stack_cache_stack_[STACK_CACHE_SIZE];
-  long stack_cache_stack_pos_;
+  intptr_t stack_cache_stack_pos_;
   struct Scheme_Object **fixup_runstack_base_;
   int fixup_already_in_place_;
   void *retry_alloc_r1_;
@@ -180,19 +180,19 @@ typedef struct Thread_Local_Variables {
   rxpos regcode_;
   rxpos regcodesize_;
   rxpos regcodemax_;
-  long regmaxlookback_;
-  long rx_buffer_size_;
+  intptr_t regmaxlookback_;
+  intptr_t rx_buffer_size_;
   rxpos *startp_buffer_cache_;
   rxpos *endp_buffer_cache_;
   rxpos *maybep_buffer_cache_;
   rxpos *match_stack_buffer_cache_;
-  unsigned long scheme_os_thread_stack_base_;
+  uintptr_t scheme_os_thread_stack_base_;
   int traversers_registered_;
   struct Finalizations **save_fns_ptr_;
   struct Scheme_Object *scheme_system_idle_channel_;
   struct Scheme_Object *system_idle_put_evt_;
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
-  long stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
+  intptr_t stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Object *mark_id_;
@@ -217,8 +217,8 @@ typedef struct Thread_Local_Variables {
   void *jit_future_storage_[2];
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
-  long scheme_current_cont_mark_stack_;
-  long scheme_current_cont_mark_pos_;
+  intptr_t scheme_current_cont_mark_stack_;
+  intptr_t scheme_current_cont_mark_pos_;
   struct Scheme_Custodian *main_custodian_;
   struct Scheme_Custodian *last_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
@@ -242,8 +242,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *maybe_recycle_cell_;
   int recycle_cc_count_;
   void *gmp_mem_pool_;
-  unsigned long max_total_allocation_;
-  unsigned long current_total_allocation_;
+  uintptr_t max_total_allocation_;
+  uintptr_t current_total_allocation_;
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
   struct Scheme_Logger *scheme_main_logger_;
@@ -252,8 +252,8 @@ typedef struct Thread_Local_Variables {
   int env_uid_counter_;
   int scheme_overflow_count_;
   struct Scheme_Object *original_pwd_;
-  long scheme_hash_request_count_;
-  long scheme_hash_iteration_count_;
+  intptr_t scheme_hash_request_count_;
+  intptr_t scheme_hash_iteration_count_;
   struct Scheme_Env *initial_modules_env_;
   int num_initial_modules_;
   struct Scheme_Object **initial_modules_;
@@ -274,12 +274,12 @@ typedef struct Thread_Local_Variables {
   int current_lifetime_;
   int scheme_main_was_once_suspended_;
   int buffer_init_size_;
-  long scheme_total_gc_time_;
-  long start_this_gc_time_;
-  long end_this_gc_time_;
+  intptr_t scheme_total_gc_time_;
+  intptr_t start_this_gc_time_;
+  intptr_t end_this_gc_time_;
   volatile short delayed_break_ready_;
   struct Scheme_Thread *main_break_target_thread_;
-  long scheme_code_page_total_;
+  intptr_t scheme_code_page_total_;
   int locale_on_;
   void *current_locale_name_ptr_;
   int gensym_counter_;
@@ -357,7 +357,7 @@ START_XFORM_SKIP;
 MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
 # ifdef __mzscheme_private__
 /* In the Racket DLL, need thread-local to be fast: */
-MZ_EXTERN unsigned long scheme_tls_delta;
+MZ_EXTERN uintptr_t scheme_tls_delta;
 #  ifdef MZ_USE_WIN_TLS_VIA_DLL
 MZ_EXTERN int scheme_tls_index;
 #  endif

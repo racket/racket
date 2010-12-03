@@ -660,9 +660,11 @@ See also @secref["im:strings"] and @secref["im:encodings"].
 @section[#:tag "im:intsize"]{Integers}
 
 Racket expects to be compiled in a mode where @cppi{short} is a
-16-bit integer, @cppi{int} is a 32-bit integer, and @cppi{long} has
-the same number of bits as @cpp{void*}. The @cppi{mzlonglong} type has
+16-bit integer, @cppi{int} is a 32-bit integer, and @cppi{intptr_t} has
+the same number of bits as @cpp{void*}. The @cppi{long} type can match
+either @cpp{int} or @cpp{intptr_t}, depending on the platform.
+The @cppi{mzlonglong} type has
 64 bits for compilers that support a 64-bit integer type, otherwise it
-is the same as @cpp{long}; thus, @cpp{mzlonglong} tends to match
+is the same as @cpp{intptr_t}; thus, @cpp{mzlonglong} tends to match
 @cpp{long long}. The @cppi{umzlonglong} type is the unsigned version
 of @cpp{mzlonglong}.

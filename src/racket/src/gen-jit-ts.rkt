@@ -11,7 +11,7 @@
     [(#\m) "MZ_MARK_STACK_TYPE"]
     [(#\p) "void*"]
     [(#\i) "int"]
-    [(#\l) "long"]
+    [(#\l) "intptr_t"]
     [(#\z) "size_t"]
     [(#\v) "void"]
     [else (error 'char->type "unknown: ~e" c)]))

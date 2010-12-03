@@ -9,15 +9,15 @@
 */
 
 #define ROOTS_PTR_ALIGNMENT WORD_SIZE
-#define ROOTS_PTR_TO_INT(x) ((unsigned long)x)
+#define ROOTS_PTR_TO_INT(x) ((uintptr_t)x)
 
 static void grow_roots(Roots *roots) {
-  unsigned long *new_roots;
+  uintptr_t *new_roots;
 
   roots->size = roots->size ? ( 2 * roots->size ) : 500;
-  new_roots   = (unsigned long *)ofm_malloc(sizeof(unsigned long) * (roots->size + 1));
+  new_roots   = (uintptr_t *)ofm_malloc(sizeof(uintptr_t) * (roots->size + 1));
 
-  memcpy((void *)new_roots, (void *)roots->roots, sizeof(unsigned long) * roots->count);
+  memcpy((void *)new_roots, (void *)roots->roots, sizeof(uintptr_t) * roots->count);
 
   if (roots->roots)
     free(roots->roots);
@@ -27,7 +27,7 @@ static void grow_roots(Roots *roots) {
 
 static int compare_roots(const void *a, const void *b)
 {
-  if (*(unsigned long *)a < *(unsigned long *)b)
+  if (*(uintptr_t *)a < *(uintptr_t *)b)
     return -1;
   else
     return 1;
@@ -41,7 +41,7 @@ static void sort_and_merge_roots(Roots *roots)
   if (roots->count < 4)
     return;
 
-  my_qsort(roots->roots, roots->count >> 1, 2 * sizeof(unsigned long), compare_roots);
+  my_qsort(roots->roots, roots->count >> 1, 2 * sizeof(uintptr_t), compare_roots);
 
   {
     int i;

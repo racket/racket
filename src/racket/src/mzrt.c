@@ -126,7 +126,7 @@ void mzrt_sleep(int seconds)
 MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value) {
 #ifdef WIN32
 # if defined(__MINGW32__)
-  return InterlockedExchangeAdd((long *)counter, value);
+  return InterlockedExchangeAdd((intptr_t *)counter, value);
 # else
   return InterlockedExchangeAdd(counter, value);
 # endif
@@ -210,7 +210,7 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
   return thread;
 }
 
-mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, long stacksize) {
+mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, intptr_t stacksize) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
   mzrt_thread_stub_data *stub_data;
 
@@ -248,7 +248,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 }
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
-  long stacksize;
+  intptr_t stacksize;
 
 #ifdef OS_X
   stacksize = 8*1024*1024;
@@ -501,7 +501,7 @@ int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
   return pthread_cond_wait(&cond->cond, &mutex->mutex);
 }
 
-int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds) {
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, intptr_t seconds, intptr_t nanoseconds) {
   struct timespec timeout;
   timeout.tv_sec  = seconds;
   timeout.tv_nsec = nanoseconds;
@@ -589,7 +589,7 @@ int mzrt_sema_destroy(mzrt_sema *s)
 typedef struct mzrt_rwlock {
   HANDLE readEvent;
   HANDLE writeMutex;
-  unsigned long readers;
+  uintptr_t readers;
 } mzrt_rwlock;
 
 int mzrt_rwlock_create(mzrt_rwlock **lock) {
@@ -729,7 +729,7 @@ int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
   return 0;
 }
 
-int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long secs, long nsecs) {
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, intptr_t secs, intptr_t nsecs) {
   return 0;
 }
 

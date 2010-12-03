@@ -21,7 +21,7 @@ embedded:
  error messages if @cpp{stderr} output goes nowhere.}
 
  @item{@cppdef{scheme_console_output} --- This pointer can be set to a
- function that takes a string and a @cpp{long} string length; the
+ function that takes a string and a @cpp{intptr_t} string length; the
  function will be called to display internal Racket warnings and
  messages that possibly contain non-terminating nuls. The default is
  @var{NULL}.}

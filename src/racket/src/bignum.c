@@ -63,7 +63,7 @@
 #include "gmp/gmp.h"
 
 /* Used by gmp: */
-void scheme_bignum_use_fuel(long n);
+void scheme_bignum_use_fuel(intptr_t n);
 
 
 #if defined(SIXTY_FOUR_BIT_INTEGERS)
@@ -122,26 +122,26 @@ extern void GC_check(void *p);
 THREAD_LOCAL_DECL(static void *bignum_cache[BIGNUM_CACHE_SIZE]);
 THREAD_LOCAL_DECL(static int cache_count);
 
-static void *copy_to_protected(void *p, long len, int zero)
+static void *copy_to_protected(void *p, intptr_t len, int zero)
 {
   void *r;
-  long minsz;
+  intptr_t minsz;
   
   minsz = GC_malloc_stays_put_threshold();
-  if (minsz >= len + sizeof(long)) {
+  if (minsz >= len + sizeof(intptr_t)) {
     if (cache_count) {
       --cache_count;
       r = bignum_cache[cache_count];
       bignum_cache[cache_count] = NULL;
     } else
       r = (char *)scheme_malloc_atomic(minsz);
-    ((long *)r)[0] = 1;
+    ((intptr_t *)r)[0] = 1;
   } else {
-    r = (char *)scheme_malloc_atomic(len + sizeof(long));
-    ((long *)r)[0] = 0;
+    r = (char *)scheme_malloc_atomic(len + sizeof(intptr_t));
+    ((intptr_t *)r)[0] = 0;
   }
 
-  r = (char *)r XFORM_OK_PLUS sizeof(long);
+  r = (char *)r XFORM_OK_PLUS sizeof(intptr_t);
 
   if (p) memcpy(r, p, len);
   if (zero) memset(r, 0, len);
@@ -150,9 +150,9 @@ static void *copy_to_protected(void *p, long len, int zero)
 
 static void free_protected(void *p)
 {
-  if (((long *)p)[-1]) {
+  if (((intptr_t *)p)[-1]) {
     if (cache_count < BIGNUM_CACHE_SIZE) {
-      bignum_cache[cache_count++] = (char *)p - sizeof(long);
+      bignum_cache[cache_count++] = (char *)p - sizeof(intptr_t);
     }
   }
 }
@@ -184,7 +184,7 @@ void scheme_clear_bignum_cache(void) { }
 
 #define xor(a, b) (!(a) ^ !(b))
 
-Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *o)
+Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *o)
   XFORM_SKIP_PROC
 {
   bigdig bv;
@@ -212,7 +212,7 @@ Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *o)
   return (Scheme_Object *) mzALIAS o;
 }
 
-Scheme_Object *scheme_make_bignum(long v)
+Scheme_Object *scheme_make_bignum(intptr_t v)
 {
   Small_Bignum *r;
   r = MALLOC_ONE_TAGGED(Small_Bignum);
@@ -222,7 +222,7 @@ Scheme_Object *scheme_make_bignum(long v)
   return scheme_make_small_bignum(v, r);
 }
 
-Scheme_Object *scheme_make_bignum_from_unsigned(unsigned long v)
+Scheme_Object *scheme_make_bignum_from_unsigned(uintptr_t v)
 {
   Small_Bignum *r;
   r = MALLOC_ONE_TAGGED(Small_Bignum);
@@ -344,9 +344,9 @@ Scheme_Object *scheme_make_bignum_from_unsigned_long_long(umzlonglong v)
   of its bigdig must be zero, unless it is -100...000.
 
 */
-int scheme_bignum_get_int_val(const Scheme_Object *o, long *v)
+int scheme_bignum_get_int_val(const Scheme_Object *o, intptr_t *v)
 {
-  if (SCHEME_BIGLEN(o) > 1) {    /* won't fit in a signed long */
+  if (SCHEME_BIGLEN(o) > 1) {    /* won't fit in a signed intptr_t */
     return 0;
   } else if (SCHEME_BIGLEN(o) == 0) {
     *v = 0;
@@ -359,19 +359,19 @@ int scheme_bignum_get_int_val(const Scheme_Object *o, long *v)
     /* Special case for the most negative number representable in a signed word */
     *v = SCHEME_BIGDIG(o)[0];
     return 1;
-  } else if ((SCHEME_BIGDIG(o)[0] & FIRST_BIT_MASK) != 0) { /* Won't fit into a signed long */
+  } else if ((SCHEME_BIGDIG(o)[0] & FIRST_BIT_MASK) != 0) { /* Won't fit into a signed intptr_t */
     return 0;
   } else if (SCHEME_BIGPOS(o)) {
-    *v = (long)SCHEME_BIGDIG(o)[0];
+    *v = (intptr_t)SCHEME_BIGDIG(o)[0];
     return 1;
   } else {
-    *v = -((long)SCHEME_BIGDIG(o)[0]);
+    *v = -((intptr_t)SCHEME_BIGDIG(o)[0]);
     return 1;
   }
 }
 
-int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, unsigned long *v)
-     /* We want to return anything that will fit into a `unsigned long'. */
+int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, uintptr_t *v)
+     /* We want to return anything that will fit into a `uintptr_t'. */
 {
   if ((SCHEME_BIGLEN(o) > 1) || !SCHEME_BIGPOS(o))
     /* Won't fit into word, or not positive */
@@ -459,13 +459,13 @@ int scheme_bignum_get_unsigned_long_long_val(const Scheme_Object *o, umzlonglong
 /* If the bignum fits into a scheme integer, return that instead */
 Scheme_Object *scheme_bignum_normalize(const Scheme_Object *o)
 {
-  long v;
+  intptr_t v;
 
   if (!SCHEME_BIGNUMP(o))
     return (Scheme_Object *) mzALIAS o;
 
   if (scheme_bignum_get_int_val(o, &v)) {
-    long t;
+    intptr_t t;
 
     t = v & MAX_TWO_BIT_MASK;
     if (t == 0 || t == MAX_TWO_BIT_MASK)
@@ -509,7 +509,7 @@ static Scheme_Object *make_single_bigdig_result(int pos, bigdig d)
    copy the bignum a, and if msd != 0, concat. it as the most significant
    digit
 */
-static Scheme_Object *bignum_copy(const Scheme_Object *a, long msd)
+static Scheme_Object *bignum_copy(const Scheme_Object *a, intptr_t msd)
 {
   Scheme_Object* o;
   int c;
@@ -535,7 +535,7 @@ static Scheme_Object *bignum_copy(const Scheme_Object *a, long msd)
 
 int scheme_bignum_eq(const Scheme_Object *a, const Scheme_Object *b)
 {
-  long a_len, b_len;
+  intptr_t a_len, b_len;
 
   a_len = SCHEME_BIGLEN(a);
   b_len = SCHEME_BIGLEN(b);
@@ -553,7 +553,7 @@ int scheme_bignum_eq(const Scheme_Object *a, const Scheme_Object *b)
 /* - if a < b, 0 if a == b, + if  a > b */
 XFORM_NONGCING static int bignum_abs_cmp(const Scheme_Object *a, const Scheme_Object *b)
 {
-  long a_len, b_len;
+  intptr_t a_len, b_len;
 
   a_len = SCHEME_BIGLEN(a);
   b_len = SCHEME_BIGLEN(b);
@@ -571,7 +571,7 @@ XFORM_NONGCING static int bignum_abs_cmp(const Scheme_Object *a, const Scheme_Ob
 
 int scheme_bignum_lt(const Scheme_Object *a, const Scheme_Object *b)
 {
-  long a_pos, b_pos;
+  intptr_t a_pos, b_pos;
   int res;
 
   a_pos = SCHEME_BIGPOS(a);
@@ -660,7 +660,7 @@ XFORM_NONGCING static int bigdig_length(bigdig* array, int alloced)
 static Scheme_Object *bignum_add_sub(const Scheme_Object *a, const Scheme_Object *b, int sub)
 {
   Scheme_Object *o;
-  long a_size, b_size, max_size;
+  intptr_t a_size, b_size, max_size;
   short a_pos, b_pos;
 
   bigdig *o_digs, *a_digs, *b_digs;
@@ -764,7 +764,7 @@ Scheme_Object *scheme_bignum_sub1(const Scheme_Object *n)
 static Scheme_Object *bignum_multiply(const Scheme_Object *a, const Scheme_Object *b, int norm)
 {
   Scheme_Object *o;
-  long a_size, a_pos, b_size, b_pos, res_size, i, j;
+  intptr_t a_size, a_pos, b_size, b_pos, res_size, i, j;
   bigdig* o_digs, *a_digs, *b_digs;
   SAFE_SPACE(asd) SAFE_SPACE(bsd)
 
@@ -827,14 +827,14 @@ Scheme_Object *scheme_bignum_multiply(const Scheme_Object *a, const Scheme_Objec
   return bignum_multiply(a, b, 1);
 }
 
-static Scheme_Object *do_power(const Scheme_Object *a, unsigned long b)
+static Scheme_Object *do_power(const Scheme_Object *a, uintptr_t b)
 {
   Scheme_Object *result;
   int i;
 
   result = scheme_make_integer(1);
 
-  i = sizeof(unsigned long) * 8- 1;
+  i = sizeof(uintptr_t) * 8- 1;
   while (!((b >> i) & 0x1) && i >= 0)
   {
     i = i - 1;
@@ -875,7 +875,7 @@ Scheme_Object *do_big_power(const Scheme_Object *a, const Scheme_Object *b)
 
 Scheme_Object *scheme_generic_integer_power(const Scheme_Object *a, const Scheme_Object *b)
 {
-  unsigned long exponent;
+  uintptr_t exponent;
 
   if (scheme_current_thread->constant_folding) {
     /* if we're trying to fold a constant, limit the work that we're willing to do at compile time */
@@ -917,7 +917,7 @@ Scheme_Object *scheme_bignum_min(const Scheme_Object *a, const Scheme_Object *b)
 assumes len a >= len b */
 static Scheme_Object *do_bitop(const Scheme_Object *a, const Scheme_Object *b, int op)
 {
-  long a_size, b_size, a_pos, b_pos, res_alloc, i;
+  intptr_t a_size, b_size, a_pos, b_pos, res_alloc, i;
   short res_pos;
   bigdig* a_digs, *b_digs, *res_digs, quick_digs[1];
   int carry_out_a, carry_out_b, carry_out_res, carry_in_a, carry_in_b, carry_in_res;
@@ -1081,11 +1081,11 @@ Scheme_Object *scheme_bignum_not(const Scheme_Object *a)
   }
 }
 
-Scheme_Object *scheme_bignum_shift(const Scheme_Object *n, long shift)
+Scheme_Object *scheme_bignum_shift(const Scheme_Object *n, intptr_t shift)
 {
   Scheme_Object* o;
   bigdig* res_digs, *n_digs, quick_digs[1], shift_out;
-  long res_alloc, shift_words, shift_bits, i, j, n_size;
+  intptr_t res_alloc, shift_words, shift_bits, i, j, n_size;
   SAFE_SPACE(nsd)
 
   n_size = SCHEME_BIGLEN(n);
@@ -1297,7 +1297,7 @@ Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 
   if (radix == 10 && (len < SMALL_NUM_STR_LEN)) {
     /* try simple fixnum read first */
-    long fx;
+    intptr_t fx;
     if (!str[stri])
       return scheme_false;
     for (fx = 0; str[stri]; stri++) {
@@ -1451,7 +1451,7 @@ void scheme_bignum_divide(const Scheme_Object *n, const Scheme_Object *d,
     return;
   } else {
     int i;
-    long n_size, d_size, q_alloc, r_alloc, d_pos;
+    intptr_t n_size, d_size, q_alloc, r_alloc, d_pos;
     short n_pos;
     bigdig *q_digs, *r_digs, *n_digs, *d_digs;
     Scheme_Object *q, *r;
@@ -1509,11 +1509,11 @@ void scheme_bignum_divide(const Scheme_Object *n, const Scheme_Object *d,
   }
 }
 
-static unsigned long fixnum_sqrt(unsigned long n, unsigned long *rem)
+static uintptr_t fixnum_sqrt(uintptr_t n, uintptr_t *rem)
 {
-  unsigned long root = 0;
-  unsigned long square = 0;
-  unsigned long try_root, try_square;
+  uintptr_t root = 0;
+  uintptr_t square = 0;
+  uintptr_t try_root, try_square;
   int i;
 
   for (i = SQRT_BIT_MAX; i >= 0; i--)
@@ -1544,7 +1544,7 @@ Scheme_Object *scheme_integer_sqrt_rem(const Scheme_Object *n, Scheme_Object **r
   SAFE_SPACE(qsd)
 
   if (SCHEME_INTP(n)) {
-    unsigned long root, rem;
+    uintptr_t root, rem;
     root = fixnum_sqrt(SCHEME_INT_VAL(n), &rem);
     if (remainder) {
       o = scheme_make_integer_value(rem);
@@ -1553,7 +1553,7 @@ Scheme_Object *scheme_integer_sqrt_rem(const Scheme_Object *n, Scheme_Object **r
     rem_size = (rem == 0 ? 0 : 1);
     o = scheme_make_integer(root);
   } else {
-    long n_size, res_alloc, rem_alloc;
+    intptr_t n_size, res_alloc, rem_alloc;
     bigdig *res_digs, *rem_digs, *sqr_digs;
 
     n_size = SCHEME_BIGLEN(n);
@@ -1649,7 +1649,7 @@ Scheme_Object *scheme_integer_sqrt_rem(const Scheme_Object *n, Scheme_Object **r
 Scheme_Object *scheme_bignum_gcd(const Scheme_Object *n, const Scheme_Object *d)
 {
   bigdig *r_digs, *n_digs, *d_digs;
-  long n_size, d_size, r_alloc, r_size;
+  intptr_t n_size, d_size, r_alloc, r_size;
   int res_double;
   Scheme_Object *r;
   SAFE_SPACE(ns) SAFE_SPACE(ds)
@@ -1764,7 +1764,7 @@ Scheme_Object *scheme_bignum_gcd(const Scheme_Object *n, const Scheme_Object *d)
 }
 
 /* Used by GMP library (which is not xformed for precise GC): */
-void scheme_bignum_use_fuel(long n)
+void scheme_bignum_use_fuel(intptr_t n)
 {
 #ifdef MZ_PRECISE_GC
 # ifndef GC_STACK_CALLEE_RESTORE

@@ -130,7 +130,7 @@ static void eval_exptime(Scheme_Object *names, int count,
 
 static Scheme_Module_Exports *make_module_exports();
 
-static Scheme_Object *scheme_sys_wraps_phase_worker(long p);
+static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
 static Scheme_Object *resolved_module_path_value(Scheme_Object *rmp);
 
 #define cons scheme_make_pair
@@ -278,7 +278,7 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
                                          int *_count,
                                          int vars);
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, 
-                         int eval_exp, int eval_run, long base_phase, Scheme_Object *cycle_list);
+                         int eval_exp, int eval_run, intptr_t base_phase, Scheme_Object *cycle_list);
 static void eval_module_body(Scheme_Env *menv, Scheme_Env *env);
 
 static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
@@ -697,7 +697,7 @@ static int is_builtin_modname(Scheme_Object *modname)
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
 {
-  long phase;
+  intptr_t phase;
 
   if (!env)
     phase = 0;
@@ -709,7 +709,7 @@ Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
   return scheme_sys_wraps_phase(scheme_make_integer(phase));
 }
 
-static Scheme_Object *scheme_sys_wraps_phase_worker(long p)
+static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p)
 {
   Scheme_Object *rn, *w;
 
@@ -733,7 +733,7 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(long p)
 
 Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
 {
-  long p;
+  intptr_t p;
 
   if (SCHEME_INTP(phase))
     p = SCHEME_INT_VAL(phase);
@@ -951,7 +951,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   Scheme_Env *menv, *lookup_env = NULL;
   int i, count, protected = 0;
   const char *errname;
-  long base_phase;
+  intptr_t base_phase;
 
   modname = argv[0];
   name = argv[1];
@@ -1382,7 +1382,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                      "namespace-attach-module: "
                      "source namespace phase: %ld does not match destination namespace phase: %ld",
-                     (long)from_env->phase, (long)to_env->phase);
+                     (intptr_t)from_env->phase, (intptr_t)to_env->phase);
   }
 
   name = scheme_module_resolve(scheme_make_modidx(argv[1], scheme_false, scheme_false), 0);
@@ -3718,7 +3718,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 
   {
     const char *srcstr;
-    long srclen;
+    intptr_t srclen;
     
     if (from_env->module)
       srcstr = scheme_display_to_string(from_env->module->modsrc, &srclen);
@@ -3863,7 +3863,7 @@ static void unlock_registry(Scheme_Env *env)
   scheme_hash_set(env->module_registry->loaded, scheme_false, NULL);
 }
 
-XFORM_NONGCING static long make_key(int base_phase, int eval_exp, int eval_run)
+XFORM_NONGCING static intptr_t make_key(int base_phase, int eval_exp, int eval_run)
 {
   return ((base_phase << 3) 
           | (eval_exp ? ((eval_exp > 0) ? 2 : 4) : 0) 
@@ -3872,7 +3872,7 @@ XFORM_NONGCING static long make_key(int base_phase, int eval_exp, int eval_run)
 
 static int did_start(Scheme_Object *v, int base_phase, int eval_exp, int eval_run)
 {
-  long key;
+  intptr_t key;
 
   key = make_key(base_phase, eval_exp, eval_run);
 
@@ -3887,7 +3887,7 @@ static int did_start(Scheme_Object *v, int base_phase, int eval_exp, int eval_ru
 
 static Scheme_Object *add_start(Scheme_Object *v, int base_phase, int eval_exp, int eval_run)
 {
-  long key;
+  intptr_t key;
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)v;
   Scheme_Bucket *b;
 
@@ -3998,7 +3998,7 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
 }
 
 static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
-                               long base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
+                               intptr_t base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
 {
   Scheme_Object *new_cycle_list, *midx, *l;
   Scheme_Module *im;
@@ -4131,13 +4131,13 @@ typedef struct Start_Module_Args {
   Scheme_Env *env;
   int eval_exp;
   int eval_run;
-  long base_phase;
+  intptr_t base_phase;
   Scheme_Object *cycle_list;
   Scheme_Object *syntax_idx;
 } Start_Module_Args;
 
 static void chain_start_module_w_push(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
-                                      long base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
+                                      intptr_t base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
 {
   Start_Module_Args a;
   
@@ -4386,7 +4386,7 @@ static void should_run_for_compile(Scheme_Env *menv)
 }
 
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
-                         Scheme_Object *syntax_idx, int eval_exp, int eval_run, long base_phase,
+                         Scheme_Object *syntax_idx, int eval_exp, int eval_run, intptr_t base_phase,
                          Scheme_Object *cycle_list)
 /* eval_exp == -1 => make it ready, eval_exp == 1 => run exp-time, eval_exp = 0 => don't even make ready */
 {
@@ -4545,7 +4545,7 @@ static void *eval_module_body_k(void)
 }
 
 #if 0
-# define LOG_RUN_DECLS long start_time
+# define LOG_RUN_DECLS intptr_t start_time
 # define LOG_START_RUN(mod) (start_time = scheme_get_process_milliseconds())
 # define LOG_END_RUN(mod) (printf("Ran %s [%d msec]\n", \
                                   scheme_write_to_string(mod->modname, NULL), \
@@ -5890,7 +5890,7 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
 }
 
 #if 0
-# define LOG_EXPAND_DECLS long start_time
+# define LOG_EXPAND_DECLS intptr_t start_time
 # define LOG_START_EXPAND(mod) (start_time = scheme_get_process_milliseconds())
 # define LOG_END_EXPAND(mod) (printf("Expanded/compiled %s [%d msec]\n", \
                                      scheme_write_to_string(mod->modname, NULL), \
@@ -6266,7 +6266,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
   if (vec) {
     Scheme_Object *srcs;
     char *fromsrc = NULL, *fromsrc_colon = "";
-    long fromsrclen = 0;
+    intptr_t fromsrclen = 0;
     
     if (same_resolved_modidx(SCHEME_VEC_ELS(vec)[1], modidx)
 	&& SAME_OBJ(SCHEME_VEC_ELS(vec)[2], exname)) {
@@ -6410,7 +6410,7 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids,
   return scheme_make_lifted_defn(scheme_sys_wraps(env), _ids, expr, _env);
 }
 
-static Scheme_Object *make_require_form(Scheme_Object *module_path, long phase, Scheme_Object *mark)
+static Scheme_Object *make_require_form(Scheme_Object *module_path, intptr_t phase, Scheme_Object *mark)
 {
   Scheme_Object *e = module_path;
 
@@ -6429,7 +6429,7 @@ static Scheme_Object *make_require_form(Scheme_Object *module_path, long phase, 
 }
 
 Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
-                                           long phase,
+                                           intptr_t phase,
                                            Scheme_Object *mark,
                                            void *data)
 {
@@ -9906,7 +9906,7 @@ require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 }
 
 Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
-                                                  long phase,
+                                                  intptr_t phase,
                                                   Scheme_Comp_Env *cenv,
                                                   Scheme_Object *mark)
 {

@@ -237,10 +237,10 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 #define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - 1) * sizeof(Scheme_Object *))
 
 Scheme_Object *
-scheme_make_vector (long size, Scheme_Object *fill)
+scheme_make_vector (intptr_t size, Scheme_Object *fill)
 {
   Scheme_Object *vec;
-  long i;
+  intptr_t i;
 
   if (size < 0) {
     vec = scheme_make_integer(size);
@@ -277,13 +277,13 @@ static Scheme_Object *
 make_vector (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *vec, *fill;
-  long len;
+  intptr_t len;
 
   len = scheme_extract_index("make-vector", 0, argc, argv, -1, 0);
 
   if ((len == -1) 
       /* also watch for overflow: */
-      || ((long)VECTOR_BYTES(len) < len)) {
+      || ((intptr_t)VECTOR_BYTES(len) < len)) {
     scheme_raise_out_of_memory("make-vector", "making vector of length %s",
 			       scheme_make_provided_string(argv[0], 1, NULL));
   }
@@ -345,10 +345,10 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v)
 }
 
 void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *what, Scheme_Object *vec, 
-                          long bottom, long len)
+                          intptr_t bottom, intptr_t len)
 {
   if (len) {
-    long n = len - 1;
+    intptr_t n = len - 1;
     char *vstr;
     int vlen;
     vstr = scheme_make_provided_string(vec, 2, &vlen);
@@ -439,7 +439,7 @@ Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
 Scheme_Object *
 scheme_checked_vector_ref (int argc, Scheme_Object *argv[])
 {
-  long i, len;
+  intptr_t i, len;
   Scheme_Object *vec;
 
   vec = argv[0];
@@ -494,7 +494,7 @@ Scheme_Object *
 scheme_checked_vector_set(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *vec = argv[0];
-  long i, len;
+  intptr_t i, len;
 
   if (SCHEME_CHAPERONEP(vec))
     vec = SCHEME_CHAPERONE_VAL(vec);
@@ -588,7 +588,7 @@ list_to_vector (int argc, Scheme_Object *argv[])
 Scheme_Object *
 scheme_list_to_vector (Scheme_Object *list)
 {
-  long len, i;
+  intptr_t len, i;
   Scheme_Object *vec, *orig = list;
 
   len = scheme_proper_list_length(list);
@@ -634,8 +634,8 @@ vector_fill (int argc, Scheme_Object *argv[])
 static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *s1, *s2;
-  long istart, ifinish;
-  long ostart, ofinish;
+  intptr_t istart, ifinish;
+  intptr_t ostart, ofinish;
   int slow = 0;
 
   s1 = argv[0];
@@ -706,7 +706,7 @@ Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *vec)
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *vec, *ovec, *v;
-  long len, i;
+  intptr_t len, i;
 
   vec = argv[0];
   if (SCHEME_NP_CHAPERONEP(vec))
@@ -741,7 +741,7 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p;
   Scheme_Object *vec, **a;
-  long len, start, finish, i;
+  intptr_t len, start, finish, i;
 
   vec = argv[0];
   if (SCHEME_NP_CHAPERONEP(vec))
@@ -852,7 +852,7 @@ static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv)
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *vec = argv[0];
-  long n;
+  intptr_t n;
   if (SCHEME_NP_CHAPERONEP(vec)) vec = SCHEME_CHAPERONE_VAL(vec);
   n = SCHEME_VEC_SIZE(vec);
   return scheme_make_integer(n);
@@ -888,7 +888,7 @@ static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_string_len (int argc, Scheme_Object *argv[])
 {
-  long n = SCHEME_CHAR_STRLEN_VAL(argv[0]);
+  intptr_t n = SCHEME_CHAR_STRLEN_VAL(argv[0]);
   return scheme_make_integer(n);
 }
 
@@ -907,13 +907,13 @@ static Scheme_Object *unsafe_string_set (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_bytes_len (int argc, Scheme_Object *argv[])
 {
-  long n = SCHEME_BYTE_STRLEN_VAL(argv[0]);
+  intptr_t n = SCHEME_BYTE_STRLEN_VAL(argv[0]);
   return scheme_make_integer(n);
 }
 
 static Scheme_Object *unsafe_bytes_ref (int argc, Scheme_Object *argv[])
 {
-  long v;
+  intptr_t v;
   v = (unsigned char)SCHEME_BYTE_STR_VAL(argv[0])[SCHEME_INT_VAL(argv[1])];
   return scheme_make_integer(v);
 }

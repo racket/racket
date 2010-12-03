@@ -367,7 +367,7 @@ static Scheme_Object *CHECK_SINGLE(Scheme_Object *v, int s)
 # define CHECK_SINGLE(v, s) v
 #endif
 
-Scheme_Object *scheme_read_number(const mzchar *str, long len,
+Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 				  int is_float, 
 				  int is_not_float,
 				  int decimal_means_float,
@@ -375,7 +375,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
 				  Scheme_Object *complain,
 				  int *div_by_zero,
 				  int test_only,
-				  Scheme_Object *stxsrc, long line, long col, long pos, long span,
+				  Scheme_Object *stxsrc, intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 				  Scheme_Object *indentation)
 {
   int i, has_decimal, must_parse, has_slash;
@@ -1397,7 +1397,7 @@ static Scheme_Object *
 number_to_string (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
-  long radix;
+  intptr_t radix;
 
   if (!SCHEME_NUMBERP(o))
     scheme_wrong_type("number->string", "number", 0, argc, argv);
@@ -1421,7 +1421,7 @@ number_to_string (int argc, Scheme_Object *argv[])
     /* Fast path for common case. */
     mzchar num[32];
     int pos = 32;
-    long v = SCHEME_INT_VAL(o);
+    intptr_t v = SCHEME_INT_VAL(o);
     if (v) {
       int neg, digit;
       if (v < 0) {
@@ -1452,8 +1452,8 @@ number_to_string (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 string_to_number (int argc, Scheme_Object *argv[])
 {
-  long radix;
-  long len;
+  intptr_t radix;
+  intptr_t len;
   mzchar *mzstr;
   int decimal_inexact, div_by_zero = 0;
   Scheme_Object *v;
@@ -1641,7 +1641,7 @@ int scheme_check_double(const char *where, double d, const char *dest)
 
 static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 {
-  long strlen, slen;
+  intptr_t strlen, slen;
   int sgned;
   char *str;
   int buf[2], i;
@@ -1658,7 +1658,7 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
     bigend = SCHEME_TRUEP(argv[2]);
 
   if (argc > 3) {
-    long start, finish;
+    intptr_t start, finish;
 
     scheme_get_substring_indices("integer-bytes->integer", argv[0],
                                  argc, argv,
@@ -1723,13 +1723,13 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
   default:
 #ifdef SIXTY_FOUR_BIT_INTEGERS
     if (sgned) {
-      long val;
-      memcpy(&val, str, sizeof(long));
+      intptr_t val;
+      memcpy(&val, str, sizeof(intptr_t));
       return scheme_make_integer_value(val);
       }
     else {
-      unsigned long val;
-      memcpy(&val, str, sizeof(unsigned long));
+      uintptr_t val;
+      memcpy(&val, str, sizeof(uintptr_t));
       return scheme_make_integer_value_from_unsigned(val);
       }
     break;
@@ -1786,7 +1786,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   Scheme_Object *n, *s;
   char *str;
   int size, sgned;
-  long val, offset, buf[2];
+  intptr_t val, offset, buf[2];
 #if !defined(NO_LONG_LONG_TYPE) && !defined(SIXTY_FOUR_BIT_INTEGERS)
   mzlonglong llval;
 #endif
@@ -1816,7 +1816,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     scheme_wrong_type("integer->integer-bytes", "mutable byte string", 4, argc, argv);
 
   if (argc > 5) {
-    long start, finish;
+    intptr_t start, finish;
     
     scheme_get_substring_indices("integer-bytes->integer", s,
                                  argc, argv,
@@ -1850,13 +1850,13 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     if (sgned)
       bad = !scheme_get_int_val(n, &val);
     else
-      bad = !scheme_get_unsigned_int_val(n, (unsigned long *)&val);
+      bad = !scheme_get_unsigned_int_val(n, (uintptr_t *)&val);
 #ifdef SIXTY_FOUR_BIT_INTEGERS
     if (!bad) {
       if (sgned)
-	bad = ((val > (long)0x7fffffff) || (val < -(long)0x80000000));
+	bad = ((val > (intptr_t)0x7fffffff) || (val < -(intptr_t)0x80000000));
       else
-	bad = (val > (long)0xffffffff);
+	bad = (val > (intptr_t)0xffffffff);
     }
 #endif
   } else  {
@@ -1864,7 +1864,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     if (sgned)
       bad = !scheme_get_int_val(n, &val);
     else
-      bad = !scheme_get_unsigned_int_val(n, (unsigned long *)&val);
+      bad = !scheme_get_unsigned_int_val(n, (uintptr_t *)&val);
 #else
 # ifndef NO_LONG_LONG_TYPE
     if (sgned)
@@ -1916,17 +1916,17 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     break;
   default:
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-    *(long *)str = val;
+    *(intptr_t *)str = val;
 #else
 # ifndef NO_LONG_LONG_TYPE
     memcpy(str, &llval, sizeof(mzlonglong));
 # else
     {
       Scheme_Object *hi, *lo, *a[2];
-      unsigned long ul;
+      uintptr_t ul;
       
       a[0] = n;
-      a[1] = scheme_make_integer_value_from_unsigned((unsigned long)-1);
+      a[1] = scheme_make_integer_value_from_unsigned((uintptr_t)-1);
       lo = scheme_bitwise_and(2, a);
       a[1] = scheme_make_integer(-32);
       hi = scheme_bitwise_shift(2, a);
@@ -1975,7 +1975,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
 {
-  long offset = 0, slen;
+  intptr_t offset = 0, slen;
   char *str, buf[8];
   int bigend = MZ_IS_BIG_ENDIAN;
 
@@ -1983,7 +1983,7 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
     scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
 
   if (argc > 2) {
-    long start, finish;
+    intptr_t start, finish;
 
     scheme_get_substring_indices("integer-bytes->integer", argv[0],
                                  argc, argv,
@@ -2044,7 +2044,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
   int size;
   int bigend = MZ_IS_BIG_ENDIAN;
   double d;
-  long offset = 0;
+  intptr_t offset = 0;
 
   n = argv[0];
   if (!SCHEME_REALP(n))
@@ -2067,7 +2067,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
       scheme_wrong_type("real->floating-point-bytes", "mutable byte string", 3, argc, argv);
     
     if (argc > 4) {
-      long start, finish;
+      intptr_t start, finish;
       
       scheme_get_substring_indices("real->floating-point-bytes", s,
                                    argc, argv,
@@ -2132,7 +2132,7 @@ static Scheme_Object *system_big_endian_p (int argc, Scheme_Object *argv[])
 # include "newrandom.inc"
 #endif
 
-long scheme_rand(Scheme_Random_State *rs)
+intptr_t scheme_rand(Scheme_Random_State *rs)
 {
   return sch_int_rand(2147483647, rs);
 }
@@ -2140,7 +2140,7 @@ long scheme_rand(Scheme_Random_State *rs)
 static Scheme_Object *
 random_seed(int argc, Scheme_Object *argv[])
 {
-  long i = -1;
+  intptr_t i = -1;
   Scheme_Object *o = argv[0], *rand_state;
 
   if (scheme_get_int_val(o,  &i)) {
@@ -2176,7 +2176,7 @@ sch_random(int argc, Scheme_Object *argv[])
     v = sch_double_rand((Scheme_Random_State *)rand_state);
     return scheme_make_double(v);
   } else {
-    unsigned long i, v;
+    uintptr_t i, v;
     Scheme_Object *o, *rand_state;
 
     o = argv[0];

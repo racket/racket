@@ -207,14 +207,14 @@ static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
 #endif
 
-static int has_null(const char *s, long l);
+static int has_null(const char *s, intptr_t l);
 static void raise_null_error(const char *name, Scheme_Object *path, const char *mod);
 
-static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen, int kind);
+static char *do_path_to_complete_path(char *filename, intptr_t ilen, const char *wrt, intptr_t wlen, int kind);
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem, int force_rel_up, int kind);
 static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail, int kind, int *_did);
 static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded, int kind);
-static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check, int kind);
+static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr_t len, Scheme_Object *p, int just_check, int kind);
 
 READ_ONLY static Scheme_Object *up_symbol;
 READ_ONLY static Scheme_Object *relative_symbol;
@@ -560,7 +560,7 @@ void scheme_init_file_places()
 /*                             paths                                  */
 /**********************************************************************/
 
-Scheme_Object *scheme_make_sized_offset_kind_path(char *chars, long d, long len, int copy, int kind)
+Scheme_Object *scheme_make_sized_offset_kind_path(char *chars, intptr_t d, intptr_t len, int copy, int kind)
 {
   Scheme_Object *s;
   s = scheme_make_sized_offset_byte_string(chars, d, len, copy);
@@ -568,7 +568,7 @@ Scheme_Object *scheme_make_sized_offset_kind_path(char *chars, long d, long len,
   return s;
 }
 
-Scheme_Object *scheme_make_sized_offset_path(char *chars, long d, long len, int copy)
+Scheme_Object *scheme_make_sized_offset_path(char *chars, intptr_t d, intptr_t len, int copy)
 {
   return scheme_make_sized_offset_kind_path(chars, d, len, copy, SCHEME_PLATFORM_PATH_KIND);
 }
@@ -577,7 +577,7 @@ Scheme_Object *scheme_make_sized_offset_path(char *chars, long d, long len, int 
 static int is_special_filename(const char *_f, int offset, int len, int not_nul, int immediate);
 
 static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars, 
-						       long d, long len, int copy,
+						       intptr_t d, intptr_t len, int copy,
 						       int just_check, int kind)
      /* just_check == 2 => just check, and only for the case
 	that it's the last element of a path */
@@ -661,7 +661,7 @@ static Scheme_Object *make_protected_path(char *chars)
 #endif
 
 Scheme_Object *make_exposed_sized_offset_path(int already_protected, 
-					      char *chars, long d, long len, int copy,
+					      char *chars, intptr_t d, intptr_t len, int copy,
                                               int kind)
   /* Called to make a directory path where the end has been removed.
      We may need to remove a redundant separator.
@@ -725,7 +725,7 @@ Scheme_Object *scheme_make_path(const char *chars)
   return scheme_make_sized_offset_path((char *)chars, 0, -1, 1);
 }
 
-Scheme_Object *scheme_make_sized_path(char *chars, long len, int copy)
+Scheme_Object *scheme_make_sized_path(char *chars, intptr_t len, int copy)
 {
   return scheme_make_sized_offset_path(chars, 0, len, copy);
 }
@@ -982,7 +982,7 @@ static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
 static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *s, int argc, Scheme_Object **argv)
 {
   Scheme_Object *p;
-  long i, len;
+  intptr_t i, len;
   int kind;
 
   if (!SCHEME_BYTE_STRINGP(s))
@@ -1166,7 +1166,7 @@ wchar_t *scheme_convert_to_wchar(const char *s, int do_copy)
      /* This function uses '\t' in place of invalid UTF-8 encoding
 	bytes, because '\t' is not a legal filename under Windows. */
 {
-  long len, l;
+  intptr_t len, l;
   wchar_t *ws;
 
   l = strlen(s);
@@ -1187,7 +1187,7 @@ wchar_t *scheme_convert_to_wchar(const char *s, int do_copy)
 
 char *scheme_convert_from_wchar(const wchar_t *ws)
 {
-  long len, l;
+  intptr_t len, l;
   char *s;
 
   l = wc_strlen(ws);
@@ -1217,7 +1217,7 @@ Scheme_Object *scheme_get_file_directory(const char *filename)
 Scheme_Object *scheme_remove_current_directory_prefix(Scheme_Object *fn)
 {
   Scheme_Object *cwd;
-  long len;
+  intptr_t len;
 
   cwd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
 
@@ -1237,7 +1237,7 @@ Scheme_Object *scheme_remove_current_directory_prefix(Scheme_Object *fn)
   return fn;
 }
 
-static int has_null(const char *s, long l)
+static int has_null(const char *s, intptr_t l)
 {
   if (!l)
     return 1;
@@ -2346,11 +2346,11 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 #endif
 }
 
-Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path)
+Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *path)
 /* If path is supplied, then fd is 0 for stat, 1 for lstat */
 {
   int errid = 0;
-  unsigned long devi = 0, inoi = 0, inoi2 = 0;
+  uintptr_t devi = 0, inoi = 0, inoi2 = 0;
   int shift = 0, shift2 = -1;
   Scheme_Object *devn, *inon, *a[2];
 
@@ -2372,8 +2372,8 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path)
   
   if (!errid) {
     /* Warning: we assume that dev_t and ino_t fit in a long. */
-    devi = (unsigned long)buf.st_dev;
-    inoi = (unsigned long)buf.st_ino;
+    devi = (uintptr_t)buf.st_dev;
+    inoi = (uintptr_t)buf.st_ino;
     shift = sizeof(dev_t);
   }
 #endif
@@ -2496,7 +2496,7 @@ static int path_is_simple_dir_without_sep(Scheme_Object *path)
   return 0;
 }
 
-static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check,
+static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr_t len, Scheme_Object *p, int just_check,
                                                 int kind)
 /* Although this function accepts an offset, the Windows part assumes that
    `offset' is always 0. */
@@ -2571,7 +2571,7 @@ static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, 
 # ifdef TILDE_IS_ABSOLUTE
   if (kind == SCHEME_UNIX_PATH_KIND) {
     if (s[offset] == '~') {
-      long i;
+      intptr_t i;
       for (i = 1; i < len; i++) {
         if (IS_A_UNIX_SEP(s[offset + i]))
           break;
@@ -2704,7 +2704,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 	len = SCHEME_PATH_LEN(bs);
 	if (!len) {
 	  char *astr;
-	  long alen;
+	  intptr_t alen;
 
 	  astr = scheme_make_args_string("other ", i+idelta, argc, argv, &alen);
 	  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -3505,7 +3505,7 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
 }
 #endif
 
-int scheme_is_relative_path(const char *s, long len, int kind)
+int scheme_is_relative_path(const char *s, intptr_t len, int kind)
 {
   if (!len)
     return 0;
@@ -3532,7 +3532,7 @@ int scheme_is_relative_path(const char *s, long len, int kind)
   }
 }
 
-int scheme_is_complete_path(const char *s, long len, int kind)
+int scheme_is_complete_path(const char *s, intptr_t len, int kind)
 {
   if (!len)
     return 0;
@@ -3562,7 +3562,7 @@ int scheme_is_complete_path(const char *s, long len, int kind)
     return 0;
 }
 
-static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen, int kind)
+static char *do_path_to_complete_path(char *filename, intptr_t ilen, const char *wrt, intptr_t wlen, int kind)
 {
   if (!scheme_is_complete_path(filename, ilen, kind)) {
     char *naya;
@@ -3843,7 +3843,7 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
 # define COPY_BUFFER_SIZE 2048
     FILE *s, *d;
     char b[COPY_BUFFER_SIZE];
-    long len;
+    intptr_t len;
     int ok;
     struct stat buf;
 
@@ -3996,7 +3996,7 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
   char buffer[SL_NAME_MAX];
 #endif
 #ifndef NO_READLINK
-  long len;
+  intptr_t len;
   int copied = 0;
 #endif
   char *filename;
@@ -5065,7 +5065,7 @@ static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])
   {
 #   define DRIVE_BUF_SIZE 1024
     char drives[DRIVE_BUF_SIZE], *s;
-    long len, ds;
+    intptr_t len, ds;
     UINT oldmode;
 
     len = GetLogicalDriveStrings(DRIVE_BUF_SIZE, drives);

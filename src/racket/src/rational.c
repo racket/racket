@@ -56,7 +56,7 @@ Scheme_Object *scheme_integer_to_rational(const Scheme_Object *n)
   return make_rational(n, one, 0);
 }
 
-Scheme_Object *scheme_make_small_rational(long n, Small_Rational *s)
+Scheme_Object *scheme_make_small_rational(intptr_t n, Small_Rational *s)
  XFORM_SKIP_PROC
 {
   s->so.type = scheme_rational_type;
@@ -146,7 +146,7 @@ Scheme_Object *scheme_rational_denominator(const Scheme_Object *n)
   return ((Scheme_Rational *)n)->denom;
 }
 
-Scheme_Object *scheme_make_fixnum_rational(long n, long d)
+Scheme_Object *scheme_make_fixnum_rational(intptr_t n, intptr_t d)
 {
   /* This function is called to implement division on small integers,
      so don't allocate unless necessary. */

@@ -37,17 +37,17 @@ installed with @cpp{scheme_set_type_equality}.}
 
 Returns 1 if the Racket values are @scheme[equal?].}
 
-@function[(long scheme_equal_hash_key
+@function[(intptr_t scheme_equal_hash_key
            [Scheme_Object* obj])]{
 
 Returns the primary @scheme[equal?]-hash key for @var{obj}.}
 
-@function[(long scheme_equal_hash_key2
+@function[(intptr_t scheme_equal_hash_key2
            [Scheme_Object* obj])]{
 
 Returns the secondary @scheme[equal?]-hash key for @var{obj}.}
 
-@function[(long scheme_recur_equal_hash_key
+@function[(intptr_t scheme_recur_equal_hash_key
            [Scheme_Object* obj]
            [void* cycle_data])]{
 
@@ -57,7 +57,7 @@ installed with @cpp{scheme_set_type_equality}.}
 
 Returns the primary @scheme[equal?]-hash key for @var{obj}.}
 
-@function[(long scheme_recur_equal_hash_key2
+@function[(intptr_t scheme_recur_equal_hash_key2
            [Scheme_Object* obj]
            [void* cycle_data])]{
 
@@ -189,7 +189,7 @@ roughly as follows:
     int count; /* number of mapped keys */
     Scheme_Object **keys;
     Scheme_Object **vals;
-    void (*make_hash_indices)(void *v, long *h1, long *h2);
+    void (*make_hash_indices)(void *v, intptr_t *h1, intptr_t *h2);
     int (*compare)(void *v1, void *v2);
     /* ... */
   } Scheme_Hash_Table;
@@ -254,7 +254,7 @@ roughly as follows:
     int size;  /* size of buckets array */
     int count; /* number of buckets, >= number of mapped keys */
     Scheme_Bucket **buckets;
-    void (*make_hash_indices)(void *v, long *h1, long *h2);
+    void (*make_hash_indices)(void *v, intptr_t *h1, intptr_t *h2);
     int (*compare)(void *v1, void *v2);
     /* ... */
   } Scheme_Bucket_Table;
@@ -314,7 +314,7 @@ weakly, then @var{key} points to a (weak) pointer to the actual key,
 and the weak pointer's value can be @cpp{NULL}.}
 
 
-@function[(long scheme_double_to_int
+@function[(intptr_t scheme_double_to_int
            [char* where]
            [double d])]{
 
@@ -322,12 +322,12 @@ Returns a fixnum value for the given floating-point number @var{d}. If @var{d}
 is not an integer or if it is too large, then an error message is
 reported; @var{name} is used for error-reporting.}
 
-@function[(long scheme_get_milliseconds)]{
+@function[(intptr_t scheme_get_milliseconds)]{
 
 Returns the current ``time'' in milliseconds, just like
 @scheme[current-milliseconds].}
 
-@function[(long scheme_get_process_milliseconds)]{
+@function[(intptr_t scheme_get_process_milliseconds)]{
 
 Returns the current process ``time'' in milliseconds, just like
 @scheme[current-process-milliseconds].}

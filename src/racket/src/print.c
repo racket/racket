@@ -90,11 +90,11 @@ typedef struct Scheme_Print_Params {
 
   /* Used during `display' and `write': */
   char *print_buffer;
-  long print_position;
-  long print_allocated;
-  long print_maxlen;
-  long print_offset;
-  long print_syntax;
+  intptr_t print_position;
+  intptr_t print_allocated;
+  intptr_t print_maxlen;
+  intptr_t print_offset;
+  intptr_t print_syntax;
   Scheme_Object *print_port;
   mz_jmp_buf *print_escape;
   Scheme_Object *depth_delta; /* for large qq depth */
@@ -106,7 +106,7 @@ static void register_traversers(void);
 #endif
 
 static void print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, 
-			  int notdisplay, long maxl, int check_honu, Scheme_Object *qq_depth);
+			  int notdisplay, intptr_t maxl, int check_honu, Scheme_Object *qq_depth);
 static int print(Scheme_Object *obj, int notdisplay, int compact, 
 		 Scheme_Hash_Table *ht,
                  Scheme_Marshal_Tables *mt,
@@ -125,8 +125,8 @@ static void print_vector(Scheme_Object *vec, int notdisplay, int compact,
 			 PrintParams *pp,
                          int as_prefab);
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
-static char *print_to_string(Scheme_Object *obj, long * volatile len, int write,
-			     Scheme_Object *port, long maxl, int check_honu,
+static char *print_to_string(Scheme_Object *obj, intptr_t * volatile len, int write,
+			     Scheme_Object *port, intptr_t maxl, int check_honu,
                              Scheme_Object *qq_depth);
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
@@ -269,7 +269,7 @@ static void *print_to_port_k(void)
 }
 
 static void do_handled_print(Scheme_Object *obj, Scheme_Object *port,
-			     Scheme_Object *proc, long maxl)
+			     Scheme_Object *proc, intptr_t maxl)
 {
   Scheme_Object *a[2];
 
@@ -284,7 +284,7 @@ static void do_handled_print(Scheme_Object *obj, Scheme_Object *port,
   
   if (maxl > 0) {
     char *s;
-    long len;
+    intptr_t len;
 
     s = scheme_get_sized_byte_string_output(a[1], &len);
     if (len > maxl)
@@ -294,7 +294,7 @@ static void do_handled_print(Scheme_Object *obj, Scheme_Object *port,
   }
 }
 
-void scheme_write_w_max(Scheme_Object *obj, Scheme_Object *port, long maxl)
+void scheme_write_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
 {
   if (((Scheme_Output_Port *)port)->write_handler)
     do_handled_print(obj, port, scheme_write_proc, maxl);
@@ -317,7 +317,7 @@ void scheme_write(Scheme_Object *obj, Scheme_Object *port)
   scheme_write_w_max(obj, port, -1);
 }
 
-void scheme_display_w_max(Scheme_Object *obj, Scheme_Object *port, long maxl)
+void scheme_display_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
 {
   if (((Scheme_Output_Port *)port)->display_handler)
     do_handled_print(obj, port, scheme_display_proc, maxl);
@@ -340,7 +340,7 @@ void scheme_display(Scheme_Object *obj, Scheme_Object *port)
   scheme_display_w_max(obj, port, -1);
 }
 
-void scheme_print_w_max(Scheme_Object *obj, Scheme_Object *port, long maxl)
+void scheme_print_w_max(Scheme_Object *obj, Scheme_Object *port, intptr_t maxl)
 {
   if (((Scheme_Output_Port *)port)->print_handler)
     do_handled_print(obj, port, scheme_print_proc, maxl);
@@ -367,11 +367,11 @@ static void *print_to_string_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *obj, *qq_depth;
-  long *len, maxl;
+  intptr_t *len, maxl;
   int iswrite, check_honu;
 
   obj = (Scheme_Object *)p->ku.k.p1;
-  len = (long *) mzALIAS p->ku.k.p2;
+  len = (intptr_t *) mzALIAS p->ku.k.p2;
   maxl = p->ku.k.i1;
   iswrite = p->ku.k.i2;
   check_honu = p->ku.k.i3;
@@ -384,7 +384,7 @@ static void *print_to_string_k(void)
   return (void *)print_to_string(obj, len, iswrite, NULL, maxl, check_honu, qq_depth);
 }
 
-char *scheme_write_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
+char *scheme_write_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -398,12 +398,12 @@ char *scheme_write_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
   return (char *)scheme_top_level_do(print_to_string_k, 0);
 }
 
-char *scheme_write_to_string(Scheme_Object *obj, long *len)
+char *scheme_write_to_string(Scheme_Object *obj, intptr_t *len)
 {
   return scheme_write_to_string_w_max(obj, len, -1);
 }
 
-char *scheme_display_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
+char *scheme_display_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -417,12 +417,12 @@ char *scheme_display_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
   return (char *)scheme_top_level_do(print_to_string_k, 0);
 }
 
-char *scheme_display_to_string(Scheme_Object *obj, long *len)
+char *scheme_display_to_string(Scheme_Object *obj, intptr_t *len)
 {
   return scheme_display_to_string_w_max(obj, len, -1);
 }
 
-char *scheme_print_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
+char *scheme_print_to_string_w_max(Scheme_Object *obj, intptr_t *len, intptr_t maxl)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -436,7 +436,7 @@ char *scheme_print_to_string_w_max(Scheme_Object *obj, long *len, long maxl)
   return (char *)scheme_top_level_do(print_to_string_k, 0);
 }
 
-char *scheme_print_to_string(Scheme_Object *obj, long *len)
+char *scheme_print_to_string(Scheme_Object *obj, intptr_t *len)
 {
   return scheme_print_to_string_w_max(obj, len, -1);
 }
@@ -821,9 +821,9 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
     if (!v)
       scheme_hash_set(ht, obj, (Scheme_Object *)0x1);
     else {
-      if ((long)v == 1) {
+      if ((intptr_t)v == 1) {
 	(*counter) += 2;
-	scheme_hash_set(ht, obj, (Scheme_Object *)(long)*counter);
+	scheme_hash_set(ht, obj, (Scheme_Object *)(intptr_t)*counter);
       }
       return;
     }
@@ -951,8 +951,8 @@ static Scheme_Hash_Table *setup_datum_graph(Scheme_Object *o, int for_write, voi
 
 static char *
 print_to_string(Scheme_Object *obj, 
-		long * volatile len, int write,
-		Scheme_Object *port, long maxl,
+		intptr_t * volatile len, int write,
+		Scheme_Object *port, intptr_t maxl,
 		int check_honu,
                 Scheme_Object *qq_depth)
 {
@@ -1112,11 +1112,11 @@ print_to_string(Scheme_Object *obj,
 
 static void 
 print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdisplay, 
-              long maxl, int check_honu, Scheme_Object *qq_depth)
+              intptr_t maxl, int check_honu, Scheme_Object *qq_depth)
 {
   Scheme_Output_Port *op;
   char *str;
-  long len;
+  intptr_t len;
   
   op = scheme_output_port_record(port);
   if (op->closed)
@@ -1130,7 +1130,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
 static void print_this_string(PrintParams *pp, const char *str, int offset, int autolen)
      /* If str is NULL and autolen is 0, flush print buffer */
 {
-  long len;
+  intptr_t len;
   char *oldstr;
 
   if (!autolen) {
@@ -1177,7 +1177,7 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
   
   if (pp->print_maxlen > PRINT_MAXLEN_MIN) {
     if (pp->print_position > pp->print_maxlen) {
-      long l = pp->print_maxlen;
+      intptr_t l = pp->print_maxlen;
 
       pp->print_buffer[l] = 0;
       pp->print_buffer[l - 1] = '.';
@@ -1213,7 +1213,7 @@ void scheme_print_utf8(Scheme_Print_Params *pp, const char *str, int offset, int
   print_utf8_string(pp, str, offset, len);
 }
 
-static void print_number(PrintParams *pp, long n)
+static void print_number(PrintParams *pp, intptr_t n)
 {
   unsigned char s[4];
 
@@ -1225,7 +1225,7 @@ static void print_number(PrintParams *pp, long n)
   print_this_string(pp, (char *)s, 0, 4);
 }
 
-static void print_short_number(PrintParams *pp, long n)
+static void print_short_number(PrintParams *pp, intptr_t n)
 {
   unsigned char s[2];
 
@@ -1244,7 +1244,7 @@ static void print_one_byte(PrintParams *pp, int n)
   print_this_string(pp, (char *)s, 0, 1);
 }
 
-static void print_compact_number(PrintParams *pp, long n)
+static void print_compact_number(PrintParams *pp, intptr_t n)
 {
   unsigned char s[2];
 
@@ -1387,12 +1387,12 @@ static int compare_keys(const void *a, const void *b)
   } else if (SCHEME_FIRSTP(bv))
     return 1;
 
-  return ((long *)a)[1] - ((long *)b)[1];
+  return ((intptr_t *)a)[1] - ((intptr_t *)b)[1];
 }
 
 static void sort_referenced_keys(Scheme_Marshal_Tables *mt)
 {
-  long j, size, pos = 0;
+  intptr_t j, size, pos = 0;
   Scheme_Object **keys;
   Scheme_Hash_Table *key_map;
 
@@ -1423,7 +1423,7 @@ static void print_table_keys(int notdisplay, int compact, Scheme_Hash_Table *ht,
                              Scheme_Marshal_Tables *mt,
                              PrintParams *pp)
 {
-  long j, size, offset;
+  intptr_t j, size, offset;
   Scheme_Object **keys, *key, *obj;
 
   size = mt->sorted_keys_count;
@@ -1449,11 +1449,11 @@ static void print_table_keys(int notdisplay, int compact, Scheme_Hash_Table *ht,
 static int
 print_substring(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
                 Scheme_Marshal_Tables *mt,
-		PrintParams *pp, char **result, long *rlen,
-                int print_keys, long *klen)
+		PrintParams *pp, char **result, intptr_t *rlen,
+                int print_keys, intptr_t *klen)
 {
   int closed;
-  long save_alloc, save_pos, save_off, save_maxl;
+  intptr_t save_alloc, save_pos, save_off, save_maxl;
   char *save_buf;
   Scheme_Object *save_port;
 
@@ -1645,7 +1645,7 @@ void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep)
     if (!mt->st_refs->count)
       mt->st_refs = st_refs;
     else {
-      long i;
+      intptr_t i;
       for (i = 0; i < st_refs->size; i++) {
         if (st_refs->vals[i]) {
           scheme_hash_set(mt->st_refs, st_refs->keys[i], st_refs->vals[i]);
@@ -1660,7 +1660,7 @@ static void print_escaped(PrintParams *pp, int notdisplay,
                           Scheme_Marshal_Tables *mt, int shared)
 {
   char *r;
-  long len;
+  intptr_t len;
   Scheme_Object *idx;
 
   if (shared) {
@@ -1698,7 +1698,7 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 static void printaddress(PrintParams *pp, Scheme_Object *o)
 {
   char buf[40];
-  sprintf(buf, ":%lx", (long)o);
+  sprintf(buf, ":%" PRINTF_INTPTR_SIZE_PREFIX "x", (intptr_t)o);
   print_this_string(pp, buf, 0, -1);
 }
 # define PRINTADDRESS(pp, obj) printaddress(pp, obj)
@@ -1753,8 +1753,8 @@ static int to_quoted(Scheme_Object *obj, PrintParams *pp, int notdisplay)
 static int is_graph_point(Scheme_Hash_Table *ht, Scheme_Object *obj)
 {
   if (ht) {
-    long v;
-    v = (long)scheme_hash_get(ht, obj);
+    intptr_t v;
+    v = (intptr_t)scheme_hash_get(ht, obj);
     if ((v == 0) || (v == 1))
       return 0;
     return 1;
@@ -1826,9 +1826,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   save_honu_mode = pp->honu_mode;
 
   if (ht && HAS_SUBSTRUCT(obj, ssQUICK)) {
-    long val;
+    intptr_t val;
     
-    val = (long)scheme_hash_get(ht, obj);
+    val = (intptr_t)scheme_hash_get(ht, obj);
     
     if (val) {
       if (val != 1) {
@@ -2026,7 +2026,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SCHEME_INTP(obj))
     {
       if (compact) {
-	long v = SCHEME_INT_VAL(obj);
+	intptr_t v = SCHEME_INT_VAL(obj);
 	if (v >= 0 && v < CPT_RANGE(SMALL_NUMBER)) {
 	  unsigned char s[1];
 	  s[0] = (unsigned char)(v + CPT_SMALL_NUMBER_START);
@@ -2709,7 +2709,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	} else
 	  print_utf8_string(pp, "#<syntax", 0, 8);
         if (pp->print_syntax) {
-          long slen;
+          intptr_t slen;
           char *str;
           print_utf8_string(pp, " ", 0, 1);
           str = print_to_string(scheme_syntax_to_datum((Scheme_Object *)stx, 0, NULL),
@@ -2991,7 +2991,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       Scheme_Type t = SCHEME_TYPE(obj);
       Scheme_Object *v;
-      long slen;
+      intptr_t slen;
 
       if (t >= _scheme_last_type_) {
 	/* Doesn't happen: */
@@ -3012,7 +3012,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_this_string(pp, "#~", 0, 2);
 #if NO_COMPACT
 	if (t < _scheme_last_type_) {
-	  sprintf (quick_buffer, "%ld", (long)SCHEME_TYPE(obj));
+	  sprintf (quick_buffer, "%ld", (intptr_t)SCHEME_TYPE(obj));
 	  print_this_string(pp, quick_buffer, 0, -1);
 	} else
 	  print_this_string(pp, scheme_get_type_name(t), 0, -1);
@@ -3029,8 +3029,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
         Scheme_Hash_Table *st_refs, *symtab, *rns, *tht;
-        long *shared_offsets;
-        long st_len, j, shared_offset, start_offset;
+        intptr_t *shared_offsets;
+        intptr_t st_len, j, shared_offset, start_offset;
 
         mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
@@ -3066,7 +3066,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	/* "Print" again, now that we know which values are actually
            shared. On this pass, shared values that reference other shared values
            are re-computed with the compacted keys. */
-        shared_offsets = MALLOC_N_ATOMIC(long, mt->st_refs->count);
+        shared_offsets = MALLOC_N_ATOMIC(intptr_t, mt->st_refs->count);
         mt->shared_offsets = shared_offsets;
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
         mt->symtab = symtab;
@@ -3159,7 +3159,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	printer(obj, !notdisplay, pp);
       } else {
 	char *s;
-	long len = -1;
+	intptr_t len = -1;
 	s = scheme_get_type_name((SCHEME_TYPE(obj)));
 	print_utf8_string(pp, "#", 0, 1);
 #ifdef SGC_STD_DEBUGGING
@@ -3804,7 +3804,7 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 static void flush_from_byte_port(Scheme_Object *orig_port, PrintParams *pp)
 {
   char *bytes;
-  long len;
+  intptr_t len;
   bytes = scheme_get_sized_byte_string_output(orig_port, &len);
   print_this_string(pp, bytes, 0, len);
 }
@@ -3816,7 +3816,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
   PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2], *sub_pp;
   Scheme_Object * volatile save_port;
   mz_jmp_buf escape, * volatile save;
-  volatile long save_max;
+  volatile intptr_t save_max;
 
   if (!SCHEME_OUTPORTP(argv[1])) {
     scheme_wrong_type((notdisplay > 1)

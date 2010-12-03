@@ -468,10 +468,10 @@ int scheme_is_output_port(Scheme_Object *port)
 /*                          string input ports                            */
 /*========================================================================*/
 
-static long
+static intptr_t
 string_get_or_peek_bytes(Scheme_Input_Port *port,
-			 char *buffer, long offset, long size,
-			 int peek, long skip,
+			 char *buffer, intptr_t offset, intptr_t size,
+			 int peek, intptr_t skip,
 			 Scheme_Object *unless)
 {
   Scheme_Indexed_String *is;
@@ -490,7 +490,7 @@ string_get_or_peek_bytes(Scheme_Input_Port *port,
       is->index = pos + 1;
     return 1;
   } else {
-    long l, delta;
+    intptr_t l, delta;
 
     delta = is->index + skip;
 
@@ -508,21 +508,21 @@ string_get_or_peek_bytes(Scheme_Input_Port *port,
   }
 }
 
-static long
+static intptr_t
 string_get_bytes(Scheme_Input_Port *port,
-		  char *buffer, long offset, long size,
+		  char *buffer, intptr_t offset, intptr_t size,
 		  int nonblock, Scheme_Object *unless)
 {
   return string_get_or_peek_bytes(port, buffer, offset, size, 0, 0, unless);
 }
 
-static long
+static intptr_t
 string_peek_bytes(Scheme_Input_Port *port,
-		   char *buffer, long offset, long size,
+		   char *buffer, intptr_t offset, intptr_t size,
 		   Scheme_Object *sskip,
 		   int nonblock, Scheme_Object *unless)
 {
-  long skip;
+  intptr_t skip;
 
   if (SCHEME_INTP(sskip))
     skip = SCHEME_INT_VAL(sskip);
@@ -544,7 +544,7 @@ string_close_in (Scheme_Input_Port *port)
 }
 
 static Scheme_Indexed_String *
-make_indexed_string (const char *str, long len)
+make_indexed_string (const char *str, intptr_t len)
 {
   Scheme_Indexed_String *is;
 
@@ -575,7 +575,7 @@ make_indexed_string (const char *str, long len)
 }
 
 Scheme_Object *
-scheme_make_sized_byte_string_input_port(const char *str, long len)
+scheme_make_sized_byte_string_input_port(const char *str, intptr_t len)
 {
   Scheme_Input_Port *ip;
 
@@ -604,9 +604,9 @@ scheme_make_byte_string_input_port(const char *str)
 /*                          string output ports                           */
 /*========================================================================*/
 
-static long
+static intptr_t
 string_write_bytes(Scheme_Output_Port *port,
-		    const char *str, long d, long len,
+		    const char *str, intptr_t d, intptr_t len,
 		    int rarely_block, int enable_break)
 {
   Scheme_Indexed_String *is;
@@ -664,12 +664,12 @@ scheme_make_byte_string_output_port (void)
 }
 
 char *
-scheme_get_reset_sized_byte_string_output(Scheme_Object *port, long *size, int reset, long startpos, long endpos)
+scheme_get_reset_sized_byte_string_output(Scheme_Object *port, intptr_t *size, int reset, intptr_t startpos, intptr_t endpos)
 {
   Scheme_Output_Port *op;
   Scheme_Indexed_String *is;
   char *v;
-  long len;
+  intptr_t len;
 
   if (!SCHEME_OUTPUT_PORTP(port))
     return NULL;
@@ -715,7 +715,7 @@ scheme_get_reset_sized_byte_string_output(Scheme_Object *port, long *size, int r
 }
 
 char *
-scheme_get_sized_byte_string_output(Scheme_Object *port, long *size)
+scheme_get_sized_byte_string_output(Scheme_Object *port, intptr_t *size)
 {
   return scheme_get_reset_sized_byte_string_output(port, size, 0, 0, -1);
 }
@@ -755,7 +755,7 @@ typedef struct User_Input_Port {
 /* This function is mainly responsible for checking the result of a
    read-proc or peek-proc. */
 
-static long user_read_result(const char *who, Scheme_Input_Port *port,
+static intptr_t user_read_result(const char *who, Scheme_Input_Port *port,
 			     Scheme_Object *val, Scheme_Object *bstr,
 			     int peek, int nonblock, int evt_ok,
 			     int special_ok, int false_ok,
@@ -873,9 +873,9 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
 
 /* Call read-proc or peek-proc. */
 
-static long
+static intptr_t
 user_get_or_peek_bytes(Scheme_Input_Port *port,
-		       char *buffer, long offset, long size,
+		       char *buffer, intptr_t offset, intptr_t size,
 		       int nonblock,
 		       int peek, Scheme_Object *peek_skip,
 		       Scheme_Object *unless,
@@ -883,7 +883,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 {
   Scheme_Object *fun, *val, *a[3], *bstr;
   User_Input_Port *uip = (User_Input_Port *)port->port_data;
-  long r;
+  intptr_t r;
   Scheme_Cont_Frame_Data cframe;
 
   val = uip->peeked;
@@ -996,9 +996,9 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 /*   Main entry points                                           */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-static long
+static intptr_t
 user_get_bytes(Scheme_Input_Port *port,
-	       char *buffer, long offset, long size,
+	       char *buffer, intptr_t offset, intptr_t size,
 	       int nonblock, Scheme_Object *unless)
 {
   return user_get_or_peek_bytes(port, buffer, offset, size,
@@ -1007,9 +1007,9 @@ user_get_bytes(Scheme_Input_Port *port,
 				NULL);
 }
 
-static long
+static intptr_t
 user_peek_bytes(Scheme_Input_Port *port,
-		char *buffer, long offset, long size,
+		char *buffer, intptr_t offset, intptr_t size,
 		Scheme_Object *skip,
 		int nonblock, Scheme_Object *unless)
 {
@@ -1021,7 +1021,7 @@ user_peek_bytes(Scheme_Input_Port *port,
 
 static int
 user_peeked_read(Scheme_Input_Port *port,
-		 long size,
+		 intptr_t size,
 		 Scheme_Object *unless_evt,
 		 Scheme_Object *target_evt)
 {
@@ -1248,9 +1248,9 @@ user_write_ready(Scheme_Output_Port *port)
   return 1;
 }
 
-static long
+static intptr_t
 user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
-		  Scheme_Object *val, int rarely_block, int enable_break, long len)
+		  Scheme_Object *val, int rarely_block, int enable_break, intptr_t len)
 {
   Scheme_Object *p[2];
 
@@ -1331,8 +1331,8 @@ user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
   }
 }
 
-static long
-user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long len,
+static intptr_t
+user_write_bytes(Scheme_Output_Port *port, const char *str, intptr_t offset, intptr_t len,
 		  int rarely_block, int enable_break)
 {
   /* As always, rarely_block => flush, !len => flush,
@@ -1403,7 +1403,7 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long le
 static Scheme_Object *user_write_evt_wrapper(void *d, int argc, struct Scheme_Object *argv[])
 {
   Scheme_Object *val, *port;
-  long r, len;
+  intptr_t r, len;
 
   port = (Scheme_Object *)((void **)d)[0];
   val = (Scheme_Object *)((void **)d)[1];
@@ -1425,7 +1425,7 @@ static Scheme_Object *user_write_evt_wrapper(void *d, int argc, struct Scheme_Ob
 
 static Scheme_Object *
 user_write_bytes_evt(Scheme_Output_Port *port,
-		     const char *buffer, long offset, long size)
+		     const char *buffer, intptr_t offset, intptr_t size)
 {
   Scheme_Object *to_write, *wrapper;
   Scheme_Object *a[3], *val;
@@ -1596,14 +1596,14 @@ static void pipe_did_write(Scheme_Pipe *pipe)
   }
 }
 
-static long pipe_get_or_peek_bytes(Scheme_Input_Port *p,
-				   char *buffer, long offset, long size,
+static intptr_t pipe_get_or_peek_bytes(Scheme_Input_Port *p,
+				   char *buffer, intptr_t offset, intptr_t size,
 				   int nonblock,
-				   int peek, long peek_skip,
+				   int peek, intptr_t peek_skip,
 				   Scheme_Object *unless)
 {
   Scheme_Pipe *pipe;
-  long c, skipped = 0;
+  intptr_t c, skipped = 0;
 
   pipe = (Scheme_Pipe *)(p->port_data);
 
@@ -1632,7 +1632,7 @@ static long pipe_get_or_peek_bytes(Scheme_Input_Port *p,
   if (pipe->bufstart == pipe->bufend)
     c = EOF;
   else {
-    long bs = pipe->bufstart;
+    intptr_t bs = pipe->bufstart;
     c = 0;
     if (bs > pipe->bufend) {
       int n;
@@ -1731,21 +1731,21 @@ static long pipe_get_or_peek_bytes(Scheme_Input_Port *p,
   return c;
 }
 
-static long pipe_get_bytes(Scheme_Input_Port *p,
-			   char *buffer, long offset, long size,
+static intptr_t pipe_get_bytes(Scheme_Input_Port *p,
+			   char *buffer, intptr_t offset, intptr_t size,
 			   int nonblock,
 			   Scheme_Object *unless)
 {
   return pipe_get_or_peek_bytes(p, buffer, offset, size, nonblock, 0, 0, unless);
 }
 
-static long pipe_peek_bytes(Scheme_Input_Port *p,
-			    char *buffer, long offset, long size,
+static intptr_t pipe_peek_bytes(Scheme_Input_Port *p,
+			    char *buffer, intptr_t offset, intptr_t size,
 			    Scheme_Object *skip,
 			    int nonblock,
 			    Scheme_Object *unless)
 {
-  long peek_skip;
+  intptr_t peek_skip;
 
   if (SCHEME_INTP(skip))
     peek_skip = SCHEME_INT_VAL(skip);
@@ -1760,13 +1760,13 @@ static long pipe_peek_bytes(Scheme_Input_Port *p,
   return pipe_get_or_peek_bytes(p, buffer, offset, size, nonblock, 1, peek_skip, unless);
 }
 
-static long pipe_write_bytes(Scheme_Output_Port *p,
-			      const char *str, long d, long len,
+static intptr_t pipe_write_bytes(Scheme_Output_Port *p,
+			      const char *str, intptr_t d, intptr_t len,
 			      int rarely_block, int enable_break)
 {
   Scheme_Pipe *pipe;
-  long avail, firstpos, firstn, secondn, endpos;
-  long wrote = 0;
+  intptr_t avail, firstpos, firstn, secondn, endpos;
+  intptr_t wrote = 0;
 
   pipe = (Scheme_Pipe *)(p->port_data);
 
@@ -1789,7 +1789,7 @@ static long pipe_write_bytes(Scheme_Output_Port *p,
     /* If we've peek in the past, then buflen might have grown larger
        than bufmax. But for consistency, use that extra space only for
        peeks. */
-    long extra;
+    intptr_t extra;
     extra = pipe->buflen - (pipe->bufmax + pipe->bufmaxextra);
     if (extra > 0)
       avail -= extra;
@@ -1797,8 +1797,8 @@ static long pipe_write_bytes(Scheme_Output_Port *p,
 
   if (pipe->bufmax && (avail < len)) {
     /* Must we block to write it all? */
-    long xavail = avail;
-    long can_extra;
+    intptr_t xavail = avail;
+    intptr_t can_extra;
 
     can_extra = ((pipe->bufmax + pipe->bufmaxextra) - pipe->buflen);
     if (can_extra > 0)
@@ -1829,7 +1829,7 @@ static long pipe_write_bytes(Scheme_Output_Port *p,
 	if (pipe->bufmax) {
 	  /* Again, it's possible that the port grew to accomodate
 	     past peeks... */
-	  long extra;
+	  intptr_t extra;
 	  extra = pipe->buflen - (pipe->bufmax + pipe->bufmaxextra);
 	  if (extra > 0)
 	    avail -= extra;
@@ -1950,7 +1950,7 @@ static void pipe_out_close(Scheme_Output_Port *p)
 static int pipe_out_ready(Scheme_Output_Port *p)
 {
   Scheme_Pipe *pipe;
-  long avail;
+  intptr_t avail;
 
   pipe = (Scheme_Pipe *)(p->port_data);
 
@@ -2475,7 +2475,7 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
 {
   Scheme_Output_Port *op;
   char *s;
-  long size, startpos, endpos;
+  intptr_t size, startpos, endpos;
 
   op = scheme_output_port_record(argv[0]);
   if (!SCHEME_OUTPUT_PORTP(argv[0])
@@ -2483,7 +2483,7 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
     scheme_wrong_type(who, "string output port", 0, argc, argv);
 
   if (argc > 2) {
-    long len;
+    intptr_t len;
     Scheme_Indexed_String *is;
 
     is = (Scheme_Indexed_String *)op->port_data;
@@ -3015,7 +3015,7 @@ do_read_line (int as_bytes, const char *who, int argc, Scheme_Object *argv[])
   int ch;
   int crlf = 0, cr = 0, lf = 1;
   char *buf, *oldbuf, onstack[32];
-  long size = 31, oldsize, i = 0;
+  intptr_t size = 31, oldsize, i = 0;
 
   if (argc && !SCHEME_INPUT_PORTP(argv[0]))
     scheme_wrong_type(who, "input-port", 0, argc, argv);
@@ -3115,7 +3115,7 @@ do_general_read_bytes(int as_bytes,
 		      int alloc_mode, int only_avail, int peek)
 {
   Scheme_Object *port, *str, *peek_skip, *unless_evt = NULL;
-  long size, start, finish, got;
+  intptr_t size, start, finish, got;
   int delta, size_too_big = 0;
 
   if (alloc_mode) {
@@ -3304,7 +3304,7 @@ static Scheme_Object *
 peeked_read(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port, *unless_evt, *target_evt;
-  long size;
+  intptr_t size;
   int v;
 
   if ((SCHEME_INTP(argv[0]) && (SCHEME_INT_VAL(argv[0]) > 0))
@@ -3432,7 +3432,7 @@ do_write_bytes_avail(int as_bytes, const char *who,
 		     int rarely_block, int get_evt)
 {
   Scheme_Object *port, *str;
-  long size, start, finish, putten;
+  intptr_t size, start, finish, putten;
 
   if (as_bytes && !SCHEME_BYTE_STRINGP(argv[0])) {
     scheme_wrong_type(who, "byte string", 0, argc, argv);
@@ -4058,7 +4058,7 @@ static Scheme_Object *global_port_count_lines(int argc, Scheme_Object **argv)
 static Scheme_Object *port_next_location(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *a[3];
-  long line, col, pos;
+  intptr_t line, col, pos;
 
   if (!SCHEME_INPUT_PORTP(argv[0]) && !SCHEME_OUTPUT_PORTP(argv[0]))
     scheme_wrong_type("port-next-location", "port", 0, argc, argv);
@@ -4156,7 +4156,7 @@ static Scheme_Object *do_load_handler(void *data)
 	  err_msg = scheme_make_byte_string("something else");
 	else {
 	  char *s, *t;
-	  long len, slen;
+	  intptr_t len, slen;
 
 	  t = "declaration for `";
 	  len = strlen(t);
@@ -4275,7 +4275,7 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
 
   /* Turn on line/column counting, unless it's a .zo file: */
   if (SCHEME_PATHP(argv[0])) {
-    long len;
+    intptr_t len;
 
     len = SCHEME_BYTE_STRLEN_VAL(argv[0]);
     if ((len < 3)
@@ -4284,7 +4284,7 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
 	|| (SCHEME_BYTE_STR_VAL(argv[0])[len - 1] != 'o'))
       scheme_count_lines(port);
   } else {
-    long len;
+    intptr_t len;
 
     len = SCHEME_CHAR_STRLEN_VAL(argv[0]);
     if ((len < 3)

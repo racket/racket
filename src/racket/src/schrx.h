@@ -13,12 +13,12 @@ typedef struct regexp {
   Scheme_Type type;
   MZ_HASH_KEY_EX
   Scheme_Object *source;
-  long nsubexp, ncounter, maxlookback;
-  long regsize;
+  intptr_t nsubexp, ncounter, maxlookback;
+  intptr_t regsize;
   short flags;
   unsigned char *regstart;      /* Infor about required starting bytes */
-  long regmust;                 /* pointer relative to self to required starting string */
-  long regmlen;			/* length of the string at regmust */
+  intptr_t regmust;                 /* pointer relative to self to required starting string */
+  intptr_t regmlen;			/* length of the string at regmust */
 #ifdef INDIRECT_TO_PROGRAM
   char *program;
 #else

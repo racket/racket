@@ -45,12 +45,6 @@
 # define STK_DIFF(a, b) ((a) - (b))
 #endif
 
-#ifdef SHORT_ALIGN
-typedef short stack_val;
-#else
-typedef long stack_val;
-#endif
-
 #ifndef STACK_SAFETY_MARGIN
 # define STACK_SAFETY_MARGIN 50000
 #endif

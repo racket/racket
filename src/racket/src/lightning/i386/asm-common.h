@@ -85,8 +85,8 @@ typedef unsigned char	_uc;
 typedef unsigned short	_us;
 typedef unsigned int	_ui;
 typedef int	        _si;
-typedef long		_sl;
-typedef unsigned long	_ul;
+typedef intptr_t        _sl;
+typedef uintptr_t	_ul;
 
 #define _jit_UC(X)	((_uc  )(X))
 #define _jit_SC(X)	((_sc  )(X))
@@ -111,11 +111,11 @@ typedef unsigned long	_ul;
 #define _jit_L(L)         _jit_VD(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
 #define _jit_I_noinc(I)   _jit_VD(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
 
-#define _COPY_HIGH_BIT(N, I) (((unsigned long)(I) & (1 << ((N)-1))) ? ~_MASK(N) : 0)
+#define _COPY_HIGH_BIT(N, I) (((uintptr_t)(I) & (1 << ((N)-1))) ? ~_MASK(N) : 0)
 
-#define _MASK(N)	((unsigned long)(((long)1<<(N)))-1)
-#define _siP(N,I)	(!((((unsigned long)(I))^(_COPY_HIGH_BIT(N, I)))&~_MASK(N)))
-#define _uiP(N,I)	(!(((unsigned long)(I))&~_MASK(N)))
+#define _MASK(N)	((uintptr_t)(((intptr_t)1<<(N)))-1)
+#define _siP(N,I)	(!((((uintptr_t)(I))^(_COPY_HIGH_BIT(N, I)))&~_MASK(N)))
+#define _uiP(N,I)	(!(((uintptr_t)(I))&~_MASK(N)))
 #define _suiP(N,I)	(_siP(N,I) | _uiP(N,I))
 
 #ifndef _ASM_SAFETY

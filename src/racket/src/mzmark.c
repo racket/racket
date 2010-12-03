@@ -1848,13 +1848,13 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int runstack_val_SIZE(void *p, struct NewGC *gc) {
-  long *s = (long *)p;
+  intptr_t *s = (intptr_t *)p;
   return
   s[1];
 }
 
 static int runstack_val_MARK(void *p, struct NewGC *gc) {
-  long *s = (long *)p;
+  intptr_t *s = (intptr_t *)p;
   void **a, **b;
   a = (void **)s + 4 + s[2];
   b = (void **)s + 4 + s[3];
@@ -1867,7 +1867,7 @@ static int runstack_val_MARK(void *p, struct NewGC *gc) {
 }
 
 static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
-  long *s = (long *)p;
+  intptr_t *s = (intptr_t *)p;
   void **a, **b;
   a = (void **)s + 4 + s[2];
   b = (void **)s + 4 + s[3];

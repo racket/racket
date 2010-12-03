@@ -133,7 +133,7 @@ union jit_double_imm {
 };
 
 #ifdef JIT_X86_64
-# define jit_double_as_long(v) (*(double *)(_jit.x.uc_pc) = v, *(long *)(_jit.x.uc_pc))
+# define jit_double_as_long(v) (*(double *)(_jit.x.uc_pc) = v, *(intptr_t *)(_jit.x.uc_pc))
 # define _jit_push_d(immd) \
   (MOVQir(jit_double_as_long(immd), JIT_REXTMP),		\
    PUSHQr(JIT_REXTMP))
@@ -161,7 +161,7 @@ union jit_double_imm {
 #ifdef JIT_X86_64
 #define jit_ldi_d_fppush(rd, is)   \
   (MOVQrr(JIT_R0, JIT_REXTMP), \
-   MOVQir(((long)is), JIT_R0),  \
+   MOVQir(((intptr_t)is), JIT_R0),  \
    jit_ldr_d_fppush(rd, JIT_R0), \
    MOVQrr(JIT_REXTMP, JIT_R0))
 #else
@@ -229,7 +229,7 @@ union jit_double_imm {
 #ifdef JIT_X86_64
 #define jit_sti_d_fppop(is, rd)   \
   (MOVQrr(JIT_R0, JIT_REXTMP), \
-   MOVQir(((long)is), JIT_R0),  \
+   MOVQir(((intptr_t)is), JIT_R0),  \
    jit_str_d_fppop(JIT_R0, rd), \
    MOVQrr(JIT_REXTMP, JIT_R0))
 #else

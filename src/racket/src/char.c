@@ -240,7 +240,7 @@ static Scheme_Object *
 integer_to_char (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_INTP(argv[0])) {
-    long v;
+    intptr_t v;
     v = SCHEME_INT_VAL(argv[0]);
     if ((v >= 0) 
 	&& (v <= 0x10FFFF)
@@ -249,7 +249,7 @@ integer_to_char (int argc, Scheme_Object *argv[])
   } else if (SCHEME_BIGNUMP(argv[0])
 	     && SCHEME_BIGPOS(argv[0])) {
     /* On 32-bit machines, there's still a chance... */
-    long y;
+    intptr_t y;
     if (scheme_get_int_val(argv[0], &y)) {
       if (y <= 0x10FFFF)
 	return _scheme_make_char(y);

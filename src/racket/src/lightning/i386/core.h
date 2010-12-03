@@ -122,7 +122,7 @@ struct jit_local_state {
 #define _jit_bra_l(rs, is, op)		(CMPQir(is, rs), op, _jit.x.pc)
 
 #ifdef JIT_X86_64
-# define jit_bra_l(rs, is, op) (_s32P((long)(is)) \
+# define jit_bra_l(rs, is, op) (_s32P((intptr_t)(is)) \
                                 ? _jit_bra_l(rs, is, op) \
                                 : (MOVQir(is, JIT_REXTMP), jit_bra_qr(JIT_REXTMP, rs, op)))
 #else
@@ -422,8 +422,8 @@ struct jit_local_state {
 # define jit_normal_pushonlyarg_i(rs)	jit_pusharg_i(rs)
 # define jit_save_argstate(curstate)	curstate = _jitl.argssize;
 # define jit_restore_argstate(curstate)	_jitl.argssize = curstate;
-# define jit_finish(sub)        ((void)jit_calli((sub)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
-# define jit_finishr(reg)	(jit_callr((reg)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+# define jit_finish(sub)        ((void)jit_calli((sub)), ADDLir(sizeof(intptr_t) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+# define jit_finishr(reg)	(jit_callr((reg)), ADDLir(sizeof(intptr_t) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
 # define jit_return_pop_insn_len() 3 /* size of ADDLir() */
 # define jit_normal_finish(sub) jit_finish(sub)
 #endif
@@ -444,9 +444,9 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define	jit_arg_us()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_i()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_ui()		((_jitl.framesize += sizeof(int)) - sizeof(int))
-#define	jit_arg_l()		((_jitl.framesize += sizeof(long)) - sizeof(long))
-#define	jit_arg_ul()		((_jitl.framesize += sizeof(long)) - sizeof(long))
-#define	jit_arg_p()		((_jitl.framesize += sizeof(long)) - sizeof(long))
+#define	jit_arg_l()		((_jitl.framesize += sizeof(intptr_t)) - sizeof(intptr_t))
+#define	jit_arg_ul()		((_jitl.framesize += sizeof(intptr_t)) - sizeof(intptr_t))
+#define	jit_arg_p()		((_jitl.framesize += sizeof(intptr_t)) - sizeof(intptr_t))
 #endif
 
 #define	jit_arg_f()		((_jitl.framesize += sizeof(float)) - sizeof(float))
@@ -460,13 +460,13 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_movi_i(d, is)	((is) ? MOVLir((is), (d)) : XORLrr ((d), (d)) )
 #define jit_movr_l(d, rs)	((void)((rs) == (d) ? 0 : MOVQrr((rs), (d))))
 #define jit_movi_l(d, is)	((is) \
-                                 ? (_u32P((long)(is)) \
+                                 ? (_u32P((intptr_t)(is)) \
                                     ? MOVLir((is), (d)) \
                                     : MOVQir((is), (d))) \
                                  : XORLrr ((d), (d)) )
-#define jit_movi_p(d, is)       jit_movi_l(d, ((long)(is)))
+#define jit_movi_p(d, is)       jit_movi_l(d, ((intptr_t)(is)))
 #define jit_patchable_movi_p(d, is) (MOVQir((is), (d)), _jit.x.pc)
-#define jit_patch_movi(pa,pv)   (*_PSL((pa) - sizeof(long)) = _jit_SL((pv)))
+#define jit_patch_movi(pa,pv)   (*_PSL((pa) - sizeof(intptr_t)) = _jit_SL((pv)))
 
 #define jit_ntoh_ui(d, rs)	jit_op_((d), (rs), BSWAPLr(d))
 #define jit_ntoh_us(d, rs)	jit_op_((d), (rs), RORWir(8, d))
@@ -566,14 +566,14 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_bmsi_l(label, rs, is) jit_bmsi_i(label, rs, is)
 #define jit_bmci_l(label, rs, is) jit_bmci_i(label, rs, is)
 
-#define jit_jmpi(label)		(JMPm( ((unsigned long) (label)),	0, 0, 0), _jit.x.pc)
-#define jit_calli(label)	(CALLm( ((unsigned long) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_jmpi(label)		(JMPm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
+#define jit_calli(label)	(CALLm( ((uintptr_t) (label)),	0, 0, 0), _jit.x.pc)
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
 
 #ifdef SUPPORT_TINY_JUMPS
 # if 0
-static long _CHECK_TINY(long diff) { if ((diff < -128) || (diff > 127)) *(long *)0x0 = 1; return diff; }
+static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) || (diff > 127)) *(intptr_t *)0x0 = 1; return diff; }
 # else
 #  define _CHECK_TINY(x) x
 # endif
@@ -585,7 +585,7 @@ static long _CHECK_TINY(long diff) { if ((diff < -128) || (diff > 127)) *(long *
 #endif
 
 #ifdef JIT_X86_64
-#define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v)))
+#define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(intptr_t)) = _jit_SL((jit_insn *)(v)))
 # define jit_patch_short_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
 # define jit_patch_branch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
 # define jit_patch_ucbranch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
@@ -648,10 +648,10 @@ static long _CHECK_TINY(long diff) { if ((diff < -128) || (diff > 127)) *(long *
 #define jit_stxi_l(id, rd, rs)		MOVQrQm((rs), (id), (rd), 0,    0)
 
 #ifdef JIT_X86_64
-# define jit_ldi_l(d, is) (_u32P((long)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
-# define jit_sti_l(id, rs) (_u32P((long)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, (long)(id)), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
-# define jit_ldi_i(d, is) (_u32P((long)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
-# define jit_sti_i(id, rs) (_u32P((long)(id)) ? _jit_sti_i(id, rs) : (jit_movi_l(JIT_REXTMP, (long)(id)), MOVQrm(rs, 0, JIT_REXTMP, 0, 0)))
+# define jit_ldi_l(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
+# define jit_sti_l(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
+# define jit_ldi_i(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
+# define jit_sti_i(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_i(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrm(rs, 0, JIT_REXTMP, 0, 0)))
 #else
 # define jit_ldi_l(d, is) _jit_ldi_l(d, is)
 # define jit_sti_l(id, rs) _jit_sti_l(id, rs)

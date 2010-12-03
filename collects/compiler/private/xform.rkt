@@ -1017,7 +1017,7 @@
         
         ;; Accum top-level typedefs for pointers and non-pointers as a list-of-sym:
         (define pointer-types '())
-        (define non-pointer-types '(int char long unsigned ulong uint void float double uchar wchar_t))
+        (define non-pointer-types '(int char long unsigned intptr_t ulong uint uintptr_t void float double uchar wchar_t))
         ;; Accum top-level struct decls as list of (cons sym (list (cons symbol vtype) ...))
         (define struct-defs '())
         
@@ -1884,7 +1884,7 @@
                              0)]
                  [non-ptr-base (cond
                                  [(eq? 'unsigned  (tok-n (car e)))
-                                  (if (memq (tok-n (cadr e)) '(int long char))
+                                  (if (memq (tok-n (cadr e)) '(int long char intptr_t))
                                       (list 'unsigned (tok-n (cadr e))))]
                                  [(lookup-non-pointer-type (tok-n (car e)))
                                   (list (tok-n (car e)))]
@@ -1925,7 +1925,7 @@
                                 ;; End of function ptr
                                 ;; (and we don't care about func ptrs)
                                 (values pointers non-pointers)])]
-                            [(memq (tok-n v) '(int long char unsigned void ulong uint))
+                            [(memq (tok-n v) '(int long char unsigned intptr_t void ulong uint uintptr_t))
                              ;; No more variable declarations
                              (values pointers non-pointers)]
                             [(memq (tok-n v) '(|,| * |:| 1))

@@ -43,7 +43,7 @@ typedef void *(*mz_proc_thread_start)(void*);
 
 mz_proc_thread* mzrt_proc_first_thread_init();
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start, void* data);
-mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start, void* data, long stacksize);
+mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start, void* data, intptr_t stacksize);
 void *mz_proc_thread_wait(mz_proc_thread *thread);
 int mz_proc_thread_detach(mz_proc_thread *thread);
 void mz_proc_thread_exit(void *rc);
@@ -76,7 +76,7 @@ int mzrt_mutex_destroy(mzrt_mutex *mutex);
 typedef struct mzrt_cond mzrt_cond; /* OPAQUE DEFINITION */
 int mzrt_cond_create(mzrt_cond **cond);
 int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex);
-int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds);
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, intptr_t seconds, intptr_t nanoseconds);
 int mzrt_cond_signal(mzrt_cond *cond);
 int mzrt_cond_broadcast(mzrt_cond *cond);
 int mzrt_cond_destroy(mzrt_cond *cond);
@@ -180,10 +180,10 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
 #endif
 }
 
-static MZ_INLINE void mzrt_ensure_max_cas(unsigned long *atomic_val, unsigned long len) {
+static MZ_INLINE void mzrt_ensure_max_cas(uintptr_t *atomic_val, uintptr_t len) {
   int set = 0;
   while(!set) {
-    unsigned long old_val = *atomic_val;
+    uintptr_t old_val = *atomic_val;
     if (len > old_val) {
       set = !mzrt_cas((size_t *)atomic_val, old_val, len);
     }
