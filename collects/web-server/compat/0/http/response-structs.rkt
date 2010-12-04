@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract
+         (prefix-in new: web-server/http/response-structs)
          web-server/http/response-structs
          web-server/http/xexpr
          racket/list
@@ -65,6 +66,8 @@
     [else
      (response/xexpr r)]))
 
-(provide (except-out (all-defined-out)
-                     BODIES
-                     GENS))
+(provide 
+ (rename-out [new:TEXT/HTML-MIME-TYPE TEXT/HTML-MIME-TYPE])
+ (except-out (all-defined-out)
+             BODIES
+             GENS))

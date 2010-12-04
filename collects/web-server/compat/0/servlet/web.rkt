@@ -29,4 +29,14 @@
 (define-ssd-like new:send/suspend/dispatch send/suspend/dispatch)
 (define-ssd-like new:send/suspend/url/dispatch send/suspend/url/dispatch)
 
-(provide (all-defined-out))
+(provide 
+ (rename-out [new:servlet-prompt servlet-prompt]
+             [new:continuation-url? continuation-url?]
+             [new:current-servlet-continuation-expiration-handler
+              current-servlet-continuation-expiration-handler]
+             [new:redirect/get redirect/get]
+             [new:redirect/get/forget redirect/get/forget]
+             [new:adjust-timeout! adjust-timeout!]
+             [new:clear-continuation-table! clear-continuation-table!]
+             [new:with-errors-to-browser with-errors-to-browser])
+ (all-defined-out))

@@ -5,4 +5,7 @@
 (define (make d)
   (new:make (λ (req) (normalize-response (d req)))))
 
-(provide (all-defined-out))
+(provide 
+ (rename-out
+  [new:interface-version interface-version])
+ (all-defined-out))

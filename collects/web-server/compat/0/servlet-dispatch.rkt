@@ -10,4 +10,5 @@
                     kw-args
                     (λ (req) (normalize-response (gen req)))))))
 
-(provide (all-defined-out))
+(provide (rename-out [new:serve/launch/wait serve/launch/wait])
+         (all-defined-out))
