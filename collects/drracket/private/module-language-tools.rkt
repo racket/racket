@@ -154,6 +154,10 @@
                [frame (send tab get-frame)])
           (when (send frame initialized?)
             (send frame begin-container-sequence)
+            
+            ;; avoid any time with both sets of buttons in the panel so the window doesn't get too wide
+            (send (send frame get-toolbar-button-panel) change-children (λ (x) '()))
+            
             (let ([directly-specified-buttons
                    (map (λ (button-spec)
                           (new switchable-button%
