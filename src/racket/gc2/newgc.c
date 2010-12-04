@@ -600,6 +600,10 @@ int GC_is_allocated(void *p)
 /* Allocation                                                                */
 /*****************************************************************************/
 
+#ifdef _WIN64
+# define GC_ALIGN_SIXTEEN
+#endif
+
 /* struct objhead is defined in gc2_obj.h */
 /* Make sure alloction starts out double-word aligned. 
    The header on each allocated object is one word, so to make

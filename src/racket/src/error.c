@@ -1044,7 +1044,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
   if (arity_str) {
     pos = scheme_sprintf(s, slen, "%t: expects %t, given %d",
-			 name, namelen, arity_str, arity_len, xargc);
+			 name, (intptr_t)namelen, arity_str, (intptr_t)arity_len, xargc);
   } else if (minc < 0) {
     const char *n;
     int nlen;
@@ -1061,20 +1061,20 @@ static char *make_arity_expect_string(const char *name, int namelen,
     }
 
     pos = scheme_sprintf(s, slen, "%t: no clause matching %d argument%s",
-			 n, nlen,
+			 n, (intptr_t)nlen,
 			 xargc, xargc == 1 ? "" : "s");
   } else if (!maxc)
     pos = scheme_sprintf(s, slen, "%t: expects no arguments, given %d",
-			 name, namelen, xargc);
+			 name, (intptr_t)namelen, xargc);
   else if (maxc < 0)
     pos = scheme_sprintf(s, slen, "%t: expects at least %d argument%s, given %d",
-			 name, namelen, xminc, (xminc == 1) ? "" : "s", xargc);
+			 name, (intptr_t)namelen, xminc, (xminc == 1) ? "" : "s", xargc);
   else if (minc == maxc)
     pos = scheme_sprintf(s, slen, "%t: expects %d argument%s, given %d",
-			 name, namelen, xminc, (xminc == 1) ? "" : "s", xargc);
+			 name, (intptr_t)namelen, xminc, (xminc == 1) ? "" : "s", xargc);
   else
     pos = scheme_sprintf(s, slen, "%t: expects %d to %d arguments, given %d",
-			 name, namelen, xminc, xmaxc, xargc);
+			 name, (intptr_t)namelen, xminc, xmaxc, xargc);
 
   if (xargc && argv) {
     len /= xargc;

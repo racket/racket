@@ -399,6 +399,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 #  ifdef MZ_XFORM
 START_XFORM_SKIP;
 #  endif
+MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
 static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   return scheme_external_get_thread_local_variables();
 }

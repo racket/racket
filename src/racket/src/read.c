@@ -1557,7 +1557,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             }
             scheme_read_err(port, stxsrc, line, col, pos, fl, ch, indentation,
                             "read: bad input: `#%u'",
-                            found, fl);
+                            found, (intptr_t)fl);
             return NULL;
           }
           break;
@@ -1650,7 +1650,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos),
 			      ch, indentation,
 			      "read: bad syntax `#%c%u'",
-			      orig_ch, a, cnt);
+			      orig_ch, a, (intptr_t)cnt);
 	      return NULL;
 	    }
 	  }
@@ -1760,7 +1760,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 				ch, indentation,
 				"read: bad syntax `#ha%5%u'",
 				str_part,
-				one_more, NOT_EOF_OR_SPECIAL(ch) ? 1 : 0);
+				one_more, (intptr_t)(NOT_EOF_OR_SPECIAL(ch) ? 1 : 0));
 		return NULL;
 	      }
 	    }
@@ -3412,7 +3412,7 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
       scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, init_span), EOF, indentation,
 		      "read: found end-of-file before terminating %u%s",
 		      tag, 
-		      (tlen > 50) ? 50 : tlen,
+		      (intptr_t)((tlen > 50) ? 50 : tlen),
 		      (tlen > 50) ? "..." : "");
       return NULL;
     }
@@ -3950,7 +3950,7 @@ read_delimited_constant(int ch, const mzchar *str,
                     first_ch,
                     str_part,
                     one_more, 
-                    NOT_EOF_OR_SPECIAL(ch) ? 1 : 0);
+                    (intptr_t)(NOT_EOF_OR_SPECIAL(ch) ? 1 : 0));
     return NULL;
   }
             
@@ -4098,7 +4098,7 @@ read_character(Scheme_Object *port,
       scheme_read_err(port, stxsrc, line, col, pos, count + 2, 0, indentation,
 		      "read: bad character constant #\\%c%u",
 		      (maxc == 4) ? 'u' : 'U',
-		      nbuf, count);
+		      nbuf, (intptr_t)count);
       return NULL;
     } else {
       ch = n;

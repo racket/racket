@@ -25,6 +25,10 @@
 /* The size of a `long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
+#ifdef _WIN64
+# define SIZEOF_VOID_P 8
+#endif
+
 /* Direction of stack growth: 1 = up, -1 = down, 0 = unknown */
 #define STACK_DIRECTION -1
 

@@ -14,10 +14,15 @@
 (define opt-flags "/O2 /Oy-")
 (define re:only #f)
 
-(unless (find-executable-path "cl.exe" #f)
-  (error (string-append
-	  "Cannot find executable \"cl.exe\".\n"
-	  "You may need to find and run \"vsvars32.bat\".")))
+(define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
+
+(define cl.exe
+  (let ([p (find-executable-path "cl.exe" #f)])
+    (unless p
+     (error (string-append
+	     "Cannot find executable \"cl.exe\".\n"
+	     "You may need to find and run \"vsvars32.bat\".")))
+    "cl.exe"))
 
 (unless (directory-exists? "xsrc")
   (make-directory "xsrc"))
@@ -110,7 +115,8 @@
 				   (list
 				    "--depends"
 				    "--cpp"
-				    (format "cl.exe /MT /E ~a ~a ~a" 
+				    (format "~a /MT /E ~a ~a ~a" 
+					    cl.exe
 					    common-cpp-defs
 					    expand-extra-flags 
 					    includes)
@@ -139,14 +145,14 @@
 			   (check-timestamp t2 f)
 			   (>= t t2)))
 		       deps))))
-    (unless (system- (format "cl.exe ~a /MT /Zi ~a /c ~a /Fdxsrc/ /Fo~a" flags opt-flags c o))
+    (unless (system- (format "~a ~a /MT /Zi ~a /c ~a /Fdxsrc/ /Fo~a" cl.exe flags opt-flags c o))
       (error "failed compile"))))
 
 (define common-deps (list "../../racket/gc2/xform.rkt"
 			  "../../racket/gc2/xform-mod.rkt"))
 
-(define (find-obj f d) (format "../~a/release/~a.obj" d f))
-(define (find-lib f d) (format "../~a/release/~a.lib" d f))
+(define (find-obj f d) (format "../~a/~arelease/~a.obj" d (if win64? "x64/" "") f))
+(define (find-lib f d) (format "../~a/~arelease/~a.lib" d (if win64? "x64/" "") f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,8 +253,10 @@
 	     (> (file-or-directory-modify-seconds f)
 		ms))
 	   objs)
-      (unless (system- (format "cl.exe ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a"
+      (unless (system- (format "~a ~a ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a"
+			       cl.exe
 			       (if exe? "" "/LD /DLL")
+			       (if win64? "/MACHINE:x64" "")
 			       dll
 			       (let loop ([objs (append objs sys-libs)])
 				 (if (null? objs)
@@ -338,7 +346,8 @@
 	    "../../../GRacket.exe" " /subsystem:windows" #t))
 (system- "mt.exe -manifest ../../../GRacket.exe.manifest -outputresource:../../../GRacket.exe;1")
 
-(system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj")
+(system- (format "~a /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj"
+		 cl.exe))
 (system- "lib.exe -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib")
 
 (define (copy-file/diff src dest)
