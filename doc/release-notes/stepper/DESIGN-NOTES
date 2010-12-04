@@ -912,3 +912,18 @@ harder than I expected.  Don't ask me about lazy scheme.  Or Advanced.  Grr!
 
 **************
 
+Okay, you can ask me about lazy scheme now. Err, lazy racket. The answer
+is simple: Stephen Chang is working on it :). I'm back in here trying to
+figure out why I changed to stepper-syntax-property, and I think the
+answer is that Back In The Day, it wasn't possible to extract all of the
+syntax properties associated with the stepper.  Hmm... actually, maybe I
+should leave this alone; do I want programs to be able to mangle their
+own stepper marks? No, probably not.
+
+Other changes on the GUI side: the stepper now eagerly precomputes
+steps, rather than doing a complex back-and-forth locking; this is less
+code, and works better, too.
+
+Nice to be here again...
+
+2010-12-04
