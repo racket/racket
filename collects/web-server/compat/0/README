@@ -5,10 +5,13 @@ conversion of X-expressions and lists with the format (cons/c bytes?
 The compatibility binding for normalize-response is a coercion from
 the OLD responses to the NEW response structure.
 
-Other incompatibilities introduced:
+Other incompatibilities introduced without compatibility bindings:
 
-The contract on read-mime-types specifies what kind of hash it returns.
 send/formlet requires that the wrapper return an Xexpr
+
+Other incompatibilities introduced with compatibility bindings:
+
+http/response-structs:
 response/basic was removed.
 response/full was removed.
 response/port was removed [1]
@@ -16,6 +19,8 @@ The response/incremental structure was removed.
 response/c was removed.
 make-xexpr-response was renamed response/xexpr and extended.
 normalize-response was removed.
+
+http/cookie:
 xexpr-response/cookies was removed and folded into response/xexpr.
 
 The following places are where old responses were accepted and no longer are:
@@ -49,7 +54,7 @@ Here are some ideas that could be use to ease backwards compatibility:
 
 Footnotes:
 
-1. response/port was present for about a week, so no compatibility is provided.
+1. response/port was present for a few weeks, so no compatibility is provided.
 
 2. If anyone can suggest a good way to provide a compatibility layer
 without duplicating code, I'm interested. The problem is that
