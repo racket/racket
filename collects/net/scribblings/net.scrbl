@@ -7,6 +7,7 @@
 
 @include-section["url.scrbl"]
 @include-section["uri-codec.scrbl"]
+@include-section["websocket.scrbl"]
 @include-section["ftp.scrbl"]
 @include-section["sendurl.scrbl"]
 @include-section["smtp.scrbl"]
