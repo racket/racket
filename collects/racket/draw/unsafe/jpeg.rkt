@@ -342,7 +342,7 @@
                                        [jpeg_color_space _J_COLOR_SPACE]
 
                                        [comp_info _pointer]
-
+				       
 				       [quant_tbl _quant_tbl_t]
                                        
                                        [dc_huff_tbl_ptrs_1 _pointer]

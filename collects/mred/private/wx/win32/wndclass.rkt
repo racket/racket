@@ -35,7 +35,7 @@
 
 ;; call in atomic mode:
 (define (register-hwnd! hwnd)
-  (hash-set! all-hwnds (cast hwnd _pointer _long) #t)
+  (hash-set! all-hwnds (cast hwnd _pointer _intptr) #t)
   (let ([c (malloc-immobile-cell (vector #f #f #f))])
     (void (SetWindowLongW hwnd GWLP_USERDATA c))))
   
@@ -60,7 +60,7 @@
 
 (define (any-hwnd->wx hwnd)
   (and
-   (atomically (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+   (atomically (hash-ref all-hwnds (cast hwnd _pointer _intptr) #f))
    (let ([wx (hwnd->wx hwnd)])
      (and wx
           (send wx is-hwnd? hwnd)
@@ -78,7 +78,7 @@
 
 ;; call in atomic mode:
 (define (can-unregister-hwnd? hwnd)
-  (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+  (hash-ref all-hwnds (cast hwnd _pointer _intptr) #f))
 
 ;; call in atomic mode:
 (define (unregister-hwnd! hwnd)
@@ -86,7 +86,7 @@
     (when c
       (free-immobile-cell c)
       (SetWindowLongW hwnd GWLP_USERDATA #f))
-    (hash-remove! all-hwnds (cast hwnd _pointer _long))))
+    (hash-remove! all-hwnds (cast hwnd _pointer _intptr))))
 
 ;; ----------------------------------------
 

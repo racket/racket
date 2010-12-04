@@ -150,7 +150,7 @@
            (set! items (append items (list i)))
            (if submenu
                (AppendMenuW hmenu (bitwise-ior MF_POPUP MF_STRING) (send submenu get-hmenu) label)
-               (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _long _pointer) label)))))))
+               (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _intptr _pointer) label)))))))
 
   (define/public (append-separator) 
     (atomically

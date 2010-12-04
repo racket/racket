@@ -28,9 +28,14 @@
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(windows) 
+   (ffi-lib ,(if win64?
+		 "libintl-8.dll"
+		 "libpangowin32-1.0-0.dll"))
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")
-   (ffi-lib "freetype6.dll")
+   (ffi-lib ,(if win64? 
+		 "libfreetype-6.dll"
+		 "freetype6.dll"))
    (ffi-lib "libfontconfig-1.dll")
    (ffi-lib "libpangoft2-1.0-0.dll")
    (ffi-lib "libpangocairo-1.0-0.dll")])

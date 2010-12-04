@@ -50,21 +50,25 @@
               MAKELONG
               MAKELPARAM))
 
+(define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
+(define win_abi (if win64? #f 'stdcall))
+
 (define-syntax-rule (_wfun . a)
-  (_fun #:abi 'stdcall . a))
+  (_fun #:abi win_abi . a))
 
 (define _WORD _int16)
 (define _DWORD _int32)
 (define _UDWORD _uint32)
 (define _ATOM _int)
-(define _WPARAM _long)
-(define _LPARAM _long)
-(define _LRESULT _long)
+(define _UINT_PTR _uintptr)
+(define _WPARAM _intptr) ; supposed to be _UINT_PTR, but we have some sign mismatch
+(define _LONG_PTR _intptr)
+(define _LPARAM _LONG_PTR)
+(define _LRESULT _LONG_PTR)
 (define _BOOL (make-ctype _int (lambda (v) (if v 1 0)) (lambda (v) (not (zero? v)))))
 (define _UINT _uint)
-(define _UINT_PTR _ulong)
 (define _BYTE _uint8)
-(define _HRESULT _int32)
+(define _HRESULT _long)
 (define _WCHAR _int16)
 (define _SIZE_T _long)
 (define _INT_PTR _intptr)

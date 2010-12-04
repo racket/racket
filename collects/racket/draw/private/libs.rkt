@@ -3,7 +3,18 @@
          racket/runtime-path
          (for-syntax racket/base))
 
-(provide define-runtime-lib)
+(provide define-runtime-lib
+	 win64?
+	 (for-syntax win64?))
+
+(define win64?
+  (and (eq? 'windows (system-type))
+       (equal? "win32\\x86_64" 
+	       (path->string (system-library-subpath #f)))))
+(define-for-syntax win64?
+  (and (eq? 'windows (system-type))
+       (equal? "win32\\x86_64" 
+	       (path->string (system-library-subpath #f)))))
 
 (define-syntax define-runtime-lib
   (syntax-rules (macosx unix windows ffi-lib)

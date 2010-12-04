@@ -90,9 +90,13 @@ static void init_iconv()
   if (!m)
     m = LoadLibraryW(scheme_get_dll_path(L"libiconv.dll"));
   if (!m)
+    m = LoadLibraryW(scheme_get_dll_path(L"libiconv-2.dll"));
+  if (!m)
     m = LoadLibrary("iconv.dll");
   if (!m)
     m = LoadLibrary("libiconv.dll");
+  if (!m)
+    m = LoadLibrary("libiconv-2.dll");
   if (m) {
     iconv = (iconv_proc_t)GetProcAddress(m, "libiconv");
     iconv_open = (iconv_open_proc_t)GetProcAddress(m, "libiconv_open");
