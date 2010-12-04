@@ -471,8 +471,8 @@ Scheme_Object *(*scheme_make_integer_value)(intptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned)(uintptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_long_long)(mzlonglong i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_long)(umzlonglong i);
-Scheme_Object *(*scheme_make_integer_value_from_long_halves)(unsigned long lowhalf, unsigned long hihalf);
-Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_halves)(unsigned long lowhalf, unsigned long hihalf);
+Scheme_Object *(*scheme_make_integer_value_from_long_halves)(uintptr_t lowhalf, uintptr_t hihalf);
+Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_halves)(uintptr_t lowhalf, uintptr_t hihalf);
 Scheme_Object *(*scheme_make_double)(double d);
 #ifdef MZ_USE_SINGLE_FLOATS
 Scheme_Object *(*scheme_make_float)(float f) ;
