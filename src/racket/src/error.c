@@ -33,10 +33,6 @@
 # include <stdarg.h>
 #endif
 
-#ifndef PRINTF_INTPTR_SIZE_PREFIX
-# define PRINTF_INTPTR_SIZE_PREFIX "l"
-#endif
-
 #define mzVA_ARG(x, y) HIDE_FROM_XFORM(va_arg(x, y))
 #define TMP_CMARK_VALUE scheme_parameterization_key
 
