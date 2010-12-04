@@ -1,0 +1,7 @@
+Each directory contains a mirror of the Web Server top-level as it was before a backwards incompatible change. 
+
+For example, to get the version of web-server/servlet/web before backwards incompatible change 0, require web-server/compat/0/servlet/web.
+
+Each directory also contains a README describing the changes and the compatibility interface. 
+
+These are not documented in the manual to discourage new programs written to the old interface.
