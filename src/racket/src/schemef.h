@@ -1123,7 +1123,7 @@ MZ_EXTERN int scheme_check_proc_arity2(const char *where, int a,
 				       int which, int argc, Scheme_Object **argv,
 				       int false_ok);
 
-MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, int *len);
+MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, intptr_t *len);
 MZ_EXTERN char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
 
 MZ_EXTERN const char *scheme_system_library_subpath();

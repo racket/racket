@@ -949,7 +949,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 
   if (len) {
     char *sstr;
-    int slen;
+    intptr_t slen;
 
     sstr = scheme_make_provided_string(s, 2, &slen);
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -1754,7 +1754,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
     int pos = (num_err ? num_err : char_err) - 1;
     char *args, *bstr;
     intptr_t alen;
-    int blen;
+    intptr_t blen;
     char *type = (num_err ? "exact-number" : "character");
     Scheme_Object *bad = argv[pos];
 
@@ -1823,7 +1823,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
       case 'e':
       case 'E':
 	{
-	  int len;
+	  intptr_t len;
 	  char *s;
 	  s = scheme_make_provided_string(argv[used++], 0, &len);
 	  scheme_write_byte_string(s, len, port);

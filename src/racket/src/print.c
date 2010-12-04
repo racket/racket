@@ -1861,7 +1861,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   if (SCHEME_SYMBOLP(obj)
       || SCHEME_KEYWORDP(obj))
     {
-      int l;
+      intptr_t l;
       Scheme_Object *idx;
       int is_kw;
 
@@ -1938,7 +1938,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  
 	  if (is_kw)
 	    print_utf8_string(pp, "#:", 0, 2);
-	  s = scheme_symbol_name_and_size(obj, (unsigned int *)&l, 
+	  s = scheme_symbol_name_and_size(obj, (uintptr_t *)&l, 
 					  ((pp->can_read_pipe_quote 
 					    ? SCHEME_SNF_PIPE_QUOTE
 					    : SCHEME_SNF_NO_PIPE_QUOTE)
@@ -2314,7 +2314,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    src = obj;
 
 	  if (SAME_OBJ(src, obj)) {
-            int l;
+            intptr_t l;
             const char *s;
             Scheme_Object *name;
 
@@ -2331,7 +2331,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
-            s = scheme_symbol_name_and_size(name, (unsigned int *)&l, 
+            s = scheme_symbol_name_and_size(name, (uintptr_t *)&l, 
                                             (pp->print_struct
                                              ? SCHEME_SNF_FOR_TS
                                              : (pp->can_read_pipe_quote 
