@@ -5,6 +5,19 @@ conversion of X-expressions and lists with the format (cons/c bytes?
 The compatibility binding for normalize-response is a coercion from
 the OLD responses to the NEW response structure.
 
+For most applications, preserving compatibility is as simple as changing:
+
+(require web-server/servlet
+	 web-server/servlet-env)
+
+to
+
+(require web-server/compat/0/servlet
+	 web-server/compat/0/servlet-env)
+
+However, for libraries and more complicated applications, more
+detailed changes may be required.
+
 Other incompatibilities introduced without compatibility bindings:
 
 send/formlet requires that the wrapper return an Xexpr
