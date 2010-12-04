@@ -5,7 +5,7 @@
          racket/file
          racket/date
          net/uri-codec
-         web-server/servlet
+         web-server/compat/0/servlet
          handin-server/private/md5
          handin-server/private/logger
          handin-server/private/config
