@@ -1,6 +1,6 @@
 #lang racket/base
 (require (prefix-in new: web-server/servlet-env)
-         "../http/response-structs.rkt")
+         "http/response-structs.rkt")
 
 (define serve/servlet
   (make-keyword-procedure

@@ -1,6 +1,6 @@
 #lang racket/base
 (require (prefix-in new: web-server/servlet-dispatch)
-         "../http/response-structs.rkt")
+         "http/response-structs.rkt")
 
 (define dispatch/servlet
   (make-keyword-procedure
