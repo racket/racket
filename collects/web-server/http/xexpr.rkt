@@ -3,9 +3,21 @@
          racket/list
          xml
          web-server/private/xexpr
+         unstable/contract
          "request-structs.rkt"
          "cookie.rkt"
          "response-structs.rkt")
+
+(define xexpr-response/c
+  (coerce/c
+   (λ (x)
+     (cond
+       [(response? x)
+        x]
+       [(xexpr? x)
+        (response/xexpr x)]
+       [else
+        #f]))))
 
 (define (response/xexpr
          xexpr
@@ -25,6 +37,7 @@
      (write-xexpr xexpr out))))
 
 (provide/contract
+ [xexpr-response/c contract?]
  [response/xexpr 
   ((pretty-xexpr/c)
    (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?) #:preamble bytes?)

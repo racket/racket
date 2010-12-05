@@ -1,5 +1,6 @@
 #lang racket
 (require web-server/servlet-env
+         web-server/servlet/servlet-structs
          web-server/http)
 
 (define (serve/dispatch dispatch)
@@ -8,4 +9,4 @@
                  #:servlet-regexp #rx""))
 
 (provide/contract
- [serve/dispatch ((request? . -> . response?) . -> . void)])
+ [serve/dispatch ((request? . -> . response/c) . -> . void)])
