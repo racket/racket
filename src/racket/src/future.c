@@ -1214,16 +1214,16 @@ void scheme_check_future_work()
     if (ft && ft->want_lw) {
       void *storage[3];
 
-      (void)capture_future_continuation(ft, storage);
-
-      /* Signal the waiting worker thread that it
-         can continue doing other things: */
-      mzrt_mutex_lock(fs->future_mutex);
-      if (ft->can_continue_sema) {
-        mzrt_sema_post(ft->can_continue_sema);
-        ft->can_continue_sema = NULL;
+      if (capture_future_continuation(ft, storage)) {
+        /* Signal the waiting worker thread that it
+           can continue doing other things: */
+        mzrt_mutex_lock(fs->future_mutex);
+        if (ft->can_continue_sema) {
+          mzrt_sema_post(ft->can_continue_sema);
+          ft->can_continue_sema = NULL;
+        }
+        mzrt_mutex_unlock(fs->future_mutex);
       }
-      mzrt_mutex_unlock(fs->future_mutex);
     } else
       break;
   }
