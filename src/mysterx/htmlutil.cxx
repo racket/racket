@@ -992,7 +992,7 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
 Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
-  long val; \
+  intptr_t val; \
   GUARANTEE_ELEMENT (scm_name, 0); \
   GUARANTEE_INTEGER (scm_name, 1); \
   pIHTMLStyle = styleInterfaceFromElement(argv[0]); \

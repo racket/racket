@@ -13,10 +13,12 @@ dotnet/Release
 myspage/Release
 myspage/*.idb
 myspage/*.user
+myspage/x64
 
 myssink/Release
 myssink/*.idb
 myssink/*.user
+myssink/x64
 
 gc_traverse.inc
 3m

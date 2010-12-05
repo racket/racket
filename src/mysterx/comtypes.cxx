@@ -434,13 +434,15 @@ Scheme_Object * mx_scode_to_scheme_number (int argc, Scheme_Object **argv)
 
 Scheme_Object * scheme_number_to_mx_scode(int argc, Scheme_Object **argv)
 {
+  intptr_t lv;
   SCODE scode;
 
   GUARANTEE_TYPE ("number->com-scode", 0, SCHEME_REALP, "number");
 
-  if (scheme_get_int_val (argv[0], &scode) == 0)
+  if (scheme_get_int_val (argv[0], &lv) == 0)
       scheme_signal_error("number->com-scode: "
 			  "number %V too big to fit in com-scode", argv[0]);
+  scode = lv;
 
   return mx_make_scode (scode);
 }
