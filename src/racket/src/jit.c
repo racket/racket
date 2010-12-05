@@ -1955,6 +1955,9 @@ typedef struct {
   intptr_t full_size, copy_size;
 #ifdef JIT_X86_64
   intptr_t saved_r14, saved_r15;
+# ifdef _WIN64
+  intptr_t saved_r12, saved_r13;
+# endif
 #endif
   Scheme_Object *result;
   void *new_runstack;
@@ -11796,7 +11799,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
-  (void)jit_calli(ts_on_demand); /* DARWIN: stack needs to be 16-byte aligned */
+  mz_prepare(0);
+  (void)mz_finish_lwe(ts_on_demand, ref);
   CHECK_LIMIT();
   /* Restore registers and runstack, and jump to arity checking
      of newly-created code when argv == runstack (i.e., a tail call): */
@@ -13438,11 +13442,15 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 #ifdef JIT_X86_64
     jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r14, JIT_R0, JIT_R(14));
     jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r15, JIT_R0, JIT_R(15));
+# ifdef _WIN64
+    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r12, JIT_R0, JIT_R(12));
+    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r13, JIT_R0, JIT_R(13));
+# endif
 #endif
 
     jit_prepare(1);
     jit_pusharg_p(JIT_R0);
-    (void)jit_calli(continuation_apply_install);
+    (void)mz_finish(continuation_apply_install);
     
     CHECK_LIMIT();
   }
@@ -13488,6 +13496,10 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 # ifdef JIT_X86_64
     /* saved_r14 is installed in the topmost frame already */
     jit_ldxi_p(JIT_R(15), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r15);
+# ifdef _WIN64
+    jit_ldxi_p(JIT_R(12), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r12);
+    jit_ldxi_p(JIT_R(13), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r13);
+# endif
 # endif
     CHECK_LIMIT();
 

@@ -354,9 +354,15 @@ struct jit_local_state {
    before we set up the local frame: */
 #define JIT_PREARG JIT_R0
 #ifdef JIT_X86_64
-# define jit_getprearg__p(r) (MOVQrr(_EDI, r))
-# define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
-# define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
+# ifdef _WIN64
+#  define jit_getprearg__p(r) (MOVQrr(_ECX, r))
+#  define jit_getprearg_pip_p(r) (MOVQrr(JIT_R(9), r))
+#  define jit_getprearg_pipp_p(r) (jit_ldxi_p(r, JIT_SP, 40))
+# else
+#  define jit_getprearg__p(r) (MOVQrr(_EDI, r))
+#  define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
+#  define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
+# endif
 #else
 # define jit_getprearg__p(r) (jit_ldxi_p(r, JIT_SP, 4))
 # define jit_getprearg_pip_p(r) (jit_ldxi_p(r, JIT_SP, 16))

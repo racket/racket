@@ -1276,7 +1276,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
      to suspend wouldn't accomplish anything). */
   insist_to_suspend = !is_atomic;
   prefer_to_suspend = (insist_to_suspend || fs->future_queue_count);
-  
+
   if (prefer_to_suspend
       && GC_gen0_alloc_page_ptr 
       && capture_future_continuation(future, storage)) {
