@@ -14,7 +14,7 @@ The following facilities are experimental.
 @defmodule[syntax/parse/experimental/contract]
 
 Macros can apply contracts to their sub-expressions using the
-@defidentifier[#'expr/c #:form? #t] syntax class.
+@racket[expr/c] syntax class.
 
 @defproc[(expr/c [contract-expr syntax?]
                  [#:positive pos-blame 'use-site]

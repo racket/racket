@@ -46,7 +46,7 @@ Match syntax satisfying the corresponding predicates.
                  [description (or/c string? #f)])
          (attributes value)]{
 
-The @defidentifier[#'static #:form? #t] syntax class matches an
+The @racket[static] syntax class matches an
 identifier that is bound in the syntactic environment to static
 information (see @scheme[syntax-local-value]) satisfying the given
 @scheme[predicate]. If the term does not match, the
