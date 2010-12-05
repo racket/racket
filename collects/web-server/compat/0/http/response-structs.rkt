@@ -1,10 +1,7 @@
 #lang racket/base
-(require racket/contract
-         (prefix-in new: web-server/http/response-structs)
-         web-server/http/response-structs
+(require web-server/http/response-structs
          web-server/http/xexpr
-         racket/list
-         xml)
+         racket/list)
 
 (define response/basic? response?)
 (define (make-response/basic c m s mime hs)
@@ -48,11 +45,6 @@
 (define (response/incremental-body r)
   (hash-ref GENS r))
 
-(define response/c
-  (or/c response/basic?
-        (cons/c bytes? (listof (or/c string? bytes?)))
-        xexpr/c))
-
 (define make-xexpr-response response/xexpr)
 
 (define (normalize-response r [close? #f])
@@ -67,7 +59,6 @@
      (response/xexpr r)]))
 
 (provide 
- (rename-out [new:TEXT/HTML-MIME-TYPE TEXT/HTML-MIME-TYPE])
  (except-out (all-defined-out)
              BODIES
              GENS))

@@ -2,75 +2,73 @@ In Racket 5.0.99.4 and before, the Web Server supported implicit
 conversion of X-expressions and lists with the format (cons/c bytes?
 (listof (or/c string? bytes?))) into response data structures for output.
 
-The compatibility binding for normalize-response is a coercion from
-the OLD responses to the NEW response structure.
+After 5.0.99.4, this implicit conversion has been generalized into
+current-response/c and response/c. In the process, implicit conversion
+has been completely removed from some internal plumbing AND the
+response structures have been streamlined---primarily for efficiency.
 
-For most applications, preserving compatibility is as simple as changing:
+This document describes the incompatible changes and how to restore
+the old behavior when that is possible.
 
-(require web-server/servlet
-	 web-server/servlet-env)
+--- Coercion behavior ---
 
-to
+The old coercion behavior will be dynamically introduced by requiring
+web-server/compat/0/coerce or parameterizing current-response/c to
+(coerce/c normalize-response) after requiring
+web-server/compat/0/http/response-structs.
 
-(require web-server/compat/0/servlet
-	 web-server/compat/0/servlet-env)
+--- New response structures ---
 
-However, for libraries and more complicated applications, more
-detailed changes may be required.
+The http/response-structs module has changed to be almost
+unrecognizable. http/response-structs was provided through http and
+servlet, so many Web applications implicitly rely on it.
 
-Other incompatibilities introduced without compatibility bindings:
+web-server/compat/0/http/response-structs provides a version that
+implements the old behavior without interferring with new version
+(i.e., they can both be required simultaneously.) [N.B. response/port
+was only present for a few weeks, so it is not provided in the
+compatibility library.]
 
-send/formlet requires that the wrapper return an Xexpr
+--- xexpr-response/cookies ---
 
-Other incompatibilities introduced with compatibility bindings:
+The http/cookie module provided xexpr-response/cookies, but that
+functionality is now part of response/xexpr. The old function can be
+required from web-server/compat/0/http/cookie (without interferring
+with any other bindings from the new cookie module.)
 
-http/response-structs:
-response/basic was removed.
-response/full was removed.
-response/port was removed [1]
-The response/incremental structure was removed.
-response/c was removed.
-make-xexpr-response was renamed response/xexpr and extended.
-normalize-response was removed.
+--- Internal APIs ---
 
-http/cookie:
-xexpr-response/cookies was removed and folded into response/xexpr.
-
-The following places are where old responses were accepted and no longer are:
+Many internal APIs are restricted to receive only actual response?
+structures:
 
 configuration-table responders
 authentication responder on dispatchers/dispatch-passwords
-servlet-loading responder on dispatchers/dispatch-servlets
-#lang web-server/insta [2]
-lang/web --- make-stateless-servlet
-private/servlet --- handler field
-servlet-env --- serve/servlet's #:file-not-found-responder arg
-serlet/servlet-structs --- response-generator/c, expiration-handler/c
-servlet/setup --- make*servlet
-servlet/web --- with-errors-to-browser
-
-The following places are where old responses were accepted and no
-longer are, but compatible bindings are provided: 
-
-dispatch/serve --- serve/dispatch
 dispatchers/dispatch-lift --- make
 dispatchers/dispatch-pathprocedure --- make
 http/response --- output-response and output-response/method
+
+No compatible interface is provided for these functions and data structures.
+
+--- External APIs ---
+
+Most external APIs now use the new response/c. Specifically:
+
+dispatch/serve --- serve/dispatch
 servlet-dispatch --- dispatch/servlet
 servlet-env --- serve/servlet
-servlet/web --- send/*
+servlet/web --- send/*, with-errors-to-browser
+dispatchers/dispatch-servlets  --- servlet-loading responder argument
+#lang web-server/insta
+lang/web --- make-stateless-servlet
+private/servlet --- handler field
+serlet/servlet-structs --- response-generator/c, expiration-handler/c
+servlet/setup --- make*servlet
 
-Here are some ideas that could be use to ease backwards compatibility:
+These represent nearly every place where servlets typically interact
+with the server.
 
-* A new servlet version for module servlets that puts an old contract
-  on the return from start. 
-
-Footnotes:
-
-1. response/port was present for a few weeks, so no compatibility is provided.
-
-2. If anyone can suggest a good way to provide a compatibility layer
-without duplicating code, I'm interested. The problem is that
-web-server/insta walks the module source to find the "start" function,
-and we'd presumably want to overwrite that. Plus, web-server/insta
-will import other bindings that now have imcompatibilities. 
+However, one function: send/formlet from formlets used to allow any
+old response/c as a wrapper result, while the new version requires
+that the wrapper returns an Xexpr. This changes is justified in that
+formlets already bake in support for Xexpr as a fundamental part of
+their syntax.
