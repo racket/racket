@@ -68,9 +68,6 @@
 (define write-prop-val write-text)
 
 (provide/contract
- [write-xexpr (->* [xexpr/c] [output-port?] void?)])
-
-(provide/contract
  [create-webpage (string? xexpr/c . -> . void?)]
  [create-stylesheet (string? css/c . -> . void?)])
 

@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require scribble/eval "utils.rkt" (for-label racket (except-in xml write-xexpr) unstable/web))
+@(require scribble/eval "utils.rkt" (for-label racket xml unstable/web))
 
 @title{XML and CSS}
 
@@ -37,15 +37,10 @@ This flat contract corresponds to @scheme[xexpr?].  It is reprovided from
 @scheme[xexpr/c], this module provides its own definition.
 }
 
-@deftogether[(
 @defproc[(write-css [css css/c] [out output-port? (current-output-port)])
-         void?]
-@defproc[(write-xexpr [xexpr xexpr/c] [out output-port? (current-output-port)])
-         void?]
-)]{
-These functions write CSS-expressions and
-X-expressions, respectively, to output ports, by their
-canonical text representations.
+         void?]{
+This function writes CSS-expressions to output ports by its
+canonical text representation.
 }
 
 @deftogether[(
