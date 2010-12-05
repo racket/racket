@@ -72,6 +72,8 @@
                           (build-path example-servlets "add-v2.rkt"))
     (test-add-two-numbers mkd "add-ssd.rkt - send/suspend/dispatch"
                           (build-path example-servlets "add-ssd.rkt"))
+    (test-add-two-numbers mkd "add-compat0.rkt"
+                          (build-path example-servlets "add-compat0.rkt"))
     (test-add-two-numbers mkd "add-formlets.rkt - send/formlet"
                           (build-path example-servlets "add-formlets.rkt"))
     (test-add-two-numbers mkd "add-page.rkt"
