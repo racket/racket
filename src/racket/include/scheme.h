@@ -136,7 +136,6 @@ START_XFORM_SUSPEND;
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include <stdint.h>
 
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
