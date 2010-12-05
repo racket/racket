@@ -471,6 +471,10 @@ web-server/insta
                      xml))
 
 @defmodule[web-server/http/xexpr]{
+                                  
+@defthing[xexpr-response/c contract?]{
+A contract for use with @racket[current-response/c] that coerces
+X-expressions into @racket[response?] structures using @racket[response/xexpr].}
 
 @defproc[(response/xexpr [xexpr xexpr/c]
                          [#:code code number? 200]

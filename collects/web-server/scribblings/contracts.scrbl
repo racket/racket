@@ -11,13 +11,24 @@
 This module provides a number of contracts
 for use in servlets.
 
+@defparam[current-response/c ctc contract?]{
+The contract used by @racket[response/c] dynamically. Defaults to @racket[any/c].
+}
+
+@defthing[response/c contract?]{
+A contract corresponding to @racket[(dynamic/c any/c current-response/c response?)].
+                            
+This allows Web applications to customize the Web Server's handling of responses, while ensuring that the Web Server
+always receives @racket[response?] structures.
+}                           
+
 @defthing[k-url? contract?]{
 Equivalent to @racket[string?]. 
                                        
 Example: @racket["http://localhost:8080/servlets;1*1*20131636/examples/add.rkt"]}
 
 @defthing[response-generator/c contract?]{
-Equivalent to @racket[(k-url? . -> . response?)].
+Equivalent to @racket[(k-url? . -> . response/c)].
            
 Example: @racketblock[(lambda (k-url)
                         (response/xexpr
@@ -28,7 +39,7 @@ Example: @racketblock[(lambda (k-url)
 }
 
 @defthing[expiration-handler/c contract?]{
-Equivalent to @racket[(or/c false/c (request? . -> . response?))].
+Equivalent to @racket[(or/c false/c (request? . -> . response/c))].
               
 Typically @racket[#f] uses the default expiration handler, which displays an error message.
            

@@ -128,7 +128,7 @@ Like always, you don't even need to save the file.
 
 @section{Full API}
 
-@defproc[(serve/servlet [start (request? . -> . response?)]
+@defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
                         [#:connection-close? connection-close? boolean? #f]
                         [#:launch-browser? launch-browser? boolean? (not command-line?)]
@@ -152,7 +152,7 @@ Like always, you don't even need to save the file.
                         [#:servlets-root servlets-root path-string? (build-path server-root-path "htdocs")]
                         [#:servlet-current-directory servlet-current-directory path-string? servlets-root]
                         [#:file-not-found-responder file-not-found-responder
-                                                    (request? . -> . response?)
+                                                    (request? . -> . response/c)
                                                     (gen-file-not-found-responder 
                                                      (build-path
                                                       server-root-path

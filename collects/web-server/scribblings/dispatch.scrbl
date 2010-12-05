@@ -105,9 +105,9 @@ After mastering the world of blogging software, you decide to put the ubiquitous
            [dispatch-pattern dispatch-fun]
            ...)]
          #:contracts
-         ([else-fun (request? . -> . response?)]
-          [dispatch-fun (request? any/c ... . -> . response?)])]{
- Returns two values: the first is a dispatching function with the contract @racket[(request? . -> . response?)]
+         ([else-fun (request? . -> . response/c)]
+          [dispatch-fun (request? any/c ... . -> . response/c)])]{
+ Returns two values: the first is a dispatching function with the contract @racket[(request? . -> . response/c)]
  that calls the appropriate @racket[dispatch-fun] based on the first @racket[dispatch-pattern] that matches the
  request's URL; the second is a URL-generating function with the contract @racket[(procedure? any/c ... . -> . string?)]
  that generates a URL using @racket[dispatch-pattern] for the @racket[dispatch-fun] given as its first argument.
@@ -131,8 +131,8 @@ After mastering the world of blogging software, you decide to put the ubiquitous
            [dispatch-pattern dispatch-fun]
            ...)]
          #:contracts
-         ([else-fun (request? . -> . response?)]
-          [dispatch-fun (request? any/c ... . -> . response?)])]{
+         ([else-fun (request? . -> . response/c)]
+          [dispatch-fun (request? any/c ... . -> . response/c)])]{
  Like @racket[dispatch-rules], except returns a third value with the contract @racket[(request? . -> . boolean?)] that returns
       @racket[#t] if the dispatching rules apply to the request and @racket[#f] otherwise.
       }
@@ -146,8 +146,8 @@ After mastering the world of blogging software, you decide to put the ubiquitous
            [dispatch-pattern dispatch-fun]
            ...)]
          #:contracts
-         ([else-fun (request? . -> . response?)]
-          [dispatch-fun (request? any/c ... . -> . response?)])]{
+         ([else-fun (request? . -> . response/c)]
+          [dispatch-fun (request? any/c ... . -> . response/c)])]{
  Returns a dispatching function as described by @racket[dispatch-rules].
 }
 
@@ -156,11 +156,11 @@ After mastering the world of blogging software, you decide to put the ubiquitous
           [dispatch-pattern dispatch-fun]
           ...)
          #:contracts
-         ([dispatch-fun (request? any/c ... . -> . response?)])]{
+         ([dispatch-fun (request? any/c ... . -> . response/c)])]{
  Returns a URL-generating function as described by @racket[dispatch-rules].
 }
 
-@defproc[(serve/dispatch [dispatch (request? . -> . response?)])
+@defproc[(serve/dispatch [dispatch (request? . -> . response/c)])
          void]{
  Calls @racket[serve/servlet] with a @racket[#:servlet-regexp] argument (@racket[#rx""]) so that every request is handled by @racket[dispatch].
 }
