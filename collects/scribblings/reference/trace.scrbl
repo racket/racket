@@ -5,7 +5,7 @@
 @(begin (define ev (make-base-eval))
 	(ev '(require racket/trace)))
 
-@title["Tracing"]
+@title{Tracing}
 
 @note-lib-only[racket/trace]
 
@@ -106,7 +106,7 @@ results, and a number indicating the depth of the call.
 
 }
                    
-@defparam[current-prefix-out prefix string?]{
+@defparam[current-prefix-in prefix string?]{
   This string is used by the default value of @racket[current-trace-print-args]
   indicating that the current line is showing the a call to a
   traced function.
