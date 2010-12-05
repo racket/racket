@@ -1,6 +1,38 @@
 #lang racket/base
 (require racket/contract racket/dict racket/match)
 
+(define (dynamic/c pre parameter post)
+  (define pre-ctc (coerce-contract 'pre pre))
+  (define post-ctc (coerce-contract 'post post))
+  (make-contract
+   #:name (build-compound-type-name 'dynamic pre-ctc parameter post-ctc)
+   #:projection
+   (λ (b)
+     (define pre-proj ((contract-projection pre-ctc) b))
+     (define post-proj ((contract-projection post-ctc) b))
+     (λ (x)
+       (define dyn-proj
+         ((contract-projection (coerce-contract 'dynamic (parameter))) b))
+       (post-proj 
+        (dyn-proj
+         (pre-proj
+          x)))))))
+
+(define (coerce/c i->o)
+  (make-contract
+   #:name (build-compound-type-name 'coerce i->o)
+   #:projection
+   (λ (b)
+     (λ (x)
+       (or (i->o x)
+           (raise-blame-error b x "Coercion failed"))))))
+
+(provide/contract
+ [dynamic/c (-> contract? (parameter/c contract?) contract?
+                contract?)]
+ [coerce/c (-> (-> any/c any/c)
+               contract?)])
+
 (define path-element?
   (or/c path-string? (symbols 'up 'same)))
 ;; Eli: We already have a notion of "path element" which is different

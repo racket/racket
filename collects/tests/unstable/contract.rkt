@@ -1,6 +1,18 @@
 #lang racket
+(require rackunit rackunit/text-ui unstable/contract "helpers.rkt" tests/eli-tester)
 
-(require rackunit rackunit/text-ui unstable/contract "helpers.rkt")
+(test
+ (let ()
+   (define p (make-parameter any/c))
+   (define c (dynamic/c string? p number?))
+   
+   (parameterize ([p (coerce/c string->number)])
+     (test
+      (contract c "123" 'pos 'neg) => 123
+      (contract c "123a" 'pos 'neg) =error> "Coercion failed"))
+   
+   (test 
+    (contract c "123" 'pos 'neg) =error> "broke")))
 
 (run-tests
  (test-suite "contract.ss"
