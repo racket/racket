@@ -17,6 +17,9 @@ web-server/compat/0/coerce or parameterizing current-response/c to
 (coerce/c normalize-response) after requiring
 web-server/compat/0/http/response-structs.
 
+Since Xexpr conversion is so convenient, xexpr-response/c is now
+provided by http/xexpr for use with current-response/c.
+
 --- New response structures ---
 
 The http/response-structs module has changed to be almost
@@ -24,7 +27,7 @@ unrecognizable. http/response-structs was provided through http and
 servlet, so many Web applications implicitly rely on it.
 
 web-server/compat/0/http/response-structs provides a version that
-implements the old behavior without interferring with new version
+implements the old behavior without interfering with new version
 (i.e., they can both be required simultaneously.) [N.B. response/port
 was only present for a few weeks, so it is not provided in the
 compatibility library.]
@@ -33,7 +36,7 @@ compatibility library.]
 
 The http/cookie module provided xexpr-response/cookies, but that
 functionality is now part of response/xexpr. The old function can be
-required from web-server/compat/0/http/cookie (without interferring
+required from web-server/compat/0/http/cookie (without interfering
 with any other bindings from the new cookie module.)
 
 --- Internal APIs ---
@@ -61,7 +64,7 @@ dispatchers/dispatch-servlets  --- servlet-loading responder argument
 #lang web-server/insta
 lang/web --- make-stateless-servlet
 private/servlet --- handler field
-serlet/servlet-structs --- response-generator/c, expiration-handler/c
+servlet/servlet-structs --- response-generator/c, expiration-handler/c
 servlet/setup --- make*servlet
 
 These represent nearly every place where servlets typically interact
