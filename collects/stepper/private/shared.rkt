@@ -1,37 +1,39 @@
-#lang scheme
+#lang racket
 
-(require "my-macros.ss"
+(require "my-macros.rkt"
          srfi/26
          scheme/class)
 
-#;(require (for-syntax mzlib/list))
 
-  ; CONTRACTS
-  
-  (define varref-set? (listof identifier?))
-  (define binding-set? (or/c varref-set? (symbols 'all)))
-  (define (arglist? v)
-    (or (null? v)
-        (identifier? v)
-        (and (pair? v)
-             ((flat-contract-predicate (cons/c identifier? arglist?)) v))        
-        (and (syntax? v) (null? (syntax-e v)))
-        (and (syntax? v) 
-             ((flat-contract-predicate (cons/c identifier? arglist?)) (syntax-e v)))))
-  
-  #;(provide/contract
+; CONTRACTS
+
+(define varref-set? (listof identifier?))
+(define binding-set? (or/c varref-set? (symbols 'all)))
+(define (arglist? v)
+  (or (null? v)
+      (identifier? v)
+      (and (pair? v)
+           ((flat-contract-predicate (cons/c identifier? arglist?)) v))        
+      (and (syntax? v) (null? (syntax-e v)))
+      (and (syntax? v) 
+           ((flat-contract-predicate (cons/c identifier? arglist?)) (syntax-e v)))))
+
+#;(provide/contract
    [varref-set-remove-bindings (-> varref-set? varref-set? varref-set?)]
    [binding-set-varref-set-intersect (-> binding-set? varref-set? binding-set?)]
    [binding-set-union (-> (listof binding-set?) binding-set?)]
    [varref-set-union (-> (listof varref-set?) varref-set?)]
-   [skipto/auto (syntax? (symbols 'rebuild 'discard) (syntax? . -> . syntax?) . -> . syntax?)]
+   [skipto/auto (syntax? (symbols 'rebuild 'discard) 
+                         (syntax? . -> . syntax?)
+                         . -> . 
+                         syntax?)]
    [in-closure-table (-> any/c boolean?)]
    [sublist (-> number? number? list? list?)]
    [attach-info (-> syntax? syntax? syntax?)]
    [transfer-info (-> syntax? syntax? syntax?)]
    [arglist->ilist (-> arglist? any)]
    [arglist-flatten (-> arglist? (listof identifier?))])
-  
+
 (provide
  skipto/auto
  in-closure-table
@@ -97,26 +99,30 @@
  skipto/third
  skipto/fourth
  skipto/firstarg
-
+ 
+ (struct-out annotated-proc)
+ 
  view-controller^
  stepper-frame^
  )
-  
-  ;; stepper-syntax-property : like syntax property, but adds properties to an association
-  ;; list associated with the syntax property 'stepper-properties
-  (define stepper-syntax-property
-    (case-lambda 
-      [(stx tag) (let ([stepper-props (syntax-property stx 'stepper-properties)])
-                   (if stepper-props
-                       (let ([table-lookup (assq tag stepper-props)])
-                         (if table-lookup
-                             (cadr table-lookup)
-                             #f))
-                       #f))]
-      [(stx tag new-val) (syntax-property stx 'stepper-properties
-                                          (cons (list tag new-val)
-                                                (or (syntax-property stx 'stepper-properties)
-                                                    null)))]))
+
+;; stepper-syntax-property : like syntax property, but adds properties to an association
+;; list associated with the syntax property 'stepper-properties
+;; 2010-12-05: I no longer see any reason not just to use the regular
+;; syntax-property for this...
+(define stepper-syntax-property
+  (case-lambda 
+    [(stx tag) (let ([stepper-props (syntax-property stx 'stepper-properties)])
+                 (if stepper-props
+                     (let ([table-lookup (assq tag stepper-props)])
+                       (if table-lookup
+                           (cadr table-lookup)
+                           #f))
+                     #f))]
+    [(stx tag new-val) (syntax-property stx 'stepper-properties
+                                        (cons (list tag new-val)
+                                              (or (syntax-property stx 'stepper-properties)
+                                                  null)))]))
   
   ;; with-stepper-syntax-properties : like stepper-syntax-property, but in a "let"-like form
   (define-syntax (with-stepper-syntax-properties stx)
@@ -678,8 +684,8 @@
                 stx)]))
   
   
-  ;; the xml-snip-creation@ unit accepts the xml-snip% and scheme-snip% classes and provides
-  ;; functions which map a "spec" to an xml-snip.
+  ;; the xml-snip-creation@ unit accepts the xml-snip% and scheme-snip% classes and
+  ;; provides functions which map a "spec" to an xml-snip.
   ;; An xml-spec is (listof xml-spec-elt)
   ;; An xml-spec-elt is either
   ;;  - a string,
@@ -720,9 +726,20 @@
     (car (last-pair (send language get-language-position))))
   
   
+  ;; per Robby's suggestion: rather than using a hash table for 
+  ;; lambdas, just use an applicable structure instead.
+  
+  ;; An annotated procedure is represented at runtime by
+  ;; an applicable structure that stores stepper information.
+  (struct annotated-proc (base info)
+    #:property prop:procedure
+    (struct-field-index base))
+  
   
   (define-signature view-controller^ (go))
   (define-signature stepper-frame^ (stepper-frame%))
+  
+ 
   
 
   

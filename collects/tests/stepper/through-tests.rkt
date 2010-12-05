@@ -213,6 +213,15 @@
      -> ,@defs {(+ 12 9)}
      -> ,@defs {21}))
 
+;;intermediate/lambda hof
+(let ([defs `((define (a x)
+                (lambda (y) (+ x y)))
+              (define b (a 9)))])
+  (t 'intermediate-lambda-hof m:intermediate-lambda
+     ,@defs (b 5)
+   :: ,@defs {(b 5)}
+   -> @defs {'zoofrenzy}))
+
 ;;;;;;;;;;;;
 ;;
 ;;  OR / AND
@@ -604,9 +613,16 @@
 
 (t1 'let-deriv
     m:intermediate "(define (f g) (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))]) gp)) (define gprime (f cos))"
-    (let ([defs `((define (f g) (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))]) gp)))])
-      `((before-after (,@defs (define gprime (hilite (f cos))))
-                      (,@defs (define gprime (hilite (let ([gp (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001))]) gp)))))
+    (let ([defs `((define (f g) 
+                    (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))])
+                      gp)))])
+      `((before-after (,@defs (define gprime
+                                (hilite (f cos))))
+                      (,@defs (define gprime 
+                                (hilite (let ([gp (lambda (x) 
+                                                    (/ (- (cos (+ x 0.1)) (cos x))
+                                                       0.001))]) 
+                                          gp)))))
         (before-after (,@defs (define gprime (hilite (let ([gp (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001))]) gp))))
                       (,@defs (hilite (define gp_0 (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001)))) (define gprime (hilite gp_0))))
         (finished-stepping))))
@@ -624,6 +640,8 @@
       (before-after ((define f_0 (lambda (x) (+ x 13))) (define a (hilite f_0)))
                     ((define f_0 (lambda (x) (+ x 13))) (define a (hilite (lambda (x) (+ x 13))))))
       (finished-stepping)))
+
+
 
 ;;;;;;;;;;;;;
 ;;
@@ -1486,4 +1504,5 @@
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
-      (run-tests '(check-expect))))
+      (run-tests '(intermediate-lambda-hof))
+      ))

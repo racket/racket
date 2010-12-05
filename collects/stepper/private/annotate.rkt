@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require (prefix-in kernel: syntax/kerncase)
          mzlib/contract
@@ -9,7 +9,6 @@
          "shared.ss"
          "my-macros.ss"
          #;"xml-box.ss"
-         #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
          (prefix-in beginner-defined: "beginner-defined.ss")
          (for-syntax scheme/base))
 
@@ -103,11 +102,14 @@
 
 ; top-level-rewrite : (SYNTAX-OBJECT -> SYNTAX-OBJECT)
 
-; top-level-rewrite performs several tasks; it labels variables with their types (let-bound, lambda-bound, or non-lexical),
-; it flags if's which could come from cond's, it labels the begins in conds with 'stepper-skip annotations
+; top-level-rewrite performs several tasks; it labels variables with their types 
+; (let-bound, lambda-bound, or non-lexical), it flags if's which could come from 
+; cond's, it labels the begins in conds with 'stepper-skip annotations
 
-; label-var-types returns a syntax object which is identical to the original except that the variable references are labeled
-; with the stepper-syntax-property 'stepper-binding-type, which is set to either let-bound, lambda-bound, or non-lexical.
+; label-var-types returns a syntax object which is identical to the original except 
+; that the variable references are labeled with the stepper-syntax-property 
+; 'stepper-binding-type, which is set to either let-bound, lambda-bound, or 
+; non-lexical.
 
 (define (top-level-rewrite stx)
   (let loop ([stx stx]
@@ -128,16 +130,30 @@
                [do-let/rec
                 (lambda (stx rec?)
                   (with-syntax ([(label ((vars rhs) ...) . bodies) stx])
-                    (let* ([vars-list (apply append (map syntax->list (syntax->list (syntax (vars ...)))))]
-                           [labelled-vars-list (map (lambda (var-list) (map (lambda (exp) (recur-with-bindings exp vars-list))
-                                                                            (syntax->list var-list)))
-                                                    (syntax->list (syntax (vars ...))))]
-                           [rhs-list (if rec?
-                                         (map (lambda (exp) (recur-with-bindings exp vars-list)) (syntax->list #'(rhs ...)))
-                                         (map recur-regular (syntax->list #'(rhs ...))))]
-                           [new-bodies (map (lambda (exp) (recur-with-bindings exp vars-list)) (syntax->list #'bodies))]
+                    (let* ([vars-list 
+                            (apply append
+                                   (map syntax->list
+                                        (syntax->list (syntax (vars ...)))))]
+                           [labelled-vars-list 
+                            (map (lambda (var-list)
+                                   (map (lambda (exp)
+                                          (recur-with-bindings exp vars-list))
+                                        (syntax->list var-list)))
+                                 (syntax->list (syntax (vars ...))))]
+                           [rhs-list 
+                            (if rec?
+                                (map (lambda (exp)
+                                       (recur-with-bindings exp vars-list))
+                                     (syntax->list #'(rhs ...)))
+                                (map recur-regular (syntax->list #'(rhs ...))))]
+                           [new-bodies 
+                            (map (lambda (exp)
+                                   (recur-with-bindings exp vars-list))
+                                 (syntax->list #'bodies))]
                            [new-bindings (map list labelled-vars-list rhs-list)])
-                      (datum->syntax stx `(,#'label ,new-bindings ,@new-bodies) stx stx))))]
+                      (datum->syntax
+                       stx
+                       `(,#'label ,new-bindings ,@new-bodies) stx stx))))]
                
                ; evaluated at runtime, using 3D code:
                [put-into-xml-table (lambda (val)
@@ -476,48 +492,78 @@
                   [lambda-clause-abstraction
                    (lambda (clause)
                      (with-syntax ([(args-stx . bodies) clause])
-                       (let*-2vals ([(annotated-body free-varrefs)
-                                     ; wrap bodies in explicit begin if more than 1 user-introduced (non-skipped) bodies
-                                     ; NB: CAN'T HAPPEN in beginner up through int/lambda
-                                     (if (> (length (filter (lambda (clause)
-                                                              (not (stepper-syntax-property clause 'stepper-skip-completely)))
-                                                            (syntax->list (syntax bodies)))) 1)
-                                         (lambda-body-recur (syntax (begin . bodies)))
-                                         (let*-2vals ([(annotated-bodies free-var-sets)
-                                                       (2vals-map lambda-body-recur (syntax->list #`bodies))])
-                                                     (2vals #`(begin . #,annotated-bodies) (varref-set-union free-var-sets))))]
-                                    [new-free-varrefs (varref-set-remove-bindings free-varrefs
-                                                                                  (arglist-flatten #'args-stx))])
-                                   (2vals (datum->syntax #'here `(,#'args-stx ,annotated-body) #'clause) new-free-varrefs))))]
+                       (match-let* 
+                           ([(vector annotated-body free-varrefs)
+                             ; wrap bodies in explicit begin if more than 1 
+                             ; user-introduced (non-skipped) bodies
+                             ; NB: CAN'T HAPPEN in beginner up through int/lambda
+                             (let ([non-skipped-bodies
+                                    (filter 
+                                     (lambda (clause)
+                                       (not (skipped? clause)))
+                                     (syntax->list (syntax bodies)))])
+                               (if (> (length non-skipped-bodies) 1)
+                                   (lambda-body-recur (syntax (begin . bodies)))
+                                   (match-let* 
+                                       ([(vector annotated-bodies free-var-sets)
+                                         (2vals-map lambda-body-recur
+                                                    (syntax->list #`bodies))])
+                                     (vector #`(begin . #,annotated-bodies)
+                                             (varref-set-union free-var-sets)))))]
+                            [new-free-varrefs 
+                             (varref-set-remove-bindings
+                              free-varrefs
+                              (arglist-flatten #'args-stx))])
+                         (vector (datum->syntax
+                                  #'here
+                                  `(,#'args-stx ,annotated-body) #'clause)
+                                 new-free-varrefs))))]
                   
                   [outer-lambda-abstraction
                    (lambda (annotated-lambda free-varrefs)
-                     (let*-2vals
-                      ([closure-info (make-debug-info-app 'all free-varrefs 'none)]
-                       ;; if we manually disable the storage of names, lambdas get rendered as lambdas.
-                       [closure-name (if show-lambdas-as-lambdas?
-                                         #f
-                                         (cond [(syntax? procedure-name-info) procedure-name-info]
-                                               [(pair? procedure-name-info) (car procedure-name-info)]
-                                               [else #f]))]
+                     (match-let*
+                      ([ap-struct-maker 
+                        #`(#,annotated-proc #,annotated-lambda #f)]
+                       [closure-info (make-debug-info-app 'all free-varrefs 'none)]
+                       ;; if we manually disable the storage of 
+                       ;; names, lambdas get rendered as lambdas.
+                       [closure-name 
+                        (if show-lambdas-as-lambdas?
+                            #f
+                            (cond [(syntax? procedure-name-info) procedure-name-info]
+                                  [(pair? procedure-name-info) 
+                                   (car procedure-name-info)]
+                                  [else #f]))]
                        [closure-storing-proc
                         (opt-lambda (closure debug-info [lifted-index #f])
-                          (closure-table-put! closure (make-closure-record 
-                                                       closure-name
-                                                       debug-info
-                                                       #f
-                                                       lifted-index))
+                          (closure-table-put! closure
+                                              (make-closure-record 
+                                               closure-name
+                                               debug-info
+                                               #f
+                                               lifted-index))
                           closure)]
+                       ;; gnarr! I can't find a test case
+                       ;; that depends on the attachment of the inferred name...
                        [inferred-name-lambda
                         (if closure-name
-                            (syntax-property annotated-lambda 'inferred-name (syntax-e closure-name))
+                            (syntax-property
+                             annotated-lambda
+                             'inferred-name
+                             (syntax-e closure-name))
                             annotated-lambda)]
                        [captured
                         (cond [(pair? procedure-name-info)
-                               #`(#%plain-app #,closure-storing-proc #,inferred-name-lambda #,closure-info 
-                                              #,(cadr procedure-name-info))]
+                               #`(#%plain-app 
+                                  #,closure-storing-proc
+                                  #,inferred-name-lambda
+                                  #,closure-info 
+                                  #,(cadr procedure-name-info))]
                               [else
-                               #`(#%plain-app #,closure-storing-proc #,inferred-name-lambda #,closure-info)])])
+                               #`(#%plain-app
+                                  #,closure-storing-proc
+                                  #,inferred-name-lambda
+                                  #,closure-info)])])
                       
                       (normal-bundle free-varrefs captured)))]
                   
@@ -803,19 +849,24 @@
                  (kernel:kernel-syntax-case exp #f
                    
                    [(#%plain-lambda . clause)
-                    (let*-2vals ([(annotated-clause free-varrefs)
-                                  (lambda-clause-abstraction (syntax clause))]
-                                 [annotated-lambda
-                                  (with-syntax ([annotated-clause annotated-clause])
-                                    (syntax/loc exp (#%plain-lambda . annotated-clause)))])
+                    (match-let* 
+                        ([(vector annotated-clause free-varrefs)
+                          (lambda-clause-abstraction #'clause)]
+                         [annotated-lambda
+                          (with-syntax ([annotated-clause annotated-clause])
+                            (syntax/loc exp 
+                              (#%plain-lambda . annotated-clause)))])
                       (outer-lambda-abstraction annotated-lambda free-varrefs))]
                    
                    [(case-lambda . clauses)
-                    (let*-2vals ([(annotated-cases free-varrefs-cases)
-                                  (2vals-map lambda-clause-abstraction (syntax->list (syntax clauses)))]
-                                 [annotated-case-lambda (with-syntax ([annotated-cases annotated-cases])
-                                                          (syntax/loc exp (case-lambda . annotated-cases)))]
-                                 [free-varrefs (varref-set-union free-varrefs-cases)])
+                    (match-let* 
+                        ([(vector annotated-cases free-varrefs-cases)
+                          (2vals-map lambda-clause-abstraction 
+                                     (syntax->list (syntax clauses)))]
+                         [annotated-case-lambda 
+                          (with-syntax ([annotated-cases annotated-cases])
+                            (syntax/loc exp (case-lambda . annotated-cases)))]
+                         [free-varrefs (varref-set-union free-varrefs-cases)])
                       (outer-lambda-abstraction annotated-case-lambda free-varrefs))]
                    
                    
@@ -1225,3 +1276,7 @@
 
 (define (stepper-recertify new-stx old-stx)
   (syntax-recertify new-stx old-stx saved-code-inspector #f))
+
+;; does this stx have the 'stepper-skip-completely property?
+(define (skipped? stx)
+  (stepper-syntax-property stx 'stepper-skip-completely))
