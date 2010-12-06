@@ -49,7 +49,7 @@
          (with-syntax ([(i ...) (build-list len add1)])
            #`(define (fn-name args ... . final-arg)
                (let ([args (check/normalize 'fn-name 'args args i)] ...
-                     [final-arg (map/i (λ (x j) (check/normalize 'fn-name 'final-arg x (+ #,len j)))
+                     [final-arg (map/i (λ (x j) (check/normalize 'fn-name 'final-arg x (+ #,(+ len 1) j)))
                                        final-arg)])
                  body ...))))]
       [(define/chk (fn-name args ...) body ...)
