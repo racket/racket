@@ -170,7 +170,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
-				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_rkt.dll"
+				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\x86_64\mxmain_rkt.dll"
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\..\lib\msvc"
@@ -357,7 +357,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
-				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_rkt.dll"
+				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\x86_64\mxmain_rkt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\..\lib\msvc"
@@ -545,7 +545,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="htmlhelp.lib libracket3mxxxxxxx.lib mzdyn3m.obj"
-				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\3m\mxmain_rkt.dll"
+				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\x86_64\3m\mxmain_rkt.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\..\lib\msvc"
