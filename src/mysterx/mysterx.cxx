@@ -5388,8 +5388,10 @@ void browserHwndMsgLoop(LPVOID p)
 
 # if _MSC_VER < 1400
 #   define ATLWINDOWTITLE "AtlAxWin71"
-# else
+# elif _MSC_VER < 1500
 #   define ATLWINDOWTITLE "AtlAxWin80"
+# else
+#   define ATLWINDOWTITLE "AtlAxWin90"
 # endif
   hwnd = CreateWindow(ATLWINDOWTITLE,
                       "myspage.DHTMLPage.1",
