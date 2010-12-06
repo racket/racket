@@ -55,6 +55,7 @@
         (and exe (let ([out (open-output-string)])
                    (parameterize ([current-output-port out]
                                   [current-error-port out]
+				  [current-input-port (open-input-string "")]
                                   [current-directory this-dir])
                      (system* exe "log" "-1" "--pretty=format:%ct|%h|g")
                      (get-output-string out))))))
