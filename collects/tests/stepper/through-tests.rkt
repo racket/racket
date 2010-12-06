@@ -214,13 +214,21 @@
      -> ,@defs {21}))
 
 ;;intermediate/lambda hof
-(let ([defs `((define (a x)
-                (lambda (y) (+ x y)))
-              (define b (a 9)))])
+(let ([a-def `(define (a x)
+                (lambda (y) (+ x y)))])
   (t 'intermediate-lambda-hof m:intermediate-lambda
-     ,@defs (b 5)
-   :: ,@defs {(b 5)}
-   -> @defs {'zoofrenzy}))
+     ,a-def (define b (a 9)) (b 5)
+     :: ,a-def (define b ({a} 9))
+     -> ,a-def (define b ({(lambda (x) (lambda (y) (+ x y)))} 9))
+     :: ,a-def (define b {((lambda (x) (lambda (y) (+ x y))) 9)})
+     -> ,a-def (define b {(lambda (y) (+ 9 y))})
+     :: ,a-def (define b (lambda (y) (+ 9 y))) ({b} 5)
+     -> ,a-def (define b (lambda (y) (+ 9 y))) 
+     ({(lambda (y) (+ 9 y))} 5)
+     :: ,a-def (define b (lambda (y) (+ 9 y)))
+     {((lambda (y) (+ 9 y)) 5)}
+     -> ,a-def (define b (lambda (y) (+ 9 y))) {(+ 9 5)}
+     -> ,a-def (define b (lambda (y) (+ 9 y))) {14}))
 
 ;;;;;;;;;;;;
 ;;

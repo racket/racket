@@ -522,9 +522,8 @@
                   [outer-lambda-abstraction
                    (lambda (annotated-lambda free-varrefs)
                      (match-let*
-                      ([ap-struct-maker 
-                        #`(#,annotated-proc #,annotated-lambda #f)]
-                       [closure-info (make-debug-info-app 'all free-varrefs 'none)]
+                      ([closure-info (make-debug-info-app 'all free-varrefs 'none)]
+                       
                        ;; if we manually disable the storage of 
                        ;; names, lambdas get rendered as lambdas.
                        [closure-name 
@@ -534,38 +533,41 @@
                                   [(pair? procedure-name-info) 
                                    (car procedure-name-info)]
                                   [else #f]))]
-                       [closure-storing-proc
-                        (opt-lambda (closure debug-info [lifted-index #f])
-                          (closure-table-put! closure
-                                              (make-closure-record 
-                                               closure-name
-                                               debug-info
-                                               #f
-                                               lifted-index))
-                          closure)]
-                       ;; gnarr! I can't find a test case
-                       ;; that depends on the attachment of the inferred name...
-                       [inferred-name-lambda
-                        (if closure-name
-                            (syntax-property
-                             annotated-lambda
-                             'inferred-name
-                             (syntax-e closure-name))
-                            annotated-lambda)]
-                       [captured
+                       
+                       [make-ap-struct
+                        (lambda (clo debug-info maybe-index)
+                          (annotated-proc
+                           clo
+                           (make-closure-record 
+                            closure-name
+                            debug-info
+                            #f
+                            maybe-index)))]
+                       
+                       [ap-struct-maker 
                         (cond [(pair? procedure-name-info)
-                               #`(#%plain-app 
-                                  #,closure-storing-proc
-                                  #,inferred-name-lambda
-                                  #,closure-info 
+                               #`(#%app
+                                  #,make-ap-struct
+                                  #,closure-info
                                   #,(cadr procedure-name-info))]
                               [else
-                               #`(#%plain-app
-                                  #,closure-storing-proc
-                                  #,inferred-name-lambda
-                                  #,closure-info)])])
+                               #`(#%app
+                                  #,make-ap-struct
+                                  #,closure-info
+                                  #f)])]
+                       
+                       ;; gnarr! I can't find a test case
+                       ;; that depends on the attachment of the inferred name...
+                       [inferred-name-struct
+                        (if closure-name
+                            (syntax-property
+                             ap-struct-maker
+                             'inferred-name
+                             (syntax-e closure-name))
+                            ap-struct-maker)])
                       
-                      (normal-bundle free-varrefs captured)))]
+                      (normal-bundle free-varrefs
+                                     inferred-name-struct)))]
                   
                   
                   ;    @@                 
