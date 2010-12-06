@@ -495,7 +495,7 @@ STDMETHODIMP CMzObj::Eval(BSTR input, BSTR *output) {
   return hr;
 }
 
-LONG_PTR WINAPI dlgProc(HWND hDlg,UINT msg,WPARAM wParam,LPARAM) {
+INT_PTR WINAPI dlgProc(HWND hDlg,UINT msg,WPARAM wParam,LPARAM) {
   switch(msg) {
   case WM_INITDIALOG :
     SetDlgItemText(hDlg,MZCOM_URL,
