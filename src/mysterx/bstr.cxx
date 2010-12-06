@@ -23,7 +23,7 @@ LPWSTR schemeUCS4ToUTF16 (const mzchar * buffer, int nchars, long * result_lengt
   LPWSTR s;
   intptr_t rl;
   s = (LPWSTR) scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, &rl, 1);
-  if(result_length) *result_length = rl;
+  *result_length = rl;
   s[*result_length] = 0;
   return s;
 }
