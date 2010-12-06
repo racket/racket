@@ -263,7 +263,7 @@ The libraries
     racket\lib\win32\msvc\libracketxxxxxxx.lib
     racket\lib\win32\msvc\libmzgcxxxxxxx.lib
 
-which are created by the mzsrc and gc projects, provide linking
+which are created by the libracket and libmzgc projects, provide linking
 information for using the libracket3mxxxxxxx.dll, libracketxxxxxxx.dll,
 and libmzgcxxxxxxx.dll DLLs.  The versioning script adjusts the names,
 as described above.

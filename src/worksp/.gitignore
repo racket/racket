@@ -3,3 +3,6 @@
 */Debug
 */x64
 */*.user
+
+rbuildmode.obj
+rbuildmode.exe

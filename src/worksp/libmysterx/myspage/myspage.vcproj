@@ -112,8 +112,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 		<Configuration
@@ -162,7 +160,7 @@
 				UsePrecompiledHeader="0"
 				BrowseInformation="1"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -211,8 +209,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 		<Configuration
@@ -313,8 +309,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 		<Configuration
@@ -366,7 +360,7 @@
 				ProgramDataBaseFileName=""
 				WarningLevel="4"
 				SuppressStartupBanner="true"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="0"
 			/>
 			<Tool
@@ -416,8 +410,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 	</Configurations>
