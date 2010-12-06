@@ -49,8 +49,10 @@
          (with-syntax ([(i ...) (build-list len add1)])
            #`(define (fn-name args ... . final-arg)
                (let ([args (check/normalize 'fn-name 'args args i)] ...
-                     [final-arg (map/i (λ (x j) (check/normalize 'fn-name 'final-arg x (+ #,(+ len 1) j)))
-                                       final-arg)])
+                     [final-arg 
+                      (for/list ([x (in-list final-arg)]
+                                 [j (in-naturals #,(+ len 1))])
+                        (check/normalize 'fn-name 'final-arg x j))])
                  body ...))))]
       [(define/chk (fn-name args ...) body ...)
        (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
@@ -69,14 +71,6 @@
          #'(define (fn-name args ...)
              (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
                body ...)))])))
-
-(define (map/i f l)
-  (let loop ([l l]
-             [i 0])
-    (cond
-      [(null? l) null]
-      [else (cons (f (car l) i)
-                  (loop (cdr l) (+ i 1)))])))
 
 ;; check/normalize : symbol symbol any number -> any
 ;; based on the name of the argument, checks to see if the input
