@@ -49,7 +49,7 @@
                      pre-path)))))
   ; Connect
   (define connect (if (ws-secure-url? url) ssl-connect tcp-connect))
-  (define-values (ip op) (ssl-connect host port))
+  (define-values (ip op) (connect host port))
   ; Handshake (client)
   (define-values (key1 key2 key3 client-ans) (generate-key))
   (write-bytes (call-with-output-bytes
