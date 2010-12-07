@@ -155,7 +155,7 @@
           (unhide-cursor)
           (begin0
            (default w msg wParam lParam)
-           (do-key w msg wParam lParam #f #f default))]
+           (do-key w msg wParam lParam #f #f void))]
          [(= msg WM_KEYDOWN)
           (do-key w msg wParam lParam #f #f default)]
          [(= msg WM_KEYUP)
