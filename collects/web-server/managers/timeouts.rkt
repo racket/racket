@@ -3,6 +3,7 @@
          racket/contract)
 (require "manager.rkt")
 (require web-server/private/timer
+         web-server/http
          web-server/servlet/servlet-structs)
 (provide/contract
  [create-timeout-manager 

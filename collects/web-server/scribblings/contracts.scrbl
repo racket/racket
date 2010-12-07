@@ -14,7 +14,7 @@ provides an indirection from application-specific response formats and the inter
 HTTP response format, @racket[response].
 
 @deftogether[[
-@defthing[(can-be-response? [x any/c])
+@defproc[(can-be-response? [x any/c])
           boolean?]
 @defproc[(any->response [x any/c])
          (or/c false/c response?)]
@@ -24,6 +24,7 @@ HTTP response format, @racket[response].
 
    @racket[any->response] coerces any value into a response or returns @racket[#f] if coercion is not possible.
    @racket[any->response] guarantees that any @racket[response?] input must always be returned exactly (i.e. @racket[eq?].)
+   The default always returns @racket[#f], signifying that no coercion is possible.
    
    @racket[can-be-response?] returns @racket[#t] if @racket[x] is a response or can be turned into a response by calling
    @racket[any->response].

@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract
+         web-server/servlet/servlet-structs
          web-server/http)  
 
 (define k-url?

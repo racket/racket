@@ -2,6 +2,7 @@
 (require racket/match
          racket/contract)
 (require "manager.rkt"
+         web-server/http
          web-server/servlet/servlet-structs)
 (provide/contract
  [create-LRU-manager 
