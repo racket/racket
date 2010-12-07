@@ -8,7 +8,7 @@
  [create-timeout-manager 
   (->
    (or/c false/c
-         (request? . -> . response/c))
+         (request? . -> . can-be-response?))
    number? number? 
    manager?)])
 

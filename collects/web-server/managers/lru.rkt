@@ -7,7 +7,7 @@
  [create-LRU-manager 
   (->
    (or/c false/c
-         (request? . -> . response/c))
+         (request? . -> . can-be-response?))
    number? number? (-> boolean?)
    #:initial-count number?
    #:inform-p (number? . -> . void)
@@ -15,7 +15,7 @@
  [make-threshold-LRU-manager 
   (-> 
    (or/c false/c
-         (request? . -> . response/c))
+         (request? . -> . can-be-response?))
    number?
    manager?)])
 

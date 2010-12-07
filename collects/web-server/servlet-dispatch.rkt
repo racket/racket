@@ -26,7 +26,7 @@
 (define send-url (make-parameter net:send-url))
 
 (provide/contract
- [dispatch/servlet (((request? . -> . response/c))
+ [dispatch/servlet (((request? . -> . can-be-response?))
                     (#:regexp regexp?
                               #:current-directory path-string?
                               #:stateless? boolean?

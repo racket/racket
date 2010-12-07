@@ -39,18 +39,18 @@
  [current-servlet-continuation-expiration-handler 
   (parameter/c 
    (or/c false/c
-         (request? . -> . response/c)))]
+         (request? . -> . can-be-response?)))]
  [redirect/get (() (#:headers (listof header?)) . ->* . request?)]
  [redirect/get/forget (() (#:headers (listof header?)) . ->* . request?)]
  [adjust-timeout! (number? . -> . void?)]
  [clear-continuation-table! (-> void?)]
- [send/back (response/c . -> . void?)]
- [send/finish (response/c . -> . void?)]
- [send/forward ((string? . -> . response/c) . -> . request?)]
- [send/suspend ((string? . -> . response/c) . -> . request?)]
- [send/suspend/dispatch ((((request? . -> . any) . -> . string?) . -> . response/c) . -> . any/c)]
- [send/suspend/url ((url? . -> . response/c) . -> . request?)]
- [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c) . -> . any/c)])
+ [send/back (can-be-response? . -> . void?)]
+ [send/finish (can-be-response? . -> . void?)]
+ [send/forward ((string? . -> . can-be-response?) . -> . request?)]
+ [send/suspend ((string? . -> . can-be-response?) . -> . request?)]
+ [send/suspend/dispatch ((((request? . -> . any) . -> . string?) . -> . can-be-response?) . -> . any/c)]
+ [send/suspend/url ((url? . -> . can-be-response?) . -> . request?)]
+ [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . can-be-response?) . -> . any/c)])
 
 ;; ************************************************************
 ;; EXPORTS
@@ -151,17 +151,20 @@
 (define redirect/get/forget (make-redirect/get send/forward))
 
 (define (with-errors-to-browser send/finish-or-back thunk)
-  (with-handlers ([exn:fail? (lambda (exn)
-                          (send/finish-or-back
-                           `(html (head (title "Servlet Error"))
-                                  (body ([bgcolor "white"])
-                                        (p "The following error occured: "
-                                           (pre ,(exn->string exn)))))))])
+  (with-handlers 
+      ([exn:fail?
+        (lambda (exn)
+          (send/finish-or-back
+           (response/xexpr
+            `(html (head (title "Servlet Error"))
+                   (body ([bgcolor "white"])
+                         (p "The following error occured: "
+                            (pre ,(exn->string exn))))))))])
     (thunk)))
 
 (provide/contract
  [with-errors-to-browser
-  ((response/c . -> . request?)
+  ((can-be-response? . -> . request?)
    (-> any)
    . -> .
    any)])

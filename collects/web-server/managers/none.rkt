@@ -6,7 +6,7 @@
  [create-none-manager
   (-> 
    (or/c false/c
-         (request? . -> . response/c))
+         (request? . -> . can-be-response?))
    manager?)])
 
 (define-struct (none-manager manager) (instance-expiration-handler))

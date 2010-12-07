@@ -16,14 +16,14 @@ This module is used internally to build and load servlets. It may be useful to t
 
 @defproc[(make-v1.servlet [directory path-string?]
                           [timeout integer?]
-                          [start (request? . -> . response/c)])
+                          [start (request? . -> . can-be-response?)])
          servlet?]{
  Creates a version 1 servlet that uses @racket[directory] as its current directory, a timeout manager with a @racket[timeout] timeout, and @racket[start] as the request handler.
 }
 
 @defproc[(make-v2.servlet [directory path-string?]
                           [manager manager?]
-                          [start (request? . -> . response/c)])
+                          [start (request? . -> . can-be-response?)])
          servlet?]{
  Creates a version 2 servlet that uses @racket[directory] as its current directory, a @racket[manager] as the continuation manager, and @racket[start] as the request handler.
 }
@@ -31,7 +31,7 @@ This module is used internally to build and load servlets. It may be useful to t
 @defproc[(make-stateless.servlet [directory path-string?]
                                  [stuffer (stuffer/c serializable? bytes?)]
                                  [manager manager?]
-                                 [start (request? . -> . response/c)])
+                                 [start (request? . -> . can-be-response?)])
          servlet?]{
  Creates a stateless @racketmodname[web-server] servlet that uses @racket[directory] as its current directory, @racket[stuffer] as its stuffer, and @racket[manager] as the continuation manager, and @racket[start] as the request handler.
 }

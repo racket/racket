@@ -323,7 +323,7 @@ transmission that the server @bold{will not catch}.}
 @defproc[(redirect-to [uri non-empty-string/c]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
-         response/c]{
+         response?]{
  Generates an HTTP response that redirects the browser to @racket[uri],
  while including the @racket[headers] in the response.
  
@@ -472,11 +472,6 @@ web-server/insta
 
 @defmodule[web-server/http/xexpr]{
                                   
-@defthing[xexpr-response/c contract?]{
-A contract for use with @racket[current-response/c] that coerces
-X-expressions into @racket[response?] structures using @racket[response/xexpr]
-and passes @racket[response?] structures untouched.}
-
 @defproc[(response/xexpr [xexpr xexpr/c]
                          [#:code code number? 200]
                          [#:message message bytes? #"Okay"]
@@ -492,6 +487,9 @@ and passes @racket[response?] structures untouched.}
   code message seconds mime-type 
   (append headers (map cookie->header cookies))
   (list preamble (string->bytes/utf-8 (xexpr->string xexpr))))
- ]}
+ ]
+ 
+ This is a viable function to pass to @racket[set-any->response!].
+ }
 
 }

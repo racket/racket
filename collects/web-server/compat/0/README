@@ -1,19 +1,22 @@
 In Racket 5.0.99.4 and before, the Web Server supported implicit
 conversion of X-expressions and lists with the format (cons/c bytes? (listof (or/c string? bytes?))) into response data structures for output.
 
-After 5.0.99.4, this implicit conversion has been generalized into current-response/c and response/c. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
+After 5.0.99.4, this implicit conversion has been generalized into any->response. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
 
 This document describes the incompatible changes and how to restore the old behavior when that is possible.
 
 --- Coercion behavior ---
 
 The old coercion behavior will be dynamically introduced by requiring
-web-server/compat/0/coerce or parameterizing current-response/c to
-(coerce/c normalize-response) after requiring
-web-server/compat/0/http/response-structs.
+web-server/compat/0/coerce or running:
 
-Since Xexpr conversion is so convenient, xexpr-response/c is now
-provided by http/xexpr for use with current-response/c.
+(require web-server/compat/0/http/response-structs)
+(set-any->response! normalize-response)
+
+Users may want to allow implicit X-expression conversion by
+running
+
+(set-any->response! response/xexpr)
 
 --- New response structures ---
 
@@ -71,9 +74,19 @@ that the wrapper returns an Xexpr. This changes is justified in that
 formlets already bake in support for Xexpr as a fundamental part of
 their syntax.
 
-
 --- Removed contracts ---
+
+web-server/compat/0/servlet/servlet-structs
+
+is a replacement for the old
+
+web-server/servlet/servlet-structs
+
+because 
 
 k-url?
 response-generator/c
 expiration-handler/c
+
+are now removed. (This change is to ensure that internal uses of these
+have can-be-response? close to where they are used so any->response can be called appropriately.)
