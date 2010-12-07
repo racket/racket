@@ -8,17 +8,18 @@
          openssl)
 (provide (except-out (all-from-out net/websocket/conn) ws-conn))
 
-(define (ws-secure-url? u)
+(define (wss-url? u)
   (and (url? u)
        (equal? (url-scheme u) "wss")))
 
 (define (ws-url? u)
   (and (url? u)
        (or (equal? (url-scheme u) "ws")
-           (ws-secure-url? u))))
+           (wss-url? u))))
 
 (provide/contract
  [ws-url? (-> any/c boolean?)]
+ [wss-url? (-> any/c boolean?)]
  [ws-connect (->* (ws-url?)
                   (#:headers (listof header?))
                   open-ws-conn?)])
@@ -48,7 +49,7 @@
                             pre-path)
                      pre-path)))))
   ; Connect
-  (define connect (if (ws-secure-url? url) ssl-connect tcp-connect))
+  (define connect (if (wss-url? url) ssl-connect tcp-connect))
   (define-values (ip op) (connect host port))
   ; Handshake (client)
   (define-values (key1 key2 key3 client-ans) (generate-key))
