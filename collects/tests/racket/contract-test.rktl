@@ -8007,6 +8007,26 @@
                          'pos
                          'neg)])
         (set-s-b! v 5))))
+  
+  (test/spec-passed/result
+   'struct/c12
+   '(let ()
+      (define-struct s (a) #:mutable)
+      (define alpha (new-∃/c 'alpha))
+      (define v (make-s 3))
+      (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
+        (set-s-a! v* (s-a v*)))
+      (s-a v))
+   3)
+  
+  (test/neg-blame
+   'struct/c13
+   '(let ()
+      (define-struct s (a) #:mutable)
+      (define alpha (new-∃/c 'alpha))
+      (define v (make-s 3))
+      (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
+        (set-s-a! v* 4))))
 
   
 ;                                                                              
@@ -8980,18 +9000,43 @@ so that propagation occurs.
   (ctest #t flat-contract? (let ()
                              (define-struct s (a b))
                              (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a b) #:mutable)
+                             (struct/c s any/c any/c)))
   (ctest #t chaperone-contract? (let ()
                                   (define-struct s (a b) #:mutable)
                                   (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s ([a #:mutable] b))
+                             (struct/c s any/c any/c)))
   (ctest #t chaperone-contract? (let ()
                                   (define-struct s ([a #:mutable] b))
                                   (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a [b #:mutable]))
+                             (struct/c s any/c any/c)))
   (ctest #t chaperone-contract? (let ()
                                   (define-struct s (a [b #:mutable]))
                                   (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (f))
+                             (struct/c s (-> number? any))))
   (ctest #t chaperone-contract? (let ()
                                   (define-struct s (f))
                                   (struct/c s (-> number? any))))
+  
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a) #:mutable)
+                             (define alpha (new-∃/c 'alpha))
+                             (struct/c s alpha)))
+  (ctest #f chaperone-contract? (let ()
+                                  (define-struct s (a) #:mutable)
+                                  (define alpha (new-∃/c 'alpha))
+                                  (struct/c s alpha)))
+  (ctest #t contract? (let ()
+                        (define-struct s (a) #:mutable)
+                        (define alpha (new-∃/c 'alpha))
+                        (struct/c s alpha)))
   
   ;; Hash contracts with flat domain/range contracts
   (ctest #t contract?           (hash/c any/c any/c #:immutable #f))

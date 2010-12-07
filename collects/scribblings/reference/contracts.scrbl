@@ -345,15 +345,17 @@ Produces a flat contract that recognizes syntax objects whose
 @racket[syntax-e] content matches @racket[c].}
 
 
-@defform[(struct/c struct-id chaperone-contract-expr ...)]{
-
+@defform[(struct/c struct-id contract-expr ...)]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
-chaperone contracts produced by the @racket[chaperone-contract-expr]s.
+contracts produced by the @racket[contract-expr]s.
 
-If the fields are immutable and the @racket[chaperone-contract-expr]s evaluate
-to flat contracts, a flat contract is produced. Otherwise, a chaperone
-contract is produced.}
+Contracts for immutable fields must be either flat or chaperone contracts.
+Contracts for mutable fields may be impersonator contracts.
+If all fields are immutable and the @racket[contract-expr]s evaluate
+to flat contracts, a flat contract is produced.  If all the
+@racket[contract-expr]s are chaperone contracts, a chaperone contract is
+produced.  Otherwise, an impersonator contract is produced.}
 
 
 @defproc[(parameter/c [c contract?]) contract?]{
