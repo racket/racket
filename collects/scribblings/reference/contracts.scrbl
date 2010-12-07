@@ -1792,10 +1792,14 @@ the message that indicates the violation.
 }
 
 
-@defform[(recursive-contract contract-expr)]{
+@defform*[[(recursive-contract contract-expr)
+           (recursive-contract contract-expr type)]]{
 
 Delays the evaluation of its argument until the contract is checked,
-making recursive contracts possible.}
+making recursive contracts possible.  If @racket[type] is given, it
+describes the expected type of contract and must be one of the keywords
+@racket[#:impersonator], @racket[#:chaperone], or @racket[#:flat].  If
+@racket[type] is not given, an impersonator contract is created.}
 
 
 @defform[(opt/c contract-expr)]{

@@ -8097,6 +8097,26 @@
               'pos
               'neg))
   
+  (test/spec-passed
+   'recursive-contract6
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons 2 3)) 'pos 'neg)))
+  
+  (test/pos-blame
+   'recursive-contract7
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons 2 #t)) 'pos 'neg)))
+  
+  (test/pos-blame
+   'recursive-contract8
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons #t 3)) 'pos 'neg)))
+  
+  (test/spec-passed
+   'recursive-contract9
+   '(letrec ([ctc (or/c number? (hash/c (recursive-contract ctc #:chaperone) number?))])
+      (make-hash (list (cons (make-hash (list (cons 3 4))) 5)))))
+  
   
 
 ;                                                       
@@ -9108,6 +9128,19 @@ so that propagation occurs.
   (ctest #t contract?           (box/c trivial-proxy-ctc #:immutable #t))
   (ctest #f chaperone-contract? (box/c trivial-proxy-ctc #:immutable #t))
   (ctest #f flat-contract?      (box/c trivial-proxy-ctc #:immutable #t))
+  
+  ;; Test the ability to create different types of contracts with recursive-contract
+  (ctest #t flat-contract? (letrec ([ctc (or/c number? 
+                                               (cons/c (recursive-contract ctc #:flat)
+                                                       (recursive-contract ctc #:flat)))])
+                             ctc))
+  
+  (ctest #f flat-contract? (letrec ([ctc (or/c number? 
+                                               (box/c (recursive-contract ctc #:chaperone)))])
+                             ctc))
+  (ctest #t chaperone-contract? (letrec ([ctc (or/c number? 
+                                                    (box/c (recursive-contract ctc #:chaperone)))])
+                                  ctc))
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))

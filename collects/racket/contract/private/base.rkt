@@ -69,17 +69,41 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()
+    [(_ arg type)
+     (keyword? (syntax-e #'type))
+     (with-syntax ([maker
+                    (case (syntax-e #'type)
+                      [(#:impersonator) #'make-contract]
+                      [(#:chaperone) #'make-chaperone-contract]
+                      [(#:flat) #'make-flat-contract]
+                      [else (raise-syntax-error 'recursive-contract
+                                                "type must be one of #:impersonator, #:chaperone, or #:flat"
+                                                #'type)])]
+                   [coerce
+                    (case (syntax-e #'type)
+                      [(#:impersonator) #'coerce-contract]
+                      [(#:chaperone) #'coerce-chaperone-contract]
+                      [(#:flat) #'coerce-flat-contract]
+                      [else (raise-syntax-error 'recursive-contract
+                                                "type must be one of #:impersonator, #:chaperone, or #:flat"
+                                                #'type)])]
+                   [(type ...)
+                    (if (eq? (syntax-e #'type) '#:impersonator)
+                        null
+                        (list #'type))])
+       (syntax
+        (maker
+         #:name '(recursive-contract arg type ...)
+         #:first-order
+         (λ (val)
+           (let ([ctc (coerce 'recursive-contract arg)])
+             (contract-first-order-passes? ctc val)))
+         #:projection
+         (λ (blame)
+           (let ([ctc (coerce 'recursive-contract arg)])
+             (let ([f (contract-projection ctc)])
+               (λ (val)
+                 ((f blame) val))))))))]
     [(_ arg)
-     (syntax
-      (make-contract
-       #:name '(recursive-contract arg)
-       #:first-order
-       (λ (val)
-         (let ([ctc (coerce-contract 'recursive-contract arg)])
-           (contract-first-order-passes? ctc val)))
-       #:projection
-       (λ (blame)
-          (let ([ctc (coerce-contract 'recursive-contract arg)])
-            (let ([f (contract-projection ctc)])
-              (λ (val)
-                 ((f blame) val)))))))]))
+     (syntax/loc stx
+       (recursive-contract arg #:impersonator))]))
