@@ -341,4 +341,3 @@
     (parameterize ([current-eventspace esp])
       (queue-callback (lambda () (channel-put obj:ch (o)))))
     (send (channel-get obj:ch) last)))
-    

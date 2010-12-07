@@ -219,6 +219,7 @@
           ;; responsiveness (where too many updates might not get 
           ;; through if the canvas is mostly in suspended-refresh 
           ;; mode for scene changes):
+          #;
           (send c flush)))
       
       ;; ----------------------------------------------------------------------
@@ -345,11 +346,13 @@
           (stop! (if re-raise e (send world get)))))
       
       (define/public (start!)
-        (queue-callback
-         (lambda ()
-           (with-handlers ([exn? (handler #t)])
-             (when draw (show-canvas))
-             (when register (register-with-host))))))
+        (with-handlers ([exn? (handler #t)])
+          (when draw (show-canvas))
+          (when register (register-with-host))
+          (define w (send world get))
+          (cond
+            [(stop w) (stop! w)]
+            [(stop-the-world? w) (stop! (stop-the-world-world w))])))
       
       (define/public (stop! w)
         (set! live #f)
@@ -358,11 +361,7 @@
       ;; -------------------------------------------------------------------------
       ;; initialize the world and run 
       (super-new)
-      (start!)
-      (let ([w (send world get)])
-        (cond
-          [(stop w) (stop! w)]
-          [(stop-the-world? w) (stop! (stop-the-world-world w))]))))))
+      (start!)))))
 
 ; (define make-new-world (new-world world%))
 
