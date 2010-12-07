@@ -1,3 +1,4 @@
+
 #lang scribble/doc
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse))
@@ -23,6 +24,7 @@ constraints.
                                          racket/contract/private/box
                                          racket/contract/private/hash
                                          racket/contract/private/vector
+                                         racket/contract/private/struct
                                          racket/contract/private/misc
                                          racket/contract/private/provide)]
 
@@ -343,11 +345,15 @@ Produces a flat contract that recognizes syntax objects whose
 @racket[syntax-e] content matches @racket[c].}
 
 
-@defform[(struct/c struct-id flat-contract-expr ...)]{
+@defform[(struct/c struct-id chaperone-contract-expr ...)]{
 
-Produces a flat contract that recognizes instances of the structure
+Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
-@tech{flat contracts} produced by the @racket[flat-contract-expr]s.}
+chaperone contracts produced by the @racket[chaperone-contract-expr]s.
+
+If the fields are immutable and the @racket[chaperone-contract-expr]s evaluate
+to flat contracts, a flat contract is produced. Otherwise, a chaperone
+contract is produced.}
 
 
 @defproc[(parameter/c [c contract?]) contract?]{

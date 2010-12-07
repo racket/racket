@@ -7946,6 +7946,67 @@
                 (make-s 1 (make-s 2 3))
                 'pos
                 'neg)))
+  
+  (test/spec-passed
+   'struct/c6
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s values)
+                         'pos
+                         'neg)])
+        ((s-f v) 3))))
+
+  (test/neg-blame
+   'struct/c7
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s values)
+                         'pos
+                         'neg)])
+        ((s-f v) #f))))
+
+  (test/pos-blame
+   'struct/c8
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s (λ (v) #f))
+                         'pos
+                         'neg)])
+        ((s-f v) 3))))
+  
+  (test/spec-passed
+   'struct/c9
+   '(let ()
+      (define-struct s (a b) #:mutable)
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-a! v 4)
+        (set-s-b! v #t))))
+
+  (test/neg-blame
+   'struct/c10
+   '(let ()
+      (define-struct s (a b) #:mutable)
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-a! v #f))))
+
+  (test/neg-blame
+   'struct/c11
+   '(let ()
+      (define-struct s (a [b #:mutable]))
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-b! v 5))))
 
   
 ;                                                                              
@@ -8917,8 +8978,20 @@ so that propagation occurs.
   (ctest #t flat-contract? (and/c (flat-contract number?)
 				 (flat-contract integer?)))
   (ctest #t flat-contract? (let ()
-                            (define-struct s (a b))
-                            (struct/c s any/c any/c)))
+                             (define-struct s (a b))
+                             (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (a b) #:mutable)
+                                  (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s ([a #:mutable] b))
+                                  (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (a [b #:mutable]))
+                                  (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (f))
+                                  (struct/c s (-> number? any))))
   
   ;; Hash contracts with flat domain/range contracts
   (ctest #t contract?           (hash/c any/c any/c #:immutable #f))
