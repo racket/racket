@@ -294,7 +294,16 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 $(inputpath) &gt; Release/win32_plain.asm&#x0D;&#x0A;ml.exe /c /Cx /coff /Fo Release/win32.obj Release/win32_plain.asm&#x0D;&#x0A;"
+						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; Release/win32_plain.asm&#x0D;&#x0A;ml.exe /c /Cx /coff /Fo Release/win32.obj Release/win32_plain.asm&#x0D;&#x0A;"
+						Outputs="Release/win32.obj"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; Release/win32_plain.asm&#x0D;&#x0A;ml.exe /c /Cx /coff /Fo Release/win32.obj Release/win32_plain.asm&#x0D;&#x0A;"
 						Outputs="Release/win32.obj"
 					/>
 				</FileConfiguration>
@@ -303,7 +312,16 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 $(inputpath) &gt; x64/Release/win32_plain.asm&#x0D;&#x0A;ml64.exe /c /Cx /Fo x64/Release/win32.obj x64/Release/win32_plain.asm&#x0D;&#x0A;"
+						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; x64/Release/win32_plain.asm&#x0D;&#x0A;ml64.exe /c /Cx /Fo x64/Release/win32.obj x64/Release/win32_plain.asm&#x0D;&#x0A;"
+						Outputs="x64/Release/win32.obj"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; x64/Release/win32_plain.asm&#x0D;&#x0A;ml64.exe /c /Cx /Fo x64/Release/win32.obj x64/Release/win32_plain.asm&#x0D;&#x0A;"
 						Outputs="x64/Release/win32.obj"
 					/>
 				</FileConfiguration>
