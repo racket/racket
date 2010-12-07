@@ -181,14 +181,14 @@
 ;; checks to see if there are duplicates
 #;
 (define (find-dups)
-  (let ([ht (make-hash-table 'equal)])
+  (let ([ht (make-hash)])
     (for-each
      (λ (line)
        (let ([name (list-ref line 0)]
              [obj (list-ref line 1)])
-         (hash-table-put! ht name (cons obj (hash-table-get ht name '())))))
+         (hash-set! ht name (cons obj (hash-ref ht name '())))))
      tex-shortcut-table)
-    (hash-table-for-each
+    (hash-for-each
      ht
      (λ (k v)
        (unless (= 1 (length v))
