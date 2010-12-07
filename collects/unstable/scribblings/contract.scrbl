@@ -222,27 +222,3 @@ immutable dictionaries (which may be passed through a constructor that involves
 efficient than the original dictionaries.
 
 }
-
-@addition[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
-
-@defproc[(dynamic/c [pre contract?] [dynamic (parameter/c contract?)] [post contract?])
-         contract?]{
-Returns a contract that applies the @racket[pre] contract, then the contract dynamically bound to the @racket[dynamic] parameter, then the @racket[post] contract.
-}
-                   
-@defproc[(coerce/c [coerce (-> any/c any/c)])
-         contract?]{
-Returns a contract that applies @racket[coerce] to all values and blames the positive party if @racket[coerce] returns false. This is a light-weight way to create a contract from a simple projection.
-}
-                                    
-@defexamples[
-#:eval (eval/require 'racket/contract 'unstable/contract)
-       
-(define p (make-parameter any/c))
-(define c (dynamic/c string? p number?))
-
-(contract c "123" 'pos 'neg)
-
-(p (coerce/c string->number))
-(contract c "123" 'pos 'neg)
-(contract c "123a" 'pos 'neg)]
