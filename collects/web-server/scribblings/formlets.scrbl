@@ -450,7 +450,7 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
  processing stage of @racket[f].
 }
                
-@defproc[(embed-formlet [embed/url embed/url/c]
+@defproc[(embed-formlet [embed/url ((request? . -> . any) . -> . string?)]
                         [f (formlet/c any/c ...)])
          xexpr/c]{
  Like @racket[send/formlet], but for use with @racket[send/suspend/dispatch].

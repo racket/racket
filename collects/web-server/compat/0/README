@@ -1,14 +1,9 @@
 In Racket 5.0.99.4 and before, the Web Server supported implicit
-conversion of X-expressions and lists with the format (cons/c bytes?
-(listof (or/c string? bytes?))) into response data structures for output.
+conversion of X-expressions and lists with the format (cons/c bytes? (listof (or/c string? bytes?))) into response data structures for output.
 
-After 5.0.99.4, this implicit conversion has been generalized into
-current-response/c and response/c. In the process, implicit conversion
-has been completely removed from some internal plumbing AND the
-response structures have been streamlined---primarily for efficiency.
+After 5.0.99.4, this implicit conversion has been generalized into current-response/c and response/c. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
 
-This document describes the incompatible changes and how to restore
-the old behavior when that is possible.
+This document describes the incompatible changes and how to restore the old behavior when that is possible.
 
 --- Coercion behavior ---
 
@@ -75,3 +70,10 @@ old response/c as a wrapper result, while the new version requires
 that the wrapper returns an Xexpr. This changes is justified in that
 formlets already bake in support for Xexpr as a fundamental part of
 their syntax.
+
+
+--- Removed contracts ---
+
+k-url?
+response-generator/c
+expiration-handler/c

@@ -36,6 +36,9 @@
    [initialize-servlet ((request? . -> . response/c) . -> . (request? . -> . response/c))]
    
    ;; Servlet Interface
+   [send/suspend ((string? . -> . response/c) . -> . request?)]
+   [send/suspend/dispatch ((((request? . -> . any/c) . -> . string?) . -> . response/c)
+                           . -> . any/c)]
    [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
    [send/suspend/url ((url? . -> . response/c) . -> . request?)]
    [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)

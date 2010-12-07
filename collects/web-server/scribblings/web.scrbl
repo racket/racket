@@ -160,8 +160,10 @@ functions of interest for the servlet developer.
  Calls @racket[send/forward] with @racket[redirect-to], passing @racket[hs] as the headers.
 }
                   
-@defthing[current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]{
- Holds the @racket[expiration-handler/c] to be used when a continuation
+@defthing[current-servlet-continuation-expiration-handler 
+          (parameter/c (or/c false/c
+                             (request? . -> . response/c)))]{
+ Holds the expiration handler to be used when a continuation
  captured in this context is expired, then looked up.
  
  Example:

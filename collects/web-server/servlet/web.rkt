@@ -36,16 +36,19 @@
 ;; ********************************************************************************
 
 (provide/contract
- [current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]
+ [current-servlet-continuation-expiration-handler 
+  (parameter/c 
+   (or/c false/c
+         (request? . -> . response/c)))]
  [redirect/get (() (#:headers (listof header?)) . ->* . request?)]
  [redirect/get/forget (() (#:headers (listof header?)) . ->* . request?)]
  [adjust-timeout! (number? . -> . void?)]
  [clear-continuation-table! (-> void?)]
  [send/back (response/c . -> . void?)]
  [send/finish (response/c . -> . void?)]
- [send/forward (response-generator/c . -> . request?)]
- [send/suspend (response-generator/c . -> . request?)]
- [send/suspend/dispatch ((embed/url/c . -> . response/c) . -> . any/c)]
+ [send/forward ((string? . -> . response/c) . -> . request?)]
+ [send/suspend ((string? . -> . response/c) . -> . request?)]
+ [send/suspend/dispatch ((((request? . -> . any) . -> . string?) . -> . response/c) . -> . any/c)]
  [send/suspend/url ((url? . -> . response/c) . -> . request?)]
  [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c) . -> . any/c)])
 

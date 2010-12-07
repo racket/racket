@@ -24,7 +24,7 @@
                ,@(formlet-display f))))))))
 
 (provide/contract
- [embed-formlet (embed/url/c formlet*/c . -> . pretty-xexpr/c)])
+ [embed-formlet (((request? . -> . any) . -> . string?) formlet*/c . -> . pretty-xexpr/c)])
 
 (define (embed-formlet embed/url f)
   `(form ([action ,(embed/url

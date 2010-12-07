@@ -5,7 +5,12 @@
 (require web-server/private/timer
          web-server/servlet/servlet-structs)
 (provide/contract
- [create-timeout-manager (expiration-handler/c number? number? . -> . manager?)])
+ [create-timeout-manager 
+  (->
+   (or/c false/c
+         (request? . -> . response/c))
+   number? number? 
+   manager?)])
 
 ;; Utility
 (define (make-counter)

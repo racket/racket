@@ -4,11 +4,20 @@
 (require "manager.rkt"
          web-server/servlet/servlet-structs)
 (provide/contract
- [create-LRU-manager (expiration-handler/c number? number? (-> boolean?)
-                                          #:initial-count number?
-                                          #:inform-p (number? . -> . void)
-                                          . -> . manager?)]
- [make-threshold-LRU-manager (expiration-handler/c number? . -> . manager?)])
+ [create-LRU-manager 
+  (->
+   (or/c false/c
+         (request? . -> . response/c))
+   number? number? (-> boolean?)
+   #:initial-count number?
+   #:inform-p (number? . -> . void)
+   manager?)]
+ [make-threshold-LRU-manager 
+  (-> 
+   (or/c false/c
+         (request? . -> . response/c))
+   number?
+   manager?)])
 
 ;; Utility
 (define (make-counter)

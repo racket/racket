@@ -3,7 +3,11 @@
 (require "manager.rkt")
 (require web-server/servlet/servlet-structs)
 (provide/contract
- [create-none-manager (expiration-handler/c . -> . manager?)])
+ [create-none-manager
+  (-> 
+   (or/c false/c
+         (request? . -> . response/c))
+   manager?)])
 
 (define-struct (none-manager manager) (instance-expiration-handler))
 (define (create-none-manager
