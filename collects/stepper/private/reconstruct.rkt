@@ -110,7 +110,9 @@
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-ref finished-xml-box-table val (lambda () #f))
           (stepper-syntax-property #`(quote #,val) 'stepper-xml-value-hint 'from-xml-box)
-          (let ([closure-record (closure-table-lookup val (lambda () #f))])     
+          (let (#;[closure-record (closure-table-lookup val (lambda () #f))]
+                [closure-record (and (annotated-proc? val)
+                                     (annotated-proc-info val))])
             (if closure-record
                 (let* ([mark (closure-record-mark closure-record)]
                        [base-name (closure-record-name closure-record)])

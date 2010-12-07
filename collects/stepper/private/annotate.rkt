@@ -546,13 +546,15 @@
                        
                        [ap-struct-maker 
                         (cond [(pair? procedure-name-info)
-                               #`(#%app
+                               #`(#%plain-app
                                   #,make-ap-struct
+                                  #,annotated-lambda
                                   #,closure-info
                                   #,(cadr procedure-name-info))]
                               [else
-                               #`(#%app
+                               #`(#%plain-app
                                   #,make-ap-struct
+                                  #,annotated-lambda
                                   #,closure-info
                                   #f)])]
                        

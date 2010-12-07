@@ -322,6 +322,7 @@
   (define (step-through-expression expanded expand-next-expression)
     (let* ([annotated (a:annotate expanded break show-lambdas-as-lambdas?
                                   language-level)])
+      (printf "annotated: ~v\n" (syntax->datum annotated))
       (parameterize ([test-engine:test-silence #t])
         (eval-syntax annotated))
       (expand-next-expression)))
