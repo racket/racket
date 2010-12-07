@@ -670,8 +670,11 @@
                       (let ([frame (find-frame item)])
                         (when frame
                           (send frame next-tab))))])
+     
      (let ([frame (find-frame windows-menu)])
        (unless (or (not frame) (= 1 (send frame get-tab-count)))
+         (unless (eq? (system-type) 'macosx)
+           (new separator-menu-item% [parent windows-menu]))
          (for ([i (in-range 0 (send frame get-tab-count))]
                #:when (< i 9))
            (new menu-item% 
@@ -683,7 +686,9 @@
                 [callback
                  (λ (a b)
                    (send frame change-to-nth-tab i))]))))
-     (new separator-menu-item% [parent windows-menu]))))
+     
+     (when (eq? (system-type) 'macosx)
+       (new separator-menu-item% [parent windows-menu])))))
 
 ;; Check for any files lost last time.
 ;; Ignore the framework's empty frames test, since

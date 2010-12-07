@@ -44,7 +44,8 @@
            items))
   (let* ([file-menu (find-menu (string-constant file-menu))]
          [edit-menu (find-menu (string-constant edit-menu))]
-         [windows-menu (find-menu (string-constant windows-menu))]
+         [windows-menu (or (find-menu (string-constant windows-menu))
+                           (find-menu (string-constant tabs-menu)))]
          [help-menu (find-menu (string-constant help-menu))]
          [other-items
           (remq* (list file-menu edit-menu windows-menu help-menu) items)]
@@ -212,10 +213,11 @@
             (set-icon icon (send icon get-loaded-mask) 'both))))
     
     (let ([mb (make-object (get-menu-bar%) this)])
-      (when (or (eq? (system-type) 'macos)
-                (eq? (system-type) 'macosx))
-        (make-object menu:can-restore-underscore-menu% (string-constant windows-menu-label)
-          mb)))
+      (make-object menu:can-restore-underscore-menu%
+        (case (system-type)
+          [(macosx) (string-constant windows-menu-label)]
+          [else (string-constant tabs-menu-label)])
+        mb))
     
     (reorder-menus this)
     

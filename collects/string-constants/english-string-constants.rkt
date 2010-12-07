@@ -599,7 +599,8 @@ please adhere to these guidelines:
  (edit-menu "Edit")
  (help-menu "Help")
  (windows-menu "Windows")
- 
+ (tabs-menu "Tabs") ;; this is the name of the "Windows" menu under linux & windows
+  
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
  ;;; - sometimes, things are stuck in the middle of 
@@ -730,6 +731,7 @@ please adhere to these guidelines:
 
   ;; windows menu
  (windows-menu-label "&Windows")
+ (tabs-menu-label "&Tabs") ;; this is the name of the menu under linux & windows
  (minimize "Minimize") ;; minimize and zoom are only used under mac os x
  (zoom "Zoom")
  (bring-frame-to-front "Bring Frame to Front")       ;;; title of dialog
