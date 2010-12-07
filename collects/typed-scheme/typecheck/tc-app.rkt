@@ -5,7 +5,7 @@
          "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
          "tc-subst.rkt" (prefix-in c: racket/contract)
          syntax/parse racket/match racket/trace scheme/list 
-	 unstable/sequence unstable/debug
+	 unstable/sequence unstable/debug unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
          scheme/bool
          racket/unsafe/ops
@@ -281,13 +281,15 @@
                 (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
     ;; use the additional but normally ignored first argument to make-sequence to provide a better instantiation
-    [(#%plain-app (~var op (id-from 'make-sequence 'racket/private/for)) (~and quo ((~literal quote) (i:id))) arg:expr)
-     #:when (type-annotation #'i)     
+    [(#%plain-app (~var op (id-from 'make-sequence 'racket/private/for)) (~and quo ((~literal quote) (i:id ...))) arg:expr)
+     #:when (andmap type-annotation (syntax->list #'(i ...)))
      (match (single-value #'op)
          [(tc-result1: (and t Poly?))
           (tc-expr/check #'quo (ret Univ))
           (tc/funapp #'op #'(quo arg) 
-                     (ret (instantiate-poly t (list (type-annotation #'i))))
+                     (ret (instantiate-poly t (extend (list Univ Univ)
+                                                      (map type-annotation (syntax->list #'(i ...)))
+                                                      Univ)))
                      (list (ret Univ) (single-value #'arg))
                      expected)])]
     ;; unsafe struct operations

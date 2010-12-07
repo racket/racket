@@ -52,23 +52,19 @@
      #:literals (let-values quote)
      [(let-values ([_ (m-s '(_) '())]) . _)
       #'m-s])
-   (-poly (a) 
+   (-poly (a b)
           (let ([seq-vals 
-                 (lambda ([a a])
+                 (lambda (a)
                    (-values (list 
-                             (-> Univ a)
+                             (-> Univ (-values a))
                              (-> Univ Univ)
                              Univ
                              (-> Univ Univ)
-                             (-> a Univ)
-                             (-> Univ a Univ))))])
-            (-> Univ (-seq a) (seq-vals))
-            #;
-            (cl->* (-> Univ (-lst a) (seq-vals))
-                   (-> Univ (-vec a) (seq-vals))
-                   (-> Univ -String (seq-vals -Char))
-                   (-> Univ -Bytes (seq-vals -Nat))
-                   (-> Univ -Input-Port (seq-vals -Nat)))))]
+                             (->* a Univ)
+                             (->* (cons Univ a) Univ))))])
+            (cl->*
+             (-> Univ (-seq a) (seq-vals (list a)))
+             (-> Univ (-seq a b) (seq-vals (list a b))))))]
   ;; in-range
   [(syntax-parse (local-expand #'(in-range 1) 'expression #f)
      [(i-n _ ...)

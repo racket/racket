@@ -579,6 +579,10 @@
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-for-each (-poly (a b c) (-> (-HT a b) (-> a b c) -Void))]
 [hash-count (-poly (a b) (-> (-HT a b) -NonnegativeFixnum))]
+[hash-keys (-poly (a b) ((-HT a b) . -> . (-lst a)))]
+[hash-values (-poly (a b) ((-HT a b) . -> . (-lst b)))]
+[hash->list (-poly (a b) ((-HT a b) . -> . (-lst (-pair a b))))]
+
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
 [eq-hash-code (-poly (a) (-> a -Integer))]
 [eqv-hash-code (-poly (a) (-> a -Integer))]
