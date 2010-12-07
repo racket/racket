@@ -71,7 +71,7 @@
                           (when (eq? receiver font-name-control)
                             (when (symbol? mono-list)
                               (begin-busy-cursor)
-                              (set! mono-list (get-face-list 'mono))
+                              (set! mono-list (sort (get-face-list 'mono) string-ci<=?))
                               (send font-name-control clear)
                               (for-each
                                (λ (x) (send font-name-control append x))
