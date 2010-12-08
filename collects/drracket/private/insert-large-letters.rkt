@@ -51,12 +51,12 @@
   (define dlg (new dialog% 
                    [parent parent] 
                    [width 700]
-                   [label (string-constant large-semicolon-letters)]))  
+                   [label (string-constant large-semicolon-letters)]))
   (define: text-field : (Instance Text-Field%) 
     (new text-field% 
          [parent dlg] 
          [label (string-constant text-to-insert)]
-         [callback (λ: ([x : Any] [y : Any]) (update-txt (send text-field get-value)))]))
+         [callback (λ: ([x : Any] [y : Any]) (update-txt (send (assert text-field defined?) get-value)))]))
   (: info-bar (Instance Horizontal-Panel%))
   (define info-bar (new horizontal-panel%
                         [parent dlg]
@@ -71,7 +71,7 @@
            [callback
             (λ: ([x : Any] [y : Any])
                 (let ([old (preferences:get 'drracket:large-letters-font)]
-                      [choice (send font-choice get-selection)])
+                      [choice (send (assert font-choice defined?) get-selection)])
                   (when choice
                     (preferences:set 'drracket:large-letters-font
                                      (cons (list-ref (get-face-list)
@@ -79,7 +79,7 @@
                                            (if old
                                                (cdr old)
                                                (send (get-default-font) get-point-size))))
-                    (update-txt (send text-field get-value)))))])))
+                    (update-txt (send (assert text-field defined?) get-value)))))])))
   
   (: count (Instance Message%))
   (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
@@ -103,7 +103,7 @@
   (: ok Any)
   (: cancel Any)
   (define-values (ok cancel)
-    (gui-utils:ok/cancel-buttons button-panel
+    (gui-utils:ok/cancel-buttons (assert button-panel defined?)
                                  (λ: ([x : Any] [y : Any]) (set! ok? #t) (send dlg show #f))
                                  (λ: ([x : Any] [y : Any]) (send dlg show #f))))
   (: update-txt (String -> Any))
@@ -112,11 +112,11 @@
     (send txt lock #f)
     (send txt delete 0 (send txt last-position))
     (let ([bm (render-large-letters comment-prefix comment-character (get-chosen-font) str txt)])
-      (send ec set-line-count (+ 1 (send txt last-paragraph)))
+      (send (assert ec defined?) set-line-count (+ 1 (send txt last-paragraph)))
       (send txt lock #t)
       (send txt end-edit-sequence)
-      (send count set-label (format columns-string (get-max-line-width txt)))
-      (send dark-msg set-bm bm)))
+      (send (assert count defined?) set-label (format columns-string (get-max-line-width txt)))
+      (send (assert dark-msg defined?) set-bm bm)))
   
   
   ;; CHANGE - get-face can return #f
@@ -128,15 +128,15 @@
           [(null? faces) (void)]
           [else (cond
                   [(equal? face (car faces))
-                   (send font-choice set-selection i)]
+                   (send (assert font-choice defined?) set-selection i)]
                   [else
                    (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
   (update-txt " ")
-  (send text-field focus)
+  (send (assert text-field defined?) focus)
   (send dlg show #t)
-  (and ok? (send text-field get-value)))
+  (and ok? (send (assert text-field defined?) get-value)))
 
 (: get-w-size ((Instance Bitmap-DC%) String -> String))
 (define (get-w-size dc face-name)

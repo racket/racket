@@ -186,6 +186,7 @@
 [assert (-poly (a b) (cl->*
 		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
 		      (-> (Un a (-val #f)) a)))]
+[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
 [open-input-string (-> -String -Input-Port)]
