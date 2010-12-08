@@ -231,7 +231,12 @@
 ;; vars : (listof identifier)
 ;;    vars will contain one identifier for each arg, plus one more for rst,
 ;;    unless rst is #f, in which case it just contains one identifier for each arg.
-(define-for-syntax (args/vars->callsite fn args rst vars this-param)
+;;
+;; FIXME: Currently, none of the resulting argument checkers attempt to preserve tail
+;; recursion.  If all of the result contracts (which would need to be passed to
+;; this function as well as results-checkers) can be evaluated early, then we can
+;; preserve tail recursion in the fashion of -> etc.
+(define-for-syntax (args/vars->arg-checker result-checkers args rst vars this-param)
   (let ([opts? (ormap arg-optional? args)]
         [this-params (if this-param (list this-param) '())])
     (cond
@@ -250,8 +255,8 @@
                  (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y)))))])
            
            ;; has both optional and keyword args
-           #`(keyword-apply/no-unsupplied 
-              #,fn 
+           #`(keyword-return/no-unsupplied 
+              #,(if (null? result-checkers) #f (car result-checkers)) 
               '#,(map car sorted-kwd/arg-pairs)
               (list #,@(map cdr sorted-kwd/arg-pairs))
               #,(if rst
@@ -261,36 +266,42 @@
               #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args))))]
       [opts?
        ;; has optional args, but no keyword args
-       #`(apply/no-unsupplied #,fn
-                              #,(if rst
-                                    #'rest-args
-                                    #''())
-                              #,@this-params
-                              #,@(if rst
-                                     (all-but-last (vector->list vars))
-                                     (vector->list vars)))] 
+       #`(return/no-unsupplied #,(if (null? result-checkers) #f (car result-checkers))
+                               #,(if rst
+                                     #'rest-args
+                                     #''())
+                               #,@this-params
+                               #,@(if rst
+                                      (all-but-last (vector->list vars))
+                                      (vector->list vars)))] 
       [else
-       (let ([middle-arguments 
-              (let loop ([args args]
-                         [i 0])
-                (cond
-                  [(null? args) #'()]
-                  [else
-                   (let ([arg (car args)])
-                     #`(#,@(if (arg-kwd arg)
-                               #`(#,(arg-kwd arg) #,(vector-ref vars i))
-                               #`(#,(vector-ref vars i)))
-                        .
-                        #,(loop (cdr args) (+ i 1))))]))])
-         (if rst
-             #`(apply #,fn #,@this-params #,@middle-arguments rest-args)
-             #`(#,fn #,@this-params #,@middle-arguments)))])))
+       (let*-values ([(rev-regs rev-kwds)
+                      (for/fold ([regs null]
+                                 [kwds null])
+                        ([arg (in-list args)]
+                         [i (in-naturals)])
+                        (if (arg-kwd arg)
+                            (values regs (cons (vector-ref vars i) kwds))
+                            (values (cons (vector-ref vars i) regs) kwds)))]
+                     [(regular-arguments keyword-arguments)
+                      (values (reverse rev-regs) (reverse rev-kwds))])
+         (cond
+           [(and (null? keyword-arguments) rst)
+            #`(apply values #,@result-checkers #,@this-params #,@regular-arguments rest-args)]
+           [(null? keyword-arguments)
+            #`(values #,@result-checkers #,@this-params #,@regular-arguments)]
+           [rst
+            #`(apply values #,@result-checkers (list #,@keyword-arguments) #,@this-params #,@regular-arguments rest-args)]
+           [else
+            #`(values #,@result-checkers (list #,@keyword-arguments) #,@this-params #,@regular-arguments)]))])))
 
-(define (apply/no-unsupplied fn rest-args . args)
-  (apply fn (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args)
-                    rest-args)))
+(define (return/no-unsupplied res-checker rest-args . args)
+  (if res-checker
+      (apply values res-checker 
+             (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))
+      (apply values (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))))
 
-(define (keyword-apply/no-unsupplied fn kwds kwd-args rest-args . args)
+(define (keyword-return/no-unsupplied res-checker kwds kwd-args rest-args . args)
   (let-values ([(supplied-kwds supplied-kwd-args)
                 (let loop ([kwds kwds]
                            [kwd-args kwd-args])
@@ -304,10 +315,18 @@
                          [else
                           (values (cons (car kwds) kwds-rec)
                                   (cons (car kwd-args) args-rec))]))]))])
-    (keyword-apply fn
-                   supplied-kwds supplied-kwd-args 
-                   (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args)
-                           rest-args))))
+    (cond
+      [(and res-checker (null? supplied-kwd-args))
+       (apply values res-checker
+              (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
+      [(null? supplied-kwd-args)
+       (apply values (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
+      [res-checker
+       (apply values res-checker supplied-kwd-args 
+              (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
+      [else
+       (apply values supplied-kwd-args 
+              (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))])))
 
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
@@ -414,26 +433,27 @@
                        #`(#,arg-proj-var #,wrapper-arg)]))])
             #,body)))))
 
-(define-for-syntax (add-result-checks an-istx
-                                      ordered-ress res-indicies
-                                      res-proj-vars indy-res-proj-vars
-                                      wrapper-ress indy-res-vars
-                                      arg/res-to-indy-var
-                                      arg-call-stx)
+;; Returns an empty list if no result contracts and a list of a single syntax value
+;; which should be a function from results to projection-applied versions of the same
+;; if there are result contracts.
+(define-for-syntax (result-checkers an-istx
+                                    ordered-ress res-indicies
+                                    res-proj-vars indy-res-proj-vars
+                                    wrapper-ress indy-res-vars
+                                    arg/res-to-indy-var)
   (cond
     [(istx-ress an-istx)
-     ;; WRONG! needs to preserve tail recursion? .... well ->d does anyways.
-     #`(let-values ([#,(vector->list wrapper-ress)  #,arg-call-stx])
-         
-         #,(add-wrapper-let 
-            (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
-            #f
-            ordered-ress res-indicies
-            res-proj-vars indy-res-proj-vars 
-            wrapper-ress indy-res-vars
-            arg/res-to-indy-var))]
+     (list
+      #`(λ #,(vector->list wrapper-ress)
+          #,(add-wrapper-let 
+             (add-post-cond an-istx arg/res-to-indy-var #`(values #,@(vector->list wrapper-ress)))
+             #f
+             ordered-ress res-indicies
+             res-proj-vars indy-res-proj-vars 
+             wrapper-ress indy-res-vars
+             arg/res-to-indy-var)))]
     [else
-     arg-call-stx]))
+     null]))
 
 (define-for-syntax (add-eres-lets an-istx res-proj-vars arg/res-to-indy-var stx)
   (cond
@@ -448,16 +468,6 @@
            body))]
     [else stx]))
   
-(define-for-syntax (maybe-a-method/name stx)
-  (if (syntax-parameter-value #'making-a-method)
-      (syntax-property stx 'method-arity-error #t)
-      stx))
-
-(define-for-syntax (maybe-make-contracted-function fn ctc)
-  (if (syntax-parameter-value #'making-a-method)
-      fn
-      #`(make-contracted-function #,fn #,ctc)))
-
 (define-for-syntax (mk-wrapper-func an-istx used-indy-vars)
   (let ([args+rst (append (istx-args an-istx)
                           (if (istx-rst an-istx)
@@ -552,33 +562,39 @@
 
             (λ (val)
               (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-              #,(maybe-make-contracted-function
-                  (maybe-a-method/name
-                   (syntax-property
-                    #`(λ #,(args/vars->arglist an-istx wrapper-args this-param)
-                        #,(add-wrapper-let 
-                           (add-pre-cond 
-                            an-istx 
-                            arg/res-to-indy-var 
-                            (add-eres-lets
-                             an-istx
-                             res-proj-vars
-                             arg/res-to-indy-var
-                             (add-result-checks
+              (let ([arg-checker
+                     (λ #,(args/vars->arglist an-istx wrapper-args this-param)
+                       #,(add-wrapper-let 
+                          (add-pre-cond 
+                           an-istx 
+                           arg/res-to-indy-var 
+                           (add-eres-lets
+                            an-istx
+                            res-proj-vars
+                            arg/res-to-indy-var
+                            (args/vars->arg-checker
+                             (result-checkers
                               an-istx
                               ordered-ress res-indicies
                               res-proj-vars indy-res-proj-vars
                               wrapper-ress indy-res-vars
-                              arg/res-to-indy-var
-                              (args/vars->callsite #'val (istx-args an-istx) (istx-rst an-istx) wrapper-args this-param))))
-                           #t
-                           ordered-args arg-indicies
-                           arg-proj-vars indy-arg-proj-vars 
-                           wrapper-args indy-arg-vars
-                           arg/res-to-indy-var))
-                    'inferred-name
-                    (syntax-local-name)))
-                  #'ctc)))))))
+                              arg/res-to-indy-var)
+                             (istx-args an-istx)
+                             (istx-rst an-istx)
+                             wrapper-args
+                             this-param)))
+                          #t
+                          ordered-args arg-indicies
+                          arg-proj-vars indy-arg-proj-vars 
+                          wrapper-args indy-arg-vars
+                          arg/res-to-indy-var))])
+                (impersonate-procedure
+                 val
+                 (make-keyword-procedure
+                  (λ (kwds kwd-args . args)
+                    (keyword-apply arg-checker kwds kwd-args args))
+                  (λ args (apply arg-checker args)))
+                 impersonator-prop:contracted ctc))))))))
 
 (define (un-dep ctc obj blame)
   (let ([ctc (coerce-contract '->i ctc)])
