@@ -14,6 +14,9 @@ kill_all() {
   kill -15 $KILL
   sleep 2
   kill -9 $KILL
+  sleep 1
+  # Clear unattached shared memory segments
+  ipcs -ma | awk '0 == $6 {print $2}' | xargs -n 1 ipcrm -m
 }
 
 run_loop () { # <basename> <kill?>
