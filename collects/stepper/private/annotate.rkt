@@ -1,16 +1,13 @@
-#lang racket/base
+#lang racket
 
 (require (prefix-in kernel: syntax/kerncase)
-         mzlib/contract
-         mzlib/list
-         mzlib/etc
-         scheme/match
+         racket/contract
          "marks.ss"
          "shared.ss"
          "my-macros.ss"
          #;"xml-box.ss"
          (prefix-in beginner-defined: "beginner-defined.ss")
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (define-syntax (where stx)
   (syntax-case stx ()
@@ -28,10 +25,9 @@
    (((or/c continuation-mark-set? false/c) 
      break-kind?)
     (list?)
-    . opt->* .
-    (any/c))                       ; procedure for runtime break
-   boolean?                        ; show-lambdas-as-lambdas?
-   (union any/c (symbols 'testing)); language-level
+    . ->* .
+    any/c)                       ; procedure for runtime break
+   boolean?   ; show-lambdas-as-lambdas?
    . -> .
    syntax?)]                       ; results
  
@@ -278,7 +274,7 @@
 
 
 
-(define (annotate main-exp break show-lambdas-as-lambdas? language-level)
+(define (annotate main-exp break show-lambdas-as-lambdas?)
   
   #;(define _ (>>> main-exp #;(syntax->datum main-exp)))
   

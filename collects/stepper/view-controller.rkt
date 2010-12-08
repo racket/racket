@@ -322,12 +322,11 @@
    program-expander-prime 
    ;; what do do with the results:
    (lambda (result) (async-channel-put view-channel result))
-   (get-render-settings render-to-string render-to-sexp 
+   (get-render-settings render-to-string
+                        render-to-sexp 
                         (send language-level stepper:enable-let-lifting?)
-			(send language-level stepper:show-consumed-and/or-clauses?))
-   (send language-level stepper:show-lambdas-as-lambdas?)
-   language-level
-   #f)
+			(send language-level stepper:show-consumed-and/or-clauses?)
+                        (send language-level stepper:show-lambdas-as-lambdas?)))
   
   (send s-frame show #t)
   
