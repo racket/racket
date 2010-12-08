@@ -11,7 +11,7 @@
          ;racket/trace unstable/debug
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
-         syntax/kerncase syntax/parse
+         syntax/kerncase syntax/parse unstable/syntax
          unstable/debug
          (for-template 
           racket/base
@@ -115,12 +115,12 @@
     (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
       (cond 
         ;; after everything, check the body expressions
-        [(null? names) 
-         (do-check void null null form null body null expected #:abstract orig-flat-names)
-         #;
-         (if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))]
+        [(null? names)
+         ;(if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))
+         (do-check void null null form null body null expected #:abstract orig-flat-names)]
         ;; if none of the names bound in the letrec are free vars of this rhs
-        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?)) (free-vars (car exprs))))
+        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
+                     (free-vars (car exprs))))
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
@@ -131,7 +131,66 @@
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a\n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
-                   names (map (λ (l) (ret (map get-type l))) names) form exprs body clauses expected)]))))
+                   names
+                   ;; compute set of variables that can't be undefined. see below.
+                   (let-values
+                    ([(safe-bindings _)
+                      (for/fold ([safe-bindings              '()] ; includes transitively-safe
+                                 [transitively-safe-bindings '()])
+                          ([names  names]
+                           [clause clauses])
+                        (case (safe-letrec-values-clause? clause transitively-safe-bindings)
+                          ;; transitively safe -> safe to mention in a subsequent rhs
+                          [(transitively-safe) (values (append names safe-bindings)
+                                                       (append names transitively-safe-bindings))]
+                          ;; safe -> safe by itself, but may not be safe to use in a subsequent rhs
+                          [(safe)              (values (append names safe-bindings)
+                                                       transitively-safe-bindings)]
+                          ;; unsafe -> could be undefined
+                          [(unsafe)            (values safe-bindings transitively-safe-bindings)]))])
+                    (map (λ (l) (let ([types-from-user (map get-type l)])
+                                  (ret (if (andmap (λ (x) ; are all the lhs vars safe?
+                                                      (s:member x safe-bindings bound-identifier=?))
+                                                   l)
+                                           types-from-user
+                                           (map (λ (x) (make-Union (list x -Undefined)))
+                                                types-from-user)))))
+                         names))
+                   form exprs body clauses expected)]))))
+
+;; determines whether any of the variables bound in the given clause can have an undefined value
+;; in this case, we cannot trust the type the user gave us and must union it with undefined
+;; for example, the following code:
+;;  (letrec: ([x : Float x]) x)
+;; should not typecheck with type Float, even though the user said so, because the actual value
+;; is undefined.
+;; this implements a conservative analysis.
+;; we identify 3 kinds of bindings:
+;;  - safe bindings cannot be undefined
+;;  - transitively safe bindings are safe and can safely be used in subsequent rhss
+;;  - unsafe bindings may be undefined
+;; x is transitively safe if for all its free variables, they are either transitively safe and
+;; earlier in the letrec or they are bound outside the letrec
+;; x is safe if it is transitively safe or if its rhs is a lambda
+;; otherwise, x is unsafe
+;; this function returns either 'transitively-safe, 'safe or 'unsafe
+;; Note: In some cases (such as the example on the bottom of page 6 of Ghuloum and Dybvig's
+;;  Fixing Letrec (reloaded) paper), we are more conservative than a fully-connected component
+;;  based approach. On the other hand, our algorithm should cover most interesting cases and
+;;  is much simpler than Tarjan's.
+(define (safe-letrec-values-clause? clause transitively-safe-bindings)
+  (define clause-rhs
+    (syntax-parse clause
+      [(bindings . rhs) #'rhs]))
+  (cond [(andmap (lambda (fv) (s:member fv transitively-safe-bindings bound-identifier=?))
+                 (apply append
+                        (syntax-map (lambda (x) (free-vars x))
+                                    clause-rhs)))
+         'transitively-safe]
+        [else
+         (syntax-parse clause-rhs #:literal-sets (kernel-literals)
+           [((#%plain-lambda _ ...)) 'safe]
+           [else                     'unsafe])]))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
