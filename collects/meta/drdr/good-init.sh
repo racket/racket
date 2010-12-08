@@ -15,12 +15,14 @@ kill_all() {
   sleep 2
   kill -9 $KILL
   sleep 1
-  # Clear unattached shared memory segments
-  ipcs -ma | awk '0 == $6 {print $2}' | xargs -n 1 ipcrm -m
 }
 
 run_loop () { # <basename> <kill?>
   while true; do
+    if [[ "x$2" = "xyes" ]]; then
+      echo "clearing unattached shm regions"
+      ipcs -ma | awk '0 == $6 {print $2}' | xargs -n 1 ipcrm -m
+    fi
     echo "$1: compiling"
     "$PLTROOT/bin/raco" make "$1.rkt"
     echo "$1: running"
