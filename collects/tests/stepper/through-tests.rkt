@@ -1501,10 +1501,10 @@
      {(define-struct a_1 (b c))} {1})
   
   
- 
+  (provide ggg)
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    (parameterize ([disable-stepper-error-handling #t]
+    (parameterize (#;[disable-stepper-error-handling #t]
                    #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
@@ -1512,5 +1512,5 @@
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
-      (run-tests '(intermediate-lambda-hof))
+      (run-tests '(mz-app2))
       ))

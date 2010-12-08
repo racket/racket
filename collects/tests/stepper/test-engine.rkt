@@ -178,25 +178,29 @@
 
 (define-namespace-anchor n-anchor)
 
+;; it seems to be okay to use the same namespace for all of the tests... 
+(define test-namespace (make-base-namespace))
+(namespace-attach-module (namespace-anchor->empty-namespace n-anchor)
+                         'mzlib/pconvert-prop
+                         test-namespace)
+(parameterize ([current-namespace test-namespace])
+    (namespace-require 'test-engine/racket-tests)
+    ;; make the test engine happy by adding a binding for test~object:
+    (namespace-set-variable-value! 'test~object #f))
+
 ;; call-iter-on-each : (-> syntax?) (syntax? (-> 'a) -> 'a) -> void/c
 ;; call the given iter on each syntax in turn (iter bounces control
 ;; back to us by calling the followup-thunk).
 (define (call-iter-on-each stx-thunk iter)
-  (let ([ns (make-base-namespace)])
-    ;; gets structures to print correctly. Copied from fix in command-line tests.
-    (namespace-attach-module (namespace-anchor->empty-namespace n-anchor)
-                             'mzlib/pconvert-prop
-                             ns)
-  (parameterize ([current-namespace ns])
-    (namespace-require 'test-engine/racket-tests)
-    ;; make the test engine happy by adding a binding for test~object:
-    (namespace-set-variable-value! 'test~object #f)
+  (parameterize ([current-namespace test-namespace])
     (let iter-loop ()
       (let* ([next (stx-thunk)]
-             [followup-thunk (if (eof-object? next) void iter-loop)]
+             [followup-thunk (if (eof-object? next) 
+                                 void
+                                 iter-loop)]
              [expanded (expand next)])
         ;;(printf "~v\n" expanded)
-        (iter expanded followup-thunk))))))
+        (iter expanded followup-thunk)))))
 
 
 (define (warn error-box who fmt . args)
