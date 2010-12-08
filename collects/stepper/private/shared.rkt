@@ -1,8 +1,6 @@
 #lang racket
 
-(require "my-macros.rkt"
-         srfi/26
-         scheme/class)
+(require scheme/class)
 
 
 ; CONTRACTS
@@ -283,11 +281,11 @@
   
   (define (list-partition lst n)
     (if (= n 0)
-        (2vals null lst)
+        (vector null lst)
         (if (null? lst)
             (list-ref lst 0) ; cheap way to generate exception
-            (let*-2vals ([(first rest) (list-partition (cdr lst) (- n 1))])
-              (2vals (cons (car lst) first) rest)))))
+            (match-let* ([(vector first rest) (list-partition (cdr lst) (- n 1))])
+              (vector (cons (car lst) first) rest)))))
   
 ;  (define expr-read read-getter)
 ;  (define set-expr-read! read-setter)
@@ -482,7 +480,7 @@
     (cond [(or (stepper-syntax-property stx 'stepper-skipto)
 	       (stepper-syntax-property stx 'stepper-skipto/discard))
            =>
-           (cut update <> stx (cut skipto/auto <> traversal transformer) traversal)]
+           (lambda (x) (update x stx (lambda (y) (skipto/auto y traversal transformer)) traversal))]
           [else (transformer stx)]))
 
   ;  small test case:
