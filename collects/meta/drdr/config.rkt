@@ -8,7 +8,7 @@
 (plt-directory "/opt/plt")
 (drdr-directory "/opt/svn/drdr")
 (git-path "/usr/bin/git")
-(Xvfb-path "/usr/bin/Xvnc")
+(Xvfb-path "/usr/bin/Xorg")
 (fluxbox-path "/usr/bin/fluxbox")
 (vncviewer-path "/usr/bin/vncviewer")
 (current-make-install-timeout-seconds (* 90 60))
