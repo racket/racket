@@ -36,7 +36,7 @@
        (printf "Skipping Typed Racket tests.\n")]
       [(when (the-tests)
          (unless (= 0 ((exec) (the-tests)))
-           (eprintf "Typed Racket Tests did not pass.")))
+           (eprintf "Typed Racket Tests did not pass.\n")))
        (when (opt?)
          (parameterize ([current-command-line-arguments #()])
            (dynamic-require '(file "optimizer/run.rkt") #f))

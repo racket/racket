@@ -5,7 +5,7 @@
 	 (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
-                    [Un t:Un] [-> t:->])
+                    [Un t:Un] [-> t:->] [->* t:->*])
          (private base-types base-types-extra colon)
          (for-template (private base-types base-types-extra base-env colon))
          (private parse-type)
@@ -83,7 +83,7 @@
    ;; requires transformer time stuff that doesn't work
    #;[(Refinement even?) (make-Refinement #'even?)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
-   [(Number Number Number * -> Boolean) ((list N N) N . ->* . B)]
+   [(Number Number Number * -> Boolean) ((list N N) N . t:->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax
    [(U Number Boolean) (t:Un N B)]
    [(U Number Boolean Number) (t:Un N B)]
@@ -111,6 +111,12 @@
     (-polydots (a) ((list) [a a] . ->... . N))]
    
    [(Any -> Boolean : Number) (make-pred-ty -Number)]
+   [(Any -> Boolean : #:+ (Number @ 0) #:- (! Number @ 0))
+    (make-pred-ty -Number)]
+   [(Any -> Boolean : #:+ (! Number @ 0) #:- (Number @ 0))
+    (t:->* (list Univ) -Boolean : (-FS (-not-filter -Number 0 null) (-filter -Number 0 null)))]
+   [(Number -> Number -> Number)
+    (t:-> -Number (t:-> -Number -Number))]
    [(Integer -> (All (X) (X -> X)))
     (t:-> -Integer (-poly (x) (t:-> x x)))]
    

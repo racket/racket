@@ -96,6 +96,13 @@
            (loop (cdr props) others)]
           [p (loop (cdr props) (cons p others))]))))
 
+
+(define (-imp p1 p2)
+  (match* (p1 p2)
+    [((Bot:) _) -top]
+    [((Top:) _) p2]
+    [(_ _) (make-ImpFilter p1 p2)]))
+
 (define (-or . args)
   (define mk
     (case-lambda [() -bot]
