@@ -1751,7 +1751,7 @@
     (copy extend? time)
     (clear))
 
-  (def/override (do-copy [exact-integer? time] [bool? extend?])
+  (def/public (do-copy [exact-integer? time] [bool? extend?])
     (set-common-copy-region-data! #f)
     (let ([sl (if (and extend?
                        copy-style-list)
@@ -1814,10 +1814,10 @@
                 (add-selected snip)
                 (loop (snip->next snip))))))))
 
-  (def/override (do-paste [exact-integer? time])
+  (def/public (do-paste [exact-integer? time])
     (do-generic-paste the-clipboard time))
 
-  (def/override (do-paste-x-selection [exact-integer? time])
+  (def/public (do-paste-x-selection [exact-integer? time])
     (do-generic-paste the-x-selection-clipboard time))
   
   (define/private (generic-paste x-sel? time)

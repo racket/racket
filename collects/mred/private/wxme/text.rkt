@@ -2032,10 +2032,10 @@
         (copy extend? time start end)
         (delete start end))))
 
-  (def/override (do-copy [exact-nonnegative-integer? startp] 
-                         [exact-nonnegative-integer? endp] 
-                         [exact-integer? time] 
-                         [bool? extend?])
+  (def/public (do-copy [exact-nonnegative-integer? startp] 
+                       [exact-nonnegative-integer? endp] 
+                       [exact-integer? time] 
+                       [bool? extend?])
     (let ([startp (max startp 0)]
           [endp (min endp len)])
       (unless (endp . <= . startp)
@@ -2094,10 +2094,10 @@
         (set! prev-paste-start start)
         (set! prev-paste-end (+ start delta)))))
 
-  (define/override (do-paste start time)
+  (define/public (do-paste start time)
     (do-generic-paste the-clipboard start time))
 
-  (define/override (do-paste-x-selection start time)
+  (define/public (do-paste-x-selection start time)
     (do-generic-paste the-x-selection-clipboard start time))
 
   (define/private (generic-paste x-sel? time start end)
