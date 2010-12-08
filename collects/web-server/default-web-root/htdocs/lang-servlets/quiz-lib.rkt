@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/serialize
+         web-server/http
          net/url)
 (provide (struct-out mc-question)
          make-cue-page
