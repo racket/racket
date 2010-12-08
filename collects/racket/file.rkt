@@ -85,7 +85,8 @@
                       "path, valid-path, string, or #f"
                       base-dir))
   (let ([tmpdir (find-system-path 'temp-dir)])
-    (let loop ([s (current-seconds)][ms (current-milliseconds)])
+    (let loop ([s (current-seconds)]
+               [ms (inexact->exact (truncate (current-inexact-milliseconds)))])
       (let ([name (let ([n (format template (format "~a~a" s ms))])
                     (cond [base-dir (build-path base-dir n)]
                           [(relative-path? n) (build-path tmpdir n)]
