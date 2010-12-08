@@ -36,7 +36,6 @@
 
 (provide
  skipto/auto
- in-closure-table
  sublist
  attach-info
  transfer-info
@@ -60,8 +59,6 @@
  struct-flag
  multiple-highlight
  flatten-take
- closure-table-put!
- closure-table-lookup
  get-lifted-var
  get-arg-var
  begin0-temp

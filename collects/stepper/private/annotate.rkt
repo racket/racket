@@ -521,20 +521,16 @@
                   
                   [outer-lambda-abstraction
                    (lambda (annotated-lambda free-varrefs)
-                     (match-let*
+                     (let*-2vals
                       ([closure-info (make-debug-info-app 'all free-varrefs 'none)]
+                       ;; if we manually disable the storage of names, lambdas get rendered as lambdas.
+                       [closure-name (if show-lambdas-as-lambdas?
+                                         #f
+                                         (cond [(syntax? procedure-name-info) procedure-name-info]
+                                               [(pair? procedure-name-info) (car procedure-name-info)]
+                                               [else #f]))]
                        
-                       ;; if we manually disable the storage of 
-                       ;; names, lambdas get rendered as lambdas.
-                       [closure-name 
-                        (if show-lambdas-as-lambdas?
-                            #f
-                            (cond [(syntax? procedure-name-info) procedure-name-info]
-                                  [(pair? procedure-name-info) 
-                                   (car procedure-name-info)]
-                                  [else #f]))]
-                       
-                       [make-ap-struct
+                       #;[make-ap-struct
                         (lambda (clo debug-info maybe-index)
                           (annotated-proc
                            clo
@@ -544,32 +540,37 @@
                             #f
                             maybe-index)))]
                        
-                       [ap-struct-maker 
+                       
+                       
+                       [closure-storing-proc
+                        (lambda (clo debug-info maybe-index)
+                          (annotated-proc
+                           clo
+                           (make-closure-record 
+                            closure-name
+                            debug-info
+                            #f
+                            maybe-index)))]
+                       
+                       [captured
                         (cond [(pair? procedure-name-info)
-                               #`(#%plain-app
-                                  #,make-ap-struct
-                                  #,annotated-lambda
-                                  #,closure-info
-                                  #,(cadr procedure-name-info))]
+                               #`(#%plain-app #,closure-storing-proc #,annotated-lambda #,closure-info 
+                                              #,(cadr procedure-name-info))]
                               [else
-                               #`(#%plain-app
-                                  #,make-ap-struct
-                                  #,annotated-lambda
-                                  #,closure-info
-                                  #f)])]
+                               #`(#%plain-app #,closure-storing-proc #,annotated-lambda #,closure-info
+                                              #f)])]
                        
                        ;; gnarr! I can't find a test case
                        ;; that depends on the attachment of the inferred name...
                        [inferred-name-struct
                         (if closure-name
                             (syntax-property
-                             ap-struct-maker
+                             captured
                              'inferred-name
                              (syntax-e closure-name))
-                            ap-struct-maker)])
+                            captured)])
                       
-                      (normal-bundle free-varrefs
-                                     inferred-name-struct)))]
+                      (normal-bundle free-varrefs inferred-name-struct)))]
                   
                   
                   ;    @@                 
@@ -853,24 +854,19 @@
                  (kernel:kernel-syntax-case exp #f
                    
                    [(#%plain-lambda . clause)
-                    (match-let* 
-                        ([(vector annotated-clause free-varrefs)
-                          (lambda-clause-abstraction #'clause)]
-                         [annotated-lambda
-                          (with-syntax ([annotated-clause annotated-clause])
-                            (syntax/loc exp 
-                              (#%plain-lambda . annotated-clause)))])
+                    (let*-2vals ([(annotated-clause free-varrefs)
+                                  (lambda-clause-abstraction (syntax clause))]
+                                 [annotated-lambda
+                                  (with-syntax ([annotated-clause annotated-clause])
+                                    (syntax/loc exp (#%plain-lambda . annotated-clause)))])
                       (outer-lambda-abstraction annotated-lambda free-varrefs))]
                    
                    [(case-lambda . clauses)
-                    (match-let* 
-                        ([(vector annotated-cases free-varrefs-cases)
-                          (2vals-map lambda-clause-abstraction 
-                                     (syntax->list (syntax clauses)))]
-                         [annotated-case-lambda 
-                          (with-syntax ([annotated-cases annotated-cases])
-                            (syntax/loc exp (case-lambda . annotated-cases)))]
-                         [free-varrefs (varref-set-union free-varrefs-cases)])
+                    (let*-2vals ([(annotated-cases free-varrefs-cases)
+                                  (2vals-map lambda-clause-abstraction (syntax->list (syntax clauses)))]
+                                 [annotated-case-lambda (with-syntax ([annotated-cases annotated-cases])
+                                                          (syntax/loc exp (case-lambda . annotated-cases)))]
+                                 [free-varrefs (varref-set-union free-varrefs-cases)])
                       (outer-lambda-abstraction annotated-case-lambda free-varrefs))]
                    
                    
@@ -1123,7 +1119,7 @@
                                                                             #,(break-wrap
                                                                                (wcm-wrap
                                                                                 app-debug-info
-                                                                                #`(if (#%plain-app #,in-closure-table #,(car tagged-arg-temps))
+                                                                                #`(if (#%plain-app #,annotated-proc? #,(car tagged-arg-temps))
                                                                                       #,app-term
                                                                                       #,(return-value-wrap app-term))))))])
                          #`(let-values #,let-clauses #,let-body))
