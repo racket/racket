@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse unstable/syntax
          racket/match
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
@@ -52,7 +52,7 @@
   (pattern (#%plain-app op:mpair-op p:mpair-expr e:expr ...)
            #:with opt
            (begin (log-optimization "mutable pair" #'op)
-                  #`(op.unsafe p.opt #,@(map (optimize) (syntax->list #'(e ...)))))))
+                  #`(op.unsafe p.opt #,@(syntax-map (optimize) #'(e ...))))))
 
   
 ;; if the equivalent sequence of cars and cdrs is guaranteed not to fail,

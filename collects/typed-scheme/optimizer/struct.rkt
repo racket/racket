@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse unstable/syntax
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types type-table)
@@ -21,4 +21,4 @@
                         #`(unsafe-struct-ref  #,((optimize) #'s) #,idx))
                  (begin (log-optimization "struct set" #'op)
                         #`(unsafe-struct-set! #,((optimize) #'s) #,idx
-                                              #,@(map (optimize) (syntax->list #'(v ...)))))))))
+                                              #,@(syntax-map (optimize) #'(v ...))))))))

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse unstable/syntax
          racket/match
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
@@ -63,4 +63,4 @@
            #:with opt
            (begin (log-optimization "vector" #'op)
                   #`(op.unsafe v.opt #,((optimize) #'i)
-                               #,@(map (optimize) (syntax->list #'(new ...)))))))
+                               #,@(syntax-map (optimize) #'(new ...))))))
