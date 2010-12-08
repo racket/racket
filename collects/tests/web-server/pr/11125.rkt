@@ -13,7 +13,9 @@
       
       (define (start req)
         (thread-cell-set! tc (add1 (thread-cell-ref tc)))
-        (number->string (thread-cell-ref tc)))
+        (response/full 200 #"Okay" (current-seconds)
+                       #"text" empty
+                       (list (string->bytes/utf-8 (number->string (thread-cell-ref tc))))))
       
       (define-values (pipe-read-p pipe-write-p)
         (make-pipe))
