@@ -1774,7 +1774,7 @@ evaluated in order, and the results from all but the last
 form.}
 
 @specsubform[#:literals (=>) [test-expr => proc-expr]]{The @racket[proc-expr] is
-evaluated, and it must produce a procedure that accepts on argument,
+evaluated, and it must produce a procedure that accepts one argument,
 otherwise the @exnraise[exn:fail:contract]. The procedure is applied
 to the result of @racket[test-expr] in tail position with respect to
 the @racket[cond] expression.}
