@@ -324,7 +324,7 @@
            (safely-delete-directory (format "/tmp/.tX~a-lock" i))
            (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
            (with-running-program
-               (Xvfb-path) (list (format ":~a" i) "-ac" "-rfbauth" "/home/jay/.vnc/passwd")
+               (Xvfb-path) (list (format ":~a" i))
              (lambda ()
                (sleep 1)
                (with-running-program
