@@ -44,30 +44,7 @@
 
 ;; honestly, match-let* supersedes all of this, if I ever have time to redo it...
 
-(provide 2vals let*-2vals 2vals-first 2vals-second 2vals-map apply-to-first-of-2vals)
-
-(define 2vals vector)
-
-(define-syntax (let*-2vals stx)
-  (syntax-case stx (let*-2vals)
-    [(let*-2vals () . bodies)
-     (syntax/loc stx (begin . bodies))]
-    [(let*-2vals ([(id-a id-b) rhs] binding ...) . bodies)  ; 2 values in a vector
-     (syntax/loc stx (let* ([_a rhs] [id-a (vector-ref _a 0)] [id-b (vector-ref _a 1)])
-                       (let*-2vals (binding ...) . bodies)))]
-    [(let*-2vals ([id-a rhs] binding ...) . bodies)         ; just 1 value
-     (quasisyntax/loc stx (let* ([id-a rhs]) 
-                            #,(syntax/loc stx (let*-2vals (binding ...) . bodies))))]))
-
-(define-syntax (2vals-first stx)
-  (syntax-case stx (2vals-first)
-    [(2vals-first a)
-     (syntax (vector-ref a 0))]))
-
-(define-syntax (2vals-second stx)
-  (syntax-case stx (2vals-second)
-    [(2vals-second a)
-     (syntax (vector-ref a 1))]))
+(provide 2vals-map apply-to-first-of-2vals)
 
 (define (apply-to-first-of-2vals proc 2vals)
   (vector (proc (vector-ref 2vals 0))
@@ -79,10 +56,10 @@
 
 (define (2vals-map f . lsts)
   (if (null? (car lsts))
-      (2vals null null)
-      (let*-2vals ([(a b) (apply f (map car lsts))]
-                   [(a-rest b-rest) (apply 2vals-map f (map cdr lsts))])
-        (2vals (cons a a-rest) (cons b b-rest)))))
+      (vector null null)
+      (match-let* ([(vector a b) (apply f (map car lsts))]
+                   [(vector a-rest b-rest) (apply 2vals-map f (map cdr lsts))])
+        (vector (cons a a-rest) (cons b b-rest)))))
 
 ; test cases
 ; (require my-macros)

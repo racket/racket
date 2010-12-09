@@ -1,14 +1,11 @@
-(module lifting scheme/base
-  (require mzlib/etc
-           mzlib/contract
-           (prefix-in kernel: syntax/kerncase)
-           mzlib/match
-           "testing-shared.ss"
-           "shared.ss"
-           "my-macros.ss"
-           (for-syntax scheme/base))
+#lang racket
 
-  (define-struct context-record (stx index kind))
+(require (prefix-in kernel: syntax/kerncase)
+         "testing-shared.ss"
+         "shared.ss"
+         (for-syntax racket/base))
+
+(define-struct context-record (stx index kind))
   
   ; context-records are used to represent syntax context frames. That is,
   ; a list of context records represents a path through a syntax tree
@@ -24,7 +21,7 @@
                           
   
   (define (lift stx lift-in-highlight?)
-    (let*-2vals ([(context-records highlight) (find-highlight stx)])
+    (match-let* ([(vector context-records highlight) (find-highlight stx)])
       (lift-local-defs context-records highlight lift-in-highlight?)))
   
   ; [find-highlight (-> syntax? (listof context-record?))]
@@ -34,123 +31,131 @@
 
   (define (find-highlight stx)
     (let/ec success-escape
-      (local
-          ((define (make-try-all-subexprs stx kind context-so-far)
-             (lambda (index-mangler list-of-subtries)
-               (let loop ([index 0] [remaining list-of-subtries])
-                 (unless (null? remaining)
-                   (let* ([try (car remaining)]
-                          [corrected-index (index-mangler index)])
-                   ((car try) (cadr try) (cons (make-context-record stx corrected-index kind) context-so-far))
-                   (loop (+ index 1) (cdr remaining)))))))
-           
-           (define try->offset-try
-             (lambda (try)
-               (lambda (offset subtries)
-                 (try (lambda (index) (list (+ offset index))) subtries))))
-           
-           ;; WHOA: this code uses the template for fully-expanded syntax; what the code
-           ;; actually gets is reconstructed code.  This is a problem, because you can't
-           ;; distinguish a top-level begin from one that's the result of some evaluation. 
-           ;; I think for the moment that it will solve our problem simply to remove the
-           ;; special case for begin at the top level.  JBC, 2006-10-09
-           
-           ;; ... aaaand, yep, there's a bug.  The input is not fully-expanded syntax, and 
-           ;; therefore _can_ include a two-branched 'if' (because the reconstructor produces it.)
-           ;; 
-           
-           (define (top-level-expr-iterator stx context-so-far)
-             (let ([try (try->offset-try (make-try-all-subexprs stx 'top-level context-so-far))])
-               (kernel:kernel-syntax-case stx #f
-                 [(module identifier name (#%plain-module-begin . module-level-exprs))
-                  (try 3 (map (lambda (expr) `(,module-level-expr-iterator ,expr))
-                              (syntax->list #'module-level-exprs)))]
-                 [else-stx
-                  (general-top-level-expr-iterator stx context-so-far)])))
-           
-           (define (module-level-expr-iterator stx context-so-far)
-             (kernel:kernel-syntax-case stx #f
-               [(#%provide . provide-specs)
-                (void)]
-               [else-stx
-                (general-top-level-expr-iterator stx context-so-far)]))
-           
-           (define (general-top-level-expr-iterator stx context-so-far)
-             (let ([try (try->offset-try (make-try-all-subexprs stx 'general-top-level context-so-far))])
-               (kernel:kernel-syntax-case stx #f
-                 [(define-values (var ...) expr)
-                  (try 2 `((,expr-iterator ,#'expr)))]
-                 [(define-syntaxes (var ...) expr)
-                  (try 2 `((,expr-iterator ,#'expr)))]
-                 ;; this code is buggy, but I believe it doesn't belong here at all 
-                 ;; per above discussion.  JBC, 2006-10-09
-                 #;[(begin . top-level-exprs)
-                  (try 1 (map (lambda (expr) `(,top-level-expr-iterator ,expr))
-                              (syntax->list #'exprs)))]
-                 [(#%require . require-specs)
-                  (void)]
-                 [else
-                  (expr-iterator stx context-so-far)])))
-           
-           (define (expr-iterator stx context-so-far)
-             (when (stepper-syntax-property stx 'stepper-highlight)
-               (success-escape (2vals context-so-far stx)))
-             (let* ([try (make-try-all-subexprs stx 'expr context-so-far)]
-                    [try-exprs (lambda (index-mangler exprs) (try index-mangler (map (lambda (expr) (list expr-iterator expr)) 
-                                                                                     (syntax->list exprs))))]
-                    [try-exprs-offset (try->offset-try try-exprs)] 
-                    [let-values-abstraction
-                     (lambda (stx)
-                       (kernel:kernel-syntax-case stx #f
-                         [(kwd (((variable ...) rhs) ...) . bodies)
-                          (begin
-                            (try-exprs (lambda (index) (list 1 index 1)) #'(rhs ...))
-                            (try-exprs-offset 2 #'bodies))]
-                         [else
-                          (error 'expr-syntax-object-iterator 
-                                 "unexpected let(rec) expression: ~a"
-                                 (syntax->datum stx))]))]) 
-               (kernel:kernel-syntax-case stx #f
-                 [var-stx
-                  (identifier? (syntax var-stx))
-                  (void)]
-                 [(#%plain-lambda vars . bodies)
-                  (try-exprs-offset 2 #'bodies)]
-                 [(case-lambda (vars . bodies) ...)
-                  (let loop ([count 1] [clauses (syntax->list #'(bodies ...))])
-                    (unless (null? clauses)
-                      (try-exprs (lambda (index) (list count (+ index 1))) (cdar clauses))
-                      (loop (+ count 1) (cdr clauses))))]
-                 [(if test then else)
-                  (try-exprs-offset 1 #'(test then else))]
-                 [(if test then)
-                  (try-exprs-offset 1 #'(test then))]
-                 [(begin . bodies)
-                  (try-exprs-offset 1 #'bodies)]
-                 [(begin0 . bodies)
-                  (try-exprs-offset 1 #'bodies)]
-                 [(let-values . _)
-                  (let-values-abstraction stx)]
-                 [(letrec-values . _)
-                  (let-values-abstraction stx)]
-                 [(set! var val)
-                  (try-exprs-offset 2 #'(val))]
-                 [(quote _)
-                  (void)]
-                 [(quote-syntax _)
-                  (void)]
-                 [(with-continuation-mark key mark body)
-                  (try-exprs-offset 1 #'(key mark body))]
-                 [(#%plain-app . exprs)
-                  (try-exprs-offset 1 #'exprs)]
-                 [(#%top . var)
-                  (void)]
-                 [else
-                  (error 'expr-iterator "unknown expr: ~a" 
-                         (syntax->datum stx))]))))
+      (let ()
+        (define (make-try-all-subexprs stx kind context-so-far)
+          (lambda (index-mangler list-of-subtries)
+            (let loop ([index 0] [remaining list-of-subtries])
+              (unless (null? remaining)
+                (let* ([try (car remaining)]
+                       [corrected-index (index-mangler index)])
+                  ((car try) (cadr try) (cons (make-context-record stx corrected-index kind) context-so-far))
+                  (loop (+ index 1) (cdr remaining)))))))
         
-        (begin (top-level-expr-iterator stx null)
-               (error 'find-highlight "couldn't find highlight-placeholder in expression: ~v" (syntax->datum stx))))))
+        (define try->offset-try
+          (lambda (try)
+            (lambda (offset subtries)
+              (try (lambda (index) (list (+ offset index))) subtries))))
+        
+        ;; WHOA: this code uses the template for fully-expanded syntax; what the code
+        ;; actually gets is reconstructed code.  This is a problem, because you can't
+        ;; distinguish a top-level begin from one that's the result of some evaluation. 
+        ;; I think for the moment that it will solve our problem simply to remove the
+        ;; special case for begin at the top level.  JBC, 2006-10-09
+        
+        ;; ... aaaand, yep, there's a bug.  The input is not fully-expanded syntax, and 
+        ;; therefore _can_ include a two-branched 'if' (because the reconstructor produces it.)
+        ;; 
+        
+        (define (top-level-expr-iterator stx context-so-far)
+          (let ([try (try->offset-try (make-try-all-subexprs stx 'top-level context-so-far))])
+            (kernel:kernel-syntax-case 
+             stx #f
+             [(module identifier name (#%plain-module-begin . module-level-exprs))
+              (try 3 (map (lambda (expr) `(,module-level-expr-iterator ,expr))
+                          (syntax->list #'module-level-exprs)))]
+             [else-stx
+              (general-top-level-expr-iterator stx context-so-far)])))
+        
+           
+           
+        (define (module-level-expr-iterator stx context-so-far)
+          (kernel:kernel-syntax-case 
+           stx #f
+           [(#%provide . provide-specs)
+            (void)]
+           [else-stx
+            (general-top-level-expr-iterator stx context-so-far)]))
+        
+        (define (general-top-level-expr-iterator stx context-so-far)
+          (let ([try (try->offset-try (make-try-all-subexprs stx 'general-top-level context-so-far))])
+            (kernel:kernel-syntax-case 
+             stx #f
+             [(define-values (var ...) expr)
+              (try 2 `((,expr-iterator ,#'expr)))]
+             [(define-syntaxes (var ...) expr)
+              (try 2 `((,expr-iterator ,#'expr)))]
+             ;; this code is buggy, but I believe it doesn't belong here at all 
+             ;; per above discussion.  JBC, 2006-10-09
+             #;[(begin . top-level-exprs)
+                (try 1 (map (lambda (expr) `(,top-level-expr-iterator ,expr))
+                            (syntax->list #'exprs)))]
+             [(#%require . require-specs)
+              (void)]
+             [else
+              (expr-iterator stx context-so-far)])))
+        
+           
+        (define (expr-iterator stx context-so-far)
+          (when (stepper-syntax-property stx 'stepper-highlight)
+            (success-escape (vector context-so-far stx)))
+          (let* ([try (make-try-all-subexprs stx 'expr context-so-far)]
+                 [try-exprs (lambda (index-mangler exprs) (try index-mangler (map (lambda (expr) (list expr-iterator expr)) 
+                                                                                  (syntax->list exprs))))]
+                 [try-exprs-offset (try->offset-try try-exprs)] 
+                 [let-values-abstraction
+                  (lambda (stx)
+                    (kernel:kernel-syntax-case stx #f
+                                               [(kwd (((variable ...) rhs) ...) . bodies)
+                                                (begin
+                                                  (try-exprs (lambda (index) (list 1 index 1)) #'(rhs ...))
+                                                  (try-exprs-offset 2 #'bodies))]
+                                               [else
+                                                (error 'expr-syntax-object-iterator 
+                                                       "unexpected let(rec) expression: ~a"
+                                                       (syntax->datum stx))]))]) 
+            (kernel:kernel-syntax-case 
+             stx #f
+             [var-stx
+              (identifier? (syntax var-stx))
+              (void)]
+             [(#%plain-lambda vars . bodies)
+              (try-exprs-offset 2 #'bodies)]
+             [(case-lambda (vars . bodies) ...)
+              (let loop ([count 1] [clauses (syntax->list #'(bodies ...))])
+                (unless (null? clauses)
+                  (try-exprs (lambda (index) (list count (+ index 1))) (cdar clauses))
+                  (loop (+ count 1) (cdr clauses))))]
+             [(if test then else)
+              (try-exprs-offset 1 #'(test then else))]
+             [(if test then)
+              (try-exprs-offset 1 #'(test then))]
+             [(begin . bodies)
+              (try-exprs-offset 1 #'bodies)]
+             [(begin0 . bodies)
+              (try-exprs-offset 1 #'bodies)]
+             [(let-values . _)
+              (let-values-abstraction stx)]
+             [(letrec-values . _)
+              (let-values-abstraction stx)]
+             [(set! var val)
+              (try-exprs-offset 2 #'(val))]
+             [(quote _)
+              (void)]
+             [(quote-syntax _)
+              (void)]
+             [(with-continuation-mark key mark body)
+              (try-exprs-offset 1 #'(key mark body))]
+             [(#%plain-app . exprs)
+              (try-exprs-offset 1 #'exprs)]
+             [(#%top . var)
+              (void)]
+             [else
+              (error 'expr-iterator "unknown expr: ~a" 
+                     (syntax->datum stx))])))
+        
+        ;; this should exit before reaching the error:
+        (top-level-expr-iterator stx null)
+        (error 'find-highlight "couldn't find highlight-placeholder in expression: ~v" (syntax->datum stx)))))
 
   ; TESTING:
   
@@ -186,12 +191,12 @@
                           (list `(define-values (f) (lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)))) '(2)
                                                'general-top-level)))
    
-   (let*-2vals ([(context-records highlight) (find-highlight test-datum)])
+   (match-let* ([(vector context-records highlight) (find-highlight test-datum)])
      (test expected map datum-ize-context-record context-records))
    
    
    (test null (lambda () 
-                (let*-2vals ([(context-records dc) 
+                (match-let* ([(vector context-records dc) 
                               (find-highlight (car (build-stx-with-highlight `((hilite foo)))))])
                   context-records))))
   
@@ -312,5 +317,5 @@
      )
    
    (report-errs)
-   ))
+   )
  
