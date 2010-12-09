@@ -15,7 +15,6 @@
          syntax-parser
 
          (except-out (all-from-out "keywords.rkt")
-                     ~do
                      ~reflect
                      ~splicing-reflect
                      ~eh-var)
