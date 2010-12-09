@@ -19,19 +19,19 @@
          (struct-out exn:fail:contract:blame))
 
 (define (blame=? a b equal?/recur)
-  (and (equal?/recur (blame-positive a) (blame-positive b))
-       (equal?/recur (blame-negative a) (blame-negative b))
-       (equal?/recur (blame-contract a) (blame-contract b))
+  (and (equal?/recur (blame-source a) (blame-source b))
        (equal?/recur (blame-value a) (blame-value b))
-       (equal?/recur (blame-source a) (blame-source b))
+       (equal?/recur (blame-contract a) (blame-contract b))
+       (equal?/recur (blame-positive a) (blame-positive b))
+       (equal?/recur (blame-negative a) (blame-negative b))
        (equal?/recur (blame-original? a) (blame-original? b))))
 
 (define (blame-hash b hash/recur)
-  (bitwise-xor (hash/recur (blame-positive b))
-               (hash/recur (blame-negative b))
-               (hash/recur (blame-contract b))
+  (bitwise-xor (hash/recur (blame-source b))
                (hash/recur (blame-value b))
-               (hash/recur (blame-source b))
+               (hash/recur (blame-contract b))
+               (hash/recur (blame-positive b))
+               (hash/recur (blame-negative b))
                (hash/recur (blame-original? b))))
 
 (define-struct blame
@@ -65,6 +65,7 @@
 (define (default-blame-format b x custom-message)
   (let* ([source-message (source-location->prefix (blame-source b))]
          [positive-message (show/display (blame-positive b))]
+         [negative-message (show/display (blame-negative b))]
          [contract-message (show/write (blame-contract b))]
          [value-message (if (blame-value b)
                           (format " on ~a" (show/display (blame-value b)))
@@ -73,13 +74,28 @@
                                (equal? (blame-positive b) (blame-user b)))
                            ""
                            (format " given to ~a" (show/display (blame-user b))))])
-    (format "~a~a broke the contract ~a~a~a; ~a"
-            source-message
-            positive-message
-            contract-message
-            value-message
-            user-message
-            custom-message)))
+
+    (cond
+      [(blame-original? b)
+       (format "~afound a contradiction between the contract ~a~a for ~a and its implementation~a; ~a; to fix adjust either the contract or the implementation of ~a"
+               source-message
+               contract-message
+               value-message
+               positive-message
+               user-message 
+               custom-message
+               positive-message)]
+      [else
+       (format "~afound a contradiction between the contract ~a~a for ~a and its client ~a~a; ~a; to fix adjust either the contract on ~a or the implementation of ~a"
+               source-message
+               contract-message
+               value-message
+               negative-message
+               positive-message
+               user-message 
+               custom-message
+               negative-message
+               positive-message)])))
 
 (define ((show f) v)
   (let* ([line

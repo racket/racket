@@ -89,9 +89,8 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (regexp-match?
-         (string-append "(^| )" (regexp-quote blame) " broke")
-         msg))
+        (define reg (string-append  "the implementation of " (regexp-quote blame)))
+        (regexp-match? reg msg))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
