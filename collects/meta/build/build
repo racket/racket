@@ -1346,6 +1346,14 @@ DO_WIN32_BUILD() {
   # done
   # IFS="$SAVED_IFS"
 
+  separator "win63: Use new .sln files"
+  local SAVED_IFS="$IFS"; IFS=$'\n'
+  local file
+  for file in $(find "$PLTHOME/src/worksp10") -type f; do
+    _cp "$file" "${file//worksp10/worksp}"
+  done
+  IFS="$SAVED_IFS"
+
   separator "win32: Full build"
   build_w32step VSNET "racket"
   build_w32step VSNET "gracket"
