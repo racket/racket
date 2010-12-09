@@ -1,5 +1,5 @@
 #;
-(exn-pred 3)
+(exn-pred 1)
 #lang typed/racket
 
 ;; make sure letrec takes into account that some bidings may be undefined

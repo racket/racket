@@ -34,35 +34,39 @@
       (#:abstract any/c)
       . c:->* . 
       tc-results?)
-     (w/c t/p ([types (listof (listof Type/c))]
-               [props (listof (listof Filter?))])
-          (define-values (types props)
-            (for/lists (t p) 
-              ([r (in-list results)]
+     (w/c t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
+               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
+               [props          (listof (listof Filter?))])
+          (define-values (types expected-types props)
+            (for/lists (t e p) 
+              ([r     (in-list results)]
+               [e-r   (in-list expected-results)]
                [names (in-list namess)])
-              (match r 
-                [(tc-results: ts (FilterSet: fs+ fs-) os)
+              (match* (r e-r)
+                [((tc-results: ts (FilterSet: fs+ fs-) os) (tc-results: e-ts _ _)) ; rest should be the same
                  ;(printf "f+: ~a\n" fs+)
                  ;(printf "f-: ~a\n" fs-)
                  (values ts
+                         e-ts
                          (apply append
                                 (for/list ([n names]
                                            [f+ fs+]
                                            [f- fs-])
                                   (list (make-ImpFilter (-not-filter (-val #f) n) f+)
                                         (make-ImpFilter (-filter (-val #f) n) f-)))))]
-                [(tc-results: ts (NoFilter:) _) (values ts null)]))))
+                [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
+                 (values ts e-ts null)]))))
+     (w/c append-region ([p1 (listof Filter?)]
+                         [p2 (listof Filter?)])
+          (define-values (p1 p2)
+            (combine-props (apply append props) (env-props (lexical-env)) (box #t))))
      ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name
    namess
    ;; the types
    types
-   (w/c append-region
-    #:result (listof Filter?)
-    (define-values (p1 p2)
-      (combine-props (apply append props) (env-props (lexical-env)) (box #t)))
-    (append p1 p2))
+   (append p1 p2)
    (for-each expr->type
              clauses
              exprs 
@@ -78,11 +82,20 @@
           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
          [(tc-results: ts fs os dt db)
           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
-     (if expected 
-         (check-below 
-          (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
-          expected)
-         (run (tc-exprs (syntax->list body)))))))
+     (with-lexical-env/extend/props
+      ;; we typechecked the rhss with the lhss having types that potentially contain undefined
+      ;; if undefined can actually show up, a type error will have been triggered
+      ;; it is therefore safe to typecheck the body with the original types the user gave us
+      ;; any undefined-related problems have been caught already
+      namess
+      expected-types ; types w/o undefined
+      (append p1 p2)
+      ;; typecheck the body
+      (if expected 
+          (check-below 
+           (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
+           expected)
+          (run (tc-exprs (syntax->list body))))))))
 
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds
