@@ -103,12 +103,12 @@
            #:env (current-env)
            command args))
         (define-values
-          (the-process stdout stdin stderr)
+          (the-process _stdout stdin _stderr)
           (parameterize ([subprocess-group-enabled #t])
             (apply subprocess
-                   #f #;(current-error-port) 
+                   (current-error-port) 
                    #f
-                   #f #;(current-error-port)
+                   (current-error-port)
                    new-command new-args)))
         ; Die if this program does
         (define parent
@@ -129,8 +129,8 @@
          thunk
          (λ ()
            ; Close the output ports
-           (close-input-port stdout)
-           (close-input-port stderr)
+           #;(close-input-port stdout)
+           #;(close-input-port stderr)
            
            ; Kill the guard
            (kill-thread waiter)
@@ -277,8 +277,15 @@
                     (recur-many (sub1 i) r f)))))
 
 (define XSERVER-OFFSET 20)
+(define ROOTX XSERVER-OFFSET)
 (define (cpu->child cpu-i)
-  (+ XSERVER-OFFSET cpu-i))
+  (+ XSERVER-OFFSET cpu-i 1))
+
+(define (remove-X-locks tmp-dir i)
+  (for ([dir (in-list (list "/tmp" tmp-dir))])
+    (safely-delete-directory (build-path dir (format ".X~a-lock" i)))
+    (safely-delete-directory (build-path dir ".X11-unix" (format ".X~a-lock" i)))
+    (safely-delete-directory (build-path dir (format ".tX~a-lock" i)))))
 
 (define (integrate-revision rev)
   (define test-dir
@@ -319,24 +326,27 @@
          
          (define (start-x-server i inner)
            (notify! "Starting X server #~a" i)
-           (safely-delete-directory (format "/tmp/.X~a-lock" i))
-           (safely-delete-directory (build-path tmp-dir (format ".X~a-lock" i)))
-           (safely-delete-directory (format "/tmp/.tX~a-lock" i))
-           (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
+           (remove-X-locks tmp-dir i)
            (with-running-program
-               (Xvfb-path) (list (format ":~a" i))
+               (Xvfb-path) (list (format ":~a" i) "-display" (format ":~a" ROOTX))
              (lambda ()
                (sleep 1)
                (with-running-program
                    (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
                  inner))))
          
-         (recur-many (number-of-cpus)
-                     (lambda (cpu-i inner)
-                       (define child (cpu->child cpu-i))
-                       (start-x-server child inner))
-                     (lambda ()
-                       (test-revision rev)))))
+         (notify! "Starting root X server #~a" ROOTX)
+         (remove-X-locks tmp-dir ROOTX)
+         (with-running-program
+             "/usr/bin/Xorg" (list (format ":~a" ROOTX))
+           (lambda ()
+             (sleep 10)
+             (recur-many (number-of-cpus)
+                         (lambda (cpu-i inner)
+                           (define child (cpu->child cpu-i))
+                           (start-x-server child inner))
+                         (lambda ()
+                           (test-revision rev)))))))
      ; Remove the test directory
      (safely-delete-directory test-dir))))
 
