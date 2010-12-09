@@ -414,6 +414,12 @@
 	    (values 0 0)
 	    (get-display-left-top-inset)))
 
+      (define fullscreen?
+        (and (not config:keep-titlebar?)
+             (let-values ([(w h) (get-display-size #t)])
+               (and (= config:actual-screen-w w)
+                    (= config:actual-screen-h h)))))
+
       (define background-f
 	(make-object (class frame%
 		       (inherit is-shown?)
@@ -425,7 +431,9 @@
 			[x (- screen-left-inset)] [y (- screen-top-inset)]
 			[width (inexact->exact (floor config:actual-screen-w))]
 			[height (inexact->exact (floor config:actual-screen-h))]
-			[style '(no-caption no-resize-border hide-menu-bar)]))))
+			[style (append
+                                (if fullscreen? '(hide-menu-bar) null)
+                                '(no-caption no-resize-border))]))))
 
       (send background-f enable #f)
 
@@ -440,7 +448,9 @@
 		     [height (inexact->exact (floor config:actual-screen-h))]
 		     [style (if config:keep-titlebar?
 				null
-				'(no-caption no-resize-border hide-menu-bar))]))
+                                (append
+                                 (if fullscreen? '(hide-menu-bar) null)
+                                 '(no-caption no-resize-border)))]))
       
       (define f-both (new talk-frame%
 			  [closeable? #t]
