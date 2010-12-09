@@ -295,7 +295,9 @@ the state transitions / contracts are:
       (gui-utils:ok/cancel-buttons
        bottom-panel
        ok-callback
-       (λ (a b) (cancel-callback)))
+       (λ (a b) (cancel-callback))
+       (string-constant ok)
+       (string-constant undo-changes))
       (make-object grow-box-spacer-pane% bottom-panel)
       (send* bottom-panel
         (stretchable-height #f)

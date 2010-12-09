@@ -455,6 +455,7 @@ please adhere to these guidelines:
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Please choose a background color")
  (revert-to-defaults "Revert to Defaults")
+ (undo-changes "Undo Changes and Close") ;; used in the preferences dialog to undo preference changes
   
   (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.

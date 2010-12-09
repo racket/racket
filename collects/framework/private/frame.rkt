@@ -761,7 +761,7 @@
         (let-values ([(cw _4) (get-client-size)]
                      [(tw _1 _2 _3) (send dc get-text-extent str normal-control-font)])
           (when (< cw tw)
-            (min-client-width (inexact->exact (floor tw)))))))
+            (min-client-width (inexact->exact (ceiling tw)))))))
     (define/override (on-paint)
       (let ([dc (get-dc)])
         (send dc set-font normal-control-font)
