@@ -211,6 +211,7 @@ name_of_platform() {
     ( "ppc-darwin"        ) echo "Mac X11 on Darwin (PPC)" ;;
     ( "i386-darwin"       ) echo "Mac X11 on Darwin (Intel)" ;;
     ( "i386-win32"        ) echo "Windows" ;;
+    ( "x86_64-win32"      ) echo "Windows x64" ;;
     # These are source distribution platforms
     ( "unix"              ) echo "Unix" ;;
     ( "mac"               ) echo "Macintosh" ;;
@@ -258,6 +259,7 @@ name_of_dist_type() {
 platforms_of_dist_type() {
   case "$1" in
     ( "bin" ) echo "i386-win32" \
+                   "x86_64-win32" \
                    "i386-osx-mac" \
                    "ppc-osx-mac" \
                    "ppc-darwin" \
@@ -448,7 +450,7 @@ show() {
   if [[ "$verbose" = "yes" ]]; then
     echo ""
     case "$platform" in
-      ( *"-linux"* | "sparc-solaris" | "i386-win32" )
+      ( *"-linux"* | "sparc-solaris" | *"-win32" )
         echo ">>>" "$@" | fmt -t -w 79
         ;;
       ( *"-freebsd" | *"-osx-mac" | *"-darwin" )
@@ -1146,9 +1148,9 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  if [[ "$platform" = "i386-win32" ]]; then
+  if [[ "$platform" = *"-win32" ]]; then
     export PLTPLANETDIR="$(cygpath -w "$PLTPLANETDIR")"
-    DO_WIN32_BUILD
+    DO_WINDOWS_BUILD
   else
     _mcd "$PLTHOME/src/build"
     machineget LDFLAGS; export LDFLAGS
@@ -1207,7 +1209,7 @@ DO_BUILD() { # inputs -- releasing
   for _exe in $(choose_for_testing $test_mode 3m cgc); do
     for _jit in $(choose_for_testing $test_mode yes no); do
       if [[ "${_exe}" = "cgc" ]]; then exe="cgc"; else exe=""; fi
-      if [[ "$platform" = "i386-win32" ]]; then
+      if [[ "$platform" = *"-win32" ]]; then
         exe="$PLTHOME/Racket$exe.exe"
       else
         exe="$PLTHOME/bin/racket$exe"
@@ -1280,13 +1282,15 @@ winpath2unix() { # input: windows path
   echo "$*" | sed 's_^\([a-zA-Z]\):[/\\]_/\1/_; s_\\_/_g'
 }
 
-build_w32step() { # inputs: type, name, [args...]
+win_build_step() { # inputs: type, name, [args...]
   separator "Building: $2 [${machine}(${platform})] ($1)"
   local btype="$1" bname="$2"; shift 2
+  local arch="Win32"
+  if [[ "$platform" = "x86_64-"* ]]; then arch="x64"; fi
   start_timer
   case "$btype" in
     ( "VSNET"   ) _cd "$PLTHOME/src/worksp/$bname"
-                  _run "$VSNET" "$bname.sln" /build "Release|Win32"
+                  _run "$VSNET" "$bname.sln" /build "Release|$arch"
                   ;;
     ( "NMAKE"   ) _run "$NMAKE" "$@"
                   ;;
@@ -1302,16 +1306,16 @@ build_w32step() { # inputs: type, name, [args...]
                   fi
                   ;;
     ( "VSNET3M" ) _cd "$PLTHOME/src/worksp/$bname"
-                  _run "$VSNET" "$bname.sln" /build "Release|Win32"
+                  _run "$VSNET" "$bname.sln" /build "Release|$arch"
                   _run "$PLTHOME/Racket.exe" "xform.rkt" "$@"
-                  _run "$VSNET" "$bname.sln" /build "3m|Win32"
+                  _run "$VSNET" "$bname.sln" /build "3m|$arch"
                   ;;
-    ( * ) exit_error "Unknown type for build_w32step: \"$btype\"" ;;
+    ( * ) exit_error "Unknown type for win_build_step: \"$btype\"" ;;
   esac
   show_time "--==> $bname on ${machine}(${platform}) done,"
 }
 
-DO_WIN32_BUILD() {
+DO_WINDOWS_BUILD() {
 
   ## --------------------------------------------------------------------------
   /usr/bin/mount -c /
@@ -1337,7 +1341,7 @@ DO_WIN32_BUILD() {
   LIB=".;$VC\\lib;$VC\\atlmfc\\lib;$VC\\PlatformSDK\\lib"
   export VSNET NMAKE PATH INCLUDE LIB
 
-  # separator "win32: Convert .sln files"
+  # separator "Windows: Convert .sln files"
   # local SAVED_IFS="$IFS"; IFS=$'\n'
   # local sln
   # for sln in $(find "$PLTHOME/src/worksp" -type f -name "*.sln"); do
@@ -1346,7 +1350,7 @@ DO_WIN32_BUILD() {
   # done
   # IFS="$SAVED_IFS"
 
-  separator "win63: Use new .sln files"
+  separator "Windows: Use new .sln files"
   local SAVED_IFS="$IFS"; IFS=$'\n'
   local file
   for file in $(find "$PLTHOME/src/worksp10") -type f; do
@@ -1354,31 +1358,31 @@ DO_WIN32_BUILD() {
   done
   IFS="$SAVED_IFS"
 
-  separator "win32: Full build"
-  build_w32step VSNET "racket"
-  build_w32step VSNET "gracket"
-  _cd "$PLTHOME/src/worksp/gc2"; build_w32step RKT "3M" make.rkt
+  separator "Windows: Full build"
+  win_build_step VSNET "racket"
+  win_build_step VSNET "gracket"
+  _cd "$PLTHOME/src/worksp/gc2"; win_build_step RKT "3M" make.rkt
 
   _cd "$PLTHOME"
-  build_w32step VSNET "mzstart"
-  build_w32step VSNET "mrstart"
+  win_build_step VSNET "mzstart"
+  win_build_step VSNET "mrstart"
 
   _cd "$PLTHOME/lib"
-  build_w32step RKT "get-libs (gui)" ../src/get-libs.rkt core
-  build_w32step RKT "get-libs (gui)" ../src/get-libs.rkt gui
+  win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt core
+  win_build_step RKT "get-libs (gui)" ../src/get-libs.rkt gui
 
-  separator "win32: Building libraries"
+  separator "Windows: Building libraries"
   _cd "$PLTHOME"
-  build_w32step RKT "compiler" -N raco -l- raco setup -Dl compiler
+  win_build_step RKT "compiler" -N raco -l- raco setup -Dl compiler
 
-  build_w32step VSNET3M "mzcom"
-  build_w32step VSNET3M "libmysterx"
+  win_build_step VSNET3M "mzcom"
+  win_build_step VSNET3M "libmysterx"
   # _cd "$PLTHOME/src/srpersist"
-  # build_w32step NMAKE "srpersist" /f srpersist.mak "install"
+  # win_build_step NMAKE "srpersist" /f srpersist.mak "install"
 
-  _cd "$PLTHOME"; build_w32step RKT "raco setup" $SETUP_ARGS
+  _cd "$PLTHOME"; win_build_step RKT "raco setup" $SETUP_ARGS
 
-  separator "win32: Building Cygwin libreries"
+  separator "Windows: Building Cygwin libreries"
   _mcd "$PLTHOME/src/build"
   _run ../configure --disable-gracket
   _cd "racket/dynsrc"
@@ -1387,7 +1391,7 @@ DO_WIN32_BUILD() {
   || exit_error "Errors when running \"make\" for Cygwin"
 
   # Borland is no longer supported:
-  # separator "win32: Building Borland libreries"
+  # separator "Windows: Building Borland libreries"
   # _cd "$PLTHOME/src/racket/dynsrc"
   # _run bcc32 -I"../include" -I"g:/borland/bcc55/include" \
   #        -o"mzdynb.obj" -c "mzdyn.c"
@@ -1395,7 +1399,7 @@ DO_WIN32_BUILD() {
   # _cp "mzdynb.obj" "mzdynb.def" "$PLTHOME/lib/bcc"
 
   _cd "$PLTHOME"
-  build_w32step RKT "winvers" -l setup/winvers; sleep 240
+  win_build_step RKT "winvers" -l setup/winvers; sleep 240
 
 }
 
