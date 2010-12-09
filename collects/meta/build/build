@@ -76,10 +76,10 @@ defbuild() {
 # required).  Warning: an `eval "foo=\"bar\""' is used to assign values.
 msets "/machines/D" "workdir=/var/tmp" "moveto=" "copytobak=" \
       "configure_args=" "LDFLAGS=" "ext_lib_paths=" "renice=" \
-      "more_setup_args="
+      "more_setup_args=" "test_gui="
 # defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/racket" \
 #          "ext_lib_paths=/arch/unix/packages/openssl-0.9.7e"
-defbuild "pitcairn"    "i386-win32" \
+defbuild "pitcairn"    "i386-win32" "test_gui=yes" \
          "workdir=f:" # no "/..." path (that can get interpreted as a flag)
 # The LDFLAGS is a workaround for a bug in Fink, see
 # http://wiki.finkproject.org/index.php/Fink:Packaging:Preparing_for_10.5#OpenGL_Bug
@@ -99,7 +99,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "inga"        "i386-freebsd"
 # defbuild "chicago-unstable" "i386-linux-debian-unstable"
 # Start the main build last
-defbuild "$workmachine" "x86_64-linux-f7" "copytobak=$maindir"
+defbuild "$workmachine" "x86_64-linux-f7" "copytobak=$maindir" "test_gui=yes"
 msets "/"
 
 ###############################################################################
@@ -1221,7 +1221,7 @@ DO_BUILD() { # inputs -- releasing
   sleep 8 # time to flush stderr
 
   # GRacket-based tests on the main machine, in an Xvnc session
-  if [[ "$machine" = "$workmachine" ]]; then
+  if [[ "$test_gui" = "yes" ]]; then
     separator "${machine}(${platform}) testing DrRacket"
     _start_xvnc
     dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
