@@ -103,7 +103,7 @@
   (: ok Any)
   (: cancel Any)
   (define-values (ok cancel)
-    (gui-utils:ok/cancel-buttons (assert button-panel defined?)
+    (gui-utils:ok/cancel-buttons button-panel
                                  (λ: ([x : Any] [y : Any]) (set! ok? #t) (send dlg show #f))
                                  (λ: ([x : Any] [y : Any]) (send dlg show #f))))
   (: update-txt (String -> Any))
@@ -112,11 +112,11 @@
     (send txt lock #f)
     (send txt delete 0 (send txt last-position))
     (let ([bm (render-large-letters comment-prefix comment-character (get-chosen-font) str txt)])
-      (send (assert ec defined?) set-line-count (+ 1 (send txt last-paragraph)))
+      (send ec set-line-count (+ 1 (send txt last-paragraph)))
       (send txt lock #t)
       (send txt end-edit-sequence)
-      (send (assert count defined?) set-label (format columns-string (get-max-line-width txt)))
-      (send (assert dark-msg defined?) set-bm bm)))
+      (send count set-label (format columns-string (get-max-line-width txt)))
+      (send dark-msg set-bm bm)))
   
   
   ;; CHANGE - get-face can return #f

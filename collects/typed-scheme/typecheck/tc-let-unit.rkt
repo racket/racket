@@ -139,7 +139,7 @@
                                  [transitively-safe-bindings '()])
                           ([names  names]
                            [clause clauses])
-                        (case (safe-letrec-values-clause? clause transitively-safe-bindings)
+                        (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
                           ;; transitively safe -> safe to mention in a subsequent rhs
                           [(transitively-safe) (values (append names safe-bindings)
                                                        (append names transitively-safe-bindings))]
@@ -178,11 +178,13 @@
 ;;  Fixing Letrec (reloaded) paper), we are more conservative than a fully-connected component
 ;;  based approach. On the other hand, our algorithm should cover most interesting cases and
 ;;  is much simpler than Tarjan's.
-(define (safe-letrec-values-clause? clause transitively-safe-bindings)
+(define (safe-letrec-values-clause? clause transitively-safe-bindings letrec-bound-ids)
   (define clause-rhs
     (syntax-parse clause
       [(bindings . rhs) #'rhs]))
-  (cond [(andmap (lambda (fv) (s:member fv transitively-safe-bindings bound-identifier=?))
+  (cond [(andmap (lambda (fv)
+                   (or (not (s:member fv letrec-bound-ids bound-identifier=?)) ; from outside
+                       (s:member fv transitively-safe-bindings bound-identifier=?)))
                  (apply append
                         (syntax-map (lambda (x) (free-vars x))
                                     clause-rhs)))
