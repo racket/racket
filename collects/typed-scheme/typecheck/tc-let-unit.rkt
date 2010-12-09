@@ -27,7 +27,7 @@
     [(tc-results: ts _ _)
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
-(d/c (do-check expr->type namess results form exprs body clauses expected #:abstract [abstract null])
+(d/c (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results? . c:-> . any/c)
        (listof (listof identifier?)) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
@@ -66,7 +66,7 @@
    (for-each expr->type
              clauses
              exprs 
-             results)
+             expected-results)
    (let ([subber (lambda (proc lst)
                    (for/list ([i (in-list lst)])
                      (for/fold ([s i])
@@ -117,7 +117,7 @@
         ;; after everything, check the body expressions
         [(null? names)
          ;(if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))
-         (do-check void null null form null body null expected #:abstract orig-flat-names)]
+         (do-check void null null null form null body null expected #:abstract orig-flat-names)]
         ;; if none of the names bound in the letrec are free vars of this rhs
         [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
                      (free-vars (car exprs))))
@@ -156,6 +156,8 @@
                                            (map (λ (x) (make-Union (list x -Undefined)))
                                                 types-from-user)))))
                          names))
+                   ;; types the user gave. check against that to error if we could get undefined
+                   (map (λ (l) (ret (map get-type l))) names)
                    form exprs body clauses expected)]))))
 
 ;; determines whether any of the variables bound in the given clause can have an undefined value
@@ -219,6 +221,4 @@
                                          tc-expr/check))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
-    (do-check void names types form exprs body clauses expected)))
-
-
+    (do-check void names types types form exprs body clauses expected)))
