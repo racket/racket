@@ -150,22 +150,26 @@
          [(= msg WM_KILLFOCUS)
           (queue-window-event this (lambda () (on-kill-focus)))
           0]
-         [(and (= msg WM_SYSKEYDOWN)
-               (or (= wParam VK_MENU) (= wParam VK_F4))) ;; F4 is close
-          (unhide-cursor)
-          (begin0
-           (default w msg wParam lParam)
-           (do-key w msg wParam lParam #f #f void))]
+         [(= msg WM_SYSKEYDOWN)
+          (let ([result (if (or (= wParam VK_MENU) (= wParam VK_F4)) ;; F4 is close
+			    (begin
+			      (unhide-cursor)
+			      (default w msg wParam lParam))
+			    0)])
+	    (do-key w msg wParam lParam #f #f void)
+	    result)]
          [(= msg WM_KEYDOWN)
           (do-key w msg wParam lParam #f #f default)]
          [(= msg WM_KEYUP)
           (do-key w msg wParam lParam #f #t default)]
-         [(and (= msg WM_SYSCHAR)
-               (= wParam VK_MENU))
-          (unhide-cursor)
-          (begin0
-           (default w msg wParam lParam)
-           (do-key w msg wParam lParam #t #f void))]
+         [(= msg WM_SYSCHAR)
+	  (let ([result (if (= wParam VK_MENU)
+			    (begin
+			      (unhide-cursor)
+			      (default w msg wParam lParam))
+			    0)])
+	    (do-key w msg wParam lParam #t #f void)
+	    result)]
          [(= msg WM_CHAR)
           (do-key w msg wParam lParam #t #f default)]
          [(= msg WM_COMMAND)
