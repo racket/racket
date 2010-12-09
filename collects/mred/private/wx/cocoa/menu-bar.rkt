@@ -46,7 +46,12 @@
                (tell #:type _BOOL the-apple-menu performKeyEquivalent: evt))
           ;; Explicity send the event to the keyWindow:
           (and
+           ;; Don't go into an infinite loop:
            (not (recurring-for-command))
+           ;; Don't handle Cmd-` for cycling through windows:
+           ;; [Is this right for all locales?]
+           (not (equal? "`" (tell #:type _NSString evt characters)))
+           ;; Otherwise, try to dispatch to the first respnder:
            (let ([w (tell app keyWindow)])
              (and w
                   (let ([r (tell w firstResponder)])
