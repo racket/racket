@@ -32,8 +32,8 @@
 
 (define white (send the-color-database find-color "white"))
 
-;; A Drawing is (make-drawing number number (??? -> void) (box boolean))
-(define-struct drawing (start end draw tacked?))
+;; A Drawing is (make-drawing (??? -> void) (box boolean))
+(define-struct drawing (draw tacked?))
 
 (define-struct idloc (start end id))
 
@@ -101,12 +101,12 @@
     (define/augment (after-delete start len)
       (for ([im (in-hash-values table)])
         (interval-map-contract! im start (+ start len)))
-      (inner (void) after-delete))
+      (inner (void) after-delete start len))
 
     (define/augment (after-insert start len)
       (for ([im (in-hash-values table)])
         (interval-map-expand! im start (+ start len)))
-      (inner (void) after-insert))
+      (inner (void) after-insert start len))
 
     (super-new)))
 
@@ -153,7 +153,7 @@
         (invalidate-bitmap-cache 0.0 0.0 +inf.0 +inf.0)))
 
     (define/public (add-hover-drawing start end draw [tack-box (box #f)])
-      (let ([drawing (make-drawing start end draw tack-box)])
+      (let ([drawing (make-drawing draw tack-box)])
         (interval-map-cons*! drawings-list
                              start (add1 end)
                              drawing
@@ -194,6 +194,15 @@
              (super on-local-event ev)))
         (else
          (super on-local-event ev))))
+
+    ;; Clear tacked-table on any modification.
+    ;; FIXME: possible to be more precise? (but not needed for macro stepper)
+    (define/augment (after-delete start len)
+      (set! tacked-table (make-hasheq))
+      (inner (void) after-delete start len))
+    (define/augment (after-insert start len)
+      (set! tacked-table (make-hasheq))
+      (inner (void) after-insert start len))
 
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
