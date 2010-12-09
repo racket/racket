@@ -1157,6 +1157,7 @@
                   (when rotate? (cairo_restore cr))
                   (values w h d a)]
                  [else
+                  (pango_cairo_update_context cr context)
                   (let ([layout (pango_layout_new context)]
                         [next-s #f])
                     (pango_layout_set_font_description layout desc)
