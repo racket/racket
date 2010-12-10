@@ -1225,9 +1225,14 @@ DO_BUILD() { # inputs -- releasing
   # GRacket-based tests on the main machine, in an Xvnc session
   if [[ "$test_gui" = "yes" ]]; then
     separator "${machine}(${platform}) testing DrRacket"
-    if [[ "$platform" != *"-win32" ]]; then _start_xvnc; fi
-    dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
-    if [[ "$platform" != *"-win32" ]]; then _end_xvnc; fi
+    if [[ "$platform" = *"-win32" ]]; then
+      dont_exit _timeout_run 120 "$PLTHOME/gracket.exe" \
+          "$(cygpath -w "$PLTHOME/$drtestscript")"
+    else
+      _start_xvnc
+      dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
+      _end_xvnc
+    fi
   fi
 
   ## --------------------------------------------------------------------------
