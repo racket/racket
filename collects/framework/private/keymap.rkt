@@ -1230,7 +1230,8 @@
           (map "del" "delete-key")
           
           (map-meta "d" "kill-word")
-          (map-meta "del" "backward-kill-word")
+          (map-meta "del" "kill-word")
+          (map-meta "backspace" "backward-kill-word")
           (map-meta "c" "capitalize-word")
           (map-meta "u" "upcase-word")
           (map-meta "l" "downcase-word")
