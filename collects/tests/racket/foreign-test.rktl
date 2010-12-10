@@ -21,7 +21,7 @@
 
 (when (eq? 'windows (system-type))
   (let* ([concat string-append]
-         [studio  "c:/Program Files/Microsoft Visual Studio 8"]
+         [studio  "c:/Program Files/Microsoft Visual Studio 10.0"]
          [scommon (concat studio "/Common7")]
          [vc      (concat studio "/VC")])
     (putenv "PATH"    (concat (getenv "PATH")

@@ -1114,7 +1114,7 @@ DO_BUILD() { # inputs -- releasing
   ## --------------------------------------------------------------------------
   releasing="$1"; shift
   machineget platform workdir moveto copytobak \
-             configure_args ext_lib_paths renice more_setup_args
+             configure_args ext_lib_paths renice more_setup_args test_gui
 
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
@@ -1282,6 +1282,40 @@ winpath2unix() { # input: windows path
   echo "$*" | sed 's_^\([a-zA-Z]\):[/\\]_/\1/_; s_\\_/_g'
 }
 
+# `grab_batch_vars' will run the given batch file and grab all of the
+# environment variables it sets.
+grab_one_batch_var() {
+  if [[ "x$1" = "x" ]]; then return; fi
+  # If this happens, then we'll need to quote 's as '"'"'s
+  if [[ "$1" = *"'"* ]]; then echo "Terrible quote abort! $1"; exit 1; fi
+  # echo "Setting ${1%%=*} := ${1#*=}"
+  eval "export ${1%%=*}='${1#*=}'"
+}
+grab_batch_vars() { # input: batchfile args ...
+  local exe="$1"; shift
+  local tmpbatch="/tmp/grab_vars.bat"
+  rm -f "$tmpbatch"
+  cat >> "$tmpbatch" <<-EOF
+	@echo off
+	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E1")"
+	call "$(cygpath -w "$exe")" $*
+	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E2")"
+EOF
+  chmod +x "$tmpbatch"
+  "$tmpbatch"
+  rm "$tmpbatch"
+  sort "/tmp/E1" | grep -v '^!' > "/tmp/E1s"; mv "/tmp/E1s" "/tmp/E1"
+  sort "/tmp/E2" | grep -v '^!' > "/tmp/E2s"; mv "/tmp/E2s" "/tmp/E2"
+  local vars="$(comm -13 "/tmp/E1" "/tmp/E2")"
+  rm "/tmp/E1" "/tmp/E2"
+  local NL=$'\n'
+  while [[ "$vars" = *"$NL"* ]]; do
+    grab_one_batch_var "${vars%%${NL}*}"
+    vars="${vars#*${NL}}"
+  done
+  grab_one_batch_var "$vars"
+}
+
 win_build_step() { # inputs: type, name, [args...]
   separator "Building: $2 [${machine}(${platform})] ($1)"
   local btype="$1" bname="$2"; shift 2
@@ -1324,22 +1358,15 @@ DO_WINDOWS_BUILD() {
 
   # Note: commands must be executed using unix paths (also PATH)
   STUDIO="c:\\Program Files\\Microsoft Visual Studio 10.0"
-  SCOMMON="$STUDIO\\Common7"
-  VC="$STUDIO\\VC"
-  VSNET="$(winpath2unix "$SCOMMON\\IDE\\devenv.com")"
-  NMAKE="$(winpath2unix "$VC\\bin\\nmake.exe")"
-  local uSCOMMON="$(winpath2unix "$SCOMMON")"
-  local uVC="$(winpath2unix "$VC")"
-  local uPLTHOME="$(winpath2unix "$PLTHOME")"
-  PATH="$uVC/bin:$uSCOMMON/IDE:$uSCOMMON/Tools:$uSCOMMON/Tools/Bin"
-  PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
-  PATH="$PATH:/c/Windows/system32:/c/Windows:/c/Windows/System32/Wbem"
-  PATH="$PATH:$uPLTHOME:$uPLTHOME/bin"
-  PATH="$PATH:."
+  VSNET="$(winpath2unix "$STUDIO\\Common7\\IDE\\devenv.com")"
+  NMAKE="$(winpath2unix "$STUDIO\\VC\\bin\\nmake.exe")"
 
-  INCLUDE='c:\Program Files\Microsoft SDKs\Windows\v7.0A\Include'
-  INCLUDE="$VC\\include;$VC\\atlmfc\\include;$VC\PlatformSDK\Include;$INCLUDE"
-  LIB=".;$VC\\lib;$VC\\atlmfc\\lib;$VC\\PlatformSDK\\lib"
+  local arch="x86"
+  if [[ "$platform" = "x86_64-"* ]]; then arch="x64"; fi
+  grab_batch_vars "$(winpath2unix "$STUDIO\\VC\\vcvarsall.bat")" "$arch"
+
+  PATH="$PATH:$(winpath2unix "$PLTHOME"):."
+
   export VSNET NMAKE PATH INCLUDE LIB
 
   # separator "Windows: Convert .sln files"
