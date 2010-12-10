@@ -1323,7 +1323,7 @@ DO_WINDOWS_BUILD() {
   export TEMP="c:\\cygwin\\tmp" TMP="c:\\cygwin\\tmp"
 
   # Note: commands must be executed using unix paths (also PATH)
-  STUDIO="c:\\Program Files\\Microsoft Visual Studio 8"
+  STUDIO="c:\\Program Files\\Microsoft Visual Studio 10.0"
   SCOMMON="$STUDIO\\Common7"
   VC="$STUDIO\\VC"
   VSNET="$(winpath2unix "$SCOMMON\\IDE\\devenv.com")"
@@ -1337,7 +1337,8 @@ DO_WINDOWS_BUILD() {
   PATH="$PATH:$uPLTHOME:$uPLTHOME/bin"
   PATH="$PATH:."
 
-  INCLUDE="$VC\\include;$VC\\atlmfc\\include;$VC\PlatformSDK\Include"
+  INCLUDE='c:\Program Files\Microsoft SDKs\Windows\v7.0A\Include'
+  INCLUDE="$VC\\include;$VC\\atlmfc\\include;$VC\PlatformSDK\Include;$INCLUDE"
   LIB=".;$VC\\lib;$VC\\atlmfc\\lib;$VC\\PlatformSDK\\lib"
   export VSNET NMAKE PATH INCLUDE LIB
 
@@ -1353,7 +1354,7 @@ DO_WINDOWS_BUILD() {
   separator "Windows: Use new .sln files"
   local SAVED_IFS="$IFS"; IFS=$'\n'
   local file
-  for file in $(find "$PLTHOME/src/worksp10") -type f; do
+  for file in $(find "$PLTHOME/src/worksp10" -type f); do
     _cp "$file" "${file//worksp10/worksp}"
   done
   IFS="$SAVED_IFS"
