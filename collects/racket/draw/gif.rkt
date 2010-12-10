@@ -185,20 +185,42 @@
            [w (img-desc-width (image-desc i))]
            [h (img-desc-height (image-desc i))]
            [t (let ([v (image-transparent i)])
-                (and v (* v 3)))])
-      (values
-       w
-       h
-       (list->vector
-        (for/list ([j (in-range h)])
-          (let ([bstr (make-bytes (* 4 w) 255)])
-            (let ([yp (* w j)])
-              (for ([i (in-range w)])
-                (let ([pos (* 3 (bytes-ref data (+ yp i)))])
-                  (when (eq? pos t)
-                    ;; transparent
-                    (bytes-set! bstr (+ 3 (* i 4)) 0))
-                  (bytes-set! bstr (* i 4) (bytes-ref ct pos))
-                  (bytes-set! bstr (+ 1 (* i 4)) (bytes-ref ct (+ 1 pos)))
-                  (bytes-set! bstr (+ 2 (* i 4)) (bytes-ref ct (+ 2 pos))))))
-            bstr)))))))
+                (and v (* v 3)))]
+           [vec
+            ;; build vector of row byte strings
+            (list->vector
+             (for/list ([j (in-range h)])
+               (let ([bstr (make-bytes (* 4 w) 255)])
+                 (let ([yp (* w j)])
+                   (for ([i (in-range w)])
+                     (let ([pos (* 3 (bytes-ref data (+ yp i)))])
+                       (when (eq? pos t)
+                         ;; transparent
+                         (bytes-set! bstr (+ 3 (* i 4)) 0))
+                       (bytes-set! bstr (* i 4) (bytes-ref ct pos))
+                       (bytes-set! bstr (+ 1 (* i 4)) (bytes-ref ct (+ 1 pos)))
+                       (bytes-set! bstr (+ 2 (* i 4)) (bytes-ref ct (+ 2 pos))))))
+                 bstr)))]
+           [vec2
+            (if (img-desc-interlace? (image-desc i))
+                ;; reorder rows for interlace decoding
+                (let ([vec2 (make-vector h #f)])
+                  (for ([i (in-range h)])
+                    (let ([j (let ([count (quotient (- h 1) 8)])
+                               (if (i . <= . count) 
+                                   (* i 8)
+                                   (let ([i (- i (add1 count))]
+                                         [count (quotient (- h 5) 8)])
+                                     (if (i . <= . count)
+                                         (+ (* i 8) 4)
+                                         (let ([i (- i (add1 count))]
+                                               [count (quotient (- h 3) 4)])
+                                           (if (i . <= . count)
+                                               (+ (* i 4) 2)
+                                               (let ([i (- i (add1 count))])
+                                                 (+ (* i 2) 1))))))))])
+                      (vector-set! vec2 j (vector-ref vec i))))
+                  vec2)
+                ;; rows are already in order
+                vec)])
+      (values w h vec2))))
