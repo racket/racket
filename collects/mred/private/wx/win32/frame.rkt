@@ -500,6 +500,9 @@
   (define/public (set-title s)
     (atomically
      (set! saved-title s)
-     (SetWindowTextW (get-hwnd) (string-append s (if modified? "*" ""))))))
+     (SetWindowTextW (get-hwnd) (string-append s (if modified? "*" "")))))
 
+  (define/public (popup-menu-with-char c)
+    (DefWindowProcW hwnd WM_SYSKEYDOWN (char->integer c) (arithmetic-shift 1 29))
+    (DefWindowProcW hwnd WM_SYSCHAR (char->integer c) (arithmetic-shift 1 29))))
 
