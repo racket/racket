@@ -657,14 +657,24 @@
             (send item enable (and frame (> (length (send frame get-tabs)) 1)))))])
   (group:add-to-windows-menu
    (λ (windows-menu)
+     (define sprefix (if (eq? (system-type) 'windows)
+                         (cons 'shift (get-default-shortcut-prefix))
+                         (get-default-shortcut-prefix)))
      (new menu-item%
-          [parent windows-menu] [label (string-constant prev-tab)] [shortcut #\[]
+          [parent windows-menu]
+          [label (string-constant prev-tab)]
+          [shortcut #\[]
+          [shortcut-prefix sprefix]
           [demand-callback dc]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
                           (send frame prev-tab))))])
-     (new menu-item% [parent windows-menu] [label (string-constant next-tab)] [shortcut #\]]
+     (new menu-item% 
+          [parent windows-menu]
+          [label (string-constant next-tab)]
+          [shortcut #\]]
+          [shortcut-prefix sprefix]
           [demand-callback dc]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
