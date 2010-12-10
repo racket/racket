@@ -216,8 +216,8 @@ is not @racket[#f] and if @racket[timeout-secs] seconds pass without a
 successful synchronization.
 
 If @racket[timeout-secs] is @racket[0], each @racket[evt] is checked
-at least once, so a @racket[timeout-secs] value of @racket[0] can be
-used for polling.
+at least once before returning @racket[#f], so a @racket[timeout-secs] 
+value of @racket[0] can be used for polling.
 
 See also @racket[alarm-evt] for an alternative timeout mechanism.}
 
