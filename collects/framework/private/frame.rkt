@@ -2486,6 +2486,7 @@
     (super-new [stretchable-width #f]
                [style '(transparent)])
     
+    (send (get-dc) set-font small-control-font)
     (define-values (indicator-width indicator-height)
       (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator)])
         (values tw th)))
