@@ -308,7 +308,7 @@
                     (set! syntax-provide? #t))
                   (dict-set h #'in #'out)]
                  [((~datum protect) . _)
-                  (tc-error "provide: protect not supported by Typed Scheme")]
+                  (tc-error "provide: protect not supported by Typed Racket")]
                  [_ (int-err "unknown provide form")])))]
           [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
     ;; compute the new provides
