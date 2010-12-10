@@ -2949,6 +2949,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   src_find_id = find_id;
   modidx = scheme_stx_module_name(NULL, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
                                   NULL, NULL, NULL, NULL, &rename_insp);
+  /* If modidx and modidx is not #<undefined>,  then find_id is now a 
+     symbol, otherwise it's still an identifier. */
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
