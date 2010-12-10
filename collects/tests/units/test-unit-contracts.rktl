@@ -6,10 +6,11 @@
 (define top-level "top-level")
 
 (define (match-blame re msg)
-  (regexp-match? (string-append "(^| )" re " broke") msg))
+  (or (regexp-match? (string-append "(^| )for " re " and its implementation;") msg)
+      (regexp-match? (string-append "(^| )and its client " re ";") msg)))
 
 (define (match-obj re msg)
-  (regexp-match? (string-append "(^| )on " re ";") msg))
+  (regexp-match? (string-append "(^| )on " re " for") msg))
 
 (define (get-ctc-err msg)
   (cond
