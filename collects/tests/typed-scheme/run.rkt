@@ -30,6 +30,7 @@
  (cond [(and (unit?) (int?)) tests]
        [(unit?)              unit-tests]
        [(int?)               int-tests]
+       [(the-tests)          (the-tests)]
        [else
         (error "You must specify which tests should be run. See --help for more info.\n")]))
 
