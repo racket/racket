@@ -399,20 +399,22 @@
        [(and (eq? evt 'wait)
              (not handler?))
         #t]
-       ;; `yield' is supposed to return immediately if the
-       ;; event is already ready:
-       [(and (evt? evt) (sync/timeout 0 (wrap-evt evt (lambda (v) (list v)))))
-        => (lambda (v) (car v))]
-       [handler?
-        (sync (if (eq? evt 'wait) 
-                  (wrap-evt e (lambda (_) #t))
-                  evt)
-              (handle-evt ((eventspace-queue-proc e))
-                          (lambda (v)
-                            (when v (handle-event v))
-                            (yield evt))))]
        [else
-        (sync evt)]))]))
+        (define (wait-now)
+          (if handler?
+              (sync (if (eq? evt 'wait) 
+                        (wrap-evt e (lambda (_) #t))
+                        evt)
+                    (handle-evt ((eventspace-queue-proc e))
+                                (lambda (v)
+                                  (when v (handle-event v))
+                                  (yield evt))))
+              (sync evt)))
+        (if (evt? evt)
+            ;; `yield' is supposed to return immediately if the
+            ;; event is already ready:
+            (sync/timeout wait-now evt)
+            (wait-now))]))]))
 
 (define yield-refresh
   (lambda ()
