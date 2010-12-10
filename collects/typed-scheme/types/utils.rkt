@@ -171,7 +171,7 @@
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
 
 (define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
-  (tc-error/delayed #:stx stx (apply format msg rest))
+  (apply tc-error/delayed #:stx stx msg rest)
   return)
 
 ;; error for unbound variables
