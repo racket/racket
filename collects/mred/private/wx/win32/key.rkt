@@ -215,12 +215,13 @@
            (if just-check?
                #t
                (let* ([id (if (number? id) (integer->char id) id)]
+		      [key-id (if (equal? id #\033)
+				  'escape
+				  id)]
                       [e (new key-event%
                               [key-code (if is-up?
                                            'release
-                                           (if (equal? id #\033)
-                                               'escape
-                                               id))]
+                                           key-id)]
                               [shift-down shift-down?]
                               [control-down control-down?]
                               [meta-down #f]
@@ -229,5 +230,7 @@
                               [y 0]
                               [time-stamp 0]
                               [caps-down caps-down?])])
+		 (when is-up?
+		   (send e set-key-release-code key-id))
                  e))))))
 
