@@ -172,6 +172,16 @@
 	    result)]
          [(= msg WM_CHAR)
           (do-key w msg wParam lParam #t #f default)]
+	 [(= msg WM_MOUSEWHEEL)
+	  (let ([orig-delta (quotient (HIWORD wParam) WHEEL_DELTA)])
+	    (let loop ([delta (abs orig-delta)])
+	      (unless (zero? delta)
+		(do-key w msg (if (negative? orig-delta)
+				  'wheel-down
+				  'wheel-up)
+			lParam #f #f void)
+                (loop (sub1 delta)))))
+	  0]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
                  [wx (any-hwnd->wx control-hwnd)]

@@ -121,9 +121,12 @@
         [caps-down? (not (zero? (arithmetic-shift (GetKeyState VK_CAPITAL) -1)))]
         [alt-down? (= (bitwise-and (HIWORD lParam) KF_ALTDOWN) KF_ALTDOWN)])
     (let-values ([(id other-shift other-altgr other-shift-altgr)
-                  (if is-char?
-                      ;; wParam is a character
-                      (let ([id wParam]
+                  (cond
+		   [(symbol? wParam)
+		    (values wParam #f #f #f)]
+		   [is-char?
+		      ;; wParam is a character or symbol
+		      (let ([id wParam]
                             [sc (THE_SCAN_CODE lParam)])
                         ;; Remember scan codes to help with some key-release events:
                         (when (byte? id)
@@ -153,7 +156,8 @@
                                             (values id s a sa)
                                             ;; different AltGr
                                             (values id s o sa)))
-                                    (values id s a sa))))))
+                                    (values id s a sa))))))]
+		   [else
                       ;; wParam is a virtual key code
                       (let ([id (hash-ref win32->symbol wParam #f)]
                             [override-mapping? (and control-down? (not alt-down?))]
@@ -210,7 +214,7 @@
                              [(and (not id) is-up?)
                               (values (try-generate-release) #f #f #f)]
                              [else
-                              (values id #f #f #f)]))))])
+                              (values id #f #f #f)])))])])
       (and id
            (if just-check?
                #t
