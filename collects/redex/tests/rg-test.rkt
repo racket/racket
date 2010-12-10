@@ -29,18 +29,19 @@
       (get-output-string p)
       (close-output-port p))))
 
-(define-syntax (test-contract-violation stx)
+(define-syntax (test-contract-violation/client stx)
   (syntax-case stx ()
-    [(form expr)
+    [(form expr) 
      (syntax/loc stx (form "" expr))]
     [(_ name expr)
-     (with-syntax ([expected 
-                    (syntax/loc stx
-                      (regexp (format "rg-test.*broke the contract .* ~a" name)))])
-       #'(test (raised-exn-msg 
-                exn:fail? 
-                (begin (output (λ () expr)) 'no-violation))
-               expected))]))
+     (syntax/loc stx
+       (test-contract-violation 
+        (output (λ () expr))
+        #:blaming "rg-test"
+        #:message ""
+        #:extract (match-lambda
+                    [(exn:fail:redex:test _ _ (? exn:fail:contract:blame? e) _) e]
+                    [x x])))]))
 
 (define find-base-cases/unparsed
   (compose find-base-cases parse-language))
@@ -226,7 +227,7 @@
           (parameterize ([current-namespace ns])
             (expand #'(generate-term M n))))
         #rx"generate-term: expected a identifier defined by define-language( in: M)?$")
-  (test-contract-violation (generate-term L n 1.5)))
+  (test-contract-violation/client (generate-term L n 1.5)))
 
 ;; variable-except pattern
 (let ()
@@ -770,16 +771,16 @@
                      #:print? #f)
         (counterexample 1))
   
-  (test-contract-violation
+  (test-contract-violation/client
    "#:attempts argument"
    (redex-check lang natural #t #:attempts 3.5))
-  (test-contract-violation
+  (test-contract-violation/client
    "#:retries argument"
    (redex-check lang natural #t #:retries 3.5))
-  (test-contract-violation
+  (test-contract-violation/client
    "#:attempt-size argument"
    (redex-check lang natural #t #:attempt-size -))
-  (test-contract-violation
+  (test-contract-violation/client
    "#:prepare argument"
    (redex-check lang natural #t #:prepare (λ (_) (values))))
   
@@ -926,13 +927,12 @@
           #:prepare (λ (_) (error 'fixer))
           #:print? #f))
         #rx"fixing 0")
-  (test (raised-exn-msg 
-         exn:fail:contract:blame?
-         (check-reduction-relation 
-          (reduction-relation L (--> 0 0))
-          void
-          #:prepare (λ () 0)))
-        #rx"rg-test broke the contract")
+  (test-contract-violation/client
+   "#:prepare argument" 
+   (check-reduction-relation 
+    (reduction-relation L (--> 0 0))
+    void
+    #:prepare (λ () 0)))
   
   (let ([S (reduction-relation L (--> 1 2 name) (--> 3 4))])
     (test (output (λ () (check-reduction-relation S (λ (x) #t) #:attempts 1)))
@@ -983,19 +983,19 @@
           #rx"^check-reduction-relation: unable"))
 
   (let ([R (reduction-relation L (--> any any))])
-    (test-contract-violation
+    (test-contract-violation/client
      "#:attempts argument"
      (check-reduction-relation R values #:attempts -1))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:retries argument"
      (check-reduction-relation R values #:retries -1))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:attempt-size argument"
      (check-reduction-relation R values #:attempt-size (λ (_) (values 1 2))))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:prepare argument"
      (check-reduction-relation R values #:prepare (λ (_) (values 1 2))))
-    (test-contract-violation (check-reduction-relation R #t))))
+    (test-contract-violation/client (check-reduction-relation R #t))))
 
 ; check-metafunction
 (let ()
@@ -1109,19 +1109,19 @@
   (let ()
     (define-metafunction empty
       [(f 0) 0])
-    (test-contract-violation
+    (test-contract-violation/client
      "#:attempts argument"
      (check-metafunction f void #:attempts 3.5))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:retries argument"
      (check-metafunction f void #:retries 3.5))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:attempt-size argument"
      (check-metafunction f void #:attempt-size 3.5))
-    (test-contract-violation
+    (test-contract-violation/client
      "#:prepare argument"
      (check-metafunction f void #:prepare car #:print? #f))
-    (test-contract-violation (check-metafunction f (λ () #t))))
+    (test-contract-violation/client (check-metafunction f (λ () #t))))
   
   ; Extension reinterprets the LHSs of the base metafunction
   ; relative to the new language.
@@ -1254,7 +1254,7 @@
    (hash-map 
     (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1) lang 'top-level)) 
     (λ (_ cls) cls))
-   '(..._1 ..._1))
+   '(..._1 ..._1))    
   (test-class-reassignments
    '((3 ..._1) ..._2 (4 ..._1) ..._3)
    '((..._2 . ..._3)))

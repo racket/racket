@@ -1,12 +1,14 @@
 #lang scheme
 
 (require "../private/matcher.ss"
+         (for-syntax syntax/parse)
          errortrace/errortrace-lib
          errortrace/errortrace-key)
 (provide test test-syn-err tests reset-count
          syn-err-test-namespace
          print-tests-passed
          equal/bindings?
+         test-contract-violation
          runtime-error-source)
 
 (define syn-err-test-namespace (make-base-namespace))
@@ -137,3 +139,23 @@
 ;; rib-lt : rib rib -> boolean
 (define (rib-lt r1 r2) (string<=? (format "~s" (bind-name r1))
                                   (format "~s" (bind-name r2))))
+
+(define-syntax (test-contract-violation stx)
+  (syntax-parse stx
+    [(_ expr
+        (~or (~once (~seq #:blaming blaming:expr))
+             (~optional (~seq #:message message:expr)
+                        #:defaults ([message #'""]))
+             (~optional (~seq #:extract extract:expr)
+                        #:defaults ([extract #'values])))
+        ...)
+     #`(test (with-handlers ([(λ (exn)
+                                (let ([exn (extract exn)])
+                                  (and (exn:fail:contract:blame? exn)
+                                       (regexp-match? 
+                                        blaming
+                                        (format "~a" (blame-positive (exn:fail:contract:blame-object exn)))))))
+                              exn-message])
+               expr
+               (gensym 'no-violation))
+             #,(syntax/loc stx (regexp message)))]))
