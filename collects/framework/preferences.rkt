@@ -405,7 +405,7 @@ the state transitions / contracts are:
         #:rewrite-aliases (listof (-> any/c any)))
       void?)
   ((symbol value test)
-   ((aliases '()) (rewrite-aliases (map (lambda (x) (values)) aliases))))
+   ((aliases '()) (rewrite-aliases (map (lambda (x) values) aliases))))
   @{This function must be called every time your application starts up, before
     any call to @scheme[preferences:get] or @scheme[preferences:set]
     (for any given preference).
