@@ -70,7 +70,7 @@
           VK_PRINT 'print
           VK_EXECUTE 'execute
           VK_INSERT 'insert
-          VK_DELETE 'delete
+          VK_DELETE #\rubout
           VK_HELP  'help
           VK_NUMPAD0 'numpad0
           VK_NUMPAD1 'numpad1
