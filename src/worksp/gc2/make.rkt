@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (use-compiled-file-paths null)
 
@@ -14,14 +14,14 @@
 (define opt-flags "/O2 /Oy-")
 (define re:only #f)
 
-(define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
+(define win64?
+  (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
 
 (define cl.exe
   (let ([p (find-executable-path "cl.exe" #f)])
     (unless p
-     (error (string-append
-	     "Cannot find executable \"cl.exe\".\n"
-	     "You may need to find and run \"vsvars32.bat\".")))
+      (error (string-append "Cannot find executable \"cl.exe\".\n"
+                            "You may need to find and run \"vsvars32.bat\".")))
     "cl.exe"))
 
 (unless (directory-exists? "xsrc")
@@ -151,8 +151,13 @@
 (define common-deps (list "../../racket/gc2/xform.rkt"
 			  "../../racket/gc2/xform-mod.rkt"))
 
-(define (find-obj f d) (format "../~a/~arelease/~a.obj" d (if win64? "x64/" "") f))
-(define (find-lib f d) (format "../~a/~arelease/~a.lib" d (if win64? "x64/" "") f))
+(define (find-build-file d f)
+  (string-append
+   (if win64?
+     (string-append "../" d "/x64/release")
+     (let ([d (string-append "../" d "/win32/release")])
+       (if (directory-exists? d) d (string-append "../" d "/release"))))
+   "/" f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,12 +291,9 @@
 	     "xsrc/gc2.obj"
 	     "xsrc/mzsj86.obj"
 	     "xsrc/foreign.obj"
-	     (find-obj "gmp" "libracket")
-	     (find-lib "libffi" "racket")
-	     (map
-	      (lambda (n)
-		(format "xsrc/~a.obj" n))
-	      srcs))])
+	     (find-build-file "libracket" "gmp.obj")
+	     (find-build-file "racket" "libffi.lib")
+	     (map (lambda (n) (format "xsrc/~a.obj" n)) srcs))])
   (link-dll objs null null dll "" #f))
 
 (define (check-rc res rc)
