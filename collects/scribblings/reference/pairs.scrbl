@@ -153,7 +153,10 @@ null
 
 @defproc[(list? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
  is a list: either the empty list, or a pair whose second element is a
- list. This procedure takes amortized constant time.
+ list. This procedure effectively takes constant time due to internal caching
+ (so that any necessary traversals of pairs can in principle count as an 
+ extra cost of allocating the pairs).
+ 
 @mz-examples[
 (list? '(1 2))
 (list? (cons 1 (cons 2 '())))
