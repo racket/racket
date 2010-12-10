@@ -42,11 +42,14 @@
                 (begin (output (λ () expr)) 'no-violation))
                expected))]))
 
+(define find-base-cases/unparsed
+  (compose find-base-cases parse-language))
+
 (let ()
   (define-language lc
     (e x (e e) (λ (x) e))
     (x variable))
-  (let ([bc (find-base-cases lc)])
+  (let ([bc (find-base-cases/unparsed lc)])
     (test (to-table (base-cases-non-cross bc))
           '((e . (1 2 2)) (x . (0))))
     (test (to-table (base-cases-cross bc))
@@ -55,7 +58,7 @@
 (let ()
   (define-language lang
     (e (e e)))
-  (let ([bc (find-base-cases lang)])
+  (let ([bc (find-base-cases/unparsed lang)])
     (test (to-table (base-cases-non-cross bc)) '((e . (inf))))
     (test (to-table (base-cases-cross bc)) '((e-e . (0 inf inf))))))
 
@@ -63,7 +66,7 @@
   (define-language lang
     (a 1 2 3)
     (b a (a_1 b_!_1)))
-  (let ([bc (find-base-cases lang)])
+  (let ([bc (find-base-cases/unparsed lang)])
     (test (to-table (base-cases-non-cross bc))
           '((a . (0 0 0)) (b . (1 2))))
     (test (to-table (base-cases-cross bc))
@@ -78,7 +81,7 @@
     (v (λ (x) e)
        number)
     (x variable))
-  (let ([bc (find-base-cases lc)])
+  (let ([bc (find-base-cases/unparsed lc)])
     (test (to-table (base-cases-non-cross bc)) 
           '((e . (2 2 1 1)) (v . (2 0)) (x . (0))))
     (test (to-table (base-cases-cross bc))
@@ -88,10 +91,12 @@
 (let ()
   (define-language L
     (x (variable-prefix x)
-       (variable-except y))
+       (variable-except y)
+       (name x 1)
+       (name y 1))
     (y y))
-  (test (hash-ref (base-cases-non-cross (find-base-cases L)) 'x)
-        '(0 0)))
+  (test (hash-ref (base-cases-non-cross (find-base-cases/unparsed L)) 'x)
+        '(0 0 0 0)))
 
 (define (make-random . nums)
   (let ([nums (box nums)])
@@ -542,7 +547,7 @@
                                  (decisions #:nt (patterns first)))
         47)
   
-  (test (hash-ref (base-cases-non-cross (find-base-cases name-collision)) 'e-e)
+  (test (hash-ref (base-cases-non-cross (find-base-cases/unparsed name-collision)) 'e-e)
         '(0)))
 
 (let ()

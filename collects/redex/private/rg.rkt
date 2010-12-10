@@ -354,12 +354,12 @@
                          (let ([cross? (not (symbol? pat))])
                            (λ (r s a e f)
                              (values (gen-nt (if any? sexpc langc) p cross? r s a f) e)))]
-                        [(struct binder ((or (app (symbol-match named-nt-rx) (? symbol? p)) p)))
-                         (let ([g (recur p)])
+                        [(? binder?)
+                         (let ([g (recur (binder-pattern pat))])
                            (λ (r s a e f)
                              (generate/prior pat e (λ () (g r s a e f)))))]
-                        [(struct mismatch (_ (app (symbol-match mismatch-nt-rx) p)))
-                         (let ([g (recur p)])
+                        [(? mismatch?)
+                         (let ([g (recur (mismatch-pattern pat))])
                            (set! mismatches? #t)
                            (λ (r s a e f)
                              (let-values ([(ts e) (g r s a e f)])
@@ -451,13 +451,18 @@
     (let ([nts '()])
       (let loop ([pat pat])
         (match pat
-          [(? symbol? pat)
-           (when ((is-nt? lang) (symbol->nt pat))
-             (set! nts (cons (cons #f (symbol->nt pat)) nts)))]
+          [(? binder?)
+           (set! nts (cons (cons #f (binder-pattern pat)) nts))]
+          [(? mismatch?)
+           (set! nts (cons (cons #f (mismatch-pattern pat)) nts))]
+          [(? symbol?)
+           (when ((is-nt? lang) pat)
+             (set! nts (cons (cons #f pat) nts)))]
           [`(cross ,(? symbol? x-nt))
            (set! nts (cons (cons #t x-nt) nts))]
           [`(variable-except ,s ...) (void)]
           [`(variable-prefix ,p) (void)]
+          [`(name ,_ ,p) (loop p)]
           [`() (void)]
           [(struct ellipsis (_ p _ _))
            (loop p)]
@@ -535,8 +540,20 @@
          (and match (cadr match) (string->symbol (cadr match))))))
 
 (define-struct class (id) #:inspector (make-inspector))
+
 (define-struct mismatch (id group) #:inspector (make-inspector))
+(define mismatch-pattern
+  (match-lambda
+    [(struct mismatch (_ name))
+     ((symbol-match mismatch-nt-rx) name)]))
+
 (define-struct binder (name) #:inspector (make-inspector))
+(define binder-pattern
+  (match-lambda
+    [(struct binder (name))
+     (match ((symbol-match named-nt-rx) name)
+       [#f name]
+       [p p])]))
 
 ;; name: (or/c symbol? mismatch?)
 ;;   The generator records `name' in the environment when generating an ellipsis,
