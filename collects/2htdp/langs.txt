@@ -1,0 +1,7 @@
+;; design points for bsl/isl/asl in 2htdp
+
+*** '() will be the empty list 
+
+*** bsl: current bsl - symbols + '() 
+*** isl: lambda + local 
+*** isl+: symbols, quoted and backquoted S-expressions 
