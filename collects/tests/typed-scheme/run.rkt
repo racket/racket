@@ -30,7 +30,8 @@
  (cond [(and (unit?) (int?)) tests]
        [(unit?)              unit-tests]
        [(int?)               int-tests]
-       [else                 #f]))
+       [else
+        (error "You must specify which tests should be run. See --help for more info.\n")]))
 
 (cond [(and (nightly?) (eq? 'cgc (system-type 'gc)))
        (printf "Skipping Typed Racket tests.\n")]
