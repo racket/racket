@@ -354,6 +354,7 @@
  (choose-a-background-color "Hintergrundfarbe auswählen")
 
  (revert-to-defaults "Standardeinstellung wiederherstellen")
+ (undo-changes "Änderungen rückgängig machen und schließen") ;; used in the preferences dialog to undo preference changes
 
   (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
@@ -498,6 +499,8 @@
  (edit-menu "Bearbeiten")
  (help-menu "Hilfe")
  (windows-menu "Fenster")
+
+ (tabs-menu "Tabs")
  
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
@@ -629,6 +632,7 @@
 
  ;; windows menu
  (windows-menu-label "&Fenster")
+ (tabs-menu-label "&Tabs")
  (minimize "Minimieren") ;; minimize and zoom are only used under mac os x
  (zoom "Zoomen")
  (bring-frame-to-front "Fenster nach vorn")       ;;; title of dialog
