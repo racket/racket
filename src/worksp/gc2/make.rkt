@@ -155,8 +155,8 @@
   (string-append
    (if win64?
      (string-append "../" d "/x64/release")
-     (let ([d (string-append "../" d "/win32/release")])
-       (if (directory-exists? d) d (string-append "../" d "/release"))))
+     (let ([d2 (string-append "../" d "/win32/release")])
+       (if (directory-exists? d2) d2 (string-append "../" d "/release"))))
    "/" f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
