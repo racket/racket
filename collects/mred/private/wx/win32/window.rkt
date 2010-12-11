@@ -56,8 +56,6 @@
                                      -> (unless r (failed 'ClientToScreen))))
 
 (define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
-(define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
-                               -> (when (zero? r) (failed 'FillRect))))
 
 (define-shell32 DragAcceptFiles (_wfun _HWND _BOOL -> _void))
 
