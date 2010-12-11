@@ -29,7 +29,7 @@ the state transitions / contracts are:
 
 (require scribble/srcdoc scheme/class scheme/gui/base 
          scheme/contract scheme/file)
-(require/doc scheme/base scribble/manual)
+(require/doc scheme/base scribble/manual (for-label racket/serialize))
 
 (provide exn:struct:unknown-preference)
 
@@ -434,13 +434,13 @@ the state transitions / contracts are:
   preferences:set-un/marshall
   (symbol? (any/c . -> . printable/c) (printable/c . -> . any/c) . -> . void?)
   (symbol marshall unmarshall)
-  @{@scheme[preference:set-un/marshall] is used to specify marshalling and
+  @{@scheme[preferences:set-un/marshall] is used to specify marshalling and
     unmarshalling functions for the preference
     @scheme[symbol]. @scheme[marshall] will be called when the users saves their
     preferences to turn the preference value for @scheme[symbol] into a
     printable value. @scheme[unmarshall] will be called when the user's
     preferences are read from the file to transform the printable value
-    into its internal representation. If @scheme[preference:set-un/marshall]
+    into its internal representation. If @scheme[preferences:set-un/marshall]
     is never called for a particular preference, the values of that
     preference are assumed to be printable.
     
@@ -454,8 +454,11 @@ the state transitions / contracts are:
     happen when the preferences file becomes corrupted, or is edited
     by hand.
     
-    @scheme[preference:set-un/marshall] must be called before calling
-    @scheme[preferences:get],@scheme[preferences:set].})
+    @scheme[preferences:set-un/marshall] must be called before calling
+    @scheme[preferences:get],@scheme[preferences:set].
+
+    See also @racket[serialize] and @racket[deserialize].
+   })
  
  (proc-doc/names
   preferences:restore-defaults
