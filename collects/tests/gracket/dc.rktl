@@ -72,6 +72,9 @@
   (try-ok 'set-text-foreground (make-object color% "Yellow"))
   (try-ok 'set-text-mode 'transparent)
 
+  (try-ok 'get-char-height)
+  (try-ok 'get-char-width)
+
   (try 'try-color (make-object color% "Yellow") (make-object color%)))
 
 (st #f mdc ok?)

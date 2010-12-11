@@ -1385,9 +1385,6 @@
               (vector-set! vec 3 #f)
               (vector-set! vec 4 #f)))))
     
-    (def/public (get-char-width)
-      10.0)
-
     (def/public (start-doc [string? desc])
       (check-ok 'start-doc))
     (def/public (end-doc)
@@ -1617,6 +1614,37 @@
                      (install-alternate-face c layout font desc attrs context)
                      (zero? (pango_layout_get_unknown_glyphs_count layout))))
             (g_object_unref layout))))))
+    
+    (def/public (get-char-width)
+      (with-cr
+       10.0
+       cr
+       (get-font-metric cr pango_font_metrics_get_approximate_char_width)))
+
+    (def/public (get-char-height)
+      (with-cr
+       12.0
+       cr
+       (get-font-metric cr (lambda (m)
+                             (+ (pango_font_metrics_get_ascent m)
+                                (pango_font_metrics_get_descent m))))))
+
+    (define/private (get-font-metric cr sel)
+      (let ([desc (get-pango font)]
+            [attrs (send font get-pango-attrs)]
+            [context+fontmap (or (for/or ([c (in-vector contexts)]
+                                          [fm (in-vector font-maps)])
+                                   (and c (cons c fm)))
+                                 (cons
+                                  (pango_cairo_create_context cr)
+                                  (pango_cairo_font_map_new)))])
+        (let ([font (pango_font_map_load_font (cdr context+fontmap)
+                                              (car context+fontmap)
+                                              desc)])
+          (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])
+            (let ([v (sel metrics)])
+              (pango_font_metrics_unref metrics)
+              (/ v (exact->inexact PANGO_SCALE)))))))
 
     (void))
 
