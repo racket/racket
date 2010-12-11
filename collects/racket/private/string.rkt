@@ -15,7 +15,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (define (real->decimal-string n [digits 2])
     (unless (exact-nonnegative-integer? digits)
-      (raise-type-error 'real->decimal-string "exact-nonnegative-integer" n))
+      (raise-type-error 'real->decimal-string "exact-nonnegative-integer" digits))
     (let* ([e (expt 10 digits)]
            [num (round (abs (* e (inexact->exact n))))])
       (format "~a~a.~a"
