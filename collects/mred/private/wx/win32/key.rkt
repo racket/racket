@@ -8,7 +8,8 @@
 
 (provide
  (protect-out make-key-event
-              generates-key-event?))
+              generates-key-event?
+	      reset-key-mapping))
 
 (define-user32 GetKeyState (_wfun _int -> _SHORT))
 (define-user32 MapVirtualKeyW (_wfun _UINT _UINT -> _UINT))
@@ -34,15 +35,24 @@
 ;; The characters in find_shift_alts are things that we'll try
 ;; to include in keyboard events as char-if-Shift-weren't-pressed,
 ;; char-if-AltGr-weren't-pressed, etc.
-(define other-key-codes
-  (let ([find_shift_alts (string-append
-                          "!@#$%^&*()_+-=\\|[]{}:\";',.<>/?~`"
-                          "abcdefghijklmnopqrstuvwxyz"
-                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                          "0123456789")])
-    (list->vector
-     (for/list ([i (in-string find_shift_alts)])
-       (VkKeyScanW (char->integer i))))))
+(define find_shift_alts (string-append
+			 "!@#$%^&*()_+-=\\|[]{}:\";',.<>/?~`"
+			 "abcdefghijklmnopqrstuvwxyz"
+			 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			 "0123456789"))
+(define other-key-codes #f)
+(define (get-other-key-codes)
+  (or other-key-codes
+      (begin
+	(set! other-key-codes
+	      (list->vector
+	       (for/list ([i (in-string find_shift_alts)])
+		 (VkKeyScanW (char->integer i)))))
+	other-key-codes)))
+(define (reset-key-mapping)
+  (set! other-key-codes #f))
+(define (other-orig j)
+  (char->integer (string-ref find_shift_alts j)))
 
 ;; If a virtual key code has no mapping here, then the key should be
 ;; ignored by WM_KEYDOWN and processed by WM_CHAR instead
@@ -136,26 +146,26 @@
                         (let ([k (MapVirtualKeyW sc 1)])
                           (if (zero? k)
                               (values (integer->char id) #f #f #f)
-                              (for/fold ([id id][s #f][a #f][sa #f]) ([o (in-vector other-key-codes)]
+                              (for/fold ([id id][s #f][a #f][sa #f]) ([o (in-vector (get-other-key-codes))]
                                                                       [j (in-naturals)])
                                 (if (= (bitwise-and o #xFF) k)
                                     ;; Figure out whether it's different in the shift
                                     ;; for AltGr dimension, or both:
                                     (if (eq? (zero? (bitwise-and o #x100)) shift-down?)
                                         ;; different Shift
-                                        (if (eq? (= (bitwise-and o #x600) #x6000)
+                                        (if (eq? (= (bitwise-and o #x600) #x600)
                                                  (and control-down? alt-down?))
                                             ;; same AltGr
-                                            (values id o a sa)
+                                            (values id (other-orig j) a sa)
                                             ;; different AltGr
-                                            (values id s a o))
+                                            (values id s a (other-orig j)))
                                         ;; same Shift
-                                        (if (eq? (= (bitwise-and o #x600) #x6000)
+                                        (if (eq? (= (bitwise-and o #x600) #x600)
                                                  (and control-down? alt-down?))
                                             ;; same AltGr
                                             (values id s a sa)
                                             ;; different AltGr
-                                            (values id s o sa)))
+                                            (values id s (other-orig j) sa)))
                                     (values id s a sa))))))]
 		   [else
                       ;; wParam is a virtual key code
@@ -184,15 +194,15 @@
                                             [else id])])
                                   (let-values ([(s a sa)
                                                 ;; Look for shifted alternate:
-                                                (for/fold ([s #f][a #f][sa #f]) ([o (in-vector other-key-codes)]
+                                                (for/fold ([s #f][a #f][sa #f]) ([o (in-vector (get-other-key-codes))]
                                                                                  [j (in-naturals)])
                                                   (if (= (bitwise-and o #xFF) wParam)
                                                       (if (not (zero? (bitwise-and o #x100)))
-                                                          (if (= (bitwise-and o #x600) #x6000)
-                                                              (values s a o)
-                                                              (values o a sa))
-                                                          (if (= (bitwise-and o #x600) #x6000)
-                                                              (values s o sa)
+                                                          (if (= (bitwise-and o #x600) #x600)
+                                                              (values s a (other-orig j))
+                                                              (values (other-orig j) a sa))
+                                                          (if (= (bitwise-and o #x600) #x600)
+                                                              (values s (other-orig j) sa)
                                                               (values s a sa)))
                                                       (values s a sa)))])
                                     (if (and id shift-down?)
@@ -233,8 +243,16 @@
                               [x 0]
                               [y 0]
                               [time-stamp 0]
-                              [caps-down caps-down?])])
+                              [caps-down caps-down?])]
+		      [as-key (lambda (v)
+				(if (integer? v) (integer->char v) v))])
 		 (when is-up?
 		   (send e set-key-release-code key-id))
+		 (when other-shift 
+		   (send e set-other-shift-key-code (as-key other-shift)))
+		 (when other-altgr 
+		   (send e set-other-altgr-key-code (as-key other-altgr)))
+		 (when other-shift-altgr 
+		   (send e set-other-shift-altgr-key-code (as-key other-shift-altgr)))
                  e))))))
 

@@ -220,6 +220,9 @@
          [(= msg WM_COPYDATA)
           (handle-copydata lParam)
           0]
+	 [(= msg WM_INPUTLANGCHANGE)
+	  (reset-key-mapping)
+	  0]
          [else
           (default w msg wParam lParam)])))
 
