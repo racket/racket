@@ -650,11 +650,11 @@
 
   (define/private (pre-event-refresh key?)
     ;; Since we break the connection between the
-    ;; Cocoa queue and event handling, we
+    ;; Win32 queue and event handling, we
     ;; re-sync the display in case a stream of
     ;; events (e.g., key repeat) have a corresponding
     ;; stream of screen updates.
-    (void))
+    (flush-display))
 
   (define/public (get-dialog-level) (send parent get-dialog-level)))
 
