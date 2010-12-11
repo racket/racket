@@ -1321,7 +1321,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                 st = NULL;
 
               if (!st || (st->num_slots != (SCHEME_VEC_SIZE(v) - 1))) {
-                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
                                 (SCHEME_VEC_SIZE(v)
                                  ? (st
                                     ? ("read: mismatch between structure description"
@@ -1332,7 +1332,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
               }
 
               if (stxsrc && !(MZ_OPT_HASH_KEY(&st->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
-                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
                                 "read: cannot read mutable `#s' form as syntax");
               }
 
