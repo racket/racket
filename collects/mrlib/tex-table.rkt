@@ -28,15 +28,15 @@
     ("leftrightarrow" "↔")
     ("nearrow" "↗")
     ("Updownarrow" "⇕")
-    ("hookleftarrow" "↩")
-    ("hookrightarrow" "↪")
-    ("leadsto""↝")
-    
+   
     ;; arrows that didn't come out right in copy & paste
     ;←− \longleftarrow
     ;⇐= \Longleftarrow 
+    ;← 􏰂 \hookleftarrow
     ;←→ \longleftrightarrow 
+    ;􏰁 → \hookrightarrow
     ;⇐⇒ \Longleftrightarrow
+    ;􏴲 \leadsto∗ 
     ;􏰃−→ \longmapsto
     ;=⇒ \Longrightarrow 
     ;􏰃→ \mapsto
