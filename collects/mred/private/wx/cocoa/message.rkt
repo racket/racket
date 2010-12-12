@@ -4,6 +4,7 @@
          ffi/unsafe/objc
          racket/draw/private/bitmap
           "../../syntax.rkt"
+          "../../lock.rkt"
           "window.rkt"
           "item.rkt"
           "utils.rkt"
@@ -30,6 +31,43 @@
               #:type _NSString
               "NSApplicationPath")))
 
+(define (make-icon label)
+  (let ([icon
+         (if (eq? label 'app)
+             (get-app-icon)
+             (let ([id (integer-bytes->integer
+                        (case label
+                          [(caution) #"caut"]
+                          [(stop) #"stop"])
+                        #f
+                        #t)])
+               (tell (tell NSWorkspace sharedWorkspace)
+                     iconForFileType:
+                     (NSFileTypeForHFSTypeCode id))))])
+    (tellv icon retain) 
+    (tellv icon setSize: #:type _NSSize (make-NSSize 64 64))
+    (unless (eq? label 'app)
+      ;; Add badge:
+      (let ([app-icon (get-icon 'app)])
+        (tellv icon lockFocus)
+        (tellv app-icon drawInRect: #:type _NSRect (make-NSRect (make-NSPoint 32 0)
+                                                                (make-NSSize 32 32))
+               fromRect: #:type _NSRect (make-NSRect (make-NSPoint 0 0)
+                                                     (make-NSSize 64 64))
+               operation: #:type _int 2 ; NSCompositeSourceOver 
+               fraction: #:type _CGFloat 1.0)
+        (tellv icon unlockFocus)))
+    icon))
+
+(define icons (make-hash))
+(define (get-icon label)
+  (or (hash-ref icons label #f)
+      (let ([icon (atomically (make-icon label))])
+        (hash-set! icons label icon)
+        icon)))
+
+;; ----------------------------------------
+
 (define-objc-class MyTextField NSTextField
   #:mixins (KeyMouseResponder CursorDisplayer)
   [wxb])
@@ -47,21 +85,7 @@
   (super-new [parent parent]
              [cocoa (let* ([label (cond
                                    [(string? label) label]
-                                   [(symbol? label)
-                                    (let ([icon
-                                           (if (eq? label 'app)
-                                               (get-app-icon)
-                                               (let ([id (integer-bytes->integer
-                                                          (case label
-                                                            [(caution) #"caut"]
-                                                            [(stop) #"stop"])
-                                                          #f
-                                                          #t)])
-                                                 (tell (tell NSWorkspace sharedWorkspace)
-                                                       iconForFileType:
-                                                       (NSFileTypeForHFSTypeCode id))))])
-                                      (tellv icon setSize: #:type _NSSize (make-NSSize 64 64))
-                                      icon)]
+                                   [(symbol? label) (get-icon label)]
                                    [(send label ok?) label]
                                    [else "<bad>"])]
                            [cocoa
@@ -103,3 +127,4 @@
   (define/override (gets-focus?) #f)
 
   (def/public-unimplemented get-font))
+
