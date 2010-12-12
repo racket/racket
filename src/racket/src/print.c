@@ -1698,7 +1698,7 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 static void printaddress(PrintParams *pp, Scheme_Object *o)
 {
   char buf[40];
-  sprintf(buf, ":%" PRINTF_INTPTR_SIZE_PREFIX "x", (intptr_t)o);
+  sprintf(buf, ":%" PRIxPTR, (intptr_t)o);
   print_this_string(pp, buf, 0, -1);
 }
 # define PRINTADDRESS(pp, obj) printaddress(pp, obj)
@@ -1838,12 +1838,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	} else {
 	  if (val > 0) {
 	    always_scheme(pp, 1);
-	    sprintf(quick_buffer, "#%" PRINTF_INTPTR_SIZE_PREFIX "d=", (val - 3) >> 1);
+	    sprintf(quick_buffer, "#%" PRIdPTR "=", (val - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    scheme_hash_set(ht, obj, (Scheme_Object *)(-val));
 	  } else {
 	    always_scheme(pp, 0);
-	    sprintf(quick_buffer, "#%" PRINTF_INTPTR_SIZE_PREFIX "d#", ((-val) - 3) >> 1);
+	    sprintf(quick_buffer, "#%" PRIdPTR "#", ((-val) - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    return 0;
 	  }
@@ -2041,7 +2041,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           }
 	}
       } else {
-	sprintf(quick_buffer, "%" PRINTF_INTPTR_SIZE_PREFIX "d", SCHEME_INT_VAL(obj));
+	sprintf(quick_buffer, "%" PRIdPTR "", SCHEME_INT_VAL(obj));
 	print_utf8_string(pp, quick_buffer, 0, -1);
       }
     }
@@ -2574,7 +2574,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print_utf8_string(pp, ":", 0, 1);
         }
 
-        sprintf(s, "%" PRINTF_INTPTR_SIZE_PREFIX "d", ((Scheme_Env *)obj)->phase);
+        sprintf(s, "%" PRIdPTR "", ((Scheme_Env *)obj)->phase);
         print_utf8_string(pp, s, 0, -1);
 	print_utf8_string(pp, ">", 0, 1);
       }
@@ -2703,10 +2703,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  }
 	  if (stx->srcloc->line >= 0)
 	    sprintf(quick_buffer, 
-		    "%" PRINTF_INTPTR_SIZE_PREFIX "d:%" PRINTF_INTPTR_SIZE_PREFIX "d", 
+		    "%" PRIdPTR ":%" PRIdPTR "", 
 		    stx->srcloc->line, stx->srcloc->col-1);
 	  else
-	    sprintf(quick_buffer, ":%" PRINTF_INTPTR_SIZE_PREFIX "d", 
+	    sprintf(quick_buffer, ":%" PRIdPTR "", 
 		    stx->srcloc->pos);
 	  print_utf8_string(pp, quick_buffer, 0, -1);
 	} else
@@ -3016,7 +3016,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #if NO_COMPACT
 	if (t < _scheme_last_type_) {
 	  sprintf (quick_buffer, 
-		   "%" PRINTF_INTPTR_SIZE_PREFIX "d", 
+		   "%" PRIdPTR, 
 		   (intptr_t)SCHEME_TYPE(obj));
 	  print_this_string(pp, quick_buffer, 0, -1);
 	} else

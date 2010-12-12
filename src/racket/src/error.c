@@ -349,9 +349,9 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    j++;
 	    d = ints[ip++];
             if (as_hex)
-              sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "x", d);
+              sprintf(buf, "%" PRIxPTR, d);
             else
-              sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "d", d);
+              sprintf(buf, "%" PRIdPTR, d);
 	    t = buf;
 	    tlen = strlen(t);
 	  }
@@ -370,7 +370,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    intptr_t d;
 	    d = ints[ip++];
 	    if (d >= 0) {
-	      sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "d:", d);
+	      sprintf(buf, "%" PRIdPTR ":", d);
 	      t = buf;
 	      tlen = strlen(t);
 	    } else {
@@ -1944,7 +1944,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
       errmsg = "reference to an identifier before its definition: %S%_%s";
 
     if (((Scheme_Bucket_With_Home *)b)->home->phase) {
-      sprintf(phase_buf, " phase: %" PRINTF_INTPTR_SIZE_PREFIX "d", ((Scheme_Bucket_With_Home *)b)->home->phase);
+      sprintf(phase_buf, " phase: %" PRIdPTR "", ((Scheme_Bucket_With_Home *)b)->home->phase);
       phase = phase_buf;
     } else
       phase = "";

@@ -308,7 +308,7 @@ Scheme_Env *scheme_engine_instance_init() {
   os_platform_init();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("#if 0\nengine_instance_init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
+  printf("#if 0\nengine_instance_init @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
 
   scheme_starting_up = 1;
@@ -464,7 +464,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   Scheme_Env *env;
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("place_init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
+  printf("place_init @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
   scheme_set_current_os_thread_stack_base(stack_base);
 
@@ -480,7 +480,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   init_toplevel_local_offsets_hashtable_caches();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("pre-process @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
+  printf("pre-process @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
 
   scheme_make_thread(stack_base);
@@ -499,7 +499,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_module_resolver();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("process @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
+  printf("process @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
 
   /* error handling and buffers */
@@ -564,7 +564,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   --scheme_current_thread->suspend_break; /* created with breaks suspended */
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("done @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n#endif\n", scheme_get_process_milliseconds());
+  printf("done @ %" PRIdPTR "\n#endif\n", scheme_get_process_milliseconds());
 #endif
 
   return env;
@@ -611,10 +611,10 @@ static void make_kernel_env(void)
   builtin_ref_counter = 0;
 
 #ifdef TIME_STARTUP_PROCESS
-   printf("init @ %" PRINTF_INTPTR_SIZE_PREFIX "d\n", scheme_get_process_milliseconds());
+   printf("init @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 # define MZTIMEIT(n, f) (MARK_START_TIME(), f, DONE_TIME(n))
 # define MARK_START_TIME() startt = scheme_get_process_milliseconds()
-# define DONE_TIME(n) (printf(#n ": %" PRINTF_INTPTR_SIZE_PREFIX "d\n", (intptr_t)(scheme_get_process_milliseconds() - startt)))
+# define DONE_TIME(n) (printf(#n ": %" PRIdPTR "\n", (intptr_t)(scheme_get_process_milliseconds() - startt)))
 #else
 # define MZTIMEIT(n, f) f
 # define MARK_START_TIME() /**/

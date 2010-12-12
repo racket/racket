@@ -29,7 +29,7 @@
 #undef HAVE_UINTPTR_T
 
 #ifdef HAVE_INTPTR_T
-# include <stdint.h>
+# include <inttypes.h>
 #endif
 #ifndef HAVE_INTPTR_T
 typedef long intptr_t;
