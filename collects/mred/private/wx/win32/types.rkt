@@ -127,10 +127,15 @@
 		      [time _DWORD]
 		      [pt _POINT]))
 
+(define (short v)
+  (if (zero? (bitwise-and #x8000 v))
+      v
+      (bitwise-ior v (arithmetic-shift -1 15))))
+
 (define (HIWORD v)
-  (arithmetic-shift v -16))
+  (short (arithmetic-shift v -16)))
 (define (LOWORD v)
-  (bitwise-and v #xFFFF))
+  (short (bitwise-and v #xFFFF)))
 
 (define (MAKELONG a b)
   (bitwise-ior (arithmetic-shift b 16) 
