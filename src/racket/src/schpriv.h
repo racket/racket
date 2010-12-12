@@ -2027,8 +2027,8 @@ intptr_t scheme_get_print_width(void);
 # ifndef PRINTF_INTPTR_SIZE_PREFIX
 # define PRINTF_INTPTR_SIZE_PREFIX "l"
 # endif
-# define PTIdPTR PRINTF_INTPTR_SIZE_PREFIX "d"
-# define PTIxPTR PRINTF_INTPTR_SIZE_PREFIX "x"
+# define PRIdPTR PRINTF_INTPTR_SIZE_PREFIX "d"
+# define PRIxPTR PRINTF_INTPTR_SIZE_PREFIX "x"
 #endif
 
 /*========================================================================*/
