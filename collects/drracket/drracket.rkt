@@ -36,7 +36,9 @@
     (when cm-trace?
       (flprintf "PLTDRDEBUG: enabling CM tracing\n")
       (manager-trace-handler
-       (λ (x) (display "1: ") (display x) (newline) (flush-output))))))
+       (λ (x) 
+         (when (regexp-match #rx"compiling" x)
+           (display "1: ") (display x) (newline) (flush-output)))))))
 
 (when install-cm?
   (flprintf "PLTDRCM: installing compilation manager\n")
@@ -50,7 +52,9 @@
     (when cm-trace?
       (flprintf "PLTDRCM: enabling CM tracing\n")
       (manager-trace-handler
-       (λ (x) (display "1: ") (display x) (newline) (flush-output))))))
+       (λ (x) 
+         (when (regexp-match #rx"compiling" x)
+           (display "1: ") (display x) (newline) (flush-output)))))))
 
 (when profiling?
   (flprintf "PLTDRPROFILE: installing profiler\n")

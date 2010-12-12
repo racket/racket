@@ -220,7 +220,9 @@
               (equal? (getenv "PLTDRDEBUG") "trace"))
       (printf "PLTDRCM/PLTDRDEBUG: reinstalling CM trace handler after setting splash load handler\n")
       (manager-trace-handler
-       (λ (x) (display "2: ") (display x) (newline))))))
+       (λ (x) 
+         (when (regexp-match #rx"compiling" x)
+           (display "2: ") (display x) (newline)))))))
 
 (define funny-gauge%
   (class canvas% 
