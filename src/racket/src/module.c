@@ -1492,7 +1492,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    else if (menv->phase == 1)
 	      phase = " for syntax";
 	    else {
-	      sprintf(buf, " at phase %ld", menv->phase);
+	      sprintf(buf, " at phase %" PRIdPTR, menv->phase);
 	      phase = buf;
 	    }
 

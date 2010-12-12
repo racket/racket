@@ -150,8 +150,6 @@ static MZ_INLINE intptr_t SPAN(Scheme_Object *port, intptr_t pos) {
 /* For cases where we'd rather report the location as just the relevant prefix: */
 #define MINSPAN(port, pos, span) (span)
 
-#define SRCLOC_TMPL " in %q[%L%ld]"
-
 #define mz_shape_cons 0
 #define mz_shape_vec 1
 #define mz_shape_hash_list 2
@@ -2780,7 +2778,7 @@ read_list(Scheme_Object *port,
 	if (indt->suspicious_line) {
 	  suggestion = scheme_malloc_atomic(100);
 	  sprintf(suggestion,
-		  "; indentation suggests a missing %s before line %ld",
+		  "; indentation suggests a missing %s before line %" PRIdPTR,
 		  closer_name(params, indt->suspicious_closer),
 		  indt->suspicious_line);
 	}
@@ -3466,7 +3464,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
   if (suspicious_quote) {
     suspicions = (char *)scheme_malloc_atomic(64);
     sprintf(suspicions,
-	    "; newline within %s suggests a missing %s on line %ld",
+	    "; newline within %s suggests a missing %s on line %" PRIdPTR,
 	    is_honu_char ? "character" : "string",
 	    is_honu_char ? "'" : "'\"'",
 	    suspicious_quote);
@@ -3510,9 +3508,9 @@ read_vector (Scheme_Object *port,
   len = scheme_list_length(obj);
   if (requestLength >= 0 && len > requestLength) {
     char buffer[20];
-    sprintf(buffer, "%ld", requestLength);
+    sprintf(buffer, "%" PRIdPTR, requestLength);
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-		    "read: vector length %ld is too small, "
+		    "read: vector length %" PRIdPTR " is too small, "
 		    "%d values provided",
 		    requestLength, len);
     return NULL;
@@ -4430,7 +4428,7 @@ static void unexpected_closer(int ch,
       sprintf(found, "unexpected");
     } else if (indt->multiline) {
       sprintf(found,
-	      "%s %s to close %s on line %ld, found instead",
+	      "%s %s to close %s on line %" PRIdPTR ", found instead",
 	      missing,
 	      closer_name(params, indt->closer),
 	      opener_name(params, opener),
@@ -4446,7 +4444,7 @@ static void unexpected_closer(int ch,
     if (indt->suspicious_line) {
       suggestion = scheme_malloc_atomic(100);
       sprintf(suggestion,
-	      "; indentation suggests a missing %s before line %ld",
+	      "; indentation suggests a missing %s before line %" PRIdPTR,
 	      closer_name(params, indt->suspicious_closer),
 	      indt->suspicious_line);
     }
@@ -5422,7 +5420,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
       != ((all_short ? 2 : 4) * (symtabsize - 1)))
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad table count: %ld != %ld)",
+		    "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
 		    got, (all_short ? 2 : 4) * (symtabsize - 1));
   offset += got;
 
@@ -5452,7 +5450,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 
   if (shared_size >= size) {
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
+		    "read (compiled): ill-formed code (shared size %" PRIdPTR " >= total size %" PRIdPTR ")",
 		    shared_size, size);
   }
 
@@ -5475,7 +5473,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->size = size;
   if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad count: %ld != %ld, started at %ld)",
+		    "read (compiled): ill-formed code (bad count: %" PRIdPTR " != %" PRIdPTR 
+                    ", started at %" PRIdPTR ")",
 		    got, size, rp->base);
 
   local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
@@ -5636,7 +5635,8 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
       
       if ((got = scheme_get_bytes(port, size, (char *)st, 0)) != size)
         scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-                        "on-demand load: ill-formed code (bad count: %ld != %ld, started at %ld)",
+                        "on-demand load: ill-formed code (bad count: %" PRIdPTR " != %" PRIdPTR 
+                        ", started at %" PRIdPTR ")",
                         got, size, 0);
     }
     scheme_current_thread->error_buf = savebuf;

@@ -7074,7 +7074,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       phase = " in the transformer environment";
     else {
       phase = buf;
-      sprintf(buf, " at phase %ld", env->genv->phase);
+      sprintf(buf, " at phase %" PRIdPTR, env->genv->phase);
     }
     if (has_orig_unbound) {
       scheme_wrong_syntax(scheme_compile_stx_string, 
