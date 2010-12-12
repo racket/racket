@@ -37,7 +37,7 @@ exec "$PLTHOME/bin/gracket" "$0"
 (define es (make-eventspace))
 
 (current-eventspace es)
-(void (thread (lambda () (sleep 60) (die "timeout!"))))
+(void (thread (lambda () (sleep 120) (die "timeout!"))))
 
 ;; make sure the preferences are such that we don't get the welcome screen
 (cleanup)

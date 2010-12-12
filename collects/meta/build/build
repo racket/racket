@@ -738,8 +738,8 @@ _kill() { # args: pid [process name]
                                      if [[ ! -d "/proc/$pid" ]]; then return; fi
   show "Killing $desc"
   kill -15 "$pid" > /dev/null 2>& 1; if [[ ! -d "/proc/$pid" ]]; then return; fi
-  usleep 500000                    ; if [[ ! -d "/proc/$pid" ]]; then return; fi
-  usleep 500000                    ; if [[ ! -d "/proc/$pid" ]]; then return; fi
+  sleep 0.5                        ; if [[ ! -d "/proc/$pid" ]]; then return; fi
+  sleep 0.5                        ; if [[ ! -d "/proc/$pid" ]]; then return; fi
   sleep 1                          ; if [[ ! -d "/proc/$pid" ]]; then return; fi
   echo "re-killing $desc"
   kill -15 "$pid" > /dev/null 2>& 1; if [[ ! -d "/proc/$pid" ]]; then return; fi
@@ -805,10 +805,10 @@ _start_xvnc() {
     -rfbauth "$HOME/.vnc/passwd" \
     -br \
     > "$xvnclog" 2>&1 &
-  Xvncpid="$!"; usleep 500000
+  Xvncpid="$!"; sleep 0.5
   echo "Xvnc running ($Xvncpid)"
   metacity --sm-disable &
-  Xwmpid="$!"; usleep 500000
+  Xwmpid="$!"; sleep 0.5
   echo "window manager running ($Xwmpid)"
   # to see the window, uncomment this
   # DISPLAY="$real_DISPLAY" vncviewer ::6565 -PasswordFile "$HOME/.vnc/passwd" &
@@ -1226,11 +1226,10 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$test_gui" = "yes" ]]; then
     separator "${machine}(${platform}) testing DrRacket"
     if [[ "$platform" = *"-win32" ]]; then
-      dont_exit _timeout_run 120 "$PLTHOME/gracket.exe" \
-          "$(cygpath -w "$PLTHOME/$drtestscript")"
+      dont_exit "$PLTHOME/gracket.exe" "$(cygpath -w "$PLTHOME/$drtestscript")"
     else
       _start_xvnc
-      dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
+      dont_exit env HOME="$testdir" "$PLTHOME/$drtestscript"
       _end_xvnc
     fi
   fi
