@@ -25,6 +25,7 @@
 (define-user32 SetLayeredWindowAttributes (_wfun _HWND _COLORREF _BYTE _DWORD -> _BOOL))
 (define-user32 GetActiveWindow (_wfun -> _HWND))
 (define-user32 SetFocus (_wfun _HWND -> _HWND))
+(define-user32 BringWindowToTop (_wfun _HWND -> (r : _BOOL) -> (unless r (failed 'BringWindowToTop))))
 
 (define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
 
@@ -141,6 +142,8 @@
 
   (define saved-title (or label ""))
   (define hidden-zoomed? #f)
+  (define float-without-caption? (and (memq 'float style)
+                                      (memq 'no-caption style)))
 
   (define min-width #f)
   (define min-height #f)
@@ -187,9 +190,14 @@
       (set! hidden-zoomed? (is-maximized?)))
     (super direct-show on? (if hidden-zoomed?
                                SW_SHOWMAXIMIZED
-                               SW_SHOW))
+                               (if float-without-caption?
+                                   SW_SHOWNOACTIVATE
+                                   SW_SHOW)))
     (when (and on? (iconized?))
-      (ShowWindow hwnd SW_RESTORE)))
+      (ShowWindow hwnd SW_RESTORE))
+    (when on?
+      (unless float-without-caption?
+        (BringWindowToTop hwnd))))
 
   (define/public (destroy)
     (direct-show #f))
