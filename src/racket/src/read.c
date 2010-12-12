@@ -3510,7 +3510,7 @@ read_vector (Scheme_Object *port,
     char buffer[20];
     sprintf(buffer, "%" PRIdPTR, requestLength);
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-		    "read: vector length %" PRIdPTR " is too small, "
+		    "read: vector length %ld is too small, "
 		    "%d values provided",
 		    requestLength, len);
     return NULL;
@@ -5420,7 +5420,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
       != ((all_short ? 2 : 4) * (symtabsize - 1)))
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
+		    "read (compiled): ill-formed code (bad table count: %ld != %ld)",
 		    got, (all_short ? 2 : 4) * (symtabsize - 1));
   offset += got;
 
@@ -5450,7 +5450,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 
   if (shared_size >= size) {
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (shared size %" PRIdPTR " >= total size %" PRIdPTR ")",
+		    "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
 		    shared_size, size);
   }
 
@@ -5473,8 +5473,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->size = size;
   if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad count: %" PRIdPTR " != %" PRIdPTR 
-                    ", started at %" PRIdPTR ")",
+		    "read (compiled): ill-formed code (bad count: %ld != %ld"
+                    ", started at %ld)",
 		    got, size, rp->base);
 
   local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
@@ -5635,8 +5635,8 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
       
       if ((got = scheme_get_bytes(port, size, (char *)st, 0)) != size)
         scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-                        "on-demand load: ill-formed code (bad count: %" PRIdPTR " != %" PRIdPTR 
-                        ", started at %" PRIdPTR ")",
+                        "on-demand load: ill-formed code (bad count: %ld != %ld"
+                        ", started at %ld)",
                         got, size, 0);
     }
     scheme_current_thread->error_buf = savebuf;
