@@ -487,7 +487,7 @@ please adhere to these guidelines:
   (mfs-recur-over-subdirectories "Rekursivt i undermapper")
   (mfs-regexp-filename-filter "Regexp filnavnsfilter")
   (mfs-search-string "Søgestreng")
-  (mfs-drscheme-multi-file-search "DrRacket - Søgning i flere filer") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "Søgning i flere filer - DrRacket") ;; results window and error message title
   (mfs-not-a-dir "\"~a\" er ikke en mappe")
   (mfs-open-file "Åbn fil")
   (mfs-stop-search "Stop søgning")

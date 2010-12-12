@@ -537,7 +537,7 @@
   ;; preferences initialization
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
-  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|ss|scm)$" string?)
+  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|scrbl|ss|scm)$" string?)
   (drr:set-default 'drracket:multi-file-search:search-string "" string?)
   (drr:set-default 'drracket:multi-file-search:search-type
                            1

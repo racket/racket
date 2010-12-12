@@ -539,7 +539,7 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "Шукати у вкладених каталогах")
  (mfs-regexp-filename-filter "Фільтрувати імена файлів за регулярними виразами")
  (mfs-search-string "Шукати рядки")
- (mfs-drscheme-multi-file-search "DrRacket - багатофайловый пошук") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "багатофайловый пошук - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" не каталог")
  (mfs-open-file "Відкрити файл")
  (mfs-stop-search "Зупинити пошук")

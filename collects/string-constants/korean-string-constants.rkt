@@ -464,7 +464,7 @@
  (mfs-recur-over-subdirectories "하위디렉토리도 검색")
  (mfs-regexp-filename-filter "다음 정규표현식에 맞는 파일")
  (mfs-search-string "찾을 문자열")
- (mfs-drscheme-multi-file-search "DrRacket - 다중 파일 검색") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "다중 파일 검색 - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" 는 디렉토리가 아닙니다")
  (mfs-open-file "파일 열기")
  (mfs-stop-search "검색 중지")

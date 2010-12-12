@@ -448,7 +448,7 @@
  (mfs-recur-over-subdirectories "In Unterverzeichnisse abtauchen")
  (mfs-regexp-filename-filter "Regulärer Ausdruck Dateinamen-Filter")
  (mfs-search-string "Zeichenkette suchen")
- (mfs-drscheme-multi-file-search "DrRacket - Suche in mehreren Dateien") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Suche in mehreren Dateien - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" ist kein Verzeichnis")
  (mfs-open-file "Datei öffnen")
  (mfs-stop-search "Suche stoppen")

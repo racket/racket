@@ -549,14 +549,15 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "Recur over subdirectories")
  (mfs-regexp-filename-filter "Regexp filename filter")
  (mfs-search-string "Search string")
- (mfs-drscheme-multi-file-search "DrRacket - Multi File Search") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Multi File Search - DrRacket") ;; error message window title
  (mfs-not-a-dir "\"~a\" is not a directory")
  (mfs-open-file "Open File")
  (mfs-stop-search "Stop Search")
  (mfs-case-sensitive-label "Case sensitive")
  (mfs-no-matches-found "No matches found.")
  (mfs-search-interrupted "Search aborted.")
- 
+ (mfs-drscheme-multi-file-search-title "Multi File Search for \"~a\" - DrRacket") ;; the ~a format specifier is filled in with the search string
+  
  ;;; reverting a file
  (are-you-sure-revert
   "Are you sure that you want to revert this file? This change cannot be undone.")
