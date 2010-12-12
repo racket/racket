@@ -372,7 +372,15 @@ See @racket[clipboard<%>].
 }
 
 @defproc[(label-string? [v any/c]) boolean?]{
-  Returns @racket[#t] if @racket[v] is a string whose length is less than or equal to @racket[200].                                             
+  Returns @racket[#t] if @racket[v] is a string whose length is less than or equal to @racket[200].
+          
+  This predicate is typically used as the contract for strings that 
+  appear in GUI objects. In some cases, such as the label in a @racket[button%]
+  or @racket[menu-item%] object, the character @litchar{&} is treated specially
+  to indicate that the following character is used in keyboard navigation. See
+  @xmethod[labelled-menu-item<%> set-label] for one such example.
+  In other cases, such as the label on a @racket[frame%], @litchar{&} is not
+  treated specially.
 }
 
 @defproc[(key-code-symbol? [v any/c]) boolean?]{
