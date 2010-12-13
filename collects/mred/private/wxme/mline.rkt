@@ -948,7 +948,7 @@ Debugging tools:
           (if (has-flag? (snip->flags asnip) NEWLINE)
               (begin
                 (do-new-line asnip)
-                (send media consistent-snip-lines 'post-do-new-line)
+                (assert (send media consistent-snip-lines 'post-do-new-line))
                 #t)
               (begin
                 (set-snip-line! asnip mline)
