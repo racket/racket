@@ -354,9 +354,15 @@ struct jit_local_state {
    before we set up the local frame: */
 #define JIT_PREARG JIT_R0
 #ifdef JIT_X86_64
-# define jit_getprearg__p(r) (MOVQrr(_EDI, r))
-# define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
-# define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
+# ifdef _WIN64
+#  define jit_getprearg__p(r) (MOVQrr(_ECX, r))
+#  define jit_getprearg_pip_p(r) (MOVQrr(JIT_R(9), r))
+#  define jit_getprearg_pipp_p(r) (jit_ldxi_p(r, JIT_SP, 40))
+# else
+#  define jit_getprearg__p(r) (MOVQrr(_EDI, r))
+#  define jit_getprearg_pip_p(r) (MOVQrr(_ECX, r))
+#  define jit_getprearg_pipp_p(r) (MOVQrr(JIT_R(8), r))
+# endif
 #else
 # define jit_getprearg__p(r) (jit_ldxi_p(r, JIT_SP, 4))
 # define jit_getprearg_pip_p(r) (jit_ldxi_p(r, JIT_SP, 16))
@@ -364,7 +370,24 @@ struct jit_local_state {
 #endif
 
 #ifdef JIT_X86_64
-# define jit_base_prolog() (PUSHQr(_EBP), MOVQrr(_ESP, _EBP), PUSHQr(_EBX), PUSHQr(_R12), PUSHQr(_R13))
+# ifdef _WIN64
+#  define jit_preserve_locals() (ADDQir(-32, JIT_SP))
+#  define jit_restore_locals() (ADDQir(32, JIT_SP))
+#  define _RCS1 _ESI
+#  define _RCS2 _EDI
+#  define jit_reg_is_arg(reg) (((reg) ==_ECX) || ((reg) == _EDX))
+# else
+/* For AMD64 ABI, R12 and R13 are callee-save, instead of EDI and ESI */
+#  define jit_preserve_locals() (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13))
+#  define jit_restore_locals() (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
+#  define _RCS1 _R12
+#  define _RCS2 _R13
+#  define jit_reg_is_arg(reg) (((reg) == _EDI) || ((reg) ==_ESI) || ((reg) == _EDX))
+# endif
+#endif
+
+#ifdef JIT_X86_64
+# define jit_base_prolog() (PUSHQr(_EBP), MOVQrr(_ESP, _EBP), PUSHQr(_EBX), PUSHQr(_RCS1), PUSHQr(_RCS2))
 # define jit_prolog(n) (_jitl.nextarg_geti = 0, jit_base_prolog())
 #else
 # define jit_base_prolog() (PUSHLr(_EBP), MOVLrr(_ESP, _EBP), PUSHLr(_EBX), PUSHLr(_ESI), PUSHLr(_EDI))
@@ -392,20 +415,18 @@ struct jit_local_state {
 #define jit_prepare_d(nd)	(_jitl.argssize += 2 * (nd))
 #ifdef JIT_X86_64
 # define jit_pusharg_i(rs)	(_jitl.argpushes--, MOVQrr(rs, JIT_CALLTMPSTART + _jitl.argpushes))
-# define jit_normal_pushonlyarg_i(rs) (_jitl.argpushes--, MOVQrr(rs, _EDI))
+# define jit_normal_pushonlyarg_i(rs) (_jitl.argpushes--, MOVQrr(rs, jit_arg_reg_order[0]))
 # define jit_save_argstate(curstate)	curstate = _jitl.argpushes;
 # define jit_restore_argstate(curstate)	_jitl.argpushes = curstate;
 # define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
 # define jit_normal_finish(sub) jit_calli((sub))
 # define jit_return_pop_insn_len() 0
-# define jit_reg_is_arg(reg) ((reg == _EDI) || (reg ==_ESI) || (reg == _EDX))
 # define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
                                  jit_shift_args(), \
                                  jit_reg_is_arg((reg)) ? CALQsr((JIT_REXTMP)) : jit_callr((reg)), \
                                  jit_restore_locals())
-/* R12 and R13 are callee-save, instead of EDI and ESI */
 # define jit_shift_args() \
-   (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13), \
+  (jit_preserve_locals(), \
    (_jitl.argssize  \
     ? (MOVQrr(JIT_CALLTMPSTART, jit_arg_reg_order[0]),  \
        ((_jitl.argssize > 1)  \
@@ -415,8 +436,6 @@ struct jit_local_state {
             : (void)0)) \
         : (void)0)) \
     : (void)0))
-# define jit_restore_locals() \
-    (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
 #else
 # define jit_pusharg_i(rs)	PUSHLr(rs)
 # define jit_normal_pushonlyarg_i(rs)	jit_pusharg_i(rs)
@@ -436,7 +455,11 @@ struct jit_local_state {
 #define	jit_arg_l()	        (_jitl.nextarg_geti++)
 #define	jit_arg_p()	        (_jitl.nextarg_geti++)
 #define jit_arg_reg(p)          (jit_arg_reg_order[p])
+# ifdef _WIN64
+static const int const jit_arg_reg_order[] = { _ECX, _EDX, JIT_R(8), JIT_R(9) };
+# else
 static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
+# endif
 #else
 #define	jit_arg_c()		((_jitl.framesize += sizeof(int)) - sizeof(int))
 #define	jit_arg_uc()		((_jitl.framesize += sizeof(int)) - sizeof(int))
@@ -589,7 +612,7 @@ static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) || (diff > 127)) 
 # define jit_patch_short_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
 # define jit_patch_branch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
 # define jit_patch_ucbranch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
-# define jit_ret() (POPQr(_R13), POPQr(_R12), POPQr(_EBX), POPQr(_EBP), RET_())
+# define jit_ret() (POPQr(_RCS2), POPQr(_RCS1), POPQr(_EBX), POPQr(_EBP), RET_())
 #else
 # define jit_patch_branch_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
 # define jit_patch_ucbranch_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)

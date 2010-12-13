@@ -54,7 +54,7 @@
   
   (define-struct let-glump (name-set exp val-set))
 
-  ; split-list : ('a -> boolean) (listof 'a) -> (2vals (listof 'a) (listof 'a))
+  ; split-list : ('a -> boolean) (listof 'a) -> (vector (listof 'a) (listof 'a))
   ; split-list splits a list into two lists at the first element s.t. (fn element) => true).
   ; that is, split-list yields the lists A and B such that (append A B) gives the original
   ; list, and (fn element) => false for all elements in A, and B is either empty or
@@ -63,15 +63,15 @@
  (define (split-list fn lst)
     (let loop ([remaining lst] [so-far null]) 
       (cond [(null? remaining)
-             (2vals (reverse so-far) null)]
+             (vector (reverse so-far) null)]
             [else
              (if (fn (car remaining))
-                 (2vals (reverse so-far) remaining)
+                 (vector (reverse so-far) remaining)
                  (loop (cdr remaining) (cons (car remaining) so-far)))])))
   
   ; test cases
-  ; (test (2vals '(93 4 2) '(0 2 1)) split-list (lambda (x) (= x 0)) '(93 4 2 0 2 1))
-  ; (test (2vals '(3 4 5) '()) split-list (lambda (x) (= x 0)) '(3 4 5))
+  ; (test (vector '(93 4 2) '(0 2 1)) split-list (lambda (x) (= x 0)) '(93 4 2 0 2 1))
+  ; (test (vector '(3 4 5) '()) split-list (lambda (x) (= x 0)) '(3 4 5))
         
   ; n-split-list : num ('a list) -> ('a list) ('a list)
   ; n-split-list splits a given list A into two lists B and C, such that B contains the
@@ -82,11 +82,11 @@
       (error 'n-split-list "can't split list ~a after ~ath element; not long enough" lst num))
     (let loop ([count num] [remaining lst] [so-far null])
       (if (= count 0)
-          (2vals (reverse so-far) remaining)
+          (vector (reverse so-far) remaining)
           (loop (- count 1) (cdr remaining) (cons (car remaining) so-far)))))
   
   ; test cases
-  ; (test (2vals '(a b c) '(d e f)) n-split-list 3 '(a b c d e f))
+  ; (test (vector '(a b c) '(d e f)) n-split-list 3 '(a b c d e f))
   
   
   (define (mark-as-highlight stx)
@@ -110,7 +110,8 @@
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-ref finished-xml-box-table val (lambda () #f))
           (stepper-syntax-property #`(quote #,val) 'stepper-xml-value-hint 'from-xml-box)
-          (let ([closure-record (closure-table-lookup val (lambda () #f))])     
+          (let ([closure-record (and (annotated-proc? val)
+                                     (annotated-proc-info val))])
             (if closure-record
                 (let* ([mark (closure-record-mark closure-record)]
                        [base-name (closure-record-name closure-record)])
@@ -645,68 +646,69 @@
                   [recon-let
                    (lambda ()
                      (with-syntax ([(label ((vars rhs) ...) . bodies) exp])
-                       (let*-2vals ([binding-sets (map syntax->list (syntax->list #'(vars ...)))]
-                                    [binding-list (apply append binding-sets)]
-                                    [glumps 
-                                     (map (lambda (binding-set rhs)
-                                            (make-let-glump
-                                             (map (lambda (binding)
-                                                    (stepper-syntax-property binding
-                                                                     'stepper-lifted-name
-                                                                     (binding-lifted-name mark-list binding)))
-                                                 binding-set)
-                                             rhs
-                                             (map (lambda (arg-binding) 
-                                                     (lookup-binding mark-list arg-binding))
-                                                  binding-set)))
-                                          binding-sets
-                                          (syntax->list #`(rhs ...)))]
-                                    [num-defns-done (lookup-binding mark-list let-counter)]
-                                    [(done-glumps not-done-glumps)
-                                     (n-split-list num-defns-done glumps)]
-                                    [recon-lifted 
-                                     (lambda (names expr)
-                                       #`(#,names #,expr))]
-                                    [before-bindings
-                                     (map
-                                      (lambda (glump)
-                                        (let* ([name-set (let-glump-name-set glump)]
-                                               [rhs-val-set (map (lambda (val)
-                                                                   (if (> (length name-set) 0)
-                                                                       (recon-value val render-settings (car name-set))
-                                                                       (recon-value val render-settings))) 
-                                                                 (let-glump-val-set glump))])
-                                          (if (= (length rhs-val-set) 1)
-                                              #`(#,name-set #,@rhs-val-set)
-                                              #`(#,name-set (values #,rhs-val-set)))))
-                                      done-glumps)]
-                                    [reconstruct-remaining-def
-                                     (lambda (glump)
-                                       (let ([rhs-source (let-glump-exp glump)]
-                                             [rhs-name-set (let-glump-name-set glump)])
-                                         (recon-lifted rhs-name-set
-                                                       (recon-source-current-marks rhs-source))))]
-                                    [after-bindings
-                                     (if (pair? not-done-glumps)
-                                         (if (eq? so-far nothing-so-far)
-                                             (map reconstruct-remaining-def not-done-glumps)
-                                             (cons (recon-lifted (let-glump-name-set (car not-done-glumps)) so-far)
-                                                   (map reconstruct-remaining-def (cdr not-done-glumps))))
-                                         null)]
-                                    [recon-bindings (append before-bindings after-bindings)]
-                                    ;; there's a terrible tangle of invariants here.  Among them:  
-                                    ;; num-defns-done = (length binding-sets) IFF the so-far has a 'stepper-offset' index
-                                    ;; that is not #f (that is, we're evaluating the body...)                                    
-                                    [so-far-offset-index (and (not (eq? so-far nothing-so-far)) 
-                                                                   (stepper-syntax-property so-far 'stepper-offset-index))]
-                                    [bodies (syntax->list (syntax bodies))]
-                                    [rectified-bodies 
-                                     (map (lambda (body offset-index)
-                                            (if (eq? offset-index so-far-offset-index)
-                                                so-far
-                                                (recon-source-expr body mark-list binding-list binding-list render-settings)))
-                                          bodies
-                                          (iota (length bodies)))])
+                       (match-let* 
+                        ([binding-sets (map syntax->list (syntax->list #'(vars ...)))]
+                         [binding-list (apply append binding-sets)]
+                         [glumps 
+                          (map (lambda (binding-set rhs)
+                                 (make-let-glump
+                                  (map (lambda (binding)
+                                         (stepper-syntax-property binding
+                                                                  'stepper-lifted-name
+                                                                  (binding-lifted-name mark-list binding)))
+                                       binding-set)
+                                  rhs
+                                  (map (lambda (arg-binding) 
+                                         (lookup-binding mark-list arg-binding))
+                                       binding-set)))
+                               binding-sets
+                               (syntax->list #`(rhs ...)))]
+                         [num-defns-done (lookup-binding mark-list let-counter)]
+                         [(vector done-glumps not-done-glumps)
+                          (n-split-list num-defns-done glumps)]
+                         [recon-lifted 
+                          (lambda (names expr)
+                            #`(#,names #,expr))]
+                         [before-bindings
+                          (map
+                           (lambda (glump)
+                             (let* ([name-set (let-glump-name-set glump)]
+                                    [rhs-val-set (map (lambda (val)
+                                                        (if (> (length name-set) 0)
+                                                            (recon-value val render-settings (car name-set))
+                                                            (recon-value val render-settings))) 
+                                                      (let-glump-val-set glump))])
+                               (if (= (length rhs-val-set) 1)
+                                   #`(#,name-set #,@rhs-val-set)
+                                   #`(#,name-set (values #,rhs-val-set)))))
+                           done-glumps)]
+                         [reconstruct-remaining-def
+                          (lambda (glump)
+                            (let ([rhs-source (let-glump-exp glump)]
+                                  [rhs-name-set (let-glump-name-set glump)])
+                              (recon-lifted rhs-name-set
+                                            (recon-source-current-marks rhs-source))))]
+                         [after-bindings
+                          (if (pair? not-done-glumps)
+                              (if (eq? so-far nothing-so-far)
+                                  (map reconstruct-remaining-def not-done-glumps)
+                                  (cons (recon-lifted (let-glump-name-set (car not-done-glumps)) so-far)
+                                        (map reconstruct-remaining-def (cdr not-done-glumps))))
+                              null)]
+                         [recon-bindings (append before-bindings after-bindings)]
+                         ;; there's a terrible tangle of invariants here.  Among them:  
+                         ;; num-defns-done = (length binding-sets) IFF the so-far has a 'stepper-offset' index
+                         ;; that is not #f (that is, we're evaluating the body...)                                    
+                         [so-far-offset-index (and (not (eq? so-far nothing-so-far)) 
+                                                   (stepper-syntax-property so-far 'stepper-offset-index))]
+                         [bodies (syntax->list (syntax bodies))]
+                         [rectified-bodies 
+                          (map (lambda (body offset-index)
+                                 (if (eq? offset-index so-far-offset-index)
+                                     so-far
+                                     (recon-source-expr body mark-list binding-list binding-list render-settings)))
+                               bodies
+                               (iota (length bodies)))])
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
              (if (stepper-syntax-property exp 'stepper-fake-exp)
                  

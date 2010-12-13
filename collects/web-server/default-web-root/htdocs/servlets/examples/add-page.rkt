@@ -8,20 +8,22 @@
 (define (request-number which-number)
   (let/ec esc
     (page
-     `(html (head (title "Enter a Number to Add"))
-            (body ([bgcolor "white"])
-                  (form ([action ,(embed/url
-                                   (lambda/page ()
-                                                (esc
-                                                 (string->number
-                                                  (get-binding 'number)))))]
-                         [method "post"])
-                        "Enter the " ,which-number " number to add: "
-                        (input ([type "text"] [name "number"] [value ""]))
-                        (input ([type "submit"] [name "enter"] [value "Enter"]))))))))
+     (response/xexpr
+      `(html (head (title "Enter a Number to Add"))
+             (body ([bgcolor "white"])
+                   (form ([action ,(embed/url
+                                    (lambda/page ()
+                                                 (esc
+                                                  (string->number
+                                                   (get-binding 'number)))))]
+                          [method "post"])
+                         "Enter the " ,which-number " number to add: "
+                         (input ([type "text"] [name "number"] [value ""]))
+                         (input ([type "submit"] [name "enter"] [value "Enter"])))))))))
 
 (define/page (start)
-  `(html (head (title "Sum"))
-         (body ([bgcolor "white"])
-               (p "The answer is "
-                  ,(number->string (+ (request-number "first") (request-number "second")))))))
+  (response/xexpr
+   `(html (head (title "Sum"))
+          (body ([bgcolor "white"])
+                (p "The answer is "
+                   ,(number->string (+ (request-number "first") (request-number "second"))))))))

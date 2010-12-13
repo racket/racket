@@ -35,23 +35,23 @@
 
 ;; call in atomic mode:
 (define (register-hwnd! hwnd)
-  (hash-set! all-hwnds (cast hwnd _pointer _long) #t)
+  (hash-set! all-hwnds (cast hwnd _pointer _intptr) #t)
   (let ([c (malloc-immobile-cell (vector #f #f #f))])
-    (void (SetWindowLongW hwnd GWLP_USERDATA c))))
+    (void (SetWindowLongPtrW hwnd GWLP_USERDATA c))))
   
 (define (set-hwnd-wx! hwnd wx)
-  (let* ([c (GetWindowLongW hwnd GWLP_USERDATA)]
+  (let* ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)]
          [v (ptr-ref c _racket)])
     (vector-set! v 0 (make-weak-box wx))))
 
 (define (set-hwnd-ctlproc! hwnd save-ptr ctlproc)
-  (let* ([c (GetWindowLongW hwnd GWLP_USERDATA)]
+  (let* ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)]
          [v (ptr-ref c _racket)])
     (vector-set! v 1 ctlproc)
     (vector-set! v 2 save-ptr)))
 
 (define (hwnd->wx hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+  (let ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)])
     (and c (let ([v (ptr-ref c _racket)])
              (and v
                   (let ([wb (vector-ref v 0)])
@@ -60,33 +60,33 @@
 
 (define (any-hwnd->wx hwnd)
   (and
-   (atomically (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+   (atomically (hash-ref all-hwnds (cast hwnd _pointer _intptr) #f))
    (let ([wx (hwnd->wx hwnd)])
      (and wx
           (send wx is-hwnd? hwnd)
           wx))))
 
 (define (hwnd->ctlproc hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+  (let ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)])
     (and c (let ([v (ptr-ref c _racket)])
              (and v (vector-ref v 1))))))
 
 (define (hwnd->ctlproc-fptr hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+  (let ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)])
     (and c (let ([v (ptr-ref c _racket)])
              (and v (vector-ref v 2))))))
 
 ;; call in atomic mode:
 (define (can-unregister-hwnd? hwnd)
-  (hash-ref all-hwnds (cast hwnd _pointer _long) #f))
+  (hash-ref all-hwnds (cast hwnd _pointer _intptr) #f))
 
 ;; call in atomic mode:
 (define (unregister-hwnd! hwnd)
-  (let ([c (GetWindowLongW hwnd GWLP_USERDATA)])
+  (let ([c (GetWindowLongPtrW hwnd GWLP_USERDATA)])
     (when c
       (free-immobile-cell c)
-      (SetWindowLongW hwnd GWLP_USERDATA #f))
-    (hash-remove! all-hwnds (cast hwnd _pointer _long))))
+      (SetWindowLongPtrW hwnd GWLP_USERDATA #f))
+    (hash-remove! all-hwnds (cast hwnd _pointer _intptr))))
 
 ;; ----------------------------------------
 
@@ -122,7 +122,7 @@
   (let ([default-ctlproc (hwnd->ctlproc w)])
     (if (= msg WM_DESTROY)
         (begin
-          (SetWindowLongW w GWLP_WNDPROC (hwnd->ctlproc-fptr w))
+          (SetWindowLongPtrW w GWLP_WNDPROC (hwnd->ctlproc-fptr w))
           (unregister-hwnd! w)
           (default-ctlproc w msg wParam lParam))
         (let ([wx (hwnd->wx w)])
@@ -135,10 +135,10 @@
 (define control_proc (function-ptr control-proc _WndProc))
 
 (define (subclass-control hwnd)
-  (let* ([fptr (GetWindowLongW hwnd GWLP_WNDPROC)]
+  (let* ([fptr (GetWindowLongPtrW hwnd GWLP_WNDPROC)]
          [old-control-proc (function-ptr fptr _WndProc)])
     (set-hwnd-ctlproc! hwnd fptr old-control-proc)
-    (SetWindowLongW hwnd GWLP_WNDPROC control_proc)))
+    (SetWindowLongPtrW hwnd GWLP_WNDPROC control_proc)))
 
 
 (define _DialogProc (_wfun _HWND _UINT _WPARAM _LPARAM -> _INT_PTR))

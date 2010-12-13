@@ -51,22 +51,7 @@
      
      (test-equal? "secure? #f"
                   (header-value (cookie->header (make-cookie "name" "value" #:secure? #f)))
-                  #"name=value; Version=1"))
-    
-    (test-suite
-     "xexpr-response/cookies"
-     (test-equal? "Simple"
-                  (response/full-body (xexpr-response/cookies empty `(html)))
-                  (list #"<html />"))
-     
-     (test-equal? "One (body)"
-                  (response/full-body (xexpr-response/cookies (list (make-cookie "name" "value")) `(html)))
-                  (list #"<html />"))
-     
-     (test-equal? "One (headers)"
-                  (map (lambda (h) (cons (header-field h) (header-value h)))
-                       (response/basic-headers (xexpr-response/cookies (list (make-cookie "name" "value")) `(html))))
-                  (list (cons #"Set-Cookie" #"name=value; Version=1")))))
+                  #"name=value; Version=1")))
    
    (test-suite
     "cookie-parse.rkt"

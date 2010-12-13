@@ -21,7 +21,7 @@
 
 (when (eq? 'windows (system-type))
   (let* ([concat string-append]
-         [studio  "c:/Program Files/Microsoft Visual Studio 8"]
+         [studio  "c:/Program Files/Microsoft Visual Studio 10.0"]
          [scommon (concat studio "/Common7")]
          [vc      (concat studio "/VC")])
     (putenv "PATH"    (concat (getenv "PATH")
@@ -70,6 +70,8 @@
   (t  2 'add1_byte_int  (_fun _byte -> _int ) 1)
   (t  2 'add1_int_byte  (_fun _int  -> _byte) 1)
   (t  2 'add1_byte_byte (_fun _byte -> _byte) 1)
+  (t  -1 'add1_int_int   (_fun _int  -> _int ) -2)
+  (t  -1 'add1_int_int   (_fun _int  -> _fixint ) -2)
   ;; ---
   (t 12 'decimal_int_int_int    (_fun _int  _int  -> _int ) 1 2)
   (t 12 'decimal_byte_int_int   (_fun _byte _int  -> _int ) 1 2)

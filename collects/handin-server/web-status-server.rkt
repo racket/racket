@@ -6,6 +6,8 @@
          racket/date
          net/uri-codec
          web-server/servlet
+         web-server/compat/0/coerce
+         web-server/compat/0/http/response-structs
          handin-server/private/md5
          handin-server/private/logger
          handin-server/private/config

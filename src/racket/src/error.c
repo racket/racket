@@ -33,10 +33,6 @@
 # include <stdarg.h>
 #endif
 
-#ifndef PRINTF_INTPTR_SIZE_PREFIX
-# define PRINTF_INTPTR_SIZE_PREFIX "l"
-#endif
-
 #define mzVA_ARG(x, y) HIDE_FROM_XFORM(va_arg(x, y))
 #define TMP_CMARK_VALUE scheme_parameterization_key
 
@@ -307,7 +303,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	s[i++] = '%';
       else {
 	const char *t;
-	int tlen;
+	intptr_t tlen;
 	int dots = 0;
 
 	switch (type) {
@@ -353,9 +349,9 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    j++;
 	    d = ints[ip++];
             if (as_hex)
-              sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "x", d);
+              sprintf(buf, "%" PRIxPTR, d);
             else
-              sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "d", d);
+              sprintf(buf, "%" PRIdPTR, d);
 	    t = buf;
 	    tlen = strlen(t);
 	  }
@@ -374,7 +370,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    intptr_t d;
 	    d = ints[ip++];
 	    if (d >= 0) {
-	      sprintf(buf, "%" PRINTF_INTPTR_SIZE_PREFIX "d:", d);
+	      sprintf(buf, "%" PRIdPTR ":", d);
 	      t = buf;
 	      tlen = strlen(t);
 	    } else {
@@ -448,7 +444,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    Scheme_Object *sym;
 	    sym = (Scheme_Object *)ptrs[pp++];
-	    t = scheme_symbol_name_and_size(sym, (unsigned int *)&tlen, 0);
+	    t = scheme_symbol_name_and_size(sym, (uintptr_t *)&tlen, 0);
 	  }
 	  break;
 	case 'V':
@@ -895,7 +891,7 @@ int scheme_log_level_p(Scheme_Logger *logger, int level)
   return (logger->want_level >= level);
 }
 
-static char *error_write_to_string_w_max(Scheme_Object *v, int len, int *lenout)
+static char *error_write_to_string_w_max(Scheme_Object *v, int len, intptr_t *lenout)
 {
   Scheme_Object *o, *args[2];
 
@@ -1044,7 +1040,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
   if (arity_str) {
     pos = scheme_sprintf(s, slen, "%t: expects %t, given %d",
-			 name, namelen, arity_str, arity_len, xargc);
+			 name, (intptr_t)namelen, arity_str, (intptr_t)arity_len, xargc);
   } else if (minc < 0) {
     const char *n;
     int nlen;
@@ -1061,20 +1057,20 @@ static char *make_arity_expect_string(const char *name, int namelen,
     }
 
     pos = scheme_sprintf(s, slen, "%t: no clause matching %d argument%s",
-			 n, nlen,
+			 n, (intptr_t)nlen,
 			 xargc, xargc == 1 ? "" : "s");
   } else if (!maxc)
     pos = scheme_sprintf(s, slen, "%t: expects no arguments, given %d",
-			 name, namelen, xargc);
+			 name, (intptr_t)namelen, xargc);
   else if (maxc < 0)
     pos = scheme_sprintf(s, slen, "%t: expects at least %d argument%s, given %d",
-			 name, namelen, xminc, (xminc == 1) ? "" : "s", xargc);
+			 name, (intptr_t)namelen, xminc, (xminc == 1) ? "" : "s", xargc);
   else if (minc == maxc)
     pos = scheme_sprintf(s, slen, "%t: expects %d argument%s, given %d",
-			 name, namelen, xminc, (xminc == 1) ? "" : "s", xargc);
+			 name, (intptr_t)namelen, xminc, (xminc == 1) ? "" : "s", xargc);
   else
     pos = scheme_sprintf(s, slen, "%t: expects %d to %d arguments, given %d",
-			 name, namelen, xminc, xmaxc, xargc);
+			 name, (intptr_t)namelen, xminc, xmaxc, xargc);
 
   if (xargc && argv) {
     len /= xargc;
@@ -1085,7 +1081,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
       pos++;
 
       for (i = (is_method ? 1 : 0); i < argc; i++) {
-	int l;
+	intptr_t l;
 	char *o;
 	o = error_write_to_string_w_max(argv[i], len, &l);
 	memcpy(s + pos, " ", 1);
@@ -1306,7 +1302,7 @@ char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv
     pos = strlen(other);
     for (i = 0; i < argc; i++) {
       if (i != which) {
-	int l;
+	intptr_t l;
 	char *o;
 	o = error_write_to_string_w_max(argv[i], len, &l);
 	memcpy(other + pos, " ", 1);
@@ -1346,7 +1342,7 @@ void scheme_wrong_type(const char *name, const char *expected,
 {
   Scheme_Object *o;
   char *s;
-  int slen;
+  intptr_t slen;
   int isres = 0;
   GC_CAN_IGNORE char *isress = "argument";
 
@@ -1403,7 +1399,7 @@ void scheme_wrong_field_type(Scheme_Object *c_name,
 void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
 {
   char *s;
-  int slen;
+  intptr_t slen;
 
   if (o)
     s = scheme_make_provided_string(o, 1, &slen);
@@ -1776,8 +1772,7 @@ void scheme_wrong_syntax_with_more_sources(const char *where,
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
-  intptr_t len, slen;
-  int rlen;
+  intptr_t len, slen, rlen;
   char *s, *r;
 
   s = init_buf(&len, NULL);
@@ -1795,7 +1790,7 @@ void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)
     slen = 17;
     for (i = 0; i < argc; i++) {
       char *o;
-      int olen;
+      intptr_t olen;
 
       o = error_write_to_string_w_max(argv[i], len, &olen);
       memcpy(s + slen, " ", 1);
@@ -1869,7 +1864,7 @@ void scheme_wrong_return_arity(const char *where,
     vlen = 1;
     for (i = 0; i < maxpos; i++) {
       char *o;
-      int olen;
+      intptr_t olen;
 
       o = error_write_to_string_w_max(array[i], len, &olen);
       memcpy(v + vlen, " ", 1);
@@ -1949,7 +1944,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
       errmsg = "reference to an identifier before its definition: %S%_%s";
 
     if (((Scheme_Bucket_With_Home *)b)->home->phase) {
-      sprintf(phase_buf, " phase: %" PRINTF_INTPTR_SIZE_PREFIX "d", ((Scheme_Bucket_With_Home *)b)->home->phase);
+      sprintf(phase_buf, " phase: %" PRIdPTR "", ((Scheme_Bucket_With_Home *)b)->home->phase);
       phase = phase_buf;
     } else
       phase = "";
@@ -1968,7 +1963,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
   }
 }
 
-char *scheme_make_provided_string(Scheme_Object *o, int count, int *lenout)
+char *scheme_make_provided_string(Scheme_Object *o, int count, intptr_t *lenout)
 {
   intptr_t len;
 
@@ -3144,7 +3139,7 @@ static Scheme_Object *
 def_exn_handler(int argc, Scheme_Object *argv[])
 {
   char *s;
-  int len = -1;
+  intptr_t len = -1;
 
   if (SCHEME_CHAPERONE_STRUCTP(argv[0])
       && scheme_is_struct_instance(exn_table[MZEXN].type, argv[0])) {

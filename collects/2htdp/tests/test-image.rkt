@@ -17,8 +17,8 @@
 (send f show #t)
 |#
 
-(require "../image.ss"
-         (only-in "../../mrlib/image-core.ss" 
+(require 2htdp/image
+         (only-in mrlib/image-core 
                   image%
                   make-image
                   image-shape
@@ -39,11 +39,10 @@
                   to-img
                   render-normalized
                   render-image)
-         (only-in "../private/image-more.ss" 
+         (only-in "../private/image-more.rkt"
                   bring-between
                   swizzle)
-         ; "../private/img-err.ss"
-         "../../mrlib/private/image-core-bitmap.ss"
+         mrlib/private/image-core-bitmap
          lang/posn
          racket/math
          racket/class

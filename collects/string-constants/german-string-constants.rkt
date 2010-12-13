@@ -354,6 +354,7 @@
  (choose-a-background-color "Hintergrundfarbe auswählen")
 
  (revert-to-defaults "Standardeinstellung wiederherstellen")
+ (undo-changes "Änderungen rückgängig machen und schließen") ;; used in the preferences dialog to undo preference changes
 
   (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
@@ -447,7 +448,7 @@
  (mfs-recur-over-subdirectories "In Unterverzeichnisse abtauchen")
  (mfs-regexp-filename-filter "Regulärer Ausdruck Dateinamen-Filter")
  (mfs-search-string "Zeichenkette suchen")
- (mfs-drscheme-multi-file-search "DrRacket - Suche in mehreren Dateien") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Suche in mehreren Dateien - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" ist kein Verzeichnis")
  (mfs-open-file "Datei öffnen")
  (mfs-stop-search "Suche stoppen")
@@ -498,6 +499,8 @@
  (edit-menu "Bearbeiten")
  (help-menu "Hilfe")
  (windows-menu "Fenster")
+
+ (tabs-menu "Tabs")
  
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
@@ -629,6 +632,7 @@
 
  ;; windows menu
  (windows-menu-label "&Fenster")
+ (tabs-menu-label "&Tabs")
  (minimize "Minimieren") ;; minimize and zoom are only used under mac os x
  (zoom "Zoomen")
  (bring-frame-to-front "Fenster nach vorn")       ;;; title of dialog

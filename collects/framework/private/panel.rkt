@@ -182,9 +182,15 @@
   (define dragable-mixin
     (mixin (window<%> area-container<%>) (dragable<%>)
       (init parent)
-      
-      (define/public (get-vertical?)
-        (error 'get-vertical "abstract method"))
+
+      (init-field vertical?)
+
+      (define/public-final (get-vertical?) vertical?)
+      (define/public-final (set-orientation h?) 
+        (define v? (not h?))
+        (unless (eq? vertical? v?)
+          (set! vertical? v?) 
+          (container-flow-modified)))
       (define/private (min-extent child) 
         (let-values ([(w h) (send child get-graphical-min-size)])
           (if (get-vertical?)
@@ -413,18 +419,15 @@
       (stretchable-height #f)
       (min-height 10)))
   
-  
   (define vertical-dragable-mixin
     (mixin (dragable<%>) (vertical-dragable<%>)
-      (define/override (get-vertical?) #t)
-      (super-instantiate ())))
+      (super-new [vertical? #t])))
   
   (define horizontal-dragable-mixin
     (mixin (dragable<%>) (vertical-dragable<%>)
-      (define/override (get-vertical?) #f)
-      (super-instantiate ())))
+      (super-new [vertical? #f])))
   
-  (define vertical-dragable% (vertical-dragable-mixin (dragable-mixin vertical-panel%)))
+  (define vertical-dragable% (vertical-dragable-mixin (dragable-mixin panel%)))
   
-  (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin horizontal-panel%)))
+  (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin panel%)))
 

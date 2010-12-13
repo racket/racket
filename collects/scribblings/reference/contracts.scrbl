@@ -1,3 +1,4 @@
+
 #lang scribble/doc
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse))
@@ -23,6 +24,7 @@ constraints.
                                          racket/contract/private/box
                                          racket/contract/private/hash
                                          racket/contract/private/vector
+                                         racket/contract/private/struct
                                          racket/contract/private/misc
                                          racket/contract/private/provide)]
 
@@ -343,11 +345,17 @@ Produces a flat contract that recognizes syntax objects whose
 @racket[syntax-e] content matches @racket[c].}
 
 
-@defform[(struct/c struct-id flat-contract-expr ...)]{
-
-Produces a flat contract that recognizes instances of the structure
+@defform[(struct/c struct-id contract-expr ...)]{
+Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
-@tech{flat contracts} produced by the @racket[flat-contract-expr]s.}
+contracts produced by the @racket[contract-expr]s.
+
+Contracts for immutable fields must be either flat or chaperone contracts.
+Contracts for mutable fields may be impersonator contracts.
+If all fields are immutable and the @racket[contract-expr]s evaluate
+to flat contracts, a flat contract is produced.  If all the
+@racket[contract-expr]s are chaperone contracts, a chaperone contract is
+produced.  Otherwise, an impersonator contract is produced.}
 
 
 @defproc[(parameter/c [c contract?]) contract?]{
@@ -1784,10 +1792,14 @@ the message that indicates the violation.
 }
 
 
-@defform[(recursive-contract contract-expr)]{
+@defform*[[(recursive-contract contract-expr)
+           (recursive-contract contract-expr type)]]{
 
 Delays the evaluation of its argument until the contract is checked,
-making recursive contracts possible.}
+making recursive contracts possible.  If @racket[type] is given, it
+describes the expected type of contract and must be one of the keywords
+@racket[#:impersonator], @racket[#:chaperone], or @racket[#:flat].  If
+@racket[type] is not given, an impersonator contract is created.}
 
 
 @defform[(opt/c contract-expr)]{

@@ -18,6 +18,9 @@
   [(macosx) 
    (ffi-lib "libgmodule-2.0.0.dylib")]
   [(windows) 
+   (ffi-lib ,(if win64?
+		 "libgthread-2.0-0.dll"
+		 "libgmodule-2.0-0.dll"))
    (ffi-lib "libgmodule-2.0-0.dll")])
 
 (define-runtime-lib gobj-lib 

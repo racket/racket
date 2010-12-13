@@ -28,9 +28,14 @@
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(windows) 
+   (ffi-lib ,(if win64?
+		 "libintl-8.dll"
+		 "libpangowin32-1.0-0.dll"))
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")
-   (ffi-lib "freetype6.dll")
+   (ffi-lib ,(if win64? 
+		 "libfreetype-6.dll"
+		 "freetype6.dll"))
    (ffi-lib "libfontconfig-1.dll")
    (ffi-lib "libpangoft2-1.0-0.dll")
    (ffi-lib "libpangocairo-1.0-0.dll")])
@@ -48,6 +53,7 @@
 (define PangoFontFamily (_cpointer 'PangoFontFamily))
 (define PangoFont (_cpointer 'PangoFont))
 (define PangoFontMap (_cpointer 'PangoFontMap))
+(define PangoFontMetrics (_cpointer 'PangoFontMetrics))
 (define PangoAttrList (_cpointer 'PangoAttrList))
 (define PangoAttribute (_cpointer 'PangoAttribute))
 (define PangoLanguage (_cpointer 'PangoLanguage))
@@ -184,6 +190,14 @@
 (define-pango pango_font_get_coverage (_fun PangoFont PangoLanguage -> PangoCoverage)
   #:wrap (allocator pango_coverage_unref))
 (define-pango pango_coverage_get (_fun PangoCoverage _int -> _int))
+
+(define-pango pango_font_metrics_unref (_fun PangoFontMetrics -> _void)
+  #:wrap (deallocator))
+(define-pango pango_font_get_metrics (_fun PangoFont PangoLanguage -> PangoFontMetrics)
+  #:wrap (allocator pango_font_metrics_unref))
+(define-pango pango_font_metrics_get_approximate_char_width (_fun PangoFontMetrics -> _int))
+(define-pango pango_font_metrics_get_ascent (_fun PangoFontMetrics -> _int))
+(define-pango pango_font_metrics_get_descent (_fun PangoFontMetrics -> _int))
 
 (define-pango pango_layout_get_unknown_glyphs_count (_fun PangoLayout -> _int))
 

@@ -537,7 +537,7 @@
   ;; preferences initialization
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
-  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|ss|scm)$" string?)
+  (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|scrbl|ss|scm)$" string?)
   (drr:set-default 'drracket:multi-file-search:search-string "" string?)
   (drr:set-default 'drracket:multi-file-search:search-type
                            1
@@ -657,21 +657,34 @@
             (send item enable (and frame (> (length (send frame get-tabs)) 1)))))])
   (group:add-to-windows-menu
    (λ (windows-menu)
+     (define sprefix (if (eq? (system-type) 'windows)
+                         (cons 'shift (get-default-shortcut-prefix))
+                         (get-default-shortcut-prefix)))
      (new menu-item%
-          [parent windows-menu] [label (string-constant prev-tab)] [shortcut #\[]
+          [parent windows-menu]
+          [label (string-constant prev-tab)]
+          [shortcut #\[]
+          [shortcut-prefix sprefix]
           [demand-callback dc]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
                           (send frame prev-tab))))])
-     (new menu-item% [parent windows-menu] [label (string-constant next-tab)] [shortcut #\]]
+     (new menu-item% 
+          [parent windows-menu]
+          [label (string-constant next-tab)]
+          [shortcut #\]]
+          [shortcut-prefix sprefix]
           [demand-callback dc]
           [callback (λ (item _) 
                       (let ([frame (find-frame item)])
                         (when frame
                           (send frame next-tab))))])
+     
      (let ([frame (find-frame windows-menu)])
        (unless (or (not frame) (= 1 (send frame get-tab-count)))
+         (unless (eq? (system-type) 'macosx)
+           (new separator-menu-item% [parent windows-menu]))
          (for ([i (in-range 0 (send frame get-tab-count))]
                #:when (< i 9))
            (new menu-item% 
@@ -683,7 +696,9 @@
                 [callback
                  (λ (a b)
                    (send frame change-to-nth-tab i))]))))
-     (new separator-menu-item% [parent windows-menu]))))
+     
+     (when (eq? (system-type) 'macosx)
+       (new separator-menu-item% [parent windows-menu])))))
 
 ;; Check for any files lost last time.
 ;; Ignore the framework's empty frames test, since

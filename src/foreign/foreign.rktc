@@ -332,9 +332,9 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
 /* longs and ints are really the same */
 #define scheme_get_realint_val(x,y) \
-  scheme_get_int_val(x,(long*)(y))
+  scheme_get_int_val(x,(intptr_t*)(y))
 #define scheme_get_unsigned_realint_val(x,y) \
-  scheme_get_unsigned_int_val(x,(unsigned long*)(y))
+  scheme_get_unsigned_int_val(x,(uintptr_t*)(y))
 #define scheme_make_realinteger_value \
   scheme_make_integer_value
 #define scheme_make_realinteger_value_from_unsigned \
@@ -345,7 +345,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 /* These will make sense in Racket when longs are longer than ints (needed
  * for libffi's int32 types).  There is no need to deal with bignums because
  * mzscheme's fixnums are longs. */
-inline int scheme_get_realint_val(Scheme_Object *o, int *v)
+MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -356,7 +356,7 @@ inline int scheme_get_realint_val(Scheme_Object *o, int *v)
     return 1;
   } else return 0;
 }
-inline int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
+MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -606,6 +606,12 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
    (lambda (x aux) @list{scheme_get_unsigned_long_long_val(@x,&@aux)}) #f
    "integer_value_from_unsigned_long_long")
 
+/* This is like int32, but always assumes fixnum: */
+@(defctype* '(fixint "int32")   "Tsint32"  "INT" "INT"  "integer")
+
+/* This is like uint32, but always assumes fixnum: */
+@(defctype* '(ufixint "uint32") "Tuint32" "INT" "UINT" "integer_from_unsigned")
+
 @@@IFNDEF{SIXTY_FOUR_BIT_LONGS}{
 #define ffi_type_smzlong ffi_type_sint32
 #define ffi_type_umzlong ffi_type_uint32
@@ -621,12 +627,6 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 #define ffi_type_smzintptr ffi_type_sint64
 #define ffi_type_umzintptr ffi_type_uint64
 }
-
-/* This is like intptr, but always assumes fixnum: */
-@(defctype* '(fixint "smzintptr")   "intptr_t"  "INT" "INT"  "integer")
-
-/* This is like uint32, but always assumes fixnum: */
-@(defctype* '(ufixint "umzintptr") "uintptr_t" "INT" "UINT" "integer_from_unsigned")
 
 /* This is what mzscheme defines as intptr, assuming fixnums: */
 @(defctype* '(fixnum "smzintptr")

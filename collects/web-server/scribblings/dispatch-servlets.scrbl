@@ -1,5 +1,12 @@
 #lang scribble/doc
-@(require "web-server.rkt")
+@(require "web-server.rkt"
+          (for-label web-server/http
+                     web-server/private/servlet
+                     web-server/configuration/responders
+                     web-server/dispatchers/filesystem-map
+                     web-server/servlet/setup
+                     net/url
+                     web-server/managers/manager))
 
 @title[#:tag "dispatch-servlets"]{Serving Servlets}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets
@@ -21,11 +28,11 @@
 @defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
-                (url? exn? . -> . response/c)
+                (url? exn? . -> . can-be-response?)
                 servlet-loading-responder]
                [#:responders-servlet
                 responders-servlet
-                (url? exn? . -> . response/c)
+                (url? exn? . -> . can-be-response?)
                 servlet-error-responder])
          dispatcher/c]{
  This dispatcher runs racket servlets, using @racket[url->servlet] to resolve URLs to the underlying servlets.
@@ -46,7 +53,7 @@
                      [namespace namespace?]
                      [manager manager?]
                      [directory path-string?]
-                     [handler (request? . -> . response/c)])
+                     [handler (request? . -> . can-be-response?)])
                     #:mutable]{
   Instances of this structure hold the necessary parts of a servlet:
   the @racket[custodian] responsible for the servlet's resources,

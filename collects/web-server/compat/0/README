@@ -1,0 +1,92 @@
+In Racket 5.0.99.4 and before, the Web Server supported implicit
+conversion of X-expressions and lists with the format (cons/c bytes? (listof (or/c string? bytes?))) into response data structures for output.
+
+After 5.0.99.4, this implicit conversion has been generalized into any->response. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
+
+This document describes the incompatible changes and how to restore the old behavior when that is possible.
+
+--- Coercion behavior ---
+
+The old coercion behavior will be dynamically introduced by requiring
+web-server/compat/0/coerce or running:
+
+(require web-server/compat/0/http/response-structs)
+(set-any->response! normalize-response)
+
+Users may want to allow implicit X-expression conversion by
+running
+
+(set-any->response! response/xexpr)
+
+--- New response structures ---
+
+The http/response-structs module has changed to be almost
+unrecognizable. http/response-structs was provided through http and
+servlet, so many Web applications implicitly rely on it.
+
+web-server/compat/0/http/response-structs provides a version that
+implements the old behavior without interfering with new version
+(i.e., they can both be required simultaneously.) [N.B. response/port
+was only present for a few weeks, so it is not provided in the
+compatibility library.]
+
+--- xexpr-response/cookies ---
+
+The http/cookie module provided xexpr-response/cookies, but that
+functionality is now part of response/xexpr. The old function can be
+required from web-server/compat/0/http/cookie (without interfering
+with any other bindings from the new cookie module.)
+
+--- Internal APIs ---
+
+Many internal APIs are restricted to receive only actual response?
+structures:
+
+configuration-table responders
+authentication responder on dispatchers/dispatch-passwords
+dispatchers/dispatch-lift --- make
+dispatchers/dispatch-pathprocedure --- make
+http/response --- output-response and output-response/method
+
+No compatible interface is provided for these functions and data structures.
+
+--- External APIs ---
+
+Most external APIs now use the new response/c. Specifically:
+
+dispatch/serve --- serve/dispatch
+servlet-dispatch --- dispatch/servlet
+servlet-env --- serve/servlet
+servlet/web --- send/*, with-errors-to-browser
+dispatchers/dispatch-servlets  --- servlet-loading responder argument
+#lang web-server/insta
+lang/web --- make-stateless-servlet
+private/servlet --- handler field
+servlet/servlet-structs --- response-generator/c, expiration-handler/c
+servlet/setup --- make*servlet
+
+These represent nearly every place where servlets typically interact
+with the server.
+
+However, one function: send/formlet from formlets used to allow any
+old response/c as a wrapper result, while the new version requires
+that the wrapper returns an Xexpr. This changes is justified in that
+formlets already bake in support for Xexpr as a fundamental part of
+their syntax.
+
+--- Removed contracts ---
+
+web-server/compat/0/servlet/servlet-structs
+
+is a replacement for the old
+
+web-server/servlet/servlet-structs
+
+because 
+
+k-url?
+response-generator/c
+expiration-handler/c
+
+are now removed. (This change is to ensure that internal uses of these
+have can-be-response? close to where they are used so any->response can be called appropriately.)

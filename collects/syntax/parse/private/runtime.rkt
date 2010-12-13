@@ -99,11 +99,12 @@
 
 (require syntax/stx)
 (define (stx-list-take stx n)
-  (let loop ([stx stx] [n n])
-    (if (zero? n)
-        null
-        (cons (stx-car stx)
-              (loop (stx-cdr stx) (sub1 n))))))
+  (datum->syntax #f
+                 (let loop ([stx stx] [n n])
+                   (if (zero? n)
+                       null
+                       (cons (stx-car stx)
+                             (loop (stx-cdr stx) (sub1 n)))))))
 
 ;; stx-list-drop/cx : stxish stx nat -> (values stxish stx)
 (define (stx-list-drop/cx x cx n)

@@ -14,7 +14,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 {
   Scheme_Rational *r = (Scheme_Rational *)o;
   FP_TYPE n, d;
-  int ns, ds;
+  intptr_t ns, ds;
 
   if (SCHEME_INTP(r->num)) {
     n = (FP_TYPE)SCHEME_INT_VAL(r->num);

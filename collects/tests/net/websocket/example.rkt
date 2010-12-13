@@ -26,7 +26,7 @@
 (define-runtime-path example-pth ".")
 
 (serve/servlet (λ (req)
-                 (make-response/full
+                 (response/full
                   200 #"Okay"
                   (current-seconds) TEXT/HTML-MIME-TYPE
                   empty

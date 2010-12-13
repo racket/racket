@@ -33,8 +33,8 @@
            [_ f]))
   (match fs
     [(FilterSet: f+ f-)
-     (combine (subst-filter (add-extra-filter f+) k o polarity)
-	      (subst-filter (add-extra-filter f-) k o polarity))]
+     (-FS (subst-filter (add-extra-filter f+) k o polarity)
+          (subst-filter (add-extra-filter f-) k o polarity))]
     [_ (-FS -top -top)]))
 
 (d/c (subst-type t k o polarity)

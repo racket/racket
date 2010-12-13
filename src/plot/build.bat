@@ -1,0 +1,2 @@
+..\..\racket build.rkt libplplot plplot/dc_drv.c  plplot/plcont.c  plplot/plfill.c  plplot/plmap.c  plplot/plshade.c  plplot/plwind.c  plplot/pdfutils.c  plplot/plcore.c  plplot/plgridd.c  plplot/plmeta.c  plplot/plstripc.c  plplot/plargs.c  plplot/plctrl.c  plplot/plhist.c  plplot/plot3d.c  plplot/plsym.c  plplot/plbox.c  plplot/plcvt.c  plplot/plimage.c  plplot/plpage.c  plplot/pltick.c  plplot/plbuf.c  plplot/pldtik.c  plplot/plline.c  plplot/plsdef.c  plplot/plvpor.c
+..\..\racket build.rkt libfit fit/fit.c fit/matrix.c

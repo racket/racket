@@ -33,19 +33,14 @@ Here, @scheme[text] is any of the datatypes described in
 
 @defthing[xexpr/c flat-contract?]{
 This flat contract corresponds to @scheme[xexpr?].  It is reprovided from
-@schememodname[xml].  In versions of PLT Scheme before the implementation of
+@schememodname[xml].  In versions of Racket before the implementation of
 @scheme[xexpr/c], this module provides its own definition.
 }
 
-@deftogether[(
 @defproc[(write-css [css css/c] [out output-port? (current-output-port)])
-         void?]
-@defproc[(write-xexpr [css css/c] [out output-port? (current-output-port)])
-         void?]
-)]{
-These functions write CSS-expressions and
-X-expressions, respectively, to output ports, by their
-canonical text representations.
+         void?]{
+This function writes CSS-expressions to output ports by its
+canonical text representation.
 }
 
 @deftogether[(

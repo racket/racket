@@ -14,13 +14,14 @@
   ; counter1 and counter2 may have been modified
   (send/suspend/dispatch
    (lambda (embed/url)
-     ; The frame (ref) must have been captured, any changes to web-cells after this will be lost
-     `(html 
-       (body (h2 "Web Cell Test")
-             (div (h3 "First")
-                  ,(include1 embed/url))
-             (div (h3 "Second")
-                  ,(include2 embed/url)))))))
+     (response/xexpr
+      ; The frame (ref) must have been captured, any changes to web-cells after this will be lost
+      `(html 
+        (body (h2 "Web Cell Test")
+              (div (h3 "First")
+                   ,(include1 embed/url))
+              (div (h3 "Second")
+                   ,(include2 embed/url))))))))
 
 (define (make-counter)
   (make-web-cell 0))

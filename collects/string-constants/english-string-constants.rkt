@@ -455,6 +455,7 @@ please adhere to these guidelines:
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Please choose a background color")
  (revert-to-defaults "Revert to Defaults")
+ (undo-changes "Undo Changes and Close") ;; used in the preferences dialog to undo preference changes
   
   (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
@@ -548,14 +549,15 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "Recur over subdirectories")
  (mfs-regexp-filename-filter "Regexp filename filter")
  (mfs-search-string "Search string")
- (mfs-drscheme-multi-file-search "DrRacket - Multi File Search") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Multi File Search - DrRacket") ;; error message window title
  (mfs-not-a-dir "\"~a\" is not a directory")
  (mfs-open-file "Open File")
  (mfs-stop-search "Stop Search")
  (mfs-case-sensitive-label "Case sensitive")
  (mfs-no-matches-found "No matches found.")
  (mfs-search-interrupted "Search aborted.")
- 
+ (mfs-drscheme-multi-file-search-title "Multi File Search for \"~a\" - DrRacket") ;; the ~a format specifier is filled in with the search string
+  
  ;;; reverting a file
  (are-you-sure-revert
   "Are you sure that you want to revert this file? This change cannot be undone.")
@@ -599,7 +601,8 @@ please adhere to these guidelines:
  (edit-menu "Edit")
  (help-menu "Help")
  (windows-menu "Windows")
- 
+ (tabs-menu "Tabs") ;; this is the name of the "Windows" menu under linux & windows
+  
  ;;; menus
  ;;; - in menu labels, the & indicates a alt-key based shortcut.
  ;;; - sometimes, things are stuck in the middle of 
@@ -730,6 +733,7 @@ please adhere to these guidelines:
 
   ;; windows menu
  (windows-menu-label "&Windows")
+ (tabs-menu-label "&Tabs") ;; this is the name of the menu under linux & windows
  (minimize "Minimize") ;; minimize and zoom are only used under mac os x
  (zoom "Zoom")
  (bring-frame-to-front "Bring Frame to Front")       ;;; title of dialog

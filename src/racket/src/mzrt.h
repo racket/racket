@@ -171,7 +171,7 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
 # endif
 #elif defined(_MSC_VER)
 # if defined(_AMD64_)
-  return _InterlockedCompareExchange64((LONGLONG volatile *)addr, (LONGLONG)new_val, (LONGLONG)old) == (LONGLONG)old
+  return _InterlockedCompareExchange64((LONGLONG volatile *)addr, (LONGLONG)new_val, (LONGLONG)old) == (LONGLONG)old;
 # elif _M_IX86 >= 400
   return _InterlockedCompareExchange((LONG volatile *)addr, (LONG)new_val, (LONG)old) == (LONG)old;
 # endif

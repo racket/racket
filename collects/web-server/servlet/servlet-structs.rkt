@@ -2,21 +2,23 @@
 (require racket/contract
          web-server/http)  
 
-(define k-url?
-  string?)
+(define (real-any->response x)
+  #f)
 
-(define response-generator/c
-  (k-url? . -> . response/c))
+(define (any->response x)
+  (if (response? x)
+      x
+      (real-any->response x)))
 
-(define expiration-handler/c
-  (or/c false/c
-        (request? . -> . response/c)))
+(define (set-any->response! f)
+  (set! real-any->response f))
 
-(define embed/url/c
-  ((request? . -> . any/c) . -> . string?))
+(define (can-be-response? x)
+  (or (response? x)
+      (and (any->response x)
+           #t)))
 
 (provide/contract
- [response-generator/c contract?]
- [k-url? (any/c . -> . boolean?)]
- [expiration-handler/c contract?]
- [embed/url/c contract?])
+ [any->response (-> any/c (or/c false/c response?))]
+ [set-any->response! (-> (-> any/c (or/c false/c response?)) void)]
+ [can-be-response? (-> any/c boolean?)])

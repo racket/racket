@@ -380,7 +380,7 @@
  (mfs-recur-over-subdirectories "Recurrir sobre subdirectorios")
  (mfs-regexp-filename-filter "Filtro de nombres de archivo con expresiones regulares")
  (mfs-search-string "Buscar cadena")
- (mfs-drscheme-multi-file-search "DrRacket - Búsqueda Multi Archivo")
+ (mfs-drscheme-multi-file-search "Búsqueda Multi Archivo  - DrRacket")
  (mfs-not-a-dir "\"~a\" no es un directorio")
  (mfs-open-file "Abrir Archivo")
  (mfs-stop-search "Detener Búsqueda")

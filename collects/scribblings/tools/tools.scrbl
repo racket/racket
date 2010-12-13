@@ -112,12 +112,12 @@ Each of the @scheme[drracket-tools] files must contain a module that
 @scheme[unit]. The unit
 must import the @scheme[drracket:tool^] signature, which is
 provided by the @FileFirst{tool.rkt} library in the
-@scheme[drscheme] collection. The @scheme[drracket:tool^]
+@scheme[drscheme] collection. The @as-index{@scheme[drracket:tool^]}
 signature contains all of the names listed in this manual.
 The unit must export the @scheme[drracket:tool-exports^]
 signature. 
 
-The @scheme[drracket:tool-exports^] signature contains two
+The @as-index{@scheme[drracket:tool-exports^]} signature contains two
 names: @scheme[phase1] and @scheme[phase2]. These names must
 be bound to thunks. After all of the tools are loaded, all of
 the @tt{phase1} functions are called and then all of the

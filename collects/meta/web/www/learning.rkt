@@ -66,11 +66,11 @@
       matter—so for your own good, we're going to forward your application to
       them anyway.
     @~ How many years have you programmed in Scheme?
-    @~ How many years have you programmed in PLT Scheme?
+    @~ How many years have you programmed in Racket?
     @~ If the two numbers above are not identical, justify.
-    @~ How many PLT Scheme Web applications have you written?
-    @~ What problems did you find with the PLT Scheme Web server in the
-       process?  Please list bug report numbers.
+    @~ How many Racket Web applications have you written?
+    @~ What problems did you find with the Racket Web server in the process?
+       Please list bug report numbers.
     @~ Which wheels did you inadvertently reinvent?
     @~ Do you prefer your calculi Classic or Featherweight?
     @~ Should types be intervals or ideals?

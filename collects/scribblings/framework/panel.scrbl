@@ -98,6 +98,12 @@
     horizontally aligned.
 
   }
+  
+  @defmethod[(set-orientation [horizontal? boolean?]) void?]{
+    Sets the orientation of the panel, switching it from behaving
+    like a @racket[panel:horizontal-dragable<%>] and 
+    @racket[panel:vertical-dragable<%>].
+  }
 }
 @definterface[panel:vertical-dragable<%> (panel:dragable<%>)]{
   A panel that implements

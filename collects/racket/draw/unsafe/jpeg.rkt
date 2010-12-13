@@ -35,6 +35,11 @@
 (define _J_DCT_METHOD _int)
 (define _J_DITHER_MODE _int)
 
+(define _jbool (if win64? 
+		   (make-ctype _byte
+			       (lambda (v) (if v 1 0))
+			       (lambda (v) (not (zero? v))))
+		   _bool))
 (define-enum
   0
   JCS_UNKNOWN
@@ -78,13 +83,13 @@
 (define _comp_info_size
   (case JPEG_LIB_VERSION
     [(62 70) _pointer]
-    [else (make-cstruct-type (list _pointer _bool))]))
+    [else (make-cstruct-type (list _pointer _jbool))]))
 
 (define-cstruct _jpeg_decompress_struct ([err _jpeg_error_mgr-pointer]
                                          [mem _jpeg_memory_mgr-pointer]
                                          [progress _pointer] ; _jpeg_progress_mgr_pointer
                                          [client_data _pointer]
-                                         [is_decompressor _bool]
+                                         [is_decompressor _jbool]
                                          [global_state _int]
                                          [src* _pointer] ; actually jpeg_source_mgr-pointer
 
@@ -99,20 +104,20 @@
 
                                          [output_gamma _double]
 
-                                         [buffered_image _bool]
-                                         [raw_data_out _bool]
+                                         [buffered_image _jbool]
+                                         [raw_data_out _jbool]
 
                                          [dct_method _J_DCT_METHOD]
-                                         [do_fancy_upsampling _bool]
-                                         [do_block_smoothing _bool]
+                                         [do_fancy_upsampling _jbool]
+                                         [do_block_smoothing _jbool]
 
-                                         [quantize_colors _bool]
+                                         [quantize_colors _jbool]
                                          [dither_mode _J_DITHER_MODE]
-                                         [two_pass_quantize _bool]
+                                         [two_pass_quantize _jbool]
                                          [desired_number_of_colors _int]
-                                         [enable_1pass_quant _bool]
-                                         [enable_external_quant _bool]
-                                         [enable_2pass_quant _bool]
+                                         [enable_1pass_quant _jbool]
+                                         [enable_external_quant _jbool]
+                                         [enable_2pass_quant _jbool]
 
                                          [output_width _JDIMENSION]
                                          [output_height _JDIMENSION]
@@ -151,8 +156,8 @@
 
                                          [comp_info&is_baseline _comp_info_size]
 
-                                         [progressive_mode _bool]
-                                         [arith_code _bool]
+                                         [progressive_mode _jbool]
+                                         [arith_code _jbool]
 
                                          [arith_dc_L_1 _uint8]
                                          [arith_dc_L_2 _uint8]
@@ -207,16 +212,16 @@
 
                                          [restart_interval _uint]
 
-                                         [saw_JFIF_marker _bool]
+                                         [saw_JFIF_marker _jbool]
                                          [JFIF_major_version _uint8]
                                          [JFIF_minor_version _uint8]
                                          [density_unit _uint8]
                                          [X_density _uint16]
                                          [Y_density _uint16]
-                                         [saw_Adobe_marker _bool]
+                                         [saw_Adobe_marker _jbool]
                                          [Adobe_transform _uint8]
 
-                                         [CCIR601_sampling _bool]
+                                         [CCIR601_sampling _jbool]
 
                                          [marker_list _pointer]
 
@@ -272,9 +277,9 @@
 (define-cstruct _jpeg_source_mgr ([next_input_byte _pointer] ;; /* => next byte to read from buffer */
                                   [bytes_in_buffer _size_t]  ;; /* # of bytes remaining in buffer */
                                   [init_source (_fun _j_decompress_ptr -> _void)]
-                                  [fill_input_buffer (_fun _j_decompress_ptr -> _bool)]
+                                  [fill_input_buffer (_fun _j_decompress_ptr -> _jbool)]
                                   [skip_input_data (_fun _j_decompress_ptr _long -> _void)]
-                                  [resync_to_restart (_fun _j_decompress_ptr _int -> _bool)]
+                                  [resync_to_restart (_fun _j_decompress_ptr _int -> _jbool)]
                                   [term_source (_fun _j_decompress_ptr -> _void)]
                                   ;; extra fields specific to this binding:
                                   [buffer _pointer]))
@@ -308,8 +313,8 @@
 
 (define _sampling_t
   (case JPEG_LIB_VERSION
-    [(62) _bool] ; just CCIR601_sampling
-    [else (make-cstruct-type (list _bool _bool))])) ; CCIR601_sampling and do_fancy_downsampling
+    [(62) _jbool] ; just CCIR601_sampling
+    [else (make-cstruct-type (list _jbool _jbool))])) ; CCIR601_sampling and do_fancy_downsampling
 
 (define-cstruct _factors_62_t ([max_h_samp_factor _int]
 			      [max_v_samp_factor _int]))
@@ -324,7 +329,7 @@
                                        [mem _jpeg_memory_mgr-pointer]
                                        [progress _pointer] ; _jpeg_progress_mgr_pointer
                                        [client_data _pointer]
-                                       [is_decompressor _bool]
+                                       [is_decompressor _jbool]
                                        [global_state _int]
 
                                        [dest* _pointer] ; actually jpeg_destination_mgr-pointer
@@ -342,7 +347,7 @@
                                        [jpeg_color_space _J_COLOR_SPACE]
 
                                        [comp_info _pointer]
-
+				       
 				       [quant_tbl _quant_tbl_t]
                                        
                                        [dc_huff_tbl_ptrs_1 _pointer]
@@ -408,9 +413,9 @@
                                        [num_scans _int]
                                        [scan_info _pointer]
 
-                                       [raw_data_in _bool]
-                                       [arith_code _bool]
-                                       [optimize_coding _bool]
+                                       [raw_data_in _jbool]
+                                       [arith_code _jbool]
+                                       [optimize_coding _jbool]
 				       [sampling _sampling_t]
                                        [smoothing_factor _int]
                                        [dct_method _J_DCT_METHOD]
@@ -418,17 +423,17 @@
                                        [restart_interval _uint]
                                        [restart_in_rows _int]
                                        
-                                       [write_JFIF_header _bool]
+                                       [write_JFIF_header _jbool]
                                        [JFIF_major_version _uint8]
                                        [JFIF_minor_version _uint8]
                                        [density_unit _uint8]
                                        [X_density _uint16]
                                        [Y_density _uint16]
-                                       [write_Adobe_marker _bool]
+                                       [write_Adobe_marker _jbool]
 
                                        [next_scanline _JDIMENSION]
 
-                                       [progressive_mode _bool]
+                                       [progressive_mode _jbool]
 				       [factors _factors_t]
 
                                        [total_iMCU_rows _JDIMENSION]
@@ -474,7 +479,7 @@
 (define-cstruct _jpeg_destination_mgr ([next_output_byte _pointer] ;; /* => next byte to write in buffer */
                                        [free_in_buffer _size_t]  ;; /* # of byte spaces remaining in buffer */
                                        [init_destination (_fun _j_compress_ptr -> _void)]
-                                       [empty_output_buffer (_fun _j_compress_ptr -> _bool)]
+                                       [empty_output_buffer (_fun _j_compress_ptr -> _jbool)]
                                        [term_destination (_fun _j_compress_ptr -> _void)]
                                        ;; extra fields specific to this binding:
                                        [buffer _pointer]))
@@ -632,16 +637,16 @@
 (define-jpeg/private jpeg_std_error (_fun _jpeg_error_mgr-pointer -> _jpeg_error_mgr-pointer))
 
 (define-jpeg/private jpeg_CreateDecompress (_fun _j_decompress_ptr _int _int -> _void))
-(define-jpeg/private jpeg_resync_to_restart (_fun _j_decompress_ptr _int -> _bool))
-(define-jpeg jpeg_read_header (_fun _j_decompress_ptr _bool -> _void))
+(define-jpeg/private jpeg_resync_to_restart (_fun _j_decompress_ptr _int -> _jbool))
+(define-jpeg jpeg_read_header (_fun _j_decompress_ptr _jbool -> _void))
 (define-jpeg jpeg_start_decompress (_fun _j_decompress_ptr -> _void))
 (define-jpeg jpeg_read_scanlines (_fun _j_decompress_ptr _pointer _int -> _void))
 (define-jpeg jpeg_finish_decompress (_fun _j_decompress_ptr -> _int))
 
 (define-jpeg/private jpeg_CreateCompress (_fun _j_compress_ptr _int _int -> _void))
 (define-jpeg jpeg_set_defaults (_fun _j_compress_ptr -> _int))
-(define-jpeg jpeg_set_quality (_fun _j_compress_ptr _int _bool -> _int))
-(define-jpeg jpeg_start_compress (_fun _j_compress_ptr _bool -> _void))
+(define-jpeg jpeg_set_quality (_fun _j_compress_ptr _int _jbool -> _int))
+(define-jpeg jpeg_start_compress (_fun _j_compress_ptr _jbool -> _void))
 (define-jpeg jpeg_write_scanlines (_fun _j_compress_ptr _pointer _int -> _void))
 (define-jpeg jpeg_finish_compress (_fun _j_compress_ptr -> _int))
 

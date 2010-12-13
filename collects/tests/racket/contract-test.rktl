@@ -89,9 +89,8 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (regexp-match?
-         (string-append "(^| )" (regexp-quote blame) " broke")
-         msg))
+        (define reg (string-append  "the implementation of " (regexp-quote blame)))
+        (regexp-match? reg msg))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
@@ -7946,6 +7945,87 @@
                 (make-s 1 (make-s 2 3))
                 'pos
                 'neg)))
+  
+  (test/spec-passed
+   'struct/c6
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s values)
+                         'pos
+                         'neg)])
+        ((s-f v) 3))))
+
+  (test/neg-blame
+   'struct/c7
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s values)
+                         'pos
+                         'neg)])
+        ((s-f v) #f))))
+
+  (test/pos-blame
+   'struct/c8
+   '(let ()
+      (define-struct s (f))
+      (let ([v (contract (struct/c s (-> number? number?))
+                         (make-s (λ (v) #f))
+                         'pos
+                         'neg)])
+        ((s-f v) 3))))
+  
+  (test/spec-passed
+   'struct/c9
+   '(let ()
+      (define-struct s (a b) #:mutable)
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-a! v 4)
+        (set-s-b! v #t))))
+
+  (test/neg-blame
+   'struct/c10
+   '(let ()
+      (define-struct s (a b) #:mutable)
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-a! v #f))))
+
+  (test/neg-blame
+   'struct/c11
+   '(let ()
+      (define-struct s (a [b #:mutable]))
+      (let ([v (contract (struct/c s integer? boolean?)
+                         (make-s 3 #t)
+                         'pos
+                         'neg)])
+        (set-s-b! v 5))))
+  
+  (test/spec-passed/result
+   'struct/c12
+   '(let ()
+      (define-struct s (a) #:mutable)
+      (define alpha (new-∃/c 'alpha))
+      (define v (make-s 3))
+      (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
+        (set-s-a! v* (s-a v*)))
+      (s-a v))
+   3)
+  
+  (test/neg-blame
+   'struct/c13
+   '(let ()
+      (define-struct s (a) #:mutable)
+      (define alpha (new-∃/c 'alpha))
+      (define v (make-s 3))
+      (let ([v* (contract (struct/c s alpha) v 'pos 'neg)])
+        (set-s-a! v* 4))))
 
   
 ;                                                                              
@@ -8015,6 +8095,26 @@
               #f
               'pos
               'neg))
+  
+  (test/spec-passed
+   'recursive-contract6
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons 2 3)) 'pos 'neg)))
+  
+  (test/pos-blame
+   'recursive-contract7
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons 2 #t)) 'pos 'neg)))
+  
+  (test/pos-blame
+   'recursive-contract8
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat)))])
+      (contract ctc (cons 1 (cons #t 3)) 'pos 'neg)))
+  
+  (test/spec-passed
+   'recursive-contract9
+   '(letrec ([ctc (or/c number? (hash/c (recursive-contract ctc #:chaperone) number?))])
+      (make-hash (list (cons (make-hash (list (cons 3 4))) 5)))))
   
   
 
@@ -8917,8 +9017,45 @@ so that propagation occurs.
   (ctest #t flat-contract? (and/c (flat-contract number?)
 				 (flat-contract integer?)))
   (ctest #t flat-contract? (let ()
-                            (define-struct s (a b))
-                            (struct/c s any/c any/c)))
+                             (define-struct s (a b))
+                             (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a b) #:mutable)
+                             (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (a b) #:mutable)
+                                  (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s ([a #:mutable] b))
+                             (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s ([a #:mutable] b))
+                                  (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a [b #:mutable]))
+                             (struct/c s any/c any/c)))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (a [b #:mutable]))
+                                  (struct/c s any/c any/c)))
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (f))
+                             (struct/c s (-> number? any))))
+  (ctest #t chaperone-contract? (let ()
+                                  (define-struct s (f))
+                                  (struct/c s (-> number? any))))
+  
+  (ctest #f flat-contract? (let ()
+                             (define-struct s (a) #:mutable)
+                             (define alpha (new-∃/c 'alpha))
+                             (struct/c s alpha)))
+  (ctest #f chaperone-contract? (let ()
+                                  (define-struct s (a) #:mutable)
+                                  (define alpha (new-∃/c 'alpha))
+                                  (struct/c s alpha)))
+  (ctest #t contract? (let ()
+                        (define-struct s (a) #:mutable)
+                        (define alpha (new-∃/c 'alpha))
+                        (struct/c s alpha)))
   
   ;; Hash contracts with flat domain/range contracts
   (ctest #t contract?           (hash/c any/c any/c #:immutable #f))
@@ -8990,6 +9127,19 @@ so that propagation occurs.
   (ctest #t contract?           (box/c trivial-proxy-ctc #:immutable #t))
   (ctest #f chaperone-contract? (box/c trivial-proxy-ctc #:immutable #t))
   (ctest #f flat-contract?      (box/c trivial-proxy-ctc #:immutable #t))
+  
+  ;; Test the ability to create different types of contracts with recursive-contract
+  (ctest #t flat-contract? (letrec ([ctc (or/c number? 
+                                               (cons/c (recursive-contract ctc #:flat)
+                                                       (recursive-contract ctc #:flat)))])
+                             ctc))
+  
+  (ctest #f flat-contract? (letrec ([ctc (or/c number? 
+                                               (box/c (recursive-contract ctc #:chaperone)))])
+                             ctc))
+  (ctest #t chaperone-contract? (letrec ([ctc (or/c number? 
+                                                    (box/c (recursive-contract ctc #:chaperone)))])
+                                  ctc))
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
@@ -9935,12 +10085,11 @@ so that propagation occurs.
     (test ctc value-contract (contract ctc (λ (x [y 3]) x) 'pos 'neg)))
   (let ([ctc (->i ([x number?]) ([y number?]) [_ number?])])
     (test ctc value-contract (contract ctc (λ (x [y 3]) x) 'pos 'neg)))
-  ;; currently fails due to procedure-rename interacting badly with
-  ;; chaperoned/proxied procedures
   (let ([ctc (unconstrained-domain-> number?)])
     (test ctc value-contract (contract ctc (λ (x) 3) 'pos 'neg)))
   (let ([ctc (case-> (-> number? number? number?) (-> number? number?))])
     (test ctc value-contract (contract ctc (case-lambda [(x) 3] [(x y) (+ x y)]) 'pos 'neg)))
+
   (let ([ctc (box/c number?)])
     (test ctc value-contract (contract ctc (box 3) 'pos 'neg)))
   (let ([ctc (hash/c number? number?)])

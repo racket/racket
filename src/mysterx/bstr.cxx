@@ -21,7 +21,9 @@ static
 LPWSTR schemeUCS4ToUTF16 (const mzchar * buffer, int nchars, long * result_length)
 {
   LPWSTR s;
-  s = (LPWSTR) scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, result_length, 1);
+  intptr_t rl;
+  s = (LPWSTR) scheme_ucs4_to_utf16 (buffer, 0, nchars, NULL, 0, &rl, 1);
+  *result_length = rl;
   s[*result_length] = 0;
   return s;
 }
@@ -29,7 +31,7 @@ LPWSTR schemeUCS4ToUTF16 (const mzchar * buffer, int nchars, long * result_lengt
 static
 LPWSTR schemeUTF8ToUTF16 (const unsigned char * buffer, int buflen, long * result_length)
 {
-  long nchars;
+  intptr_t nchars;
   mzchar * ucs4;
   ucs4 = scheme_utf8_decode_to_buffer_len (buffer, buflen, NULL, 0, &nchars);
   return schemeUCS4ToUTF16 (ucs4, nchars, result_length);
@@ -132,7 +134,7 @@ Scheme_Object * multiByteToSchemeCharString (const char * mbstr)
   int len;
   WCHAR * wide;
   HRESULT hr;
-  long nchars;
+  intptr_t nchars;
   mzchar * ucs4;
 
   len = (int) strlen (mbstr);
@@ -163,7 +165,7 @@ BSTR multiByteToBSTR (LPCSTR text, UINT len)
   return bstr;
 }
 
-BSTR textToBSTR (LPCTSTR text, UINT length)
+BSTR textToBSTR (LPCTSTR text, size_t length)
 {
 #ifdef UNICODE
   return SysAllocStringLen (text, length);
@@ -175,7 +177,7 @@ BSTR textToBSTR (LPCTSTR text, UINT length)
 Scheme_Object * BSTRToSchemeString (BSTR bstr)
 {
   UINT length;
-  long nchars;
+  intptr_t nchars;
   mzchar * string;
 
   length = SysStringLen (bstr);
@@ -189,7 +191,7 @@ Scheme_Object * BSTRToSchemeString (BSTR bstr)
 Scheme_Object * LPOLESTRToSchemeString (LPOLESTR str)
 {
   UINT length;
-  long nchars;
+  intptr_t nchars;
   mzchar * string;
 
   length = wcslen (str);
@@ -203,7 +205,7 @@ Scheme_Object * LPOLESTRToSchemeString (LPOLESTR str)
 Scheme_Object * BSTRToSchemeSymbol (BSTR bstr)
 {
   UINT length;
-  long nchars;
+  intptr_t nchars;
   mzchar * string;
 
   length = SysStringLen (bstr);
@@ -229,9 +231,9 @@ static
 void updateSchemeByteStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 {
   UINT len;
-  long nchars;
+  intptr_t nchars;
   mzchar * string;
-  long ncodes;
+  intptr_t ncodes;
 
   len = SysStringLen (bstr);
   string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, len,
@@ -250,7 +252,7 @@ static
 void updateSchemeCharStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 {
   UINT len;
-  long ulen;
+  intptr_t ulen;
 
   len = SysStringLen (bstr);
 
@@ -286,7 +288,7 @@ void updateSchemeFromBSTR (Scheme_Object *obj, BSTR bstr)
 }
 
 
-BSTR stringToBSTR (LPCSTR s, UINT len)
+BSTR stringToBSTR (LPCSTR s, size_t len)
 {
   BSTR bstr;
 

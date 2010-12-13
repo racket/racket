@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse
+(require syntax/parse unstable/syntax
          scheme/list scheme/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
@@ -62,7 +62,7 @@
                     (and (isoftype? (cadr p) -FloatComplex)
                          (could-be-unboxed-in? (car (syntax-e (car p)))
                                                #'(begin body ...))))
-                  (map syntax->list (syntax->list #'(clause ...)))))
+                  (syntax-map syntax->list #'(clause ...))))
                 ((function-candidates others)
                  ;; extract function bindings that have float-complex arguments
                  ;; we may be able to pass arguments unboxed
@@ -142,7 +142,7 @@
                         (opt-candidates.bindings ... ...
                          opt-functions.res ...
                          opt-others.res ...)
-                      #,@(map (optimize) (syntax->list #'(body ...)))))))
+                      #,@(syntax-map (optimize) #'(body ...))))))
 
 (define-splicing-syntax-class let-like-keyword
   #:commit
@@ -185,13 +185,13 @@
         ([ids e-rhs:expr] ...) e-body:expr ...)
        #:with rebindings
        (filter (lambda (x) x)
-               (map (syntax-parser
-                     [((id) rhs)
-                      #:when (and (identifier? #'rhs)
-                                  (free-identifier=? v #'rhs))
-                      #'id]
-                     [_ #f])
-                    (syntax->list #'((ids e-rhs) ...))))
+               (syntax-map (syntax-parser
+                            [((id) rhs)
+                             #:when (and (identifier? #'rhs)
+                                         (free-identifier=? v #'rhs))
+                             #'id]
+                            [_ #f])
+                           #'((ids e-rhs) ...)))
        (or (look-at #'(e-rhs ... e-body ...))
            (ormap (lambda (x) (could-be-unboxed-in? x exp))
                   (syntax->list #'rebindings)))]
@@ -288,15 +288,15 @@
            #:when (syntax->datum #'unboxed-info)
            ;; partition of the arguments
            #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
-           #:with (real-params ...) (map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                                         (syntax->list #'(to-unbox ...)))
-           #:with (imag-params ...) (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                                         (syntax->list #'(to-unbox ...)))
+           #:with (real-params ...) (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
+                                                #'(to-unbox ...))
+           #:with (imag-params ...) (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
+                                                #'(to-unbox ...))
            #:with res
            (begin
              (log-optimization "fun -> unboxed fun" #'v)
              ;; add unboxed parameters to the unboxed vars table
-             (let ((to-unbox (map syntax->datum (syntax->list #'(to-unbox ...)))))
+             (let ((to-unbox (syntax-map syntax->datum #'(to-unbox ...))))
                (let loop ((params     (syntax->list #'params))
                           (i          0)
                           (real-parts (syntax->list #'(real-params ...)))
@@ -308,7 +308,7 @@
                         ;; be inserted when optimizing the body
                         #`((v) (#%plain-lambda
                                 (real-params ... imag-params ... #,@(reverse boxed))
-                                #,@(map (optimize) (syntax->list #'(body ...)))))]
+                                #,@(syntax-map (optimize) #'(body ...))))]
 
                        [(memq i to-unbox) ; we unbox the current param, add to the table
                         (dict-set! unboxed-vars-table (car params)

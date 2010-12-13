@@ -13,6 +13,7 @@
          web-server/configuration/responders
          web-server/private/mime-types
          web-server/servlet/setup
+         web-server/servlet/servlet-structs
          web-server/servlet-dispatch
          unstable/contract
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
@@ -38,7 +39,7 @@
         "web-server/default-web-root"))
 
 (provide/contract
- [serve/servlet (((request? . -> . response/c))
+ [serve/servlet (((request? . -> . can-be-response?))
                  (#:connection-close? boolean?
                   #:command-line? boolean?
                   #:launch-browser? boolean?
@@ -57,7 +58,7 @@
                   #:extra-files-paths (listof path-string?)
                   #:servlets-root path-string?
                   #:servlet-current-directory path-string?
-                  #:file-not-found-responder (request? . -> . response/c)
+                  #:file-not-found-responder (request? . -> . can-be-response?)
                   #:mime-types-path path-string?
                   #:servlet-path string?
                   #:servlet-regexp regexp?
@@ -172,7 +173,7 @@
       #:url->path (fsmap:make-url->path (build-path server-root-path "htdocs"))
       #:path->mime-type (make-path->mime-type mime-types-path)
       #:indices (list "index.html" "index.htm"))
-     (lift:make file-not-found-responder)))
+     (lift:make (compose any->response file-not-found-responder))))
   (serve/launch/wait
    dispatcher  
    #:connection-close? connection-close?

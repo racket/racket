@@ -350,7 +350,7 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *what, Scheme
   if (len) {
     intptr_t n = len - 1;
     char *vstr;
-    int vlen;
+    intptr_t vlen;
     vstr = scheme_make_provided_string(vec, 2, &vlen);
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		     "%s: index %s out of range [%ld, %ld] for %s: %t",

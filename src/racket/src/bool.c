@@ -448,7 +448,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return 0;
   } else if (SCHEME_BYTE_STRINGP(obj1)
 	     || SCHEME_GENERAL_PATHP(obj1)) {
-    int l1, l2;
+    intptr_t l1, l2;
     if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
                                       || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
@@ -457,7 +457,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return ((l1 == l2)
 	    && !memcmp(SCHEME_BYTE_STR_VAL(obj1), SCHEME_BYTE_STR_VAL(obj2), l1));
   } else if (SCHEME_CHAR_STRINGP(obj1)) {
-    int l1, l2;
+    intptr_t l1, l2;
     if ((eql->for_chaperone == 1) && (!SCHEME_IMMUTABLEP(obj1)
                                       || !SCHEME_IMMUTABLEP(obj2)))
       return 0;
@@ -615,7 +615,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 
 static int vector_equal(Scheme_Object *vec1, Scheme_Object *vec2, Equal_Info *eql)
 {
-  int i, len;
+  intptr_t i, len;
 
   len = SCHEME_VEC_SIZE(vec1);
   if (len != SCHEME_VEC_SIZE(vec2))

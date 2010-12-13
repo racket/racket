@@ -1214,16 +1214,16 @@ void scheme_check_future_work()
     if (ft && ft->want_lw) {
       void *storage[3];
 
-      (void)capture_future_continuation(ft, storage);
-
-      /* Signal the waiting worker thread that it
-         can continue doing other things: */
-      mzrt_mutex_lock(fs->future_mutex);
-      if (ft->can_continue_sema) {
-        mzrt_sema_post(ft->can_continue_sema);
-        ft->can_continue_sema = NULL;
+      if (capture_future_continuation(ft, storage)) {
+        /* Signal the waiting worker thread that it
+           can continue doing other things: */
+        mzrt_mutex_lock(fs->future_mutex);
+        if (ft->can_continue_sema) {
+          mzrt_sema_post(ft->can_continue_sema);
+          ft->can_continue_sema = NULL;
+        }
+        mzrt_mutex_unlock(fs->future_mutex);
       }
-      mzrt_mutex_unlock(fs->future_mutex);
     } else
       break;
   }
@@ -1276,7 +1276,7 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
      to suspend wouldn't accomplish anything). */
   insist_to_suspend = !is_atomic;
   prefer_to_suspend = (insist_to_suspend || fs->future_queue_count);
-  
+
   if (prefer_to_suspend
       && GC_gen0_alloc_page_ptr 
       && capture_future_continuation(future, storage)) {

@@ -27,7 +27,9 @@ This module provides the exports from @racketmodname[net/websocket/client] and @
 
 @defmodule[net/websocket/client]
 
-@defproc[(ws-url? [x any/c]) boolean?]{ Returns true if @racket[x] is a @racket[url?] and has a @racket[url-scheme] equal to @litchar["ws"]. }
+@defproc[(ws-url? [x any/c]) boolean?]{ Returns true if @racket[x] is a @racket[url?] and has a @racket[url-scheme] equal to @litchar["ws"] or @litchar["wss"]. }
+
+@defproc[(wss-url? [x any/c]) boolean?]{ Returns true if @racket[x] is a @racket[url?] and has a @racket[url-scheme] equal to @litchar["wss"]. }
 
 @defproc[(ws-connect [u ws-url?]
                      [#:headers headers (listof header?) empty])

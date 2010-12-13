@@ -28,8 +28,14 @@ extern "C" {
 #if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
 # define USE_THREAD_LOCAL
 # if _MSC_VER
-#  define THREAD_LOCAL /* empty */
-#  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+#  ifdef _WIN64
+#   define THREAD_LOCAL __declspec(thread)
+#   define MZ_THREAD_EXTERN extern
+#   define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
+#  else
+#   define THREAD_LOCAL /* empty */
+#   define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+#  endif
 # elif (defined(__APPLE__) && defined(__MACH__)) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
@@ -60,6 +66,10 @@ extern "C" {
 #endif
 
 #define MZ_EXTERN extern MZ_DLLSPEC
+
+#ifndef MZ_THREAD_EXTERN
+# define MZ_THREAD_EXTERN MZ_EXTERN
+#endif
 
 MZ_EXTERN void scheme_init_os_thread();
 
@@ -385,10 +395,24 @@ XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 # endif
 #else
 /* Using `THREAD_LOCAL' variable: */
-MZ_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
-# define scheme_get_thread_local_variables() (&scheme_thread_locals)
-# ifdef MZ_XFORM
+# if defined(IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC) && !defined(__mzscheme_private__)
+#  ifdef MZ_XFORM
+START_XFORM_SKIP;
+#  endif
+MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+  return scheme_external_get_thread_local_variables();
+}
+#  ifdef MZ_XFORM
+END_XFORM_SKIP;
+XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
+#  endif
+# else
+MZ_THREAD_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
+#  define scheme_get_thread_local_variables() (&scheme_thread_locals)
+#  ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
+#  endif
 # endif
 #endif
 

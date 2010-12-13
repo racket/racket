@@ -97,6 +97,7 @@
 (define -Boolean (make-Base 'Boolean #'boolean?))
 (define -Symbol (make-Base 'Symbol #'symbol?))
 (define -Void (make-Base 'Void #'void?))
+(define -Undefined (make-Base 'Undefined #'(lambda (x) (equal? (letrec ([y y]) y) x)))) ; initial value of letrec bindings
 (define -Bytes (make-Base 'Bytes #'bytes?))
 (define -Regexp (make-Base 'Regexp #'(and/c regexp? (not/c pregexp?) (not/c byte-regexp?))))
 (define -PRegexp (make-Base 'PRegexp #'(and/c pregexp? (not/c byte-pregexp?))))

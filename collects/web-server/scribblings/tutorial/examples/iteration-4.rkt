@@ -21,7 +21,7 @@
   (set-blog-posts! a-blog
                    (cons a-post (blog-posts a-blog))))
 
-;; start: request -> html-response
+;; start: request -> doesn't
 ;; Consumes a request and produces a page that displays
 ;; all of the web content.
 (define (start request)
@@ -33,19 +33,20 @@
   (post (extract-binding/single 'title bindings)
         (extract-binding/single 'body bindings)))
 
-;; render-blog-page: request -> html-response
-;; Produces an html-response page of the content of the BLOG.
+;; render-blog-page: request -> doesn't
+;; Produces an HTML page of the content of the BLOG.
 (define (render-blog-page request)
-  (local [(define (response-generator make-url)        
-            `(html (head (title "My Blog"))
-                   (body 
-                    (h1 "My Blog")
-                    ,(render-posts)
-                    (form ((action 
-                            ,(make-url insert-post-handler)))
-                          (input ((name "title")))
-                          (input ((name "body")))
-                          (input ((type "submit")))))))
+  (local [(define (response-generator make-url)  
+            (response/xexpr
+             `(html (head (title "My Blog"))
+                    (body 
+                     (h1 "My Blog")
+                     ,(render-posts)
+                     (form ((action 
+                             ,(make-url insert-post-handler)))
+                           (input ((name "title")))
+                           (input ((name "body")))
+                           (input ((type "submit"))))))))
           
           (define (insert-post-handler request)
             (blog-insert-post! 
@@ -54,15 +55,15 @@
     
     (send/suspend/dispatch response-generator)))
 
-;; render-post: post -> html-response
-;; Consumes a post, produces an html-response fragment of the post.
+;; render-post: post -> xexpr
+;; Consumes a post, produces an xexpr fragment of the post.
 (define (render-post a-post)
   `(div ((class "post")) 
         ,(post-title a-post)
         (p ,(post-body a-post))))
 
-;; render-posts: -> html-response
-;; Consumes a blog, produces an html-response fragment
+;; render-posts: -> xexpr
+;; Consumes a blog, produces an xexpr fragment
 ;; of all its posts.
 (define (render-posts)
   `(div ((class "posts"))

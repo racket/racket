@@ -37,5 +37,5 @@
     (error 'record? "(~s, ~s) didn't record proper number of images: ~s" n dir 
            number-of-png)))
 
-(create-n-images 3 4 "images3/")
+(create-n-images 3 3 "images3/")
 (create-n-images 0 0 "images0/")

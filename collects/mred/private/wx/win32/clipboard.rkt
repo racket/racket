@@ -10,7 +10,8 @@
          "const.rkt"
          "../../syntax.rkt"
          "wndclass.rkt"
-         "hbitmap.rkt")
+         "hbitmap.rkt"
+         "../common/local.rkt")
 
 (provide 
  (protect-out clipboard-driver%

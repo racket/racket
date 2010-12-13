@@ -79,7 +79,7 @@ of the contract library does not change over time.
     (let ()
       (define (has-proper-blame? msg)
         (regexp-match?
-         (string-append "(^| )" (regexp-quote blame) " broke")
+         (string-append  "the implementation of " (regexp-quote blame))
          msg))
       (printf "testing: ~s\n" name)
       (contract-eval

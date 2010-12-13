@@ -34,7 +34,7 @@ A stateless servlet should @racket[provide] the following exports:
 }
 
 @defproc[(start [initial-request request?])
-         response/c]{
+         response?]{
  This function is called when an instance of this servlet is started.
  The argument is the HTTP request that initiated the instance.
 }
@@ -49,7 +49,8 @@ An example @racket['stateless] servlet module:
    serialize-stuffer
    (md5-stuffer (build-path (find-system-path 'home-dir) ".urls"))))
  (define (start req)
-   `(html (body (h2 "Look ma, no state!"))))
+   (response/xexpr
+    `(html (body (h2 "Look ma, no state!")))))
 ]
 
 

@@ -534,7 +534,7 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "サブディレクトリ内を再帰的に検索")
  (mfs-regexp-filename-filter "ファイル名を正規表現でフィルタ")
  (mfs-search-string "検索語")
- (mfs-drscheme-multi-file-search "DrRacket - 複数ファイルからの検索") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "複数ファイルからの検索 - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" はディレクトリではありません")
  (mfs-open-file "ファイルを開く")
  (mfs-stop-search "検索を中止")

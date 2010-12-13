@@ -518,7 +518,7 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
 /*========================================================================*/
 
 Scheme_Bucket_Table *
-scheme_make_bucket_table (int size, int type)
+scheme_make_bucket_table (intptr_t size, int type)
 {
   Scheme_Bucket_Table *table;
   size_t asize;

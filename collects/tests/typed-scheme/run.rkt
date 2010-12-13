@@ -30,13 +30,15 @@
  (cond [(and (unit?) (int?)) tests]
        [(unit?)              unit-tests]
        [(int?)               int-tests]
-       [else                 #f]))
+       [(the-tests)          (the-tests)]
+       [else
+        (error "You must specify which tests should be run. See --help for more info.\n")]))
 
 (cond [(and (nightly?) (eq? 'cgc (system-type 'gc)))
        (printf "Skipping Typed Racket tests.\n")]
       [(when (the-tests)
          (unless (= 0 ((exec) (the-tests)))
-           (eprintf "Typed Racket Tests did not pass.")))
+           (eprintf "Typed Racket Tests did not pass.\n")))
        (when (opt?)
          (parameterize ([current-command-line-arguments #()])
            (dynamic-require '(file "optimizer/run.rkt") #f))

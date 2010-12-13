@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require web-server/dispatch/syntax
          web-server/dispatch/serve
          web-server/dispatch/url-patterns

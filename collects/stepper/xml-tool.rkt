@@ -354,6 +354,9 @@
              (let ([char (send text get-character pos)])
                (case char
                  [(#\>) #f]
+                 [(#\/) (if last-space
+                            (loop (- pos 1) last-space)
+                            #f)]
                  [(#\<) 
                   (if (or (char=? (send text get-character (+ pos 1)) #\/)
                           (char=? (send text get-character (+ pos 1)) #\>))

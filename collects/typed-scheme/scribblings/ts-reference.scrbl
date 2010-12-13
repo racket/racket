@@ -216,7 +216,8 @@ by @racket[read].}
 @defform[(U t ...)]{is the union of the types @racket[t ...].
  @ex[(λ: ([x : Real])(if (> 0 x) "yes" 'no))]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
-  the @racket[fun-ty]s.  The @racket[fun-ty]s must all be function
+  the @racket[fun-ty]s, considered in order from first to last. 
+  The @racket[fun-ty]s must all be function
   types constructed with @racket[->].}
 @defform/none[(t t1 t2 ...)]{is the instantiation of the parametric type
   @racket[t] at types @racket[t1 t2 ...]}

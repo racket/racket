@@ -2550,8 +2550,8 @@ Scheme_Object *mx_com_event_type(int argc, Scheme_Object **argv)
 
 BOOL schemeValueFitsVarType(Scheme_Object *val, VARTYPE vt)
 {
-  long int longInt;
-  unsigned long uLongInt;
+  intptr_t longInt;
+  uintptr_t uLongInt;
 
   switch (vt) {
 
@@ -2765,8 +2765,10 @@ void marshalSchemeValueToVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
   }
 
   else if (SCHEME_EXACT_INTEGERP(val)) {
+    intptr_t lv;
     pVariantArg->vt = VT_I4;
-    scheme_get_int_val(val, &pVariantArg->lVal);
+    scheme_get_int_val(val, &lv);
+	pVariantArg->lVal = lv;
   }
 
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -2834,8 +2836,10 @@ void marshalSchemeValueToVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
   else if (scheme_apply(mx_marshal_raw_scheme_objects, 0, NULL) == scheme_false)
     scheme_signal_error("Unable to inject Scheme value %V into VARIANT", val);
   else {
+    uintptr_t v2;
     pVariantArg->vt = VT_INT;
-    pVariantArg->intVal = PtrToInt(val);
+    v2 = PtrToInt(val);
+    pVariantArg->intVal = v2;
   }
   return;
 }
@@ -3359,7 +3363,7 @@ void unmarshalArgSchemeObject(Scheme_Object *obj,VARIANTARG *pVariantArg) {
 
   case VT_I4 | VT_BYREF :
 
-    long lVal;
+    intptr_t lVal;
 
     if (SCHEME_EXACT_INTEGERP(val) == FALSE) {
       handlerUpdateError("exact integer");
@@ -4157,6 +4161,7 @@ void allocateDirectRetval(VARIANT *va)
   }
 }
 
+#ifndef _WIN64
 static VARIANT argVas[MAXDIRECTARGS];
 static VARIANT optArgVas[MAXDIRECTARGS];
 
@@ -4276,6 +4281,7 @@ END_XFORM_SKIP;
 
   return retval;
 }
+#endif
 
 static Scheme_Object *mx_make_call(int argc, Scheme_Object **argv,
                                    INVOKEKIND invKind)
@@ -4311,6 +4317,7 @@ static Scheme_Object *mx_make_call(int argc, Scheme_Object **argv,
 
   pTypeDesc = getMethodType((MX_COM_Object *)argv[0], name, invKind);
 
+#ifndef _WIN64
   // try direct call via function pointer
   // otherwise, use COM Automation
 
@@ -4320,6 +4327,7 @@ static Scheme_Object *mx_make_call(int argc, Scheme_Object **argv,
       (retval = mx_make_direct_call(argc, argv, invKind,
                                     pIDispatch, name, pTypeDesc)))
     return retval;
+#endif
 
   if (pTypeDesc) dispid = pTypeDesc->memID;
 
@@ -5380,8 +5388,10 @@ void browserHwndMsgLoop(LPVOID p)
 
 # if _MSC_VER < 1400
 #   define ATLWINDOWTITLE "AtlAxWin71"
-# else
+# elif _MSC_VER < 1500
 #   define ATLWINDOWTITLE "AtlAxWin80"
+# else
+#   define ATLWINDOWTITLE "AtlAxWin90"
 # endif
   hwnd = CreateWindow(ATLWINDOWTITLE,
                       "myspage.DHTMLPage.1",
@@ -5407,7 +5417,9 @@ void browserHwndMsgLoop(LPVOID p)
     SetWindowLong(hwnd, GWL_STYLE,
                   GetWindowLong(hwnd, GWL_STYLE) & ~1L);
 
+#ifndef _WIN64
   SetClassLong(hwnd, GCL_HICON, HandleToLong(hIcon));
+#endif
 
   SetWindowText(hwnd, pBrowserWindowInit->browserWindow.label);
 

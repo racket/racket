@@ -259,7 +259,7 @@
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list -InexactReal) -InexactReal -InexactReal))
                   (list (->* (list -Real) -Real -Real))
-                  (list (->* (list) (Un -Real -FloatComplex) -FloatComplex))
+                  (list (->* (list (Un -Real -FloatComplex)) (Un -Real -FloatComplex) -FloatComplex))
                   (list (->* (list -FloatComplex) N -FloatComplex))
                   (list (->* (list N -FloatComplex) N -FloatComplex))
                   (list (->* (list N) N N))))]

@@ -3,9 +3,15 @@
          racket/contract)
 (require "manager.rkt")
 (require web-server/private/timer
+         web-server/http
          web-server/servlet/servlet-structs)
 (provide/contract
- [create-timeout-manager (expiration-handler/c number? number? . -> . manager?)])
+ [create-timeout-manager 
+  (->
+   (or/c false/c
+         (request? . -> . can-be-response?))
+   number? number? 
+   manager?)])
 
 ;; Utility
 (define (make-counter)

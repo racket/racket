@@ -1,8 +1,8 @@
 This directory contains
 
   - solution files and project files for building Racket and GRacket
-    with Microsoft Visual Studio 8.0 and up (which work with the Express
-    2005 version of Visual Studio);
+    with Microsoft Visual Studio 2008 (a.k.a. version 9.0) and up,
+    which work with the Express version of Visual Studio;
 
   - mzconfig.h which is a manual version of information that is gathered
     automatically when using the "configure" script;
@@ -11,7 +11,7 @@ This directory contains
     Studio command-line tools; and
 
   - solution files and project files for building MzCOM and MysterX with
-    Microsoft Visual Studio 8.0 (not Express, which doesn't support ATL
+    Microsoft Visual Studio 2008 (not Express, which doesn't support ATL
     and MFC).
 
 Visual Studio Express is available for free from Microsoft; it can be
@@ -41,21 +41,23 @@ As always, please report bugs via one of the following:
 Building Racket and GRacket
 ---------------------------
 
-If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
+If you're using MSVC 2008 (not Express), and if `devenv.exe' is in your
 path, then you can just run
     racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM and MysterX steps.
+
+If your MSVC environment is configured for 64-bit builds (e.g., by
+running "vcvarsall.bat" with "x64), then a 64-bit build is created.
 
 The CGC variants of Racket, GRacket, MzCOM, and MysterX can be built via
 Visual Studio projects.  The 3m variants are built by a Racket script
 that runs the MSVC command-line tools.  (See "CGC versus 3m" in
 racket\src\README if you don't know about the two variants.)
 
-The 3m build requires:
-    racket\src\worksp\racket
-It's simplest to just build the main CGC solutions, which automatically
-build all of the above projects, and then build 3m.
+
+If you can't run "build.bat" or don't want to, you have to perform
+several steps: first builg RacketCGC, then build Racket3m, etc.
 
 Building RacketCGC and GRacketCGC
 ---------------------------------
@@ -85,7 +87,15 @@ In addition, building RacketCGC executes
     racket\src\racket\dynsrc\mkmzdyn.bat
 which copies .exp, .obj, and .lib files into racket\lib\.
 
-Finally, you must install pre-build DLLs that GRacket needs to run.
+Downloading Pre-Built Binaries
+-------------------------------
+
+You must install some pre-built DLLs if you want text-encoding
+converts, OpenSSL support, `racket/draw', or `racket/gui' support.
+In principle, you could build them from scratch, but since they
+are (mostly) maintained by people and organizations other than
+PLT, we supply them in binary form.
+
 The DLLs are available from
 
     http://download.racket-lang.org/libs/
@@ -97,14 +107,13 @@ and they must be installed into
 The "get-libs.rkt" script in "racket\src" can download the libraries,
 and the script is used by "build.bat".
 
-
 Building Racket3m and GRacket3m
 -------------------------------
 
 After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
 
   1. Ensure that the Visual Studio command-line tools are in your path.
-     You may need to run "vsvars32.bat" from your Visual Studio
+     You may need to run "vcvarsall.bat" from your Visual Studio
      installation, so that PATH and other environment variables are set.
 
   2. Change directories to racket\src\worksp\gc2 and run
@@ -254,7 +263,7 @@ The libraries
     racket\lib\win32\msvc\libracketxxxxxxx.lib
     racket\lib\win32\msvc\libmzgcxxxxxxx.lib
 
-which are created by the mzsrc and gc projects, provide linking
+which are created by the libracket and libmzgc projects, provide linking
 information for using the libracket3mxxxxxxx.dll, libracketxxxxxxx.dll,
 and libmzgcxxxxxxx.dll DLLs.  The versioning script adjusts the names,
 as described above.

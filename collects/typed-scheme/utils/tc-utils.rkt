@@ -1,7 +1,7 @@
 #lang scheme/base
 
 #|
-This file is for utilities that are only useful for Typed Scheme, but
+This file is for utilities that are only useful for Typed Racket, but
 don't depend on any other portion of the system
 |#
 
@@ -52,7 +52,7 @@ don't depend on any other portion of the system
                (and (syntax-transforming?) (syntax-original? (syntax-local-introduce e)))
                #;(and (orig-module-stx) (eq? (debugf syntax-source-module e) (debugf syntax-source-module (orig-module-stx))))
 	       #;(syntax-source-module stx))
-      (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~.s" (syntax->datum (locate-stx e)))
+      (log-message l 'warning (format "Typed Racket has detected unreachable code: ~.s" (syntax->datum (locate-stx e)))
                    e))))
 
 (define (locate-stx stx)

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse syntax/id-table scheme/dict
+(require syntax/parse syntax/id-table scheme/dict unstable/syntax
          "../utils/utils.rkt" racket/unsafe/ops
          (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
          (types abbrev)
@@ -71,8 +71,7 @@
                                 (let ()
                                   ;; unlike addition, we simply can't skip real parts of imaginaries
                                   (define (skip-0s l)
-                                    (let* ((l1 (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                                                    (syntax->list l)))
+                                    (let* ((l1 (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0)) l))
                                            ;; but we can skip all but the first 0
                                            (l2 (filter (lambda (x) (not (equal? (syntax->datum x) 0.0)))
                                                        (cdr l1))))
@@ -98,19 +97,19 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
-                     #,@(let ((lr (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                                       (syntax->list #'(c1.real-binding c2.real-binding cs.real-binding ...))))
-                              (li (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                                       (syntax->list #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))
+                     #,@(let ((lr (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                              #'(c1.real-binding c2.real-binding cs.real-binding ...)))
+                              (li (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                              #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))))
                           (let loop ([o1 (car lr)]
                                      [o2 (car li)]
                                      [e1 (cdr lr)]
                                      [e2 (cdr li)]
-                                     [rs (append (map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                                                      (syntax->list #'(cs.real-binding ...)))
+                                     [rs (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
+                                                             #'(cs.real-binding ...))
                                                  (list #'real-binding))]
-                                     [is (append (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                                                      (syntax->list #'(cs.imag-binding ...)))
+                                     [is (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
+                                                             #'(cs.imag-binding ...))
                                                  (list #'imag-binding))]
                                      [res '()])
                             (if (null? e1)
@@ -142,10 +141,10 @@
            #:when (or (isoftype? this-syntax -FloatComplex) (isoftype? this-syntax -Number))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
-           #:with reals (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                             (syntax->list #'(c1.real-binding c2.real-binding cs.real-binding ...)))
-           #:with imags (map (lambda (x) (if (syntax->datum x) x #'0.0))
-                             (syntax->list #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))
+           #:with reals (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                    #'(c1.real-binding c2.real-binding cs.real-binding ...))
+           #:with imags (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
+                                    #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary float complex" #'op)
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
@@ -155,14 +154,14 @@
                                    [o2 (car (syntax->list #'imags))]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
-                                   [rs (append (map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                                                    (syntax->list #'(cs.real-binding ...)))
+                                   [rs (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
+                                                           #'(cs.real-binding ...))
                                                (list #'real-binding))]
-                                   [is (append (map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                                                    (syntax->list #'(cs.imag-binding ...)))
+                                   [is (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
+                                                           #'(cs.imag-binding ...))
                                                (list #'imag-binding))]
-                                   [ds (map (lambda (x) (unboxed-gensym))
-                                            (syntax->list #'(c2.real-binding cs.real-binding ...)))]
+                                   [ds (syntax-map (lambda (x) (unboxed-gensym))
+                                                   #'(c2.real-binding cs.real-binding ...))]
                                    [res '()])
                           (if (null? e1)
                               (reverse res)

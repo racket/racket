@@ -343,30 +343,30 @@
   (test-empty '(number ... number ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() 'none)))
   (test-empty '(number ... number ...) '(1 1) (list (make-test-mtch (make-bindings (list (make-bind 'number '(1)))) '(1 1) 'none)))
   (test-empty '(number ... number ...) '(1 2 1 2) (list (make-test-mtch (make-bindings (list (make-bind 'number '(1 2)))) '(1 2 1 2) 'none)))
-  (test-empty '(number ... number ...) '(1 2) #f)
+ (test-empty '(number ... number ...) '(1 2) #f)
   
-  (test-empty '((number ... number ...) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() 'none)))
-  (test-empty '((number ... number ...) ...) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'number '(())))) '(()) 'none)))
-  (test-empty '((number ... number ...) ...) '((1 1)) (list (make-test-mtch (make-bindings (list (make-bind 'number '((1))))) '((1 1)) 'none)))
-  (test-empty '((number ... number ...) ...) '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 6)) (list (make-test-mtch (make-bindings 
-                                                                                                               (list (make-bind 'number '((1) (2) (1 2 3) (4 5 6)))))
-                                                                                                              '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 6))
-                                                                                                              'none)))
-  (test-empty '((number ... number ...) ...) '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 -6)) #f)
+;  (test-empty '((number ... number ...) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() 'none)))
+;  (test-empty '((number ... number ...) ...) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'number '(())))) '(()) 'none)))
+;  (test-empty '((number ... number ...) ...) '((1 1)) (list (make-test-mtch (make-bindings (list (make-bind 'number '((1))))) '((1 1)) 'none)))
+;  (test-empty '((number ... number ...) ...) '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 6)) (list (make-test-mtch (make-bindings 
+;                                                                                                               (list (make-bind 'number '((1) (2) (1 2 3) (4 5 6)))))
+;                                                                                                              '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 6))
+;                                                                                                              'none)))
+;  (test-empty '((number ... number ...) ...) '((1 1) (2 2) (1 2 3 1 2 3) (4 5 6 4 5 -6)) #f)
+;  
+;  (test-empty '((name number any) (number ... number ...) ...) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'any '()) (make-bind 'number '()))) '(()) 'none)))
+;  (test-empty '((name number any) (number ... number ...) ...) '(((1)) (1 1)) (list (make-test-mtch (make-bindings (list (make-bind 'any '((1))) (make-bind 'number '((1))))) '(((1)) (1 1)) 'none)))
+;  (test-empty '((name number any) (number ... number ...) ...) '(((1)) (1 2)) #f)
+;  (test-empty '((name number any) (number ... number ...) ...) '(((2)) (1 1)) #f)
+;  
+;  (test-empty '((number ... number ...) ... (name number any)) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'any '()) (make-bind 'number '()))) '(()) 'none)))
+;  (test-empty '((number ... number ...) ... (name number any)) '((1 1) ((1))) (list (make-test-mtch (make-bindings (list (make-bind 'any '((1))) (make-bind 'number '((1))))) '((1 1) ((1))) 'none)))
+;  (test-empty '((number ... number ...) ... (name number any)) '((1 2) ((1))) #f)
+;  (test-empty '((number ... number ...) ... (name number any)) '((1 1) ((2))) #f)
   
-  (test-empty '((name number any) (number ... number ...) ...) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'any '()) (make-bind 'number '()))) '(()) 'none)))
-  (test-empty '((name number any) (number ... number ...) ...) '(((1)) (1 1)) (list (make-test-mtch (make-bindings (list (make-bind 'any '((1))) (make-bind 'number '((1))))) '(((1)) (1 1)) 'none)))
-  (test-empty '((name number any) (number ... number ...) ...) '(((1)) (1 2)) #f)
-  (test-empty '((name number any) (number ... number ...) ...) '(((2)) (1 1)) #f)
-  
-  (test-empty '((number ... number ...) ... (name number any)) '(()) (list (make-test-mtch (make-bindings (list (make-bind 'any '()) (make-bind 'number '()))) '(()) 'none)))
-  (test-empty '((number ... number ...) ... (name number any)) '((1 1) ((1))) (list (make-test-mtch (make-bindings (list (make-bind 'any '((1))) (make-bind 'number '((1))))) '((1 1) ((1))) 'none)))
-  (test-empty '((number ... number ...) ... (name number any)) '((1 2) ((1))) #f)
-  (test-empty '((number ... number ...) ... (name number any)) '((1 1) ((2))) #f)
-  
-  ; causes an error
-  #;(test-empty '((number ... number ...) ... (number ... number ...) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() 'none)))
-  
+;  ; causes an error
+;  #;(test-empty '((number ... number ...) ... (number ... number ...) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() 'none)))
+;  
   (test-empty '() '() (list (make-test-mtch (make-bindings null) '() 'none)))
   (test-empty '(a) '(a) (list (make-test-mtch (make-bindings null) '(a) 'none)))
   (test-empty '(a) '(b) #f)
@@ -698,7 +698,13 @@
   
   (test-empty `(+ 1 (side-condition (name x any) (lambda (bindings) (eq? (term x) #;(lookup-binding bindings 'x) 'a)) (eq? (term x) 'a)))
               '(+ 1 b)
-              #f)
+              #f) 
+  
+  (test-empty `(any_2 any_3 ...) '(1 2 3) (list 
+               (make-test-mtch (make-bindings (list (make-bind 'any_2 1)
+                                                    (make-bind 'any_3 '(2 3))))
+                               '(1 2 3)
+                               'none)))
   
   #;(test-empty `(side-condition ((any_1 ..._a) (any_2 ..._a))
                                  (lambda (bindings) (error 'should-not-be-called))

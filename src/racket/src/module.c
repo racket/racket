@@ -1492,7 +1492,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    else if (menv->phase == 1)
 	      phase = " for syntax";
 	    else {
-	      sprintf(buf, " at phase %ld", menv->phase);
+	      sprintf(buf, " at phase %" PRIdPTR, menv->phase);
 	      phase = buf;
 	    }
 
@@ -3430,7 +3430,7 @@ static void setup_accessible_table(Scheme_Module *m)
   }
 }
 
-Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_mod_phase)
+Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t rev_mod_phase)
 {
   Scheme_Env *menv;
 
@@ -3800,7 +3800,8 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
   if (SAME_OBJ(modname, kernel_modname)) {
     Scheme_Env *kenv;
     kenv = scheme_get_kernel_env();
-    name = SCHEME_STX_SYM(name);
+    if (SCHEME_STXP(name))
+      name = SCHEME_STX_SYM(name);
     return scheme_lookup_in_table(kenv->syntax, (char *)name);
   } else if (SAME_OBJ(modname, unsafe_modname)
              || SAME_OBJ(modname, flfxnum_modname)
@@ -3816,7 +3817,8 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
     if (!menv)
       return NULL;
 
-    name = scheme_tl_id_sym(menv, name, NULL, 0, NULL, NULL);
+    if (SCHEME_STXP(name))
+      name = scheme_tl_id_sym(menv, name, NULL, 0, NULL, NULL);
 
     val = scheme_lookup_in_table(menv->syntax, (char *)name);
 

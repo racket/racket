@@ -5,6 +5,7 @@
 @(require (for-label web-server/servlet-env
                      web-server/servlet-dispatch
                      web-server/http
+                     web-server/managers/manager
                      web-server/managers/lru
                      web-server/private/util
                      web-server/dispatchers/dispatch
@@ -20,7 +21,7 @@
 These functions optimize the construction of dispatchers and launching of servers for single servlets and interactive development.
 
 @defproc[(dispatch/servlet 
-          [start (request? . -> . response/c)]
+          [start (request? . -> . response?)]
           [#:regexp regexp regexp? #rx""]
           [#:stateless? stateless? boolean? #f]
           [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]

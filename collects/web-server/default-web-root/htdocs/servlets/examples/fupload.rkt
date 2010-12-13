@@ -8,12 +8,13 @@
   (define req
     (send/suspend
      (lambda (k-url)
-       `(html (body (form ([action ,k-url] 
-                           [method "post"]
-                           [enctype "multipart/form-data"])
-                          (input ([type "file"]
-                                  [name "somename"]))
-                          (input ([type "submit"]))))))))
+       (response/xexpr
+        `(html (body (form ([action ,k-url] 
+                            [method "post"]
+                            [enctype "multipart/form-data"])
+                           (input ([type "file"]
+                                   [name "somename"]))
+                           (input ([type "submit"])))))))))
   (define (header->xexpr h)
     (match h
       [(struct header (field value))
@@ -29,6 +30,7 @@
                 (li "Name: " ,(bytes->string/utf-8 filename))
                 (li "Headers: " (ul ,@(map header->xexpr headers)))
                 (li "Contents: " (pre ,(bytes->string/utf-8 content)))))]))
-  `(html (body ([bgcolor "white"])
-               (p "Uploaded:"
-                  (ul ,@(map binding->xexpr (request-bindings/raw req)))))))
+  (response/xexpr
+   `(html (body ([bgcolor "white"])
+                (p "Uploaded:"
+                   (ul ,@(map binding->xexpr (request-bindings/raw req))))))))

@@ -141,7 +141,7 @@ URLs to paths on the filesystem.
 @a-dispatcher[web-server/dispatchers/dispatch-lift
               @elem{defines a dispatcher constructor.}]{
 
-@defproc[(make (proc (request? . -> . response/c)))
+@defproc[(make (proc (request? . -> . response?)))
          dispatcher/c]{
  Constructs a dispatcher that calls @racket[proc] on the request
  object, and outputs the response to the connection.
@@ -167,7 +167,7 @@ URLs to paths on the filesystem.
                    for invoking a particular procedure when a request is given to a particular
                    URL path.}]{
 
-@defproc[(make (path string?) (proc (request? . -> . response/c)))
+@defproc[(make (path string?) (proc (request? . -> . response?)))
          dispatcher/c]{
  Checks if the request URL path as a string is equal to @racket[path]
  and if so, calls @racket[proc] for a response.
@@ -257,7 +257,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [denied? denied?/c]
                [#:authentication-responder
                 authentication-responder
-                (url? header? . -> . response/c)
+                (url? header? . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
          dispatcher/c]{
  A dispatcher that checks if the request is denied based on @racket[denied?]. If so, then 
@@ -389,7 +389,7 @@ Consider this example:
           (lambda (conn req)
             (output-response/method
              conn
-             (make-response/full
+             (response/full
               200 #"Okay"
               (current-seconds) TEXT/HTML-MIME-TYPE
               empty
@@ -402,10 +402,10 @@ Consider this example:
         (lambda (conn req)          
           (output-response/method
            conn
-           (make-response/full 200 #"Okay"
-                               (current-seconds) TEXT/HTML-MIME-TYPE
-                               empty
-                               (list #"<html><body>Unlimited</body></html>"))
+           (response/full 200 #"Okay"
+                          (current-seconds) TEXT/HTML-MIME-TYPE
+                          empty
+                          (list #"<html><body>Unlimited</body></html>"))
            (request-method req))))
        #:port 8080)
 

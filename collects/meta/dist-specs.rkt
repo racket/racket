@@ -104,6 +104,7 @@ i386-linux-ubuntu-intrepid :=tag unix
 i386-linux-ubuntu-jaunty   :=tag unix
 i386-freebsd      :=tag unix
 i386-win32        :=tag win
+x86_64-win32      :=tag win
 ppc-darwin        :=tag unix
 i386-darwin       :=tag unix
 ppc-osx-mac       :=tag mac
@@ -720,6 +721,7 @@ platform
          ppc-darwin        => "Mac OS X using X11 (PPC)"
          i386-darwin       => "Mac OS X using X11 (Intel)"
          i386-win32        => "Windows"
+         x86_64-win32      => "Windows x64"
          ;; generic platforms for source distributions
          unix => "Unix"
          mac  => "Macintosh"

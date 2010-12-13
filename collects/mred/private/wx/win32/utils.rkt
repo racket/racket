@@ -19,8 +19,8 @@
 
               GetLastError
 
-              GetWindowLongW
-              SetWindowLongW
+              GetWindowLongPtrW
+              SetWindowLongPtrW
               SendMessageW SendMessageW/str
               GetSysColor GetRValue GetGValue GetBValue make-COLORREF
               CreateBitmap
@@ -67,8 +67,16 @@
   (error who "call failed (~s)"
          (GetLastError)))
 
-(define-user32 GetWindowLongW (_wfun _HWND _int -> _pointer))
-(define-user32 SetWindowLongW (_wfun _HWND _int _pointer -> _pointer))
+(define is-win64?
+  (equal? "win32\\x86_64" 
+	  (path->string (system-library-subpath #f))))
+
+(define GetWindowLongPtrW
+  (get-ffi-obj (if is-win64? 'GetWindowLongPtrW 'GetWindowLongW) user32-lib
+	       (_wfun _HWND _int -> _pointer)))
+(define SetWindowLongPtrW
+  (get-ffi-obj (if is-win64? 'SetWindowLongPtrW 'SetWindowLongW) user32-lib
+	       (_wfun _HWND _int _pointer -> _pointer)))
 
 (define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 (define-user32 SendMessageW/str (_wfun _HWND _UINT _WPARAM _string/utf-16 -> _LRESULT)

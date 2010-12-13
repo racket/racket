@@ -185,19 +185,49 @@ in the sequence.
 @defproc[(in-hash [hash hash?]) sequence?]{
   Returns a sequence equivalent to @scheme[hash].
 
+  @examples[
+  (define table (hash 'a 1 'b 2))
+  (for ([(key value) (in-hash table)])
+    (printf "key: ~a value: ~a\n" key value))
+  ]
+
   @info-on-seq["hashtables" "hash tables"]}
 
 @defproc[(in-hash-keys [hash hash?]) sequence?]{
-  Returns a sequence whose elements are the keys of @scheme[hash].}
+  Returns a sequence whose elements are the keys of @scheme[hash].
+
+  @examples[
+  (define table (hash 'a 1 'b 2))
+  (for ([key (in-hash-keys table)])
+    (printf "key: ~a\n" key))
+  ]
+  
+  }
 
 @defproc[(in-hash-values [hash hash?]) sequence?]{
-  Returns a sequence whose elements are the values of @scheme[hash].}
+  Returns a sequence whose elements are the values of @scheme[hash].
+
+  @examples[
+  (define table (hash 'a 1 'b 2))
+  (for ([value (in-hash-values table)])
+    (printf "value: ~a\n" value))
+  ]
+  
+  }
 
 @defproc[(in-hash-pairs [hash hash?]) sequence?]{
   Returns a sequence whose elements are pairs, each containing a key and
   its value from @scheme[hash] (as opposed to using @scheme[hash]
   directly as a sequence to get the key and value as separate values for
-  each element).}
+  each element).
+
+  @examples[
+  (define table (hash 'a 1 'b 2))
+  (for ([key+value (in-hash-pairs table)])
+    (printf "key and value: ~a\n" key+value))
+  ]
+  
+  }
 
 @defproc[(in-directory [dir (or/c #f path-string?) #f]) sequence?]{
   Return a sequence that produces all of the paths for files,

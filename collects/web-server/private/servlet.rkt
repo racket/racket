@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract)
-(require web-server/managers/manager
+(require web-server/servlet/servlet-structs
+         web-server/managers/manager
          web-server/http)
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
@@ -21,7 +22,7 @@
           [namespace namespace?]
           [manager manager?]
           [directory path-string?]
-          [handler (request? . -> . response/c)])]
+          [handler (request? . -> . can-be-response?)])]
  [struct execution-context 
          ([request request?])]
  [current-servlet (parameter/c (or/c false/c servlet?))]

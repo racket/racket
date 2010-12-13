@@ -1,5 +1,7 @@
-#lang racket
+#lang racket/base
 (require racket/pretty
+         racket/list
+         racket/contract
          "structures.rkt"
          "reader.rkt"
          "writer.rkt")
@@ -249,5 +251,53 @@
  [xml->xexpr (content/c . -> . xexpr/c)]
  [xexpr->xml (xexpr/c . -> . content/c)]
  [xexpr-drop-empty-attributes (parameter/c boolean?)]
+ [write-xexpr (->* (xexpr/c) (output-port?) void)] 
  [validate-xexpr (any/c . -> . (one-of/c #t))]
  [correct-xexpr? (any/c (-> any/c) (exn:invalid-xexpr? . -> . any/c) . -> . any/c)])
+
+(define (write-xexpr x [out (current-output-port)])
+  (cond
+    ; Element
+    [(cons? x)
+     (define name (car x))
+     (define-values (attrs content)
+       (if (and (pair? (cdr x))
+                (or (null? (cadr x))
+                    (and (pair? (cadr x)) (pair? (caadr x)))))
+           (values (cadr x) (cddr x))
+           (values null (cdr x))))
+     ; Write opening tag
+     (display "<" out)
+     (display name out)
+     ; Write attributes
+     (for ([att (in-list attrs)])
+       (fprintf out " ~a=\"~a\"" (car att)
+                (escape (cadr att) escape-attribute-table)))
+     ; Write end of opening tag
+     (if (and (null? content)
+              (let ([short (empty-tag-shorthand)])
+                (case short
+                  [(always) #t]
+                  [(never) #f]
+                  [else (memq (lowercase-symbol name) short)])))
+         (display " />" out)
+         (begin
+           (display ">" out)
+           ; Write body
+           (for ([xe (in-list content)])
+             (write-xexpr xe out))
+           ; Write closing tag
+           (display "</" out)
+           (display name out)
+           (display ">" out)))]
+    ; PCData
+    [(string? x)
+     (display (escape x escape-table) out)]
+    ; Entities
+    [(symbol? x)
+     (fprintf out "&~a;" x)]
+    [(exact-nonnegative-integer? x)
+     (fprintf out "&#~a;" x)]
+    ; Embedded XML
+    [(source? x)
+     (write-xml-element x 0 void out)]))

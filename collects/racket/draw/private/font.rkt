@@ -40,7 +40,7 @@
 (define-syntax-rule (atomically e)
   (begin (start-atomic) (begin0 e (end-atomic))))
 
-(define substitute-fonts? (memq (system-type) '(macosx)))
+(define substitute-fonts? (memq (system-type) '(macosx windows)))
 (define substitute-mapping (make-hasheq))
 
 (define (install-alternate-face ch layout font desc attrs context)

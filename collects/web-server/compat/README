@@ -1,0 +1,6 @@
+Each directory contains a README describing backwards incompatible changes to the Web Server and instructions for using the compatibility interface in newer versions.
+
+Most compatibility interfaces mirror the structure of the Web Server collection. For example, to require the version of web-server/http/cookie before backwards incompatible change 0, require web-server/compat/0/http/cookie.
+
+These compatibility interfaces are not documented in the manual to discourage new programs from using the old interface.
+

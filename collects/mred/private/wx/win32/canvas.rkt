@@ -155,23 +155,24 @@
         [(= msg WM_PAINT)
          (let* ([ps (malloc 128)]
                 [hdc (BeginPaint w ps)])
-           (if for-gl?
-               (queue-paint)
-               (if (positive? paint-suspended)
-                   (set! suspended-refresh? #t)
-                   (let* ([hbrush (if no-autoclear?
-                                      #f
-                                      (if transparent?
-                                          background-hbrush
-                                          (CreateSolidBrush bg-colorref)))])
-                     (when hbrush
-                       (let ([r (GetClientRect canvas-hwnd)])
-                         (FillRect hdc r hbrush))
-                       (unless transparent?
-                         (DeleteObject hbrush)))
-                     (unless (do-canvas-backing-flush hdc)
-                       (queue-paint)))))
-           (EndPaint hdc ps))
+	   (when hdc
+             (if for-gl?
+                 (queue-paint)
+                 (if (positive? paint-suspended)
+                     (set! suspended-refresh? #t)
+                     (let* ([hbrush (if no-autoclear?
+                                        #f
+                                        (if transparent?
+                                            background-hbrush
+                                            (CreateSolidBrush bg-colorref)))])
+                       (when hbrush
+                         (let ([r (GetClientRect canvas-hwnd)])
+                           (FillRect hdc r hbrush))
+                         (unless transparent?
+                           (DeleteObject hbrush)))
+                       (unless (do-canvas-backing-flush hdc)
+                         (queue-paint)))))
+             (EndPaint hdc ps)))
          0]
         [(= msg WM_NCPAINT)
          (if control-border-theme

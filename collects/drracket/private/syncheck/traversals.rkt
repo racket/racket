@@ -1395,11 +1395,7 @@
                     (loop (list (syntax-source stx)
                                 (syntax-position stx)
                                 (syntax-span stx))))))))
-          (define locs-to-be-renamed 
-            (sort (hash-map src-locs (λ (k v) k))
-                  >=
-                  #:key cadr))
-          (define to-be-renamed (hash-map all-stxs (λ (k v) k)))
+          (define to-be-renamed (sort (hash-map all-stxs (λ (k v) k)) > #:key syntax-position))
           (define do-renaming?
             (or (not (name-duplication? to-be-renamed id-sets new-sym))
                 (equal?

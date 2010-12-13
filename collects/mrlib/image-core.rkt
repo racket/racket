@@ -792,6 +792,7 @@ has been moved out).
          (send dc draw-path path dx dy)))]
     [(flip? np-atomic-shape) 
      (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
+       (send dc set-smoothing 'smoothed)
        (send dc draw-bitmap 
              bm
              (- dx (/ (send bm get-width) 2))
@@ -803,6 +804,7 @@ has been moved out).
      (let ([θ (degrees->radians (text-angle np-atomic-shape))]
            [font (send dc get-font)])
        (send dc set-font (text->font np-atomic-shape))
+       (send dc set-smoothing 'aligned) ;; should this be smoothed?
        (let ([color (get-color-arg (text-color np-atomic-shape))])
          (send dc set-text-foreground 
                (cond

@@ -18,6 +18,7 @@
          web-server/http
          web-server/stuffers
          web-server/servlet/setup
+         web-server/servlet/servlet-structs
          web-server/dispatchers/dispatch
          (prefix-in filter: web-server/dispatchers/dispatch-filter)
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets))
@@ -25,7 +26,7 @@
 (define send-url (make-parameter net:send-url))
 
 (provide/contract
- [dispatch/servlet (((request? . -> . response/c))
+ [dispatch/servlet (((request? . -> . can-be-response?))
                     (#:regexp regexp?
                               #:current-directory path-string?
                               #:stateless? boolean?

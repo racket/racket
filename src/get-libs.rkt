@@ -20,7 +20,11 @@
      [win32/i386
       ["iconv.dll" 892928]
       ["libeay32.dll" 1089536]
-      ["ssleay32.dll" 237568]]]
+      ["ssleay32.dll" 237568]]
+     [win32/x86_64
+     ["libiconv-2.dll" 1378028]
+     ["libeay32.dll" 1293824]
+     ["ssleay32.dll" 260608]]]
     ;; GUI Libraries
     [gui
      [i386-macosx
@@ -90,7 +94,25 @@
             ["libgio-2.0-0.dll" 669318]
             ["libwimp.dll" 69632]
             ["gtkrc" 1181])
-          '())]]))
+          '())]
+     [win32/x86_64
+      ["libjpeg-7.dll" 224768]
+      ["libcairo-2.dll" 1266147]
+      ["libpango-1.0-0.dll" 423199]
+      ["libexpat-1.dll" 263006]
+      ["libpng14-14.dll" 272473]
+      ["zlib1.dll" 191825]
+      ["libfreetype-6.dll" 633649]
+      ["libintl-8.dll" 240862]
+      ["libfontconfig-1.dll" 339943]
+      ["libglib-2.0-0.dll" 1267577]
+      ["libgobject-2.0-0.dll" 425888]
+      ["libgmodule-2.0-0.dll" 119538]
+      ["libpangocairo-1.0-0.dll" 185168]
+      ["libpangowin32-1.0-0.dll" 192656]
+      ["libpangoft2-1.0-0.dll" 1188615]
+      ["libplplot.dll" 248832]
+      ["libfit.dll" 69120]]]))
 
 (define-values [package dest-dir]
   (command-line #:args [package [dest-dir (current-directory)]]

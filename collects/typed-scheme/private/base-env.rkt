@@ -186,6 +186,7 @@
 [assert (-poly (a b) (cl->*
 		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
 		      (-> (Un a (-val #f)) a)))]
+[defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
 [open-input-string (-> -String -Input-Port)]
@@ -579,6 +580,10 @@
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-for-each (-poly (a b c) (-> (-HT a b) (-> a b c) -Void))]
 [hash-count (-poly (a b) (-> (-HT a b) -NonnegativeFixnum))]
+[hash-keys (-poly (a b) ((-HT a b) . -> . (-lst a)))]
+[hash-values (-poly (a b) ((-HT a b) . -> . (-lst b)))]
+[hash->list (-poly (a b) ((-HT a b) . -> . (-lst (-pair a b))))]
+
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
 [eq-hash-code (-poly (a) (-> a -Integer))]
 [eqv-hash-code (-poly (a) (-> a -Integer))]

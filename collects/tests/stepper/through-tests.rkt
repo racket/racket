@@ -213,6 +213,23 @@
      -> ,@defs {(+ 12 9)}
      -> ,@defs {21}))
 
+;;intermediate/lambda hof
+(let ([a-def `(define (a x)
+                (lambda (y) (+ x y)))])
+  (t 'intermediate-lambda-hof m:intermediate-lambda
+     ,a-def (define b (a 9)) (b 5)
+     :: ,a-def (define b ({a} 9))
+     -> ,a-def (define b ({(lambda (x) (lambda (y) (+ x y)))} 9))
+     :: ,a-def (define b {((lambda (x) (lambda (y) (+ x y))) 9)})
+     -> ,a-def (define b {(lambda (y) (+ 9 y))})
+     :: ,a-def (define b (lambda (y) (+ 9 y))) ({b} 5)
+     -> ,a-def (define b (lambda (y) (+ 9 y))) 
+     ({(lambda (y) (+ 9 y))} 5)
+     :: ,a-def (define b (lambda (y) (+ 9 y)))
+     {((lambda (y) (+ 9 y)) 5)}
+     -> ,a-def (define b (lambda (y) (+ 9 y))) {(+ 9 5)}
+     -> ,a-def (define b (lambda (y) (+ 9 y))) {14}))
+
 ;;;;;;;;;;;;
 ;;
 ;;  OR / AND
@@ -604,9 +621,16 @@
 
 (t1 'let-deriv
     m:intermediate "(define (f g) (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))]) gp)) (define gprime (f cos))"
-    (let ([defs `((define (f g) (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))]) gp)))])
-      `((before-after (,@defs (define gprime (hilite (f cos))))
-                      (,@defs (define gprime (hilite (let ([gp (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001))]) gp)))))
+    (let ([defs `((define (f g) 
+                    (let ([gp (lambda (x) (/ (- (g (+ x 0.1)) (g x)) 0.001))])
+                      gp)))])
+      `((before-after (,@defs (define gprime
+                                (hilite (f cos))))
+                      (,@defs (define gprime 
+                                (hilite (let ([gp (lambda (x) 
+                                                    (/ (- (cos (+ x 0.1)) (cos x))
+                                                       0.001))]) 
+                                          gp)))))
         (before-after (,@defs (define gprime (hilite (let ([gp (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001))]) gp))))
                       (,@defs (hilite (define gp_0 (lambda (x) (/ (- (cos (+ x 0.1)) (cos x)) 0.001)))) (define gprime (hilite gp_0))))
         (finished-stepping))))
@@ -624,6 +648,8 @@
       (before-after ((define f_0 (lambda (x) (+ x 13))) (define a (hilite f_0)))
                     ((define f_0 (lambda (x) (+ x 13))) (define a (hilite (lambda (x) (+ x 13))))))
       (finished-stepping)))
+
+
 
 ;;;;;;;;;;;;;
 ;;
@@ -1475,7 +1501,7 @@
      {(define-struct a_1 (b c))} {1})
   
   
- 
+  (provide ggg)
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
     (parameterize ([disable-stepper-error-handling #t]
@@ -1486,4 +1512,5 @@
                                   check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-all-tests)
-      (run-tests '(check-expect))))
+      (run-tests '(simple-if))
+      ))

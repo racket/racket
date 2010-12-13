@@ -305,7 +305,9 @@ static void record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
 static __declspec(thread) void *tls_space;
 
 static unsigned WINAPI evalLoop(void *args) XFORM_SKIP_PROC {
+#ifndef _WIN64
   scheme_register_tls_space(&tls_space, 0);
+#endif
   scheme_set_atexit(record_at_exit);
   return scheme_main_setup(1, do_evalLoop, 0, (char **)args);
 }
@@ -493,7 +495,7 @@ STDMETHODIMP CMzObj::Eval(BSTR input, BSTR *output) {
   return hr;
 }
 
-BOOL WINAPI dlgProc(HWND hDlg,UINT msg,WPARAM wParam,LPARAM) {
+INT_PTR WINAPI dlgProc(HWND hDlg,UINT msg,WPARAM wParam,LPARAM) {
   switch(msg) {
   case WM_INITDIALOG :
     SetDlgItemText(hDlg,MZCOM_URL,

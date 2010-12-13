@@ -49,7 +49,12 @@
                  hmenu
                  lbl))
 
-  (def/public-unimplemented select)
+  (define/public (select mb)
+    (when parent
+      (let ([m (regexp-match #rx"&[^&]" label)])
+        (when m
+          (send parent popup-menu-with-char (string-ref (car m) 1))))))
+
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)
   (def/public-unimplemented set-title)
@@ -150,7 +155,7 @@
            (set! items (append items (list i)))
            (if submenu
                (AppendMenuW hmenu (bitwise-ior MF_POPUP MF_STRING) (send submenu get-hmenu) label)
-               (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _long _pointer) label)))))))
+               (AppendMenuW hmenu (bitwise-ior MF_STRING) (cast id _intptr _pointer) label)))))))
 
   (define/public (append-separator) 
     (atomically

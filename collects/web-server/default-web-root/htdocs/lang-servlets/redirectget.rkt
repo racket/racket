@@ -6,12 +6,14 @@
   (define request 
     (send/suspend
      (λ (url)
-       `(html
-         (head)
-         (body
-          (form ((action ,url))
-                (input ((type "submit") (value "submit")))))))))
+       (response/xexpr
+        `(html
+          (head)
+          (body
+           (form ((action ,url))
+                 (input ((type "submit") (value "submit"))))))))))
   (redirect/get)
   (send/suspend
    (λ (_)
-     `(html "bye"))))
+     (response/xexpr
+      `(html "bye")))))

@@ -131,8 +131,10 @@ quantities fit in Racket's immediate integers (i.e., not bignums).}
 @defthing*[([_fixint ctype?]
             [_ufixint ctype?])]{
 
-Like @scheme[_fixnum] and @scheme[_ufixnum], but coercions from C are
-checked to be in range.}
+Similar to @scheme[_fixnum]/@scheme[_ufixnum], but based on
+@racket[_int]/@racket[_uint] instead of
+@racket[_intptr]/@racket[_uintptr], and coercions from C are checked
+to be in range.}
 
 @defthing*[([_float ctype?]
             [_double ctype?]

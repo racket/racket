@@ -9,15 +9,7 @@
          racket/contract racket/match unstable/match
          (for-syntax racket/base))
 
-;; this implements the sequence invariant described on the first page relating to Bot
-
-(define (combine l1 l2)
-  (match* (l1 l2) 
-          [(_ (Bot:)) (-FS -top -bot)]
-          [((Bot:) _) (-FS -bot -top)]
-          [(_ _) (-FS l1 l2)]))
-
-(provide combine abstract-results)
+(provide abstract-results)
 
 
 (d/c (abstract-results results arg-names)
@@ -51,8 +43,8 @@
   (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
   (match fs
     [(FilterSet: f+ f-)
-     (combine (abo ids keys f+) (abo ids keys f-))]
-    [(NoFilter:) (combine -top -top)]))
+     (-FS (abo ids keys f+) (abo ids keys f-))]
+    [(NoFilter:) (-FS -top -top)]))
 
 (d/c (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
@@ -76,7 +68,7 @@
 (define (merge-filter-sets fs)
   (match fs
     [(list (FilterSet: f+ f-) ...)
-     (make-FilterSet (make-AndFilter f+) (make-AndFilter f-))]))
+     (-FS (make-AndFilter f+) (make-AndFilter f-))]))
 
 (define (tc-results->values tc)
   (match tc

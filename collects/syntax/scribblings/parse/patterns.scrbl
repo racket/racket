@@ -32,7 +32,7 @@ means specifically @tech{@Spattern}.
 
 @schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
-                            ~! ~bind ~fail ~parse ~peek ~peek-not)
+                            ~! ~bind ~fail ~parse ~peek ~peek-not ~do)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -90,7 +90,8 @@ means specifically @tech{@Spattern}.
                  (~bind [attr-arity-decl expr] ...)
                  (~fail maybe-fail-condition maybe-message-expr)
                  (~parse S-pattern stx-expr)
-                 (@#,ref[~and a] A-pattern ...+)]
+                 (@#,ref[~and a] A-pattern ...+)
+                 (~do defn-or-expr ...)]
                 [proper-S-pattern
                  #, @elem{a @svar{S-pattern} that is not a @svar{A-pattern}}]
                 [proper-H-pattern
@@ -952,4 +953,21 @@ Evaluates @scheme[stx-expr] to a syntax object and matches it against
 @specsubform[(@#,def[~and a] A-pattern ...+)]{
 
 Performs the actions of each @scheme[A-pattern].
+}
+
+@specsubform[(@#,defhere[~do] defn-or-expr ...)]{
+
+Takes a sequence of definitions and expressions, which may be
+intermixed, and evaluates them in the scope of all previous attribute
+bindings. The names bound by the definitions are in scope in the
+expressions of subsequent patterns and clauses.
+
+There is currently no way to bind attributes using a @scheme[~do]
+pattern. It is an error to shadow an attribute binding with a
+definition in a @scheme[~do] block.
+
+@myexamples[
+(syntax-parse #'(1 2 3)
+  [(a b (~do (printf "a was ~s\n" #'a)) c:id) 'ok])
+]
 }

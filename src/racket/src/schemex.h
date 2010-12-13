@@ -361,7 +361,7 @@ void (*scheme_remove_gc_callback)(Scheme_Object *key);
 /*========================================================================*/
 /*                             hash tables                                */
 /*========================================================================*/
-Scheme_Bucket_Table *(*scheme_make_bucket_table)(int size_hint, int type);
+Scheme_Bucket_Table *(*scheme_make_bucket_table)(intptr_t size_hint, int type);
 void (*scheme_add_to_table)(Scheme_Bucket_Table *table, const char *key, void *val, int);
 void (*scheme_change_in_table)(Scheme_Bucket_Table *table, const char *key, void *new_val);
 void *(*scheme_lookup_in_table)(Scheme_Bucket_Table *table, const char *key);
@@ -471,8 +471,8 @@ Scheme_Object *(*scheme_make_integer_value)(intptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned)(uintptr_t i);
 Scheme_Object *(*scheme_make_integer_value_from_long_long)(mzlonglong i);
 Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_long)(umzlonglong i);
-Scheme_Object *(*scheme_make_integer_value_from_long_halves)(unsigned long lowhalf, unsigned long hihalf);
-Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_halves)(unsigned long lowhalf, unsigned long hihalf);
+Scheme_Object *(*scheme_make_integer_value_from_long_halves)(uintptr_t lowhalf, uintptr_t hihalf);
+Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_halves)(uintptr_t lowhalf, uintptr_t hihalf);
 Scheme_Object *(*scheme_make_double)(double d);
 #ifdef MZ_USE_SINGLE_FLOATS
 Scheme_Object *(*scheme_make_float)(float f) ;
@@ -500,36 +500,36 @@ const char *(*scheme_get_proc_name)(Scheme_Object *p, int *len, int for_error);
 /*========================================================================*/
 /*                               strings                                  */
 /*========================================================================*/
-int (*scheme_utf8_decode)(const unsigned char *s, int start, int end, 
-				 unsigned int *us, int dstart, int dend,
-				 intptr_t *ipos, char utf16, int permissive);
-int (*scheme_utf8_decode_as_prefix)(const unsigned char *s, int start, int end, 
-					   unsigned int *us, int dstart, int dend,
-					   intptr_t *ipos, char utf16, int permissive);
-int (*scheme_utf8_decode_all)(const unsigned char *s, int len, unsigned int *us, 
-				     int permissive);
-int (*scheme_utf8_decode_prefix)(const unsigned char *s, int len, unsigned int *us, 
-					int permissive);
-mzchar *(*scheme_utf8_decode_to_buffer)(const unsigned char *s, int len, 
-					       mzchar *buf, int blen);
-mzchar *(*scheme_utf8_decode_to_buffer_len)(const unsigned char *s, int len, 
-						   mzchar *buf, int blen, intptr_t *rlen);
-int (*scheme_utf8_decode_count)(const unsigned char *s, int start, int end, 
-						      int *_state, int might_continue, int permissive);
-int (*scheme_utf8_encode)(const unsigned int *us, int start, int end, 
-				 unsigned char *s, int dstart,
-				 char utf16);
-int (*scheme_utf8_encode_all)(const unsigned int *us, int len, unsigned char *s);
-char *(*scheme_utf8_encode_to_buffer)(const mzchar *s, int len, 
-					     char *buf, int blen);
-char *(*scheme_utf8_encode_to_buffer_len)(const mzchar *s, int len, 
-						 char *buf, int blen, intptr_t *rlen);
-unsigned short *(*scheme_ucs4_to_utf16)(const mzchar *text, int start, int end, 
-					       unsigned short *buf, int bufsize,
-					       intptr_t *ulen, int term_size);
-mzchar *(*scheme_utf16_to_ucs4)(const unsigned short *text, int start, int end, 
-				       mzchar *buf, int bufsize,
-				       intptr_t *ulen, int term_size);
+intptr_t (*scheme_utf8_decode)(const unsigned char *s, intptr_t start, intptr_t end, 
+				      unsigned int *us, intptr_t dstart, intptr_t dend,
+				      intptr_t *ipos, char utf16, int permissive);
+intptr_t (*scheme_utf8_decode_as_prefix)(const unsigned char *s, intptr_t start, intptr_t end, 
+						unsigned int *us, intptr_t dstart, intptr_t dend,
+						intptr_t *ipos, char utf16, int permissive);
+intptr_t (*scheme_utf8_decode_all)(const unsigned char *s, intptr_t len, unsigned int *us, 
+					  int permissive);
+intptr_t (*scheme_utf8_decode_prefix)(const unsigned char *s, intptr_t len, unsigned int *us, 
+					     int permissive);
+mzchar *(*scheme_utf8_decode_to_buffer)(const unsigned char *s, intptr_t len, 
+					       mzchar *buf, intptr_t blen);
+mzchar *(*scheme_utf8_decode_to_buffer_len)(const unsigned char *s, intptr_t len, 
+						   mzchar *buf, intptr_t blen, intptr_t *rlen);
+intptr_t (*scheme_utf8_decode_count)(const unsigned char *s, intptr_t start, intptr_t end, 
+							   int *_state, int might_continue, int permissive);
+intptr_t (*scheme_utf8_encode)(const unsigned int *us, intptr_t start, intptr_t end, 
+				      unsigned char *s, intptr_t dstart,
+				      char utf16);
+intptr_t (*scheme_utf8_encode_all)(const unsigned int *us, intptr_t len, unsigned char *s);
+char *(*scheme_utf8_encode_to_buffer)(const mzchar *s, intptr_t len, 
+					     char *buf, intptr_t blen);
+char *(*scheme_utf8_encode_to_buffer_len)(const mzchar *s, intptr_t len, 
+						 char *buf, intptr_t blen, intptr_t *rlen);
+unsigned short *(*scheme_ucs4_to_utf16)(const mzchar *text, intptr_t start, intptr_t end, 
+					       unsigned short *buf, intptr_t bufsize,
+					       intptr_t *ulen, intptr_t term_size);
+mzchar *(*scheme_utf16_to_ucs4)(const unsigned short *text, intptr_t start, intptr_t end, 
+				       mzchar *buf, intptr_t bufsize,
+				       intptr_t *ulen, intptr_t term_size);
 Scheme_Object *(*scheme_open_converter)(const char *from_e, const char *to_e);
 void (*scheme_close_converter)(Scheme_Object *conv);
 /*========================================================================*/
@@ -813,16 +813,16 @@ Scheme_Object *(*scheme_datum_to_kernel_stx)(Scheme_Object *e);
 /*                                symbols                                 */
 /*========================================================================*/
 Scheme_Object *(*scheme_intern_symbol)(const char *name);
-Scheme_Object *(*scheme_intern_exact_symbol)(const char *name, unsigned int len);
-Scheme_Object *(*scheme_intern_exact_char_symbol)(const mzchar *name, unsigned int len);
+Scheme_Object *(*scheme_intern_exact_symbol)(const char *name, uintptr_t len);
+Scheme_Object *(*scheme_intern_exact_char_symbol)(const mzchar *name, uintptr_t len);
 Scheme_Object *(*scheme_make_symbol)(const char *name); /* Make uninterned */
-Scheme_Object *(*scheme_make_exact_symbol)(const char *name, unsigned int len); /* Exact case */
-Scheme_Object *(*scheme_make_exact_char_symbol)(const mzchar *name, unsigned int len); /* Exact case */
+Scheme_Object *(*scheme_make_exact_symbol)(const char *name, uintptr_t len); /* Exact case */
+Scheme_Object *(*scheme_make_exact_char_symbol)(const mzchar *name, uintptr_t len); /* Exact case */
 const char *(*scheme_symbol_name)(Scheme_Object *sym);
-const char *(*scheme_symbol_name_and_size)(Scheme_Object *sym, unsigned int *l, int flags);
+const char *(*scheme_symbol_name_and_size)(Scheme_Object *sym, uintptr_t *l, int flags);
 char *(*scheme_symbol_val)(Scheme_Object *sym);
-Scheme_Object *(*scheme_intern_exact_keyword)(const char *name, unsigned int len);
-Scheme_Object *(*scheme_intern_exact_char_keyword)(const mzchar *name, unsigned int len);
+Scheme_Object *(*scheme_intern_exact_keyword)(const char *name, uintptr_t len);
+Scheme_Object *(*scheme_intern_exact_char_keyword)(const mzchar *name, uintptr_t len);
 /*========================================================================*/
 /*                                structs                                 */
 /*========================================================================*/
@@ -928,13 +928,13 @@ int (*scheme_check_proc_arity)(const char *where, int a,
 int (*scheme_check_proc_arity2)(const char *where, int a,
 				       int which, int argc, Scheme_Object **argv,
 				       int false_ok);
-char *(*scheme_make_provided_string)(Scheme_Object *o, int count, int *len);
+char *(*scheme_make_provided_string)(Scheme_Object *o, int count, intptr_t *len);
 char *(*scheme_make_args_string)(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
 const char *(*scheme_system_library_subpath)();
 void (*scheme_signal_received)(void);
 void (*scheme_signal_received_at)(void *);
 void *(*scheme_get_signal_handle)();
-int (*scheme_char_strlen)(const mzchar *s);
+intptr_t (*scheme_char_strlen)(const mzchar *s);
 Scheme_Object *(*scheme_stx_extract_marks)(Scheme_Object *stx);
 Scheme_Object *(*scheme_get_place_table)(void);
 void *(*scheme_register_process_global)(const char *key, void *val);

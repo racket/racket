@@ -418,9 +418,9 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 
 /* longs and ints are really the same */
 #define scheme_get_realint_val(x,y) \
-  scheme_get_int_val(x,(long*)(y))
+  scheme_get_int_val(x,(intptr_t*)(y))
 #define scheme_get_unsigned_realint_val(x,y) \
-  scheme_get_unsigned_int_val(x,(unsigned long*)(y))
+  scheme_get_unsigned_int_val(x,(uintptr_t*)(y))
 #define scheme_make_realinteger_value \
   scheme_make_integer_value
 #define scheme_make_realinteger_value_from_unsigned \
@@ -431,7 +431,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 /* These will make sense in Racket when longs are longer than ints (needed
  * for libffi's int32 types).  There is no need to deal with bignums because
  * mzscheme's fixnums are longs. */
-inline int scheme_get_realint_val(Scheme_Object *o, int *v)
+MZ_INLINE int scheme_get_realint_val(Scheme_Object *o, int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -442,7 +442,7 @@ inline int scheme_get_realint_val(Scheme_Object *o, int *v)
     return 1;
   } else return 0;
 }
-inline int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
+MZ_INLINE int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 {
   if (SCHEME_INTP(o)) {
     uintptr_t lv = SCHEME_INT_VAL(o);
@@ -612,6 +612,28 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Scheme:   scheme_make_integer_value_from_unsigned_long_long(<C>)
  */
 
+/* This is like int32, but always assumes fixnum: */
+#define FOREIGN_fixint (10)
+/* Type Name:   fixint
+ * LibFfi type: ffi_type_sint32
+ * C type:      Tsint32
+ * Predicate:   SCHEME_INTP(<Scheme>)
+ * Scheme->C:   SCHEME_INT_VAL(<Scheme>)
+ * S->C offset: 0
+ * C->Scheme:   scheme_make_integer(<C>)
+ */
+
+/* This is like uint32, but always assumes fixnum: */
+#define FOREIGN_ufixint (11)
+/* Type Name:   ufixint
+ * LibFfi type: ffi_type_uint32
+ * C type:      Tuint32
+ * Predicate:   SCHEME_INTP(<Scheme>)
+ * Scheme->C:   SCHEME_UINT_VAL(<Scheme>)
+ * S->C offset: 0
+ * C->Scheme:   scheme_make_integer_from_unsigned(<C>)
+ */
+
 #ifndef SIXTY_FOUR_BIT_LONGS
 #define ffi_type_smzlong ffi_type_sint32
 #define ffi_type_umzlong ffi_type_uint32
@@ -627,28 +649,6 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 #define ffi_type_smzintptr ffi_type_sint64
 #define ffi_type_umzintptr ffi_type_uint64
 #endif /* SIXTY_FOUR_BIT_INTEGERS */
-
-/* This is like intptr, but always assumes fixnum: */
-#define FOREIGN_fixint (10)
-/* Type Name:   fixint
- * LibFfi type: ffi_type_smzintptr
- * C type:      intptr_t
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_INT_VAL(<Scheme>)
- * S->C offset: 0
- * C->Scheme:   scheme_make_integer(<C>)
- */
-
-/* This is like uint32, but always assumes fixnum: */
-#define FOREIGN_ufixint (11)
-/* Type Name:   ufixint
- * LibFfi type: ffi_type_umzintptr
- * C type:      uintptr_t
- * Predicate:   SCHEME_INTP(<Scheme>)
- * Scheme->C:   SCHEME_UINT_VAL(<Scheme>)
- * S->C offset: 0
- * C->Scheme:   scheme_make_integer_from_unsigned(<C>)
- */
 
 /* This is what mzscheme defines as intptr, assuming fixnums: */
 #define FOREIGN_fixnum (12)
@@ -828,8 +828,8 @@ typedef union _ForeignAny {
   Tuint32 x_uint32;
   Tsint64 x_int64;
   Tuint64 x_uint64;
-  intptr_t x_fixint;
-  uintptr_t x_ufixint;
+  Tsint32 x_fixint;
+  Tuint32 x_ufixint;
   intptr_t x_fixnum;
   uintptr_t x_ufixnum;
   float x_float;
@@ -970,8 +970,8 @@ static int ctype_sizeof(Scheme_Object *type)
   case FOREIGN_uint32: return sizeof(Tuint32);
   case FOREIGN_int64: return sizeof(Tsint64);
   case FOREIGN_uint64: return sizeof(Tuint64);
-  case FOREIGN_fixint: return sizeof(intptr_t);
-  case FOREIGN_ufixint: return sizeof(uintptr_t);
+  case FOREIGN_fixint: return sizeof(Tsint32);
+  case FOREIGN_ufixint: return sizeof(Tuint32);
   case FOREIGN_fixnum: return sizeof(intptr_t);
   case FOREIGN_ufixnum: return sizeof(uintptr_t);
   case FOREIGN_float: return sizeof(float);
@@ -1049,13 +1049,13 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
     return FFI_DEFAULT_ABI;
   else if (SAME_OBJ(sym, sysv_sym)) {
-#ifdef WINDOWS_DYNAMIC_LOAD
+#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
     return FFI_SYSV;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
 #endif
   } else if (SAME_OBJ(sym, stdcall_sym)) {
-#ifdef WINDOWS_DYNAMIC_LOAD
+#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
     return FFI_STDCALL;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
@@ -1306,8 +1306,8 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_uint32: return scheme_make_realinteger_value_from_unsigned(REF_CTYPE(Tuint32));
     case FOREIGN_int64: return scheme_make_integer_value_from_long_long(REF_CTYPE(Tsint64));
     case FOREIGN_uint64: return scheme_make_integer_value_from_unsigned_long_long(REF_CTYPE(Tuint64));
-    case FOREIGN_fixint: return scheme_make_integer(REF_CTYPE(intptr_t));
-    case FOREIGN_ufixint: return scheme_make_integer_from_unsigned(REF_CTYPE(uintptr_t));
+    case FOREIGN_fixint: return scheme_make_integer(REF_CTYPE(Tsint32));
+    case FOREIGN_ufixint: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint32));
     case FOREIGN_fixnum: return scheme_make_integer(REF_CTYPE(intptr_t));
     case FOREIGN_ufixnum: return scheme_make_integer_from_unsigned(REF_CTYPE(uintptr_t));
     case FOREIGN_float: return scheme_make_float(REF_CTYPE(float));
@@ -1446,30 +1446,30 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
       return NULL;
     case FOREIGN_fixint:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(intptr_t)<sizeof(int) && ret_loc) {
+      if (sizeof(Tsint32)<sizeof(int) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(intptr_t));
+        delta += (sizeof(int)-sizeof(Tsint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
-        intptr_t tmp;
-        tmp = (intptr_t)(SCHEME_INT_VAL(val));
-        (((intptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
+        Tsint32 tmp;
+        tmp = (Tsint32)(SCHEME_INT_VAL(val));
+        (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixint",0,1,&(val));
         return NULL; /* hush the compiler */
       }
     case FOREIGN_ufixint:
 #     ifdef SCHEME_BIG_ENDIAN
-      if (sizeof(uintptr_t)<sizeof(int) && ret_loc) {
+      if (sizeof(Tuint32)<sizeof(int) && ret_loc) {
         ((int*)W_OFFSET(dst,delta))[0] = 0;
-        delta += (sizeof(int)-sizeof(uintptr_t));
+        delta += (sizeof(int)-sizeof(Tuint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
-        uintptr_t tmp;
-        tmp = (uintptr_t)(SCHEME_UINT_VAL(val));
-        (((uintptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
+        Tuint32 tmp;
+        tmp = (Tuint32)(SCHEME_UINT_VAL(val));
+        (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixint",0,1,&(val));
         return NULL; /* hush the compiler */
@@ -3344,14 +3344,14 @@ void scheme_init_foreign(Scheme_Env *env)
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
-  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_smzintptr));
+  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_fixint);
   scheme_add_global("_fixint", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("ufixint");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
-  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_umzintptr));
+  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_ufixint);
   scheme_add_global("_ufixint", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("fixnum");

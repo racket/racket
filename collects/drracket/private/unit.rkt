@@ -3928,6 +3928,8 @@ module browser threading seems wrong.
                                          vertical-dragable/def-int%)
                                      (unit-frame this)
                                      (parent panel-with-tabs))]
+        [define orientation-callback (λ (p v) (send resizable-panel set-orientation v))]
+        (preferences:add-callback 'drracket:defs/ints-horizontal orientation-callback #t)
         
         [define definitions-canvas #f]
         (initialize-definitions-canvas)

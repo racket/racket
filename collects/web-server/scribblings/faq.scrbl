@@ -3,6 +3,10 @@
 
 @title[#:tag "faq"]{Troubleshooting and Tips}
 
+@section{Why is my servlet failing with a @racket[can-be-response?] contract violation after updating Racket?}
+
+After 5.0.99.4, the Web Server had a backwards incompatible change that prevents X-expressions and lists of bytes from being directly returned from servlets. Please read @filepath{PLTHOME/collects/web-server/compat/0/README} to learn about porting your servlets forward. Don't worry. It's easy.
+
 @section{Why are my templates not updating on the server when I change the file on disk?}
 
 Templates are compiled into your application, so when you change them there is no connection between that change in the filesystem and the compiled bytecode that is already loaded in a running Web server process. For more discussion, see @secref["update-servlets"].

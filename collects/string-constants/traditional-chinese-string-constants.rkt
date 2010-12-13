@@ -450,7 +450,7 @@
   (mfs-recur-over-subdirectories "包含子目录")
   (mfs-regexp-filename-filter "文件名筛选(正则表达式)")
   (mfs-search-string "查找字符串")
-  (mfs-drscheme-multi-file-search "DrRacket——多文件查找") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "多文件查找——DrRacket") ;; results window and error message title
   (mfs-not-a-dir "\"~a\"不是目录")
   (mfs-open-file "打开文件")
   (mfs-stop-search "停止搜索")

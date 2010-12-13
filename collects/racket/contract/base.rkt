@@ -9,6 +9,7 @@
          "private/box.rkt"
          "private/hash.rkt"
          "private/vector.rkt"
+         "private/struct.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
          "private/guts.rkt"
@@ -31,6 +32,7 @@
  (all-from-out "private/box.rkt")
  (all-from-out "private/hash.rkt")
  (all-from-out "private/vector.rkt")
+ (all-from-out "private/struct.rkt")
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
              check-unary-between/c)

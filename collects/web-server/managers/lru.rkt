@@ -2,13 +2,23 @@
 (require racket/match
          racket/contract)
 (require "manager.rkt"
+         web-server/http
          web-server/servlet/servlet-structs)
 (provide/contract
- [create-LRU-manager (expiration-handler/c number? number? (-> boolean?)
-                                          #:initial-count number?
-                                          #:inform-p (number? . -> . void)
-                                          . -> . manager?)]
- [make-threshold-LRU-manager (expiration-handler/c number? . -> . manager?)])
+ [create-LRU-manager 
+  (->
+   (or/c false/c
+         (request? . -> . can-be-response?))
+   number? number? (-> boolean?)
+   #:initial-count number?
+   #:inform-p (number? . -> . void)
+   manager?)]
+ [make-threshold-LRU-manager 
+  (-> 
+   (or/c false/c
+         (request? . -> . can-be-response?))
+   number?
+   manager?)])
 
 ;; Utility
 (define (make-counter)

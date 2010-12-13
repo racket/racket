@@ -33,8 +33,9 @@
   ;; these are the available searches
   (define-struct search-type (label make-searcher params))
   
-  ;; search-info = (make-search-info string boolean (union #f regexp) search-type)
-  (define-struct search-info (dir recur? filter searcher))
+  ;; search-info = (make-search-info string boolean (union #f regexp) search-type string)
+  ;; the search-string field is only informative; not used for actual searching
+  (define-struct search-info (dir recur? filter searcher search-string))
   
   ;; search-types : (listof search-type)
   (define search-types
@@ -54,7 +55,9 @@
   ;; thread: eventspace main thread
   ;; opens a window and creates the thread that does the search
   (define (open-search-window search-info)
-    (define frame (make-object search-size-frame% (string-constant mfs-drscheme-multi-file-search)))
+    (define frame (new search-size-frame%
+                       [name (format (string-constant mfs-drscheme-multi-file-search-title)
+                                      (search-info-search-string search-info))]))
     (define panel (make-object saved-vertical-resizable% (send frame get-area-container)))
     (define button-panel (make-object horizontal-panel% (send frame get-area-container)))
     (define open-button (make-object button% (string-constant mfs-open-file) button-panel
@@ -526,7 +529,8 @@
       (send recur-check-box get-value)
       (and (send filter-check-box get-value)
            (regexp (send filter-text-field get-value)))
-      searcher)))
+      searcher
+      (send search-text-field get-value))))
   
   
   ;; do-search : search-info text -> void

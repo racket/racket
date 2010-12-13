@@ -32,6 +32,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; old-style flat struct contracts
+;;
+(require "private/contract-struct.rkt")
+(provide (all-from-out "private/contract-struct.rkt"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; provide everything from the racket/ implementation
 ;; except the arrow contracts
 ;;

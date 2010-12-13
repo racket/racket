@@ -14,10 +14,11 @@
   (define new-req
     (send/suspend
      (lambda (k-url)
-       `(html (head (title "Hello!"))
-              (body (h1 "Hello " ,(if who who "<unknown>"))
-                    (form ([action ,k-url])
-                          (input ([name "who"]))))))))
+       (response/xexpr
+        `(html (head (title "Hello!"))
+               (body (h1 "Hello " ,(if who who "<unknown>"))
+                     (form ([action ,k-url])
+                           (input ([name "who"])))))))))
   (define binds
     (request-bindings/raw new-req))
   (match (bindings-assq #"who" binds)
@@ -25,10 +26,10 @@
      (define new-who 
        (bytes->string/utf-8 (binding:form-value b)))
      (redirect-to (url->string (request-uri req))
-      see-other
-      #:headers
-      (list
-       (cookie->header (make-cookie "id" new-who))))]
+                  see-other
+                  #:headers
+                  (list
+                   (cookie->header (make-cookie "id" new-who))))]
     [else
      (redirect-to
       (url->string (request-uri req))

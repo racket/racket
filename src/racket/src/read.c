@@ -150,8 +150,6 @@ static MZ_INLINE intptr_t SPAN(Scheme_Object *port, intptr_t pos) {
 /* For cases where we'd rather report the location as just the relevant prefix: */
 #define MINSPAN(port, pos, span) (span)
 
-#define SRCLOC_TMPL " in %q[%L%ld]"
-
 #define mz_shape_cons 0
 #define mz_shape_vec 1
 #define mz_shape_hash_list 2
@@ -1321,7 +1319,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                 st = NULL;
 
               if (!st || (st->num_slots != (SCHEME_VEC_SIZE(v) - 1))) {
-                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
                                 (SCHEME_VEC_SIZE(v)
                                  ? (st
                                     ? ("read: mismatch between structure description"
@@ -1332,7 +1330,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
               }
 
               if (stxsrc && !(MZ_OPT_HASH_KEY(&st->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
-                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
                                 "read: cannot read mutable `#s' form as syntax");
               }
 
@@ -1557,7 +1555,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             }
             scheme_read_err(port, stxsrc, line, col, pos, fl, ch, indentation,
                             "read: bad input: `#%u'",
-                            found, fl);
+                            found, (intptr_t)fl);
             return NULL;
           }
           break;
@@ -1650,7 +1648,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos),
 			      ch, indentation,
 			      "read: bad syntax `#%c%u'",
-			      orig_ch, a, cnt);
+			      orig_ch, a, (intptr_t)cnt);
 	      return NULL;
 	    }
 	  }
@@ -1760,7 +1758,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 				ch, indentation,
 				"read: bad syntax `#ha%5%u'",
 				str_part,
-				one_more, NOT_EOF_OR_SPECIAL(ch) ? 1 : 0);
+				one_more, (intptr_t)(NOT_EOF_OR_SPECIAL(ch) ? 1 : 0));
 		return NULL;
 	      }
 	    }
@@ -2780,7 +2778,7 @@ read_list(Scheme_Object *port,
 	if (indt->suspicious_line) {
 	  suggestion = scheme_malloc_atomic(100);
 	  sprintf(suggestion,
-		  "; indentation suggests a missing %s before line %ld",
+		  "; indentation suggests a missing %s before line %" PRIdPTR,
 		  closer_name(params, indt->suspicious_closer),
 		  indt->suspicious_line);
 	}
@@ -3412,7 +3410,7 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
       scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, init_span), EOF, indentation,
 		      "read: found end-of-file before terminating %u%s",
 		      tag, 
-		      (tlen > 50) ? 50 : tlen,
+		      (intptr_t)((tlen > 50) ? 50 : tlen),
 		      (tlen > 50) ? "..." : "");
       return NULL;
     }
@@ -3466,7 +3464,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
   if (suspicious_quote) {
     suspicions = (char *)scheme_malloc_atomic(64);
     sprintf(suspicions,
-	    "; newline within %s suggests a missing %s on line %ld",
+	    "; newline within %s suggests a missing %s on line %" PRIdPTR,
 	    is_honu_char ? "character" : "string",
 	    is_honu_char ? "'" : "'\"'",
 	    suspicious_quote);
@@ -3510,7 +3508,7 @@ read_vector (Scheme_Object *port,
   len = scheme_list_length(obj);
   if (requestLength >= 0 && len > requestLength) {
     char buffer[20];
-    sprintf(buffer, "%ld", requestLength);
+    sprintf(buffer, "%" PRIdPTR, requestLength);
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
 		    "read: vector length %ld is too small, "
 		    "%d values provided",
@@ -3950,7 +3948,7 @@ read_delimited_constant(int ch, const mzchar *str,
                     first_ch,
                     str_part,
                     one_more, 
-                    NOT_EOF_OR_SPECIAL(ch) ? 1 : 0);
+                    (intptr_t)(NOT_EOF_OR_SPECIAL(ch) ? 1 : 0));
     return NULL;
   }
             
@@ -4098,7 +4096,7 @@ read_character(Scheme_Object *port,
       scheme_read_err(port, stxsrc, line, col, pos, count + 2, 0, indentation,
 		      "read: bad character constant #\\%c%u",
 		      (maxc == 4) ? 'u' : 'U',
-		      nbuf, count);
+		      nbuf, (intptr_t)count);
       return NULL;
     } else {
       ch = n;
@@ -4430,7 +4428,7 @@ static void unexpected_closer(int ch,
       sprintf(found, "unexpected");
     } else if (indt->multiline) {
       sprintf(found,
-	      "%s %s to close %s on line %ld, found instead",
+	      "%s %s to close %s on line %" PRIdPTR ", found instead",
 	      missing,
 	      closer_name(params, indt->closer),
 	      opener_name(params, opener),
@@ -4446,7 +4444,7 @@ static void unexpected_closer(int ch,
     if (indt->suspicious_line) {
       suggestion = scheme_malloc_atomic(100);
       sprintf(suggestion,
-	      "; indentation suggests a missing %s before line %ld",
+	      "; indentation suggests a missing %s before line %" PRIdPTR,
 	      closer_name(params, indt->suspicious_closer),
 	      indt->suspicious_line);
     }
@@ -5475,7 +5473,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->size = size;
   if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-		    "read (compiled): ill-formed code (bad count: %ld != %ld, started at %ld)",
+		    "read (compiled): ill-formed code (bad count: %ld != %ld"
+                    ", started at %ld)",
 		    got, size, rp->base);
 
   local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
@@ -5636,7 +5635,8 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
       
       if ((got = scheme_get_bytes(port, size, (char *)st, 0)) != size)
         scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
-                        "on-demand load: ill-formed code (bad count: %ld != %ld, started at %ld)",
+                        "on-demand load: ill-formed code (bad count: %ld != %ld"
+                        ", started at %ld)",
                         got, size, 0);
     }
     scheme_current_thread->error_buf = savebuf;

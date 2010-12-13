@@ -23,7 +23,10 @@ the users and implementers of managers.
 @defstruct[manager ([create-instance ((-> void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]
                     [clear-continuations! (number? . -> . void)]
-                    [continuation-store! (number? any/c expiration-handler/c . -> . (list/c number? number?))]
+                    [continuation-store! (number? any/c 
+                                                  (or/c false/c
+                                                        (request? . -> . can-be-response?))
+                                                  . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)]
                     [continuation-peek (number? number? number? . -> . any/c)])]{
  @racket[create-instance] is called to initialize a instance, to hold the
@@ -51,13 +54,17 @@ the users and implementers of managers.
 }
 
 @defstruct[(exn:fail:servlet-manager:no-instance exn:fail)
-           ([expiration-handler expiration-handler/c])]{
+           ([expiration-handler 
+             (or/c false/c
+                   (request? . -> . can-be-response?))])]{
  This exception should be thrown by a manager when an instance is looked
  up that does not exist.
 }
 
 @defstruct[(exn:fail:servlet-manager:no-continuation exn:fail)
-           ([expiration-handler expiration-handler/c])]{
+           ([expiration-handler 
+             (or/c false/c
+                   (request? . -> . can-be-response?))])]{
  This exception should be thrown by a manager when a continuation is
  looked up that does not exist.
 }
@@ -72,7 +79,10 @@ the users and implementers of managers.
 
 This module defines a manager constructor:
 
-@defproc[(create-none-manager (instance-expiration-handler expiration-handler/c))
+@defproc[(create-none-manager 
+          (instance-expiration-handler 
+           (or/c false/c
+                 (request? . -> . can-be-response?))))
          manager?]{
  This manager does not actually store any continuation or instance data.
  You could use it if you know your servlet does not use the continuation
@@ -97,9 +107,12 @@ Web Language. (See @secref["stateless"].)
 
 This module defines a manager constructor:
 
-@defproc[(create-timeout-manager [instance-exp-handler expiration-handler/c]
-                                 [instance-timeout number?]
-                                 [continuation-timeout number?])
+@defproc[(create-timeout-manager 
+          [instance-exp-handler 
+           (or/c false/c
+                 (request? . -> . can-be-response?))]
+          [instance-timeout number?]
+          [continuation-timeout number?])
          manager?]{
  Instances managed by this manager will be expired @racket[instance-timeout]
  seconds after the last time it is accessed. If an expired instance is
@@ -130,7 +143,9 @@ deployments of the @web-server .
 This module defines a manager constructor:
 
 @defproc[(create-LRU-manager
-          [instance-expiration-handler expiration-handler/c]
+          [instance-expiration-handler 
+           (or/c false/c
+                 (request? . -> . can-be-response?))]
           [check-interval integer?]
           [collect-interval integer?]
           [collect? (-> boolean?)]
@@ -163,7 +178,9 @@ This module defines a manager constructor:
 The recommended usage of this manager is codified as the following function:
 
 @defproc[(make-threshold-LRU-manager 
-          [instance-expiration-handler expiration-handler/c]
+          [instance-expiration-handler 
+           (or/c false/c
+                 (request? . -> . can-be-response?))]
           [memory-threshold number?])
          manager?]{
  This creates an LRU manager with the following behavior:

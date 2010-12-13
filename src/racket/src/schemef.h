@@ -447,7 +447,7 @@ MZ_EXTERN void scheme_remove_gc_callback(Scheme_Object *key);
 /*                             hash tables                                */
 /*========================================================================*/
 
-MZ_EXTERN Scheme_Bucket_Table *scheme_make_bucket_table(int size_hint, int type);
+MZ_EXTERN Scheme_Bucket_Table *scheme_make_bucket_table(intptr_t size_hint, int type);
 MZ_EXTERN void scheme_add_to_table(Scheme_Bucket_Table *table, const char *key, void *val, int);
 MZ_EXTERN void scheme_change_in_table(Scheme_Bucket_Table *table, const char *key, void *new_val);
 MZ_EXTERN void *scheme_lookup_in_table(Scheme_Bucket_Table *table, const char *key);
@@ -573,8 +573,8 @@ MZ_EXTERN Scheme_Object *scheme_make_integer_value(intptr_t i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned(uintptr_t i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_long(mzlonglong i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_long(umzlonglong i);
-MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_halves(unsigned long lowhalf, unsigned long hihalf);
-MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_halves(unsigned long lowhalf, unsigned long hihalf);
+MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_halves(uintptr_t lowhalf, uintptr_t hihalf);
+MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_halves(uintptr_t lowhalf, uintptr_t hihalf);
 MZ_EXTERN Scheme_Object *scheme_make_double(double d);
 #ifdef MZ_USE_SINGLE_FLOATS
 MZ_EXTERN Scheme_Object *scheme_make_float(float f) ;
@@ -609,39 +609,39 @@ MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_e
 /*                               strings                                  */
 /*========================================================================*/
 
-MZ_EXTERN int scheme_utf8_decode(const unsigned char *s, int start, int end, 
-				 unsigned int *us, int dstart, int dend,
-				 intptr_t *ipos, char utf16, int permissive);
-MZ_EXTERN int scheme_utf8_decode_as_prefix(const unsigned char *s, int start, int end, 
-					   unsigned int *us, int dstart, int dend,
-					   intptr_t *ipos, char utf16, int permissive);
-MZ_EXTERN int scheme_utf8_decode_all(const unsigned char *s, int len, unsigned int *us, 
-				     int permissive);
-MZ_EXTERN int scheme_utf8_decode_prefix(const unsigned char *s, int len, unsigned int *us, 
-					int permissive);
-MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, int len, 
-					       mzchar *buf, int blen);
-MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len, 
-						   mzchar *buf, int blen, intptr_t *rlen);
-XFORM_NONGCING MZ_EXTERN int scheme_utf8_decode_count(const unsigned char *s, int start, int end, 
-						      int *_state, int might_continue, int permissive);
+MZ_EXTERN intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end, 
+				      unsigned int *us, intptr_t dstart, intptr_t dend,
+				      intptr_t *ipos, char utf16, int permissive);
+MZ_EXTERN intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end, 
+						unsigned int *us, intptr_t dstart, intptr_t dend,
+						intptr_t *ipos, char utf16, int permissive);
+MZ_EXTERN intptr_t scheme_utf8_decode_all(const unsigned char *s, intptr_t len, unsigned int *us, 
+					  int permissive);
+MZ_EXTERN intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigned int *us, 
+					     int permissive);
+MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, intptr_t len, 
+					       mzchar *buf, intptr_t blen);
+MZ_EXTERN mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len, 
+						   mzchar *buf, intptr_t blen, intptr_t *rlen);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end, 
+							   int *_state, int might_continue, int permissive);
 
-MZ_EXTERN int scheme_utf8_encode(const unsigned int *us, int start, int end, 
-				 unsigned char *s, int dstart,
-				 char utf16);
-MZ_EXTERN int scheme_utf8_encode_all(const unsigned int *us, int len, unsigned char *s);
+MZ_EXTERN intptr_t scheme_utf8_encode(const unsigned int *us, intptr_t start, intptr_t end, 
+				      unsigned char *s, intptr_t dstart,
+				      char utf16);
+MZ_EXTERN intptr_t scheme_utf8_encode_all(const unsigned int *us, intptr_t len, unsigned char *s);
 
-MZ_EXTERN char *scheme_utf8_encode_to_buffer(const mzchar *s, int len, 
-					     char *buf, int blen);
-MZ_EXTERN char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len, 
-						 char *buf, int blen, intptr_t *rlen);
+MZ_EXTERN char *scheme_utf8_encode_to_buffer(const mzchar *s, intptr_t len, 
+					     char *buf, intptr_t blen);
+MZ_EXTERN char *scheme_utf8_encode_to_buffer_len(const mzchar *s, intptr_t len, 
+						 char *buf, intptr_t blen, intptr_t *rlen);
 
-MZ_EXTERN unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end, 
-					       unsigned short *buf, int bufsize,
-					       intptr_t *ulen, int term_size);
-MZ_EXTERN mzchar *scheme_utf16_to_ucs4(const unsigned short *text, int start, int end, 
-				       mzchar *buf, int bufsize,
-				       intptr_t *ulen, int term_size);
+MZ_EXTERN unsigned short *scheme_ucs4_to_utf16(const mzchar *text, intptr_t start, intptr_t end, 
+					       unsigned short *buf, intptr_t bufsize,
+					       intptr_t *ulen, intptr_t term_size);
+MZ_EXTERN mzchar *scheme_utf16_to_ucs4(const unsigned short *text, intptr_t start, intptr_t end, 
+				       mzchar *buf, intptr_t bufsize,
+				       intptr_t *ulen, intptr_t term_size);
 
 MZ_EXTERN Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e);
 MZ_EXTERN void scheme_close_converter(Scheme_Object *conv);
@@ -982,17 +982,17 @@ MZ_EXTERN Scheme_Object *scheme_datum_to_kernel_stx(Scheme_Object *e);
 /*========================================================================*/
 
 MZ_EXTERN Scheme_Object *scheme_intern_symbol(const char *name);
-MZ_EXTERN Scheme_Object *scheme_intern_exact_symbol(const char *name, unsigned int len);
-MZ_EXTERN Scheme_Object *scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len);
+MZ_EXTERN Scheme_Object *scheme_intern_exact_symbol(const char *name, uintptr_t len);
+MZ_EXTERN Scheme_Object *scheme_intern_exact_char_symbol(const mzchar *name, uintptr_t len);
 MZ_EXTERN Scheme_Object *scheme_make_symbol(const char *name); /* Make uninterned */
-MZ_EXTERN Scheme_Object *scheme_make_exact_symbol(const char *name, unsigned int len); /* Exact case */
-MZ_EXTERN Scheme_Object *scheme_make_exact_char_symbol(const mzchar *name, unsigned int len); /* Exact case */
+MZ_EXTERN Scheme_Object *scheme_make_exact_symbol(const char *name, uintptr_t len); /* Exact case */
+MZ_EXTERN Scheme_Object *scheme_make_exact_char_symbol(const mzchar *name, uintptr_t len); /* Exact case */
 MZ_EXTERN const char *scheme_symbol_name(Scheme_Object *sym);
-MZ_EXTERN const char *scheme_symbol_name_and_size(Scheme_Object *sym, unsigned int *l, int flags);
+MZ_EXTERN const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *l, int flags);
 MZ_EXTERN char *scheme_symbol_val(Scheme_Object *sym);
 
-MZ_EXTERN Scheme_Object *scheme_intern_exact_keyword(const char *name, unsigned int len);
-MZ_EXTERN Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int len);
+MZ_EXTERN Scheme_Object *scheme_intern_exact_keyword(const char *name, uintptr_t len);
+MZ_EXTERN Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, uintptr_t len);
 
 /*========================================================================*/
 /*                                structs                                 */
@@ -1123,7 +1123,7 @@ MZ_EXTERN int scheme_check_proc_arity2(const char *where, int a,
 				       int which, int argc, Scheme_Object **argv,
 				       int false_ok);
 
-MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, int *len);
+MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, intptr_t *len);
 MZ_EXTERN char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, intptr_t *len);
 
 MZ_EXTERN const char *scheme_system_library_subpath();
@@ -1132,7 +1132,7 @@ MZ_EXTERN void scheme_signal_received(void);
 MZ_EXTERN void scheme_signal_received_at(void *);
 MZ_EXTERN void *scheme_get_signal_handle();
 
-MZ_EXTERN int scheme_char_strlen(const mzchar *s);
+MZ_EXTERN intptr_t scheme_char_strlen(const mzchar *s);
 
 MZ_EXTERN Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
 

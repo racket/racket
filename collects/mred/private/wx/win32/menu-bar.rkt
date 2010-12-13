@@ -55,6 +55,10 @@
          (send m set-parent this lbl hmenu)))
       (refresh))
 
+    (define/public (popup-menu-with-char c)
+      (when parent
+	(send parent popup-menu-with-char c)))
+
     (define/public (set-parent f)
       (SetMenu (send f get-hwnd) hmenu)
       (set! parent f)

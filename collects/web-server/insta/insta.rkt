@@ -58,8 +58,8 @@
                                      #'(body ...))])
        (quasisyntax/loc stx
          (#,@expanded
-          (provide/contract (#,start (request? . -> . response/c)))
-          (serve/servlet (contract (request? . -> . response/c) #,start
+          (provide/contract (#,start (request? . -> . can-be-response?)))
+          (serve/servlet (contract (request? . -> . can-be-response?) #,start
                                    'you 'web-server
                                    "start"
                                    #f)

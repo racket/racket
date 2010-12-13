@@ -92,6 +92,8 @@
       location.href = selector[selector.selectedIndex].value;
     }
     // returns an ordering for the platform names, an array of regexps
+    // note that the entries are sorted in a good order, so return an order
+    // that only brings the locally desired entries to the top
     function getPlatformOrder() {
       var p = navigator.platform;
       var l = function(str) { return p.indexOf(str) != -1@";" }
@@ -104,18 +106,15 @@
           Linux32  = /Linux.*i386/,
           Unix     = /Unix/,
           Solaris  = /Solaris/;
-      var default_order = [Win, Mac, Linux, Unix];
-      // The default is the common case
-      if (p == null) return default_order;
-      else if (l("SunOS")) return [Solaris, Unix, Linux, Mac, Win];
-      else if (l("Win"))   return [Win, Mac, Linux, Unix];
-      else if (l("Mac"))
-      return [(l("Intel")?MacIntel:MacPPC), Mac, Unix, Linux, Win];
+      if (p == null) return [];
+      else if (l("SunOS")) return [Solaris, Unix];
+      else if (l("Win"))   return [Win];
+      else if (l("Mac"))   return [(l("Intel")?MacIntel:MacPPC), Mac, Unix];
       else if (l("Linux")) {
         // also show the linux explanation if it's a linux
         document.getElementById("linux_explain").style.display = "block";
-        return [(l("_64")?Linux64:Linux32), Linux, Unix, Mac, Win];
-      } else return default_order;
+        return [(l("_64")?Linux64:Linux32), Linux, Unix];
+      } else return [];
     }
     // show the linux explanation on change too (do it with a timeout so it
     // changes even when the arrow keys are used to move the selection -- since
@@ -134,28 +133,26 @@
     //
     var opts = selector.options;
     var len = opts.length;
-    var tmps = new Array(len); // temp array to sort the options
     // get the order and a make a sorting function
     var order = getPlatformOrder();
     function getOrder(str) {
-      for (var i=0@";" i<len@";" i++)
-        if (str.search(order[i]) >= 0) return i * 10;
+      for (var i=0@";" i<order.length@";" i++)
+        if (str.search(order[i]) >= 0) return i;
       return 999;
     }
     function isBetter(opt1,opt2) {
+      // sort first by the order, then by how they were placed originally
       var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
-      // prefer non-source
-      if (opt1[0].search("source")>=0) ord1 += 1;
-      if (opt2[0].search("source")>=0) ord2 += 1;
            if (ord1 < ord2)       return -1;
       else if (ord1 > ord2)       return +1;
-      else if (opt1[0] < opt2[0]) return -1;
-      else if (opt1[0] > opt2[0]) return +1;
+      else if (opt1[2] < opt2[2]) return -1;
+      else if (opt1[2] > opt2[2]) return +1;
       else                        return  0;
     }
     // sort the options, need to use a temporary array
+    var tmps = new Array(len);
     for (var i=0@";" i<len@";" i++)
-      tmps[i]=[opts[i].text,opts[i].value];
+      tmps[i]=[opts[i].text,opts[i].value,i];
     tmps.sort(isBetter);
     for (var i=0@";" i<len@";" i++) {
       opts[i].text  = tmps[i][0];

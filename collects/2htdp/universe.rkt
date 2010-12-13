@@ -12,7 +12,8 @@
    -- make window resizable :: why
 |#
 
-(require (for-syntax "private/syn-aux.ss")
+(require (for-syntax "private/syn-aux.ss"
+                     stepper/private/shared)
          "private/syn-aux-aux.ss" 
          "private/syn-aux.ss"
          "private/check-aux.ss"
@@ -226,7 +227,9 @@
                    [_ (err '#'record? stx)])))]
             [args 
              (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")])
-       #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args)))]))
+       (stepper-syntax-property
+        #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
+        'stepper-skip-completely #t))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
@@ -341,4 +344,3 @@
     (parameterize ([current-eventspace esp])
       (queue-callback (lambda () (channel-put obj:ch (o)))))
     (send (channel-get obj:ch) last)))
-    

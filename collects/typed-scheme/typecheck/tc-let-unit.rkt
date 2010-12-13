@@ -11,7 +11,7 @@
          ;racket/trace unstable/debug
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
-         syntax/kerncase syntax/parse
+         syntax/kerncase syntax/parse unstable/syntax
          unstable/debug
          (for-template 
           racket/base
@@ -27,46 +27,50 @@
     [(tc-results: ts _ _)
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
-(d/c (do-check expr->type namess results form exprs body clauses expected #:abstract [abstract null])
+(d/c (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results? . c:-> . any/c)
        (listof (listof identifier?)) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
       (#:abstract any/c)
       . c:->* . 
       tc-results?)
-     (w/c t/p ([types (listof (listof Type/c))]
-               [props (listof (listof Filter?))])
-          (define-values (types props)
-            (for/lists (t p) 
-              ([r (in-list results)]
+     (w/c t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
+               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
+               [props          (listof (listof Filter?))])
+          (define-values (types expected-types props)
+            (for/lists (t e p) 
+              ([r     (in-list results)]
+               [e-r   (in-list expected-results)]
                [names (in-list namess)])
-              (match r 
-                [(tc-results: ts (FilterSet: fs+ fs-) os)
+              (match* (r e-r)
+                [((tc-results: ts (FilterSet: fs+ fs-) os) (tc-results: e-ts _ _)) ; rest should be the same
                  ;(printf "f+: ~a\n" fs+)
                  ;(printf "f-: ~a\n" fs-)
                  (values ts
+                         e-ts
                          (apply append
                                 (for/list ([n names]
                                            [f+ fs+]
                                            [f- fs-])
                                   (list (make-ImpFilter (-not-filter (-val #f) n) f+)
                                         (make-ImpFilter (-filter (-val #f) n) f-)))))]
-                [(tc-results: ts (NoFilter:) _) (values ts null)]))))
+                [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
+                 (values ts e-ts null)]))))
+     (w/c append-region ([p1 (listof Filter?)]
+                         [p2 (listof Filter?)])
+          (define-values (p1 p2)
+            (combine-props (apply append props) (env-props (lexical-env)) (box #t))))
      ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name
    namess
    ;; the types
    types
-   (w/c append-region
-    #:result (listof Filter?)
-    (define-values (p1 p2)
-      (combine-props (apply append props) (env-props (lexical-env)) (box #t)))
-    (append p1 p2))
+   (append p1 p2)
    (for-each expr->type
              clauses
              exprs 
-             results)
+             expected-results)
    (let ([subber (lambda (proc lst)
                    (for/list ([i (in-list lst)])
                      (for/fold ([s i])
@@ -78,11 +82,20 @@
           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
          [(tc-results: ts fs os dt db)
           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
-     (if expected 
-         (check-below 
-          (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
-          expected)
-         (run (tc-exprs (syntax->list body)))))))
+     (with-lexical-env/extend/props
+      ;; we typechecked the rhss with the lhss having types that potentially contain undefined
+      ;; if undefined can actually show up, a type error will have been triggered
+      ;; it is therefore safe to typecheck the body with the original types the user gave us
+      ;; any undefined-related problems have been caught already
+      namess
+      expected-types ; types w/o undefined
+      (append p1 p2)
+      ;; typecheck the body
+      (if expected 
+          (check-below 
+           (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
+           expected)
+          (run (tc-exprs (syntax->list body))))))))
 
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds
@@ -115,12 +128,12 @@
     (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
       (cond 
         ;; after everything, check the body expressions
-        [(null? names) 
-         (do-check void null null form null body null expected #:abstract orig-flat-names)
-         #;
-         (if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))]
+        [(null? names)
+         ;(if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))
+         (do-check void null null null form null body null expected #:abstract orig-flat-names)]
         ;; if none of the names bound in the letrec are free vars of this rhs
-        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?)) (free-vars (car exprs))))
+        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
+                     (free-vars (car exprs))))
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
@@ -131,7 +144,70 @@
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a\n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
-                   names (map (λ (l) (ret (map get-type l))) names) form exprs body clauses expected)]))))
+                   names
+                   ;; compute set of variables that can't be undefined. see below.
+                   (let-values
+                    ([(safe-bindings _)
+                      (for/fold ([safe-bindings              '()] ; includes transitively-safe
+                                 [transitively-safe-bindings '()])
+                          ([names  names]
+                           [clause clauses])
+                        (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
+                          ;; transitively safe -> safe to mention in a subsequent rhs
+                          [(transitively-safe) (values (append names safe-bindings)
+                                                       (append names transitively-safe-bindings))]
+                          ;; safe -> safe by itself, but may not be safe to use in a subsequent rhs
+                          [(safe)              (values (append names safe-bindings)
+                                                       transitively-safe-bindings)]
+                          ;; unsafe -> could be undefined
+                          [(unsafe)            (values safe-bindings transitively-safe-bindings)]))])
+                    (map (λ (l) (let ([types-from-user (map get-type l)])
+                                  (ret (if (andmap (λ (x) ; are all the lhs vars safe?
+                                                      (s:member x safe-bindings bound-identifier=?))
+                                                   l)
+                                           types-from-user
+                                           (map (λ (x) (make-Union (list x -Undefined)))
+                                                types-from-user)))))
+                         names))
+                   ;; types the user gave. check against that to error if we could get undefined
+                   (map (λ (l) (ret (map get-type l))) names)
+                   form exprs body clauses expected)]))))
+
+;; determines whether any of the variables bound in the given clause can have an undefined value
+;; in this case, we cannot trust the type the user gave us and must union it with undefined
+;; for example, the following code:
+;;  (letrec: ([x : Float x]) x)
+;; should not typecheck with type Float, even though the user said so, because the actual value
+;; is undefined.
+;; this implements a conservative analysis.
+;; we identify 3 kinds of bindings:
+;;  - safe bindings cannot be undefined
+;;  - transitively safe bindings are safe and can safely be used in subsequent rhss
+;;  - unsafe bindings may be undefined
+;; x is transitively safe if for all its free variables, they are either transitively safe and
+;; earlier in the letrec or they are bound outside the letrec
+;; x is safe if it is transitively safe or if its rhs is a lambda
+;; otherwise, x is unsafe
+;; this function returns either 'transitively-safe, 'safe or 'unsafe
+;; Note: In some cases (such as the example on the bottom of page 6 of Ghuloum and Dybvig's
+;;  Fixing Letrec (reloaded) paper), we are more conservative than a fully-connected component
+;;  based approach. On the other hand, our algorithm should cover most interesting cases and
+;;  is much simpler than Tarjan's.
+(define (safe-letrec-values-clause? clause transitively-safe-bindings letrec-bound-ids)
+  (define clause-rhs
+    (syntax-parse clause
+      [(bindings . rhs) #'rhs]))
+  (cond [(andmap (lambda (fv)
+                   (or (not (s:member fv letrec-bound-ids bound-identifier=?)) ; from outside
+                       (s:member fv transitively-safe-bindings bound-identifier=?)))
+                 (apply append
+                        (syntax-map (lambda (x) (free-vars x))
+                                    clause-rhs)))
+         'transitively-safe]
+        [else
+         (syntax-parse clause-rhs #:literal-sets (kernel-literals)
+           [((#%plain-lambda _ ...)) 'safe]
+           [else                     'unsafe])]))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
@@ -158,6 +234,4 @@
                                          tc-expr/check))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
-    (do-check void names types form exprs body clauses expected)))
-
-
+    (do-check void names types types form exprs body clauses expected)))

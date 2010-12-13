@@ -4,14 +4,22 @@
          web-server/http/request
          web-server/http/request-structs
          net/websocket/conn
-         net/websocket/handshake)
+         net/websocket/handshake
+         openssl)
 (provide (except-out (all-from-out net/websocket/conn) ws-conn))
 
+(define (wss-url? u)
+  (and (url? u)
+       (equal? (url-scheme u) "wss")))
+
 (define (ws-url? u)
-  (and (url? u) (equal? (url-scheme u) "ws")))
+  (and (url? u)
+       (or (equal? (url-scheme u) "ws")
+           (wss-url? u))))
 
 (provide/contract
  [ws-url? (-> any/c boolean?)]
+ [wss-url? (-> any/c boolean?)]
  [ws-connect (->* (ws-url?)
                   (#:headers (listof header?))
                   open-ws-conn?)])
@@ -41,20 +49,23 @@
                             pre-path)
                      pre-path)))))
   ; Connect
-  (define-values (ip op) (tcp-connect host port))
+  (define connect (if (wss-url? url) ssl-connect tcp-connect))
+  (define-values (ip op) (connect host port))
   ; Handshake (client)
-  (fprintf op "GET ~a HTTP/1.1\r\n" the-path)
   (define-values (key1 key2 key3 client-ans) (generate-key))
-  (print-headers 
-   op
-   (list* (make-header #"Host" (string->bytes/utf-8 host))
-          (make-header #"Connection" #"Upgrade")
-          (make-header #"Upgrade" #"WebSocket")
-          (make-header #"Sec-WebSocket-Key1" (string->bytes/utf-8 key1))
-          (make-header #"Sec-WebSocket-Key2" (string->bytes/utf-8 key2))
-          headers))
-  
-  (write-bytes key3 op)
+  (write-bytes (call-with-output-bytes
+                (λ (op)
+                  (fprintf op "GET ~a HTTP/1.1\r\n" the-path)
+                  (print-headers
+                   op
+                   (list* (make-header #"Host" (string->bytes/utf-8 host))
+                          (make-header #"Connection" #"Upgrade")
+                          (make-header #"Upgrade" #"WebSocket")
+                          (make-header #"Sec-WebSocket-Key1" (string->bytes/utf-8 key1))
+                          (make-header #"Sec-WebSocket-Key2" (string->bytes/utf-8 key2))
+                          headers))
+                  (write-bytes key3 op)))
+               op)
   (flush-output op)
   ; Handshake (server)
   (define sresponse (read-bytes-line ip 'any))

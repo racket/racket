@@ -539,7 +539,7 @@
   (mfs-recur-over-subdirectories "Récursion dans les sous-répertoires")
   (mfs-regexp-filename-filter "Expression régulière pour filtrer les noms de fichiers")
   (mfs-search-string "Chercher la chaîne de caractères")
-  (mfs-drscheme-multi-file-search "DrRacket - Recherche dans des fichiers multiples") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "Recherche dans des fichiers multiples - DrRacket") ;; results window and error message title
   (mfs-not-a-dir "\"~a\" n'est pas un répertoire")
   (mfs-open-file "Ouvrir le fichier")
   (mfs-stop-search "Stopper la recherche")

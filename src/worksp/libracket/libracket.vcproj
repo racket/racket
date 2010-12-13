@@ -10,6 +10,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -34,15 +37,12 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
 				Name="VCMIDLTool"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\racket\include,..\..\racket\src,..\..\foreign\libffi_msvc,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -99,6 +99,89 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				BaseAddress="0x10400000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
@@ -118,9 +201,6 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
 				Name="VCMIDLTool"
 			/>
 			<Tool
@@ -129,7 +209,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\racket\include,..\..\racket\src,..\..\foreign\libffi_msvc,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -162,6 +242,91 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Oy-"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				BaseAddress="0x10400000"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -227,10 +392,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Racket\Src\Eval.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\foreign\libffi_msvc\ffi.c"
 				>
 			</File>
 			<File
@@ -310,10 +471,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi_msvc\prep_cif.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Racket\Src\Print.c"
 				>
 			</File>
@@ -370,15 +527,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\foreign\libffi_msvc\types.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Racket\Src\vector.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\foreign\libffi_msvc\win32.c"
 				>
 			</File>
 		</Filter>

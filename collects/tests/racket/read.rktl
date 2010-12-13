@@ -1069,6 +1069,15 @@
 (err/rt-test (readstr "#s((v 0 (2 #f) #()) 1)") exn:fail:read?)
 (err/rt-test (readstr "#s((v 0 (2 #f) #(0)) 1)") exn:fail:read?)
 
+(err/rt-test (readstr "#s(1 2)") (lambda (x)
+                                   (and (exn:fail:read? x)
+                                        (not (exn:fail:read:eof? x)))))
+(err/rt-test (readstr "#s(1 2") exn:fail:read:eof?)
+(err/rt-test (read-syntax 's (open-input-string "#s((a #(0)) 1)"))
+             (lambda (x)
+               (and (exn:fail:read? x)
+                    (not (exn:fail:read:eof? x)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

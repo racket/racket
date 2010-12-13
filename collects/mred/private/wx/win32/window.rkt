@@ -56,8 +56,6 @@
                                      -> (unless r (failed 'ClientToScreen))))
 
 (define-gdi32 CreateFontIndirectW (_wfun _LOGFONT-pointer -> _HFONT))
-(define-user32 FillRect (_wfun _HDC _RECT-pointer _HBRUSH -> (r : _int)
-                               -> (when (zero? r) (failed 'FillRect))))
 
 (define-shell32 DragAcceptFiles (_wfun _HWND _BOOL -> _void))
 
@@ -150,24 +148,38 @@
          [(= msg WM_KILLFOCUS)
           (queue-window-event this (lambda () (on-kill-focus)))
           0]
-         [(and (= msg WM_SYSKEYDOWN)
-               (or (= wParam VK_MENU) (= wParam VK_F4))) ;; F4 is close
-          (unhide-cursor)
-          (begin0
-           (default w msg wParam lParam)
-           (do-key w msg wParam lParam #f #f))]
+         [(= msg WM_SYSKEYDOWN)
+          (let ([result (if (or (= wParam VK_MENU) (= wParam VK_F4)) ;; F4 is close
+			    (begin
+			      (unhide-cursor)
+			      (default w msg wParam lParam))
+			    0)])
+	    (do-key w msg wParam lParam #f #f void)
+	    result)]
          [(= msg WM_KEYDOWN)
           (do-key w msg wParam lParam #f #f default)]
          [(= msg WM_KEYUP)
           (do-key w msg wParam lParam #f #t default)]
-         [(and (= msg WM_SYSCHAR)
-               (= wParam VK_MENU))
-          (unhide-cursor)
-          (begin0
-           (default w msg wParam lParam)
-           (do-key w msg wParam lParam #t #f void))]
+         [(= msg WM_SYSCHAR)
+	  (let ([result (if (= wParam VK_MENU)
+			    (begin
+			      (unhide-cursor)
+			      (default w msg wParam lParam))
+			    0)])
+	    (do-key w msg wParam lParam #t #f void)
+	    result)]
          [(= msg WM_CHAR)
           (do-key w msg wParam lParam #t #f default)]
+	 [(= msg WM_MOUSEWHEEL)
+	  (let ([orig-delta (quotient (HIWORD wParam) WHEEL_DELTA)])
+	    (let loop ([delta (abs orig-delta)])
+	      (unless (zero? delta)
+		(do-key w msg (if (negative? orig-delta)
+				  'wheel-down
+				  'wheel-up)
+			lParam #f #f void)
+                (loop (sub1 delta)))))
+	  0]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]
                  [wx (any-hwnd->wx control-hwnd)]
@@ -208,6 +220,9 @@
          [(= msg WM_COPYDATA)
           (handle-copydata lParam)
           0]
+	 [(= msg WM_INPUTLANGCHANGE)
+	  (reset-key-mapping)
+	  0]
          [else
           (default w msg wParam lParam)])))
 
@@ -636,11 +651,11 @@
 
   (define/private (pre-event-refresh key?)
     ;; Since we break the connection between the
-    ;; Cocoa queue and event handling, we
+    ;; Win32 queue and event handling, we
     ;; re-sync the display in case a stream of
     ;; events (e.g., key repeat) have a corresponding
     ;; stream of screen updates.
-    (void))
+    (flush-display))
 
   (define/public (get-dialog-level) (send parent get-dialog-level)))
 

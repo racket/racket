@@ -5993,6 +5993,8 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
     if (!SCHEME_FALSEP(argv[0])) {
       if (SCHEME_REALP(argv[0]))
 	timeout = (float)scheme_real_to_double(argv[0]);
+      else if (scheme_check_proc_arity(NULL, 0, 0, argc, argv))
+        timeout = 0.0;
       
       if (timeout < 0.0) {
 	scheme_wrong_type(name, "non-negative real number", 0, argc, argv);
@@ -6151,10 +6153,17 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
       }
     }
     return o;
-  } else if (tailok)
-    return scheme_false;
-  else
-    return NULL;
+  } else {
+    if (with_timeout && SCHEME_PROCP(argv[0])) {
+      if (tailok)
+        return _scheme_tail_apply(argv[0], 0, NULL);
+      else
+        return _scheme_apply(argv[0], 0, NULL);
+    } else if (tailok)
+      return scheme_false;
+    else
+      return NULL;
+  }
 }
 
 static Scheme_Object *sch_sync(int argc, Scheme_Object *argv[])

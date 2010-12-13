@@ -2233,11 +2233,11 @@
                 (λ (stx)
                   (syntax-case stx ()
                     [(_ test-form)
-                     #'(test (with-handlers ([exn:fail:contract? exn-message])
-                               (test-form (reduction-relation empty-language (--> any any))
-                                          #:equiv 1 2)
-                               "no error raised")
-                             #rx"tl-test\\.(?:.+).*broke the contract")]))])
+                     (syntax/loc stx
+                       (test-contract-violation
+                        (test-form (reduction-relation empty-language (--> any any))
+                                   #:equiv 1 2)
+                        #:blaming "tl-test"))]))])
     (test-bad-equiv-arg test-->)
     (test-bad-equiv-arg test-->>))
 
@@ -2269,15 +2269,18 @@
     
     (test (capture-output (test-results)) "2 tests failed (out of 6 total).\n")
     
-    (test (with-handlers ([exn:fail:contract? exn-message])
-            (test-->>∃ 1+ 0 (λ (x y) x)))
-          #rx"tl-test\\.(?:.+).*broke the contract.*goal expression")
-    (test (with-handlers ([exn:fail:contract? exn-message])
-            (test-->>∃ 1 0 1))
-          #rx"tl-test\\.(?:.+).*broke the contract.*reduction relation expression")
-    (test (with-handlers ([exn:fail:contract? exn-message])
-            (test-->>∃ #:steps 1.1 1+ 0 1))
-          #rx"tl-test\\.(?:.+).*broke the contract.*steps expression"))
+    (test-contract-violation
+     (test-->>∃ 1+ 0 (λ (x y) x))
+     #:blaming "tl-test"
+     #:message "goal expression")
+    (test-contract-violation
+     (test-->>∃ 1 0 1)
+     #:blaming "tl-test"
+     #:message "reduction relation expression")
+    (test-contract-violation
+     (test-->>∃ #:steps 1.1 1+ 0 1)
+     #:blaming "tl-test"
+     #:message "steps expression"))
   
   (print-tests-passed 'tl-test.ss)
   

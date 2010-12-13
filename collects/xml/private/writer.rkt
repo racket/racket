@@ -165,5 +165,11 @@
 (define (escape x table)
   (regexp-replace* table x replace-escaped))
 
+(provide escape
+         escape-table
+         escape-attribute-table
+         lowercase-symbol
+         write-xml-element)
+
 ;; incr : Nat -> Nat
 (define (incr n) (+ n 2))

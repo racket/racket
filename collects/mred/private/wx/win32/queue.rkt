@@ -65,7 +65,7 @@
 (define (message-dequeue es hwnd)
   ;; Called in the eventspace for hwnd:
   (let ([t (eventspace-extra-table es)]
-        [id (cast hwnd _HWND _long)])
+        [id (cast hwnd _HWND _intptr)])
     (atomically (hash-remove! t id))
     (let ([msg (malloc-msg)])
       (let loop ()
@@ -90,7 +90,7 @@
 (define (queue-message-dequeue es hwnd)
   ;; in atomic mode
   (let ([t (eventspace-extra-table es)]
-        [id (cast hwnd _HWND _long)])
+        [id (cast hwnd _HWND _intptr)])
     (unless (hash-ref t id #f)
       (hash-set! t id #t)
       (queue-event es (lambda () (message-dequeue es hwnd))))))

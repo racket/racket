@@ -207,17 +207,20 @@ pseudo-randomly for the result; the
 random-number generator that controls this choice.}
 
 
-@defproc[(sync/timeout [timeout-secs (or/c nonnegative-number? #f)]
+@defproc[(sync/timeout [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
                        [evt evt?] ...+) 
           any]{
 
-Like @racket[sync], but returns @racket[#f] if @racket[timeout-secs]
-is not @racket[#f] and if @racket[timeout-secs] seconds pass without a
-successful synchronization.
+Like @racket[sync] if @racket[timeout] is @racket[#f]. If
+@racket[timeout] is a real number, then the result is @racket[#f]
+if @racket[timeout] seconds pass without a
+successful synchronization. If @racket[timeout] is a procedure, then
+it is called in tail position if polling the @racket[evt]s discovers
+no ready events.
 
-If @racket[timeout-secs] is @racket[0], each @racket[evt] is checked
-at least once, so a @racket[timeout-secs] value of @racket[0] can be
-used for polling.
+A zero value for @racket[timeout] is equivalent to @racket[(lambda ()
+#f)]. In either case, each @racket[evt] is checked at least once
+before returning @racket[#f] or calling @racket[timeout].
 
 See also @racket[alarm-evt] for an alternative timeout mechanism.}
 
@@ -231,12 +234,11 @@ either all @racket[evt]s remain unchosen or the @racket[exn:break]
 exception is raised, but not both.}
 
 
-@defproc[(sync/timeout/enable-break [timeout-secs (or/c nonnegative-number? #f)]
+@defproc[(sync/timeout/enable-break [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
                                     [evt evt?] ...+) 
          any]{
 
-Like @racket[sync/enable-break], but with a timeout in seconds (or
-@racket[#f]), as for @racket[sync/timeout].}
+Like @racket[sync/enable-break], but with a timeout as for @racket[sync/timeout].}
 
 
 @defproc[(choice-evt [evt evt?] ...) evt?]{

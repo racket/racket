@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
 	 (except-in (rep type-rep) make-arr)
-         (rename-in (types convenience union utils) [make-arr* make-arr])
+         (rename-in (types convenience union utils printer filter-ops) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
@@ -22,6 +22,7 @@
 
 (provide star ddd/bound)
 (define enable-mu-parsing (make-parameter #t))
+(print-complex-filters? #t)
 
 (define ((parse/id p) loc datum)
   #;(printf "parse-type/id id : ~a\n ty: ~a\n" (syntax-object->datum loc) (syntax-object->datum stx))
@@ -103,7 +104,7 @@
   (pattern cdr
            #:attr pe (make-CdrPE)))
 
-(define-splicing-syntax-class latent-filter
+(define-splicing-syntax-class simple-latent-filter
   #:description "latent filter"  
   (pattern (~seq t:expr (~describe "@" (~datum @)) pe:path-elem ...)
            #:attr type (parse-type #'t)
@@ -111,6 +112,41 @@
   (pattern t:expr
            #:attr type (parse-type #'t)
            #:attr path '()))
+
+(define-syntax-class prop
+  #:attributes (prop)
+  (pattern (~literal Top) #:attr prop -top)
+  (pattern (~literal Bot) #:attr prop -bot)
+  (pattern (t:expr (~describe "@" (~datum @)) pe:path-elem ... i:nat)
+           #:attr prop (-filter (parse-type #'t) (syntax-e #'i) (attribute pe.pe)))
+  (pattern ((~datum !) t:expr (~describe "@" (~datum @)) pe:path-elem ... i:nat)
+           #:attr prop (-not-filter (parse-type #'t) (syntax-e #'i) (attribute pe.pe)))
+  (pattern ((~literal and) p:prop ...)
+           #:attr prop (apply -and (attribute p.prop)))
+  (pattern ((~literal or) p:prop ...)
+           #:attr prop (apply -or (attribute p.prop)))
+  (pattern ((~literal implies) p1:prop p2:prop)
+           #:attr prop (-imp (attribute p1.prop) (attribute p2.prop))))
+
+(define-syntax-class object
+  #:attributes (object)
+  (pattern e:expr
+           #:attr object -no-obj))
+
+(define-splicing-syntax-class full-latent
+  #:description "latent propositions and object"
+  (pattern (~seq (~optional (~seq #:+ p+:prop ...))
+                 (~optional (~seq #:- p-:prop ...))
+                 (~optional (~seq #:object o:object)))
+           #:attr positive (if (attribute p+.prop)
+                               (apply -and (attribute p+.prop))
+                               -top)
+           #:attr negative (if (attribute p-.prop)
+                               (apply -and (attribute p-.prop))
+                               -top)
+           #:attr object (if (attribute o.object)
+                             (attribute o.object)
+                             -no-obj)))
 
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])    
@@ -210,14 +246,25 @@
       [((~and kw t:Parameter) t1 t2)      
        (add-type-name-reference #'kw)
        (-Param (parse-type #'t1) (parse-type #'t2))]
-      ;; function types
-      ;; handle this error first:
-      [((~or dom (~between (~and kw t:->) 2 +inf.0)) ...)
-       (for ([k (syntax->list #'(kw ...))]) (add-type-name-reference k))
-       (tc-error/stx (syntax->list #'(kw ...))
-                     "The -> type constructor may be used only once in a form")
-       Err]
-      [(dom (~and kw t:->) rng : ~! latent:latent-filter)
+      ;; curried function notation
+      [((~and dom:non-keyword-ty (~not t:->)) ...
+        (~and kw t:->) 
+        (~and (~seq rest-dom ...) (~seq (~or _ (~between t:-> 1 +inf.0)) ...)))
+       (add-type-name-reference #'kw)
+       (let ([doms (for/list ([d (syntax->list #'(dom ...))])
+                    (parse-type d))])
+         (make-Function
+          (list (make-arr
+                 doms
+                 (parse-type (syntax/loc stx (rest-dom ...)))))))]
+      [(dom ... (~and kw t:->) rng : latent:full-latent)
+       (add-type-name-reference #'kw)
+       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
+       (->* (map parse-type (syntax->list #'(dom ...)))
+            (parse-type #'rng)
+            : (-FS (attribute latent.positive) (attribute latent.negative))
+            : (attribute latent.object))]
+      [(dom (~and kw t:->) rng : ~! latent:simple-latent-filter)
        (add-type-name-reference #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]

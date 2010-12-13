@@ -1305,7 +1305,7 @@ do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
     for (i = 0; i < k; i++) {
       if (!SCHEME_PAIRP(lst)) {
 	char *lstr;
-	int llen;
+	intptr_t llen;
 
 	lstr = scheme_make_provided_string(argv[0], 2, &llen);
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -1324,7 +1324,7 @@ do_list_ref(char *name, int takecar, int argc, Scheme_Object *argv[])
   if (takecar) {
     if (!SCHEME_PAIRP(lst)) {
       char *lstr;
-      int llen;
+      intptr_t llen;
 
       lstr = scheme_make_provided_string(argv[0], 2, &llen);
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -1400,7 +1400,7 @@ name (int argc, Scheme_Object *argv[]) \
       pair = SCHEME_CAR (list); \
       if (!SCHEME_PAIRP (pair)) {\
         char *npstr, *lstr; \
-        int nplen, llen; \
+        intptr_t nplen, llen; \
         npstr = scheme_make_provided_string(pair, 2, &nplen); \
         lstr = scheme_make_provided_string(argv[1], 2, &llen); \
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT, \

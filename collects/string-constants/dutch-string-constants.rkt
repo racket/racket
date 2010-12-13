@@ -287,7 +287,7 @@
  (mfs-recur-over-subdirectories "Recursief in mappen")
  (mfs-regexp-filename-filter "Regexp filename filter")
  (mfs-search-string "Zoektekst")
- (mfs-drscheme-multi-file-search "DrRacket - Multi File Search") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Multi File Search - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" is geen map")
  (mfs-open-file "Bestand openen")
  (mfs-stop-search "Stop met zoeken")

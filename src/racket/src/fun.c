@@ -1881,10 +1881,10 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code)
     }
 
     if (cstx->srcloc->line >= 0) {
-      sprintf(buf, "%s%s%ld:%ld",
+      sprintf(buf, "%s%s%" PRIdPTR ":%" PRIdPTR,
 	      src, (src[0] ? ":" : ""), cstx->srcloc->line, cstx->srcloc->col - 1);
     } else {
-      sprintf(buf, "%s%s%ld",
+      sprintf(buf, "%s%s%" PRIdPTR,
 	      src, (src[0] ? "::" : ""), cstx->srcloc->pos);
     }
 

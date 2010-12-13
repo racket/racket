@@ -81,7 +81,6 @@ from @schememodname[scheme/contract]:
  real-in
  recursive-contract
  string/len
- struct/c
  symbols
  syntax/c
  vector-immutable/c
@@ -124,3 +123,9 @@ flat contract that recognizes vectors. The number of elements in the
 vector must match the number of arguments supplied to
 @racket[vector/c], and each element of the vector must match the
 corresponding flat contract.}
+
+@defform[(struct/c struct-id flat-contract-expr ...)]{
+
+Produces a flat contract that recognizes instances of the structure
+type named by @racket[struct-id], and whose field values match the
+flat contracts produced by the @racket[flat-contract-expr]s.}

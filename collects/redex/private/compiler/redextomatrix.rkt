@@ -48,8 +48,8 @@
   (match dl
     [`(define-language ,(? symbol? name)
         ,non-terms ...)
-     (map (λ (x) (extract-literals/pat nts (cdr x) lit-table))
-          non-terms)]
+     (for-each (λ (x) (extract-literals/pat nts (cdr x) lit-table))
+               non-terms)]
     [_
      'error]))
 
@@ -91,7 +91,7 @@
   (match dl
     [`(define-language ,(? symbol? name)
         ,non-terms ...)
-     (map (λ (x) (hash-set! or-table (car x) (build-or (cdr x) nts (hash-map lit-table (λ (x y) x)) #t)))
+     (for-each (λ (x) (hash-set! or-table (car x) (build-or (cdr x) nts (hash-map lit-table (λ (x y) x)) #t)))
           non-terms)]
     [_
      'error]))
@@ -366,27 +366,50 @@
     (hash-for-each
      or-table
      (λ (key val)
-       (let ((compiled-bool (car (apply-reduction-relation* red
-                                                            (term (matrix (a)
-                                                                          (
-                                                                           ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
-                                                                           )
-                                                                          ()
-                                                                          ()
-                                                                          0
-                                                                          #f)))))
-             (compiled-set (car (apply-reduction-relation* red 
-                                                           (term (matrix (a)
-                                                                         ( ,@(map (λ (x) 
-                                                                                    (let ((row (wrap-production-with-name x))) 
-                                                                                      `((,row -> ,(build-right-hand-side row)) 
-                                                                                        
-                                                                                        ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
-                                                                                  (make-or-list val)))
-                                                                         ()
-                                                                         ()
-                                                                         0
-                                                                         #f))))
+       (let ((compiled-bool (begin #;(printf "~a\n\n" (term (matrix (a)
+                                                                  (
+                                                                   ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
+                                                                   )
+                                                                  ()
+                                                                  ()
+                                                                  0
+                                                                  #f))) 
+                                   (car (apply-reduction-relation* red
+                                                                   (term (matrix (a)
+                                                                                 (
+                                                                                  ((,val -> (set! results (cons #t results))) ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,val () ())))))
+                                                                                  )
+                                                                                 ()
+                                                                                 ()
+                                                                                 0
+                                                                                 #f))))
+                                   )
+                            )
+             (compiled-set (begin #;(traces red (term (matrix (a)
+                                                                 ( ,@(map (λ (x) 
+                                                                            (let ((row (wrap-production-with-name x))) 
+                                                                              `((,row -> ,(build-right-hand-side row)) 
+                                                                                
+                                                                                ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
+                                                                          (make-or-list val)))
+                                                                 ()
+                                                                 ()
+                                                                 0
+                                                                 #f)))
+                                  (match (apply-reduction-relation* red 
+                                                                  (term (matrix (a)
+                                                                                ( ,@(map (λ (x) 
+                                                                                           (let ((row (wrap-production-with-name x))) 
+                                                                                             `((,row -> ,(build-right-hand-side row)) 
+                                                                                               
+                                                                                               ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,row () ())))))))
+                                                                                         (make-or-list val)))
+                                                                                ()
+                                                                                ()
+                                                                                0
+                                                                                #f)))
+                                    ((list x) x))
+                                  )
                            ))
          (hash-set! nt-table
                     key
@@ -427,34 +450,34 @@
 
 ; compile-redex-match: sexp[pattern] (listof symbol[non-terminals]) (listof symbols) -> sexp[def]
 (define (compile-redex-match pat nts syms)
- ; prints for debuging
- #;(printf "~a\n\n"
-           `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
-                               `((,p -> 
-                                     (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
-                                                                                                     (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
-                                                                         a
-                                                                         'none)
-                                                         results))
-                                     ) 
-                                 ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
-                               )
-                            ) () () 0 #f)
+  ; prints for debuging
+  (printf "~a\n\n"
+          `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
+                           `((,p -> 
+                                 (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
+                                                                                                 (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
+                                                                     a
+                                                                     'none)
+                                                     results))
+                                 ) 
+                             ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
+                           )
+                        ) () () 0 #f)
           )
- #;(printf "~a\n\n" 
+  (printf "~a\n\n" 
           (apply-reduction-relation* 
            red
            `(matrix (a) (,(let ((p (translate-redex pat nts syms #f)))
-                               `((,p -> 
-                                     (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
-                                                                                                     (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
-                                                                         a
-                                                                         'none)
-                                                         results))
-                                     ) 
-                                 ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
-                               )
-                            ) () () 0 #f))
+                            `((,p -> 
+                                  (set! results (cons (make-test-mtch (make-bindings (list ,@(map (λ (x) `(make-bind ',(string->symbol (format "~s" (term (Get-Pvar ,x)))) (term ,x))) 
+                                                                                                  (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))) ))
+                                                                      a
+                                                                      'none)
+                                                      results))
+                                  ) 
+                              ,@(map (λ (x) (list x #f)) (remove-duplicates (term (Get-Free-Name-Patterns ,p () ())))))
+                            )
+                         ) () () 0 #f))
           )
   `(λ (a)
      (let ([results '()])
@@ -480,6 +503,7 @@
 (define (make-lang-namespace lang)
   (define lang-defs (compile-dl lang))
   (define namespace (namespace-anchor->namespace here))
+  #;(pretty-print lang-defs)
   (for-each (curryr eval namespace) lang-defs)
   namespace)
 
@@ -497,6 +521,7 @@
   (define nts (compile-define-language-nts lang))
   (define syms (compile-define-language-lit lang nts))
   (λ (pat)
+    #;(pretty-print (compile-redex-match pat nts syms))
     (eval (compile-redex-match pat nts syms) namespace)))
 
 ;; sexp[lang] -> sexp[non-terminal] -> sexp[term] -> boolean

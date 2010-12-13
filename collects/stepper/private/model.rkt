@@ -63,13 +63,13 @@
    void?))
 
 (provide/contract
- [go (program-expander-contract       ; program-expander
+ [go (->*
+      (program-expander-contract       ; program-expander
       (step-result? . -> . void?)     ; receive-result
-      (or/c render-settings? false/c) ; render-settings
-      boolean?                        ; track-inferred-names?
-      (or/c object? (symbols 'testing))   ;; FIXME: can do better: subclass of language%       ; the language level
-      boolean?                        ; disable-error-handling (to allow debugging)
-      . -> .
+      (or/c render-settings? false/c)) ; render-settings
+      (#:raw-step-receiver 
+       (-> continuation-mark-set? symbol? void?)
+       #:disable-error-handling? boolean?)
       void?)])
 
    
@@ -81,7 +81,8 @@
 ; go starts a stepper instance
 ; see provide stmt for contract
 (define (go program-expander receive-result render-settings
-            show-lambdas-as-lambdas? language-level disable-error-handling)
+            #:disable-error-handling? [disable-error-handling? #f]
+            #:raw-step-receiver [raw-step-receiver #f])
   
   ;; finished-exps:
   ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -320,8 +321,10 @@
         (lambda (stx dont-care) (list stx))))
   
   (define (step-through-expression expanded expand-next-expression)
-    (let* ([annotated (a:annotate expanded break show-lambdas-as-lambdas?
-                                  language-level)])
+    (define show-lambdas-as-lambdas?
+      (render-settings-show-lambdas-as-lambdas? render-settings))
+    (let* ([annotated (a:annotate expanded break 
+                                  show-lambdas-as-lambdas?)])
       (parameterize ([test-engine:test-silence #t])
         (eval-syntax annotated))
       (expand-next-expression)))
@@ -340,7 +343,7 @@
   
   (program-expander
    (lambda ()
-     (unless disable-error-handling
+     (unless disable-error-handling?
        (error-display-handler err-display-handler)))
    (lambda (expanded continue-thunk) ; iter
      (r:reset-special-values)

@@ -14,5 +14,5 @@
 	 (for-syntax typed-scheme/private/base-types-extra))
 (provide (rename-out [with-handlers: with-handlers]
                      [define-type-alias define-type])
-	 assert with-type for for*
+	 assert defined? with-type for for*
          (for-syntax (all-from-out typed-scheme/private/base-types-extra)))

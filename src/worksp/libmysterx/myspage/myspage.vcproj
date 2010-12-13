@@ -11,6 +11,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -36,9 +39,6 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
 				Name="VCMIDLTool"
 				AdditionalIncludeDirectories="..\..\..\..\include"
 				WarningLevel="3"
@@ -60,7 +60,7 @@
 				UsePrecompiledHeader="0"
 				BrowseInformation="1"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -109,14 +109,12 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 		<Configuration
-			Name="Jrm|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			Name="Debug|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfATL="1"
@@ -134,12 +132,10 @@
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
 				Name="VCMIDLTool"
 				AdditionalIncludeDirectories="..\..\..\..\include"
 				WarningLevel="3"
+				TargetEnvironment="3"
 				GenerateStublessProxies="true"
 				TypeLibraryName="$(ProjectName).tlb"
 				OutputDirectory="..\..\..\mysterx\myspage"
@@ -158,7 +154,7 @@
 				UsePrecompiledHeader="0"
 				BrowseInformation="1"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -175,7 +171,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
-				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
 				IgnoreDefaultLibraryNames="LIBCMT"
@@ -185,8 +180,8 @@
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="$(OutDir)\$(InputName).lib"
-				TargetMachine="1"
+				ImportLibrary="$(OutDir)\$(ProjectName).lib"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -208,8 +203,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
 			/>
 		</Configuration>
 		<Configuration
@@ -231,9 +224,6 @@
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
 				Name="VCMIDLTool"
@@ -260,7 +250,7 @@
 				ProgramDataBaseFileName=""
 				WarningLevel="4"
 				SuppressStartupBanner="true"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="0"
 			/>
 			<Tool
@@ -310,8 +300,104 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				Description="Register $(ProjectName).dll"
-				CommandLine="REGSVR32 /s ..\..\..\..\lib\$(ProjectName).dll"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfATL="1"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			DeleteExtensionsOnClean="*.obj;*.ilk;*.pdb;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.bat;$(TargetPath)"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				AdditionalIncludeDirectories="..\..\..\..\include"
+				WarningLevel="3"
+				TargetEnvironment="3"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(ProjectName).tlb"
+				OutputDirectory="..\..\..\mysterx\myspage"
+				HeaderFileName="$(ProjectName).h"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="false"
+				AdditionalIncludeDirectories="..\..\..\..\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;MYSPAGE_EXPORTS"
+				StringPooling="true"
+				ExceptionHandling="1"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="false"
+				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName=""
+				WarningLevel="4"
+				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
+				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
+				LinkIncremental="1"
+				SuppressStartupBanner="true"
+				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
+				IgnoreDefaultLibraryNames=""
+				ModuleDefinitionFile="..\..\..\mysterx\myspage\$(ProjectName).def"
+				GenerateDebugInformation="false"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				ImportLibrary="$(OutDir)\$(InputName).lib"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>
@@ -367,7 +453,26 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCMIDLTool"
+						GenerateStublessProxies="true"
+						OutputDirectory="$(InputDir)"
+						HeaderFileName="$(InputName).h"
+						InterfaceIdentifierFileName="$(InputName)_i.c"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCMIDLTool"
+						OutputDirectory="$(InputDir)"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCMIDLTool"
@@ -387,7 +492,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						ResourceOutputFileName="$(InputDir)\$(InputName).res"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCResourceCompilerTool"
+						ResourceOutputFileName="$(InputDir)\$(InputName).res"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCResourceCompilerTool"

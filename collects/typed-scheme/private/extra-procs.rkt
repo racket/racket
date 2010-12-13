@@ -1,5 +1,5 @@
 #lang scheme/base
-(provide assert)
+(provide assert defined?)
 
 (define-syntax assert
   (syntax-rules ()
@@ -8,3 +8,6 @@
     ((assert v pred)
      (let ((val v))
        (if (pred val) val (error "Assertion failed"))))))
+
+(define (defined? v)
+  (not (equal? v (letrec ([x x]) x))))

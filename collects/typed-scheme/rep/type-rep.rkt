@@ -196,7 +196,8 @@
                  (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
                  (combine-frees (map free-vars* (cons dty rs))))
              (if (symbol? dbound)
-                 (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant))) (map free-idxs* (cons dty rs))))
+                 (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant))) 
+                                      (map free-idxs* (cons dty rs))))
                  (combine-frees (map free-idxs* (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 

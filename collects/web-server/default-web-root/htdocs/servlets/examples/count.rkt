@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/date)
+(require racket/date
+         web-server/http)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)
@@ -11,8 +12,9 @@
   (set! other-count (add1 other-count))
   (set! count (add1 count))
   
-  `(html (head (title "Counter"))
-         (body ([bgcolor "white"])
-               (p "This servlet was called " ,(number->string count)
-                  " times and " ,(number->string other-count)
-                  " times since loaded on " ,a-date "."))))
+  (response/xexpr
+   `(html (head (title "Counter"))
+          (body ([bgcolor "white"])
+                (p "This servlet was called " ,(number->string count)
+                   " times and " ,(number->string other-count)
+                   " times since loaded on " ,a-date ".")))))

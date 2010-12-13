@@ -14,4 +14,4 @@
          (for-syntax "private/base-types-extra.rkt"))
 (provide (rename-out [with-handlers: with-handlers])
          (for-syntax (all-from-out "private/base-types-extra.rkt"))
-	 assert with-type for for*)
+	 assert defined? with-type for for*)

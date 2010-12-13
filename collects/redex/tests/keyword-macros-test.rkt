@@ -47,16 +47,19 @@
 
 (let* ([default #'3]
        [formals `((#:a ,default (,#'(-> number? string?) "#:a arg")))]
-       [parse (λ (actuals) (parse-kw-args formals actuals actuals 'test-form))])
+       [form 'test-form]
+       [parse (λ (actuals) (parse-kw-args formals actuals actuals form))])
   (test (first (parse #'())) default)
   (define arg
     (eval (first (parse #'(#:a (λ (x) 3)))) 
           (namespace-anchor->namespace test-module)))
-  (test (with-handlers ([exn:fail:contract:blame? exn-message])
-          (arg 3))
-        #rx"keyword-macros-test.*broke the contract.*on #:a arg")
-  (test (with-handlers ([exn:fail:contract:blame? exn-message])
-          (arg "NaN"))
-        #rx"test-form.*broke the contract.*on #:a arg"))
+  (test-contract-violation
+   (arg 3)
+   #:blaming "keyword-macros-test"
+   #:message "#:a arg")
+  (test-contract-violation
+   (arg "NaN")
+   #:blaming (format "~a" form)
+   #:message "#:a arg"))
 
 (print-tests-passed 'keyword-macros-test.ss)

@@ -1500,7 +1500,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define JIT_FRAME_FLONUM_OFFSET (-(JIT_WORD_SIZE * (LOCAL_FRAME_SIZE + 3)))
 # define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHQr(ret_addr_reg), jit_base_prolog())
-# ifdef MZ_USE_JIT_X86_64
+# if defined(MZ_USE_JIT_X86_64) && !defined(_WIN64)
 #  define jit_shuffle_saved_regs() (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13))
 #  define jit_unshuffle_saved_regs() (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
 # else
@@ -1955,6 +1955,9 @@ typedef struct {
   intptr_t full_size, copy_size;
 #ifdef JIT_X86_64
   intptr_t saved_r14, saved_r15;
+# ifdef _WIN64
+  intptr_t saved_r12, saved_r13;
+# endif
 #endif
   Scheme_Object *result;
   void *new_runstack;
@@ -3572,8 +3575,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     if (need_set_rs) {
       JIT_UPDATE_THREAD_RSPTR();
     }
-    mz_prepare_direct_prim(3);
+	mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
+    CHECK_LIMIT();
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
     {
       __END_SHORT_JUMPS__(1);
@@ -11795,7 +11799,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
-  (void)jit_calli(ts_on_demand); /* DARWIN: stack needs to be 16-byte aligned */
+  mz_prepare(0);
+  (void)mz_finish_lwe(ts_on_demand, ref);
   CHECK_LIMIT();
   /* Restore registers and runstack, and jump to arity checking
      of newly-created code when argv == runstack (i.e., a tail call): */
@@ -13437,11 +13442,15 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 #ifdef JIT_X86_64
     jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r14, JIT_R0, JIT_R(14));
     jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r15, JIT_R0, JIT_R(15));
+# ifdef _WIN64
+    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r12, JIT_R0, JIT_R(12));
+    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r13, JIT_R0, JIT_R(13));
+# endif
 #endif
 
     jit_prepare(1);
     jit_pusharg_p(JIT_R0);
-    (void)jit_calli(continuation_apply_install);
+    (void)mz_finish(continuation_apply_install);
     
     CHECK_LIMIT();
   }
@@ -13487,6 +13496,10 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 # ifdef JIT_X86_64
     /* saved_r14 is installed in the topmost frame already */
     jit_ldxi_p(JIT_R(15), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r15);
+# ifdef _WIN64
+    jit_ldxi_p(JIT_R(12), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r12);
+    jit_ldxi_p(JIT_R(13), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r13);
+# endif
 # endif
     CHECK_LIMIT();
 

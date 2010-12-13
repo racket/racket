@@ -25,96 +25,56 @@
     "output-response"
     
     (test-suite 
-     "response/basic"
-     (test-equal? "response/basic" 
+     "response"
+     (test-equal? "response" 
                   (output output-response 
-                          (make-response/basic 404 #"404" (current-seconds) #"text/html"
-                                              (list)))
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                              (list) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
-     (test-equal? "response/basic (header)" 
+     (test-equal? "response (header)" 
                   (output output-response 
-                          (make-response/basic 404 #"404" (current-seconds) #"text/html"
-                                              (list (make-header #"Header" #"Value"))))
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                    (list (make-header #"Header" #"Value")) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
-     (test-equal? "response/basic (body)" 
+     (test-equal? "response (body)" 
                   (output output-response 
-                          (make-response/basic 404 #"404" (current-seconds) #"text/html"
-                                              (list)))
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                    (list) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
-     (test-equal? "response/basic (bytes body)"
+     (test-equal? "response (bytes body)"
                   (output output-response 
-                          (make-response/basic 404 #"404" (current-seconds) #"text/html"
-                                              (list)))
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                    (list) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
-     (test-equal? "response/basic (both)" 
+     (test-equal? "response (both)" 
                   (output output-response 
-                          (make-response/basic 404 #"404" (current-seconds) #"text/html"
-                                              (list (make-header #"Header" #"Value"))))
+                          (response 404 #"404" (current-seconds) #"text/html"
+                                    (list (make-header #"Header" #"Value")) void))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n"))
     
     (test-suite 
      "response/full"
      (test-equal? "response/full" 
                   (output output-response 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list) (list)))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
      (test-equal? "response/full (header)" 
                   (output output-response 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list (make-header #"Header" #"Value")) (list)))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
      
      (test-equal? "response/full (bytes body)"
                   (output output-response 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list) (list #"Content!")))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\nContent!")
      (test-equal? "response/full (both)" 
                   (output output-response 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list (make-header #"Header" #"Value")) (list #"Content!")))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\nContent!"))
-    
-    (test-suite
-     "response/incremental"
-     (test-equal? "response/incremental" 
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) (lambda (write) (void))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n")
-     (test-equal? "response/incremental (header)" 
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) (void))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n0\r\n\r\n")
-     (test-equal? "response/incremental (body)" 
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) 
-                                                     (lambda (write) (write #"Content!"))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n8\r\nContent!\r\n0\r\n\r\n")
-     (test-equal? "response/incremental (bytes body)"
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) 
-                                                     (lambda (write) (write #"Content!"))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n8\r\nContent!\r\n0\r\n\r\n")
-     (test-equal? "response/incremental (both)" 
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) (write #"Content!"))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n8\r\nContent!\r\n0\r\n\r\n")
-     (test-equal? "response/incremental (twice)" 
-                  (output output-response 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) 
-                                                       (write #"Content!")
-                                                       (write #"Content!"))))
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n8\r\nContent!\r\n8\r\nContent!\r\n0\r\n\r\n"))
     
     (test-suite
      "Simple content"
@@ -147,80 +107,34 @@
      "response/full"
      (test-equal? "response/full" 
                   (output output-response/method 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list) (list))
                           #"HEAD")
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
      (test-equal? "response/full (header)" 
                   (output output-response/method
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list (make-header #"Header" #"Value")) (list))
                           #"HEAD")
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
      (test-equal? "response/full (body)" 
                   (output output-response/method
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list) (list #"Content!"))
                           #"HEAD")
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
      (test-equal? "response/full (bytes body)"
                   (output output-response/method 
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list) (list #"Content!"))
                           #"HEAD")
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
      (test-equal? "response/full (both)" 
                   (output output-response/method
-                          (make-response/full 404 #"404" (current-seconds) #"text/html"
+                          (response/full 404 #"404" (current-seconds) #"text/html"
                                               (list (make-header #"Header" #"Value")) (list #"Content!"))
                           #"HEAD")
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n"))
-    
-    (test-suite
-     "response/incremental"
-     (test-equal? "response/incremental" 
-                  (output output-response/method 
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) (lambda (write) (void)))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
-     (test-equal? "response/incremental (header)" 
-                  (output output-response/method
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) (void)))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
-     (test-equal? "response/incremental (body)" 
-                  (output output-response/method
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) 
-                                                     (lambda (write) (write #"Content!")))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
-     (test-equal? "response/incremental (bytes body)"
-                  (output output-response/method
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list) 
-                                                     (lambda (write) (write #"Content!")))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
-     (test-equal? "response/incremental (both)" 
-                  (output output-response/method
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) (write #"Content!")))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
-     (test-equal? "response/incremental (twice)" 
-                  (output output-response/method
-                          (make-response/incremental 404 #"404" (current-seconds) #"text/html"
-                                                     (list (make-header #"Header" #"Value"))
-                                                     (lambda (write) 
-                                                       (write #"Content!")
-                                                       (write #"Content!")))
-                          #"HEAD")
-                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n"))
     
     (test-suite
      "Simple content"

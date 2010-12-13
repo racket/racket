@@ -30,13 +30,14 @@ When used inside @racket[page] syntactically, a rename transformer for the proce
 A simple example:
 @racketblock[
  (page
-  `(html 
-    (body 
-     (a ([href 
-          ,(embed/url 
-            (λ (req)
-              "You clicked!"))])
-        "Click me"))))]
+  (response/xexpr
+   `(html 
+     (body 
+      (a ([href 
+           ,(embed/url 
+             (λ (req)
+               "You clicked!"))])
+         "Click me")))))]
 
 Similarly, many Web applications make use almost exclusively of functions that are arguments to @racket[embed/url] and immediately invoke @racket[send/suspend/dispatch].
 

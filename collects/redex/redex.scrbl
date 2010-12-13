@@ -741,20 +741,20 @@ a sequence of variables. The variable @racket[var2] is used to
 determine the number of variables generated and @racket[var2] must be
 bound by the left-hand side of the rule.
 
-All side-conditions provided with @racket[side-condition] and
-@racket[hidden-side-condition] are collected with @racket[and] and
+The expressions within @as-index{@racket[side-condition] clause}s
+and @as-index{@racket[side-condition/hidden] clause}s are collected with @racket[and] and
 used as guards on the case being matched. The argument to each
 side-condition should be a Racket expression, and the pattern
 variables in the @|ttpattern| are bound in that expression. A
-@racket[side-condition/hidden] form is the same as
-@racket[side-condition], except that the side condition is not
+@racket[side-condition/hidden] clause is the same as
+a @racket[side-condition] clause, except that the condition is not
 rendered when typesetting via @racketmodname[redex/pict].
 
-Each @racket[where] clause acts as a side condition requiring a
+Each @as-index{@racket[where] clause} acts as a side condition requiring a
 successful pattern match, and it can bind pattern variables in the
 side-conditions (and @racket[where] clauses) that follow and in the
 metafunction result. The bindings are the same as bindings in a
-@racket[term-let] expression. A @racket[where/hidden] clause is the
+@racket[term-let] expression. A @as-index{@racket[where/hidden] clause} is the
 same as a @racket[where] clause, but the clause is not
 rendered when typesetting via @racketmodname[redex/pict].
 

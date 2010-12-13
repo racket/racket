@@ -245,14 +245,14 @@ integer_to_char (int argc, Scheme_Object *argv[])
     if ((v >= 0) 
 	&& (v <= 0x10FFFF)
 	&& ((v < 0xD800) || (v > 0xDFFF)))
-      return _scheme_make_char(v);
+      return _scheme_make_char((int)v);
   } else if (SCHEME_BIGNUMP(argv[0])
 	     && SCHEME_BIGPOS(argv[0])) {
     /* On 32-bit machines, there's still a chance... */
     intptr_t y;
     if (scheme_get_int_val(argv[0], &y)) {
       if (y <= 0x10FFFF)
-	return _scheme_make_char(y);
+	return _scheme_make_char((int)y);
     }
   }
 

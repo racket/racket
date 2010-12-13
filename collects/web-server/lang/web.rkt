@@ -2,6 +2,7 @@
 (require net/url
          racket/contract
          racket/serialize
+         web-server/servlet/servlet-structs
          web-server/http
          web-server/managers/manager
          web-server/private/define-closure
@@ -26,22 +27,25 @@
 
 (provide/contract
  [make-stateless-servlet
-  (custodian? namespace? manager? path-string? (request? . -> . response/c)
+  (custodian? namespace? manager? path-string? (request? . -> . can-be-response?)
               (stuffer/c serializable? bytes?) . -> . stateless-servlet?)])
 
 ; These contracts interfere with the continuation safety marks
 #;(provide/contract
    ;; Server Interface
-   [initialize-servlet ((request? . -> . response/c) . -> . (request? . -> . response/c))]
+   [initialize-servlet ((request? . -> . can-be-response?) . -> . (request? . -> . can-be-response?))]
    
    ;; Servlet Interface
-   [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
-   [send/suspend/url ((url? . -> . response/c) . -> . request?)]
-   [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
+   [send/suspend ((string? . -> . can-be-response?) . -> . request?)]
+   [send/suspend/dispatch ((((request? . -> . any/c) . -> . string?) . -> . can-be-response?)
+                           . -> . any/c)]
+   [send/suspend/hidden ((url? list? . -> . can-be-response?) . -> . request?)]
+   [send/suspend/url ((url? . -> . can-be-response?) . -> . request?)]
+   [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . can-be-response?)
                                . -> . any/c)]
    [redirect/get (-> request?)])
 
-;; initial-servlet : (request -> response) -> (request -> response/c)
+;; initial-servlet : (request -> response) -> (request -> can-be-response?)
 (define (initialize-servlet start)
   (let ([params (current-parameterization)])
     (lambda (req0)

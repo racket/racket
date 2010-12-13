@@ -44,7 +44,8 @@
            items))
   (let* ([file-menu (find-menu (string-constant file-menu))]
          [edit-menu (find-menu (string-constant edit-menu))]
-         [windows-menu (find-menu (string-constant windows-menu))]
+         [windows-menu (or (find-menu (string-constant windows-menu))
+                           (find-menu (string-constant tabs-menu)))]
          [help-menu (find-menu (string-constant help-menu))]
          [other-items
           (remq* (list file-menu edit-menu windows-menu help-menu) items)]
@@ -212,10 +213,11 @@
             (set-icon icon (send icon get-loaded-mask) 'both))))
     
     (let ([mb (make-object (get-menu-bar%) this)])
-      (when (or (eq? (system-type) 'macos)
-                (eq? (system-type) 'macosx))
-        (make-object menu:can-restore-underscore-menu% (string-constant windows-menu-label)
-          mb)))
+      (make-object menu:can-restore-underscore-menu%
+        (case (system-type)
+          [(macosx) (string-constant windows-menu-label)]
+          [else (string-constant tabs-menu-label)])
+        mb))
     
     (reorder-menus this)
     
@@ -759,7 +761,7 @@
         (let-values ([(cw _4) (get-client-size)]
                      [(tw _1 _2 _3) (send dc get-text-extent str normal-control-font)])
           (when (< cw tw)
-            (min-client-width (inexact->exact (floor tw)))))))
+            (min-client-width (inexact->exact (ceiling tw)))))))
     (define/override (on-paint)
       (let ([dc (get-dc)])
         (send dc set-font normal-control-font)
@@ -2484,6 +2486,7 @@
     (super-new [stretchable-width #f]
                [style '(transparent)])
     
+    (send (get-dc) set-font small-control-font)
     (define-values (indicator-width indicator-height)
       (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator)])
         (values tw th)))

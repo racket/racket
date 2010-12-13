@@ -50,7 +50,7 @@
 ;; Computes the number of atoms contained in TREE.
 (define (tree-size tree)
   (if (pair? tree) 
-      (apply + (map tree-size tree)) 
+      (apply + 1 (map tree-size tree))
       1))
 
 

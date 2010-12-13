@@ -924,7 +924,7 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
 Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
                                            Scheme_Object *locname, Scheme_Object *exname,
                                            Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-                                           int mod_phase, Scheme_Object *src_phase_index, 
+                                           intptr_t mod_phase, Scheme_Object *src_phase_index, 
                                            Scheme_Object *nom_export_phase, Scheme_Object *insp,
                                            int mode);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
@@ -1627,7 +1627,7 @@ typedef uintptr_t bigdig;
 
 typedef struct {
   Scheme_Inclhash_Object iso;
-  int len;
+  intptr_t len;
   bigdig *digits;
 } Scheme_Bignum;
 
@@ -1682,9 +1682,9 @@ Scheme_Object *scheme_bignum_xor(const Scheme_Object *a, const Scheme_Object *b)
 Scheme_Object *scheme_bignum_not(const Scheme_Object *a);
 Scheme_Object *scheme_bignum_shift(const Scheme_Object *a, intptr_t shift);
 
-XFORM_NONGCING double scheme_bignum_to_double_inf_info(const Scheme_Object *n, int just_use, int *only_need);
+XFORM_NONGCING double scheme_bignum_to_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
 #ifdef MZ_USE_SINGLE_FLOATS
-XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, int just_use, int *only_need);
+XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
 #else
 # define scheme_bignum_to_float_inf_info scheme_bignum_to_double_inf_info
 #endif
@@ -2022,6 +2022,14 @@ struct Scheme_Load_Delay;
 Scheme_Object *scheme_load_delayed_code(int pos, struct Scheme_Load_Delay *ld);
 
 intptr_t scheme_get_print_width(void);
+
+#ifndef PTIdPTR
+# ifndef PRINTF_INTPTR_SIZE_PREFIX
+# define PRINTF_INTPTR_SIZE_PREFIX "l"
+# endif
+# define PRIdPTR PRINTF_INTPTR_SIZE_PREFIX "d"
+# define PRIxPTR PRINTF_INTPTR_SIZE_PREFIX "x"
+#endif
 
 /*========================================================================*/
 /*                          compile and link                              */
@@ -3093,7 +3101,7 @@ Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp
 int scheme_is_module_env(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it);
-Scheme_Env *scheme_module_access(Scheme_Object *modname, Scheme_Env *env, int rev_mod_phase);
+Scheme_Env *scheme_module_access(Scheme_Object *modname, Scheme_Env *env, intptr_t rev_mod_phase);
 void scheme_module_force_lazy(Scheme_Env *env, int previous);
 
 int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *varname);
@@ -3118,7 +3126,7 @@ int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object 
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
-					   int pos, int mod_phase);
+					   int pos, intptr_t mod_phase);
 
 
 Scheme_Env *scheme_get_kernel_env();
@@ -3534,7 +3542,7 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
-Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, unsigned int len);
+Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, uintptr_t len);
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);
 
@@ -3545,9 +3553,6 @@ int scheme_regexp_is_byte(Scheme_Object *re);
 Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int pcre, int * volatile result_is_err_string);
 int scheme_is_pregexp(Scheme_Object *o);
 void scheme_clear_rx_buffers(void);
-unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
-				      unsigned short *buf, int bufsize,
-				      intptr_t *ulen, int term_size);
 
 #ifdef SCHEME_BIG_ENDIAN
 # define MZ_UCS4_NAME "UCS-4BE"

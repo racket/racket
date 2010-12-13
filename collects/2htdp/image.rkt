@@ -16,19 +16,6 @@ improvments/changes wrt to htdp/image:
   - got rid of pinholes (see the new overlay, beside, and above functions)
   - a bunch of new polygon functions
 
-Equality change: equality is now based on the structure of the construction of the picture. 
-This means that some equalities that were there before are no longer true. For example,
-in the old library, these two images are the same:
-
-  (overlay/xy (rectangle 100 10 'solid 'red)
-               0
-               10
-               (rectangle 100 10 'solid 'red))
-
-  (rectangle 100 20 'solid 'red)
-
-... and why aren't they the same again....?!
-
 todo: sort out wxme library support (loading in text mode).
 
 ------------

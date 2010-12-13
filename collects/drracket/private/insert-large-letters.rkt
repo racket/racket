@@ -51,12 +51,12 @@
   (define dlg (new dialog% 
                    [parent parent] 
                    [width 700]
-                   [label (string-constant large-semicolon-letters)]))  
+                   [label (string-constant large-semicolon-letters)]))
   (define: text-field : (Instance Text-Field%) 
     (new text-field% 
          [parent dlg] 
          [label (string-constant text-to-insert)]
-         [callback (λ: ([x : Any] [y : Any]) (update-txt (send text-field get-value)))]))
+         [callback (λ: ([x : Any] [y : Any]) (update-txt (send (assert text-field defined?) get-value)))]))
   (: info-bar (Instance Horizontal-Panel%))
   (define info-bar (new horizontal-panel%
                         [parent dlg]
@@ -71,7 +71,7 @@
            [callback
             (λ: ([x : Any] [y : Any])
                 (let ([old (preferences:get 'drracket:large-letters-font)]
-                      [choice (send font-choice get-selection)])
+                      [choice (send (assert font-choice defined?) get-selection)])
                   (when choice
                     (preferences:set 'drracket:large-letters-font
                                      (cons (list-ref (get-face-list)
@@ -79,7 +79,7 @@
                                            (if old
                                                (cdr old)
                                                (send (get-default-font) get-point-size))))
-                    (update-txt (send text-field get-value)))))])))
+                    (update-txt (send (assert text-field defined?) get-value)))))])))
   
   (: count (Instance Message%))
   (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
@@ -128,15 +128,15 @@
           [(null? faces) (void)]
           [else (cond
                   [(equal? face (car faces))
-                   (send font-choice set-selection i)]
+                   (send (assert font-choice defined?) set-selection i)]
                   [else
                    (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
   (update-txt " ")
-  (send text-field focus)
+  (send (assert text-field defined?) focus)
   (send dlg show #t)
-  (and ok? (send text-field get-value)))
+  (and ok? (send (assert text-field defined?) get-value)))
 
 (: get-w-size ((Instance Bitmap-DC%) String -> String))
 (define (get-w-size dc face-name)

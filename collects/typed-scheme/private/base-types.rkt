@@ -20,6 +20,7 @@
 [Zero (-val 0)]
 
 [Void -Void]
+[Undefined -Undefined] ; initial value of letrec bindings
 [Boolean -Boolean]
 [Symbol -Symbol]
 [String -String]

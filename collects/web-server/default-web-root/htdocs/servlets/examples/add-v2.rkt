@@ -5,7 +5,7 @@
 (define interface-version 'v2)
 (define manager
   (create-timeout-manager
-   (lambda _ `(html (body "Expired")))
+   (lambda _ (response/xexpr `(html (body "Expired"))))
    360 360))
 
 ; request-number : str -> num
@@ -18,15 +18,17 @@
 ; build-request-page : str -> str -> response
 (define (build-request-page which-number)
   (lambda (k-url)
-    `(html (head (title "Enter a Number to Add"))
-           (body ([bgcolor "white"])
-                 (form ([action ,k-url] [method "post"])
-                       "Enter the " ,which-number " number to add: "
-                       (input ([type "text"] [name "number"] [value ""]))
-                       (input ([type "submit"] [name "enter"] [value "Enter"])))))))
+    (response/xexpr
+     `(html (head (title "Enter a Number to Add"))
+            (body ([bgcolor "white"])
+                  (form ([action ,k-url] [method "post"])
+                        "Enter the " ,which-number " number to add: "
+                        (input ([type "text"] [name "number"] [value ""]))
+                        (input ([type "submit"] [name "enter"] [value "Enter"]))))))))
 
 (define (start initial-request)
-  `(html (head (title "Sum"))
-         (body ([bgcolor "white"])
-               (p "The answer is "
-                  ,(number->string (+ (request-number "first") (request-number "second")))))))
+  (response/xexpr
+   `(html (head (title "Sum"))
+          (body ([bgcolor "white"])
+                (p "The answer is "
+                   ,(number->string (+ (request-number "first") (request-number "second"))))))))

@@ -23,7 +23,8 @@
      render-to-sexp
      lifting?
      show-and/or-clauses-consumed?
-     all-bindings-mutable?))
+     all-bindings-mutable?
+     show-lambdas-as-lambdas?))
   
   (provide/contract [check-global-defined (-> symbol? boolean?)]
                     [global-lookup (-> any/c any)]
@@ -35,7 +36,8 @@
                              [render-to-sexp (any/c . -> . any)]
                              [lifting? boolean?]
 			     [show-and/or-clauses-consumed? boolean?]
-                             [all-bindings-mutable? boolean?])]
+                             [all-bindings-mutable? boolean?]
+                             [show-lambdas-as-lambdas? boolean?])]
                     
                     
                     
@@ -43,6 +45,7 @@
                                           (any/c . -> . any) ; render-to-sexp
                                           boolean? ; lifting?
 					  boolean? ; show-and/or-clauses-consumed?
+                                          boolean? ; show-lambdas-as-lambdas?
                                           . -> .
                                           render-settings?)]
                     
@@ -53,7 +56,8 @@
                     [fake-intermediate-render-settings render-settings?]
                     [fake-intermediate/lambda-render-settings render-settings?]
                     [fake-advanced-render-settings render-settings?]
-                    [fake-mz-render-settings render-settings?])
+                    [fake-mz-render-settings render-settings?]
+                    [fake-lazy-render-settings render-settings?])
   
   (define (make-fake-render-to-sexp true/false constructor-style abbreviate)
     (lambda (val)
@@ -67,20 +71,20 @@
   
     ; FIXME : #f totally unacceptable as 'render-to-string'
   (define fake-beginner-render-settings
-    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t #t #f))
+    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t #t #f #f))
   
   (define fake-beginner-wla-render-settings
-    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #t #f))
+    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #t #f #f))
   
   (define fake-intermediate-render-settings
     fake-beginner-wla-render-settings)
   
   (define fake-intermediate/lambda-render-settings
-    fake-beginner-wla-render-settings)
+    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #t #f #t))
   
   ;; this is a guess:
   (define fake-advanced-render-settings
-    fake-beginner-wla-render-settings)
+    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #t #f #t))
   
   (define fake-mz-render-settings
     (make-render-settings (booleans-as-true/false) 
@@ -89,13 +93,26 @@
                           print-convert
                           #f
                           #t
-			  #f))
+			  #f
+                          #t))
+  
+  (define fake-lazy-render-settings
+    (make-render-settings (booleans-as-true/false) 
+                          (constructor-style-printing) 
+                          (abbreviate-cons-as-list) 
+                          print-convert
+                          #f
+                          #t
+			  #f
+                          #f))
   
   (define-struct test-struct () (make-inspector))
   
   ;; get-render-settings : infer aspects of the current language's print conversion by explicitly testing 
   ;;  assorted test expressions
-  (define (get-render-settings render-to-string render-to-sexp lifting? show-and/or-clauses-consumed?)
+  (define (get-render-settings render-to-string render-to-sexp lifting? 
+                               show-and/or-clauses-consumed?
+                               show-lambdas-as-lambdas?)
     (let* ([true-false-printed? (string=? (render-to-string #t) "true")]
            [constructor-style-printing? (string=? (render-to-string (make-test-struct)) "(make-test-struct)")]
            [rendered-list (render-to-string '(3))]
@@ -111,7 +128,8 @@
        render-to-sexp
        lifting?
        show-and/or-clauses-consumed?
-       #f)))
+       #f
+       show-lambdas-as-lambdas?)))
   
   (define (check-global-defined identifier)
     (with-handlers

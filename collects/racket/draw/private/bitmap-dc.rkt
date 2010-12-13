@@ -85,7 +85,8 @@
              get-size
              get-transformation
              set-transformation
-             scale)
+             scale
+             get-font)
     
     (super-new)
 
@@ -149,6 +150,25 @@
           (scale sx sy)
           (begin0
            (draw-bitmap-section src (/ dest-x sx) (/ dest-y sy) src-x src-y src-w src-h style color mask)
-           (set-transformation t)))))))
+           (set-transformation t)))))
+
+    (def/override (get-char-width)
+      (if (internal-get-bitmap)
+          (super get-char-width)
+          (send (get-temp-bitmap-dc) get-char-width)))
+
+    (def/override (get-char-height)
+      (if (internal-get-bitmap)
+          (super get-char-height)
+          (send (get-temp-bitmap-dc) get-char-height)))
+
+    (define temp-dc #f)
+    (define/private (get-temp-bitmap-dc)
+      (let ([dc (or (and temp-dc (weak-box-value temp-dc))
+                    (let ([dc (make-object bitmap-dc% (make-object bitmap% 1 1))])
+                      (set! temp-dc (make-weak-box dc))
+                      dc))])
+        (send dc set-font (get-font))
+        dc))))
 
 (install-bitmap-dc-class! bitmap-dc%)

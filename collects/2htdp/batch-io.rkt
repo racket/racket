@@ -63,7 +63,7 @@
   (map string (read-chunks f read-char drop-last-newline)))
 
 (def-reader (read-lines f)
-  (read-chunks f read-line reverse))
+  (read-chunks f *read-line reverse))
 
 (def-reader (read-words f)
   (read-words/line/internal f append))
@@ -74,7 +74,7 @@
   (read-words/line/internal f cons))
 
 (define (read-words/line/internal f combine)
-  (define lines (read-chunks f read-line (lambda (x) x)))
+  (define lines (read-chunks f *read-line (lambda (x) x)))
   (foldl (lambda (f r)
            (define fst (filter (compose not (curry string=? "")) (split f)))
            (combine fst r))
@@ -86,6 +86,9 @@
 (def-reader (read-csv-file/rows f row)
   (check-proc 'read-csv-file row 1 "one argument" "row")
   (read-csv-file/func f row))
+
+(define (*read-line)
+  (read-line (current-input-port) 'any))
 
 ;; -----------------------------------------------------------------------------
 ;; tester 

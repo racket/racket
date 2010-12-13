@@ -487,7 +487,7 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "Recursão sobre subdirectorias")
  (mfs-regexp-filename-filter "Expressão Regular para filtro do nome do ficheiro")
  (mfs-search-string "String de Procura")
- (mfs-drscheme-multi-file-search "DrRacket - Procura Multi Ficheiro") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Procura Multi Ficheiro - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" não é um directorio")
  (mfs-open-file "Abrir Ficheiro")
  (mfs-stop-search "Parar Procura")

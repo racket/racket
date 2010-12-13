@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse 
+(require syntax/parse unstable/syntax
          racket/pretty
          (for-template scheme/base)
          "../utils/utils.rkt"
@@ -37,41 +37,41 @@
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
             formals e:expr ...)
-           #:with opt #`(op formals #,@(map (optimize) (syntax->list #'(e ...)))))
+           #:with opt #`(op formals #,@(syntax-map (optimize) #'(e ...))))
   (pattern (case-lambda [formals e:expr ...] ...)
            ;; optimize all the bodies
            #:with (opt-parts ...)
-           (map (lambda (part)
-                  (let ((l (syntax->list part)))
-                    (cons (car l)
-                          (map (optimize) (cdr l)))))
-                (syntax->list #'([formals e ...] ...)))
+           (syntax-map (lambda (part)
+                         (let ((l (syntax->list part)))
+                           (cons (car l)
+                                 (map (optimize) (cdr l)))))
+                       #'([formals e ...] ...))
            #:with opt #'(case-lambda opt-parts ...))
   (pattern ((~and op (~or (~literal let-values) (~literal letrec-values)))
             ([ids e-rhs:expr] ...) e-body:expr ...)
-           #:with (opt-rhs ...) (map (optimize) (syntax->list #'(e-rhs ...)))
+           #:with (opt-rhs ...) (syntax-map (optimize) #'(e-rhs ...))
            #:with opt #`(op ([ids opt-rhs] ...)
-                            #,@(map (optimize) (syntax->list #'(e-body ...)))))
+                            #,@(syntax-map (optimize) #'(e-body ...))))
   (pattern (letrec-syntaxes+values stx-bindings
                                    ([(ids ...) e-rhs:expr] ...)
                                    e-body:expr ...)
            ;; optimize all the rhss
            #:with (opt-clauses ...)
-           (map (lambda (clause)
-                  (let ((l (syntax->list clause)))
-                    (list (car l) ((optimize) (cadr l)))))
-                (syntax->list #'([(ids ...) e-rhs] ...)))
+           (syntax-map (lambda (clause)
+                         (let ((l (syntax->list clause)))
+                           (list (car l) ((optimize) (cadr l)))))
+                       #'([(ids ...) e-rhs] ...))
            #:with opt #`(letrec-syntaxes+values
                          stx-bindings
                          (opt-clauses ...)
-                         #,@(map (optimize) (syntax->list #'(e-body ...)))))
+                         #,@(syntax-map (optimize) #'(e-body ...))))
   (pattern (kw:identifier expr ...)
            #:when 
 	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
 			     #'#%variable-reference #'with-continuation-mark)])
 	     (free-identifier=? k #'kw))
            ;; we don't want to optimize in the cases that don't match the #:when clause
-           #:with opt #`(kw #,@(map (optimize) (syntax->list #'(expr ...)))))
+           #:with opt #`(kw #,@(syntax-map (optimize) #'(expr ...))))
   (pattern other:expr
            #:with opt #'other))
 

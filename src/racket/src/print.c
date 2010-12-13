@@ -1698,7 +1698,7 @@ static void cannot_print(PrintParams *pp, int notdisplay,
 static void printaddress(PrintParams *pp, Scheme_Object *o)
 {
   char buf[40];
-  sprintf(buf, ":%" PRINTF_INTPTR_SIZE_PREFIX "x", (intptr_t)o);
+  sprintf(buf, ":%" PRIxPTR, (intptr_t)o);
   print_this_string(pp, buf, 0, -1);
 }
 # define PRINTADDRESS(pp, obj) printaddress(pp, obj)
@@ -1838,12 +1838,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	} else {
 	  if (val > 0) {
 	    always_scheme(pp, 1);
-	    sprintf(quick_buffer, "#%ld=", (val - 3) >> 1);
+	    sprintf(quick_buffer, "#%" PRIdPTR "=", (val - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    scheme_hash_set(ht, obj, (Scheme_Object *)(-val));
 	  } else {
 	    always_scheme(pp, 0);
-	    sprintf(quick_buffer, "#%ld#", ((-val) - 3) >> 1);
+	    sprintf(quick_buffer, "#%" PRIdPTR "#", ((-val) - 3) >> 1);
 	    print_utf8_string(pp, quick_buffer, 0, -1);
 	    return 0;
 	  }
@@ -1861,7 +1861,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   if (SCHEME_SYMBOLP(obj)
       || SCHEME_KEYWORDP(obj))
     {
-      int l;
+      intptr_t l;
       Scheme_Object *idx;
       int is_kw;
 
@@ -1938,7 +1938,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  
 	  if (is_kw)
 	    print_utf8_string(pp, "#:", 0, 2);
-	  s = scheme_symbol_name_and_size(obj, (unsigned int *)&l, 
+	  s = scheme_symbol_name_and_size(obj, (uintptr_t *)&l, 
 					  ((pp->can_read_pipe_quote 
 					    ? SCHEME_SNF_PIPE_QUOTE
 					    : SCHEME_SNF_NO_PIPE_QUOTE)
@@ -2041,7 +2041,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           }
 	}
       } else {
-	sprintf(quick_buffer, "%ld", SCHEME_INT_VAL(obj));
+	sprintf(quick_buffer, "%" PRIdPTR "", SCHEME_INT_VAL(obj));
 	print_utf8_string(pp, quick_buffer, 0, -1);
       }
     }
@@ -2314,7 +2314,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    src = obj;
 
 	  if (SAME_OBJ(src, obj)) {
-            int l;
+            intptr_t l;
             const char *s;
             Scheme_Object *name;
 
@@ -2331,7 +2331,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
-            s = scheme_symbol_name_and_size(name, (unsigned int *)&l, 
+            s = scheme_symbol_name_and_size(name, (uintptr_t *)&l, 
                                             (pp->print_struct
                                              ? SCHEME_SNF_FOR_TS
                                              : (pp->can_read_pipe_quote 
@@ -2574,7 +2574,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print_utf8_string(pp, ":", 0, 1);
         }
 
-        sprintf(s, "%ld", ((Scheme_Env *)obj)->phase);
+        sprintf(s, "%" PRIdPTR "", ((Scheme_Env *)obj)->phase);
         print_utf8_string(pp, s, 0, -1);
 	print_utf8_string(pp, ">", 0, 1);
       }
@@ -2702,9 +2702,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    print_utf8_string(pp, ":", 0, 1);
 	  }
 	  if (stx->srcloc->line >= 0)
-	    sprintf(quick_buffer, "%ld:%ld", stx->srcloc->line, stx->srcloc->col-1);
+	    sprintf(quick_buffer, 
+		    "%" PRIdPTR ":%" PRIdPTR "", 
+		    stx->srcloc->line, stx->srcloc->col-1);
 	  else
-	    sprintf(quick_buffer, ":%ld", stx->srcloc->pos);
+	    sprintf(quick_buffer, ":%" PRIdPTR "", 
+		    stx->srcloc->pos);
 	  print_utf8_string(pp, quick_buffer, 0, -1);
 	} else
 	  print_utf8_string(pp, "#<syntax", 0, 8);
@@ -3012,7 +3015,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_this_string(pp, "#~", 0, 2);
 #if NO_COMPACT
 	if (t < _scheme_last_type_) {
-	  sprintf (quick_buffer, "%ld", (intptr_t)SCHEME_TYPE(obj));
+	  sprintf (quick_buffer, 
+		   "%" PRIdPTR, 
+		   (intptr_t)SCHEME_TYPE(obj));
 	  print_this_string(pp, quick_buffer, 0, -1);
 	} else
 	  print_this_string(pp, scheme_get_type_name(t), 0, -1);

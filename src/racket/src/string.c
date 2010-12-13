@@ -90,9 +90,13 @@ static void init_iconv()
   if (!m)
     m = LoadLibraryW(scheme_get_dll_path(L"libiconv.dll"));
   if (!m)
+    m = LoadLibraryW(scheme_get_dll_path(L"libiconv-2.dll"));
+  if (!m)
     m = LoadLibrary("iconv.dll");
   if (!m)
     m = LoadLibrary("libiconv.dll");
+  if (!m)
+    m = LoadLibrary("libiconv-2.dll");
   if (m) {
     iconv = (iconv_proc_t)GetProcAddress(m, "libiconv");
     iconv_open = (iconv_open_proc_t)GetProcAddress(m, "libiconv_open");
@@ -321,21 +325,21 @@ static Scheme_Object *byte_converter_p(int argc, Scheme_Object *argv[]);
 static void register_traversers(void);
 #endif
 
-static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
-static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
-static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2);
+static int mz_char_strcmp(const char *who, const mzchar *str1, intptr_t l1, const mzchar *str2, intptr_t l2, int locale, int size_shortcut);
+static int mz_char_strcmp_ci(const char *who, const mzchar *str1, intptr_t l1, const mzchar *str2, intptr_t l2, int locale, int size_shortcut);
+static int mz_strcmp(const char *who, unsigned char *str1, intptr_t l1, unsigned char *str2, intptr_t l2);
 
-XFORM_NONGCING static int utf8_decode_x(const unsigned char *s, int start, int end,
-					unsigned int *us, int dstart, int dend,
+XFORM_NONGCING static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t end,
+					unsigned int *us, intptr_t dstart, intptr_t dend,
 					intptr_t *ipos, intptr_t *jpos,
 					char compact, char utf16,
 					int *state, int might_continue, int permissive);
-XFORM_NONGCING static int utf8_encode_x(const unsigned int *us, int start, int end,
-					unsigned char *s, int dstart, int dend,
+XFORM_NONGCING static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,
+					unsigned char *s, intptr_t dstart, intptr_t dend,
 					intptr_t *_ipos, intptr_t *_opos, char utf16);
 
 static char *string_to_from_locale(int to_bytes,
-				   char *in, int delta, int len,
+				   char *in, intptr_t delta, intptr_t len,
 				   intptr_t *olen, int perm,
 				   int *no_cvt);
 
@@ -949,7 +953,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 
   if (len) {
     char *sstr;
-    int slen;
+    intptr_t slen;
 
     sstr = scheme_make_provided_string(s, 2, &slen);
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -1754,7 +1758,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
     int pos = (num_err ? num_err : char_err) - 1;
     char *args, *bstr;
     intptr_t alen;
-    int blen;
+    intptr_t blen;
     char *type = (num_err ? "exact-number" : "character");
     Scheme_Object *bad = argv[pos];
 
@@ -1823,7 +1827,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
       case 'e':
       case 'E':
 	{
-	  int len;
+	  intptr_t len;
 	  char *s;
 	  s = scheme_make_provided_string(argv[used++], 0, &len);
 	  scheme_write_byte_string(s, len, port);
@@ -2803,7 +2807,7 @@ static char *do_convert(iconv_t cd,
 #define MZ_SC_BUF_SIZE 32
 
 static char *string_to_from_locale(int to_bytes,
-				   char *in, int delta, int len,
+				   char *in, intptr_t delta, intptr_t len,
 				   intptr_t *olen, int perm,
 				   int *no_cvt)
      /* Call this function only when iconv is available, and only when
@@ -4160,18 +4164,18 @@ static Scheme_Object *string_normalize_kd (int argc, Scheme_Object *argv[])
 /*                            strcmps                                 */
 /**********************************************************************/
 
-int scheme_char_strlen(const mzchar *s)
+intptr_t scheme_char_strlen(const mzchar *s)
 {
-  int i;
+  intptr_t i;
   for (i = 0; s[i]; i++) {
   }
   return i;
 }
 
-static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, 
+static int mz_char_strcmp(const char *who, const mzchar *str1, intptr_t l1, const mzchar *str2, intptr_t l2, 
 			  int use_locale, int size_shortcut)
 {
-  int endres;
+  intptr_t endres;
 
   if (size_shortcut && (l1 != l2))
     return 1;
@@ -4209,10 +4213,10 @@ static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzc
   return endres;
 }
 
-static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, 
+static int mz_char_strcmp_ci(const char *who, const mzchar *str1, intptr_t l1, const mzchar *str2, intptr_t l2, 
 			     int use_locale, int size_shortcut)
 {
-  int p1, p2, sp1, sp2, a, b;
+  intptr_t p1, p2, sp1, sp2, a, b;
   mzchar spec1[SPECIAL_CASE_FOLD_MAX], spec2[SPECIAL_CASE_FOLD_MAX];
 
   if (size_shortcut && (l1 != l2))
@@ -4277,9 +4281,9 @@ static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const 
   return ((p1 < l1) || sp1) - ((p2 < l2) || sp2);
 }
 
-static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2)
+static int mz_strcmp(const char *who, unsigned char *str1, intptr_t l1, unsigned char *str2, intptr_t l2)
 {
-  int endres;
+  intptr_t endres;
 
   if (l1 > l2) {
     l1 = l2;
@@ -4705,8 +4709,8 @@ byte_converter_p(int argc, Scheme_Object *argv[])
 /*                         utf8 converter                             */
 /**********************************************************************/
 
-static int utf8_decode_x(const unsigned char *s, int start, int end,
-			 unsigned int *us, int dstart, int dend,
+static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t end,
+			 unsigned int *us, intptr_t dstart, intptr_t dend,
 			 intptr_t *ipos, intptr_t *jpos,
 			 char compact, char utf16, int *_state,
 			 int might_continue, int permissive)
@@ -4732,7 +4736,8 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
         or U+FFFD. */
 
 {
-  int i, j, oki, failmode = -3, state;
+  intptr_t i, j, oki;
+  int failmode = -3, state;
   int init_doki;
   int nextbits, v;
   unsigned int sc;
@@ -4970,7 +4975,7 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 # endif
 	  }
 	} else {
-	  int delta;
+	  intptr_t delta;
 	  delta = (i - oki);
 	  if (delta) {
 	    if (j + delta + 1 < dend) {
@@ -5060,16 +5065,16 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
   return j - dstart;
 }
 
-int scheme_utf8_decode(const unsigned char *s, int start, int end,
-		       unsigned int *us, int dstart, int dend,
+intptr_t scheme_utf8_decode(const unsigned char *s, intptr_t start, intptr_t end,
+		       unsigned int *us, intptr_t dstart, intptr_t dend,
 		       intptr_t *ipos, char utf16, int permissive)
 {
   return utf8_decode_x(s, start, end, us, dstart, dend,
 		       ipos, NULL, utf16, utf16, NULL, 0, permissive);
 }
 
-int scheme_utf8_decode_as_prefix(const unsigned char *s, int start, int end,
-				 unsigned int *us, int dstart, int dend,
+intptr_t scheme_utf8_decode_as_prefix(const unsigned char *s, intptr_t start, intptr_t end,
+				 unsigned int *us, intptr_t dstart, intptr_t dend,
 				 intptr_t *ipos, char utf16, int permissive)
      /* Always returns number of read characters, not error codes. */
 {
@@ -5079,17 +5084,17 @@ int scheme_utf8_decode_as_prefix(const unsigned char *s, int start, int end,
   return opos - dstart;
 }
 
-int scheme_utf8_decode_all(const unsigned char *s, int len, unsigned int *us, int permissive)
+intptr_t scheme_utf8_decode_all(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
 {
   return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 0, permissive);
 }
 
-int scheme_utf8_decode_prefix(const unsigned char *s, int len, unsigned int *us, int permissive)
+intptr_t scheme_utf8_decode_prefix(const unsigned char *s, intptr_t len, unsigned int *us, int permissive)
      /* us != NULL */
 {
   {
     /* Try fast path (all ASCII) */
-    int i;
+    intptr_t i;
     for (i = 0; i < len; i++) {
       if (s[i] < 128)
 	us[i] = s[i];
@@ -5103,10 +5108,10 @@ int scheme_utf8_decode_prefix(const unsigned char *s, int len, unsigned int *us,
   return utf8_decode_x(s, 0, len, us, 0, -1, NULL, NULL, 0, 0, NULL, 1, permissive);
 }
 
-mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len,
-					 mzchar *buf, int blen, intptr_t *_ulen)
+mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, intptr_t len,
+					 mzchar *buf, intptr_t blen, intptr_t *_ulen)
 {
-  int ulen;
+  intptr_t ulen;
 
   ulen = utf8_decode_x(s, 0, len, NULL, 0, -1,
 		       NULL, NULL, 0, 0,
@@ -5124,21 +5129,21 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len,
   return buf;
 }
 
-mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, int len,
-				     mzchar *buf, int blen)
+mzchar *scheme_utf8_decode_to_buffer(const unsigned char *s, intptr_t len,
+				     mzchar *buf, intptr_t blen)
 {
   intptr_t ulen;
   return scheme_utf8_decode_to_buffer_len(s, len, buf, blen, &ulen);
 }
 
-int scheme_utf8_decode_count(const unsigned char *s, int start, int end,
+intptr_t scheme_utf8_decode_count(const unsigned char *s, intptr_t start, intptr_t end,
 			     int *_state, int might_continue, int permissive)
 {
   intptr_t pos = 0;
 
   if (!_state || !*_state) {
     /* Try fast path (all ASCII): */
-    int i;
+    intptr_t i;
     for (i = start; i < end; i++) {
       if (s[i] > 127)
 	break;
@@ -5156,14 +5161,14 @@ int scheme_utf8_decode_count(const unsigned char *s, int start, int end,
   return pos;
 }
 
-static int utf8_encode_x(const unsigned int *us, int start, int end,
-			 unsigned char *s, int dstart, int dend,
+static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t end,
+			 unsigned char *s, intptr_t dstart, intptr_t dend,
 			 intptr_t *_ipos, intptr_t *_opos, char utf16)
   /* Results:
         -1 => input ended in the middle of an encoding - only when utf16 and _opos
 	non-negative => reports number of bytes/code-units produced */
 {
-  int i, j, done = start;
+  intptr_t i, j, done = start;
 
   if (dend < 0)
     dend = 0x7FFFFFFF;
@@ -5310,8 +5315,8 @@ static int utf8_encode_x(const unsigned int *us, int start, int end,
   }
 }
 
-int scheme_utf8_encode(const unsigned int *us, int start, int end,
-		       unsigned char *s, int dstart,
+intptr_t scheme_utf8_encode(const unsigned int *us, intptr_t start, intptr_t end,
+		       unsigned char *s, intptr_t dstart,
 		       char utf16)
 {
   return utf8_encode_x(us, start, end,
@@ -5319,16 +5324,16 @@ int scheme_utf8_encode(const unsigned int *us, int start, int end,
 		       NULL, NULL, utf16);
 }
 
-int scheme_utf8_encode_all(const unsigned int *us, int len, unsigned char *s)
+intptr_t scheme_utf8_encode_all(const unsigned int *us, intptr_t len, unsigned char *s)
 {
   return utf8_encode_x(us, 0, len, s, 0, -1, NULL, NULL, 0 /* utf16 */);
 }
 
-char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
-				       char *buf, int blen,
+char *scheme_utf8_encode_to_buffer_len(const mzchar *s, intptr_t len,
+				       char *buf, intptr_t blen,
 				       intptr_t *_slen)
 {
-  int slen;
+  intptr_t slen;
 
   /* ASCII with len < blen is a common case: */
   if (len < blen) {
@@ -5355,19 +5360,19 @@ char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
   return buf;
 }
 
-char *scheme_utf8_encode_to_buffer(const mzchar *s, int len,
-				   char *buf, int blen)
+char *scheme_utf8_encode_to_buffer(const mzchar *s, intptr_t len,
+				   char *buf, intptr_t blen)
 {
   intptr_t slen;
   return scheme_utf8_encode_to_buffer_len(s, len, buf, blen, &slen);
 }
 
-unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
-				     unsigned short *buf, int bufsize,
-				     intptr_t *ulen, int term_size)
+unsigned short *scheme_ucs4_to_utf16(const mzchar *text, intptr_t start, intptr_t end,
+				     unsigned short *buf, intptr_t bufsize,
+				     intptr_t *ulen, intptr_t term_size)
 {
   mzchar v;
-  int extra, i, j;
+  intptr_t extra, i, j;
   unsigned short *utf16;
 
   /* Count characters that fall outside UCS-2: */
@@ -5395,12 +5400,12 @@ unsigned short *scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
   return utf16;
 }
 
-mzchar *scheme_utf16_to_ucs4(const unsigned short *text, int start, int end,
-			     mzchar *buf, int bufsize,
-			     intptr_t *ulen, int term_size)
+mzchar *scheme_utf16_to_ucs4(const unsigned short *text, intptr_t start, intptr_t end,
+			     mzchar *buf, intptr_t bufsize,
+			     intptr_t *ulen, intptr_t term_size)
 {
   int wc;
-  int i, j;
+  intptr_t i, j;
 
   for (i = start, j = 0; i < end; i++) {
     wc = text[i];

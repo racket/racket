@@ -423,7 +423,7 @@
           (if (eq? (system-type) 'windows)
               (lambda (s)
                 (let ([split (let loop ([s s])
-                               (let ([m (regexp-match "([^ ]*) (.*)" s)])
+                               (let ([m (regexp-match #rx"([^ ]*) (.*)" s)])
                                  (if m
                                      (cons (cadr m) (loop (caddr m)))
                                      (list s))))])

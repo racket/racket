@@ -486,7 +486,7 @@ GC2_EXTERN void GC_adopt_message_allocator(void *msg_memory);
 #endif
 
 /* Macros (implementation-specific): */
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(_WIN64)
 # define gcLOG_WORD_SIZE 3
 #else
 # define gcLOG_WORD_SIZE 2

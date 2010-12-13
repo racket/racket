@@ -19,4 +19,8 @@
 
  (sexp-diff '(defun f (x) (+ (* x 2) 4 4 1))
             '(defun f (x) (- (* x 2) 5 5 3 1)))
- => '((defun f (x) #:new (- (* x 2) 5 5 3 1) #:old (+ (* x 2) 4 4 1))))
+ => '((defun f (x) (#:new - #:old + (* x 2) #:new 5 #:new 5 #:new 3 #:old 4 #:old 4 1)))
+ 
+ (sexp-diff (list 1 (list 2) 3) (list 1 (list 4) 3))
+ => '((1 (#:new 4 #:old 2) 3))
+ )

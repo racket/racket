@@ -34,10 +34,11 @@
     [else (tally-results (cdr mc-qs) (cdr answs))]))
 
 (define (start initial-request)
-  `(html (head (title "Final Page"))
-         (body
-          (h1 "Quiz Results")
-          (p ,(format "You got ~a correct out of ~a questions."
-                      (tally-results quiz (get-answers quiz))
-                      (length quiz)))
-          (p "Thank you for taking the quiz"))))
+  (response/xexpr
+   `(html (head (title "Final Page"))
+          (body
+           (h1 "Quiz Results")
+           (p ,(format "You got ~a correct out of ~a questions."
+                       (tally-results quiz (get-answers quiz))
+                       (length quiz)))
+           (p "Thank you for taking the quiz")))))
