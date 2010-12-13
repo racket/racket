@@ -249,11 +249,12 @@
 	  l)))))
 
   (define/public (get-text-data)
-    (wait-request-backref 
-     (atomically
-      (let-values ([(l backref) (make-request-backref)])
-	(gtk_clipboard_request_text cb backref)
-	l))))
+    (or (wait-request-backref 
+         (atomically
+          (let-values ([(l backref) (make-request-backref)])
+            (gtk_clipboard_request_text cb backref)
+            l)))
+        ""))
 
   (define/public (get-bitmap-data)
     (wait-request-backref 
