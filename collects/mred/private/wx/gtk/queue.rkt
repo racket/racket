@@ -118,10 +118,10 @@
 (define POLLERR #x8)
 (define POLLHUP #x10)
 
-(define-mz scheme_get_fdset (_fun _pointer _int -> _pointer))
-(define-mz scheme_fdset (_fun _pointer _int -> _void))
-(define-mz scheme_set_wakeup_time (_fun _pointer _double -> _void))
-(define-mz scheme_add_fd_eventmask (_fun _pointer _int -> _void)
+(define-mz scheme_get_fdset (_fun _pointer _int -> _gcpointer))
+(define-mz scheme_fdset (_fun _gcpointer _int -> _void))
+(define-mz scheme_set_wakeup_time (_fun _gcpointer _double -> _void))
+(define-mz scheme_add_fd_eventmask (_fun _gcpointer _int -> _void)
   #:fail #f)
 
 (define (install-wakeup fds)

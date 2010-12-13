@@ -730,7 +730,7 @@ void *scheme_alloc_fdset_array(int count, int permanent)
   if (permanent)
     return scheme_malloc_eternal(count * (dynamic_fd_size + sizeof(intptr_t)));
   else
-    return scheme_malloc_atomic(count * (dynamic_fd_size + sizeof(intptr_t)));
+    return scheme_malloc_atomic_allow_interior(count * (dynamic_fd_size + sizeof(intptr_t)));
 }
 
 void *scheme_init_fdset_array(void *fdarray, int count)

@@ -262,6 +262,12 @@ GC2_EXTERN intptr_t GC_malloc_stays_put_threshold();
    objects that never move, and where pointers are allowed
    into the object's interior. */
 
+GC2_EXTERN int GC_is_on_allocated_page(void *p);
+/* 
+   Returns 1 if p refers to a page of memory on which
+   the GC allocates objects (although p may or may not
+   be a valid pointer to the start of an alloctaed object). */
+
 /***************************************************************************/
 /* Memory tracing                                                          */
 /***************************************************************************/

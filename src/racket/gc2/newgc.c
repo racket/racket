@@ -2962,6 +2962,13 @@ void GC_fixup(void *pp)
   GC_fixup2(pp, GC_get_GC());
 }
 
+int GC_is_on_allocated_page(void *p)
+{
+  NewGC *gc = GC_get_GC();
+  return !!pagemap_find_page(gc->page_maps, p);
+}
+
+
 /*****************************************************************************/
 /* memory stats and traces                                                   */
 /*****************************************************************************/

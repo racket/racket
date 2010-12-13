@@ -529,6 +529,18 @@ Scheme_Object *scheme_make_external_cptr(GC_CAN_IGNORE void *cptr, Scheme_Object
   o = scheme_make_cptr(NULL, typetag);
   SCHEME_CPTR_FLAGS(o) |= 0x1;
   SCHEME_CPTR_VAL(o) = cptr;
+
+#if 0
+  /* For debugging. An external pointer onto a GCable page is
+     not necessarily a bug (e.g. it might be a Win32 handle that
+     happens to look like a pointer to a GCable page) --- but it 
+     probably is, so it's worth a look when it happens. */
+# ifdef MZ_PRECISE_GC
+  if (GC_is_on_allocated_page(cptr))
+    printf("%p is on collectable page\n", cptr);
+# endif
+#endif
+
   return o;
 }
 

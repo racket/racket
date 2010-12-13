@@ -391,4 +391,4 @@
   (post-dummy-event) ; why do we need this? 'nextEventMatchingMask:' seems to hang if we don't use it
   (set-ffi-obj! 'scheme_sleep #f _pointer (function-ptr sleep-until-event 
                                                         (_fun #:atomic? #t 
-                                                              _float _pointer -> _void))))
+                                                              _float _gcpointer -> _void))))

@@ -66,7 +66,7 @@
 
 (define-mz scheme_add_evt (_fun _Scheme_Type
                                 (_fun #:atomic? #t _scheme -> _int)
-                                (_fun #:atomic? #t _scheme _pointer -> _void)
+                                (_fun #:atomic? #t _scheme _gcpointer -> _void)
                                 _pointer
                                 _int
                                 -> _void))
@@ -189,7 +189,7 @@
                                           _racket _racket -> _void)
                                     _racket ; data
                                     _int ; strong?
-                                    -> _pointer))
+                                    -> _gcpointer))
 
 (define (shutdown-eventspace! e ignored)
   ;; atomic mode
