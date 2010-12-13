@@ -82,9 +82,6 @@
     ["plt" "Racket Package"]
     ["sit" "StuffIt Archive"]))
 
-;; Used to sort packages when more then one is rendered on a page
-(define -package-order- '(racket racket-textual))
-
 (define -mirrors-
   ;; This is a sequence of
   ;;   (location url reposnisble-name email [techincal-contact])
@@ -133,6 +130,15 @@
      "Francisco Solsona"
      "solsona@acm.org"]
     ))
+
+;; Used to sort packages when more then one is rendered on a page
+(define (-installer-orders-)
+  `((,installer-package ,eq? (racket racket-textual))
+    (,installer-binary? ,eq? (#t #f))
+    (,installer-platform ,regexp-match?
+     (#px"\\bwin(32)?\\b" #px"\\bmac\\b" #px"\\blinux\\b" #px""))
+    (,installer-platform ,regexp-match?
+     (#px"\\bi386\\b" #px"\\bx86_64\\b" #px"\\bppc\\b" #px""))))
 
 ;; ----------------------------------------------------------------------------
 
@@ -221,19 +227,34 @@
                     (error 'installers "bad installer data line#~a: ~s"
                            num line))))))
 
-;; sorted by version (newest first), and then by -package-order-
+(define (order->precedes order)
+  (define =? (car order))
+  (define l (cadr order))
+  (define (num-of x)
+    (let loop ([l l] [n 0])
+      (cond [(null? l)
+             (error 'precedes "could not find ~s in precedence list: ~s" x l)]
+            [(=? (car l) x) n]
+            [else (loop (cdr l) (add1 n))])))
+  (lambda (x y) (< (num-of x) (num-of y))))
+
+;; sorted by version (newest first), and then by -installer-orders-
 (define all-installers
-  (sort (call-with-input-file installers-data parse-installers)
-        (lambda (i1 i2)
-          (let ([v1 (installer-version-number i1)]
-                [v2 (installer-version-number i2)])
-            (or (> v1 v2)
-                (and (= v1 v2)
-                     (let* ([p1 (installer-package i1)]
-                            [p2 (installer-package i2)]
-                            [t1 (memq p1 -package-order-)])
-                       (and t1 (or (memq p2 (cdr t1))
-                                   (not (memq p2 -package-order-)))))))))))
+  (sort
+   (call-with-input-file installers-data parse-installers)
+   (let ([fns `([,installer-version-number . ,>]
+                ,@(map (lambda (o) (cons (car o) (order->precedes (cdr o))))
+                       (-installer-orders-)))])
+     (lambda (i1 i2)
+       (let loop ([fns fns])
+         (if (null? fns)
+           #f
+           (let* ([get (caar fns)] [<? (cdar fns)] [x1 (get i1)] [x2 (get i2)])
+             (or (<? x1 x2) (and (equal? x1 x2) (loop (cdr fns)))))))))))
+(with-output-to-file "/tmp/x" #:exists 'truncate
+  (lambda ()
+    (for ([i all-installers])
+      (printf "~s ~s\n" (installer-platform i) (installer-path i)))))
 
 (define package->name
   (let ([t (make-hasheq)])
