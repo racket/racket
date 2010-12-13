@@ -42,7 +42,7 @@ The @racket[dispatch-server^] signature is an alias for
 
  @defthing[port tcp-listen-port?]{Specifies the port to serve on.}
  @defthing[listen-ip (or/c string? false/c)]{Passed to @racket[tcp-listen].}
- @defthing[max-waiting integer?]{Passed to @racket[tcp-accept].}
+ @defthing[max-waiting exact-integer?]{Passed to @racket[tcp-listen].}
  @defthing[initial-connection-timeout integer?]{Specifies the initial timeout given to a connection.}
  @defproc[(read-request [c connection?]
                         [p tcp-listen-port?]

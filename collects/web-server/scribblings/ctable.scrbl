@@ -30,7 +30,7 @@ structures.
 
 @racketblock[
 `((port ,integer?)
-  (max-waiting ,integer?)
+  (max-waiting ,exact-integer?)
   (initial-connection-timeout ,integer?)
   (default-host-table
     ,host-table-sexpr?)
