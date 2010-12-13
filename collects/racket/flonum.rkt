@@ -1,7 +1,9 @@
 #lang racket/base
+
 (require '#%flfxnum 
          "private/vector-wraps.rkt"
-         "unsafe/ops.rkt")
+         "unsafe/ops.rkt"
+         (for-syntax racket/base))
 
 (provide fl+ fl- fl* fl/
          flabs flsqrt flexp fllog

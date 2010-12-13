@@ -96,7 +96,7 @@ in the sequence.
 
 @defproc[(in-vector [vec vector?]
                     [start exact-nonnegative-integer? 0]
-                    [stop (or/c exact-nonnegative-integer? #f) #f]
+                    [stop (or/c exact-integer? #f) #f]
                     [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
   Returns a sequence equivalent to @scheme[vec] when no optional
@@ -114,19 +114,18 @@ in the sequence.
   equal to @scheme[end] if @scheme[step] is non-negative, or less or
   equal to @scheme[end] if @scheme[step] is negative.
 
+  If @racket[start] is not a valid index, or @racket[stop]
+  is not in [-1, @racket[(vector-length vec)]] then the @exnraise[exn:fail:contract].
   If @scheme[start] is less than @scheme[stop] and @scheme[step] is
   negative, then the @exnraise[exn:fail:contract:mismatch].  Similarly,
   if @scheme[start] is more than @scheme[stop] and @scheme[step] is
-  positive, then the @exnraise[exn:fail:contract:mismatch].  The
-  @scheme[start] and @scheme[stop] values are @emph{not} checked against
-  the size of @scheme[vec], so access can fail when an element is
-  demanded from the sequence.
+  positive, then the @exnraise[exn:fail:contract:mismatch].
 
   @speed[in-vector "vector"]}
 
 @defproc[(in-string [str string?]
                     [start exact-nonnegative-integer? 0]
-                    [stop (or/c exact-nonnegative-integer? #f) #f]
+                    [stop (or/c exact-integer? #f) #f]
                     [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
   Returns a sequence equivalent to @scheme[str] when no optional
@@ -141,7 +140,7 @@ in the sequence.
 
 @defproc[(in-bytes [bstr bytes?]
                    [start exact-nonnegative-integer? 0]
-                   [stop (or/c exact-nonnegative-integer? #f) #f]
+                   [stop (or/c exact-integer? #f) #f]
                    [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
   Returns a sequence equivalent to @scheme[bstr] when no optional

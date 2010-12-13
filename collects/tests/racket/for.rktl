@@ -24,6 +24,10 @@
 (test-generator [(h f d)] (in-vector #(a b c d e f g h) 7 1 -2))
 (test-generator [(b d f)] (in-vector #(a b c d e f g h) 1 6 2))
 (test-generator [(h f d)] (in-vector #(a b c d e f g h) 7 2 -2))
+(test-generator [(c b a)] (in-vector #(a b c) 2 -1 -1))
+;; Test indices out of bounds
+(err/rt-test (for/list ([x (in-vector #(a b c d) 0 6 2)]) x) exn:fail:contract?)
+(err/rt-test (for/list ([x (in-vector #(a b c d) 6 0 -2)]) x) exn:fail:contract?)
 (test-generator [(#\a #\b #\c)] "abc")
 (test-generator [(#\a #\u3bb #\c)] "a\u03BBc")
 (test-generator [(#\a #\b #\c)] (in-string "abc"))

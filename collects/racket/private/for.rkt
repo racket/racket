@@ -64,7 +64,10 @@
 
              define-in-vector-like
              define-:vector-like-gen
-             (for-syntax make-in-vector-like))
+             (for-syntax make-in-vector-like)
+
+             normalise-inputs ;; Only exported to get around certificate problem
+             )
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
@@ -480,10 +483,16 @@
 
   ;; Vector-like sequences --------------------------------------------------
 
-  ;; (: check-ranges (Symbol Natural Natural Integer -> Void))
-  (define (check-ranges who start stop step)
-    (unless (exact-nonnegative-integer? start) (raise-type-error who "exact non-negative integer" start))
-    (unless (exact-nonnegative-integer? stop) (raise-type-error who "exact non-negative integer or #f" stop))
+  ;; (: check-ranges (Symbol Natural Integer Integer Natural -> Void))
+  ;;
+  ;; As no object can have more slots than can be indexed by
+  ;; the largest fixnum, after running these checks start,
+  ;; stop, and step are guaranteed to be fixnums.
+  (define (check-ranges who start stop step len)
+    (unless (and (exact-nonnegative-integer? start) (< start len))
+      (raise-type-error who (format "exact non-negative integer in [0,~a)" len) start))
+    (unless (and (integer? stop) (<= -1 stop) (<= stop len))
+      (raise-type-error who (format "exact integer in [-1,~a] or #f" len) stop))
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-type-error who "exact non-zero integer" step))
     (when (and (< start stop) (< step 0))
@@ -495,6 +504,20 @@
                                         start stop)
                             step)))
 
+  ;; (: normalise-inputs (A) (Symbol String (Any -> Boolean) (A -> Natural) Any Any Any Any -> (values Fixnum Fixnum Fixnum)))
+  ;;
+  ;; Checks all inputs are valid for an in-vector sequence,
+  ;; and if so returns the vector, start, stop, and
+  ;; step. Start, stop, and step are guaranteed to be Fixnum
+  (define (normalise-inputs who type-name vector? unsafe-vector-length
+                            vec start stop step)
+    (unless (vector? vec)
+      (raise-type-error who type-name vec))
+    (let* ([len (unsafe-vector-length vec)]
+           [stop* (if stop stop len)])
+      (check-ranges who start stop* step len)
+      (values vec start stop* step)))
+  
   (define-syntax define-in-vector-like
     (syntax-rules ()
       [(define-in-vector-like in-vector-name
@@ -505,9 +528,9 @@
           [(v start) (in-vector-name v start #f 1)]
           [(v start stop) (in-vector-name v start stop 1)]
           [(v start stop step)
-           (unless (vector?-id v) (raise-type-error (quote in-vector-name) type-name-str v))
-           (let ([stop (or stop (vector-length-id v))])
-             (check-ranges (quote in-vector-name) start stop step)
+           (let-values (([v start stop step]
+                         (normalise-inputs in-vector-name type-name-str vector?-id vector-length-id
+                                          v start stop step)))
              (make-do-sequence (lambda () (:vector-gen-id v start stop step))))]))]))
 
   (define-syntax define-:vector-like-gen
@@ -529,12 +552,16 @@
           void
           void))]))
 
-  (define-for-syntax (make-in-vector-like vector?-id
+  (define-for-syntax (make-in-vector-like in-vector-name
+                                          type-name-str
+                                          vector?-id
                                           unsafe-vector-length-id
                                           in-vector-id
                                           unsafe-vector-ref-id)
      (define (in-vector-like stx)
-       (with-syntax ([vector? vector?-id]
+       (with-syntax ([in-vector-name in-vector-name]
+                     [type-name type-name-str]
+                     [vector? vector?-id]
                      [in-vector in-vector-id]
                      [unsafe-vector-length unsafe-vector-length-id]
                      [unsafe-vector-ref unsafe-vector-ref-id])
@@ -572,24 +599,12 @@
               #`[(id)
                  (:do-in
                   ;; Outer bindings
-                  ;; Prevent multiple evaluation
-                  ([(v* stop*) (let ([vec vec-expr]
-                                     [stop* stop])
-                                 (if (and (not stop*) (vector? vec))
-                                     (values vec (unsafe-vector-length vec))
-                                     (values vec stop*)))]
-                   [(start*) start]
-                   [(step*) step])
-                  ;; Outer check
-                  (when (or (not (vector? v*))
-                            (not (exact-integer? start*))
-                            (not (exact-integer? stop*))
-                            (not (exact-integer? step*))
-                            (zero? step*)
-                            (and (< start* stop*) (< step* 0))
-                            (and (> start* stop*) (> step* 0)))
-                    ;; Let in-vector report the error
-                    (in-vector v* start* stop* step*))
+                  ;; start*, stop*, and step* are guaranteed to be exact integers
+                  ([(v* start* stop* step*)
+                    (normalise-inputs (quote in-vector-name) type-name
+                                      vector? unsafe-vector-length vec-expr start stop step)])
+                  ;; Outer check is done by normalise-inputs
+                  #t
                   ;; Loop bindings
                   ([idx start*])
                   ;; Pos guard
@@ -623,7 +638,9 @@
 
   (define-sequence-syntax *in-vector
     (lambda () #'in-vector)
-    (make-in-vector-like #'vector?
+    (make-in-vector-like 'in-vector
+                         "vector"
+                         #'vector?
                          #'unsafe-vector-length
                          #'in-vector
                          #'unsafe-vector-ref))
@@ -636,7 +653,9 @@
 
   (define-sequence-syntax *in-string
     (lambda () #'in-string)
-    (make-in-vector-like #'string?
+    (make-in-vector-like 'in-string
+                         "string"
+                         #'string?
                          #'string-length
                          #'in-string
                          #'string-ref))
@@ -649,7 +668,9 @@
 
   (define-sequence-syntax *in-bytes
     (lambda () #'in-bytes)
-    (make-in-vector-like #'bytes?
+    (make-in-vector-like 'in-bytes
+                         "bytes"
+                         #'bytes?
                          #'bytes-length
                          #'in-bytes
                          #'bytes-ref))

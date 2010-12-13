@@ -1,7 +1,9 @@
 #lang scheme/base
+
 (require '#%flfxnum
          "private/vector-wraps.rkt"
-         "unsafe/ops.rkt")
+         "unsafe/ops.rkt"
+         (for-syntax racket/base))
 
 (provide fx->fl fl->fx
          fxabs

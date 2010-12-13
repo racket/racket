@@ -1,4 +1,5 @@
 #lang racket/base
+
 (require '#%flfxnum
          (for-syntax racket/base))
 
@@ -22,7 +23,9 @@
 
      (define-sequence-syntax in-fXvector
        (lambda () #'in-fXvector*)
-       (make-in-vector-like #'fXvector?
+       (make-in-vector-like 'in-fXvector
+                            fXvector-str
+                            #'fXvector?
                             #'unsafe-fXvector-length
                             #'in-fXvector*
                             #'unsafe-fXvector-ref))
