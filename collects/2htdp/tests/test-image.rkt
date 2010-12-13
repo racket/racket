@@ -51,6 +51,7 @@
          racket/port
          wxme
          rackunit
+         file/convertible
          (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
@@ -2050,6 +2051,9 @@
                 (image-height (list-ref washed 2)))
         =>
         #f))
+
+(test (convertible? (circle 20 "solid" "red")) => #t)
+(test (bytes? (convert (circle 20 "solid" "red") 'png-bytes)) => #t)
 
 
 

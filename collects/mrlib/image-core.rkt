@@ -36,7 +36,8 @@ has been moved out).
          "private/image-core-snipclass.rkt"
          "private/regmk.rkt"
          (prefix-in cis: "cache-image-snip.ss")
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         file/convertible)
 
 
 
@@ -197,8 +198,29 @@ has been moved out).
 (define skip-image-equality-fast-path (make-parameter #f))
 (define render-normalized (make-parameter #f))
 
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (img format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send (to-bitmap (to-img img)) save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
+(define (to-bitmap img)  
+  (let* ([bb (send img get-bb)]
+         [bm (make-object bitmap% 
+               (add1 (inexact->exact (ceiling (bb-right bb)))) 
+               (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
+         [bdc (make-object bitmap-dc% bm)])
+    (send bdc clear)
+    (render-image img bdc 0 0)
+    (send bdc get-bitmap)))
+	     
 (define image%
-  (class* snip% (equal<%> image<%>)
+  (class* snip% (png-convertible<%> equal<%> image<%>)
     (init-field shape bb normalized? pinhole)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
