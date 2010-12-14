@@ -65,7 +65,7 @@
  (bug-report-synthesized-information "Información sintetizada")  ;; dialog title
  (bug-report-show-synthesized-info "Muestra información resumida")
  (bug-report-submit "Enviar")
- (bug-report-submit-menu-item "Enviar reporte de problemas") ;; in Help Menu (drs & help desk)
+ (bug-report-submit-menu-item "Enviar reporte de problemas...") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "Error al enviar el reporte de problemas")
  (error-sending-bug-report-expln "Un error ocurrió mientras enviaba éste reporte de problemas.  Si tu conexión a Internet está funcionando bien, por favor visita:\n\n    http://bugs.racket-lang.org/\n\ny envía el reporte de problemas por medio de la forma de web en esea página de WEB. Sentimos mucho las molestias que esto te ocasiona.\n\nEl mensaje de error es:\n~a")
  (illegal-bug-report "Reporte de problemas ilegal")

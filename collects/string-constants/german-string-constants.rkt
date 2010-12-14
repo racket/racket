@@ -60,7 +60,7 @@
  (bug-report-synthesized-information "Generierte Information")  ;; dialog title
  (bug-report-show-synthesized-info "Generierte Informationen anzeigen")	; (an)zeigen
  (bug-report-submit "Abschicken")	
- (bug-report-submit-menu-item "Bug-Report abschicken") ;; in Help Menu (drs & help desk)
+ (bug-report-submit-menu-item "Bug-Report abschicken...") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "Versendung des Bug-Reports fehlgeschlagen")
  (error-sending-bug-report-expln "Ein Fehler ist beim Versenden des Bug-Reports aufgetreten. Falls Ihre Internet-Verbindung eigentlich funktioniert, besuchen Sie bitte:\n\n    http://bugs.racket-lang.org/ \n\nund teilen Sie uns den Bug mit unserem Online-Formular mit. Wir bitten um Ihr Verständnis.\n\nDie Fehlermeldung lautet:\n~a")
  (illegal-bug-report "Ungültiger Bug-Report")

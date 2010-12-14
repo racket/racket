@@ -76,7 +76,7 @@
  (bug-report-synthesized-information "세부 정보")  ;; dialog title
  (bug-report-show-synthesized-info "세부 정보 보기")
  (bug-report-submit "제출")
- (bug-report-submit-menu-item "오류 보고 제출") ;; in Help Menu (drs & help desk)
+ (bug-report-submit-menu-item "오류 보고 제출...") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "오류 보고 보내기 오류")
  (error-sending-bug-report-expln "오류 보고 도중에 오류가 발생했습니다. 다른 인터넷 연결이 원활하다면, 다음 사이트를 방문하여:\n\n    http://bugs.racket-lang.org/\n\n 오류 보고를 온라인 형식으로
 제출하여 주십시오. 불편을 드려 죄송합니다.\n\n 오류 메세지는 다음과 같습니다 :\n~a")

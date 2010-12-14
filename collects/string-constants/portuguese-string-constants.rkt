@@ -158,7 +158,7 @@ please adhere to these guidelines:
  (bug-report-synthesized-information "Informação Gerada")  ;; dialog title
  (bug-report-show-synthesized-info "Mostrar Informação Gerada")
  (bug-report-submit "Enviar")
- (bug-report-submit-menu-item "Enviar relatório de erro") ;; in Help Menu (drs & help desk)
+ (bug-report-submit-menu-item "Enviar relatório de erro...") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "Erro a Enviar relatório de erro")
  (error-sending-bug-report-expln "Um erro ocorreu enquanto o relatório de erro estava a ser enviado. Se a sua ligação à internet está a funcionar correctamente, por favor visite:\n\n http://bugs.racket-lang.org/\n\ne envie o erro através do nosso formulário online. Pedimos desculpa pelo incómodo.\n\nA mensagem de erro é:\n~a")
  (illegal-bug-report "Relatório de Erro Ilegal")

@@ -89,8 +89,6 @@
 
 (drracket:modes:add-initial-modes)
 
-(namespace-set-variable-value! 'help-desk:frame-mixin drracket:frame:basics-mixin)
-
 (finder:default-filters (list* '("Racket (.rkt)" "*.rkt")
                                '("Racket (.ss)" "*.ss")
                                '("Racket (.scm)" "*.scm")

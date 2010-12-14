@@ -153,12 +153,19 @@ please adhere to these guidelines:
  (bug-report-field-docs-installed "Docs Installed")
  (bug-report-field-collections "Collections")
  (bug-report-field-human-language "Human Language")
-  (bug-report-field-memory-use "Memory Use")
+ (bug-report-field-memory-use "Memory Use")
  (bug-report-field-version "Version")
  (bug-report-synthesized-information "Synthesized Information")  ;; dialog title
  (bug-report-show-synthesized-info "Show Synthesized Info")
  (bug-report-submit "Submit")
- (bug-report-submit-menu-item "Submit Bug Report") ;; in Help Menu (drs & help desk)
+ (close-and-save-bug-report "Close && Save") ;; button in bug report dialog, next to cancel and bug-report-submit
+ (bug-report-submit-menu-item "Submit Bug Report...")  ;; same as above, but used when there are saved bug reports
+ (saved-bug-reports-menu-item "Saved Bug Reports") ;; in Help Menu, submenu title
+ (disacard-all-saved-bug-reports "Discard All Saved Bug Reports") ;; menu item: only shows up when there is more than one saved bug report
+ (no-saved-bug-reports "No bug reports have been saved") ;; an info message that shows up as a disabled menu item when no saved bug reports are around
+ (new-bug-report "New Bug Report") ;; button label the user sees when there are saved bug reports, but the user asks to save another one.
+ (close-and-save "Close and Save") ;; button on the bottom of the bug report form
+ (saved-unsubmitted-bug-reports "Saved, unsubmitted bug reports:") ;; next to previous line in same dialog, followed by list of bug report subjects (as buttons)
  (error-sending-bug-report "Error Sending Bug Report")
  (error-sending-bug-report-expln "An error occurred when sending this bug report. If your internet connection is otherwise working fine, please visit:\n\n    http://bugs.racket-lang.org/\n\nand submit the bug via our online web-form. Sorry for the difficulties.\n\nThe error message is:\n~a")
  (illegal-bug-report "Illegal Bug Report")

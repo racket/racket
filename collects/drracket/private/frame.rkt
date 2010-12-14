@@ -153,12 +153,74 @@
          menu 
          (get-additional-important-urls))
         (new menu-item%
-             (label (string-constant bug-report-submit-menu-item))
-             (parent menu)
-             (callback
+             [label (string-constant bug-report-submit-menu-item)]
+             [parent menu]
+             [callback
               (λ (x y)
-                (help-desk:report-bug))))
-        
+                (define saved (saved-bug-report-titles/ids))
+                (cond
+                  [(null? saved)
+                   (help-desk:report-bug #f #:frame-mixin basics-mixin)]
+                  [else
+                   (define which #f)
+                   (define (done the-one)
+                     (set! which the-one)
+                     (send dlg show #f))
+                   (define dlg (new dialog% 
+                                    [label (string-constant drscheme)]
+                                    [parent this]))
+                   (define btn1 (new button% 
+                                     [parent dlg]
+                                     [label (string-constant new-bug-report)]
+                                     [callback (λ (x y) (done #f))]))
+                   (new message% [parent dlg] [label (string-constant saved-unsubmitted-bug-reports)])
+                   (define btns
+                     (cons btn1
+                           (for/list ([a-brinfo (in-list saved)])
+                             (new button%
+                                  [parent dlg]
+                                  [label (brinfo-title a-brinfo)]
+                                  [callback
+                                   (λ (x y) (done (brinfo-id a-brinfo)))]))))
+                   (define width (apply max (map (λ (x) (let-values ([(w h) (send x get-client-size)]) w))
+                                                 btns)))
+                   (for ([x (in-list btns)])
+                     (send x min-width width))
+                   (send btn1 focus)
+                   (send dlg show #t)
+                   (help-desk:report-bug which #:frame-mixin basics-mixin)]))])
+        (new menu%
+             [label (string-constant saved-bug-reports-menu-item)]
+             [parent menu]
+             [demand-callback
+              (let ([last-time (gensym)]) ;;  a unique thing to guarantee the menu is built the first time
+                (λ (saved-bug-reports-menu)
+                  (define this-time (saved-bug-report-titles/ids))
+                  (unless (equal? last-time this-time)
+                    (set! last-time this-time)
+                    (for ([x (in-list (send saved-bug-reports-menu get-items))])
+                      (send x delete))
+                    (cond
+                      [(null? this-time)
+                       (send (new menu-item%
+                                  [parent saved-bug-reports-menu]
+                                  [label (string-constant no-saved-bug-reports)]
+                                  [callback void])
+                             enable #f)]
+                      [else
+                       (unless (null? (cdr this-time))
+                         (new menu-item%
+                              [parent saved-bug-reports-menu]
+                              [label (string-constant disacard-all-saved-bug-reports)]
+                              [callback (λ (x y) (discard-all-saved-bug-reports))])
+                         (new separator-menu-item% [parent saved-bug-reports-menu]))
+                       (for ([a-brinfo (in-list this-time)])
+                         (new menu-item%
+                           [parent saved-bug-reports-menu]
+                           [label (brinfo-title a-brinfo)]
+                           [callback
+                            (λ (x y)
+                              (help-desk:report-bug (brinfo-id a-brinfo) #:frame-mixin basics-mixin))]))]))))])
         (drracket:app:add-language-items-to-help-menu menu))
       
       (define/override (file-menu:new-string) (string-constant new-menu-item))

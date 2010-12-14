@@ -84,7 +84,7 @@
   (bug-report-synthesized-information "综合信息")  ;; dialog title
   (bug-report-show-synthesized-info "显示综合信息")
   (bug-report-submit "提交")
-  (bug-report-submit-menu-item "提交程序错误报告") ;; in Help Menu (drs & help desk)
+  (bug-report-submit-menu-item "提交程序错误报告...") ;; in Help Menu (drs & help desk)
   (error-sending-bug-report "程序错误报告传输出错")
   (error-sending-bug-report-expln "在传输程序错误报告的过程中出现了错误。如果你能够正常浏览网络，请访问：\n\n    http://bugs.racket-lang.org/\n\n使用网页上的表单提交程序错误报告。对于由此产生的不便，我们表示抱歉。\n\n传输错误详情：\n~a")
   (illegal-bug-report "非法的程序错误报告")
