@@ -48,6 +48,7 @@ If the namespace does not, they are colored the unbound color.
 (provide tool@)
 
 (define o (current-output-port))
+(define (oprintf . args) (apply fprintf o args))
 
 (define status-init (string-constant cs-status-init))
 (define status-coloring-program (string-constant cs-status-coloring-program))
