@@ -184,7 +184,9 @@
 
     (define/record (clear))
     
-    (define/record (erase))
+    (define/override (erase)
+      (super erase)
+      (set! procs null))
 
     (define/record (draw-arc x y
                              width height
