@@ -112,7 +112,7 @@
         (MoveWindow client-hwnd 1 (+ tab-height 2) (- w 4) (- h tab-height 6) #t)))
 
     (define/override (is-command? cmd)
-      (= cmd 64985))
+      (= cmd -551))
 
     (define/public (do-command cmd control-hwnd)
       (queue-window-event this (lambda ()
