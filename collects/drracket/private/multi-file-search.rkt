@@ -470,10 +470,13 @@
     (define (recur-check-box-callback)
       (preferences:set 'drracket:multi-file-search:recur? (send recur-check-box get-value)))
     (define (methods-choice-callback)
-      (preferences:set 'drracket:multi-file-search:search-type (send methods-choice get-selection)) 
+      (define which (send methods-choice get-selection))
+      (preferences:set 'drracket:multi-file-search:search-type which) 
+      (set-method which))
+    (define (set-method which)
       (send active-method-panel active-child
             (list-ref (send active-method-panel get-children)
-                      (send methods-choice get-selection))))
+                      which)))
     (define (search-text-field-callback)
       (preferences:set 'drracket:multi-file-search:search-string (send search-text-field get-value)))
     (define (dir-button-callback) 
@@ -519,6 +522,9 @@
     (send method-panel set-alignment 'left 'center)
     (send filter-panel stretchable-height #f)
     
+    (send methods-choice set-selection (preferences:get 'drracket:multi-file-search:search-type))
+    (set-method (preferences:get 'drracket:multi-file-search:search-type)) 
+        
     (send search-text-field focus)
     (send dialog show #t)
     
