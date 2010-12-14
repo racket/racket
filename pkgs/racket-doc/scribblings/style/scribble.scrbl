@@ -125,9 +125,8 @@ Refrain from referring to documentation ``above'' or ``below,'' and
 instead have a hyperlink point to the right place.
 
 In prose, use @litchar{``} and @litchar{''} quotation marks instead of
-@litchar{"}. Use @litchar{---} for an em-dash, and do not include
-spaces on either side, though it will typeset as an en-dash and spaces
-in HTML output. Use American style for quotation marks and punctuation
+@litchar{"}. Use @litchar{---} for an em dash, and do not include
+spaces on either side. Use American style for quotation marks and punctuation
 @; [Eli] BTW, I've asked several people about this, and the general
 @;   agreement that I've seen is that this is a rather arbitrary rule
 @;   and there's no harm in doing the more logical thing of putting
