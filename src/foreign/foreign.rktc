@@ -87,6 +87,10 @@ exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 
 static void save_errno_values(int kind);
 
+/* This make hides pointerness from cdefstruct so that it
+   doesn't generate a mark/fixup action: */
+#define NON_GCBALE_PTR(t) t*
+
 /*****************************************************************************/
 /* Defining EnumProcessModules for openning `self' as an ffi-lib */
 
@@ -161,7 +165,7 @@ END_XFORM_SKIP;
 /* Library objects */
 
 @cdefstruct[ffi-lib
-  [handle  "void*"]
+  [handle  "NON_GCBALE_PTR(void)"]
   [name    "Scheme_Object*"]
   [objects "Scheme_Hash_Table*"]]
 
@@ -228,9 +232,9 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 /* Pull pointers (mostly functions) out of ffi-lib objects */
 
 @cdefstruct[ffi-obj
-  [obj  "void*"]
+  [obj  "NON_GCBALE_PTR(void)"]
   [name "char*"]
-  [lib  "ffi_lib_struct*"]]
+  [lib  "NON_GCBALE_PTR(ffi_lib_struct)"]]
 
 /* (ffi-obj objname ffi-lib-or-libname) -> ffi-obj */
 @cdefine[ffi-obj 2]{
@@ -972,7 +976,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 /* Callback type */
 
 @cdefstruct[ffi-callback
-  [callback "void*"]
+  [callback "NON_GCBALE_PTR(void)"]
   [proc     "Scheme_Object*"]
   [itypes   "Scheme_Object*"]
   [otype    "Scheme_Object*"]

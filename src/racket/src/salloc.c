@@ -1222,10 +1222,11 @@ void scheme_reset_finalizations(void)
   current_lifetime++;
 }
 
-static void do_next_finalization(void *o, void *data)
+static void do_next_finalization(void *o, void *_data)
 {
-  Finalizations *fns = *(Finalizations **)data;
+  Finalizations *fns = *(Finalizations **)_data;
   Finalization *fn;
+  GC_CAN_IGNORE void *data;
 
   if (fns->lifetime != current_lifetime)
     return;
@@ -1234,7 +1235,7 @@ static void do_next_finalization(void *o, void *data)
     if (fns->scheme_first->next || fns->ext_f || fns->prim_first) {
       /* Re-install low-level finalizer and run a scheme finalizer */
       GC_register_eager_finalizer(o, fns->scheme_first->next ? 1 : 2, 
-				  do_next_finalization, data, NULL, NULL);
+				  do_next_finalization, _data, NULL, NULL);
     }
 
     fn = fns->scheme_first;
@@ -1244,15 +1245,26 @@ static void do_next_finalization(void *o, void *data)
     else
       fn->next->prev = NULL;
 
-    fn->f(o, fn->data);
+    /* Clear out the `data' pointer, in case it refers to
+       memory that is free()ed, in which case the GC might
+       later take over the same page of memory. */
+    data = fn->data;
+    fn->data = NULL;
+
+    fn->f(o, data);
     return;
   }
 
-  if (fns->ext_f)
-    fns->ext_f(o, fns->ext_data);
+  if (fns->ext_f) {
+    data = fns->ext_data;
+    fns->ext_data = NULL;
+    fns->ext_f(o, data);
+  }
 
   for (fn = fns->prim_first; fn; fn = fn->next) {
-    fn->f(o, fn->data);
+    data = fn->data;
+    fn->data = NULL;
+    fn->f(o, data);
   }
 }
 

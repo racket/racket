@@ -84,6 +84,10 @@
 
 static void save_errno_values(int kind);
 
+/* This make hides pointerness from cdefstruct so that it
+   doesn't generate a mark/fixup action: */
+#define NON_GCBALE_PTR(t) t*
+
 /*****************************************************************************/
 /* Defining EnumProcessModules for openning `self' as an ffi-lib */
 
@@ -161,7 +165,7 @@ END_XFORM_SKIP;
 static Scheme_Type ffi_lib_tag;
 typedef struct ffi_lib_struct {
   Scheme_Object so;
-  void* handle;
+  NON_GCBALE_PTR(void) handle;
   Scheme_Object* name;
   Scheme_Hash_Table* objects;
 } ffi_lib_struct;
@@ -180,14 +184,12 @@ int ffi_lib_SIZE(void *p) {
 }
 int ffi_lib_MARK(void *p) {
   ffi_lib_struct *s = (ffi_lib_struct *)p;
-  gcMARK(s->handle);
   gcMARK(s->name);
   gcMARK(s->objects);
   return gcBYTES_TO_WORDS(sizeof(ffi_lib_struct));
 }
 int ffi_lib_FIXUP(void *p) {
   ffi_lib_struct *s = (ffi_lib_struct *)p;
-  gcFIXUP(s->handle);
   gcFIXUP(s->name);
   gcFIXUP(s->objects);
   return gcBYTES_TO_WORDS(sizeof(ffi_lib_struct));
@@ -271,9 +273,9 @@ static Scheme_Object *foreign_ffi_lib_name(int argc, Scheme_Object *argv[])
 static Scheme_Type ffi_obj_tag;
 typedef struct ffi_obj_struct {
   Scheme_Object so;
-  void* obj;
+  NON_GCBALE_PTR(void) obj;
   char* name;
-  ffi_lib_struct* lib;
+  NON_GCBALE_PTR(ffi_lib_struct) lib;
 } ffi_obj_struct;
 #define SCHEME_FFIOBJP(x) (SCHEME_TYPE(x)==ffi_obj_tag)
 #define MYNAME "ffi-obj?"
@@ -290,16 +292,12 @@ int ffi_obj_SIZE(void *p) {
 }
 int ffi_obj_MARK(void *p) {
   ffi_obj_struct *s = (ffi_obj_struct *)p;
-  gcMARK(s->obj);
   gcMARK(s->name);
-  gcMARK(s->lib);
   return gcBYTES_TO_WORDS(sizeof(ffi_obj_struct));
 }
 int ffi_obj_FIXUP(void *p) {
   ffi_obj_struct *s = (ffi_obj_struct *)p;
-  gcFIXUP(s->obj);
   gcFIXUP(s->name);
-  gcFIXUP(s->lib);
   return gcBYTES_TO_WORDS(sizeof(ffi_obj_struct));
 }
 END_XFORM_SKIP;
@@ -1049,13 +1047,13 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
     return FFI_DEFAULT_ABI;
   else if (SAME_OBJ(sym, sysv_sym)) {
-#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
+#ifdef WINDOWS_DYNAMIC_LOAD
     return FFI_SYSV;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
 #endif
   } else if (SAME_OBJ(sym, stdcall_sym)) {
-#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
+#ifdef WINDOWS_DYNAMIC_LOAD
     return FFI_STDCALL;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
@@ -1153,7 +1151,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
 static Scheme_Type ffi_callback_tag;
 typedef struct ffi_callback_struct {
   Scheme_Object so;
-  void* callback;
+  NON_GCBALE_PTR(void) callback;
   Scheme_Object* proc;
   Scheme_Object* itypes;
   Scheme_Object* otype;
@@ -1174,7 +1172,6 @@ int ffi_callback_SIZE(void *p) {
 }
 int ffi_callback_MARK(void *p) {
   ffi_callback_struct *s = (ffi_callback_struct *)p;
-  gcMARK(s->callback);
   gcMARK(s->proc);
   gcMARK(s->itypes);
   gcMARK(s->otype);
@@ -1183,7 +1180,6 @@ int ffi_callback_MARK(void *p) {
 }
 int ffi_callback_FIXUP(void *p) {
   ffi_callback_struct *s = (ffi_callback_struct *)p;
-  gcFIXUP(s->callback);
   gcFIXUP(s->proc);
   gcFIXUP(s->itypes);
   gcFIXUP(s->otype);
