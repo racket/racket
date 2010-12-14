@@ -22,7 +22,14 @@
 ;; `try-atomic' to continue a frozen
 ;; computation in non-atomic mode.
 (define (call-as-nonatomic-retry-point thunk)
-  (let ([b (box null)])
+  (let ([b (box (if (freezer-box)
+                    ;; Already in try-atomic; we'll have to complete
+                    ;;  everything atomically, and starting with
+                    ;;  a non-empty list means that we won't bother
+                    ;;  capturing continuations.
+                    (list void)
+                    ;; Start with an empty list of things to finish:
+                    null))])
     (begin0
      (parameterize ([freezer-box b])
        ;; In atomic mode (but not using call-as-atomic, because we
@@ -72,10 +79,9 @@
                               (lambda () default)))
                            freeze-tag)
                           (void)))]
-             [prev #f]
              [done? #f])
         (hash-set! saved-ptrs handler #t)
-        (parameterize ([freezer-box #f])
+        (begin
           (let/ec esc ;; esc + dynamic-wind prevents escape via alternate prompt tags
             (dynamic-wind
              void
@@ -84,7 +90,9 @@
                 (lambda ()
                   (call-with-continuation-prompt ; to catch aborts
                    (lambda ()
-                     (set! prev (scheme_set_on_atomic_timeout handler))
+                     (when (scheme_set_on_atomic_timeout handler)
+                       (log-error "no")
+                       (error 'try-atomic "nested atomic timeout"))
                      (set! ready? #t)
                      (begin0
                       (thunk)
@@ -104,6 +112,6 @@
                   (thunk))))
              (lambda ()
                (hash-remove! saved-ptrs handler)
-               (scheme_restore_on_atomic_timeout prev)
+               (scheme_restore_on_atomic_timeout #f)
                (unless done? (esc (void))))))))])))
 
