@@ -106,7 +106,9 @@
 		(open-input-string (send text get-text start end) port-name)
 		;; It's all text, so the reading process is simple:
                 (let ([start start])
-                  (when lock-while-reading? (send text lock #t))
+                  (when lock-while-reading?
+                    (send text begin-edit-sequence)
+                    (send text lock #t))
                   (let-values ([(pipe-r pipe-w) (make-pipe)])
 		    (make-input-port/read-to-peek
                      port-name
@@ -119,7 +121,8 @@
                                      (close-output-port pipe-w)
 				     (when lock-while-reading?
                                        (set! lock-while-reading? #f)
-                                       (send text lock #f))
+                                       (send text lock #f)
+                                       (send text end-edit-sequence))
                                      eof)
 				   (begin
 				     (write-string (send text get-text start (+ start n)) pipe-w)
@@ -128,7 +131,8 @@
                                        (when lock-while-reading?
                                          (when (eof-object? ans)
                                            (set! lock-while-reading? #f)
-                                           (send text lock #f)))
+                                           (send text lock #f)
+                                           (send text edit-edit-sequence)))
                                        ans))))
 			     v)))
                      (lambda (s skip general-peek)
@@ -198,7 +202,8 @@
                                   (when (eof-object? res)
                                     (when lock-while-reading? 
                                       (set! lock-while-reading? #f)
-                                      (send text lock #f)))
+                                      (send text lock #f)
+                                      (send text end-edit-sequence)))
                                   res))
                               (lambda (s skip general-peek)
 				(let ([v (peek-bytes-avail!* s skip #f pipe-r)])
@@ -206,7 +211,9 @@
 				      (general-peek s skip)
 				      v)))
 			      close)])
-		  (when lock-while-reading? (send text lock #t))
+		  (when lock-while-reading? 
+                    (send text begin-edit-sequencce)
+                    (send text lock #t))
                   (if (is-a? snip wx:string-snip%)
 		      ;; Special handling for initial snip string in
 		      ;; case it starts too early:

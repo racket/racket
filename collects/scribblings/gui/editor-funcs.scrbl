@@ -254,9 +254,15 @@ The result port must not be used if @racket[text-editor] changes in any
 @method[text% get-revision-number] method can be used to detect any of these changes.
 
 To help guard against such uses, if @racket[lock-while-reading?] argument is
-a true value, then @racket[open-input-text-editor] will lock the @racket[text-editor]
-before it returns and unlock it after it is safe to use the above methods. (In some
-cases, it will not lock the editor at all, if using those methods are always safe.)
+a true value, then @racket[open-input-text-editor] will 
+@method[editor<%> lock] the @racket[text-editor] and call
+@method[editor<%> begin-edit-sequence]
+before it returns and un@method[editor<%> lock] it and
+call @method[editor<%> end-edit-sequence]
+after it is safe to use the above methods. (In some
+cases, it will not @method[editor<%> lock] the editor 
+or put it in an edit sequence at all, 
+if using those methods are always safe.)
 
 }
 
