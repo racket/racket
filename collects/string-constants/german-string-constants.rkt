@@ -1353,6 +1353,9 @@
   (test-engine-property-fail-error "Eigenschaft falsifizierbar mit")
   (test-engine-property-error-error "`check-property' bekam den folgenden Fehler~n:: ~a")
 
+  (signature-enable-checks "Signaturüberprüfung aktivieren")
+  (signature-disable-checks "Signaturüberprüfung deaktivieren")
+
   ; section header
   (test-engine-check-failures "Check-Fehler:")
   ; section header

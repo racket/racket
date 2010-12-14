@@ -14,7 +14,8 @@
 	 make-procedure-to-blame
 	 procedure-to-blame?
 	 procedure-to-blame-proc procedure-to-blame-syntax
-	 make-type-variable-info type-variable-info?)
+	 make-type-variable-info type-variable-info?
+	 signature-checking-enabled?)
 
 (require scheme/promise
 	 mzlib/struct
@@ -143,8 +144,12 @@
 	   'stepper-skipto/discard
 	   '(syntax-e cdr syntax-e cdr cdr car))))))))
 
+(define signature-checking-enabled? (make-parameter #t))
+
 (define (apply-signature signature val)
-  ((signature-enforcer signature) signature val))
+  (if (signature-checking-enabled?)
+      ((signature-enforcer signature) signature val)
+      val))
 
 (define-struct type-variable-info ())
 

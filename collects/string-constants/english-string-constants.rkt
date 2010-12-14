@@ -1455,6 +1455,9 @@ please adhere to these guidelines:
   (test-engine-property-fail-error "Property falsifiable with")
   (test-engine-property-error-error "check-property encountered the following error~n:: ~a")
 
+  (signature-enable-checks "Enable Signature Checks")
+  (signature-disable-checks "Disable Signature Checks")
+
   ; section header
   (test-engine-check-failures "Check failures:")
   ; section header
