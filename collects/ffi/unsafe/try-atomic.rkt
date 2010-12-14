@@ -17,13 +17,18 @@
 
 (define freezer-box (make-parameter #f))
 (define freeze-tag (make-continuation-prompt-tag))
+(define force-timeout (make-parameter #f))
 
 ;; Runs `thunk' atomically, but cooperates with 
 ;; `try-atomic' to continue a frozen
 ;; computation in non-atomic mode.
 (define (call-as-nonatomic-retry-point thunk)
+  (when (freezer-box) 
+    ;; Try to avoid a nested try-atomic:
+    (parameterize ([force-timeout #t])
+      (sleep)))
   (let ([b (box (if (freezer-box)
-                    ;; Already in try-atomic; we'll have to complete
+                    ;; Still in try-atomic; we'll have to complete
                     ;;  everything atomically, and starting with
                     ;;  a non-empty list means that we won't bother
                     ;;  capturing continuations.
@@ -69,6 +74,7 @@
              [handler (lambda (must-give-up)
                         (when (and ready? 
                                    (or (positive? must-give-up)
+                                       (force-timeout)
                                        (should-give-up?)))
                           (scheme_call_with_composable_no_dws
                            (lambda (proc)
