@@ -19,9 +19,7 @@ special text conversions:
 
 @itemize[
 
- @item{@litchar{---}: converted to @racket['mdash], which the HTML render
-       outputs as an en-dash surrounded by space (so don't put spaces around
-       @litchar{---} in a document)}
+ @item{@litchar{---}: converted to @racket['mdash]}
 
  @item{@litchar{--}: converted to @racket['ndash]}
 

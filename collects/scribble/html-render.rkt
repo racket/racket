@@ -1263,7 +1263,7 @@
              (ascii-ize i)))]
         [(symbol? i)
          (case i
-           [(mdash) '(" " ndash " ")]
+           [(mdash) '(8212 (wbr))] ;; <wbr> encourages breaking after rather than before
            ;; use "single left/right-pointing angle quotation mark"
            ;; -- it's not a correct choice, but works best for now
            ;;    (see the "Fonts with proper angle brackets"
