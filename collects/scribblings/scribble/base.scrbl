@@ -233,7 +233,7 @@ beginning of each line.
 
 The @racket[str]s are @emph{not} decoded with @racket[decode-content],
 so @racket[(verbatim "---")] renders with three hyphens instead of an
-em-dash. Beware, however, that @emph{reading}
+em dash. Beware, however, that @emph{reading}
 @litchar["@"]@racket[verbatim] converts @litchar["@"] syntax
 within the argument, and such reading occurs well before
 arguments to @racket[verbatim] are delivered at run-time. To disable simple

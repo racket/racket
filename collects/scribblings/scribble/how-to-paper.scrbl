@@ -101,10 +101,8 @@ Add more text to @filepath{mouse.scrbl} so that it looks like this:
         of the second @racket[section] call, has a single paragraph.
 
 Run the @exec{scribble} command(s) from @secref["first-example"]
-again. You may notice the curly double-quotes in the output; in PDF
-output, the @litchar{---} turned into an em-dash. For HTML, it turned
-into a en-dash with surrounding spaces, which is a typical convention
-for em-dashes in HTML.
+again. You may notice the curly double-quotes in the output, and
+the @litchar{---} turned into an em dash.
 
 @;----------------------------------------
 @section{Splitting the Document Source}
@@ -526,7 +524,7 @@ recognized by @racket[decode].
 
 A different but related @defterm{content decoding} takes place within
 a paragraph or section title. Content decoding is responsible for
-converting @litchar{---} to an em-dash or for converting @litchar{"}
+converting @litchar{---} to an em dash or for converting @litchar{"}
 and @litchar{'} to suitable curly quotes.
 
 The decoding process for document's stream is ultimately determined by
