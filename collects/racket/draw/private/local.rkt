@@ -43,4 +43,6 @@
   install-color
   dc-adjust-smoothing
   can-combine-text?
-  can-mask-bitmap?)
+  can-mask-bitmap?
+  reset-clip
+  get-clear-operator)

@@ -151,7 +151,12 @@
 
     ;; erase : -> void
     ;; A public method: erases all drawing
-    erase))
+    erase
+
+    ;; get-clear-operator : -> int
+    ;;  Gets the Cairo operator used by the default
+    ;;  `clear' implementation
+    get-clear-operator))
 
 (define default-dc-backend%
   (class* object% (dc-backend<%>)
@@ -206,6 +211,9 @@
     (define/public (get-gl-context)
       #f)
 
+    (define/public (get-clear-operator)
+      CAIRO_OPERATOR_CLEAR)
+
     (super-new)))
 
 (define hilite-color (send the-color-database find-color "black"))
@@ -228,7 +236,7 @@
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
              install-color dc-adjust-smoothing reset-clip
              collapse-bitmap-b&w?
-             ok? can-combine-text? can-mask-bitmap?)
+             ok? can-combine-text? can-mask-bitmap? get-clear-operator)
 
     ;; Using the global lock here is troublesome, becase
     ;; operations involving paths, regions, and text can
@@ -651,7 +659,7 @@
       (with-cr
        (check-ok 'erase)
        cr
-       (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
+       (cairo_set_operator cr (get-clear-operator))
        (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
        (cairo_paint cr)
        (cairo_set_operator cr CAIRO_OPERATOR_OVER)))

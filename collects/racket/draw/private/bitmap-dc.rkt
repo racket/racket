@@ -73,6 +73,11 @@
 
     (define/override (collapse-bitmap-b&w?) b&w?)
 
+    (define/override (get-clear-operator)
+      (if (send bm has-alpha-channel?)
+          CAIRO_OPERATOR_CLEAR
+          CAIRO_OPERATOR_OVER))
+
     (super-new)))
 
 (define black (send the-color-database find-color "black"))
