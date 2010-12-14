@@ -97,7 +97,6 @@
                   (call-with-continuation-prompt ; to catch aborts
                    (lambda ()
                      (when (scheme_set_on_atomic_timeout handler)
-                       (log-error "no")
                        (error 'try-atomic "nested atomic timeout"))
                      (set! ready? #t)
                      (begin0
