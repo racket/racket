@@ -386,11 +386,11 @@ used.  There are no restrictions on the Racket procedure; in
 particular, its lexical context is properly preserved.
 
 The optional @scheme[abi] keyword argument determines the foreign ABI
-that is used.  @scheme[#f] or @scheme['default] will use a
-platform-dependent default; other possible values are
-@scheme['stdcall] and @scheme['sysv] (the latter corresponds to
-``cdecl'').  This is especially important on Windows, where most
-system functions are @scheme['stdcall], which is not the default.
+that is used. Supplying @scheme[#f] or @scheme['default] indicates the
+platform-dependent default. The other possible
+values---@scheme['stdcall]and @scheme['sysv] (i.e., ``cdecl'')---are
+currently supported only for 32-bit Windows; using them on other
+platforms raises an exception.
 
 If @scheme[atomic?] is true, then when a Racket procedure is given
 this procedure type and called from foreign code, then the Racket

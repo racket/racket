@@ -1047,13 +1047,13 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
     return FFI_DEFAULT_ABI;
   else if (SAME_OBJ(sym, sysv_sym)) {
-#ifdef WINDOWS_DYNAMIC_LOAD
+#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
     return FFI_SYSV;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
 #endif
   } else if (SAME_OBJ(sym, stdcall_sym)) {
-#ifdef WINDOWS_DYNAMIC_LOAD
+#if defined(WINDOWS_DYNAMIC_LOAD) && !defined(_WIN64)
     return FFI_STDCALL;
 #else
     scheme_signal_error("%s: ABI not implemented: %V", who, sym);
