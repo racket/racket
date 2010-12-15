@@ -40,6 +40,7 @@
 (define (mean x y)
   (/ (+ x y) 2))
 
+;; save+restore pen, brush, also smoothing
 (define-syntax with-saved-pen&brush
   (syntax-rules ()
     [(with-saved-pen&brush dc . body)
@@ -47,10 +48,13 @@
 
 (define (save-pen&brush dc thunk)
   (let ([old-pen (send dc get-pen)]
-        [old-brush (send dc get-brush)])
+        [old-brush (send dc get-brush)]
+        [old-smoothing (send dc get-smoothing)])
     (begin0 (thunk)
-      (send dc set-pen old-pen)
-      (send dc set-brush old-brush))))
+      (send* dc
+        (set-pen old-pen)
+        (set-brush old-brush)
+        (set-smoothing old-smoothing)))))
 
 (define-syntax with-saved-text-config
   (syntax-rules ()
@@ -63,10 +67,11 @@
         [old-background (send dc get-text-background)]
         [old-mode (send dc get-text-mode)])
     (begin0 (thunk)
-            (send dc set-font old-font)
-            (send dc set-text-foreground old-color)
-            (send dc set-text-background old-background)
-            (send dc set-text-mode old-mode))))
+      (send* dc
+        (set-font old-font)
+        (set-text-foreground old-color)
+        (set-text-background old-background)
+        (set-text-mode old-mode)))))
 
 ;; Interfaces
 
@@ -263,6 +268,7 @@
                                   [(adj-y) fh]
                                   [(mini) _d])
                        (send* dc
+                         (set-smoothing 'smoothed)
                          (draw-rounded-rectangle
                           (+ x dx)
                           (+ y dy adj-y)
@@ -300,6 +306,7 @@
                              (set-brush billboard-brush)
                              (set-font (billboard-font dc))
                              (set-text-foreground color)
+                             (set-smoothing 'smoothed)
                              (draw-rounded-rectangle (- lx ld) (- ly ld)
                                                      (+ lw ld ld) (+ lh ld ld))
                              (draw-text label lx ly))))))))])
