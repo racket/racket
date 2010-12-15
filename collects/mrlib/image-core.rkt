@@ -28,6 +28,7 @@ has been moved out).
 |#
 
 (require racket/class
+         racket/draw
          racket/gui/base
          racket/math
          racket/contract
@@ -211,13 +212,15 @@ has been moved out).
 
 (define (to-bitmap img)  
   (let* ([bb (send img get-bb)]
-         [bm (make-object bitmap% 
-               (add1 (inexact->exact (ceiling (bb-right bb)))) 
-               (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
-         [bdc (make-object bitmap-dc% bm)])
+         [bm (make-bitmap
+              (add1 (inexact->exact (ceiling (bb-right bb)))) 
+              (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
+         [bdc (new bitmap-dc% [bitmap bm])])
     (send bdc clear)
     (render-image img bdc 0 0)
-    (send bdc get-bitmap)))
+    (begin0
+        (send bdc get-bitmap)
+      (send bdc set-bitmap #f)))
 	     
 (define image%
   (class* snip% (png-convertible<%> equal<%> image<%>)

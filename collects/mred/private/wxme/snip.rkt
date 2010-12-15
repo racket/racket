@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         scheme/file
+         scheme/file file/convertible
          "../syntax.ss"
          "snip-flags.ss"
          "private.ss"
@@ -863,7 +863,18 @@
              jpeg png png/mask png/alpha
              xbm xpm bmp pict))
 
-(defclass* image-snip% internal-snip% (equal<%>)
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (img format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send (send img get-bitmap) save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
+(defclass* image-snip% internal-snip% (equal<%> png-convertible<%>)
   (inherit-field s-admin
                  s-flags)
   (inherit set-snipclass)
