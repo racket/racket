@@ -205,6 +205,7 @@ MZ_EXTERN void scheme_log(Scheme_Logger *logger, int level, int flags,
 MZ_EXTERN void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data);
 MZ_EXTERN void scheme_log_abort(char *buffer);
 MZ_EXTERN void scheme_log_warning(char *buffer);
+MZ_EXTERN void scheme_glib_log_message(const char *log_domain, int log_level, const char *message, void *user_data);
 MZ_EXTERN void scheme_out_of_memory_abort();
 
 MZ_EXTERN void scheme_wrong_count(const char *name, int minc, int maxc,

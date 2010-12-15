@@ -100,6 +100,7 @@ EXPORTS
  scheme_log_message
  scheme_log_abort
  scheme_log_warning
+ scheme_glib_log_message
  scheme_out_of_memory_abort
  scheme_wrong_count
  scheme_wrong_count_m

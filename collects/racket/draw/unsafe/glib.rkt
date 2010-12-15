@@ -31,3 +31,7 @@
 (define-ffi-definer define-glib glib-lib)
 (define-ffi-definer define-gmodule gmodule-lib)
 (define-ffi-definer define-gobj gobj-lib)
+
+;; Route glib logging to Racket logging:
+(define-glib g_log_set_default_handler (_fun _fpointer _pointer -> _fpointer))
+(void (g_log_set_default_handler (get-ffi-obj 'scheme_glib_log_message #f _fpointer) #f))

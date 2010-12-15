@@ -106,6 +106,7 @@
 #define scheme_log_message (scheme_extension_table->scheme_log_message)
 #define scheme_log_abort (scheme_extension_table->scheme_log_abort)
 #define scheme_log_warning (scheme_extension_table->scheme_log_warning)
+#define scheme_glib_log_message (scheme_extension_table->scheme_glib_log_message)
 #define scheme_out_of_memory_abort (scheme_extension_table->scheme_out_of_memory_abort)
 #define scheme_wrong_count (scheme_extension_table->scheme_wrong_count)
 #define scheme_wrong_count_m (scheme_extension_table->scheme_wrong_count_m)

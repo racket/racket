@@ -106,6 +106,7 @@
   scheme_extension_table->scheme_log_message = scheme_log_message;
   scheme_extension_table->scheme_log_abort = scheme_log_abort;
   scheme_extension_table->scheme_log_warning = scheme_log_warning;
+  scheme_extension_table->scheme_glib_log_message = scheme_glib_log_message;
   scheme_extension_table->scheme_out_of_memory_abort = scheme_out_of_memory_abort;
   scheme_extension_table->scheme_wrong_count = scheme_wrong_count;
   scheme_extension_table->scheme_wrong_count_m = scheme_wrong_count_m;

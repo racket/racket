@@ -2882,6 +2882,49 @@ void scheme_log_warning(char *buffer)
   scheme_log_message(scheme_main_logger, SCHEME_LOG_WARNING, buffer, strlen(buffer), scheme_false);
 }
 
+void scheme_glib_log_message(const char *log_domain,
+                             int log_level,
+                             const char *message,
+                             void *user_data)
+/* This handler is suitable for use as a glib logging handler.
+   Although a handler can be implemented with the FFI,
+   we build one into Racket to avoid potential problems of
+   handlers getting GCed or retaining a namespace. */
+{
+#define mzG_LOG_LEVEL_ERROR    (1 << 2)
+#define mzG_LOG_LEVEL_CRITICAL (1 << 3)
+#define mzG_LOG_LEVEL_WARNING  (1 << 4)
+#define mzG_LOG_LEVEL_MESSAGE  (1 << 5)
+#define mzG_LOG_LEVEL_INFO     (1 << 6)
+#define mzG_LOG_LEVEL_DEBUG    (1 << 7)
+  int level, len1, len2;
+  char *together;
+
+  if (log_level & (mzG_LOG_LEVEL_ERROR))
+    level = SCHEME_LOG_FATAL;
+  if (log_level & (mzG_LOG_LEVEL_CRITICAL))
+    level = SCHEME_LOG_ERROR;
+  if (log_level & (mzG_LOG_LEVEL_WARNING | mzG_LOG_LEVEL_MESSAGE))
+    level = SCHEME_LOG_WARNING;
+  if (log_level & (mzG_LOG_LEVEL_INFO))
+    level = SCHEME_LOG_INFO;
+  if (log_level & (mzG_LOG_LEVEL_DEBUG))
+    level = SCHEME_LOG_DEBUG;
+
+  len2 = strlen(message);
+  if (log_domain) {
+    len1 = strlen(log_domain);
+    together = (char *)scheme_malloc_atomic(len1 + len2 + 3);
+    memcpy(together, log_domain, len1);
+    memcpy(together + len1, ": ", 2);
+    memcpy(together + len1 + 2 + 1, message, len2);
+    len2 += len1 + 2;
+  } else
+    together = (char *)message;
+  
+  scheme_log_message(scheme_main_logger, level, together, len2, scheme_false);
+}
+
 static int extract_level(const char *who, int which, int argc, Scheme_Object **argv)
 {
   Scheme_Object *v;
