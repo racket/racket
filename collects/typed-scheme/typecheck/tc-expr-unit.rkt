@@ -27,8 +27,8 @@
 ;; `fixnum?' to avoid creating platform-dependent .zo files.
 (define (portable-fixnum? n)
   (and (exact-integer? n)
-       (< n (expt 2 31))
-       (> n (- (expt 2 31)))))
+       (< n (expt 2 30))
+       (> n (- (expt 2 30)))))
 
 ;; return the type of a literal value
 ;; scheme-value -> type
