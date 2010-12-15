@@ -19,6 +19,7 @@
 @include-section["plot.scrbl"]
 @include-section["switchable-button.scrbl"]
 @include-section["image-core.scrbl"]
+@include-section["matrix-snip.scrbl"]
 @include-section["tex-table.scrbl"]
 
 @section{Acknowledgments}

@@ -356,6 +356,12 @@ Both @schememodname[scheme/gui/base] and
 @schememodname[racket/gui/base] depend on @schememodname[mred], so it
 is attached by all variants of @racket[make-gui-empty-namespace].
 
+@defmodule*/no-declare[(mred/mred)]
+
+The @schememodname[mred] library actually just re-exports
+@schememodname[mred/mred], which is an even older name for the
+library.
+
 @; ----------------------------------------
 
 @include-section["compat.scrbl"]
