@@ -811,8 +811,7 @@
 
           (let-values ([(loadfile
                          type
-                         inlined?
-                         delfile)
+                         inlined?)
                         (if (and (equal? filename #"")
                                  can-inline?
                                  (positive? type))
@@ -821,24 +820,18 @@
                                 (send f get-fixed len)
                               (if (and (len . > . 0)
                                        (send f ok?))
-                                  (let ([fname (make-temporary-file "img~a")])
-                                    (call-with-output-file*
-                                     fname
-                                     #:exists 'truncate
-                                     (lambda (fi)
-                                       (for ([i (in-range len)])
-                                         (display (send f get-unterminated-bytes) fi))))
-                                    (values fname
-                                            'unknown/mask
-                                            #t
-                                            fname))
+                                  (let-values ([(in out) (make-pipe)])
+                                    (for ([i (in-range len)])
+                                      (display (send f get-unterminated-bytes) out))
+                                    (close-output-port out)
+                                    (values in
+                                            'unknown/alpha
+                                            #t))
                                   (values filename
                                           (int->img-type type)
-                                          #f
                                           #f)))
                             (values filename
                                     (int->img-type type)
-                                    #f
                                     #f))])
             (let ([snip (make-object image-snip% 
                                      (if (equal? loadfile #"")
@@ -849,8 +842,6 @@
                                      type
                                      (positive? relative) 
                                      inlined?)])
-              (when delfile
-                (delete-file delfile))
               (send snip resize w h)
               (send snip set-offset dx dy)
 
@@ -901,7 +892,7 @@
    args
    [([bitmap% bm] [(make-or-false bitmap%) [mask #f]])
     (set-bitmap bm mask)]
-   [([(make-or-false path-string?) [name #f]]
+   [([(make-or-false (make-alts path-string? input-port?)) [name #f]]
      [image-type? [kind 'unknown]]
      [bool? [relative-path? #f]]
      [bool? [inline? #t]])
@@ -963,7 +954,7 @@
                          (and mask
                               (send mask ok?)
                               (= w (send mask get-width))
-                              (= w (send mask get-height))
+                              (= h (send mask get-height))
                               mask)))]
               [alpha (send dc get-alpha)])
           (when (pair? caret)
@@ -1007,64 +998,68 @@
           (send f put-fixed 0)
 
           (let ([num-lines
-                 (let ([fname (make-temporary-file "img~a")])
-                   (send bm save-file fname 'png)
-                   (begin0
-                    (call-with-input-file* 
-                     fname
-                     (lambda (fi)
-                       (let loop ([numlines 0])
-                         (let ([s (read-bytes IMG-MOVE-BUF-SIZE fi)])
-                           (if (eof-object? s)
-                               numlines
-                               (begin
-                                 (send f put-unterminated s)
-                                 (loop (add1 numlines))))))))
-                    (delete-file fname)))])
+                 (let-values ([(in out) (make-pipe)])
+                   (send bm save-file out 'png)
+                   (close-output-port out)
+                   (let loop ([numlines 0])
+                     (let ([s (read-bytes IMG-MOVE-BUF-SIZE in)])
+                       (if (eof-object? s)
+                           numlines
+                           (begin
+                             (send f put-unterminated s)
+                             (loop (add1 numlines)))))))])
             
             (let ([end (send f tell)])
               (send f jump-to lenpos)
               (send f put-fixed num-lines)
               (send f jump-to end)))))))
   
-  (def/public (load-file [(make-or-false path-string?) [name #f]]
+  (def/public (load-file [(make-or-false (make-alts path-string? input-port?)) [name #f]]
                          [image-type? [kind 'unknown]]
                          [bool? [rel-path? #f]]
                          [bool? [inline? #t]])
     (do-set-bitmap #f #f #f)
     
     (let* ([rel-path? (and rel-path?
-                           name
+                           (path-string? name)
                            (relative-path? name))]
            [name (if rel-path?
                      name
-                     (and name (path->complete-path name)))])
+                     (and name 
+                          (if (path-string? name)
+                              (path->complete-path name)
+                              name)))])
       (set! s-flags
             (if rel-path?
                 (add-flag s-flags USES-BUFFER-PATH)
                 (remove-flag s-flags USES-BUFFER-PATH)))
 
-      (let ([name (and name (if (string? name)
-                                (string->path name)
-                                name))])
+      (let ([orig-name name]
+            [name (and name
+                       (path-string? name)
+                       (if (string? name)
+                           (string->path name)
+                           name))])
         (unless inline?
           (set! filename name)
           (set! filetype kind))
 
-        (when name
-          (let ([fullpath (if rel-path?
-                              (path->complete-path
-                               name
-                               (or (and s-admin
-                                        (let ([e (send s-admin get-editor)])
-                                          (and e
-                                               (let ([fn (send e get-filename)])
-                                                 (and fn
-                                                      (let-values ([(base name dir?) (split-path fn)])
-                                                        (and (path? base)
-                                                             (path->complete-path base))))))))
-                                   (current-directory)))
-                              name)])
+        (when orig-name
+          (let ([fullpath (if (input-port? orig-name)
+                              orig-name
+                              (if rel-path?
+                                  (path->complete-path
+                                   name
+                                   (or (and s-admin
+                                            (let ([e (send s-admin get-editor)])
+                                              (and e
+                                                   (let ([fn (send e get-filename)])
+                                                     (and fn
+                                                          (let-values ([(base name dir?) (split-path fn)])
+                                                            (and (path? base)
+                                                                 (path->complete-path base))))))))
+                                       (current-directory)))
+                                  name))])
             (let ([nbm (dynamic-wind
                            begin-busy-cursor
                            (lambda ()

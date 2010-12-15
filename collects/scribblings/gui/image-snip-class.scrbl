@@ -8,7 +8,7 @@ An @scheme[image-snip%] is a snip that can display bitmap images
  box containing an ``X'' is drawn.
 
 
-@defconstructor*/make[(([filename (or/c path-string? false/c) #f]
+@defconstructor*/make[(([file (or/c path-string? input-port? #f) #f]
                         [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
                                         'gif 'gif/mask 'gif/alpha 
                                         'jpeg 'png 'png/mask 'png/alpha
@@ -16,9 +16,9 @@ An @scheme[image-snip%] is a snip that can display bitmap images
                         [relative-path? any/c #f]
                         [inline? any/c #t])
                        ([bitmap (is-a?/c bitmap%)]
-                        [mask (or/c (is-a?/c bitmap%) false/c) #f]))]{
+                        [mask (or/c (is-a?/c bitmap%) #f) #f]))]{
 
-Creates an image snip, loading the image @scheme[filename] if
+Creates an image snip, loading the image @scheme[file] if
  specified (see also @method[image-snip% load-file]), or using the
  given @scheme[bitmap].
 
@@ -57,7 +57,7 @@ See also @scheme[equal<%>].}
 
 
 @defmethod[(get-bitmap)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Returns the bitmap that is displayed by the snip, whether set through
  @method[image-snip% set-bitmap] or @method[image-snip% load-file]. If
@@ -70,7 +70,7 @@ The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
 }
 
 @defmethod[(get-bitmap-mask)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Returns the mask bitmap that is used for displaying by the snip, if
  one was installed with @method[image-snip% set-bitmap].  If no mask
@@ -82,8 +82,8 @@ The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
 
 }
 
-@defmethod[(get-filename [relative-path (or/c (box/c any/c) false/c) #f])
-           (or/c path-string? false/c)]{
+@defmethod[(get-filename [relative-path (or/c (box/c any/c) #f) #f])
+           (or/c path-string? #f)]{
 
 Returns the name of the currently loaded, non-inlined file, or
  @scheme[#f] if a file is not loaded or if a file was loaded with
@@ -106,7 +106,7 @@ Returns the kind used to load the currently loaded, non-inlined file,
 
 }
 
-@defmethod[(load-file [filename (or/c path-string? false/c)]
+@defmethod[(load-file [file (or/c path-string? input-port? #f)]
                       [kind (one-of/c 'unknown 'unknown/mask 'unknown/alpha
                                       'gif 'gif/mask 'gif/alpha 
                                       'jpeg 'png 'png/mask 'png/alpha
@@ -115,18 +115,20 @@ Returns the kind used to load the currently loaded, non-inlined file,
                       [inline? any/c #t])
            void?]{
 
-Loads the file by passing @scheme[filename] and @scheme[kind] to
- @method[bitmap% load-file] If a bitmap had previously been specified
+Loads the file by passing @scheme[file] and @scheme[kind] to
+ @xmethod[bitmap% load-file]. If a bitmap had previously been specified
  with @method[image-snip% set-bitmap], that bitmap (and mask) will no
- longer be used. If @scheme[filename] is @scheme[#f], then the current
+ longer be used. If @scheme[file] is @scheme[#f], then the current
  image is cleared.
 
 When @scheme['unknown/mask], @scheme['gif/mask], or @scheme['png/mask]
  is specified and the loaded bitmap object includes a mask (see
  @method[bitmap% get-loaded-mask]), the mask is used for drawing the
- bitmap (see @method[dc<%> draw-bitmap]).
+ bitmap (see @method[dc<%> draw-bitmap]). The @scheme['unknown/alpha],
+ @scheme['gif/alpha], or @scheme['png/alpha] variants are recommended,
+ however.
 
-If @scheme[relative-path?] is not @scheme[#f] and @scheme[filename] is a
+If @scheme[relative-path?] is not @scheme[#f] and @scheme[file] is a
  relative path, then the file will be read using the path of the
  owning editor's filename. If the image is not inlined, it will be
  saved as a relative pathname.
@@ -162,22 +164,19 @@ The bitmap will be cropped to fit in the given dimensions.
 }
 
 @defmethod[(set-bitmap [bm (is-a?/c bitmap%)]
-                       [mask (or/c (is-a?/c bitmap%) false/c) #f])
+                       [mask (or/c (is-a?/c bitmap%) #f) #f])
            void?]{
 
-Sets the bitmap that is displayed by the snip. This method also
- accepts an optional mask to be used when drawing the bitmap (see
- @method[dc<%> draw-bitmap]), but supplying the mask directly is now
- deprecated. Instead, if no mask is supplied but the bitmap's
- @method[bitmap% get-loaded-mask] method produces a bitmap of the same
- dimensions, it is used as the mask. Furthermore, such a mask is saved
- with the snip when it is saved to a file or copied (whereas a
- directly supplied mask is not saved).
+Sets the bitmap that is displayed by the snip.
 
-The supplied bitmap must not be selected into a @scheme[bitmap-dc%]
- object, otherwise @|MismatchExn|, and it cannot be selected into
- a @scheme[bitmap-dc%] as long as it belongs to the snip, but it
- can be used as a pen or brush stipple.
+An optional @racket[mask] is used when drawing the bitmap (see
+ @method[dc<%> draw-bitmap]), but supplying the mask directly is
+ deprecated. If no mask is supplied but the bitmap's
+ @method[bitmap% get-loaded-mask] method produces a bitmap of the same
+ dimensions, it is used as the mask; furthermore, such a mask is saved
+ with the snip when it is saved to a file or copied (whereas a
+ directly supplied mask is not saved). Typically, however, @racket[bm]
+ instead should have an alpha channel instead of a separate mask bitmap.
 
 }
 
