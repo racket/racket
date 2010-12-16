@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="5.0.99.4"
+  <assemblyIdentity version="5.0.99.5"
                     processorArchitecture="X86"
                     name="Org.PLT-Scheme.GRacket"
                     type="win32" />
