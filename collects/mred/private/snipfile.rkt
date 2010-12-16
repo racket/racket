@@ -212,7 +212,7 @@
 				      v)))
 			      close)])
 		  (when lock-while-reading? 
-                    (send text begin-edit-sequencce)
+                    (send text begin-edit-sequence)
                     (send text lock #t))
                   (if (is-a? snip wx:string-snip%)
 		      ;; Special handling for initial snip string in
