@@ -257,8 +257,9 @@
       (private
         [do-popup-callback (lambda ()
                              (wx:queue-callback (lambda ()
-                                                  (combo-callback)
-                                                  (send c popup-combo))
+                                                  (when (send c is-enabled-to-root?)
+                                                    (combo-callback)
+                                                    (send c popup-combo)))
                                                 wx:middle-queue-key))])
       (public
         [set-on-popup (lambda (proc) 
