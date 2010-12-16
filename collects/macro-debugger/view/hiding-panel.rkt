@@ -252,11 +252,17 @@ TODO
 ;; ----
 
 (define (policy->string policy)
-  (string-append 
-   (case (car policy)
-     ((show-if) "show ")
-     ((hide-if) "hide "))
-   (condition->string (cadr policy))))
+  (string-limit 200
+                (string-append 
+                 (case (car policy)
+                   ((show-if) "show ")
+                   ((hide-if) "hide "))
+                 (condition->string (cadr policy)))))
+
+(define (string-limit size s)
+  (cond [(> (string-length s) size)
+         (string-append (substring s 0 (- size 3)) "...")]
+        [else s]))
 
 (define (condition->string condition)
   (match condition
