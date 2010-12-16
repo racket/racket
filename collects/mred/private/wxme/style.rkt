@@ -1,11 +1,12 @@
 #lang scheme/base
 (require scheme/class
          scheme/file
-         (for-syntax scheme/base)
+         (for-syntax scheme/base)         
+         racket/draw
          "../syntax.ss"
          "cycle.ss"
          "private.ss"
-         "wx.ss")
+         "symbol-predicates.rkt")
 
 (provide mult-color<%>
          add-color<%>

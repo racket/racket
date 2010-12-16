@@ -11,6 +11,7 @@
          "stream.ss"
          "undo.ss"
          "keymap.ss"
+         "editor-data.rkt"
          (only-in "cycle.ss" 
                   text%
                   pasteboard%

@@ -15,7 +15,7 @@
 (require htdp/error
          racket/class
          lang/posn
-         racket/gui/base
+         racket/draw
          mrlib/image-core
          (for-syntax racket/base
                      racket/list))

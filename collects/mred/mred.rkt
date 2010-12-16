@@ -14,6 +14,7 @@
 	   (prefix wx: "private/wxme/snip.ss")
 	   (prefix wx: "private/wxme/keymap.ss")
 	   (prefix wx: "private/wxme/editor-admin.ss")
+           (prefix wx: "private/wxme/editor-data.ss")
 	   (prefix wx: "private/wxme/editor-snip.ss")
 	   (prefix wx: "private/wxme/stream.ss")
 	   (prefix wx: "private/wxme/wordbreak.ss")

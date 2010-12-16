@@ -1,5 +1,6 @@
 (module cache-image-snip mzscheme
-  (require mred
+  (require racket/draw
+           mred/private/wxme/snip
            mzlib/class
            mzlib/string
 	   mzlib/contract

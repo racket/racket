@@ -7,6 +7,7 @@
          "snip-flags.ss"
          "editor.ss"
          "editor-admin.ss"
+         "editor-snip-class.rkt"
          "snip-admin.ss"
          "text.ss"
          "pasteboard.ss"
@@ -360,8 +361,8 @@
                   (when with-border?
                     (let ([pen (send dc get-pen)])
                       (when (and (pair? caret)
-                                 selected-text-color)
-                        (send dc set-pen selected-text-color 1 'solid))
+                                 (send my-admin get-selected-text-color))
+                        (send dc set-pen (send my-admin get-selected-text-color) 1 'solid))
                       (let* ([l (+ orig-x left-inset)]
                              [t (+ orig-y top-inset)]
                              [r (+ l w left-margin right-margin 

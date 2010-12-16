@@ -5,13 +5,17 @@
          racket/match
          racket/contract
          racket/class
-         racket/gui/base
+         racket/draw
+         ;(only-in racket/gui/base frame% canvas% slider% horizontal-panel% button%)
          htdp/error
          racket/math
          (for-syntax racket/base
                      racket/list)
          lang/posn)
 
+;; for testing
+; (require racket/gui/base)
+#;
 (define (show-image arg [extra-space 0])
   (letrec ([g (to-img arg)]
            [f (new frame% [label ""])]
@@ -1353,7 +1357,6 @@
          place-image/align
          
          
-         show-image
          save-image
          bring-between
          

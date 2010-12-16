@@ -29,16 +29,18 @@ has been moved out).
 
 (require racket/class
          racket/draw
-         racket/gui/base
+         (for-syntax racket/base)
+         file/convertible         
          racket/math
          racket/contract
-         "private/image-core-bitmap.ss"
-         "image-core-wxme.ss"
-         "private/image-core-snipclass.rkt"
-         "private/regmk.rkt"
-         (prefix-in cis: "cache-image-snip.ss")
-         (for-syntax racket/base)
-         file/convertible)
+         "private/image-core-bitmap.ss" ;; safe
+         "image-core-wxme.ss" ;; safe
+         "private/image-core-snipclass.rkt" ;; safe
+         "private/regmk.rkt" ;; safe
+         ;; the hard cases
+         mred/private/wxme/snip
+         (prefix-in cis: "cache-image-snip.ss") ;; safe
+         )
 
 
 
@@ -220,7 +222,7 @@ has been moved out).
     (render-image img bdc 0 0)
     (begin0
         (send bdc get-bitmap)
-      (send bdc set-bitmap #f)))
+      (send bdc set-bitmap #f))))
 	     
 (define image%
   (class* snip% (png-convertible<%> equal<%> image<%>)
@@ -285,10 +287,7 @@ has been moved out).
               (when standard
                 (let ([dc (make-object bitmap-dc% (make-object bitmap% 1 1))])
                   (let-values ([(w h d a) (send dc get-text-extent "X" (send standard get-font))])
-                    (set! scroll-step (+ h
-                                         (if (is-a? ed text%)
-                                             (send ed get-line-spacing)
-                                             0)))))))))
+                    (set! scroll-step (+ h (send admin get-line-spacing)))))))))
         ;; if that didn't happen, set it to 12.
         (unless scroll-step (set! scroll-step 12))))
     
@@ -1170,7 +1169,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          to-img
          bitmap->image
-         image-snip->image)
+         image-snip->image
+         image-snip%)
 
 ;; method names
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)

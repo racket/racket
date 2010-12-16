@@ -6,6 +6,7 @@
          "const.ss"
          "private.ss"
          "editor.ss"
+         "editor-data.rkt"
          "undo.ss"
          "style.ss"
          "snip.ss"

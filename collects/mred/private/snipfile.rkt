@@ -14,50 +14,6 @@
 	   text-editor-load-handler
 	   open-output-text-editor )
 
-  ;; snip-class% and editor-data-class% loaders
-
-  (define (ok-string-element? m)
-    (and (string? m)
-         (regexp-match? #rx"^[-a-zA-Z0-9_. ]+$" m)
-         (not (string=? m ".."))
-         (not (string=? m "."))))
-  
-  (define (ok-lib-path? m)
-    (and (pair? m)
-         (eq? 'lib (car m))
-         (pair? (cdr m))
-         (list? m)
-         (andmap ok-string-element? (cdr m))))
-
-  (let ([load-one
-	 (lambda (str id %)
-	   (let ([m (with-handlers ([exn:fail:read? (lambda (x) #f)])
-		      (and (regexp-match #rx"^[(].*[)]$" str)
-                           (let* ([p (open-input-string str)]
-                                  [m (read p)])
-                             (and (eof-object? (read p))
-                                  m))))])
-	     (if (or (ok-lib-path? m)
-                     (and (list? m)
-                          (= (length m) 2)
-                          (ok-lib-path? (car m))
-                          (ok-lib-path? (cadr m))))
-                 (let ([m (if (ok-lib-path? m)
-                              m
-                              (car m))])
-                   (let ([result (dynamic-require m id)])
-                     (if (is-a? result %)
-                         result
-                         (error 'load-class "not a ~a% instance" id))))
-		 #f)))])
-    ;; install the getters:
-    (wx:set-get-snip-class!
-     (lambda (name)
-       (load-one name 'snip-class wx:snip-class%)))
-    (wx:set-get-editor-data-class!
-     (lambda (name)
-       (load-one name 'editor-data-class wx:editor-data-class%))))
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define readable-snip<%>

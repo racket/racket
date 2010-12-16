@@ -5,10 +5,12 @@
          (only-in "cycle.ss" 
                   set-snip-admin%!
                   popup-menu%)
-         "wx.ss")
+         (prefix-in wx: "wx.ss"))
 
 (provide snip-admin%
          standard-snip-admin%)
+
+(define TAB-WIDTH 20)
 
 (defclass snip-admin% object%
   (super-new)
@@ -48,7 +50,19 @@
     #f)
 
   (def/public (modified [snip% s] [any? modified?])
-    (void)))
+    (void))
+  
+  (def/public (get-line-spacing)
+    #f)
+  
+  (def/public (get-selected-text-color)
+    #f)
+  
+  (def/public (call-with-busy-cursor [procedure? thunk])
+    (void))
+  
+  (def/public (get-tabs [maybe-box? [length #f]] [maybe-box? [tab-width #f]] [maybe-box? [in-units #f]])
+    #f))
 
 (set-snip-admin%! snip-admin%)
 
@@ -146,4 +160,27 @@
 
   (def/override (modified [snip% s] [any? modified?])
     (when (eq? (send s get-admin) this)
-      (send editor on-snip-modified s modified?))))
+      (send editor on-snip-modified s modified?)))
+  
+  (def/override (get-line-spacing)
+    (if (object-method-arity-includes? editor 'get-line-spacing 0)
+        (send editor get-line-spacing)
+        0))
+  
+  (def/override (get-tabs [maybe-box? [length #f]] [maybe-box? [tab-width #f]] [maybe-box? [in-units #f]])
+    (if (object-method-arity-includes? editor 'get-tabs 3)
+        (send editor get-tabs length tab-width in-units)
+        (begin (when length (set-box! length 0))
+               (when tab-width (set-box! tab-width TAB-WIDTH))
+               (when in-units (set-box! in-units #t))
+               null)))
+  
+  (def/override (get-selected-text-color)
+    (wx:get-highlight-text-color))
+  
+  (def/override (call-with-busy-cursor [procedure? thunk])
+    (dynamic-wind
+     wx:begin-busy-cursor
+     thunk
+     wx:end-busy-cursor))
+  )

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/gui/base
+(require racket/draw
          scheme/class)
 
 

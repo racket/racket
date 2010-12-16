@@ -18,7 +18,7 @@
 (decl extended-text% set-extended-text%!)
 (decl extended-pasteboard% set-extended-pasteboard%!)
 
-(decl get-snip-class set-get-snip-class!)
+;(decl get-snip-class set-get-snip-class!)
 (decl get-editor-data-class set-get-editor-data-class!)
 
 (decl editor-get-file set-editor-get-file!)
