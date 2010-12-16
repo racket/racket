@@ -117,7 +117,8 @@ and files as @exec{raco make}, so the two tools can be used together.
 implements the compilation and dependency management used by
 @exec{raco make} and @exec{raco setup}.}
 
-@defproc[(make-compilation-manager-load/use-compiled-handler)
+@defproc[(make-compilation-manager-load/use-compiled-handler 
+          [delete-zos-when-rkt-file-does-not-exist? any/c #f])
          (path? (or/c symbol? false/c) . -> . any)]{
 
 Returns a procedure suitable as a value for the
@@ -199,6 +200,10 @@ consistent with the caching of the default module name resolver (see
 If @racket[use-compiled-file-paths] contains an empty list when
 @racket[make-compilation-manager-load/use-compiled-handler] is called,
 then @racket[exn:fail:contract] exception is raised.
+
+If the @racket[delete-zos-when-rkt-file-does-not-exist?] argument is a true
+value, then the returned handler will delete @filepath{.zo} files
+when there is no corresponding original source file.
 
 @emph{Do not} install the result of
 @racket[make-compilation-manager-load/use-compiled-handler] when the

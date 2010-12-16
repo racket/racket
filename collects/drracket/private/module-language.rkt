@@ -247,7 +247,7 @@
                    (cons (build-path "compiled" "drracket" "errortrace")
                          (use-compiled-file-paths)))]))
              
-             (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
+             (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler #t))
              (let* ([cd (find-system-path 'collects-dir)]
                     [no-dirs (list (CACHE-DIR) 
                                    (if (relative-path? cd)

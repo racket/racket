@@ -540,7 +540,8 @@
     (lambda (src)
       (parameterize ([current-load/use-compiled
                       (make-compilation-manager-load/use-compiled-handler/table
-                       cache)])
+                       cache
+                       #f)])
         (compile-root (car (use-compiled-file-paths))
                       (path->complete-path src)
                       cache
@@ -548,10 +549,10 @@
                       #f)
         (void)))))
 
-(define (make-compilation-manager-load/use-compiled-handler)
-  (make-compilation-manager-load/use-compiled-handler/table (make-hash)))
+(define (make-compilation-manager-load/use-compiled-handler [delete-zos-when-rkt-file-does-not-exist? #f])
+  (make-compilation-manager-load/use-compiled-handler/table (make-hash) delete-zos-when-rkt-file-does-not-exist?))
 
-(define (make-compilation-manager-load/use-compiled-handler/table cache)
+(define (make-compilation-manager-load/use-compiled-handler/table cache delete-zos-when-rkt-file-does-not-exist?)
   (let ([orig-eval (current-eval)]
         [orig-load (current-load)]
         [orig-registry (namespace-module-registry (current-namespace))]
@@ -564,7 +565,13 @@
                       (let ([p2 (rkt->ss path)])
                         (and (not (eq? path p2))
                              (file-exists? p2)))))
-             (trace-printf "skipping:  ~a file does not exist" path)]
+             (trace-printf "skipping:  ~a file does not exist" path)
+             (when delete-zos-when-rkt-file-does-not-exist?
+               (unless (null? modes)
+                 (define to-delete (path-add-suffix (get-compilation-path (car modes) path) #".zo")) 
+                 (when (file-exists? to-delete)
+                   (trace-printf "deleting:  ~s" to-delete)
+                 (delete-file to-delete))))]
             [(or (null? (use-compiled-file-paths))
                  (not (equal? (car modes)
                               (car (use-compiled-file-paths)))))
