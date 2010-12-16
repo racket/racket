@@ -221,6 +221,7 @@
       (private-field
        [l (and label
 	       (make-object wx-message% #f proxy p label -1 -1 null font))]
+       [combo-callback #f]
        [c (make-object (class wx-text-editor-canvas% 
                          (define/override (on-combo-select i)
                            (let ([len (length callbacks)])
@@ -239,8 +240,30 @@
 				'(hide-hscroll))
 			    '(hide-vscroll hide-hscroll))))]
        [callbacks null])
+      (override 
+        [pre-on-event (lambda (w e)
+                        (or (super pre-on-event w e)
+                            (and combo-callback
+                                 (eq? w c)
+                                 (send e button-down?)
+                                 (let ([w (box 0)]
+                                       [h (box 0)])
+                                   (send c get-client-size w h)
+                                   (not (and (<= 0 (send e get-x) (unbox w))
+                                             (<= 0 (send e get-y) (unbox h)))))
+                                 (begin
+                                   (do-popup-callback)
+                                   #t))))])
+      (private
+        [do-popup-callback (lambda ()
+                             (wx:queue-callback (lambda ()
+                                                  (combo-callback)
+                                                  (send c popup-combo))
+                                                wx:middle-queue-key))])
       (public
-        [set-on-popup (lambda (proc) (send c set-on-popup proc))]
+        [set-on-popup (lambda (proc) 
+                        (set! combo-callback proc) 
+                        (send c set-on-popup (lambda () (do-popup-callback))))]
         [clear-combo-items (lambda () (set! callbacks null) (send c clear-combo-items))]
         [append-combo-item (lambda (s cb)
                              (and (send c append-combo-item s)
