@@ -84,17 +84,9 @@ Scheme_Object *scheme_complex_normalize(const Scheme_Object *o)
     return (Scheme_Object *)c; 
   }
 
-  if (SCHEME_DBLP(c->i)) {
-    if (!SCHEME_DBLP(c->r)) {
-      Scheme_Object *r;
-      r = scheme_make_double(scheme_get_val_as_double(c->r));
-      c->r = r;
-    }
-  } else if (SCHEME_DBLP(c->r)) {
-    Scheme_Object *i;
-    i = scheme_make_double(scheme_get_val_as_double(c->i));
-    c->i = i;
-  }
+  /* Coercions: Exact -> float -> double
+     If the complex contains a float and an exact, we coerce the exact
+     to a float, etc. */
 
 #ifdef MZ_USE_SINGLE_FLOATS
   if (SCHEME_FLTP(c->i)) {
@@ -108,8 +100,30 @@ Scheme_Object *scheme_complex_normalize(const Scheme_Object *o)
 	c->r = v;
       }
     }
-  }
+  } else if (SCHEME_FLTP(c->r)) {
+    Scheme_Object *v;
+    /* Imag part can't be a float, or we'd be in the previous case */
+    if (SCHEME_DBLP(c->i)) {
+      v = scheme_make_double(SCHEME_FLT_VAL(c->r));
+      c->r = v;
+    } else {
+      v = scheme_make_float(scheme_get_val_as_float(c->i));
+      c->i = v;
+    }
+  } else
 #endif
+
+  if (SCHEME_DBLP(c->i)) {
+    if (!SCHEME_DBLP(c->r)) {
+      Scheme_Object *r;
+      r = scheme_make_double(scheme_get_val_as_double(c->r));
+      c->r = r;
+    }
+  } else if (SCHEME_DBLP(c->r)) {
+    Scheme_Object *i;
+    i = scheme_make_double(scheme_get_val_as_double(c->i));
+    c->i = i;
+  }
 
   return (Scheme_Object *)c;
 }

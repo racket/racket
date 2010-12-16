@@ -2061,6 +2061,22 @@
        (dbz-test polar2)))
    parts))
 
+;; extra complex tests
+;; it used to be that complex numbers whose parts were floating-point
+;; numbers of differing precision, coercion to the highest precision
+;; when constructing the complex number (usually when reading) could
+;; fail non-deterministically (which is why we test 1000 times)
+(for ([i (in-range 1000)])
+  (test #t zero? (with-input-from-string "0.0f0" read)))
+(for ([i (in-range 1000)])
+  (test #t zero? (with-input-from-string "0.0e0+0.0f0i" read)))
+(for ([i (in-range 1000)])
+  (test #t zero? (string->number "0.0e0+0.0f0i")))
+(for ([i (in-range 1000)])
+  (test #t zero? (make-rectangular 0.0e0 (with-input-from-string "0.0f0" read))))
+(for ([i (in-range 1000)])
+  (test #t zero? (make-rectangular 0.0e0 (string->number "0.0f0"))))
+
 (test #f string->number "88" 7)
 (test #f string->number "")
 (test #f string->number " 1")
