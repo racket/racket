@@ -47,6 +47,8 @@
 (define HTHSCROLL           6)
 (define HTVSCROLL           7)
 
+(define CB_SHOWDROPDOWN #x014F)
+
 (define-cstruct _SCROLLINFO
   ([cbSize _UINT]
    [fMask _UINT]
@@ -487,6 +489,9 @@
            (queue-window-event this (lambda () (on-combo-select i))))]
         [(= cmd CBN_DROPDOWN)
          (constrained-reply (get-eventspace) (lambda () (on-popup)) (void))]))
+
+     (define/public (popup-combo)
+       (SendMessageW combo-hwnd CB_SHOWDROPDOWN 1 0))
 
      (define/override (is-hwnd? a-hwnd)
        (or (ptr-equal? panel-hwnd a-hwnd)
