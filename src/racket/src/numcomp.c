@@ -397,7 +397,7 @@ zero_p (int argc, Scheme_Object *argv[])
   int v;
   v = scheme_is_zero(argv[0]);
   if (v < 0) {
-    NEED_REAL(zero?);
+    NEED_NUMBER(zero?);
     ESCAPED_BEFORE_HERE;
   }
   return (v ? scheme_true : scheme_false);
