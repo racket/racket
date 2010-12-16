@@ -1645,7 +1645,7 @@
                                    (and c (cons c fm)))
                                  (cons
                                   (pango_cairo_create_context cr)
-                                  (pango_cairo_font_map_new)))])
+                                  (pango_cairo_font_map_get_default)))])
         (let ([font (pango_font_map_load_font (cdr context+fontmap)
                                               (car context+fontmap)
                                               desc)])
