@@ -1479,7 +1479,7 @@
             (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
               (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t #f clip-mask))]
            [(and mask
-                 (or (not black?)
+                 (or (and (not black?) (not (send src is-color?)))
                      (alpha . < . 1.0)))
             ;; mask plus color or alpha with a color bitmap
             (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
@@ -1531,7 +1531,15 @@
                        [m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
                    (cairo_matrix_init_translate m (- a-src-x a-dest-x) (- a-src-y a-dest-y))
                    (cairo_pattern_set_matrix p m)
+                   ;; clip to the section that we're supposed to draw:
+                   (cairo_save cr)
+                   (cairo_new_path cr)
+                   (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
+                   (cairo_clip cr)
+                   ;; draw:
                    (cairo_mask cr p)
+                   ;; restore clipping:
+                   (cairo_restore cr)
                    (cairo_pattern_destroy p)))])
          (cond
           [(or (send src is-color?)
