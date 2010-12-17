@@ -280,8 +280,7 @@ has been moved out).
 
     (define/override (copy) (make-image shape bb normalized? pinhole))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-      (let ([smoothing (send dc get-smoothing)])
-        (render-image this dc x y)))
+      (render-image this dc x y))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
