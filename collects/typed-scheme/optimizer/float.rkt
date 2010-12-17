@@ -4,7 +4,7 @@
          racket/dict racket/flonum
          (for-template scheme/base racket/flonum scheme/unsafe/ops)
          "../utils/utils.rkt"
-         (types abbrev)
+         (types numeric-tower)
          (optimizer utils fixnum))
 
 (provide float-opt-expr float-coerce-expr)

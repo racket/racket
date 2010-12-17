@@ -22,7 +22,7 @@
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
  (only-in racket/private/pre-base new-apply-proc)
- (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
+ (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
  (only-in (rep type-rep) make-HashtableTop make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
           make-HeterogenousVector))

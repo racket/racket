@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "abbrev.rkt" (only-in scheme/contract current-blame-format)
+         "abbrev.rkt" "numeric-tower.rkt" (only-in scheme/contract current-blame-format)
 	 (types comparison printer union subtype utils substitute)
          scheme/list racket/match scheme/promise
          (for-syntax syntax/parse scheme/base)
@@ -11,7 +11,7 @@
          (for-template scheme/base))
 
 (provide (all-defined-out)
-         (all-from-out "abbrev.rkt")
+         (all-from-out "abbrev.rkt" "numeric-tower.rkt")
          ;; these should all eventually go away
          make-Name make-ValuesDots make-Function
          (rep-out filter-rep object-rep))
@@ -23,7 +23,7 @@
   (apply Un (map tc-result-t args)))
 
 
-;; used to produce a more general type for loop variables
+;; used to produce a more general type for loop variables, vectors, etc.
 ;; generalize : Type -> Type
 (define (generalize t)
   (let/ec exit
@@ -33,7 +33,14 @@
 	[(Value: 0) -Integer]
         [(List: ts) (-lst (apply Un ts))]
         [(? (lambda (t) (subtype t -Integer))) -Integer]
+        [(? (lambda (t) (subtype t -Rat))) -Rat]
         [(? (lambda (t) (subtype t -Flonum))) -Flonum]
+        [(? (lambda (t) (subtype t -SmallFloat))) -SmallFloat]
+        [(? (lambda (t) (subtype t -InexactReal))) -InexactReal]
+        [(? (lambda (t) (subtype t -Real))) -Real]
+        [(? (lambda (t) (subtype t -FloatComplex))) -FloatComplex]
+        [(? (lambda (t) (subtype t -SmallFloatComplex))) -SmallFloatComplex]
+        [(? (lambda (t) (subtype t -Number))) -Number]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(MPair: t1 (Value: '())) (-mlst t1)]

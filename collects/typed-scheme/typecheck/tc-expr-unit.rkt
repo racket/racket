@@ -21,15 +21,6 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
-;; Is the number a fixnum on *all* the platforms Racket supports?  This
-;; works because Racket compiles only on 32+ bit systems.  This check is
-;; done at compile time to typecheck literals -- so use it instead of
-;; `fixnum?' to avoid creating platform-dependent .zo files.
-(define (portable-fixnum? n)
-  (and (exact-integer? n)
-       (< n (expt 2 30))
-       (>= n (- (expt 2 30)))))
-
 ;; return the type of a literal value
 ;; scheme-value -> type
 (define (tc-literal v-stx [expected #f])
@@ -42,25 +33,47 @@
     [i:exp expected]
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
+
+    ;; Numbers
     [0 -Zero]
-    [(~var i (3d (conjoin portable-fixnum? positive?))) -PositiveFixnum]
-    [(~var i (3d (conjoin portable-fixnum? negative?))) -NegativeFixnum]
-    [(~var i (3d (conjoin portable-fixnum?))) -Fixnum]
-    [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
-    [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
-    [(~var i (3d exact-integer?)) -Integer]
-    [(~var i (3d (conjoin number? exact? rational?))) -ExactRational]
-    [(~var i (3d (conjoin flonum?
-                          (lambda (x) (or (positive? x) (zero? x)))
-                          (lambda (x) (not (eq? x -0.0))))))
-     -NonnegativeFlonum]
-    [(~var i (3d flonum?)) -Flonum]
-    [(~var i (3d real?)) -Real]
+    [1 -One]
+    [(~var i (3d (conjoin byte? positive?))) -PosByte]
+    [(~var i (3d byte?)) -Byte]
+    [(~var i (3d (conjoin portable-index? positive?))) -PosIndex]
+    [(~var i (3d (conjoin portable-fixnum? positive?))) -PosFixnum]
+    [(~var i (3d (conjoin portable-fixnum? negative?))) -NegFixnum]
+    [(~var i (3d exact-positive-integer?)) -PosInt]
+    [(~var i (3d (conjoin exact-integer? negative?))) -NegInt]
+    [(~var i (3d (conjoin number? exact? rational? positive?))) -PosRat]
+    [(~var i (3d (conjoin number? exact? rational? negative?))) -NegRat]
+    [(~var i (3d (lambda (x) (eq? x 0.0)))) -FlonumPosZero]
+    [(~var i (3d (lambda (x) (eq? x -0.0)))) -FlonumNegZero]
+    [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
+    [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
+    [(~var i (3d flonum?)) -Flonum] ; for nan
+    ;; Small float literals can't be assigned a type normally.
+    ;; Since small floats can't live in a zo, the compilation process
+    ;; promotes them silently to plain floats. Thus, a small float
+    ;; literal can, at runtime turn into either a small float (if the
+    ;; program is not compiled) or a plain float (if it is).
+    ;; That means that if we see a small float literal, we have to
+    ;; give it an Inexact-Real type, which covers both cases.
+    [(~var i (3d (lambda (x) (eq? x 0.0f0)))) -InexactRealPosZero]
+    [(~var i (3d (lambda (x) (eq? x -0.0f0)))) -InexactRealNegZero]
+    [(~var i (3d (conjoin inexact-real? positive?))) -PosInexactReal]
+    [(~var i (3d (conjoin inexact-real? negative?))) -NegInexactReal]
+    [(~var i (3d inexact-real?)) -InexactReal] ; for nan
+    [(~var i (3d real?)) -Real] ; catch-all, just in case
     ;; a complex number can't have a float imaginary part and an exact real part
     [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
                                                    (flonum? (real-part x)))))))
      -FloatComplex]
-    [(~var i (3d number?)) -Number]
+    ;; same issue as small floats
+    [(~var i (3d (conjoin number? (lambda (x) (and (inexact-real? (imag-part x))
+                                                   (inexact-real? (real-part x)))))))
+     -InexactComplex]
+    [(~var i (3d number?)) -Number] ; otherwise, Number
+
     [i:str -String]
     [i:char -Char]
     [i:keyword (-val (syntax-e #'i))]

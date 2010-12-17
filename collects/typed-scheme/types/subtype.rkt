@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-	 (types utils comparison resolve abbrev substitute)
+	 (types utils comparison resolve abbrev numeric-tower substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          racket/match unstable/match
@@ -232,47 +232,6 @@
 	      [((Union: (list)) _) A0]
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
-	      ;; now we encode the numeric hierarchy - bletch
-              [((Base: 'Integer _) (== -Real =t)) A0]
-	      [((Base: 'Integer _) (Base: 'Number _)) A0]
-              [((Base: 'Flonum _)  (Base: 'Inexact-Real _)) A0]
-	      [((Base: 'Flonum _)  (== -Real =t)) A0]
-	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
-	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
-	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
-	      [((Base: 'Exact-Positive-Integer _) (Base: 'Exact-Rational _)) A0]
-	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
-	      [((Base: 'Exact-Positive-Integer _) (== -Nat =t)) A0]
-	      [((Base: 'Exact-Positive-Integer _) (Base: 'Integer _)) A0]
-
-              [((Base: 'Positive-Fixnum _) (Base: 'Exact-Positive-Integer _)) A0]
-	      [((Base: 'Positive-Fixnum _) (Base: 'Exact-Rational _)) A0]
-	      [((Base: 'Positive-Fixnum _) (Base: 'Number _)) A0]
-	      [((Base: 'Positive-Fixnum _) (== -Nat =t)) A0]
-	      [((Base: 'Positive-Fixnum _) (Base: 'Integer _)) A0]
-
-	      [((Base: 'Negative-Fixnum _) (Base: 'Exact-Rational _)) A0]
-	      [((Base: 'Negative-Fixnum _) (Base: 'Number _)) A0]
-	      [((Base: 'Negative-Fixnum _) (Base: 'Integer _)) A0]
-              
-	      [((== -Nat =t) (Base: 'Number _)) A0]
-	      [((== -Nat =t) (Base: 'Exact-Rational _)) A0]
-	      [((== -Nat =t) (Base: 'Integer _)) A0]
-
-	      [((== -Fixnum =t) (Base: 'Number _)) A0]
-	      [((== -Fixnum =t) (Base: 'Exact-Rational _)) A0]
-	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
-
-              [((Base: 'Nonnegative-Flonum _) (Base: 'Flonum _)) A0]
-              [((Base: 'Nonnegative-Flonum _) (Base: 'Inexact-Real _)) A0]
-              [((Base: 'Nonnegative-Flonum _) (Base: 'Number _)) A0]
-
-              [((Base: 'Inexact-Real _) (== -Real =t)) A0]
-              [((Base: 'Inexact-Real _) (Base: 'Number _)) A0]
-
-              [((Base: 'Float-Complex _) (Base: 'Number _)) A0]
-
-              
               ;; values are subtypes of their "type"
 	      [((Value: (? exact-integer? n)) (Base: 'Integer _)) A0]
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]

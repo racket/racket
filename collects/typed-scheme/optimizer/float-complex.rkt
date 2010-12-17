@@ -3,7 +3,7 @@
 (require syntax/parse syntax/id-table scheme/dict unstable/syntax
          "../utils/utils.rkt" racket/unsafe/ops
          (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
-         (types abbrev)
+         (types numeric-tower)
          (optimizer utils float))
 
 (provide float-complex-opt-expr

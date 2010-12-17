@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" (for-syntax scheme/base)
          (rep type-rep)
-	 (types comparison abbrev union)
+	 (types comparison abbrev numeric-tower union)
          rackunit)
 
 (provide type-equal-tests)

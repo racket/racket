@@ -3,7 +3,7 @@
 (begin
   (require
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base)
-   (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos]))
+   (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos]))
   
   (define all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -InexactReal -Real N))
 

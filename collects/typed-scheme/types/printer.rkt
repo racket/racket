@@ -1,8 +1,9 @@
 #lang scheme/base
 
 (require unstable/sequence racket/require racket/match
-         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "types/abbrev.rkt"
-                  "rep/rep-utils.rkt" "utils/utils.rkt" "utils/tc-utils.rkt"))
+         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "rep/rep-utils.rkt"
+                  "types/abbrev.rkt" "types/numeric-tower.rkt" "types/subtype.rkt"
+                  "utils/utils.rkt" "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
 ;; FIXME - currently broken

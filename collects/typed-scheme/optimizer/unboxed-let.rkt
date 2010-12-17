@@ -5,7 +5,7 @@
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          (for-template scheme/base)
-         (types abbrev utils type-table)
+         (types numeric-tower utils type-table)
          (rep type-rep)
          (optimizer utils float-complex))
 

@@ -14,7 +14,7 @@
                racket/unsafe/ops)
  (utils tc-utils)
  (types union convenience) 
- (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym]))
+ (rename-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 

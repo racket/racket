@@ -1,0 +1,181 @@
+#lang racket/base
+
+(require "../utils/utils.rkt")
+
+(require (types abbrev numeric-predicates)
+         (rep type-rep)
+         (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
+
+(provide (all-defined-out))
+
+;; Numeric hierarchy
+;; All built as unions of non-overlapping base types.
+;; This should make encoding mathematical properties in the base env easier.
+;; Most of the weird base types will probably never be exposed to the user
+;; and some probably won't show up in the base env either.
+;; A lot of these contracts will be overriden in type->contract, so their
+;; hairiness should not be of much consequence.
+
+;; Is the number a fixnum on *all* the platforms Racket supports?  This
+;; works because Racket compiles only on 32+ bit systems.  This check is
+;; done at compile time to typecheck literals -- so use it instead of
+;; `fixnum?' to avoid creating platform-dependent .zo files.
+(define (portable-fixnum? n)
+  (and (exact-integer? n)
+       (< n (expt 2 30))
+       (>= n (- (expt 2 30)))))
+;; same, for indexes
+(define (portable-index? n)
+  (and (exact-integer? n)
+       (< n (expt 2 28))
+       (>= n (- (expt 2 28)))))
+
+;; Singletons
+(define -Zero (-val 0)) ; exact
+(define -One  (-val 1))
+
+;; Integers
+(define -Byte>1 (make-Base 'Byte-Larger-Than-One ; unsigned
+                           #'(and/c byte? (lambda (x) (> x 1)))))
+(define -PosByte (*Un -One -Byte>1))
+(define -Byte    (*Un -Zero -PosByte))
+(define -PosIndexNotByte
+  (make-Base 'Positive-Index-Not-Byte
+             #'(and/c index? positive? (not/c byte?))))
+(define -PosIndex    (*Un -One -Byte>1 -PosIndexNotByte))
+(define -Index       (*Un -Zero -PosIndex))
+(define -PosFixnumNotIndex
+  (make-Base 'Positive-Fixnum-Not-Index
+             #'(and/c fixnum? positive? (not/c index?))))
+(define -PosFixnum    (*Un -PosFixnumNotIndex -PosIndex))
+(define -NonNegFixnum (*Un -PosFixnum -Zero))
+(define -NegFixnum
+  (make-Base 'Negative-Fixnum-Not-Index
+             #'(and/c fixnum? negative?)))
+(define -NonPosFixnum (*Un -NegFixnum -Zero))
+(define -Fixnum       (*Un -NegFixnum -Zero -PosFixnum))
+(define -PosIntNotFixnum
+  (make-Base 'Positive-Integer-Not-Fixnum
+             #'(and/c exact-integer? positive? (not/c fixnum?))))
+(define -PosInt    (*Un -PosIntNotFixnum -PosFixnum))
+(define -NonNegInt (*Un -PosInt -Zero))
+(define -Nat       -NonNegInt)
+(define -NegIntNotFixnum
+  (make-Base 'Negative-Integer-Not-Fixnum
+             #'(and/c exact-integer? negative? (not/c fixnum?))))
+(define -NegInt    (*Un -NegIntNotFixnum -NegFixnum))
+(define -NonPosInt (*Un -NegInt -Zero))
+(define -Int       (*Un -NegInt -Zero -PosInt))
+
+;; Rationals
+(define -PosRatNotInt
+  (make-Base 'Positive-Rational-Not-Integer
+             #'(and/c exact-rational? positive? (not/c integer?))))
+(define -PosRat    (*Un -PosRatNotInt -PosInt))
+(define -NonNegRat (*Un -PosRat -Zero))
+(define -NegRatNotInt
+  (make-Base 'Negative-Rational-Not-Integer
+             #'(and/c exact-rational? negative? (not/c integer?))))
+(define -NegRat    (*Un -NegRatNotInt -NegInt))
+(define -NonPosRat (*Un -NegRat -Zero))
+(define -Rat       (*Un -NegRat -Zero -PosRat))
+
+;; Floating-point numbers
+(define -FlonumPosZero (make-Base 'Float-Positive-Zero
+                                  #'(lambda (x) (eq? x 0.0))))
+(define -FlonumNegZero (make-Base 'Float-Negative-Zero
+                                  #'(lambda (x) (eq? x -0.0))))
+(define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero))
+(define -FlonumNan (make-Base 'Float-Nan
+                              #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))))
+(define -PosFlonum
+  (make-Base 'Positive-Float
+             #'(and/c flonum? positive?)))
+(define -NonNegFlonum (*Un -PosFlonum -FlonumPosZero))
+(define -NegFlonum
+  (make-Base 'Negative-Float
+             #'(and/c flonum? negative?)))
+(define -NonPosFlonum (*Un -NegFlonum -FlonumNegZero))
+(define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
+;; inexact reals can be flonums (64-bit floats) or 32-bit floats
+(define -SmallFloatPosZero ; disjoint from Flonum 0s
+  (make-Base 'Small-Float-Positive-Zero
+             ;; eqv? equates 0.0f0 with itself, but not eq?
+             ;; we also need to check for small-float? since eqv? also equates
+             ;; 0.0f0 and 0.0e0
+             #'(and/c small-float? (lambda (x) (eqv? x 0.0f0)))))
+(define -SmallFloatNegZero
+  (make-Base 'Small-Float-Negative-Zero
+             #'(and/c small-float? (lambda (x) (eqv? x -0.0f0)))))
+(define -SmallFloatZero (*Un -SmallFloatPosZero -SmallFloatNegZero))
+(define -SmallFloatNan (make-Base 'Small-Float-Nan
+                                  #'(and/c small-float?
+                                           ;; eqv? equates single and double precision nans
+                                           (lambda (x) (eqv? x +nan.0)))))
+(define -InexactRealPosZero (*Un -SmallFloatPosZero -FlonumPosZero))
+(define -InexactRealNegZero (*Un -SmallFloatNegZero -FlonumNegZero))
+(define -InexactRealZero    (*Un -InexactRealPosZero -InexactRealNegZero))
+(define -PosSmallFloat
+  (make-Base 'Positive-Small-Float
+             #'(and/c small-float? positive?)))
+(define -PosInexactReal    (*Un -PosSmallFloat -PosFlonum))
+(define -NonNegSmallFloat  (*Un -PosSmallFloat -SmallFloatPosZero))
+(define -NonNegInexactReal (*Un -PosInexactReal -InexactRealPosZero))
+(define -NegSmallFloat
+  (make-Base 'Negative-Small-Float
+             #'(and/c small-float? negative?)))
+(define -NegInexactReal    (*Un -NegSmallFloat -NegFlonum))
+(define -NonPosSmallFloat  (*Un -NegSmallFloat -SmallFloatNegZero))
+(define -NonPosInexactReal (*Un -NegInexactReal -InexactRealNegZero))
+(define -SmallFloat        (*Un -NegSmallFloat -SmallFloatNegZero -SmallFloatPosZero -PosSmallFloat -SmallFloatNan))
+(define -InexactReal       (*Un -SmallFloat -Flonum))
+
+;; Reals
+(define -RealZero   (*Un -Zero -InexactRealZero))
+(define -PosReal    (*Un -PosRat -PosInexactReal))
+(define -NonNegReal (*Un -NonNegRat -NonNegInexactReal))
+(define -NegReal    (*Un -NegRat -NegInexactReal))
+(define -NonPosReal (*Un -NonPosRat -NonPosInexactReal))
+(define -Real       (*Un -Rat -InexactReal))
+
+;; Complexes
+;; We could go into _much_ more precision here.
+;; We could have types that reflect the size/exactness of both components
+;; (e.g. PosFixnumNonNegIntComplex), to give more interesting types to
+;; real-part, imag-part and others.
+;; We could have Complex be a 2-argument type constructor (although it
+;; could construct uninhabitable types like (Complex Integer Float), which
+;; can't exist in Racket (parts must be both exact or both inexact)).
+;; Imaginaries could have their own type hierarchy as well.
+;; That's future work.
+
+;; Both parts of a complex number must be of the same exactness.
+;; Thus, the only possible kinds of complex numbers are:
+;; Real/Real, Flonum/Flonum, SmallFloat/SmallFloat
+(define -FloatComplex (make-Base 'Float-Complex
+                                 #'(and/c number?
+                                          (lambda (x)
+                                            (and (flonum? (imag-part x))
+                                                 (flonum? (real-part x)))))))
+(define -SmallFloatComplex (make-Base 'Small-Float-Complex
+                                      #'(and/c number?
+                                               (lambda (x)
+                                                 (and (small-float? (imag-part x))
+                                                      (small-float? (real-part x)))))))
+(define -InexactComplex (*Un -FloatComplex -SmallFloatComplex))
+(define -ExactComplexNotReal
+  (make-Base 'Complex-Not-Real #'(and/c number?
+                                        (not/c real?)
+                                        (lambda (x) (exact? (imag-part x))))))
+(define -Complex (*Un -Real -InexactComplex -ExactComplexNotReal))
+(define -Number -Complex)
+
+;; TODO for compatibility
+(define -NonnegativeFlonum -NonNegFlonum)
+(define -ExactRational -Rat)
+(define -Integer -Int)
+(define -ExactPositiveInteger -PosInt)
+(define -PositiveFixnum -PosFixnum)
+(define -NegativeFixnum -NegFixnum)
+(define -NonnegativeFixnum -NonNegFixnum)
+(define -ExactNonnegativeInteger -Nat)

@@ -1,23 +1,55 @@
 #lang s-exp "type-env-lang.rkt"
 
 [Complex -Number]
-[Float-Complex -FloatComplex] ; for consistency with float vs inexact-real
-[Inexact-Complex -FloatComplex] ; for backward compatiblity
 [Number -Number]
-[Integer -Integer]
+[Inexact-Complex -InexactComplex]
+[Small-Float-Complex -SmallFloatComplex]
+[Float-Complex -FloatComplex]
 [Real -Real]
-[Exact-Rational -ExactRational]
-[Float -Flonum] ;; these 2 are the default, 64-bit floats, can be optimized
-[Nonnegative-Float -NonnegativeFlonum] ;; associated test is: flonum? 
-[Inexact-Real -InexactReal] ;; any inexact real. could be 32- or 64-bit float
-                            ;; associated test is: inexact-real?
-[Exact-Positive-Integer -ExactPositiveInteger]
-[Exact-Nonnegative-Integer -ExactNonnegativeInteger]
-[Positive-Fixnum -PositiveFixnum]
-[Nonnegative-Fixnum -NonnegativeFixnum]
+[Nonpositive-Real -NonPosReal]
+[Negative-Real -NegReal]
+[Nonnegative-Real -NonNegReal]
+[Positive-Real -PosReal]
+[Real-Zero -RealZero]
+[Inexact-Real -InexactReal]
+[Small-Float -SmallFloat]
+[Nonpositive-Inexact-Real -NonPosInexactReal]
+[Nonpositive-Small-Float -NonPosSmallFloat]
+[Negative-Inexact-Real -NegInexactReal]
+[Nonnegative-Inexact-Real -NonNegInexactReal]
+[Nonnegative-Small-Float -NonNegSmallFloat]
+[Positive-Inexact-Real -PosInexactReal]
+[Inexact-Real-Zero -InexactRealZero]
+[Inexact-Real-Negative-Zero -InexactRealNegZero]
+[Inexact-Real-Positive-Zero -InexactRealPosZero]
+[Small-Float-Zero -SmallFloatZero]
+[Float -Flonum] ; these are the default, 64-bit floats, can be optimized
+[Nonpositive-Float -NonPosFlonum]
+[Nonnegative-Float -NonNegFlonum]
+[Float-Zero -FlonumZero]
+[Exact-Rational -Rat]
+[Nonpositive-Exact-Rational -NonPosRat]
+[Negative-Exact-Rational -NegRat]
+[Nonnegative-Exact-Rational -NonNegRat]
+[Positive-Exact-Rational -PosRat]
+[Integer -Integer]
+[Nonpositive-Integer -NonPosInt]
+[Negative-Integer -NegInt]
+[Exact-Nonnegative-Integer -Nat] ; both of these are valid
+[Natural -Nat]
+[Exact-Positive-Integer -PosInt] ; both of these are valid
+[Positive-Integer -PosInt]
 [Fixnum -Fixnum]
-[Natural -ExactNonnegativeInteger]
+[Nonpositive-Fixnum -NonPosFixnum]
+[Nonnegative-Fixnum -NonNegFixnum]
+[Positive-Fixnum -PosFixnum]
+[Index -Index]
+[Positive-Index -PosIndex]
+[Byte -Byte]
+[Positive-Byte -PosByte]
 [Zero (-val 0)]
+[One  (-val 1)]
+
 
 [Void -Void]
 [Undefined -Undefined] ; initial value of letrec bindings
