@@ -1480,7 +1480,8 @@
               (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t tmp-mask 
                                       clip-mask CAIRO_OPERATOR_SOURCE))]
            [(and mask
-                 (or (and (not black?) (not (send src is-color?)))
+                 (or (and (or (not black?) (eq? style 'opaque))
+                          (not (send src is-color?)))
                      (alpha . < . 1.0)))
             ;; mask plus color or alpha with a color bitmap
             (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
