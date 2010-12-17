@@ -43,6 +43,7 @@ Both parts of the toolbox rely extensively on the
 @include-section["win-classes.scrbl"]
 @include-section["win-funcs.scrbl"]
 @include-section["editor-overview.scrbl"]
+@include-section["snip-classes.scrbl"]
 @include-section["editor-classes.scrbl"]
 @include-section["editor-funcs.scrbl"]
 @include-section["wxme.scrbl"]

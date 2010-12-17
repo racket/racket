@@ -8,13 +8,13 @@ Editors:
 
 @diagram->table[editor-diagram]
 
-Snips:
+Editor Snips:
 
-@diagram->table[snip-diagram]
+@diagram->table[editor-snip-diagram]
 
 Displays, Administrators, and Mappings:
 
-@diagram->table[admin-diagram]
+@diagram->table[editor-admin-diagram]
 
 Styles:
 
@@ -44,18 +44,10 @@ Alphabetical:
 @include-section["editor-stream-out-base-class.scrbl"]
 @include-section["editor-stream-out-bytes-base-class.scrbl"]
 @include-section["editor-wordbreak-map-class.scrbl"]
-@include-section["image-snip-class.scrbl"]
 @include-section["keymap-class.scrbl"]
 @include-section["mult-color-intf.scrbl"]
 @include-section["pasteboard-class.scrbl"]
-@include-section["readable-snip-intf.scrbl"]
-@include-section["snip-class.scrbl"]
-@include-section["snip-admin-class.scrbl"]
-@include-section["snip-class-class.scrbl"]
-@include-section["snip-class-list-intf.scrbl"]
-@include-section["string-snip-class.scrbl"]
 @include-section["style-intf.scrbl"]
 @include-section["style-delta-class.scrbl"]
 @include-section["style-list-class.scrbl"]
-@include-section["tab-snip-class.scrbl"]
 @include-section["text-class.scrbl"]
