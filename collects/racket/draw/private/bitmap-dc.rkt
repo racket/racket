@@ -50,6 +50,7 @@
                 (exact->inexact (send bm get-height)))))
 
     (define/override (get-cr) c)
+    (define/override (release-cr cr) (when bm (send bm drop-alpha-s)))
 
     (define/override (end-cr) (void))
 

@@ -235,7 +235,7 @@
                255 0 0 0
                255 255 255 255))
   (send u set-loaded-mask mu)
-  (define (try-draw nonce-color b&w?)
+  (define (try-draw nonce-color b&w? changed?)
     (let* ((bm (make-object bitmap% 2 2 b&w?))
            (dc (make-object bitmap-dc% bm)))
       (send dc clear)
@@ -254,15 +254,33 @@
                          0 255 255 255
                          0 255 255 255
                          0 255 255 255)
-                  (bytes 255 100 0 0
-                         255 255 255 255
-                         255 255 255 255
-                         255 255 255 255))
+                  (if changed?
+                      (bytes 255 255 255 255
+                             255 0 0 0
+                             255 255 255 255
+                             255 255 255 255)
+                      (bytes 255 100 0 0
+                             255 255 255 255
+                             255 255 255 255
+                             255 255 255 255)))
               'masked-draw
               s))))
-  (try-draw (make-object color% "green") #f)
-  (try-draw (make-object color%) #f)
-  (try-draw (make-object color%) #t))
+  (try-draw (make-object color% "green") #f #f)
+  (try-draw (make-object color%) #f #f)
+  (try-draw (make-object color%) #t #f)
+  (send mu set-argb-pixels 0 0 2 2
+        (bytes 255 255 255 255
+               255 0 0 0
+               255 255 255 255
+               255 0 0 0))
+  (try-draw (make-object color%) #f #t)
+  (let ([dc (make-object bitmap-dc% mu)])
+    (send dc erase)
+    (send dc set-pen "white" 1 'transparent)
+    (send dc set-brush "black" 'solid)
+    (send dc draw-rectangle 0 0 1 1)
+    (send dc set-bitmap #f))
+  (try-draw (make-object color%) #f #f))
 
 ;; ----------------------------------------
 
