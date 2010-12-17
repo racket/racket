@@ -60,7 +60,7 @@
           (send f show #t)))
       
       (define dc-for-text-size (make-parameter 
-				#f
+				(make-object bitmap-dc% (make-bitmap 1 1))
 				(lambda (x)
 				  (unless (or (not x)
 					      (is-a? x dc<%>))

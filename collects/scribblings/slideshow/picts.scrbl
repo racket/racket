@@ -150,9 +150,8 @@ adding the given ascent and descent.}
          pict?]{
 
 Creates a pict that draws text. For creating text picts within a slide
-presentation, see @racket[t], instead. Otherwise, before calling this
-function, a drawing context must be installed with
-@racket[dc-for-text-size].
+presentation, see @racket[t]. The size of the resulting pict may
+depend on the value of @racket[dc-for-text-size].
 
 The @racket[style] argument must be one of the following:
 
@@ -989,10 +988,10 @@ A parameter that is used to determine the @tech{bounding box} of picts
 created with @racket[text].
 
 The drawing context installed in this parameter need not be the same
-as the ultimate drawing context, but it must measure text in the same
-way. In particular, use a @racket[post-script-dc%] for preparing
-PostScript output, while a @racket[bitmap-dc%] instance will work fine
-for either @racket[bitmap-dc%] or @racket[canvas%] output.}
+as the ultimate drawing context, but it should measure text in the same
+way. Under normal circumstances, font metrics are the same for all
+drawing contexts, so the default value of @racket[dc-for-text-size] is
+a @racket[bitmap-dc%] that draws to a 1-by-1 bitmap.}
 
 
 @defproc[(draw-pict [pict pict?]
