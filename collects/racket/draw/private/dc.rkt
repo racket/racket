@@ -713,6 +713,7 @@
                    (put (send (bitmap-to-b&w-bitmap 
                                st 0 0 
                                (send st get-width) (send st get-height) mode col
+                               #f
                                #f)
                               get-cairo-surface))]
                   [(and (send st is-color?)
@@ -1475,21 +1476,23 @@
                  (or (send src is-color?)
                      mask))
             ;; Need to ensure that the result is still B&W
-            (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
-              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t tmp-bm clip-mask))]
+            (let-values ([(tmp-bm tmp-mask) (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask #t)])
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t tmp-mask 
+                                      clip-mask CAIRO_OPERATOR_SOURCE))]
            [(and mask
                  (or (and (not black?) (not (send src is-color?)))
                      (alpha . < . 1.0)))
             ;; mask plus color or alpha with a color bitmap
             (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 style color alpha #f)])
-              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask clip-mask))]
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h msrc-x msrc-y 'solid #f #t mask 
+                                      clip-mask #f))]
            [else
             ;; Normal combination...
             (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y
-                                    style color black? mask clip-mask)]))))
+                                    style color black? mask clip-mask #f)]))))
 
     (define/public (do-draw-bitmap-section src dest-x dest-y src-x src-y src-w src-h msrc-x msrc-y 
-                                           style color black? mask clip-mask)
+                                           style color black? mask clip-mask op)
       (with-cr
        (void)
        cr
@@ -1532,6 +1535,7 @@
                    (cairo_pattern_set_matrix p m)
                    ;; clip to the section that we're supposed to draw:
                    (cairo_save cr)
+                   (when op (cairo_set_operator cr op))
                    (cairo_new_path cr)
                    (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
                    (cairo_clip cr)
@@ -1572,15 +1576,20 @@
          (flush-cr)))
       #t)
 
-    (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)
+    (define/private (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask result-mask?)
       (let* ([bm-w (inexact->exact (ceiling src-w))]
              [bm-h (inexact->exact (ceiling src-h))]
              [tmp-bm (make-object bitmap% bm-w bm-h #f #t)]
+             [tmp-mask (and result-mask?
+                            (make-object bitmap% bm-w bm-h #f #t))]
              [tmp-dc (make-object -bitmap-dc% tmp-bm)])
         (send tmp-dc set-background bg)
         (send tmp-dc draw-bitmap-section src 0 0 src-x src-y src-w src-h style color mask)
         (send tmp-dc set-bitmap #f)
-        (let ([bstr (make-bytes (* bm-w bm-h 4))])
+        (let* ([bstr (make-bytes (* bm-w bm-h 4))]
+               [mask-bstr (if result-mask?
+                              (make-bytes (* bm-w bm-h 4))
+                              bstr)])
           (send tmp-bm get-argb-pixels 0 0 bm-w bm-h bstr)
           (for ([i (in-range 0 (bytes-length bstr) 4)])
             (let ([v (if (= (bytes-ref bstr i) 255)
@@ -1590,12 +1599,20 @@
                              255
                              0)
                          255)])
-              (bytes-set! bstr i (- 255 v))
+              (let ([old-v (bytes-ref bstr i)])
+                (bytes-set! bstr i (- 255 v))
+                (bytes-set! mask-bstr i (if (= old-v 255)
+                                            255
+                                            0)))
               (bytes-set! bstr (+ i 1) v)
               (bytes-set! bstr (+ i 2) v)
               (bytes-set! bstr (+ i 3) v)))
           (send tmp-bm set-argb-pixels 0 0 bm-w bm-h bstr)
-          tmp-bm)))
+          (when result-mask?
+            (send tmp-mask set-argb-pixels 0 0 bm-w bm-h mask-bstr))
+          (if result-mask?
+              (values tmp-bm tmp-mask)
+              tmp-bm))))
     
     (define/private (bitmap-to-argb-bitmap src src-x src-y src-w src-h msrc-x msrc-y 
                                            style color alpha mask) 
