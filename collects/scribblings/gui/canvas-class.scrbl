@@ -55,8 +55,9 @@ The @scheme[style] argument indicates one or more of the following styles:
        canvas before calls to @method[canvas% on-paint]} 
 
  @item{@scheme['transparent] --- the canvas is automatically ``erased''
- before an update using it's parent window's background; the result is
- undefined if this flag is combined with @scheme['no-autoclear]}
+ before an update using it's parent window's background; see @racket[canvas<%>]
+ for information on the interaction of @racket['transparent] and offscreen buffering; 
+ the result is undefined if this flag is combined with @scheme['no-autoclear]}
  
  @item{@scheme['no-focus] --- prevents the canvas from accepting the
  keyboard focus when the canvas is clicked, or when the

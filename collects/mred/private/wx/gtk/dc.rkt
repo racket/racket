@@ -96,7 +96,7 @@
     (inherit end-delay)
     (define canvas cnvs)
 
-    (super-new)
+    (super-new [transparent? (not (send canvas get-canvas-background))])
 
     (define gl #f)
     (define/override (get-gl-context)
@@ -146,12 +146,5 @@
                 [h (box 0)])
             (send canvas get-client-size w h)
             (let ([cr (gdk_cairo_create win)])
-              (let ([s (cairo_get_source cr)])
-                (cairo_pattern_reference s)
-                (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
-                (cairo_new_path cr)
-                (cairo_rectangle cr 0 0 (unbox w) (unbox h))
-                (cairo_fill cr)
-                (cairo_set_source cr s)
-                (cairo_pattern_destroy s))
+              (backing-draw-bm bm cr (unbox w) (unbox h))
               (cairo_destroy cr))))))

@@ -6,9 +6,6 @@
 A canvas is a subwindow onto which graphics and text can be drawn. Canvases also
  receive mouse and keyboard events.
 
-To draw onto a canvas, get its device context (see
-@method[canvas<%> get-dc]).
-
 The @scheme[canvas<%>] interface is implemented by two classes:
 @itemize[
 
@@ -19,6 +16,28 @@ The @scheme[canvas<%>] interface is implemented by two classes:
   @scheme[editor<%>] objects}
 
 ]
+
+To draw onto a canvas, get its device context (see
+@method[canvas<%> get-dc]).
+
+Drawing to a canvas's drawing context actually renders into an
+offscreen buffer. The buffer is automatically flushed to the screen by
+a background thread, explicitly via the @method[canvas<%> flush]
+method, or explicitly via @racket[flush-display]---unless flushing
+has been disabled for the canvas.  The @method[canvas<%>
+suspend-flush] method suspends flushing for a canvas until a matching
+@method[canvas<%> resume-flush] calls; calls to @method[canvas<%>
+suspend-flush] and @method[canvas<%> resume-flush] can be nested, in
+which case flushing is suspended until the outermost @method[canvas<%>
+suspend-flush] is balanced by a @method[canvas<%> resume-flush].
+
+In the case of a transparent canvas (i.e., one that is created with
+@racket['transparent] style), line and text smoothing can depend on
+the window that serves as the canvas's background. For example,
+smoothing may color pixels differently depending on whether the target
+context is white or gray.  Background-sensitive smoothing is supported
+only if a relatively small number of drawing commands are recorded in
+the canvas's offscreen buffer, however.
 
 
 @defmethod*[([(accept-tab-focus)
@@ -191,7 +210,7 @@ Does nothing.
 
 @defmethod[(resume-flush) void?]{
 
-See @method[canvas<%> suspend-flush].}
+See @racket[canvas<%>] for information on canvas flushing.}
 
 
 
@@ -223,19 +242,10 @@ Under Mac OS X, enables or disables space for a resize tab at the
 
 @defmethod[(suspend-flush) void?]{
 
-Drawing to a canvas's drawing context actually renders into an
-offscreen buffer. The buffer is automatically flushed to the screen by
-a background thread, explicitly via the @method[canvas<%> flush] method, 
-or explicitly via @racket[flush-display] --- unless flushing has been disabled for the canvas.
-The @method[canvas<%> suspend-flush] method suspends flushing for a
-canvas until a matching @method[canvas<%> resume-flush] calls; calls to
-@method[canvas<%> suspend-flush] and @method[canvas<%> resume-flush] can
-be nested, in which case flushing is suspended until the outermost
-@method[canvas<%> suspend-flush] is balanced by a @method[canvas<%>
-resume-flush].
+See @racket[canvas<%>] for information on canvas flushing.
 
-On some platforms, beware that suspending flushing for a canvas can
-discourage refreshes for other windows in the same frame.}
+Beware that suspending flushing for a canvas can discourage refreshes
+for other windows in the same frame on some platforms.}
 
 
 @defmethod[(warp-pointer [x (integer-in 0 10000)]
