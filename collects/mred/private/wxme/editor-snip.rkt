@@ -3,12 +3,12 @@
          "../syntax.ss"
          "private.ss"
          "const.ss"
-         "snip.ss"
-         "snip-flags.ss"
+         racket/snip
+         racket/snip/snip-flags
+         "standard-snip-admin.rkt"
          "editor.ss"
          "editor-admin.ss"
          "editor-snip-class.rkt"
-         "snip-admin.ss"
          "text.ss"
          "pasteboard.ss"
          "wx.ss"
@@ -16,8 +16,7 @@
                     text%
                     pasteboard%
                     editor-snip%
-                    editor-snip-editor-admin%
-                    snip-admin%))
+                    editor-snip-editor-admin%))
 
 (provide editor-snip%
          editor-snip-editor-admin<%>)

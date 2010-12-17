@@ -8,7 +8,6 @@
 
 (decl text% set-text%!)
 (decl pasteboard% set-pasteboard%!)
-(decl snip-admin% set-snip-admin%!)
 (decl editor-stream-in% set-editor-stream-in%!)
 (decl editor-stream-out% set-editor-stream-out%!)
 (decl editor-snip% set-editor-snip%!)
@@ -18,7 +17,6 @@
 (decl extended-text% set-extended-text%!)
 (decl extended-pasteboard% set-extended-pasteboard%!)
 
-;(decl get-snip-class set-get-snip-class!)
 (decl get-editor-data-class set-get-editor-data-class!)
 
 (decl editor-get-file set-editor-get-file!)

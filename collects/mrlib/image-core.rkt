@@ -33,14 +33,12 @@ has been moved out).
          file/convertible         
          racket/math
          racket/contract
-         "private/image-core-bitmap.ss" ;; safe
-         "image-core-wxme.ss" ;; safe
-         "private/image-core-snipclass.rkt" ;; safe
-         "private/regmk.rkt" ;; safe
-         ;; the hard cases
-         mred/private/wxme/snip
-         (prefix-in cis: "cache-image-snip.ss") ;; safe
-         )
+         "private/image-core-bitmap.ss" 
+         "image-core-wxme.ss"
+         "private/image-core-snipclass.rkt"
+         "private/regmk.rkt"
+         racket/snip
+         (prefix-in cis: "cache-image-snip.ss"))
 
 
 

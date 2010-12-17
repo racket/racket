@@ -11,14 +11,13 @@
 	   (prefix wx: "private/wxme/editor.ss")
 	   (prefix wx: "private/wxme/text.ss")
 	   (prefix wx: "private/wxme/pasteboard.ss")
-	   (prefix wx: "private/wxme/snip.ss")
+	   (prefix wx: racket/snip)
 	   (prefix wx: "private/wxme/keymap.ss")
 	   (prefix wx: "private/wxme/editor-admin.ss")
            (prefix wx: "private/wxme/editor-data.ss")
 	   (prefix wx: "private/wxme/editor-snip.ss")
 	   (prefix wx: "private/wxme/stream.ss")
 	   (prefix wx: "private/wxme/wordbreak.ss")
-	   (prefix wx: "private/wxme/snip-admin.ss")
 	   "private/wxtop.ss"
 	   "private/app.ss"
 	   "private/misc.ss"

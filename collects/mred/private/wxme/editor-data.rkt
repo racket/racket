@@ -3,17 +3,15 @@
 (require scheme/class
          scheme/file file/convertible
          "../syntax.ss"
-         "snip-flags.ss"
+         racket/snip/snip-flags
          "private.ss"
          "style.ss"
          "load-one.rkt"
-         ;; used only in contracts
-         (only-in "cycle.ss" editor-stream-in% editor-stream-out% snip-admin%)
-         ;; used for real
-         (only-in "cycle.ss" get-editor-data-class set-get-editor-data-class!)
+         (only-in "cycle.ss"
+                  editor-stream-in% editor-stream-out%
+                  get-editor-data-class set-get-editor-data-class!)
          "../wx/common/event.rkt"
-         racket/draw
-         (only-in "wx.ss" begin-busy-cursor end-busy-cursor get-highlight-text-color))
+         racket/draw)
 
 (provide get-the-editor-data-class-list         
          editor-data%

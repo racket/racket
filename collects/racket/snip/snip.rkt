@@ -1,15 +1,12 @@
 #lang scheme/base
 (require scheme/class
          scheme/file file/convertible
-         "../syntax.ss"
          "snip-flags.ss"
-         "private.ss"
-         "style.ss"
-         "load-one.rkt"
-         ;; used only in contracts
-         ;(only-in "cycle.ss" editor-stream-in% editor-stream-out% snip-admin%)
-         ;; used for real         
-         "../wx/common/event.rkt"
+         mred/private/syntax
+         mred/private/wxme/private
+         mred/private/wxme/style
+         mred/private/wxme/load-one
+         mred/private/wx/common/event
          racket/draw)
 
 (provide snip%
@@ -50,8 +47,6 @@
          string-snip-dtext
 
          caret-status?
-
-         ;selected-text-color
 
          image-type?)
 

@@ -3,14 +3,12 @@
 (require racket/class
          racket/file file/convertible
          "../syntax.ss"
-         "snip-flags.ss"
+         racket/snip/snip-flags
          "private.ss"
          "style.ss"
-         "snip.rkt"
-         ;; used only in contracts
-         (only-in "cycle.ss" editor-stream-in% editor-stream-out% snip-admin%)
-         ;; used for real
+         racket/snip
          (only-in "cycle.ss"
+                  editor-stream-in% editor-stream-out%
                   extended-text% extended-pasteboard% extended-editor-snip% 
                   get-editor-data-class)
          "../wx/common/event.rkt"

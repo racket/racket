@@ -2,7 +2,7 @@
 (require scheme/class
          "../syntax.ss"
          "private.ss"
-         "snip.ss"
+         racket/snip
          "editor-data.rkt"
          (only-in "cycle.ss"
                   set-editor-stream-in%!

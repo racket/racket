@@ -5,8 +5,8 @@
          "../syntax.ss"
          "private.ss"
          "style.ss"
-         "snip.ss"
-         "snip-flags.ss"
+         racket/snip
+         racket/snip/snip-flags
          "editor-admin.ss"
          "stream.ss"
          "undo.ss"

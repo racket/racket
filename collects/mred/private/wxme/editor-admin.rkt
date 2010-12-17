@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          "../syntax.ss"
-         "snip.ss"
+         racket/snip
          "private.ss"
          (only-in "cycle.ss" popup-menu%))
 

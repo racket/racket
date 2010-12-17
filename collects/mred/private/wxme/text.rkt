@@ -11,9 +11,9 @@
          "editor-data.rkt"
          "undo.ss"
          "style.ss"
-         "snip.ss"
-         "snip-flags.ss"
-         "snip-admin.ss"
+         racket/snip
+         racket/snip/snip-flags
+         "standard-snip-admin.rkt"
          "keymap.ss"
          (only-in "cycle.ss" set-text%!)
          "wordbreak.ss"

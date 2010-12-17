@@ -3,7 +3,7 @@
 	   mzlib/class100
 	   (prefix-in wx: "kernel.ss")
            (prefix-in wx: "wxme/text.ss")
-           (prefix-in wx: "wxme/snip.ss")
+           (prefix-in wx: racket/snip)
            (prefix-in wx: "wxme/editor-canvas.ss")
 	   "lock.ss"
 	   "const.ss"

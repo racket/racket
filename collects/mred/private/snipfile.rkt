@@ -3,7 +3,7 @@
            racket/port
 	   syntax/moddep
            (prefix-in wx: "kernel.ss")
-	   (prefix-in wx: "wxme/snip.ss")
+	   (prefix-in wx: racket/snip)
 	   (prefix-in wx: "wxme/cycle.ss")
 	   "check.ss"
 	   "editor.ss")
