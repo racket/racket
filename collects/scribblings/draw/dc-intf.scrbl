@@ -112,8 +112,10 @@ If the @racket[mask] bitmap is monochrome, drawing occurs in the
 If the @racket[mask] bitmap is grayscale, then the blackness of each
  mask pixel controls the opacity of the drawn pixel (i.e., the mask
  acts as an inverted alpha channel). If the @racket[mask] bitmap is
- color, the component values of a given pixel are averaged to arrive
- at an @racket[alpha] value for the pixel.
+ color, the color component values of a given pixel are averaged to arrive
+ at an @racket[alpha] value for the pixel. If the @racket[mask] bitmap
+ has an alpha channel, it is combined for masking with the alpha value that is 
+ computed from the color components.
 
 The current brush, current pen, and current text for the DC have no
  effect on how the bitmap is drawn, but the bitmap is scaled if the DC
