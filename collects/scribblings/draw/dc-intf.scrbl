@@ -104,18 +104,27 @@ If a @racket[mask] bitmap is supplied, it must have the same width and height
  @scheme[bitmap-dc%] object, both bitmaps must be distinct from the
  destination bitmap, otherwise @|MismatchExn|.
 
-If the @racket[mask] bitmap is monochrome, drawing occurs in the
- target @scheme[dc<%>] only where the mask bitmap contains black
- pixels (independent of @racket[style], which controls how the white
- pixels of a monochrome @racket[source] are handled).
+The effect of @racket[mask] on drawing depends on the type of the
+bitmap:
+@;
+@itemlist[
 
-If the @racket[mask] bitmap is grayscale, then the blackness of each
- mask pixel controls the opacity of the drawn pixel (i.e., the mask
- acts as an inverted alpha channel). If the @racket[mask] bitmap is
- color, the color component values of a given pixel are averaged to arrive
- at an @racket[alpha] value for the pixel. If the @racket[mask] bitmap
- has an alpha channel, it is combined for masking with the alpha value that is 
- computed from the color components.
+ @item{If the @racket[mask] bitmap is monochrome, drawing occurs in
+       the target @scheme[dc<%>] only where the mask bitmap contains
+       black pixels (independent of @racket[style], which controls how
+       the white pixels of a monochrome @racket[source] are handled).}
+
+ @item{If @racket[mask] is color with an alpha channel, the alpha
+       channel only is used as the mask for drawing @racket[source].}
+
+ @item{If the @racket[mask] bitmap is color without an alpha channel,
+       the color components of a given pixel are averaged to arrive at
+       an @racket[alpha] value for the pixel. In particular, if the
+       @racket[mask] bitmap is grayscale, then the blackness of each
+       mask pixel controls the opacity of the drawn pixel (i.e., the
+       mask acts as an inverted alpha channel).}
+
+]
 
 The current brush, current pen, and current text for the DC have no
  effect on how the bitmap is drawn, but the bitmap is scaled if the DC
