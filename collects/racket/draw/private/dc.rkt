@@ -1473,11 +1473,10 @@
           (cond
            [(and (collapse-bitmap-b&w?)
                  (or (send src is-color?)
-                     (and mask
-                          (send mask is-color?))))
+                     mask))
             ;; Need to ensure that the result is still B&W
             (let* ([tmp-bm (bitmap-to-b&w-bitmap src src-x src-y src-w src-h style color mask)])
-              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t #f clip-mask))]
+              (do-draw-bitmap-section tmp-bm dest-x dest-y 0 0 src-w src-h 0 0 'solid #f #t tmp-bm clip-mask))]
            [(and mask
                  (or (and (not black?) (not (send src is-color?)))
                      (alpha . < . 1.0)))
@@ -1584,14 +1583,14 @@
         (let ([bstr (make-bytes (* bm-w bm-h 4))])
           (send tmp-bm get-argb-pixels 0 0 bm-w bm-h bstr)
           (for ([i (in-range 0 (bytes-length bstr) 4)])
-            (bytes-set! bstr i (if (= (bytes-ref bstr i) 255)
-                                   255
-                                   0))
-            (let ([v (if (and (= 255 (bytes-ref bstr (+ i 1)))
-                              (= 255 (bytes-ref bstr (+ i 2)))
-                              (= 255 (bytes-ref bstr (+ i 3))))
-                         255
-                         0)])
+            (let ([v (if (= (bytes-ref bstr i) 255)
+                         (if (and (= 255 (bytes-ref bstr (+ i 1)))
+                                  (= 255 (bytes-ref bstr (+ i 2)))
+                                  (= 255 (bytes-ref bstr (+ i 3))))
+                             255
+                             0)
+                         255)])
+              (bytes-set! bstr i (- 255 v))
               (bytes-set! bstr (+ i 1) v)
               (bytes-set! bstr (+ i 2) v)
               (bytes-set! bstr (+ i 3) v)))
