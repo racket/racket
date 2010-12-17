@@ -1335,6 +1335,19 @@
       (orig-make-pen color real-0-255 pen-style pen-cap pen-join))
     pen))
 
+(define/chk freeze
+  (case-lambda 
+    [(image) (freeze/internal 0 0 (image-width image) (image-height image) image)]
+    [(width height image) (freeze/internal 0 0 width height image)]
+    [(x y width height image) (freeze/internal x y width height image)]))
+
+(define (freeze/internal x y w h image)
+  (define bm (make-bitmap w h))
+  (define bdc (make-object bitmap-dc% bm))
+  (render-image image bdc (- x) (- y))
+  (send bdc set-bitmap #f)
+  (to-img bm))
+
 (provide overlay
          overlay/align
          overlay/xy
@@ -1421,6 +1434,8 @@
          build-color/color
          build-pen/make-pen
          build-pen/pen
+         
+         freeze
          
          render-image)
 
