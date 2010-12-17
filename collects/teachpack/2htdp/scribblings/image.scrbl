@@ -1110,15 +1110,15 @@ more expensive than with the other shapes.
   }
                 
 
-@deftogether[(@defproc[(freeze [image image?]) image?]{}
-              @defproc[(freeze [width (and/c real? (not/c negative?))]
-                               [width (and/c real? (not/c negative?))]
-                               [image image?]) image?]{}
-              @defproc[(freeze [x real?]
-                               [y real?]
-                               [width (and/c real? (not/c negative?))]
-                               [width (and/c real? (not/c negative?))]
-                               [image image?]) image?]{})]{
+@defproc*[([(freeze [image image?]) image?]
+           [(freeze [width (and/c real? (not/c negative?))]
+                    [width (and/c real? (not/c negative?))]
+                    [image image?]) image?]
+           [(freeze [x real?]
+                    [y real?]
+                    [width (and/c real? (not/c negative?))]
+                    [width (and/c real? (not/c negative?))]
+                    [image image?]) image?])]{
   Freezing an image internally builds a bitmap, crops the image, draws the cropped image
   into the bitmap and then
   uses the bitmap to draw that image afterwards. Typically this is used as a performance
