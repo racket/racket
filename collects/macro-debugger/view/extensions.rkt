@@ -80,8 +80,8 @@
 
     (define/override (show-props show?)
       (super show-props show?)
-      (send/i macro-stepper widget<%> update/preserve-view))
+      (when (send (send/i macro-stepper widget<%> get-config) get-refresh-on-resize?)
+        (send/i macro-stepper widget<%> update/preserve-view)))
 
     (super-new
      (config (send/i macro-stepper widget<%> get-config)))))
-

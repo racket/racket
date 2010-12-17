@@ -34,7 +34,8 @@
     (define -text (new browser-text%))
     (define -ecanvas
       (new canvas:color% (parent -split-panel) (editor -text)))
-    (define -props-panel (new horizontal-panel% (parent -split-panel)))
+    (define -props-panel
+      (new horizontal-panel% (parent -split-panel) (style '(deleted))))
     (define props
       (new properties-view%
            (parent -props-panel)
@@ -52,16 +53,25 @@
     (define/public (show-props show?)
       (internal-show-props show?))
 
+    (define saved-props-percentage #f)
+
     (define/private (internal-show-props show?)
       (if show?
           (unless (send -props-panel is-shown?)
-            (let ([p (send/i config config<%> get-props-percentage)])
+            (send -split-panel begin-container-sequence)
+            (let ([p (or saved-props-percentage
+                         (send/i config config<%> get-props-percentage))])
               (send -split-panel add-child -props-panel)
               (update-props-percentage p))
-            (send -props-panel show #t))
+            (send -props-panel show #t)
+            (send -split-panel end-container-sequence))
           (when (send -props-panel is-shown?)
+            (send -split-panel begin-container-sequence)
+            (set! saved-props-percentage
+                  (cadr (send -split-panel get-percentages)))
             (send -split-panel delete-child -props-panel)
-            (send -props-panel show #f))))
+            (send -props-panel show #f)
+            (send -split-panel end-container-sequence))))
 
     (define/private (update-props-percentage p)
       (send -split-panel set-percentages
@@ -220,8 +230,14 @@
     (define/private (calculate-columns)
       (define style (code-style -text (send/i config config<%> get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
+      #|
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
-      (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
+      (sub1 (inexact->exact (floor (/ canvas-w char-width))))
+      |#
+      (let ([admin (send -text get-admin)]
+            [w-box (box 0.0)])
+        (send admin get-view #f #f w-box #f)
+        (sub1 (inexact->exact (floor (/ (unbox w-box) char-width))))))
 
     ;; Initialize
     (super-new)
