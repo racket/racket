@@ -117,7 +117,10 @@ Put the saved things in the help menu.
      (for/list ([a-saved-report (in-list x)])
        (define assoc-l (saved-report-table a-saved-report))
        (define subj-p (assoc 'subject assoc-l))
-       (brinfo (trim-to-200 (regexp-replace* #rx"&" (cadr subj-p) "&&")) 
+       (define title (cadr subj-p))
+       (brinfo (if (string=? title "")
+                   "<<no title>>"
+                   (trim-to-200 (regexp-replace* #rx"&" title "&&"))) 
                (saved-report-id a-saved-report))))))
 
 (define (trim-to-200 str)
