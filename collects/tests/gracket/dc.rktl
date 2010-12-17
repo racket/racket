@@ -219,5 +219,51 @@
     (test #t 'same-scaled (equal? s2 s3))))
 
 ;; ----------------------------------------
+;; Test some masking combinations
+
+(let ()
+  (define u (make-object bitmap% 2 2))
+  (define mu (make-object bitmap% 2 2))
+  (send u set-argb-pixels 0 0 2 2
+        (bytes 255 100 0 0
+               255 0 0 0
+               255 100 0 0
+               255 0 0 0))
+  (send mu set-argb-pixels 0 0 2 2
+        (bytes 255 0 0 0
+               255 255 255 255
+               255 0 0 0
+               255 255 255 255))
+  (send u set-loaded-mask mu)
+  (define (try-draw nonce-color b&w?)
+    (let* ((bm (make-object bitmap% 2 2 b&w?))
+           (dc (make-object bitmap-dc% bm)))
+      (send dc clear)
+      ;; Check that draw-bitmap-section really uses the
+      ;; section, even in combination with a mask.
+      (send dc draw-bitmap-section u 0 0 0 0 2 1
+            'solid nonce-color (send u get-loaded-mask))
+      (send dc set-bitmap #f)
+      (let ([s (make-bytes (* 2 2 4))])
+        (send bm get-argb-pixels 0 0 2 2 s)
+        (when b&w? (send bm get-argb-pixels 0 0 2 2 s #t))
+        (test (if b&w?
+                  ;; For b&w destination, check that the
+                  ;;  alpha is consistent with the drawn pixels
+                  (bytes 255 0 0 0
+                         0 255 255 255
+                         0 255 255 255
+                         0 255 255 255)
+                  (bytes 255 100 0 0
+                         255 255 255 255
+                         255 255 255 255
+                         255 255 255 255))
+              'masked-draw
+              s))))
+  (try-draw (make-object color% "green") #f)
+  (try-draw (make-object color%) #f)
+  (try-draw (make-object color%) #t))
+
+;; ----------------------------------------
 
 (report-errs)
