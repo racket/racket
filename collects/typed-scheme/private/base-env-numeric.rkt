@@ -17,7 +17,8 @@
            (-> -Pos -Pos)
            (-> -Nat -Nat)
            (-> -ExactRational -Integer)
-           (-> -NonnegativeFlonum -NonnegativeFlonum)
+           (-> -NonNegFlonum -NonNegFlonum)
+           (-> -NonPosFlonum -NonPosFlonum)
            (-> -Flonum -Flonum)
            (-> -InexactReal -InexactReal)
            (-> -Real -Real)))
@@ -237,7 +238,9 @@
                   (list (->* (list) (Un -FloatComplex -Flonum) -FloatComplex))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
-          (append (list (->* (list -Pos) -Nat -Pos))
+          (append (list (-> -PosByte -PosByte -PosIndex))
+                  (list (-> -Byte -Byte -Index))
+                  (list (->* (list -Pos) -Nat -Pos))
                   (list (->* (list -Nat -Pos) -Nat -Pos))
                   (for/list ([t (list -Nat -Integer -ExactRational -NonnegativeFlonum -Flonum)]) (->* (list) t t))
                   ;; special cases for promotion to inexact, not exhaustive
