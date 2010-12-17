@@ -116,7 +116,7 @@
             (let* ([surface (cairo_win32_surface_create hdc)]
                    [cr (cairo_create surface)])
               (cairo_surface_destroy surface)
-              (backing-draw-bm cr bm (unbox w) (unbox h))
+              (backing-draw-bm bm cr (unbox w) (unbox h))
               (cairo_destroy cr))))))
 
 (define (request-flush-delay canvas)
