@@ -320,4 +320,70 @@ Queues an update for the cursor in the @techlink{display} for this
 
 Does nothing.
 
-}}}
+}}
+
+
+@defmethod[(get-line-spacing)
+           (and/c real? (not/c negative?))]{
+
+@methspec{
+
+Returns the spacing inserted by the snip's editor between each
+line. 
+}
+@methimpl{
+
+Returns @scheme[0.0]
+
+}}
+
+@defmethod[(get-selected-text-color)
+           void?]{
+
+@methspec{
+
+Returns the color that is used to draw selected text or @scheme[#f] if
+selected text is drawn with its usual color.
+}
+@methimpl{
+
+Returns @scheme[#f].
+}}
+
+
+@defmethod[(call-with-busy-cursor [thunk (-> any)])
+           any]{
+
+@methspec{
+
+Calls @scheme[thunk] while changing the cursor to a watch cursor for
+all windows in the current eventspace.
+
+}
+
+@methimpl{
+
+Does nothing.
+}}
+
+@defmethod[(get-tabs [length (or/c (box/c exact-nonnegative-integer?) #f) #f]
+                     [tab-width (or/c (box/c real?) #f) #f]
+                     [in-units (or/c (box/c any/c) #f) #f])
+           (listof real?)]{
+
+@methspec{
+Returns the current tab-position array as a list.
+
+@boxisfillnull[(scheme length) @elem{the length of the tab array (and therefore the returned 
+list)}]
+@boxisfillnull[(scheme tab-width) @elem{the width used for tabs past the 
+end of the tab array}]
+@boxisfillnull[(scheme in-units) @elem{@scheme[#t] if the tabs are specified in
+canvas units or @scheme[#f] if they are specified in space-widths}]
+}
+
+@methimpl{
+Returns @scheme[null].
+}
+}
+}
