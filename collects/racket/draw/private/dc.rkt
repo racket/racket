@@ -511,6 +511,7 @@
            [(unsmoothed) CAIRO_ANTIALIAS_NONE]
            [(partly-smoothed) CAIRO_ANTIALIAS_GRAY]
            [(smoothed) CAIRO_ANTIALIAS_SUBPIXEL]))
+        (cairo_font_options_set_hint_metrics o2 CAIRO_HINT_METRICS_OFF)
         (pango_cairo_context_set_font_options context o2)
         (cairo_font_options_destroy o2)))
 
