@@ -2,7 +2,7 @@
 (require scheme/class
          "private.ss"
          racket/snip
-         racket/snip/snip-flags)
+         racket/snip/private/snip-flags)
 
 (provide change-record%
          proc-record%

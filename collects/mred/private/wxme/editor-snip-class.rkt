@@ -3,7 +3,7 @@
 (require racket/class
          racket/file file/convertible
          "../syntax.ss"
-         racket/snip/snip-flags
+         racket/snip/private/snip-flags
          "private.ss"
          "style.ss"
          racket/snip

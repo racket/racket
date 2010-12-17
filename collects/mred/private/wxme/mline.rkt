@@ -3,7 +3,7 @@
          "../syntax.ss"
          "const.ss"
          racket/snip
-         racket/snip/snip-flags
+         racket/snip/private/snip-flags
          "private.ss")
 
 (provide create-mline

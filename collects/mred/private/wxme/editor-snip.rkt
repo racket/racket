@@ -4,7 +4,7 @@
          "private.ss"
          "const.ss"
          racket/snip
-         racket/snip/snip-flags
+         racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
          "editor.ss"
          "editor-admin.ss"

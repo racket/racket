@@ -1,3 +1,3 @@
 #lang racket/base
-(require "snip/snip.rkt" "snip/snip-admin.rkt")
-(provide (all-from-out "snip/snip.rkt" "snip/snip-admin.rkt"))
+(require "snip/private/snip.rkt" "snip/private/snip-admin.rkt")
+(provide (all-from-out "snip/private/snip.rkt" "snip/private/snip-admin.rkt"))

@@ -10,7 +10,7 @@
          "undo.ss"
          "style.ss"
          racket/snip
-         racket/snip/snip-flags
+         racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
          "keymap.ss"
          (only-in "cycle.ss" set-pasteboard%!)

@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         mred/private/syntax
+         racket/draw/private/syntax
          "snip.ss")
 
 (provide snip-admin%)

@@ -2,11 +2,10 @@
 (require scheme/class
          scheme/file file/convertible
          "snip-flags.ss"
-         mred/private/syntax
-         mred/private/wxme/private
+         "load-one.rkt"
+         racket/draw/private/syntax
          mred/private/wxme/style
-         mred/private/wxme/load-one
-         mred/private/wx/common/event
+         mred/private/wxme/private
          racket/draw)
 
 (provide snip%
@@ -54,8 +53,8 @@
 
 ;; these are used only in contracts
 ;; we don't want the real definitions b/c they require the gui
-(define-values (editor-stream-in% editor-stream-out% snip-admin%)
-  (values object% object% object%))
+(define-values (editor-stream-in% editor-stream-out% snip-admin% mouse-event% key-event%)
+  (values object% object% object% object% object%))
 
 (define (symbol-list? l)
   (and (list? l) (andmap symbol? l)))

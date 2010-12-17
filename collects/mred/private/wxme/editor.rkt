@@ -6,7 +6,7 @@
          "private.ss"
          "style.ss"
          racket/snip
-         racket/snip/snip-flags
+         racket/snip/private/snip-flags
          "editor-admin.ss"
          "stream.ss"
          "undo.ss"
