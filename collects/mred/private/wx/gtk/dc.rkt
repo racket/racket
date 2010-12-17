@@ -92,11 +92,12 @@
 
 (define dc%
   (class backing-dc%
-    (init [(cnvs canvas)])
+    (init [(cnvs canvas)]
+          transparent?)
     (inherit end-delay)
     (define canvas cnvs)
 
-    (super-new [transparent? (not (send canvas get-canvas-background))])
+    (super-new [transparent? transparent?])
 
     (define gl #f)
     (define/override (get-gl-context)

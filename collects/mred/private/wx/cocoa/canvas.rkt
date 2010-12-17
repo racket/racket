@@ -360,7 +360,7 @@
        (tellv content-cocoa setDelegate: content-cocoa)
        (install-control-font content-cocoa #f))
 
-     (define dc (make-object dc% this))
+     (define dc (make-object dc% this (memq 'transparent canvas-style)))
 
      (send dc start-backing-retained)
 

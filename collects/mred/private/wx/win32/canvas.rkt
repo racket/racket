@@ -204,7 +204,7 @@
      (define/override (wndproc-for-ctlproc w msg wParam lParam default)
        (default w msg wParam lParam))
      
-     (define dc (new dc% [canvas this]))
+     (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
      (send dc start-backing-retained)
 
      (define/public (get-dc) dc)

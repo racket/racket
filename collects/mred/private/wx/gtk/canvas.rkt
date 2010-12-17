@@ -284,7 +284,7 @@
 
      (set-size x y w h)
      
-     (define dc (new dc% [canvas this]))
+     (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
 
      (define for-gl? (memq 'gl style))
      (when for-gl?
