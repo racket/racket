@@ -48,6 +48,8 @@
 
          caret-status?
 
+         readable-snip<%>
+
          image-type?)
 
 ;; these are used only in contracts
@@ -1376,3 +1378,7 @@
 (define get-snip-class
  (lambda (name)
    (load-one name 'snip-class snip-class%)))
+
+(define readable-snip<%>
+  (interface ()
+    read-special))

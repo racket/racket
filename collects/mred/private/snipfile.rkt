@@ -8,17 +8,12 @@
 	   "check.ss"
 	   "editor.ss")
 		
-  (provide readable-snip<%>
-	   open-input-text-editor 
+  (provide open-input-text-editor 
 	   open-input-graphical-file
 	   text-editor-load-handler
 	   open-output-text-editor )
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define readable-snip<%>
-    (interface ()
-      read-special))
 
   (define empty-string (make-bytes 0))
   
@@ -144,7 +139,7 @@
 					 (next-snip empty-string)
 					 (lambda (file line col ppos)
 					   (if (is-a? the-snip wx:snip%)
-					       (if (is-a? the-snip readable-snip<%>)
+					       (if (is-a? the-snip wx:readable-snip<%>)
 						   (send the-snip read-special file line col ppos)
 						   (send the-snip copy))
 					       the-snip)))]
