@@ -42,7 +42,8 @@
 
 (define-syntax define/chk
   (λ (stx)
-    (define (adjust-case case-args bodies)
+    (define (adjust-case fn-name case-args bodies)
+      (with-syntax ([fn-name fn-name])
       (syntax-case case-args ()
         [(args ... . final-arg)
          (identifier? #'final-arg)
@@ -71,17 +72,17 @@
                              (syntax->list #'(args ...)))])
            #`((args ...)
               (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
-                #,@bodies)))]))
+                #,@bodies)))])))
     (syntax-case stx (case-lambda)
       [(define/chk fn-name (case-lambda [in-args in-body ...] ...))
-       (with-syntax ([((args body) ...) (map adjust-case
+       (with-syntax ([((args body) ...) (map (lambda (a b) (adjust-case #'fn-name a b))
                                              (syntax->list #'(in-args ...))
                                              (syntax->list #'((in-body ...) ...)))])
          #'(define fn-name
              (case-lambda
                [args body] ...)))]
       [(define/chk (fn-name . args) body ...)
-       (with-syntax ([(args body) (adjust-case #'args #'(body ...))])
+       (with-syntax ([(args body) (adjust-case #'fn-name #'args #'(body ...))])
          #`(define (fn-name . args) body))])))
 
 ;; check/normalize : symbol symbol any number -> any
