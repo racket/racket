@@ -43,14 +43,13 @@
 (define-syntax define/chk
   (λ (stx)
     (define (adjust-case fn-name case-args bodies)
-      (with-syntax ([fn-name fn-name])
       (syntax-case case-args ()
         [(args ... . final-arg)
          (identifier? #'final-arg)
          (let ([len (length (syntax->list #'(args ...)))])
            (with-syntax ([(i ...) (build-list len add1)])
              #`((args ... . final-arg)
-                (let ([args (check/normalize 'fn-name 'args args i)] ...
+                (let ([args (check/normalize '#,fn-name 'args args i)] ...
                       [final-arg 
                        (for/list ([x (in-list final-arg)]
                                   [j (in-naturals #,(+ len 1))])
@@ -71,8 +70,8 @@
                                   (raise-syntax-error 'define/chk "unknown argument spec" stx arg)]))
                              (syntax->list #'(args ...)))])
            #`((args ...)
-              (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
-                #,@bodies)))])))
+              (let ([arg-ids (check/normalize '#,fn-name 'arg-ids arg-ids i)] ...)
+                #,@bodies)))]))
     (syntax-case stx (case-lambda)
       [(define/chk fn-name (case-lambda [in-args in-body ...] ...))
        (with-syntax ([((args body) ...) (map (lambda (a b) (adjust-case #'fn-name a b))
