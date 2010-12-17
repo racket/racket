@@ -16,7 +16,7 @@
          racket/class
          lang/posn
          racket/gui/base
-         "../../mrlib/image-core.ss"
+         mrlib/image-core
          (for-syntax racket/base
                      racket/list))
 

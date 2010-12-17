@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../../mrlib/image-core.ss"
+(require mrlib/image-core
          "img-err.ss"
          racket/match
          racket/contract
