@@ -1290,7 +1290,7 @@ module, or at the top level if the form is not inside a module).
 A @tech{variable reference} can be used with
 @racket[variable-reference->empty-namespace],
 @racket[variable-reference->resolved-module-path], and
-@racket[variable-reference->top-level-namespace], but facilities like
+@racket[variable-reference->namespace], but facilities like
 @racket[define-namespace-anchor] and
 @racket[namespace-anchor->namespace] wrap those to provide an clearer
 interface. A @tech{variable reference} is also useful to low-level
