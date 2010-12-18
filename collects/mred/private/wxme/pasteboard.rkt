@@ -5,6 +5,7 @@
          "../syntax.ss"
          "const.ss"
          "private.ss"
+         racket/snip/private/private
          "editor.ss"
          "editor-data.rkt"
          "undo.ss"

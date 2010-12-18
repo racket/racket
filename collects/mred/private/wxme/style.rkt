@@ -6,6 +6,7 @@
          "../syntax.ss"
          "cycle.ss"
          "private.ss"
+         racket/snip/private/private
          "symbol-predicates.rkt")
 
 (provide mult-color<%>

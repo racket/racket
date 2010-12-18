@@ -2,6 +2,7 @@
 (require scheme/class
          "../syntax.ss"
          "private.ss"
+         racket/snip/private/private
          "const.ss"
          racket/snip
          racket/snip/private/snip-flags

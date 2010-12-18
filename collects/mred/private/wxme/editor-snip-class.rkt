@@ -5,6 +5,7 @@
          "../syntax.ss"
          racket/snip/private/snip-flags
          "private.ss"
+         racket/snip/private/private
          "style.ss"
          racket/snip
          (only-in "cycle.ss"

@@ -4,7 +4,8 @@
          "const.ss"
          racket/snip
          racket/snip/private/snip-flags
-         "private.ss")
+         "private.ss"
+         racket/snip/private/private)
 
 (provide create-mline
          (struct-out mline)

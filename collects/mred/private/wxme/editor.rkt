@@ -4,6 +4,7 @@
          scheme/file
          "../syntax.ss"
          "private.ss"
+         racket/snip/private/private
          "style.ss"
          racket/snip
          racket/snip/private/snip-flags

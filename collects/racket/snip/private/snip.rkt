@@ -5,7 +5,7 @@
          "load-one.rkt"
          racket/draw/private/syntax
          mred/private/wxme/style
-         mred/private/wxme/private
+         "private.rkt"
          racket/draw)
 
 (provide snip%

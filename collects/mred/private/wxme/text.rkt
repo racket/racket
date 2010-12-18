@@ -7,6 +7,7 @@
          "const.ss"
          "mline.ss"
          "private.ss"
+         racket/snip/private/private
          "editor.ss"
          "editor-data.rkt"
          "undo.ss"

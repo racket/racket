@@ -2,6 +2,7 @@
 (require scheme/class
          "../syntax.ss"
          "private.ss"
+         racket/snip/private/private
          racket/snip
          "editor-data.rkt"
          (only-in "cycle.ss"
