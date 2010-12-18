@@ -5108,7 +5108,22 @@
                   (lambda ()
                     (call-on-paint #f)
                     (set! write-locked? wl?)
-                    (set! flow-locked? #f))])
+                    (set! flow-locked? #f))]
+
+                 [local-caret-pen
+                  (if bg-color
+                      (let ([r (send bg-color red)]
+                            [g (send bg-color green)]
+                            [b (send bg-color blue)])
+                        (if (and (= r 255) (= g 255) (= b 255))
+                            caret-pen
+                            (make-object pen% (make-object color% 
+                                                           (- 255 r)
+                                                           (- 255 g)
+                                                           (- 255 b))
+                                         (send caret-pen get-width) 
+                                         'solid)))
+                      caret-pen)])
 
             (call-on-paint #t)
             
@@ -5134,7 +5149,7 @@
                                hilite-on?)
                       (let ([y ycounter]
                             [save-pen (send dc get-pen)])
-                        (send dc set-pen caret-pen)
+                        (send dc set-pen local-caret-pen)
                         (send dc draw-line dx (+ y dy) dx (sub1 (+ y extra-line-h dy)))
                         (send dc set-pen save-pen)))
                     (paint-done)]
@@ -5314,7 +5329,7 @@
                                          (when (eq? 'show-caret show-caret)
                                            (when (and (hsxs . <= . rightx) (hsxs . >= . leftx))
                                              (let ([save-pen (send dc get-pen)])
-                                               (send dc set-pen caret-pen)
+                                               (send dc set-pen local-caret-pen)
                                                (send dc draw-line (+ hsxs dx) (+ hsys dy) 
                                                      (+ hsxs dx) 
                                                      (+ hsye (sub1 dy)))
