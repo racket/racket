@@ -7,7 +7,7 @@
                   clipboard-client%
                   key-event%
                   mouse-event%)
-         mred/private/wxme/snip
+         racket/snip
          mred/private/wxme/mline
          mred/private/wxme/style
          mred/private/wxme/editor
