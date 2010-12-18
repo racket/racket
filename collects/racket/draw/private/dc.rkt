@@ -14,6 +14,7 @@
          "color.ss"
          "pen.ss"
          "brush.ss"
+         "gradient.ss"
          "font.ss"
          "bitmap.ss"
          "region.ss"
@@ -728,6 +729,23 @@
           (cairo_set_source cr p)
           (cairo_pattern_destroy p))))
 
+    (define/private (make-gradient-pattern cr gradient)
+      (define p 
+        (if (is-a? gradient linear-gradient%)
+            (call-with-values (lambda () (send gradient get-line)) cairo_pattern_create_linear)
+            (call-with-values (lambda () (send gradient get-circles)) cairo_pattern_create_radial)))
+      (for ([st (send gradient get-stops)])
+          (let* ([offset (car st)]
+                 [c (cadr st)]
+                 [norm (lambda (v) (/ v 255.0))]
+                 [r (norm (color-red c))]
+                 [g (norm (color-green c))]
+                 [b (norm (color-blue c))]
+                 [a (color-alpha c)])
+            (cairo_pattern_add_color_stop_rgba p offset r g b a)))
+      (cairo_set_source cr p)
+      (cairo_pattern_destroy p))
+
     ;; Stroke, fill, and flush the current path
     (define/private (draw cr brush? pen?)
       (define (install-stipple st col mode get put)
@@ -767,7 +785,10 @@
         (let ([s (send brush get-style)])
           (unless (eq? 'transparent s)
             (let ([st (send brush get-stipple)]
-                  [col (send brush get-color)])
+                  [col (send brush get-color)]
+                  [gradient (send brush get-gradient)])
+              (if gradient
+                (make-gradient-pattern cr gradient)
               (if st
                   (install-stipple st col s 
                                    (lambda () brush-stipple-s)
@@ -826,7 +847,7 @@
                        (install-color cr 
                                       (if (eq? s 'hilite) hilite-color col)
                                       alpha
-                                      #f)]))))
+                                      #f)])))))
             (cairo_fill_preserve cr))))
       (when pen?
         (let ([s (send pen get-style)])

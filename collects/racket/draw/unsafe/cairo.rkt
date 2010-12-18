@@ -182,6 +182,7 @@
 
 (define-cairo cairo_show_page (_fun _cairo_t -> _void))
 
+;; Patterns
 (define-cairo cairo_set_source (_fun _cairo_t _cairo_pattern_t -> _void))
 (define-cairo cairo_get_source (_fun _cairo_t -> _cairo_pattern_t)) ;; not an allocator
 (define-cairo cairo_set_source_surface (_fun _cairo_t _cairo_surface_t _double* _double* -> _void))
@@ -195,6 +196,34 @@
   #:wrap (retainer cairo_pattern_destroy car))
 (define-cairo cairo_pattern_set_matrix (_fun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
 (define-cairo cairo_pattern_set_extend (_fun _cairo_pattern_t _int -> _void))
+
+;; Gradients
+(define-cairo cairo_pattern_add_color_stop_rgb (_fun _cairo_pattern_t _double* _double* _double* _double* -> _void))
+(define-cairo cairo_pattern_add_color_stop_rgba (_fun _cairo_pattern_t _double* _double* _double* _double* _double* -> _void))
+(define-cairo cairo_pattern_get_color_stop_count (_fun _cairo_pattern_t (_ptr o _int)  -> _int))
+(define-cairo cairo_pattern_get_color_stop_rgba (_fun _cairo_pattern_t _int (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+
+(define-cairo cairo_pattern_create_rgb (_fun _double* _double* _double* -> _cairo_pattern_t)
+  #:wrap (allocator cairo_pattern_destroy))
+(define-cairo cairo_pattern_create_rgba (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
+  #:wrap (allocator cairo_pattern_destroy))
+(define-cairo cairo_pattern_get_rgba (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)) ;; not an allocator
+(define-cairo cairo_pattern_get_surface (_fun _cairo_pattern_t (_ptr o _cairo_surface_t) -> _int)) ;; not an allocator
+
+(define-cairo cairo_pattern_create_linear (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
+  #:wrap (allocator cairo_pattern_destroy))
+(define-cairo cairo_pattern_get_linear_points (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+(define-cairo cairo_pattern_create_radial (_fun _double* _double* _double* _double* _double* _double* -> _cairo_pattern_t)
+  #:wrap (allocator cairo_pattern_destroy))
+(define-cairo cairo_pattern_get_radial_circles (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+(define-cairo cairo_pattern_status (_fun _cairo_pattern_t -> _int))
+
+(define-cairo cairo_pattern_get_extend (_fun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_set_filter (_fun _cairo_pattern_t _int -> _void))
+(define-cairo cairo_pattern_get_filter (_fun _cairo_pattern_t -> _int))
+(define-cairo cairo_pattern_get_matrix (_fun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
+(define-cairo cairo_pattern_get_type (_fun _cairo_pattern_t -> _int))
+
 
 ;; Surfaces
 (define-cairo cairo_surface_finish (_fun _cairo_surface_t -> _void))
@@ -315,5 +344,12 @@
   CAIRO_HINT_METRICS_DEFAULT
   CAIRO_HINT_METRICS_OFF
   CAIRO_HINT_METRICS_ON)
+
+(define-enum
+  0
+  CAIRO_PATTERN_TYPE_SOLID
+  CAIRO_PATTERN_TYPE_SURFACE
+  CAIRO_PATTERN_TYPE_LINEAR
+  CAIRO_PATTERN_TYPE_RADIAL)
 
 (define/provide CAIRO_CONTENT_COLOR_ALPHA #x3000)

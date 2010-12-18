@@ -5,6 +5,7 @@
          "draw/private/font-dir.rkt"
          "draw/private/pen.rkt"
          "draw/private/brush.rkt"
+         "draw/private/gradient.rkt"
          "draw/private/region.rkt"
          "draw/private/bitmap.rkt"
          "draw/private/dc-path.rkt"
@@ -22,6 +23,10 @@
          font-name-directory<%> the-font-name-directory
          pen% pen-list% the-pen-list
          brush% brush-list% the-brush-list
+         linear-gradient%
+         radial-gradient%
+         make-linear-gradient
+         make-radial-gradient
          region%
          dc-path%
          dc<%>

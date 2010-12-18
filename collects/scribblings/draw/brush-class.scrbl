@@ -1,6 +1,9 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          scribble/eval)
 
+@(define class-eval (make-base-eval))
+@(interaction-eval #:eval class-eval (require racket/class racket/draw))
 @defclass/title[brush% object% ()]{
 
 A brush is a drawing tool with a color and a style that is used for
@@ -11,6 +14,15 @@ In addition to its color and style, a brush can have a stipple bitmap.
  Painting with a
  stipple brush is similar to calling @method[dc<%> draw-bitmap] with
  the stipple bitmap in the filled region.
+
+A brush can also be constructed as a @racket[linear-gradient%] or
+@racket[radial-gradient%].
+
+@examples[ #:eval class-eval
+(new brush% [gradient (make-object linear-gradient% 0 0 10 10 
+  (list (list 0   (make-object color% 255 0 0))
+        (list 0.5 (make-object color% 0 255 0))
+        (list 1   (make-object color% 0 0 255))))])]
 
 A brush's style is one of the following:
 
@@ -98,6 +110,14 @@ Gets the stipple bitmap, or @scheme[#f] if the brush has no stipple.
 
 }
 
+@defmethod[(get-gradient)
+           (or/c (is-a?/c gradient<%>) false/c)]{
+
+Gets the gradient, or @scheme[#f] if the brush has no gradient.
+
+}
+
+
 @defmethod[(get-style)
            (one-of/c 'transparent 'solid 'opaque 
                      'xor 'hilite 'panel 
@@ -158,3 +178,4 @@ A brush cannot be modified if it was obtained from a
 
 }}
 
+@(close-eval class-eval)
