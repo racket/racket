@@ -767,7 +767,7 @@
                          [any? [alpha? #t]])
   (make-object bitmap% w h #f alpha?))
 
-(define/top (read-bitmap [path-string? filename]
+(define/top (read-bitmap [(make-alts path-string? input-port?) filename]
                          [bitmap-file-kind-symbol? [kind 'unknown/alpha]]
                          [(make-or-false color%) [bg-color #f]]
                          [any? [complain-on-failure? #t]])
