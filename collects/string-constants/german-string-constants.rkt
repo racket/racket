@@ -60,7 +60,14 @@
  (bug-report-synthesized-information "Generierte Information")  ;; dialog title
  (bug-report-show-synthesized-info "Generierte Informationen anzeigen")	; (an)zeigen
  (bug-report-submit "Abschicken")	
+ (close-and-save-bug-report "Schließen && Speichern") ;; button in bug report dialog, next to cancel and bug-report-submit
  (bug-report-submit-menu-item "Bug-Report abschicken...") ;; in Help Menu (drs & help desk)
+ (saved-bug-reports-menu-item "Gepeicherte Bug-Reports") ;; in Help Menu, submenu title
+ (disacard-all-saved-bug-reports "Alle gespeicherten Bug-Reports verwerfen") ;; menu item: only shows up when there is more than one saved bug report
+ (no-saved-bug-reports "Kein Bug-Report wurde gespeichert") ;; an info message that shows up as a disabled menu item when no saved bug reports are around
+ (new-bug-report "Neuer Bug-Report") ;; button label the user sees when there are saved bug reports, but the user asks to save another one.
+ (close-and-save "Schließen und Speichern") ;; button on the bottom of the bug report form
+ (saved-unsubmitted-bug-reports "Gespeicherte, noch nicht abgeschickte Bug-Reports:") ;; next to previous line in same dialog, followed by list of bug report subjects (as buttons)
  (error-sending-bug-report "Versendung des Bug-Reports fehlgeschlagen")
  (error-sending-bug-report-expln "Ein Fehler ist beim Versenden des Bug-Reports aufgetreten. Falls Ihre Internet-Verbindung eigentlich funktioniert, besuchen Sie bitte:\n\n    http://bugs.racket-lang.org/ \n\nund teilen Sie uns den Bug mit unserem Online-Formular mit. Wir bitten um Ihr Verständnis.\n\nDie Fehlermeldung lautet:\n~a")
  (illegal-bug-report "Ungültiger Bug-Report")
@@ -448,13 +455,14 @@
  (mfs-recur-over-subdirectories "In Unterverzeichnisse abtauchen")
  (mfs-regexp-filename-filter "Regulärer Ausdruck Dateinamen-Filter")
  (mfs-search-string "Zeichenkette suchen")
- (mfs-drscheme-multi-file-search "Suche in mehreren Dateien - DrRacket") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "Suchen in mehreren Dateien - DrRacket") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" ist kein Verzeichnis")
  (mfs-open-file "Datei öffnen")
  (mfs-stop-search "Suche stoppen")
  (mfs-case-sensitive-label "Groß-/Kleinschreibung beachten")
  (mfs-no-matches-found "Keine Treffer gefunden.")
  (mfs-search-interrupted "Suche abgebrochen.")
+ (mfs-drscheme-multi-file-search-title "Suchen in mehreren Dateien nach \"~a\" - DrRacket") ;; the ~a format specifier is filled in with the search string
  
  ;;; reverting a file
  (are-you-sure-revert
