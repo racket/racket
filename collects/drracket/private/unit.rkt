@@ -51,6 +51,11 @@ module browser threading seems wrong.
 
   (define define-button-long-label "(define ...)")
   
+  (define oprintf
+    (let ([op (current-output-port)])
+      (λ args
+        (apply fprintf op args))))
+  
   (define-unit unit@
     (import [prefix help-desk: drracket:help-desk^]
             [prefix drracket:app: drracket:app^]
@@ -76,7 +81,8 @@ module browser threading seems wrong.
       set-visible-defs
       set-focus-d/i
       get-i
-      set-i)
+      set-i
+      insert-auto-text)
     (define tab<%>
       (interface (drracket:rep:context<%>)
         get-frame
@@ -693,7 +699,12 @@ module browser threading seems wrong.
           (define/pubment (already-warned)
             (set! already-warned-state #t))
 
+          ;; the really-modified? flag determines if there 
+          ;; is a modification that is not the insertion of the auto-text
           (define really-modified? #f)
+          
+          ;; when this flag is #t, edits to the buffer do not count as 
+          ;; user's edits and so the yellow warning does not appear
           (define ignore-edits? #f)
 
           (define/augment (after-insert x y)
@@ -776,7 +787,7 @@ module browser threading seems wrong.
                  (not (is-modified?))
                  (not (get-filename))))
           ;; inserts the auto-text if any, and executes the text if so
-          (define/private (insert-auto-text)
+          (define/public (insert-auto-text)
             (define lang
               (drracket:language-configuration:language-settings-language
                next-settings))
@@ -788,20 +799,13 @@ module browser threading seems wrong.
                          (drracket:language-configuration:language-settings-settings
                           next-settings))))
             (when auto-text
+              (set! ignore-edits? #t)
               (begin-edit-sequence #f)
               (insert auto-text)
               (set-modified #f)
+              (set! ignore-edits? #f)
               (end-edit-sequence)
-              (set! really-modified? #f)
-              ;; HACK: click run; would be better to override on-execute and
-              ;; make it initialize a working repl, but the problem is that
-              ;; doing that in module-language.rkt means that it'll either need
-              ;; to find if the current text is the auto-text and analyze it to
-              ;; get this initialization, or it will need to do that for all
-              ;; possible contents, which means that it'll work when opening
-              ;; exiting files too (it might be feasible once we have a #lang
-              ;; parser).
-              (send (get-top-level-window) execute-callback)))
+              (set! really-modified? #f)))
           (define/private (remove-auto-text)
             (when (and (not really-modified?)
                        (not (get-filename))
@@ -821,8 +825,6 @@ module browser threading seems wrong.
           
           (super-new [show-line-numbers? (show-line-numbers?)])
           
-          ;; insert the default-text
-          (queue-callback (lambda () (insert-auto-text)))
           (highlight-first-line
            (is-a? (drracket:language-configuration:language-settings-language next-settings)
                   drracket:module-language:module-language<%>))
@@ -2708,7 +2710,8 @@ module browser threading seems wrong.
             (send defs set-interactions-text ints)
             (send defs set-tab tab)
             (send ints set-definitions-text defs)
-            (send defs change-mode-to-match)))
+            (send defs change-mode-to-match)
+            (send defs insert-auto-text)))
         
         
         ;                              
@@ -4647,12 +4650,12 @@ module browser threading seems wrong.
     (define (create-new-drscheme-frame filename)
       (let* ([drs-frame% (drracket:get/extend:get-unit-frame)]
              [frame (new drs-frame% (filename filename))])
-        (send (send frame get-interactions-text) initialize-console)
         (when first-frame?
           (let ([pos (preferences:get 'drracket:frame:initial-position)])
             (when pos
               (send frame move (car pos) (cdr pos)))))
         (send frame update-toolbar-visibility)
         (send frame show #t)
+        (send (send frame get-interactions-text) initialize-console)
         (set! first-frame? #f)
         frame)))

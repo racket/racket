@@ -1674,34 +1674,29 @@ TODO
         (thaw-colorer)
         (send context disable-evaluation)
         (reset-console)
-        
-        (let ([exn-raised #f]
-              [lang (drracket:language-configuration:language-settings-language user-language-settings)])
-          (queue-user/wait
-           (λ () ; =User=, =No-Breaks=
-             (with-handlers ((exn:fail? (λ (x) (set! exn-raised x))))
-               (cond
-                 ;; this is for backwards compatibility; drracket used to
-                 ;; expect this method to be a thunk (but that was a bad decision)
-                 [(object-method-arity-includes? lang 'first-opened 1)
-                  (send lang first-opened
-                        (drracket:language-configuration:language-settings-settings user-language-settings))]
-                 [else
-                  ;; this is the backwards compatible case.
-                  (send lang first-opened)]))))
-          (when exn-raised
-            (let ([sp (open-output-string)])
-              (parameterize ([current-error-port sp])
-                (drracket:init:original-error-display-handler (exn-message exn-raised) exn-raised)) 
-              (message-box (string-constant drscheme)
-                           (format "Exception raised while running the first-opened method of the language ~s:\n~a"
-                                   (send lang get-language-position)
-                                   (get-output-string sp))))))
-        
         (insert-prompt)
-        (send context enable-evaluation)
-        (end-edit-sequence)
-        (clear-undos))
+        
+        (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)]
+              [drr-evtspace (current-eventspace)])
+          (run-in-evaluation-thread
+           (λ ()
+             (let/ec k
+               (parameterize ([error-escape-handler (λ () (k (void)))])
+                 (cond
+                   ;; this is for backwards compatibility; drracket used to
+                   ;; expect this method to be a thunk (but that was a bad decision)
+                   [(object-method-arity-includes? lang 'first-opened 1)
+                    (send lang first-opened
+                          (drracket:language-configuration:language-settings-settings user-language-settings))]
+                   [else
+                    ;; this is the backwards compatible case.
+                    (send lang first-opened)])))
+             (parameterize ([current-eventspace drr-evtspace])
+               (queue-callback
+                (λ ()
+                  (send context enable-evaluation)
+                  (end-edit-sequence)
+                  (clear-undos))))))))
       
       (define indenting-limit 0)
       (define/override (get-limit n) 

@@ -217,8 +217,7 @@ See also
 
 }
 
-@defmethod[(initialize-console)
-           void?]{
+@defmethod[(initialize-console) void?]{
 
 This inserts the ``Welcome to DrRacket'' message into the interactions
 buffer, calls
@@ -227,12 +226,22 @@ buffer, calls
 @method[editor<%> clear-undos].
 
 Once the console is initialized, this method calls
-@method[drracket:language:language<%> first-opened]. Accordingly, this method should not be called to initialize
+@method[drracket:language:language<%> first-opened]. 
+Accordingly, this method should not be called to initialize
 a REPL when the user's evaluation is imminent. That is,
 this method should be called when new tabs or new windows
 are created, but not when the Run button is clicked. 
 
-
+This method calls the 
+@method[drracket:language:language<%> first-opened]
+from the user's eventspace's main thread and, when 
+@method[drracket:language:language<%> first-opened]
+returns, it enqueue's a callback that ends
+an edit sequence on the REPL and calls
+@method[editor<%> clear-undos]. Accordingly, if the
+@method[drracket:language:language<%> first-opened]
+method does not return, the interactions text will
+be in an unclosed edit sequence.
 }
 
 @defmethod[(insert-prompt)

@@ -628,25 +628,27 @@ default settings obtained via
 
 }
 
-@defmethod*[([(first-opened [settings settings]) void?]
-             [(first-opened) void?])]{
+@defmethod*[([(first-opened [settings settings]) void?])]{
 
-This method is called when the language is initialized, but
-no program is run. It is called from the user's eventspace's
-main thread.
+This method is called after the language is initialized, but
+no program has yet been run. It is called from the user's 
+eventspace's main thread.
 
 See also
 @method[drracket:rep:text% initialize-console].
 
 Calling this method should not raise an exception (or otherwise
-try to escape). DrRacket is not in a position to signal the errors
-as user errors when this is called. An error will cause DrRacket
-to hang.
+try to escape). DrRacket calls this method in a @racket[parameterize]
+where the @racket[error-escape-handler] is set to an escaping
+continuation that continues initializing the interactions window.
+Thus, raising an exception will report the error in the user's
+interactions window as if this were a bug in the user's program.
+Escaping in any other way, however, can cause DrRacket to fail
+to start up.
 
-Contrary to the method contract space, this method
-does not have to accept both zero and one arguments; the zero argument
-version is for backwards compatibility and drracket tests the arity of the
-method before invoking it.
+Contrary to the method contract space, DrRacket will also invoke this
+method if it has zero arguments, passing nothing; the zero argument
+version is for backwards compatibility and is not recommended.
 
 }
 
