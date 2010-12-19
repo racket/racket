@@ -147,11 +147,6 @@ Several environment variables can affect DrRacket's behavior:
        @envvar{PLTDRDEBUG} since the source locations are reported for
        the breaks.}
 
- @item{@indexed-envvar{PLTDRTESTS} : When this environment variable is
-       set, DrRacket installs a special button in the button bar that
-       starts the test suite. (The test suite is available only in the
-       source distribution.)}
-
  @item{@indexed-envvar{PLTSTRINGCONSTANTS} : When this environment
        variable is set, DrRacket prints out the string constants that
        have not yet been translated. If it is set to a particular
