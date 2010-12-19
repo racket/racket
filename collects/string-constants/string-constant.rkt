@@ -1,19 +1,20 @@
-#lang mzscheme
-(require-for-syntax mzlib/etc
-                    mzlib/list
-                    (prefix english: "english-string-constants.rkt")
-                    (prefix spanish: "spanish-string-constants.rkt")
-                    (prefix german: "german-string-constants.rkt")
-                    (prefix french: "french-string-constants.rkt")
-                    (prefix dutch: "dutch-string-constants.rkt")
-                    (prefix danish: "danish-string-constants.rkt")
-                    (prefix portuguese: "portuguese-string-constants.rkt")
-                    (prefix japanese: "japanese-string-constants.rkt")
-                    (prefix traditional-chinese: "traditional-chinese-string-constants.rkt")
-                    (prefix simplified-chinese: "simplified-chinese-string-constants.rkt")
-                    (prefix russian: "russian-string-constants.rkt")
-                    (prefix ukrainian: "ukrainian-string-constants.rkt")
-                    (prefix korean: "korean-string-constants.rkt"))
+#lang racket/base
+(require (for-syntax racket/base)
+	 (for-syntax mzlib/etc)
+	 (for-syntax mzlib/list)
+	 (for-syntax (prefix-in english: "english-string-constants.rkt"))
+	 (for-syntax (prefix-in spanish: "spanish-string-constants.rkt"))
+	 (for-syntax (prefix-in german: "german-string-constants.rkt"))
+	 (for-syntax (prefix-in french: "french-string-constants.rkt"))
+	 (for-syntax (prefix-in dutch: "dutch-string-constants.rkt"))
+	 (for-syntax (prefix-in danish: "danish-string-constants.rkt"))
+	 (for-syntax (prefix-in portuguese: "portuguese-string-constants.rkt"))
+	 (for-syntax (prefix-in japanese: "japanese-string-constants.rkt"))
+	 (for-syntax (prefix-in traditional-chinese: "traditional-chinese-string-constants.rkt"))
+	 (for-syntax (prefix-in simplified-chinese: "simplified-chinese-string-constants.rkt"))
+	 (for-syntax (prefix-in russian: "russian-string-constants.rkt"))
+	 (for-syntax (prefix-in ukrainian: "ukrainian-string-constants.rkt"))
+	 (for-syntax (prefix-in korean: "korean-string-constants.rkt")))
 
 (require mzlib/file
          mzlib/etc
@@ -67,7 +68,7 @@
 
 (define-syntax-set (string-constant string-constants this-language all-languages)
   ;; type sc = (make-sc symbol (listof (list symbol string)) (union #f hash-table[symbol -o> #t]))
-  (define-struct sc (language-name constants ht))
+  (define-struct sc (language-name constants ht) #:mutable)
 
   (define available-string-constant-sets
     (list
@@ -119,8 +120,8 @@
                    [extract-ht
                     (lambda (sc)
                       (unless (sc-ht sc)
-                        (let ([ht (make-hash-table)])
-                          (for-each (lambda (ent) (hash-table-put! ht (car ent) #t))
+                        (let ([ht (make-hash)])
+                          (for-each (lambda (ent) (hash-set! ht (car ent) #t))
                                     (sc-constants sc))
                           (set-sc-ht! sc ht)))
                       (sc-ht sc))]
@@ -133,7 +134,7 @@
                          (lambda (pair1)
                            (let* ([constant1 (car pair1)]
                                   [value1 (cadr pair1)]
-                                  [pair2 (hash-table-get ht2 constant1 (lambda () #f))])
+                                  [pair2 (hash-ref ht2 constant1 (lambda () #f))])
                              (unless pair2
                                (let ([no-warning-cache-key (cons (sc-language-name sc1) (sc-language-name sc2))])
                                  (when (or (env-var-set? (sc-language-name sc1))
@@ -166,7 +167,10 @@
                               lang1-name
                               lang2-name)
                      (for-each (lambda (x) (fprintf sp "   ~s\n" x))
-                               (sort constants string<=? #:key symbol->string #:cache-keys? #t))
+                               (sort constants string<=? 
+				     #:key (lambda (p)
+					     (symbol->string (car p)))
+				     #:cache-keys? #t))
                      (newline sp)))
                  warning-table)
                 (get-output-string sp)))))
@@ -176,7 +180,7 @@
     (syntax-case stx ()
       [(_ name)
        (let ([assoc-table (sc-constants first-string-constant-set)]
-             [datum (syntax-object->datum (syntax name))])
+             [datum (syntax->datum (syntax name))])
          (unless (symbol? datum)
            (raise-syntax-error #f (format "expected name, got: ~s" datum) stx))
          (let ([default-val (assq datum assoc-table)])
@@ -211,7 +215,7 @@
     (syntax-case stx ()
       [(_ name)
        (let ([assoc-table (sc-constants first-string-constant-set)]
-             [datum (syntax-object->datum (syntax name))])
+             [datum (syntax->datum (syntax name))])
          (unless (symbol? datum)
            (raise-syntax-error #f (format "expected name, got: ~s" datum) stx))
          (let ([default-val (assq datum assoc-table)])
