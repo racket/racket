@@ -87,6 +87,38 @@
     )
  
    (test-case
+    "vector"
+    (define integer-vector (make-vector-signature 'integer-list integer #f))
+    (check-equal? (say-no (apply-signature integer-vector '#(1 2 3)))
+		  '#(1 2 3))
+    (check-equal? (say-no (apply-signature integer-vector '#f))
+		  'no)
+    (check-eq? (failed-signature (apply-signature integer-vector '#(1 #f 3)))
+	       integer))
+
+   (test-case
+    "vector/cached"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-signature 'counting-integer 
+				  (lambda (obj)
+				    (set! count (+ 1 count))
+				    (integer? obj))
+				  'integer-marker))
+
+      (define integer-vector (make-vector-signature 'integer-list counting-integer #f))
+
+      (define v1 '#(1 2 3))
+
+      (check-eq? (say-no (apply-signature integer-vector v1))
+		 v1)
+      (check-equal? count 3)
+      (check-eq? (say-no (apply-signature integer-vector v1))
+		 v1)
+      (check-equal? count 3)))
+
+
+   (test-case
     "mixed"
     (define int-or-bool (make-mixed-signature 'int-or-bool
 					     (list integer
