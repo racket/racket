@@ -4,13 +4,15 @@
          scheme/file
          "../syntax.ss"
          "private.ss"
+         racket/snip/private/private
          "style.ss"
-         "snip.ss"
-         "snip-flags.ss"
+         racket/snip
+         racket/snip/private/snip-flags
          "editor-admin.ss"
          "stream.ss"
          "undo.ss"
          "keymap.ss"
+         "editor-data.rkt"
          (only-in "cycle.ss" 
                   text%
                   pasteboard%

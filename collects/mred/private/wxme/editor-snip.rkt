@@ -2,12 +2,14 @@
 (require scheme/class
          "../syntax.ss"
          "private.ss"
+         racket/snip/private/private
          "const.ss"
-         "snip.ss"
-         "snip-flags.ss"
+         racket/snip
+         racket/snip/private/snip-flags
+         "standard-snip-admin.rkt"
          "editor.ss"
          "editor-admin.ss"
-         "snip-admin.ss"
+         "editor-snip-class.rkt"
          "text.ss"
          "pasteboard.ss"
          "wx.ss"
@@ -15,8 +17,7 @@
                     text%
                     pasteboard%
                     editor-snip%
-                    editor-snip-editor-admin%
-                    snip-admin%))
+                    editor-snip-editor-admin%))
 
 (provide editor-snip%
          editor-snip-editor-admin<%>)
@@ -360,8 +361,8 @@
                   (when with-border?
                     (let ([pen (send dc get-pen)])
                       (when (and (pair? caret)
-                                 selected-text-color)
-                        (send dc set-pen selected-text-color 1 'solid))
+                                 (send my-admin get-selected-text-color))
+                        (send dc set-pen (send my-admin get-selected-text-color) 1 'solid))
                       (let* ([l (+ orig-x left-inset)]
                              [t (+ orig-y top-inset)]
                              [r (+ l w left-margin right-margin 

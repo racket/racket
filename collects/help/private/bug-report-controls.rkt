@@ -340,7 +340,8 @@
   (gui-utils:ok/cancel-buttons button-panel
                                (λ (a b) (ok))
                                (λ (a b) (cancel))
-                               (string-constant bug-report-submit))
+                               (string-constant bug-report-submit)
+                               #:confirm-style '())
   (new grow-box-spacer-pane% [parent button-panel])
   
   

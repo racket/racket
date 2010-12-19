@@ -1,17 +1,21 @@
 #lang racket/base
 
-(require "../../mrlib/image-core.ss"
+(require mrlib/image-core
          "img-err.ss"
          racket/match
          racket/contract
          racket/class
-         racket/gui/base
+         racket/draw
+         ;(only-in racket/gui/base frame% canvas% slider% horizontal-panel% button%)
          htdp/error
          racket/math
          (for-syntax racket/base
                      racket/list)
          lang/posn)
 
+;; for testing
+; (require racket/gui/base)
+#;
 (define (show-image arg [extra-space 0])
   (letrec ([g (to-img arg)]
            [f (new frame% [label ""])]
@@ -1331,6 +1335,19 @@
       (orig-make-pen color real-0-255 pen-style pen-cap pen-join))
     pen))
 
+(define/chk freeze
+  (case-lambda 
+    [(image) (freeze/internal 0 0 (image-width image) (image-height image) image)]
+    [(width height image) (freeze/internal 0 0 width height image)]
+    [(x y width height image) (freeze/internal x y width height image)]))
+
+(define (freeze/internal x y w h image)
+  (define bm (make-bitmap w h))
+  (define bdc (make-object bitmap-dc% bm))
+  (render-image image bdc (- x) (- y))
+  (send bdc set-bitmap #f)
+  (to-img bm))
+
 (provide overlay
          overlay/align
          overlay/xy
@@ -1353,7 +1370,6 @@
          place-image/align
          
          
-         show-image
          save-image
          bring-between
          
@@ -1418,6 +1434,8 @@
          build-color/color
          build-pen/make-pen
          build-pen/pen
+         
+         freeze
          
          render-image)
 

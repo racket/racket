@@ -23,11 +23,12 @@
 
 (define dc%
   (class backing-dc%
-    (init [(cnvs canvas)])
+    (init [(cnvs canvas)]
+          transparent?)
     (define canvas cnvs)
 
     (inherit end-delay)
-    (super-new)
+    (super-new [transparent? transparent?])
 
     (define gl #f)
     (define/override (get-gl-context)
@@ -89,13 +90,6 @@
                (let* ([surface (cairo_quartz_surface_create_for_cg_context cg (unbox w) (unbox h))]
                       [cr (cairo_create surface)])
                  (cairo_surface_destroy surface)
-                 (let ([s (cairo_get_source cr)])
-                   (cairo_pattern_reference s)
-                   (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
-                   (cairo_new_path cr)
-                   (cairo_rectangle cr 0 0 (unbox w) (unbox h))
-                   (cairo_fill cr)
-                   (cairo_set_source cr s)
-                   (cairo_pattern_destroy s))
+                 (backing-draw-bm bm cr (unbox w) (unbox h))
                  (cairo_destroy cr))))))
    (tellv ctx restoreGraphicsState)))

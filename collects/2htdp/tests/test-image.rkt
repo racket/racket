@@ -51,6 +51,7 @@
          racket/port
          wxme
          rackunit
+         file/convertible
          (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
@@ -1617,6 +1618,38 @@
         =>
         #t))
 
+
+(let ([i 
+       (overlay (circle 20 'solid 'red)
+                (rectangle 10 60 'solid 'blue))])
+  (test (freeze i)
+        => 
+        i))
+
+(test (freeze 10 10 (rectangle 20 20 'solid 'blue))
+      =>
+      (rectangle 10 10 'solid 'blue))
+
+(test (freeze 5 5 10 10 (rectangle 20 20 'solid 'blue))
+      =>
+      (rectangle 10 10 'solid 'blue))
+
+(test (freeze 5 7 12 10 (rectangle 20 20 'solid 'blue))
+      =>
+      (rectangle 12 10 'solid 'blue))
+
+(let ()
+  (define bkg (rectangle 12 12 'solid 'white))
+  (define i1 (overlay/xy 
+              (freeze 0 0 11 11 (rectangle 10 10 'outline 'orange))
+              0 0
+              bkg))
+  (define i2 (overlay/xy
+              (rectangle 10 10 'outline 'orange)
+              0 0
+              bkg))
+  (test i1 => i2))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  test pinholes.
@@ -2050,6 +2083,9 @@
                 (image-height (list-ref washed 2)))
         =>
         #f))
+
+(test (convertible? (circle 20 "solid" "red")) => #t)
+(test (bytes? (convert (circle 20 "solid" "red") 'png-bytes)) => #t)
 
 
 

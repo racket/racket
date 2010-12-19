@@ -660,7 +660,9 @@
 			    ; Bitmap copying:
 			    (when (and (not no-bitmaps?) last?)
 			      (let ([x 5] [y 165])
-				(let ([mred-icon (get-icon)])
+				(let ([bg (send dc get-background)]
+                                      [mred-icon (get-icon)])
+                                  (send dc set-background "YELLOW")
 				  (case mask-ex-mode
 				    [(plt plt-mask plt^plt mred^plt)
 				     (let* ([plt (get-plt)]
@@ -711,19 +713,20 @@
                                            mred-icon)]
                                     [(mred~)
                                      (send dc draw-bitmap (get-rotated) x y 'opaque)]
-                                    [(mred^mred~ opaque-mred^mred~ red-mred^mred~)
+                                    [(mred^mred~ opaque-mred^mred~ red-mred^mred~ opaque-red-mred^mred~)
                                      (send dc draw-bitmap mred-icon x y 
-                                           (if (eq? mask-ex-mode 'opaque-mred^mred~)
+                                           (if (memq mask-ex-mode '(opaque-mred^mred~ opaque-red-mred^mred~))
                                                'opaque
                                                'solid)
                                            (send the-color-database find-color 
-                                                 (if (eq? mask-ex-mode 'red-mred^mred~)
+                                                 (if (memq mask-ex-mode '(red-mred^mred~ opaque-red-mred^mred~))
                                                      "RED"
                                                      "BLACK"))
                                            (get-rotated))]
                                     [else
                                      ;; simple draw
-                                     (send dc draw-bitmap mred-icon x y 'xor)]))
+                                     (send dc draw-bitmap mred-icon x y 'xor)])
+                                  (send dc set-background bg))
 				(set! x (+ x (send (get-icon) get-width)))
 				(let ([black (send the-color-database find-color "BLACK")]
 				      [red (send the-color-database find-color "RED")]
@@ -1191,13 +1194,14 @@
     (make-object button% "Clock" hp2.5 (lambda (b e) (do-clock #f)))
     (make-object choice% #f
 		 '("MrEd XOR" "PLT Middle" "PLT ^ MrEd" "MrEd ^ PLT" "MrEd ^ MrEd" 
-		   "MrEd~" "MrEd ^ MrEd~" "M^M~ Opaque" "M^M~ Red"
+		   "MrEd~ Opaque" "MrEd ^ MrEd~" "M^M~ Opaque" "M^M~ Red" "M^M~ Rd Opq"
 		   "PLT^PLT")
 		 hp2.5
 		 (lambda (self event)
 		   (send canvas set-mask-ex-mode 
 			 (list-ref '(mred plt plt-mask mred^plt mred^mred 
-					  mred~ mred^mred~ opaque-mred^mred~ red-mred^mred~
+					  mred~ mred^mred~ opaque-mred^mred~ 
+                                          red-mred^mred~ opaque-red-mred^mred~
 					  plt^plt)
 				   (send self get-selection)))))
     (make-object check-box% "Kern" hp2.5

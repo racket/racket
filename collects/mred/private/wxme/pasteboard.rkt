@@ -5,12 +5,14 @@
          "../syntax.ss"
          "const.ss"
          "private.ss"
+         racket/snip/private/private
          "editor.ss"
+         "editor-data.rkt"
          "undo.ss"
          "style.ss"
-         "snip.ss"
-         "snip-flags.ss"
-         "snip-admin.ss"
+         racket/snip
+         racket/snip/private/snip-flags
+         "standard-snip-admin.rkt"
          "keymap.ss"
          (only-in "cycle.ss" set-pasteboard%!)
          "wordbreak.ss"

@@ -13,6 +13,7 @@
          (all-from-out scheme/contract))
 
 (require (for-label scheme/gui/base
+                    racket/snip
                     scheme/class
                     scheme/contract
                     scheme/base
@@ -20,6 +21,7 @@
 		    mrlib/switchable-button
                     framework))
 (provide (for-label (all-from-out scheme/gui/base)
+                    (all-from-out racket/snip)
                     (all-from-out scheme/class)
                     (all-from-out scheme/contract)
                     (all-from-out scheme/base)

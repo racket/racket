@@ -764,6 +764,13 @@ If the namespace does not, they are colored the unbound color.
                                                           start-selection
                                                           end-selection)))))
                                       (for-each (λ (f) (f menu)) add-menus)
+                                      
+                                      (drracket:unit:add-search-help-desk-menu-item
+                                       text
+                                       menu
+                                       event
+                                       (λ () (new separator-menu-item% [parent menu])))
+                                      
                                       (send (get-canvas) popup-menu menu
                                             (+ 1 (inexact->exact (floor (send event get-x))))
                                             (+ 1 (inexact->exact (floor (send event get-y))))))]))))

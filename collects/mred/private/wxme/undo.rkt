@@ -1,8 +1,9 @@
 #lang scheme/base
 (require scheme/class
          "private.ss"
-         "snip.ss"
-         "snip-flags.ss")
+         racket/snip/private/private
+         racket/snip
+         racket/snip/private/snip-flags)
 
 (provide change-record%
          proc-record%

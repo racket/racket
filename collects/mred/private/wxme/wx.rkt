@@ -1,22 +1,14 @@
 #lang scheme/base
-(require "../kernel.ss")
+(require "../kernel.ss" "symbol-predicates.rkt")
 
 (define the-clipboard (get-the-clipboard))
 (define the-x-selection-clipboard (get-the-x-selection))
 
-(define (family-symbol? s)
-  (memq s '(default decorative roman script
-             swiss modern symbol system)))
-(define (style-symbol? s)
-  (memq s '(normal italic slant)))
-(define (weight-symbol? s)
-  (memq s '(normal bold light)))
-(define (smoothing-symbol? s)
-  (memq s '(default smoothed unsmoothed partly-smoothed)))
 (define (size? v) (and (exact-positive-integer? v)
                        (byte? v)))
 
-(provide event%
+(provide (all-from-out "symbol-predicates.rkt")
+         event%
          mouse-event%
          key-event%
          timer%

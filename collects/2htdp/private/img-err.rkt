@@ -15,8 +15,8 @@
 (require htdp/error
          racket/class
          lang/posn
-         racket/gui/base
-         "../../mrlib/image-core.ss"
+         racket/draw
+         mrlib/image-core
          (for-syntax racket/base
                      racket/list))
 
@@ -42,35 +42,47 @@
 
 (define-syntax define/chk
   (λ (stx)
-    (syntax-case stx ()
-      [(define/chk (fn-name args ... . final-arg) body ...)
-       (identifier? #'final-arg)
-       (let ([len (length (syntax->list #'(args ...)))])
-         (with-syntax ([(i ...) (build-list len add1)])
-           #`(define (fn-name args ... . final-arg)
-               (let ([args (check/normalize 'fn-name 'args args i)] ...
-                     [final-arg 
-                      (for/list ([x (in-list final-arg)]
-                                 [j (in-naturals #,(+ len 1))])
-                        (check/normalize 'fn-name 'final-arg x j))])
-                 body ...))))]
-      [(define/chk (fn-name args ...) body ...)
-       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
-                     [(arg-ids ...)
-                      (map (λ (arg)
-                             (syntax-case arg ()
-                               [x 
-                                (identifier? #'x)
-                                #'x]
-                               [(x y)
-                                (identifier? #'x)
-                                #'x]
-                               [_
-                                (raise-syntax-error 'define/chk "unknown argument spec" stx arg)]))
-                           (syntax->list #'(args ...)))])
-         #'(define (fn-name args ...)
-             (let ([arg-ids (check/normalize 'fn-name 'arg-ids arg-ids i)] ...)
-               body ...)))])))
+    (define (adjust-case fn-name case-args bodies)
+      (syntax-case case-args ()
+        [(args ... . final-arg)
+         (identifier? #'final-arg)
+         (let ([len (length (syntax->list #'(args ...)))])
+           (with-syntax ([(i ...) (build-list len add1)])
+             #`((args ... . final-arg)
+                (let ([args (check/normalize '#,fn-name 'args args i)] ...
+                      [final-arg 
+                       (for/list ([x (in-list final-arg)]
+                                  [j (in-naturals #,(+ len 1))])
+                         (check/normalize 'fn-name 'final-arg x j))])
+                  #,@bodies))))]
+        [(args ...)
+         (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)]
+                       [(arg-ids ...)
+                        (map (λ (arg)
+                               (syntax-case arg ()
+                                 [x 
+                                  (identifier? #'x)
+                                  #'x]
+                                 [(x y)
+                                  (identifier? #'x)
+                                  #'x]
+                                 [_
+                                  (raise-syntax-error 'define/chk "unknown argument spec" stx arg)]))
+                             (syntax->list #'(args ...)))])
+           #`((args ...)
+              (let ([arg-ids (check/normalize '#,fn-name 'arg-ids arg-ids i)] ...)
+                #,@bodies)))]))
+    (syntax-case stx (case-lambda)
+      [(define/chk fn-name (case-lambda [in-args in-body ...] ...))
+       (with-syntax ([((args body) ...) (map (lambda (a b) (adjust-case #'fn-name a b))
+                                             (syntax->list #'(in-args ...))
+                                             (syntax->list #'((in-body ...) ...)))])
+         #'(define fn-name
+             (case-lambda
+               [args body] ...)))]
+      [(define/chk (fn-name . args) body ...)
+       (with-syntax ([(args body) (adjust-case #'fn-name #'args #'(body ...))])
+         #`(define (fn-name . args) body))])))
 
 ;; check/normalize : symbol symbol any number -> any
 ;; based on the name of the argument, checks to see if the input
@@ -135,7 +147,7 @@
                 'integer\ greater\ than\ 2
                 i arg)
      arg]
-    [(dx dy x1 y1 x2 y2 pull1 pull2)
+    [(dx dy x y x1 y1 x2 y2 pull1 pull2)
      (check-arg fn-name
                 (real? arg)
                 'real\ number

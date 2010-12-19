@@ -16,20 +16,14 @@
 
 ;; ----------------------------------------
 
-(import-class NSTextField NSImageView NSWorkspace)
+(import-class NSTextField NSImageView NSWorkspace NSRunningApplication)
 
 (define _OSType _uint32)
 
 (define-cocoa NSFileTypeForHFSTypeCode (_fun _OSType -> _id))
 
 (define (get-app-icon)
-  (tell (tell NSWorkspace sharedWorkspace)
-        iconForFile:
-        (tell (tell (tell NSWorkspace sharedWorkspace)
-                    activeApplication)
-              objectForKey:
-              #:type _NSString
-              "NSApplicationPath")))
+  (tell (tell NSRunningApplication currentApplication) icon))
 
 (define (make-icon label)
   (let ([icon

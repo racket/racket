@@ -360,7 +360,7 @@
        (tellv content-cocoa setDelegate: content-cocoa)
        (install-control-font content-cocoa #f))
 
-     (define dc (make-object dc% this))
+     (define dc (make-object dc% this (memq 'transparent canvas-style)))
 
      (send dc start-backing-retained)
 
@@ -382,6 +382,7 @@
      (define/override (get-client-size xb yb)
        (super get-client-size xb yb)
        (when is-combo?
+         (set-box! xb (max 0 (- (unbox xb) 22)))
          (set-box! yb (max 0 (- (unbox yb) 5)))))
 
      (define/override (maybe-register-as-child parent on?)
@@ -627,6 +628,8 @@
        (tellv content-cocoa addItemWithObjectValue: #:type _NSString str)
        #t)
      (define/public (on-combo-select i) (void))
+     (define/public (popup-combo)
+       (tellv (tell content-cocoa cell) popUp: #f))
 
      (define clear-bg? (and (not (memq 'transparent canvas-style)) 
                             (not (memq 'no-autoclear canvas-style))))
@@ -718,7 +721,7 @@
        (let ([xb (box 0)]
              [yb (box 0)])
          (get-client-size xb yb)
-         ((send e get-x) . > . (- (unbox xb) 22))))
+         ((send e get-x) . > . (unbox xb))))
 
      (define/public (on-popup) (void))
 
@@ -764,12 +767,10 @@
        (void))
 
      (define/public (get-backing-size xb yb)
-       (get-client-size xb yb)
-       (when is-combo?
-         (set-box! xb (- (unbox xb) 22))))
+       (get-client-size xb yb))
 
      (define/override (get-cursor-width-delta)
-       (if is-combo? 22 0))
+       0)
 
      (define/public (is-flipped?)
        (tell #:type _BOOL (get-cocoa-content) isFlipped))

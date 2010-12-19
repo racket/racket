@@ -88,7 +88,8 @@
     (define/override (on-superwindow-show show?)
       (unless show?
         (set! in? #f)
-        (set! down? #f))
+        (set! down? #f)
+        (refresh))
       (super on-superwindow-show show?))
     
     (define/override (on-event evt)

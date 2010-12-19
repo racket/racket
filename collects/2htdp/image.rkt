@@ -125,7 +125,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          make-pen pen
          pen?
          step-count?
-         save-image)
+         save-image
+         
+         freeze)
 
 (provide bitmap
          empty-image)

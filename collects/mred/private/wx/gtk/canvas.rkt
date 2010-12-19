@@ -41,6 +41,7 @@
 (define-gtk gtk_combo_box_entry_new_text (_fun -> _GtkWidget))
 (define-gtk gtk_combo_box_append_text (_fun _GtkWidget _string -> _void))
 (define-gtk gtk_combo_box_remove_text (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_combo_box_popup (_fun _GtkWidget -> _void))
 
 (define-gtk gtk_widget_queue_draw (_fun _GtkWidget -> _void))
 
@@ -283,7 +284,7 @@
 
      (set-size x y w h)
      
-     (define dc (new dc% [canvas this]))
+     (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
 
      (define for-gl? (memq 'gl style))
      (when for-gl?
@@ -344,10 +345,19 @@
      (define/override (handles-events? gtk) (not (ptr-equal? gtk combo-button-gtk)))
 
      (define/override (internal-pre-on-event gtk e)
-       (when (and (ptr-equal? gtk combo-button-gtk)
-                  (send e button-down?))
-         (on-popup))
-       #f)
+       (if (and (ptr-equal? gtk combo-button-gtk)
+                (send e button-down?))
+           (begin
+             (on-popup)
+             #t)
+           #f))
+     (define/public (popup-combo)
+       ;; Unfortunately, the user has to hold the mouse 
+       ;; button down when popping up the menu this way,
+       ;; whereas the default handler (that we subvert in
+       ;; `internal-pre-on-event') keeps the menu open if
+       ;; the user release the mouse button right away.
+       (gtk_combo_box_popup gtk))
 
      (define/override (get-client-delta)
        (values margin margin))

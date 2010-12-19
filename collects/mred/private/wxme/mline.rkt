@@ -2,9 +2,10 @@
 (require scheme/class
          "../syntax.ss"
          "const.ss"
-         "snip.ss"
-         "snip-flags.ss"
-         "private.ss")
+         racket/snip
+         racket/snip/private/snip-flags
+         "private.ss"
+         racket/snip/private/private)
 
 (provide create-mline
          (struct-out mline)

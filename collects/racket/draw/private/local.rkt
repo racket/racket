@@ -12,6 +12,7 @@
   get-cairo-alpha-surface
   release-bitmap-storage
   get-bitmap-gl-context
+  drop-alpha-s
 
   ;; bitmap-dc%
   internal-get-bitmap

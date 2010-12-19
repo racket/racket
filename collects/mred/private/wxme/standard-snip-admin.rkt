@@ -1,56 +1,15 @@
 #lang scheme/base
 (require scheme/class
          "../syntax.ss"
-         "snip.ss"
+         racket/snip
          (only-in "cycle.ss" 
-                  set-snip-admin%!
                   popup-menu%)
-         "wx.ss")
+         (prefix-in wx: "wx.ss"))
 
-(provide snip-admin%
-         standard-snip-admin%)
+(provide standard-snip-admin%)
 
-(defclass snip-admin% object%
-  (super-new)
+(define TAB-WIDTH 20)
 
-  (def/public (get-editor) #f)
-  (def/public (get-dc) #f)
-  (def/public (get-view-size [maybe-box? w] [maybe-box? h])
-    #f)
-
-  (def/public (get-view [maybe-box? x] [maybe-box? y] [maybe-box? w] [maybe-box? h] 
-                        [(make-or-false snip%) [snip #f]])
-    #f)
-
-  (def/public (scroll-to [snip% s]
-                         [real? x] [real? y]
-                         [nonnegative-real? w] [nonnegative-real? h]
-                         [any? refresh?]
-                         [(symbol-in start end none) [bias 'none]])
-    #f)
-
-  (def/public (set-caret-owner [snip% s] [(symbol-in imeditorte display global) dist])
-    (void))
-
-  (def/public (resized [snip% s] [any? redraw?]) (void))
-
-  (def/public (recounted [snip% s] [any? redraw?]) (void))
-
-  (def/public (needs-update [snip% s] [real? x] [real? y]
-                            [nonnegative-real? w] [nonnegative-real? h])
-    (void))
-
-  (def/public (release-snip [snip% s]) #f)
-
-  (def/public (update-cursor) (void))
-
-  (def/public (popup-menu [popup-menu% p][snip% snip][real? x][real? y])
-    #f)
-
-  (def/public (modified [snip% s] [any? modified?])
-    (void)))
-
-(set-snip-admin%! snip-admin%)
 
 (defclass standard-snip-admin% snip-admin%
   (init-field editor)
@@ -146,4 +105,27 @@
 
   (def/override (modified [snip% s] [any? modified?])
     (when (eq? (send s get-admin) this)
-      (send editor on-snip-modified s modified?))))
+      (send editor on-snip-modified s modified?)))
+  
+  (def/override (get-line-spacing)
+    (if (object-method-arity-includes? editor 'get-line-spacing 0)
+        (send editor get-line-spacing)
+        0))
+  
+  (def/override (get-tabs [maybe-box? [length #f]] [maybe-box? [tab-width #f]] [maybe-box? [in-units #f]])
+    (if (object-method-arity-includes? editor 'get-tabs 3)
+        (send editor get-tabs length tab-width in-units)
+        (begin (when length (set-box! length 0))
+               (when tab-width (set-box! tab-width TAB-WIDTH))
+               (when in-units (set-box! in-units #t))
+               null)))
+  
+  (def/override (get-selected-text-color)
+    (wx:get-highlight-text-color))
+  
+  (def/override (call-with-busy-cursor [procedure? thunk])
+    (dynamic-wind
+     wx:begin-busy-cursor
+     thunk
+     wx:end-busy-cursor))
+  )

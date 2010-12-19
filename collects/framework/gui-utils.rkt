@@ -111,36 +111,36 @@
 
 (define (cancel-on-right?) (system-position-ok-before-cancel?))
 
-(define ok/cancel-buttons
-  (lambda (parent 
-           confirm-callback
-           cancel-callback 
-           [confirm-str (string-constant ok)]
-           [cancel-str (string-constant cancel)])
-    (let ([confirm (λ ()
-                     (instantiate button% ()
-                       (parent parent)
-                       (callback confirm-callback)
-                       (label confirm-str)
-                       (style '(border))))]
-          [cancel (λ ()
-                    (instantiate button% ()
-                      (parent parent)
-                      (callback cancel-callback)
-                      (label cancel-str)))])
-      (let-values ([(b1 b2)
-                    (cond
-                      [(cancel-on-right?)
-                       (values (confirm) (cancel))]
-                      [else
-                       (values (cancel) (confirm))])])
-        (let ([w (max (send b1 get-width)
-                      (send b2 get-width))])
-          (send b1 min-width w)
-          (send b2 min-width w)
-          (if (cancel-on-right?)
-              (values b1 b2)
-              (values b2 b1)))))))
+(define (ok/cancel-buttons parent 
+                           confirm-callback
+                           cancel-callback 
+                           [confirm-str (string-constant ok)]
+                           [cancel-str (string-constant cancel)]
+                           #:confirm-style [confirm-style '(border)]) 
+  (let ([confirm (λ ()
+                   (instantiate button% ()
+                     (parent parent)
+                     (callback confirm-callback)
+                     (label confirm-str)
+                     (style confirm-style)))]
+        [cancel (λ ()
+                  (instantiate button% ()
+                    (parent parent)
+                    (callback cancel-callback)
+                    (label cancel-str)))])
+    (let-values ([(b1 b2)
+                  (cond
+                    [(cancel-on-right?)
+                     (values (confirm) (cancel))]
+                    [else
+                     (values (cancel) (confirm))])])
+      (let ([w (max (send b1 get-width)
+                    (send b2 get-width))])
+        (send b1 min-width w)
+        (send b2 min-width w)
+        (if (cancel-on-right?)
+            (values b1 b2)
+            (values b2 b1))))))
 
 
 (define clickback-delta (make-object style-delta% 'change-underline #t))
@@ -346,23 +346,29 @@
         ((is-a?/c button%) (is-a?/c event%) . -> . any)
         ((is-a?/c button%) (is-a?/c event%) . -> . any))
        (string?
-        string?)
+        string?
+        #:confirm-style (listof symbol?))
        (values (is-a?/c button%)
                (is-a?/c button%)))
   ((parent
     confirm-callback
     cancel-callback)
    ((confirm-label (string-constant ok))
-    (cancel-label (string-constant cancel))))
+    (cancel-label (string-constant cancel))
+    (confirm-style '(border))))
   @{Adds an Ok and a cancel button to a panel, changing the order
     to suit the platform. Under Mac OS X and unix, the confirmation action
     is on the right (or bottom) and under Windows, the canceling action is on
     the right (or bottom).
-    The confirmation action button has the @scheme['(border)] style.
     The buttons are also sized to be the same width.
     
     The first result is be the OK button and the second is
     the cancel button.
+    
+    By default, the confirmation action button has the @scheme['(border)] style,
+    meaning that hitting return in the dialog will trigger the confirmation action.
+    The @racket[confirm-style] argument can override this behavior, tho.
+    See @racket[button%] for the precise list of allowed styles.
     
     See also @scheme[gui-utils:cancel-on-right?].})
  

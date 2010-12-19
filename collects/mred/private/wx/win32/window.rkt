@@ -601,12 +601,13 @@
 
   (define/public (send-leaves mk)
     (set! mouse-in? #f)
-    (let ([e (mk 'leave)])
-      (if (eq? (current-thread) 
-               (eventspace-handler-thread eventspace))
-          (handle-mouse-event (get-client-hwnd) 0 0 e)
-          (queue-window-event this
-                              (lambda () (dispatch-on-event/sync e))))))
+    (when mk
+      (let ([e (mk 'leave)])
+        (if (eq? (current-thread) 
+                 (eventspace-handler-thread eventspace))
+            (handle-mouse-event (get-client-hwnd) 0 0 e)
+            (queue-window-event this
+                                (lambda () (dispatch-on-event/sync e)))))))
 
   (define/public (send-child-leaves mk)
     #f)

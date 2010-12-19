@@ -143,7 +143,8 @@
         (let ([pq paint-queued])
           (when pq (set-box! pq #f)))
         (set! paint-queued #f)
-        (when (or (not b) (is-shown-to-root?))
+        (cond
+         [(or (not b) (is-shown-to-root?))
           (let ([dc (get-dc)])
             (send dc suspend-flush)
             (send dc ensure-ready)
@@ -156,7 +157,11 @@
                   (send dc set-background old-bg))))
             (on-paint)
             (send dc resume-flush)
-            (queue-backing-flush))))
+            (queue-backing-flush))]
+         [b ; => not shown to root
+          ;; invalidate dc so that it's refresh
+          ;; when it's shown again
+          (send (get-dc) reset-backing-retained)]))
       (when req
         (cancel-canvas-flush-delay req)))
 

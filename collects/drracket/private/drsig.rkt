@@ -190,7 +190,8 @@
    forget-saved-bug-report
    record-saved-bug-report
    (struct teachpack-callbacks (get-names remove add))
-   make-teachpack-callbacks))
+   make-teachpack-callbacks
+   add-search-help-desk-menu-item))
 
 (define-signature drracket:frame-cm^
   (<%>

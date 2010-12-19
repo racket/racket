@@ -5,6 +5,7 @@
          "editor.ss"
          "editor-admin.ss"
          "private.ss"
+         racket/snip/private/private
          (only-in "cycle.ss" popup-menu%)
          (only-in "../helper.ss" queue-window-callback)
          "wx.ss")

@@ -4,20 +4,19 @@
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
            scheme/class
-           racket/draw
+           racket/draw racket/snip
            mzlib/etc
 	   (prefix wx: "private/kernel.ss")
 	   (prefix wx: "private/wxme/style.ss")
 	   (prefix wx: "private/wxme/editor.ss")
 	   (prefix wx: "private/wxme/text.ss")
 	   (prefix wx: "private/wxme/pasteboard.ss")
-	   (prefix wx: "private/wxme/snip.ss")
 	   (prefix wx: "private/wxme/keymap.ss")
 	   (prefix wx: "private/wxme/editor-admin.ss")
+           (prefix wx: "private/wxme/editor-data.ss")
 	   (prefix wx: "private/wxme/editor-snip.ss")
 	   (prefix wx: "private/wxme/stream.ss")
 	   (prefix wx: "private/wxme/wordbreak.ss")
-	   (prefix wx: "private/wxme/snip-admin.ss")
 	   "private/wxtop.ss"
 	   "private/app.ss"
 	   "private/misc.ss"
@@ -68,7 +67,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-eventspace)
-    (parameterize ([wx:the-snip-class-list (wx:make-the-snip-class-list)]
+    (parameterize ([the-snip-class-list (make-the-snip-class-list)]
                    [wx:the-editor-data-class-list (wx:make-the-editor-data-class-list)])
       (wx:make-eventspace)))
 
@@ -120,8 +119,6 @@
 	     get-highlight-background-color
              get-highlight-text-color
 	     get-the-editor-data-class-list
-	     get-the-snip-class-list
-	     image-snip%
 	     is-busy?
 	     is-color-display?
 	     key-event%
@@ -142,19 +139,13 @@
 	     read-editor-global-header
 	     read-editor-version
 	     scroll-event%
-	     snip%
-	     snip-admin%
-	     snip-class%
-	     snip-class-list<%>
 	     special-control-key
 	     special-option-key
              map-command-as-meta-key
 	     label->plain-label
-	     string-snip%
 	     style<%>
 	     style-delta%
 	     style-list%
-	     tab-snip%
 	     write-editor-global-footer
 	     write-editor-global-header
 	     write-editor-version
@@ -183,7 +174,8 @@
                          [else ".gracketrc"]))]
           [else #f])))
 
-  (provide (all-from racket/draw))
+  (provide (all-from racket/draw)
+           (all-from racket/snip))
 
   (provide button%
 	   canvas%
@@ -274,7 +266,6 @@
 	   view-control-font
 	   menu-control-font
 	   timer%
-	   readable-snip<%>
 	   open-input-text-editor
 	   open-input-graphical-file
 	   open-output-text-editor

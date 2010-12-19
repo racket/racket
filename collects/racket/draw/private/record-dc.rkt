@@ -1,6 +1,7 @@
 #lang racket/base
 (require "syntax.rkt"
          racket/class
+         ffi/unsafe/atomic
          "dc.rkt"
          "bitmap.rkt"
          "bitmap-dc.rkt"
@@ -14,11 +15,13 @@
 
 (provide record-dc-mixin
          get-recorded-command
-         reset-recording)
+         reset-recording
+         set-recording-limit)
 
 (define-local-member-name
   get-recorded-command
-  reset-recording)
+  reset-recording
+  set-recording-limit)
 
 (define black (send the-color-database find-color "black"))
 
@@ -91,6 +94,14 @@
   (class %
     (super-new)
 
+    (define record-limit +inf.0)
+    (define current-size 0)
+
+    (define/public (set-recording-limit amt)
+      (set! record-limit amt))
+    (define/private (continue-recording?)
+      (current-size . < . record-limit))
+
     (define-syntax-rule (define/record (name arg ...))
       (define/override (name arg ...)
         (super name arg ...)
@@ -98,16 +109,24 @@
 
     (define procs null)
     (define/private (record proc)
-      (set! procs (cons proc procs)))
+      (when (continue-recording?)
+        (start-atomic)
+        (set! current-size (add1 current-size))
+        (set! procs (cons proc procs))
+        (end-atomic)))
 
     (define/public (get-recorded-command)
-      (let ([procs (reverse procs)])
-        (lambda (dc)
-          (for ([proc (in-list procs)])
-            (proc dc)))))
+      (and (continue-recording?)
+           (let ([procs (reverse procs)])
+             (lambda (dc)
+               (for ([proc (in-list procs)])
+                 (proc dc))))))
 
     (define/public (reset-recording)
-      (set! procs null))
+      (start-atomic)
+      (set! procs null)
+      (set! current-size 0)
+      (end-atomic))
 
     (define clones (make-hasheq))
     (define/private (clone clone-x x)
@@ -127,18 +146,21 @@
 
     (define/override (transform mi)
       (super transform mi)
-      (let ([mi (vector->immutable-vector mi)])
-        (record (lambda (dc) (send dc transform mi)))))
+      (when (continue-recording?)
+        (let ([mi (vector->immutable-vector mi)])
+          (record (lambda (dc) (send dc transform mi))))))
 
     (define/override (set-initial-matrix mi)
       (super set-initial-matrix mi)
-      (let ([mi (vector->immutable-vector mi)])
-        (record (lambda (dc) (send dc set-initial-matrix mi)))))
+      (when (continue-recording?)
+        (let ([mi (vector->immutable-vector mi)])
+          (record (lambda (dc) (send dc set-initial-matrix mi))))))
 
     (define/override (set-transformation mi)
       (super set-transformation mi)
-      (let ([mi (vector->immutable-vector mi)])
-        (record (lambda (dc) (send dc set-transformation mi)))))
+      (when (continue-recording?)
+        (let ([mi (vector->immutable-vector mi)])
+          (record (lambda (dc) (send dc set-transformation mi))))))
 
     (define/record (set-smoothing s))
 
@@ -153,32 +175,37 @@
 
     (define/override (do-set-brush! b)
       (super do-set-brush! b)
-      (let ([b (clone clone-brush b)])
-        (record (lambda (dc) (send dc do-set-brush! b)))))
+      (when (continue-recording?)
+        (let ([b (clone clone-brush b)])
+          (record (lambda (dc) (send dc do-set-brush! b))))))
 
     (define/override (set-text-foreground c)
       (super set-text-foreground c)
-      (let ([c (clone clone-color c)])
-        (record (lambda (dc) (send dc set-text-foreground c)))))
+      (when (continue-recording?)
+        (let ([c (clone clone-color c)])
+          (record (lambda (dc) (send dc set-text-foreground c))))))
     
     (define/override (set-text-background c)
       (super set-text-background c)
-      (let ([c (clone clone-color c)])
-        (record (lambda (dc) (send dc set-text-background c)))))
+      (when (continue-recording?)
+        (let ([c (clone clone-color c)])
+          (record (lambda (dc) (send dc set-text-background c))))))
     
     (define/override (set-background c)
       (super set-background c)
-      (let ([c (clone clone-color c)])
-        (record (lambda (dc) (send dc set-background c)))))
+      (when (continue-recording?)
+        (let ([c (clone clone-color c)])
+          (record (lambda (dc) (send dc set-background c))))))
     
     (define/record (set-text-mode m))
 
     (define/override (set-clipping-region r)
       (super set-clipping-region r)
-      (let ([make-r (if r
-                        (region-maker r)
-                        (lambda (dc) #f))])
-        (record (lambda (dc) (send dc set-clipping-region (make-r dc))))))
+      (when (continue-recording?)
+        (let ([make-r (if r
+                          (region-maker r)
+                          (lambda (dc) #f))])
+          (record (lambda (dc) (send dc set-clipping-region (make-r dc)))))))
 
     (define/record (set-clipping-rect x y w h))
 
@@ -186,7 +213,7 @@
     
     (define/override (erase)
       (super erase)
-      (set! procs null))
+      (reset-recording))
 
     (define/record (draw-arc x y
                              width height
@@ -200,13 +227,15 @@
     
     (define/override (draw-lines pts [x 0.0] [y 0.0])
       (super draw-lines pts x y)
-      (let ([pts (map (lambda (p) (clone clone-point p)) pts)])
-        (record (lambda (dc) (send dc draw-lines pts x y)))))
+      (when (continue-recording?)
+        (let ([pts (map (lambda (p) (clone clone-point p)) pts)])
+          (record (lambda (dc) (send dc draw-lines pts x y))))))
 
     (define/override (draw-polygon pts [x 0.0] [y 0.0] [fill-style 'odd-even])
       (super draw-polygon pts x y fill-style)
-      (let ([pts (map (lambda (p) (clone clone-point p)) pts)])
-        (record (lambda (dc) (send dc draw-polygon pts x y fill-style)))))
+      (when (continue-recording?)
+        (let ([pts (map (lambda (p) (clone clone-point p)) pts)])
+          (record (lambda (dc) (send dc draw-polygon pts x y fill-style))))))
 
     (define/record (draw-rectangle x y w h))
     
@@ -218,16 +247,26 @@
 
     (define/override (draw-path path [x 0.0] [y 0.0] [fill-style 'odd-even])
       (super draw-path path x y fill-style)
-      (let ([path (clone clone-path path)])
-        (record (lambda (dc) (send dc draw-path path x y fill-style)))))
+      (when (continue-recording?)
+        (let ([path (clone clone-path path)])
+          (record (lambda (dc) (send dc draw-path path x y fill-style))))))
     
     (define/override (draw-text s x y [combine? #f] [offset 0] [angle 0.0])
       (super draw-text s x y combine? offset angle)
-      (let ([s (string->immutable-string s)])
-        (record (lambda (dc) (send dc draw-text s x y combine? offset angle)))))
+      (when (continue-recording?)
+        (let ([s (string->immutable-string s)])
+          (record (lambda (dc) (send dc draw-text s x y combine? offset angle))))))
+    
+    (define/override (draw-bitmap src dx dy [style 'solid] [color black] [mask #f])
+      (super draw-bitmap src dx dy style color mask)
+      (when (continue-recording?)
+        (let ([src (clone clone-bitmap src)]
+              [mask (and mask (clone clone-bitmap mask))])
+          (record (lambda (dc) (send dc draw-bitmap src dx dy style color mask))))))
     
     (define/override (draw-bitmap-section src dx dy sx sy sw sh [style 'solid] [color black] [mask #f])
       (super draw-bitmap-section src dx dy sx sy sw sh style color mask)
-      (let ([src (clone clone-bitmap src)]
-            [mask (and mask (clone clone-bitmap mask))])
-        (record (lambda (dc) (send dc draw-bitmap-section src dx dy sx sy sw sh style color mask)))))))
+      (when (continue-recording?)
+        (let ([src (clone clone-bitmap src)]
+              [mask (and mask (clone clone-bitmap mask))])
+          (record (lambda (dc) (send dc draw-bitmap-section src dx dy sx sy sw sh style color mask))))))))

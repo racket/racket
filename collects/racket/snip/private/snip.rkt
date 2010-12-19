@@ -1,34 +1,27 @@
 #lang scheme/base
 (require scheme/class
-         scheme/file
-         "../syntax.ss"
+         scheme/file file/convertible
          "snip-flags.ss"
-         "private.ss"
-         "style.ss"
-         "cycle.ss"
-         "wx.ss")
+         "load-one.rkt"
+         racket/draw/private/syntax
+         mred/private/wxme/style
+         "private.rkt"
+         racket/draw)
 
 (provide snip%
          snip-class%
          string-snip%
          tab-snip%
          image-snip%
-         editor-data%
-         editor-data-class%
-         location-editor-data%
          snip-class-list<%>
-         editor-data-class-list<%>
          get-the-snip-class-list
-         get-the-editor-data-class-list
-         the-editor-snip-class
+         
+         get-snip-class
 
          the-snip-class-list ;; parameter
          make-the-snip-class-list
-         the-editor-data-class-list ;; parameter
-         make-the-editor-data-class-list
          
          (struct-out snip-class-link)
-         (struct-out editor-data-class-link)
 
          snip->admin
          snip->count
@@ -54,9 +47,14 @@
 
          caret-status?
 
-         selected-text-color
+         readable-snip<%>
 
          image-type?)
+
+;; these are used only in contracts
+;; we don't want the real definitions b/c they require the gui
+(define-values (editor-stream-in% editor-stream-out% snip-admin% mouse-event% key-event%)
+  (values object% object% object% object% object%))
 
 (define (symbol-list? l)
   (and (list? l) (andmap symbol? l)))
@@ -72,16 +70,12 @@
            (exact-nonnegative-integer? (cdr v))
            ((car v) . <= . (cdr v)))))
 
-(define selected-text-color (get-highlight-text-color))
-
 ;; ------------------------------------------------------------
 
 (define MAX-WASTE 3)
 (define MIN-WASTE-CHECK 24)
 (define IMAGE-PIXELS-PER-SCROLL 20.0)
 (define IMAGE-VOID-SIZE 20.0)
-
-(define TAB-WIDTH 20)
 
 (define (replace-nuls s)
   (if (for/or ([c (in-string s)]) (or (eq? #\nul c)
@@ -462,7 +456,7 @@
                       [real? dx] [real? dy] [caret-status? caret])
     (unless (has-flag? s-flags INVISIBLE)
       (if (and (pair? caret)
-               (or selected-text-color
+               (or (and s-admin (send s-admin get-selected-text-color))
                    (eq? 'solid (send dc get-text-mode))))
           ;; Draw three parts: before selection, selection, after selection
           (let ([before (replace-nuls
@@ -484,8 +478,8 @@
                                         (send dc get-text-extent before))])
               (let ([col (send dc get-text-foreground)]
                     [mode (send dc get-text-mode)])
-                (when selected-text-color
-                  (send dc set-text-foreground selected-text-color))
+                (when (and s-admin (send s-admin get-selected-text-color))
+                  (send dc set-text-foreground (send s-admin get-selected-text-color)))
                 (send dc set-text-mode 'transparent)
                 (send dc draw-text sel (+ x w) y #f)
                 (send dc set-text-foreground col)
@@ -696,24 +690,19 @@
                [media (and admin
                            (send admin get-editor))])
           (let-values ([(n tabs tabspace mult)
-                        (if (media . is-a? . text%)
-                            (let-boxes ([n 0]
+                        (let-boxes ([n 0]
                                         [space 0]
                                         [units? #f]
                                         [tabs null])
-                                (set-box! tabs (send media get-tabs n space units?))
-                              (values n
-                                      tabs
-                                      space
-                                      (if units? 
-                                          1 
-                                          (if (zero? str-w)
-                                              1.0
-                                              str-w))))
-                            (values 0
-                                    #()
-                                    TAB-WIDTH
-                                    1))])
+                            (set-box! tabs (send admin get-tabs n space units?))
+                          (values n
+                                  tabs ;; this should be a vector, right?
+                                  space
+                                  (if units? 
+                                      1 
+                                      (if (zero? str-w)
+                                          1.0
+                                          str-w))))])
             (set-str-w
              (let loop ([i 0])
                (if (= i n)
@@ -863,7 +852,18 @@
              jpeg png png/mask png/alpha
              xbm xpm bmp pict))
 
-(defclass* image-snip% internal-snip% (equal<%>)
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (img format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send (send img get-bitmap) save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
+(defclass* image-snip% internal-snip% (equal<%> png-convertible<%>)
   (inherit-field s-admin
                  s-flags)
   (inherit set-snipclass)
@@ -1060,11 +1060,11 @@
                                                                  (path->complete-path base))))))))
                                        (current-directory)))
                                   name))])
-            (let ([nbm (dynamic-wind
-                           begin-busy-cursor
-                           (lambda ()
-                             (make-object bitmap% fullpath kind))
-                           end-busy-cursor)])
+            (let ([nbm (if s-admin
+                           (send s-admin call-with-busy-cursor
+                                 (lambda ()
+                                   (make-object bitmap% fullpath kind)))
+                           (make-object bitmap% fullpath kind))])
               (when (send nbm ok?)
                 (do-set-bitmap nbm #f #f))))))
       ;; for refresh:
@@ -1222,60 +1222,6 @@
     (when (and s-admin is-relative-path? filename)
       (load-file filename filetype #t))))
 
-;; ------------------------------------------------------------
-
-(defclass editor-snip-class% snip-class%
-  (inherit set-classname
-           set-version)
-  (inherit-field s-required?)
-
-  (super-new)
-  
-  (set-classname "wxmedia")
-  (set-version 4)
-  (set! s-required? #t)
-
-  (def/override (read [editor-stream-in% f])
-    (let ([vers (send f do-reading-version this)])
-      (let ([ed% (case (send f get-exact)
-                   [(1) extended-text%]
-                   [(2) extended-pasteboard%]
-                   [else #f])]
-            [border? (positive? (send f get-exact))]
-            [lm (max 0 (send f get-exact))]
-            [tm (max 0 (send f get-exact))]
-            [rm (max 0 (send f get-exact))]
-            [bm (max 0 (send f get-exact))]
-            [li (max 0 (send f get-exact))]
-            [ti (max 0 (send f get-exact))]
-            [ri (max 0 (send f get-exact))]
-            [bi (max 0 (send f get-exact))]
-            [min-w (send f get-inexact)]
-            [max-w (send f get-inexact)]
-            [min-h (send f get-inexact)]
-            [max-h (send f get-inexact)]
-            [tf? (and (vers . > . 1)
-                      (positive? (send f get-exact)))]
-            [atl? (and (vers . > . 2)
-                       (positive? (send f get-exact)))]
-            [ubs? (and (vers . > . 3)
-                       (positive? (send f get-exact)))])
-        (let ([e (and ed% (new ed%))])
-          (let ([snip (make-object extended-editor-snip%
-                                   e
-                                   border?
-                                   lm tm rm bm li ti ri bi
-                                   (if (negative? min-w) 'none min-w)
-                                   (if (negative? max-w) 'none max-w)
-                                   (if (negative? min-h) 'none min-h)
-                                   (if (negative? max-h) 'none max-h))])
-            (send snip do-set-graphics tf? atl? ubs?)
-            (if e
-                (begin
-                  (send e get-style-list)
-                  (send e read-from-file f #t))
-                (send snip set-editor #f))
-            snip))))))
 
 ;; ------------------------------------------------------------
 
@@ -1318,7 +1264,6 @@
 (define the-string-snip-class (new string-snip-class%))
 (define the-tab-snip-class (new tab-snip-class%))
 (define the-image-snip-class (new image-snip-class%))
-(define the-editor-snip-class (new editor-snip-class%))
 
 (define-struct snip-class-link ([c #:mutable] [name #:mutable] [header-flag #:mutable] map-position reading-version))
 
@@ -1331,7 +1276,7 @@
 
   (add the-string-snip-class)
   (add the-tab-snip-class)
-  (add the-editor-snip-class)
+  ;(add the-editor-snip-class)
   (add the-image-snip-class)
 
   (define/public (reset-header-flags s)
@@ -1409,148 +1354,6 @@
 
 ;; ------------------------------------------------------------
 
-(defclass editor-data% object%
-  (properties [[(make-or-false editor-data-class%) dataclass] #f]
-              [[(make-or-false editor-data%) next] #f])
-  (super-new)
-  (def/public (write [editor-stream-out% f])
-    (error 'write "should have overridden"))
-
-  (define/public (get-s-dataclass) dataclass)
-  (define/public (get-s-next) next)
-  (define/public (set-s-next v) (set! next v)))
-
-
-(defclass location-editor-data% editor-data%
-  (inherit set-dataclass)
-  (init-field x y)
-  (super-new)
-  (set-dataclass the-location-editor-data-class)
-
-  (define/public (get-x) x)
-  (define/public (get-y) y)
-
-  (def/override (write [editor-stream-out% f])
-    (send f put x)
-    (send f put y)
-    #t))
-
-;; ------------------------------------------------------------
-
-(defclass editor-data-class% object%
-  (define classname "wxbad")  
-  (def/public (set-classname [string? s])
-    (set! classname (string->immutable-string s)))
-  (def/public (get-classname) classname)
-
-  (properties [[bool? required?] #f])
-  (define/public (get-s-required?) required?)
-
-  (def/public (read [editor-stream-in% f]) (void))
-
-  (super-new))
-
-(defclass location-editor-data-class% editor-data-class%
-  (inherit set-classname
-           set-required?)
-
-  (super-new)
-
-  (set-classname "wxloc")
-  (set-required? #t)
-
-  (def/override (read [editor-stream-in% f])
-    (let ([x (send f get-inexact)]
-          [y (send f get-inexact)])
-      (new location-editor-data% [x x][y y]))))
-
-(define the-location-editor-data-class
-  (new location-editor-data-class%))
-
-;; ------------------------------------------------------------
-
-(define-struct editor-data-class-link ([c #:mutable] [name #:mutable] map-position))
-
-(defclass editor-data-class-list% object%
-  (define ht (make-hash))
-  (define pos-ht (make-hash))
-  (define rev-pos-ht (make-hash))
-
-  (super-new)
-
-  (add the-location-editor-data-class)
-
-  (def/public (find [string? name])
-    (let ([c (hash-ref ht name #f)])
-      (or c
-          (let ([c (get-editor-data-class name)])
-            (when c (add c))
-            c))))
-  
-  (def/public (find-position [editor-data-class% c])
-    (hash-ref pos-ht c 0))
-  
-  (def/public (add [editor-data-class% c])
-    (let ([name (send c get-classname)])
-      (hash-set! ht name c)
-      (let ([n (add1 (hash-count pos-ht))])
-        (hash-set! pos-ht c n)
-        (hash-set! rev-pos-ht n c))))
-
-  (def/public (number) (hash-count ht))
-
-  (def/public (nth [exact-nonnegative-integer? n]) (hash-ref rev-pos-ht n #f))
-
-  (def/public (write [editor-stream-out% f])
-    (let ([n (number)])
-      (send f put n)
-      (for ([i (in-range 1 (add1 n))])
-        (let ([c (nth i)])
-          (send f put (string->bytes/utf-8 (send c get-classname)))
-
-          (send f add-dl (make-editor-data-class-link c
-                                                      #f
-                                                      i)))))
-    #t)
-
-  (def/public (read [editor-stream-in% f])
-    (let-boxes ([count 0])
-        (send f get count)
-      (for/and ([i (in-range count)])
-        (let ([s (send f get-bytes)])
-          (and (send f ok?)
-               (send f add-dl (make-editor-data-class-link
-                               #f
-                               (bytes->string/utf-8 s #\?)
-                               (add1 i)))
-               #t)))))
-
-  (define/public (find-by-map-position f n)
-    (ormap (lambda (s)
-             (and (= n (editor-data-class-link-map-position s))
-                  (begin
-                    (when (editor-data-class-link-name s)
-                      (let ([c (find (editor-data-class-link-name s))])
-                        (when (not c)
-                          ;; unknown class/version
-                          (log-error (format "unknown editor data class: ~e" 
-                                             (editor-data-class-link-name s))))
-                        (set-editor-data-class-link-name! s #f)
-                        (set-editor-data-class-link-c! s c)))
-                    (editor-data-class-link-c s))))
-           (send f get-dl))))
-
-(define editor-data-class-list<%> (class->interface editor-data-class-list%))
-
-(define (make-the-editor-data-class-list)
-  (new editor-data-class-list%))
-
-(define the-editor-data-class-list (make-parameter (make-the-editor-data-class-list)))
-(define (get-the-editor-data-class-list)
-  (the-editor-data-class-list))
-
-;; ------------------------------------------------------------
-
 (define snip->admin (class-field-accessor snip% s-admin))
 (define snip->count (class-field-accessor snip% s-count))
 (define snip->next (class-field-accessor snip% s-next))
@@ -1569,3 +1372,12 @@
 (define set-snip-next! (class-field-mutator snip% s-next))
 
 (define snip%-get-text (generic snip% get-text))
+
+;; install the getters:
+(define get-snip-class
+ (lambda (name)
+   (load-one name 'snip-class snip-class%)))
+
+(define readable-snip<%>
+  (interface ()
+    read-special))

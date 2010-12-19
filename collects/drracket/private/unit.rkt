@@ -129,74 +129,78 @@ module browser threading seems wrong.
                         (set! added? #t)
                         (new separator-menu-item% [parent menu]))))])
              
-             (let* ([end (send text get-end-position)]
-                    [start (send text get-start-position)])
-               (unless (= 0 (send text last-position))
-                 (let* ([str (if (= end start)
-                                 (find-symbol
-                                  text
-                                  (call-with-values
-                                   (λ ()
-                                     (send text dc-location-to-editor-location
-                                           (send event get-x)
-                                           (send event get-y)))
-                                   (λ (x y)
-                                     (send text find-position x y))))
-                                 (send text get-text start end))]
-                        ;; almost the same code as "search-help-desk" in "rep.rkt"
-                        [l (send text get-canvas)]
-                        [l (and l (send l get-top-level-window))]
-                        [l (and l (is-a? l -frame<%>) (send l get-definitions-text))]
-                        [l (and l (send l get-next-settings))]
-                        [l (and l (drracket:language-configuration:language-settings-language l))]
-                        [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
-                        [name (and l (send l get-language-name))])
-                   (unless (string=? str "")
-                     (add-sep)
-                     (let ([short-str (shorten-str str 50)])
-                       (make-object menu-item%
-                         (gui-utils:format-literal-label
-                          (string-constant search-help-desk-for) 
-                          (if (equal? short-str str)
-                              str
-                              (string-append short-str "...")))
-                         menu
-                         (λ x (help-desk:help-desk str (list ctxt name)))))))))
-           
-           (when (is-a? text editor:basic<%>)
-             (let-values ([(pos text) (send text get-pos/text event)])
-               (when (and pos (is-a? text text%))
-                 (send text split-snip pos)
-                 (send text split-snip (+ pos 1))
-                 (let ([snip (send text find-snip pos 'after-or-none)])
-                   (when (or (is-a? snip image-snip%)
-                             (is-a? snip image-core:image%)
-                             (is-a? snip cache-image-snip%))
-                     (add-sep)
-                     (new menu-item%
-                          [parent menu]
-                          [label (string-constant save-image)]
-                          [callback
-                           (λ (_1 _2)
-                             (let ([fn (put-file #f 
-                                                 (send text get-top-level-window)
-                                                 #f "untitled.png" "png")])
-                               (when fn
-                                 (let ([kind (filename->kind fn)])
-                                   (cond
-                                     [kind
-                                      (cond
-                                        [(or (is-a? snip image-snip%)
-                                             (is-a? snip cache-image-snip%))
-                                         (send (send snip get-bitmap) save-file fn kind)]
-                                        [else
-                                         (image-core:save-image-as-bitmap snip fn kind)])]
-                                     [else
-                                      (message-box 
-                                       (string-constant drscheme)
-                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm")])))))]))))))
-           
-           (void))))))
+             (add-search-help-desk-menu-item text menu event add-sep)
+             
+             (when (is-a? text editor:basic<%>)
+               (let-values ([(pos text) (send text get-pos/text event)])
+                 (when (and pos (is-a? text text%))
+                   (send text split-snip pos)
+                   (send text split-snip (+ pos 1))
+                   (let ([snip (send text find-snip pos 'after-or-none)])
+                     (when (or (is-a? snip image-snip%)
+                               (is-a? snip image-core:image%)
+                               (is-a? snip cache-image-snip%))
+                       (add-sep)
+                       (new menu-item%
+                            [parent menu]
+                            [label (string-constant save-image)]
+                            [callback
+                             (λ (_1 _2)
+                               (let ([fn (put-file #f 
+                                                   (send text get-top-level-window)
+                                                   #f "untitled.png" "png")])
+                                 (when fn
+                                   (let ([kind (filename->kind fn)])
+                                     (cond
+                                       [kind
+                                        (cond
+                                          [(or (is-a? snip image-snip%)
+                                               (is-a? snip cache-image-snip%))
+                                           (send (send snip get-bitmap) save-file fn kind)]
+                                          [else
+                                           (image-core:save-image-as-bitmap snip fn kind)])]
+                                       [else
+                                        (message-box 
+                                         (string-constant drscheme)
+                                         "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm")])))))]))))))
+             
+             (void))))))
+    
+    (define (add-search-help-desk-menu-item text menu event [add-sep void])
+      (let* ([end (send text get-end-position)]
+             [start (send text get-start-position)])
+        (unless (= 0 (send text last-position))
+          (let* ([str (if (= end start)
+                          (find-symbol
+                           text
+                           (call-with-values
+                            (λ ()
+                              (send text dc-location-to-editor-location
+                                    (send event get-x)
+                                    (send event get-y)))
+                            (λ (x y)
+                              (send text find-position x y))))
+                          (send text get-text start end))]
+                 ;; almost the same code as "search-help-desk" in "rep.rkt"
+                 [l (send text get-canvas)]
+                 [l (and l (send l get-top-level-window))]
+                 [l (and l (is-a? l -frame<%>) (send l get-definitions-text))]
+                 [l (and l (send l get-next-settings))]
+                 [l (and l (drracket:language-configuration:language-settings-language l))]
+                 [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
+                 [name (and l (send l get-language-name))])
+            (unless (string=? str "")
+              (add-sep)
+              (let ([short-str (shorten-str str 50)])
+                (make-object menu-item%
+                  (gui-utils:format-literal-label
+                   (string-constant search-help-desk-for) 
+                   (if (equal? short-str str)
+                       str
+                       (string-append short-str "...")))
+                  menu
+                  (λ x (help-desk:help-desk str (list ctxt name))))
+                (void)))))))
     
     (define (filename->kind fn)
       (let ([ext (filename-extension fn)])

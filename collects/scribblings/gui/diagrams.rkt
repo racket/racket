@@ -11,8 +11,10 @@
            menu-diagram
            editor-diagram
            snip-diagram
+           editor-snip-diagram
            style-diagram
-           admin-diagram
+           snip-list-diagram
+           editor-admin-diagram
            stream-diagram)
 
   (define (diagram->table d)
@@ -125,11 +127,21 @@ DIAG
    |- string-snip%
    |   |- tab-snip%
    |- image-snip%
+   |- editor-snip% (not provided by racket/snip)
+
+  snip-admin%
+DIAG
+)
+
+  (define editor-snip-diagram
+#<<DIAG
+  snip%
    |- editor-snip%
 DIAG
 )
+
  
-  (define admin-diagram
+  (define editor-admin-diagram
 #<<DIAG
   editor-canvas%
  
@@ -147,11 +159,18 @@ DIAG
 DIAG
 )
 
+  (define snip-list-diagram
+#<<DIAG
+  snip-class%
+  snip-class-list<%>
+DIAG
+)
+
   (define stream-diagram
 #<<DIAG
  editor-data%
- editor-data-class%                     snip-class%
- editor-data-class-list<%>              snip-class-list<%>
+ editor-data-class%
+ editor-data-class-list<%>
  
  editor-stream-in%                 editor-stream-out%
  editor-stream-in-base%            editor-stream-out-base%

@@ -219,5 +219,87 @@
     (test #t 'same-scaled (equal? s2 s3))))
 
 ;; ----------------------------------------
+;; Test some masking combinations
+
+(let ()
+  (define u (make-object bitmap% 2 2))
+  (define mu (make-object bitmap% 2 2))
+  (send u set-argb-pixels 0 0 2 2
+        (bytes 255 100 0 0
+               255 0 0 0
+               255 100 0 0
+               255 255 255 255))
+  (send mu set-argb-pixels 0 0 2 2
+        (bytes 255 0 0 0
+               255 255 255 255
+               255 0 0 0
+               255 255 255 255))
+  (send u set-loaded-mask mu)
+  (define (try-draw nonce-color mode expect 
+                    #:bottom? [bottom? #f])
+    (let* ((b&w? (not (eq? mode 'color)))
+           (bm (make-object bitmap% 2 2 b&w?))
+           (dc (make-object bitmap-dc% bm)))
+      (send dc clear)
+      (when (eq? mode 'black)
+        (send dc set-brush "black" 'solid)
+        (send dc draw-rectangle 0 0 2 2))
+      ;; Check that draw-bitmap-section really uses the
+      ;; section, even in combination with a mask.
+      (send dc draw-bitmap-section u 
+            0 (if bottom? 1 0)
+            0 (if bottom? 1 0) 2 1
+            'solid nonce-color (send u get-loaded-mask))
+      (send dc set-bitmap #f)
+      (let ([s (make-bytes (* 2 2 4))])
+        (send bm get-argb-pixels 0 0 2 2 s)
+        (when b&w? (send bm get-argb-pixels 0 0 2 2 s #t))
+        (test expect 'masked-draw s))))
+  (define usual-expect (bytes 255 100 0 0
+                              255 255 255 255
+                              255 255 255 255
+                              255 255 255 255))
+  (try-draw (make-object color% "green") 'color usual-expect)
+  (try-draw (make-object color%) 'color usual-expect)
+  (try-draw (make-object color%) 'white
+            ;; For b&w destination, check that the
+            ;;  alpha is consistent with the drawn pixels
+            (bytes 255 0 0 0
+                   0 255 255 255
+                   0 255 255 255
+                   0 255 255 255))
+  (send mu set-argb-pixels 0 0 2 2
+        (bytes 255 255 255 255
+               255 255 255 255
+               255 0 0 0
+               255 0 0 0))
+  (try-draw (make-object color%) 'black
+            #:bottom? #t
+            ;; Another b&w destination test, this time
+            ;; with a mask that forces black pixels to
+            ;; white:
+            (bytes 255 0 0 0
+                   255 0 0 0
+                   255 0 0 0
+                   0 255 255 255))
+  (send mu set-argb-pixels 0 0 2 2
+        (bytes 255 255 255 255
+               255 0 0 0
+               255 255 255 255
+               255 0 0 0))
+  (try-draw (make-object color%) 'color
+            (bytes 255 255 255 255
+                   255 0 0 0
+                   255 255 255 255
+                   255 255 255 255))
+  (let ([dc (make-object bitmap-dc% mu)])
+    (send dc erase)
+    (send dc set-pen "white" 1 'transparent)
+    (send dc set-brush "black" 'solid)
+    (send dc draw-rectangle 0 0 1 1)
+    (send dc set-bitmap #f))
+  (try-draw (make-object color%) 'color usual-expect))
+
+;; ----------------------------------------
 
 (report-errs)

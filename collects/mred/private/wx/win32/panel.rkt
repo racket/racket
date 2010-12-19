@@ -22,16 +22,19 @@
 
     (define children null)
     (define/override (register-child child on?)
-      (let ([now-on? (and (memq child children) #t)])
+      (let ([on? (and on? #t)]
+            [now-on? (and (memq child children) #t)])
         (unless (eq? on? now-on?)
           (unless on?
             (when (eq? child mouse-in-child)
+              (send child send-leaves #f)
               (set! mouse-in-child #f)))
           (set! children 
                 (if on?
                     (cons child children)
                     (remq child children)))
-          (send child parent-enable (is-enabled-to-root?)))))
+          (when on?
+            (send child parent-enable (is-enabled-to-root?))))))
 
     (define/override (internal-enable on?)
       (super internal-enable on?)

@@ -28,15 +28,17 @@ has been moved out).
 |#
 
 (require racket/class
-         racket/gui/base
+         racket/draw
+         (for-syntax racket/base)
+         file/convertible         
          racket/math
          racket/contract
-         "private/image-core-bitmap.ss"
+         "private/image-core-bitmap.ss" 
          "image-core-wxme.ss"
          "private/image-core-snipclass.rkt"
          "private/regmk.rkt"
-         (prefix-in cis: "cache-image-snip.ss")
-         (for-syntax racket/base))
+         racket/snip
+         (prefix-in cis: "cache-image-snip.ss"))
 
 
 
@@ -197,8 +199,31 @@ has been moved out).
 (define skip-image-equality-fast-path (make-parameter #f))
 (define render-normalized (make-parameter #f))
 
+(define png-convertible<%>
+  (interface* ()
+              ([prop:convertible
+                (lambda (img format default)
+                  (case format
+                    [(png-bytes)
+                     (let ([s (open-output-bytes)])
+                       (send (to-bitmap (to-img img)) save-file s 'png)
+                       (get-output-bytes s))]
+                    [else default]))])))
+
+(define (to-bitmap img)  
+  (let* ([bb (send img get-bb)]
+         [bm (make-bitmap
+              (add1 (inexact->exact (ceiling (bb-right bb)))) 
+              (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
+         [bdc (new bitmap-dc% [bitmap bm])])
+    (send bdc clear)
+    (render-image img bdc 0 0)
+    (begin0
+        (send bdc get-bitmap)
+      (send bdc set-bitmap #f))))
+	     
 (define image%
-  (class* snip% (equal<%> image<%>)
+  (class* snip% (png-convertible<%> equal<%> image<%>)
     (init-field shape bb normalized? pinhole)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
@@ -260,10 +285,7 @@ has been moved out).
               (when standard
                 (let ([dc (make-object bitmap-dc% (make-object bitmap% 1 1))])
                   (let-values ([(w h d a) (send dc get-text-extent "X" (send standard get-font))])
-                    (set! scroll-step (+ h
-                                         (if (is-a? ed text%)
-                                             (send ed get-line-spacing)
-                                             0)))))))))
+                    (set! scroll-step (+ h (send admin get-line-spacing)))))))))
         ;; if that didn't happen, set it to 12.
         (unless scroll-step (set! scroll-step 12))))
     
@@ -280,8 +302,7 @@ has been moved out).
 
     (define/override (copy) (make-image shape bb normalized? pinhole))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-      (let ([smoothing (send dc get-smoothing)])
-        (render-image this dc x y)))
+      (render-image this dc x y))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
@@ -1146,7 +1167,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          to-img
          bitmap->image
-         image-snip->image)
+         image-snip->image
+         image-snip%)
 
 ;; method names
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)

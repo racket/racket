@@ -4,11 +4,14 @@
          racket/draw/private/bitmap-dc
          racket/draw/private/bitmap
          racket/draw/private/local
+         racket/draw/private/record-dc
+         racket/draw/unsafe/cairo
          "../../lock.rkt"
          "queue.rkt")
 
 (provide 
  (protect-out backing-dc%
+              backing-draw-bm
               
               ;; scoped method names:
               get-backing-size
@@ -35,12 +38,18 @@
   end-delay)
 
 (define backing-dc%
-  (class (dc-mixin bitmap-dc-backend%)
+  (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))
+    (init transparent?)
+
     (inherit internal-get-bitmap
              internal-set-bitmap
-             reset-cr)
+             reset-cr
+             set-recording-limit
+             get-recorded-command)
 
     (super-new)
+
+    (set-recording-limit (if transparent? 1024 -1))
 
     (define/override (ok?) #t)
 
@@ -67,7 +76,8 @@
        [(not retained-cr) #f]
        [(positive? retained-counter) 
         (unless nada?
-          (proc (internal-get-bitmap)))
+          (proc (or (get-recorded-command)
+                    (internal-get-bitmap))))
         #t]
        [else 
         (reset-backing-retained proc)
@@ -155,3 +165,43 @@
 
 (define (release-backing-bitmap bm)
   (send bm release-bitmap-storage))
+
+(define cairo-dc
+  (make-object (dc-mixin
+                (class default-dc-backend%
+                  (inherit reset-cr)
+
+                  (define cr #f)
+                  (define w 0)
+                  (define h 0)
+
+                  (super-new)
+
+                  (define/public (set-cr new-cr new-w new-h)
+                    (set! cr new-cr)
+                    (set! w new-w)
+                    (set! h new-h)
+                    (when cr
+                      (reset-cr cr)))
+
+                  (define/override (get-cr) cr)
+
+                  (define/override (reset-clip cr)
+                    (super reset-clip cr)
+                    (cairo_rectangle cr 0 0 w h)
+                    (cairo_clip cr))))))
+
+(define (backing-draw-bm bm cr w h)
+  (if (procedure? bm)
+      (begin
+        (send cairo-dc set-cr cr w h)
+        (bm cairo-dc)
+        (send cairo-dc set-cr #f 0 0))
+      (let ([s (cairo_get_source cr)])
+        (cairo_pattern_reference s)
+        (cairo_set_source_surface cr (send bm get-cairo-surface) 0 0)
+        (cairo_new_path cr)
+        (cairo_rectangle cr 0 0 w h)
+        (cairo_fill cr)
+        (cairo_set_source cr s)
+        (cairo_pattern_destroy s))))
