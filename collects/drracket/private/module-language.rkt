@@ -14,6 +14,7 @@
          framework
          string-constants
          planet/config
+         setup/dirs
          "drsig.rkt"
          "rep.rkt")
 
@@ -248,13 +249,10 @@
                          (use-compiled-file-paths)))]))
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler #t))
-             (let* ([cd (find-system-path 'collects-dir)]
-                    [no-dirs (list (CACHE-DIR) 
-                                   (if (relative-path? cd)
-                                       (find-executable-path
-                                        (find-system-path 'exec-file)
-                                        cd)
-                                       cd))])
+             (let* ([cd (find-collects-dir)]
+                    [no-dirs (if cd 
+                                 (list (CACHE-DIR) cd)
+                                 (list (CACHE-DIR)))])
                (manager-skip-file-handler
                 (λ (p) (file-stamp-in-paths p no-dirs))))))))
       
