@@ -111,8 +111,9 @@ WARNING: printf is rebound in the body of the unit to always
       (let ([filename (get-filename)])
         (or (and (path? id)
                  (path? filename)
-                 (equal? (normal-case-path (normalize-path (get-filename)))
-                         (normal-case-path (normalize-path id))))
+                 (or (equal? id filename) ;; "fast path" check
+                     (equal? (normal-case-path (normalize-path (get-filename)))
+                             (normal-case-path (normalize-path id)))))
             (and (symbol? port-name-identifier)
                  (symbol? id)
                  (equal? port-name-identifier id)))))
