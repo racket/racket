@@ -79,11 +79,14 @@
     (syntax-rules ()
       [(_ id orig mc1r mc2r)
        (begin
+         (define proc-id
+           (let ([id (lambda (x) (mc1r (mc2r x)))])
+             id))
          (define-syntax id
            (syntax-id-rules (set!)
              [(_ x) (mc1r (mc2r x))]
              [(set! _ v) (set! orig v)]
-             [_ (lambda (x) (mc1r (mc2r x)))]))
+             [_ proc-id]))
          (provide (rename-out [id orig])))]))
 
   (provide-inlined-combo mcaar caar mcar mcar)
