@@ -361,8 +361,8 @@
                   (when with-border?
                     (let ([pen (send dc get-pen)])
                       (when (and (pair? caret)
-                                 (send my-admin get-selected-text-color))
-                        (send dc set-pen (send my-admin get-selected-text-color) 1 'solid))
+                                 (send s-admin get-selected-text-color))
+                        (send dc set-pen (send s-admin get-selected-text-color) 1 'solid))
                       (let* ([l (+ orig-x left-inset)]
                              [t (+ orig-y top-inset)]
                              [r (+ l w left-margin right-margin 
