@@ -245,7 +245,8 @@
               client-to-screen
               is-auto-scroll? get-virtual-width get-virtual-height
               reset-auto-scroll
-              refresh-for-autoscroll)
+              refresh-for-autoscroll
+              flush)
 
      (define vscroll-ok? (and (memq 'vscroll style) #t))
      (define vscroll? vscroll-ok?)
@@ -397,15 +398,16 @@
 
      (define/override (show on?)
        ;; FIXME: what if we're in the middle of an on-paint?
-       (super show on?)
-       (fix-dc))
+       (super show on?))
 
      (define/override (hide-children)
        (super hide-children)
+       (fix-dc #f)
        (suspend-all-reg-blits))
 
      (define/override (show-children)
        (super show-children)
+       (fix-dc)
        (resume-all-reg-blits))
 
      (define/override (fixup-locations-children)
@@ -629,6 +631,11 @@
        #t)
      (define/public (on-combo-select i) (void))
      (define/public (popup-combo)
+       ;; Pending refresh events intefere with combo popups
+       ;; for some reason, so flush them:
+       (yield-refresh)
+       (flush)
+       ;; Beware that the `popUp:' method is undocumented:
        (tellv (tell content-cocoa cell) popUp: #f))
 
      (define clear-bg? (and (not (memq 'transparent canvas-style)) 
