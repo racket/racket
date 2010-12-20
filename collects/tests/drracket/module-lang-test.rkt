@@ -1,4 +1,4 @@
-#lang at-exp scheme/gui
+#lang at-exp racket/gui
 (require "module-lang-test-utils.rkt")
 (provide run-test)
 
@@ -18,9 +18,9 @@
         (number? (syntax-e (syntax thing)))
         (syntax/loc stx (#%datum . thing))]))
    (provide #%module-begin [rename bug-datum #%datum]))
- (module module-lang-test-tmp4 scheme/base
+ (module module-lang-test-tmp4 racket/base
    (/ 888 2)
-   (provide (except-out (all-from-out scheme/base) #%top-interaction))))
+   (provide (except-out (all-from-out racket/base) #%top-interaction))))
 
 (test @t{}
       #f
@@ -33,7 +33,7 @@
       @rx{Module Language: only a module expression is allowed
           Interactions disabled}
       #t)
-(test @t{(module m mzscheme) 1}
+(test @t{(module m racket) 1}
       #f
       @rx{Module Language: there can only be one expression in the definitions
           Interactions disabled}
@@ -55,20 +55,20 @@
           collection not found
           Interactions disabled}
       #t)
-(test @t{#lang scheme
+(test @t{#lang racket
          3}
       #f
       "3")
-(test @t{(module m mzscheme (provide x) (define x 1))}
+(test @t{(module m racket (provide x) (define x 1))}
       @t{x}
       "1")
-(test @t{(module m mzscheme (define x 1))}
+(test @t{(module m racket (define x 1))}
       @t{x}
       "1")
-(test @t{(module m mzscheme (define x 1) (define y 1) (provide y))}
+(test @t{(module m racket (define x 1) (define y 1) (provide y))}
       @t{x}
       "1")
-(test @t{(module m mzscheme (define x 1) (define y 2) (provide y))}
+(test @t{(module m racket (define x 1) (define y 2) (provide y))}
       @t{y}
       "2")
 (test @t{(module m mzscheme (require mzlib/list))}
@@ -154,7 +154,7 @@
            (define-syntax app (syntax-rules () ((app . x) '(app . x)))))}
       @t{x}
       "2")
-(test @t{#lang scheme
+(test @t{#lang racket
          (eval 'cons)}
       #f
       @rx{. compile: unbound identifier \(and no #%top syntax transformer is bound\) in: cons})
@@ -164,14 +164,14 @@
 
 ;; check that we have a working repl in the right language after
 ;; syntax errors, unless it's a bad language
-(test @t{#lang scheme
+(test @t{#lang racket
          (define x 1)
          (define y (/ 0))}
       @t{(+ 122 x)}
       @rx{. /: division by zero
           123}
       #t)
-(test @t{#lang scheme
+(test @t{#lang racket
          (define x 1)
          (define y (/ 0))}
       @t{(if x 123)}
@@ -208,7 +208,6 @@
            (* x 123))}
       #f
       @rx{cannot open input file
-          No such file or directory
           Module Language: invalid language specification
           Interactions disabled}
       #t)
@@ -218,43 +217,41 @@
       "\nInteractions disabled: setup/infotab does not support a REPL (no #%top-interaction)"
       #t)
 
-;; test scheme/load behavior
-(test @t{#lang scheme/load
+;; test racket/load behavior
+(test @t{#lang racket/load
          (module m mzscheme (provide x) (define x 2))
          (require 'm)
          (printf "~s\n" x)
          (flush-output)}
       #f
       "2")
-(test @t{#lang scheme/load
+(test @t{#lang racket/load
          (module m mzscheme (provide x) (define x 2))
-         (module n scheme/base (require 'm) (provide y) (define y (* x x)))
+         (module n racket/base (require 'm) (provide y) (define y (* x x)))
          (require 'n)
          (printf "~s\n" y)
          (flush-output)}
       #f
       "4")
 
-(test @t{#lang scheme
+(test @t{#lang racket
          (define-syntax (f stx)
            (syntax-case stx ()
              [(f)
               (raise (make-exn:fail:syntax "both" (current-continuation-marks) (list #'f stx)))]))}
       @t{(f)}
-      #<<--
-> (f)
-. both in:
-  f
-  (f)
---
+      (string-append "> (f)\n"
+                     ". both in:\n"
+                     "  f\n"
+                     "  (f)")
       #t)
 
 ;; test protection against user-code changing the namespace
-(test @t{#lang scheme/base
+(test @t{#lang racket/base
          (current-namespace (make-base-namespace))}
       "(+ 1 2)"
       "3")
-(test @t{#lang scheme/base
+(test @t{#lang racket/base
          (current-namespace (make-base-empty-namespace))}
       "(+ 1 2)"
       "3")
