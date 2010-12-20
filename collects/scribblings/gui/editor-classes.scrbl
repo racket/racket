@@ -16,10 +16,6 @@ Displays, Administrators, and Mappings:
 
 @diagram->table[editor-admin-diagram]
 
-Styles:
-
-@diagram->table[style-diagram]
-
 Streams for Saving and Cut-and-Paste:
 
 @diagram->table[stream-diagram]
@@ -28,7 +24,6 @@ Alphabetical:
 
 @local-table-of-contents[]
 
-@include-section["add-color-intf.scrbl"]
 @include-section["editor-intf.scrbl"]
 @include-section["editor-admin-class.scrbl"]
 @include-section["editor-canvas-class.scrbl"]
@@ -45,9 +40,5 @@ Alphabetical:
 @include-section["editor-stream-out-bytes-base-class.scrbl"]
 @include-section["editor-wordbreak-map-class.scrbl"]
 @include-section["keymap-class.scrbl"]
-@include-section["mult-color-intf.scrbl"]
 @include-section["pasteboard-class.scrbl"]
-@include-section["style-intf.scrbl"]
-@include-section["style-delta-class.scrbl"]
-@include-section["style-list-class.scrbl"]
 @include-section["text-class.scrbl"]

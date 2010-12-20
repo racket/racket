@@ -3,7 +3,7 @@
 	   mzlib/etc
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/style.ss")
+	   (prefix wx: racket/snip)
 	   "lock.ss"
 	   "const.ss"
 	   "check.ss"

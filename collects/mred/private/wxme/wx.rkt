@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../kernel.ss" "symbol-predicates.rkt")
+(require "../kernel.ss" racket/draw/private/font-syms)
 
 (define the-clipboard (get-the-clipboard))
 (define the-x-selection-clipboard (get-the-x-selection))
@@ -7,7 +7,7 @@
 (define (size? v) (and (exact-positive-integer? v)
                        (byte? v)))
 
-(provide (all-from-out "symbol-predicates.rkt")
+(provide (all-from-out racket/draw/private/font-syms)
          event%
          mouse-event%
          key-event%
@@ -39,10 +39,6 @@
          hide-cursor
          run-printout
          current-ps-setup
-         family-symbol?
-         style-symbol?
-         weight-symbol?
-         smoothing-symbol?
          get-highlight-background-color
          get-highlight-text-color)
 

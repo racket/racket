@@ -9,7 +9,6 @@
                   mouse-event%)
          racket/snip
          mred/private/wxme/mline
-         mred/private/wxme/style
          mred/private/wxme/editor
          mred/private/wxme/text
          mred/private/wxme/pasteboard

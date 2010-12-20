@@ -9,7 +9,6 @@
          "editor.ss"
          "editor-data.rkt"
          "undo.ss"
-         "style.ss"
          racket/snip
          racket/snip/private/snip-flags
          "standard-snip-admin.rkt"

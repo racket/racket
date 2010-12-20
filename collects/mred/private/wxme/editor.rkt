@@ -4,9 +4,9 @@
          scheme/file
          "../syntax.ss"
          "private.ss"
-         racket/snip/private/private
-         "style.ss"
          racket/snip
+         racket/snip/private/private
+	 racket/snip/private/style
          racket/snip/private/snip-flags
          "editor-admin.ss"
          "stream.ss"

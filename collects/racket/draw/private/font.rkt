@@ -25,9 +25,6 @@
                                                       PANGO_UNDERLINE_SINGLE))
                            l))
 
-(define (smoothing-symbol? s)
-  (memq s '(default smoothed unsmoothed partly-smoothed)))
-
 (define (size? v) (and (exact-positive-integer? v)
                        (byte? v)))
 

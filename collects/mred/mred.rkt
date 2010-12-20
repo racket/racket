@@ -7,7 +7,6 @@
            racket/draw racket/snip
            mzlib/etc
 	   (prefix wx: "private/kernel.ss")
-	   (prefix wx: "private/wxme/style.ss")
 	   (prefix wx: "private/wxme/editor.ss")
 	   (prefix wx: "private/wxme/text.ss")
 	   (prefix wx: "private/wxme/pasteboard.ss")
@@ -95,8 +94,7 @@
 		       (define n k:n) ...
 		       (provide n ...)))))])))
 
-  (propagate add-color<%>
-	     add-editor-keymap-functions
+  (propagate add-editor-keymap-functions
 	     add-text-keymap-functions
 	     add-pasteboard-keymap-functions
 	     begin-busy-cursor
@@ -134,7 +132,6 @@
 	     editor-stream-out-bytes-base%
 	     editor-wordbreak-map%
 	     mouse-event%
-	     mult-color<%>
 	     read-editor-global-footer
 	     read-editor-global-header
 	     read-editor-version
@@ -143,9 +140,6 @@
 	     special-option-key
              map-command-as-meta-key
 	     label->plain-label
-	     style<%>
-	     style-delta%
-	     style-list%
 	     write-editor-global-footer
 	     write-editor-global-header
 	     write-editor-version
@@ -154,7 +148,6 @@
 	     eventspace-shutdown?
 	     get-panel-background
 
-             the-style-list
              the-editor-wordbreak-map
              make-screen-bitmap
              make-gl-bitmap)

@@ -5,7 +5,7 @@
 	   mzlib/list
 	   mzlib/file
 	   (prefix wx: "kernel.ss")
-           (prefix wx: "wxme/style.ss")
+           (prefix wx: racket/snip)
            (prefix wx: "wxme/keymap.ss")
            (prefix wx: "wxme/editor.ss")
            (prefix wx: "wxme/text.ss")

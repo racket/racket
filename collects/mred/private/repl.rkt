@@ -2,7 +2,7 @@
   (require mzlib/class
 	   mzlib/class100
 	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/style.ss")
+	   (prefix wx: racket/snip)
 	   "editor.ss"
 	   "app.ss"
 	   "mrtop.ss"

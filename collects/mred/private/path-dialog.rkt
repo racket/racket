@@ -1,7 +1,7 @@
 (module path-dialog mzscheme
   (require mzlib/class mzlib/list mzlib/string mzlib/file
 	   (prefix wx: "kernel.ss")
-	   (prefix wx: "wxme/style.ss")
+	   (prefix wx: racket/snip)
 	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
            "messagebox.ss" "mrmenu.ss" (only scheme/base compose))
   (provide path-dialog%)

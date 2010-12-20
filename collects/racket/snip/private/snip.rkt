@@ -3,9 +3,9 @@
          scheme/file file/convertible
          "snip-flags.ss"
          "load-one.rkt"
-         racket/draw/private/syntax
-         mred/private/wxme/style
+         "style.rkt"
          "private.rkt"
+         racket/draw/private/syntax
          racket/draw)
 
 (provide snip%

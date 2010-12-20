@@ -53,4 +53,5 @@
   do-reading-version
   do-map-position
   do-get-header-flag
-  do-set-header-flag)
+  do-set-header-flag
+  get-wxme-version)

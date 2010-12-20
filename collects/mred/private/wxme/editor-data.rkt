@@ -3,12 +3,12 @@
 (require scheme/class
          scheme/file file/convertible
          "../syntax.ss"
-         racket/snip/private/snip-flags
          "private.ss"
+         racket/snip/private/snip-flags
          racket/snip/private/private
-         "style.ss"
-        racket/snip/private/load-one
-	(only-in "cycle.ss"
+ 	 racket/snip/private/style
+	 racket/snip/private/load-one
+	 (only-in "cycle.ss"
                   editor-stream-in% editor-stream-out%
                   get-editor-data-class set-get-editor-data-class!)
          "../wx/common/event.rkt"

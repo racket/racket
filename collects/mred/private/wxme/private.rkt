@@ -82,8 +82,7 @@
 (define-local-member-name
   set-s-read-format
   get-s-read-format
-  set-s-read-version
-  get-wxme-version)
+  set-s-read-version)
 
 ;; editor-snip%
 (define-local-member-name
