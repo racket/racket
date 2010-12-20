@@ -2,13 +2,16 @@
 @(require "common.ss"
           "diagrams.ss")
 
-@title[#:style '(toc quiet)]{Snip Classes}
+@title[#:style '(toc quiet)]{Snip and Style Classes}
 
-@;@defmodule*/no-declare[(racket/snip)]
+@declare-exporting[racket/snip racket/gui/base racket/gui]
+@defmodule*/no-declare[(racket/snip)]
 
-The @racketmodname[racket/snip] collection provides access to the
-@tech{snip} classes @emph{without} depending on
-@racketmodname[racket/gui].  
+The @racketmodname[racket/snip] collection provides the core
+@tech{snip} and @tech{style} classes @emph{without} depending on
+@racketmodname[racket/gui/base]. This separation enables
+libraries that can cooperate with an editor while also working in
+contexts that do not have a GUI.
 
 Snips and Administrators:
 

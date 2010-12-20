@@ -21,8 +21,7 @@
 
 @defmodule[wxme]{The @racketmodname[wxme] library provides tools for
 reading @tech{WXME} @racket[editor<%>]-format files (see
-@secref["editorfileformat"]) without the @racket[racket/gui] library
-(i.e., using @exec{racket} instead of @exec{gracket}).}
+@secref["editorfileformat"]) without the @racket[racket/gui] library.}
 
 
 @defproc[(is-wxme-stream? [in input-port?]) boolean?]{
