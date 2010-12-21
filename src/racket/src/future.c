@@ -1346,6 +1346,28 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
   future->arg_S0 = NULL;
 }
 
+void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
+                                   prim_allocate_values_t f)
+  XFORM_SKIP_PROC
+/* Called in future thread */
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future = fts->thread->current_ft;
+
+  future->prim_protocol = SIG_ALLOC_VALUES;
+
+  future->arg_i0 = count;
+  future->arg_s0 = (Scheme_Object *)t;
+
+  future->time_of_request = scheme_get_inexact_milliseconds();
+  future->source_of_request = who;
+  future->source_type = src_type;
+
+  future_do_runtimecall(fts, (void*)f, 1);
+
+  future->arg_s0 = NULL;
+}
+
 #ifdef MZ_PRECISE_GC
 
 uintptr_t scheme_rtcall_alloc(const char *who, int src_type)
@@ -1568,6 +1590,17 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         p_seg = (Scheme_Thread *)future->arg_s0;
         future->arg_s0 = NULL;
         scheme_new_mark_segment(p_seg);
+        break;
+      }
+    case SIG_ALLOC_VALUES:
+      {
+        prim_allocate_values_t func = (prim_allocate_values_t)future->prim_func;
+        GC_CAN_IGNORE Scheme_Object *arg_s0 = future->arg_s0;
+
+        future->arg_s0 = NULL;
+
+        func(future->arg_i0, (Scheme_Thread *)arg_s0);
+
         break;
       }
 # define JIT_TS_LOCALIZE(t, f) GC_CAN_IGNORE t f = future->f

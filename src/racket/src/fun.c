@@ -281,6 +281,9 @@ scheme_init_fun (Scheme_Env *env)
 						 "values",
 						 0, -1,
 						 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                                 | SCHEME_PRIM_IS_BINARY_INLINED
+                                                 | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("values",
 			     scheme_values_func,
 			     env);

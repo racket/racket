@@ -29,6 +29,7 @@ typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Ob
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
 typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
+typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 
 #define PENDING 0
 #define RUNNING 1
@@ -121,6 +122,7 @@ typedef struct future_t {
 #define SIG_VOID_VOID_3ARGS    1
 #define SIG_ALLOC              2
 #define SIG_ALLOC_MARK_SEGMENT 3
+#define SIG_ALLOC_VALUES       4
 
 # include "jit_ts_protos.h"
 
@@ -139,7 +141,8 @@ extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
 extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
-
+extern void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
+                                          prim_allocate_values_t f);
 #else 
 
 #define IS_WORKER_THREAD 0

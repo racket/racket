@@ -179,6 +179,7 @@ SHARED_OK static void *struct_set_code, *struct_set_multi_code;
 SHARED_OK static void *struct_proc_extract_code;
 SHARED_OK static void *bad_app_vals_target;
 SHARED_OK static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
+SHARED_OK static void *values_code;
 SHARED_OK static void *finish_tail_call_code, *finish_tail_call_fixup_code;
 SHARED_OK static void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
 SHARED_OK static void *box_flonum_from_stack_code;
@@ -3055,6 +3056,29 @@ static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
   return 1;
 #endif
 }
+
+static void allocate_values(int count, Scheme_Thread *p)
+{
+  Scheme_Object **a;
+
+  a = MALLOC_N(Scheme_Object *, count);
+
+  p->values_buffer = a;
+  p->values_buffer_size = count;
+}
+
+#ifdef MZ_USE_FUTURES
+static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall) {
+    scheme_rtcall_allocate_values("[allocate_values]", FSRC_OTHER, count, p, allocate_values);
+  } else
+    allocate_values(count, p);
+}
+#else
+# define ts_allocate_values allocate_values
+#endif
+
 
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 {
@@ -7416,8 +7440,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, app, NULL);
-    } else if (IS_NAMED_PRIM(rator, "list*")) {
-      /* on a single argument, `list*' is identity */
+    } else if (IS_NAMED_PRIM(rator, "list*")
+               || IS_NAMED_PRIM(rator, "values")) {
+      /* on a single argument, `list*' or `values' is identity */
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -8709,6 +8734,25 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       allocate_rectangular(jitter);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "values")) {
+      Scheme_Object *args[3];
+
+      args[0] = rator;
+      args[1] = app->rand1;
+      args[2] = app->rand2;
+
+      generate_app(NULL, args, 2, jitter, 0, 0, 2);
+
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      jit_movi_l(JIT_V1, 2);
+      (void)jit_calli(values_code);
+
+      mz_rs_inc(2); /* no sync */
+      mz_runstack_popped(jitter, 2);
+
+      return 1;
     }
   }
 
@@ -9164,6 +9208,28 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       if (c) {
         mz_rs_inc(c); /* no sync */
         mz_runstack_popped(jitter, c);
+      }
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "values")) {
+      int c = app->num_args;
+
+      if (c) {
+        generate_app(app, NULL, c, jitter, 0, 0, 2);
+        CHECK_LIMIT();
+        mz_rs_sync();
+
+        jit_movi_l(JIT_V1, c);
+        (void)jit_calli(values_code);
+
+        mz_rs_inc(c); /* no sync */
+        mz_runstack_popped(jitter, c);
+      } else {
+        mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
+        jit_movi_l(JIT_R0, 0);
+        jit_stxi_l(((int)&((Scheme_Thread *)0x0)->ku.multiple.count), JIT_R2, JIT_R0);
+        jit_stxi_p(((int)&((Scheme_Thread *)0x0)->ku.multiple.array), JIT_R2, JIT_R0);
+        jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
       }
 
       return 1;
@@ -11954,6 +12020,58 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     }
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
+    mz_epilog(JIT_R1);
+    CHECK_LIMIT();
+  }
+
+  /*** values_code ***/
+  /* Arguments on runstack, V1 has count */
+  {
+    GC_CAN_IGNORE jit_insn *refslow, *ref1, *refloop, *ref2;
+
+    values_code = jit_get_ip().ptr;
+    mz_prolog(JIT_R1);
+    mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
+    jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->values_buffer);
+    ref1 = jit_bnei_p(jit_forward(), JIT_R1, NULL);
+    CHECK_LIMIT();
+
+    /* Allocate new array: */
+    refslow = _jit.x.pc;
+    JIT_UPDATE_THREAD_RSPTR();
+    mz_prepare(2);
+    jit_pusharg_p(JIT_R2);
+    jit_pusharg_i(JIT_V1);
+    (void)mz_finish_lwe(ts_allocate_values, ref2);
+    CHECK_LIMIT();
+
+    /* Try again... */
+    mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
+    jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->values_buffer);
+
+    /* Buffer is non-NULL... big enough? */
+    mz_patch_branch(ref1);
+    jit_ldxi_i(JIT_R0, JIT_R2, &((Scheme_Thread *)0x0)->values_buffer_size);
+    jit_bltr_i(refslow, JIT_R0, JIT_V1);
+    
+    /* Buffer is ready */
+    jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R2, JIT_R1);
+    jit_stxi_i(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R2, JIT_V1);
+    CHECK_LIMIT();
+    
+    /* Copy values over: */
+    jit_movr_p(JIT_R0, JIT_RUNSTACK);
+    refloop = _jit.x.pc;
+    jit_ldr_p(JIT_R2, JIT_R0);
+    jit_str_p(JIT_R1, JIT_R2);
+    jit_subi_l(JIT_V1, JIT_V1, 1);
+    jit_addi_p(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+    jit_addi_p(JIT_R1, JIT_R1, JIT_WORD_SIZE);
+    jit_bnei_l(refloop, JIT_V1, 0);
+    CHECK_LIMIT();
+
+    jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+    
     mz_epilog(JIT_R1);
     CHECK_LIMIT();
   }
