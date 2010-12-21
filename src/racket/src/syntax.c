@@ -3183,7 +3183,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     int try_again;
     do {
       try_again = 0;
-      /* (let ([x (let~ ([y M]) N)]) P) => (let~ ([y M]) (let ([x N]) P)) */
+      /* (let ([x (let~ ([y M]) N)]) P) => (let~ ([y M]) (let ([x N]) P))
+         or (let ([x (begin M ... N)]) P) => (begin M ... (let ([x N]) P)) */
       if (post_bind) {
         if (head->num_clauses == 1) {
           clv = (Scheme_Compiled_Let_Value *)head->body; /* ([x ...]) */
@@ -3214,6 +3215,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
               post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
               try_again = 1;
             }
+          } else if (SAME_TYPE(SCHEME_TYPE(clv->value), scheme_sequence_type)) {
+            Scheme_Sequence *seq = (Scheme_Sequence *)clv->value; /* (begin M ... N) */
+
+            clv->value = seq->array[seq->count - 1];
+            seq->array[seq->count - 1] = (Scheme_Object *)head;
+
+            return scheme_optimize_expr((Scheme_Object *)seq, info, context);
           }
         }
       }
