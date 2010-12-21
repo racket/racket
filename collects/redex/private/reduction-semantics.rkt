@@ -2005,7 +2005,10 @@
 (struct search-success ())
 (struct search-failure (cutoff?))
 
-(define (traverse-reduction-graph reductions start #:goal [goal? #f] #:steps [steps +inf.0])
+;; traverse-reduction-graph : 
+;;  reduction-relation term #:goal (-> any boolean?) #:steps number? #:visit (-> any/c void?) -> (or/c search-success? search-failure?)
+;;  reduction-relation term #:goal #f                #:steps number? #:visit (-> any/c void?) -> (values (listof any/c) boolean?)
+(define (traverse-reduction-graph reductions start #:goal [goal? #f] #:steps [steps +inf.0] #:visit [visit void])
   (let/ec return
     (let ([answers (make-hash)]
           [cycle? #f]
@@ -2025,6 +2028,7 @@
               [(hash-ref path term #f)
                (set! cycle? #t)]
               [else
+               (visit term)
                (let ([nexts (apply-reduction-relation reductions term)])
                  (cond
                    [(null? nexts) 
@@ -2123,12 +2127,15 @@
                            #:name "#:cycles-ok argument")
                 (~optional (~seq #:equiv equiv?)
                            #:defaults ([equiv?.c test-equiv-default])
-                           #:name test-equiv-name))
+                           #:name test-equiv-name)
+                (~optional (~seq #:pred pred)
+                           #:defaults ([pred #f])
+                           #:name "#:pred argument"))
            ...
            e1:expr
            e2:expr ...)
      #:declare equiv? (expr/c test-equiv-ctc #:name test-equiv-name)
-     #`(test-->>/procs red e1 (list e2 ...) traverse-reduction-graph #,(attribute cycles-ok?) equiv?.c #,(get-srcloc stx))]))
+     #`(test-->>/procs 'test-->> red e1 (list e2 ...) traverse-reduction-graph #,(attribute cycles-ok?) equiv?.c #,(attribute pred) #,(get-srcloc stx))]))
 
 (define-syntax (test--> stx)
   (syntax-parse stx
@@ -2138,16 +2145,29 @@
            e1:expr
            e2:expr ...)
      #:declare equiv? (expr/c test-equiv-ctc #:name test-equiv-name)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t equiv?.c #,(get-srcloc stx))]))
+     #`(test-->>/procs 'test--> red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t equiv?.c #f #,(get-srcloc stx))]))
 
-(define (apply-reduction-relation/dummy-second-value red arg)
+(define (apply-reduction-relation/dummy-second-value red arg #:visit visit)
   (values (apply-reduction-relation red arg) #f))
 
-(define (test-->>/procs red arg expected apply-red cycles-ok? equiv? srcinfo)
+(define (test-->>/procs name red arg expected apply-red cycles-ok? equiv? pred srcinfo)
   (unless (reduction-relation? red)
-    (error 'test--> "expected a reduction relation as first argument, got ~e" red))
-  (let-values ([(got got-cycle?) (apply-red red arg)])
-    (inc-tests)
+    (error name "expected a reduction relation as first argument, got ~e" red))
+  (when pred
+    (unless (and (procedure? pred)
+                 (procedure-arity-includes? pred 1))
+      (error 'test-->> "expected a procedure that accepted one argument for the #:pred, got ~e" pred)))
+  (inc-tests)
+  (define visit-already-failed? #f)
+  (define (visit t)
+    (when pred
+      (unless visit-already-failed?
+        (unless (pred t)
+          (set! visit-already-failed? #t)
+          (inc-failures)
+          (print-failed srcinfo)
+          (fprintf (current-error-port) "found a term that failed #:pred: ~v\n" t)))))
+  (let-values ([(got got-cycle?) (apply-red red arg #:visit visit)])
     
     (cond
       [(and got-cycle?
@@ -2156,19 +2176,20 @@
        (print-failed srcinfo)
        (fprintf (current-error-port) "found a cycle in the reduction graph\n")]
       [else
-       (let* ([⊆ (λ (s1 s2) (andmap (λ (x1) (memf (λ (x) (equiv? x1 x)) s2)) s1))]
-              [set-equal? (λ (s1 s2) (and (⊆ s1 s2) (⊆ s2 s1)))])
-         (unless (set-equal? expected got)
-           (inc-failures)
-           (print-failed srcinfo)
-           (for-each
-            (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
-            expected)
-           (if (empty? got)
-               (fprintf (current-error-port) "got nothing\n")
-               (for-each
-                (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
-                got))))])))
+       (unless visit-already-failed?
+         (let* ([⊆ (λ (s1 s2) (andmap (λ (x1) (memf (λ (x) (equiv? x1 x)) s2)) s1))]
+                [set-equal? (λ (s1 s2) (and (⊆ s1 s2) (⊆ s2 s1)))])
+           (unless (set-equal? expected got)
+             (inc-failures)
+             (print-failed srcinfo)
+             (for-each
+              (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
+              expected)
+             (if (empty? got)
+                 (fprintf (current-error-port) "got nothing\n")
+                 (for-each
+                  (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
+                  got)))))])))
 
 (define-syntax (test-->>∃ stx)
   (syntax-parse stx

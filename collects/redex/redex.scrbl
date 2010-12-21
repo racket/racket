@@ -1109,17 +1109,29 @@ Tests to see if @racket[e1] is equal to @racket[e2].
 
 @defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
               ([option (code:line #:cycles-ok)
-                       (code:line #:equiv pred-expr)])
+                       (code:line #:equiv pred-expr)
+                       (code:line #:pred pred-expr)])
               #:contracts ([rel-expr reduction-relation?]
-                           [pred-expr (--> any/c any/c any/c)]
+                           [pred-expr (--> any/c any)]
                            [e1-expr any/c]
                            [e2-expr any/c])]{
 
 Tests to see if the term @racket[e1-expr],
 reduces to the terms @racket[e2-expr] under @racket[rel-expr],
-using @racket[pred-expr] to determine equivalence. This test uses
+using @racket[pred-expr] to determine equivalence. 
+
+If @racket[#:pred] is specified, it is applied to each reachable term
+until one of the terms fails to satify the predicate (i.e., the
+predicate returns @racket[#f]). If that happens, then the test fails
+and a message is printed with the term that failed to satisfy the
+predicate.
+
+This test uses
 @racket[apply-reduction-relation*], so it does not terminate
 when the resulting reduction graph is infinite.
+
+
+
 }
 
 @defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)

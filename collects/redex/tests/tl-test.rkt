@@ -2187,6 +2187,15 @@
           #rx"FAILED tl-test.(?:.+):[0-9.]+\nfound a cycle in the reduction graph\n1 test failed \\(out of 1 total\\).\n"))
   
   (let ()
+    (define subred (reduction-relation empty-language (--> natural ,(- (term natural) 1))))
+    (test (capture-output (test-->> subred #:pred (λ (x) #t) 1 -1) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test-->> subred #:pred number? 1 -1) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test-->> subred #:pred odd? 1 -1) (test-results))
+         #rx"FAILED tl-test.rkt:[0-9.]+\nfound a term that failed #:pred: 0\n1 test failed \\(out of 1 total\\).\n"))
+  
+  (let ()
     (define-metafunction empty-language [(f any) ((any))])
     (test (capture-output (test-equal (term (f 1)) (term ((1))))
                           (test-results))
