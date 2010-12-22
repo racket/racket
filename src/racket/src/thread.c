@@ -4634,7 +4634,11 @@ int scheme_wait_until_suspend_ok(void)
 
   while (do_atomic && scheme_on_atomic_timeout) {
     did = 1;
+    if (atomic_timeout_auto_suspend)
+      atomic_timeout_auto_suspend++;
     call_on_atomic_timeout(1);
+    if (atomic_timeout_auto_suspend > 1)
+      --atomic_timeout_auto_suspend;
   }
 
   return did;

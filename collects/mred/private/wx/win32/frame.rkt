@@ -210,7 +210,8 @@
      [(= msg WM_CLOSE)
       (queue-window-event this (lambda () 
 				 (when (on-close)
-				   (direct-show #f))))
+                                   (atomically
+                                    (direct-show #f)))))
       0]
      [(and (= msg WM_SIZE)
            (not (= wParam SIZE_MINIMIZED)))

@@ -15,9 +15,12 @@
 (define scheme_restore_on_atomic_timeout 
   (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun _pointer -> _pointer)))
 
-(define freezer-box (make-parameter #f))
+(define freezer-box-key (gensym))
 (define freeze-tag (make-continuation-prompt-tag))
 (define force-timeout (make-parameter #f))
+
+(define (freezer-box)
+  (continuation-mark-set-first #f freezer-box-key))
 
 ;; Runs `thunk' atomically, but cooperates with 
 ;; `try-atomic' to continue a frozen
@@ -36,13 +39,14 @@
                     ;; Start with an empty list of things to finish:
                     null))])
     (begin0
-     (parameterize ([freezer-box b])
+     (with-continuation-mark freezer-box-key b
        ;; In atomic mode (but not using call-as-atomic, because we
        ;; don't want to change the exception handler, etc.)
-       (start-atomic)
-       (begin0 
-        (thunk)
-        (end-atomic)))
+       (begin
+         (start-atomic)
+         (begin0 
+          (thunk)
+          (end-atomic))))
      ;; Retries out of atomic mode:
      (let ([l (unbox b)])
        (for ([k (in-list (reverse l))])
