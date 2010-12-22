@@ -1264,7 +1264,8 @@
                  arg
                  (or (current-load-relative-directory)
                      (current-directory)))])])
-       #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
+       ;; the rotate does a coercion to a 2htdp/image image
+       #`(rotate 0 (make-object image-snip% (make-object bitmap% #,path 'unknown/mask))))]))
 
 (define/chk (image->color-list image)
   (let* ([w (image-width image)]
