@@ -87,6 +87,12 @@ The @racketmodname[racket] library combines
              #:location "LISP and Functional Programming"
              #:date "1990")
 
+  (bib-entry #:key "Felleisen88a"
+             #:author "Matthias Felleisen"
+             #:title "The theory and practice of first-class prompts"
+             #:location "Principles of Programming Languages"
+             #:date "1988")
+
   (bib-entry #:key "Felleisen88"
              #:author "Matthias Felleisen, Mitch Wand, Dan Friedman, and Bruce Duba"
              #:title "Abstract Continuations: A Mathematical Semantics for Handling Full Functional Jumps"
@@ -149,7 +155,7 @@ The @racketmodname[racket] library combines
             #:url "http://www.r6rs.org/")
 
   (bib-entry #:key "Sitaram90"
-             #:author "Dorai Sitaram"
+             #:author "Dorai Sitaram and Matthias Felleisen"
              #:title "Control Delimiters and Their Hierarchies"
              #:location @italic{Lisp and Symbolic Computation}
              #:date "1990")
