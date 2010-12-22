@@ -5,3 +5,8 @@
 *** bsl: current bsl - symbols + '() 
 *** isl: lambda + local 
 *** isl+: symbols, quoted and backquoted S-expressions 
+
+*** structures come with dot and update forms (where?)
+
+*** if checked signatures are added, change libraries to export signatures
+    for basic things 
