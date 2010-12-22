@@ -450,7 +450,7 @@ now.
 
 @item{
 
-@defstruct[stop-with ([w (unsyntax @tech{WorldState})])]{signals to
+@defstruct*[stop-with ([w (unsyntax @tech{WorldState})])]{signals to
 DrRacket that the world program should shut down. That is, any
 handler may return @scheme[(stop-with w)] provided @scheme[w] is a
 @tech{WorldState}. If it does, the state of the world becomes @scheme[w]
