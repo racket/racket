@@ -89,7 +89,11 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (define reg (string-append  "the implementation of " (regexp-quote blame)))
+        (define reg
+          (case blame
+            [(pos) #rx"^self-contract violation"]
+            [(neg) #rx"blaming neg"]
+            [else (error 'test/spec-failed "unknown blame name ~s" blame)]))
         (regexp-match? reg msg))
       (printf "testing: ~s\n" name)
       (contract-eval
@@ -10912,11 +10916,11 @@ so that propagation occurs.
            (require 'provide/contract-35/m)
            (f #f)))))
     
-      (test (format "contract-test.rktl:~a.30: "
+      (test (format "contract-test.rktl:~a.30"
                     (+ here-line 8))
             'provide/contract-compiled-source-locs
             (with-handlers ((exn:fail? (λ (x) 
-                                         (let ([m (regexp-match #rx"contract-test.rktl[^ ]* " (exn-message x))])
+                                         (let ([m (regexp-match #rx"contract-test.rktl[^ ]*.30" (exn-message x))])
                                            (and m (car m))))))
               
               (contract-eval '(require 'provide/contract-35/n)))))
@@ -11018,7 +11022,6 @@ so that propagation occurs.
                 (provide/contract [f (-> integer? integer? integer?)])))
        (eval '(require 'pce8-bug1)))
    (λ (x)
-     (printf ">> ~s\n" (exn-message x))
      (and (exn? x)
           (regexp-match #rx"pce8-bug" (exn-message x)))))
 
@@ -11033,7 +11036,7 @@ so that propagation occurs.
        (eval '(g 12)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"broke the contract.*on g" (exn-message x)))))
+          (regexp-match #rx"contract on g from 'pce9-bug" (exn-message x)))))
   
   (contract-error-test
    #'(begin
@@ -11046,7 +11049,7 @@ so that propagation occurs.
        (eval '(g 'a)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"broke the contract.*on g" (exn-message x)))))
+          (regexp-match #rx"contract on g from 'pce10-bug" (exn-message x)))))
    
   (contract-eval
    `(,test

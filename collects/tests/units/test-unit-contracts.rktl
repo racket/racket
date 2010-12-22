@@ -6,15 +6,15 @@
 (define top-level "top-level")
 
 (define (match-blame re msg)
-  (or (regexp-match? (string-append "(^| )for " re " and its implementation;") msg)
-      (regexp-match? (string-append "(^| )and its client " re ";") msg)))
+  (or (regexp-match? (format "blaming ~a" re) msg)
+      (regexp-match? (format "self-contract violation:.*from ~a" re) msg)))
 
 (define (match-obj re msg)
-  (regexp-match? (string-append "(^| )on " re " for") msg))
+  (regexp-match? (string-append "contract on " re " from") msg))
 
 (define (get-ctc-err msg)
   (cond
-    [(regexp-match #rx";[ ]*(.*)" msg)
+    [(regexp-match  #rx"contract violation: ([^\n]*)\n" msg)
      =>
      (λ (x) (cadr x))]
     [else (error 'test-contract-error
