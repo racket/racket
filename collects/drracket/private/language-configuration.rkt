@@ -1008,6 +1008,8 @@
                              (send (send t get-style-list) basic-style)
                              before (send t last-position))])
                     (send t change-style size-sd before (send t last-position))))])
+          (when (send normal-control-font get-size-in-pixels)
+            (send size-sd set-size-in-pixels-on #t))
           (let loop ([strs (regexp-split #rx"#lang" sc-lang-in-source-discussion)])
             (do-insert (car strs) #f)
             (unless (null? (cdr strs))
