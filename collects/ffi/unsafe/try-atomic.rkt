@@ -16,11 +16,15 @@
   (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun _pointer -> _pointer)))
 
 (define freezer-box-key (gensym))
+(define in-try-atomic-key (gensym))
 (define freeze-tag (make-continuation-prompt-tag))
 (define force-timeout (make-parameter #f))
 
 (define (freezer-box)
   (continuation-mark-set-first #f freezer-box-key))
+
+(define (in-try-atomic?)
+  (continuation-mark-set-first #f in-try-atomic-key))
 
 ;; Runs `thunk' atomically, but cooperates with 
 ;; `try-atomic' to continue a frozen
@@ -54,7 +58,7 @@
           k
           freeze-tag))))))
 
-(define (can-try-atomic?) (and (freezer-box) #t))
+(define (can-try-atomic?) (and (freezer-box) (not (in-try-atomic?))))
 
 ;; prevent GC of handler while it's installed:
 (define saved-ptrs (make-hash))
@@ -68,6 +72,7 @@
   (let ([b (freezer-box)])
     (cond
      [(not b) (error 'try-atomic "not inside a nonatomic retry point")]
+     [(in-try-atomic?) (error 'try-atomic "already trying atomic")]
      [(and (pair? (unbox b)) keep-in-order?)
       ;; gave up on previous try, so give up now immediately:
       (set-box! b (cons thunk (unbox b)))
@@ -75,8 +80,10 @@
      [else
       ;; try to do some work:
       (let* ([ready? #f]
+             [done? #f]
              [handler (lambda (must-give-up)
                         (when (and ready? 
+                                   (not done?)
                                    (or (positive? must-give-up)
                                        (force-timeout)
                                        (should-give-up?)))
@@ -88,10 +95,9 @@
                               freeze-tag
                               (lambda () default)))
                            freeze-tag)
-                          (void)))]
-             [done? #f])
+                          (void)))])
         (hash-set! saved-ptrs handler #t)
-        (begin
+        (with-continuation-mark in-try-atomic-key #t
           (let/ec esc ;; esc + dynamic-wind prevents escape via alternate prompt tags
             (dynamic-wind
              void
