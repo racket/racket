@@ -187,13 +187,14 @@
             [select (lambda (on?) (send snip select on?))]
             [click-select (lambda (on?) (send snip click-select on?))]
             [scroll-to (lambda () (let* ([admin (send snip get-admin)]
-                                         [dc (send admin get-dc)]
+                                         [dc (and admin (send admin get-dc))]
                                          [h-box (box 0.0)])
-                                    (send snip get-extent dc 0 0 #f h-box #f #f #f #f)
-                                    (send admin
-                                          scroll-to
-                                          snip
-                                          0 0 0 (unbox h-box) #t)))]
+                                    (when dc
+                                      (send snip get-extent dc 0 0 #f h-box #f #f #f #f)
+                                      (send admin
+                                            scroll-to
+                                            snip
+                                            0 0 0 (unbox h-box) #t))))]
             [user-data (case-lambda [() data][(x) (set! data x)])]
             [get-parent (lambda () 
                           (let ([parent-of-snip (send snip get-parent)])
