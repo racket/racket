@@ -229,13 +229,14 @@
 					   (lambda () 
 					     (send client get-data 
 						   (list-ref client-orig-types i)))
-					   #""))
-                    #"")])
-      (gtk_selection_data_set sel-data
-                              (gdk_atom_intern (list-ref client-types i) #t)
-                              8
-                              bstr
-                              (bytes-length bstr))))
+					   #f))
+                    #f)])
+      (when bstr
+        (gtk_selection_data_set sel-data
+				(gdk_atom_intern (list-ref client-types i) #t)
+				8
+				bstr
+				(bytes-length bstr)))))
 
   (define/public (get-data data-format)
     (let* ([data-format (if (equal? data-format "TEXT")
