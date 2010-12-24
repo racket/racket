@@ -911,7 +911,7 @@ please adhere to these guidelines:
  (convert-to-semicolon-comment "Convert to Semicolon Comment")
  
  ;;; executables
- (create-executable-menu-item-label "Create Executable...")
+ (create-executable-menu-item-label "Create &Executable...")
  (create-executable-title "Create Executable")
  (must-save-before-executable "You must save your program before creating an executable.")
  (save-a-mred-launcher "Save a GRacket Launcher")
