@@ -12,16 +12,19 @@
    (ffi-lib "libpixman-1.0.dylib")
    (ffi-lib "libpng14.14.dylib")
    (ffi-lib "libcairo.2.dylib")]
-  [(windows) 
+  [(win32) 
    (ffi-lib "zlib1.dll")
-   (ffi-lib ,(if win64?
-		 "libintl-8.dll"
-		 "zlib1.dll"))
    (ffi-lib "libpng14-14.dll")
    (ffi-lib "libexpat-1.dll")
-   (ffi-lib ,(if win64?
-		 "libfreetype-6.dll"
-		 "freetype6.dll"))
+   (ffi-lib "freetype6.dll")
+   (ffi-lib "libfontconfig-1.dll")
+   (ffi-lib "libcairo-2.dll")]
+  [(win64) 
+   (ffi-lib "zlib1.dll")
+   (ffi-lib "libintl-8.dll")
+   (ffi-lib "libpng14-14.dll")
+   (ffi-lib "libexpat-1.dll")
+   (ffi-lib "libfreetype-6.dll")
    (ffi-lib "libfontconfig-1.dll")
    (ffi-lib "libcairo-2.dll")])
 
