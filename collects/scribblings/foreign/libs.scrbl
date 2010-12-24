@@ -10,7 +10,7 @@ from @as-index{shared objects} (a.k.a. @defterm{@as-index{shared
 libraries}} or @defterm{@as-index{dynamically loaded libraries}}). The
 @scheme[ffi-lib] function loads a shared object.
 
-@defproc[(ffi-lib? [v any/c]) boolean>]{
+@defproc[(ffi-lib? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @scheme[#f] otherwise.}
