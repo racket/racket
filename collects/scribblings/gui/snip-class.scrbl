@@ -3,7 +3,7 @@
 
 @defclass/title[snip% object% (equal<%>)]{
 
-A direct instance of @scheme[snip%] is uninteresting. Useful snips are
+A direct instance of @racket[snip%] is uninteresting. Useful snips are
  defined by instantiating derived subclasses, but this class defines
  the basic functionality.
 
@@ -46,10 +46,10 @@ To define a class of snips that can be saved or cut-and-pasted:
 
 @itemize[
 
- @item{Create an instance of @scheme[snip-class%], implementing the
+ @item{Create an instance of @racket[snip-class%], implementing the
        @method[snip-class% read] method. Export the
-       @scheme[snip-class%] instance as @scheme[snip-class] from a
-       module, and use a classname of the form @scheme["(lib ...)"] as
+       @racket[snip-class%] instance as @racket[snip-class] from a
+       module, and use a classname of the form @racket["(lib ...)"] as
        described in @|snipclassdiscuss|.}
 
  @item{For each instance of the snip class, set the snip's class object 
@@ -62,11 +62,11 @@ To define a class of snips that can be saved or cut-and-pasted:
 ]
 
 To define a class of snips that read specially with
-@scheme[open-input-text-editor]:
+@racket[open-input-text-editor]:
 
 @itemize[
 
- @item{Make your @scheme[snip%] class implement @scheme[readable-snip<%>].}
+ @item{Make your @racket[snip%] class implement @racket[readable-snip<%>].}
 
  @item{Implement the @method[readable-snip<%> read-special] method.}
 
@@ -76,8 +76,8 @@ To define a class of snips that read specially with
 
 @defconstructor[()]{
 
-Creates a plain snip of length 1 with the @scheme["Basic"] style of
- @scheme[the-style-list].
+Creates a plain snip of length 1 with the @racket["Basic"] style of
+ @racket[the-style-list].
 
 }
 
@@ -93,14 +93,14 @@ Creates a plain snip of length 1 with the @scheme["Basic"] style of
 @methspec{
 
 Called to determine the cursor image used when the cursor is moved
- over the snip in an editor. If @scheme[#f] is returned, a default
+ over the snip in an editor. If @racket[#f] is returned, a default
  cursor is selected by the editor. (See @xmethod[editor<%>
  adjust-cursor] for more information.)
 
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -129,8 +129,8 @@ The drawing context and snip's @techlink{location}s in drawing context
 
 See @xmethod[editor<%> can-do-edit-operation?].
 
-Called when the snip's editor's method is called, @scheme[recursive?]
- is not @scheme[#f], and this snip owns the caret.
+Called when the snip's editor's method is called, @racket[recursive?]
+ is not @racket[#f], and this snip owns the caret.
 
 }
 
@@ -156,7 +156,7 @@ Creates and returns a copy of this snip. The @method[snip% copy]
 See @xmethod[editor<%> do-edit-operation].
 
 Called when the snip's editor's method is called,
- @scheme[recursive?] is not @scheme[#f], and this snip owns the caret.
+ @racket[recursive?] is not @racket[#f], and this snip owns the caret.
 
 }
 
@@ -177,20 +177,20 @@ Called when the snip's editor's method is called,
 @methspec{
 
 Called (by an editor) to draw the snip into the given drawing context
- with the snip's top left corner at @techlink{location} (@scheme[x],
- @scheme[y]) in DC coordinates.
+ with the snip's top left corner at @techlink{location} (@racket[x],
+ @racket[y]) in DC coordinates.
 
-The arguments @scheme[left], @scheme[top], @scheme[right], and @scheme[bottom]
+The arguments @racket[left], @racket[top], @racket[right], and @racket[bottom]
  define a clipping region (in DC coordinates) that the snip can use to
  optimize drawing, but it can also ignore these arguments.
 
-The @scheme[dx] and @scheme[dy] argument provide numbers that can be
- subtracted from @scheme[x] and @scheme[y] to obtain the snip's @techlink{location} in
+The @racket[dx] and @racket[dy] argument provide numbers that can be
+ subtracted from @racket[x] and @racket[y] to obtain the snip's @techlink{location} in
  editor coordinates (as opposed to DC coordinates, which are used for
  drawing).
 
 See @|drawcaretdiscuss| for information about
-@scheme[draw-caret]. When @racket[draw-caret] is a pair, refrain from
+@racket[draw-caret]. When @racket[draw-caret] is a pair, refrain from
 drawing a background for the selected region, and use
 @racket[get-highlight-text-color] when it is not @racket[#f] for
 drawing text and other ``foreground'' elements.
@@ -220,10 +220,10 @@ Draws nothing.
 @defmethod[(equal-to? [snip (is-a?/c snip%)]
                       [equal? (-> any/c any/c boolean?)])
            boolean?]{
-@methspec{See @scheme[equal<%>].}
+@methspec{See @racket[equal<%>].}
 
-@methimpl{Calls the @method[snip% other-equal-to?] method of @scheme[snip]
-(to simulate multi-method dispatch) in case @scheme[snip] provides a
+@methimpl{Calls the @method[snip% other-equal-to?] method of @racket[snip]
+(to simulate multi-method dispatch) in case @racket[snip] provides a
 more specific equivalence comparison.}}
 
 @defmethod[(other-equal-to? [that (is-a?/c snip%)]
@@ -235,16 +235,16 @@ more specific equivalence comparison.}}
 @defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
-@methspec{See @scheme[equal<%>].}
+@methspec{See @racket[equal<%>].}
  
-@methimpl{Returns @scheme[(eq-hash-code this)].}}
+@methimpl{Returns @racket[(eq-hash-code this)].}}
 
 @defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
-@methspec{See @scheme[equal<%>].}
+@methspec{See @racket[equal<%>].}
  
-@methimpl{Returns @scheme[1].}}
+@methimpl{Returns @racket[1].}}
                     
 @defmethod[(find-scroll-step [y real?])
            exact-nonnegative-integer?]{
@@ -258,7 +258,7 @@ If a snip contains more than one vertical scroll step (see
 }
 @methimpl{
 
-Returns @scheme[0].
+Returns @racket[0].
 
 }}
 
@@ -266,7 +266,7 @@ Returns @scheme[0].
            (or/c (is-a?/c snip-admin%) false/c)]{
 
 Returns the administrator for this snip. (The administrator can be
- @scheme[#f] even if the snip is owned but not visible in the editor.)
+ @racket[#f] even if the snip is owned but not visible in the editor.)
 
 }
 
@@ -294,8 +294,8 @@ Calculates the snip's width, height, descent (amount of height which
  is drawn below the baseline), space (amount of height which is
  ``filler'' space at the top), and horizontal spaces (amount of width
  which is ``filler'' space at the left and right). Those values are
- returned by filling the @scheme[w], @scheme[h], @scheme[descent],
- @scheme[space], @scheme[lspace], and @scheme[rspace] boxes.
+ returned by filling the @racket[w], @racket[h], @racket[descent],
+ @racket[space], @racket[lspace], and @racket[rspace] boxes.
 
 This method is called by the snip's administrator; it is not normally
  called directly by others. To get the extent of a snip, use
@@ -313,13 +313,13 @@ A drawing context is provided for the purpose of finding font sizes,
  context's setting, it must restore them before returning. However,
  the methods should not need to change the drawing context; only font
  settings can affect measurement results from a device context, and
- @xmethod[dc<%> get-text-extent] accepts a @scheme[font%] argument for
+ @xmethod[dc<%> get-text-extent] accepts a @racket[font%] argument for
  sizing that overrides that device context's current font.
 
-The snip's left and top @techlink{location}s are provided as @scheme[x]
- and @scheme[y] in editor coordinates, in case the snip's size depends
- on its location; the @scheme[x] and @scheme[y] arguments are usually
- ignored. In a text editor, the @scheme[y]-coordinate is the @italic{line's}
+The snip's left and top @techlink{location}s are provided as @racket[x]
+ and @racket[y] in editor coordinates, in case the snip's size depends
+ on its location; the @racket[x] and @racket[y] arguments are usually
+ ignored. In a text editor, the @racket[y]-coordinate is the @italic{line's}
  top @techlink{location}; the snip's actual top @techlink{location} is
  potentially undetermined until its height is known.
 
@@ -341,7 +341,7 @@ The snip's editor is usually internally locked for writing and
 }
 @methimpl{
 
-Fills in all boxes with @scheme[0.0].
+Fills in all boxes with @racket[0.0].
 
 }}
 
@@ -354,42 +354,42 @@ following symbols:
 
 @itemize[
 
- @item{@indexed-scheme['is-text] --- this is a text snip derived from
-       @scheme[string-snip%]; do not set this flag}
+ @item{@indexed-racket['is-text] --- this is a text snip derived from
+       @racket[string-snip%]; do not set this flag}
 
- @item{@indexed-scheme['can-append] --- this snip can be merged with
+ @item{@indexed-racket['can-append] --- this snip can be merged with
        another snip of the same type}
 
- @item{@indexed-scheme['invisible] --- the user doesn't ``see'' this snip; 
+ @item{@indexed-racket['invisible] --- the user doesn't ``see'' this snip; 
        e.g.: a carriage return}
 
- @item{@indexed-scheme['hard-newline] --- a newline must follow the snip}
+ @item{@indexed-racket['hard-newline] --- a newline must follow the snip}
 
- @item{@indexed-scheme['newline] --- a newline currently follows the
+ @item{@indexed-racket['newline] --- a newline currently follows the
        snip; only an owning editor should set this flag}
 
- @item{@indexed-scheme['handles-events] --- this snip can handle
+ @item{@indexed-racket['handles-events] --- this snip can handle
        keyboard and mouse events when it has the keyboard focus}
 
- @item{@indexed-scheme['handles-all-mouse-events] --- this snip can
+ @item{@indexed-racket['handles-all-mouse-events] --- this snip can
        handle mouse events that touch the snip or that immediately
        follow an event that touches the snip, even if the snip does
        not have the keyboard focus}
 
- @item{@indexed-scheme['width-depends-on-x] --- this snip's display
+ @item{@indexed-racket['width-depends-on-x] --- this snip's display
        width depends on the snip's x-@techlink{location} within the
        editor; e.g.: tab}
 
- @item{@indexed-scheme['height-depends-on-y] --- this snip's display
+ @item{@indexed-racket['height-depends-on-y] --- this snip's display
        height depends on the snip's y-@techlink{location} within the editor}
 
- @item{@indexed-scheme['width-depends-on-y] --- this snip's display
+ @item{@indexed-racket['width-depends-on-y] --- this snip's display
        width depends on the snip's y-@techlink{location} within the editor}
 
- @item{@indexed-scheme['height-depends-on-x] --- this snip's display
+ @item{@indexed-racket['height-depends-on-x] --- this snip's display
        height depends on the snip's x-@techlink{location} within the editor}
 
- @item{@indexed-scheme['uses-editor-path] --- this snip uses its
+ @item{@indexed-racket['uses-editor-path] --- this snip uses its
        editor's pathname and should be notified when the name changes;
        notification is given as a redundant call to @method[snip%
        set-admin]}
@@ -403,14 +403,14 @@ following symbols:
 @methspec{
 
 Returns the number of horizontal scroll steps within the snip.  For
- most snips, this is @scheme[1]. Embedded editor snips use this method so that
+ most snips, this is @racket[1]. Embedded editor snips use this method so that
  scrolling in the owning editor will step through the lines in the
  embedded editor.
 
 }
 @methimpl{
 
-Returns @scheme[1].
+Returns @racket[1].
 
 }}
 
@@ -426,7 +426,7 @@ find the y-offset into the snip for a given scroll offset.
 }
 @methimpl{
 
-Returns @scheme[0.0].
+Returns @racket[0.0].
 
 }}
 
@@ -458,20 +458,20 @@ Returns the snip's style. See also @method[snip% set-style].
 @methspec{
 
 Returns the text for this snip starting with the @techlink{position}
- @scheme[offset] within the snip, and continuing for a total length of
- @scheme[num] @techlink{item}s. If @scheme[offset] is greater than the snip's
- @techlink{count}, then @scheme[""] is returned. If @scheme[num] is greater than the
+ @racket[offset] within the snip, and continuing for a total length of
+ @racket[num] @techlink{item}s. If @racket[offset] is greater than the snip's
+ @techlink{count}, then @racket[""] is returned. If @racket[num] is greater than the
  snip's @techlink{count} minus the offset, then text from the offset to the end
  of the snip is returned.
 
-If @scheme[flattened?] is not @scheme[#f], then flattened text is returned.
+If @racket[flattened?] is not @racket[#f], then flattened text is returned.
  See @|textdiscuss| for a discussion of flattened vs. non-flattened
  text.
 
 }
 @methimpl{
 
-Returns @scheme[""].
+Returns @racket[""].
 
 }}
 
@@ -487,15 +487,15 @@ Like @method[snip% get-text] in non-flattened mode, except that the
  characters are put into the given mutable string, instead of returned
  in a newly allocated string.
 
-The @scheme[buffer] string is filled starting at position
- @scheme[buffer-offset]. The @scheme[buffer] string must be at least
- @math{@scheme[num]+@scheme[buffer-offset]} characters long.
+The @racket[buffer] string is filled starting at position
+ @racket[buffer-offset]. The @racket[buffer] string must be at least
+ @math{@racket[num]+@racket[buffer-offset]} characters long.
 
 }
 @methimpl{
 
 Calls @method[snip% get-text], except in the case of a
- @scheme[string-snip%], in which case @scheme[buffer] is filled
+ @racket[string-snip%], in which case @racket[buffer] is filled
  directly.
 
 }}
@@ -504,7 +504,7 @@ Calls @method[snip% get-text], except in the case of a
 @defmethod[(is-owned?)
            boolean?]{
 
-Returns @scheme[#t] if this snip has an owner, @scheme[#f] otherwise.
+Returns @racket[#t] if this snip has an owner, @racket[#f] otherwise.
  Note that a snip may be owned by an editor if it was inserted and
  then deleted from the editor, if it's still in the editor's undo
  history.
@@ -517,13 +517,13 @@ Returns @scheme[#t] if this snip has an owner, @scheme[#f] otherwise.
 
 @methspec{
 
-Return @scheme[#t] if @this-obj[] ``matches'' @scheme[snip],
- @scheme[#f] otherwise.
+Return @racket[#t] if @this-obj[] ``matches'' @racket[snip],
+ @racket[#f] otherwise.
 
 }
 @methimpl{
 
-Returns @scheme[#t] if the @scheme[snip] and @this-obj[] are from the
+Returns @racket[#t] if the @racket[snip] and @this-obj[] are from the
  same class and have the same length.
 
 }}
@@ -534,10 +534,10 @@ Returns @scheme[#t] if the @scheme[snip] and @this-obj[] are from the
 
 @methspec{
 
-Merges @this-obj[] with @scheme[prev], returning @scheme[#f] if the
+Merges @this-obj[] with @racket[prev], returning @racket[#f] if the
  snips cannot be merged or a new merged snip otherwise. This method
  will only be called if both snips are from the same class and both
- have the @indexed-scheme['can-append] flag.
+ have the @indexed-racket['can-append] flag.
 
 If the returned snip does not have the expected @techlink{count}, its
  @techlink{count} is forcibly modified. If the returned snip is
@@ -549,7 +549,7 @@ The snip's editor is usually internally locked for reading when this
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -557,7 +557,7 @@ Returns @scheme[#f].
 @defmethod[(next)
            (or/c (is-a?/c snip%) false/c)]{
 
-Returns the next snip in the editor owning this snip, or @scheme[#f]
+Returns the next snip in the editor owning this snip, or @racket[#f]
  if this is the last snip.
 
 In a text editor, the next snip is the snip at the @techlink{position}
@@ -583,14 +583,14 @@ Called to handle keyboard events when this snip has the keyboard focus
  event uses @techlink{display} coordinates), and the snip's
  @techlink{location} in editor coordinates.
 
-The @scheme[x] and @scheme[y] arguments are the snip's
+The @racket[x] and @racket[y] arguments are the snip's
  @techlink{location} in @techlink{display} coordinates. The
- @scheme[editorx] and @scheme[editory] arguments are the snip's
- @techlink{location} in editor coordinates.  To get @scheme[event]'s x
- @techlink{location} in snip coordinates, subtract @scheme[x] from
- @scheme[(send event get-x)].
+ @racket[editorx] and @racket[editory] arguments are the snip's
+ @techlink{location} in editor coordinates.  To get @racket[event]'s x
+ @techlink{location} in snip coordinates, subtract @racket[x] from
+ @racket[(send event get-x)].
 
-See also @indexed-scheme['handles-events] in @method[snip% get-flags].
+See also @indexed-racket['handles-events] in @method[snip% get-flags].
 
 }
 @methimpl{
@@ -613,14 +613,14 @@ Called to handle mouse events on the snip when this snip can handle
  events and when the snip has the keyboard focus. See @method[snip%
  on-char] for information about the arguments. 
 
-The @scheme[x] and @scheme[y] arguments are the snip's
+The @racket[x] and @racket[y] arguments are the snip's
  @techlink{location} in @techlink{display} coordinates. The
- @scheme[editorx] and @scheme[editory] arguments are the snip's
- @techlink{location} in editor coordinates.  To get @scheme[event]'s x
- @techlink{location} in snip coordinates, subtract @scheme[x] from
- @scheme[(send event get-x)].
+ @racket[editorx] and @racket[editory] arguments are the snip's
+ @techlink{location} in editor coordinates.  To get @racket[event]'s x
+ @techlink{location} in snip coordinates, subtract @racket[x] from
+ @racket[(send event get-x)].
 
-See also @indexed-scheme['handles-events] in @method[snip% get-flags].
+See also @indexed-racket['handles-events] in @method[snip% get-flags].
 
 }
 @methimpl{
@@ -640,8 +640,8 @@ Notifies the snip that it is or is not allowed to display the caret
  that the caret is actually shown or hidden; the @method[snip% draw]
  method is called for all display requests.
 
-The @scheme[own-it?] argument is @scheme[#t] if the snip owns the
- keyboard focus or @scheme[#f] otherwise.
+The @racket[own-it?] argument is @racket[#t] if the snip owns the
+ keyboard focus or @racket[#f] otherwise.
 
 }
 @methimpl{
@@ -659,7 +659,7 @@ Does nothing.
 @methspec{
 
 Calculates a partial width for the snip, starting from the first snip
- @techlink{item} and continuing for @scheme[len] @techlink{item}s. The
+ @techlink{item} and continuing for @racket[len] @techlink{item}s. The
  drawing context and snip's @techlink{location}s in editor coordinates
  are provided. See also @method[snip% get-extent].
 
@@ -669,7 +669,7 @@ The snip's editor is usually internally locked for writing and
 }
 @methimpl{
 
-Returns @scheme[0.0].
+Returns @racket[0.0].
 
 }}
 
@@ -677,7 +677,7 @@ Returns @scheme[0.0].
 @defmethod[(previous)
            (or/c (is-a?/c snip%) false/c)]{
 
-Returns the previous snip in the editor owning this snip, or @scheme[#f] if this
+Returns the previous snip in the editor owning this snip, or @racket[#f] if this
  is the first snip.
 
 }
@@ -688,8 +688,8 @@ Returns the previous snip in the editor owning this snip, or @scheme[#f] if this
 @methspec{
 
 Asks the snip to try to release itself from its owner. If the snip is
- not owned or the release is successful, then @scheme[#t] is
- returned. Otherwise, @scheme[#f] is returned and the snip remains
+ not owned or the release is successful, then @racket[#t] is
+ returned. Otherwise, @racket[#f] is returned and the snip remains
  owned.  See also @method[snip% is-owned?].
 
 Use this method for moving a snip from one editor to another. This
@@ -711,16 +711,16 @@ Requests a low-level release from the snip's owning administrator.
 @methspec{
 
 Resizes the snip. The snip can refuse to be resized by returning
- @scheme[#f]. Otherwise, the snip will resize (it must call its
+ @racket[#f]. Otherwise, the snip will resize (it must call its
  administrator's @method[snip-admin% resized] method) and return
- @scheme[#t].
+ @racket[#t].
 
 See also @xmethod[pasteboard% on-interactive-resize].
 
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -736,9 +736,9 @@ The default method sets the internal state of a snip to record its
  owned by an administrator and the administrator has not blessed the
  transition. If the administrator state of a snip is not modified as
  expected during a sensitive call to this method by an instance of
- @scheme[text%] or @scheme[pasteboard%], the
+ @racket[text%] or @racket[pasteboard%], the
  internal state may be forcibly modified (if the new administrator was
- @scheme[#f]) or a surrogate snip may be created (if the snip was
+ @racket[#f]) or a surrogate snip may be created (if the snip was
  expected to receive a new administrator).
 
 The snip's (new) editor is usually internally locked for reading when
@@ -871,10 +871,10 @@ The snip's editor is usually internally locked for reading when this
 
 @methimpl{
 
-Creates a new @scheme[snip%] instance with @scheme[position]
+Creates a new @racket[snip%] instance with @racket[position]
 elements, and modifies @this-obj[] to decrement its count by
-@scheme[position]. The nest snip is installed into @scheme[first] and
-@this-obj[] is installed into @scheme[second].
+@racket[position]. The nest snip is installed into @racket[first] and
+@this-obj[] is installed into @racket[second].
 
 }}
 

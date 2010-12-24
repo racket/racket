@@ -3,7 +3,7 @@
 
 @defclass/title[image-snip% snip% ()]{
 
-An @scheme[image-snip%] is a snip that can display bitmap images
+An @racket[image-snip%] is a snip that can display bitmap images
  (usually loaded from a file). When the image file cannot be found, a
  box containing an ``X'' is drawn.
 
@@ -18,9 +18,9 @@ An @scheme[image-snip%] is a snip that can display bitmap images
                        ([bitmap (is-a?/c bitmap%)]
                         [mask (or/c (is-a?/c bitmap%) #f) #f]))]{
 
-Creates an image snip, loading the image @scheme[file] if
+Creates an image snip, loading the image @racket[file] if
  specified (see also @method[image-snip% load-file]), or using the
- given @scheme[bitmap].
+ given @racket[bitmap].
 
 }
 
@@ -28,29 +28,29 @@ Creates an image snip, loading the image @scheme[file] if
 @defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
-Returns an integer that can be used as a @scheme[equal?]-based hash
-code for @this-obj[] (using the same notion of @scheme[equal?] as
+Returns an integer that can be used as a @racket[equal?]-based hash
+code for @this-obj[] (using the same notion of @racket[equal?] as
 @method[image-snip% other-equal-to?]).
 
-See also @scheme[equal<%>].}
+See also @racket[equal<%>].}
 
 @defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
-Returns an integer that can be used as a @scheme[equal?]-based
+Returns an integer that can be used as a @racket[equal?]-based
 secondary hash code for @this-obj[] (using the same notion of
-@scheme[equal?] as @method[image-snip% other-equal-to?]).
+@racket[equal?] as @method[image-snip% other-equal-to?]).
 
-See also @scheme[equal<%>].}
+See also @racket[equal<%>].}
 
 @defmethod[(get-bitmap)
            (or/c (is-a?/c bitmap%) #f)]{
 
 Returns the bitmap that is displayed by the snip, whether set through
  @method[image-snip% set-bitmap] or @method[image-snip% load-file]. If
- no bitmap is displayed, the result is @scheme[#f].
+ no bitmap is displayed, the result is @racket[#f].
 
-The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
+The returned bitmap cannot be selected into a @racket[bitmap-dc%] as
  long as it belongs to the snip, but it can be used as a pen or
  brush stipple.
 
@@ -61,9 +61,9 @@ The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
 
 Returns the mask bitmap that is used for displaying by the snip, if
  one was installed with @method[image-snip% set-bitmap].  If no mask
- is used, the result is @scheme[#f].
+ is used, the result is @racket[#f].
 
-The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
+The returned bitmap cannot be selected into a @racket[bitmap-dc%] as
  long as it belongs to the snip, but it can be used as a pen or
  brush stipple.
 
@@ -73,10 +73,10 @@ The returned bitmap cannot be selected into a @scheme[bitmap-dc%] as
            (or/c path-string? #f)]{
 
 Returns the name of the currently loaded, non-inlined file, or
- @scheme[#f] if a file is not loaded or if a file was loaded with
+ @racket[#f] if a file is not loaded or if a file was loaded with
  inlining (the default).
 
-@boxisfillnull[(scheme relative-path) @elem{@scheme[#t] if the loaded file's path is
+@boxisfillnull[(scheme relative-path) @elem{@racket[#t] if the loaded file's path is
 relative to the owning editor's path}]
 
 }
@@ -88,7 +88,7 @@ relative to the owning editor's path}]
                      'xbm 'xpm 'bmp 'pict)]{
 
 Returns the kind used to load the currently loaded, non-inlined file,
- or @scheme['unknown] if a file is not loaded or if a file was loaded
+ or @racket['unknown] if a file is not loaded or if a file was loaded
  with inlining (the default).
 
 }
@@ -102,25 +102,25 @@ Returns the kind used to load the currently loaded, non-inlined file,
                       [inline? any/c #t])
            void?]{
 
-Loads the file by passing @scheme[file] and @scheme[kind] to
+Loads the file by passing @racket[file] and @racket[kind] to
  @xmethod[bitmap% load-file]. If a bitmap had previously been specified
  with @method[image-snip% set-bitmap], that bitmap (and mask) will no
- longer be used. If @scheme[file] is @scheme[#f], then the current
+ longer be used. If @racket[file] is @racket[#f], then the current
  image is cleared.
 
-When @scheme['unknown/mask], @scheme['gif/mask], or @scheme['png/mask]
+When @racket['unknown/mask], @racket['gif/mask], or @racket['png/mask]
  is specified and the loaded bitmap object includes a mask (see
  @method[bitmap% get-loaded-mask]), the mask is used for drawing the
- bitmap (see @method[dc<%> draw-bitmap]). The @scheme['unknown/alpha],
- @scheme['gif/alpha], or @scheme['png/alpha] variants are recommended,
+ bitmap (see @method[dc<%> draw-bitmap]). The @racket['unknown/alpha],
+ @racket['gif/alpha], or @racket['png/alpha] variants are recommended,
  however.
 
-If @scheme[relative-path?] is not @scheme[#f] and @scheme[file] is a
+If @racket[relative-path?] is not @racket[#f] and @racket[file] is a
  relative path, then the file will be read using the path of the
  owning editor's filename. If the image is not inlined, it will be
  saved as a relative pathname.
 
-If @scheme[inline?] is not @scheme[#f], the image data will be saved
+If @racket[inline?] is not @racket[#f], the image data will be saved
  directly to the file or clipboard when the image is saved or copied
  (preserving the bitmap's mask, if any).  The source filename and kind
  is no longer relevant.
@@ -131,13 +131,13 @@ If @scheme[inline?] is not @scheme[#f], the image data will be saved
                             [equal? (any/c any/c . -> . boolean?)])
            boolean?]{
 
-Returns @scheme[#t] if @this-obj[] and @scheme[snip] both have bitmaps
+Returns @racket[#t] if @this-obj[] and @racket[snip] both have bitmaps
 and the bitmaps are the same. If either has a mask bitmap
 with the same dimensions as the main bitmap, then the masks must be
 the same (or if only one mask is present, it must correspond to a
 solid mask).
 
-The given @scheme[equal?] function (for recursive comparisons) is not
+The given @racket[equal?] function (for recursive comparisons) is not
 used.}
 
 
