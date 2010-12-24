@@ -223,9 +223,13 @@ has been moved out).
       (send bdc set-bitmap #f))))
 	     
 (define image%
-  (class* snip% (png-convertible<%> equal<%> image<%>)
+  (class* snip% (png-convertible<%> image<%>)
     (init-field shape bb normalized? pinhole)
-    (define/public (equal-to? that eq-recur)
+    
+    (define/override (equal-to? that eq-recur) (compare-em that eq-recur))
+    (define/override (other-equal-to? that eq-recur) (compare-em that eq-recur))
+    
+    (define/private (compare-em that eq-recur)
       (or (eq? this that)
           (let ([that 
                  (cond
@@ -256,8 +260,11 @@ has been moved out).
       (render-image obj bdc 0 0)
       (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
     
-    (define/public (equal-hash-code-of y) 42)
-    (define/public (equal-secondary-hash-code-of y) 3)
+    ;; this could render the image into a bitmap and then get the hash code of the bytes
+    ;; cannot render the tree into a string and then get the hash code of that string
+    ;;   b/c that might make equal things have the same code.
+    (define/override (equal-hash-code-of y) 42)
+    (define/override (equal-secondary-hash-code-of y) 3)
 
     (define/public (get-shape) shape)
     (define/public (set-shape s) (set! shape s))

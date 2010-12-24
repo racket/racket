@@ -1312,6 +1312,12 @@
       =>
       (to-img (make-object image-snip% green-blue-20x10-bitmap)))
 
+;; make sure that raw image snips are equal to image snips
+(let ([i1 (make-object image-snip% (collection-file-path "bug09.png" "icons"))]
+      [i2 (make-object image-snip% (collection-file-path "bug09.png" "icons"))])
+  (test (equal? (rotate 0 i1) i2) => #t)
+  (test (equal? i1 (rotate 0 i2)) => #t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; cropping (and place-image)
