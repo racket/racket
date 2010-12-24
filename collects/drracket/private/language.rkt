@@ -874,7 +874,7 @@
                   parent))
              users-name))))
   
-  ;; users-name-ok? : symbol string (union #f frame% dialog%) string -> boolean
+  ;; users-name-ok? : symbol string (union #f frame% dialog%) path? -> boolean
   ;; returns #t if the string is an acceptable name for
   ;; a saved executable, and #f otherwise.
   (define (users-name-ok? mode extension parent name)
