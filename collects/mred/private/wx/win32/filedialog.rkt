@@ -185,7 +185,7 @@
                        #f
                        (map (lambda (p) (build-path (car strs) p))
                             (cdr strs))))
-                 (cast (OPENFILENAME-lpstrFile ofn) _pointer _string/utf-16)))
+                 (string->path (cast (OPENFILENAME-lpstrFile ofn) _pointer _string/utf-16))))
         (when directory
           (free (OPENFILENAME-lpstrInitialDir ofn)))
         (when message
