@@ -118,8 +118,11 @@
   #:mixins (FocusResponder KeyMouseResponder MyWindowMethods)
   [wxb])
 
-(set-front-hook! (lambda () (values front
-                                    (and front (send front get-eventspace)))))
+(set-front-hook! (lambda () 
+                   (let ([f (or front
+                                root-fake-frame)])
+                     (values f
+                             (and f (send f get-eventspace))))))
 
 (set-eventspace-hook! (lambda (w)
                         (or (and w
@@ -266,18 +269,7 @@
                   (tell (tell NSApplication sharedApplication)
                         endSheet: cocoa))))
             (tellv cocoa orderOut: #f)
-            (let ([next
-                   (atomically
-                    (with-autorelease
-                     (let ([wins (tell (tell NSApplication sharedApplication) orderedWindows)])
-                       (begin0
-                        (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
-                          (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
-                            (and (tell #:type _BOOL win isVisible)
-                                 (not (tell win parentWindow))
-                                 (or (not root-fake-frame)
-                                     (not (ptr-equal? win (send root-fake-frame get-cocoa))))
-                                 win)))))))])
+            (let ([next (get-app-front-window)])
               (cond
                [next (tellv next makeKeyWindow)]
                [root-fake-frame (send root-fake-frame install-mb)]
@@ -483,7 +475,9 @@
     (define/public (set-menu-bar _mb) 
       (set! mb _mb)
       (send mb set-top-window this)
-      (when (tell #:type _BOOL cocoa isMainWindow)
+      (when (or (tell #:type _BOOL cocoa isMainWindow)
+                (and (eq? this root-fake-frame)
+                     (not (get-app-front-window))))
         (install-mb)))
 
     (define/public (install-mb)
@@ -540,6 +534,19 @@
       (queue-window-event this (lambda () (color-callback))))))
 
 ;; ----------------------------------------
+
+(define (get-app-front-window)
+  (atomically
+   (with-autorelease
+    (let ([wins (tell (tell NSApplication sharedApplication) orderedWindows)])
+      (begin0
+       (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
+         (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
+           (and (tell #:type _BOOL win isVisible)
+                (not (tell win parentWindow))
+                (or (not root-fake-frame)
+                    (not (ptr-equal? win (send root-fake-frame get-cocoa))))
+                win))))))))
 
 (define (location->window x y)
   (let ([n (tell #:type _NSInteger NSWindow 
