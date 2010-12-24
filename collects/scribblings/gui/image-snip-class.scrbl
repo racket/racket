@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@defclass/title[image-snip% snip% (equal<%>)]{
+@defclass/title[image-snip% snip% ()]{
 
 An @scheme[image-snip%] is a snip that can display bitmap images
  (usually loaded from a file). When the image file cannot be found, a
@@ -42,19 +42,6 @@ secondary hash code for @this-obj[] (using the same notion of
 @scheme[equal?] as @method[image-snip% other-equal-to?]).
 
 See also @scheme[equal<%>].}
-
-
-@defmethod[(equal-to? [snip (is-a?/c image-snip%)]
-                      [equal? (any/c any/c . -> . boolean?)])
-           boolean?]{
-
-Calls the @method[image-snip% other-equal-to?] method of @scheme[snip]
-(to simulate multi-method dispatch) in case @scheme[snip] provides a
-more specific equivalence comparison.
-
-See also @scheme[equal<%>].}
-
-
 
 @defmethod[(get-bitmap)
            (or/c (is-a?/c bitmap%) #f)]{
@@ -145,7 +132,7 @@ If @scheme[inline?] is not @scheme[#f], the image data will be saved
            boolean?]{
 
 Returns @scheme[#t] if @this-obj[] and @scheme[snip] both have bitmaps
-and the bitmaps are the same dimensions. If either has a mask bitmap
+and the bitmaps are the same. If either has a mask bitmap
 with the same dimensions as the main bitmap, then the masks must be
 the same (or if only one mask is present, it must correspond to a
 solid mask).

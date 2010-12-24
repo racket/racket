@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@defclass/title[snip% object% ()]{
+@defclass/title[snip% object% (equal<%>)]{
 
 A direct instance of @scheme[snip%] is uninteresting. Useful snips are
  defined by instantiating derived subclasses, but this class defines
@@ -217,7 +217,35 @@ Draws nothing.
 
 }}
 
+@defmethod[(equal-to? [snip (is-a?/c snip%)]
+                      [equal? (-> any/c any/c boolean?)])
+           boolean?]{
+@methspec{See @scheme[equal<%>].}
 
+@methimpl{Calls the @method[snip% other-equal-to?] method of @scheme[snip]
+(to simulate multi-method dispatch) in case @scheme[snip] provides a
+more specific equivalence comparison.}}
+
+@defmethod[(other-equal-to? [that (is-a?/c snip%)]
+                            [equal? (-> any/c any/ boolean?)])
+           boolean?]{
+@methimpl{Returns @racket[(eq? this that)].}
+}
+
+@defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
+           exact-integer?]{
+
+@methspec{See @scheme[equal<%>].}
+ 
+@methimpl{Returns @scheme[(eq-hash-code this)].}}
+
+@defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
+           exact-integer?]{
+
+@methspec{See @scheme[equal<%>].}
+ 
+@methimpl{Returns @scheme[1].}}
+                    
 @defmethod[(find-scroll-step [y real?])
            exact-nonnegative-integer?]{
 
@@ -233,7 +261,6 @@ If a snip contains more than one vertical scroll step (see
 Returns @scheme[0].
 
 }}
-
 
 @defmethod[(get-admin)
            (or/c (is-a?/c snip-admin%) false/c)]{

@@ -108,7 +108,7 @@
 
 ;; ------------------------------------------------------------
 
-(defclass snip% object%
+(defclass* snip% object% (equal<%>)
   ;; For use only by the owning editor:
   (field [s-prev #f]
          [s-next #f]
@@ -322,14 +322,19 @@
                 #f))))
 
   (def/public (set-unmodified)
-    (void)))
-
+    (void))
+  
+  (def/public (equal-to? [snip% that] [any? recur]) 
+    (send that other-equal-to? this recur))
+  (def/public (other-equal-to? [image-snip% that] [any? recur]) (eq? this that))
+  (define/public (equal-hash-code-of recur) (eq-hash-code this))
+  (define/public (equal-secondary-hash-code-of recur) 1))
+ 
 (defclass internal-snip% snip%
   (super-new)
   (def/override (set-count [exact-integer? c])
     ;; reject change
     (void)))
-
 ;; ------------------------------------------------------------
 
 (defclass string-snip-class% snip-class%
@@ -863,7 +868,7 @@
                        (get-output-bytes s))]
                     [else default]))])))
 
-(defclass* image-snip% internal-snip% (equal<%> png-convertible<%>)
+(defclass* image-snip% internal-snip% (png-convertible<%>)
   (inherit-field s-admin
                  s-flags)
   (inherit set-snipclass)
@@ -1138,10 +1143,7 @@
   (def/public (get-bitmap-mask)
     mask)
 
-  (def/public (equal-to? [image-snip% other] [any? recur])
-    (send other other-equal-to? this recur))
-
-  (def/public (other-equal-to? [image-snip% other] [any? recur])
+  (def/override (other-equal-to? [image-snip% other] [any? recur])
     (let* ([bm (send this get-bitmap)]
            [bm2 (send other get-bitmap)])
       (and
@@ -1186,9 +1188,9 @@
             (hash-code s1)))
         0))
 
-  (def/public (equal-hash-code-of [any? recur])
+  (def/override (equal-hash-code-of [any? recur])
     (do-hash-code equal-hash-code))
-  (def/public (equal-secondary-hash-code-of [any? recur])
+  (def/override (equal-secondary-hash-code-of [any? recur])
     (do-hash-code equal-secondary-hash-code))
 
   (def/public (set-offset [real? x] [real? y])
