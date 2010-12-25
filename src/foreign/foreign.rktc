@@ -1156,10 +1156,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
                    if (@f[pred]) {
                      @ctype tmp@";"@and[offset]{ intptr_t toff@";"}
                      tmp = (@ctype)(@f[s->c]);
-                     @and[offset @list{
-                       toff = SCHEME_@|offset|_OFFSET(val);
-                       if (_offset) *_offset = toff;@;
-                     @"\n"  }]@;
+                     @and[offset @list{toff = SCHEME_@|offset|_OFFSET(val);@"\n"}]@;
                      @(if ptr?
                           @list{if (basetype_p == NULL || @;
                                     @(if offset
@@ -1168,13 +1165,17 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
                                     @(if (equal? ftype "pointer")
                                          @list{!is_gcable_pointer(val)}
                                          @list{0})) {
+                                  @and[offset @list{if (_offset) *_offset = 0;@"\n"}]@;
                                   @x = @(if offset
-                                          @list{(_offset ? tmp : @;
-                                                   (@ctype)W_OFFSET(tmp, toff))}
-                                          "tmp");
+                                         @list{(@ctype)W_OFFSET(tmp, toff);}
+                                         "tmp");
                                   return NULL;
                                 } else {
                                   *basetype_p = FOREIGN_@cname;
+                                  @and[offset @list{
+                                      toff = SCHEME_@|offset|_OFFSET(val);
+                                      if (_offset) *_offset = toff;@;
+                                      @"\n"  }]@;
                                   return @(if offset
                                             @list{_offset ? tmp : @;
                                                     (@ctype)W_OFFSET(tmp, toff)}
@@ -1199,7 +1200,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
           return NULL;
         } else {
           *basetype_p = FOREIGN_struct;
-          if (_offset) {
+          if (_offset && is_gcable_pointer(val)) {
             *_offset = poff;
             return p;
           } else {

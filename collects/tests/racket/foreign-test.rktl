@@ -256,6 +256,25 @@
     (test 'hello hash-ref ht seventeen2 #f)
     (test 'hello hash-ref ht seventeen3 #f)))
 
+;; Check proper handling of offsets:
+(let ()
+  (define scheme_make_sized_byte_string 
+    (get-ffi-obj 'scheme_make_sized_byte_string #f (_fun _pointer _long _int -> _scheme)))
+  ;; Non-gcable:
+  (let ()
+    (define p (cast (ptr-add #f 20) _pointer _pointer))
+    (define d (scheme_make_sized_byte_string (ptr-add p 24)
+                                             4
+                                             0))
+    (test 44 values (cast d _pointer _long)))
+  ;; GCable:
+  (let ()
+    (define p (cast (ptr-add #f 20) _pointer _gcpointer))
+    (define d (scheme_make_sized_byte_string (ptr-add p 24)
+                                             4
+                                             0))
+    (test 44 values (cast d _gcpointer _long))))
+
 (delete-test-files)
 
 (report-errs)

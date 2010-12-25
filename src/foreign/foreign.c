@@ -1676,12 +1676,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
         void* tmp; intptr_t toff;
         tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
         toff = SCHEME_FFIANYPTR_OFFSET(val);
-        if (_offset) *_offset = toff;
         if (basetype_p == NULL || (tmp == NULL && toff == 0) || !is_gcable_pointer(val)) {
-          (((void**)W_OFFSET(dst,delta))[0]) = (_offset ? tmp : (void*)W_OFFSET(tmp, toff));
+          if (_offset) *_offset = 0;
+          (((void**)W_OFFSET(dst,delta))[0]) = (void*)W_OFFSET(tmp, toff);;
           return NULL;
         } else {
           *basetype_p = FOREIGN_pointer;
+          toff = SCHEME_FFIANYPTR_OFFSET(val);
+          if (_offset) *_offset = toff;
           return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
         }
       } else {
@@ -1699,12 +1701,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
         void* tmp; intptr_t toff;
         tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
         toff = SCHEME_FFIANYPTR_OFFSET(val);
-        if (_offset) *_offset = toff;
         if (basetype_p == NULL || (tmp == NULL && toff == 0) || 0) {
-          (((void**)W_OFFSET(dst,delta))[0]) = (_offset ? tmp : (void*)W_OFFSET(tmp, toff));
+          if (_offset) *_offset = 0;
+          (((void**)W_OFFSET(dst,delta))[0]) = (void*)W_OFFSET(tmp, toff);;
           return NULL;
         } else {
           *basetype_p = FOREIGN_gcpointer;
+          toff = SCHEME_FFIANYPTR_OFFSET(val);
+          if (_offset) *_offset = toff;
           return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
         }
       } else {
@@ -1749,7 +1753,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
           return NULL;
         } else {
           *basetype_p = FOREIGN_struct;
-          if (_offset) {
+          if (_offset && is_gcable_pointer(val)) {
             *_offset = poff;
             return p;
           } else {
