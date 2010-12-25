@@ -668,8 +668,8 @@
          [guid-len (bytes-length GRACKET_GUID)]
          [data-len (COPYDATASTRUCT-cbData cd)])
     (when (and (data-len
-                . > . 
-                (+ guid-len (ctype-sizeof _DWORD)))
+                . >= . 
+                (+ guid-len 4 (ctype-sizeof _DWORD)))
                (bytes=? GRACKET_GUID
                         (scheme_make_sized_byte_string data
                                                        guid-len
