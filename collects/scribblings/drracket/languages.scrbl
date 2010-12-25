@@ -341,6 +341,17 @@ A program in the teaching languages should be tested using the check forms ---
  
  Tests can be disabled if necessary, see @secref["menu:racket"] for details.
 
+One final difference between these teaching languages and other languages is the way
+they save files. That is, when DrRacket saves a file and the current language
+is one of these five teaching languages, it inserts three lines of metadata that 
+record the precise language (including any options set) and the teachpacks.
+This has two benefits: opening the file later restores the settings and the metadata
+is formulated in such a way as to be executable code so running @exec{racket} or 
+@exec{gracket} on the file in a shell will run the program in the appropriate language.
+
+This meta data always consists of exactly three lines, and so can be stripped out
+by three calls to @racket[read-line].
+ 
 @; ----------------------------------------
 
 @section[#:tag "experimental-langs"]{Other Experimental Languages}
