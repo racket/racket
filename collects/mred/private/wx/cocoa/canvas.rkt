@@ -407,7 +407,7 @@
 
      (define/override (show-children)
        (super show-children)
-       (fix-dc)
+       ;; (fix-dc) ; inteferes with `paint-children''
        (resume-all-reg-blits))
 
      (define/override (fixup-locations-children)
