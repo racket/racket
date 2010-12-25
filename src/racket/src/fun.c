@@ -6704,7 +6704,6 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
          val, then p->cjs.jumping_to_continuation is unset,
          so it's ok to communicate val via p->cjs.val. The
          target for this jump is in compose_continuation(). */
-      p->next_meta -= 1;
       if (val) {
         if (val == SCHEME_MULTIPLE_VALUES) {
           if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
