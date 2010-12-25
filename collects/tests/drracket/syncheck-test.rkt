@@ -276,11 +276,11 @@ trigger runtime errors in check syntax.
                    (" " default-color)
                    ("x" lexically-bound) 
                    (")" default-color))
-                 (list '(((21 22) (55 56)) 
-                         ((23 24) (39 40) (47 48))
-                         ((25 26) (41 42))
-                         ((27 28) (49 50))
-                         ((57 58) (59 60) (61 62)))))
+                 (list '((21 22) (55 56)) 
+                       '((23 24) (39 40) (47 48))
+                       '((25 26) (41 42))
+                       '((27 28) (49 50))
+                       '((57 58) (59 60) (61 62))))
 
      (build-test "(module m mzscheme)"
                 '(("("        default-color)

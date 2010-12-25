@@ -1322,12 +1322,13 @@ If the namespace does not, they are colored the unbound color.
                           (send the-tab clear-annotations)
                           (send the-tab reset-offer-kill)
                           (send (send the-tab get-defs) syncheck:init-arrows)
-                          
+                          (define settings (send definitions-text get-next-settings))
                           (drracket:eval:expand-program
                            #:gui-modules? #f
                            (drracket:language:make-text/pos definitions-text 0 (send definitions-text last-position))
-                           (send definitions-text get-next-settings)
-                           #t
+                           settings
+                           (not (is-a? (drracket:language-configuration:language-settings-language settings)
+                                       drracket:module-language:module-language<%>))
                            init-proc
                            kill-termination
                            (λ (sexp loop) ; =user=
