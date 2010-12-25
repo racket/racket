@@ -326,7 +326,7 @@
   
   (def/public (equal-to? [snip% that] [any? recur]) 
     (send that other-equal-to? this recur))
-  (def/public (other-equal-to? [image-snip% that] [any? recur]) (eq? this that))
+  (def/public (other-equal-to? [snip% that] [any? recur]) (eq? this that))
   (define/public (equal-hash-code-of recur) (eq-hash-code this))
   (define/public (equal-secondary-hash-code-of recur) 1))
  
