@@ -810,8 +810,9 @@
   (do-request-flush-delay 
    cocoa-win
    (lambda (cocoa-win)
-     (tellv cocoa-win disableFlushWindow)
-     #t)
+     (and (tell #:type _bool cocoa-win isVisible)
+          (tellv cocoa-win disableFlushWindow)
+          #t))
    (lambda (cocoa-win)
      (tellv cocoa-win enableFlushWindow))))
 
