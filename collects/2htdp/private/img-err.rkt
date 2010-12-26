@@ -10,6 +10,7 @@
          pen-style? 
          pen-cap?
          pen-join?
+         real-valued-posn?
          check-mode/color-combination)
 
 (require htdp/error
@@ -232,6 +233,10 @@
                 'list-of-posns
                 i arg)
      (check-arg fn-name
+                (andmap real-valued-posn? arg)
+                'list-of-posns-with-real-valued-x-and-y-coordinates
+                i arg)
+     (check-arg fn-name
                 (>= (length arg) 3)
                 'list-of-at-least-three-posns
                 i arg)
@@ -293,6 +298,10 @@
 (define (pen-join? arg)
   (member (if (string? arg) (string->symbol arg) arg)
           '(round bevel miter)))
+(define (real-valued-posn? arg)
+  (and (posn? arg)
+       (real? (posn-x arg))
+       (real? (posn-y arg))))
 
 
 ;; checks the dependent part of the 'color' specification

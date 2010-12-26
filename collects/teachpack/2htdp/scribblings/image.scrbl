@@ -559,11 +559,11 @@ the @scheme[point-count] argument determines how many points the star has.
 }
 
                      
-@defproc*[([(polygon [vertices (listof posn?)] 
+@defproc*[([(polygon [vertices (listof real-valued-posn?)] 
                      [mode mode?]
                      [color image-color?])
             image?]
-           [(polygon [vertices (listof posn?)] 
+           [(polygon [vertices (listof real-valued-posn?)] 
                      [outline-mode (or/c 'outline "outline")]
                      [pen-or-color (or/c pen? image-color?)])
             image?])]{
@@ -1264,6 +1264,11 @@ Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the im
 
 @defproc[(step-count? [x any/c]) boolean?]{
   Determines if @racket[x] is an integer greater than or equal to @racket[1].                                           
+}
+
+@defproc[(real-valued-posn? [x any/c]) boolean?]{
+  Determines if @racket[x] is a @racket[posn] whose @racket[_x] and @racket[_y]
+  fields are both @racket[real?] numbers.
 }
 
 @defstruct[pen ([color image-color?]

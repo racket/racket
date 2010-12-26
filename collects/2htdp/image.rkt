@@ -106,6 +106,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          pen-style? 
          pen-cap?
          pen-join?
+         real-valued-posn?
          color-red color-blue color-green color? color
          pen-color pen-width pen-style pen-cap pen-join 
 

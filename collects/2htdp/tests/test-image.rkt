@@ -1914,6 +1914,11 @@
                    'solid (make-pen "black" 12 "solid" "round" "round"))
           =>
           #rx"^polygon: expected <image-color>")
+(test/exn (polygon (list (make-posn 0 0+1i) (make-posn 100 0) (make-posn 100 100))
+                   'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^polygon: expected <list-of-posns-with-real-valued-x-and-y-coordinates>")
+
 
 (test/exn (save-image "tri.png" (triangle 50 "solid" "purple"))
           =>
