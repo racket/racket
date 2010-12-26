@@ -589,11 +589,7 @@ case $OS in
     ;;
   BeOS)
     enable_cgcdefault="yes"
-    if test "${enable_sgcdebug}" = "yes" ; then
-      dummyvar=""
-    else
-      enable_sgc=yes
-    fi
+    enable_sgc=yes
     ;;
   Darwin)
 
@@ -721,14 +717,14 @@ fi
 
 ############## SGC ################
 
+if test "${enable_sgcdebug}" = "yes" ; then
+  enable_sgc=yes
+  OPTIONS="$OPTIONS -DSGC_STD_DEBUGGING=1"
+fi
+
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
-fi
-
-if test "${enable_sgcdebug}" = "yes" ; then
-  GCDIR=sgc
-  OPTIONS="$OPTIONS -DSGC_STD_DEBUGGING=1"
 fi
 
 ############## C flags ################
