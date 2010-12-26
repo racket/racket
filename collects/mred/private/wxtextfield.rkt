@@ -30,13 +30,14 @@
                get-text)
       (super-new)
 
-      (define delta 2)
+      (define delta 3)
+      (define hdelta 1)
       (define (get-size)
         (max 4 (send (send (get-style) get-font) get-point-size)))
                
       (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
         (let ([s (get-size)])
-          (when w (set-box! w (* s (get-count))))
+          (when w (set-box! w (* (max 1.0 (- s hdelta hdelta)) (get-count))))
           (when h (set-box! h (+ s 2.0)))
           (when descent (set-box! descent 1.0))
           (when space (set-box! space 1.0))
@@ -44,7 +45,7 @@
           (when rspace (set-box! rspace 0.0))))
       (define/override (partial-offset dc x y pos)
         (let ([s (get-size)])
-          (* s pos)))
+          (* (max 1.0 (- s hdelta hdelta)) pos)))
       (define/override (draw dc x y left top right bottom dx dy draw-caret)
         (let ([s (get-size)]
               [b (send dc get-brush)]
@@ -54,8 +55,8 @@
           (send dc set-brush black-brush)
           (send dc set-smoothing 'aligned)
           (for/fold ([x x]) ([i (in-range (get-count))])
-            (send dc draw-ellipse (+ x delta) (+ y delta 1) (- s delta delta) (- s delta delta))
-            (+ x s))
+            (send dc draw-ellipse (+ x delta -1) (+ y delta 1) (- s delta delta) (- s delta delta))
+            (+ x (- s hdelta hdelta)))
           (send dc set-pen p)
           (send dc set-brush b)
           (send dc set-smoothing m)))
