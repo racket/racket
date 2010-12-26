@@ -1169,9 +1169,9 @@ static void free_sector(void *p)
   /* Determine the size: */
   t = s;
   while(1) {
-    DECL_SECTOR_PAGETABLES;
     intptr_t pagetableindex = SECTOR_LOOKUP_PAGETABLE(t);
     intptr_t pageindex = SECTOR_LOOKUP_PAGEPOS(t);
+    DECL_SECTOR_PAGETABLES;
     GET_SECTOR_PAGETABLES(t);
     if (sector_pagetables[pagetableindex]
 	&& (sector_pagetables[pagetableindex][pageindex].start == s)) {
@@ -1228,10 +1228,10 @@ static void free_sector(void *p)
 #ifdef WIN32
 static int is_sector_segment(void *p)
 {
-  DECL_SECTOR_PAGETABLES;
   uintptr_t s = PTR_TO_INT(p);
   intptr_t pagetableindex = SECTOR_LOOKUP_PAGETABLE(s);
   intptr_t pageindex = SECTOR_LOOKUP_PAGEPOS(s);
+  DECL_SECTOR_PAGETABLES;
 
   FIND_SECTOR_PAGETABLES(p);
   if (!sector_pagetables) return 0;
@@ -4292,12 +4292,16 @@ static void run_finalizers(void)
 static int traced_from_roots, traced_from_stack, traced_from_uncollectable, traced_from_finals;
 #endif
 
-#if 0
-extern intptr_t scheme_get_milliseconds(void);
-# define GETTIME() scheme_get_milliseconds()
+#ifdef WIN32
+# define GETTIME() 0
 #else
+# if 0
+extern intptr_t scheme_get_milliseconds(void);
+#  define GETTIME() scheme_get_milliseconds()
+# else
 extern intptr_t scheme_get_process_milliseconds(void);
-# define GETTIME() scheme_get_process_milliseconds()
+#  define GETTIME() scheme_get_process_milliseconds()
+# endif
 #endif
 
 #if TIME
@@ -4920,7 +4924,7 @@ void GC_prim_stringout(char *s, int len)
 	SetConsoleScreenBufferSize(console, size);
   }
 
-  WriteConsole(console, s, len, &wrote, NULL);
+  WriteConsoleA(console, s, len, &wrote, NULL);
 }
 # else
 extern void GC_prim_stringout(char *s, int len);
