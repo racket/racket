@@ -5584,9 +5584,11 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
         if (!skip_dws)
           pre(dwl->dw->data);
 
-        if (scheme_continuation_application_count != old_cac) {
-          old_cac = scheme_continuation_application_count;
-          scheme_recheck_prompt_and_barrier(cont);
+        if (!cont->composable) {
+          if (scheme_continuation_application_count != old_cac) {
+            old_cac = scheme_continuation_application_count;
+            scheme_recheck_prompt_and_barrier(cont);
+          }
         }
       }
       p = scheme_current_thread;

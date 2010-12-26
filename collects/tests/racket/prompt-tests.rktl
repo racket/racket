@@ -2212,4 +2212,46 @@
                      'expected-result)))))))))
     (λ (x) x))))
 
+;; ----------------------------------------
+;; There's a "is the target prompt still in place?"
+;;  check that should not happen when a composable
+;;  continuation is applied. (Random testing discovered
+;;  an incorrect check.)
 
+(test
+ 12345
+ 'no-prompt-check-on-compose
+ (let ()
+   (define pt1 (make-continuation-prompt-tag))
+
+   (define-syntax-rule (% pt body handler)
+     (call-with-continuation-prompt
+      (lambda () body)
+      pt
+      handler))
+
+   ;; (lambda (v) v)
+   ;; as a composable continuation:
+   (define comp-id
+     (%
+      pt1
+      (call-with-composable-continuation
+       (λ (k) (abort-current-continuation pt1 k))
+       pt1)
+      (lambda (k) k)))
+
+   ((% pt1
+       (dynamic-wind
+           (λ () (comp-id 2))
+           (λ () 
+              ;; As we jump back to this continuation,
+              ;; it's ok that no `pt1' prompt is
+              ;; in place anymore
+              (call-with-composable-continuation
+               (λ (k) (abort-current-continuation
+                       pt1 
+                       k))
+               pt1))
+           (λ () #f))
+       (λ (x) x))
+    12345)))
