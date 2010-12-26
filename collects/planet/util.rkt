@@ -61,17 +61,17 @@
             (list/c #t path? natural-number/c natural-number/c)
             (list/c #f string?)))]
  [download/install-pkg
-  (-> string? string? natural-number/c any/c (or/c pkg? #f))]
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c any/c (or/c pkg? #f))]
  [install-pkg
   (-> pkg-spec? path-string? natural-number/c any/c (or/c pkg? #f))]
  [add-hard-link 
-  (-> string? string? natural-number/c natural-number/c path? void?)]
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
-  (-> string? string? natural-number/c natural-number/c void?)]
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c void?)]
  [remove-pkg
-  (-> string? string? natural-number/c natural-number/c void?)]
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c void?)]
  [erase-pkg
-  (-> string? string? natural-number/c natural-number/c void?)])
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c void?)])
 
 
 ;; get-package-spec : string string [nat | #f] [min-ver-spec | #f] -> pkg?

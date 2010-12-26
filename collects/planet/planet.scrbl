@@ -567,39 +567,46 @@ functionality exposed by @seclink["cmdline"]{the @exec{raco planet} command-line
 also available programmatically through this library.
 
 @defproc[(download/install-pkg [owner string?]
-			       [pkg string?]
+			       [pkg (and/c string? #rx"[.]plt")]
 			       [maj natural-number/c]
 			       [min natural-number/c])
          (or/c pkg? #f)]{
 Downloads and installs the package specifed by the given owner name,
 package name, major and minor version number. Returns false if no such
 package is available; otherwise returns a package structure for the
-installed package.}
+installed package.
 
-@defproc[(install-pkg [pkg pkg-spec?]
+The @racket[pkg] argument must end with @racket[".plt"].
+}
+
+@defproc[(install-pkg [pkg-spec pkg-spec?]
                       [file path-string?]
                       [maj natural-number/c]
                       [min natural-number/c])
-         (or/c pkg? #f)]{
+         (or/c pkg-spec? #f)]{
  Installs the package represented by the arguments, using
- only the @racket[pkg-spec-path] and @racket[pkg-spec-name]
- fields of @racket[pkg].
+ the @racket[pkg-spec] argument to find the path and name of
+ the package to install.
+ 
+ See @racket[get-package-spec] to build a @racket[pkg-spec] argument.
  
  Returns a new @racket[pkg-spec?] corresponding to the package
  that was actually installed.
 }
 
 @defproc[(get-package-spec [owner string?]
-                           [pkg string?]
+                           [pkg (and/c string? #rx"[.]plt")]
                            [maj (or/c #f natural-number/c) #f]
                            [min (or/c #f natural-number/c) #f])
          pkg-spec?]{
   Builds a @racket[pkg-spec?] corresponding to the package specified by 
   @racket[owner], @racket[pkg], @racket[maj], and @racket[min].
+  
+  The @racket[pkg] argument must end with the string @racket[".plt"].
 }
 
 @defproc[(pkg-spec? [v any/c]) boolean?]{
-  Recognizes the result of @racket[get-package-spec].                                        
+  Recognizes the result of @racket[get-package-spec] (and @racket[install-pkg]).
 }
                    
 @defparam[current-cache-contents contents
@@ -640,11 +647,14 @@ Unpacks the PLaneT archive with the given filename, placing its contents
 into the given directory (creating that path if necessary).}
 
 @defproc[(remove-pkg [owner string?]
-		     [pkg   string?]
+		     [pkg   (and/c string? #rx"[.]plt")]
 		     [maj   natural-number/c]
 		     [min   natural-number/c])
 	 any]{
-Removes the specified package from the local planet cache.}
+Removes the specified package from the local planet cache.
+
+The @racket[pkg] argument must end with the string @racket[".plt"].
+}
 
 @defproc[(display-plt-file-structure [plt-file (or/c path-string? path?)])
          any]{
@@ -662,7 +672,7 @@ Removes the entire linkage table from the system, which will force all
 modules to relink themselves to PLaneT modules the next time they run.}
 
 @defproc[(add-hard-link [owner string?]
-			[pkg   string?]
+			[pkg   (and/c string? #rx"[.]plt$")]
 			[maj   natural-number/c]
 			[min   natural-number/c]
 			[dir   path?])
@@ -675,14 +685,20 @@ development; users only interested in using PLaneT packages
 available online should not need to create any development links.
 
 If the specified package already has a development link, this function
-first removes the old link and then adds the new one.}
+first removes the old link and then adds the new one.
+
+The @racket[pkg] argument must end with the string @racket[".plt"].
+}
 
 @defproc[(remove-hard-link [owner string?]
-	 		   [pkg   string?]
+	 		   [pkg   (and/c string? #rx"[.]plt")]
 			   [maj   natural-number/c]
 			   [min   natural-number/c])
  	 any]{
-Removes any hard link that may be associated with the given package.}
+Removes any hard link that may be associated with the given package.
+
+The @racket[pkg] argument must end with the string @racket[".plt"].
+}
 
 @defproc[(resolve-planet-path [spec quoted-planet-require-spec?])
 	 path?]{
@@ -718,7 +734,7 @@ produces a list corresponding to its name and version, exactly like
 }
 
 @defproc[(exn:fail:planet? [val any/c]) boolean?]{
-  Returns @racket[#t] if @racket[val] is                                                   
+  Returns @racket[#t] if @racket[val] is an exception indicating a planet-specific failure.
 }
 
 @subsection{Terse Status Updates}
