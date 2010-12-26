@@ -484,10 +484,10 @@
       (eqv? (any any -> boolean)
 	"to determine whether two values are equivalent from the"
 	"  perspective of all functions that can be applied to it (extensional)")
-      ((beginner-=~ =~) (real real non-negative-real -> boolean)
-	"to check whether two real numbers are within some amount (the third argument) of either other")
+      ((beginner-=~ =~) (number number non-negative-real -> boolean)
+	"to check whether two numbers are within some amount (the third argument) of either other")
       ((beginner-equal~? equal~?) (any any non-negative-real -> boolean)
-	"to compare like equal? on the first two arguments, except using =~ in the case of real numbers")
+	"to compare like equal? on the first two arguments, except using =~ in the case of numbers")
       (eof eof
 	"the end-of-file value")
       (eof-object? (any -> boolean)

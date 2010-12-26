@@ -276,8 +276,8 @@ namespace.
 					       (current-continuation-marks))))])
     (let ? ([a x][b y])
       (cond
-        [(real? a)
-         (and (real? b)
+        [(number? a)
+         (and (number? b)
               (beginner-=~ a b epsilon))]
 	[(procedure? a)
 	 (fail "first argument of equality cannot be a procedure, given ~e" a)]
@@ -318,8 +318,8 @@ namespace.
 
 (define-teach beginner =~
   (lambda (a b c)
-    (check-three a b c '=~ real? 'real real? 'real positive-real? 'non-negative-real)
-    (<= (- a c) b (+ a c))))
+    (check-three a b c '=~ number? 'number number? 'number positive-real? 'non-negative-real)
+    (<= (magnitude (- a b)) c)))
 
 (define-teach beginner equal~?
   (lambda (a b c)
