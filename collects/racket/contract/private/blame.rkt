@@ -81,12 +81,18 @@
          [value-message (if (blame-value b)
                           (format " on ~a" (show/display (blame-value b)))
                           "")])
-
+    ;; use (regexp-match #rx"\n" ...) to find out if show/display decided that this
+    ;; is a multiple-line message and adjust surrounding formatting accordingly
     (cond
       [(blame-original? b)
        (string-append
         (format "self-contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a\n" value-message positive-message)
+        (format "  contract~a from ~a~a" 
+                value-message 
+                positive-message
+                (if (regexp-match #rx"\n" positive-message)
+                    ""
+                    "\n"))
         contract-message+at)]
       [else
        (define negative-message (show/display (blame-negative b)))
@@ -96,7 +102,17 @@
              (format " via ~a" (show/display (blame-user b)))))
        (string-append
         (format "contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a~a, blaming ~a\n" value-message negative-message user-message positive-message)
+        (format "  contract~a from ~a~a~a blaming ~a~a" 
+                value-message
+                negative-message 
+                user-message
+                (if (regexp-match #rx"\n" negative-message)
+                    " "
+                    ",")
+                positive-message
+                (if (regexp-match #rx"\n" positive-message)
+                    ""
+                    "\n"))
         contract-message+at)])))
 
 (define (add-newline str)
