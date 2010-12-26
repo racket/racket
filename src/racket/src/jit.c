@@ -13379,7 +13379,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
   /* argc is in V1 */
   {
     int multi_ok;
-    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref6, *refloop;
+    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref6, *ref7, *refloop;
     void *code;
 
     for (multi_ok = 0; multi_ok < 2; multi_ok++) {
@@ -13434,6 +13434,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       jit_subr_p(JIT_R2, JIT_RUNSTACK, JIT_R2);
       /* R2 is now destination */
 
+      ref7 = jit_beqi_l(jit_forward(), JIT_V1, 2); /* 2 args => no non-list args to install */
+
       jit_subi_l(JIT_R0, JIT_V1, 2); /* drop first and last arg */
       jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_WORD_SIZE); /* skip first arg */
@@ -13446,6 +13448,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       (void)jit_bgti_l(refloop, JIT_R0, 0);
       __END_INNER_TINY__(1);
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_WORD_SIZE); /* restore RUNSTACK */
+
+      mz_patch_branch(ref7);
 
       /* original args are in new place; now unpack list arguments; R2
          is still argv, but R1 doesn't have the count any more; 
