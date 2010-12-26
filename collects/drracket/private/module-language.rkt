@@ -179,7 +179,8 @@
                 (module-language-settings-collection-paths settings)
                 (module-language-settings-command-line-args settings)
                 (module-language-settings-auto-text settings)
-                (module-language-settings-compilation-on? settings))))
+                (module-language-settings-compilation-on? settings)
+                (module-language-settings-full-trace? settings))))
       
       (define/override (unmarshall-settings marshalled)
         (and (list? marshalled)
