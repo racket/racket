@@ -2826,7 +2826,7 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t
               intptr_t slen;
               char *cp;
               slen = SCHEME_SYM_LEN(orig_logger->name);
-              cp = scheme_malloc_atomic(slen + len + 2);
+              cp = scheme_malloc_atomic(slen + 2 + len + 1);
               memcpy(cp, SCHEME_SYM_VAL(orig_logger->name), slen);
               memcpy(cp + slen, ": ", 2);
               memcpy(cp + slen + 2, buffer, len + 1);
