@@ -12052,7 +12052,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     /* Buffer is non-NULL... big enough? */
     mz_patch_branch(ref1);
     jit_ldxi_i(JIT_R0, JIT_R2, &((Scheme_Thread *)0x0)->values_buffer_size);
-    jit_bltr_i(refslow, JIT_R0, JIT_V1);
+    (void)jit_bltr_i(refslow, JIT_R0, JIT_V1);
     
     /* Buffer is ready */
     jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R2, JIT_R1);
@@ -12067,7 +12067,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_subi_l(JIT_V1, JIT_V1, 1);
     jit_addi_p(JIT_R0, JIT_R0, JIT_WORD_SIZE);
     jit_addi_p(JIT_R1, JIT_R1, JIT_WORD_SIZE);
-    jit_bnei_l(refloop, JIT_V1, 0);
+    (void)jit_bnei_l(refloop, JIT_V1, 0);
     CHECK_LIMIT();
 
     jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
