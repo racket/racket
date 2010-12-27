@@ -2255,3 +2255,47 @@
            (λ () #f))
        (λ (x) x))
     12345)))
+
+(test
+ 12345
+ 'no-prompt-post-check-on-compose
+ (let ()
+   (define pt1 (make-continuation-prompt-tag))
+   
+   (define-syntax-rule (% pt body handler)
+     (call-with-continuation-prompt
+      (lambda () body)
+      pt
+      handler))
+
+   ((λ (y-comp-cont_7)
+       ((λ (x-comp-cont_3)
+           ((%
+             pt1
+             (x-comp-cont_3
+              (λ ()
+                 (y-comp-cont_7
+                  (λ () (call-with-composable-continuation
+                         (λ (k) (abort-current-continuation pt1 k))
+                         pt1)))))
+             (λ (x) x))
+            12345))
+        (%
+         pt1
+         (dynamic-wind
+             (λ () (y-comp-cont_7 (λ () #f)))
+             (λ () ((call-with-composable-continuation
+                     (λ (k) (abort-current-continuation pt1 k))
+                     pt1)))
+             (λ () #f))
+         (λ (x) x))))
+    (%
+     pt1
+     (dynamic-wind
+         (λ () #f)
+         (λ () ((call-with-composable-continuation
+                 (λ (k) (abort-current-continuation pt1 k)) 
+                 pt1)))
+         (λ () #f))
+     (λ (x) x)))))
+

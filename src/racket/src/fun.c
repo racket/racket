@@ -9086,7 +9086,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
 
   p = scheme_current_thread;
 
-  if (recheck) {
+  if (recheck && !recheck->composable) {
     if (scheme_continuation_application_count != old_cac) {
       scheme_recheck_prompt_and_barrier(recheck);
     }
