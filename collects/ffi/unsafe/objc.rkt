@@ -870,6 +870,8 @@
 ;; --------------------------------------------------
 
 (define-objc class_getInstanceMethod (_fun _Class _SEL -> _Method))
-(define-objc method_setImplementation (_fun _Method _IMP -> _IMP))
-
-
+(define-objc method_setImplementation (_fun _Method _IMP -> _IMP)
+  #:fail (lambda () (lambda (meth imp)
+                      (set-objc_method-method_imp! 
+                       (cast meth _Method _objc_method-pointer) 
+                       (function-ptr imp _IMP)))))
