@@ -119,6 +119,7 @@ the settings above should match r5rs
     (test-expression "+1/2i" "0+1/2i")
     (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
     (test-expression "(exact? 1.5)" "#f")
+    (test-expression "(print (floor (sqrt 2)))" "1.0")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" "#<procedure:f>")
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
@@ -218,6 +219,7 @@ the settings above should match r5rs
     (test-expression "+1/2i" "0+1/2i")
     (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
     (test-expression "(exact? 1.5)" "#f")
+    (test-expression "(print (floor (sqrt 2)))" "1.0")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" "#<procedure:f>")
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
@@ -323,6 +325,7 @@ the settings above should match r5rs
     (test-expression "+1/2i" "0+1/2i")
     (test-expression "779625/32258" "{number 779625/32258 \"24 5433/32258\" mixed}")
     (test-expression "(exact? 1.5)" "#f")
+    (test-expression "(print (floor (sqrt 2)))" #rx"reference to undefined identifier: print")
     
     (test-expression "(let ((f (lambda (x) x))) f)" "#<procedure:f>")
     (test-expression ",1" "{stop-22x22.png} unquote: not in quasiquote in: (unquote 1)")
@@ -477,9 +480,10 @@ the settings above should match r5rs
     (test-expression "779625/32258"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" 
-                     "true"
-                     "true")
+    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(print (floor (sqrt 2)))" 
+                     "print: name is not defined, not a parameter, and not a primitive name"
+                     "reference to an identifier before its definition: print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)"
                      "let: name is not defined, not a parameter, and not a primitive name"
@@ -643,9 +647,10 @@ the settings above should match r5rs
     (test-expression "779625/32258"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" 
-                     "true"
-                     "true")
+    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(print (floor (sqrt 2)))" 
+                     "print: name is not defined, not a parameter, and not a primitive name"
+                     "reference to an identifier before its definition: print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "let: name is not defined, not a parameter, and not a primitive name"
@@ -803,9 +808,10 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" 
-                     "true"
-                     "true")
+    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(print (floor (sqrt 2)))" 
+                     "print: name is not defined, not a parameter, and not a primitive name"
+                     "reference to an identifier before its definition: print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "function:f"
@@ -960,9 +966,10 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" 
-                     "true"
-                     "true")
+    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(print (floor (sqrt 2)))" 
+                     "print: name is not defined, not a parameter, and not a primitive name"
+                     "reference to an identifier before its definition: print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "(lambda (a1) ...)"
@@ -1119,9 +1126,8 @@ the settings above should match r5rs
     (test-expression "779625/32258" 
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
-    (test-expression "(exact? 1.5)" 
-                     "true"
-                     "true")
+    (test-expression "(exact? 1.5)" "true")
+    (test-expression "(print (floor (sqrt 2)))" "#i1.0")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "(lambda (a1) ...)"
@@ -1492,12 +1498,12 @@ the settings above should match r5rs
 
 (define (run-test)
   (go module-lang)
+  (go pretty-big)
   (go r5rs)
   (go beginner)
   (go beginner/abbrev)
   (go intermediate)
   (go intermediate/lambda)
-  (go advanced)
-  (go pretty-big))
+  (go advanced))
 
 (fire-up-drscheme-and-run-tests run-test)

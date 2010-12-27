@@ -159,18 +159,25 @@
 		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
 		 ;; record signature violations with the test engine
-		 (signature-violation-proc
-		  (lambda (obj signature message blame)
-		    (cond
-		     ((namespace-variable-value 'test~object #f (lambda () #f))
-		      => (lambda (engine)
-			   (send (send engine get-info) signature-failed
-				 obj signature message blame))))))
+                 (signature-violation-proc
+                  (lambda (obj signature message blame)
+                    (cond
+                      ((namespace-variable-value 'test~object #f (lambda () #f))
+                       => (lambda (engine)
+                            (send (send engine get-info) signature-failed
+                                  obj signature message blame))))))
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
 		 (signature-checking-enabled? (get-preference 'signatures:enable-checking? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40)))))))
-            (super on-execute settings run-in-user-thread))
+            (super on-execute settings run-in-user-thread)
+            
+            ;; set the global-port-print-handler after the super class because the super sets it too
+            (run-in-user-thread
+             (lambda ()
+               (global-port-print-handler
+                (λ (value port [depth 0])
+                  (teaching-language-render-value/format value settings port 'infinity))))))
           
           (define/private (teaching-languages-error-value->string settings v len)
             (let ([sp (open-output-string)])
