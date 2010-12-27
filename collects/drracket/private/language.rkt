@@ -488,7 +488,7 @@
             (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]))
        
        (global-port-print-handler
-        (λ (value port)
+        (λ (value port [depth 0])
           (let-values ([(converted-value write?)
                         (call-with-values 
                             (lambda () (simple-module-based-language-convert-value value setting))
