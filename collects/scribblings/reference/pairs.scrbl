@@ -964,8 +964,8 @@ Returns a list with all elements from @racket[lst], randomly shuffled.
 
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-This returns the first element in the list @scheme[lst] that minimizes
-the result of @scheme[proc]. 
+Returns the first element in the list @scheme[lst] that minimizes
+the result of @scheme[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmin car '((3 pears) (1 banana) (2 apples)))
@@ -974,8 +974,8 @@ the result of @scheme[proc].
 
 @defproc[(argmax [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-This returns the first element in the list @scheme[lst] that maximizes
-the result of @scheme[proc]. 
+Returns the first element in the list @scheme[lst] that maximizes
+the result of @scheme[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmax car '((3 pears) (1 banana) (2 apples)))
