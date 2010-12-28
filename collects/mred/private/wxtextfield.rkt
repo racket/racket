@@ -31,7 +31,7 @@
       (super-new)
 
       (define delta 3)
-      (define hdelta 1)
+      (define hdelta 2)
       (define (get-size)
         (max 4 (send (send (get-style) get-font) get-point-size)))
                
@@ -55,7 +55,7 @@
           (send dc set-brush black-brush)
           (send dc set-smoothing 'aligned)
           (for/fold ([x x]) ([i (in-range (get-count))])
-            (send dc draw-ellipse (+ x delta -1) (+ y delta 1) (- s delta delta) (- s delta delta))
+            (send dc draw-ellipse (- (+ x delta) hdelta) (+ y delta 1) (- s delta delta) (- s delta delta))
             (+ x (- s hdelta hdelta)))
           (send dc set-pen p)
           (send dc set-brush b)
