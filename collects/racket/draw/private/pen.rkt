@@ -1,5 +1,6 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe/atomic
          "color.ss"
          "syntax.ss"
          "local.ss"
@@ -159,14 +160,17 @@
                    (method-name 'find-or-create-pen 'pen-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)
                          w s c j)])
-        (let ([e (hash-ref pens key #f)])
-          (or (and e
-                   (ephemeron-value e))
-              (let* ([f (make-object pen% col w s c j)]
-                     [e (make-ephemeron key f)])
-                (send f s-set-key key)
-                (hash-set! pens key e)
-                f)))))))
+        (start-atomic)
+        (begin0
+         (let ([e (hash-ref pens key #f)])
+           (or (and e
+                    (ephemeron-value e))
+               (let* ([f (make-object pen% col w s c j)]
+                      [e (make-ephemeron key f)])
+                 (send f s-set-key key)
+                 (hash-set! pens key e)
+                 f)))
+         (end-atomic))))))
 
 (define the-pen-list (new pen-list%))
 

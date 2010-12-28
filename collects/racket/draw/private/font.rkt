@@ -264,14 +264,15 @@
              (vector size (and face (string->immutable-string face)) family
                      style weight underlined? smoothing size-in-pixels?)]
             (method-name 'find-or-create-font font-list%))])
-      (let ([e (hash-ref fonts key #f)])
-        (or (and e
-                 (ephemeron-value e))
-            (let* ([f (apply make-object font% (vector->list key))]
-                   [e (make-ephemeron key f)])
-              (send f s-set-table-key key)
-              (hash-set! fonts key e)
-              f))))))
+      (atomically
+       (let ([e (hash-ref fonts key #f)])
+         (or (and e
+                  (ephemeron-value e))
+             (let* ([f (apply make-object font% (vector->list key))]
+                    [e (make-ephemeron key f)])
+               (send f s-set-table-key key)
+               (hash-set! fonts key e)
+               f)))))))
 
 (define the-font-list (new font-list%))
 

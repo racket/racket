@@ -1,5 +1,6 @@
 #lang scheme/base
 (require scheme/class
+         ffi/unsafe/atomic
          "color.ss"
          "syntax.ss"
          "local.ss"
@@ -116,14 +117,17 @@
                    (method-name 'find-or-create-brush 'brush-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)
                          s)])
-        (let ([e (hash-ref brushes key #f)])
-          (or (and e
-                   (ephemeron-value e))
-              (let* ([f (make-object brush% col s)]
-                     [e (make-ephemeron key f)])
-                (send f s-set-key key)
-                (hash-set! brushes key e)
-                f)))))))
+        (start-atomic)
+        (begin0
+          (let ([e (hash-ref brushes key #f)])
+            (or (and e
+                     (ephemeron-value e))
+                (let* ([f (make-object brush% col s)]
+                       [e (make-ephemeron key f)])
+                  (send f s-set-key key)
+                  (hash-set! brushes key e)
+                  f)))
+          (end-atomic))))))
 
 (define the-brush-list (new brush-list%))
 
