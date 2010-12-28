@@ -689,15 +689,18 @@
                     (define editor (send this get-editor))
                     (define/public (lock)   (send editor lock #t))
                     (define/public (unlock) (send editor lock #f))
-                    (when win?
-                      (let ([m (send this get-menu)])
-                        (for-each (lambda (r)
-                                    (define l (path->string r))
-                                    (make-object menu-item% l m
-                                                 (lambda _
-                                                   (enter-text r)
-                                                   (do-enter))))
-                                  (filesystem-root-list))))
+		    (define/override (on-popup e)
+                      (when win?
+                        (let ([m (send this get-menu)])
+			  (for-each (lambda (i) (send i delete))
+				    (send m get-items))
+			  (for-each (lambda (r)
+				      (define l (path->string r))
+				      (make-object menu-item% l m
+						   (lambda _
+						     (enter-text r)
+						     (do-enter))))
+				    (filesystem-root-list)))))
                     (lock))])
           (if win?
             (new c [label #f] [parent this] [init-value ""] [choices '()])
