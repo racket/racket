@@ -129,6 +129,8 @@
 
 (define-gtk gtk_combo_box_set_active (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_combo_box_get_active (_fun _GtkWidget -> _int))
+(define-gtk gtk_combo_box_set_button_sensitivity (_fun _GtkWidget _int -> _void))
+(define GTK_SENSITIVITY_ON 1)
 
 (define-signal-handler connect-expose "expose-event"
   (_fun _GtkWidget _GdkEventExpose-pointer -> _gboolean)
@@ -257,6 +259,7 @@
          [is-combo?
           (let* ([gtk (as-gtk-allocation (gtk_combo_box_entry_new_text))]
                  [orig-entry (gtk_bin_get_child gtk)])
+	    (gtk_combo_box_set_button_sensitivity gtk GTK_SENSITIVITY_ON)
             (values orig-entry gtk #f #f #f #f #f (extract-combo-button gtk) 0))]
          [has-border?
           (let ([client-gtk (gtk_drawing_area_new)]
@@ -571,9 +574,21 @@
      (define/public (combo-maybe-clicked)
        (let ([i (gtk_combo_box_get_active gtk)])
          (when (i . > . -1)
-           (gtk_combo_box_set_active gtk -1)
+	   (set-no-active-item)
            (queue-window-event this (lambda () (on-combo-select i))))))
      (define/public (on-combo-select i) (void))
+
+     (define/private (set-no-active-item)
+       ;; (gtk_combo_box_set_active gtk -1) should work,
+       ;; or using (.._iter #f) should work, but neither
+       ;; causes the "changed" signal to be emitted when the
+       ;; currently active item is re-selected, so we
+       ;; hack around the problem by adding an item, making
+       ;; it active, then removing it
+       (atomically
+	(gtk_combo_box_append_text gtk "dummy")
+	(gtk_combo_box_set_active gtk combo-count)
+	(gtk_combo_box_remove_text gtk combo-count)))
 
      (define/public (set-combo-text t) (void))
 
