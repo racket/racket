@@ -114,4 +114,11 @@ If @scheme[show?] is true, the method does not immediately return. Instead,
   method returns as soon as possible after the dialog is hidden.
 
 }
+
+@defmethod[(show-without-yield)
+           void?]{
+
+Like @racket[(send @#,this-obj[] @#,method[dialog% show] #t)], but returns
+immediately instead of @racket[yield]ing.}
+
 }

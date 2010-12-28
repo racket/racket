@@ -240,6 +240,11 @@
 	  (check-style cwho #f '(no-caption resize-border no-sheet close-button) style)))
       (rename [super-on-subwindow-char on-subwindow-char])
       (private-field [wx #f])
+      (public
+        [show-without-yield (lambda () 
+                              (as-entry
+                               (lambda ()
+                                 (send wx call-show #t (lambda () (send wx show-without-yield))))))])
       (override
 	[on-subwindow-char (lambda (w event)
 			     (super-on-subwindow-char w event)

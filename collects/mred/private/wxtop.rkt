@@ -346,6 +346,17 @@
 				  1 1)
 		    (set! already-trying? #f)
 		    (resized)]))))))])
+
+      (public
+        [call-show
+	 (lambda (on? do-show)
+           (when on?
+             (position-for-initial-show))
+	   (if on?
+	       (hash-table-put! top-level-windows this #t)
+	       (hash-table-remove! top-level-windows this))
+	   (as-exit ; as-exit because there's an implicit wx:yield for dialogs
+            do-show))])
       
       (override
 	;; show: add capability to set perform-updates
@@ -356,12 +367,8 @@
 	;;          pass now to superclass's show.
 	[show
 	 (lambda (on?)
-           (when on?
-             (position-for-initial-show))
-	   (if on?
-	       (hash-table-put! top-level-windows this #t)
-	       (hash-table-remove! top-level-windows this))
-	   (as-exit ; as-exit because there's an implicit wx:yield for dialogs
+           (call-show
+            on?
 	    (lambda () (super show on?))))]
 
 	[on-visible
