@@ -654,8 +654,9 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     if (table->weak && (table->size > 4096)) {
       int actual = 0;
 
-      /* Forced GC: so that the new table is as small as possible. */
-      scheme_collect_garbage();
+      /* It might be nice to force a GC so that the new table is
+         as small as possible, but that's too expensive. */
+      /* scheme_collect_garbage(); */
 
       /* Check actual count: */
       for (i = 0; i < oldsize; i++) {
