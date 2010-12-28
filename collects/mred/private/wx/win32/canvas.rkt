@@ -27,7 +27,7 @@
 (define WS_EX_CLIENTEDGE        #x00000200)
 
 (define-user32 BeginPaint (_wfun _HWND _pointer -> _HDC))
-(define-user32 EndPaint (_wfun _HDC _pointer -> _BOOL))
+(define-user32 EndPaint (_wfun _HWND _pointer -> _BOOL))
 (define-user32 ShowScrollBar (_wfun _HWND _int _BOOL -> (r : _BOOL)
                                     -> (unless r (failed 'ShowScrollbar))))
 
@@ -174,7 +174,7 @@
                            (DeleteObject hbrush)))
                        (unless (do-canvas-backing-flush hdc)
                          (queue-paint)))))
-             (EndPaint hdc ps)))
+             (EndPaint w ps)))
          0]
         [(= msg WM_NCPAINT)
          (if control-border-theme
