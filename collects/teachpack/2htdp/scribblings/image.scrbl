@@ -1205,9 +1205,26 @@ This section lists predicates for the basic structures provided by the image lib
 
 @defstruct[color ([red (and/c natural-number/c (<=/c 255))]
                   [green (and/c natural-number/c (<=/c 255))]
-                  [blue (and/c natural-number/c (<=/c 255))])]{
-  The @racket[color] struct defines a color with red, green, and blue components
-      that range from @racket[0] to @racket[255].
+                  [blue (and/c natural-number/c (<=/c 255))]
+                  [alpha (and/c natural-number/c (<=/c 255))])]{
+  The @racket[color] struct defines a color with @racket[red], 
+      @racket[green], @racket[blue], and @racket[alpha] components
+      that range from @racket[0] to @racket[255]. 
+      
+    The @racket[red], @racket[green], and @racket[blue] fields
+      combine to make a color, with the higher values meaning more of the given color. 
+      For example, @racket[(make-color 255 0 0)] makes a
+      bright red color and @racket[(make-color 255 0 255)] makes a bright purple.
+    
+      The @racket[alpha] field controls the transparency of the color. A value of @racket[255] means
+      that the color is opaque and @racket[0] means the color is fully transparent.
+      
+  The constructor, @racket[make-color], also accepts only three arguments, in which case
+  the three arguments are used for the @racket[red], @racket[green], and @racket[blue] fields, and the
+  @racket[alpha] field defaults to @racket[255].
+  
+  Unfortunately, not all of the primitives that accept or produce @racket[color] structs use the @racket[alpha]
+  field; only @racket[image->color-list] and @racket[color-list->bitmap] do.  
 }
 
 @defproc[(y-place? [x any/c]) boolean?]{

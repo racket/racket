@@ -1624,6 +1624,19 @@
         =>
         #t))
 
+(test (image->color-list
+       (overlay
+        (color-list->bitmap 
+         (list (color 0 0 0 0)
+               (color 0 0 255 255))
+         1 2)
+        (color-list->bitmap 
+         (list (color 255 0 0 255)
+               (color 0 0 0 0))
+         1 2)))
+      =>
+      (list (color 255 0 0 255) 
+            (color 0 0 255 255)))
 
 (let ([i 
        (overlay (circle 20 'solid 'red)

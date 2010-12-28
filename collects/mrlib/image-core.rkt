@@ -178,8 +178,13 @@ has been moved out).
 ;; an color is
 ;;  - (make-color (<=/c 0 255) (<=/c 0 255) (<=/c 0 255))
 ;;  - string
-(define-struct/reg-mk color (red green blue) #:transparent)
-
+(define-struct/reg-mk color (red green blue alpha) #:transparent)
+(define -make-color
+  ;; this let is here just for the name
+  (let ([make-color
+         (λ (r g b [a 255])
+           (make-color r g b a))])
+    make-color))
 ;                                                   
 ;                                                   
 ;                                                   
@@ -396,6 +401,14 @@ has been moved out).
                                   (list-ref parsed-args 3)
                                   (list-ref parsed-args 4)
                                   (make-hash))]
+                    [(and (eq? tag 'struct:color)
+                          (= arg-count 3))
+                     ;; we changed the arity of the color constructor from old versions,
+                     ;; so fix it up here.
+                     (make-color (list-ref parsed-args 0)
+                                 (list-ref parsed-args 1)
+                                 (list-ref parsed-args 2)
+                                 255)]
                     [else
                      (k #f)]))]))]
         [else sexp]))))
@@ -1154,7 +1167,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
          make-flip flip? flip-flipped? flip-shape
          
-         (struct-out color)
+         (except-out (struct-out color) make-color)
+         (rename-out [-make-color make-color]) 
          
          degrees->radians
          normalize-shape

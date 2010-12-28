@@ -241,7 +241,7 @@
                 'list-of-at-least-three-posns
                 i arg)
      arg]
-    [(int0-255-1 int0-255-2 int0-255-3)
+    [(int0-255-1 int0-255-2 int0-255-3 int0-255-4)
      (check-arg fn-name (and (integer? arg) (<= 0 arg 255)) 
                 'integer\ between\ 0\ and\ 255 i arg)
      arg]

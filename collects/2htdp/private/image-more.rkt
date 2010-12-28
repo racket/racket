@@ -1269,40 +1269,55 @@
 (define/chk (image->color-list image)
   (let* ([w (image-width image)]
          [h (image-height image)]
-         [bm (make-object bitmap% w h)]
+         [bm (make-bitmap w h)]
          [bdc (make-object bitmap-dc% bm)]
-         [c (make-object color%)])
+         [c (make-object color%)]
+         [bytes (make-bytes (* w h 4))])
     (send bdc clear)
     (render-image image bdc 0 0)
-    (for/list ([i (in-range 0 (* w h))])
-      (send bdc get-pixel (remainder i w) (quotient i w) c)
-      (color (send c red) (send c green) (send c blue)))))
+    (send bdc get-argb-pixels 0 0 w h bytes)
+    (for/list ([i (in-range 0 (* w h 4) 4)])
+      (color (bytes-ref bytes (+ i 1))
+             (bytes-ref bytes (+ i 2))
+             (bytes-ref bytes (+ i 3))
+             (bytes-ref bytes i)))))
 
 (define/chk (color-list->bitmap color-list width height)
   (check-dependencies 'color-list->bitmap
                       (= (* width height) (length color-list))
                       "the length of the color list to match the product of the width and the height, but the list has ~a elements and the width and height are ~a and ~a respectively"
                       (length color-list) width height)
-  (let* ([bmp (make-object bitmap% width height)]
-         [bdc (make-object bitmap-dc% bmp)]
+  (let* ([bmp (make-bitmap width height)]
+         [bytes (make-bytes (* width height 4) 0)]
          [o (make-object color%)])
     (for ([c (in-list color-list)]
           [i (in-naturals)])
+      (define j (* i 4))
       (cond
         [(color? c)
-         (send o set (color-red c) (color-green c) (color-blue c))
-         (send bdc set-pixel (remainder i width) (quotient i width) o)]
+         (bytes-set! bytes j (color-alpha c))
+         (bytes-set! bytes (+ j 1) (color-red c))
+         (bytes-set! bytes (+ j 2) (color-green c))
+         (bytes-set! bytes (+ j 3) (color-blue c))]
         [else
          (let* ([str (if (string? c) c (symbol->string c))]
                 [clr (or (send the-color-database find-color str)
                          (send the-color-database find-color "black"))])
-           (send bdc set-pixel (remainder i width) (quotient i width) clr))]))
+           (bytes-set! bytes j 255)  ;; this should probably (send clr alpha) when that's possible
+           (bytes-set! bytes (+ j 1) (send clr red))
+           (bytes-set! bytes (+ j 2) (send clr green))
+           (bytes-set! bytes (+ j 3) (send clr blue)))]))
+    (send bmp set-argb-pixels 0 0 width height bytes)
     (bitmap->image bmp)))
       
 (define build-color/make-color
   (let ([orig-make-color make-color])
-    (define/chk (make-color int0-255-1 int0-255-2 int0-255-3) 
-      (orig-make-color int0-255-1 int0-255-2 int0-255-3))
+    (define/chk make-color
+      (case-lambda 
+        [(int0-255-1 int0-255-2 int0-255-3) 
+         (orig-make-color int0-255-1 int0-255-2 int0-255-3)]
+        [(int0-255-1 int0-255-2 int0-255-3 int0-255-4) 
+         (orig-make-color int0-255-1 int0-255-2 int0-255-3 int0-255-4)]))
     make-color))
 
 (define/chk (pinhole-x image) (let ([ph (send image get-pinhole)]) (and ph (point-x ph))))
@@ -1319,8 +1334,12 @@
 
 (define build-color/color
   (let ([orig-make-color make-color])
-    (define/chk (color int0-255-1 int0-255-2 int0-255-3) 
-      (orig-make-color int0-255-1 int0-255-2 int0-255-3))
+    (define/chk color
+      (case-lambda
+        [(int0-255-1 int0-255-2 int0-255-3) 
+         (orig-make-color int0-255-1 int0-255-2 int0-255-3)]
+        [(int0-255-1 int0-255-2 int0-255-3 int0-255-4) 
+         (orig-make-color int0-255-1 int0-255-2 int0-255-3 int0-255-4)]))
     color))
 
 (define build-pen/make-pen
