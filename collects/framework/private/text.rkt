@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 #|
 
 WARNING: printf is rebound in the body of the unit to always
@@ -7,10 +7,10 @@ WARNING: printf is rebound in the body of the unit to always
 |#
 
 (require string-constants
-         scheme/unit
-         scheme/class
-         scheme/match
-         scheme/path
+         racket/unit
+         racket/class
+         racket/match
+         racket/path
          "sig.rkt"
          "../gui-utils.rkt"
          "../preferences.rkt"
@@ -794,7 +794,7 @@ WARNING: printf is rebound in the body of the unit to always
         [(preferences:get 'framework:ask-about-paste-normalization)
          (let-values ([(mbr checked?)
                        (message+check-box/custom
-                        (string-constant drscheme)
+                        (string-constant drracket)
                         (string-constant normalize-string-info)
                         (string-constant dont-ask-again)
                         (string-constant normalize)
@@ -2373,7 +2373,7 @@ WARNING: printf is rebound in the body of the unit to always
         (let ([install-handlers
                (λ (port)
                  ;; don't want to set the port-print-handler here; 
-                 ;; instead drscheme sets the global-port-print-handler
+                 ;; instead drracket sets the global-port-print-handler
                  ;; to catch fractions and the like
                  (set-interactive-write-handler port)
                  (set-interactive-display-handler port))])
