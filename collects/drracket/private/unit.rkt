@@ -1119,7 +1119,7 @@ module browser threading seems wrong.
         (define/public-final (get-defs) defs)
         (define/public-final (get-ints) ints)
         (define/public-final (get-visible-defs) (values visible-defs defs-shown?))
-        (define/public-final (set-visible-defs vd ds?) 
+        (define/public-final (set-visible-defs vd ds?)
           (set! visible-defs vd)
           (set! defs-shown? ds?))
         (define/public-final (get-visible-ints) (values visible-ints ints-shown?))
@@ -2909,12 +2909,14 @@ module browser threading seems wrong.
           (define (set-visible-regions txt regions)
             (when regions
               (for-each (λ (canvas region) 
-                          (let ([admin (send txt get-admin)])
-                            (send admin scroll-to 
-                                  (first region)
-                                  (second region)
-                                  (third region)
-                                  (fourth region)))) 
+                          (send canvas call-as-primary-owner
+                                (λ ()
+                                  (let ([admin (send txt get-admin)])
+                                    (send admin scroll-to 
+                                          (first region)
+                                          (second region)
+                                          (third region)
+                                          (fourth region)))))) 
                         (send txt get-canvases)
                         regions)))
           
