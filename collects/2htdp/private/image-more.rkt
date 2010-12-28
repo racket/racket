@@ -71,7 +71,7 @@
                (inexact->exact (ceiling height)))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
-    (send bdc clear)
+    (send bdc erase)
     (render-image image bdc 0 0)
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
@@ -1273,7 +1273,7 @@
          [bdc (make-object bitmap-dc% bm)]
          [c (make-object color%)]
          [bytes (make-bytes (* w h 4))])
-    (send bdc clear)
+    (send bdc erase)
     (render-image image bdc 0 0)
     (send bdc get-argb-pixels 0 0 w h bytes)
     (for/list ([i (in-range 0 (* w h 4) 4)])

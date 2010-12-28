@@ -221,7 +221,7 @@ has been moved out).
               (add1 (inexact->exact (ceiling (bb-right bb)))) 
               (add1 (inexact->exact (ceiling (bb-bottom bb)))))]
          [bdc (new bitmap-dc% [bitmap bm])])
-    (send bdc clear)
+    (send bdc erase)
     (render-image img bdc 0 0)
     (begin0
         (send bdc get-bitmap)
@@ -261,7 +261,7 @@ has been moved out).
     
     (define/private (draw-into bm bdc bytes obj)
       (send bdc set-bitmap bm)
-      (send bdc clear)
+      (send bdc erase)
       (render-image obj bdc 0 0)
       (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
     
@@ -650,7 +650,7 @@ has been moved out).
                (+ 1 (ceiling (inexact->exact (bb-right bb))))
                (+ 1 (ceiling (inexact->exact (bb-bottom bb)))))]
          [bdc (make-object bitmap-dc% bm)])
-    (send bdc clear)
+    (send bdc erase)
     (render-image image bdc 0 0)
     (send bdc set-bitmap #f)
     (send bm save-file filename kind)))
@@ -989,13 +989,13 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          (send bdc set-bitmap new-bm)
          (send bdc set-scale x-scale y-scale)
-         (send bdc clear)
+         (send bdc erase)
          (send bdc draw-bitmap orig-bm 0 0)
          
          (when new-mask
            (send bdc set-bitmap new-mask)
            (send bdc set-scale x-scale y-scale)
-           (send bdc clear)
+           (send bdc erase)
            (send bdc draw-bitmap orig-mask 0 0))
          
          (send bdc set-bitmap #f)
