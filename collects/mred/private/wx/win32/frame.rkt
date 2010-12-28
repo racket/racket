@@ -290,7 +290,7 @@
   (define/override (set-top-focus win win-path child-hwnd)
     (set! focus-window-path win-path)
     (when (ptr-equal? hwnd (GetActiveWindow))
-      (SetFocus child-hwnd)))
+      (void (SetFocus child-hwnd))))
 
   (define/private (set-frame-focus)
     (when (pair? focus-window-path)
