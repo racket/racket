@@ -794,7 +794,7 @@ WARNING: printf is rebound in the body of the unit to always
         [(preferences:get 'framework:ask-about-paste-normalization)
          (let-values ([(mbr checked?)
                        (message+check-box/custom
-                        (string-constant drracket)
+                        (string-constant drscheme)
                         (string-constant normalize-string-info)
                         (string-constant dont-ask-again)
                         (string-constant normalize)
@@ -3129,12 +3129,15 @@ designates the character that triggers autocompletion
     ;; should change the current word to the word in the list.
     (define/private (show-options word start-pos end-pos cursor)
       (let ([x (box 0)]
-            [y (box 0)])
-        (position-location start-pos x y #f)
+            [yb (box 0)]
+            [yt (box 0)])
+        (position-location start-pos x yb #f)
+        (position-location start-pos #f yt #t)
         (set! completions-box (new completion-box%
                                    [completions (new scroll-manager% [cursor cursor])]
-                                   [menu-x (unbox x)]
-                                   [menu-y (+ (unbox y) 2)]
+                                   [line-x (unbox x)]
+                                   [line-y-above (unbox yt)]
+                                   [line-y-below (unbox yb)]
                                    [editor this]))
         (send completions-box redraw)))
     
@@ -3373,8 +3376,9 @@ designates the character that triggers autocompletion
   (class* object% (completion-box<%>)
     
     (init-field completions       ; scroll-manager%       the possible completions (all of which have base-word as a prefix)
-                menu-x            ; int                   the menu's top-left x coordinate
-                menu-y            ; int                   the menu's top-left y coordinate
+                line-x            ; int                   the x coordinate of the line where the menu goes
+                line-y-above      ; int                   the y coordinate of the top of the line where the menu goes
+                line-y-below      ; int                   the y coordinate of the bottom of the line where the menu goes
                 editor            ; editor<%>             the owner of this completion box
                 )
     
@@ -3449,12 +3453,18 @@ designates the character that triggers autocompletion
                               (add1 n))))]))])))
         
         (let ([final-x (cond
-                         [(< (+ menu-x w) editor-width)
-                          menu-x]
+                         [(< (+ line-x w) editor-width)
+                          line-x]
                          [(> editor-width w)
                           (- editor-width w)]
-                         [else menu-x])]
-              [final-y menu-y])
+                         [else line-x])]
+              [final-y (cond
+                         [(< (+ line-y-below 2 h) editor-height)
+                          (+ line-y-below 2)]
+                         [(> (- line-y-above h) 0)
+                          (- line-y-above h)]
+                         [else
+                          (+ line-y-below 2)])])
           
           (make-geometry final-x final-y w h vec))))
     
