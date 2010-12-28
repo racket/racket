@@ -301,5 +301,30 @@
   (try-draw (make-object color%) 'color usual-expect))
 
 ;; ----------------------------------------
+;; 0 alpha should make the RGB components irrelevant
+
+(let ()
+  (define bm1 (make-bitmap 1 2))
+  (define bm2 (make-bitmap 1 2))
+
+  (send bm1 set-argb-pixels 0 0 1 2 (bytes 0   0 0 0
+                                           255 0 0 255))
+  (send bm2 set-argb-pixels 0 0 1 2 (bytes 255 255 0 0
+                                           0   0   0 0))
+
+  (define the-bytes (make-bytes 8 0))
+
+  (define bm3 (make-bitmap 1 2))
+  (define bdc (make-object bitmap-dc% bm3))
+  (void (send bdc draw-bitmap bm1 0 0))
+  (void (send bdc draw-bitmap bm2 0 0))
+
+  (send bdc get-argb-pixels 0 0 1 2 the-bytes)
+  (test (bytes 255 255 0 0
+               255 0   0 255)
+        values
+        the-bytes))
+
+;; ----------------------------------------
 
 (report-errs)
