@@ -1131,17 +1131,17 @@
 
   (define/public (do-scroll-to localx localy w h refresh? bias prev? next? only-focus?)
     (and canvas
-         (or (and (not (send canvas is-focus-on?))
+         (or (and (or (send canvas is-focus-on?)
+                      (not only-focus?))
+                  (list (send canvas scroll-to localx localy w h refresh? bias)))
+             (and (not (send canvas is-focus-on?))
                   (or
                    (and prev? 
                         prevadmin
                         (send prevadmin do-scroll-to localx localy w h refresh? bias #t #f #t))
                    (and next? 
                         nextadmin
-                        (send nextadmin do-scroll-to localx localy w h refresh? bias #f #t #t))))
-             (and (or (not only-focus?)
-                      (send canvas is-focus-on?))
-                  (list (send canvas scroll-to localx localy w h refresh? bias))))))
+                        (send nextadmin do-scroll-to localx localy w h refresh? bias #f #t #t)))))))
 
   (def/override (grab-caret [(symbol-in immediate display global) dist])
     (when canvas
