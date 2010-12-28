@@ -670,12 +670,18 @@
                             (bytes-set! data (+ ri 1) v)
                             (bytes-set! data (+ ri 2) v)
                             (bytes-set! data (+ ri B) v))
-                          (begin
-                            (when alpha-channel? 
-                              (bytes-set! data (+ ri A) (bytes-ref bstr pi)))
-                            (bytes-set! data (+ ri R) (bytes-ref bstr (+ pi 1)))
-                            (bytes-set! data (+ ri G) (bytes-ref bstr (+ pi 2)))
-                            (bytes-set! data (+ ri B) (bytes-ref bstr (+ pi 3)))))))))))
+                          (if alpha-channel?
+                              (let ([a (bytes-ref bstr pi)]
+                                    [pm (lambda (a v)
+                                          (quotient (* a v) 255))])
+                                (bytes-set! data (+ ri A) a)
+                                (bytes-set! data (+ ri R) (pm a (bytes-ref bstr (+ pi 1))))
+                                (bytes-set! data (+ ri G) (pm a (bytes-ref bstr (+ pi 2))))
+                                (bytes-set! data (+ ri B) (pm a (bytes-ref bstr (+ pi 3)))))
+                              (begin
+                                (bytes-set! data (+ ri R) (bytes-ref bstr (+ pi 1)))
+                                (bytes-set! data (+ ri G) (bytes-ref bstr (+ pi 2)))
+                                (bytes-set! data (+ ri B) (bytes-ref bstr (+ pi 3))))))))))))
           (cairo_surface_mark_dirty s)))
       (cond
        [(and set-alpha?
