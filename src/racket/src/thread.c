@@ -4641,6 +4641,11 @@ int scheme_wait_until_suspend_ok(void)
       --atomic_timeout_auto_suspend;
   }
 
+  if (do_atomic) {
+    scheme_log_abort("about to suspend in atomic mode");
+    abort();
+  }
+
   return did;
 }
 

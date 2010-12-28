@@ -657,15 +657,11 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
       }
 
       if (ii >= n) {
-        if (!scheme_current_thread->next)
+        if (!scheme_wait_until_suspend_ok()) {
           break;
-        else {
-          if (!scheme_wait_until_suspend_ok()) {
-            break;
-          } else {
-            /* there may have been some action on one of the waitables;
-               try again */
-          }
+        } else {
+          /* there may have been some action on one of the waitables;
+             try again */
         }
       } else
         break;
