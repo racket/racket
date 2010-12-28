@@ -1,0 +1,166 @@
+
+/* See the beginning of "scribble.css". */
+
+/* Monospace: */
+.ScmIn, .ScmRdr, .ScmPn, .ScmMeta,
+.ScmMod, .ScmKw, .ScmVar, .ScmSym,
+.ScmRes, .ScmOut, .ScmCmt, .ScmVal {
+  font-family: monospace;
+}
+
+/* Serif: */
+.inheritedlbl {
+  font-family: serif;
+}
+
+/* ---------------------------------------- */
+/* Inherited methods, left margin */
+
+.inherited {
+  width: 100%;
+  margin-top: 0.5em;
+  text-align: left;
+  background-color: #ECF5F5;
+}
+
+.inherited td {
+  font-size: 82%;
+  padding-left: 1em;
+  text-indent: -0.8em;
+  padding-right: 0.2em;
+}
+
+.inheritedlbl {
+  font-style: italic;
+}
+
+/* ---------------------------------------- */
+/* Scheme text styles */
+
+.ScmIn {
+  color: #cc6633;
+  background-color: #eeeeee;
+}
+
+.ScmInBG {
+  background-color: #eeeeee;
+}
+
+.ScmRdr {
+}
+
+.ScmPn {
+  color: #843c24;
+}
+
+.ScmMeta {
+  color: #262680;
+}
+
+.ScmMod {
+  color: black;
+}
+
+.ScmOpt {
+  color: black;
+}
+
+.ScmKw {
+  color: black;
+  font-weight: bold;
+}
+
+.ScmErr {
+  color: red;
+  font-style: italic;
+}
+
+.ScmVar {
+  color: #262680;
+  font-style: italic;
+}
+
+.ScmSym {
+  color: #262680;
+}
+
+.ScmValLink {
+  text-decoration: none;
+  color: blue;
+}
+
+.ScmModLink {
+  text-decoration: none;
+  color: blue;
+}
+
+.ScmStxLink {
+  text-decoration: none;
+  color: black;
+  font-weight: bold;
+}
+
+.ScmRes {
+  color: #0000af;
+}
+
+.ScmOut {
+  color: #960096;
+}
+
+.ScmCmt {
+  color: #c2741f;
+}
+
+.ScmVal {
+  color: #228b22;
+}
+
+/* ---------------------------------------- */
+/* Some inline styles */
+
+.together {
+  width: 100%;
+}
+
+.prototype td {
+  vertical-align: text-top;
+}
+.longprototype td {
+  vertical-align: bottom;
+}
+
+.ScmBlk td {
+  vertical-align: baseline;
+}
+
+.argcontract td {
+  vertical-align: text-top;
+}
+
+.highlighted {
+  background-color: #ddddff;
+}
+
+.defmodule {
+  width: 100%;
+  background-color: #F5F5DC;
+}
+
+.specgrammar {
+  float: right;
+}
+
+.SBibliography td {
+  vertical-align: text-top;
+}
+
+.leftindent {
+ margin-left: 1em;
+ margin-right: 0em;
+}
+
+.insetpara {
+ margin-left: 1em;
+ margin-right: 1em;
+}

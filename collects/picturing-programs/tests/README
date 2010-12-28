@@ -1,0 +1,11 @@
+
+to test:         $ ./xrun  
+to add a player: $ ./player Foo
+
+shared.ss : player infrastructure 
+carl.ss   : one specific player derived from shared.ss
+sam.ss    : another one 
+  -- add more with player plus string 
+
+balls.ss  : the server 
+

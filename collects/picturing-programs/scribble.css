@@ -1,0 +1,429 @@
+
+/* CSS seems backward: List all the classes for which we want a
+   particular font, so that the font can be changed in one place.  (It
+   would be nicer to reference a font definition from all the places
+   that we want it.)
+
+   As you read the rest of the file, remember to double-check here to
+   see if any font is set. */
+
+/* Monospace: */
+.maincolumn, .refpara, .tocset, .stt, .hspace {
+  font-family: monospace;
+}
+
+/* Serif: */
+.main, .refcontent, .tocview, .tocsub, i {
+  font-family: serif;
+}
+
+/* Sans-serif: */
+.version, .versionNoNav {
+  font-family: sans-serif;
+}
+
+/* ---------------------------------------- */
+
+p, .SIntrapara {
+  display: block;
+  margin: 1em 0;
+}
+
+h2 { /* per-page main title */
+  margin-top: 0;
+}
+
+h3, h4, h5, h6, h7, h8 {
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+}
+
+/* Needed for browsers like Opera, and eventually for HTML 4 conformance.
+   This means that multiple paragraphs in a table element do not have a space
+   between them. */
+table p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------- */
+/* Main */
+
+body {
+  color: black;
+  background-color: #ffffff;
+}
+
+table td {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.maincolumn {
+  width: 43em;
+  margin-right: -40em;
+  margin-left: 15em;
+}
+
+.main {
+  text-align: left;
+}
+
+/* ---------------------------------------- */
+/* Navigation */
+
+.navsettop, .navsetbottom {
+  background-color: #f0f0e0;
+  padding: 0.25em 0 0.25em 0;
+}
+
+.navsettop {
+  margin-bottom: 1.5em;
+  border-bottom: 2px solid #e0e0c0;
+}
+
+.navsetbottom {
+  margin-top: 2em;
+  border-top: 2px solid #e0e0c0;
+}
+
+.navleft {
+  margin-left: 1ex;
+  position: relative;
+  float: left;
+  white-space: nowrap;
+}
+.navright {
+  margin-right: 1ex;
+  position: relative;
+  float: right;
+  white-space: nowrap;
+}
+.nonavigation {
+  color: #e0e0e0;
+}
+
+.searchform {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.searchbox {
+  width: 16em;
+  margin: 0px;
+  padding: 0px;
+  background-color: #eee;
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#contextindicator {
+  position: fixed;
+  background-color: #c6f;
+  color: #000;
+  font-family: monospace;
+  font-weight: bold;
+  padding: 2px 10px;
+  display: none;
+  right: 0;
+  bottom: 0;
+}
+
+/* ---------------------------------------- */
+/* Version */
+
+.versionbox {
+  position: relative;
+  float: right;
+  left: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+.version {
+  font-size: small;
+}
+.versionNoNav {
+  font-size: xx-small; /* avoid overlap with author */
+}
+
+/* ---------------------------------------- */
+/* Margin notes */
+
+.refpara, .refelem {
+  position: relative;
+  float: right;
+  left: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+
+.refpara {
+  top: -1em;
+}
+
+.refcolumn {
+  background-color: #F5F5DC;
+  display: block;
+  position: relative;
+  width: 13em;
+  font-size: 85%;
+  border: 0.5em solid #F5F5DC;
+  margin: 0 0 0 0;
+}
+
+.refcontent {
+  margin: 0 0 0 0;
+}
+
+.refcontent p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ---------------------------------------- */
+/* Table of contents, inline */
+
+.toclink {
+  text-decoration: none;
+  color: blue;
+  font-size: 85%;
+}
+
+.toptoclink {
+  text-decoration: none;
+  color: blue;
+  font-weight: bold;
+}
+
+/* ---------------------------------------- */
+/* Table of contents, left margin */
+
+.tocset {
+  position: relative;
+  float: left;
+  width: 12.5em;
+  margin-right: 2em;
+}
+.tocset td {
+  vertical-align: text-top;
+}
+
+.tocview {
+  text-align: left;
+  background-color: #f0f0e0;
+}
+
+.tocsub {
+  text-align: left;
+  margin-top: 0.5em;
+  background-color: #f0f0e0;
+}
+
+.tocviewlist, .tocsublist {
+  margin-left: 0.2em;
+  margin-right: 0.2em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+}
+.tocviewlist table {
+  font-size: 82%;
+}
+
+.tocviewsublist, .tocviewsublistonly, .tocviewsublisttop, .tocviewsublistbottom {
+  margin-left: 0.4em;
+  border-left: 1px solid #bbf;
+  padding-left: 0.8em;
+}
+.tocviewsublist {
+  margin-bottom: 1em;
+}
+.tocviewsublist table,
+.tocviewsublistonly table,
+.tocviewsublisttop table,
+.tocviewsublistbottom table {
+  font-size: 75%;
+}
+
+.tocviewtitle * {
+  font-weight: bold;
+}
+
+.tocviewlink {
+  text-decoration: none;
+  color: blue;
+}
+
+.tocviewselflink {
+  text-decoration: underline;
+  color: blue;
+}
+
+.tocviewtoggle {
+  text-decoration: none;
+  color: blue;
+  font-size: 75%; /* looks better, and avoids bounce when toggling sub-sections due to font alignments */
+}
+
+.tocsublist td {
+  padding-left: 1em;
+  text-indent: -1em;
+}
+
+.tocsublinknumber {
+  font-size: 82%;
+}
+
+.tocsublink {
+  font-size: 82%;
+  text-decoration: none;
+}
+
+.tocsubseclink {
+  font-size: 82%;
+  text-decoration: none;
+}
+
+.tocsubnonseclink {
+  font-size: 82%;
+  text-decoration: none;
+  padding-left: 0.5em;
+}
+
+.tocsubtitle {
+  font-size: 82%;
+  font-style: italic;
+  margin: 0.2em;
+}
+
+.sepspace {
+  font-size: 40%;
+}
+
+.septitle {
+  font-size: 70%;
+}
+
+/* ---------------------------------------- */
+/* Some inline styles */
+
+.indexlink {
+  text-decoration: none;
+}
+
+.nobreak {
+  white-space: nowrap;
+}
+
+.stt {
+}
+
+.title {
+  font-size: 200%;
+  font-weight: normal;
+  margin-top: 2.8em;
+  text-align: center;
+}
+
+pre { margin-left: 2em; }
+blockquote { margin-left: 2em; }
+
+ol          { list-style-type: decimal; }
+ol ol       { list-style-type: lower-alpha; }
+ol ol ol    { list-style-type: lower-roman; }
+ol ol ol ol { list-style-type: upper-alpha; }
+
+i {
+}
+
+.SubFlow {
+  display: block;
+  margin: 0em;
+}
+
+.boxed {
+  width: 100%;
+  background-color: #E8E8FF;
+}
+
+.hspace {
+}
+
+.slant {
+  font-style: oblique;
+}
+
+.badlink {
+  text-decoration: underline;
+  color: red;
+}
+
+.plainlink {
+  text-decoration: none;
+  color: blue;
+}
+
+.techoutside       { text-decoration: underline; color: #b0b0b0; }
+.techoutside:hover { text-decoration: underline; color: blue; }
+
+/* .techinside:hover doesn't work with FF, .techinside:hover>
+   .techinside doesn't work with IE, so use both (and IE doesn't
+   work with inherit in the second one, so use blue directly) */
+.techinside                    { color: black; }
+.techinside:hover              { color: blue; }
+.techoutside:hover>.techinside { color: inherit; }
+
+.SCentered {
+  text-align: center;
+}
+
+.imageleft {
+  float: left;
+  margin-right: 0.3em;
+}
+
+.Smaller{
+  font-size: 82%;
+}
+
+.Larger{
+  font-size: 122%;
+}
+
+/* A hack, inserted to break some Scheme ids: */
+.mywbr {
+  width: 0;
+  font-size: 1px;
+}
+
+.compact li p {
+  margin: 0em;
+  padding: 0em;
+}
+
+.noborder img {
+  border: 0;
+}
+
+.SAuthorListBox {
+  position: relative;
+  float: right;
+  left: 2em;
+  top: -2.5em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+.SAuthorList {
+  font-size: 82%;
+}
+.SAuthorList:before {
+  content: "by ";
+}
+.author {
+  display: inline;
+  white-space: nowrap;
+}
