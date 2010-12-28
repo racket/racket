@@ -194,6 +194,7 @@
 (define (backing-draw-bm bm cr w h)
   (if (procedure? bm)
       (begin
+        (send cairo-dc reset-config)
         (send cairo-dc set-cr cr w h)
         (bm cairo-dc)
         (send cairo-dc set-cr #f 0 0))

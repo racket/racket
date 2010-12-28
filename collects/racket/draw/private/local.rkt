@@ -21,6 +21,7 @@
   ;; dc%
   in-cairo-context
   get-clipping-matrix
+  reset-config
 
   ;; region%
   install-region
