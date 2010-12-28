@@ -143,6 +143,7 @@
         0
         (cond
          [(= msg WM_SETFOCUS)
+          (set-top-focus this null w)
           (queue-window-event this (lambda () (on-set-focus)))
           0]
          [(= msg WM_KILLFOCUS)

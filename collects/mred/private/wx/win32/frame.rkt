@@ -296,6 +296,12 @@
     (when (pair? focus-window-path)
       (SetFocus (send (last focus-window-path) get-focus-hwnd))))
 
+  (define/public (get-focus-window [even-if-not-active? #f])
+    (and focus-window-path
+         (or even-if-not-active?
+             (ptr-equal? hwnd (GetActiveWindow)))
+         (last focus-window-path)))
+
   (define/override (can-accept-focus?)
     #f)
   (define/override (child-can-accept-focus?)

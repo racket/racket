@@ -379,6 +379,13 @@
         (when is-main?
           (do-notify-responder wx on?))))
 
+    (define/public (get-focus-window [even-if-not-active? #f])
+      (let ([f-cocoa (tell cocoa firstResponder)])
+        (and f-cocoa
+             (or even-if-not-active?
+                 (tell #:type _BOOL cocoa isKeyWindow))
+             (->wx (get-ivar f-cocoa wxb)))))
+
     (define/public (install-wait-cursor)
       (when (positive? (eventspace-wait-cursor-count (get-eventspace)))
         (tellv (get-wait-cursor-handle) set)))

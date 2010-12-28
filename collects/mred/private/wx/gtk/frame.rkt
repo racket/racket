@@ -49,6 +49,7 @@
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 (define-gtk gtk_window_set_icon_list (_fun _GtkWindow _GList -> _void))
 (define-gtk gtk_window_fullscreen (_fun _GtkWindow -> _void))
+(define-gtk gtk_window_get_focus (_fun _GtkWindow -> _GtkWidget))
 
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
 
@@ -376,6 +377,14 @@
 				(unless (eq? on? reported-activate)
 				  (set! reported-activate on?)
 				  (on-activate on?)))))))
+
+    (define/public (get-focus-window [even-if-not-active? #f])
+      (let ([f-gtk (gtk_window_get_focus gtk)])
+        (and f-gtk
+             (or even-if-not-active?
+                 (positive? (bitwise-and (get-gtk-object-flags f-gtk)
+                                         GTK_HAS_FOCUS)))
+             (gtk->wx f-gtk))))
     
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))
