@@ -2902,13 +2902,13 @@ void scheme_glib_log_message(const char *log_domain,
 
   if (log_level & (mzG_LOG_LEVEL_ERROR))
     level = SCHEME_LOG_FATAL;
-  if (log_level & (mzG_LOG_LEVEL_CRITICAL))
+  else if (log_level & (mzG_LOG_LEVEL_CRITICAL))
     level = SCHEME_LOG_ERROR;
-  if (log_level & (mzG_LOG_LEVEL_WARNING | mzG_LOG_LEVEL_MESSAGE))
+  else if (log_level & (mzG_LOG_LEVEL_WARNING | mzG_LOG_LEVEL_MESSAGE))
     level = SCHEME_LOG_WARNING;
-  if (log_level & (mzG_LOG_LEVEL_INFO))
+  else if (log_level & (mzG_LOG_LEVEL_INFO))
     level = SCHEME_LOG_INFO;
-  if (log_level & (mzG_LOG_LEVEL_DEBUG))
+  else /* if (log_level & (mzG_LOG_LEVEL_DEBUG)) */
     level = SCHEME_LOG_DEBUG;
 
   len2 = strlen(message);
