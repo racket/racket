@@ -339,7 +339,7 @@
                             e
                             shutdown-eventspace!
                             cb-box ; retain callback until it's called
-                            1))
+                            0))
       e)))
 
 (define main-eventspace (make-eventspace* (current-thread)))
