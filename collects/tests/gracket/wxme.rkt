@@ -477,26 +477,36 @@
 ;; Every character is 10.0 high, 10.0 wide, 1.0 descent, 1.0 top space
 (send t set-admin (new test-editor-admin%))
 
-(expect (let ([x (box 0.0)] [y (box 0.0)])
-          (list (begin
-                  (send t position-location 1 x y)
-                  (list (unbox x) (unbox y)))
-                (begin
-                  (send t position-location 1 x y #f)
-                  (list (unbox x) (unbox y)))))
-        '((10.0 0.0) (10.0 10.0)))
-(expect (let ([x (box 0.0)] [y (box 0.0)])
-          (list (begin
-                  (send t position-location 14 x y)
-                  (list (unbox x) (unbox y)))
-                (begin
-                  (send t position-location 14 x y #f)
-                  (list (unbox x) (unbox y)))))
-        '((20.0 11.0) (20.0 21.0)))
-(expect (let ([w (box 0.0)] [h (box 0.0)])
-          (send t get-extent w h)
-          (list (unbox w) (unbox h)))
-        '(192.0 22.0))
+(define (check-simple-locations pl pt pr pb)
+  (list
+   (expect (let ([x (box 0.0)] [y (box 0.0)])
+             (list (begin
+                     (send t position-location 1 x y)
+                     (list (unbox x) (unbox y)))
+                   (begin
+                     (send t position-location 1 x y #f)
+                     (list (unbox x) (unbox y)))))
+           (list (list (+ pl 10.0) (+ pt 0.0))
+                 (list (+ pl 10.0) (+ pt 10.0))))
+   (expect (let ([x (box 0.0)] [y (box 0.0)])
+             (list (begin
+                     (send t position-location 14 x y)
+                     (list (unbox x) (unbox y)))
+                   (begin
+                     (send t position-location 14 x y #f)
+                     (list (unbox x) (unbox y)))))
+           (list (list (+ pl 20.0) (+ pt 11.0))
+                 (list (+ pl 20.0) (+ pt 21.0))))
+   (expect (let ([w (box 0.0)] [h (box 0.0)])
+             (send t get-extent w h)
+             (list (unbox w) (unbox h)))
+           (list (+ 192.0 pl pr)
+                 (+ 22.0 pt pb)))))
+(check-simple-locations 0 0 0 0)
+
+(send t set-padding 5.0 8.0 11.0 13.0)
+(check-simple-locations 5 8 11 13)
+(send t set-padding 0 0 0 0)
 
 (expect (send t find-position 0.0 0.0) 0)
 (expect (send t find-position 0.0 3.0) 0)

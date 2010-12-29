@@ -622,6 +622,8 @@ Typically used (indirectly) by snip objects belonging to the
 
 Returns the font descent for the editor. This method is primarily used
  when an editor is an @techlink{item} within another editor.
+For a text editor, the reported descent includes the editor's
+ bottom padding (see @method[text% set-padding]).
 
 @|OVD| @FCAME[]
 
@@ -634,6 +636,8 @@ Returns the font descent for the editor. This method is primarily used
 Gets the current extent of the editor's graphical representation.
 @boxisfillnull[(scheme w) @elem{the editor's width}]
 @boxisfillnull[(scheme h) @elem{the editor's height}]
+For a text editor, the reported extent includes the editor's
+padding (see @method[text% set-padding]).
 
 @|OVD|  @FCAME[]
 
@@ -854,6 +858,8 @@ Obtaining the @techlink{location} if the bottom-right corner may
 Returns the maximum font space for the editor. This method is
  primarily used when an editor is an @techlink{item} within another
  editor.
+For a text editor, the reported space includes the editor's
+ top padding (see @method[text% set-padding]).
 
 @|OVD| @FCAME[]
 
@@ -2260,16 +2266,16 @@ Sets the maximum number of undoables that will be remembered by the
 @defmethod[(set-max-width [width (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
-Sets the maximum display width for the contents of the editor;
- zero or @scheme['none] indicates that there is no maximum.  In a
- text editor, having no maximum disables automatic line breaking,
- and the minimum (positive) maximum width depends on the width of the
- autowrap bitmap.
+Sets the maximum display width for the contents of the editor; zero or
+ @scheme['none] indicates that there is no maximum.  In a text editor,
+ having no maximum disables automatic line breaking, and the minimum
+ (positive) maximum width depends on the width of the autowrap
+ bitmap. The maximum width of a text editor includes its left and
+ right padding (see @method[text% set-padding]) and its autowrap
+ bitmap (see @method[text% set-autowrap-bitmap]).
 
 Setting the width is disallowed when the editor is internally locked
  for reflowing (see also @|lockdiscuss|).
-
-See also @method[text% set-autowrap-bitmap].
 
 }
 

@@ -1069,15 +1069,15 @@ Debugging tools:
 
 ;; ----------------------------------------
 
-(define (update-graphics mline media dc)
+(define (update-graphics mline media dc padding-l padding-t)
   (define (update-left)
     (and (bit-overlap? (mline-flags mline) CALC-LEFT)
          (not (eq? (mline-left mline) NIL))
-         (update-graphics (mline-left mline) media dc)))
+         (update-graphics (mline-left mline) media dc padding-l padding-t)))
   (define (update-here)
     (and 
      (bit-overlap? (mline-flags mline) CALC-HERE)
-     (let ([y (get-location mline)]
+     (let ([y (+ (get-location mline) padding-t)]
            [nextsnip (snip->next (mline-last-snip mline))])
        (let loop ([asnip (mline-snip mline)]
                   [maxbase 0.0]
@@ -1085,7 +1085,7 @@ Debugging tools:
                   [maxspace 0.0]
                   [maxantidescent 0.0]
                   [maxantispace 0.0]
-                  [totalwidth 0.0]
+                  [totalwidth padding-l]
                   [maxscroll 1]
                   [scroll-snip #f]
                   [last-w 0.0]
@@ -1156,7 +1156,7 @@ Debugging tools:
   (define (update-right)
     (and (bit-overlap? (mline-flags mline) CALC-RIGHT)
          (not (eq? (mline-right mline) NIL))
-         (update-graphics (mline-right mline) media dc)))
+         (update-graphics (mline-right mline) media dc padding-l padding-t)))
 
   (let ([left? (update-left)]
         [here? (update-here)]
