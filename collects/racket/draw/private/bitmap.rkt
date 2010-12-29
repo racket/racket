@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/unsafe/ops
+#lang racket/base
+(require racket/class
+         racket/unsafe/ops
          file/convertible
          "syntax.rkt"
          "hold.rkt"
