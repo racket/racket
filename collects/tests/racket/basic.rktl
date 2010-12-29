@@ -1348,6 +1348,11 @@
 (test-values (list (void)) (lambda () (for-each (lambda (x) (values 1 2)) '(1 2))))
 (err/rt-test (map (lambda (x) (values 1 2)) '(1 2)) arity?)
 
+;; Make sure `values' isn't JIT-inlined in a single-value position:
+(err/rt-test ((if (zero? (random 1)) (lambda () (+ (values) 3)) #f)) arity?)
+(err/rt-test ((if (zero? (random 1)) (lambda () (+ (values 1 2) 3)) #f)) arity?)
+(err/rt-test ((if (zero? (random 1)) (lambda () (+ (values 1 2 4) 3)) #f)) arity?)
+
 (test #t andmap add1 null)
 (test #t andmap < null null)
 (test #f ormap add1 null)

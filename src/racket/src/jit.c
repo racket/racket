@@ -8737,6 +8737,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "values")) {
       Scheme_Object *args[3];
 
+      if (!multi_ok) return 0;
+
       args[0] = rator;
       args[1] = app->rand1;
       args[2] = app->rand2;
@@ -9213,6 +9215,8 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "values")) {
       int c = app->num_args;
+
+      if (!multi_ok) return 0;
 
       if (c) {
         generate_app(app, NULL, c, jitter, 0, 0, 2);
