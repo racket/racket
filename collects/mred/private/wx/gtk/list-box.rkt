@@ -138,7 +138,6 @@
   (define callback cb)
   (define ignore-click? #f)
   (define/public (queue-changed)
-    (make-will-executor)
     ;; Called from event-handling thread
     (unless ignore-click?
       (queue-window-event

@@ -124,8 +124,6 @@
             (values cocoa image-cocoa)))
         (values button-cocoa #f)))
 
-  (define we (make-will-executor))
-
   (super-new [parent parent]
              [cocoa cocoa]
              [no-show? (memq 'deleted style)]
