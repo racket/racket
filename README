@@ -8,7 +8,7 @@ Important executables:
 * Racket: the main command-line entry point for running racket programs
   and scripts.
 
-* GRacket: the GUI-enabled Racket executable.
+* GRacket: the GUI-mode Racket executable.
 
 * raco: Racket's command-line toolset.
 
