@@ -614,9 +614,13 @@
                            [a (bytes-ref data (+ ri A))]
                            [unmult (lambda (a v)
                                      (if use-alpha?
-                                         (if (zero? a)
+                                         (if (unsafe-fx= 0 a)
                                              255
-                                             (unsafe-fxquotient (fx* v 255) a))
+					     ;; `min' shouldn't be necessary, but it's
+					     ;; just in case the data is ill-formed
+                                             (unsafe-fxmin 255 (unsafe-fxquotient 
+								(unsafe-fx* v 255) 
+								a)))
                                          v))])
                       (when alpha-channel?
                         (bytes-set! bstr pi a))
