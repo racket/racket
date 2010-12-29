@@ -122,8 +122,9 @@
        ;; Make sure we're in the right eventspace:
        (let ([wx (->wx wxb)])
          (and wx
-              (eq? (current-eventspace)
-                   (send wx get-eventspace))))
+              (eq? (current-thread)
+                   (eventspace-handler-thread
+                    (send wx get-eventspace)))))
        ;; Right event space, so handle the event:
        (do-mouse-event wxb event 'motion #f #f #f))]
   [-a _void (mouseEntered: [_id event]) 

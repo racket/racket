@@ -453,9 +453,9 @@
     (queue-event es cb 'timer-remove)))
 
 (define (register-frame-shown f on?)
-  (queue-event (current-eventspace) f (if on?
-                                          'frame-add
-                                          'frame-remove)))
+  (queue-event (send f get-eventspace) f (if on?
+                                             'frame-add
+                                             'frame-remove)))
 
 (define (get-top-level-windows [e (current-eventspace)])
   ;; called in event-pump thread
