@@ -37,29 +37,8 @@ It's intended to be used with the textbook
 @hyperlink["http://www.picturingprograms.com" "Picturing Programs"].
 
 @section{Installation}
-If you're reading this, you've probably already installed the teachpack successfully,
-but if you need to install it on a different machine, ...
-@itemize[#:style 'ordered
-                 @item{start DrScheme}
-                 @item{switch languages to ``Use the language declared in the
-                       source'' and click ``Run''}
-                 @item{in the Interactions pane, type
-                       @racketblock[(require (planet sbloch/picturing-programs:2))]}
-                 @item{after a few seconds, you should see the message
-                       
-                       @racketoutput{Wrote file ``picturing-programs.rkt'' to installed-teachpacks directory.}}
-                 @item{switch languages back to one of the HtDP languages, like Beginning Student}
-                 @item{either
-                       @itemize{
-                                @item{in the Definitions pane, type
-                                      @racketblock[(require installed-teachpacks/picturing-programs)]
-                                      or}
-                                 @item{from the Language menu, choose "Add
-                                       Teachpack..." and select "picturing-programs.rkt"}
-                                 }
-                       }
-                 @item{click "Run"}
-                 ]
+This package should be bundled with DrRacket version 5.1 and later, so there should be
+no installation procedure.
 
 @section{Functions from image.rkt and universe.rkt}
 

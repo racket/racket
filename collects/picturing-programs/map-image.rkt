@@ -26,6 +26,7 @@
 (provide-primitives real->int
                     ; maybe-color?
                     name->color
+                    colorize
                     get-pixel-color
                     ;pixel-visible?
                     ; change-to-color
@@ -79,13 +80,6 @@
     (if result
         (color%->color result)
         #f)))
-
-;; lookup-if-nec : maybe-color -> maybe-color
-;(define (lookup-if-nec c)
-;  (cond [(color? c)) c]
-;        [(or (string? c) (symbol? c)) (name->color c)]
-;        [(eqv? c #f) transparent]
-;        [else (error 'lookup-if-nec "Unrecognized type")]))
 
 
 ; colorize : broad-color -> color  -- returns #f for unrecognized names

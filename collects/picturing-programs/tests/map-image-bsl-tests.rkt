@@ -1,9 +1,7 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-beginner-reader.ss" "lang")((modname map-image-bsl-tests) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
-(require picturing-programs/book-pictures)
-(require picturing-programs/map-image)
-(require 2htdp/image)
+(require picturing-programs)
 
 ; Test cases for primitives:
 (check-expect (real->int 3.2) 3)
@@ -53,10 +51,11 @@
 (define (zero-5-args x y r g b) 0)
 
 (define tri (triangle 60 "solid" "orange"))
-; (define hieroglyphics pic:hieroglyphics)
-; (define scheme-logo pic:scheme-logo)
-; (define bloch pic:bloch)
+(define hieroglyphics pic:hieroglyphics)
+(define scheme-logo pic:scheme-logo)
+(define bloch pic:bloch)
 
+"Test cases for map3-image:"
 "tri:" tri
 "(map3-image red-id green-id blue-id tri) should be tri:"
 (map3-image red-id green-id blue-id tri)
@@ -74,14 +73,14 @@
 (map3-image zero-5-args x-gradient-5 y-gradient-5 tri)
 "The same thing with some red:"
 (map3-image red-id x-gradient-5 y-gradient-5 tri)
-"And now let's try it on bloch.  Should get a rectangular 2-dimensional color gradient:"
+"And now let's try it on bloch.  Should get a rectangular 2-dimensional color gradient, no bloch:"
 (map3-image zero-5-args x-gradient-5 y-gradient-5 bloch)
 "The same thing preserving the red:"
 (map3-image red-id x-gradient-5 y-gradient-5 bloch)
 "Rotating colors r->g->b->r:"
 (map3-image blue-id red-id green-id bloch)
 
-; Test cases for map4-image:
+"Test cases for map4-image:"
 ; red-id6 : x y r g b a -> num
 (define (red-id6 x y r g b a) r)
 ; green-id6 : x y r g b a -> num
@@ -94,7 +93,6 @@
 (define (zero-6-args x y r g b a) 0)
 ; 
 
-"tri:" tri
 "(map4-image red-id6 green-id6 blue-id6 alpha-id6 tri) should be tri:"
 (map4-image red-id6 green-id6 blue-id6 alpha-id6 tri)
 "(map4-image zero-6-args green-id6 blue-id6 alpha-id6 tri) should be a green triangle:"
@@ -150,7 +148,7 @@
 
 (check-error (map-image return-5 bloch) "colorize: Unrecognized type")
 
-; Test cases for build3-image:
+"Test cases for build3-image:"
 (define (x-gradient-2 x y) (min 255 (* 4 x)))
 (define (y-gradient-2 x y) (min 255 (* 4 y)))
 (define (zero-2-args x y) 0)
@@ -171,9 +169,11 @@
 (check-error (build3-image 17 24 x-gradient-2 y-gradient-2 return-minus-5)
              "make-color: expected <integer between 0 and 255> as third argument, given: -5")
 
-; Test cases for build4-image:
+"Test cases for build4-image:"
+"(build4-image 50 50 x-gradient-2 x-gradient-2 zero-2-args y-gradient-2) should be a square, increasingly yellow from left to right and increasingly alpha from top to bottom.  On a blue background."
+(overlay (build4-image 50 50 x-gradient-2 x-gradient-2 zero-2-args y-gradient-2) bluebox)
 
-; Test cases for build-image:
+"Test cases for build-image:"
 (define (always-red x y) (name->color "red"))
 "(build-image 50 35 (lambda (x y) red)):"
 (build-image 50 35 always-red)
