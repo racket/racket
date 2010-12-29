@@ -982,25 +982,16 @@ the mask bitmap and the original bitmap are all together in a single bytes!
               [orig-h (send orig-bm get-height)]
               [scale-w (ceiling (inexact->exact (* x-scale (send orig-bm get-width))))]
               [scale-h (ceiling (inexact->exact (* y-scale (send orig-bm get-height))))]
-              [new-bm (make-object bitmap% scale-w scale-h)]
-              [new-mask (and orig-mask (make-object bitmap% scale-w scale-h))])
-         (when new-mask
-           (send new-bm set-loaded-mask new-mask))
+              [new-bm (make-bitmap scale-w scale-h)])
          
          (send bdc set-bitmap new-bm)
          (send bdc set-scale x-scale y-scale)
          (send bdc erase)
-         (send bdc draw-bitmap orig-bm 0 0)
-         
-         (when new-mask
-           (send bdc set-bitmap new-mask)
-           (send bdc set-scale x-scale y-scale)
-           (send bdc erase)
-           (send bdc draw-bitmap orig-mask 0 0))
+         (send bdc draw-bitmap orig-bm 0 0 'solid (send the-color-database find-color "black") orig-mask)
          
          (send bdc set-bitmap #f)
          
-         (values new-bm new-mask))])))
+         (values new-bm #f))])))
 
 (define (text->font text)
   (define adjusted-size (min (max (inexact->exact (round (text-size text))) 1) 255))

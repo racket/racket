@@ -856,6 +856,23 @@
       =>
       (ellipse (* 30 3) (* 60 4) 'outline 'purple))
 
+
+;; test scaling of bitmaps with alpha (in this case, a completely blank one)
+(let ()
+  (define bmp (make-bitmap 1 1))
+  (define bdc (make-object bitmap-dc% bmp))
+  (send bdc erase)
+  (send bdc set-bitmap #f)
+  (define i (make-object image-snip% bmp))
+  (test (overlay i
+                 (rectangle 1 1 'solid 'red))
+        =>
+        (rectangle 1 1 'solid 'red))
+  (test (overlay (scale 2 i)
+                 (rectangle 2 2 'solid 'red))
+        =>
+        (rectangle 2 2 'solid 'red)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; misc tests
