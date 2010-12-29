@@ -69,3 +69,5 @@ result value of @scheme[rhs-expr], and continues matching each subsequent
 ]
 
 }
+
+@close-eval[the-eval]

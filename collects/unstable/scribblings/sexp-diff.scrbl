@@ -25,3 +25,6 @@
 
  @examples[#:eval diff-eval (sexp-diff '(0 (1 2 3)) '(0 (4 2 3)))]
 }
+
+
+@close-eval[diff-eval]

@@ -126,3 +126,5 @@ unsound in the presence of mutation from outside the class. This
 should be fixed.
 
 }
+
+@close-eval[the-eval]

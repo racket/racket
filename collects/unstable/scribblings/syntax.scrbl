@@ -484,3 +484,5 @@ non-syntax data, and @scheme[quote-syntax] does the opposite.
 ]
 
 }
+
+@close-eval[the-eval]

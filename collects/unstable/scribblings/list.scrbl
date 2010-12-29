@@ -118,3 +118,4 @@ for which @racket[pred] produces a true value.
 
 }
 
+@close-eval[the-eval]

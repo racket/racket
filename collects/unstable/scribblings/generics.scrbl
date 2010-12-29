@@ -136,3 +136,5 @@ Syntactically an error when used outside @racket[define-methods].
 (gen-port-print (current-output-port) y)
 (gen-print* y #:width 100 #:height 90)
 ]
+
+@close-eval[evaluator]

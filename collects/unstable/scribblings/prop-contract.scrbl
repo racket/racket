@@ -50,3 +50,5 @@ The contract has no effect on the struct type property accessor.
 ((get-f s2) 'apple)
 ]
 }
+
+@close-eval[the-eval]

@@ -122,3 +122,5 @@ contract wrapping.
 (app (lambda (x) 'pear) 5)
 ]
 }
+
+@close-eval[the-eval]

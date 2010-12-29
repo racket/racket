@@ -36,3 +36,5 @@ Otherwise, the table is updated functionally.}
 (dict-ref tbl #'var #f)
 ]
 }
+
+@close-eval[the-eval]

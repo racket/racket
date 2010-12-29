@@ -56,3 +56,5 @@ the inaccessible fields are omitted from the list.
 (struct->list 'not-a-struct #:on-opaque 'skip)
 ]
 }
+
+@close-eval[the-eval]

@@ -75,3 +75,5 @@ procedure or returned otherwise.
 (find-first symbol? (shared ([x (cons 'a x)]) x))
 ]
 }
+
+@close-eval[the-eval]

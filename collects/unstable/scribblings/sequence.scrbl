@@ -41,3 +41,5 @@ Produces the sequence of @racket[f] applied to each element of @racket[seq].
 (for/list ([x (sequence-lift add1 (in-range 10))])
   x)]
 }
+
+@close-eval[the-eval]
