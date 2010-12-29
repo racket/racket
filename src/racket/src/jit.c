@@ -2480,7 +2480,8 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     }
     break;
   case scheme_application3_type:
-    if (inlined_binary_prim(((Scheme_App2_Rec *)obj)->rator, obj, jitter))
+    if (inlined_binary_prim(((Scheme_App2_Rec *)obj)->rator, obj, jitter)
+        && !SAME_OBJ(((Scheme_App2_Rec *)obj)->rator, scheme_values_func)) 
       return 1;
     else if (just_markless) {
       return is_noncm(((Scheme_App3_Rec *)obj)->rator, jitter, depth, stack_start + 2);
