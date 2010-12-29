@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:contract? #rx".*contradiction.*implementation of 'U.*")
+(exn-pred exn:fail:contract? #rx".*contract violation.*blaming 'U.*")
 #lang scheme/load
 
 (module T typed-scheme
