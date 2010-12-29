@@ -2,6 +2,7 @@
 (require racket/class
          racket/unsafe/ops
          file/convertible
+         (for-syntax racket/base)
          "syntax.rkt"
          "hold.rkt"
          "../unsafe/bstr.rkt"
@@ -605,28 +606,45 @@
                 [use-alpha? (or alpha-channel? b&w?)])
             (let ([w2 (+ x (min (- width x) w))])
               (for* ([j (in-range y (min (+ y h) height))])
-                (let ([row (* j row-width)]
-                      [p (* 4 (* (- j y) w))])
-                  (for ([i (in-range x w2)])
-                    (let* ([4i (* 4 i)]
-                           [pi (+ p (* 4 (- i x)))]
-                           [ri (+ row 4i)]
-                           [a (bytes-ref data (+ ri A))]
-                           [unmult (lambda (a v)
-                                     (if use-alpha?
-                                         (if (unsafe-fx= 0 a)
-                                             255
-					     ;; `min' shouldn't be necessary, but it's
-					     ;; just in case the data is ill-formed
-                                             (unsafe-fxmin 255 (unsafe-fxquotient 
-								(unsafe-fx* v 255) 
-								a)))
-                                         v))])
+                (let* ([row (* j row-width)]
+                       [p (* 4 (* (- j y) w))]
+                       [ri-start (+ row (* 4 x))]
+                       [ri-end (+ row (* 4 w2))]
+                       [pi-start p]
+                       [pi-end (+ p (* 4 (- w2 x)))])
+                  (unless (and (<= 0 ri-start)
+                               (<= ri-end (bytes-length data)))
+                    (error 'bitmap.rkt "ri indicies out of range ~s & ~s vs ~s"
+                           ri-start
+                           ri-end
+                           (bytes-length data)))
+                  (unless (and (<= 0 pi-start)
+                               (<= pi-end (bytes-length bstr)))
+                    (error 'bitmap.rkt "pi indicies out of range ~s & ~s vs ~s"
+                           pi-start
+                           pi-end
+                           (bytes-length bstr)))
+                  (for ([ri (in-range ri-start ri-end 4)]
+                        [pi (in-range pi-start pi-end 4)])
+                    (let ([a (bytes-ref data (+ ri A))])
+                      (let-syntax ([unmult 
+                                    (λ (stx)
+                                      (syntax-case stx ()
+                                        [(_ v)
+                                         #'(if use-alpha?
+                                               (if (unsafe-fx= 0 a)
+                                                   255
+                                                   ;; `min' shouldn't be necessary, but it's
+                                                   ;; just in case the data is ill-formed
+                                                   (unsafe-fxmin 255 (unsafe-fxquotient 
+                                                                      (unsafe-fx* v 255) 
+                                                                      a)))
+                                               v)]))])
                       (when alpha-channel?
-                        (bytes-set! bstr pi a))
-                      (bytes-set! bstr (+ pi 1) (unmult a (bytes-ref data (+ ri R))))
-                      (bytes-set! bstr (+ pi 2) (unmult a (bytes-ref data (+ ri G))))
-                      (bytes-set! bstr (+ pi 3) (unmult a (bytes-ref data (+ ri B))))))))))))
+                        (unsafe-bytes-set! bstr pi a))
+                      (unsafe-bytes-set! bstr (+ pi 1) (unmult (unsafe-bytes-ref data (+ ri R))))
+                      (unsafe-bytes-set! bstr (+ pi 2) (unmult (unsafe-bytes-ref data (+ ri G))))
+                      (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
       (cond
        [get-alpha?
         (get-alphas-as-mask x y w h bstr)]
