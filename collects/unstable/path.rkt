@@ -1,10 +1,11 @@
-#lang racket
-(require unstable/list
+#lang racket/base
+(require racket/contract
+         unstable/list
          unstable/contract)
 
 ; explode-path* : path? -> (listof path?)
 (define (explode-path* p)
-  (let loop ([p p] [r empty])
+  (let loop ([p p] [r null])
     (cond 
       [(eq? 'relative p) r]
       [(not p) r]

@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require racket/sandbox)
+(require racket/promise
+         racket/sandbox)
 
 (provide make-trusted-evaluator
          make-trusted-module-evaluator

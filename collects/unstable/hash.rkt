@@ -1,6 +1,5 @@
-#lang racket
-
-(require (for-syntax syntax/parse))
+#lang racket/base
+(require racket/contract)
 
 ;; Eli: See comments for `dict-ref/check' and relatives.
 

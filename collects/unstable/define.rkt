@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax racket/list
+(require (for-syntax racket/base
+                     racket/list
                      racket/match
                      syntax/kerncase
                      unstable/syntax))

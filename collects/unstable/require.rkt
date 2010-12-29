@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax racket/match
+(require (for-syntax racket/base
+                     racket/match
                      racket/require-transform
                      racket/provide-transform
                      syntax/parse

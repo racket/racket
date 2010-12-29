@@ -1,5 +1,7 @@
-#lang racket
-(require unstable/srcloc)
+#lang racket/base
+(require racket/match
+         racket/contract
+         unstable/srcloc)
 
 #|
 Ryan:

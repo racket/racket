@@ -1,15 +1,18 @@
-#lang scribble/doc
-@(require scribble/base
-          scribble/manual
-          scribble/eval
-	  scribblings/reference/mz
+#lang scribble/manual
+@(require scribble/eval
 	  "utils.rkt"
-         (for-label unstable/sequence
-                    racket/contract
-                    racket/base))
+          (for-label unstable/sequence
+                     racket/contract
+                     racket/base))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/sequence))
+@(define-syntax speed
+    (syntax-rules ()
+      [(_ id what)
+       (t "An " (scheme id) " application can provide better performance for "
+          (elem what)
+          " iteration when it appears directly in a " (scheme for) " clause.")]))
 
 @title[#:tag "sequence"]{Sequences}
 

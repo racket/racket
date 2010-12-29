@@ -1,9 +1,11 @@
-#lang racket
+#lang racket/base
 
 (require slideshow/base slideshow/pict
+         racket/contract racket/list racket/match
          racket/splicing racket/stxparam racket/gui/base
          racket/block racket/class
-         unstable/define)
+         unstable/define
+         (for-syntax scheme/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -304,7 +306,7 @@
  [strike (->* [pict?] [any/c] pict?)]
  [shade (->* [pict?] [any/c #:ratio (real-in 0 1)] pict?)])
 (provide staged slide/staged stage stage-name
-         before at after before/at at/after except
+         before at after before/at at/after
          pict-if pict-cond pict-case pict-match
          pict-combine with-pict-combine)
 

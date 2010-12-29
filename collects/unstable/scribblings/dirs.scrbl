@@ -84,3 +84,5 @@ replaced by @racketresult[user], and the PLaneT cache is replaced by
 @racketresult[planet].
 
 }
+
+@close-eval[evaluator]

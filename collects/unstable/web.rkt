@@ -1,5 +1,6 @@
-#lang racket
+#lang racket/base
 (require xml
+         racket/contract
          unstable/function
          unstable/text)
 

@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (provide debug
          dprintf
@@ -20,11 +20,12 @@
          parameterize/debug)
 
 (require racket/block
+         racket/match
          unstable/pretty
          unstable/srcloc
          unstable/location
          unstable/syntax
-         (for-syntax racket/match syntax/parse unstable/syntax))
+         (for-syntax racket/base racket/match syntax/parse unstable/syntax))
 
 (define-syntax (let/debug stx)
   (syntax-parse stx

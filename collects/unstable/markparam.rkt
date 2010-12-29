@@ -1,5 +1,8 @@
-#lang racket
-(require racket/serialize)
+#lang racket/base
+(require racket/serialize
+         racket/function
+         racket/contract
+         (for-syntax racket/base))
 
 (define mark-parameter-first
   (curry continuation-mark-set-first #f))

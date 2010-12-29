@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require (for-syntax unstable/planet-syntax)
+(require (for-syntax racket/base unstable/planet-syntax)
          unstable/planet-syntax
          unstable/require)
 

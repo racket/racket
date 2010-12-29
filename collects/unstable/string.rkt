@@ -1,5 +1,6 @@
-#lang racket
-(require racket/serialize)
+#lang racket/base
+(require racket/contract
+         racket/serialize)
 
 (define (read/string str)
   (read (open-input-string str)))

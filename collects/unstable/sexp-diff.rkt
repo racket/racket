@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;;; diff-sexp.lisp -- diffs s-expressions based on Levenshtein-like edit distance.
 
@@ -44,6 +44,8 @@
 
 
 ;;; Code:
+
+(require racket/list)
 
 (provide sexp-diff)
 

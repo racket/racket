@@ -1,5 +1,6 @@
-#lang racket
-(require racket/serialize)
+#lang racket/base
+(require racket/contract
+         racket/serialize)
 
 (provide/contract
  [read/bytes (bytes? . -> . serializable?)]
