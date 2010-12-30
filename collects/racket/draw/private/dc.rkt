@@ -42,14 +42,7 @@
   (if (string? c)
       (or (send the-color-database find-color c)
           black)
-      (if (send c is-immutable?)
-          c
-          (let ([c (make-object color% 
-                                (color-red c) 
-                                (color-green c) 
-                                (color-blue c))]) 
-            (send c set-immutable)
-            c))))
+      (color->immutable-color c)))
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
@@ -128,6 +121,13 @@
     ;; Used to keep smoothing disabled for b&w contexts
     dc-adjust-smoothing
 
+    ;; install-color : cairo_t color<%> alpha boolean? -> void
+    ;; 
+    ;; Installs a color, which a monochrome context might reduce
+    ;;  to black or white. The boolean argument indicates whether
+    ;;  the color is for a background.
+    install-color
+
     ;; The public get-size method:
     get-size
 
@@ -185,13 +185,13 @@
 
     (define/public (dc-adjust-smoothing s) s)
 
-    (define/public (install-color cr c a)
+    (define/public (install-color cr c a bg?)
       (let ([norm (lambda (v) (/ v 255.0))])
         (cairo_set_source_rgba cr
                                (norm (color-red c))
                                (norm (color-green c))
                                (norm (color-blue c))
-                               a)))
+                               (* a (color-alpha c)))))
 
     (define/public (collapse-bitmap-b&w?) #f)
 
@@ -216,8 +216,7 @@
 
     (super-new)))
 
-(define hilite-color (send the-color-database find-color "black"))
-(define hilite-alpha 0.3)
+(define hilite-color (make-object color% 0 0 0 0.3))
 
 (define-local-member-name
   draw-bitmap-section/mask-offset)
@@ -629,7 +628,7 @@
                        255
                        0)])
             (send dest set v v v))
-          (send dest set (color-red c) (color-green c) (color-blue c))))
+          (send dest copy-from c)))
 
     (define clipping-region #f)
 
@@ -683,7 +682,7 @@
       (with-cr
        (check-ok 'erase)
        cr
-       (install-color cr bg 1.0)
+       (install-color cr bg alpha #t)
        (cairo_paint cr)))
 
     (define/override (erase)
@@ -714,7 +713,7 @@
                                               CAIRO_CONTENT_COLOR_ALPHA
                                               12 12)]
              [cr2 (cairo_create s)])
-        (install-color cr2 col alpha)
+        (install-color cr2 col alpha #f)
         (cairo_set_line_width cr2 1)
         (cairo_set_line_cap cr CAIRO_LINE_CAP_ROUND)
         (cairo_set_antialias cr2 (case (dc-adjust-smoothing smoothing)
@@ -738,7 +737,8 @@
                         (eq? mode 'solid)
                         (and (= 0 (color-red col))
                              (= 0 (color-green col))
-                             (= 0 (color-blue col))))
+                             (= 0 (color-blue col))
+                             (= 1.0 (color-alpha col))))
                    (put (send st get-cairo-surface))]
                   [(collapse-bitmap-b&w?)
                    (put (send (bitmap-to-b&w-bitmap 
@@ -825,7 +825,8 @@
                       [else
                        (install-color cr 
                                       (if (eq? s 'hilite) hilite-color col)
-                                      (if (eq? s 'hilite) hilite-alpha alpha))]))))
+                                      alpha
+                                      #f)]))))
             (cairo_fill_preserve cr))))
       (when pen?
         (let ([s (send pen get-style)])
@@ -838,7 +839,8 @@
                                    (lambda (v) (set! pen-stipple-s v) v))
                   (install-color cr 
                                  (if (eq? s 'hilite) hilite-color col)
-                                 (if (eq? s 'hilite) hilite-alpha alpha))))
+                                 alpha
+                                 #f)))
             (cairo_set_line_width cr (let* ([v (send pen get-width)]
                                             [v (if (aligned? smoothing)
                                                    (/ (floor (* effective-scale-x v)) effective-scale-x)
@@ -1164,12 +1166,12 @@
           (when (eq? text-mode 'solid)
             (unless rotate?
               (let-values ([(w h d a) (do-text cr #f s 0 0 font combine? 0 0.0)])
-                (install-color cr text-bg alpha)
+                (install-color cr text-bg alpha #f)
                 (cairo_new_path cr)
                 (cairo_rectangle cr x y w h)
                 (cairo_fill cr))))
           (cairo_new_path cr) ; important for underline mode
-          (install-color cr text-fg alpha))
+          (install-color cr text-fg alpha #f))
         (when rotate?
           (cairo_save cr)
           (cairo_translate cr x y)
@@ -1501,7 +1503,8 @@
         (let ([black? (or (not color)
                           (and (= 0 (color-red color))
                                (= 0 (color-green color))
-                               (= 0 (color-blue color))))])
+                               (= 0 (color-blue color))
+                               (= 1.0 (color-alpha color))))])
           (cond
            [(and (collapse-bitmap-b&w?)
                  (or (send src is-color?)
@@ -1597,11 +1600,11 @@
              (cairo_pattern_destroy s))]
           [else
            (when (eq? style 'opaque)
-             (install-color cr bg alpha)
+             (install-color cr bg alpha #f)
              (cairo_new_path cr)
              (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
              (cairo_fill cr))
-           (install-color cr color alpha)
+           (install-color cr color alpha #f)
            (stamp-pattern src a-src-x a-src-y)])
          (when clip-mask
            (cairo_restore cr))

@@ -6,6 +6,7 @@
          color-red
          color-green
          color-blue
+         color-alpha
          color-database<%> the-color-database
          color->immutable-color)
 
@@ -15,7 +16,8 @@
 (defclass color% object%
   (field [r 0]
          [g 0]
-         [b 0])
+         [b 0]
+         [a 1.0])
   (define immutable? #f)
 
   (init-rest args)
@@ -34,24 +36,32 @@
    [([color% c])
     (set! r (color-red c))
     (set! g (color-green c))
-    (set! b (color-blue c))]
-   [([byte? _r][byte? _g][byte? _b])
+    (set! b (color-blue c))
+    (set! a (color-alpha c))]
+   [([byte? _r] [byte? _g] [byte? _b])
     (set! r _r)
-    (set! g (cadr args))
-    (set! b (caddr args))]
+    (set! g _g)
+    (set! b _b)]
+   [([byte? _r] [byte? _g] [byte? _b] [(real-in 0 1) _a])
+    (set! r _r)
+    (set! g _g)
+    (set! b _b)
+    (set! a (exact->inexact _a))]
    (init-name 'color%))
 
   (def/public (red) r)
   (def/public (green) g)
   (def/public (blue) b)
+  (def/public (alpha) a)
 
-  (def/public (set [byte? rr] [byte? rg] [byte? rb])
+  (def/public (set [byte? rr] [byte? rg] [byte? rb] [(real-in 0 1) [ra 1.0]])
     (if immutable?
         (error (method-name 'color% 'set) "object is immutable")
         (begin
           (set! r rr)
           (set! g rg)
-          (set! b rb))))
+          (set! b rb)
+          (set! a (exact->inexact ra)))))
 
   (def/public (ok?) #t)
   (def/public (is-immutable?) immutable?)
@@ -60,11 +70,12 @@
   (def/public (copy-from [color% c])
     (if immutable?
         (error (method-name 'color% 'copy-from) "object is immutable")
-        (set (send c red) (send c green) (send c blue)))))
+        (set (color-red c) (color-green c) (color-blue c) (color-alpha c)))))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
 (define color-blue (class-field-accessor color% b))
+(define color-alpha (class-field-accessor color% a))
 
 (define (color->immutable-color c)
   (if (send c is-immutable?)

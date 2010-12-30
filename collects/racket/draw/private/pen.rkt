@@ -159,6 +159,7 @@
                             _width _style _cap _join)]
                    (method-name 'find-or-create-pen 'pen-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)
+                         (send col alpha)
                          w s c j)])
         (start-atomic)
         (begin0

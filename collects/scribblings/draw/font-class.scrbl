@@ -84,7 +84,9 @@ See also
                         [style (one-of/c 'normal 'italic 'slant) 'normal]
                         [weight (one-of/c 'normal 'bold 'light) 'normal]
                         [underline? any/c #f]
-                        [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
+                        [smoothing (one-of/c 'default 'partly-smoothed 
+                                             'smoothed 'unsmoothed) 
+                                   'default]
                         [size-in-pixels? any/c #f])
                        ([size (integer-in 1 255)]
                         [face string?]
@@ -93,7 +95,9 @@ See also
                         [style (one-of/c 'normal 'italic 'slant) 'normal]
                         [weight (one-of/c 'normal 'bold 'light) 'normal]
                         [underline? any/c #f]
-                        [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
+                        [smoothing (one-of/c 'default 'partly-smoothed 
+                                             'smoothed 'unsmoothed) 
+                                   'default]
                         [size-in-pixels? any/c #f]))]{
 
 When no arguments are provided, creates an instance of the default

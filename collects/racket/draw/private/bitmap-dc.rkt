@@ -59,18 +59,27 @@
           'unsmoothed
           s))
 
-    (define/override (install-color cr c a)
+    (define/override (install-color cr c a bg?)
       (if b&w?
           (begin
             (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
-            (if (zero? a)
-                (super install-color cr c a)
-                (if (and (= (color-red c) 255)
-                         (= (color-green c) 255)
-                         (= (color-blue c) 255))
+            (if (or (zero? a)
+                    (zero? (color-alpha c)))
+                (super install-color cr c a bg?)
+                (if (if bg?
+                        ;; Background: all non-black to white
+                        (not (and (= (color-red c) 0)
+                                  (= (color-green c) 0)
+                                  (= (color-blue c) 0)
+                                  (= (color-alpha c) 1.0)))
+                        ;; Foreground: all non-white to black:
+                        (and (= (color-red c) 255)
+                             (= (color-green c) 255)
+                             (= (color-blue c) 255)
+                             (= (color-alpha c) 1.0)))
                     (cairo_set_source_rgba cr 1.0 1.0 1.0 0.0)
                     (cairo_set_source_rgba cr 0.0 0.0 0.0 1.0))))
-          (super install-color cr c a)))
+          (super install-color cr c a bg?)))
 
     (define/override (collapse-bitmap-b&w?) b&w?)
 

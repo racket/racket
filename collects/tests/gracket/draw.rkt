@@ -920,6 +920,14 @@
 							 100 310)
 						   p))
 
+                              (let ([p (send dc get-pen)])
+                                (send dc set-pen (make-object color% 0 0 0 0.1) 1 'solid)
+                                (send dc set-brush (make-object color% 255 0 200 0.5) 'solid)
+                                (send dc draw-rectangle 250 310 20 20)
+                                (send dc set-brush (make-object color% 0 255 200 0.5) 'solid)
+                                (send dc draw-rectangle 260 320 20 20)
+                                (send dc set-pen p))
+
 			      (send dc draw-line 130 310 150 310)
 			      (send dc draw-line 130 312.5 150 312.5)
 			      (send dc draw-line 130 314.3 150 314.3)

@@ -29,9 +29,9 @@
   (make-object point% (point-x p) (point-y p)))
 
 (define (clone-color c)
-  (if (send c is-immutable?)
-      c
-      (make-object color% c)))
+  (if (string? c)
+      (string->immutable-string c)
+      (color->immutable-color c)))
 
 (define (clone-pen p)
   (let ([s (send p get-stipple)])

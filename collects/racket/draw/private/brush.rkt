@@ -116,6 +116,7 @@
                             _style)]
                    (method-name 'find-or-create-brush 'brush-list%))])
       (let ([key (vector (send col red) (send col green) (send col blue)
+                         (send col alpha)
                          s)])
         (start-atomic)
         (begin0

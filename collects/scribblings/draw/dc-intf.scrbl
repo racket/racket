@@ -130,12 +130,13 @@ The effect of @racket[mask] on drawing depends on the type of the
 The current brush, current pen, and current text for the DC have no
  effect on how the bitmap is drawn, but the bitmap is scaled if the DC
  has a scale, and the DC's alpha setting determines the opacity of the
- drawn pixels (in combination with an alpha channel of @racket[source]
- and any given @racket[mask]).
+ drawn pixels (in combination with an alpha channel of @racket[source],
+ any given @racket[mask], and the alpha component of @racket[color] 
+ when @racket[source] is monochrome).
 
 For @scheme[post-script-dc%] and @racket[pdf-dc%] output, opacity from
- an alpha channel in @racket[source] or from @racket[mask] is
- rounded to full transparency or opacity.
+ an alpha channel in @racket[source], from @racket[mask], or from 
+ @racket[color] is rounded to full transparency or opacity.
 
 The result is @scheme[#t] if the bitmap is successfully drawn,
  @scheme[#f] otherwise (possibly because the bitmap's @method[bitmap%
@@ -466,7 +467,7 @@ For printer or PostScript output, an exception is raised if
            void?]{
 
 Erases the drawing region by filling it with white and, for a drawing
-context that keeps an alpha channels, sets all alphas to zero.
+context that keeps an alpha channel, sets all alphas to zero.
 
 }
 
@@ -799,13 +800,16 @@ rotation settings have their identity values.
 
 }
 
+
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
 
 Determines the opacity of drawing. A value of @scheme[0.0] corresponds
 to completely transparent (i.e., invisible) drawing, and @scheme[1.0]
 corresponds to completely opaque drawing. For intermediate values,
-drawing is blended with the existing content of the drawing context.}
+drawing is blended with the existing content of the drawing context.
+A color (e.g. for a brush) also has an alpha value; it is combined
+with the drawing context's alpha by multiplying.}
 
 
 @defmethod[(set-background [color (is-a?/c color%)])
