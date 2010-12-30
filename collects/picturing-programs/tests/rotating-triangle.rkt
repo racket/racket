@@ -10,13 +10,14 @@
 (define tricirc (overlay/xy TRI
                             (- (/ SIDE 2) R) 0
                             CIRC))
-(define badtricirc
-  (overlay/align "middle" "middle"
-                 TRI
-                 CIRC))
-
 (define (rotate-1 pic)
   (rotate 1 pic))
+
+"Triangle rotating by itself (with its top and left attached to the top and left of the window):"
+(big-bang TRI
+          (on-tick rotate-1 .05)
+          (check-with image?)
+          (on-draw show-it))
 
 "Triangle rotating around its center:"
 (big-bang tricirc
@@ -24,8 +25,12 @@
           (check-with image?)
           (on-draw show-it))
 
-"Triangle rotating around the center of its bounding box:"
-(big-bang badtricirc
-	  (on-tick rotate-1 .05)
-	  (check-with image?)
-	  (on-draw show-it))
+;show-on-yellow : image -> image
+(define (show-on-yellow pic)
+  (overlay pic (rectangle (* 2 R) (* 2 R) "solid" "yellow")))
+
+"Triangle rotating around its center, on a yellow background:"
+(big-bang tricirc
+          (on-tick rotate-1 .05)
+          (check-with image?)
+          (on-draw show-on-yellow))

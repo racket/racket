@@ -1,7 +1,7 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname map-image-bsl-tests) (read-case-sensitive #t) (teachpacks ((lib "picturing-programs.rkt" "installed-teachpacks"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "picturing-programs.rkt" "installed-teachpacks")))))
-
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname map-image-bsl-tests) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require picturing-programs)
 
 ; Test cases for primitives:
 (check-expect (real->int 3.2) 3)
