@@ -3740,7 +3740,7 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
 
 #ifdef DOS_FILE_SYSTEM
 static int tried_get_transaction;
-typedef HANDLE (WINAPI * CreateTransaction_proc)(void*, LPGUID, DWORD, DWORD, DWORD, DWORD, wchar_t);
+typedef HANDLE (WINAPI * CreateTransaction_proc)(void*, LPGUID, DWORD, DWORD, DWORD, DWORD, wchar_t*);
 static CreateTransaction_proc mzCreateTransaction;
 typedef BOOL (WINAPI * CommitTransaction_proc)(HANDLE);
 static CommitTransaction_proc mzCommitTransaction;
@@ -3801,7 +3801,7 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
   if (mzCreateTransaction) {
     HANDLE t;
     tried_transaction = 1;
-    t = mzCreateTransaction(NULL, 0, 0, 0, 0, 0, 0);
+    t = mzCreateTransaction(NULL, 0, 0, 0, 0, 0, NULL);
     if (t) {
       if (mzMoveFileTransactedW(WIDE_PATH_COPY(src), 
 				WIDE_PATH(dest),
