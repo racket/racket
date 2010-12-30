@@ -6,6 +6,7 @@
   (define primary-file "main.rkt")
   (define scribblings '(("doc.scrbl" ())))
   (define repositories '("4.x"))
+  (define compile-omit-paths '("tests"))
   (define blurb
       `("The picturing-programs collection supersedes the tiles and sb-world collections.  It provides functions to rotate, etc. images, as well as a slightly modified version of the universe teachpack."))
   (define release-notes '(
