@@ -3738,11 +3738,42 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
   return NULL;
 }
 
+#ifdef DOS_FILE_SYSTEM
+static int tried_get_transaction;
+typedef HANDLE (WINAPI * CreateTransaction_proc)(void*, LPGUID, DWORD, DWORD, DWORD, DWORD, wchar_t);
+static CreateTransaction_proc mzCreateTransaction;
+typedef BOOL (WINAPI * CommitTransaction_proc)(HANDLE);
+static CommitTransaction_proc mzCommitTransaction;
+typedef BOOL (WINAPI * MoveFileTransactedW_proc) (wchar_t *, wchar_t *, void*, void*, DWORD, HANDLE);
+static MoveFileTransactedW_proc mzMoveFileTransactedW;
+
+static void get_transaction_procs(void)
+{
+  START_XFORM_SKIP;      
+  if (!tried_get_transaction) {
+    HMODULE hm1, hm2;
+    hm1 = LoadLibrary("ktmw32.dll");
+    hm2 = LoadLibrary("kernel32.dll");
+    if (hm1 && hm2) {
+      mzCreateTransaction = (CreateTransaction_proc)GetProcAddress(hm1, "CreateTransaction");
+      mzCommitTransaction = (CommitTransaction_proc)GetProcAddress(hm1, "CommitTransaction");
+      mzMoveFileTransactedW = (MoveFileTransactedW_proc)GetProcAddress(hm2, "MoveFileTransactedW");
+    }
+    tried_get_transaction = 1;
+  }
+  END_XFORM_SKIP;
+}
+#endif
+
+
 static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 {
   int exists_ok = 0;
   char *src, *dest;
   Scheme_Object *bss, *bsd;
+#ifdef DOS_FILE_SYSTEM
+  int tried_transaction = 0;
+#endif
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_type("rename-file-or-directory", SCHEME_PATH_STRING_STR, 0, argc, argv);
@@ -3764,13 +3795,54 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 				       SCHEME_GUARD_FILE_WRITE);
 
 # ifdef DOS_FILE_SYSTEM
-  if (MoveFileExW(WIDE_PATH_COPY(src), WIDE_PATH(dest), (exists_ok ? MOVEFILE_REPLACE_EXISTING : 0)))
-    return scheme_void;
+  get_transaction_procs();
 
-  {
-    int errid;
-    errid = GetLastError();
-    errno = errid;
+  /* Try a transacted move first: */
+  if (mzCreateTransaction) {
+    HANDLE t;
+    tried_transaction = 1;
+    t = mzCreateTransaction(NULL, 0, 0, 0, 0, 0, 0);
+    if (t) {
+      if (mzMoveFileTransactedW(WIDE_PATH_COPY(src), 
+				WIDE_PATH(dest),
+				NULL,
+				NULL,
+				(exists_ok ? MOVEFILE_REPLACE_EXISTING : 0),
+				t)) {
+	if (mzCommitTransaction(t)) {
+	  return scheme_void;
+	} else {
+	  int errid;
+	  errid = GetLastError();
+	  errno = errid;
+	}
+      } else {
+	int errid;
+	errid = GetLastError();
+	if (errid == 6832) {
+	  /* transaction not supported; fall back to the old way */
+	  tried_transaction = 0;
+	} else {
+	  errno = errid;
+	}
+      }
+      CloseHandle(t);
+    } else {
+      int errid;
+      errid = GetLastError();
+      errno = errid;
+    }
+  }
+
+  if (!tried_transaction) {
+    if (MoveFileExW(WIDE_PATH_COPY(src), WIDE_PATH(dest), (exists_ok ? MOVEFILE_REPLACE_EXISTING : 0)))
+      return scheme_void;
+
+    {
+      int errid;
+      errid = GetLastError();
+      errno = errid;
+    }
   }
 
   if (errno == ERROR_CALL_NOT_IMPLEMENTED) {
@@ -3784,6 +3856,8 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
       return scheme_void;
     errid = GetLastError();
     errno = errid;
+  } else if (errno == ERROR_ALREADY_EXISTS) {
+    exists_ok = -1;
   }
 
 # define MOVE_ERRNO_FORMAT "%E"
