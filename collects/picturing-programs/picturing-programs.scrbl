@@ -211,7 +211,7 @@ produces a copy of @racket[my-picture] with all the red leached out,
 leaving only the blue and green components.
 
 Since @racket[make-color] with three arguments defaults alpha to 255,
-this function discards any alpha information (including edge-dithering)
+this definition of @racket[lose-red] discards any alpha information (including edge-dithering)
 that was in the original image.  To preserve this information, one could write
 @racketblock[
 (define (lose-red-but-not-alpha x y old-color)

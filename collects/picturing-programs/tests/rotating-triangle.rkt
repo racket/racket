@@ -18,7 +18,14 @@
 (define (rotate-1 pic)
   (rotate 1 pic))
 
-(big-bang badtricirc
+"Triangle rotating around its center:"
+(big-bang tricirc
           (on-tick rotate-1 .05)
           (check-with image?)
           (on-draw show-it))
+
+"Triangle rotating around the center of its bounding box:"
+(big-bang badtricirc
+	  (on-tick rotate-1 .05)
+	  (check-with image?)
+	  (on-draw show-it))
