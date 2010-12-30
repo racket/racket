@@ -71,9 +71,7 @@
           x y
           style font)
 
-    (define bitmap?
-      (and (label . is-a? . bitmap%)
-           (send label ok?)))
+    (define bitmap? (label . is-a? . bitmap%))
 
     (define/public (get-class) "PLTSTATIC")
     

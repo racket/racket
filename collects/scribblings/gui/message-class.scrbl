@@ -5,7 +5,7 @@
 
 A message control is a static line of text or a static bitmap. The
  text or bitmap corresponds to the message's label (see
-@method[window<%> set-label]).
+@method[message% set-label]).
 
 
 @defconstructor[([label (or/c label-string? (is-a?/c bitmap%) 
@@ -28,7 +28,7 @@ Creates a string or bitmap message initially showing @scheme[label].
  @indexed-scheme['caution], or @indexed-scheme['stop] symbol for
  @scheme[label] indicates an icon; @scheme['app] is the application
  icon (Windows and Mac OS X) or a generic ``info'' icon (X),
- @scheme['caution] is a caution-sign icon, and @scheme['stop] a
+ @scheme['caution] is a caution-sign icon, and @scheme['stop] is a
  stop-sign icon.
 
 @labelsimplestripped[(scheme label) @elem{message}]

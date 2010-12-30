@@ -59,8 +59,7 @@ A brush's style is one of the following:
 
 @index['("drawing" "outlines")]{To} draw outline shapes (such as
  unfilled boxes and ellipses), use the @scheme['transparent] brush
- style. See @method[brush% set-style] for more information about
- styles.
+ style.
 
 To avoid creating multiple brushes with the same characteristics, use
  the global @scheme[brush-list%] object
@@ -136,11 +135,10 @@ Sets or removes the stipple bitmap, where @scheme[#f] removes the
  stipple. See @scheme[brush%] for information about drawing with
  stipples.
 
-A bitmap cannot be used as a stipple if it is selected into a
- @scheme[bitmap-dc%] object; if the given bitmap is selected into a
- @scheme[bitmap-dc%] object, @|MismatchExn|. A brush cannot be
- modified if it was obtained from a @scheme[brush-list%] or while it
- is selected into a drawing context.
+If @racket[bitmap] is modified while is associated with a brush, the
+ effect on the brush is unspecified. A brush cannot be modified if it
+ was obtained from a @scheme[brush-list%] or while it is selected into
+ a drawing context.
 
 }
 

@@ -162,16 +162,15 @@ A pen cannot be modified if it was obtained from a
 
 }
 
-@defmethod[(set-stipple [stipple (or/c (is-a?/c bitmap%) #f)])
+@defmethod[(set-stipple [bitmap (or/c (is-a?/c bitmap%) #f)])
            void?]{
 
 Sets the pen stipple bitmap, where @scheme[#f] turns off the stipple bitmap.
 
-A bitmap cannot be used as a stipple if it is selected into a
- @scheme[bitmap-dc%] object; if the given bitmap is selected into a
- @scheme[bitmap-dc%] object, @|MismatchExn|. A pen cannot be modified
- if it was obtained from a @scheme[pen-list%] or while it is selected
- into a drawing context.
+If @racket[bitmap] is modified while is associated with a pen, the
+ effect on the pen is unspecified. A pen cannot be modified if it was
+ obtained from a @scheme[pen-list%] or while it is selected into a
+ drawing context.
 
 }
 

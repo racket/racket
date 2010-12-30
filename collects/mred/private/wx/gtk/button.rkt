@@ -46,7 +46,7 @@
                    [(or (string? label) (not label))
                     (as-gtk-allocation
                      (gtk_new_with_mnemonic (or (mnemonic-string label) "")))]
-                   [(send label ok?)
+                   [else
                     (let ([pixbuf (bitmap->pixbuf label)])
                       (atomically
                        (let ([gtk (as-gtk-allocation (gtk_new))]
@@ -54,9 +54,7 @@
                          (release-pixbuf pixbuf)
                          (gtk_container_add gtk image-gtk)
                          (gtk_widget_show image-gtk)
-                         gtk)))]
-                   [else
-                    (as-gtk-allocation (gtk_new_with_mnemonic "<bad>"))])]
+                         gtk)))])]
              [callback cb]
              [font font]
              [no-show? (memq 'deleted style)])

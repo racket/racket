@@ -7,11 +7,6 @@ A @scheme[bitmap%] object is a pixel-based image, either
  monochrome, color, or color with an alpha channel. See also
  @racket[make-screen-bitmap] and @xmethod[canvas% make-bitmap].
 
-Sometimes, a bitmap object creation fails in a low-level manner. In
- that case, the @method[bitmap% ok?] method returns @scheme[#f], and
- the bitmap cannot be supplied to methods that consume or operate on
- bitmaps (otherwise, @|MismatchExn|).
-
 A bitmap is convertible to @racket['png-bytes] through the
 @racketmodname[file/convertible] protocol.
 
@@ -34,7 +29,7 @@ A bitmap is convertible to @racket['png-bytes] through the
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
 
-The @racket[make-bitmap], @racket[make-monchrome-bitmap], and
+The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
  @racket[read-bitmap] functions are preferred over using
  @racket[make-object] with @racket[bitmap%], because the functions are
  less overloaded and provide more useful defaults.
@@ -217,12 +212,12 @@ For PNG loading, if @scheme[bg-color] is not @scheme[#f], then it is
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if the bitmap is usable (created or changed
- successfully). If @scheme[#f] is returned, the bitmap cannot be
- supplied to methods that consume or operate on bitmaps (otherwise,
- @|MismatchExn|).
+Returns @scheme[#t] if the bitmap is valid in the sense that an image
+ file was loaded successfully. If @method[bitmap% ok?] returns
+ @racket[#f], then drawing to or from the bitmap has no effect.
 
 }
+
 
 @defmethod[(save-file [name (or/c path-string? output-port?)]
                       [kind (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp)]

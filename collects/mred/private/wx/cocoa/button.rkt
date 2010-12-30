@@ -54,12 +54,10 @@
       (cond
        [(string? label)
         (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
-       [(send label ok?)
+       [else
         (if button-type
             (tellv cocoa setTitle: #:type _NSString "")
-            (tellv cocoa setImage: (bitmap->image label)))]
-       [else
-        (tellv cocoa setTitle: #:type _NSString "<bad>")])
+            (tellv cocoa setImage: (bitmap->image label)))])
       (init-font cocoa font)
       (tellv cocoa sizeToFit)
       (when (and (eq? event-type 'button)
@@ -89,8 +87,7 @@
 
   (define-values (cocoa image-cocoa)
     (if (and button-type
-             (not (string? label))
-             (send label ok?))
+             (not (string? label)))
         ;; Check-box image: need an view to join a button and an image view:
         ;; (Could we use the NSImageButtonCell from the radio-box implementation
         ;;  instead?)
