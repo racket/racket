@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require racket/port lang/error net/url)
 (provide with-input-from-string
          with-output-to-string

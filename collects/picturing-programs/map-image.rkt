@@ -14,8 +14,9 @@
         racket/snip
         racket/class
         2htdp/image
+        (only-in htdp/error natural?)
         (only-in mrlib/image-core render-image))
-(require picturing-programs/book-pictures)
+;(require picturing-programs/book-pictures)
 
 ;(require mrlib/image-core)
 ;(require 2htdp/private/image-more)
@@ -94,10 +95,10 @@
   (compose colorize f))
 
 
-; natural? : anything -> boolean
-(define (natural? it)
-  (and (integer? it)
-       (>= it 0)))
+;; natural? : anything -> boolean
+;(define (natural? it)
+;  (and (integer? it)
+;       (>= it 0)))
 
 ; color=? : broad-color broad-color -> boolean
 (define (color=? c1 c2)
@@ -111,95 +112,6 @@
                   (= (color-green rc1) (color-green rc2))
                   (= (color-blue rc1) (color-blue rc2)))))))
 
-;; build-image-internal : nat(width) nat(height) (nat nat -> color) bitmap% -> image
-;(define (build-image-internal width height f mask-bm)
-;;  (unless (and (natural? width) (natural? height))
-;;    (error 'build-image "Expected natural numbers as first two arguments"))
-;;  (unless (procedure-arity-includes? f 2)
-;;    (error 'build-image "Expected function with contract number number -> color as third argument"))
-;  (let* [[bm (make-bitmap width height)]
-;         [bmdc (make-object bitmap-dc% bm)]
-;         ]
-;    (for* ((y (in-range height))
-;           (x (in-range width)))
-;          (send bmdc set-pixel x y (color->color% (f x y)))
-;        ))
-;    (send bmdc set-bitmap #f)
-;    (make-image
-;     (make-translate (quotient width 2) (quotient height 2)
-;                     (make-bitmap bm mask-bm 0 1 1 #f #f))
-;     (make-bb width height height)
-;     #f ; not normalized
-;     )
-;    )
-
-;; build-image : natural(width) natural(height) (nat nat -> color) -> image
-;(define (build-image width height f)
-;  (unless (and (natural? width) (natural? height))
-;    (error 'build-image "Expected natural numbers as first two arguments"))
-;  (unless (procedure-arity-includes? f 2)
-;    (error 'build-image "Expected function with contract number number -> color as third argument"))
-;  (if (or (zero? width) (zero? height))       ; bitmap% doesn't like zero-sized images
-;    (rectangle width height "solid" "white")
-;    (let* [[mask-bm (make-object bitmap% width height #t)] ; monochrome
-;           [mask-bmdc (make-object bitmap-dc% mask-bm)]
-;           [black (make-object color% 0 0 0)]]
-;      (send mask-bmdc set-background black)
-;      (send mask-bmdc clear)
-;      ;    (for ((y (in-range height)))
-;      ;      (for ((x (in-range width)))
-;      ;        (send mask-bmdc set-pixel x y black)))
-;      ; can we replace this with (send mask-bmdc clear)?
-;      (send mask-bmdc set-bitmap #f)
-;      (build-image-internal width height f mask-bm)
-;      )
-;    )
-;  )
-; 
-;; build3-image: nat(width) nat(height) (nat nat -> nat) (nat nat -> nat) (nat nat -> nat) -> image
-;(define (build3-image width height rfunc gfunc bfunc)
-;  (unless (and (natural? width) (natural? height))
-;    (error 'build3-image "Expected natural numbers as first two arguments"))
-;  (unless (procedure-arity-includes? rfunc 2)
-;    (error 'build3-image "Expected function with contract number number -> number as third argument"))
-;  (unless (procedure-arity-includes? gfunc 2)
-;    (error 'build3-image "Expected function with contract number number -> number as fourth argument"))
-;  (unless (procedure-arity-includes? bfunc 2)
-;    (error 'build3-image "Expected function with contract number number -> number as fifth argument"))
-;  (build-image width height
-;               (lambda (x y) (make-color (rfunc x y) (gfunc x y) (bfunc x y)))))
-;
-;; build-masked-image : nat(width) nat(height) (nat nat -> maybe-color) -> image
-;(define (build-masked-image width height f)
-;  (unless (and (natural? width) (natural? height))
-;    (error 'build-masked-image "Expected natural numbers as first two arguments"))
-;  (unless (procedure-arity-includes? f 2)
-;    (error 'build-masked-image "Expected function with contract number number -> maybe-color as third argument"))
-;  (if (or (zero? width) (zero? height))       ; bitmap% doesn't like zero-sized images
-;    (rectangle width height "solid" "white")
-;    (let* [[bm (make-object bitmap% width height)]
-;           [bmdc (make-object bitmap-dc% bm)]
-;           [mask-bm (make-object bitmap% width height #t)] ; monochrome
-;           [mask-bmdc (make-object bitmap-dc% mask-bm)]
-;           [visible (make-object color% 0 0 0)]
-;           [transparent (make-object color% 255 255 255)]]
-;      (for ((y (in-range height)))
-;        (for ((x (in-range width)))
-;          (let* [[mc (f x y)]
-;                 [color (if mc (color->color% mc) transparent)]
-;                 [mask (if mc visible transparent)]]
-;            (send bmdc set-pixel x y color)
-;            (send mask-bmdc set-pixel x y mask)
-;            )))
-;      (send bmdc set-bitmap #f)
-;      (send mask-bmdc set-bitmap #f)
-;      (make-image
-;       (make-translate (quotient width 2) (quotient height 2)
-;                       (make-bitmap bm mask-bm 0 1 1 #f #f))
-;       (make-bb width height height)
-;       #f ; not normalized
-;       )
-;    )))
 
 
 
@@ -401,25 +313,3 @@
                       (bfunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))
                       (afunc x y (color-red c) (color-green c) (color-blue c) (color-alpha c))))
       pic))
-  
-
-;; map-masked-image : (int int maybe-color -> maybe-color) image -> image
-;(define (map-masked-image f pic)
-;  (unless (procedure-arity-includes? f 3)
-;    (error 'map-masked-image "Expected function with contract number number maybe-color -> maybe-color as first argument"))
-;  (unless (image? pic)
-;    (error 'map-masked-image "Expected image as second argument"))
-;  (let* [[width (image-width pic)]
-;         [height (image-height pic)]
-;         [bm (make-object bitmap% width height)]
-;         [bmdc (make-object bitmap-dc% bm)]
-;         [mask (get-mask pic)]
-;         ]
-;    (render-image pic bmdc 0 0)
-;    (build-masked-image
-;     width height
-;     (lambda (x y)
-;       (f x y
-;          (if (pixel-visible? x y pic)
-;              (get-pixel-color x y pic)
-;              #f))))))

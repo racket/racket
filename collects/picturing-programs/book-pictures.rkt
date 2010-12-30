@@ -1,9 +1,9 @@
-#lang racket
+#lang racket/base
 ; Initial version, Dec. 13, 2010.
 ; Doesn't work with a literal image, but it works to use a "bitmap"
 ; reference to a file that's included with the teachpacks.  Dec. 21, 2010.
 
-(require 2htdp/image)
+(require (only-in 2htdp/image bitmap))
 
 (provide (all-defined-out))
 

@@ -10,7 +10,8 @@
       `("The picturing-programs collection supersedes the tiles and sb-world collections.  It provides functions to rotate, etc. images, as well as a slightly modified version of the universe teachpack."))
   (define release-notes '(
 (p "Version 2.5: Re-enabled diagonal reflection.  Moved into the bundle
-(so it doesn't require a PLaneT install).  Added some picture variables.")
+(so it doesn't require a PLaneT install).  Added some picture variables.
+Rewrote a bunch of things for compatibility with 5.1.")
 (p "Version 2.4: Added change-to-color and map3-image.  Cleaned up documentation.")
 (p "Version 2.3: Renamed files from .ss to .rkt, so they work better with Racket.  Added map-image, build-image, name->color, and friends; re-fixed bug in rotate-cw and rotate-ccw.")
 (p "Version 2.2: Fixed bug in rotate-cw and rotate-ccw; restored reflect-vert and reflect-horiz; added with-input-from-url.")

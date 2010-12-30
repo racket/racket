@@ -1,7 +1,7 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname map-image-bsl-tests) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
-(require picturing-programs)
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname map-image-bsl-tests) (read-case-sensitive #t) (teachpacks ((lib "picturing-programs.rkt" "installed-teachpacks"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "picturing-programs.rkt" "installed-teachpacks")))))
+
 
 ; Test cases for primitives:
 (check-expect (real->int 3.2) 3)
@@ -132,13 +132,13 @@
 "tri:" tri
 "(map-image color-id tri):" 
 (define ex1 (map-image color-id tri)) ex1
-"(map-image kill-red tri):" 
+"(map-image kill-red tri): should be green, on an opaque background with no red" 
 (define ex2 (map-image kill-red tri)) ex2
 "(map-image kill-red-preserving-alpha tri):"
 (define ex2prime (map-image kill-red-preserving-alpha tri)) ex2prime
 "(map-image make-gradient tri):"
 (define ex3 (map-image make-gradient tri)) ex3
-"(map-image kill-red hieroglyphics):"
+"(map-image kill-red hieroglyphics): should be on an opaque background with no red"
 (define ex4 (map-image kill-red hieroglyphics)) ex4
 "(map-image kill-red scheme-logo):"
 (define ex5 (map-image kill-red scheme-logo)) ex5
@@ -259,15 +259,20 @@ fuzzy-tri
   (make-gray (quotient (+ (color-red c)
                           (color-green c) 
                           (color-blue c))
-                       3)))
+                       3)
+             (color-alpha c)))
                                    
-; make-gray : natural -> color
-(define (make-gray n)
-  (make-color n n n))
+; make-gray : natural(value) natural(alpha) -> color
+(define (make-gray value alpha)
+  (make-color value value value alpha))
 
 ; color->gray : image -> image
 (define (color->gray pic)
   (map-image pixel->gray pic))
 
+"(color->gray bloch):"
 (color->gray bloch)
-(color->gray hieroglyphics)
+"(overlay (color->gray hieroglyphics) bluebox):"
+(overlay (color->gray hieroglyphics) bluebox)
+"(overlay (color->gray (white->trans hieroglyphics)) bluebox):"
+(overlay (color->gray (white->trans hieroglyphics)) bluebox)
