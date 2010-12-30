@@ -235,11 +235,12 @@ TODO
       ;; for use in debugging the stack trace stuff
       #;
       (when (exn? exn)
-        (print-struct #t)
-        (for-each 
-         (λ (frame) (printf " ~s\n" frame))
-         (continuation-mark-set->context (exn-continuation-marks exn)))
-        (printf "\n"))
+        (parameterize ([print-struct #t])
+          (for-each 
+           (λ (frame) (printf " ~s\n" frame))
+           (continuation-mark-set->context (exn-continuation-marks exn)))
+          (printf "\n")))
+      
       (drracket:debug:error-display-handler/stacktrace msg exn stack)))
   
   (define (main-user-eventspace-thread?)

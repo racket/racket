@@ -11,7 +11,8 @@
    [use-get/put-dialog (-> (-> any) path? void?)]
    [set-module-language! (->* () (boolean?) void?)])
   
-  (provide fire-up-drscheme-and-run-tests
+  (provide queue-callback/res
+           fire-up-drscheme-and-run-tests
            save-drscheme-window-as
            do-execute
            test-util-error
@@ -42,6 +43,7 @@
   ;; use the "save as" dialog in drscheme to save the definitions
   ;; window to a file.
   (define (save-drscheme-window-as filename)
+    (not-on-eventspace-handler-thread 'save-drscheme-window-as)
     (use-get/put-dialog
      (lambda ()
        (fw:test:menu-select "File" "Save Definitions As..."))
@@ -50,6 +52,7 @@
   ;; open-dialog is a thunk that should open the dialog
   ;; filename is a string naming a file that should be typed into the dialog
   (define (use-get/put-dialog open-dialog filename)
+    (not-on-eventspace-handler-thread 'use-get/put-dialog)
     (let ([drs (wait-for-drscheme-frame)])
       (with-handlers ([(lambda (x) #t)
 		       (lambda (x)
@@ -141,7 +144,8 @@
   ;; waits for it to be re-enabled, indicating that the computation
   ;; is complete.
   (define (wait-for-computation frame)
-    (verify-drscheme-frame-frontmost 'wait-for-computation frame)
+    (not-on-eventspace-handler-thread 'wait-for-computation)
+    (queue-callback/res (λ () (verify-drscheme-frame-frontmost 'wait-for-computation frame)))
     (let* ([wait-for-computation-to-start
 	    (lambda ()
 	      (fw:test:reraise-error)
@@ -159,24 +163,26 @@
      [(frame)
       (do-execute frame #t)]
      [(frame wait-for-finish?)
-      (verify-drscheme-frame-frontmost 'do-execute frame)
-      (let ([button (send frame get-execute-button)])
+      (not-on-eventspace-handler-thread 'do-execute)
+      (queue-callback/res (λ () (verify-drscheme-frame-frontmost 'do-execute frame)))
+      (let ([button (queue-callback/res (λ () (send frame get-execute-button)))])
 	(fw:test:run-one (lambda () (send button command)))
 	(when wait-for-finish?
 	  (wait-for-computation frame)))]))
   
   (define (verify-drscheme-frame-frontmost function-name frame)
+    (on-eventspace-handler-thread 'verify-drscheme-frame-frontmost)
     (let ([tl (get-top-level-focus-window)])
       (unless (and (eq? frame tl)
                    (drscheme-frame? tl))
         (error function-name "drscheme frame not frontmost: ~e (found ~e)" frame tl))))
   
   (define (clear-definitions frame)
-    (verify-drscheme-frame-frontmost 'clear-definitions frame)
-    (fw:test:new-window (send frame get-definitions-canvas))
-    (let ([window (send frame get-focus-window)])
-      (let-values ([(cw ch) (send window get-client-size)]
-		   [(w h) (send window get-size)])
+    (queue-callback/res (λ () (verify-drscheme-frame-frontmost 'clear-definitions frame)))
+    (fw:test:new-window (queue-callback/res (λ () (send frame get-definitions-canvas))))
+    (let ([window (queue-callback/res (λ () (send frame get-focus-window)))])
+      (let-values ([(cw ch) (queue-callback/res (λ () (send window get-client-size)))]
+		   [(w h) (queue-callback/res (λ () (send window get-size)))])
         (fw:test:mouse-click 'left
 			     (inexact->exact (floor (+ cw (/ (- w cw) 2))))
 			     (inexact->exact (floor (+ ch (/ (- h ch) 2)))))))
@@ -186,15 +192,20 @@
 				    "Delete")))
 
   (define (type-in-definitions frame str)
+    (not-on-eventspace-handler-thread 'type-in-definitions)
     (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #f 'type-in-definitions))
   (define (type-in-interactions frame str)
+    (not-on-eventspace-handler-thread 'type-in-interactions)
     (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #f 'type-in-interactions))
   (define (insert-in-definitions frame str)
+    (not-on-eventspace-handler-thread 'insert-in-definitions)
     (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #t 'insert-in-definitions))
   (define (insert-in-interactions frame str)
+    (not-on-eventspace-handler-thread 'insert-in-interactions)
     (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #t 'insert-in-interactions))
 
   (define (put-in-frame get-canvas frame str/sexp just-insert? who)
+    (not-on-eventspace-handler-thread 'put-in-frame)
     (unless (and (object? frame) (is-a? frame top-level-window<%>))
       (error who "expected a frame or a dialog as the first argument, got ~e" frame))
     (let ([str (if (string? str/sexp)
@@ -203,10 +214,10 @@
 		     (parameterize ([current-output-port port])
 		       (write str/sexp port))
 		     (get-output-string port)))])
-      (verify-drscheme-frame-frontmost who frame)
-      (let ([canvas (get-canvas frame)])
+      (queue-callback/res (λ () (verify-drscheme-frame-frontmost who frame)))
+      (let ([canvas (queue-callback/res (λ () (get-canvas frame)))])
 	(fw:test:new-window canvas)
-	(let ([editor (send canvas get-editor)])
+	(let ([editor (queue-callback/res (λ () (send canvas get-editor)))])
           (cond
             [just-insert? 
              (let ([s (make-semaphore 0)])
@@ -218,11 +229,20 @@
                (unless (sync/timeout 3 s)
                  (error who "callback didn't run for 3 seconds; trying to insert ~s" str/sexp)))]
             [else 
-             (send editor set-caret-owner #f)
+             (queue-callback/res (λ () (send editor set-caret-owner #f)))
              (type-string str)])))))
   
+  (define (queue-callback/res thunk)
+    (not-on-eventspace-handler-thread 'queue-callback/res)
+    (let ([c (make-channel)])
+      (queue-callback (λ () (channel-put c (with-handlers ((exn:fail? values)) (call-with-values thunk list)))))
+      (define res (channel-get c))
+      (when (exn? res) (raise res))
+      (apply values res)))
+
   (define (alt-return-in-interactions frame)
-    (verify-drscheme-frame-frontmost 'alt-return-in-interactions frame)
+    (not-on-eventspace-handler-thread 'alt-return-in-interactions)
+    (queue-callback/res (λ () (verify-drscheme-frame-frontmost 'alt-return-in-interactions frame)))
     (let ([canvas (send frame get-interactions-canvas)])
       (fw:test:new-window canvas)
       (let ([editor (send canvas get-editor)])
@@ -232,6 +252,7 @@
   ;; type-string : string -> void
   ;; to call test:keystroke repeatedly with the characters
   (define (type-string str)
+    (not-on-eventspace-handler-thread 'type-string)
     (let ([len (string-length str)])
       (let loop ([i 0])
         (unless (>= i len)
@@ -271,6 +292,7 @@
 ;;;    (get-sub-panel '(2 0) frame) gets the 0th child of the 2nd child of the top-panel 
   
   (define (get-sub-panel path frame)
+    (on-eventspace-handler-thread 'get-sub-panel)
     (letrec ([loop 
 	      (lambda (path panel)
 		(if (null? path)
@@ -286,6 +308,7 @@
 ;;; of the last line
   
   (define (get-text-pos text)
+    (on-eventspace-handler-thread 'get-text-pos)
     (let* ([last-pos (send text last-position)]
 	   [last-line (send text position-line last-pos)])
       (send text line-start-position last-line)))
@@ -293,13 +316,15 @@
   ; poll for enabled button
   
   (define (wait-for-button button)
+    (not-on-eventspace-handler-thread 'wait-for-button)
     (poll-until
      (let ([wait-for-button-pred
 	    (lambda ()
-	      (send button is-enabled?))])
+              (queue-callback/res (λ () (send button is-enabled?))))])
        wait-for-button-pred)))
   
   (define (push-button-and-wait button)
+    (not-on-eventspace-handler-thread 'push-button-and-wait)
     (fw:test:button-push button)
     (poll-until
      (let ([button-push-and-wait-pred
@@ -318,6 +343,7 @@
                    (list? in-language-spec)
                    (andmap (lambda (x) (or string? regexp?)) in-language-spec))
         (error 'set-language-level! "expected a non-empty list of regexps and strings for language, got: ~e" in-language-spec))
+      (not-on-eventspace-handler-thread 'set-language-level!)
       (let ([drs-frame (get-top-level-focus-window)])
         (fw:test:menu-select "Language" "Choose Language...")
         (let* ([language-dialog (wait-for-new-frame drs-frame)]
@@ -384,6 +410,7 @@
                        new-frame
                        drs-frame)))))))) 
   (define (set-module-language! [close-dialog? #t])
+    (not-on-eventspace-handler-thread 'set-module-language!)
     (let ([drs-frame (get-top-level-focus-window)])
       (fw:test:menu-select "Language" "Choose Language...")
       (let* ([language-dialog (wait-for-new-frame drs-frame)])
@@ -407,6 +434,7 @@
   ;; checks that the language in the drscheme window is set to the given one.
   ;; clears the definitions, clicks execute and checks the interactions window.
   (define (check-language-level lang-spec)
+    (not-on-eventspace-handler-thread 'check-language-level!)
     (let* ([drs-frame (wait-for-drscheme-frame)]
            [interactions (send drs-frame get-interactions-text)]
            [definitions-canvas (send drs-frame get-definitions-canvas)])
@@ -414,21 +442,28 @@
       (fw:test:menu-select "Edit" "Select All")
       (fw:test:menu-select "Edit" "Delete")
       (do-execute drs-frame)
-      (let ([lang-line (send interactions get-text
-                             (send interactions line-start-position 1)
-                             (send interactions line-end-position 1))])
+      (let ([lang-line (queue-callback/res
+                        (λ ()
+                          (send interactions get-text
+                                (send interactions line-start-position 1)
+                                (send interactions line-end-position 1))))])
         (unless (regexp-match lang-spec lang-line)
           (error 'check-language-level "expected ~s to match ~s"
                  lang-line lang-spec)))))
   
   
   (define (repl-in-edit-sequence?)
-    (send (send (wait-for-drscheme-frame) get-interactions-text) refresh-delayed?))
+    (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)
+    (let ([drr (wait-for-drscheme-frame)])
+      (queue-callback/res
+       (λ ()
+         (send (send drr get-interactions-text) refresh-delayed?)))))
  
   ;; has-error? : frame -> (union #f string)
   ;; returns the error text of an error in the interactions window of the frame or #f if there is none.
   ;; ensures that frame is front most.
   (define (has-error? frame)
+    (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)
     (run-one/sync
      (lambda ()
        (verify-drscheme-frame-frontmost 'had-error? frame)
@@ -470,6 +505,7 @@
     (case-lambda
       [(frame) (fetch-output frame #f #f)]
       [(frame _start _end)
+       (not-on-eventspace-handler-thread 'fetch-output)
        (run-one/sync
         (lambda ()
           (verify-drscheme-frame-frontmost 'fetch-output frame)
@@ -537,6 +573,7 @@
   ;; waits for it to complete. Also propogates
   ;; exceptions.
   (define (run-one/sync f)
+    (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)
     (let ([s (make-semaphore 0)]
           [raised-exn? #f]
           [exn #f]
@@ -558,6 +595,7 @@
   (define orig-display-handler (error-display-handler))
   
   (define (fire-up-drscheme-and-run-tests run-test)
+    (on-eventspace-handler-thread 'fire-up-drscheme-and-run-tests)
     (let ()
       ;; change the preferences system so that it doesn't write to 
       ;; a file; partly to avoid problems of concurrency in drdr
@@ -590,3 +628,11 @@
 		 (run-test)
 		 (exit)))
       (yield (make-semaphore 0))))
+
+(define (not-on-eventspace-handler-thread fn)
+  (when (eq? (current-thread) (eventspace-handler-thread (current-eventspace)))
+    (error fn "expected to be run on some thread other than the eventspace handler thread")))
+
+(define (on-eventspace-handler-thread fn)
+  (unless (eq? (current-thread) (eventspace-handler-thread (current-eventspace)))
+    (error fn "expected to be run on the eventspace handler thread")))

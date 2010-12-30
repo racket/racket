@@ -110,7 +110,7 @@
              (set-language-level! (list #rx"How to Design Programs" this-lang))))
          
          (clear-definitions drr-frame)
-         (send definitions-text insert (test-program t))
+         (insert-in-definitions drr-frame (test-program t))
          (do-execute drr-frame)
          
          (let ([result (fetch-output
