@@ -7,7 +7,8 @@
                      [_print print]
                      [_cons cons]
                      [_set! set!]
-                     [_zero? zero?]))
+                     [_zero? zero?])
+         (struct-out runtime-error) raise-runtime-error first-error)
 
 (define tag
   (let ([tags (make-hash)])
@@ -27,7 +28,7 @@
                  [(list? v) (andmap comparable? v)]
                  [else #t]))
          (tag v)
-         (raise-type-error '% "non-procedure" v)))
+         (raise-runtime-error '% "non-procedure" v)))
    (let ([h handler])
      (λ (x) (h x)))))
 
@@ -55,22 +56,31 @@
     (case v1
       [(#t) e2]
       [(#f) e3]
-      [else (raise-type-error 'if "#t or #f" v1)])))
+      [else (raise-runtime-error 'if "#t or #f" v1)])))
 
 (define (_+ x y) (+ x y))
 
 (define (_print n)
   (if (number? n)
       (begin (print n) #f)
-      (raise-type-error 'print "number" n)))
+      (raise-runtime-error 'print "number" n)))
 
 (define (_cons x xs)
   (if (list? xs)
       (cons x xs)
-      (raise-type-error 'cons "list?" 1 x xs)))
+      (raise-runtime-error 'cons "list?" xs)))
 
 (define-syntax-rule (_set! x e)
   (begin (set! x e) #f))
 
 (define (_zero? x)
   (equal? 0 x))
+
+(define first-error (make-parameter #f))
+(struct runtime-error (primitive expected given) #:prefab)
+(define (raise-runtime-error . details)
+  (define error (apply runtime-error details))
+  (when (first-error)
+    (unless (unbox (first-error))
+      (set-box! (first-error) error)))
+  (raise error))
