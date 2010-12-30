@@ -4,7 +4,7 @@
   (define can-be-loaded-with 'all)
   (define required-core-version "5.0.0.1")
   (define primary-file "main.rkt")
-  (define scribblings '(("doc.scrbl" ())))
+  (define scribblings '(("picturing-programs.scrbl" ())))
   (define repositories '("4.x"))
   (define compile-omit-paths '("tests"))
   (define blurb
