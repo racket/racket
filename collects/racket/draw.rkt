@@ -18,7 +18,7 @@
 (provide color%
          color-database<%> the-color-database
          point%
-         font% font-list% the-font-list
+         font% font-list% the-font-list make-font
          font-name-directory<%> the-font-name-directory
          pen% pen-list% the-pen-list
          brush% brush-list% the-brush-list

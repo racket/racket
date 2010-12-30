@@ -11,6 +11,7 @@
 
 (provide font%
          font-list% the-font-list
+         make-font
          family-symbol? style-symbol? weight-symbol? smoothing-symbol?
          get-pango-attrs
          get-face-list
@@ -284,3 +285,18 @@
              (filter pango_font_family_is_monospace fams)
              fams))))
 
+(define (make-font #:size [size 12]
+                   #:face [face #f]
+                   #:family [family 'default]
+                   #:style [style 'normal]
+                   #:weight [weight 'normal]
+                   #:underlined? [underlined? #f]
+                   #:smoothing [smoothing 'default]
+                   #:size-in-pixels? [size-in-pixels? #f])
+  (unless (size? size) (raise-type-error 'make-font "exact integer in [1, 255]" size))
+  (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
+  (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
+  (unless (style-symbol? style) (raise-type-error 'make-font "style-symbol" style))
+  (unless (weight-symbol? weight) (raise-type-error 'make-font "weight-symbol" weight))
+  (unless (smoothing-symbol? smoothing) (raise-type-error 'make-font "smoothing-symbol" smoothing))
+  (make-object font% size face family style weight underlined? smoothing size-in-pixels?))

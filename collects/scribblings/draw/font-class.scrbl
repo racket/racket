@@ -24,8 +24,15 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-scheme['swiss]}
  @item{@indexed-scheme['modern] (fixed width)}
  @item{@indexed-scheme['symbol] (Greek letters and more)}
- @item{@indexed-scheme['system] (used to draw control labels)}
- ]}
+ @item{@indexed-scheme['system] (similar to the font to draw control labels,
+                                 but see @racket[normal-control-font])}
+ ]
+
+ @margin-note{The terminology ``family'' and ``face'' is mangled relative
+              to its usual meaning. A @racket[font%] ``face'' is really
+              a font family in the usual terminology, while a @racket[font%]
+              ``family'' is a kind of abstract font family that is mapped to a
+              particular font family on a given platform.}}
 
  @item{face --- A string face name, such as @scheme["Courier"]. The format
                 and meaning of a face name is platform- and
@@ -106,6 +113,8 @@ When no arguments are provided, creates an instance of the default
 
 See @scheme[font%] for information about @scheme[family],
  @scheme[style], and @scheme[weight].  @scheme[font-name-directory<%>].
+
+See also @racket[make-font].
 
 }
 

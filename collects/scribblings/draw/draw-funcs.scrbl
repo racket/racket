@@ -21,6 +21,7 @@ Returns a list of font face names available on the current system. If
 
 }
 
+
 @defproc[(get-family-builtin-face [family (one-of/c 'default 'decorative 'roman 'script 
                                                     'swiss 'modern 'symbol 'system)])
          string?]{
@@ -31,6 +32,8 @@ Returns the built-in default face mapping for a particular font
 See @scheme[font%] for information about @scheme[family].
 
 }
+
+
 @defproc[(make-bitmap [width exact-positive-integer?]
                       [height exact-positive-integer?]
                       [alpha? any/c #t])
@@ -39,6 +42,26 @@ See @scheme[font%] for information about @scheme[family].
 Returns @racket[(make-object bitmap% width height #f alpha?)], but
 this procedure is preferred because it defaults @racket[alpha?] in a
 more useful way.}
+
+
+@defproc[(make-font [#:size size (integer-in 1 255) 12]
+                    [#:face face (or/c string? #f) #f]
+                    [#:family family (one-of/c 'default 'decorative 'roman 'script 
+                                               'swiss 'modern 'symbol 'system)
+                              'default]
+                    [#:style style (one-of/c 'normal 'italic 'slant) 'normal]
+                    [#:weight weight (one-of/c 'normal 'bold 'light) 'normal]
+                    [#:underline? underline? any/c #f]
+                    [#:smoothing smoothing (one-of/c 'default 'partly-smoothed 
+                                                      'smoothed 'unsmoothed) 
+                                 'default]
+                    [#:size-in-pixels? size-in-pixels? any/c #f])
+         (is-a?/c font%)]{
+
+Creates a @racket[font%] instance. This procedure provides an
+equivalent but more convenient interface compared to using
+@racket[make-object] with @racket[font%].
+}
 
 
 @defproc[(make-monochrome-bitmap [width exact-positive-integer?]
