@@ -842,6 +842,43 @@ static intptr_t get_page_size()
   return page_size;
 }
 
+#if defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC) && defined(_WIN64)
+static RUNTIME_FUNCTION rtf;
+typedef struct mzUNWIND_INFO {
+  unsigned char version:3;
+  unsigned char flags:5;
+  unsigned char prolog_size;
+  unsigned char unwind_code_count;
+  unsigned char fp:4;
+  unsigned char fp_off:4;
+  unsigned short *unwind_codes;
+} mzUNWIND_INFO;
+static mzUNWIND_INFO uwi;
+
+PRUNTIME_FUNCTION get_rewind_info(DWORD64 ControlPc, PVOID Context)
+{
+  /* When Win64 wants to unwind the stack and hit hits FFI- or 
+     JIT-generated code, it invokes this callback. We should return
+     information that lets the unwind continue. For now, though,
+     we give up, which means that certain attempts to report crashes
+     turn into unwind-failure aborts. */
+  rtf.BeginAddress = ControlPc;
+  rtf.EndAddress = ControlPc;
+  rtf.UnwindData = (intptr_t)&uwi;
+  uwi.version = 1;
+  uwi.flags = 0;
+  uwi.prolog_size = 0;
+  uwi.fp = 5;
+  uwi.fp_off = 0;
+
+  /* that's not right, yet, so... */
+  scheme_log_abort("Cannot provide unwind info for generated code");
+  abort();
+
+  return &rtf;
+}
+#endif
+
 static void *malloc_page(intptr_t size)
 {
   void *r;
@@ -855,8 +892,13 @@ static void *malloc_page(intptr_t size)
                                 doesn't like PAGE_EXECUTE_READWRITE. In case
                                 that's true, we use a separate VirtualProtect step. */
                              PAGE_READWRITE);
-    if (r)
+    if (r) {
       VirtualProtect(r, size, PAGE_EXECUTE_READWRITE, &old);
+# ifdef _WIN64
+      RtlInstallFunctionTableCallback((DWORD64)r | 0x3, (DWORD64)r, size,
+				      get_rewind_info, NULL, L"oops.dll");
+# endif
+    }
   }
 #else
 # ifdef MAP_ANON
@@ -881,6 +923,9 @@ static void *malloc_page(intptr_t size)
 static void free_page(void *p, intptr_t size)
 {
 #ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+# ifdef _WIN64
+  RtlDeleteFunctionTable((PRUNTIME_FUNCTION)((DWORD64)p|0x3));
+# endif
   VirtualFree(p, 0, MEM_RELEASE);
 #else
   munmap(p, size);
