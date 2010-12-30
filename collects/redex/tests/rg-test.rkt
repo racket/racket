@@ -444,29 +444,20 @@
     (C (c hole))
     (D (d hole))
     (E (e hole))
-    (F (f hole)))
+    (F (f hole))
+    
+    (p (in-hole (hole hole) 4))
+    (q (in-hole (hole ... hole) 4)))
   
   (test (generate-term L (in-hole 3 4) 5) 3)
-  (test (generate-term L (in-hole (hole hole) 4) 5) '(4 4))
-  (test (generate-term/decisions L (in-hole (hole ... hole) 4) 5 0 (decisions #:seq (list (λ (_) 1))))
-        '(4 4))
-  
-  (let-syntax ([test-sequence-holes 
-                (λ (stx)
-                  (syntax-case stx ()
-                    [(_ l)
-                     #`(let ([length l]
-                             [bindings #f])
-                         (test (generate-term/decisions 
-                                L
-                                (side-condition (in-hole ((name x (q C)) (... ...)) 4)
-                                                (set! bindings (term ((x C) (... ...)))))
-                                5 0 (decisions #:seq (list (λ (_) length))))
-                               #,(syntax/loc stx (build-list length (λ (_) '(q (c 4))))))
-                         (test bindings 
-                               #,(syntax/loc stx (build-list length (λ (_) (term ((q (c hole)) (c hole))))))))]))])
-    (test-sequence-holes 3)
-    (test-sequence-holes 0))
+  (test (raised-exn-msg 
+         exn:fail? 
+         (test-match L p (generate-term L p 5)))
+        #rx"two holes")
+  (test (raised-exn-msg 
+         exn:fail?
+         (test-match L q (generate-term/decisions L q 5 0 (decisions #:seq (list (λ (_) 1))))))
+        #rx"two holes")
   
   (let ([bindings #f])
     (test (generate-term 
@@ -476,7 +467,22 @@
            0)
           (term (c (d (e (f hole))))))
     (test bindings (term ((c hole) (d hole) (e hole) (f hole) 
-                                   (c (d hole)) (c (d (e hole))) (c (d (e (f hole)))))))))
+                                   (c (d hole)) (c (d (e hole))) (c (d (e (f hole))))))))
+  
+  (test
+   (let/ec return
+     (generate-term
+      L
+      (side-condition (name C (hide-hole hole))
+                      (return (term (in-hole C 1))))
+      0))
+   (term hole))
+  
+  (test (generate-term 
+         L
+         (in-hole ((hide-hole (in-hole hole hole)) hole) 1)
+         0)
+        (term (hole 1))))
 
 (let ()
   (define-language lc
