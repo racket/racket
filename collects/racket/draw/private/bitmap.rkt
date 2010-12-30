@@ -574,7 +574,7 @@
                                  [exact-nonnegative-integer? h]
                                  [bytes? bstr]
                                  [any? [get-alpha? #f]])
-      (unless ((bytes-length bstr) . >  . (* w h))
+      (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
                               bstr))
@@ -653,7 +653,7 @@
                                  [exact-nonnegative-integer? h]
                                  [bytes? bstr]
                                  [any? [set-alpha? #f]])
-      (unless ((bytes-length bstr) . >  . (* w h))
+      (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'set-argb-pixels)
                               "byte string is too short: "
                               bstr))
