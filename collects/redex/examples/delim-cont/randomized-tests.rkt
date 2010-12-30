@@ -278,7 +278,7 @@
        (define cell (fresh prefix))
        (set! allocated (cons cell allocated))
        cell)
-     (define no-dw? (alloc-cell "handlers-disabled?"))
+     (define capts (alloc-cell "active-cont-capts"))
      (define dw-frame-locs
        (let ([locs (make-hash)])
          (λ (x)
@@ -301,15 +301,15 @@
                       [t (fresh "t")])
             `((λ (,t)
                 (if ,a?
-                    (begin (if ,no-dw? #f (set! ,s? #t)) (,c ,t))
+                    (begin (if (zero? ,capts) (set! ,s? #t) #f) (,c ,t))
                     (% 1
                        (dynamic-wind
                         (λ () 
-                          (if ,no-dw?
-                              #f
+                          (if (zero? ,capts)
                               (if ,a? 
                                   (if ,s? (set! ,s? #f) ,(transform e1))
-                                  #f)))
+                                  #f)
+                              #f))
                         (λ ()
                           ((call/comp 
                             (λ (k)
@@ -318,22 +318,22 @@
                                 (abort 1 k)))
                             1)))
                         (λ () 
-                          (if ,no-dw?
-                              (set! ,a? #t)
+                          (if (zero? ,capts)
                               (if ,a?
                                   ,(transform e3)
-                                  (set! ,a? #t)))))
-                       (λ (k) (begin (if ,no-dw? #f (set! ,s? #t)) (k ,t))))))
+                                  (set! ,a? #t))
+                              (set! ,a? #t))))
+                       (λ (k) (begin (if (zero? ,capts) (set! ,s? #t) #f) (k ,t))))))
               (λ () ,(transform e2))))]
          [`(cont ,v ,E)
           (let ([x (fresh "v")])
             `(begin
-               (set! ,no-dw? #t)
+               (set! ,capts (+ ,capts 1))
                ((λ (,x)
                   (% ,x 
                      ,(transform 
                        (term (plug ,E (call/cc (λ (k) (abort ,x k)) ,x))))
-                     (λ (x) (begin (set! ,no-dw? #f) x))))
+                     (λ (x) (begin (set! ,capts (+ ,capts -1)) x))))
                 ,(transform v))))]
          [`(comp ,E)
           (define numbers
@@ -343,11 +343,11 @@
               [_ (list)]))
           (define t (add1 (apply max 0 (numbers E))))
           `(begin
-             (set! ,no-dw? #t)
+             (set! ,capts (+ ,capts 1))
              (% ,t 
                 ,(transform
                   (term (plug ,E (call/comp (λ (k) (abort ,t k)) ,t))))
-                (λ (x) (begin (set! ,no-dw? #f) x))))]
+                (λ (x) (begin (set! ,capts (+ ,capts -1)) x))))]
          [`(list ,vs ...)
           `(list ,@(map transform-value vs))]
          [(? list? xs) 
@@ -365,7 +365,9 @@
                          [(list _ v’) (list x v’)]))
                 allocated)
           ,o
-          ,e’)]))
+          (begin
+            (set! ,capts 0)
+            ,e’))]))
 
 ;; The built-in `plug' sometimes chooses the wrong hole.
 (define-metafunction grammar

@@ -124,6 +124,17 @@
    5))
  "134" 5)
 
+(test-transformation
+ (<>
+  ()
+  ()
+  (cont 0
+        (dw x
+            #f
+            (cons (cont 1 hole) hole)
+            (print 2))))
+ "" procedure)
+
 (define (transformation-preserves-meaning? p)
   (let ([original-result (parameterize ([model-eval-steps 1000]) (model-eval p))]
         [transformed (transform-intermediate p)]
