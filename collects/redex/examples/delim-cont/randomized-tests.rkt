@@ -212,37 +212,61 @@
       [_ x])))
 
 (define (proper-wcms e)
-  (let fix ([ok? #t] [e e])
+  ; Performs two tasks:
+  ; 1. drops duplicate cm keys, and
+  ; 2. drops `wcm' frames when the reduction relation
+  ; would not otherwise merge the marks (replacing them
+  ; with `call/cm' requires more care, since the `wcm'
+  ; body may contain a hole).
+  (let fix ([ctxt 'wont-have-wcm] [e e])
+    (define tail
+      (match-lambda
+        [(or 'comp-top 'may-have-wcm) 'may-have-wcm]
+        ['wont-have-wcm 'wont-have-wcm]))
     (match e
       [`(wcm ,w ,e)
-       (if ok? 
-           `(wcm ,(remove-duplicates (fix #t w) #:key first) 
-                 ,(fix #f e))
-           (fix #f e))]
+       (match ctxt
+         [(or 'comp-top 'wont-have-wcm)
+          `(wcm ,(remove-duplicates (fix 'dont-care w) #:key first) 
+                ,(fix 'may-have-wcm e))]
+         ['may-have-wcm
+          (fix 'may-have-wcm e)])]
       [`(list . ,vs)
-       `(list . ,(map (curry fix #t) vs))]
+       ; context doesn't matter for values
+       `(list . ,(map (curry fix 'dont-care) vs))]
       [`(λ ,xs ,e)
-       ; #f in case applied with a continuation that's already marked
-       `(λ ,xs ,(fix #f e))]
+       ; caller's continuation may be marked
+       `(λ ,xs ,(fix 'may-have-wcm e))]
       [`(cont ,v ,E)
-       `(cont ,(fix #t v) ,(fix #t E))]
+       ; body will be wrapped in a prompt
+       `(cont ,(fix 'dont-care v) ,(fix 'wont-have-wcm E))]
       [`(comp ,E)
-       `(comp ,(fix #t E))]
+       ; comp application merges only top-level marks
+       `(comp ,(fix 'comp-top E))]
       [`(begin ,e1 ,e2)
-       `(begin ,(fix #t e1)
-               ,(fix ok? e2))]
+       `(begin ,(fix 'wont-have-wcm e1)
+               ; "begin-v" does not merge marks
+               ,(fix (tail ctxt) e2))]
       [`(% ,e1 ,e2 ,e3)
-       `(% ,(fix #t e1) ,(fix ok? e2) ,(fix #t e3))]
+       `(% ,(fix 'wont-have-wcm e1)
+           ; prompt persists until e2 is a value
+           ,(fix 'wont-have-wcm e2)
+           ,(fix 'wont-have-wcm e3))]
       [`(dw ,x ,e1 ,e2 ,e3)
-       `(dw ,x ,(fix #t e1) ,(fix ok? e2) ,(fix #t e3))]
+       `(dw ,x 
+            ,(fix 'wont-have-wcm e1)
+            ; dw persists until e2 is a value
+            ,(fix 'wont-have-wcm e2)
+            ,(fix 'wont-have-wcm e3))]
       [`(if ,e1 ,e2 ,e3)
-       `(if ,(fix #t e1) 
-            ,(fix ok? e2)
-            ,(fix ok? e3))]
+       `(if ,(fix 'wont-have-wcm e1) 
+            ; "ift" and "iff" do not merge marks
+            ,(fix (tail ctxt) e2)
+            ,(fix (tail ctxt) e3))]
       [`(set! ,x ,e)
-       `(set! ,x ,(fix #t e))]
+       `(set! ,x ,(fix 'wont-have-wcm e))]
       [(? list?) 
-       (map (curry fix #t) e)]
+       (map (curry fix 'wont-have-wcm) e)]
       [_ e])))
 
 (define transform-intermediate
