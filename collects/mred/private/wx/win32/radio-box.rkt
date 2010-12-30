@@ -55,8 +55,7 @@
               (MoveWindow hwnd 0 0 w y #t)
               null)
             (let* ([label (car labels)]
-                   [bitmap? (and (label . is-a? . bitmap%)
-                                 (send label ok?))]
+                   [bitmap? (label . is-a? . bitmap%)]
                    [radio-hwnd 
                     (CreateWindowExW/control 0
                                              "PLTBUTTON"

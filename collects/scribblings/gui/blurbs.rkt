@@ -40,25 +40,22 @@
     @elem{If @litchar{&} occurs in @|where|@|detail|, it 
  is specially parsed as for @scheme[button%].})
 
-  (define (bitmapuseinfo pre what thing then detail)
-   @elem{@|pre| @|what| is @|thing|, @|then| the bitmap@|detail|
- must be valid (see @xmethod[bitmap% ok?]) and not installed
- in a @scheme[bitmap-dc%] object; otherwise, @|MismatchExn|. If the
+  (define (bitmapuseinfo pre what thing and the)
+   @elem{@|pre| @|what| is @|thing|,@|and| if @|the|
  bitmap has a mask (see @xmethod[bitmap% get-loaded-mask])
  that is the same size as the bitmap, then the mask is used for the
- label; furthermore, in contrast to the limitations of
- @xmethod[dc<%> draw-bitmap], non-monochrome label masks work
- consistently on all platforms.})
+ label. Modifying a bitmap while it is used as a label has
+ an unspecified effect on the displayed label.})
 
   (define-syntax bitmaplabeluse
    (syntax-rules ()
-     [(_ id) @bitmapuseinfo["If" (scheme id) "a bitmap" "then" ""]]))
+     [(_ id) @bitmapuseinfo["If" (scheme id) "a bitmap" " and" "the"]]))
   (define-syntax bitmaplabelusearray
    (syntax-rules ()
-     [(_ id) @bitmapuseinfo["If" (scheme id) "a list of bitmaps" "then" "s"]]))
+     [(_ id) @bitmapuseinfo["If" (scheme id) "a list of bitmaps" " and" "a"]]))
   (define-syntax bitmaplabeluseisbm
     (syntax-rules ()
-      [(_ id) @bitmapuseinfo["Since" (scheme id) "a bitmap" "" ""]]))
+      [(_ id) @bitmapuseinfo["Since" (scheme id) "a bitmap" "" "the"]]))
   
   (define bitmapiforiglabel
     @elem{The bitmap label is installed only

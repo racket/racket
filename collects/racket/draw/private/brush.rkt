@@ -91,10 +91,6 @@
   (def/public (get-stipple) stipple)
   (def/public (set-stipple [(make-or-false bitmap%) s]) 
     (check-immutable 'set-stipple)
-    (let ([old-s stipple])
-      (set! stipple #f)
-      (when old-s (send old-s adjust-lock -1)))
-    (when s (send s adjust-lock 1))
     (set! stipple s)))
 
 ;; ----------------------------------------

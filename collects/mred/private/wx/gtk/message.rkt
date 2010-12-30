@@ -60,14 +60,11 @@
                              [(caution) (gtk_image_new_from_stock "gtk-dialog-warning" icon-size)]
                              [(stop) (gtk_image_new_from_stock "gtk-dialog-error" icon-size)]
                              [else (gtk_image_new_from_stock "gtk-dialog-question" icon-size)]))
-                          (if (send label ok?)
-                              (let ([pixbuf (bitmap->pixbuf label)])
-                                (begin0
-                                 (as-gtk-allocation
-                                  (gtk_image_new_from_pixbuf pixbuf))
-                                 (release-pixbuf pixbuf)))
-                              (as-gtk-allocation
-                               (gtk_label_new_with_mnemonic "<bad-image>")))))]
+                          (let ([pixbuf (bitmap->pixbuf label)])
+                            (begin0
+                             (as-gtk-allocation
+                              (gtk_image_new_from_pixbuf pixbuf))
+                             (release-pixbuf pixbuf)))))]
              [font font]
              [no-show? (memq 'deleted style)])
 

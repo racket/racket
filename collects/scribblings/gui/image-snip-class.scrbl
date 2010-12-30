@@ -50,10 +50,6 @@ Returns the bitmap that is displayed by the snip, whether set through
  @method[image-snip% set-bitmap] or @method[image-snip% load-file]. If
  no bitmap is displayed, the result is @racket[#f].
 
-The returned bitmap cannot be selected into a @racket[bitmap-dc%] as
- long as it belongs to the snip, but it can be used as a pen or
- brush stipple.
-
 }
 
 @defmethod[(get-bitmap-mask)
@@ -62,10 +58,6 @@ The returned bitmap cannot be selected into a @racket[bitmap-dc%] as
 Returns the mask bitmap that is used for displaying by the snip, if
  one was installed with @method[image-snip% set-bitmap].  If no mask
  is used, the result is @racket[#f].
-
-The returned bitmap cannot be selected into a @racket[bitmap-dc%] as
- long as it belongs to the snip, but it can be used as a pen or
- brush stipple.
 
 }
 

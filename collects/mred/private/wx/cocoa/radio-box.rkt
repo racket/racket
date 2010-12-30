@@ -85,8 +85,7 @@
                   (let ([button (tell cocoa 
                                       cellAtRow: #:type _NSInteger (if horiz? 0 i)
                                       column: #:type _NSInteger (if horiz? i 0))])
-                    (if (and (not (string? label))
-                             (send label ok?))
+                    (if (not (string? label))
                         (begin
                           (tellv button setTitle: #:type _NSString "")
                           (set-ivar! button img (bitmap->image label)))

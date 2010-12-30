@@ -1799,10 +1799,6 @@ If @scheme[bitmap] is @scheme[#f], no autowrap indicator is drawn
  (this is the default). The previously used bitmap (possibly
  @scheme[#f]) is returned.
 
-The bitmap will not be modified. It may be selected into a
- @scheme[bitmap-dc%] object, but it will be selected out if this
- method is called again.
-
 Setting the bitmap is disallowed when the editor is internally locked
  for reflowing (see also @|lockdiscuss|).
 

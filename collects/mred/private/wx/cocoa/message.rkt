@@ -80,8 +80,7 @@
              [cocoa (let* ([label (cond
                                    [(string? label) label]
                                    [(symbol? label) (get-icon label)]
-                                   [(send label ok?) label]
-                                   [else "<bad>"])]
+                                   [else label])]
                            [cocoa
                             (if (string? label)
                                 (as-objc-allocation
