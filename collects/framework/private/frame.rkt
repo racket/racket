@@ -470,12 +470,13 @@
     
     ;; make-new-status-line-msg : symbol string -> status-line-msg
     (define/private (make-new-status-line-msg id msg-txt)
-      (make-status-line-msg
-       (instantiate message% ()
-         (parent status-line-container-panel)
-         (stretchable-width #t)
-         (label msg-txt))
-       id))
+      (define msg
+        (new message% 
+             [parent status-line-container-panel]
+             [stretchable-width #t]
+             [label ""]))
+      (send msg set-label msg-txt)
+      (make-status-line-msg msg id))
     
     (inherit get-eventspace)
     (define/private (do-main-thread t)
