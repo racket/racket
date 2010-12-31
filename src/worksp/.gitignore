@@ -1,8 +1,10 @@
-# MSVC build directory:
+# MSVC build directories:
 */Release
 */Debug
-*/SGC
+*/Win32
 */x64
+*/3m
+*/SGC
 */*.user
 
 rbuildmode.obj

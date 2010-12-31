@@ -1,25 +1,24 @@
-libmysterx.ncb
-libmysterx.suo
+/libmysterx.ncb
+/libmysterx.suo
 
-dotnet/_dotnet.h
-dotnet/_dotnet_i.c
-dotnet/_dotnet_p.c
-dotnet/_dotnet.idl
-dotnet/_dotnet.tlb
-dotnet/_dotnet.res
-dotnet/dlldata.c
-dotnet/Release
+/dotnet/_dotnet.h
+/dotnet/_dotnet_i.c
+/dotnet/_dotnet_p.c
+/dotnet/_dotnet.idl
+/dotnet/_dotnet.tlb
+/dotnet/_dotnet.res
+/dotnet/dlldata.c
+/dotnet/Release
 
-myspage/Release
-myspage/*.idb
-myspage/*.user
-myspage/x64
+/myspage/Release
+/myspage/*.idb
+/myspage/*.user
+/myspage/x64
 
-myssink/Release
-myssink/*.idb
-myssink/*.user
-myssink/x64
+/myssink/Release
+/myssink/*.idb
+/myssink/*.user
+/myssink/x64
 
-gc_traverse.inc
-3m
-xsrc
+/gc_traverse.inc
+/xsrc
