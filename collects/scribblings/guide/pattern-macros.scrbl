@@ -119,7 +119,7 @@ the expansion is
 @racketblock[
 (let ([set!_1 5]
       [other 6])
-  (let ([tmp_1 tmp])
+  (let ([tmp_1 set!_1])
     (set! set!_1 other)
     (set! other tmp_1))
   (list set!_1 other))
