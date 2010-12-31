@@ -608,6 +608,9 @@ plt-extras :+= (package: "embedded-gui/")
 ;; -------------------- eopl
 plt-extras :+= (package: "eopl/")
 
+;; -------------------- picturing-programs
+plt-extras :+= (package: "picturing-programs/")
+
 ;; -------------------- algol60
 plt-extras :+= (package: "algol60/")
 
