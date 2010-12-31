@@ -315,10 +315,9 @@ either it is released with @racket[port-file-unlock] or the port is closed
 
 Depending on the platform, locks may be merely advisory (i.e., locks
 affect only the ability of processes to acquire locks) or they may
-correspond to mandatory read and write locks, where @racket['shared]
-locks correspond to read locks and @racket['exclusive] locks
-correspond to write locks. Specifically, locks are mandatory under
-Windows and advisory on other platforms.
+correspond to mandatory locks that prevent reads and writes to the
+locked file. Specifically, locks are mandatory under Windows and
+advisory on other platforms.
 
 Typically, locking is supported only for file ports, and attempting to
 acquire a lock with other kinds of file-stream ports raises an
