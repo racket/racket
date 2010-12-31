@@ -1,6 +1,6 @@
 ;; Implementation of SRFI 63 "Homogeneous and Heterogeneous Arrays" for PLT 
 ;; Scheme.
-;; Copyright (C) 2007-2010 Chongkai Zhu
+;; Copyright (C) 2007-2011 Chongkai Zhu
 
 ;; Released under the same terms as the SRFI reference implementation.
 

@@ -49,7 +49,7 @@ BEGIN
             VALUE "FileDescription", "Racket application\0"
             VALUE "InternalName", "Racket\0"
             VALUE "FileVersion", "5, 0, 99, 5\0"
-            VALUE "LegalCopyright", "Copyright Å© 1995-2010\0"
+            VALUE "LegalCopyright", "Copyright Å© 1995-2011\0"
             VALUE "OriginalFilename", "racket.exe\0"
             VALUE "ProductName", "Racket\0"
             VALUE "ProductVersion", "5, 0, 99, 5\0"

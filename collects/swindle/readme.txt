@@ -137,7 +137,7 @@ Swindle environment.
 
 ====< Copyright Notice >================================================
 
-Copyright (C) 1998-2010 Eli Barzilay (eli@barzilay.org)
+Copyright (C) 1998-2011 Eli Barzilay (eli@barzilay.org)
 
     This library is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as
