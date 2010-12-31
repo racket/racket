@@ -885,16 +885,18 @@ trigger runtime errors in check syntax.
 	(let ([drs (wait-for-drscheme-frame)])
 	  (set-language-level! (list "Pretty Big"))
 	  (do-execute drs)
-          (let* ([defs (send drs get-definitions-text)]
+          (let* ([defs (queue-callback/res (λ () (send drs get-definitions-text)))]
 		 [filename (make-temporary-file "syncheck-test~a")])
 	    (let-values ([(dir _1 _2) (split-path filename)])
-              (send defs save-file filename)
+              (queue-callback/res (λ () (send defs save-file filename)))
 	      (preferences:set 'framework:coloring-active #f)
               (close-the-error-window-test drs)
               (for-each (run-one-test (normalize-path dir)) tests)
-	      (preferences:set 'framework:coloring-active #t)
-	      (send defs save-file) ;; clear out autosave
-	      (send defs set-filename #f)
+              (preferences:set 'framework:coloring-active #t)
+	      (queue-callback/res
+               (λ () 
+                 (send defs save-file) ;; clear out autosave
+                 (send defs set-filename #f)))
               (delete-file filename)
               
               (printf "Ran ~a tests.\n" total-tests-run)))))))
@@ -904,10 +906,10 @@ trigger runtime errors in check syntax.
     (insert-in-definitions drs "(")
     (click-check-syntax-button drs)
     (wait-for-computation drs)
-    (unless (send drs syncheck:error-report-visible?)
+    (unless (queue-callback/res (λ () (send drs syncheck:error-report-visible?)))
       (error 'close-the-error-window-test "error report window never appeared"))
     (do-execute drs)
-    (when (send drs syncheck:error-report-visible?)
+    (when (queue-callback/res (λ () (send drs syncheck:error-report-visible?)))
       (error 'close-the-error-window-test "error report window did not go away after clicking Run")))
     
   (define total-tests-run 0)
@@ -915,7 +917,7 @@ trigger runtime errors in check syntax.
   (define ((run-one-test save-dir) test)
     (set! total-tests-run (+ total-tests-run 1))
     (let* ([drs (wait-for-drscheme-frame)]
-           [defs (send drs get-definitions-text)]
+           [defs (queue-callback/res (λ () (send drs get-definitions-text)))]
            [input (test-input test)]
            [expected (test-expected test)]
            [arrows (test-arrows test)]
@@ -928,10 +930,10 @@ trigger runtime errors in check syntax.
       (click-check-syntax-button drs)
       (wait-for-computation drs)
       
-      (when (send defs in-edit-sequence?)
+      (when (queue-callback/res (λ () (send defs in-edit-sequence?)))
         (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
       
-      (let ([err (send drs syncheck:get-error-report-contents)]) 
+      (let ([err (queue-callback/res (λ () (send drs syncheck:get-error-report-contents)))]) 
         (when err
           (fprintf (current-error-port)
                    "FAILED ~s\n   error report window is visible:\n   ~a\n"
@@ -952,7 +954,7 @@ trigger runtime errors in check syntax.
                            expected])
                         got
                         arrows 
-                        (send defs syncheck:get-bindings-table)
+                        (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))
                         input))))
   
   
@@ -1040,11 +1042,7 @@ trigger runtime errors in check syntax.
   
   ;; get-annotate-output : drscheme-frame -> (listof str/ann)
   (define (get-annotated-output drs)
-    (let ([chan (make-channel)])
-      (queue-callback
-       (λ ()
-         (channel-put chan (get-string/style-desc (send drs get-definitions-text)))))
-      (channel-get chan)))
+    (queue-callback/res (λ () (get-string/style-desc (send drs get-definitions-text)))))
   
   (define (click-check-syntax-button drs)
     (test:run-one (lambda () (send (send drs syncheck:get-button) command))))
