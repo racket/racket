@@ -1137,6 +1137,7 @@ path/s is either such a string or a list of them.
 "collects/openssl" responsible (mflatt)
 "collects/parser-tools" responsible (mflatt)
 "collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
+"collects/picturing-programs" responsible (sbloch)
 "collects/plai" responsible (jay)
 "collects/plai/private/gc-gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/planet" responsible (robby)
