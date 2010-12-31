@@ -1,8 +1,7 @@
-#lang mzscheme 
+#lang racket/base
 (require launcher
-         mzlib/cmdline
-         mzlib/list
-         mzlib/unitsig
+         racket/cmdline
+         racket/unit
          "debug.ss"
          "test-suite-utils.ss")
 

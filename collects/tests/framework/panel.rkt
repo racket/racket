@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket/base
 (require "test-suite-utils.ss")
 
 (test
