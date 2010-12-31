@@ -685,26 +685,29 @@
           (make-object message% (protect& message) p)))
 
       (define dir-text
-        (let ([c (class (if win? combo-field% text-field%) (super-new)
+        (let* ([c%
+                (if win?
+                    (class combo-field%
+                      (super-new [choices '()])
+                      (define/override (on-popup e)
+                        (let ([m (send this get-menu)])
+                          (for-each (lambda (i) (send i delete))
+                                    (send m get-items))
+                          (for-each (lambda (r)
+                                      (define l (path->string r))
+                                      (make-object menu-item% l m
+                                                   (lambda _
+                                                     (enter-text r)
+                                                     (do-enter))))
+                                    (filesystem-root-list)))))
+                    text-field%)]
+               [c (class c%
+                    (super-new)
                     (define editor (send this get-editor))
                     (define/public (lock)   (send editor lock #t))
                     (define/public (unlock) (send editor lock #f))
-		    (define/override (on-popup e)
-                      (when win?
-                        (let ([m (send this get-menu)])
-			  (for-each (lambda (i) (send i delete))
-				    (send m get-items))
-			  (for-each (lambda (r)
-				      (define l (path->string r))
-				      (make-object menu-item% l m
-						   (lambda _
-						     (enter-text r)
-						     (do-enter))))
-				    (filesystem-root-list)))))
                     (lock))])
-          (if win?
-            (new c [label #f] [parent this] [init-value ""] [choices '()])
-            (new c [label #f] [parent this] [init-value ""]))))
+          (new c [label #f] [parent this] [init-value ""])))
 
       (define path-list
         (new (class list-box%
