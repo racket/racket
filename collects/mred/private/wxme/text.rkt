@@ -3101,8 +3101,8 @@
                    (begin
                      (when ty (set-box! ty (+ (- total-height extra-line-h) padding-t)))
                      (when by (set-box! by (+ total-height padding-t)))
-                     (when tx (set-box! tx 0))
-                     (when bx (set-box! bx 0))
+                     (when tx (set-box! tx padding-l))
+                     (when bx (set-box! bx padding-l))
                      #f)
                    (if (or whole-line? (zero? len))
                        (begin
@@ -5187,7 +5187,9 @@
                       (let ([y ycounter]
                             [save-pen (send dc get-pen)])
                         (send dc set-pen local-caret-pen)
-                        (send dc draw-line dx (+ y dy) dx (sub1 (+ y extra-line-h dy)))
+                        (send dc draw-line 
+                              (+ dx padding-l) (+ y dy)
+                              (+ dx padding-l) (sub1 (+ y extra-line-h dy)))
                         (send dc set-pen save-pen)))
                     (paint-done)]
                    [(ycounter . >= . endy)
