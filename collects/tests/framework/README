@@ -77,11 +77,15 @@ signal failures when there aren't any.
 
   |# scheme.rkt #|
 
+- panel tests:
+
+ |# panel.rkt #|
+
 - |# (interactive #| tests
 
   | these tests require intervention by people. Clicking and whatnot
 
-  - panel:single |# panel.rkt #|
+  - panel:single |# panel-single.rkt #|
 
   - garbage collection: |# mem.rkt #|
 
