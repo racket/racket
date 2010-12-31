@@ -32,7 +32,8 @@
 
 (define (fix-expr top-vars) 
   (compose drop-duplicate-binders
-           proper-wcms 
+           proper-wcms
+           proper-conts ; before fixing wcm!
            consistent-dws
            (curry close top-vars '())))
 
@@ -268,6 +269,51 @@
       [(? list?) 
        (map (curry fix 'wont-have-wcm) e)]
       [_ e])))
+
+(define proper-conts
+  ; Turns (cont v_1 (in-hole E_1 (% v_1 E_2 v_2)))
+  ; into  (cont v_1 (in-hole E_1        E_2     ))
+  ; since no real program can construct the former.
+  ;
+  ; It would be nice to perform this transformation
+  ; by iteratively applying this rewrite rule
+  ;
+  ; (--> (in-hole (name C (cross e)) (cont v_1 (in-hole E_1 (% v_1 E_2 v_2))))
+  ;      (in-hole C (cont v_1 (in-hole E_1 E_2))))
+  ;
+  ; but a Redex bug (PR 11579) prevents that from working.
+  (let ([none (gensym)])
+    (define-metafunction grammar
+      [(fix (cont v E) any)
+       (cont (fix v ,none) (fix E v))]
+      
+      [(fix (dw x e_1 E e_2) any)
+       (dw x (fix e_1 ,none) (fix E any) (fix e_2 ,none))]
+      [(fix (wcm w E) any)
+       (wcm (fix w ,none) (fix E any))]
+      [(fix (v ... E e ...) any)
+       ((fix v ,none) ... (fix E any) (fix e ,none) ...)]
+      [(fix (begin E e) any)
+       (begin (fix E any) (fix e ,none))]
+      [(fix (% E e_1 e_2) any)
+       (% (fix E any) (fix e_1 ,none) (fix e_2 ,none))]
+      [(fix (% v e E) any)
+       (% (fix v ,none) (fix e ,none) (fix E any))]
+      [(fix (% any E v) any)
+       (fix E any)]
+      [(fix (% v_1 E v_2) any)
+       (% (fix v_1 ,none) (fix E any) (fix v_2 ,none))]
+      [(fix (set! x E) any)
+       (set! x (fix E any))]
+      [(fix (if E e_1 e_2) any)
+       (if (fix E any) (fix e_1 ,none) (fix e_2 ,none))]
+      
+      [(fix (any_1 ...) any_2)
+       ((fix any_1 ,none) ...)]
+      [(fix any_1 any_2)
+       any_1])
+    (λ (expr)
+      (term (fix ,expr ,none)))))
 
 (define transform-intermediate
   (match-lambda
