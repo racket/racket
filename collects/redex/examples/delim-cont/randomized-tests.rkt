@@ -8,17 +8,35 @@
 
 (provide (all-defined-out))
 
-(define (main [seed-arg #f])
-  (define seed
-    (if seed-arg 
-        (string->number seed-arg)
-        (add1 (random (sub1 (expt 2 31))))))
+(define (main . args)
+  (define from-grammar-tests #f)
+  (define from-rules-tests #f)
+  (define seed (add1 (random (sub1 (expt 2 31)))))
+  
+  (command-line
+   #:argv args
+   #:once-each
+   ["--grammar"
+    n
+    "Perform n tests generated from the grammar for programs"
+    (set! from-grammar-tests (string->number n))]
+   ["--rules"
+    n
+    "Perform n tests generated from the reduction relation"
+    (set! from-rules-tests (string->number n))]
+   ["--seed"
+    n
+    "Generate tests using the PRG seed n"
+    (set! seed (string->number n))])
+  
   (printf "Test seed: ~s\n" seed)
   (parameterize ([current-pseudo-random-generator test-prg])
     (random-seed seed))
   (parameterize ([redex-pseudo-random-generator test-prg])
-    (time (test #:attempts 3000))
-    (time (test #:source :-> #:attempts 3000))))
+    (when from-grammar-tests
+      (time (test #:attempts from-grammar-tests)))
+    (when from-rules-tests
+      (time (test #:source :-> #:attempts from-rules-tests)))))
 
 (define-syntax-rule (test . kw-args)
   (redex-check grammar p (same-behavior? (term p)) 
