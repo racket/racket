@@ -7,10 +7,19 @@
                      racket/gui/base
                      (only-in racket/base path-string?))
           lang/posn
-          "shared.ss"
-          "image-util.ss"
+          "shared.rkt"
           scribble/decode
           scribble/manual)
+
+@(require scribble/eval)
+
+@(define img-eval (make-base-eval))
+@(interaction-eval #:eval img-eval (require 2htdp/image))
+@(interaction-eval #:eval img-eval (require lang/posn))
+
+@(define-syntax-rule 
+   (image-examples exp ...)
+   (examples #:eval img-eval exp ...))
 
 @teachpack["image"]{Images}
 
@@ -669,7 +678,13 @@ the @scheme[point-count] argument determines how many points the star has.
                                (ellipse 10 10 "solid" "forestgreen"))
                    20
                    15
-                   (ellipse 10 10 "solid" "forestgreen"))]
+                   (ellipse 10 10 "solid" "forestgreen"))
+                  (overlay/xy
+                   (overlay/xy (circle 30 'solid (color 0 150 0 127))
+                               26 0
+                               (circle 30 'solid (color 0 0 255 127)))
+                   13 26
+                   (circle 30 'solid (color 200 0 0 127)))]
 }
 
 @defproc[(underlay [i1 image?] [i2 image?] [is image?] ...) image?]{
@@ -1520,3 +1535,4 @@ or manipulated as cleanly (by any image program).
  }
 
 
+@(close-eval img-eval)
