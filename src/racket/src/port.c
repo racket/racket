@@ -41,6 +41,7 @@
 # include <fcntl.h>
 # include <sys/types.h>
 # include <sys/time.h>
+# include <sys/file.h>
 # ifdef BSTRING_INCLUDE
 #  include <bstring.h>
 # endif
@@ -4688,6 +4689,117 @@ scheme_file_buffer(int argc, Scheme_Object *argv[])
 
     return scheme_void;
   }
+}
+
+static int try_lock(int fd, int writer, int *_errid)
+{
+#ifdef UNIX_FILE_SYSTEM
+  {
+    int ok;
+
+    do {
+      ok = flock(fd, (writer ? LOCK_EX : LOCK_SH) | LOCK_NB);
+    } while ((ok == -1) && (errno == EINTR));
+
+    if (ok == 0)
+      return 1;
+
+    if (errno == EWOULDBLOCK) {
+      *_errid = 0;
+      return 0;
+    }
+    
+    *_errid = errno;
+    return 0;
+  }
+#endif
+#ifdef WINDOWS_FILE_HANDLES
+  *_errid = 5;
+  return 0;
+#endif
+}
+
+static void check_already_closed(const char *name, Scheme_Object *p)
+{
+  int is_closed;
+  if (SCHEME_INPUT_PORTP(p)) {
+    is_closed = scheme_input_port_record(p)->closed;
+  } else {
+    is_closed = scheme_output_port_record(p)->closed;
+  }
+  if (is_closed) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "%s: port is closed: %V",
+                     name, 
+                     p);
+  }
+}
+
+Scheme_Object *scheme_file_try_lock(int argc, Scheme_Object **argv)
+{
+  intptr_t fd;
+  int writer = 0, errid;
+
+  if (!scheme_get_port_file_descriptor(argv[0], &fd))
+    scheme_wrong_type("port-try-file-lock?", "file-stream-port", 0, argc, argv);
+
+  if (SCHEME_SYMBOLP(argv[1]) && !SCHEME_SYM_WEIRDP(argv[1])) {
+    if (!strcmp(SCHEME_SYM_VAL(argv[1]), "exclusive"))
+      writer = 1;
+    else if (!strcmp(SCHEME_SYM_VAL(argv[1]), "shared"))
+      writer = 0;
+    else
+      writer = -1;
+  } else
+    writer = -1;
+
+  if (writer == -1)
+    scheme_wrong_type("port-try-file-lock?", "'shared or 'exclusive", 1, argc, argv);
+
+  check_already_closed("port-try-file-lock?", argv[0]);
+
+  if (try_lock(fd, writer, &errid))
+    return scheme_true;
+  
+  if (errid) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "port-try-file-lock?: error getting file %s lock (%E)",
+                     (writer ? "exclusive" : "shared"),
+                     errid);
+  }
+   
+  return scheme_false;
+}
+
+Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
+{
+  int ok, errid;
+  intptr_t fd;
+
+  if (!scheme_get_port_file_descriptor(argv[0], &fd))
+    scheme_wrong_type("port-file-unlock", "file-stream-port", 0, argc, argv);
+
+  check_already_closed("port-file-unlock", argv[0]);
+
+#ifdef UNIX_FILE_SYSTEM
+  do {
+    ok = flock(fd, LOCK_UN);
+  } while ((ok == -1) && (errno == EINTR));
+  ok = !ok;
+  errid = errno;
+#endif
+#ifdef WINDOWS_FILE_HANDLES
+  ok = 0;
+  errid = 5;
+#endif
+
+  if (!ok) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "port-file-unlock: error unlocking file (%E)",
+                     errid);
+  }
+
+  return scheme_void;
 }
 
 /*========================================================================*/

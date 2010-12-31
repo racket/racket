@@ -297,6 +297,41 @@ the current output port (see @racket[current-output-port]) using
   (lambda () (read-string 5)))
 ]}
 
+
+@defproc[(port-try-file-lock? [port file-stream-port?]
+                              [mode (or/c 'shared 'exclusive)])
+         boolean?]{
+
+Attempts to acquire a lock on the file using the current platform's 
+facilities for file locking. Multiple
+processes can acquire a @racket['shared] lock on a file, but at most
+one process can hold an @racket['exclusive] lock, and @racket['shared]
+and @racket['exclusive] locks are mutually exclusive.
+
+The result is @racket[#t] if the requested lock is acquired,
+@racket[#f] otherwise. When a lock is acquired, it is held until
+either it is released with @racket[port-file-unlock] or the port is closed
+(perhaps because the process terminates).
+
+Depending on the platform, locks may be merely advisory (i.e., locks
+affect only the ability of processes to acquire locks) or they may
+correspond to mandatory read and write locks, where @racket['shared]
+locks correspond to read locks and @racket['exclusive] locks
+correspond to write locks. Specifically, locks are mandatory under
+Windows and advisory on other platforms.
+
+Typically, locking is supported only for file ports, and attempting to
+acquire a lock with other kinds of file-stream ports raises an
+@racket[exn:fail:filesystem] exception.}
+
+
+@defproc[(port-file-unlock [port file-stream-port?])
+         void?]{
+
+Releases a lock held by the current process on the file of
+@racket[port].}
+
+
 @defproc[(port-file-identity [port file-stream-port?]) exact-positive-integer?]{
 
 @index['("inode")]{Returns} a number that represents
