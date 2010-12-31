@@ -930,8 +930,8 @@ as the preference file. If the directory of the preferences file does
 not already exist, it is created.
 
 If the update lock is already held (i.e., the lock file exists), then
-@racket[locked] is called with a single argument: the path of the lock
-file. The default @racket[locked] reports an error; an alternative
+@racket[locked-proc] is called with a single argument: the path of the lock
+file. The default @racket[locked-proc] reports an error; an alternative
 thunk might wait a while and try again, or give the user the choice to
 delete the lock file (in case a previous update attempt encountered
 disaster).
