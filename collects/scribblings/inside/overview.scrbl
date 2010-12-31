@@ -361,7 +361,7 @@ To embed Racket CGC in a program, follow these steps:
   @cpp{scheme_main_stack_setup} trampoline registers the C stack with
   the memory manager without creating a namespace.)
 
-  Under Windows, when support for parallelism is enabled in the Racket
+  Under 32-bit Windows, when support for parallelism is enabled in the Racket
   build (as is the default), then before calling
   @cpp{scheme_main_setup}, your embedding application must first call
   @cppi{scheme_register_tls_space}:
