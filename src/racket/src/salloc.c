@@ -251,6 +251,14 @@ Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_
 }
 #endif
 
+#ifdef IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
+MZ_DLLEXPORT Thread_Local_Variables *scheme_external_get_thread_local_variables();
+Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_PROC
+{
+  return scheme_get_thread_local_variables();
+}
+#endif
+
 void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
 {
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
