@@ -172,8 +172,12 @@ add this test:
                  "()\n()")
   
   (do-input-test "(begin (write (read)) (flush-output) (write (read)))"
+                 "(1) (2)\n"
+                 "(1) (2)\n(1)(2)")
+  
+  (do-input-test "(let ([a (read)][b (read)]) (write a) (write b))"
                  "(1)\n(2)\n"
-                 "(1)\n(1)(2)\n(2)")
+                 "(1)\n(2)\n(1)(2)")
   
   (do-input-test 
    (string-append "(let ([b (read-byte)][bs0 (bytes 0)][bs1 (bytes 1)][bs2 (bytes 2)])"
