@@ -33,7 +33,7 @@
                        (build-path (find-system-path 'temp-dir)
                                    "framework-tests-receive-sexps-port.ss")
                      read)])
-	 (debug-printf mr-tcp "about to connect to ~a\n" port)
+         (debug-printf mr-tcp "about to connect to ~a\n" port)
 	 (let*-values ([(in out) (tcp-connect "127.0.0.1" port)])
 	   (let loop ()
 	     (debug-printf mr-tcp "about to read\n")

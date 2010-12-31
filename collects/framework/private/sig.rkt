@@ -59,8 +59,9 @@
      horizontal-dragable-mixin
      horizontal-dragable%))
   (define-signature panel^ extends panel-class^
-    ())
-  
+    (dragable-container-size
+     dragable-place-children))
+
   (define-signature application-class^
     ())
   (define-signature application^ extends application-class^

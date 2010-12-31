@@ -8,6 +8,7 @@
 (provide
  test-name
  failed-tests
+ number-of-tests
  
  ;(struct eof-result ())
  eof-result?
@@ -48,6 +49,7 @@
 
 (define test-name "<<setup>>")
 (define failed-tests null)
+(define number-of-tests 0)
 
 (define-struct eof-result ())
 
@@ -87,8 +89,10 @@
        (build-path
         (let-values ([(dir exe _)
                       (split-path (find-system-path 'exec-file))])
-          dir)
-        (if (eq? 'windows (system-type)) "GRacket.exe" "gracket")))
+          (if (eq? dir 'relative)
+              'same
+              dir))
+        (if (eq? 'windows (system-type)) "Racket.exe" "racket")))
       (path->string
        (build-path (collection-path "tests" "framework")
                    "framework-test-engine.ss")))))
@@ -172,7 +176,7 @@
                      (or (not (char-ready? in-port))
                          (not (eof-object? (peek-char in-port))))))
         (restart-mred))
-      (debug-printf messages "  ~a // ~a: sending to gracket:\n"
+      (debug-printf messages "  ~a // ~a: sending to framework side to eval:\n"
                     section-name test-name)
       (show-text sexp)
       (with-handlers ([exn:fail?
@@ -254,6 +258,7 @@
                                                 (exn->str x)
                                                 (format "~s" x))))])
                           (not (passed? result)))])
+           (set! number-of-tests (+ number-of-tests 1))
            (when failed
              (debug-printf schedule "FAILED ~a:\n  ~s\n" test-name result)
              (set! failed-tests (cons (cons section-name test-name) failed-tests))
