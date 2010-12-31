@@ -882,6 +882,11 @@
       =>
       (rectangle 100 10 "solid" "blue"))
 
+(test (overlay (rectangle 100 10 'solid (color 255 0 0 0))
+               (rectangle 100 10 'solid (color 0 255 0 255))
+               (rectangle 100 10 'solid (color 0 0 255 0)))
+      =>
+      (rectangle 100 10 'solid (color 0 255 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

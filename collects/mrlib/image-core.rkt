@@ -1065,7 +1065,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
       (make-object color% 
         (color-red color)
         (color-green color)
-        (color-blue color))))
+        (color-blue color)
+        (/ (color-alpha color) 255))))
 
 
 (define (pen->pen-obj/cache pen)

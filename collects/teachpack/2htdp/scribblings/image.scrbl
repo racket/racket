@@ -1222,9 +1222,6 @@ This section lists predicates for the basic structures provided by the image lib
   The constructor, @racket[make-color], also accepts only three arguments, in which case
   the three arguments are used for the @racket[red], @racket[green], and @racket[blue] fields, and the
   @racket[alpha] field defaults to @racket[255].
-  
-  Unfortunately, not all of the primitives that accept or produce @racket[color] structs use the @racket[alpha]
-  field; only @racket[image->color-list] and @racket[color-list->bitmap] do.  
 }
 
 @defproc[(y-place? [x any/c]) boolean?]{
