@@ -19,7 +19,7 @@ object using a color name.
                        ([red (integer-in 0 255)]
                         [green (integer-in 0 255)]
                         [blue (integer-in 0 255)]
-                        [alpha (real-in 0 1)])
+                        [alpha (real-in 0 1) 1.0])
                        ([color-name string?]))]{
 
 Creates a new color with the given RGB values and alpha, or matching
