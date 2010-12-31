@@ -288,19 +288,21 @@
                (memq v focus-window-path))
       (set! focus-window-path #f)))
   (define/override (set-top-focus win win-path child-hwnd)
-    (set! focus-window-path win-path)
+    (set! focus-window-path (cons this win-path))
     (when (ptr-equal? hwnd (GetActiveWindow))
       (void (SetFocus child-hwnd))))
 
   (define/private (set-frame-focus)
-    (when (pair? focus-window-path)
-      (SetFocus (send (last focus-window-path) get-focus-hwnd))))
+    (let ([p focus-window-path])
+      (when (pair? p)
+        (SetFocus (send (last p) get-focus-hwnd)))))
 
   (define/public (get-focus-window [even-if-not-active? #f])
-    (and focus-window-path
-         (or even-if-not-active?
-             (ptr-equal? hwnd (GetActiveWindow)))
-         (last focus-window-path)))
+    (let ([p focus-window-path])
+      (and (pair? p)
+           (or even-if-not-active?
+               (ptr-equal? hwnd (GetActiveWindow)))
+           (last p))))
 
   (define/override (can-accept-focus?)
     #f)
