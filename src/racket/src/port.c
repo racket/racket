@@ -4714,8 +4714,30 @@ static int try_lock(int fd, int writer, int *_errid)
   }
 #endif
 #ifdef WINDOWS_FILE_HANDLES
-  *_errid = 5;
-  return 0;
+  {
+    OVERLAPPED o;
+    int errid;
+
+# define LOCK_ALL_FILE_LO 0
+# define LOCK_ALL_FILE_HI 0x10000
+
+    memset(&o, 0, sizeof(OVERLAPPED));
+    if (LockFileEx((HANDLE)fd, 
+		   (LOCKFILE_FAIL_IMMEDIATELY
+		    | (writer ? LOCKFILE_EXCLUSIVE_LOCK : 0)),
+		   0, 
+		   LOCK_ALL_FILE_LO, LOCK_ALL_FILE_HI,
+		   &o))
+      return 1;
+   
+    errid = GetLastError();
+    if (errid == ERROR_LOCK_VIOLATION)
+      *_errid = 0;
+    else
+      *_errid = errid;
+    
+    return 0;
+  }
 #endif
 }
 
@@ -4789,8 +4811,11 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
   errid = errno;
 #endif
 #ifdef WINDOWS_FILE_HANDLES
-  ok = 0;
-  errid = 5;
+  ok = UnlockFile((HANDLE)fd, 0, 0, LOCK_ALL_FILE_LO, LOCK_ALL_FILE_HI);
+  if (!ok)
+    errid = GetLastError();
+  else
+    errid = 0;
 #endif
 
   if (!ok) {
