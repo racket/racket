@@ -55,8 +55,10 @@
 				      -> (when (negative? r)
 					   (error 'CloseThemeData "failed: ~s" (bitwise-and #xFFFF r))))
   #:wrap (deallocator))
-(define-uxtheme OpenThemeData (_wfun _HWND _string/utf-16 -> _HTHEME)
-  #:wrap (allocator CloseThemeData))
+(define (maybe-CloseThemeData v) (when v (CloseThemeData v)))
+(define-uxtheme OpenThemeData (_wfun _HWND _string/utf-16 -> (_or-null _HTHEME))
+  #:wrap (allocator maybe-CloseThemeData))
+
 (define-uxtheme GetThemeFont (_wfun _HTHEME _HDC _int _int _int (f : (_ptr o _LOGFONT))
 				    -> (r : _HRESULT)
 				    -> (if (negative? r) 
