@@ -48,10 +48,10 @@
                                                       (if bitmap?
 							  (case orientation
 							    [(#f) BS_BITMAP]
-							    [(left) BS_RIGHT]
-							    [(right) BS_LEFT]
-							    [(top) BS_BOTTOM]
-							    [(bottom) BS_TOP])
+							    [(left) BS_LEFT]
+							    [(right) BS_RIGHT]
+							    [(top) BS_TOP]
+							    [(bottom) BS_BOTTOM])
                                                           0))
                                          0 0 0 0
                                          (send parent get-client-hwnd)
@@ -77,7 +77,7 @@
        [orientation
 	(let ([h? (memq orientation '(left right))])
 	  (auto-size font (list (car label) (cadr label))
-		     0 0 4 4
+		     0 0 12 8
 		     #:combine-width (if h? + max)
 		     #:combine-height (if h? max +)))]
        [bitmap?
