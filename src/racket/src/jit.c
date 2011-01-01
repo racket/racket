@@ -2465,7 +2465,8 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     break;
 
   case scheme_application_type:
-    if (inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj))
+    if (inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj)
+        && !SAME_OBJ(((Scheme_App_Rec *)obj)->args[0], scheme_values_func))
       return 1;
     if (just_markless) {
       return is_noncm(((Scheme_App_Rec *)obj)->args[0], jitter, depth, 
