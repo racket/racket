@@ -1449,6 +1449,7 @@ path/s is either such a string or a list of them.
 "collects/tests/framework/load.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/main.rkt" drdr:command-line (gracket *) drdr:timeout 240
 "collects/tests/framework/mem.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/panel-single.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/panel.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/pasteboard.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/prefs.rkt" drdr:command-line (mzc "-k" *)
