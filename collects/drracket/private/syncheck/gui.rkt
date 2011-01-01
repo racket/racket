@@ -1221,8 +1221,8 @@ If the namespace does not, they are colored the unbound color.
             [(jump-to-id) (syncheck:button-callback jump-to-id  (preferences:get 'drracket:syncheck-mode))]
             [(jump-to-id mode)
              (when (send check-syntax-button is-enabled?)
-               (open-status-line 'drracket:check-syntax)
-               (update-status-line 'drracket:check-syntax status-init)
+               (open-status-line 'drracket:check-syntax:status)
+               (update-status-line 'drracket:check-syntax:status status-init)
                (ensure-rep-hidden)
                (let-values ([(expanded-expression expansion-completed) (make-traversal)])
                  (let* ([definitions-text (get-definitions-text)]
@@ -1246,7 +1246,7 @@ If the namespace does not, they are colored the unbound color.
                                (send the-tab set-breakables old-break-thread old-custodian)
                                (send the-tab enable-evaluation)
                                (send definitions-text end-edit-sequence)
-                               (close-status-line 'drracket:check-syntax)
+                               (close-status-line 'drracket:check-syntax:status)
                                
                                ;; do this with some lag ... not great, but should be okay.
                                (thread
@@ -1310,7 +1310,7 @@ If the namespace does not, they are colored the unbound color.
                                   (λ (exn)
                                     (uncaught-exception-raised)
                                     (oh exn))))
-                               (update-status-line 'drracket:check-syntax status-expanding-expression)
+                               (update-status-line 'drracket:check-syntax:status status-expanding-expression)
                                (set! user-custodian (current-custodian))
                                (set! user-directory (current-directory)) ;; set by set-directory above
                                (set! user-namespace (current-namespace)))])
@@ -1349,7 +1349,7 @@ If the namespace does not, they are colored the unbound color.
                                      (cleanup)
                                      (custodian-shutdown-all user-custodian))))]
                                [else
-                                (update-status-line 'drracket:check-syntax status-eval-compile-time)
+                                (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
                                 (eval-compile-time-part-of-top-level sexp)
                                 (parameterize ([current-eventspace drs-eventspace])
                                   (queue-callback
@@ -1357,12 +1357,12 @@ If the namespace does not, they are colored the unbound color.
                                      (with-lock/edit-sequence
                                       definitions-text
                                       (λ ()
-                                        (open-status-line 'drracket:check-syntax)
-                                        (update-status-line 'drracket:check-syntax status-coloring-program)
+                                        (open-status-line 'drracket:check-syntax:status)
+                                        (update-status-line 'drracket:check-syntax:status status-coloring-program)
                                         (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
-                                        (close-status-line 'drracket:check-syntax))))))
-                                (update-status-line 'drracket:check-syntax status-expanding-expression)
+                                        (close-status-line 'drracket:check-syntax:status))))))
+                                (update-status-line 'drracket:check-syntax:status status-expanding-expression)
                                 (loop)]))))))))))]))
         
         ;; set-directory : text -> void
