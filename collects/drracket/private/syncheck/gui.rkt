@@ -1249,13 +1249,14 @@ If the namespace does not, they are colored the unbound color.
                                (close-status-line 'drracket:check-syntax:status)
                                
                                ;; do this with some lag ... not great, but should be okay.
-                               (thread
-                                (λ ()
-                                  (flush-output (send (send the-tab get-error-report-text) get-err-port))
-                                  (queue-callback
-                                   (λ ()
-                                     (unless (= 0 (send (send the-tab get-error-report-text) last-position))
-                                       (show-error-report/tab)))))))]
+                               (let ([err-port (send (send the-tab get-error-report-text) get-err-port)])
+                                 (thread
+                                  (λ ()
+                                    (flush-output err-port)
+                                    (queue-callback
+                                     (λ ()
+                                       (unless (= 0 (send (send the-tab get-error-report-text) last-position))
+                                         (show-error-report/tab))))))))]
                             [kill-termination
                              (λ ()
                                (unless normal-termination?
@@ -1349,6 +1350,7 @@ If the namespace does not, they are colored the unbound color.
                                      (cleanup)
                                      (custodian-shutdown-all user-custodian))))]
                                [else
+                                (open-status-line 'drracket:check-syntax:status)
                                 (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
                                 (eval-compile-time-part-of-top-level sexp)
                                 (parameterize ([current-eventspace drs-eventspace])
@@ -1363,6 +1365,7 @@ If the namespace does not, they are colored the unbound color.
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
                                         (close-status-line 'drracket:check-syntax:status))))))
                                 (update-status-line 'drracket:check-syntax:status status-expanding-expression)
+                                (close-status-line 'drracket:check-syntax:status)
                                 (loop)]))))))))))]))
         
         ;; set-directory : text -> void
