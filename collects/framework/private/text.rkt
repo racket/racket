@@ -3721,14 +3721,15 @@ designates the character that triggers autocompletion
 ;; draws line numbers on the left hand side of a text% object
 (define line-numbers-mixin
   (mixin ((class->interface text%)) (line-numbers<%>)
-    (super-new)
     (inherit get-visible-line-range
              get-visible-position-range
              last-line
              line-location
              line-paragraph
              line-start-position
-             line-end-position)
+             line-end-position
+             set-padding
+             get-padding)
 
     (init-field [line-numbers-color "black"])
     (init-field [show-line-numbers? #t])
@@ -3736,13 +3737,19 @@ designates the character that triggers autocompletion
     ;; only two values should be 'left or 'right
     (init-field [alignment 'right])
 
+    (define (constructor)
+      (super-new)
+      #;
+      (define space (text-width dc (number-space+1)))
+      #;
+      (set-padding space 0 0 0)
+      #;
+      (set-padding (number-space) 0 0 0))
+
     (define (number-space)
       (number->string (max (* 10 (add1 (last-line))) 100)))
     ;; add an extra 0 so it looks nice
     (define (number-space+1) (string-append (number-space) "0"))
-
-    (define cached-snips (list))
-    (define need-to-recalculate-snips #f)
 
     ;; call this method with #t or #f to turn on/off line numbers
     (define/public (show-line-numbers! what)
@@ -3762,7 +3769,7 @@ designates the character that triggers autocompletion
                       (send style-list basic-style))])
         (send std get-font)))
 
-    ;; a <= b <= c
+    ;; low <= what <= high
     (define (between low what high)
       (and (>= what low)
            (<= what high)))
@@ -3848,6 +3855,9 @@ designates the character that triggers autocompletion
                           (min 255 (integer (* 255 green)))
                           (min 255 (integer (* 255 blue)))))
 
+    ;; an offset that looks right
+    (define magic-space 5)
+
     (define (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
@@ -3862,7 +3872,8 @@ designates the character that triggers autocompletion
         (when (between top y bottom)
           (define view (number->string (add1 (line-paragraph line))))
           (define final-x
-            (+ dx 
+            (+ ;; dx 
+              magic-space
                (case alignment
                  [(left) 0]
                  [(right) (- right-space (text-width dc view) single-space)]
@@ -3879,15 +3890,12 @@ designates the character that triggers autocompletion
 
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dx dy x)
+      (send dc draw-line (+ magic-space x) (+ dy top) (+ magic-space x) (+ dy bottom))
+      #;
       (send dc draw-line (+ dx x) (+ dy top) (+ dx x) (+ dy bottom)))
 
     ;; `line-numbers-space' will get mutated in the `on-paint' method
-    (define line-numbers-space 0)
-    (define/override (find-position x y . args)
-      ;; adjust x position to account for line numbers
-      (if show-line-numbers?
-        (super find-position (- x line-numbers-space) y . args)
-        (super find-position x y . args)))
+    ;; (define line-numbers-space 0)
 
     (define (draw-line-numbers dc left top right bottom dx dy)
       (define saved-dc (save-dc-state dc))
@@ -3896,6 +3904,13 @@ designates the character that triggers autocompletion
       (define end-line (box 0))
       (get-visible-line-range start-line end-line #f)
 
+      #|
+      (define view-width (box 0))
+      (define view-height (box 0))
+      (send this get-view-size view-width view-height)
+      |#
+
+      ; (printf "dx ~a\n" dx)
       ;; draw it!
       (draw-numbers dc top bottom dx dy (unbox start-line) (add1 (unbox end-line)))
       (draw-separator dc top bottom dx dy (text-width dc (number-space)))
@@ -3915,6 +3930,34 @@ designates the character that triggers autocompletion
     (define old-origin-y 0)
     (define old-clipping #f)
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+      (if show-line-numbers?
+        (begin
+          (set-padding (text-width dc (number-space+1)) 0 0 0)
+          (if before?
+            (let ()
+              (set! old-clipping (send dc get-clipping-region))
+              (define saved-dc (save-dc-state dc))
+              (define clipped (make-object region% dc))
+              (define all (make-object region% dc))
+              (define copy (make-object region% dc))
+              (send all set-rectangle
+                    (+ dx left) (+ dy top)
+                    (- right left) (- bottom top))
+              (if old-clipping
+                (send copy union old-clipping)
+                (send copy union all))
+              (send clipped set-rectangle
+                    0 (+ dy top)
+                    (text-width dc (number-space+1))
+                    (- bottom top))
+              (send copy subtract clipped)
+              (send dc set-clipping-region copy))
+            (begin
+              (send dc set-clipping-region old-clipping)
+              (draw-line-numbers dc left top right bottom dx dy))))
+          (set-padding 0 0 0 0))
+      (void)
+      #;
       (when show-line-numbers?
         (if before?
           (let ()
@@ -3953,7 +3996,7 @@ designates the character that triggers autocompletion
             (send copy subtract clipped)
             (send dc set-clipping-region copy)
             (send dc set-origin (+ x (text-width dc (number-space+1))) y)
-            (set! line-numbers-space (text-width dc (number-space+1)))
+            ;; (set! line-numbers-space (text-width dc (number-space+1)))
             )
           (begin
             ;; rest the origin and draw the line numbers
@@ -3961,4 +4004,6 @@ designates the character that triggers autocompletion
             (send dc set-clipping-region old-clipping)
             (draw-line-numbers dc left top right bottom dx dy))))
       (super on-paint before? dc left top right bottom dx dy draw-caret))
+
+    (constructor)
     ))
