@@ -25,6 +25,7 @@
               queue-window-refresh-event
               location->window
               flush-display
+	      get-default-control-font
 
               GetWindowRect
               GetClientRect))
