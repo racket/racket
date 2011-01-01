@@ -22,6 +22,13 @@
 (define-gtk gtk_button_new (_fun -> _GtkWidget))
 (define-gtk gtk_window_set_default (_fun _GtkWidget (_or-null _GtkWidget) -> _void))
 (define-gtk gtk_button_set_label (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_button_set_image (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_button_set_image_position (_fun _GtkWidget _int -> _void))
+
+(define GTK_POS_LEFT 0)
+(define GTK_POS_RIGHT 1)
+(define GTK_POS_TOP 2)
+(define GTK_POS_BOTTOM 3)
 
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
@@ -47,18 +54,35 @@
                     (as-gtk-allocation
                      (gtk_new_with_mnemonic (or (mnemonic-string label) "")))]
                    [else
-                    (let ([pixbuf (bitmap->pixbuf label)])
+                    (let ([pixbuf (bitmap->pixbuf (if (pair? label) 
+                                                      (car label)
+                                                      label))])
                       (atomically
-                       (let ([gtk (as-gtk-allocation (gtk_new))]
+                       (let ([gtk (if (pair? label)
+                                      (as-gtk-allocation (gtk_new_with_mnemonic (cadr label)))
+                                      (as-gtk-allocation (gtk_new)))]
                              [image-gtk (gtk_image_new_from_pixbuf pixbuf)])
                          (release-pixbuf pixbuf)
-                         (gtk_container_add gtk image-gtk)
-                         (gtk_widget_show image-gtk)
+                         (if (pair? label)
+                             (begin
+                               (gtk_button_set_image gtk image-gtk)
+                               (gtk_button_set_image_position 
+                                gtk
+                                (case (caddr label)
+                                  [(left) GTK_POS_LEFT]
+                                  [(right) GTK_POS_RIGHT]
+                                  [(top) GTK_POS_TOP]
+                                  [(bottom) GTK_POS_BOTTOM])))
+                             (begin
+                               (gtk_container_add gtk image-gtk)
+                               (gtk_widget_show image-gtk)))
                          gtk)))])]
              [callback cb]
              [font font]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
+
+  (define both-labels? (pair? label))
   
   (when (eq? event-type 'button)
     (set-gtk-object-flags! gtk (bitwise-ior (get-gtk-object-flags gtk)
@@ -92,9 +116,12 @@
         (atomically
          (let ([image-gtk (gtk_image_new_from_pixbuf pixbuf)])
            (release-pixbuf pixbuf)
-           (gtk_container_remove gtk (gtk_bin_get_child gtk))
-           (gtk_container_add gtk image-gtk)
-           (gtk_widget_show image-gtk))))]))
+           (if both-labels?
+               (gtk_button_set_image gtk image-gtk)
+               (begin
+                 (gtk_container_remove gtk (gtk_bin_get_child gtk))
+                 (gtk_container_add gtk image-gtk)
+                 (gtk_widget_show image-gtk))))))]))
 
   (define/public (set-border on?)
     (gtk_window_set_default (get-window-gtk) (if on? gtk #f))))

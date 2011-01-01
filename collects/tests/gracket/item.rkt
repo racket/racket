@@ -1235,6 +1235,55 @@
   (instructions p "button-steps.txt")
   (send f show #t))
 
+(define (image-button-frame)
+  (define f (make-frame frame% "Image Button Test"))
+  (define pt (make-object vertical-panel% f))
+  (define pm (make-object horizontal-panel% f))
+  (define pb (make-object vertical-panel% f))
+  (define pc (make-object horizontal-panel% f))
+  (define bt (new button% [parent pt]
+                  [label (list (read-bitmap
+                                (collection-file-path "foot.png" "icons"))
+                               "Top"
+                               'top)]))
+  (define bl (new button% [parent pm]
+                  [label (list (read-bitmap
+                                (collection-file-path "b-wait.png" "icons"))
+                               "Left"
+                               'left)]))
+  (define br (new button% [parent pm]
+                  [label (list (read-bitmap
+                                (collection-file-path "b-run.png" "icons"))
+                               "Right"
+                               'right)]))
+  (define bb (new button% [parent pb]
+                  [label (list (read-bitmap
+                                (collection-file-path "bug09.png" "icons"))
+                               "Bottom"
+                               'bottom)]))
+  (new button% [parent pc]
+       [label "Strings"]
+       [callback (lambda (b e)
+                   (for ([b (in-list (list bt bl br bb))])
+                     (send b set-label (list->string
+                                        (reverse
+                                         (string->list
+                                          (cadr (send b get-label))))))))])
+  (new button% [parent pc]
+       [label "Bitmaps"]
+       [callback (lambda (b e)
+                   (for ([b (in-list (list bt bl br bb))])
+                     (send b set-label (let ([bm (car (send b get-label))])
+                                         (let* ([bm2 (make-bitmap (send bm get-width)
+                                                                  (send bm get-height))]
+                                                [dc (make-object bitmap-dc% bm2)])
+                                           (send dc scale 1 -1)
+                                           (send dc translate 0 (send bm get-height))
+                                           (send dc draw-bitmap bm 0 0)
+                                           (send dc set-bitmap #f)
+                                           bm2)))))])
+  (send f show #t))
+
 (define (checkbox-frame)
   (define f (make-frame frame% "Checkbox Test"))
   (define p f)
@@ -2223,6 +2272,7 @@
 (make-object button% "Make Button Frame" bp (lambda (b e) (button-frame frame% null)))
 (make-object button% "Make Default Button Frame" bp (lambda (b e) (button-frame frame% '(border))))
 (make-object button% "Make Button Dialog" bp (lambda (b e) (button-frame dialog% null)))
+(make-object button% "Make Image Buttons" bp (lambda (b e) (image-button-frame)))
 (define crp (make-object horizontal-pane% ap))
 (send crp stretchable-height #f)
 (make-object button% "Make Checkbox Frame" crp (lambda (b e) (checkbox-frame)))
