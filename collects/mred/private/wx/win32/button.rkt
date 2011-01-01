@@ -27,7 +27,10 @@
 
     (define callback cb)
 
-    (define bitmap? (label . is-a? . bitmap%))
+    (define bitmap? (or (label . is-a? . bitmap%)
+			(pair? label)))
+    (define orientation (and (pair? label)
+			     (caddr label)))
 
     (define/public (get-class) "PLTBUTTON")
     (define/public (get-flags) BS_PUSHBUTTON)
@@ -37,12 +40,18 @@
                [hwnd 
                 (CreateWindowExW/control 0
                                          (get-class)
-                                         (if (string? label)
-                                             label
-                                             "<image>")
+                                         (cond
+					  [(string? label) label]
+					  [(pair? label) (cadr label)]
+					  [else "<image>"])
                                          (bitwise-ior (get-flags) WS_CHILD WS_CLIPSIBLINGS
                                                       (if bitmap?
-                                                          BS_BITMAP
+							  (case orientation
+							    [(#f) BS_BITMAP]
+							    [(left) BS_RIGHT]
+							    [(right) BS_LEFT]
+							    [(top) BS_BOTTOM]
+							    [(bottom) BS_TOP])
                                                           0))
                                          0 0 0 0
                                          (send parent get-client-hwnd)
@@ -52,7 +61,8 @@
                [style style])
 
     (when bitmap?
-      (let ([hbitmap (bitmap->hbitmap label #:bg (get-button-background))])
+      (let ([hbitmap (bitmap->hbitmap (if (pair? label) (car label) label)
+				      #:bg (get-button-background))])
         (remember-label-bitmap hbitmap)
         (SendMessageW (get-hwnd) BM_SETIMAGE IMAGE_BITMAP 
                       (cast hbitmap _HBITMAP _LPARAM))))
@@ -64,6 +74,12 @@
 
     (define/public (auto-size-button font label)
       (cond
+       [orientation
+	(let ([h? (memq orientation '(left right))])
+	  (auto-size font (list (car label) (cadr label))
+		     0 0 4 4
+		     #:combine-width (if h? + max)
+		     #:combine-height (if h? max +)))]
        [bitmap?
         (auto-size font label 0 0 4 4)]
        [else
