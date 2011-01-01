@@ -4,6 +4,7 @@
          racket/draw
          racket/draw/private/local
          racket/class
+	 "dc.rkt"
          "types.rkt"
          "utils.rkt"
          "const.rkt")
@@ -18,6 +19,18 @@
                          #:bg [bg (GetSysColor COLOR_BTNFACE)])
   (let* ([w (send bm get-width)]
          [h (send bm get-height)]
+	 [bm (if (bm . is-a? . win32-bitmap%)
+		 ;; Windows wants to use the result bitmap
+		 ;; as an ARGB bitmap, but Cairo seems to transfer
+		 ;; RGB win32 bitmaps to RGB win32 bitmaps in a
+		 ;; way that sometimes mangles the alpha; avoid the
+		 ;; problem by first copying to a Cairo memory bitmap.
+		 (let* ([new-b (make-object bitmap% w h #f #f)]
+			[dc (make-object bitmap-dc% new-b)])
+		   (send dc draw-bitmap bm 0 0)
+		   (send dc set-bitmap #f)
+		   new-b)
+		 bm)]
          [mask-bm (or mask-bm
                       (send bm get-loaded-mask))]
          [to-frac (lambda (v) (/ v 255.0))]
