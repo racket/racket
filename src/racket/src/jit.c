@@ -14547,7 +14547,7 @@ Scheme_Object *scheme_native_stack_trace(void)
   void *p, *q;
   uintptr_t stack_end, stack_start, halfway;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
-  int set_next_push = 0, prev_had_name = 0;
+  int prev_had_name = 0;
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
@@ -14557,6 +14557,7 @@ Scheme_Object *scheme_native_stack_trace(void)
   Get_Stack_Proc gs;
 #endif
   int use_unw = 0;
+  int delay_cache = 0;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -14625,6 +14626,8 @@ Scheme_Object *scheme_native_stack_trace(void)
     if (name) manual_unw = 1;
 #endif
 
+    delay_cache = 0;
+
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
@@ -14657,6 +14660,7 @@ Scheme_Object *scheme_native_stack_trace(void)
       }
 #endif
       name = find_symbol((uintptr_t)q);
+      delay_cache = 1; /* because changing the return address loses a name */
     } else if (SCHEME_EOFP(name)) {
       /* Stub (to mark start of running a module body, for example) */
       /* JIT_LOCAL2 has the name to use */
@@ -14687,10 +14691,6 @@ Scheme_Object *scheme_native_stack_trace(void)
       else
 	first = name;
       last = name;
-      if (set_next_push) {
-	stack_cache_stack[stack_cache_stack_pos].cache = name;
-	set_next_push = 0;
-      }
     }
 
     /* Cache the result halfway up the stack, if possible. Only cache
@@ -14700,7 +14700,8 @@ Scheme_Object *scheme_native_stack_trace(void)
        code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
     if (STK_COMP((uintptr_t)halfway, (uintptr_t)p)
-	&& prev_had_name) {
+	&& prev_had_name
+        && !delay_cache) {
       int pos;
 
       if (stack_cache_stack_pos >= (STACK_CACHE_SIZE - 1)) {
@@ -14714,8 +14715,7 @@ Scheme_Object *scheme_native_stack_trace(void)
       pos = ++stack_cache_stack_pos;
       stack_cache_stack[pos].orig_return_address = ((void **)p)[RETURN_ADDRESS_OFFSET];
       stack_cache_stack[pos].stack_frame = (void *)(((void **)p) + RETURN_ADDRESS_OFFSET);
-      stack_cache_stack[pos].cache = tail;
-      set_next_push = 1;
+      stack_cache_stack[pos].cache = last;
       ((void **)p)[RETURN_ADDRESS_OFFSET] = stack_cache_pop_code;
 
       halfway = stack_end;
