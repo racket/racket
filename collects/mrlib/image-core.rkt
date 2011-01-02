@@ -1042,31 +1042,44 @@ the mask bitmap and the original bitmap are all together in a single bytes!
     [else 'smoothed]))
 
 (define (mode-color->pen mode color)
-  (case mode
-    [(outline) 
+  (cond
+    [(eq? mode 'outline)
      (cond
        [(pen? color)
         (pen->pen-obj/cache color)]
        [else
         (send the-pen-list find-or-create-pen (get-color-arg color) 0 'solid 'round 'miter)])]
-    [(solid)
+    [else
      (send the-pen-list find-or-create-pen "black" 1 'transparent)]))
 
 (define (mode-color->brush mode color)
-  (case mode
-    [(outline)
+  (cond
+    [(eq? mode 'outline)
      (send the-brush-list find-or-create-brush "black" 'transparent)]
-    [(solid)
-     (send the-brush-list find-or-create-brush (get-color-arg color) 'solid)]))
+    [else
+     ;; this should only be 'solid if we have an old image from a save file somewhere
+     (define extra-alpha (if (eq? mode 'solid)
+                             255
+                             mode))
+     (send the-brush-list find-or-create-brush (get-color-arg color extra-alpha) 'solid)]))
 
-(define (get-color-arg color)
-  (if (string? color) 
-      color
-      (make-object color% 
-        (color-red color)
-        (color-green color)
-        (color-blue color)
-        (/ (color-alpha color) 255))))
+(define (get-color-arg color [extra-alpha 255])
+  (cond
+    [(string? color) 
+     (define color-obj (or (send the-color-database find-color color)
+                           (send the-color-database find-color "black")))
+     (make-object color%
+       (send color-obj red)
+       (send color-obj green)
+       (send color-obj blue)
+       (/ extra-alpha 255))]
+    [else
+     (make-object color% 
+       (color-red color)
+       (color-green color)
+       (color-blue color)
+       (* (/ (color-alpha color) 255)
+          (/ extra-alpha 255)))]))
 
 
 (define (pen->pen-obj/cache pen)

@@ -53,7 +53,8 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
   @mode/color-text
   
    @image-examples[(circle 30 "outline" "red")
-                   (circle 20 "solid" "blue")]
+                   (circle 20 "solid" "blue")
+                   (circle 20 100 "blue")]
 
 }
 
@@ -71,8 +72,9 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
 
   @mode/color-text
   
-  @image-examples[(ellipse 40 20 "outline" "black")
-                  (ellipse 20 40 "solid" "blue")] 
+  @image-examples[(ellipse 60 30 "outline" "black")
+                  (ellipse 30 60 "solid" "blue")
+                  (ellipse 30 60 100 "blue")] 
 }
 
 @defproc[(line [x1 real?] [y1 real?] [pen-or-color (or/c pen? image-color?)]) image?]{
@@ -702,7 +704,13 @@ the @scheme[point-count] argument determines how many points the star has.
                             (ellipse 30 40 "solid" "red")
                             (ellipse 40 30 "solid" "black")
                             (ellipse 50 20 "solid" "red")
-                            (ellipse 60 10 "solid" "black"))]
+                            (ellipse 60 10 "solid" "black"))
+                  (underlay (ellipse 10 60 40 "red")
+                            (ellipse 20 50 40 "red")
+                            (ellipse 30 40 40 "red")
+                            (ellipse 40 30 40 "red")
+                            (ellipse 50 20 40 "red")
+                            (ellipse 60 10 40 "red"))]
   
   }
 
@@ -719,7 +727,12 @@ the @scheme[point-count] argument determines how many points the star has.
                                   (rectangle 50 50 "solid" "seagreen")
                                   (rectangle 40 40 "solid" "silver")
                                   (rectangle 30 30 "solid" "seagreen")
-                                  (rectangle 20 20 "solid" "silver"))]
+                                  (rectangle 20 20 "solid" "silver"))
+                  (underlay/align "left" "middle"
+                                  (rectangle 50 50 50 "seagreen")
+                                  (rectangle 40 40 50 "seagreen")
+                                  (rectangle 30 30 50 "seagreen")
+                                  (rectangle 20 20 50 "seagreen"))]
                                   
   
   }
@@ -1195,10 +1208,17 @@ This section lists predicates for the basic structures provided by the image lib
 
 @defproc[(mode? [x any/c]) boolean?]{
  Determines if @racket[x] is a mode suitable for
- constructing images. It can be one of
+ constructing images. 
+ 
+ It can be one of
  @racket['solid], @racket["solid"], @racket['outline],
  or @racket["outline"], indicating if the shape is
  filled in or not.
+ 
+ It can also be an integer between @racket[0] and @racket[255] (inclusive)
+ indicating the transparency of the image. The integer @racket[255] is
+ fully opaque, and is the same as @racket["solid"] (or @racket['solid]).
+ The integer @racket[0] means fully transparent.
 }
 
 @defproc[(image-color? [x any/c]) boolean?]{

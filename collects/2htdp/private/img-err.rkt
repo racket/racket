@@ -130,9 +130,16 @@
                 'mode
                 i
                 arg)
-     (if (string? arg)
-         (string->symbol arg)
-         arg)]
+     (cond
+       [(or (equal? arg "solid")
+            (equal? arg 'solid))
+        255]
+       [(equal? arg "outline")
+        'outline]
+       [(and (integer? arg)
+             (not (exact? arg)))
+        (inexact->exact arg)]
+       [else arg])]
     [(width height radius radius1 radius2 side-length side-length1 side-length2
             side-a side-b side-c)
      (check-arg fn-name
@@ -278,7 +285,9 @@
 (define (x-place? arg)
   (member arg '("left" left "right" right "middle" middle "center" center "pinhole" pinhole)))
 (define (mode? arg)
-  (member arg '(solid outline "solid" "outline")))
+  (or (member arg '(solid outline "solid" "outline"))
+      (and (integer? arg)
+           (<= 0 arg 255))))
 (define (angle? arg)
   (and (real? arg)
        (< -360 arg 360)))
@@ -307,7 +316,8 @@
 ;; checks the dependent part of the 'color' specification
 (define (check-mode/color-combination fn-name i mode color)
   (cond
-    [(eq? mode 'solid)
+    [(or (eq? mode 'solid)
+         (number? mode))
      (check-arg fn-name (image-color? color) 'image-color i color)]
     [(eq? mode 'outline)
      (void)]))
