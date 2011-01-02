@@ -47,8 +47,8 @@ If the namespace does not, they are colored the unbound color.
          "traversals.rkt")
 (provide tool@)
 
-(define o (current-output-port))
-(define (oprintf . args) (apply fprintf o args))
+(define orig-output-port (current-output-port))
+(define (oprintf . args) (apply fprintf orig-output-port args))
 
 (define status-init (string-constant cs-status-init))
 (define status-coloring-program (string-constant cs-status-coloring-program))
@@ -86,8 +86,6 @@ If the namespace does not, they are colored the unbound color.
       (drracket:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
-    (define (printf . args) (apply fprintf o args))
-        
     ;;;  ;;; ;;; ;;;;; 
     ;   ;  ;   ;    ;   
     ;   ;  ;   ;    ;   

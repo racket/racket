@@ -1,10 +1,4 @@
 #lang racket/unit
-#|
-
-WARNING: printf is rebound in the body of the unit to always
-         print to the original output port.
-
-|#
 
 (require string-constants
          racket/unit
@@ -37,10 +31,7 @@ WARNING: printf is rebound in the body of the unit to always
 (init-depend framework:editor^)
 
 (define original-output-port (current-output-port))
-(define (printf . args) 
-  (apply fprintf original-output-port args)
-  (void))
-
+(define (oprintf . args) (apply fprintf original-output-port args))
 
 (define-struct range (start end caret-space? style color) #:inspector #f)
 (define-struct rectangle (left top right bottom style color) #:inspector #f)

@@ -15,11 +15,6 @@ TODO
 ; =Handler= means in the handler thread of some eventspace; it must
 ;  be combined with either =Kernel= or =User=
 
-;; WARNING: printf is rebound in this module to always use the 
-;;          original stdin/stdout of drscheme, instead of the 
-;;          user's io ports, to aid any debugging printouts.
-;;          (esp. useful when debugging the users's io)
-
 (require racket/class
          racket/path
          racket/pretty
@@ -39,6 +34,10 @@ TODO
          planet/terse-info)
 
 (provide rep@ with-stack-checkpoint)
+
+(define orig-output-port (current-output-port))
+(define (oprintf . args) (apply fprintf orig-output-port args))
+ 
 
 ;; run a thunk, and if an exception is raised, make it possible to cut the
 ;; stack so that the surrounding context is hidden
@@ -333,8 +332,6 @@ TODO
   ;; Max length of output queue (user's thread blocks if the
   ;; queue is full):
   (define output-limit-size 2000)
-  
-  (define (printf . args) (apply fprintf drracket:init:original-output-port args))
   
   (define setup-scheme-interaction-mode-keymap
     (λ (keymap)
