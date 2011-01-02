@@ -14545,7 +14545,7 @@ uintptr_t scheme_approx_sp()
 Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q;
-  uintptr_t stack_end, stack_start, halfway;
+  uintptr_t stack_end, real_stack_end, stack_start, halfway;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
   int prev_had_name = 0;
 #ifdef MZ_USE_DWARF_LIBUNWIND
@@ -14557,7 +14557,6 @@ Scheme_Object *scheme_native_stack_trace(void)
   Get_Stack_Proc gs;
 #endif
   int use_unw = 0;
-  int delay_cache = 0;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -14568,12 +14567,13 @@ Scheme_Object *scheme_native_stack_trace(void)
 
   stack_start = scheme_approx_sp();
 
+  real_stack_end = (uintptr_t)scheme_current_thread->stack_start;
   if (stack_cache_stack_pos) {
     stack_end = (uintptr_t)stack_cache_stack[stack_cache_stack_pos].stack_frame;
     stack_end -= (RETURN_ADDRESS_OFFSET << JIT_LOG_WORD_SIZE);
     tail = stack_cache_stack[stack_cache_stack_pos].cache;
   } else {
-    stack_end = (uintptr_t)scheme_current_thread->stack_start;
+    stack_end = real_stack_end;
     tail = scheme_null;
   }
 
@@ -14626,8 +14626,6 @@ Scheme_Object *scheme_native_stack_trace(void)
     if (name) manual_unw = 1;
 #endif
 
-    delay_cache = 0;
-
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
@@ -14645,7 +14643,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 
       /* q is now the frame pointer for the former q,
 	 so we can find the actual q */
-      if (STK_COMP((uintptr_t)q, stack_end)
+      if (STK_COMP((uintptr_t)q, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)q)) {
 	if (SCHEME_VOIDP(name)) {
 	  /* JIT_LOCAL2 has the next return address */
@@ -14660,7 +14658,6 @@ Scheme_Object *scheme_native_stack_trace(void)
       }
 #endif
       name = find_symbol((uintptr_t)q);
-      delay_cache = 1; /* because changing the return address loses a name */
     } else if (SCHEME_EOFP(name)) {
       /* Stub (to mark start of running a module body, for example) */
       /* JIT_LOCAL2 has the name to use */
@@ -14676,7 +14673,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 # endif
 	np = *(void **)p;
 
-      if (STK_COMP((uintptr_t)np, stack_end)
+      if (STK_COMP((uintptr_t)np, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)np)) {
         name = *(Scheme_Object **)((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
       } else
@@ -14700,8 +14697,7 @@ Scheme_Object *scheme_native_stack_trace(void)
        code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
     if (STK_COMP((uintptr_t)halfway, (uintptr_t)p)
-	&& prev_had_name
-        && !delay_cache) {
+	&& prev_had_name) {
       int pos;
 
       if (stack_cache_stack_pos >= (STACK_CACHE_SIZE - 1)) {
