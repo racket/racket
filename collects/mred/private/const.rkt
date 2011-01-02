@@ -38,7 +38,7 @@
   (define arrow-cursor (make-object wx:cursor% 'arrow))
 
   (define default-x-prefix (if (eq? 'unix (system-type))
-			       (let ([v (get-preference '|MrEd:defaultMenuPrefix| (lambda () 'ctl))])
+			       (let ([v (get-preference '|GRacket:defaultMenuPrefix| (lambda () 'ctl))])
 				 (if (memq v '(meta ctl alt ctl-m))
 				     v
 				     'ctl))
