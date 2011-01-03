@@ -1477,6 +1477,7 @@
                                [adc (make-object -bitmap-dc% alpha-mask)])
                           (send adc set-alpha alpha)
                           (send adc set-brush "black" 'solid)
+                          (send adc set-pen "black" 1 'transparent)
                           (send adc draw-rectangle 0 0 src-w src-h)
                           (send adc set-bitmap #f)
                           (let ([tmp-bm (bitmap-to-argb-bitmap src src-x src-y src-w src-h 0 0 
