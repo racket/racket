@@ -67,7 +67,6 @@
 
 (provide run-servlet)
 (define (run-servlet dispatcher
-                     #:namespace [namespace '()]
                      #:log-file [log-file #f])
   ;; a channel for incoming requests
   (define ach (make-async-channel))
@@ -100,7 +99,6 @@
            (init-path (url->string (request-uri req)))
            (dispatcher req))
          #:regexp #rx""
-         #:namespace namespace
          #:manager (make-threshold-LRU-manager
                     (send-error "Your session has expired" init-path)
                     (* 12 1024 1024))))
