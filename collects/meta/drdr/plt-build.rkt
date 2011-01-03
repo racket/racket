@@ -164,6 +164,8 @@
     (path->string (build-path trunk-dir "bin" "gracket")))
   (define collects-pth
     (build-path trunk-dir "collects"))
+  ; XXX Use a single GUI thread so that other non-GUI apps can run in parallel
+  (define gui-lock (make-semaphore 1))
   (define test-workers (make-job-queue (number-of-cpus)))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
@@ -199,20 +201,24 @@
                             [#f
                              #f]
                             [(list-rest (or 'mzscheme 'racket) rst)
-                             (lambda () (list* racket-path rst))]
+                             (lambda (k) (k (list* racket-path rst)))]
                             [(list-rest 'mzc rst)
-                             (lambda () (list* mzc-path rst))]
+                             (lambda (k) (k (list* mzc-path rst)))]
                             [(list-rest 'raco rst)
-                             (lambda () (list* raco-path rst))]
+                             (lambda (k) (k (list* raco-path rst)))]
                             [(list-rest (or 'mred 'mred-text
                                             'gracket 'gracket-text)
                                         rst)
                              (if (on-unix?)
-                                 (lambda () 
-                                   (list* gracket-path 
-                                          "-display" 
-                                          (format ":~a" (cpu->child (current-worker)))
-                                          rst))
+                                 (lambda (k) 
+                                   (call-with-semaphore 
+                                    gui-lock
+                                    (λ ()
+                                      (k
+                                       (list* gracket-path 
+                                              "-display" 
+                                              (format ":~a" (cpu->child (current-worker)))
+                                              rst)))))
                                  #f)]
                             [_
                              #f]))
@@ -223,15 +229,16 @@
                                (dynamic-wind
                                 void
                                 (λ ()
-                                  (define l (pth-cmd))
-                                  (with-env (["DISPLAY" (format ":~a" (cpu->child (current-worker)))])
-                                    (with-temporary-home-directory
-                                        (with-temporary-directory
-                                            (run/collect/wait/log log-pth 
-                                                                  #:timeout pth-timeout
-                                                                  #:env (current-env)
-                                                                  (first l)
-                                                                  (rest l))))))
+                                  (pth-cmd
+                                   (λ (l)
+                                     (with-env (["DISPLAY" (format ":~a" (cpu->child (current-worker)))])
+                                       (with-temporary-home-directory
+                                           (with-temporary-directory
+                                               (run/collect/wait/log log-pth 
+                                                                     #:timeout pth-timeout
+                                                                     #:env (current-env)
+                                                                     (first l)
+                                                                     (rest l))))))))
                                 (λ ()
                                   (semaphore-post dir-sema)))))
                             (semaphore-post dir-sema)))))))
@@ -279,6 +286,8 @@
 (define XSERVER-OFFSET 20)
 (define ROOTX XSERVER-OFFSET)
 (define (cpu->child cpu-i)
+  ROOTX
+  #;
   (+ XSERVER-OFFSET cpu-i 1))
 
 (define (remove-X-locks tmp-dir i)
@@ -328,25 +337,17 @@
            (notify! "Starting X server #~a" i)
            (remove-X-locks tmp-dir i)
            (with-running-program
-               (Xvfb-path) (list (format ":~a" i) "-display" (format ":~a" ROOTX))
+               "/usr/bin/Xorg" (list (format ":~a" i))
              (lambda ()
                (sleep 1)
                (with-running-program
                    (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")
                  inner))))
          
-         (notify! "Starting root X server #~a" ROOTX)
-         (remove-X-locks tmp-dir ROOTX)
-         (with-running-program
-             "/usr/bin/Xorg" (list (format ":~a" ROOTX))
-           (lambda ()
-             (sleep 10)
-             (recur-many (number-of-cpus)
-                         (lambda (cpu-i inner)
-                           (define child (cpu->child cpu-i))
-                           (start-x-server child inner))
-                         (lambda ()
-                           (test-revision rev)))))))
+         (start-x-server 
+          ROOTX 
+          (lambda ()
+            (test-revision rev)))))
      ; Remove the test directory
      (safely-delete-directory test-dir))))
 
