@@ -1179,16 +1179,19 @@ This produces an ACK message
             (cond
               [(string? item) (insert-in-definitions/newlines drscheme-frame item)]
               [(eq? item 'left)
-               (send definitions-text 
-                     set-position
-                     (- (send definitions-text get-start-position) 1)
-                     (- (send definitions-text get-start-position) 1))]
+               (queue-callback/res
+                (λ ()
+                  (send definitions-text 
+                        set-position
+                        (- (send definitions-text get-start-position) 1)
+                        (- (send definitions-text get-start-position) 1))))]
               [(pair? item) (apply test:menu-select item)]))
           program)])
       
       (do-execute drscheme-frame #f)
+      (queue-callback/res void) ;; make sure that the execute callback has really completed (is this necc w/ test:run-one below?)
       (when breaking-test?
-        (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
+        (test:run-one (λ () (send (send drscheme-frame get-break-button) command))))
       (wait-for-execute)
       
       (let* ([execute-text-end (max 0 (- (get-int-pos) 1))] ;; subtract one to skip last newline
@@ -1210,7 +1213,7 @@ This produces an ACK message
                 (fprintf (current-error-port)
                          "FAILED execute test for ~s\n  expected interactions to have the focus\n"
                          program))]
-             [(send definitions-canvas has-focus?)
+             [(queue-callback/res (λ () (send definitions-canvas has-focus?)))
               (let ([start (car source-location)]
                     [finish (cdr source-location)])
                 (let* ([error-ranges (queue-callback/res (λ () (send interactions-text get-error-ranges)))]
@@ -1251,12 +1254,14 @@ This produces an ACK message
         (test:menu-select "File" "Save Definitions")
         
         ; make sure that a prompt is available at end of the REPL
-        (unless (and (char=? #\>
-                             (send interactions-text get-character
-                                   (- (send interactions-text last-position) 2)))
-                     (char=? #\space
-                             (send interactions-text get-character
-                                   (- (send interactions-text last-position) 1))))
+        (unless (queue-callback/res
+                 (λ () 
+                   (and (char=? #\>
+                                (send interactions-text get-character
+                                      (- (send interactions-text last-position) 2)))
+                        (char=? #\space
+                                (send interactions-text get-character
+                                      (- (send interactions-text last-position) 1))))))
           (test:keystroke #\return))
           
         (let ([load-test
@@ -1273,12 +1278,12 @@ This produces an ACK message
                  (insert-in-interactions drscheme-frame (format "(load ~s)" short-filename))
                  
                  ;; record current text position, then stuff a CR into the REPL
-                 (let ([load-text-start (+ 1 (send interactions-text last-position))])
+                 (let ([load-text-start (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
                    
                    (test:keystroke #\return)
                    
                    (when breaking-test?
-                     (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
+                     (test:run-one (λ () (send (send drscheme-frame get-break-button) command))))
                    (wait-for-execute)
                    
                    (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
@@ -1424,12 +1429,12 @@ This produces an ACK message
     (wait-for-execute)
     
     (insert-in-interactions drscheme-frame expression)
-    (let ([start1 (+ 1 (send interactions-text last-position))])
+    (let ([start1 (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
       (test:keystroke #\return)
       (wait-for-execute)
       (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
         (insert-in-interactions drscheme-frame expression)
-        (let ([start2 (+ 1 (send interactions-text last-position))])
+        (let ([start2 (+ 1 (queue-callback/res (λ () (send interactions-text last-position))))])
           (test:keystroke #\return)
           (wait-for-execute)
           (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
@@ -1444,7 +1449,7 @@ This produces an ACK message
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (wait-for-execute)
-    (let ([ints-just-after-welcome (+ 1 (send interactions-text last-position))])
+    (let ([ints-just-after-welcome (queue-callback/res (λ () (+ 1 (send interactions-text last-position))))])
       
       (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
       (test:menu-select "File" "Save Definitions")
