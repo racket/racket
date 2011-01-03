@@ -313,11 +313,22 @@ has been moved out).
       (inexact->exact (ceiling (/ y scroll-step))))
 
     (define/override (copy) (make-image shape bb normalized? pinhole))
+    
+    (define cached-bitmap #f)
+    
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
+      (unless cached-bitmap
+        (set! cached-bitmap (make-bitmap (+ (round (bb-bottom bb)) 1) 
+                                         (+ (round (bb-right bb)) 1)))
+        (define bdc (make-object bitmap-dc% cached-bitmap))
+        (send bdc erase)
+        (render-image this bdc 0 0)
+        (send bdc set-bitmap #f))
+      
       (let ([alpha (send dc get-alpha)])
         (when draw-caret?
           (send dc set-alpha (* alpha .5)))
-        (render-image this dc x y)
+        (send dc draw-bitmap cached-bitmap x y)
         (send dc set-alpha alpha)))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
