@@ -33,13 +33,10 @@
 
 @item{In the @filepath{handin-client} collection, edit
   @filepath{info.rkt} and uncomment the lines that define
-  @racket[server:port], @racket[tools], @racket[tool-names], and
-  @racket[tool-icons].}
+  @racket[drracket-tools], @racket[drracket-tool-names],
+  @racket[drracket-tool-icons], and @racket[server:port].}
 
-@item{Run @commandline{raco setup -l handin-client}
-
-  NOTE: The command line arguments are optional, it restricts the
-  setup work to the specified collection.}
+@item{Run @commandline{raco setup handin-client}}
 
 @item{Start DrRacket, click @onscreen{Handin} to run the client,
   submit with username ``@tt{tester}'' and password ``@tt{pw}''.
