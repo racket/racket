@@ -62,15 +62,17 @@
                   (values instance-id
                           (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
            [else
-            (values ((manager-create-instance manager) (exit-handler))
+            (define eh (exit-handler))
+            (values ((manager-create-instance manager) (λ () (eh #f)))
                     start)]))
        
        (parameterize ([current-servlet-instance-id instance-id])
          (handler req))))))
 
 (define (make-stateless.servlet directory stuffer manager start)
+  (define eh (exit-handler))
   (define instance-id
-    ((manager-create-instance manager) (exit-handler)))
+    ((manager-create-instance manager) (λ () (eh #f))))
   (define ses 
     (make-stateless-servlet
      (current-custodian) (current-namespace)
