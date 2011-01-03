@@ -10,10 +10,11 @@
 
 (define-runtime-lib png-lib 
   [(unix) 
-   (case (string->symbol (path->string (system-library-subpath #f)))
-     [(i386-freebsd) (ffi-lib "libpng")]
-     [else
-      (ffi-lib "libpng12" '("0" ""))])]
+   ;; Most Linux distros supply "libpng12", while other Unix
+   ;; variants often have just "libpng":
+   (with-handlers ([exn:fail:filesystem?
+                    (lambda (exn) (ffi-lib "libpng"))])
+     (ffi-lib "libpng12" '("0" "")))]
   [(macosx) (ffi-lib "libpng14.14.dylib")]
   [(windows) 
    (ffi-lib "zlib1.dll")

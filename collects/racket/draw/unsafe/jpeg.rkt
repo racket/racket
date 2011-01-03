@@ -8,21 +8,12 @@
          "../private/utils.rkt"
          "../private/libs.rkt")
 
-(define-runtime-lib jpeg-lib 
+(define-runtime-lib jpeg-lib
   [(unix) (ffi-lib "libjpeg" '("62" ""))]
   [(macosx) 
    ;; for PPC, it's actually version 8!
    (ffi-lib "libjpeg.62.dylib")]
   [(windows) (ffi-lib "libjpeg-7.dll")])
-
-(define JPEG_LIB_VERSION
-  (case (system-type)
-    [(macosx) (if (string=? "ppc-macosx" 
-                            (path->string (system-library-subpath #f)))
-                  80
-                  62)]
-    [(unix) 62]
-    [(windows) 70]))
 
 (define-ffi-definer define-jpeg jpeg-lib
   #:provide provide)
@@ -70,19 +61,58 @@
                                   ;; and more
                                   ))
 
+(define-cstruct _jpeg_any_struct ([err _jpeg_error_mgr-pointer]))
+
+(define (error-exit m) 
+  (let ([bstr (make-bytes JMSG_LENGTH_MAX)])
+    ((jpeg_error_mgr-format_message
+      (jpeg_any_struct-err (cast m _pointer _jpeg_any_struct-pointer)))
+     m
+     bstr)
+    (error 'jpeg "~a" (bytes->string/latin-1 (subbytes bstr 0 (let loop ([i 0])
+                                                                (if (zero? (bytes-ref bstr i))
+                                                                    i
+                                                                    (loop (add1 i)))))))))
+
+(define-jpeg/private jpeg_std_error (_fun _jpeg_error_mgr-pointer -> _jpeg_error_mgr-pointer))
+
+(define-jpeg/private jpeg_CreateDecompress/test (_fun _pointer _int _int -> _void)
+  #:c-id jpeg_CreateDecompress)
+
+;; jpeglib offers no way to get the library version number dynamically,
+;; so we hack it by intercepting an error from jpeg_CreateDecompress:
+(define JPEG_LIB_VERSION
+  (let ([dummy-size 4096])
+    (let ([m (cast (malloc dummy-size 'raw) _pointer _jpeg_any_struct-pointer)]
+          [e (cast (malloc sizeof_jpeg_error_mgr 'raw) _pointer _jpeg_error_mgr-pointer)])
+      (set-jpeg_any_struct-err! m (jpeg_std_error e))
+      (set-jpeg_error_mgr-error_exit! e error-exit)
+      (let ([s (with-handlers ([exn:fail? (lambda (exn) (exn-message exn))])
+                 (jpeg_CreateDecompress/test m 0 dummy-size)
+                 "")])
+        (free m)
+        (free e)
+        (let ([m (regexp-match #rx"version: library is ([0-9]+)" s)])
+          (if m
+              (string->number (cadr m))
+              "unknown"))))))
+
+(unless (member JPEG_LIB_VERSION '(62 64 70 80))
+  (error 'jpeg "unsupported library version: ~e" JPEG_LIB_VERSION))
+
 (define _scaled_size
   (case JPEG_LIB_VERSION
-    [(62) _int]
+    [(62 64) _int]
     [else (make-cstruct-type (list _int _int))]))
 
 (define _prog_scan_size
   (case JPEG_LIB_VERSION
-    [(62 70) (make-cstruct-type (list _int _int _int _int))]
+    [(62 64 70) (make-cstruct-type (list _int _int _int _int))]
     [else (make-cstruct-type (list _int _int _int _int _int _pointer _int))]))
 
 (define _comp_info_size
   (case JPEG_LIB_VERSION
-    [(62 70) _pointer]
+    [(62 64 70) _pointer]
     [else (make-cstruct-type (list _pointer _jbool))]))
 
 (define-cstruct _jpeg_decompress_struct ([err _jpeg_error_mgr-pointer]
@@ -294,7 +324,7 @@
 					   [data_precision _int]))
 (define _compression_params_t
   (case JPEG_LIB_VERSION
-    [(62) _int] ; just data_precission
+    [(62 64) _int] ; just data_precission
     [else _jpeg7_compression_params]))
 
 (define-cstruct _quant_tbl_62_t ([quant_tbl_ptrs_1 _pointer]
@@ -308,12 +338,12 @@
 
 (define _quant_tbl_t
   (case JPEG_LIB_VERSION
-    [(62) _quant_tbl_62_t]
+    [(62 64) _quant_tbl_62_t]
     [else _quant_tbl_70_t]))
 
 (define _sampling_t
   (case JPEG_LIB_VERSION
-    [(62) _jbool] ; just CCIR601_sampling
+    [(62 64) _jbool] ; just CCIR601_sampling
     [else (make-cstruct-type (list _jbool _jbool))])) ; CCIR601_sampling and do_fancy_downsampling
 
 (define-cstruct _factors_62_t ([max_h_samp_factor _int]
@@ -321,7 +351,7 @@
 (define-cstruct (_factors_70_t _factors_62_t) ([scaled _scaled_size]))
 (define _factors_t
   (case JPEG_LIB_VERSION
-    [(62) _factors_62_t]
+    [(62 64) _factors_62_t]
     [else _factors_70_t]))
 
 
@@ -551,17 +581,6 @@
     (let ([in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
       (close-input-port in))))
 
-(define (error-exit m) 
-  (let ([bstr (make-bytes JMSG_LENGTH_MAX)])
-    ((jpeg_error_mgr-format_message
-      (jpeg_decompress_struct-err (ptr-cast m _jpeg_decompress_struct-pointer)))
-     m
-     bstr)
-    (error 'jpeg "~a" (bytes->string/latin-1 (subbytes bstr 0 (let loop ([i 0])
-                                                                (if (zero? (bytes-ref bstr i))
-                                                                    i
-                                                                    (loop (add1 i)))))))))
-
 (define (ptr-cast p t) (cast p _pointer t))
 
 (define destroy-decompress
@@ -633,8 +652,6 @@
                 len
                 1)])
     (values samps (scheme_make_sized_byte_string (ptr-ref samps _pointer) len 0))))
-
-(define-jpeg/private jpeg_std_error (_fun _jpeg_error_mgr-pointer -> _jpeg_error_mgr-pointer))
 
 (define-jpeg/private jpeg_CreateDecompress (_fun _j_decompress_ptr _int _int -> _void))
 (define-jpeg/private jpeg_resync_to_restart (_fun _j_decompress_ptr _int -> _jbool))

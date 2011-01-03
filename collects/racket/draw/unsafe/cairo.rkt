@@ -7,7 +7,7 @@
          "../private/utils.rkt")
 
 (define-runtime-lib cairo-lib
-  [(unix) (ffi-lib "libcairo" '("2"))]
+  [(unix) (ffi-lib "libcairo" '("2" ""))]
   [(macosx) 
    (ffi-lib "libpixman-1.0.dylib")
    (ffi-lib "libpng14.14.dylib")

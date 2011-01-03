@@ -9,12 +9,12 @@
           define-gobj))
 
 (define-runtime-lib glib-lib 
-  [(unix) (ffi-lib "libglib-2.0" '("0"))]
+  [(unix) (ffi-lib "libglib-2.0" '("0" ""))]
   [(macosx) (ffi-lib "libglib-2.0.0")]
   [(windows) (ffi-lib "libglib-2.0-0.dll")])
 
 (define-runtime-lib gmodule-lib 
-  [(unix) (ffi-lib "libgmodule-2.0" '("0"))]
+  [(unix) (ffi-lib "libgmodule-2.0" '("0" ""))]
   [(macosx) 
    (ffi-lib "libgmodule-2.0.0.dylib")]
   [(win32) 
@@ -24,7 +24,7 @@
    (ffi-lib "libgmodule-2.0-0.dll")])
 
 (define-runtime-lib gobj-lib 
-  [(unix) (ffi-lib "libgobject-2.0" '("0"))]
+  [(unix) (ffi-lib "libgobject-2.0" '("0" ""))]
   [(macosx) (ffi-lib "libgobject-2.0.0")]
   [(windows) (ffi-lib "libgobject-2.0-0.dll")])
 
