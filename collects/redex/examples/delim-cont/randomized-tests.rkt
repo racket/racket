@@ -11,7 +11,11 @@
 (define (main . args)
   (define from-grammar-tests #f)
   (define from-rules-tests #f)
+  
   (define seed (add1 (random (sub1 (expt 2 31)))))
+  
+  (define size #f)
+  (define attempt->size default-attempt-size)
   
   (command-line
    #:argv args
@@ -27,16 +31,23 @@
    ["--seed"
     n
     "Generate tests using the PRG seed n"
-    (set! seed (string->number n))])
+    (set! seed (string->number n))]
+   ["--size"
+    n
+    "Generate tests of size at most n"
+    (set! size (string->number n))
+    (set! attempt->size (const size))])
   
-  (printf "Test seed: ~s\n" seed)
+  (printf "Test seed: ~a (size: ~a)\n" seed (or size "variable"))
+  
   (parameterize ([current-pseudo-random-generator test-prg])
     (random-seed seed))
+  
   (parameterize ([redex-pseudo-random-generator test-prg])
     (when from-grammar-tests
-      (time (test #:attempts from-grammar-tests)))
+      (time (test #:attempts from-grammar-tests #:attempt-size attempt->size)))
     (when from-rules-tests
-      (time (test #:source :-> #:attempts from-rules-tests)))))
+      (time (test #:source :-> #:attempts from-rules-tests #:attempt-size attempt->size)))))
 
 (define-syntax-rule (test . kw-args)
   (redex-check grammar p (same-behavior? (term p)) 
