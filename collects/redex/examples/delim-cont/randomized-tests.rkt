@@ -185,10 +185,14 @@
                 (append xs loc-vars)
                 e))]
     [`(dw ,x ,e_1 ,e_2 ,e_3)
+     ; Local variables are substituted away in realistic pre-
+     ; and post-thunks. This invariant is important to 
+     ; `consistent-dws', which copies such thunks into different
+     ; scopes.
      `(dw ,x 
-          ,(close top-vars loc-vars e_1) 
+          ,(close top-vars '() e_1) 
           ,(close top-vars loc-vars e_2) 
-          ,(close top-vars loc-vars e_3))]
+          ,(close top-vars '() e_3))]
     ; substitution does not recur inside continuation values
     ; (not sure why it bothers to recur within dw expression)
     [`(cont ,v ,E)
