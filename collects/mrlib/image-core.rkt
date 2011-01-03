@@ -314,7 +314,11 @@ has been moved out).
 
     (define/override (copy) (make-image shape bb normalized? pinhole))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-      (render-image this dc x y))
+      (let ([alpha (send dc get-alpha)])
+        (when draw-caret?
+          (send dc set-alpha (* alpha .5)))
+        (render-image this dc x y)
+        (send dc set-alpha alpha)))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
