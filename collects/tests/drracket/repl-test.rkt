@@ -715,12 +715,12 @@ This produces an ACK message
     ;; comes and messes up the source location for the error.
     "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
     
-    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:6:15: expt: expected argument of type <number>; given #f"
-     "expt: expected argument of type <number>; given #f"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f"
-     #rx"{stop-multi.png} {stop-22x22.png} .*rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f")
+    (#rx"expt: expected argument of type <number>; given #f"
+     #rx"expt: expected argument of type <number>; given #f"
+     #rx"expt: expected argument of type <number>; given #f"
+     #rx"expt: expected argument of type <number>; given #f"
+     #rx"expt: expected argument of type <number>; given #f"
+     #rx"expt: expected argument of type <number>; given #f")
     'definitions
     #f
     void
