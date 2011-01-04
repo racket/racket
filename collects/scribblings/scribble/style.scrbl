@@ -77,6 +77,11 @@ procedure should have a single definition point. (Scribble issues a
 warning when a binding has multiple definition points.) Instead, use
 @racket[defproc*] or @racket[defform*].
 
+For function arguments, use @racket[v] as the meta-variable for ``any
+value.'' Use @racket[x] as a meta-variable only for numerical
+values. Other conventions include @racket[lst] for a list and
+@racket[proc] for a procedure.
+
 Pay attention to the difference between identifiers and meta-variables
 when using @racket[racket], especially outside of @racket[defproc] or
 @racket[defform]. Prefix a meta-variable with @litchar{_}; for
