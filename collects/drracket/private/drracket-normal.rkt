@@ -91,7 +91,8 @@
             (if (eq? special-state match)
                 (begin (set! special-state #f) normal-bitmap)
                 (begin (set! special-state match)
-                       (magic-image-bitmap match))))))))))
+                       (magic-image-bitmap match))))
+           (refresh-splash)))))))
 
 (when (eb-bday?) (install-eb))
 
