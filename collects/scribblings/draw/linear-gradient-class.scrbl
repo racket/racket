@@ -3,7 +3,7 @@
           scribble/eval)
 
 @(define class-eval (make-base-eval))
-@(interaction-eval #:eval class-eval (require racket/class racket/draw))
+@(interaction-eval #:eval class-eval (require racket/class racket/draw slideshow/pict))
 
 @defclass/title[linear-gradient% object% ()]{
 
@@ -34,17 +34,29 @@ points in between.
 
 @examples[
   #:eval class-eval
-  (new linear-gradient% 
-       [x0 0] [y0 100] [x1 300] [y1 100] 
-       [stops
-        (list (list 0   (make-object color% 0 0 255))
-              (list 0.5 (make-object color% 0 255 0))
-              (list 1   (make-object color% 255 0 0)))])
-  (make-object linear-gradient% 
-               0 100 300 100
-               (list (list 0   (make-object color% 0 0 255))
-                     (list 0.5 (make-object color% 0 255 0))
-                     (list 1   (make-object color% 255 0 0))))
+  (define no-pen (make-object pen% "BLACK" 1 'transparent))
+  (define brush-grad (new brush% [gradient 
+    (new linear-gradient% 
+         [x0 300] [y0 250] [x1 500] [y1 50]
+         [stops
+          (list (list 0   (make-object color% 255 0 0))
+                (list 0.5 (make-object color% 0 255 0))
+                (list 1   (make-object color% 0 0 255)))])]))
+
+  (define brush-grad2 (new brush% [gradient
+    (make-object linear-gradient% 
+                 50 150 250 150
+                 (list (list 0   (make-object color% 255 0 0))
+                       (list 0.5 (make-object color% 0 255 0))
+                       (list 1   (make-object color% 0 0 255))))]))
+  (dc (lambda (dc x y)
+    (send dc set-pen no-pen)
+    (send dc set-brush brush-grad2)
+    (send dc draw-ellipse 50 50 200 200)
+        
+    (send dc set-brush brush-grad)
+    (send dc draw-rectangle 300 50 200 200)) 550 300)]
+
 ]}
 
 
