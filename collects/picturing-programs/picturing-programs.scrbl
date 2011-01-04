@@ -16,7 +16,6 @@
 @title{Picturing Programs Teachpack}
 @author{Stephen Bloch}
 
-@; defmodule[installed-teachpack/picturing-programs]
 @defmodule[picturing-programs]
 
 @section{About This Teachpack}
