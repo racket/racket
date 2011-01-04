@@ -316,7 +316,7 @@ has been moved out).
     
     (define cached-bitmap #f)
     
-    (define/override (draw dc x y left top right bottom dx dy draw-caret?)
+    (define/override (draw dc x y left top right bottom dx dy draw-caret)
       (unless cached-bitmap
         (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
                                          (+ (inexact->exact (round (bb-bottom bb))) 1)))
@@ -326,7 +326,7 @@ has been moved out).
         (send bdc set-bitmap #f))
       
       (let ([alpha (send dc get-alpha)])
-        (when draw-caret?
+        (when (pair? draw-caret)
           (send dc set-alpha (* alpha .5)))
         (send dc draw-bitmap cached-bitmap x y)
         (send dc set-alpha alpha)))
