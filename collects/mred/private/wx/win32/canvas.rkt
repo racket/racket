@@ -162,17 +162,21 @@
                  (queue-paint)
                  (if (positive? paint-suspended)
                      (set! suspended-refresh? #t)
-                     (let* ([hbrush (if no-autoclear?
-                                        #f
-                                        (if transparent?
-                                            background-hbrush
-                                            (CreateSolidBrush bg-colorref)))])
-                       (when hbrush
-                         (let ([r (GetClientRect canvas-hwnd)])
-                           (FillRect hdc r hbrush))
-                         (unless transparent?
-                           (DeleteObject hbrush)))
+                     (let ([erase
+                            (lambda ()
+                              (let* ([hbrush (if no-autoclear?
+                                                 #f
+                                                 (if transparent?
+                                                     background-hbrush
+                                                     (CreateSolidBrush bg-colorref)))])
+                                (when hbrush
+                                  (let ([r (GetClientRect canvas-hwnd)])
+                                    (FillRect hdc r hbrush))
+                                  (unless transparent?
+                                    (DeleteObject hbrush)))))])
+                       (when transparent? (erase))
                        (unless (do-canvas-backing-flush hdc)
+                         (unless transparent? (erase))
                          (queue-paint)))))
              (EndPaint w ps)))
          0]

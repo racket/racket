@@ -143,6 +143,15 @@
            [game-over "Game Over"]
            [font (make-object font% 24 'decorative 'normal 'normal #f)]
            [turned null])
+
+          [define/public (call-with-dc proc)
+            ;; Since we're not in `on-paint', need to manually
+            ;; suspend and resume flushing, so that intermediate
+            ;; states are not flushed to the screen.
+            (let ([dc (get-dc)])
+              (send dc suspend-flush)
+              (proc dc)
+              (send dc resume-flush))]
           
           [define/private recalc/draw-turned
             (lambda (i j)
@@ -150,7 +159,9 @@
               (cond
                 [(> (length turned) 1)
                  (send this-message set-label (number->string (calc-score (length turned))))
-                 (for-each (lambda (p) (draw-cell (get-dc) #t (first p) (second p))) turned)]
+		 (call-with-dc
+		  (lambda (dc)
+		    (for-each (lambda (p) (draw-cell dc #t (first p) (second p))) turned)))]
                 [else
                  (send this-message set-label "")]))]
           
@@ -169,18 +180,24 @@
                                (<= 0 j) (< j board-height))
                           (unless (member (list i j) turned)
                             (when (> (length turned) 1)
-                              (for-each (lambda (p) (draw-cell (get-dc) #f (first p) (second p))) turned))
+			      (call-with-dc
+                               (lambda (dc)
+                                 (for-each (lambda (p) (draw-cell dc #f (first p) (second p))) turned))))
                             (recalc/draw-turned i j))]
                          [else
                           (when (> (length turned) 1)
-                            (for-each (lambda (p) (draw-cell (get-dc) #f (first p) (second p))) turned))
+                            (call-with-dc
+                             (lambda (dc)
+                               (for-each (lambda (p) (draw-cell dc #f (first p) (second p))) turned))))
                           (set! turned null)
                           (send this-message set-label "")])]
                       [(send evt button-up?)
                        (when (and (<= 0 i) (< i board-width)
                                   (<= 0 j) (< j board-height))
                          (when (> (length turned) 1)
-                           (for-each (lambda (p) (draw-cell (get-dc) #f (first p) (second p))) turned))
+                           (call-with-dc
+                            (lambda (dc)
+                              (for-each (lambda (p) (draw-cell dc #f (first p) (second p))) turned))))
                          (set! turned null)
                          (send this-message set-label "")
                          (let ([same-colors (find-same-colors i j)])
@@ -234,13 +251,15 @@
                                              empty-is)
                                    
                                    ;; draw changed lines
-                                   (for-each (lambda (i) (draw-line (get-dc) i)) is)
-                                   (unless (null? empty-is)
-                                     (let loop ([i (car (last-pair empty-is))])
-                                       (cond
-                                         [(= i board-width) (void)]
-                                         [else (draw-line (get-dc) i)
-                                               (loop (+ i 1))])))
+                                   (call-with-dc
+                                    (lambda (dc)
+                                      (for-each (lambda (i) (draw-line dc i)) is)
+                                      (unless (null? empty-is)
+                                        (let loop ([i (car (last-pair empty-is))])
+                                          (cond
+                                           [(= i board-width) (void)]
+                                           [else (draw-line dc i)
+                                                 (loop (+ i 1))])))))
                                    
                                    ;; update `small' balls
                                    (recalc/draw-turned i j)
@@ -266,7 +285,7 @@
                                                         (sub1 j)
                                                         (> (length (find-same-colors (sub1 i) (sub1 j))) 1)))]))))])))) 
                              (when game-over?
-                               (paint-game-over (get-dc))))))]
+                               (call-with-dc (lambda (dc) (paint-game-over dc)))))))]
                       
                       [else (void)])))]
           
