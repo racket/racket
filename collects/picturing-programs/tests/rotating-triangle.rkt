@@ -13,24 +13,32 @@
 (define (rotate-1 pic)
   (rotate 1 pic))
 
-"Triangle rotating by itself (with its top and left attached to the top and left of the window):"
+;Triangle rotating by itself (with its top and left attached to the top and left of the window):
+(define (test1 dummy)
 (big-bang TRI
           (on-tick rotate-1 .05)
           (check-with image?)
-          (on-draw show-it))
+          (on-draw show-it)))
 
-"Triangle rotating around its center:"
+;Triangle rotating around its center:
+(define (test2 dummy)
 (big-bang tricirc
           (on-tick rotate-1 .05)
           (check-with image?)
-          (on-draw show-it))
+          (on-draw show-it)))
 
 ;show-on-yellow : image -> image
 (define (show-on-yellow pic)
   (overlay pic (rectangle (* 2 R) (* 2 R) "solid" "yellow")))
 
-"Triangle rotating around its center, on a yellow background:"
+;Triangle rotating around its center, on a yellow background:
+(define (test3 dummy)
 (big-bang tricirc
           (on-tick rotate-1 .05)
           (check-with image?)
-          (on-draw show-on-yellow))
+          (on-draw show-on-yellow)))
+
+"Triangle rotating by itself (with its top and left attached to the top
+and left of the window): (test1 'blah)"
+"Triangle rotating around its center: (test2 'blah)"
+"Triangle rotating around its center, on a yellow background: (test3 'blah)"

@@ -81,4 +81,6 @@
 
 (build-image 100 100 diamond-color)
 
-(big-bang bloch (on-draw show-it) (on-tick myfuzz 1))
+(define (animation-test dummy)
+  (big-bang bloch (on-draw show-it) (on-tick myfuzz 1)))
+"Run (animation-test 'blah) to test myfuzz as tick handler."
