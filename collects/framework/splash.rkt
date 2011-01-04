@@ -1,8 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/class
-         scheme/file
-         scheme/gui/base)
+(require racket/class
+         racket/file
+         racket/gui/base
+         (for-syntax racket/base))
 
 (provide get-splash-bitmap
          set-splash-bitmap
@@ -28,10 +29,37 @@
 (define splash-cache-dc (make-object bitmap-dc%))
 (define splash-eventspace (make-eventspace))
 
+(define (on-splash-eventspace/proc t)
+  (parameterize ([current-eventspace splash-eventspace])
+    (queue-callback t)))
+(define-syntax-rule 
+  (on-splash-eventspace e ...)
+  (on-splash-eventspace/proc (λ () e ...)))
+
+(define (on-splash-eventspace/ret/proc t)
+  (define c (make-channel))
+  (parameterize ([current-eventspace splash-eventspace])
+    (queue-callback
+     (λ ()
+       (channel-put c (t)))))
+  (channel-get c))
+
+(define-syntax (on-splash-eventspace/ret stx)
+  (syntax-case stx ()
+    [(_ e ...)
+     (with-syntax ([line (syntax-line stx)])
+       #'(on-splash-eventspace/ret/proc (λ () e ...))
+       #;
+       #'(begin
+           (printf "starting ~a\n" line)
+           (begin0 
+             (on-splash-eventspace/ret/proc (λ () e ...))
+             (printf "finishing ~a\n" line))))]))
+
 (define (get-splash-bitmap) splash-bitmap)
 (define (set-splash-bitmap bm) 
   (set! splash-bitmap bm)
-  (send splash-canvas on-paint))
+  (on-splash-eventspace (send splash-canvas on-paint)))
 (define (get-splash-canvas) splash-canvas)
 (define (get-splash-eventspace) splash-eventspace)
 
@@ -40,8 +68,8 @@
   (set! splash-paint-callback sp)
   (refresh-splash))
 
-(define (get-splash-width) (send splash-canvas get-width))
-(define (get-splash-height) (send splash-canvas get-height))
+(define (get-splash-width) (on-splash-eventspace/ret (send splash-canvas get-width)))
+(define (get-splash-height) (on-splash-eventspace/ret (send splash-canvas get-height)))
 
 (define (set-splash-event-callback cb) (set! splash-event-callback cb))
 (define (get-splash-event-callback cb) splash-event-callback)
@@ -56,6 +84,26 @@
     (call-splash-paint-callback splash-cache-dc)
     (send splash-cache-dc set-bitmap #f)
     (send splash-canvas on-paint))
+       
+  (define (call-splash-paint-callback dc)
+    (cond
+      [(equal? 1 (procedure-arity splash-paint-callback))
+       (splash-paint-callback dc)]
+      [else 
+       (splash-paint-callback dc 
+                              (send (get-gauge) get-value) 
+                              (send (get-gauge) get-range)
+                              (send splash-canvas get-width)
+                              (send splash-canvas get-height))])
+    (for-each (λ (icon)
+                (send dc draw-bitmap
+                      (icon-bm icon)
+                      (icon-x icon)
+                      (icon-y icon)
+                      'solid
+                      (make-object color% "black")
+                      (send (icon-bm icon) get-loaded-mask)))
+              icons))
   
   (cond
     [(not (is-a? splash-cache-bitmap bitmap%)) (void)]
@@ -65,31 +113,14 @@
      (parameterize ([current-eventspace splash-eventspace])
        (queue-callback
         recompute-bitmap/refresh))]))
-        
-(define (call-splash-paint-callback dc)
-  (cond
-    [(equal? 1 (procedure-arity splash-paint-callback))
-     (splash-paint-callback dc)]
-    [else 
-     (splash-paint-callback dc 
-                            (send (get-gauge) get-value) 
-                            (send (get-gauge) get-range)
-                            (get-splash-width)
-                            (get-splash-height))])
-  (for-each (λ (icon)
-              (send dc draw-bitmap
-                    (icon-bm icon)
-                    (icon-x icon)
-                    (icon-y icon)
-                    'solid
-                    (make-object color% "black")
-                    (send (icon-bm icon) get-loaded-mask)))
-            icons))
 
 (define (set-splash-progress-bar?! b?) 
-  (send gauge-panel change-children
-        (λ (l) (if b? (list (get-gauge)) '()))))
+  (on-splash-eventspace/ret
+   (get-gauge) ;; force the gauge to be created
+   (send gauge-panel change-children
+         (λ (l) (if b? (list (get-gauge)) '())))))
 
+;; the function bound to the variable should only be called on the splash-eventspace main thread
 (define (splash-paint-callback dc)
   (if splash-bitmap
       (send dc draw-bitmap splash-bitmap 0 0)
@@ -111,55 +142,57 @@
   (unless allow-funny? (set! funny? #f))
   (set! splash-title _splash-title)
   (set! splash-max-width (max 1 (splash-get-preference (get-splash-width-preference-name) width-default)))
-  (send (get-gauge) set-range splash-max-width)
-  (send splash-tlw set-label splash-title)
   (let/ec k
     (define (no-splash)
       (set! splash-bitmap #f)
       (set! splash-canvas #f)
       (set! splash-eventspace #f)
       (k (void)))
-  
-    (cond
-      [(or (path? splash-draw-spec)
-           (string? splash-draw-spec))
-       (unless (file-exists? splash-draw-spec)
-         (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
-         (no-splash))
-       
-       (set! splash-bitmap (make-object bitmap% splash-draw-spec))
-       (unless (send splash-bitmap ok?)
-         (fprintf (current-error-port) "WARNING: bad bitmap ~s\n" splash-draw-spec)
-         (no-splash))
-       
-       (send splash-canvas min-width (send splash-bitmap get-width))
-       (send splash-canvas min-height (send splash-bitmap get-height))
-       (set! splash-cache-bitmap (make-object bitmap% 
-                                   (send splash-bitmap get-width)
-                                   (send splash-bitmap get-height)))]
-      [(and (vector? splash-draw-spec)
-            (procedure? (vector-ref splash-draw-spec 0))
-            (number? (vector-ref splash-draw-spec 1))
-            (number? (vector-ref splash-draw-spec 2)))
-       (set! splash-paint-callback (vector-ref splash-draw-spec 0))
-       (send splash-canvas min-width (vector-ref splash-draw-spec 1))
-       (send splash-canvas min-height (vector-ref splash-draw-spec 2))
-       (set! splash-cache-bitmap (make-object bitmap% 
-                                   (vector-ref splash-draw-spec 1)
-                                   (vector-ref splash-draw-spec 2)))]
-      [(not splash-draw-spec)
-       (no-splash)]
-      [else
-       (fprintf (current-error-port)
-                "WARNING: unknown splash spec: ~s" splash-draw-spec)
-       (no-splash)])
     
-    (refresh-splash)
-    (send splash-tlw center 'both)
-    (thread (λ () (send splash-tlw show #t)))
-    (sync (system-idle-evt)) ; try to wait for dialog to be shown
-    (flush-display) (yield) (sleep)
-    (flush-display) (yield) (sleep)))
+    (on-splash-eventspace/ret
+     (send (get-gauge) set-range splash-max-width)
+     (send splash-tlw set-label splash-title)
+     (cond
+       [(or (path? splash-draw-spec)
+            (string? splash-draw-spec))
+        (unless (file-exists? splash-draw-spec)
+          (fprintf (current-error-port) "WARNING: bitmap path ~s not found\n" splash-draw-spec)
+          (no-splash))
+        
+        (set! splash-bitmap (make-object bitmap% splash-draw-spec))
+        (unless (send splash-bitmap ok?)
+          (fprintf (current-error-port) "WARNING: bad bitmap ~s\n" splash-draw-spec)
+          (no-splash))
+        
+        (send splash-canvas min-width (send splash-bitmap get-width))
+        (send splash-canvas min-height (send splash-bitmap get-height))
+        (set! splash-cache-bitmap (make-object bitmap% 
+                                    (send splash-bitmap get-width)
+                                    (send splash-bitmap get-height)))]
+       [(and (vector? splash-draw-spec)
+             (procedure? (vector-ref splash-draw-spec 0))
+             (number? (vector-ref splash-draw-spec 1))
+             (number? (vector-ref splash-draw-spec 2)))
+        (set! splash-paint-callback (vector-ref splash-draw-spec 0))
+        (send splash-canvas min-width (vector-ref splash-draw-spec 1))
+        (send splash-canvas min-height (vector-ref splash-draw-spec 2))
+        (set! splash-cache-bitmap (make-object bitmap% 
+                                    (vector-ref splash-draw-spec 1)
+                                    (vector-ref splash-draw-spec 2)))]
+       [(not splash-draw-spec)
+        (no-splash)]
+       [else
+        (fprintf (current-error-port)
+                 "WARNING: unknown splash spec: ~s" splash-draw-spec)
+        (no-splash)])
+     
+     (refresh-splash)
+     
+     (send splash-tlw center 'both)
+     (send splash-tlw show-without-yield)
+     (sync (system-idle-evt)) ; try to wait for dialog to be shown
+     (flush-display) (yield) (sleep)
+     (flush-display) (yield) (sleep))))
 
 (define splash-title "no title")
 
@@ -172,9 +205,10 @@
 (define (close-splash)
   (unless (= splash-max-width splash-current-width)
     (splash-set-preference (get-splash-width-preference-name) (max 1 splash-current-width)))
-  (set! quit-on-close? #f)
+  (on-splash-eventspace/ret (set! quit-on-close? #f))
   (when splash-tlw
-    (send splash-tlw show #f)))
+    (on-splash-eventspace
+     (send splash-tlw show #f))))
 
 (define (shutdown-splash)
   (set! splash-load-handler (λ (old-load f expected) (old-load f expected))))
@@ -190,11 +224,13 @@
 (define (splash-load-handler old-load f expected)
   (set! splash-current-width (+ splash-current-width 1))
   (when (<= splash-current-width splash-max-width)
-    (send (get-gauge) set-value splash-current-width)
-    (when (or (not (member (get-gauge) (send gauge-panel get-children)))
-              ;; when the gauge is not visible, we'll redraw the canvas
-              (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
-      (refresh-splash)))
+    (let ([splash-save-width splash-current-width])
+      (on-splash-eventspace
+       (send (get-gauge) set-value splash-save-width)
+       (when (or (not (member (get-gauge) (send gauge-panel get-children)))
+                 ;; when the gauge is not visible, we'll redraw the canvas regardless
+                 (refresh-splash-on-gauge-change? splash-save-width splash-max-width))
+         (refresh-splash)))))
   (old-load f expected))
 
 (let-values ([(make-compilation-manager-load/use-compiled-handler
@@ -281,6 +317,7 @@
 (define (splash-set-preference name value)
   (put-preferences (list name) (list value)))
 
+;; only modified (or read) on the splash eventspace handler thread
 (define quit-on-close? #t)
 
 (define splash-tlw%
@@ -302,23 +339,28 @@
   (parameterize ([current-eventspace splash-eventspace])
     (new splash-tlw%
       (label splash-title))))
-(send splash-tlw set-alignment 'center 'center)
 
-(define panel (make-object vertical-pane% splash-tlw))
-(define splash-canvas (new splash-canvas% [parent panel] [style '(no-autoclear)]))
-(define gauge-panel (make-object horizontal-pane% panel))
+(define panel (on-splash-eventspace/ret (make-object vertical-pane% splash-tlw)))
+(define splash-canvas (on-splash-eventspace/ret (new splash-canvas% [parent panel] [style '(no-autoclear)])))
+(define gauge-panel (on-splash-eventspace/ret (make-object horizontal-pane% panel)))
+
+;; only called on the splash eventspace main thread
 (define get-gauge
   (let ([gauge #f])
     (λ ()
+      (unless (eq? (current-thread) (eventspace-handler-thread splash-eventspace))
+        (error 'get-gauge "called from the wrong thread"))
       (unless gauge
         (set! gauge
               (if funny?
                   (make-object funny-gauge% gauge-panel)
                   (make-object gauge% #f splash-max-width gauge-panel '(horizontal)))))
       gauge)))
-(send panel stretchable-width #f)
-(send panel stretchable-height #f)
-(send gauge-panel set-alignment 'center 'top)
-(send splash-canvas focus)
-(send splash-canvas stretchable-width #f)
-(send splash-canvas stretchable-height #f)
+(on-splash-eventspace/ret
+ (send splash-tlw set-alignment 'center 'center)
+ (send panel stretchable-width #f)
+ (send panel stretchable-height #f)
+ (send gauge-panel set-alignment 'center 'top)
+ (send splash-canvas focus)
+ (send splash-canvas stretchable-width #f)
+ (send splash-canvas stretchable-height #f))
