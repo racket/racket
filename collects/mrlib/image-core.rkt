@@ -318,8 +318,8 @@ has been moved out).
     
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
       (unless cached-bitmap
-        (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-bottom bb))) 1) 
-                                         (+ (inexact->exact (round (bb-right bb))) 1)))
+        (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
+                                         (+ (inexact->exact (round (bb-bottom bb))) 1)))
         (define bdc (make-object bitmap-dc% cached-bitmap))
         (send bdc erase)
         (render-image this bdc 0 0)
