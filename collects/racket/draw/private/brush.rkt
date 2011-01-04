@@ -61,7 +61,7 @@
     (unless (or (_gradient . is-a? . linear-gradient%)
                 (_gradient . is-a? . radial-gradient%))
       (raise-type-error (init-name 'brush%)
-                        "gradient<%> or #f"
+                        "linear-gradient%, radial-gradient%, or #f"
                         _gradient))
     (set! gradient _gradient))
 

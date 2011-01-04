@@ -25,8 +25,6 @@
          brush% brush-list% the-brush-list
          linear-gradient%
          radial-gradient%
-         make-linear-gradient
-         make-radial-gradient
          region%
          dc-path%
          dc<%>

@@ -113,6 +113,7 @@ key-event%
 keymap%
 label->plain-label
 labelled-menu-item<%>
+linear-gradient%
 list-box%
 list-control<%>
 make-bitmap
@@ -160,6 +161,7 @@ read-bitmap
 read-editor-global-footer
 read-editor-global-header
 read-editor-version
+radial-gradient%
 region%
 register-collecting-blit
 scroll-event%

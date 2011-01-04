@@ -923,9 +923,40 @@
                               (let ([p (send dc get-pen)])
                                 (send dc set-pen (make-object color% 0 0 0 0.1) 1 'solid)
                                 (send dc set-brush (make-object color% 255 0 200 0.5) 'solid)
-                                (send dc draw-rectangle 250 310 20 20)
+                                (send dc draw-rectangle 250 320 20 20)
                                 (send dc set-brush (make-object color% 0 255 200 0.5) 'solid)
-                                (send dc draw-rectangle 260 320 20 20)
+                                (send dc draw-rectangle 260 330 20 20)
+                                (send dc set-pen p))
+
+                              (let ([p (send dc get-pen)])
+                                (send dc set-pen "white" 1 'transparent)
+                                (send dc set-brush (new brush%
+                                                        [gradient
+                                                         (make-object linear-gradient%
+                                                                      300 0 380 0
+                                                                      (list (list 0.0
+                                                                                  (make-object color% 255 0 0))
+                                                                            (list 0.5
+                                                                                  (make-object color% 0 255 0))
+                                                                            (list 1.0
+                                                                                  (make-object color% 0 0 255 0.0))))]))
+                                (send dc draw-rectangle 300 320 80 20)
+                                (send dc set-pen p))
+
+                              (let ([p (send dc get-pen)])
+                                (send dc set-pen "white" 1 'transparent)
+                                (send dc set-brush (new brush%
+                                                        [gradient
+                                                         (make-object radial-gradient%
+                                                                      360 250 5
+                                                                      365 245 25
+                                                                      (list (list 0.0
+                                                                                  (make-object color% 255 0 0))
+                                                                            (list 0.5
+                                                                                  (make-object color% 0 255 0))
+                                                                            (list 1.0
+                                                                                  (make-object color% 0 0 255 0.0))))]))
+                                (send dc draw-rectangle 338 228 44 44)
                                 (send dc set-pen p))
 
 			      (send dc draw-line 130 310 150 310)

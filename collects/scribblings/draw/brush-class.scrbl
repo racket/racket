@@ -15,16 +15,16 @@ In addition to its color and style, a brush can have a stipple bitmap.
  stipple brush is similar to calling @method[dc<%> draw-bitmap] with
  the stipple bitmap in the filled region.
 
-A brush can also be constructed as a @racket[linear-gradient%] or
-@racket[radial-gradient%].
+As an alternative to a color, style, and stipple, a brush can have a
+ gradient that is a @racket[linear-gradient%] or
+ @racket[radial-gradient%]. For each point in a drawing destination, a
+ gradient associates a color to the point based on starting and ending
+ colors and starting and ending lines (for a linear gradient) or
+ circles (for a radial gradient). A gradient-assigned color is applied
+ for each point is that touched when drawing with the brush.
 
-@examples[ #:eval class-eval
-(new brush% [gradient (make-object linear-gradient% 0 0 10 10 
-  (list (list 0   (make-object color% 255 0 0))
-        (list 0.5 (make-object color% 0 255 0))
-        (list 1   (make-object color% 0 0 255))))])]
-
-A brush's style is one of the following:
+A brush's style is one of the following (but is ignored if the brush
+ has a gradient):
 
 @itemize[
 
@@ -87,9 +87,13 @@ To avoid creating multiple brushes with the same characteristics, use
                                   'horizontal-hatch 'vertical-hatch)
                          'solid]
                  [stipple (or/c #f (is-a?/c bitmap%))
-                          #f])]{
+                          #f]
+                 [gradient (or/c #f 
+                                 (is-a?/c linear-gradient%)
+                                 (is-a?/c radial-gradient%))
+                           #f])]{
 
-Creates a brush with the given color, style, and stipple. For
+Creates a brush with the given color, style, stipple, and gradient. For
  the case that the color is specified using a name, see
  @scheme[color-database<%>] for information about color names; if the
  name is not known, the brush's color is black.
@@ -104,14 +108,14 @@ Returns the brush's color.
 }
 
 @defmethod[(get-stipple)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Gets the stipple bitmap, or @scheme[#f] if the brush has no stipple.
 
 }
 
 @defmethod[(get-gradient)
-           (or/c (is-a?/c gradient<%>) false/c)]{
+           (or/c (is-a?/c gradient<%>) #f)]{
 
 Gets the gradient, or @scheme[#f] if the brush has no gradient.
 

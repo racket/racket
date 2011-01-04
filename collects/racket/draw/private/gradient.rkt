@@ -4,72 +4,63 @@
          "color.rkt")
 
 (provide linear-gradient%
-         radial-gradient%
-         make-linear-gradient
-         make-radial-gradient)
-
-;(define gradient<%> 
-;  (interface ()
-;    get-stops))
+         radial-gradient%)
 
 (define (check-reals name lst)
-  (for ([x lst])
-   (unless (real? x)
-     (raise-type-error (init-name name) "Coordinate must be a real? ~a" x))))
+  (for ([x (in-list lst)])
+    (unless (real? x)
+      (raise-type-error (init-name name) "real number" x))))
 
 (define (check-radius name lst)
-  (for ([x lst])
-   (unless (and (real? x) (not (negative? x)))
-     (raise-type-error (init-name name) "Radius must be a real? ~a" x))))
+  (for ([x (in-list lst)])
+    (unless (and (real? x) (not (negative? x)))
+      (raise-type-error (init-name name) "non-negative real number" x))))
 
 (define (check-stops name stops)
-  (unless (list? stops) (error name "Stops must be a list ~a" stops))
-  (for ([x stops])
-    (unless (list? x) (error name "A stop must be a list ~a" x))
-    (unless (= (length x) 2) (error  name "A stop must be a element list ~a" x))
-    (unless (and (real? (car x)) (<= 0.0 (car x) 1.0)) 
-      (error  name "First element of a stop must be a real between 0.0 and 1.0 ~a" (car x)))
-    (unless (is-a? (cadr x) color%) 
-      (error  name "Second element of a stop must be a color% ~a" (cdr x)))))
+  (unless (and (list? stops)
+               (for/and ([x (in-list stops)])
+                 (and (list? x)
+                      (= (length x) 2)
+                      (real? (car x))
+                      (<= 0.0 (car x) 1.0)
+                      (is-a? (cadr x) color%))))
+    (raise-type-error (init-name name) 
+                      "list of (list x c) where x is a real in [0,1] and c is a color%"
+                      stops)))
     
-;(define linear-gradient% (class* object% (gradient<%>)
-(define linear-gradient% (class object%
-  (init-field [x0 0]
-              [y0 0]
-              [x1 0]
-              [y1 0]
-              [stops null])
+(define linear-gradient% 
+  (class object%
+    (init x0 y0 x1 y1 stops)
+    (define _x0 x0)
+    (define _y0 y0)
+    (define _x1 x1)
+    (define _y1 y1)
+    (define _stops stops)
 
-  (check-reals 'linear-gradient% (list x0 y0 x1 y1))
-  (check-stops 'linear-gradient% stops)
+    (check-reals 'linear-gradient% (list x0 y0 x1 y1))
+    (check-stops 'linear-gradient% stops)
 
-  (super-new)
+    (super-new)
 
-  (define/public (get-line) (values x0 y0 x1 y1))
-  (define/public (get-stops) stops)))
+    (define/public (get-line) (values _x0 _y0 _x1 _y1))
+    (define/public (get-stops) _stops)))
 
-;(define radial-gradient% (class* object% (gradient<%>)
-(define radial-gradient% (class object%
-  (init-field [x0 0]
-              [y0 0]
-              [r0 0]
-              [x1 0]
-              [y1 0]
-              [r1 0]
-              [stops null])
+(define radial-gradient% 
+  (class object%
+    (init x0 y0 r0 x1 y1 r1 stops)
+    (define _x0 x0)
+    (define _y0 y0)
+    (define _r0 r0)
+    (define _x1 x1)
+    (define _y1 y1)
+    (define _r1 r1)
+    (define _stops stops)
 
-  (check-reals  'radial-gradient% (list x0 y0 x1 y1))
-  (check-radius 'radial-gradient% (list r0 r1))
-  (check-stops  'radial-gradient% stops)
+    (check-reals  'radial-gradient% (list _x0 _y0 _x1 _y1))
+    (check-radius 'radial-gradient% (list _r0 _r1))
+    (check-stops  'radial-gradient% stops)
 
-  (super-new)
+    (super-new)
 
-  (define/public (get-circles) (values x0 y0 r0 x1 y1 r1))
-  (define/public (get-stops) stops)))
-
-(define (make-linear-gradient x0 y0 x1 y1 stopslst) 
-  (make-object linear-gradient% x0 y0 x1 y1 stopslst))
-
-(define (make-radial-gradient x0 y0 r0 x1 y1 r1 stopslst)
-  (make-object radial-gradient% x0 y0 r0 x1 y1 r1 stopslst))
-
+    (define/public (get-circles) (values _x0 _y0 _r0 _x1 _y1 _r1))
+    (define/public (get-stops) _stops)))

@@ -7,56 +7,59 @@
 
 @defclass/title[radial-gradient% object% ()]{
 
-A radial gradient is a pattern tool that is used for
- filling in areas, such as the interior of a circle or ellipse.
+A @deftech{radial gradient} is used with a @racket[brush%] to fill
+ areas, such as the interior of a rectangle or ellipse, with smooth
+ color transitions.
 
-A radial gradient has two circles boundaries and color stops between the circles.
+Colors transitions are based on two circles and the sequence of circles that
+ ``morph'' from the starting circle to the ending circle. Colors are
+ assigned to stop circles in the sequence, and the colors of
+ the start and end circles radiate inward and outward to points that
+ are not on any intermediate circles.
 
-@defconstructor[([x0 real? 0]
-                 [y0 real? 0]
-                 [r0 real? 0]
-                 [x1 real? 0]
-                 [y1 real? 0]
-                 [r1 real? 0]
-                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%))) null])]{
+@defconstructor[([x0 real?]
+                 [y0 real?]
+                 [r0 real?]
+                 [x1 real?]
+                 [y1 real?]
+                 [r1 real?]
+                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%)))])]{
 
-Creates a radial gradient with the given circles boundaries and color stops.
-Point (x0, y0) and radius r0 define the start bounding circle, while
-point (x1, y1) and radius r1 define the end bounding circle.
-The gradient's control vector extends from any point on the start circle to the
-corresponding point on the end circle.
-A color stop is a list containing an offset value between 0.0 and 1.0 and a @racket[color%].
+Creates a radial gradient with the starting circle as the one with
+radius @racket[r0] centered at (@racket[x0], @racket[y0]) and the
+ending circle as the one with radius @racket[r1] centered at
+(@racket[x1], @racket[y1]). The @racket[stops] list assigns colors to
+circles, where @racket[0.0] corresponds to the starting circle,
+@racket[1.0] corresponds to the ending circle, and numbers in between
+correspond to circles in between.
 
-}
+@examples[ 
+  #:eval class-eval
+  (new radial-gradient% 
+    [x0 0] [y0 100] [r0 10] [x1 300] [y1 100] [r1 100]
+    [stops
+     (list (list 0   (make-object color% 0 0 255))
+           (list 0.5 (make-object color% 0 255 0))
+           (list 1   (make-object color% 255 0 0)))])
+  (make-object radial-gradient% 150 150 0 150 150 100
+              (list (list 0   (make-object color% 0 0 255))
+                    (list 0.5 (make-object color% 0 255 0))
+                    (list 1   (make-object color% 255 0 0))))
+]}
 
 @defmethod[(get-circles)
            (values real? real? real? real? real? real?)]{
 
-Returns the gradient's boundary circles.
+Returns the gradient's boundary circles as @racket[_x0], @racket[_y0],
+@racket[_r0], @racket[_x1], @racket[_y1], and @racket[_r1].
 
 }
 
 @defmethod[(get-stops)
-           (listof/c (list/c (real-in 0 1) (is-a?/c color%)))])]{
+           (listof/c (list/c (real-in 0 1) (is-a?/c color%)))]{
 
 Returns the gradient's list of color stops.
 
-}
-
-}
-@examples[ #:eval class-eval
-  (define grad (new radial-gradient% 
-    [x0 0] [y0 100] [r0 10] [x1 300] [y1 100] [r1 100]
-    [stops
-      (list (list 0   (make-object color% 0 0 255))
-            (list 0.5 (make-object color% 0 255 0))
-            (list 1   (make-object color% 255 0 0)))]))
-
-  (define grad2 (make-object radial-gradient% 150 150 0 150 150 100
-    (list (list 0   (make-object color% 0 0 255))
-          (list 0.5 (make-object color% 0 255 0))
-          (list 1   (make-object color% 255 0 0)))))]
+}}
 
 @(close-eval class-eval)
-
-

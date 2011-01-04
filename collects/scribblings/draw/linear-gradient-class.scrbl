@@ -7,27 +7,52 @@
 
 @defclass/title[linear-gradient% object% ()]{
 
-A linear gradient is a pattern tool that is used for
- filling in areas, such as the interior of a rectangle or ellipse.
+A @deftech{linear gradient} is used with a @racket[brush%] to fill
+ areas, such as the interior of a rectangle or ellipse, with smooth
+ color transitions.
 
-A linear gradient has a control vector and color stops along the line.
+Colors transitions are based on a line, where colors are assigned to
+ stop points along the line, and colors for in-between points are
+ interpolated from the stop-point colors. The color of a point on the
+ gradient's line is propagated to all points in the drawing context
+ that are touched by a line through the point and perpendicular to the
+ gradient's line.
 
-@defconstructor[([x0 real? 0]
-                 [y0 real? 0]
-                 [x1 real? 0]
-                 [y1 real? 0]
-                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%))) null])]{
 
-Creates a linear gradient with the given line and color stops.
-The gradients control vector is defined by its start point (x0, y0) and end point (x1, y1).
-A color stop is a list containing an offset value between 0.0 and 1.0 and a @racket[color%].
+@defconstructor[([x0 real?]
+                 [y0 real?]
+                 [x1 real?]
+                 [y1 real?]
+                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%)))])]{
 
-}
+Creates a linear gradient with a line from (@racket[x0], @racket[y0])
+to end point (@racket[x1], @racket[y1]). The @racket[stops] list
+assigns colors to stop points along the line, where @racket[0.0]
+corresponds to (@racket[x0], @racket[y0]), @racket[1.0] corresponds to
+(@racket[x1], @racket[y2]), and numbers in between correspond to
+points in between.
+
+@examples[
+  #:eval class-eval
+  (new linear-gradient% 
+       [x0 0] [y0 100] [x1 300] [y1 100] 
+       [stops
+        (list (list 0   (make-object color% 0 0 255))
+              (list 0.5 (make-object color% 0 255 0))
+              (list 1   (make-object color% 255 0 0)))])
+  (make-object linear-gradient% 
+               0 100 300 100
+               (list (list 0   (make-object color% 0 0 255))
+                     (list 0.5 (make-object color% 0 255 0))
+                     (list 1   (make-object color% 255 0 0))))
+]}
+
 
 @defmethod[(get-line)
            (values real? real? real? real?)]{
 
-Returns the gradient's control line.
+Returns the gradient's control line as @racket[_x0], @racket[_y0],
+@racket[_x1], and @racket[_y1].
 
 }
 
@@ -36,21 +61,6 @@ Returns the gradient's control line.
 
 Returns the gradient's list of color stops.
 
-}
-
-}
-@examples[ #:eval class-eval
-  (define grad (new linear-gradient% 
-    [x0 0] [y0 100] [x1 300] [y1 100] 
-    [stops
-      (list (list 0   (make-object color% 0 0 255))
-            (list 0.5 (make-object color% 0 255 0))
-            (list 1   (make-object color% 255 0 0)))]))
-
-  (define grad2 (make-object linear-gradient% 0 0 100 300
-    (list (list 0   (make-object color% 0 0 255))
-          (list 0.5 (make-object color% 0 255 0))
-          (list 1   (make-object color% 255 0 0)))))]
-
+}}
 
 @(close-eval class-eval)
