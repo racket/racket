@@ -71,7 +71,7 @@ transformer. It is provided normally by
 
 This procedure is intended for use in a transformer, where
 @scheme[id-stx] is an identifier bound to a @tech{syntax parameter}. The
-result is transformer that behaves as @scheme[id-stx], but that cannot
+result is a transformer that behaves as @scheme[id-stx], but that cannot
 be used with @scheme[syntax-parameterize] or
 @scheme[syntax-parameter-value].
 
@@ -80,7 +80,7 @@ defining a procedure that calls a parameter. Such a procedure can be
 exported to others to allow access to the parameter value, but not to
 change the parameter value. Similarly,
 @scheme[make-parameter-rename-transformer] allows a @tech{syntax parameter}
-to used as a macro, but not changed.
+to be used as a macro, but not changed.
 
 The result of @scheme[make-parameter-rename-transformer] is not
 treated specially by @scheme[syntax-local-value], unlike the result

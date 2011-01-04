@@ -50,6 +50,16 @@ to @math{4+2n} names:
        @math{m} is the number of @racket[field]s that do not include
        an @racket[#:auto] option.}
 
+ @item{@racket[id], a @tech{transformer binding} that encapsulates
+       information about the structure type declaration. This binding
+       is used to define subtypes, and it also works with the
+       @racket[shared] and @racket[match] forms. For detailed
+       information about the binding of @racket[id], see
+       @secref["structinfo"].
+       
+       The @racket[constructor-id] and @racket[id] can be the same, in
+       which case @racket[id] performs both roles.}
+
  @item{@racket[id]@racketidfont{?}, a @deftech{predicate} procedure
        that returns @racket[#t] for instances of the @tech{structure
        type} (constructed by @racket[constructor-id] or the
@@ -69,16 +79,6 @@ to @math{4+2n} names:
        takes an instance of the @tech{structure type} and a new field
        value. The structure is destructively updated with the new
        value, and @|void-const| is returned.}
-
- @item{@racket[id], a @tech{transformer binding} that encapsulates
-       information about the structure type declaration. This binding
-       is used to define subtypes, and it also works with the
-       @racket[shared] and @racket[match] forms. For detailed
-       information about the binding of @racket[id], see
-       @secref["structinfo"].
-       
-       The @racket[constructor-id] and @racket[id] can be the same, in
-       which case @racket[id] performs both roles.}
 
 ]
 
@@ -109,7 +109,7 @@ multiple times, attaches a property value to the structure type; see
 @racket[#:transparent] option is a shorthand for @racket[#:inspector
 #f].
 
-@margin-note{Use the @racket[prop:procedure] to property implement an
+@margin-note{Use the @racket[prop:procedure] property to implement an
 @as-index{applicable structure}, use @racket[prop:evt] to create a
 structure type whose instances are @tech{synchronizable events}, and
 so on. By convention, property names start with @racketidfont{prop:}.}
@@ -212,7 +212,7 @@ position within the structure declaration of the field named by
                                (id super-id)])]{
 
 Like @racket[struct], except that the syntax for supplying a
-@racket[super-id] is different, and a @racket[_constructor-id] that is
+@racket[super-id] is different, and a @racket[_constructor-id] that has
 a @racketidfont{make-} prefix on @racket[id] is implicitly supplied
 via @racket[#:extra-constructor-name].
 

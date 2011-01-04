@@ -259,7 +259,9 @@ invoked in tail position.)
                        [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
 
 Composes @scheme[dict-ref] and @scheme[dict-set!] to update an
-existing mapping in @scheme[dict].
+existing mapping in @scheme[dict], where the optional @racket[failure-result]
+argument is used as in @racket[dict-ref] when no mapping exists for 
+@racket[key] already.
 
 @examples[
 #:eval dict-eval
@@ -280,7 +282,9 @@ v
           (and/c dict? immutable?)]{
 
 Composes @scheme[dict-ref] and @scheme[dict-set] to functionally
-update an existing mapping in @scheme[dict].
+update an existing mapping in @scheme[dict], where the optional @racket[failure-result]
+argument is used as in @racket[dict-ref] when no mapping exists for 
+@racket[key] already.
 
 @examples[
 #:eval dict-eval
@@ -312,7 +316,7 @@ h]}
          (and/c dict? immutable?)]{
 
 Functionally removes any existing mapping for @scheme[key] in
-@scheme[dict], returning the updated dictionary.  The update can fail
+@scheme[dict], returning the fresh dictionary.  The update can fail
 if @scheme[dict] does not support functional update or does not
 support removing keys.
 
@@ -375,7 +379,7 @@ constant time.
 @defproc[(dict-iterate-first [dict dict?]) any/c]{
 
 Returns @scheme[#f] if @scheme[dict] contains no elements, otherwise
-it returns a non-@scheme[#f] value that is a index to the first
+it returns a non-@scheme[#f] value that is an index to the first
 element in the dict table; ``first'' refers to an unspecified ordering
 of the dictionary elements. For a mutable @scheme[dict], this index is
 guaranteed to refer to the first item only as long as no mappings are

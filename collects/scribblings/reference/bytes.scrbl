@@ -155,19 +155,19 @@ string.
 
 
 @defproc[(bytes->list [bstr bytes?]) (listof byte?)]{ Returns a new
- list of bytes coresponding to the content of @scheme[bstr]. That is,
+ list of bytes corresponding to the content of @scheme[bstr]. That is,
  the length of the list is @scheme[(bytes-length bstr)], and the
- sequence of bytes of @scheme[bstr] are in the same sequence in the
+ sequence of bytes of @scheme[bstr] is the same sequence in the
  result list.
 
 @mz-examples[(bytes->list #"Apple")]}
 
 
 @defproc[(list->bytes [lst (listof byte?)]) bytes?]{ Returns a new
- mutable bytes whose content is the list of bytes in @scheme[lst].
- That is, the length of the bytes is @scheme[(length lst)], and
+ mutable byte string whose content is the list of bytes in @scheme[lst].
+ That is, the length of the byte string is @scheme[(length lst)], and
  the sequence of bytes in @scheme[lst] is in the same sequence in
- the result bytes.
+ the result byte string.
 
 @mz-examples[(list->bytes (list 65 112 112 108 101))]}
 
@@ -441,7 +441,7 @@ Certain encoding combinations are always available:
  @item{@scheme[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")]
    --- converts UTF-8 to UTF-16 under @|AllUnix|, where each UTF-16
    code unit is a sequence of two bytes ordered by the current
-   platform's endianess. Under Windows, the input can include
+   platform's endianness. Under Windows, the input can include
    encodings that are not valid UTF-8, but which naturally extend the
    UTF-8 encoding to support unpaired surrogate code units, and the
    output is a sequence of UTF-16 code units (as little-endian byte
@@ -514,7 +514,7 @@ Closes the given converter, so that it can no longer be used with
 Converts the bytes from @scheme[src-start-pos] to @scheme[src-end-pos]
 in @scheme[src-bstr].
 
-If @scheme[dest-bstr] is not @scheme[#f], the converted byte are
+If @scheme[dest-bstr] is not @scheme[#f], the converted bytes are
 written into @scheme[dest-bstr] from @scheme[dest-start-pos] to
 @scheme[dest-end-pos]. If @scheme[dest-bstr] is @scheme[#f], then a
 newly allocated byte string holds the conversion results, and if

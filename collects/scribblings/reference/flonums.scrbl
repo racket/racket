@@ -11,7 +11,7 @@
 
 The @racketmodname[racket/flonum] library provides operations like
 @racket[fl+] that consume and produce only
-@tech{flonums}. Flonum-specific operations provide can better
+@tech{flonums}. Flonum-specific operations can provide better
 performance when used consistently, and they are as safe as generic
 operations like @racket[+].
 
@@ -71,7 +71,7 @@ Like @racket[round], @racket[floor], @racket[ceiling], and
 
 Like @racket[sin], @racket[cos], @racket[tan], @racket[asin],
 @racket[acos], @racket[atan], @racket[log], @racket[exp], and
-@racket[flsqrt], but constrained to consume and produce
+@racket[sqrt], but constrained to consume and produce
 @tech{flonums}. The result is @racket[+nan.0] when a number outside
 the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
 @racket[flacos], or when a negative number is given to @racket[fllog]
@@ -113,9 +113,9 @@ unsafe operations on @tech{flvector}s (see
 unsafe operations on @tech{vectors} of inexact reals.
 
 An f64vector as provided by @racketmodname[ffi/vector] stores the
-same kinds of values as an @tech{flvector}, but with extra
+same kinds of values as a @tech{flvector}, but with extra
 indirections that make f64vectors more convenient for working with
-foreign libraries. The lack of indirections make unsafe
+foreign libraries. The lack of indirections makes unsafe
 @tech{flvector} access more efficient.
 
 Two @tech{flvectors} are @racket[equal?] if they have the same length,

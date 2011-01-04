@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss")
 
-@(define lit-ellipses (scheme ...))
+@(define lit-ellipsis (scheme ...))
 
 @(define syntax-eval
    (lambda ()
@@ -19,20 +19,20 @@
                         id
                         (pattern ...)
                         (pattern ...+ . pattern)
-                        (pattern ... pattern ellipses pattern ...)
-                        (pattern ... pattern ellipses pattern ... . pattern)
+                        (pattern ... pattern ellipsis pattern ...)
+                        (pattern ... pattern ellipsis pattern ... . pattern)
                         (code:line #,(tt "#")(pattern ...))
-                        (code:line #,(tt "#")(pattern ... pattern ellipses pattern ...))
+                        (code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))
                         (code:line #,(tt "#s")(key-datum pattern ...))
-                        (code:line #,(tt "#s")(key-datum pattern ... pattern ellipses pattern ...))
-                        (ellipses stat-pattern)
+                        (code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))
+                        (ellipsis stat-pattern)
                         const]
                [stat-pattern id
                              (stat-pattern ...)
                              (stat-pattern ...+ . stat-pattern)
                              (code:line #,(tt "#")(stat-pattern ...))
                              const]
-               [ellipses #,lit-ellipses])]{
+               [ellipsis #,lit-ellipsis])]{
 
 Finds the first @scheme[pattern] that matches the syntax object
 produced by @scheme[stx-expr], and for which the corresponding
@@ -72,7 +72,7 @@ A syntax object matches a @scheme[pattern] as follows:
  A @scheme[(pattern ...)] pattern matches a syntax object whose datum
  form (i.e., without lexical information) is a list with as many
  elements as sub-@scheme[pattern]s in the pattern, and where each
- syntax object that corresponding to an element of the list matches
+ syntax object that corresponds to an element of the list matches
  the corresponding sub-@scheme[pattern].
 
  Any @tech{pattern variables} bound by the sub-@scheme[pattern]s are
@@ -82,7 +82,7 @@ A syntax object matches a @scheme[pattern] as follows:
 
  The last @scheme[pattern] must not be a @racket/form[(pattern ...)],
  @racket/form[(pattern ...+ . pattern)], @racket/form[(pattern ... pattern
- ellipses pattern ...)], or @racket/form[(pattern ... pattern ellipses
+ ellipsis pattern ...)], or @racket/form[(pattern ... pattern ellipsis
  pattern ... . pattern)] form.
 
  Like the previous kind of pattern, but matches syntax objects that
@@ -94,23 +94,23 @@ A syntax object matches a @scheme[pattern] as follows:
  @scheme[datum->syntax] coercion of the datum using the nearest
  enclosing syntax object's lexical context and source location).}
 
- @specsubform[(pattern ... pattern ellipses pattern ...)]{
+ @specsubform[(pattern ... pattern ellipsis pattern ...)]{
 
  Like the @scheme[(pattern ...)] kind of pattern, but matching a
  syntax object with any number (zero or more) elements that match the
- sub-@scheme[pattern] followed by @scheme[ellipses] in the
+ sub-@scheme[pattern] followed by @scheme[ellipsis] in the
  corresponding position relative to other sub-@scheme[pattern]s.
 
  For each pattern variable bound by the sub-@scheme[pattern] followed
- by @scheme[ellipses], the larger pattern binds the same pattern
+ by @scheme[ellipsis], the larger pattern binds the same pattern
  variable to a list of values, one for each element of the syntax
  object matched to the sub-@scheme[pattern], with an incremented
  @tech{depth marker}. (The sub-@scheme[pattern] itself may contain
- @scheme[ellipses], leading to a pattern variables bound to lists of
+ @scheme[ellipsis], leading to a pattern variables bound to lists of
  lists of syntax objects with a @tech{depth marker} of @math{2}, and
  so on.)}
 
- @specsubform[(pattern ... pattern ellipses pattern ... . pattern)]{
+ @specsubform[(pattern ... pattern ellipsis pattern ... . pattern)]{
 
  Like the previous kind of pattern, but with a final
  sub-@scheme[pattern] as for @scheme[(pattern ...+ . pattern)].  The
@@ -122,9 +122,9 @@ A syntax object matches a @scheme[pattern] as follows:
  Like a @scheme[(pattern ...)] pattern, but matching a vector syntax object
  whose elements match the corresponding sub-@scheme[pattern]s.}
 
- @specsubform[(code:line #,(tt "#")(pattern ... pattern ellipses pattern ...))]{
+ @specsubform[(code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))]{
 
- Like a @scheme[(pattern ... pattern ellipses pattern ...)] pattern,
+ Like a @scheme[(pattern ... pattern ellipsis pattern ...)] pattern,
  but matching a vector syntax object whose elements match the
  corresponding sub-@scheme[pattern]s.}
 
@@ -135,13 +135,13 @@ A syntax object matches a @scheme[pattern] as follows:
  sub-@scheme[pattern]s. The @scheme[key-datum] must correspond to a
  valid first argument to @scheme[make-prefab-struct].}
 
- @specsubform[(code:line #,(tt "#s")(key-datum pattern ... pattern ellipses pattern ...))]{
+ @specsubform[(code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))]{
 
- Like a @scheme[(pattern ... pattern ellipses pattern ...)] pattern,
+ Like a @scheme[(pattern ... pattern ellipsis pattern ...)] pattern,
  but matching a @tech{prefab} structure syntax object whose elements
  match the corresponding sub-@scheme[pattern]s.}
 
- @specsubform[(ellipses stat-pattern)]{
+ @specsubform[(ellipsis stat-pattern)]{
 
  Matches the same as @scheme[stat-pattern], which is like a @scheme[pattern],
  but identifiers with the binding @scheme[...] are treated the same as
@@ -260,16 +260,16 @@ the individual @scheme[stx-expr].
                          (template-elem ...+ . template)
                          (code:line #,(tt "#")(template-elem ...))
                          (code:line #,(tt "#s")(key-datum template-elem ...))
-                         (ellipses stat-template)
+                         (ellipsis stat-template)
                          const]
-               [template-elem (code:line template ellipses ...)]
+               [template-elem (code:line template ellipsis ...)]
                [stat-template id
                               (stat-template ...)
                               (stat-template ... . stat-template)
                               (code:line #,(tt "#")(stat-template ...))
                               (code:line #,(tt "#s")(key-datum stat-template ...))
                               const]
-               [ellipses #,lit-ellipses])]{
+               [ellipsis #,lit-ellipsis])]{
 
 Constructs a syntax object based on a @scheme[template],which can
 inlude @tech{pattern variables} bound by @scheme[syntax-case] or
@@ -282,14 +282,14 @@ Template forms produce a syntax object as follows:
  If @scheme[id] is bound as a @tech{pattern variable}, then
  @scheme[id] as a template produces the @tech{pattern variable}'s
  match result. Unless the @scheme[id] is a sub-@scheme[template] that is
- replicated by @scheme[ellipses] in a larger @scheme[template], the
+ replicated by @scheme[ellipsis] in a larger @scheme[template], the
  @tech{pattern variable}'s value must be a syntax object with a
  @tech{depth marker} of @math{0} (as opposed to a list of
  matches).
 
  More generally, if the @tech{pattern variable}'s value has a depth
  marker @math{n}, then it can only appear within a template where it
- is replicated by at least @math{n} @scheme[ellipses]es. In that case,
+ is replicated by at least @math{n} @scheme[ellipsis]es. In that case,
  the template will be replicated enough times to use each match result
  at least once.
 
@@ -299,38 +299,38 @@ Template forms produce a syntax object as follows:
  @specsubform[(template-elem ...)]{
 
  Produces a syntax object whose datum is a list, and where the
- elements of the list correspond to syntax objects producesd by the
+ elements of the list correspond to syntax objects produced by the
  @scheme[template-elem]s.
 
  A @scheme[template-elem] is a sub-@scheme[template] replicated by any
- number of @scheme[ellipses]es:
+ number of @scheme[ellipsis]es:
 
  @itemize[
 
   @item{If the sub-@scheme[template] is replicated by no
-   @scheme[ellipses]es, then it generates a single syntax object to
+   @scheme[ellipsis]es, then it generates a single syntax object to
    incorporate into the result syntax object.}
 
   @item{If the sub-@scheme[template] is replicated by one
-   @scheme[ellipses], then it generates a sequence of syntax objects
+   @scheme[ellipsis], then it generates a sequence of syntax objects
    that is ``inlined'' into the resulting syntax object.
 
-   The number of generated elements depends the values of
+   The number of generated elements depends on the values of
    @tech{pattern variables} referenced within the
    sub-@scheme[template]. There must be at least one @tech{pattern
-   variable} whose value is has a @tech{depth marker} less than the
-   number of @scheme[ellipses]es after the pattern variable within the
+   variable} whose value has a @tech{depth marker} less than the
+   number of @scheme[ellipsis]es after the pattern variable within the
    sub-@scheme[template].
 
    If a @tech{pattern variable} is replicated by more
-   @scheme[ellipses]es in a @scheme[template] than the @tech{depth
+   @scheme[ellipsis]es in a @scheme[template] than the @tech{depth
    marker} of its binding, then the @tech{pattern variable}'s result
-   is determined normally for inner @scheme[ellipses]es (up to the
+   is determined normally for inner @scheme[ellipsis]es (up to the
    binding's @tech{depth marker}), and then the result is replicated
-   as necessary to satisfy outer @scheme[ellipses]es.}
+   as necessary to satisfy outer @scheme[ellipsis]es.}
 
- @item{For each @scheme[ellipses] after the first one, the preceding
-   element (with earlier replicating @scheme[ellipses]s) is
+ @item{For each @scheme[ellipsis] after the first one, the preceding
+   element (with earlier replicating @scheme[ellipsis]es) is
    conceptually wrapped with parentheses for generating output, and
    then the wrapping parentheses are removed in the resulting syntax
    object.}]}
@@ -338,7 +338,7 @@ Template forms produce a syntax object as follows:
  @specsubform[(template-elem ... . template)]{
 
   Like the previous form, but the result is not necessarily a list;
-  instead, the place of the empty list in resulting syntax object's
+  instead, the place of the empty list in the resulting syntax object's
   datum is taken by the syntax object produced by @scheme[template].}
 
  @specsubform[(code:line #,(tt "#")(template-elem ...))]{
@@ -353,16 +353,16 @@ Template forms produce a syntax object as follows:
    The @scheme[key-datum] must correspond to a valid first argument of
    @scheme[make-prefab-struct].}
 
- @specsubform[(ellipses stat-template)]{
+ @specsubform[(ellipsis stat-template)]{
 
   Produces the same result as @scheme[stat-template], which is like a
-  @scheme[template], but @scheme[...] is treated like a @scheme[id]
+  @scheme[template], but @scheme[...] is treated like an @scheme[id]
   (with no pattern binding).}
 
  @specsubform[const]{
 
   A @scheme[const] template is any form that does not match the
-  preceding cases, and it produces the result @scheme[(quote-syntac
+  preceding cases, and it produces the result @scheme[(quote-syntax
   const)].}
 
 A @scheme[(#,(schemekeywordfont "syntax") template)] form is normally
@@ -383,12 +383,12 @@ substituted in place of the @scheme[unsyntax] or
 @scheme[unsyntax-splicing] form within the quasiquoting template, just
 like @scheme[unquote] and @scheme[unquote-splicing] within
 @scheme[quasiquote]. (If the escaped expression does not generate a
-syntax object, it is converted to one in the same was as for the
-right-hand sides of @scheme[with-syntax].)  Nested
+syntax object, it is converted to one in the same way as for the
+right-hand side of @scheme[with-syntax].)  Nested
 @scheme[quasisyntax]es introduce quasiquoting layers in the same way
 as nested @scheme[quasiquote]s.
 
-Also analogous @scheme[quasiquote], the reader converts @litchar{#`}
+Also analogous to @scheme[quasiquote], the reader converts @litchar{#`}
 to @scheme[quasisyntax], @litchar{#,} to @scheme[unsyntax], and
 @litchar["#,@"] to @scheme[unsyntax-splicing]. See also
 @secref["parse-quote"].}
@@ -412,7 +412,7 @@ for use only with a @scheme[quasisyntax] template.}
 Like @scheme[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
 @scheme[stx-expr] (which must produce a syntax object), unless the
-@scheme[template] is just a pattern variable or both the source and
+@scheme[template] is just a pattern variable, or both the source and
 position of @scheme[stx-expr] are @scheme[#f].}
 
 
@@ -475,21 +475,21 @@ Equivalent to
 @defidform[...]{
 
 The @scheme[...] transformer binding prohibits @scheme[...] from
-being used as an expression. This binding useful only in syntax
+being used as an expression. This binding is useful only in syntax
 patterns and templates, where it indicates repetitions of a pattern or
 template. See @scheme[syntax-case] and @scheme[syntax].}
 
 @defidform[_]{
 
 The @scheme[_] transformer binding prohibits @scheme[_] from being
-used as an expression. This binding useful only in syntax patterns,
+used as an expression. This binding is useful only in syntax patterns,
 where it indicates a pattern that matches any syntax object. See
 @scheme[syntax-case].}
 
 
 @defproc[(syntax-pattern-variable? [v any/c]) boolean?]{
 
-Return @scheme[#t] if @scheme[v] is a value that, as a
+Returns @scheme[#t] if @scheme[v] is a value that, as a
 transformer-binding value, makes the bound variable as pattern
 variable in @scheme[syntax] and other forms. To check whether an
 identifier is a pattern variable, use @scheme[syntax-local-value] to

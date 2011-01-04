@@ -54,7 +54,7 @@ shape and properties of the result:
 
  @item{If the result has a @scheme['certify-mode] property that is
           @indexed-scheme['transparent-binding], then the certificate
-          is attached to similar to @scheme['transparent], but further
+          is attached in a way similar to @scheme['transparent], but further
           treating the syntax object corresponding to the second list
           element as having a @scheme['transparent] value for the
           @scheme['certify-mode] property if it does not already have
@@ -119,7 +119,7 @@ expansion context:
 
  @item{When the expander encounters a @scheme[quote-syntax] form, it
    attaches all accumulated @tech{active certificates} from the
-   expressions's context to the quoted syntax objects. A certificate
+   expression's context to the quoted syntax objects. A certificate
    for the enclosing module (if any) is also included. The
    certificates are attached as @tech{inactive certificates} to the
    immediate syntax object (i.e., not to any nested syntax

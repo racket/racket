@@ -53,7 +53,7 @@ For most sequence types, extracting elements from a sequence has no
 side-effect on the original sequence value; for example, extracting the
 sequence of elements from a list does not change the list.  For other
 sequence types, each extraction implies a side effect; for example,
-extracting the sequence of bytes from a port cause the bytes to be read
+extracting the sequence of bytes from a port causes the bytes to be read
 from the port.
 
 Individual elements of a sequence typically correspond to single values,
@@ -163,7 +163,7 @@ in the sequence.
   Returns a sequence equivalent to @scheme[(in-port read-byte in)].}
 
 @defproc[(in-input-port-chars [in input-port?]) sequence?]{
-  Returns a sequence whose elements are read as characters form
+  Returns a sequence whose elements are read as characters from
   @scheme[in] (equivalent to @scheme[(in-port read-char in)]).}
 
 @defproc[(in-lines [in input-port? (current-input-port)]
@@ -244,8 +244,8 @@ in the sequence.
   @racket[stop] value is not included in the sequence); @scheme[stop]
   can be a predicate that is applied to the results of @racket[producer],
   or it can be a value that is tested against the result of 
-  with @scheme[eq?].  (You must use a predicate for @racket[stop]
-  function if the stop value is itself a function or if
+  with @scheme[eq?].  (The @racket[stop] argument must be a predicate
+  if the stop value is itself a function or if
   @scheme[producer] returns multiple values.)}
 
 @defproc[(in-value [v any/c]) sequence?]{
@@ -315,7 +315,7 @@ in the sequence.
     @item{The fifth result is like the fourth result, but it takes the
       current element value(s) instead of the current position.}
     @item{The sixth result is like the fourth result, but it takes both
-      the current position and the current element values(s) and
+      the current position and the current element value(s) and
       determines a sequence end after the current element is already
       included in the sequence.}]
 
@@ -457,9 +457,9 @@ in the sequence.
 
 @defproc[(stream-add-between [s sequence?] [e any/c])
          sequence?]{
-  Returns a sequence whose elements are the elements of @scheme[s]
-  except in between each is @scheme[e].  The new sequence is constructed
-  lazily.}
+  Returns a sequence whose elements are the elements of @scheme[s],
+  but with @scheme[e] between each pair of elements in @racket[s].
+  The new sequence is constructed lazily.}
 
 @defproc[(stream-count [f procedure?] [s sequence?])
          exact-nonnegative-integer?]{
@@ -500,7 +500,7 @@ in the sequence.
     (g)
     (g)]
 
-  To use an existing generator as a sequence, you should use
+  To use an existing generator as a sequence, use
   @scheme[in-producer] with a stop-value known for the generator.
 
   @examples[#:eval generator-eval
@@ -518,7 +518,7 @@ in the sequence.
 
 @defform[(infinite-generator body ...)]{
   Creates a function similar to @scheme[generator] but when the last
-  @scheme[body] is executed the function will re-execute all the bodies
+  @scheme[body] is evaluated, the function will re-evaluates all the bodies
   in a loop.
 
   @examples[#:eval generator-eval

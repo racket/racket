@@ -65,8 +65,8 @@ appears twice). When this source is parsed in a typical
 
 A @deftech{top-level binding} is a @tech{binding} from a definition at
 the top-level; a @deftech{module binding} is a binding from a
-definition in a module; and a @deftech{local binding} is another other
-kind of binding. There is no difference between an @deftech{unbound}
+definition in a module; all other bindings are @deftech{local bindings}.
+There is no difference between an @deftech{unbound}
 identifier and one with a @tech{top-level binding}; within a module,
 references to @tech{top-level bindings} are disallowed, and so such
 identifiers are called @tech{unbound} in a module context.
@@ -112,7 +112,7 @@ A @deftech{syntax object} combines a simpler Racket value, such as a
 symbol or pair, with @deftech{lexical information} about bindings,
 source-location information, @tech{syntax properties}, and
 @tech{syntax certificates}. In particular, an @tech{identifier} is
-represented as a symbol object that combines a symbol and lexical and
+represented as a symbol object that combines a symbol with lexical and
 other information.
 
 For example, a @racketidfont{car} @tech{identifier} might have
@@ -127,12 +127,12 @@ When a @tech{syntax object} represents a more complex expression than
 an @tech{identifier} or simple constant, its internal components can
 be extracted. Even for extracted identifier, detailed information
 about binding is available mostly indirectly; two identifiers can be
-compared to see if they refer to the same binding (i.e.,
+compared to determine whether they refer to the same binding (i.e.,
 @racket[free-identifier=?]), or whether each identifier would bind the
-other if one was in a binding position and the other in an expression
+other if one were in a binding position and the other in an expression
 position (i.e., @racket[bound-identifier=?]).
 
-For example, the when the program written as
+For example, when the program written as
 
 @racketblock[(let ([x 5]) (+ x 6))]
 
@@ -397,7 +397,7 @@ core syntactic forms are encountered:
 
  @item{When a @racket[require] form is encountered at the top level or
        module level, all lexical information derived from the top
-       level or the specific module's level are extended with bindings
+       level or the specific module's level is extended with bindings
        from the specified modules. If not otherwise indicated in the
        @racket[require] form, bindings are introduced at the
        @tech{phase level}s specified by the exporting modules:
@@ -467,7 +467,7 @@ For example, in
 ]
 
 the binding introduced for @racket[x] applies to the @racket[x] in the
-body, but not the @racket[y] n the body, because (at the point in
+body, but not the @racket[y] in the body, because (at the point in
 expansion where the @racket[let-values] form is encountered) the
 binding @racket[x] and the body @racket[y] are not
 @racket[bound-identifier=?].
@@ -485,7 +485,7 @@ the @tech{base environment}).
 
 The @tech{value} for the binding is obtained by evaluating the
 expression in the @racket[define-syntaxes] form. This expression must
-be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
+be @tech{expand}ed (i.e., parsed) before it can be evaluated, and it is
 expanded at @tech{phase level} 1 (i.e., in the @tech{transformer
 environment}) instead of @tech{phase level} 0.
 

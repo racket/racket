@@ -110,7 +110,7 @@ because all numbers are @tech{complex numbers}.}
 @defproc[(rational? [v any/c]) boolean?]{ Returns @racket[#t] if
  @racket[v] is a @techlink{rational number}, @racket[#f] otherwise.
 
-@mz-examples[(rational? 1) (rational? +inf.0) (real? "hello")]}
+@mz-examples[(rational? 1) (rational? +inf.0) (rational? "hello")]}
 
 
 @defproc[(integer? [v any/c]) boolean?]{ Returns @racket[#t] if @racket[v]
@@ -252,7 +252,7 @@ Returns the product of the @racket[z]s, multiplying pairwise from left
            [(/ [z number?] [w number?] ...+) number?])]{
 
 When no @racket[w]s are supplied, returns @racket[(/ 1 z)].
- Otherwise, returns the division @racket[z] by the @racket[w]s working
+ Otherwise, returns the division of @racket[z] by the @racket[w]s working
  pairwise from left to right.
 
 If @racket[z] is exact @racket[0] and no @racket[w] is exact
@@ -387,7 +387,7 @@ Returns the smallest integer that is at least as large as
 
 @defproc[(truncate [x real?]) integer?]{
 
-Returns the integer farthest from @racket[0] that is no closer to
+Returns the integer farthest from @racket[0] that is not farther from
  @racket[0] than @racket[x].
 
 @mz-examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5)]}
@@ -395,7 +395,7 @@ Returns the integer farthest from @racket[0] that is no closer to
 
 @defproc[(numerator [q rational?]) integer?]{
 
-Coreces @racket[q] to an exact number, finds the numerator of the
+Coerces @racket[q] to an exact number, finds the numerator of the
  number expressed in its simplest fractional form, and returns this
  number coerced to the exactness of @racket[q].
 
@@ -404,7 +404,7 @@ Coreces @racket[q] to an exact number, finds the numerator of the
 
 @defproc[(denominator [q rational?]) integer?]{
 
-Coreces @racket[q] to an exact number, finds the numerator of the
+Coerces @racket[q] to an exact number, finds the numerator of the
  number expressed in its simplest fractional form, and returns this
  number coerced to the exactness of @racket[q].
 
@@ -415,7 +415,7 @@ Coreces @racket[q] to an exact number, finds the numerator of the
 
 Among the real numbers within @racket[(abs tolerance)] of @racket[x],
  returns the one corresponding to an exact number whose
- @racket[denominator] is smallest.  If multiple integers are within
+ @racket[denominator] is the smallest.  If multiple integers are within
  @racket[tolerance] of @racket[x], the one closest to @racket[0] is
  used.
 
@@ -440,21 +440,21 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 
 
 @defproc[(< [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t] if
- the arguments in the given order are in strictly increasing,
+ the arguments in the given order are strictly increasing,
  @racket[#f] otherwise.
 
 @mz-examples[(< 1 1) (< 1 2 3) (< 1 +inf.0) (< 1 +nan.0)]}
 
 
 @defproc[(<= [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t]
- if the arguments in the given order are in non-decreasing,
+ if the arguments in the given order are non-decreasing,
  @racket[#f] otherwise.
 
 @mz-examples[(<= 1 1) (<= 1 2 1)]}
 
 
 @defproc[(> [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t] if
- the arguments in the given order are in strictly decreasing,
+ the arguments in the given order are strictly decreasing,
  @racket[#f] otherwise.
 
 @mz-examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (< +nan.0 1)]}
@@ -556,7 +556,7 @@ Returns the tangent of @racket[z], where @racket[z] is in radians. The
 
 @defproc[(asin [z number?]) number?]{
 
-Returns the arcsin in radians of @racket[z]. The result is normally
+Returns the arcsine in radians of @racket[z]. The result is normally
  inexact, but it is exact @racket[0] if @racket[z] is exact @scheme[0].
 
 @mz-examples[(asin 0.25) (asin 1+05.i)]}
@@ -746,7 +746,7 @@ both in binary and as integers.
                                (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
-When called with and integer argument @racket[k], returns a random
+When called with an integer argument @racket[k], returns a random
 exact integer in the range @racket[0] to @math{@racket[k]-1}. When
 called with zero arguments, returns a random inexact number between
 @racket[0] and @racket[1], exclusive.
@@ -827,7 +827,7 @@ generator.}
 @defproc[(number->string [z number?] [radix (or/c 2 8 10 16) 10])
          string?]{
  Returns a string that is the printed form of @racket[z]
- in the base specific by @racket[radix]. If @racket[z] is inexact,
+ in the base specified by @racket[radix]. If @racket[z] is inexact,
  @racket[radix] must be @racket[10], otherwise the
  @exnraise[exn:fail:contract].
 
@@ -841,7 +841,7 @@ Reads and returns a number datum from @racket[s] (see
 @secref["parse-number"]), returning @racket[#f] if @racket[s] does not
 parse exactly as a number datum (with no whitespace). The optional
 @racket[radix] argument specifies the default base for the number,
-which can be overriden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
+which can be overridden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
 @litchar{#x} in the string.
 
 @mz-examples[(string->number "3.0+2.5i") (string->number "hello")
@@ -853,12 +853,12 @@ which can be overriden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
 
 Prints @racket[n] into a string and returns the string. The printed
 form of @racket[n] shows exactly @racket[decimal-digits] digits after
-the decimal point. The printed for uses a minus sign if @racket[n] is
+the decimal point. The printed form uses a minus sign if @racket[n] is
 negative, and it does not use a plus sign if @racket[n] is positive.
 
 Before printing, @racket[n] is converted to an exact number,
 multiplied by @racket[(expt 10 decimal-digits)], rounded, and then
-divided again by @racket[(expt 10 decimal-digits)].  The result of ths
+divided again by @racket[(expt 10 decimal-digits)].  The result of this
 process is an exact number whose decimal representation has no more
 than @racket[decimal-digits] digits after the decimal (and it is
 padded with trailing zeros if necessary).

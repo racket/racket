@@ -79,20 +79,20 @@ argument:
 racket
 (provide place-main)
 
-(define (place-main ch)
-  (place-channel-send ch (format "Hello from place ~a" 
-                                 (place-channel-recv ch))))
+(define (place-main pch)
+  (place-channel-send pch (format "Hello from place ~a" 
+                                  (place-channel-recv pch))))
 ]
 
 
-@defproc[(place? [x any/c]) boolean?]{
-  Returns @racket[#t] if @racket[x] is a @deftech{place descriptor}
+@defproc[(place? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a @deftech{place descriptor}
   value, @racket[#f] otherwise. Every @tech{place descriptor}
   is also a @tech{place channel}.
 }
 
-@defproc[(place-channel? [x any/c]) boolean?]{
-  Returns @racket[#t] if @racket[x] is @tech{place channel}, 
+@defproc[(place-channel? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is @tech{place channel}, 
   @racket[#f] otherwise.
 }
 
@@ -130,15 +130,15 @@ racket
   channel}).
 }
 
-@defproc[(place-channel-send [ch place-channel?] [v any/c]) void]{
-  Sends a message @racket[v] on channel @racket[ch].
+@defproc[(place-channel-send [pch place-channel?] [v any/c]) void]{
+  Sends a message @racket[v] on channel @racket[pch].
 }
 
-@defproc[(place-channel-recv [p place-channel?]) any/c]{
-  Returns a message received on channel @racket[ch].
+@defproc[(place-channel-recv [pch place-channel?]) any/c]{
+  Returns a message received on channel @racket[pch].
 }
 
-@defproc[(place-channel-send/recv [ch place-channel?] [v any/c]) void]{
-  Sends an immutable message @racket[v] on channel @racket[ch] and then 
+@defproc[(place-channel-send/recv [pch place-channel?] [v any/c]) void]{
+  Sends an immutable message @racket[v] on channel @racket[pch] and then 
   waits for a reply message on the same channel.
 }

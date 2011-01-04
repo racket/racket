@@ -42,7 +42,7 @@ system and hardware---which rarely support, for example, the guarantee
 of sequential consistency that is provided for @racket[thread]-based
 concurrency. At the same time, operations that seem obviously safe may
 have a complex enough implementation internally that they cannot run
-in parallel. See also @guidesecref["effective-futures"].
+in parallel. See also @guidesecref["effective-futures"] in @|Guide|.
 
 @deftogether[(
 @defproc[(future [thunk (-> any)]) future?]

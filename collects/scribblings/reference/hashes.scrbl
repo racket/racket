@@ -376,7 +376,7 @@ constant time and atomically. If @scheme[hash] is created with
          (or/c #f exact-nonnegative-integer?)]{
 
 Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
-it returns an integer that is a index to the first element in the hash
+it returns an integer that is an index to the first element in the hash
 table; ``first'' refers to an unspecified ordering of the table
 elements, and the index values are not necessarily consecutive
 integers. For a mutable @scheme[hash], this index is guaranteed to

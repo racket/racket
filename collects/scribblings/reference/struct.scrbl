@@ -24,7 +24,7 @@ takes one value for each field of the structure type, except that some
 of the fields of a structure type can be @deftech{automatic fields};
 the @tech{automatic fields} are initialized to a constant that is
 associated with the structure type, and the corresponding arguments
-are omitted for the constructor procedure. All automatic fields in a
+are omitted from the constructor procedure. All automatic fields in a
 structure type follow the non-automatic fields.
 
 A structure type can be created as a @pidefterm{structure subtype} of
@@ -124,7 +124,7 @@ are initialized with @racket[auto-v]. The total field count (including
 The @racket[props] argument is a list of pairs, where the @racket[car]
 of each pair is a structure type property descriptor, and the
 @racket[cdr] is an arbitrary value. A property can be specified
-multiple times in in @racket[props] (including properties that are
+multiple times in @racket[props] (including properties that are
 automatically added by properties that are directly included in
 @racket[props]) only if the associated values are @racket[eq?],
 otherwise the @exnraise[exn:fail:contract]. See @secref["structprops"]
@@ -577,13 +577,13 @@ encapsulated procedure must return):
 @itemize[
 
  @item{an identifier that is bound to the structure type's descriptor,
- or @racket[#f] it none is known;}
+ or @racket[#f] if none is known;}
 
  @item{an identifier that is bound to the structure type's constructor,
- or @racket[#f] it none is known;}
+ or @racket[#f] if none is known;}
 
  @item{an identifier that is bound to the structure type's predicate,
- or @racket[#f] it none is known;}
+ or @racket[#f] if none is known;}
 
  @item{a list of identifiers bound to the field accessors of the
  structure type, optionally with @racket[#f] as the list's last
@@ -678,7 +678,7 @@ as @racket[make-struct-info].}
 @defthing[prop:struct-info struct-type-property?]{
 
 The @tech{structure type property} for creating new structure types
-like @racket[struct:struct-info]. The property value must a procedure
+like @racket[struct:struct-info]. The property value must be a procedure
 of one argument that takes an instance structure and returns
 structure-type information in list form.}
 
