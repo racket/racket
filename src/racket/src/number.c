@@ -192,6 +192,23 @@ READ_ONLY Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_obje
 #include <machine/fpu.h>
 #endif
 
+#ifdef ASM_DBLPREC_CONTROL_87
+/* Linux uses extended precision by default.
+   Make x87 computations double-precision instead of 
+   extended-precision, so that if/when the JIT generates
+   x87 instructions, it's consistent with everything else. */
+static void to_double_prec(void)
+{
+  int _dblprec = 0x27F;
+  asm ("fldcw %0" : : "m" (_dblprec));
+}
+static void to_extended_prec(void)
+{
+  int _dblprec = 0x37F;
+  asm ("fldcw %0" : : "m" (_dblprec));
+}
+#endif
+
 void
 scheme_init_number (Scheme_Env *env)
 {
@@ -247,13 +264,7 @@ scheme_init_number (Scheme_Env *env)
   }
 #endif
 #ifdef ASM_DBLPREC_CONTROL_87
-  {
-    /* Make x87 computations double-precision instead of 
-       extended-precision, so that if/when the JIT generates
-       x87 instructions, it's consistent with everything else. */
-    int _dblprec = 0x27F;
-    asm ("fldcw %0" : : "m" (_dblprec));
-  }
+  to_double_prec();
 #endif
   END_XFORM_SKIP;
 
@@ -2450,8 +2461,20 @@ static double sch_pow(double x, double y)
 	  return scheme_infinity_val;
       }
     }
-  } else
-    return pow(x, y);
+  } else {
+#ifdef ASM_DBLPREC_CONTROL_87
+    /* libm's pow() implementation seems to rely on
+       extended precision in pow(), so reset the control
+       word while calling pow(); note that the x87 control 
+       word is thread-specific */
+    to_extended_prec();
+#endif
+    x = pow(x, y);
+#ifdef ASM_DBLPREC_CONTROL_87
+    to_double_prec();
+#endif
+    return x;
+  }
 }
 #endif
 
