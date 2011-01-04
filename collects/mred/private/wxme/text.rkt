@@ -2592,7 +2592,9 @@
                              [(symbol-in guess same copy standard text text-force-cr) [format 'guess]]
                              [any? [replace-styles? #t]])
     (if (or write-locked? s-user-locked?)
-        'guess ;; FIXME: docs say that this is more specific
+        (if (not (detect-wxme-file (method-name 'text% 'insert-file) f #t))
+            'text
+            'standard)
         (do-insert-file (method-name 'text% 'insert-file) f format replace-styles?)))
 
   (define/private (do-insert-file who f fmt clear-styles?)

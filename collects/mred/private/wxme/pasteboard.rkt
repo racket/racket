@@ -1907,7 +1907,7 @@
                              [any? [replace-styles? #f]])
     (if (or s-user-locked? 
             (not (zero? write-locked)))
-        'guess ;; FIXME: docs say that this is more specific
+        'standard
         (do-insert-file (method-name 'pasteboard% 'insert-file) f replace-styles?)))
   
   (define/private (do-insert-file who f clear-styles?)
