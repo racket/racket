@@ -519,6 +519,7 @@ case $OS in
     ;;
   OpenBSD)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
+    enable_pthread=yes
     ;;
   NetBSD)
     LIBS="$LIBS -rdynamic"
