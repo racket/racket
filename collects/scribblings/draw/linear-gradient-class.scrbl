@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
-          scribble/eval)
+          scribble/eval
+          (for-label slideshow/pict))
 
 @(define class-eval (make-base-eval))
 @(interaction-eval #:eval class-eval (require racket/class racket/draw slideshow/pict))
@@ -55,7 +56,7 @@ points in between.
     (send dc draw-ellipse 50 50 200 200)
         
     (send dc set-brush brush-grad)
-    (send dc draw-rectangle 300 50 200 200)) 550 300)]
+    (send dc draw-rectangle 300 50 200 200)) 550 300)
 
 ]}
 

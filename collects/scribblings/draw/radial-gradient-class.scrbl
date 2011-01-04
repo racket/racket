@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
-          scribble/eval)
+          scribble/eval
+          (for-label slideshow/pict))
 
 @(define class-eval (make-base-eval))
 @(interaction-eval #:eval class-eval (require racket/class racket/draw slideshow/pict))
