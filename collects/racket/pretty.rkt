@@ -560,63 +560,74 @@
 
      (define escapes-table
        (let* ([table (make-hasheq)]
-              [local-cycle (and found-cycle (make-hasheq))]
+              [local-compound (and print-as-qq?
+                                   (make-hasheq))]
+              [is-compound! (lambda (obj)
+                              (hash-set! local-compound obj #t))]
               [escapes! (lambda (obj)
                           (hash-set! table obj #t)
                           #t)]
               [orf (lambda (a b) (or a b))])
-         (and print-as-qq?
-              (let loop ([obj obj])
-                (if (and local-cycle (hash-ref local-cycle obj #f))
-                    #f
-                    (begin
-                      (when local-cycle
-                        (hash-set! local-cycle obj #t))
-                      (begin0
-                       (cond
-                        [ #f]
-                        [(vector? obj)
-                         (let ([len (vector-length obj)])
-                           (let vloop ([esc? #f][i 0])
-                             (if (= i len)
-                                 (and esc? 
-                                      (escapes! obj))
-                                 (vloop (or (loop (vector-ref obj i)) esc?) 
-                                        (add1 i)))))]
-                        [(pair? obj)
-                         (and (orf (loop (car obj))
-                                   (loop (cdr obj)))
-                              (escapes! obj))]
-                        [(mpair? obj)
-                         (loop (mcar obj))
-                         (loop (mcdr obj))
-                         ;; always unquoted:
-                         #t]
-                        [(and (box? obj) print-box?) 
-                         (and (loop (unbox obj))
-                              (escapes! obj))]
-                        [(and (custom-write? obj)
-                              (not (struct-type? obj)))
-                         (let ([kind (if (custom-print-quotable? obj)
-                                         (custom-print-quotable-accessor obj)
-                                         'self)])
-                           (and (or (and (loop (extract-sub-objects obj pport))
-                                         (not (memq kind '(self always))))
-                                    (memq kind '(never)))
-                                (escapes! obj)))]
-                        [(struct? obj)
-                         (and (or (loop (struct->vector obj))
-                                  (not (prefab-struct-key obj)))
-                              (escapes! obj))]
-                        [(hash? obj)
-                         (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
-                                (or (orf (loop v) 
-                                         (loop k))
-                                    esc?))
-                              (escapes! obj))]
-                        [else #f])
-                       (when local-cycle
-                         (hash-remove! local-cycle obj)))))))
+         (when print-as-qq?
+           (let loop ([obj obj])
+             (cond
+              [(hash-ref table obj #f)
+               ;; already decided that it escapes
+               #t]
+              [(and local-compound 
+                    (hash-ref local-compound obj #f))
+               ;; either still deciding (so assume #f) or
+               ;; already decided that no escape is needed
+               #f]
+              [else
+               (cond
+                [(vector? obj)
+                 (is-compound! obj)
+                 (let ([len (vector-length obj)])
+                   (let vloop ([esc? #f][i 0])
+                     (if (= i len)
+                         (and esc? 
+                              (escapes! obj))
+                         (vloop (or (loop (vector-ref obj i)) esc?) 
+                                (add1 i)))))]
+                [(pair? obj)
+                 (is-compound! obj)
+                 (and (orf (loop (car obj))
+                           (loop (cdr obj)))
+                      (escapes! obj))]
+                [(mpair? obj)
+                 (is-compound! obj)
+                 (loop (mcar obj))
+                 (loop (mcdr obj))
+                 ;; always unquoted:
+                 #t]
+                [(and (box? obj) print-box?) 
+                 (is-compound! obj)
+                 (and (loop (unbox obj))
+                      (escapes! obj))]
+                [(and (custom-write? obj)
+                      (not (struct-type? obj)))
+                 (is-compound! obj)
+                 (let ([kind (if (custom-print-quotable? obj)
+                                 (custom-print-quotable-accessor obj)
+                                 'self)])
+                   (and (or (and (loop (extract-sub-objects obj pport))
+                                 (not (memq kind '(self always))))
+                            (memq kind '(never)))
+                        (escapes! obj)))]
+                [(struct? obj)
+                 (is-compound! obj)
+                 (and (or (loop (struct->vector obj))
+                          (not (prefab-struct-key obj)))
+                      (escapes! obj))]
+                [(hash? obj)
+                 (is-compound! obj)
+                 (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
+                        (or (orf (loop v) 
+                                 (loop k))
+                            esc?))
+                      (escapes! obj))]
+                [else #f])])))
          table))
 
      (define cycle-counter 0)
