@@ -1674,8 +1674,10 @@ TODO
         (reset-console)
         (insert-prompt)
         
+        ;; call the first-opened method on the user's thread, but wait here for that to terminate
         (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)]
-              [drr-evtspace (current-eventspace)])
+              [drr-evtspace (current-eventspace)]
+              [s (make-semaphore 0)])
           (run-in-evaluation-thread
            (λ ()
              (let/ec k
@@ -1689,12 +1691,12 @@ TODO
                    [else
                     ;; this is the backwards compatible case.
                     (send lang first-opened)])))
-             (parameterize ([current-eventspace drr-evtspace])
-               (queue-callback
-                (λ ()
-                  (send context enable-evaluation)
-                  (end-edit-sequence)
-                  (clear-undos))))))))
+             (semaphore-post s)))
+          (semaphore-wait s))
+        
+        (send context enable-evaluation)
+        (end-edit-sequence)
+        (clear-undos))
       
       (define indenting-limit 0)
       (define/override (get-limit n) 

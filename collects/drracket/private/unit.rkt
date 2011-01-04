@@ -786,7 +786,7 @@ module browser threading seems wrong.
             (and (or (= (last-position) 0) (not really-modified?))
                  (not (is-modified?))
                  (not (get-filename))))
-          ;; inserts the auto-text if any, and executes the text if so
+          ;; inserts the auto-text if any
           (define/public (insert-auto-text)
             (define lang
               (drracket:language-configuration:language-settings-language
