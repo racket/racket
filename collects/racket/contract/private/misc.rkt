@@ -715,11 +715,7 @@
   (unless (and (real? start)
                (real? end))
     (error 'real-in "expected two real numbers as arguments, got ~e and ~e" start end))
-  (flat-named-contract 
-   `(real-in ,start ,end)
-   (λ (x)
-     (and (real? x)
-          (<= start x end)))))
+  (between/c start end))
 
 (define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]

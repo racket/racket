@@ -1,4 +1,3 @@
-
 #lang scribble/doc
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse))
@@ -183,10 +182,7 @@ input to be a real number between @racket[n] and @racket[m] or equal to
 one of them.}
 
 @defproc[(real-in [n real?] [m real?]) flat-contract?]{
-
-Returns a flat contract that requires the input to be a real number
-between @racket[n] and @racket[m], inclusive.}
-
+This is an alias for @racket[between/c].}
 
 @defproc[(integer-in [j exact-integer?] [k exact-integer?]) flat-contract?]{
 
