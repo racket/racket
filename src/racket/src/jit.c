@@ -14557,6 +14557,8 @@ Scheme_Object *scheme_native_stack_trace(void)
   Get_Stack_Proc gs;
 #endif
   int use_unw = 0;
+  int shift_cache_to_next = 0;
+  int added_list_elem;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -14688,7 +14690,13 @@ Scheme_Object *scheme_native_stack_trace(void)
       else
 	first = name;
       last = name;
-    }
+      if (shift_cache_to_next) {
+        stack_cache_stack[stack_cache_stack_pos].cache = last;
+        shift_cache_to_next = 0;
+      }
+      added_list_elem = 1;
+    } else 
+      added_list_elem = 0;
 
     /* Cache the result halfway up the stack, if possible. Only cache
        on frames where the previous frame had a return address with a
@@ -14713,6 +14721,8 @@ Scheme_Object *scheme_native_stack_trace(void)
       stack_cache_stack[pos].stack_frame = (void *)(((void **)p) + RETURN_ADDRESS_OFFSET);
       stack_cache_stack[pos].cache = last;
       ((void **)p)[RETURN_ADDRESS_OFFSET] = stack_cache_pop_code;
+      if (!added_list_elem)
+        shift_cache_to_next = 1;
 
       halfway = stack_end;
     }
@@ -14750,6 +14760,9 @@ Scheme_Object *scheme_native_stack_trace(void)
       p = q;
     }
   }
+
+  if (shift_cache_to_next)
+    stack_cache_stack[stack_cache_stack_pos].cache = scheme_null;
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_destroy_local(&c);
