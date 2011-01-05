@@ -775,7 +775,7 @@ results of the @scheme[arg] expressions as arguments.
 Methods that are present in the superclass but not declared with
 @scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner] or
 @scheme[rename-super] are not directly accessible in the class
-(through they can be called with @scheme[send]).  Every public method
+(though they can be called with @scheme[send]).  Every public method
 in a superclass is present in a derived class, even if it is not
 declared with @scheme[inherit] in the derived class; the
 @scheme[inherit] clause does not control inheritance, but merely
