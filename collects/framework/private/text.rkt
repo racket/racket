@@ -3984,6 +3984,7 @@ designates the character that triggers autocompletion
                     0 (+ dy top)
                     (text-width dc (number-space+1))
                     (- bottom top))
+              (restore-dc-state dc saved-dc)
               (send copy subtract clipped)
               (send dc set-clipping-region copy))
             (begin
