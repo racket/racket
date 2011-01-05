@@ -620,7 +620,8 @@ Finally, the representation can be an instance of a structure type
 derived from @racket[struct:struct-info] or with the
 @racket[prop:struct-info] property that also implements
 @racket[prop:procedure], and where the instance is further is wrapped
-by @racket[make-set!-transformer].
+by @racket[make-set!-transformer]. In addition, the representation may
+implement the @racket[prop:struct-auto-info] property.
 
 Use @racket[struct-info?] to recognize all allowed forms of the
 information, and use @racket[extract-struct-info] to obtain a list
@@ -681,6 +682,31 @@ The @tech{structure type property} for creating new structure types
 like @racket[struct:struct-info]. The property value must be a procedure
 of one argument that takes an instance structure and returns
 structure-type information in list form.}
+
+@deftogether[(
+@defthing[prop:struct-auto-info struct-type-property?]
+@defproc[(struct-auto-info? [v any/c]) boolean?]
+@defproc[(struct-auto-info-lists [sai struct-auto-info?]) 
+         (list/c (listof identifier?) (listof identifier?))]
+)]{
+
+The @racket[prop:struct-auto-info] property is implemented to provide
+static information about which of the accessor and mutator identifiers
+for a structure type correspond to @racket[#:auto] fields (so that
+they have no corresponding argument in the constructor). The property
+value must be a procedure that accepts an instance structure to which
+the property is given, and the result must be two lists of identifiers
+suitable as a result from @racket[struct-auto-info-lists].
+
+The @racket[struct-auto-info?] predicate recognizes values that
+implement the @racket[prop:struct-auto-info] property.
+
+The @racket[struct-auto-info-lists] function extracts two lists of
+identifiers from a value that implements the
+@racket[prop:struct-auto-info] property. The first list should be a
+subset of the accessor identifiers for the structure type described by
+@racket[sai], and the second list should be a subset of the mutator
+identifiers. The two subsets correspond to @racket[#:auto] fields.}
 
 @; ----------------------------------------------------------------------
 

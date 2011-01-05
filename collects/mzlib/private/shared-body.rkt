@@ -49,7 +49,11 @@
                                                    (let ([decl (extract-struct-info v)])
                                                      (and (cadr decl)
                                                           (andmap values (list-ref decl 4))
-                                                          decl)))))])
+                                                          (append decl
+                                                                  (list
+                                                                   (if (struct-auto-info? v)
+                                                                       (struct-auto-info-lists v)
+                                                                       (list null null)))))))))])
                                      (or (get-struct id)
                                          (let ([s (syntax-property id 'constructor-for)])
                                            (and s
@@ -75,7 +79,17 @@
 				     #f
 				     (if (eq? 'the-cons (syntax-e b))
 					 'cons
-					 (syntax-e b))))))])
+					 (syntax-e b))))))]
+           [remove-all (lambda (lst rmv-lst)
+                         (define (remove e l)
+                           (cond
+                            [(free-identifier=? e (car l)) (cdr l)]
+                            [else (cons (car l) (remove e (cdr l)))]))
+                         (let loop ([lst lst] [rmv-lst rmv-lst])
+                           (if (null? rmv-lst)
+                               lst
+                               (loop (remove (car rmv-lst) lst)
+                                     (cdr rmv-lst)))))])
        (with-syntax ([(graph-expr ...)
 		      (map (lambda (expr)
                              (let loop ([expr expr])
@@ -153,13 +167,15 @@
                                         [args (syntax->list (syntax args))])
                                     (unless args
                                       (bad "structure constructor"))
-                                    (unless (= (length (list-ref decl 4)) (length args))
-                                      (raise-syntax-error
-                                       'shared
-                                       (format "wrong argument count for structure constructor; expected ~a, found ~a"
-                                               (length (list-ref decl 4)) (length args))
-                                       stx
-                                       expr))
+                                    (let ([expected (- (length (list-ref decl 4))
+                                                       (length (car (list-ref decl 6))))])
+                                      (unless (= expected (length args))
+                                        (raise-syntax-error
+                                         'shared
+                                         (format "wrong argument count for structure constructor; expected ~a, found ~a"
+                                                 expected (length args))
+                                         stx
+                                         expr)))
                                     (with-syntax ([undefineds (map (lambda (x) (syntax undefined)) args)])
                                       (syntax (make-x . undefineds))))]
                                  [_else expr])))
@@ -253,7 +269,7 @@
                                      [(make-x e ...)
                                       (struct-decl-for (syntax make-x))
                                       (let ([decl (struct-decl-for (syntax make-x))])
-                                        (syntax-case (reverse (list-ref decl 4)) ()
+                                        (syntax-case (remove-all (reverse (list-ref decl 4)) (cadr (list-ref decl 6))) ()
                                           [() 
                                            (syntax (void))]
                                           [(setter ...) 
