@@ -2909,14 +2909,12 @@ module browser threading seems wrong.
           (define (set-visible-regions txt regions)
             (when regions
               (for-each (λ (canvas region) 
-                          (send canvas call-as-primary-owner
-                                (λ ()
-                                  (let ([admin (send txt get-admin)])
-                                    (send admin scroll-to 
-                                          (first region)
-                                          (second region)
-                                          (third region)
-                                          (fourth region)))))) 
+                           (set-visible-region canvas
+                                               (first region)
+                                               (second region)
+                                               (third region)
+                                               (fourth region)
+                                               #f))
                         (send txt get-canvases)
                         regions)))
           
