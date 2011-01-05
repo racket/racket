@@ -36,7 +36,11 @@
     n
     "Generate tests of size at most n"
     (set! size (string->number n))
-    (set! attempt->size (const size))])
+    (set! attempt->size (const size))]
+   ["--log"
+    p
+    "Log generated tests to path p"
+    (log-test (curryr pretty-display (open-output-file p #:exists 'truncate)))])
   
   (printf "Test seed: ~a (size: ~a)\n" seed (or size "variable"))
   
@@ -49,8 +53,10 @@
     (when from-rules-tests
       (time (test #:source :-> #:attempts from-rules-tests #:attempt-size attempt->size)))))
 
+(define log-test (make-parameter void))
+
 (define-syntax-rule (test . kw-args)
-  (redex-check grammar p (same-behavior? (term p)) 
+  (redex-check grammar p (begin ((log-test) (term p)) (same-behavior? (term p))) 
                #:prepare fix-prog . kw-args))
 
 (define fix-prog
