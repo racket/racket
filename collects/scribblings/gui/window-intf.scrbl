@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label (only-in ffi/unsafe cpointer?)))
 
 @definterface/title[window<%> (area<%>)]{
 
@@ -106,26 +107,22 @@ Returns the window's cursor, or @scheme[#f] if this window's cursor
 
 }
 
-@defmethod[(get-handle)
-           exact-integer?]{
+@defmethod[(get-handle) cpointer?]{
 
-Returns an exact integer representing a handle to the window in the
-current platform's GUI toolbox. Cast this number from a C @tt{long}
-to a platform-specific C type:
+Returns a handle to the window for the current platform's GUI
+toolbox. The value that the pointer represents depends on the
+platform:
 
 @itemize[
 
  @item{Windows: @tt{HWND}}
 
- @item{Mac OS X: @tt{WindowRef} for a @scheme[top-level-window<%>] object,
-       @tt{ControlRef} for other windows}
+ @item{Mac OS X: @tt{NSWindow} for a @scheme[top-level-window<%>] object,
+       @tt{NSView} for other windows}
 
- @item{X: @tt{Widget*}}
+ @item{X: @tt{GtkWidget}}
 
 ]
-
-Some windows may not have a representation in the platform's GUI level,
- in which case the result of this method is @scheme[0].
 
 }
 
