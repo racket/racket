@@ -10,9 +10,9 @@
  (utils tc-utils require-contract)
  (env type-name-env)
  (types resolve utils)
- (prefix-in t: (types convenience))
+ (prefix-in t: (types convenience abbrev))
  (private parse-type)
- racket/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
+ racket/match unstable/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
@@ -121,6 +121,57 @@
              #'list?
              #`(listof #,(t->c elem-ty)))]
         [(? (lambda (e) (eq? t:Any-Syntax e))) #'syntax?]
+
+        ;; numeric special cases
+        ;; since often-used types like Integer are big unions, this would
+        ;; generate large contracts.
+        [(== t:-PosByte type-equal?) #'(flat-named-contract 'Positive-Byte (and/c byte? positive?))]
+        [(== t:-Byte type-equal?) #'(flat-named-contract 'Byte byte?)]
+        [(== t:-PosIndex type-equal?) #'(flat-named-contract 'Positive-Index (and/c t:index? positive?))]
+        [(== t:-Index type-equal?) #'(flat-named-contract 'Index t:index?)]
+        [(== t:-PosFixnum type-equal?) #'(flat-named-contract 'Positive-Fixnum (and/c fixnum? positive?))]
+        [(== t:-NonNegFixnum type-equal?) #'(flat-named-contract 'Nonnegative-Fixnum (and/c fixnum? (lambda (x) (>= x 0))))]
+        ;; -NegFixnum is a base type
+        [(== t:-NonPosFixnum type-equal?) #'(flat-named-contract 'Nonpositive-Fixnum (and/c fixnum? (lambda (x) (<= x 0))))]
+        [(== t:-Fixnum type-equal?) #'(flat-named-contract 'Fixnum fixnum?)]
+        [(== t:-PosInt type-equal?) #'(flat-named-contract 'Positive-Integer (and/c exact-integer? positive?))]
+        [(== t:-Nat type-equal?) #'(flat-named-contract 'Natural (and/c exact-integer? (lambda (x) (>= x 0))))]
+        [(== t:-NegInt type-equal?) #'(flat-named-contract 'Negative-Integer (and/c exact-integer? negative?))]
+        [(== t:-NonPosInt type-equal?) #'(flat-named-contract 'Nonpositive-Integer (and/c exact-integer? (lambda (x) (<= x 0))))]
+        [(== t:-Integer type-equal?) #'(flat-named-contract 'Integer exact-integer?)]
+        [(== t:-PosRat type-equal?) #'(flat-named-contract 'Positive-Rational (and/c exact-rational? positive?))]
+        [(== t:-NonNegRat type-equal?) #'(flat-named-contract 'Nonnegative-Rational (and/c exact-rational? (lambda (x) (>= x 0))))]
+        [(== t:-NegRat type-equal?) #'(flat-named-contract 'Negative-Rational (and/c exact-rational? negative?))]
+        [(== t:-NonPosRat type-equal?) #'(flat-named-contract 'Nonpositive-Rational (and/c exact-rational? (lambda (x) (<= x 0))))]
+        [(== t:-Rat type-equal?) #'(flat-named-contract 'Rational exact-rational?)]
+        [(== t:-FlonumZero type-equal?) #'(flat-named-contract 'Float-Zero (and/c flonum? zero?))]
+        [(== t:-NonNegFlonum type-equal?) #'(flat-named-contract 'Nonnegative-Float (and/c flonum? (lambda (x) (>= x 0))))]
+        [(== t:-NonPosFlonum type-equal?) #'(flat-named-contract 'Nonpositive-Float (and/c flonum? (lambda (x) (<= x 0))))]
+        [(== t:-Flonum type-equal?) #'(flat-named-contract 'Float flonum?)]
+        [(== t:-SmallFloatZero type-equal?) #'(flat-named-contract 'Small-Float-Zero (and/c t:small-float? zero?))]
+        [(== t:-InexactRealZero type-equal?) #'(flat-named-contract 'Inexact-Real-Zero (and/c inexact-real? zero?))]
+        [(== t:-PosInexactReal type-equal?) #'(flat-named-contract 'Positive-Inexact-Real (and/c inexact-real? positive?))]
+        [(== t:-NonNegSmallFloat type-equal?) #'(flat-named-contract 'Nonnegative-Small-Float (and/c t:small-float? (lambda (x) (>= x 0))))]
+        [(== t:-NonNegInexactReal type-equal?) #'(flat-named-contract 'Nonnegative-Inexact-Real (and/c inexact-real? (lambda (x) (>= x 0))))]
+        [(== t:-NegInexactReal type-equal?) #'(flat-named-contract 'Negative-Inexact-Real (and/c inexact-real? negative?))]
+        [(== t:-NonPosSmallFloat type-equal?) #'(flat-named-contract 'Nonpositive-Small-Float (and/c t:small-float? (lambda (x) (<= x 0))))]
+        [(== t:-NonPosInexactReal type-equal?) #'(flat-named-contract 'Nonpositive-Inexact-Real (and/c inexact-real? (lambda (x) (<= x 0))))]
+        [(== t:-SmallFloat type-equal?) #'(flat-named-contract 'Small-Float t:small-float?)]
+        [(== t:-InexactReal type-equal?) #'(flat-named-contract 'Inexact-Real inexact-real?)]
+        [(== t:-RealZero type-equal?) #'(flat-named-contract 'Real-Zero (and/c real? zero?))]
+        [(== t:-PosReal type-equal?) #'(flat-named-contract 'Positive-Real (and/c real? positive?))]
+        [(== t:-NonNegReal type-equal?) #'(flat-named-contract 'Nonnegative-Real (and/c real? (lambda (x) (>= x 0))))]
+        [(== t:-NegReal type-equal?) #'(flat-named-contract 'Negative-Real (and/c real? negative?))]
+        [(== t:-NonPosReal type-equal?) #'(flat-named-contract 'Nonpositive-Real (and/c real? (lambda (x) (<= x 0))))]
+        [(== t:-Real type-equal?) #'(flat-named-contract 'Real real?)]
+        [(== t:-InexactComplex type-equal?)
+         #'(flat-named-contract 'Inexact-Complex
+                                (and/c number?
+                                       (lambda (x)
+                                         (and (inexact-real? (imag-part x))
+                                              (inexact-real? (real-part x))))))]
+        [(== t:-Number type-equal?) #'(flat-named-contract 'Number number?)]
+
         [(Base: sym cnt) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
