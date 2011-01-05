@@ -3880,13 +3880,16 @@ designates the character that triggers autocompletion
       (+ (unbox left) dx))
 
     (define/augment (after-insert start length)
-      (setup-padding))
+      (setup-padding)
+      (inner (void) after-insert start length))
 
     (define/augment (after-delete start length)
-      (setup-padding))
+      (setup-padding)
+      (inner (void) after-delete start length))
 
     (define/augment (after-change-style start length)
-      (setup-padding))
+      (setup-padding)
+      (inner (void) after-change-style start length))
 
     (define (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
