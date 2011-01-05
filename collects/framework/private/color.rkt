@@ -209,7 +209,8 @@ added get-regions
                       (loop (cdr old) (cdr new)))]
                [else
                 (cons (make-new-lexer-state (caar new) (cadar new))
-                      (loop null (cdr new)))]))))
+                      (loop null (cdr new)))])))
+      (update-lexer-state-observers))
 
     
     (define/public (get-regions) 
@@ -236,6 +237,16 @@ added get-regions
              local-edit-sequence? get-styles-fixed has-focus?
              get-fixed-style)
     
+    (define lexers-all-valid? #t)
+    (define/private (update-lexer-state-observers)
+      (define new (for/and ([ls (in-list lexer-states)])
+                    (lexer-state-up-to-date? ls)))
+      (unless (eq? new lexers-all-valid?)
+        (set! lexers-all-valid? new)
+        (on-lexer-valid lexers-all-valid?)))
+    (define/pubment (on-lexer-valid valid?)
+      (inner (void) on-lexer-valid valid?))
+    
     (define/private (reset-tokens)
       (for-each
        (lambda (ls)
@@ -247,6 +258,7 @@ added get-regions
          (set-lexer-state-current-lexer-mode! ls #f)
          (set-lexer-state-parens! ls (new paren-tree% (matches pairs))))
        lexer-states)
+      (update-lexer-state-observers)
       (set! restart-callback #f)
       (set! force-recolor-after-freeze #f)
       (set! colors null)
@@ -374,6 +386,7 @@ added get-regions
                                                        (send valid-tree search-max!)
                                                        (data-lexer-mode (send valid-tree get-root-data))))))
           (set-lexer-state-up-to-date?! ls #f)
+          (update-lexer-state-observers)
           (queue-callback (λ () (colorer-callback)) #f)))
        ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
         (let-values (((tok-start tok-end valid-tree invalid-tree orig-data)
@@ -454,7 +467,8 @@ added get-regions
           (when (coroutine-run 10 tok-cor)
             (for-each (lambda (ls)
                         (set-lexer-state-up-to-date?! ls #t))
-                      lexer-states)))
+                      lexer-states)
+            (update-lexer-state-observers)))
         #;(printf "end lexing\n")
         #;(printf "begin coloring\n")
         ;; This edit sequence needs to happen even when colors is null
