@@ -105,7 +105,7 @@
   (inherit get-hwnd 
 	   is-shown?
 	   get-eventspace
-           on-size
+           queue-on-size
            pre-on-char pre-on-event
            reset-cursor-in-child)
 
@@ -215,10 +215,10 @@
       0]
      [(and (= msg WM_SIZE)
            (not (= wParam SIZE_MINIMIZED)))
-      (queue-window-event this (lambda () (on-size 0 0)))
+      (queue-window-event this (lambda () (queue-on-size)))
       (stdret 0 1)]
      [(= msg WM_MOVE)
-      (queue-window-event this (lambda () (on-size 0 0)))
+      (queue-window-event this (lambda () (queue-on-size)))
       (stdret 0 1)]
      [(= msg WM_ACTIVATE)
       (let ([state (LOWORD wParam)]
