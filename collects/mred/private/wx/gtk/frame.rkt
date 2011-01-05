@@ -139,7 +139,7 @@
           style)
     (init [is-dialog? #f])
 
-    (inherit get-gtk set-size on-size
+    (inherit get-gtk set-size
              pre-on-char pre-on-event
              get-client-delta get-size
              get-parent get-eventspace

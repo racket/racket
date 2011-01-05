@@ -238,7 +238,6 @@
               is-window-enabled?
               block-mouse-events
               move get-x get-y
-              on-size
               register-as-child
               get-size get-position
               set-focus
@@ -456,7 +455,9 @@
        (fix-dc)
        (when (is-auto-scroll?)
          (reset-auto-scroll 0 0))
-       (on-size 0 0))
+       (on-size))
+
+     (define/public (on-size) (void))
 
      (define/public (show-scrollbars h? v?)
        (let ([h? (and h? hscroll-ok?)]

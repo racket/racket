@@ -420,7 +420,8 @@
         (unless (= h -1) (set! save-h h))
         (set! save-w (max save-w client-delta-w))
         (set! save-h (max save-h client-delta-h))
-        (really-set-size gtk x y save-x save-y save-w save-h)))
+        (really-set-size gtk x y save-x save-y save-w save-h)
+        (queue-on-size)))
 
     (define/public (save-size x y w h)
       (set! save-w w)
@@ -441,13 +442,7 @@
         (set! save-h h)
         (queue-on-size)))
 
-    (define on-size-queued? #f)
-    (define/public (queue-on-size)
-      (unless on-size-queued?
-        (set! on-size-queued? #t)
-        (queue-window-event this (lambda () 
-                                   (set! on-size-queued? #f)
-                                   (on-size 0 0)))))
+    (define/public (queue-on-size) (void))
 
     (define client-delta-w 0)
     (define client-delta-h 0)
@@ -604,8 +599,6 @@
 
     (define/public (on-char e) (void))
     (define/public (on-event e) (void))
-
-    (define/public (on-size w h) (void))
 
     (define/public (register-child child on?)
       (void))

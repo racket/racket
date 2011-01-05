@@ -34,7 +34,6 @@
 	[on-set-focus (lambda () (void))]
 	[on-kill-focus (lambda () (void))]
 	[set-focus (lambda () (void))]
-	[on-size (lambda () (void))]
 	[enable (lambda () (void))]
 	[show (lambda (on?) (void))]
         [is-shown? (lambda () #f)]

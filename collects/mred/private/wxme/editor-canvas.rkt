@@ -288,13 +288,16 @@
     (send admin set-canvas #f)
     #|(super ~)|#)
   
-  (define/override (on-size w h)
+  (define/override (on-size)
     (unless noloop?
-      (unless (and (= w lastwidth)
-                   (= h lastheight))
-        (unless (and media
-                     (send media get-printing))
-          (reset-size)))))
+      (unless (and media
+                   (send media get-printing))
+        (let-boxes ([w 0]
+                    [h 0])
+            (get-size w h)
+          (unless (and (= w lastwidth)
+                       (= h lastheight))
+            (reset-size))))))
 
   (define/private (reset-size)
     (reset-visual #f)

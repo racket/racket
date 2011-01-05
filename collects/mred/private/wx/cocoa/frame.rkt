@@ -63,7 +63,7 @@
         (let ([wx (->wx wxb)])
           (when wx
             (queue-window-event wx (lambda ()
-                                     (send wx on-size 0 0)
+                                     (send wx queue-on-size)
                                      (send wx clean-up)))
             ;; Live resize:
             (constrained-reply (send wx get-eventspace)
@@ -74,7 +74,7 @@
   [-a _void (windowDidMove: [_id notification])
       (when wxb
         (queue-window*-event wxb (lambda (wx)
-                                   (send wx on-size 0 0))))]
+                                   (send wx queue-on-size))))]
   [-a _void (windowDidBecomeMain: [_id notification])
       ;; We check whether the window is visible because
       ;; clicking the dock item tries to resurrect a hidden

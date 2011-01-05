@@ -194,7 +194,7 @@
            [gl-config #f])
 
      (inherit get-gtk set-size get-size get-client-size 
-              on-size get-top-win
+              get-top-win
               set-auto-size 
               adjust-client-delta infer-client-delta
               is-auto-scroll? get-virtual-width get-virtual-height
@@ -438,10 +438,9 @@
      (define/override (internal-on-client-size w h)
        (reset-dc))
      (define/override (on-client-size w h) 
-       (let ([xb (box 0)]
-             [yb (box 0)])
-         (get-size xb yb)
-         (on-size (unbox xb) (unbox yb))))
+       (on-size))
+
+     (define/public (on-size) (void))
 
      (define/public (show-scrollbars h? v?)
        (when hscroll-gtk
