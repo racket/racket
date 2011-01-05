@@ -81,6 +81,25 @@ Note that under X, keyboard focus can move to the menu bar
 }
 
 
+@defmethod[(get-client-handle) cpointer?]{
+
+Returns a handle to the ``inside'' of the window for the current
+platform's GUI toolbox. The value that the pointer represents depends
+on the platform:
+
+@itemize[
+
+ @item{Windows: @tt{HWND}}
+
+ @item{Mac OS X: @tt{NSView}}
+
+ @item{X: @tt{GtkWidget}}
+
+]
+
+See also @method[window<%> get-handle].}
+
+
 @defmethod[(get-client-size)
            (values (integer-in 0 10000)
                    (integer-in 0 10000))]{
@@ -107,9 +126,10 @@ Returns the window's cursor, or @scheme[#f] if this window's cursor
 
 }
 
+
 @defmethod[(get-handle) cpointer?]{
 
-Returns a handle to the window for the current platform's GUI
+Returns a handle to the ``outside'' of the window for the current platform's GUI
 toolbox. The value that the pointer represents depends on the
 platform:
 
@@ -124,7 +144,7 @@ platform:
 
 ]
 
-}
+See also @method[window<%> get-client-handle].}
 
 
 @defmethod[(get-height)

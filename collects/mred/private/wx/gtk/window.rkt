@@ -612,6 +612,7 @@
     (define/public (on-drop-file path) (void))
 
     (define/public (get-handle) (get-gtk))
+    (define/public (get-client-handle) (get-client-gtk))
 
     (define/public (popup-menu m x y)
       (let ([gx (box x)]

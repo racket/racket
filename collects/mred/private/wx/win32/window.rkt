@@ -249,6 +249,7 @@
   (define/public (on-set-focus) (void))
   (define/public (on-kill-focus) (void))
   (define/public (get-handle) hwnd)
+  (define/public (get-client-handle) (get-client-hwnd))
 
   (define enabled? #t)
   (define parent-enabled? #t)

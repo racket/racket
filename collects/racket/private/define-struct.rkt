@@ -44,7 +44,9 @@
       (datum->syntax orig (syntax-e orig) stx orig))
     (syntax-case stx ()
       [(self arg ...) (datum->syntax stx
-                                     (cons (transfer-srcloc orig #'self)
+                                     (cons (syntax-property (transfer-srcloc orig #'self)
+                                                            'constructor-for
+                                                            (syntax-local-introduce #'self))
                                            (syntax-e (syntax (arg ...))))
                                      stx
                                      stx)]

@@ -41,21 +41,29 @@
            [ph-used?s (map (lambda (x) (box #f)) names)]
 	   [struct-decl-for (lambda (id)
 			      (and (identifier? id)
-				   (let* ([s (symbol->string (syntax-e id))]
-					  [m (regexp-match-positions "make-" s)])
-				     (and m
-					  (let ([name (datum->syntax
-						       id
-						       (string->symbol (string-append (substring s 0 (caar m))
-										      (substring s (cdar m) (string-length s))))
-						       id)])
-					    (let ([v (syntax-local-value name (lambda () #f))])
-					      (and v
-						   (struct-declaration-info? v)
-						   (let ([decl (extract-struct-info v)])
+                                   (let ([get-struct
+                                          (lambda (id)
+                                            (let ([v (syntax-local-value id (lambda () #f))])
+                                              (and v
+                                                   (struct-declaration-info? v)
+                                                   (let ([decl (extract-struct-info v)])
                                                      (and (cadr decl)
                                                           (andmap values (list-ref decl 4))
-                                                          decl)))))))))]
+                                                          decl)))))])
+                                     (or (get-struct id)
+                                         (let ([s (syntax-property id 'constructor-for)])
+                                           (and s
+                                                (identifier? s)
+                                                (get-struct s)))
+                                         (let* ([s (symbol->string (syntax-e id))]
+                                                [m (regexp-match-positions "make-" s)])
+                                           (and m
+                                                (let ([name (datum->syntax
+                                                             id
+                                                             (string->symbol (string-append (substring s 0 (caar m))
+                                                                                            (substring s (cdar m) (string-length s))))
+                                                             id)])
+                                                  (get-struct name))))))))]
            [append-ids null]
 	   [same-special-id? (lambda (a b)
 			       ;; Almost module-or-top-identifier=?,

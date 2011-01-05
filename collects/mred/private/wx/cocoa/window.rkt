@@ -727,6 +727,7 @@
       (send (get-parent) end-no-cursor-rects))
 
     (define/public (get-handle) (get-cocoa))
+    (define/public (get-client-handle) (get-cocoa-content))
 
     (define/public (popup-menu m x y)
       (send m do-popup (get-cocoa-content) (get-cocoa-window) x (flip-client y)
