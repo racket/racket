@@ -3719,6 +3719,7 @@ designates the character that triggers autocompletion
              line-paragraph
              line-start-position
              line-end-position
+             get-view-size
              set-padding
              get-padding)
 
@@ -3730,6 +3731,7 @@ designates the character that triggers autocompletion
 
     (define (constructor)
       (super-new)
+      (setup-padding)
       #;
       (define space (text-width dc (number-space+1)))
       #;
@@ -3742,9 +3744,25 @@ designates the character that triggers autocompletion
     ;; add an extra 0 so it looks nice
     (define (number-space+1) (string-append (number-space) "0"))
 
+    (define (repaint)
+      (send this invalidate-bitmap-cache))
+
+    (define padding-dc (new bitmap-dc% [bitmap (make-screen-bitmap 1 1)]))
+    (define (setup-padding)
+      (if (showing-line-numbers?)
+        (let ()
+          (send padding-dc set-font (get-style-font))
+          (define-values (padding-left padding-top padding-right padding-bottom) (get-padding))
+          (define new-padding (text-width padding-dc (number-space+1)))
+          (set-padding new-padding 0 0 0)
+          (when (not (= padding-left new-padding))
+            (repaint)))
+        (set-padding 0 0 0 0)))
+
     ;; call this method with #t or #f to turn on/off line numbers
     (define/public (show-line-numbers! what)
-      (set! show-line-numbers? what))
+      (set! show-line-numbers? what)
+      (setup-padding))
 
     (define/public (showing-line-numbers?)
       show-line-numbers?)
@@ -3759,11 +3777,6 @@ designates the character that triggers autocompletion
                       #;
                       (send style-list basic-style))])
         (send std get-font)))
-
-    ;; low <= what <= high
-    (define (between low what high)
-      (and (>= what low)
-           (<= what high)))
 
     (define-struct saved-dc-state (pen font foreground-color))
     (define (save-dc-state dc)
@@ -3846,8 +3859,34 @@ designates the character that triggers autocompletion
                           (min 255 (integer (* 255 green)))
                           (min 255 (integer (* 255 blue)))))
 
-    ;; an offset that looks right
-    (define magic-space 5)
+    ;; adjust space so that we are always at the left-most position where
+    ;; drawing looks right
+    (define (left-space dc dx)
+      (define left (box 0))
+      (define top (box 0))
+      (define width (box 0))
+      (define height (box 0))
+      (send (send this get-admin) get-view left top width height)
+      #|
+      (define width2 (box 0))
+      (define height2 (box 0))
+      (get-view-size width2 height2)
+      |#
+      #;
+      (printf "left ~a top ~a width ~a height ~a width2 ~a height2 ~a\n"
+              (unbox left) (unbox top)
+              (unbox width) (unbox height)
+              (unbox width2) (unbox height2))
+      (+ (unbox left) dx))
+
+    (define/augment (after-insert start length)
+      (setup-padding))
+
+    (define/augment (after-delete start length)
+      (setup-padding))
+
+    (define/augment (after-change-style start length)
+      (setup-padding))
 
     (define (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
@@ -3860,11 +3899,10 @@ designates the character that triggers autocompletion
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
 
-        (when (between top y bottom)
+        (when (<= top y bottom)
           (define view (number->string (add1 (line-paragraph line))))
           (define final-x
-            (+ ;; dx 
-              magic-space
+            (+ (left-space dc dx)
                (case alignment
                  [(left) 0]
                  [(right) (- right-space (text-width dc view) single-space)]
@@ -3881,9 +3919,11 @@ designates the character that triggers autocompletion
 
     ;; draw the line between the line numbers and the actual text
     (define (draw-separator dc top bottom dx dy x)
-      (send dc draw-line (+ magic-space x) (+ dy top) (+ magic-space x) (+ dy bottom))
-      #;
-      (send dc draw-line (+ dx x) (+ dy top) (+ dx x) (+ dy bottom)))
+      (define line-x (+ (left-space dc dx) x))
+      (define line-y1 (+ dy top))
+      (define line-y2 (+ dy bottom))
+      (send dc draw-line line-x line-y1
+                         line-x line-y2))
 
     ;; `line-numbers-space' will get mutated in the `on-paint' method
     ;; (define line-numbers-space 0)
@@ -3923,11 +3963,14 @@ designates the character that triggers autocompletion
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (if show-line-numbers?
         (begin
+          #;
           (set-padding (text-width dc (number-space+1)) 0 0 0)
           (if before?
             (let ()
+              (define left-most (left-space dc dx))
               (set! old-clipping (send dc get-clipping-region))
               (define saved-dc (save-dc-state dc))
+              (setup-dc dc)
               (define clipped (make-object region% dc))
               (define all (make-object region% dc))
               (define copy (make-object region% dc))
@@ -3946,6 +3989,8 @@ designates the character that triggers autocompletion
             (begin
               (send dc set-clipping-region old-clipping)
               (draw-line-numbers dc left top right bottom dx dy))))
+          (void)
+          #;
           (set-padding 0 0 0 0))
       (void)
       #;
