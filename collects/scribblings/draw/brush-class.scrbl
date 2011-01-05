@@ -17,14 +17,16 @@ In addition to its color and style, a brush can have a stipple bitmap.
 
 As an alternative to a color, style, and stipple, a brush can have a
  gradient that is a @racket[linear-gradient%] or
- @racket[radial-gradient%]. For each point in a drawing destination, a
- gradient associates a color to the point based on starting and ending
- colors and starting and ending lines (for a linear gradient) or
- circles (for a radial gradient). A gradient-assigned color is applied
- for each point is that touched when drawing with the brush.
+ @racket[radial-gradient%]. When a brush has a gradient and the target
+ for drawing is not monochrome, then other brush settings are
+ ignored. With a gradient, for each point in a drawing destination,
+ the gradient associates a color to the point based on starting and
+ ending colors and starting and ending lines (for a linear gradient)
+ or circles (for a radial gradient); a gradient-assigned color is
+ applied for each point that is touched when drawing with the brush.
 
 A brush's style is one of the following (but is ignored if the brush
- has a gradient):
+ has a gradient and the target is not monochrome):
 
 @itemize[
 
@@ -115,7 +117,9 @@ Gets the stipple bitmap, or @scheme[#f] if the brush has no stipple.
 }
 
 @defmethod[(get-gradient)
-           (or/c (is-a?/c gradient<%>) #f)]{
+           (or/c (is-a?/c linear-gradient%)
+                 (is-a?/c radial-gradient%)
+                 #f)]{
 
 Gets the gradient, or @scheme[#f] if the brush has no gradient.
 

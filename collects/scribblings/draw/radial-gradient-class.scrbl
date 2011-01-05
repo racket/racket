@@ -24,7 +24,7 @@ Colors transitions are based on two circles and the sequence of circles that
                  [x1 real?]
                  [y1 real?]
                  [r1 real?]
-                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%)))])]{
+                 [stops (listof (list/c (real-in 0 1) (is-a?/c color%)))])]{
 
 Creates a radial gradient with the starting circle as the one with
 radius @racket[r0] centered at (@racket[x0], @racket[y0]) and the
@@ -68,7 +68,7 @@ Returns the gradient's boundary circles as @racket[_x0], @racket[_y0],
 }
 
 @defmethod[(get-stops)
-           (listof/c (list/c (real-in 0 1) (is-a?/c color%)))]{
+           (listof (list/c (real-in 0 1) (is-a?/c color%)))]{
 
 Returns the gradient's list of color stops.
 

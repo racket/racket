@@ -24,7 +24,7 @@ Colors transitions are based on a line, where colors are assigned to
                  [y0 real?]
                  [x1 real?]
                  [y1 real?]
-                 [stops (listof/c (list/c (real-in 0 1) (is-a?/c color%)))])]{
+                 [stops (listof (list/c (real-in 0 1) (is-a?/c color%)))])]{
 
 Creates a linear gradient with a line from (@racket[x0], @racket[y0])
 to end point (@racket[x1], @racket[y1]). The @racket[stops] list
@@ -70,7 +70,7 @@ Returns the gradient's control line as @racket[_x0], @racket[_y0],
 }
 
 @defmethod[(get-stops)
-           (listof/c (list/c (real-in/c 0 1) (is-a?/c color%)))]{
+           (listof (list/c (real-in/c 0 1) (is-a?/c color%)))]{
 
 Returns the gradient's list of color stops.
 
