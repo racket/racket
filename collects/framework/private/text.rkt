@@ -777,7 +777,13 @@
     (inherit begin-edit-sequence end-edit-sequence
              delete insert split-snip find-snip
              get-snip-position get-top-level-window find-string)
-    (define pasting? #f)
+    
+    ;; pasting-info : (or/c #f (listof (list number number)))
+    ;; when #f, we are not in a paste
+    ;; when a list, we are in a paste and the 
+    ;;   list contains the regions that have
+    ;;   been changed by the paste
+    (define paste-info #f)
     (define rewriting? #f)
     
     (define/public (ask-normalize?)
@@ -804,45 +810,46 @@
         [else
          (preferences:get 'framework:do-paste-normalization)]))
     (define/public (string-normalize s) (string-normalize-nfkc s))
-
-    
     
     (define/override (do-paste start time)
       (dynamic-wind
-       (λ () (set! pasting? #t))
-       (λ () (super do-paste start time))
-       (λ () (set! pasting? #f))))
+       (λ () (set! paste-info '()))
+       (λ () (super do-paste start time)
+         (let ([local-paste-info paste-info])
+           (set! paste-info #f)
+           (deal-with-paste local-paste-info)))
+       ;; use the dynamic wind to be sure that the paste-info is set back to #f
+       ;; in the case that the middle thunk raises an exception
+       (λ () (set! paste-info #f))))
     
-    (define/augment (on-insert start len)
-      (inner (void) on-insert start len)
-      (begin-edit-sequence))
-         
     (define/augment (after-insert start len)
-      (when pasting?
-        (unless rewriting?
-          (set! rewriting? #t)
-          (let/ec abort
-            (define ask? #t)
-            (split-snip start)
-            (split-snip (+ start len))
-            (let loop ([snip (find-snip start 'after-or-none)])
-              (when snip
-                (let ([pos (get-snip-position snip)])
-                  (when (< pos (+ start len))
-                    (when (is-a? snip string-snip%)
-                      (let* ([old (send snip get-text 0 (send snip get-count))]
-                             [new (string-normalize old)])
-                        (unless (equal? new old)
-                          (when ask?
-                            (set! ask? #f)
-                            (unless (ask-normalize?) (abort)))
-                          (let ([snip-pos (get-snip-position snip)])
-                            (delete snip-pos (+ snip-pos (string-length old)))
-                            (insert new snip-pos snip-pos #f)))))
-                    (loop (send snip next)))))))
-          (set! rewriting? #f)))
-      (end-edit-sequence)
+      (when paste-info
+        (set! paste-info (cons (list start len) paste-info)))
       (inner (void) after-insert start len))
+
+    (define/private (deal-with-paste local-paste-info)
+      (let/ec abort
+        (define ask? #t)
+        (for ([insertion (in-list local-paste-info)])
+          (define start (list-ref insertion 0))
+          (define len (list-ref insertion 1))
+          (split-snip start)
+          (split-snip (+ start len))
+          (let loop ([snip (find-snip start 'after-or-none)])
+            (when snip
+              (let ([pos (get-snip-position snip)])
+                (when (< pos (+ start len))
+                  (when (is-a? snip string-snip%)
+                    (let* ([old (send snip get-text 0 (send snip get-count))]
+                           [new (string-normalize old)])
+                      (unless (equal? new old)
+                        (when ask?
+                          (set! ask? #f)
+                          (unless (ask-normalize?) (abort)))
+                        (let ([snip-pos (get-snip-position snip)])
+                          (delete snip-pos (+ snip-pos (string-length old)))
+                          (insert new snip-pos snip-pos #f)))))
+                  (loop (send snip next)))))))))
     
     (super-new)))
 
