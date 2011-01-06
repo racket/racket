@@ -450,6 +450,7 @@ or when the document has been ended already.
 
 }
 
+
 @defmethod[(end-page)
            void?]{
 
@@ -458,18 +459,18 @@ Ends a single page, relevant only when drawing to a printer or
 
 For printer or PostScript output, an exception is raised if
 @scheme[end-page] is called when a page is not currently started by
-@method[dc<%> start-page].
-
-}
+@method[dc<%> start-page].}
 
 
 @defmethod[(erase)
            void?]{
 
-Erases the drawing region by filling it with white and, for a drawing
-context that keeps an alpha channel, sets all alphas to zero.
-
-}
+For a drawing context that has an alpha channel, @method[dc<%> erase]
+sets all alphas to zero. Similarly, for a transparent canvas,
+@method[dc<%> erase] erases all drawing to allow the background window
+to show through. For other drawing contexts that have no alpha channel
+or transparency, @method[dc<%> erase] fills the drawing context with
+white.}
 
 
 @defmethod[(flush) void?]{

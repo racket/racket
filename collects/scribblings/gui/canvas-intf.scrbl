@@ -10,34 +10,76 @@ The @scheme[canvas<%>] interface is implemented by two classes:
 @itemize[
 
  @item{@scheme[canvas%] --- a canvas for arbitrary drawing and
-  event handling}
+  event handling; and}
 
  @item{@scheme[editor-canvas%] --- a canvas for displaying
-  @scheme[editor<%>] objects}
+  @scheme[editor<%>] objects.}
 
 ]
 
-To draw onto a canvas, get its device context (see
-@method[canvas<%> get-dc]).
+To draw onto a canvas, get its device context via @method[canvas<%>
+ get-dc]. There are two basic approaches to updating a canvas:
+
+@itemlist[
+
+ @item{Drawing normally occurs during the canvas's @method[canvas<%>
+       on-paint] callback.  The @racket[canvas%] class supports a
+       @racket[paint-callback] initialization argument to be called
+       from the default @method[canvas<%> on-paint] method.
+
+       A canvas's @method[canvas<%> on-paint] method is called
+       automatically as an event when the windowing system determines
+       that the canvas must be updated, such as when the canvas is
+       first shown or when it is resized. Use the @method[window<%>
+       refresh] method to explicitly trigger an @method[canvas<%>
+       on-paint] call from the windowing system. (Multiple refresh
+       requests before @method[canvas<%> on-paint] can be called are
+       coaleced into a single @method[canvas<%> on-paint] call.)
+
+       Before the windowing system calls @method[canvas<%> on-paint],
+       it may erase the canvas's background (see @method[dc<%>
+       erase]), depending on the style of the canvas (e.g., as
+       determined by the @racket[style] initialization argument for
+       @racket[canvas%]). Even when the canvas's style suppresses
+       explicit clearing of the canvas, a canvas may be erased by the
+       windowing system due to window-moving and -resizing
+       operations. For a transparent canvas, ``erased'' means that the
+       canvas's parent window shows through.}
+
+ @item{Drawing can also occur at any time outside an @method[canvas<%>
+       on-paint] call form the windowing system, including from
+       threads other than the @tech{handler thread} of the canvas's
+       eventspace. Drawing outside an @method[canvas<%> on-paint]
+       callback from the system is transient in the sense that
+       windowing activity can erase the canvas, but the drawing is
+       persistent as long as no windowing refresh is needed.
+
+       Calling an @method[canvas<%> on-paint] method directly is the
+       same as drawing outside an @method[canvas<%> on-paint] callback
+       from the windowing system.}
+
+]
 
 Drawing to a canvas's drawing context actually renders into an
-offscreen buffer. The buffer is automatically flushed to the screen by
-a background thread, explicitly via the @method[canvas<%> flush]
-method, or explicitly via @racket[flush-display]---unless flushing
-has been disabled for the canvas.  The @method[canvas<%>
-suspend-flush] method suspends flushing for a canvas until a matching
-@method[canvas<%> resume-flush] calls; calls to @method[canvas<%>
-suspend-flush] and @method[canvas<%> resume-flush] can be nested, in
-which case flushing is suspended until the outermost @method[canvas<%>
-suspend-flush] is balanced by a @method[canvas<%> resume-flush].
+offscreen buffer. The buffer is automatically flushed to the screen
+asynchronously, explicitly via the @method[canvas<%> flush] method, or
+explicitly via @racket[flush-display]---unless flushing has been
+disabled for the canvas.  The @method[canvas<%> suspend-flush] method
+suspends flushing for a canvas until a matching @method[canvas<%>
+resume-flush] calls; calls to @method[canvas<%> suspend-flush] and
+@method[canvas<%> resume-flush] can be nested, in which case flushing
+is suspended until the outermost @method[canvas<%> suspend-flush] is
+balanced by a @method[canvas<%> resume-flush]. An @method[canvas<%>
+on-paint] call from the windowing system is implicitly wrapped with
+@method[canvas<%> suspend-flush] and @method[canvas<%> resume-flush]
+calls.
 
-In the case of a transparent canvas (i.e., one that is created with
-@racket['transparent] style), line and text smoothing can depend on
-the window that serves as the canvas's background. For example,
-smoothing may color pixels differently depending on whether the target
-context is white or gray.  Background-sensitive smoothing is supported
-only if a relatively small number of drawing commands are recorded in
-the canvas's offscreen buffer, however.
+In the case of a transparent canvas, line and text smoothing can
+depend on the window that serves as the canvas's background. For
+example, smoothing may color pixels differently depending on whether
+the target context is white or gray.  Background-sensitive smoothing
+is supported only if a relatively small number of drawing commands are
+recorded in the canvas's offscreen buffer, however.
 
 
 @defmethod*[([(accept-tab-focus)
