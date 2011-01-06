@@ -784,8 +784,7 @@
     ;;   list contains the regions that have
     ;;   been changed by the paste
     (define paste-info #f)
-    (define rewriting? #f)
-    
+
     (define/public (ask-normalize?)
       (cond
         [(preferences:get 'framework:ask-about-paste-normalization)
