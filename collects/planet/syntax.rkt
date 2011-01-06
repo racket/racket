@@ -8,7 +8,12 @@
          syntax-source-planet-package-minor
          syntax-source-planet-package-symbol)
 
-(require racket/match planet/util unstable/syntax)
+(require racket/match
+         planet/util
+         syntax/parse
+         unstable/syntax
+         (for-template racket/base)
+         (for-label racket/base))
 
 (define (syntax-source-planet-package stx)
   (let* ([dir (syntax-source-directory stx)])
@@ -46,7 +51,7 @@
               (if suffix (format-symbol "/~a" suffix) "")))]
     [#f #f]))
 
-(define (make-planet-require-spec stx id/f)
+(define (make-planet-require-spec stx [id/f #f])
   (datum->syntax
    stx
    (list #'planet (syntax-source-planet-package-symbol stx id/f))

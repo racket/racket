@@ -1,18 +1,9 @@
 #lang racket/base
 
 (require (for-syntax racket/base unstable/planet-syntax)
+         planet/version
          unstable/planet-syntax
          unstable/require)
-
-(define-syntax (this-package-version-symbol stx)
-  (syntax-case stx ()
-    [(tpvi)
-     (quasisyntax/loc stx
-       '#,(syntax-source-planet-package-symbol stx #f))]
-    [(tpvi name)
-     (identifier? #'name)
-     (quasisyntax/loc stx
-       '#,(syntax-source-planet-package-symbol stx #'name))]))
 
 (provide this-package-version-symbol
          this-package-in

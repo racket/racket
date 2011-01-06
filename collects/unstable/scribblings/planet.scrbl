@@ -2,7 +2,11 @@
 @(require scribble/eval
           scribble/bnf
           "utils.rkt"
-          (for-label racket/base scribble/manual unstable/planet planet/util))
+          (for-label racket/base
+                     scribble/manual
+                     unstable/planet
+                     (except-in planet/util
+                       this-package-version-symbol)))
 
 @title[#:style 'quiet #:tag "cce-planet"]{@|PLaneT| Packages}
 

@@ -6,6 +6,7 @@
                      racket/provide-transform
                      syntax/parse
                      unstable/planet-syntax)
+         planet/version
          unstable/define)
 
 (define-syntax (define-planet-package stx)
@@ -38,13 +39,6 @@
                       [sym (string->symbol (string-append prefix "/" suffix))]
                       [spec (datum->syntax stx* sym)])
                  (expand-import spec))]))))]))
-
-(define-syntax this-package-in
-  (make-require-transformer
-   (lambda (stx)
-     (syntax-parse stx
-       [(_ file:id)
-        (expand-import (make-planet-path stx #'file))]))))
 
 (define-syntax this-package-out
   (make-provide-transformer
