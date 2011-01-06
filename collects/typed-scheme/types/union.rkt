@@ -15,19 +15,14 @@
 
 (define empty-union (make-Union null))
 
-(define (flat t)
-  (match t
-    [(Union: es) es]
-    [(Values: (list (Result: (Union: es) _ _))) es]
-    [(Values: (list (Result: t _ _))) (list t)]
-    [_ (list t)]))
-
 (define (remove-subtypes ts)
   (let loop ([ts* ts] [result '()])
     (cond [(null? ts*) (reverse result)]
           [(ormap (lambda (t) (subtype (car ts*) t)) result) (loop (cdr ts*) result)]
           [else (loop (cdr ts*) (cons (car ts*) result))])))
 
+;; Union constructor
+;; Normalizes representation by sorting types.
 (define Un
   (case-lambda 
     [() empty-union]

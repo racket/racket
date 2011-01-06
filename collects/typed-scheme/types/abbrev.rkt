@@ -30,9 +30,20 @@
 (define -future make-Future)
 (define (-seq . args) (make-Sequence args))
 
+
+(define (flat t)
+  (match t
+    [(Union: es) es]
+    [(Values: (list (Result: (Union: es) _ _))) es]
+    [(Values: (list (Result: t _ _))) (list t)]
+    [_ (list t)]))
+
+;; Simple union constructor.
+;; Flattens nested unions and sorts types, but does not check for
+;; overlapping subtypes.
 (define-syntax *Un
   (syntax-rules ()
-    [(_ . args) (make-Union (list . args))]))
+    [(_ . args) (make-Union (remove-dups (sort (apply append (map flat (list . args))) type<?)))]))
 
 
 (define (make-Listof elem) (-mu list-rec (*Un (-val null) (-pair elem list-rec))))
