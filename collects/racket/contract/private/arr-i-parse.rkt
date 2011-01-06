@@ -373,7 +373,7 @@ code does the parsing and validation of the syntax.
                    [(a . b)
                     (raise-syntax-error #f "expected a range expression" stx #'a)]
                    [()
-                    (raise-syntax-error #f "expected a range expression, but found nothing" stx leftover)])]
+                    (raise-syntax-error #f "expected a range expression, but found nothing" stx)])]
                 [(post-cond leftover) 
                  (syntax-case leftover ()
                    [(#:post (id ...) post-cond . leftover)
