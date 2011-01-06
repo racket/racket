@@ -707,6 +707,26 @@ plain pumpkin. The @racket[size] determines the width.}
 Creates an angel wing, left or right, or any size.  The color and pen
 width for drawing the wing outline is the current one.}
 
+@defproc[(desktop-machine [scale real?]
+                          [style (listof symbol?) null])
+         pict?]{
+
+Produces a picture of ancient desktop computer. The @racket[scale]
+argument scales the size relative to the base size of 120 by 115. 
+
+The @racket[style] can include any of the following:
+
+@itemlist[
+
+ @item{@racket['plt] --- include a Racket logo on the machine's screen}
+
+ @item{@racket['binary] --- put 1s and 0s on the machine's screen}
+
+ @item{@racket['devil] --- like @racket['binary], and also give the machine 
+                           horns and a tail}
+
+]}
+
 @; ----------------------------------------
 
 @subsection{Balloon Annotations}
