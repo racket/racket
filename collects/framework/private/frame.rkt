@@ -2445,6 +2445,7 @@
     (define/override (get-editor%) (text:searching-mixin (super get-editor%)))
     (super-new)))
 
+;; code copied to drracket/private/unit.rkt
 (define checkout-or-nightly?
   (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (directory-exists? (collection-path "repo-time-stamp")))
@@ -2473,8 +2474,10 @@
     (define/override (on-paint)
       (cond
         [on?
+         (define dc (get-dc))
+         (send dc set-font small-control-font)
          (let-values ([(cw ch) (get-client-size)])
-           (send (get-dc) draw-text indicator
+           (send dc draw-text indicator
                  (- (/ cw 2) (/ indicator-width 2))
                  (- (/ ch 2) (/ indicator-height 2))))]))
     (define/public (set-on? new-on?)
@@ -2487,9 +2490,8 @@
     (super-new [stretchable-width #f]
                [style '(transparent)])
     
-    (send (get-dc) set-font small-control-font)
     (define-values (indicator-width indicator-height)
-      (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator)])
+      (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator small-control-font)])
         (values tw th)))
     (min-width (+ (inexact->exact (ceiling indicator-width)) 4))))
 
