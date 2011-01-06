@@ -4013,13 +4013,10 @@ module browser threading seems wrong.
                         [paint-callback
                          (λ (c dc)
                            (when (number? th)
-                             (cond
-                               [color-valid?
-                                (send dc erase)]
-                               [else
-                                (let-values ([(cw ch) (send c get-client-size)])
-                                  (send dc set-font small-control-font)
-                                  (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2))))])))]))
+                             (unless color-valid?
+                               (let-values ([(cw ch) (send c get-client-size)])
+                                 (send dc set-font small-control-font)
+                                 (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2)))))))]))
                  (define-values (tw th ta td) (send (send color-status-canvas get-dc) get-text-extent on-string small-control-font))
                  (send color-status-canvas min-width (inexact->exact (ceiling tw)))
                  color-status-canvas)))
@@ -4027,6 +4024,7 @@ module browser threading seems wrong.
         (define/public (set-color-status! v?)
           (when color-status-canvas
             (set! color-valid? v?) 
+            (send (send color-status-canvas get-dc) erase)
             (send color-status-canvas on-paint)
             (send color-status-canvas flush)))
         
