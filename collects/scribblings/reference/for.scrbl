@@ -183,7 +183,7 @@ result is the (single) result of @scheme[body]. If the
 
 @defform[(for/last (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but the @scheme[for/last] result is the (single)
-result of of the last evaluation of @scheme[body]. If the
+result of the last evaluation of @scheme[body]. If the
 @scheme[body] is never evaluated, then the result of the
 @scheme[for/last] expression is @scheme[#f].
 
@@ -291,7 +291,7 @@ identifiers. The right-hand side is of the form @scheme[(id . _rest)].
 The result can be either @scheme[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @scheme[(id . _rest)] form), or a
-new @scheme[_clause] to to replace the given one. The new clause might
+new @scheme[_clause] to replace the given one. The new clause might
 use @scheme[:do-in].}
 
 @defform[(:do-in ([(outer-id ...) outer-expr] ...)
@@ -351,7 +351,7 @@ and bound to the corresponding @scheme[id]s. The @scheme[id]s are
 bound in all expressions within the form other than the
 @scheme[init-expr]s.
 
-After the @scheme[id]s are bound, then @scheme[stop?-expr] is
+After the @scheme[id]s have been bound, the @scheme[stop?-expr] is
 evaluated. If it produces @scheme[#f], each @scheme[expr] is evaluated
 for its side-effect. The @scheme[id]s are then effectively updated
 with the values of the @scheme[step-expr]s, where the default

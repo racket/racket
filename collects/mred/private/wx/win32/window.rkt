@@ -25,6 +25,7 @@
               queue-window-refresh-event
               location->window
               flush-display
+	      get-default-control-font
 
               GetWindowRect
               GetClientRect))
@@ -243,11 +244,12 @@
   (unless (memq 'deleted style)
     (show #t))
   
-  (define/public (on-size w h) (void))
+  (define/public (queue-on-size) (void))
 
   (define/public (on-set-focus) (void))
   (define/public (on-kill-focus) (void))
   (define/public (get-handle) hwnd)
+  (define/public (get-client-handle) (get-client-hwnd))
 
   (define enabled? #t)
   (define parent-enabled? #t)
@@ -313,6 +315,7 @@
         (MoveWindow hwnd x y w h #t))
     (unless (and (= w -1) (= h -1))
       (on-resized))
+    (queue-on-size)
     (refresh))
   (define/public (move x y)
     (set-size x y -1 -1))

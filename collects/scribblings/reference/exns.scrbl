@@ -169,7 +169,7 @@ The @racket[arity-v] value must
 be a possible result from @racket[procedure-arity], except
 that it does not have to be normalized (see @racket[procedure-arity?] for
 the details of normalized arities); @racket[raise-arity-error] 
-will normalize the arity and used the normalized form in the error message.
+will normalize the arity and use the normalized form in the error message.
 If @racket[name] is a procedure, its actual arity is
 ignored.  
 
@@ -225,7 +225,7 @@ through a combination of the @racket[name], @racket[expr], and
   identifier's symbol.}
 
  @item{When @racket[name] is @racket[#f] and when @racket[expr] is not
-  an identifier or a syntax pair containing and identifier as its
+  an identifier or a syntax pair containing an identifier as its
   first element, then the form name in the error message is
   @racket["?"].}
 
@@ -259,7 +259,7 @@ the continuation; if no previous handler is available, the
 uncaught-exception handler is used (see below). In all cases, a call
 to an exception handler is @racket[parameterize-break]ed to disable
 breaks, and it is wrapped with @racket[call-with-exception-handler] to
-install the an exception handler that reports both the original and
+install the exception handler that reports both the original and
 newly raised exceptions.}
 
 @defparam[uncaught-exception-handler f (any/c . -> . any)]{
@@ -293,7 +293,7 @@ fails.}
 
 Evaluates each @racket[pred-expr] and @racket[handler-expr] in the
 order that they are specified, and then evaluates the @racket[body]s
-with a new exception handler during the its dynamic extent.
+with a new exception handler during its dynamic extent.
 
 The new exception handler processes an exception only if one of the
 @racket[pred-expr] procedures returns a true value when applied to the
@@ -415,7 +415,7 @@ non-string is returned, then the string @racket["..."] is used. If a
 primitive error string needs to be generated before the handler has
 returned, the default error value conversion handler is used.
 
-Call to an error value conversion handler are @racket[parameterize]d
+Calls to an error value conversion handler are @racket[parameterize]d
 to re-install the default error value conversion handler, and to
 enable printing of unreadable values (see @racket[print-unreadable]).}
 
@@ -548,7 +548,7 @@ platform or configuration.}
 @defstruct[(exn:fail:user exn:fail) ()
            #:inspector #f]{
 
-Raised for errors that are intended to be seen by end-users. In
+Raised for errors that are intended to be seen by end users. In
 particular, the default error printer does not show the program
 context when printing the error message.}
 
@@ -591,7 +591,7 @@ Returns the @racket[srcloc]-getting procedure associated with @racket[v].}
                    [span (or/c exact-nonnegative-integer? #f)])
                   #:inspector #f]{
 
-The fields of an @racket[srcloc] instance are as follows:
+The fields of a @racket[srcloc] instance are as follows:
 
 @itemize[
 

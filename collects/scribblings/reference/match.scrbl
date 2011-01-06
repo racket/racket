@@ -213,7 +213,7 @@ In more detail, patterns match as follows:
 
  @item{@racket[(_struct-id _pat ...)] or
        @racket[(#,(racketidfont "struct") _struct-id (_pat ...))] ---
-       matches an instance of a structure type names
+       matches an instance of a structure type named
        @racket[_struct-id], where each field in the instance matches
        the corresponding @racket[_pat]. See also @scheme[struct*].
 
@@ -292,7 +292,7 @@ In more detail, patterns match as follows:
        can be duplicated once for each @racket[_pat]! Identifiers in
        @racket[_pat] are bound only in the corresponding copy of the
        result expression; in a module context, if the result
-       expression refers to a binding, then that all @racket[_pat]s
+       expression refers to a binding, then all @racket[_pat]s
        must include the binding.
 
        @examples[
@@ -426,7 +426,7 @@ b
 @; ----------------------------------------
 
 @defproc[(exn:misc:match? [v any/c]) boolean?]{
-A predicate for the exception raised by in the case of a match failure.
+A predicate for the exception raised in the case of a match failure.
 }
 
 
@@ -444,7 +444,7 @@ The first @racket[proc-expr] subexpression must evaluate to a
  Whenever @racket[id] appears as the beginning of a pattern, this
  transformer is given, at expansion time, a syntax object
  corresponding to the entire pattern (including @racket[id]).  The
- pattern is the replaced with the result of the transformer.
+ pattern is replaced with the result of the transformer.
 
 A transformer produced by a second @racket[proc-expr] subexpression is
  used when @racket[id] is used in an expression context. Using the
@@ -466,7 +466,7 @@ default is @racket[equal?].}
  type named @racket[struct-id], where the field @racket[field] in the
  instance matches the corresponding @racket[pat].
                                                 
- Any field of @racket[struct-id] may be omitted and they may occur in any order.
+ Any field of @racket[struct-id] may be omitted, and such fields can occur in any order.
  
  @defexamples[
   #:eval match-eval

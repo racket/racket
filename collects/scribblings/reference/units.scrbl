@@ -94,7 +94,7 @@ ways:
  @item{@scheme[(rename sig-spec (id id) ...)] as an import binds the
  same as @scheme[sig-spec], except that the first @scheme[id] is used
  for the binding instead of the second @scheme[id] (where
- @scheme[sig-spec] by itself must imply a bindingthat is
+ @scheme[sig-spec] by itself must imply a binding that is
  @scheme[bound-identifier=?] to second @scheme[id]).  As an export,
  this form causes a definition for the first @scheme[id] to satisfy
  the export named by the second @scheme[id] in @scheme[sig-spec].}
@@ -134,7 +134,7 @@ export must explicitly use the tag.
 
 A unit is prohibited syntactically from importing two signatures that
 are not distinct, unless they have different tags; two signatures are
-@defterm{distinct} only if when they share no ancestor through
+@defterm{distinct} only if they share no ancestor through
 @scheme[extends]. The same syntactic constraint applies to exported
 signatures. In addition, a unit is prohibited syntactically from
 importing the same identifier twice (after renaming and other
@@ -191,7 +191,7 @@ of bindings for import or export:
  exporting the signature.}
       
  @item{Each @scheme[define-syntaxes] form in a signature declaration
- introduces a macro to that is available for use in any unit that
+ introduces a macro that is available for use in any unit that
  imports the signature.  Free variables in the definition's
  @scheme[expr] refer to other identifiers in the signature first, or
  the context of the @scheme[define-signature] form if the signature
@@ -233,7 +233,7 @@ of bindings for import or export:
 
 ]
 
-When a @scheme[define-signature] form includes a @scheme[extends]
+When a @scheme[define-signature] form includes an @scheme[extends]
 clause, then the define signature automatically includes everything in
 the extended signature. Furthermore, any implementation of the new
 signature can be used as an implementation of the extended signature.}
@@ -271,7 +271,7 @@ unit's imports, the @scheme[invoke-unit] expression must contain a
 has no imports, the @scheme[import] clause can be omitted.
 
 When no @scheme[tagged-sig-spec]s are provided, @scheme[unit-expr]
-must produce a unit that expect no imports. To invoke the unit, all
+must produce a unit that expects no imports. To invoke the unit, all
 bindings are first initialized to the @|undefined-const| value. Next,
 the unit's body definitions and expressions are evaluated in order; in
 the case of a definition, evaluation sets the value of the
@@ -300,7 +300,7 @@ The unit produced by @scheme[unit-expr] is linked and invoked as for
 @scheme[invoke-unit]. In addition, the @scheme[export] clause is
 treated as a kind of import into the local definition context. That
 is, for every binding that would be available in a unit that used the
-@scheme[export] clauses's @scheme[tagged-sig-spec] as an import, a
+@scheme[export] clause's @scheme[tagged-sig-spec] as an import, a
 definition is generated for the context of the
 @scheme[define-values/invoke-unit] form.}
 
@@ -336,7 +336,7 @@ unit. Outside the compound unit, these imports behave as for a plain
 unit; inside the compound unit, they are propagated to some of the
 linked units. The @scheme[export] clause determines the exports of the
 compound unit.  Again, outside the compound unit, these exports are
-trested the same as for a plain unit; inside the compound unit, they
+treated the same as for a plain unit; inside the compound unit, they
 are drawn from the exports of the linked units. Finally, the left-hand
 and right-hand parts of each declaration in the @scheme[link] clause
 specify how the compound unit's imports and exports are propagated to
@@ -347,7 +347,7 @@ available within the compound unit. Instead, imports and exports are
 connected at the level of whole signatures. Each specific import or
 export (i.e., an instance of some signature, possibly tagged) is given
 a @scheme[link-id] name. Specifically, a @scheme[link-id] is bound by
-the @scheme[import] clause or the left-hand part of an declaration in
+the @scheme[import] clause or the left-hand part of a declaration in
 the @scheme[link] clause. A bound @scheme[link-id] is referenced in
 the right-hand part of a declaration in the @scheme[link] clause or by
 the @scheme[export] clause.
@@ -398,7 +398,7 @@ evaluated.}
 Binds @scheme[unit-id] to both a unit and static information about the
 unit.
 
-Evaluating a reference to an @scheme[unit-id] bound by
+Evaluating a reference to a @scheme[unit-id] bound by
 @scheme[define-unit] produces a unit, just like evaluating an
 @scheme[id] bound by @scheme[(define id (unit ...))]. In addition,
 however, @scheme[unit-id] can be used in @scheme[compound-unit/infer].
@@ -449,7 +449,7 @@ on static information associated with each
 @scheme[unit-id]. Links and exports can be inferred when all
 signatures exported by the linked units are distinct from each other
 and from all imported signatures, and when all imported signatures are
-distinct. Two signatures are @defterm{distinct} only if when they
+distinct. Two signatures are @defterm{distinct} only if they
 share no ancestor through @scheme[extends].
 
 The long form of a @scheme[link] declaration can be used to resolve
@@ -525,7 +525,7 @@ current context.  If given a link form containing multiple
 
 Like @scheme[define-values/invoke-unit], but uses static information
 associated with @scheme[unit-id] to infer which imports must be
-assembled from the current context and what exports should be bound
+assembled from the current context and which exports should be bound
 by the definition.  If given a link form containing multiple
 @scheme[link-unit-id]s, then the units are first linked via
 @scheme[define-compound-unit/infer].}
@@ -579,7 +579,7 @@ the enclosing environment, and like @scheme[define-unit], in that
 
 Similar to @scheme[unit], except the body of the unit is determined by
 an existing unit produced by @scheme[unit-expr]. The result is a unit
-that whose implementation is @scheme[unit-expr], but whose imports,
+whose implementation is @scheme[unit-expr], but whose imports,
 exports, and initialization dependencies are as in the
 @scheme[unit/new-import-export] form (instead of as in the unit
 produced by @scheme[unit-expr]).
@@ -714,7 +714,7 @@ variables in the same signature, and then to the context of the
                 ...)
               ([sig-spec-block (tagged-sig-spec [id contract] ...)
                                tagged-sig-spec])]{
-The @scheme[define-unit/contract] form defines an unit compatible with
+The @scheme[define-unit/contract] form defines a unit compatible with
 link inference whose imports and exports are contracted with a unit
 contract.  The unit name is used for the positive blame of the contract.}
 

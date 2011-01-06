@@ -297,7 +297,7 @@ Similar to @scheme[map], except that
        elements of the @scheme[lst]s; and}
 
  @item{the result is that of @scheme[proc] applied to the last elements
-       of the @scheme[lsts]s; more specifically, the application of
+       of the @scheme[lst]s; more specifically, the application of
        @scheme[proc] to the last elements in the @scheme[lst]s is in tail
        position with respect to the @scheme[andmap] call.}
 
@@ -482,7 +482,7 @@ Returns @scheme[(remove* v-lst lst eqv?)].
 
 Returns a list sorted according to the @scheme[less-than?] procedure,
  which takes two elements of @scheme[lst] and returns a true value if
- the first is less than (i.e., should be sorted earlier) than the
+ the first is less than (i.e., should be sorted earlier) the
  second.
 
 The sort is stable; if two elements of @scheme[lst] are ``equal''
@@ -558,7 +558,6 @@ Like @scheme[member], but finds an element using @scheme[eq?].
 (memq 2 (list 1 2 3 4))
 (memq 9 (list 1 2 3 4))
 ]}
-}
 
 
 @defproc[(memf [proc procedure?] [lst list?])
@@ -964,8 +963,8 @@ Returns a list with all elements from @racket[lst], randomly shuffled.
 
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-This returns the first element in the list @scheme[lst] that minimizes
-the result of @scheme[proc]. 
+Returns the first element in the list @scheme[lst] that minimizes
+the result of @scheme[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmin car '((3 pears) (1 banana) (2 apples)))
@@ -974,8 +973,8 @@ the result of @scheme[proc].
 
 @defproc[(argmax [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-This returns the first element in the list @scheme[lst] that maximizes
-the result of @scheme[proc]. 
+Returns the first element in the list @scheme[lst] that maximizes
+the result of @scheme[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmax car '((3 pears) (1 banana) (2 apples)))

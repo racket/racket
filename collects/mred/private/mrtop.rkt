@@ -139,6 +139,8 @@
         [do-set-status-text (lambda (s)
                               (when status-message
                                 (send status-message set-label s)))])
+      (override
+        [get-client-handle (lambda () (send wx-panel get-client-handle))])
       (sequence 
 	(super-init (lambda () (set! wx (mk-wx finish)) wx) 
                     (lambda () wx-panel) (lambda () mid-panel)

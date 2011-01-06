@@ -82,7 +82,7 @@ Returns a newly allocated @tech{mutable list} with the same elements as
 @defproc[(mlist->list [mlst mlist?]) list?]{
 
 Returns a newly allocated @tech{mutable list} with the same elements as
-@racket[nlst].}
+@racket[mlst].}
 
 
 @defproc[(mlength [mlst mlist?])

@@ -32,6 +32,11 @@
   (-a _void (clicked: [_id sender])
       (queue-window*-event wxb (lambda (wx) (send wx clicked)))))
 
+(define NSImageLeft 2)
+(define NSImageRight 3)
+(define NSImageBelow 4)
+(define NSImageAbove 5)
+
 (defclass core-button% item%
   (init parent cb label x y w h style font
         [button-type #f])
@@ -57,11 +62,21 @@
        [else
         (if button-type
             (tellv cocoa setTitle: #:type _NSString "")
-            (tellv cocoa setImage: (bitmap->image label)))])
+            (begin
+              (when (pair? label)
+                (tellv cocoa setTitle: #:type _NSString (cadr label))
+                (tellv cocoa setImagePosition: #:type _NSInteger 
+                       (case (caddr label)
+                         [(left) NSImageLeft]
+                         [(right) NSImageRight]
+                         [(top) NSImageAbove]
+                         [(bottom) NSImageBelow])))
+              (tellv cocoa setImage: (bitmap->image (if (pair? label) (car label) label)))))])
       (init-font cocoa font)
       (tellv cocoa sizeToFit)
       (when (and (eq? event-type 'button)
-                 (string? label))
+                 (or (string? label)
+                     (pair? label)))
         (when font
           (let ([n (send font get-point-size)])
             ;; If the font is small, adjust the control size:
@@ -85,10 +100,19 @@
                                            (NSSize-height (NSRect-size frame)))))))
       cocoa))
 
+  (when (pair? label)
+    ;; It looks better to add extra padding around the button:
+    (let ([f (tell #:type _NSRect button-cocoa frame)])
+      (tellv button-cocoa setFrame: #:type _NSRect 
+             (make-NSRect
+              (NSRect-origin f)
+              (make-NSSize (+ (NSSize-width (NSRect-size f)) 2)
+                           (+ (NSSize-height (NSRect-size f)) 4))))))
+  
   (define-values (cocoa image-cocoa)
     (if (and button-type
              (not (string? label)))
-        ;; Check-box image: need an view to join a button and an image view:
+        ;; Check-box image: need a view to join a button and an image view:
         ;; (Could we use the NSImageButtonCell from the radio-box implementation
         ;;  instead?)
         (let* ([frame (tell #:type _NSRect button-cocoa frame)]

@@ -67,9 +67,9 @@ mutator bindings; see @secref["structinfo"]. A @scheme[_shell-id] must
 be one of the @scheme[id]s bound by the @scheme[shared] form to a
 @scheme[_shell-expr].
 
-When the @scheme[expr]s of the @scheme[shared] form are parsed via
+When the @scheme[expr]s of the @scheme[shared] form are parsed as
 @scheme[_shared-expr] (taking into account the order of the variants
-for precedence), and sub-expressions that parse via
+for parsing precedence), the sub-expressions that were parsed via
 @scheme[_early-expr] will be evaluated first when the @scheme[shared]
 form is evaluated. Among such expressions, they are evaluated in the
 order as they appear within the @scheme[shared] form. However, any

@@ -46,7 +46,7 @@ expansion.}
 
 @defproc[(expand-once [top-level-form any/c]) syntax?]{
 
-Partially expands @scheme[form-level-form] and returns a syntax object
+Partially expands @scheme[top-level-form] and returns a syntax object
 for the partially-expanded expression. Due to limitations in the
 expansion mechanism, some context information may be lost. In
 particular, calling @scheme[expand-once] on the result may produce a

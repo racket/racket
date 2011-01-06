@@ -5,7 +5,7 @@
 
 True and false @deftech{booleans} are represented by the values
 @scheme[#t] and @scheme[#f], respectively, though operations that
-depend a boolean value typically treat anything other than @scheme[#f]
+depend on a boolean value typically treat anything other than @scheme[#f]
 as true.
 
 See also: @scheme[and], @scheme[or], @scheme[andmap], @scheme[ormap].
@@ -155,7 +155,7 @@ type. The property value must be a list of three procedures:
        an instance of the structure type (or one of its subtypes) to
        which the property is associated.
 
-       The second argument is a @scheme[equal-hash-code]-like
+       The second argument is an @scheme[equal-hash-code]-like
        procedure to use for recursive hash-code computation; use the
        given procedure instead of @scheme[equal-hash-code] to ensure
        that data cycles are handled properly.}

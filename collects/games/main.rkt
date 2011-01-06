@@ -87,8 +87,7 @@
   (define buttons
     (map (lambda (game)
            (new button%
-                [label ((bitmap-label-maker (game-name game) (game-icon game))
-                        panel)]
+                [label (list (read-bitmap (game-icon game)) (game-name game) 'left)]
                 [parent panel]
                 [callback (lambda _ (run-game game))]))
          games))

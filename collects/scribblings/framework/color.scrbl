@@ -220,6 +220,15 @@
 
     Must only be called while the tokenizer is started.
   }
+  
+  @defmethod[#:mode augment (on-lexer-valid [valid? boolean?]) any]{
+    This method is an observer for when the lexer is working.
+    It is called when the lexer's state changes from valid to invalid (and back). 
+    The @racket[valid?] argument indicates if the lexer has finished running over the editor (or not).
+    
+    The default method just returns @racket[(void)].
+  }
+  
 }
 @defmixin[color:text-mixin (text:basic<%>) (color:text<%>)]{
   Adds the functionality needed for on-the-fly coloring and parenthesis

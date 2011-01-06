@@ -644,8 +644,11 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
           if (semas[i]->value) {
             if ((semas[i]->value > 0) && (!syncing || !syncing->reposts || !syncing->reposts[i]))
               --semas[i]->value;
-            if (syncing && syncing->accepts && syncing->accepts[i])
-              scheme_accept_sync(syncing, i);
+            if (syncing) {
+	      syncing->result = i + 1;
+	      if (syncing->accepts && syncing->accepts[i])
+		scheme_accept_sync(syncing, i);
+	    }
             break;
           }
         } else if (semas[i]->so.type == scheme_never_evt_type) {

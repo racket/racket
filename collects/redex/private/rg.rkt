@@ -111,10 +111,12 @@
 
 ; Determines a size measure for numbers, sequences, etc., using the
 ; attempt count.
-(define default-attempt->size
+(define default-attempt-size
   (λ (n) (inexact->exact (floor (/ (log (add1 n)) (log 5))))))
+(define attempt-size/c
+  (-> natural-number/c natural-number/c))
 (define attempt->size 
-  (make-parameter default-attempt->size))
+  (make-parameter default-attempt-size))
 
 (define (pick-number attempt #:top-threshold [top-threshold complex-threshold] [random generator-random])
   (let loop ([threshold 0] 
@@ -748,8 +750,8 @@
 (define-for-syntax print?-keyword
   (list '#:print? #t))
 (define-for-syntax attempt-size-keyword
-  (list '#:attempt-size #'default-attempt->size 
-        (list #'(-> natural-number/c natural-number/c) "#:attempt-size argument")))
+  (list '#:attempt-size #'default-attempt-size 
+        (list #'attempt-size/c "#:attempt-size argument")))
 (define-for-syntax (prepare-keyword lists?)
   (list '#:prepare #f 
         (list (if lists? #'(-> list? list?) #'(-> any/c any/c)) 
@@ -1008,6 +1010,8 @@
          generate-term
          check-reduction-relation
          check-metafunction
+         default-attempt-size
+         attempt-size/c
          exn:fail:redex:generation-failure?
          redex-pseudo-random-generator)
 

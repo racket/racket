@@ -61,7 +61,7 @@
     (parameterize ([current-custodian instance-custodian]
                    [current-execution-context (make-execution-context req)]
                    [exit-handler
-                    (lambda _
+                    (lambda (r)
                       (kill-connection! conn)
                       (custodian-shutdown-all instance-custodian))])
       (define maybe-response

@@ -17,12 +17,25 @@
 	      (rename checked-struct-info-rec? checked-struct-info?)))
   
   (define-values-for-syntax
+    (struct:struct-auto-info 
+     make-struct-auto-info 
+     struct-auto-info-rec?
+     struct-auto-info-ref
+     struct-auto-info-set!)
+    (make-struct-type 'struct-auto-info struct:struct-info
+                      1 0 #f
+                      (list (cons prop:struct-auto-info
+                                  (lambda (rec)
+                                    (struct-auto-info-ref rec 0))))))
+                      
+
+  (define-values-for-syntax
     (struct:checked-struct-info 
      make-checked-struct-info 
      checked-struct-info-rec?
      checked-struct-info-ref
      checked-struct-info-set!)
-    (make-struct-type 'checked-struct-info struct:struct-info
+    (make-struct-type 'checked-struct-info struct:struct-auto-info
                       0 0 #f
                       null (current-inspector)
                       (lambda (v stx)
@@ -31,10 +44,10 @@
                          "identifier for static struct-type information cannot be used as an expression"
                          stx))
                       null
-                      (lambda (proc info)
+                      (lambda (proc autos info)
                         (if (and (procedure? proc)
                                  (procedure-arity-includes? proc 0))
-                            proc
+                            (values proc autos)
                             (raise-type-error 'make-struct-info
                                               "procedure (arity 0)"
                                               proc)))))
@@ -44,7 +57,9 @@
       (datum->syntax orig (syntax-e orig) stx orig))
     (syntax-case stx ()
       [(self arg ...) (datum->syntax stx
-                                     (cons (transfer-srcloc orig #'self)
+                                     (cons (syntax-property (transfer-srcloc orig #'self)
+                                                            'constructor-for
+                                                            (syntax-local-introduce #'self))
                                            (syntax-e (syntax (arg ...))))
                                      stx
                                      stx)]
@@ -52,7 +67,7 @@
   
   (define-values-for-syntax (make-self-ctor-struct-info)
     (letrec-values ([(struct: make- ? ref set!)
-                     (make-struct-type 'self-ctor-struct-info struct:struct-info
+                     (make-struct-type 'self-ctor-struct-info struct:struct-auto-info
                                        1 0 #f
                                        (list (cons prop:procedure
                                                    (lambda (v stx)
@@ -333,11 +348,15 @@
                              "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
                              stx
                              #'id)]))])
-         (let-values ([(super-info super-info-checked?)
+         (let-values ([(super-info super-autos super-info-checked?)
 		       (if super-id
 			   (let ([v (syntax-local-value super-id (lambda () #f))])
 			     (if (struct-info? v)
-				 (values (extract-struct-info v) (checked-struct-info-rec? v))
+				 (values (extract-struct-info v) 
+                                         (if (struct-auto-info? v)
+                                             (struct-auto-info-lists v)
+                                             (list null null))
+                                         (checked-struct-info-rec? v))
 				 (raise-syntax-error
 				  #f
 				  (format "parent struct type not defined~a"
@@ -348,7 +367,7 @@
 				  stx
 				  super-id)))
 			   ;; if there's no super type, it's like it was checked
-			   (values #f #t))])
+			   (values #f #f #t))])
            (when (and super-info
                       (not (car super-info)))
              (raise-syntax-error
@@ -409,7 +428,9 @@
                  (let ([struct: (build-name id "struct:" id)]
                        [make- (if ctor-name
                                   (if self-ctor?
-                                      (car (generate-temporaries (list id)))
+                                      (if omit-define-syntaxes?
+                                          ctor-name
+                                          (car (generate-temporaries (list id))))
                                       ctor-name)
                                   (build-name id "make-" id))]
                        [? (build-name id id "?")]
@@ -496,18 +517,26 @@
                                                              (loop (add1 i) (cdr fields)))))))))))]
                          [compile-time-defns
                           (lambda ()
-                            (let ([protect (lambda (sel)
-                                             (and sel
-                                                  (if (syntax-e sel)
-                                                      #`(quote-syntax #,(prune sel))
-                                                      sel)))]
-				  [mk-info (if super-info-checked?
-                                               (if name-as-ctor?
-                                                   #'make-self-ctor-checked-struct-info
-                                                   #'make-checked-struct-info)
-                                               (if name-as-ctor?
-                                                   #'make-self-ctor-struct-info
-                                                   #'make-struct-info))])
+                            (let* ([protect (lambda (sel)
+                                              (and sel
+                                                   (if (syntax-e sel)
+                                                       #`(quote-syntax #,(prune sel))
+                                                       sel)))]
+                                   [include-autos? (or super-info-checked?
+                                                       name-as-ctor?
+                                                       (and super-autos
+                                                            (or (pair? (car super-autos))
+                                                                (pair? (cadr super-autos))))
+                                                       (positive? auto-count))]
+                                   [mk-info (if super-info-checked?
+                                                (if name-as-ctor?
+                                                    #'make-self-ctor-checked-struct-info
+                                                    #'make-checked-struct-info)
+                                                (if name-as-ctor?
+                                                    #'make-self-ctor-struct-info
+                                                    (if include-autos?
+                                                        #'make-struct-auto-info
+                                                        #'make-struct-info)))])
                               (quasisyntax/loc stx
                                 (define-syntaxes (#,id)
                                   (#,mk-info
@@ -545,6 +574,18 @@
                                             (if super-expr
                                                 #f
                                                 #t))))
+                                   #,@(if include-autos?
+                                          (list #`(list (list #,@(map protect 
+                                                                      (list-tail sels (- (length sels) auto-count)))
+                                                              #,@(if super-autos
+                                                                     (map protect (car super-autos))
+                                                                     null))
+                                                        (list #,@(map protect
+                                                                      (list-tail sets (max 0 (- (length sets) auto-count))))
+                                                              #,@(if super-autos
+                                                                     (map protect (cadr super-autos))
+                                                                     null))))
+                                          null)
                                    #,@(if name-as-ctor?
                                           (list #`(lambda () (quote-syntax #,make-)))
                                           null))))))])

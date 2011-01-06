@@ -10,7 +10,7 @@
          "../private/libs.rkt")
 
 (define-runtime-lib pango-lib 
-  [(unix) (ffi-lib "libpango-1.0" '("0"))]
+  [(unix) (ffi-lib "libpango-1.0" '("0" ""))]
   [(macosx) 
    (ffi-lib "libintl.8.dylib")
    (ffi-lib "libpango-1.0.0.dylib")]
@@ -24,7 +24,7 @@
    (ffi-lib "libpangowin32-1.0-0.dll")])
 
 (define-runtime-lib pangocairo-lib 
-  [(unix) (ffi-lib "libpangocairo-1.0" '("0"))]
+  [(unix) (ffi-lib "libpangocairo-1.0" '("0" ""))]
   [(macosx)
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(win32) 

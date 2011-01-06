@@ -9,7 +9,11 @@
              struct-info?
              extract-struct-info
              struct:struct-info
-             prop:struct-info)
+             prop:struct-info
+
+             prop:struct-auto-info
+             struct-auto-info?
+             struct-auto-info-lists)
 
   (define-values (prop:struct-info has-struct-info-prop? struct-info-prop-ref)
     (make-struct-type-property 'struct-info
@@ -99,4 +103,31 @@
              (identifier/#f? (caddr x))
              (id/#f-list? identifier? (list-ref x 3))
              (id/#f-list? identifier/#f? (list-ref x 4))
-             (or (eq? #t (list-ref x 5)) (identifier/#f? (list-ref x 5))))))))
+             (or (eq? #t (list-ref x 5)) (identifier/#f? (list-ref x 5)))))))
+
+  (define-values (prop:struct-auto-info
+                  struct-auto-info?
+                  struct-auto-info-ref)
+    (make-struct-type-property 'struct-auto-info
+                               (lambda (val info)
+                                 (unless (and (procedure? val)
+                                              (procedure-arity-includes? val 1))
+                                   (raise-type-error 'guard-for-prop:struct-auto-info "procedure (arity 1)" val))
+                                 val)))
+
+  (define-values (struct-auto-info-lists)
+    (lambda (v)
+      (unless (struct-auto-info? v)
+        (raise-type-error 'struct-auto-info-lists "struct-auto-info" v))
+      (let ([l ((struct-auto-info-ref v) v)]
+            [identifier? (lambda (v) (and (syntax? v) (symbol? (syntax-e v))))])
+        (unless (and (list? l)
+                     (= 2 (length l))
+                     (list? (car l))
+                     (list? (cadr l))
+                     (andmap identifier? (car l))
+                     (andmap identifier? (cadr l)))
+          (error 'struct-auto-info-lists
+                 "struct-auto-info procedure result not properly formed: ~e"
+                 l))
+        l))))

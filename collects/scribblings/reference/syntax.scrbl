@@ -28,7 +28,7 @@
 @title[#:tag "syntax" #:style 'toc]{Syntactic Forms}
 
 This section describes the core syntax forms that appear in a fully
-expanded expression, plus a many closely-related non-core forms.
+expanded expression, plus many closely related non-core forms.
 See @secref["fully-expanded"] for the core grammar.
 
 @local-table-of-contents[]
@@ -413,7 +413,7 @@ bindings of each @racket[require-spec] are visible for expanding later
 
  @specsubform[#:literals (for-meta)
               (for-meta phase-level require-spec ...)]{Like the combination of
-  @racket[require-spec]s, but constrained each binding specified by
+  @racket[require-spec]s, but the binding specified by
   each @racket[require-spec] is shifted by @racket[phase-level]. The
   @tech{label phase level} corresponds to @racket[#f], and a shifting
   combination that involves @racket[#f] produces @racket[#f].
@@ -1292,7 +1292,7 @@ A @tech{variable reference} can be used with
 @racket[variable-reference->resolved-module-path], and
 @racket[variable-reference->namespace], but facilities like
 @racket[define-namespace-anchor] and
-@racket[namespace-anchor->namespace] wrap those to provide an clearer
+@racket[namespace-anchor->namespace] wrap those to provide a clearer
 interface. A @tech{variable reference} is also useful to low-level
 extensions; see @other-manual['(lib
 "scribblings/inside/inside.scrbl")].}
@@ -1502,7 +1502,7 @@ exceptions, not the result of @racket[procedure-arity].}
                         (id ...+ . rest-id)
                         rest-id])]{
                
-Produces a procedure. Each @racket[[forms body ...+]]
+Produces a procedure. Each @racket[[formals body ...+]]
 clause is analogous to a single @racket[lambda] procedure; applying
 the @racket[case-lambda]-generated procedure is the same as applying a
 procedure that corresponds to one of the clauses---the first procedure
@@ -1841,7 +1841,7 @@ respect to the original @racket[and] form.
 If no @racket[expr]s are provided, then result is @racket[#f].
 
 If a single @racket[expr] is provided, then it is in tail position, so
-the results of the @racket[and] expression are the results of the
+the results of the @racket[or] expression are the results of the
 @racket[expr].
 
 Otherwise, the first @racket[expr] is evaluated. If it produces a
@@ -1930,7 +1930,7 @@ defined as follows:
 
 In an @tech{internal-definition context} (see @secref["intdef-body"]), 
 a @racket[define] form introduces a local binding.
-At the top level, the top-level binding @racket[id] is created after
+At the top level, the top-level binding for @racket[id] is created after
 evaluating @racket[expr], if it does not exist already, and the
 top-level mapping of @racket[id] (in the @techlink{namespace} linked
 with the compiled definition) is set to the binding at the same time.
@@ -2287,7 +2287,7 @@ x
 
 Assuming that all @racket[id]s refer to variables, this form evaluates
 @racket[expr], which must produce as many values as supplied
-@racket[id]s.  The location of each @racket[id] is filled wih to the
+@racket[id]s.  The location of each @racket[id] is filled with the
 corresponding value from @racket[expr] in the same way as for
 @racket[set!].
 

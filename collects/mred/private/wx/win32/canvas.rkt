@@ -86,8 +86,7 @@
               set-control-font
               is-auto-scroll? get-virtual-width get-virtual-height
               reset-auto-scroll
-              refresh-for-autoscroll
-              on-size)
+              refresh-for-autoscroll)
 
      (define hscroll? (memq 'hscroll style))
      (define vscroll? (memq 'vscroll style))
@@ -162,17 +161,21 @@
                  (queue-paint)
                  (if (positive? paint-suspended)
                      (set! suspended-refresh? #t)
-                     (let* ([hbrush (if no-autoclear?
-                                        #f
-                                        (if transparent?
-                                            background-hbrush
-                                            (CreateSolidBrush bg-colorref)))])
-                       (when hbrush
-                         (let ([r (GetClientRect canvas-hwnd)])
-                           (FillRect hdc r hbrush))
-                         (unless transparent?
-                           (DeleteObject hbrush)))
+                     (let ([erase
+                            (lambda ()
+                              (let* ([hbrush (if no-autoclear?
+                                                 #f
+                                                 (if transparent?
+                                                     background-hbrush
+                                                     (CreateSolidBrush bg-colorref)))])
+                                (when hbrush
+                                  (let ([r (GetClientRect canvas-hwnd)])
+                                    (FillRect hdc r hbrush))
+                                  (unless transparent?
+                                    (DeleteObject hbrush)))))])
+                       (when transparent? (erase))
                        (unless (do-canvas-backing-flush hdc)
+                         (unless transparent? (erase))
                          (queue-paint)))))
              (EndPaint w ps)))
          0]
@@ -237,7 +240,9 @@
                 [h (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)])
            (MoveWindow canvas-hwnd 0 0 (max 1 (- w COMBO-WIDTH)) h #t)
            (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t)))
-       (on-size 0 0))
+       (on-size))
+
+     (define/public (on-size) (void))
 
      ;; The `queue-paint' and `paint-children' methods
      ;; are defined by `canvas-mixin' from ../common/canvas-mixin

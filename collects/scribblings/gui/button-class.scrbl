@@ -7,7 +7,11 @@ Whenever a button is clicked by the user, the button's callback
  procedure is invoked. A callback procedure is provided as an
  initialization argument when each button is created.
 
-@defconstructor[([label (or/c label-string? (is-a?/c bitmap%))]
+@defconstructor[([label (or/c label-string? 
+                              (is-a?/c bitmap%)
+                              (list/c (is-a?/c bitmap%)
+                                      label-string?
+                                      (one-of/c 'left 'top 'right 'bottom)))]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c button%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
@@ -21,10 +25,13 @@ Whenever a button is clicked by the user, the button's callback
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{
 
-Creates a button with a string or bitmap label.
- @bitmaplabeluse[label]
+Creates a button with a string label, bitmap label, or both.
+ @bitmaplabeluse[label] If @racket[label] is a list, then
+ the button has both a bitmap and string label, and the
+ symbol @racket['left], @racket['top], @racket['right], or @racket['bottom]
+ specifies the location of the image relative to the text on the button.
 
-If @litchar{&} occurs in @scheme[label] (when @scheme[label] is a
+If @litchar{&} occurs in @scheme[label] (when @scheme[label] includes a
 string), it is specially parsed; under Windows and X, the character
 following @litchar{&} is underlined in the displayed control to
 indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
@@ -56,7 +63,8 @@ on-traverse-char]). @DeletedStyleNote[@scheme[style] @scheme[parent]]{button}
 
 
 @defmethod[#:mode override
-           (set-label [label (or/c label-string? (is-a?/c bitmap%))])
+           (set-label [label (or/c label-string? 
+                                   (is-a?/c bitmap%))])
            void?]{
 
 The same as @xmethod[window<%> set-label] when @scheme[label] is a
@@ -64,6 +72,9 @@ The same as @xmethod[window<%> set-label] when @scheme[label] is a
 
 Otherwise, sets the bitmap label for a bitmap button. @bitmaplabeluseisbm[label]
  @|bitmapiforiglabel|
+
+If the button has both a string and a bitmap label, then either can be
+ set using @method[button% set-label].
 
 }}
 

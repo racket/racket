@@ -1,6 +1,9 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          scribble/eval)
 
+@(define class-eval (make-base-eval))
+@(interaction-eval #:eval class-eval (require racket/class racket/draw))
 @defclass/title[brush% object% ()]{
 
 A brush is a drawing tool with a color and a style that is used for
@@ -12,7 +15,18 @@ In addition to its color and style, a brush can have a stipple bitmap.
  stipple brush is similar to calling @method[dc<%> draw-bitmap] with
  the stipple bitmap in the filled region.
 
-A brush's style is one of the following:
+As an alternative to a color, style, and stipple, a brush can have a
+ gradient that is a @racket[linear-gradient%] or
+ @racket[radial-gradient%]. When a brush has a gradient and the target
+ for drawing is not monochrome, then other brush settings are
+ ignored. With a gradient, for each point in a drawing destination,
+ the gradient associates a color to the point based on starting and
+ ending colors and starting and ending lines (for a linear gradient)
+ or circles (for a radial gradient); a gradient-assigned color is
+ applied for each point that is touched when drawing with the brush.
+
+A brush's style is one of the following (but is ignored if the brush
+ has a gradient and the target is not monochrome):
 
 @itemize[
 
@@ -75,9 +89,13 @@ To avoid creating multiple brushes with the same characteristics, use
                                   'horizontal-hatch 'vertical-hatch)
                          'solid]
                  [stipple (or/c #f (is-a?/c bitmap%))
-                          #f])]{
+                          #f]
+                 [gradient (or/c #f 
+                                 (is-a?/c linear-gradient%)
+                                 (is-a?/c radial-gradient%))
+                           #f])]{
 
-Creates a brush with the given color, style, and stipple. For
+Creates a brush with the given color, style, stipple, and gradient. For
  the case that the color is specified using a name, see
  @scheme[color-database<%>] for information about color names; if the
  name is not known, the brush's color is black.
@@ -92,11 +110,21 @@ Returns the brush's color.
 }
 
 @defmethod[(get-stipple)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Gets the stipple bitmap, or @scheme[#f] if the brush has no stipple.
 
 }
+
+@defmethod[(get-gradient)
+           (or/c (is-a?/c linear-gradient%)
+                 (is-a?/c radial-gradient%)
+                 #f)]{
+
+Gets the gradient, or @scheme[#f] if the brush has no gradient.
+
+}
+
 
 @defmethod[(get-style)
            (one-of/c 'transparent 'solid 'opaque 
@@ -158,3 +186,4 @@ A brush cannot be modified if it was obtained from a
 
 }}
 
+@(close-eval class-eval)

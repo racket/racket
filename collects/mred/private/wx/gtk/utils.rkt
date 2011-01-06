@@ -56,19 +56,19 @@
      (ffi-lib "libgio-2.0-0")
      (ffi-lib "libgdk_pixbuf-2.0-0")
      (ffi-lib "libgdk-win32-2.0-0")]
-    [else (ffi-lib "libgdk-x11-2.0" '("0"))]))
+    [else (ffi-lib "libgdk-x11-2.0" '("0" ""))]))
 (define gdk_pixbuf-lib 
   (case (system-type)
     [(windows)
      (ffi-lib "libgdk_pixbuf-2.0-0")]
     [(unix)
-     (ffi-lib "libgdk_pixbuf-2.0" '("0"))]
+     (ffi-lib "libgdk_pixbuf-2.0" '("0" ""))]
     [else gdk-lib]))
 (define gtk-lib
   (case (system-type)
     [(windows) 
      (ffi-lib "libgtk-win32-2.0-0")]
-    [else (ffi-lib "libgtk-x11-2.0" '("0"))]))
+    [else (ffi-lib "libgtk-x11-2.0" '("0" ""))]))
 
 (define-ffi-definer define-gtk gtk-lib)
 (define-ffi-definer define-gdk gdk-lib)

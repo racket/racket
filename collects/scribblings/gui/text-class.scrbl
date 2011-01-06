@@ -422,8 +422,7 @@ Deletes the specified range or the currently selected text (when no
 
 }
 
-@defmethod[#:mode override
-           (do-copy [start exact-nonnegative-integer?]
+@defmethod[(do-copy [start exact-nonnegative-integer?]
                     [end exact-nonnegative-integer?]
                     [time exact-integer?]
                     [extend? any/c])
@@ -447,8 +446,7 @@ Copy the data from @scheme[start] to @scheme[end], extending the current
 }}
 
 
-@defmethod[#:mode override
-           (do-paste [start exact-nonnegative-integer?]
+@defmethod[(do-paste [start exact-nonnegative-integer?]
                      [time exact-integer?])
            void?]{
 @methspec{
@@ -469,8 +467,7 @@ Pastes into the @techlink{position} @scheme[start].
 }}
 
 
-@defmethod[#:mode override
-           (do-paste-x-selection [start exact-nonnegative-integer?]
+@defmethod[(do-paste-x-selection [start exact-nonnegative-integer?]
                                  [time exact-integer?])
            void?]{
 @methspec{

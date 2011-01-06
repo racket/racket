@@ -273,8 +273,12 @@ The @scheme[bias] argument is one of:
 The return value is @scheme[#t] if the @techlink{display} is scrolled,
  @scheme[#f] if not (either because the requested region is already
  visible, because the @techlink{display} has zero size, or because the
- editor is currently printing.)
+ editor is currently printing).
 
+If an editor has multiple @techlink{displays}, then if any display
+ currently has the keyboard focus, it is scrolled. Otherwise, the
+ ``primary owner'' of the editor (see @method[editor-canvas%
+ call-as-primary-owner]) is scrolled.
 
 }
 @methimpl{

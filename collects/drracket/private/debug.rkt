@@ -28,6 +28,7 @@ profile todo:
          (for-syntax racket/base))
 
 (define orig (current-output-port))
+(define (oprintf . args) (apply fprintf orig args))
 
 (provide debug@)
 (define-unit debug@
@@ -38,10 +39,6 @@ profile todo:
           [prefix drracket:language-configuration: drracket:language-configuration/internal^]
           [prefix drracket:init: drracket:init^])
   (export drracket:debug^)
-  
-  
-  (define (printf . args) (apply fprintf orig args))
-  
   
   ;                                                          
   ;                                                          

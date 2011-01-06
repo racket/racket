@@ -143,9 +143,9 @@ contains the concatenated characters of the given @scheme[str]s. If no
 
 
 @defproc[(string->list [str string?]) (listof char?)]{ Returns a new
- list of characters coresponding to the content of @scheme[str]. That is,
+ list of characters corresponding to the content of @scheme[str]. That is,
  the length of the list is @scheme[(string-length str)], and the
- sequence of characters of @scheme[str] are in the same sequence in the
+ sequence of characters of @scheme[str] is the same sequence in the
  result list.
 
 @mz-examples[(string->list "Apple")]}
@@ -325,12 +325,12 @@ allocated string).}
 
 @defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string=?], but the strings are compared in a
- locale-specific way, based the value of @scheme[current-locale]. See
+ locale-specific way, based on the value of @scheme[current-locale]. See
  @secref["encodings"] for more information on locales.}
 
 @defproc[(string-locale<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @scheme[string<?], but the sort order compares strings in a
- locale-specific way, based the value of @scheme[current-locale]. In
+ locale-specific way, based on the value of @scheme[current-locale]. In
  particular, the sort order may not be simply a lexicographic
  extension of character ordering.}
 
@@ -354,11 +354,11 @@ allocated string).}
 
 @defproc[(string-locale-upcase [string string?]) string?]{ Like
  @scheme[string-upcase], but using locale-specific case-conversion
- rules based the value of @scheme[current-locale].}
+ rules based on the value of @scheme[current-locale].}
 
 @defproc[(string-locale-downcase [string string?]) string?]{ Like
  @scheme[string-downcase], but using locale-specific case-conversion
- rules based the value of @scheme[current-locale].
+ rules based on the value of @scheme[current-locale].
 }
 
 @; ----------------------------------------

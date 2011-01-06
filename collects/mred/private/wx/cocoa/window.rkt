@@ -591,7 +591,9 @@
             [y (if (= y -11111) (get-y) y)])
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t)
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
-                                                           (make-NSSize w h)))))
+                                                           (make-NSSize w h))))
+      (queue-on-size))
+
     (define/public (internal-move x y)
       (set-size x y (get-width) (get-height)))
     (define/public (move x y)
@@ -702,7 +704,7 @@
 
     (define/public (on-char s) (void))
     (define/public (on-event m) (void))
-    (define/public (on-size x y) (void))
+    (define/public (queue-on-size) (void))
 
     (define last-l? #f)
     (define last-m? #f)
@@ -725,6 +727,7 @@
       (send (get-parent) end-no-cursor-rects))
 
     (define/public (get-handle) (get-cocoa))
+    (define/public (get-client-handle) (get-cocoa-content))
 
     (define/public (popup-menu m x y)
       (send m do-popup (get-cocoa-content) (get-cocoa-window) x (flip-client y)

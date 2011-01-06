@@ -25,19 +25,17 @@
   
   (define (draw-single-loop str dc offset cx cy radius font-size color)
     (send dc set-font (send the-font-list find-or-create-font font-size 'modern))
-    (let loop ([i (string-length str)])
-      (unless (zero? i)
-        (draw-letter dc 
-                     cx 
-                     cy 
-                     (normalize-angle
-                      (+ (- (* 2 pi) (* (* 2 pi) (/ (- i 1) (string-length str))))
-                         (/ pi 2)
-                         offset))
-                     radius
-                     (string (string-ref str (- i 1)))
-                     color)
-        (loop (- i 1)))))
+    (for ([i (in-range 0 (string-length str))])
+      (draw-letter dc
+                   cx
+                   cy
+                   (normalize-angle
+                    (+ (- (* 2 pi) (* (* 2 pi) (/ (- i 1) (string-length str))))
+                       (/ pi 2)
+                       offset))
+                   radius
+                   (substring str i (+ i 1))
+                   color)))
   
   (define (normalize-angle angle)
     (cond
@@ -46,11 +44,11 @@
       [else (normalize-angle (- angle (* 2 pi)))]))
   
   (define splash-canvas (get-splash-canvas))
-  (define (draw-single-step dc offset)
+  (define (draw-single-step offset)
     (send bdc draw-bitmap eli 0 0)
     (draw-single-loop omega-str bdc offset (/ main-size 2) (/ main-size 2) 120 32 outer-color)
     (draw-single-loop hebrew-str bdc (+ (- (* 2 pi) offset) (* 2 pi)) (/ main-size 2) (/ main-size 2) 70 20 inner-color)
-    (send splash-canvas on-paint))
+    (refresh-splash))
   
   (define gc-b
     (with-handlers ([exn:fail? (lambda (x)
@@ -122,7 +120,7 @@
           (parameterize ([current-eventspace splash-eventspace])
             (queue-callback 
              (λ () 
-               (draw-single-step bdc o)
+               (draw-single-step o)
                (semaphore-post s))))
           (semaphore-wait s))
         (let ([next (+ o (/ pi 60))])

@@ -18,7 +18,7 @@ among threads. Certain kinds of objects double as events, including
 ports and threads. Other kinds of objects exist only for their use as
 events.
 
-At an point in time, an event is either @defterm{ready} for
+At any point in time, an event is either @defterm{ready} for
 synchronization, or it is not; depending on the kind of event and how
 it is used by other threads, an event can switch from not ready to
 ready (or back), at any time.  If a thread synchronizes on an event

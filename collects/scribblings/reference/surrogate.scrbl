@@ -34,9 +34,9 @@ surrogate class, and a surrogate interface.
 The host mixin adds one additional field, @scheme[surrogate], to its
 argument. It also adds a getter method, @scheme[get-surrogate], and a
 setter method, @scheme[set-surrogate], for changing the field. The
-@scheme[set-surrogate] form accepts instances the class returned by
-the form or @scheme[#f], and updates the field with its
-argument. Then, it calls the @scheme[on-disable-surrogate] on the
+@scheme[set-surrogate] method accepts instances of the class returned by
+the @racket[surrogate] form or @scheme[#f], and it updates the field with its
+argument; then, @scheme[set-surrogate] calls the @scheme[on-disable-surrogate] on the
 previous value of the field and @scheme[on-enable-surrogate] for the
 new value of the field. The @scheme[get-surrogate] method returns the
 current value of the field.

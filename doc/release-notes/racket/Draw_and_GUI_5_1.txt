@@ -120,6 +120,8 @@ A `region%' can be created as independent of any `dc<%>', in which
 cases it uses the drawing context's current transformation at the time
 that it is installed as a clipping region.
 
+Brushes now support linear and radial gradients.
+
 The old 'xor mode for pens and brushes is no longer available (since
 it is not supported by Cairo).
 

@@ -56,6 +56,14 @@ module browser threading seems wrong.
       (λ args
         (apply fprintf op args))))
   
+  ;; code copied from framework/private/frame.rkt
+  (define checkout-or-nightly?
+    (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
+          (directory-exists? (collection-path "repo-time-stamp")))
+        (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
+          (let ([fw (collection-path "framework")])
+            (directory-exists? (build-path fw 'up 'up ".git"))))))
+  
   (define-unit unit@
     (import [prefix help-desk: drracket:help-desk^]
             [prefix drracket:app: drracket:app^]
@@ -599,6 +607,13 @@ module browser threading seems wrong.
             (end-edit-sequence)
             (inner (void) after-load-file success?))
           
+          (define/augment (on-lexer-valid valid?)
+            (inner (void) on-lexer-valid valid?)
+            (let ([f (get-top-level-window)])
+              (when (and f
+                         (is-a? f -frame<%>))
+                (send f set-color-status! valid?))))
+          
           (inherit is-modified? run-after-edit-sequence)
           (define/override (set-modified mod?)
             (super set-modified mod?)
@@ -786,7 +801,7 @@ module browser threading seems wrong.
             (and (or (= (last-position) 0) (not really-modified?))
                  (not (is-modified?))
                  (not (get-filename))))
-          ;; inserts the auto-text if any, and executes the text if so
+          ;; inserts the auto-text if any
           (define/public (insert-auto-text)
             (define lang
               (drracket:language-configuration:language-settings-language
@@ -2909,14 +2924,12 @@ module browser threading seems wrong.
           (define (set-visible-regions txt regions)
             (when regions
               (for-each (λ (canvas region) 
-                          (send canvas call-as-primary-owner
-                                (λ ()
-                                  (let ([admin (send txt get-admin)])
-                                    (send admin scroll-to 
-                                          (first region)
-                                          (second region)
-                                          (third region)
-                                          (fourth region)))))) 
+                           (set-visible-region canvas
+                                               (first region)
+                                               (second region)
+                                               (third region)
+                                               (fourth region)
+                                               #f))
                         (send txt get-canvases)
                         regions)))
           
@@ -3986,6 +3999,36 @@ module browser threading seems wrong.
         (define/public (get-button-panel) button-panel)
         
         (inherit get-info-panel)
+        
+        (define color-status-canvas 
+          (and checkout-or-nightly?
+               (let ()
+                 (define on-string "()")
+                 (define color-status-canvas
+                   (new canvas% 
+                        [parent (get-info-panel)]
+                        [style '(transparent)]
+                        [stretchable-width #f]
+                        [paint-callback
+                         (λ (c dc)
+                           (when (number? th)
+                             (cond
+                               [color-valid?
+                                (send dc erase)]
+                               [else
+                                (let-values ([(cw ch) (send c get-client-size)])
+                                  (send dc set-font small-control-font)
+                                  (send dc draw-text on-string 0 (- (/ ch 2) (/ th 2))))])))]))
+                 (define-values (tw th ta td) (send (send color-status-canvas get-dc) get-text-extent on-string small-control-font))
+                 (send color-status-canvas min-width (inexact->exact (ceiling tw)))
+                 color-status-canvas)))
+        (define color-valid? #t)
+        (define/public (set-color-status! v?)
+          (when color-status-canvas
+            (set! color-valid? v?) 
+            (send color-status-canvas on-paint)
+            (send color-status-canvas flush)))
+        
         (define running-canvas
           (new running-canvas% [parent (get-info-panel)]))
         

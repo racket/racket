@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label (only-in ffi/unsafe cpointer?)))
 
 @definterface/title[window<%> (area<%>)]{
 
@@ -80,6 +81,25 @@ Note that under X, keyboard focus can move to the menu bar
 }
 
 
+@defmethod[(get-client-handle) cpointer?]{
+
+Returns a handle to the ``inside'' of the window for the current
+platform's GUI toolbox. The value that the pointer represents depends
+on the platform:
+
+@itemize[
+
+ @item{Windows: @tt{HWND}}
+
+ @item{Mac OS X: @tt{NSView}}
+
+ @item{X: @tt{GtkWidget}}
+
+]
+
+See also @method[window<%> get-handle].}
+
+
 @defmethod[(get-client-size)
            (values (integer-in 0 10000)
                    (integer-in 0 10000))]{
@@ -98,7 +118,7 @@ See also
 
 
 @defmethod[(get-cursor)
-           (or/c (is-a?/c cursor%) false/c)]{
+           (or/c (is-a?/c cursor%) #f)]{
 
 Returns the window's cursor, or @scheme[#f] if this window's cursor
  defaults to the parent's cursor.  See
@@ -106,28 +126,25 @@ Returns the window's cursor, or @scheme[#f] if this window's cursor
 
 }
 
-@defmethod[(get-handle)
-           exact-integer?]{
 
-Returns an exact integer representing a handle to the window in the
-current platform's GUI toolbox. Cast this number from a C @tt{long}
-to a platform-specific C type:
+@defmethod[(get-handle) cpointer?]{
+
+Returns a handle to the ``outside'' of the window for the current platform's GUI
+toolbox. The value that the pointer represents depends on the
+platform:
 
 @itemize[
 
  @item{Windows: @tt{HWND}}
 
- @item{Mac OS X: @tt{WindowRef} for a @scheme[top-level-window<%>] object,
-       @tt{ControlRef} for other windows}
+ @item{Mac OS X: @tt{NSWindow} for a @scheme[top-level-window<%>] object,
+       @tt{NSView} for other windows}
 
- @item{X: @tt{Widget*}}
+ @item{X: @tt{GtkWidget}}
 
 ]
 
-Some windows may not have a representation in the platform's GUI level,
- in which case the result of this method is @scheme[0].
-
-}
+See also @method[window<%> get-client-handle].}
 
 
 @defmethod[(get-height)
@@ -141,8 +158,13 @@ See also
 }
 
 @defmethod[(get-label)
-           (or/c label-string? (is-a?/c bitmap%)
-                 (one-of/c 'app 'caution 'stop) false/c)]{
+           (or/c label-string? 
+                 (is-a?/c bitmap%)
+                 (one-of/c 'app 'caution 'stop) 
+                 (list/c (is-a?/c bitmap%)
+                         label-string?
+                         (one-of/c 'left 'top 'right 'bottom))
+                 #f)]{
 
 Gets a window's label, if any. Control windows generally display their
  label in some way. Frames and dialogs display their label as a window
@@ -151,9 +173,10 @@ Gets a window's label, if any. Control windows generally display their
  have bitmap labels (only when they are created with bitmap labels),
  but all other windows have string labels. In addition, a message
  label can be an icon symbol @scheme['app], @scheme['caution], or
- @scheme['stop].
+ @scheme['stop], and a button can have both a bitmap label and a
+ string label (along with a position for the bitmap).
 
-The label string may contain @litchar{&}s, which serve as
+A label string may contain @litchar{&}s, which serve as
  keyboard navigation annotations for controls under Windows and X. The
  ampersands are not part of the displayed label of a control; instead,
  ampersands are removed in the displayed label (under all platforms),
@@ -169,7 +192,7 @@ If the window does not have a label, @scheme[#f] is returned.
 
 
 @defmethod[(get-plain-label)
-           (or/c string false/c)]{
+           (or/c string #f)]{
 
 Like
 @method[window<%> get-label], except that ampersands in the label are removed. If the window has
@@ -467,7 +490,7 @@ Enqueues an event to repaint the window.
 }
 
 
-@defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) false/c)])
+@defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) #f)])
            void?]{
 
 Sets the window's cursor. Providing @scheme[#f] instead of a cursor

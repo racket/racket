@@ -74,7 +74,7 @@ between @scheme[0] (inclusive) and the number of non-automatic fields
 in the structure type (exclusive, not counting supertype fields), and
 the designated field must also be specified as immutable.
 
-If the property value is an procedure of one argument, then the
+If the property value is a procedure of one argument, then the
 procedure serves as a @tech{syntax transformer} and for @scheme[set!]
 transformations. If the property value is a procedure of two
 arguments, then the first argument is the structure whose type has
@@ -82,7 +82,7 @@ arguments, then the first argument is the structure whose type has
 syntax object as for a @tech{syntax transformer} and for @scheme[set!]
 transformations; @scheme[set!-transformer-procedure] applied to the
 structure produces a new function that accepts just the syntax object
-and call the procedure associated through the property. Finally, if the
+and calls the procedure associated through the property. Finally, if the
 property value is an integer, the target identifier is extracted from
 the structure instance; if the field value is not a procedure of one
 argument, then a procedure that always calls
@@ -205,7 +205,7 @@ also added to the expansion result (because the expansion might
 introduce bindings or references to internal-definition bindings).
 
 Expansion of @scheme[stx] can use certificates for the expression
-already being expanded (see @secref["stxcerts"]) , and @tech{inactive
+already being expanded (see @secref["stxcerts"]), and @tech{inactive
 certificates} associated with @scheme[stx] are activated for
 @scheme[stx] (see @secref["stxcerts"]). Furthermore, if the
 transformer is defined within a module (i.e., the current expansion
@@ -347,7 +347,7 @@ Binds each identifier in @scheme[id-list] within the
 @scheme[expr] when the identifiers correspond to
 @scheme[define-values] bindings, and supply a compile-time expression
 when the identifiers correspond to @scheme[define-syntaxes] bindings;
-the later case, the number of values produced by the expression should
+the latter case, the number of values produced by the expression should
 match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 
@@ -379,7 +379,7 @@ contexts, for example), then the resulting identifier is given a
 @tech{syntax mark} to simulate a non-existent lexical context. The
 @scheme[intdef-ctx] argument can be a list because removing
 internal-definition contexts one at a time can produce a different
-intermediate binding then removing them all at once.}
+intermediate binding than removing them all at once.}
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
@@ -436,7 +436,7 @@ transformer augmented with certificates from @scheme[id-stx]. If
 results are the value that @scheme[syntax-local-value] would produce
 and @scheme[#f].
 
-If @scheme[id-stx] has no transformer biding, then
+If @scheme[id-stx] has no transformer binding, then
 @scheme[failure-thunk] is called (and it can return any number of
 values), or an exception is raised if @scheme[failure-thunk] is
 @scheme[#f].}
@@ -554,7 +554,7 @@ an @tech{expression context}, a @tech{top-level context}, a
 @tech{module context}, or a @tech{module-begin context}.
 
 A list result indicates expansion in an @tech{internal-definition
-context}. The identity of the lists's first element (i.e., its
+context}. The identity of the list's first element (i.e., its
 @scheme[eq?]ness) reflects the identity of the internal-definition
 context; in particular two transformer expansions receive the same
 first value if and only if they are invoked for the same
@@ -607,7 +607,7 @@ lexical information of the current @tech{module context} (if any)
 added.
 
 Thus, the result is an identifier corresponding to the innermost
-shadowing of @scheme[id-stx] in the current context if its shadowed,
+shadowing of @scheme[id-stx] in the current context if it is shadowed,
 and a module-contextless version of @scheme[id-stx] otherwise.
 
 @transform-time[]}
@@ -719,7 +719,7 @@ its rename-transformer chain has no binding.
 @defproc[(syntax-local-transforming-module-provides?) boolean?]{
 
 Returns @scheme[#t] while a @tech{provide transformer} is running (see
-@scheme[make-provide-transformer]) or while a @schemeidfont{expand} sub-form of
+@scheme[make-provide-transformer]) or while an @schemeidfont{expand} sub-form of
 @scheme[#%provide] is expanded, @scheme[#f] otherwise.}
 
 
@@ -871,7 +871,7 @@ into a module.
  @item{@scheme[mod-path-stx] --- a @tech{module path} (relative
        to the importing module) for the source of the imported binding.}
 
- @item{@scheme[mode] --- the @tech{phase level} shift the import.}
+ @item{@scheme[mode] --- the @tech{phase level} shift of the import.}
 
 ]}
 
@@ -904,7 +904,7 @@ of symbols representing the export modes specified by enclosing
 
 If the derived form contains a sub-form that is a
 @scheme[_provide-spec], then it can call @scheme[expand-export] to
-transform the sub-@scheme[_provide-spec] to a lists of exports.
+transform the sub-@scheme[_provide-spec] to a list of exports.
 
 See also @scheme[define-provide-syntax], which supports macro-style
 @scheme[provide] transformers.

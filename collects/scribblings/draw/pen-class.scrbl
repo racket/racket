@@ -99,7 +99,7 @@ Returns the pen join style. The default is @scheme['round].
 }
 
 @defmethod[(get-stipple)
-           (or/c (is-a?/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) #f)]{
 
 Gets the current stipple bitmap, or returns @scheme[#f] if no stipple
  bitmap is installed.

@@ -116,7 +116,7 @@
       get-client-size get-size get-width get-height get-x get-y
       get-cursor set-cursor popup-menu
       show is-shown? on-superwindow-show refresh
-      get-handle))
+      get-handle get-client-handle))
 
   (define-keywords window%-keywords [enabled #t])
 
@@ -173,6 +173,7 @@
 	[get-plain-label (lambda () (and (string? label) (wx:label->plain-label label)))]
 
 	[get-handle (lambda () (send wx get-handle))]
+	[get-client-handle (lambda () (send wx get-client-handle))]
 
 	[accept-drop-files
 	 (entry-point

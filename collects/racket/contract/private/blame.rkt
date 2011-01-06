@@ -87,8 +87,12 @@
       [(blame-original? b)
        (string-append
         (format "self-contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a~a" 
+        (format "  contract~a from ~a~a blaming ~a~a" 
                 value-message 
+                positive-message
+                (if (regexp-match #rx"\n" positive-message)
+                    " "
+                    ",")
                 positive-message
                 (if (regexp-match #rx"\n" positive-message)
                     ""

@@ -42,7 +42,7 @@ exceptions, during the transitions between @racket[pre-thunk]s and
 transitions for a continuation jump. For example, if breaks are
 disabled when a continuation is invoked, and if breaks are also
 disabled in the target continuation, then breaks will remain disabled
-until from the time of the invocation until the target continuation
+from the time of the invocation until the target continuation
 executes unless a relevant @racket[dynamic-wind] @racket[pre-thunk] or
 @racket[post-thunk] explicitly enables breaks.
 
@@ -106,7 +106,7 @@ value, breaks are enabled.}
 
 @defform[(parameterize-break boolean-expr body ...+)]{Evaluates
 @racket[boolean-expr] to determine whether breaks are initially
-enabled in while evaluating the @racket[body]s in sequence. The result
+enabled while evaluating the @racket[body]s in sequence. The result
 of the @racket[parameter-break] expression is the result of the last
 @racket[expr].
 
@@ -120,7 +120,7 @@ threads.}
 @defproc[(current-break-parameterization) break-parameterization?]{
 Analogous to @racket[(current-parameterization)] (see
 @secref["parameters"]); it returns a break-parameterization
-(effectively a thread cell) that holds the current continuation's
+(effectively, a thread cell) that holds the current continuation's
 break-enable state.}
 
 @defproc[(call-with-break-parameterization 

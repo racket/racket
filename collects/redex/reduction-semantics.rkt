@@ -77,4 +77,5 @@
                   (-> bindings? symbol? (-> any) any))]
  [relation-coverage (parameter/c (listof coverage?))]
  [covered-cases (-> coverage? (listof (cons/c string? natural-number/c)))]
- [redex-pseudo-random-generator (parameter/c pseudo-random-generator?)])
+ [redex-pseudo-random-generator (parameter/c pseudo-random-generator?)]
+ [default-attempt-size attempt-size/c])

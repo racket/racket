@@ -87,7 +87,7 @@ Returns a newly-created list containing the marks for @racket[key-v]
 in @racket[mark-set], which is a set of marks returned by
 @racket[current-continuation-marks]. The result list is truncated at
 the first point, if any, where continuation frames were originally
-separated by a prompt tagged with @racket[prompt-tag]..}
+separated by a prompt tagged with @racket[prompt-tag].}
 
 @defproc[(continuation-mark-set->list*
           [mark-set continuation-mark-set?]

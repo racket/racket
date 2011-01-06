@@ -457,11 +457,6 @@ Returns the name of a style to be used for newly inserted text,
 }
 
 
-@defmethod[(do-copy) void?]{
-
-See @xmethod[text% do-copy] or @xmethod[pasteboard% do-copy].}
-
-
 @defmethod[(do-edit-operation [op (or/c 'undo 'redo 'clear 'cut 'copy 'paste 
                                         'kill 'select-all 'insert-text-box 
                                         'insert-pasteboard-box 'insert-image)]
@@ -497,16 +492,6 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
  @|MismatchExn|.
 
 }
-
-
-@defmethod[(do-paste) void?]{
-
-See @xmethod[text% do-paste] or @xmethod[pasteboard% do-paste].}
-
-
-@defmethod[(do-paste-x-selection) void?]{
-
-See @xmethod[text% do-paste-x-selection] or @xmethod[pasteboard% do-paste-x-selection].}
 
 
 @defmethod[(editor-location-to-dc-location [x real?]

@@ -1320,7 +1320,7 @@ random terms in its search. The size and complexity of these terms tend to incre
 with each failed attempt. The @racket[#:attempt-size] keyword determines the rate at which
 terms grow by supplying a function that bounds term size based on the number of failed
 attempts (see @racket[generate-term]'s @racket[#:size] keyword). By default, the bound
-grows logarithmically with failed attempts.
+grows according to the @racket[default-attempt-size] function.
 
 When @racket[print?-expr] produces any non-@racket[#f] value (the default), 
 @racket[redex-check] prints the test outcome on @racket[current-output-port].
@@ -1461,16 +1461,25 @@ produces and consumes argument lists.}
        
        (check-metafunction Σ (λ (args) (printf "~s\n" args)) #:attempts 2)]
                                                             
-@defproc[(exn:fail:redex:generation-failure? [v any/c]) boolean?]{
-  Recognizes the exceptions raised by @racket[generate-term], 
-  @racket[redex-check], etc. when those forms are unable to produce
-  a term matching some pattern.
+@defproc[(default-attempt-size [n natural-number/c]) natural-number/c]{
+The default value of the @racket[#:attempt-size] argument to 
+@racket[redex-check] and the other randomized testing forms, this 
+procedure computes an upper bound on the size of the next
+test case from the number of previously attempted tests @racket[n]. 
+Currently, this procedure computes the base 5 logarithm, but 
+that behavior may change in future versions.
 }
                
 @defparam[redex-pseudo-random-generator generator pseudo-random-generator?]{
 @racket[generate-term] and the randomized testing forms (e.g., @racket[redex-check])
 use the parameter @racket[generator] to construct random terms. The parameter's
 initial value is @racket[(current-pseudo-random-generator)].}
+
+@defproc[(exn:fail:redex:generation-failure? [v any/c]) boolean?]{
+  Recognizes the exceptions raised by @racket[generate-term], 
+  @racket[redex-check], etc. when those forms are unable to produce
+  a term matching some pattern.
+}
 
 @deftech{Debugging PLT Redex Programs}
 

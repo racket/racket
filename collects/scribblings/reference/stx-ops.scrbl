@@ -238,7 +238,7 @@ to the symbols in @scheme[syms], where even further extension of the
 lexical information drops information for other symbols. In
 particular, transferring the lexical context via
 @scheme[datum->syntax] from the result of this function to a symbol
-other than one in @scheme[syms] produces a identifier with no binding.
+other than one in @scheme[syms] produces an identifier with no binding.
 
 See also @scheme[quote-syntax/prune].}
 

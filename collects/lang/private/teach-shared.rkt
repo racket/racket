@@ -3,6 +3,7 @@
 (require syntax/stx
          syntax/kerncase
          syntax/struct
+         racket/struct-info
          scheme/include)
 
 (provide shared/proc)

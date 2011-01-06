@@ -58,10 +58,16 @@
 									   ;; for keyword use
 									   [font no-val])
       (rename [super-set-label set-label])
-      (private-field [label lbl][callback cb] [is-bitmap? (lbl . is-a? . wx:bitmap%)])
+      (private-field [label lbl][callback cb] 
+                     [can-bitmap? (or (lbl . is-a? . wx:bitmap%)
+                                      (pair? lbl))]
+                     [can-string? (or (string? lbl)
+                                      (pair? lbl))])
       (override
 	[get-label (lambda () label)]
-	[get-plain-label (lambda () (and (string? label) (wx:label->plain-label label)))]
+	[get-plain-label (lambda () 
+                           (let ([label (if (pair? label) (cadr label) label)])
+                             (and (string? label) (wx:label->plain-label label))))]
 	[set-label (entry-point
 		    (lambda (l)
 		      ((label-checker)
@@ -69,12 +75,16 @@
 		      (let ([l (if (string? l)
                                  (string->immutable-string l)
                                  l)])
-                        (when (or (and is-bitmap?
+                        (when (or (and can-bitmap?
                                        (l . is-a? . wx:bitmap%))
-                                  (and (not is-bitmap?)
+                                  (and can-string?
                                        (string? l)))
                           (send wx set-label l)
-                          (set! label l)))))])
+                          (if (pair? label)
+                              (if (string? l)
+                                  (set! label (list (car label) l (caddr label)))
+                                  (set! label (list l (cadr label) (caddr label))))
+                              (set! label l))))))])
       (public
 	[hidden-child? (lambda () #f)] ; module-local method
 	[label-checker  (lambda () check-label-string/false)] ; module-local method
@@ -210,7 +220,7 @@
 	[label-checker  (lambda () check-label-string-or-bitmap)]) ; module-local method
       (sequence
 	(let ([cwho '(constructor button)])
-	  (check-label-string-or-bitmap cwho label)
+	  (check-label-string-or-bitmap-or-both cwho label)
 	  (check-container-parent cwho parent)
 	  (check-callback cwho callback)
 	  (check-style cwho #f '(border deleted) style)

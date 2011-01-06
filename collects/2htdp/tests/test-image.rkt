@@ -688,7 +688,7 @@
 
 (test (normalize-shape (image-shape (ellipse 50 100 'solid 'red)))
       =>
-      (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
+      (make-translate 25 50 (make-ellipse 50 100 0 255 "red")))
 
 (test (normalize-shape (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                                      (image-shape (ellipse 50 100 'solid 'blue))))
@@ -702,9 +702,9 @@
                         (image-shape (ellipse 50 100 'solid 'green))))
       =>
       (make-overlay 
-       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "red"))
-                     (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue")))
-       (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))))
+       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 255 "red"))
+                     (make-translate 25 50 (make-ellipse 50 100 0 255 "blue")))
+       (make-translate 25 50 (make-ellipse 50 100 0 255 "green"))))
 
 (test (normalize-shape (make-overlay
                         (image-shape (ellipse 50 100 'solid 'green))
@@ -712,17 +712,17 @@
                                       (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-overlay 
-       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))
-                     (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
-       (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue"))))
+       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 255 "green"))
+                     (make-translate 25 50 (make-ellipse 50 100 0 255 "red")))
+       (make-translate 25 50 (make-ellipse 50 100 0 255 "blue"))))
 
 (test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
       =>
-      (make-translate 125 150 (make-ellipse 50 100 0 'solid "blue")))
+      (make-translate 125 150 (make-ellipse 50 100 0 255 "blue")))
 
 (test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
-      (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
+      (make-translate 135 170 (make-ellipse 50 100 0 255 "blue")))
 
 (test (normalize-shape (image-shape
                         (beside/align 'top
@@ -735,7 +735,7 @@
               (make-point 10 0)
               (make-point 10 10)
               (make-point 0 10))
-        'solid
+        255
         "black")
        (make-crop
         (list (make-point 10 0)
@@ -747,7 +747,7 @@
                (make-point 20 0)
                (make-point 20 10)
                (make-point 10 10))
-         'solid
+         255
          "green"))))
 
 

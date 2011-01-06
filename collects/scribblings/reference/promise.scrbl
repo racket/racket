@@ -38,7 +38,7 @@ Note that the last @scheme[body] of this form must produce a single
 value, but the value can itself be a @scheme[delay] promise that
 returns multiple values.
 
-The @scheme[lazy] form useful for implementing lazy libraries and
+The @scheme[lazy] form is useful for implementing lazy libraries and
 languages, where tail calls can be wrapped in a promise.}
 
 

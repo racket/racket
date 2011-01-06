@@ -447,10 +447,6 @@
   (define/public (set-caret-owner snip focus) (void))
   (define/public (read-from-file mf) #f)
 
-  (define/public (do-copy time) (void))
-  (define/public (do-paste time) (void))
-  (define/public (do-paste-x-selection time) (void))
-
   (def/public (do-edit-operation [symbol? op] [any? [recursive? #t]] [exact-integer? [time 0]])
     (if (and recursive?
              s-caret-snip)

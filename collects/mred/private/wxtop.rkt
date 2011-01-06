@@ -395,8 +395,8 @@
 	;;            aren't stretchable, frame resized to size of
 	;;            contents.  Each direction is handled
 	;;            independently.
-	[on-size
-	 (lambda (bad-width bad-height)
+	[queue-on-size
+	 (lambda ()
 	   (unless (and already-trying? (not (eq? 'unix (system-type))))
 	     (parameterize ([wx:current-eventspace (get-eventspace)])
 	       (wx:queue-callback (lambda () (resized)) #t))))])

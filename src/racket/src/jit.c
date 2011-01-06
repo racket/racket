@@ -2465,7 +2465,8 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     break;
 
   case scheme_application_type:
-    if (inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj))
+    if (inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj)
+        && !SAME_OBJ(((Scheme_App_Rec *)obj)->args[0], scheme_values_func))
       return 1;
     if (just_markless) {
       return is_noncm(((Scheme_App_Rec *)obj)->args[0], jitter, depth, 
@@ -14544,9 +14545,9 @@ uintptr_t scheme_approx_sp()
 Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q;
-  uintptr_t stack_end, stack_start, halfway;
+  uintptr_t stack_end, real_stack_end, stack_start, halfway;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
-  int set_next_push = 0, prev_had_name = 0;
+  int prev_had_name = 0;
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
@@ -14556,6 +14557,8 @@ Scheme_Object *scheme_native_stack_trace(void)
   Get_Stack_Proc gs;
 #endif
   int use_unw = 0;
+  int shift_cache_to_next = 0;
+  int added_list_elem;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -14566,12 +14569,13 @@ Scheme_Object *scheme_native_stack_trace(void)
 
   stack_start = scheme_approx_sp();
 
+  real_stack_end = (uintptr_t)scheme_current_thread->stack_start;
   if (stack_cache_stack_pos) {
     stack_end = (uintptr_t)stack_cache_stack[stack_cache_stack_pos].stack_frame;
     stack_end -= (RETURN_ADDRESS_OFFSET << JIT_LOG_WORD_SIZE);
     tail = stack_cache_stack[stack_cache_stack_pos].cache;
   } else {
-    stack_end = (uintptr_t)scheme_current_thread->stack_start;
+    stack_end = real_stack_end;
     tail = scheme_null;
   }
 
@@ -14641,7 +14645,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 
       /* q is now the frame pointer for the former q,
 	 so we can find the actual q */
-      if (STK_COMP((uintptr_t)q, stack_end)
+      if (STK_COMP((uintptr_t)q, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)q)) {
 	if (SCHEME_VOIDP(name)) {
 	  /* JIT_LOCAL2 has the next return address */
@@ -14671,7 +14675,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 # endif
 	np = *(void **)p;
 
-      if (STK_COMP((uintptr_t)np, stack_end)
+      if (STK_COMP((uintptr_t)np, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)np)) {
         name = *(Scheme_Object **)((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
       } else
@@ -14686,11 +14690,13 @@ Scheme_Object *scheme_native_stack_trace(void)
       else
 	first = name;
       last = name;
-      if (set_next_push) {
-	stack_cache_stack[stack_cache_stack_pos].cache = name;
-	set_next_push = 0;
+      if (shift_cache_to_next) {
+        stack_cache_stack[stack_cache_stack_pos].cache = last;
+        shift_cache_to_next = 0;
       }
-    }
+      added_list_elem = 1;
+    } else 
+      added_list_elem = 0;
 
     /* Cache the result halfway up the stack, if possible. Only cache
        on frames where the previous frame had a return address with a
@@ -14713,9 +14719,10 @@ Scheme_Object *scheme_native_stack_trace(void)
       pos = ++stack_cache_stack_pos;
       stack_cache_stack[pos].orig_return_address = ((void **)p)[RETURN_ADDRESS_OFFSET];
       stack_cache_stack[pos].stack_frame = (void *)(((void **)p) + RETURN_ADDRESS_OFFSET);
-      stack_cache_stack[pos].cache = tail;
-      set_next_push = 1;
+      stack_cache_stack[pos].cache = last;
       ((void **)p)[RETURN_ADDRESS_OFFSET] = stack_cache_pop_code;
+      if (!added_list_elem)
+        shift_cache_to_next = 1;
 
       halfway = stack_end;
     }
@@ -14753,6 +14760,9 @@ Scheme_Object *scheme_native_stack_trace(void)
       p = q;
     }
   }
+
+  if (shift_cache_to_next)
+    stack_cache_stack[stack_cache_stack_pos].cache = scheme_null;
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_destroy_local(&c);

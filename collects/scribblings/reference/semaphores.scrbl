@@ -22,7 +22,7 @@ can be used as events; see @secref["sync"].
 @defproc[(make-semaphore [init exact-nonnegative-integer? 0]) semaphore?]{
 
 Creates and returns a new semaphore with the counter initially set to
-@scheme[init]. If @scheme[init-k] is larger than a semaphore's maximum
+@scheme[init]. If @scheme[init] is larger than a semaphore's maximum
 internal counter value, the @exnraise[exn:fail].}
 
 

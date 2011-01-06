@@ -288,13 +288,16 @@
     (send admin set-canvas #f)
     #|(super ~)|#)
   
-  (define/override (on-size w h)
+  (define/override (on-size)
     (unless noloop?
-      (unless (and (= w lastwidth)
-                   (= h lastheight))
-        (unless (and media
-                     (send media get-printing))
-          (reset-size)))))
+      (unless (and media
+                   (send media get-printing))
+        (let-boxes ([w 0]
+                    [h 0])
+            (get-size w h)
+          (unless (and (= w lastwidth)
+                       (= h lastheight))
+            (reset-size))))))
 
   (define/private (reset-size)
     (reset-visual #f)
@@ -1131,17 +1134,17 @@
 
   (define/public (do-scroll-to localx localy w h refresh? bias prev? next? only-focus?)
     (and canvas
-         (or (and (or (send canvas is-focus-on?)
-                      (not only-focus?))
-                  (list (send canvas scroll-to localx localy w h refresh? bias)))
-             (and (not (send canvas is-focus-on?))
+         (or (and (not (send canvas is-focus-on?))
                   (or
                    (and prev? 
                         prevadmin
                         (send prevadmin do-scroll-to localx localy w h refresh? bias #t #f #t))
                    (and next? 
                         nextadmin
-                        (send nextadmin do-scroll-to localx localy w h refresh? bias #f #t #t)))))))
+                        (send nextadmin do-scroll-to localx localy w h refresh? bias #f #t #t))))
+             (and (or (not only-focus?)
+                      (send canvas is-focus-on?))
+                  (list (send canvas scroll-to localx localy w h refresh? bias))))))
 
   (def/override (grab-caret [(symbol-in immediate display global) dist])
     (when canvas

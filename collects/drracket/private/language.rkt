@@ -1,8 +1,4 @@
 #lang racket/unit
-;; WARNING: printf is rebound in this module to always use the 
-;;          original stdin/stdout of drscheme, instead of the 
-;;          user's io ports, to aid any debugging printouts.
-;;          (esp. useful when debugging the users's io)
 
 (require "drsig.rkt"
          string-constants
@@ -36,7 +32,7 @@
   (export drracket:language^)
   
   (define original-output-port (current-output-port))
-  (define (printf . args) (apply fprintf original-output-port args)) 
+  (define (oprintf . args) (apply fprintf original-output-port args)) 
   
   (define-struct text/pos (text start end))
   ;; text/pos = (make-text/pos (instanceof text% number number))

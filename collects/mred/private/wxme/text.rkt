@@ -2032,10 +2032,10 @@
         (copy extend? time start end)
         (delete start end))))
 
-  (def/override (do-copy [exact-nonnegative-integer? startp] 
-                         [exact-nonnegative-integer? endp] 
-                         [exact-integer? time] 
-                         [bool? extend?])
+  (def/public (do-copy [exact-nonnegative-integer? startp] 
+                       [exact-nonnegative-integer? endp] 
+                       [exact-integer? time] 
+                       [bool? extend?])
     (let ([startp (max startp 0)]
           [endp (min endp len)])
       (unless (endp . <= . startp)
@@ -2094,10 +2094,10 @@
         (set! prev-paste-start start)
         (set! prev-paste-end (+ start delta)))))
 
-  (define/override (do-paste start time)
+  (define/public (do-paste start time)
     (do-generic-paste the-clipboard start time))
 
-  (define/override (do-paste-x-selection start time)
+  (define/public (do-paste-x-selection start time)
     (do-generic-paste the-x-selection-clipboard start time))
 
   (define/private (generic-paste x-sel? time start end)
@@ -2592,7 +2592,9 @@
                              [(symbol-in guess same copy standard text text-force-cr) [format 'guess]]
                              [any? [replace-styles? #t]])
     (if (or write-locked? s-user-locked?)
-        'guess ;; FIXME: docs say that this is more specific
+        (if (not (detect-wxme-file (method-name 'text% 'insert-file) f #t))
+            'text
+            'standard)
         (do-insert-file (method-name 'text% 'insert-file) f format replace-styles?)))
 
   (define/private (do-insert-file who f fmt clear-styles?)

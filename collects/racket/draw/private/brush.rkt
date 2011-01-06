@@ -4,7 +4,8 @@
          "color.ss"
          "syntax.ss"
          "local.ss"
-         "bitmap.ss")
+         "bitmap.ss"
+         "gradient.rkt")
 
 (provide brush%
          brush-list% the-brush-list
@@ -31,7 +32,8 @@
 
   (init [(_color color) black]
         [(_style style) 'solid]
-        [(_stipple stipple) #f])
+        [(_stipple stipple) #f]
+        [(_gradient gradient) #f])
 
   (set! color
         (cond
@@ -53,6 +55,15 @@
   (define immutable? #f)
   (define lock-count 0)
   (define stipple #f)
+  (define gradient #f)
+
+  (when _gradient
+    (unless (or (_gradient . is-a? . linear-gradient%)
+                (_gradient . is-a? . radial-gradient%))
+      (raise-type-error (init-name 'brush%)
+                        "linear-gradient%, radial-gradient%, or #f"
+                        _gradient))
+    (set! gradient _gradient))
 
   (when _stipple
     (unless (_stipple . is-a? . bitmap%)
@@ -87,6 +98,7 @@
      (method-name 'brush% 'set-color)))
 
   (define/public (get-color) color)
+  (define/public (get-gradient) gradient)
 
   (def/public (get-stipple) stipple)
   (def/public (set-stipple [(make-or-false bitmap%) s]) 

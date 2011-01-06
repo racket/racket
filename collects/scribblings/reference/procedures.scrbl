@@ -58,7 +58,7 @@ as returned by @scheme[object-name] (and as printed for debugging) is
 The given @scheme[name] is used for printing an error message if the
 resulting procedure is applied to the wrong number of arguments.  In
 addition, if @scheme[proc] is an @tech{accessor} or @tech{mutator}
-produced by @scheme[define-struct],
+produced by @scheme[struct],
 @scheme[make-struct-field-accessor], or
 @scheme[make-struct-field-mutator], the resulting procedure also uses
 @scheme[name] when its (first) argument has the wrong type. More
@@ -249,7 +249,7 @@ which must be sorted using @scheme[keyword<?]. If @scheme[allowed-kws]
 is @scheme[#f], then the resulting procedure still accepts any
 keyword, otherwise the keywords in @scheme[required-kws] must be a
 subset of those in @scheme[allowed-kws]. The original @scheme[proc]
-must require no more keywords than the ones listed din
+must require no more keywords than the ones listed in
 @scheme[required-kws], and it must allow at least the keywords in
 @scheme[allowed-kws] (or it must allow all keywords if
 @scheme[allowed-kws] is @scheme[#f]).
@@ -310,10 +310,10 @@ immutable (so that a property binding or immutable designation is
 redundant and disallowed).
 
 @examples[
-(define-struct annotated-proc (base note)
-               #:property prop:procedure 
-                          (struct-field-index base))
-(define plus1 (make-annotated-proc
+(struct annotated-proc (base note)
+  #:property prop:procedure 
+             (struct-field-index base))
+(define plus1 (annotated-proc
                 (lambda (x) (+ x 1))
                 "adds 1 to its argument"))
 (procedure? plus1)
@@ -344,14 +344,14 @@ Providing a procedure @scheme[proc-spec] argument to
 is disallowed).
 
 @mz-examples[
-(define-struct fish (weight color)
-               #:mutable
-               #:property 
-               prop:procedure  
-               (lambda (f n) 
-                 (let ([w (fish-weight f)])
-                  (set-fish-weight! f (+ n w)))))
-(define wanda (make-fish 12 'red))
+(struct fish (weight color)
+  #:mutable
+  #:property 
+  prop:procedure  
+  (lambda (f n) 
+    (let ([w (fish-weight f)])
+      (set-fish-weight! f (+ n w)))))
+(define wanda (fish 12 'red))
 (fish? wanda)
 (procedure? wanda)
 (fish-weight wanda)
@@ -375,7 +375,7 @@ If @scheme[proc] is an instance of a structure type with property
 @scheme[prop:procedure], and if the property value indicates a field
 of the structure, and if the field value is a procedure, then
 @scheme[procedure-extract-target] returns the field value. Otherwise,
-the result if @scheme[#f].
+the result is @scheme[#f].
 
 When a @scheme[prop:procedure] property value is a procedure, the
 procedure is @emph{not} returned by
@@ -400,14 +400,14 @@ Arity-mismatch reporting automatically uses
 property is not associated with a procedure structure type.
 
 @examples[
-(define-struct evens (proc)
+(struct evens (proc)
   #:property prop:procedure (struct-field-index proc)
   #:property prop:arity-string
   (lambda (p)
     "an even number of arguments"))
 
 (define pairs
-  (make-evens
+  (evens
    (case-lambda
     [() null]
     [(a b . more)
