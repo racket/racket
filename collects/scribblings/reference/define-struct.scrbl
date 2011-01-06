@@ -58,7 +58,12 @@ to @math{4+2n} names:
        @secref["structinfo"].
        
        The @racket[constructor-id] and @racket[id] can be the same, in
-       which case @racket[id] performs both roles.}
+       which case @racket[id] performs both roles. In that case, the
+       expansion of @racket[id] as an expression produces an otherwise
+       inaccessible identifier that is bound to the constructor
+       procedure; the expanded identifier has a
+       @racket['constructor-for] property whose value is an identifier
+       that is @racket[free-identifier=?] to @racket[id].}
 
  @item{@racket[id]@racketidfont{?}, a @deftech{predicate} procedure
        that returns @racket[#t] for instances of the @tech{structure
