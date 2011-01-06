@@ -78,7 +78,13 @@ has been moved out).
       (is-a? p image-snip%)
       (is-a? p bitmap%)))
 
-
+(define (un/cache-image img bitmap-cache?)
+  (unless (image? img)
+    (error 'un/cache-image "expected an image as the first argument, got ~e" img))
+  (define res (send img copy))
+  (send res set-use-bitmap-cache?! (and bitmap-cache? #t))
+  res)
+  
 ;; a shape is either:
 ;;
 ;;  - (make-overlay shape shape)
@@ -226,7 +232,9 @@ has been moved out).
     (begin0
         (send bdc get-bitmap)
       (send bdc set-bitmap #f))))
-	     
+
+(define-local-member-name set-use-bitmap-cache?!)
+
 (define image%
   (class* snip% (png-convertible<%> image<%>)
     (init-field shape bb normalized? pinhole)
@@ -315,20 +323,29 @@ has been moved out).
     (define/override (copy) (make-image shape bb normalized? pinhole))
     
     (define cached-bitmap #f)
+    (define use-cached-bitmap? #t)
+    
+    (define/public (set-use-bitmap-cache?! u-b-c?) 
+      (set! use-cached-bitmap? u-b-c?)
+      (unless use-cached-bitmap?
+        (set! cached-bitmap #f)))
     
     (define/override (draw dc x y left top right bottom dx dy draw-caret)
-      (unless cached-bitmap
-        (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
-                                         (+ (inexact->exact (round (bb-bottom bb))) 1)))
-        (define bdc (make-object bitmap-dc% cached-bitmap))
-        (send bdc erase)
-        (render-image this bdc 0 0)
-        (send bdc set-bitmap #f))
+      (when use-cached-bitmap?
+        (unless cached-bitmap
+          (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
+                                           (+ (inexact->exact (round (bb-bottom bb))) 1)))
+          (define bdc (make-object bitmap-dc% cached-bitmap))
+          (send bdc erase)
+          (render-image this bdc 0 0)
+          (send bdc set-bitmap #f)))
       
       (let ([alpha (send dc get-alpha)])
         (when (pair? draw-caret)
           (send dc set-alpha (* alpha .5)))
-        (send dc draw-bitmap cached-bitmap x y)
+        (if use-cached-bitmap?
+            (send dc draw-bitmap cached-bitmap x y)
+            (render-image this dc x y))
         (send dc set-alpha alpha)))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
@@ -1164,6 +1181,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 
 (provide make-image image-shape image-bb image-normalized? image%
+        
+         un/cache-image
          
          (struct-out bb)
          (struct-out point)

@@ -22,3 +22,8 @@ up an image.
 @defproc[(image? [v any/c]) boolean?]{
  Recognizes the images that library handles.
 }
+
+@defproc[(un/cache-image [image image?] [b any/c]) image?]{
+  Returns an image that either caches its drawing in the 
+  snip @method[snip% draw] method or doesn't, depending on @racket[b].
+}
