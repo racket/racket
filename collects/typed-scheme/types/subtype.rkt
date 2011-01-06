@@ -233,19 +233,7 @@
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; values are subtypes of their "type"
-	      [((Value: (? exact-integer? n)) (Base: 'Integer _)) A0]
-	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
-	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]
-	      [((Value: (? exact-positive-integer? n)) (Base: 'Exact-Positive-Integer _)) A0]	      
-	      [((Value: (? flonum? n)) (Base: 'Flonum _)) A0]
-	      [((Value: (? real? n)) (== -Real =t)) A0]
-	      [((Value: (? number? n)) (Base: 'Number _)) A0]
-
-              [((Value: (? keyword?)) (Base: 'Keyword _)) A0]
-              [((Value: (? char?)) (Base: 'Char _)) A0]
-	      [((Value: (? boolean? n)) (Base: 'Boolean _)) A0]
-	      [((Value: (? symbol? n)) (Base: 'Symbol _)) A0]
-	      [((Value: (? string? n)) (Base: 'String _)) A0]
+	      [((Value: v) (Base: _ _ pred _)) (if (pred v) A0 (fail! s t))]
 	      ;; tvars are equal if they are the same variable
 	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]              
               ;; sequences are covariant
@@ -259,11 +247,11 @@
                (subtypes* A0 ts (map (λ _ t*) ts))]
               [((Vector: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
-              [((Base: 'String _) (Sequence: (list t*)))
+              [((Base: 'String _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Char t*)]
-              [((Base: 'Bytes _) (Sequence: (list t*)))
+              [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
-              [((Base: 'Input-Port _) (Sequence: (list t*)))
+              [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
@@ -384,4 +372,4 @@
 ;(subtype (make-poly '(a) (make-tvar 'a)) (make-lst N))
 
 ;;problem:
-;; (subtype (make-Mu 'x (make-Syntax (make-Union (list (make-Base 'Number #'number?) (make-F 'x))))) (make-Syntax (make-Univ)))
+;; (subtype (make-Mu 'x (make-Syntax (make-Union (list (make-Base 'Number #'number? number? #'-Number) (make-F 'x))))) (make-Syntax (make-Univ)))

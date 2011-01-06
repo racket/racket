@@ -172,7 +172,7 @@
                                               (inexact-real? (real-part x))))))]
         [(== t:-Number type-equal?) #'(flat-named-contract 'Number number?)]
 
-        [(Base: sym cnt) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
+        [(Base: sym cnt _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
         [(Union: elems)         
@@ -257,7 +257,7 @@
                                  (maker fld-cnts ...))))])
                     rec))]
            [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
-        [(Syntax: (Base: 'Symbol _)) #'identifier?]
+        [(Syntax: (Base: 'Symbol _ _ _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]

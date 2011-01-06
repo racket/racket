@@ -4,6 +4,7 @@
 
 (require (types abbrev numeric-predicates)
          (rep type-rep)
+         unstable/function
          (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
 
 (provide (all-defined-out))
@@ -36,33 +37,47 @@
 
 ;; Integers
 (define -Byte>1 (make-Base 'Byte-Larger-Than-One ; unsigned
-                           #'(and/c byte? (lambda (x) (> x 1)))))
+                           #'(and/c byte? (lambda (x) (> x 1)))
+                           (conjoin byte? (lambda (x) (> x 1)))
+                           #'-Byte>1))
 (define -PosByte (*Un -One -Byte>1))
 (define -Byte    (*Un -Zero -PosByte))
 (define -PosIndexNotByte
   (make-Base 'Positive-Index-Not-Byte
-             #'(and/c index? positive? (not/c byte?))))
+             ;; index? will be checked at runtime, can be platform-specific
+             ;; portable-index? will be checked at compile-time, must be portable
+             #'(and/c index? positive? (not/c byte?))
+             (conjoin portable-index? positive? (negate byte?))
+             #'-PosIndexNotByte))
 (define -PosIndex    (*Un -One -Byte>1 -PosIndexNotByte))
 (define -Index       (*Un -Zero -PosIndex))
 (define -PosFixnumNotIndex
   (make-Base 'Positive-Fixnum-Not-Index
-             #'(and/c fixnum? positive? (not/c index?))))
+             #'(and/c fixnum? positive? (not/c index?))
+             (conjoin portable-fixnum? positive? (negate portable-index?))
+             #'-PosFixnumNotIndex))
 (define -PosFixnum    (*Un -PosFixnumNotIndex -PosIndex))
 (define -NonNegFixnum (*Un -PosFixnum -Zero))
 (define -NegFixnum
   (make-Base 'Negative-Fixnum-Not-Index
-             #'(and/c fixnum? negative?)))
+             #'(and/c fixnum? negative?)
+             (conjoin portable-fixnum? negative?)
+             #'-NegFixnum))
 (define -NonPosFixnum (*Un -NegFixnum -Zero))
 (define -Fixnum       (*Un -NegFixnum -Zero -PosFixnum))
 (define -PosIntNotFixnum
   (make-Base 'Positive-Integer-Not-Fixnum
-             #'(and/c exact-integer? positive? (not/c fixnum?))))
+             #'(and/c exact-integer? positive? (not/c fixnum?))
+             (conjoin exact-integer? positive? (negate portable-fixnum?))
+             #'-PosIntNotFixnum))
 (define -PosInt    (*Un -PosIntNotFixnum -PosFixnum))
 (define -NonNegInt (*Un -PosInt -Zero))
 (define -Nat       -NonNegInt)
 (define -NegIntNotFixnum
   (make-Base 'Negative-Integer-Not-Fixnum
-             #'(and/c exact-integer? negative? (not/c fixnum?))))
+             #'(and/c exact-integer? negative? (not/c fixnum?))
+             (conjoin exact-integer? negative? (negate portable-fixnum?))
+             #'-NegIntNotFixnum))
 (define -NegInt    (*Un -NegIntNotFixnum -NegFixnum))
 (define -NonPosInt (*Un -NegInt -Zero))
 (define -Int       (*Un -NegInt -Zero -PosInt))
@@ -70,31 +85,45 @@
 ;; Rationals
 (define -PosRatNotInt
   (make-Base 'Positive-Rational-Not-Integer
-             #'(and/c exact-rational? positive? (not/c integer?))))
+             #'(and/c exact-rational? positive? (not/c integer?))
+             (conjoin exact-rational? positive? (negate integer?))
+             #'-PosRatNotInt))
 (define -PosRat    (*Un -PosRatNotInt -PosInt))
 (define -NonNegRat (*Un -PosRat -Zero))
 (define -NegRatNotInt
   (make-Base 'Negative-Rational-Not-Integer
-             #'(and/c exact-rational? negative? (not/c integer?))))
+             #'(and/c exact-rational? negative? (not/c integer?))
+             (conjoin exact-rational? negative? (negate integer?))
+             #'-NegRatNotInt))
 (define -NegRat    (*Un -NegRatNotInt -NegInt))
 (define -NonPosRat (*Un -NegRat -Zero))
 (define -Rat       (*Un -NegRat -Zero -PosRat))
 
 ;; Floating-point numbers
 (define -FlonumPosZero (make-Base 'Float-Positive-Zero
-                                  #'(lambda (x) (eq? x 0.0))))
+                                  #'(lambda (x) (eq? x 0.0))
+                                  (lambda (x) (eq? x 0.0))
+                                  #'-FlonumPosZero))
 (define -FlonumNegZero (make-Base 'Float-Negative-Zero
-                                  #'(lambda (x) (eq? x -0.0))))
+                                  #'(lambda (x) (eq? x -0.0))
+                                  (lambda (x) (eq? x -0.0))
+                                  #'-FlonumNegZero))
 (define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero))
 (define -FlonumNan (make-Base 'Float-Nan
-                              #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))))
+                              #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))
+                              (conjoin flonum? (lambda (x) (eqv? x +nan.0)))
+                              #'-FlonumNan))
 (define -PosFlonum
   (make-Base 'Positive-Float
-             #'(and/c flonum? positive?)))
+             #'(and/c flonum? positive?)
+             (conjoin flonum? positive?)
+             #'-PosFlonum))
 (define -NonNegFlonum (*Un -PosFlonum -FlonumPosZero))
 (define -NegFlonum
   (make-Base 'Negative-Float
-             #'(and/c flonum? negative?)))
+             #'(and/c flonum? negative?)
+             (conjoin flonum? negative?)
+             #'-NegFlonum))
 (define -NonPosFlonum (*Un -NegFlonum -FlonumNegZero))
 (define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
 ;; inexact reals can be flonums (64-bit floats) or 32-bit floats
@@ -103,27 +132,37 @@
              ;; eqv? equates 0.0f0 with itself, but not eq?
              ;; we also need to check for small-float? since eqv? also equates
              ;; 0.0f0 and 0.0e0
-             #'(and/c small-float? (lambda (x) (eqv? x 0.0f0)))))
+             #'(and/c small-float? (lambda (x) (eqv? x 0.0f0)))
+             (lambda (x) #f) ; can't assign that type at compile-time. see tc-lit for more explanation
+	     #'-SmallFloatPosZero))
 (define -SmallFloatNegZero
   (make-Base 'Small-Float-Negative-Zero
-             #'(and/c small-float? (lambda (x) (eqv? x -0.0f0)))))
+             #'(and/c small-float? (lambda (x) (eqv? x -0.0f0)))
+             (lambda (x) #f)
+	     #'-SmallFloatNegZero))
 (define -SmallFloatZero (*Un -SmallFloatPosZero -SmallFloatNegZero))
 (define -SmallFloatNan (make-Base 'Small-Float-Nan
                                   #'(and/c small-float?
                                            ;; eqv? equates single and double precision nans
-                                           (lambda (x) (eqv? x +nan.0)))))
+                                           (lambda (x) (eqv? x +nan.0)))
+                                  (lambda (x) #f)
+				  #'-SmallFloatNan))
 (define -InexactRealPosZero (*Un -SmallFloatPosZero -FlonumPosZero))
 (define -InexactRealNegZero (*Un -SmallFloatNegZero -FlonumNegZero))
 (define -InexactRealZero    (*Un -InexactRealPosZero -InexactRealNegZero))
 (define -PosSmallFloat
   (make-Base 'Positive-Small-Float
-             #'(and/c small-float? positive?)))
+             #'(and/c small-float? positive?)
+             (lambda (x) #f)
+	     #'-PosSmallFloat))
 (define -PosInexactReal    (*Un -PosSmallFloat -PosFlonum))
 (define -NonNegSmallFloat  (*Un -PosSmallFloat -SmallFloatPosZero))
 (define -NonNegInexactReal (*Un -PosInexactReal -InexactRealPosZero))
 (define -NegSmallFloat
   (make-Base 'Negative-Small-Float
-             #'(and/c small-float? negative?)))
+             #'(and/c small-float? negative?)
+             (lambda (x) #f)
+	     #'-NegSmallFloat))
 (define -NegInexactReal    (*Un -NegSmallFloat -NegFlonum))
 (define -NonPosSmallFloat  (*Un -NegSmallFloat -SmallFloatNegZero))
 (define -NonPosInexactReal (*Un -NegInexactReal -InexactRealNegZero))
@@ -156,17 +195,32 @@
                                  #'(and/c number?
                                           (lambda (x)
                                             (and (flonum? (imag-part x))
-                                                 (flonum? (real-part x)))))))
+                                                 (flonum? (real-part x)))))
+                                 (conjoin number?
+                                          (lambda (x)
+                                            (and (flonum? (imag-part x))
+                                                 (flonum? (real-part x)))))
+                                 #'-FloatComplex))
 (define -SmallFloatComplex (make-Base 'Small-Float-Complex
                                       #'(and/c number?
                                                (lambda (x)
                                                  (and (small-float? (imag-part x))
-                                                      (small-float? (real-part x)))))))
+                                                      (small-float? (real-part x)))))
+                                      (conjoin number?
+                                               (lambda (x)
+                                                 (and (small-float? (imag-part x))
+                                                      (small-float? (real-part x)))))
+                                      #'-SmallFloatComplex))
 (define -InexactComplex (*Un -FloatComplex -SmallFloatComplex))
 (define -ExactComplexNotReal
-  (make-Base 'Complex-Not-Real #'(and/c number?
-                                        (not/c real?)
-                                        (lambda (x) (exact? (imag-part x))))))
+  (make-Base 'Complex-Not-Real
+             #'(and/c number?
+                      (not/c real?)
+                      (lambda (x) (exact? (imag-part x))))
+             (conjoin number?
+                      (negate real?)
+                      (lambda (x) (exact? (imag-part x))))
+             #'-ExactComplexNotReal))
 (define -Complex (*Un -Real -InexactComplex -ExactComplexNotReal))
 (define -Number -Complex)
 

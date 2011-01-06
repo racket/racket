@@ -131,7 +131,14 @@
     [#:key 'channel])
 
 ;; name is a Symbol (not a Name)
-(dt Base ([name symbol?] [contract syntax?]) 
+;; contract is used when generating contracts from types
+;; predicate is used to check (at compile-time) whether a value belongs
+;; to that base type. This is used to check for subtyping between value
+;; types and base types.
+;; marshaled has to be a syntax object that refers to the base type
+;; being created. this allows us to avoid reconstructing the base type
+;; when using it from its marshaled representation
+(dt Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?])
     [#:frees #f] [#:fold-rhs #:base] [#:intern name]
     [#:key (case name
 	     [(Number Integer) 'number]
