@@ -92,7 +92,7 @@ Returns the custom-write procedure associated with @scheme[v].}
 @deftogether[(
 @defthing[prop:custom-print-quotable struct-type-property?]
 @defthing[custom-print-quotable? struct-type-property?]
-@defthing[custom-print-quotable struct-type-property?]
+@defthing[custom-print-quotable-accessor struct-type-property?]
 )]{
 
 A property and associated predicate and accessor. The property value

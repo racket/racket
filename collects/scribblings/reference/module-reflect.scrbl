@@ -332,7 +332,9 @@ See also @racket[module->language-info] and
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
 
-@defproc[(dynamic-require [mod module-path?]
+@defproc[(dynamic-require [mod (or/c module-path?
+                                     resolved-module-path?
+                                     module-path-index?)]
                           [provided (or/c symbol? #f 0 void?)]
                           [fail-thunk (-> any) (lambda () ....)])
          any]{
