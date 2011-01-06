@@ -484,32 +484,32 @@
       (make-signature
        name
        (lambda (self thing)
-
 	 (if (not (predicate thing))
 	     (signature-violation thing self #f #f)
-	     (let ((log (wrap-ref thing)))
-	       (cond
-		((not log)
-		 (wrap-set! thing
-			    (make-lazy-wrap-log (list not-checked) '())))
-		((not (let ()
-			(define (<=? sigs1 sigs2)
-			  (andmap signature<=? sigs1 sigs2))
-			(define (check wrap-field-signatures)
-			  (ormap (lambda (field-signatures)
-				   (<=? wrap-field-signatures field-signatures))
-				 field-signatures-list))
-			(or (ormap (lambda (wrap-not-checked)
-				     (andmap check 
-					     (lazy-log-not-checked-field-signatures-list wrap-not-checked)))
-				   (lazy-wrap-log-not-checked log))
-			    (ormap check (lazy-wrap-log-checked log)))))
-		 (wrap-set! thing
-			    (make-lazy-wrap-log (cons not-checked (lazy-wrap-log-not-checked log))
-						(lazy-wrap-log-checked log)))))))
+	     (begin
+	       (let ((log (wrap-ref thing)))
+		 (cond
+		  ((not log)
+		   (wrap-set! thing
+			      (make-lazy-wrap-log (list not-checked) '())))
+		  ((not (let ()
+			  (define (<=? sigs1 sigs2)
+			    (andmap signature<=? sigs1 sigs2))
+			  (define (check wrap-field-signatures)
+			    (ormap (lambda (field-signatures)
+				     (<=? wrap-field-signatures field-signatures))
+				   field-signatures-list))
+			  (or (ormap (lambda (wrap-not-checked)
+				       (andmap check 
+					       (lazy-log-not-checked-field-signatures-list wrap-not-checked)))
+				     (lazy-wrap-log-not-checked log))
+			      (ormap check (lazy-wrap-log-checked log)))))
+		   (wrap-set! thing
+			      (make-lazy-wrap-log (cons not-checked (lazy-wrap-log-not-checked log))
+						  (lazy-wrap-log-checked log))))))
 
-	 (when eager-checking?
-	   (check-lazy-wraps! type-descriptor thing))
+	       (when eager-checking?
+		 (check-lazy-wraps! type-descriptor thing))))
        
 	 thing)
        (delay syntax)
