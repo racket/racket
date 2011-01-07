@@ -272,7 +272,7 @@
                   [(bold) (wrap e "textbf" tt?)]
                   [(tt) (wrap e "Scribtexttt" #t)]
                   [(url) (wrap e "nolinkurl" 'exact)]
-                  [(no-break) (core-render e tt?)]
+                  [(no-break) (wrap e "mbox" tt?)]
                   [(sf) (wrap e "textsf" #f)]
                   [(subscript) (wrap e "textsub" #f)]
                   [(superscript) (wrap e "textsuper" #f)]

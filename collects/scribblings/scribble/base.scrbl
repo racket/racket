@@ -346,6 +346,10 @@ See also @racket[verbatim].}
 Produces an element that forces a line break.}
 
 
+@def-elem-proc[nonbreaking]{Like @racket[elem], but line breaks are
+suppressed while rendering the content.}
+
+
 @defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 
 Produces an element containing @racket[n] spaces and style

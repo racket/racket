@@ -276,6 +276,7 @@
 
 (provide/contract
  [linebreak (-> element?)]
+ [nonbreaking elem-like-contract]
  [hspace (-> exact-nonnegative-integer? element?)]
  [elem (->* ()
             (#:style element-style?)
@@ -310,6 +311,9 @@
 
 (define (linebreak)
   (make-element 'newline '("\n")))
+
+(define (nonbreaking . str)
+  (make-element 'no-break (decode-content str)))
 
 (define (elem #:style [style plain] . str)
   (make-element style (decode-content str)))

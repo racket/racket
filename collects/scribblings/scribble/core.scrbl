@@ -646,6 +646,9 @@ recognized:
  @item{@racket['newline] --- Renders a line break independent of
        the @racket[content].}
 
+ @item{@racket['no-break] --- Prevents line breaks when rendering
+       @racket[content].}
+
 ]
 
 The following @tech{style properties} are currently recognized:
