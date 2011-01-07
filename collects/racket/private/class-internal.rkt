@@ -58,7 +58,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c ->m ->*m ->dm case->m object/c
+           class/c ->m ->*m ->dm case->m object/c instanceof
            
            ;; "keywords":
            private public override augment
@@ -3099,11 +3099,15 @@
   (λ (blame)
     (λ (obj)
       (make-wrapper-object ctc obj blame 
-                           (object/c-methods ctc) (object/c-method-contracts ctc)
-                           (object/c-fields ctc) (object/c-field-contracts ctc)))))
+                           (base-object/c-methods ctc) (base-object/c-method-contracts ctc)
+                           (base-object/c-fields ctc) (base-object/c-field-contracts ctc)))))
 
-(define-struct object/c (methods method-contracts fields field-contracts)
-  #:omit-define-syntaxes
+(define (object/c-first-order ctc)
+  (λ (obj)
+    (let/ec ret
+      (check-object-contract obj (base-object/c-methods ctc) (base-object/c-fields ctc) (λ args (ret #f))))))
+
+(define-struct base-object/c (methods method-contracts fields field-contracts)
   #:property prop:contract
   (build-contract-property 
    #:projection object/c-proj
@@ -3122,13 +3126,9 @@
        (apply build-compound-type-name
               'object/c 
               (append
-               (pair-ids-ctcs (object/c-methods ctc) (object/c-method-contracts ctc))
-               (handle-optional 'field (object/c-fields ctc) (object/c-field-contracts ctc))))))
-   #:first-order
-   (λ (ctc)
-     (λ (obj)
-       (let/ec ret
-         (check-object-contract obj (object/c-methods ctc) (object/c-fields ctc) (λ args (ret #f))))))))
+               (pair-ids-ctcs (base-object/c-methods ctc) (base-object/c-method-contracts ctc))
+               (handle-optional 'field (base-object/c-fields ctc) (base-object/c-field-contracts ctc))))))
+   #:first-order object/c-first-order))
 
 (define-syntax (object/c stx)
   (syntax-case stx ()
@@ -3139,7 +3139,24 @@
                      [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
                      [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))])
          (syntax/loc stx
-           (make-object/c methods method-ctcs fields field-ctcs))))]))
+           (make-base-object/c methods method-ctcs fields field-ctcs))))]))
+
+(define-struct (base-instanceof base-object/c) (class-ctc)
+  #:property prop:contract
+  (build-contract-property 
+   #:projection object/c-proj
+   #:name
+   (λ (ctc)
+     (build-compound-type-name 'instanceof (base-instanceof-class-ctc ctc)))
+   #:first-order object/c-first-order))
+
+(define (instanceof cctc)
+  (let ([ctc (coerce-contract 'instanceof cctc)])
+    (unless (class/c? ctc)
+      (error "expected class contract, got ~v" ctc))
+    (make-base-instanceof (class/c-methods ctc) (class/c-method-contracts ctc)
+                          (class/c-fields ctc) (class/c-field-contracts ctc)
+                          ctc)))
 
 ;;--------------------------------------------------------------------
 ;;  interfaces
@@ -4670,5 +4687,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c ->m ->*m ->dm case->m object/c)
+         class/c ->m ->*m ->dm case->m object/c instanceof)
 
