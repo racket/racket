@@ -15,6 +15,8 @@
   
   (define size #f)
   (define attempt->size default-attempt-size)
+
+  (define repetitions 1)
   
   (command-line
    #:argv args
@@ -39,18 +41,24 @@
    ["--log"
     p
     "Log generated tests to path p"
-    (log-test (curryr pretty-display (open-output-file p #:exists 'truncate)))])
+    (log-test (curryr pretty-display (open-output-file p #:exists 'truncate)))]
+   ["--repetitions"
+    n
+    "Repeats the command n times"
+    (set! repetitions (string->number n))])
   
-  (printf "Test seed: ~a (size: ~a)\n" seed (or size "variable"))
   
-  (parameterize ([current-pseudo-random-generator test-prg])
-    (random-seed seed))
-  
-  (parameterize ([redex-pseudo-random-generator test-prg])
-    (when from-grammar-tests
-      (time (test #:attempts from-grammar-tests #:attempt-size attempt->size)))
-    (when from-rules-tests
-      (time (test #:source :-> #:attempts from-rules-tests #:attempt-size attempt->size)))))
+  (for ([_ (in-range 0 repetitions)])
+    
+    (printf "Test seed: ~a (size: ~a)\n" seed (or size "variable"))
+    (parameterize ([current-pseudo-random-generator test-prg])
+      (random-seed seed))
+    
+    (parameterize ([redex-pseudo-random-generator test-prg])
+      (when from-grammar-tests
+        (time (test #:attempts from-grammar-tests #:attempt-size attempt->size)))
+      (when from-rules-tests
+        (time (test #:source :-> #:attempts from-rules-tests #:attempt-size attempt->size))))))
 
 (define log-test (make-parameter void))
 
