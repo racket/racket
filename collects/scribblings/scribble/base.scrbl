@@ -348,6 +348,33 @@ See also @racket[verbatim].}
  }
 
 
+@defthing[._ element?]{
+
+Generates a period that ends an abbreviation in the middle of a
+sentence, as opposed to a period that ends a sentence (since the
+latter may be typeset with extra space). Use @litchar|{@._}| in a
+document instead of just @litchar{.} for an abbreviation-ending period
+that is preceded by a lowercase letter and followed by a space.
+
+See @racket[.__] for an example.}
+
+
+@defthing[.__ element?]{
+
+Generates a period that ends a sentence (which may be typeset with
+extra space), as opposed to a period that ends an abbreviation in the
+middle of a sentence. Use @litchar|{@.__}| in a document instead of just
+@litchar{.} for a sentence-ending period that is preceded by an
+uppercase letter.
+
+The following example illustrates both @racket[._] and @racket[.__]:
+
+@codeblock|{
+ #lang scribble/base
+ My name is Mr@._ T@.__ I pity the fool who can't typeset punctuation.
+}|}
+
+
 @; ------------------------------------------------------------------------
 @section[#:tag "base-links"]{Links}
 

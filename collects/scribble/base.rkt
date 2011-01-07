@@ -262,6 +262,13 @@
 
 ;; ----------------------------------------
 
+(provide ._ .__)
+
+(define ._ (make-element (make-style "Sendabbrev" null) "."))
+(define .__ (make-element (make-style "Sendsentence" null) "."))
+
+;; ----------------------------------------
+
 (define elem-like-contract
   (->* () () #:rest (listof pre-content?) element?))
 
