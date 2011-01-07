@@ -290,6 +290,22 @@ This method is called only when manual
 }
 
 
+@defmethod[(refresh-now [paint-proc ((is-a?/c dc<%>) . -> . any)
+                                    (lambda (dc) (send @#,this-obj[] on-paint))]
+                        [#:flush? flush? any/c #t])
+           void?]{
+
+Calls @racket[paint-proc] with the canvas's drawing context to immediately
+update the canvas (in contrast to @method[window<%> refresh], which merely
+queues an update request to be handled at the windowing system's discretion).
+
+Before @racket[paint-proc] is called, flushing is disabled for the
+canvas. Also, the canvas is erased, unless the canvas has the
+@racket['no-autoclear] style. After @racket[paint-proc] returns,
+flushing is enabled, and if @racket[flush?] is true, then
+@method[canvas<%> flush] is called immediately.}
+
+
 @defmethod[(scroll [h-value (or/c (real-in 0.0 1.0) false/c)]
                    [v-value (or/c (real-in 0.0 1.0) false/c)])
            void?]{

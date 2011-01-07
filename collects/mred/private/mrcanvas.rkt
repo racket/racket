@@ -1,8 +1,8 @@
-(module mrcanvas mzscheme
+(module mrcanvas racket/base
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/list
-	   (prefix wx: "kernel.ss")
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "kw.ss"
@@ -103,7 +103,9 @@
       (private-field [paint-cb paint-callback]
 		     [has-x? (and (list? style) (memq 'hscroll style))]
 		     [has-y? (and (list? style) (memq 'vscroll style))])
-      (inherit get-client-size get-dc set-label)
+      (inherit get-client-size get-dc set-label 
+               suspend-flush resume-flush flush
+               get-canvas-background)
       (rename [super-on-paint on-paint])
       (sequence 
 	(let ([cwho '(constructor canvas)])
@@ -196,6 +198,29 @@
 		    (if (eq? paint-cb default-paint-cb)
 			(super-on-paint)
 			(paint-cb this (get-dc))))])
+      (private-field [no-clear? (memq 'no-autoclear style)])
+      (public
+        [refresh-now (lambda ([do-paint (lambda (dc) (on-paint))]
+                              #:flush? [flush? #t])
+                       (let ([dc (get-dc)])
+                         (dynamic-wind
+                             (lambda ()
+                               (suspend-flush))
+                             (lambda ()
+                               (unless no-clear?
+                                 (let ([bg (get-canvas-background)])
+                                   (if bg
+                                       (let ([old-bg (send dc get-background)])
+                                         (as-entry
+                                          (lambda ()
+                                            (send dc set-background bg)
+                                            (send dc clear)
+                                            (send dc set-background old-bg))))
+                                       (send dc erase))))
+                               (do-paint dc))
+                             (lambda ()
+                               (resume-flush)))
+                         (when flush? (flush))))])
       (private-field
        [wx #f])
       (sequence

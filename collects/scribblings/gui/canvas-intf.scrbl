@@ -56,7 +56,10 @@ To draw onto a canvas, get its device context via @method[canvas<%>
 
        Calling an @method[canvas<%> on-paint] method directly is the
        same as drawing outside an @method[canvas<%> on-paint] callback
-       from the windowing system.}
+       from the windowing system. For a @racket[canvas%], use
+       @method[canvas% refresh-now] to force an immediate update of
+       the canvas's content that is otherwise analogous to queueing an
+       update with @method[window<%> refresh].}
 
 ]
 
@@ -72,7 +75,7 @@ is suspended until the outermost @method[canvas<%> suspend-flush] is
 balanced by a @method[canvas<%> resume-flush]. An @method[canvas<%>
 on-paint] call from the windowing system is implicitly wrapped with
 @method[canvas<%> suspend-flush] and @method[canvas<%> resume-flush]
-calls.
+calls, as is a call to a paint procedure by @method[canvas% refresh-now].
 
 In the case of a transparent canvas, line and text smoothing can
 depend on the window that serves as the canvas's background. For
