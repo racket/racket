@@ -94,17 +94,32 @@
 
   (define-struct (spaces element) (cnt))
 
-  (define (literalize-spaces i)
+  ;; We really don't want leading hypens (or minus signs) to
+  ;; create a line break after the hyphen. For interior hyphens,
+  ;; line breaking is usually fine.
+  (define (nonbreak-leading-hyphens s)
+    (let ([m (regexp-match-positions #rx"^-+" s)])
+      (if m
+          (if (= (cdar m) (string-length s))
+              (make-element 'no-break s)
+              (let ([len (add1 (cdar m))])
+                (make-element #f (list (make-element 'no-break (substring s 0 len))
+                                       (substring s len)))))
+          s)))
+
+  (define (literalize-spaces i [leading? #f])
     (let ([m (regexp-match-positions #rx"  +" i)])
       (if m
           (let ([cnt (- (cdar m) (caar m))])
             (make-spaces #f
                          (list
-                          (literalize-spaces (substring i 0 (caar m)))
+                          (literalize-spaces (substring i 0 (caar m)) #t)
                           (hspace cnt)
                           (literalize-spaces (substring i (cdar m))))
                          cnt))
-          i)))
+          (if leading?
+              (nonbreak-leading-hyphens i)
+              i))))
 
 
   (define line-breakable-space (make-element 'tt " "))
@@ -139,9 +154,9 @@
                             (list
                              (case (car tag)
                                [(form)
-                                (make-link-element syntax-link-color (list s) tag)]
+                                (make-link-element syntax-link-color (nonbreak-leading-hyphens s) tag)]
                                [else
-                                (make-link-element value-link-color (list s) tag)]))
+                                (make-link-element value-link-color (nonbreak-leading-hyphens s) tag)]))
                             (list 
                              (make-element "badlink"
                                            (make-element value-link-color s))))))
@@ -225,8 +240,8 @@
                               (not (or it? is-var?)))
                          (if (pair? (identifier-label-binding c))
                              (make-id-element c s)
-                             s)
-                         (literalize-spaces s))
+                             (nonbreak-leading-hyphens s))
+                         (literalize-spaces s #t))
                      (cond
                       [(positive? quote-depth) value-color]
                       [(let ([v (syntax-e c)])
