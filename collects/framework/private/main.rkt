@@ -20,6 +20,9 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+;; used to time how long it takes to set a preference; the value is not actually used.
+(preferences:set-default 'drracket:prefs-debug #f (λ (x) #t))
+
 (preferences:set-default 'framework:overwrite-mode-keybindings #f boolean?)
 
 (preferences:set-default 'framework:ask-about-paste-normalization #t boolean?)

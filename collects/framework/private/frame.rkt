@@ -2470,30 +2470,110 @@
 (define pref-save-canvas%
   (class canvas%
     (define on? #f)
+    
+    (define mouse-over? #f)
+    (define mouse-down? #f)
+    
+    (define/private (update-mouse-over? mo?)
+      (unless (eq? mouse-over? mo?)
+        (set! mouse-over? mo?)
+        (refresh)))
+    (define/private (update-mouse-down? md?)
+      (unless (eq? mouse-down? md?)
+        (set! mouse-down? md?)
+        (refresh)))
+    
     (define indicator "P")
+    
+    (inherit refresh)
+    (define/override (on-event evt)
+      (cond
+        [(send evt entering?)
+         (update-mouse-over? #t)]
+        [(send evt leaving?)
+         (update-mouse-over? #f)])
+      (cond
+        [(send evt button-down?)
+         (update-mouse-down? #t)]
+        [(send evt button-up?)
+         (update-mouse-down? #f)
+         (let-values ([(cw ch) (get-client-size)])
+           (when (and (<= 0 (send evt get-x) cw)
+                      (<= 0 (send evt get-y) ch))
+             (show-prefs-stats)))]))
+    
+    (define/private (show-prefs-stats)
+      (define f (new frame% 
+                     [label (format "~a - Preferences Stats" (string-constant drscheme))]
+                     [width 600]
+                     [height 400]))
+      (define t (new text%))
+      (define ec (new editor-canvas% [parent f] [editor t]))
+      (send f reflow-container)
+      (send t begin-edit-sequence)
+      (parameterize ([current-output-port (open-output-text-editor t)])
+        (define prefs-file (find-system-path 'pref-file))
+        (printf "prefs file:\n  ~a\n\n" (path->string prefs-file))
+        (printf "setting a preference:\n  ")
+        (preferences:set 'drracket:prefs-debug #f)
+        (time (preferences:set 'drracket:prefs-debug #t))
+        (define file-contents (call-with-input-file prefs-file read))
+        (printf "\n~s preference keys\n\n" (length file-contents))
+        
+        (printf "preferences taking the most space:\n")
+        (define sizes (map 
+                       (λ (x) 
+                         (list 
+                          (car x)
+                          (bytes-length (string->bytes/utf-8 (format "~s" x)))))
+                       file-contents))
+        (for ([frame (in-list (sort sizes > #:key cadr))]
+              [x (in-range 0 10)])
+          (define key (list-ref frame 0))
+          (define size (list-ref frame 1))
+          (printf "  ~s (~s bytes)\n" key size)))
+      (send t auto-wrap #t)
+      (send t set-position 0 0)
+      (send t lock #t)
+      (send t end-edit-sequence)
+      (send f show #t))
+    
     (define/override (on-paint)
+      (define-values (cw ch) (get-client-size))
+      (define dc (get-dc))
+      (define (draw-p)
+        (send dc set-font small-control-font)
+        (send dc draw-text indicator
+              (- (/ cw 2) (/ indicator-width 2))
+              (- (/ ch 2) (/ indicator-height 2))))
       (cond
         [on?
-         (define dc (get-dc))
-         (send dc set-font small-control-font)
-         (let-values ([(cw ch) (get-client-size)])
-           (send dc draw-text indicator
-                 (- (/ cw 2) (/ indicator-width 2))
-                 (- (/ ch 2) (/ indicator-height 2))))]))
+         (send dc set-text-foreground (send the-color-database find-color "black"))
+         (draw-p)]
+        [mouse-over?
+         (send dc set-brush (if mouse-down? "blue" "skyblue") 'solid)
+         (send dc set-pen "black" 1 'transparent)
+         (send dc draw-rectangle 0 0 cw ch)
+         (send dc set-text-foreground (send the-color-database find-color "white"))
+         (draw-p)]))
+    
     (define/public (set-on? new-on?)
       (set! on? new-on?)
       (send (get-dc) erase)
       (on-paint)
       (flush))
     
-    (inherit get-dc flush get-client-size min-width)
+    (inherit get-dc flush get-client-size min-width min-height)
     (super-new [stretchable-width #f]
+               [stretchable-height #f]
                [style '(transparent)])
     
+    (send (get-dc) set-smoothing 'smoothed)
     (define-values (indicator-width indicator-height)
       (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent indicator small-control-font)])
         (values tw th)))
-    (min-width (+ (inexact->exact (ceiling indicator-width)) 4))))
+    (min-width (+ (inexact->exact (ceiling indicator-width)) 4))
+    (min-height (+ (inexact->exact (ceiling indicator-height)) 4))))
 
 (define basic% (register-group-mixin (basic-mixin frame%)))
 (define size-pref% (size-pref-mixin basic%))
