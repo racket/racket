@@ -123,7 +123,7 @@
            ;; delay expansion until it's a good time to lift expressions:
            (quasisyntax/loc stx (#%expression #,stx)))))))
 
-(define-syntax (provide/contract provide-stx)
+(define-for-syntax (true-provide/contract provide-stx)
   (syntax-case provide-stx (struct)
     [(_ p/c-ele ...)
      (let ()
@@ -755,6 +755,22 @@
          (syntax 
           (begin
             bodies ...))))]))
+
+(define-syntax (provide/contract stx)
+  (define s-l-c (syntax-local-context))
+  (case s-l-c
+   [(module-begin) ;; the case under discussion
+    #`(begin (define-values () (values))  ;; force us into the 'module' local context
+             #,stx)]
+   [(module) ;; the good case
+    (true-provide/contract stx)]
+   [else ;; expression or internal definition
+    (raise-syntax-error 'provide/contract 
+                        (format "not allowed in a ~a context"
+                                (if (pair? s-l-c)
+                                    "internal definition"
+                                    s-l-c))
+                        stx)]))
 
 (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
   (let-values ([(struct:struct-name _make _pred _get _set)

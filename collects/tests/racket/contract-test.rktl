@@ -10925,6 +10925,22 @@ so that propagation occurs.
               
               (contract-eval '(require 'provide/contract-35/n)))))
   
+  ;; test that provide/contract by itself in a module doesn't signal an error
+  (test/spec-passed/result
+   'provide/contract35
+   '(begin
+      (eval '(module provide/contract35-m1 racket
+               (provide/contract [add1 (-> number? number?)])))
+      
+      (eval '(module provide/contract35-m2 racket/base
+               (require 'provide/contract35-m1)
+               (provide provide/contract35-three)
+               (define provide/contract35-three (add1 2))))
+      
+      (eval '(require 'provide/contract35-m2))
+      (eval 'provide/contract35-three))
+   3)
+  
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug scheme/base
