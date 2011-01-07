@@ -626,6 +626,7 @@
                                     c)]
                      [(#\# #\% #\& #\$) (format "\\~a" c)]
                      [(#\uA0) "~"] ; non-breaking space
+                     [(#\uAD) "\\-"] ; soft hyphen; unfortunately, also disables auto-hyphen
                      [(#\uDF) "{\\ss}"]
                      [else
                       (if ((char->integer c) . > . 127)

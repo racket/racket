@@ -367,6 +367,12 @@ which is equivalent to @racket['nbsp] as an element.}
 A string containing the non-breaking hyphen character.}
 
 
+@defthing[?- string?]{
+
+A string containing the soft-hyphen character (i.e., a suggestion of
+where to hyphenate a word to break it across lines when rendering).}
+
+
 @defthing[._ element?]{
 
 Generates a period that ends an abbreviation in the middle of a

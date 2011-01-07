@@ -262,11 +262,12 @@
 
 ;; ----------------------------------------
 
-(provide ._ .__ ~ -~-)
+(provide ._ .__ ~ ?- -~-)
 
 (define ._ (make-element (make-style "Sendabbrev" null) "."))
 (define .__ (make-element (make-style "Sendsentence" null) "."))
 (define ~ "\uA0")
+(define ?- "\uAD")
 (define -~- "\u2011")
 
 ;; ----------------------------------------
