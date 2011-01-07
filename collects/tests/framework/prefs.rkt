@@ -21,8 +21,8 @@
   (when (file-exists? prefs-file)
     (copy-file prefs-file saved-prefs-file)
     (delete-file prefs-file)
-    (debug-printf admin "saved preferences file from ~s to ~s\n"
-                  prefs-file saved-prefs-file))
+    (debug-printf admin "saved preferences file from ~s\n" prefs-file)
+    (debug-printf admin "                         to ~s\n" saved-prefs-file))
   
   (shutdown-mred)
   
@@ -92,20 +92,20 @@
   (test 'dialog-appears
         (lambda (x) (eq? 'passed x))
         (lambda ()
-          (send-sexp-to-mred '(begin (send (make-object frame:basic% "frame") show #t)
-                                     (preferences:show-dialog)))
+          (queue-sexp-to-mred '(begin (send (make-object frame:basic% "frame") show #t)
+                                      (preferences:show-dialog)))
           (wait-for-frame "Preferences")
-          (send-sexp-to-mred '(begin (preferences:hide-dialog)
-                                     (let ([f (get-top-level-focus-window)])
-                                       (if f
-                                           (if (string=? "Preferences" (send f get-label))
-                                               'failed
-                                               'passed)
-                                           'passed))))))
+          (queue-sexp-to-mred '(begin (preferences:hide-dialog)
+                                      (let ([f (get-top-level-focus-window)])
+                                        (if f
+                                            (if (string=? "Preferences" (send f get-label))
+                                                'failed
+                                                'passed)
+                                            'passed))))))
   
   (when (file-exists? saved-prefs-file)
-    (debug-printf admin "restoring preferences file from ~s to ~s\n"
-                  saved-prefs-file prefs-file)
+    (debug-printf admin "restoring preferences file from ~s\n" saved-prefs-file)
+    (debug-printf admin "                             to ~s\n" prefs-file)
     (when (file-exists? prefs-file)
       (delete-file prefs-file))
     (copy-file saved-prefs-file prefs-file)

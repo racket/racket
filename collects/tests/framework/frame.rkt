@@ -12,9 +12,11 @@
      (lambda ()
        (let ([frame-label
               (send-sexp-to-mred
-               `(let ([f (instantiate ,class-expression () ,@args)])
-                  (send f show #t)
-                  (send f get-label)))])
+               `(queue-callback/res
+                 (λ ()
+                   (let ([f (instantiate ,class-expression () ,@args)])
+                     (send f show #t)
+                     (send f get-label)))))])
          (wait-for-frame frame-label)
          (queue-sexp-to-mred
           '(send (get-top-level-focus-window) close))

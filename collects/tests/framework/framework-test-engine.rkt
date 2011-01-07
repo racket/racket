@@ -22,6 +22,11 @@
 
 (namespace-require 'racket/gui)
 
+(eval '(define (queue-callback/res thunk)
+         (define c (make-channel))
+         (queue-callback (λ () (channel-put c (thunk))))
+         (channel-get c)))
+
 (void
  (thread
   (lambda ()

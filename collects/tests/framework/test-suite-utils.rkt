@@ -140,12 +140,11 @@
 (define queue-sexp-to-mred
   (lambda (sexp)
     (send-sexp-to-mred
-     `(let ([thunk (lambda () ,sexp)]
-            [sema (make-semaphore 0)])
-        (queue-callback (lambda ()
-                          (thunk)
-                          (semaphore-post sema)))
-        (semaphore-wait sema)))))
+     `(let ([thunk (lambda () ,sexp)]  ;; lotech hygiene
+            [c (make-channel)])
+        (queue-callback (lambda () (channel-put c (thunk))))
+        (channel-wait c)))))
+
 
 (define re:tcp-read-error (regexp "tcp-read:"))
 (define re:tcp-write-error (regexp "tcp-write:"))
