@@ -625,11 +625,12 @@
                                         "{\\SCloseSq}")
                                     c)]
                      [(#\# #\% #\& #\$) (format "\\~a" c)]
-                     [(#\uA0) "~"]
+                     [(#\uA0) "~"] ; non-breaking space
                      [(#\uDF) "{\\ss}"]
                      [else
                       (if ((char->integer c) . > . 127)
                           (case c
+                            [(#\u2011) "\\mbox{-}"] ; non-breaking hyphen
                             [(#\uB0) "$^{\\circ}$"] ; degree
                             [(#\uB2) "$^2$"]
                             [(#\u039A) "K"] ; kappa

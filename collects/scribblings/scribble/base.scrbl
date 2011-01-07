@@ -288,14 +288,6 @@ gets progressively larger.}
 @defproc[(emph [pre-content pre-content?] ...) element?]{
 The same as @racket[italic].}
 
-@defproc[(linebreak) element?]{
-Produces an element that forces a line break.}
-
-@defproc[(hspace [n exact-nonnegative-integer?]) element?]{
-
-Produces an element containing @racket[n] spaces and style
-@racket['hspace].}
-
 @defproc[(literal [str string?] ...+) element?]{
 
 Produces an element containing literally @racket[str]s with no
@@ -346,6 +338,29 @@ See also @racket[verbatim].}
  Note that when the @racket[suffixes] library is non-empty, then 
  the @racket[path] argument should not have a suffix.
  }
+
+@; ------------------------------------------------------------------------
+@section[#:tag "spacing"]{Spacing}
+
+@defproc[(linebreak) element?]{
+Produces an element that forces a line break.}
+
+
+@defproc[(hspace [n exact-nonnegative-integer?]) element?]{
+
+Produces an element containing @racket[n] spaces and style
+@racket['hspace].}
+
+
+@defthing[~ string?]{
+
+A string containing the non-breaking space character,
+which is equivalent to @racket['nbsp] as an element.}
+
+
+@defthing[-~- string?]{
+
+A string containing the non-breaking hyphen character.}
 
 
 @defthing[._ element?]{
