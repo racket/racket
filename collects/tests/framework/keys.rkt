@@ -1,13 +1,13 @@
-(module keys mzscheme
-  (require "test-suite-utils.ss")
-  (require mzlib/include)
+#lang racket/base
+
+(require "test-suite-utils.ss")
   
   (test
    'keymap:aug-keymap%/get-table
    (lambda (x)
      (equal? '((c:k "abc")) x))
    (lambda ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       '(let ([k (make-object keymap:aug-keymap%)])
          (send k add-function "abc" void)
          (send k map-function "c:k" "abc")
@@ -18,7 +18,7 @@
    (lambda (x)
      (equal? x '((c:k "def"))))
    (lambda ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       '(let ([k (make-object keymap:aug-keymap%)]
              [ht (make-hasheq)])
          (send k add-function "abc" void)
@@ -31,7 +31,7 @@
    (lambda (x)
      (equal? x '((c:k "abc-k2"))))
    (lambda ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       '(let ([k (make-object keymap:aug-keymap%)]
              [k1 (make-object keymap:aug-keymap%)]
              [k2 (make-object keymap:aug-keymap%)])
@@ -48,7 +48,7 @@
    (lambda (x)
      (equal? x '((c:k "abc-k"))))
    (lambda ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       '(let ([k (make-object keymap:aug-keymap%)]
              [k1 (make-object keymap:aug-keymap%)])
          (send k1 add-function "abc-k1" void)
@@ -64,7 +64,7 @@
      (lambda (x)
        (string=? x str2))
      (lambda ()
-       (send-sexp-to-mred
+       (queue-sexp-to-mred
         `(keymap:canonicalize-keybinding-string ,str2)))))
   
   (test-canonicalize 1 "c:a" "c:a")
@@ -260,13 +260,13 @@
       (list '((#\c control) (#\[ control))))
      ))
   
-  (send-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
-  (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
+  (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
+  (queue-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
   (wait-for-frame "dummy to trick frame group")
   
   ;; test-key : key-spec -> 
   ;;   evaluates a test case represented as a key-spec
-  (define (test-key key-spec)
+  (define (test-key key-spec i)
     (let* ([key-sequences 
             ((case (system-type)
                [(macos macosx) key-spec-macos]
@@ -280,7 +280,7 @@
               (let ([text-expect (buff-spec-string after)]
                     [start-expect (buff-spec-start after)]
                     [end-expect (buff-spec-end after)])
-                (test key-sequence
+                (test (list key-sequence i)
                       (lambda (x) (equal? x (vector text-expect start-expect end-expect)))
                       `(let* ([text (send (get-top-level-focus-window) get-editor)])
                          (send text erase)
@@ -295,15 +295,16 @@
   
   
   (define (test-specs frame-name frame-class specs)
-    (send-sexp-to-mred `(send (make-object ,frame-class ,frame-name) show #t))
+    (queue-sexp-to-mred `(send (make-object ,frame-class ,frame-name) show #t))
     (wait-for-frame frame-name)
-    (for-each test-key specs)
-    (send-sexp-to-mred `(send (get-top-level-focus-window) close)))
+    (for ([spec (in-list specs)]
+          [i (in-naturals)])
+      (test-key spec i))
+    (queue-sexp-to-mred `(send (get-top-level-focus-window) close)))
   
   (test-specs "global keybindings test" 'frame:text% global-specs)
   (test-specs "scheme mode keybindings test" 
               '(class frame:editor%
                  (define/override (get-editor%) scheme:text%)
                  (super-new))
-              scheme-specs))
-
+              scheme-specs)

@@ -1,5 +1,5 @@
-(module exit mzscheme
-  (require "test-suite-utils.ss")
+#lang racket/base
+(require "test-suite-utils.ss")
 
 (test 'exit/no-prompt
       (lambda (x)
@@ -47,4 +47,3 @@
 	 (with-handlers ([eof-result? (lambda (x) 'passed)])
 	   (send-sexp-to-mred
 	    `(exit:exit))))))
-)

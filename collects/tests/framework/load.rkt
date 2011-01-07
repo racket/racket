@@ -1,5 +1,5 @@
-(module load mzscheme
-  (require "test-suite-utils.ss")
+#lang racket/base
+(require "test-suite-utils.ss")
 
   (load-framework-automatically #f)
 
@@ -47,4 +47,4 @@
                          (with-syntax ([eles eles])
                            #''eles))])))
            (eval '(require framework/framework-sig))
-           (eval '(for-each eval (signature->symbols framework^))))))
+           (eval '(for-each eval (signature->symbols framework^)))))

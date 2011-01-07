@@ -1,5 +1,5 @@
-#lang scheme
-
+#lang racket/base
+(require (for-syntax racket/base))
 (require "test-suite-utils.ss")
 
 (define-syntax (test-search stx)
@@ -13,7 +13,7 @@
    (string->symbol (format "search.ss: line ~a" line))
    (lambda (x) (equal? bubble-table x))
    (lambda ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       `(let ([t (new (text:searching-mixin (editor:keymap-mixin text:basic%)))]
              [normalize
               (λ (ht) (sort (hash-table-map ht list)

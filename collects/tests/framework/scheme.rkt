@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "test-suite-utils.ss")
 
@@ -14,7 +14,7 @@
    (lambda (x) 
      (equal? x expected))
    (λ ()
-     (send-sexp-to-mred
+     (queue-sexp-to-mred
       `(let ([t (new scheme:text%)])
          (send t insert ,str)
          (scheme:text-balanced? t ,start ,end))))))

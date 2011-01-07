@@ -1,28 +1,10 @@
-(module prefs mzscheme
-  (require "test-suite-utils.ss"
-	   mzlib/list)
+#lang racket/base
+(require "test-suite-utils.ss")
   
   (define ((check-eq? x) y) (eq? x y))
   (define pref-sym 'plt:not-a-real-preference)
   (define marshalling-pref-sym 'plt:not-a-real-preference-marshalling)
   (define default-test-sym 'plt:not-a-real-preference-default-test)
-  
-  (define saved-prefs-file
-    (let loop ([n 0])
-      (let ([candidate
-             (build-path (find-system-path 'temp-dir)
-                         (format "saved-prefs.~a" n))])
-        (if (file-exists? candidate)
-            (loop (+ n 1))
-            candidate)))) 
-  
-  (define prefs-file (find-system-path 'pref-file))
-  
-  (when (file-exists? prefs-file)
-    (copy-file prefs-file saved-prefs-file)
-    (delete-file prefs-file)
-    (debug-printf admin "saved preferences file from ~s\n" prefs-file)
-    (debug-printf admin "                         to ~s\n" saved-prefs-file))
   
   (shutdown-mred)
   
@@ -103,11 +85,3 @@
                                                 'passed)
                                             'passed))))))
   
-  (when (file-exists? saved-prefs-file)
-    (debug-printf admin "restoring preferences file from ~s\n" saved-prefs-file)
-    (debug-printf admin "                             to ~s\n" prefs-file)
-    (when (file-exists? prefs-file)
-      (delete-file prefs-file))
-    (copy-file saved-prefs-file prefs-file)
-    (delete-file saved-prefs-file)))
-

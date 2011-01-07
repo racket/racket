@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket/base
 (require "test-suite-utils.ss")
 
 ; mem-boxes : (list-of (list string (list-of (weak-box TST))))
@@ -7,7 +7,7 @@
 (define mem-count 10)
 
 (define (test-allocate tag open close)
-  (send-sexp-to-mred
+  (queue-sexp-to-mred
    `(let ([new-boxes
            (let loop ([n ,mem-count])
              (cond
@@ -32,7 +32,7 @@
       (set! mem-boxes (cons (list ,tag new-boxes) mem-boxes)))))
 
 (define (done)
-  (send-sexp-to-mred
+  (queue-sexp-to-mred
    `(begin
       (yield) (collect-garbage)
       (yield) (collect-garbage)
@@ -110,7 +110,7 @@
 
 (define (test-frame-allocate %)
   (let ([name (format "~s" %)])
-    (send-sexp-to-mred '(preferences:set 'framework:exit-when-no-frames #f))
+    (queue-sexp-to-mred '(preferences:set 'framework:exit-when-no-frames #f))
     (test-allocate name
                    `(lambda ()
                       (let ([f (make-object ,% ,name)])
@@ -123,7 +123,7 @@
                       (when (send f is-shown?)
                         (error 'test-frame-allocate "~a instance didn't close" ',%))
                       (yield) (yield)))
-    (send-sexp-to-mred '(preferences:set 'framework:exit-when-no-frames #t))))
+    (queue-sexp-to-mred '(preferences:set 'framework:exit-when-no-frames #t))))
 
 (test-allocate "frame%"
                '(lambda ()

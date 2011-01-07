@@ -1,9 +1,10 @@
-#lang scheme
+#lang racket/base
 
-(require "test-suite-utils.ss")
+(require racket/file
+         "test-suite-utils.ss")
 
 (define dummy-frame-title "dummy to avoid quitting")
-(send-sexp-to-mred `(send (make-object frame:basic% ,dummy-frame-title) show #t))
+(queue-sexp-to-mred `(send (make-object frame:basic% ,dummy-frame-title) show #t))
 
 (define (test-creation frame% class name)
   (test
@@ -12,29 +13,26 @@
      (equal? x (list dummy-frame-title))) ;; ensure no frames left
    (lambda ()
      (let ([label
-            (send-sexp-to-mred
-             `(let ([f (instantiate (class ,frame%
-                                      (override get-editor%)
-                                      [define (get-editor%) ,class]
-                                      (super-instantiate ()))
-                         ())])
+            (queue-sexp-to-mred
+             `(let ([f (new (class ,frame%
+                              (define/override (get-editor%) ,class)
+                              (super-new)))])
                 (send (send f get-editor) set-max-undo-history 10)
                 (send f show #t)
                 (send f get-label)))])
        (wait-for-frame label)
        (send-sexp-to-mred `(test:keystroke #\a))
-       (wait-for `(string=? "a" (send (send (get-top-level-focus-window) get-editor) get-text)))
-       (send-sexp-to-mred
+       (wait-for #:queue? #t `(string=? "a" (send (send (get-top-level-focus-window) get-editor) get-text)))
+       (queue-sexp-to-mred
         `(begin 
            ;; remove the `a' to avoid save dialog boxes (and test them, I suppose)
            (send (send (get-top-level-focus-window) get-editor) undo) 
            (send (send (get-top-level-focus-window) get-editor) undo)
            
            (send (send (get-top-level-focus-window) get-editor) lock #t)
-           (send (send (get-top-level-focus-window) get-editor) lock #f)))
-       (queue-sexp-to-mred
-        `(send (get-top-level-focus-window) close))
-       (send-sexp-to-mred `(map (lambda (x) (send x get-label)) (get-top-level-windows)))))))
+           (send (send (get-top-level-focus-window) get-editor) lock #f)
+           (send (get-top-level-focus-window) close)))
+       (queue-sexp-to-mred `(map (lambda (x) (send x get-label)) (get-top-level-windows)))))))
 
 #|
   (test-creation 'frame:text%
@@ -88,7 +86,7 @@
  'highlight-range1
  (lambda (x) (equal? x 1))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        (send t highlight-range 1 2 "red")
@@ -98,7 +96,7 @@
  'highlight-range2
  (lambda (x) (equal? x 0))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        ((send t highlight-range 1 2 "red"))
@@ -109,7 +107,7 @@
  'highlight-range3
  (lambda (x) (equal? x 0))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        (send t highlight-range 1 2 "red")
@@ -121,7 +119,7 @@
  'highlight-range4
  (lambda (x) (equal? x 1))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        (send t highlight-range 1 2 "red")
@@ -135,7 +133,7 @@
  'highlight-range5
  (lambda (x) (equal? x 0))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        (send t highlight-range 1 2 "red")
@@ -151,7 +149,7 @@
      (delete-file tmp-file)
      (equal? x 0))
    (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let ([t (new text:basic%)])
        (send t insert "abc")
        (send t save-file ,tmp-file)
@@ -172,7 +170,7 @@
  'print-to-dc
  (λ (x) (equal? x 'no-error))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     '(let* ([t (new text:basic%)]
             [bmp (make-object bitmap% 100 40)]
             [dc (new bitmap-dc% (bitmap bmp))])
@@ -186,7 +184,7 @@
  'print-to-dc2
  (λ (x) (equal? x 'no-error))
  (λ ()
-   (send-sexp-to-mred
+   (queue-sexp-to-mred
     `(let* ([f (new frame% [label ""])]
             [t (new text:basic%)]
             [ec (new editor-canvas% [parent f] [editor t])]

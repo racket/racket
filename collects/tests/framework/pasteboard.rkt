@@ -1,5 +1,5 @@
-(module pasteboard mzscheme
-  (require "test-suite-utils.ss")
+#lang racket/base
+(require "test-suite-utils.ss")
 
 (define (test-creation frame class name)
   (test
@@ -7,12 +7,10 @@
    (lambda (x) #t)
    (lambda ()
      (let ([frame-label
-	    (send-sexp-to-mred
-	     `(let* ([% (class ,frame
-			  (override get-editor%)
-			  [define (get-editor%)
-			    ,class])]
-		     [f (instantiate % ())])
+	    (queue-sexp-to-mred
+             `(let* ([f (new (class ,frame
+                               (define/override (get-editor%) ,class)
+                               (super-new)))])
 		(preferences:set 'framework:exit-when-no-frames #f)
 		(send f show #t)
 		(send f get-label)))])
@@ -47,4 +45,3 @@
 (test-creation 'frame:pasteboard%
 	       'pasteboard:info%
 	       'pasteboard:info-creation)
-)

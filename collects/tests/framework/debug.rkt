@@ -1,4 +1,5 @@
-#lang mzscheme
+#lang racket/base
+(require (for-syntax racket/base))
 (provide debug-printf debug-when)
 
 ;; all of the steps in the tcp connection
