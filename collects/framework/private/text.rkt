@@ -3766,10 +3766,23 @@ designates the character that triggers autocompletion
     (define/public (set-line-numbers-color color)
       (set! line-numbers-color color))
 
+    (define notify-registered-in-list #f)
+
+    (define style-change-notify
+      (lambda (style) (unless style (setup-padding))))
+
     (define/private (get-style-font)
       (let* ([style-list (send this get-style-list)]
              [std (or (send style-list find-named-style "Standard")
                       (send style-list basic-style))])
+        ;; If the style changes, we should re-check the width of
+        ;; drawn line numbers:
+        (unless (eq? notify-registered-in-list style-list)
+          ;; `notify-on-change' holds the given function weakly:
+          (send style-list notify-on-change style-change-notify)
+          ;; Avoid registering multiple notifications:
+          (set! notify-registered-in-list style-list))
+        ;; Extract the font from the style:
         (send std get-font)))
 
     (define-struct saved-dc-state (pen font foreground-color))
@@ -3862,6 +3875,16 @@ designates the character that triggers autocompletion
       (define height (box 0))
       (send (send this get-admin) get-view left top width height)
       (+ (unbox left) dx))
+
+    (define/augment (after-insert start length)
+      (inner (void) after-insert start length)
+      ; in case the max line number changed:
+      (setup-padding))
+
+    (define/augment (after-delete start length)
+      (inner (void) after-delete start length)
+      ; in case the max line number changed:
+      (setup-padding))
 
     (define/private (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
