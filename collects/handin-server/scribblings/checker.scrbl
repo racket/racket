@@ -62,11 +62,11 @@ Keywords for configuring @racket[check:]:
   @racketmodname[handin-server/utils]).}
 
 @item{@indexed-racket[:language]---the language that is used for
-  evaluating submissions, same as the @racket[_language] argument for
-  @racket[make-evaluator] (see @racketmodname[handin-server/sandbox]),
-  except that if the value ls @racket[(list 'module _spec)],
-  then @racket[make-module-evaluator] is used with @racket[_spec] 
-  as its @racket[#:language] argument.
+  evaluating submissions. If the value is of the form 
+  @racket[(list 'module _spec)], then @racket[make-module-evaluator] 
+  is used with @racket[_spec] as its @racket[#:language] argument to
+  generate an evaluator. Otherwise, the value is passed as the 
+  @racket[_language] argument to @racket[make-evaluator].
   There is no default for this, so it must be set or an error is
   raised.  (See @racket[call-with-evaluator/submission] for further
   details.)}
