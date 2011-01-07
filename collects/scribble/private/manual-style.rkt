@@ -52,7 +52,7 @@
 (provide/contract
  [PLaneT element?]
  [hash-lang (-> element?)]
- [etc string?]
+ [etc element?]
  [inset-flow (() () #:rest (listof pre-content?) . ->* . any/c)] ; XXX no docs and bad return contract
  [litchar (() () #:rest (listof string?) . ->* . element?)]
  [t (() () #:rest (listof pre-content?) . ->* . paragraph?)]
@@ -61,7 +61,7 @@
 
 (define PLaneT (make-element "planetName" '("PLaneT")))
 
-(define etc "etc.") ; so we can fix the latex space, one day
+(define etc (make-element #f (list "etc" ._)))
 
 (define (litchar . strs)
   (let ([s (string-append* (map (lambda (s) (regexp-replace* "\n" s " "))

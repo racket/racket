@@ -300,7 +300,7 @@ begins with a start-of-string @litchar{^}; see also
 @racket[regexp-try-match]. On success, all bytes up to and including
 the match are eventually read from the port, but matching proceeds by
 first peeking bytes from the port (using @racket[peek-bytes-avail!]),
-and then (re-)reading matching bytes to discard them after the match
+and then (re@-~-)reading matching bytes to discard them after the match
 result is determined. Non-matching bytes may be read and discarded
 before the match is determined. The matcher peeks in blocking mode
 only as far as necessary to determine a match, but it may peek extra

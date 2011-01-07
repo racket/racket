@@ -1233,6 +1233,9 @@ Returns @racket[#t] if @racket[v] is a bibliography entry created by
 @defproc[(t [pre-content pre-content?] ...) paragraph?]{Wraps the
 @tech{decode}d @racket[pre-content] as a paragraph.}
 
+@defthing[etc element?]{Like @racket["etc."], but with an
+abbreviation-ending period for use in the middle of a sentence.}
+
 @defthing[PLaneT element?]{@racket["PLaneT"] (to help make sure you get
 the letters in the right case).}
 
