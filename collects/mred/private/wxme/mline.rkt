@@ -1141,7 +1141,7 @@ Debugging tools:
                                     (if is-first?
                                         (paragraph-left-margin-first para)
                                         (paragraph-left-margin para))))])
-                 (set-width mline totalwidth)
+                 (set-width mline (- totalwidth padding-l))
                  (unless (= maxscroll (mline-numscrolls mline))
                    (set-scroll-length mline maxscroll))
                  (if (= maxh (mline-h mline))

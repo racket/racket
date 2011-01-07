@@ -2037,8 +2037,11 @@ This method is normally called indirectly by @method[editor<%>
 
 The default implementation forwards the request to the
 @method[editor-admin% scroll-to] method of the current administrator,
-if any (see @method[editor<%> get-admin]). If the editor has no
-administrator, @scheme[#f] is returned.
+if any (see @method[editor<%> get-admin]). If a text editor has
+padding (see @method[text% set-padding]), then the padding is added to
+the given @techlink{location} before forwarding to the
+administrator. If the editor has no administrator, @scheme[#f] is
+returned.
 
 }
 

@@ -613,11 +613,11 @@
              (cond
                [(<= (unbox by) h)
                 ;; the max is relevant when we're already scrolled to the top.
-                (send admin scroll-to localx (max 0 (- localy h)) width height refresh? bias)]
+                (super scroll-editor-to localx (max 0 (- localy h)) width height refresh? bias)]
                [else
-                (send admin scroll-to localx localy width height refresh? bias)]))]
+                (super scroll-editor-to localx localy width height refresh? bias)]))]
           [else
-           (send admin scroll-to localx localy width height refresh? bias)])))
+           (super scroll-editor-to localx localy width height refresh? bias)])))
     
     (define/override (on-event event)
       (cond
@@ -3735,26 +3735,16 @@ designates the character that triggers autocompletion
     ;; only two values should be 'left or 'right
     (init-field [alignment 'right])
 
-    (define (constructor)
-      (super-new)
-      (setup-padding)
-      #;
-      (define space (text-width dc (number-space+1)))
-      #;
-      (set-padding space 0 0 0)
-      #;
-      (set-padding (number-space) 0 0 0))
-
-    (define (number-space)
+    (define/private (number-space)
       (number->string (max (* 10 (add1 (last-line))) 100)))
     ;; add an extra 0 so it looks nice
-    (define (number-space+1) (string-append (number-space) "0"))
+    (define/private (number-space+1) (string-append (number-space) "0"))
 
-    (define (repaint)
+    (define/private (repaint)
       (send this invalidate-bitmap-cache))
 
     (define padding-dc (new bitmap-dc% [bitmap (make-screen-bitmap 1 1)]))
-    (define (setup-padding)
+    (define/private (setup-padding)
       (if (showing-line-numbers?)
         (let ()
           (send padding-dc set-font (get-style-font))
@@ -3776,32 +3766,30 @@ designates the character that triggers autocompletion
     (define/public (set-line-numbers-color color)
       (set! line-numbers-color color))
 
-    (define (get-style-font)
+    (define/private (get-style-font)
       (let* ([style-list (send this get-style-list)]
              [std (or (send style-list find-named-style "Standard")
-                      #t
-                      #;
                       (send style-list basic-style))])
         (send std get-font)))
 
     (define-struct saved-dc-state (pen font foreground-color))
-    (define (save-dc-state dc)
+    (define/private (save-dc-state dc)
       (saved-dc-state (send dc get-pen)
                       (send dc get-font)
                       (send dc get-text-foreground)))
 
-    (define (restore-dc-state dc dc-state)
+    (define/private (restore-dc-state dc dc-state)
       (send dc set-pen (saved-dc-state-pen dc-state))
       (send dc set-font (saved-dc-state-font dc-state))
       (send dc set-text-foreground (saved-dc-state-foreground-color dc-state)))
 
     ;; set the dc stuff to values we want
-    (define (setup-dc dc)
+    (define/private (setup-dc dc)
       (send dc set-pen "black" 1 'solid)
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (make-object color% line-numbers-color)))
 
-    (define (lighter-color color)
+    (define/private (lighter-color color)
       (define (integer number)
         (inexact->exact (round number)))
       ;; hue 0-360
@@ -3867,37 +3855,15 @@ designates the character that triggers autocompletion
 
     ;; adjust space so that we are always at the left-most position where
     ;; drawing looks right
-    (define (left-space dc dx)
+    (define/private (left-space dc dx)
       (define left (box 0))
       (define top (box 0))
       (define width (box 0))
       (define height (box 0))
       (send (send this get-admin) get-view left top width height)
-      #|
-      (define width2 (box 0))
-      (define height2 (box 0))
-      (get-view-size width2 height2)
-      |#
-      #;
-      (printf "left ~a top ~a width ~a height ~a width2 ~a height2 ~a\n"
-              (unbox left) (unbox top)
-              (unbox width) (unbox height)
-              (unbox width2) (unbox height2))
       (+ (unbox left) dx))
 
-    (define/augment (after-insert start length)
-      (setup-padding)
-      (inner (void) after-insert start length))
-
-    (define/augment (after-delete start length)
-      (setup-padding)
-      (inner (void) after-delete start length))
-
-    (define/augment (after-change-style start length)
-      (setup-padding)
-      (inner (void) after-change-style start length))
-
-    (define (draw-numbers dc top bottom dx dy start-line end-line)
+    (define/private (draw-numbers dc top bottom dx dy start-line end-line)
       (define (draw-text . args)
         (send/apply dc draw-text args))
 
@@ -3927,7 +3893,7 @@ designates the character that triggers autocompletion
         (set! last-paragraph (line-paragraph line))))
 
     ;; draw the line between the line numbers and the actual text
-    (define (draw-separator dc top bottom dx dy x)
+    (define/private (draw-separator dc top bottom dx dy x)
       (define line-x (+ (left-space dc dx) x))
       (define line-y1 (+ dy top))
       (define line-y2 (+ dy bottom))
@@ -3937,7 +3903,7 @@ designates the character that triggers autocompletion
     ;; `line-numbers-space' will get mutated in the `on-paint' method
     ;; (define line-numbers-space 0)
 
-    (define (draw-line-numbers dc left top right bottom dx dy)
+    (define/private (draw-line-numbers dc left top right bottom dx dy)
       (define saved-dc (save-dc-state dc))
       (setup-dc dc)
       (define start-line (box 0))
@@ -3956,24 +3922,20 @@ designates the character that triggers autocompletion
       (draw-separator dc top bottom dx dy (text-width dc (number-space)))
       (restore-dc-state dc saved-dc))
 
-    (define (text-width dc stuff)
+    (define/private (text-width dc stuff)
       (define-values (font-width font-height baseline space)
                      (send dc get-text-extent stuff))
       font-width)
 
-    (define (text-height dc stuff)
+    (define/private (text-height dc stuff)
       (define-values (font-width height baseline space)
                      (send dc get-text-extent stuff))
       height)
 
-    (define old-origin-x 0)
-    (define old-origin-y 0)
     (define old-clipping #f)
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (if show-line-numbers?
         (begin
-          #;
-          (set-padding (text-width dc (number-space+1)) 0 0 0)
           (if before?
             (let ()
               (define left-most (left-space dc dx))
@@ -3999,57 +3961,9 @@ designates the character that triggers autocompletion
             (begin
               (send dc set-clipping-region old-clipping)
               (draw-line-numbers dc left top right bottom dx dy))))
-          (void)
-          #;
-          (set-padding 0 0 0 0))
+          (void))
       (void)
-      #;
-      (when show-line-numbers?
-        (if before?
-          (let ()
-            ;; FIXME: Moving the origin and setting the clipping rectangle
-            ;; will probably go away when 'margin's are added to editors
-            ;;
-            ;; save old origin and push it to the right a little bit
-            ;; TODO: maybe allow the line numbers to be drawn on the right hand side
-            ;; of the editor?
-            (define-values (x y) (send dc get-origin))
-            (set! old-origin-x x)
-            (set! old-origin-y y)
-            (set! old-clipping (send dc get-clipping-region))
-            (define saved-dc (save-dc-state dc))
-            (setup-dc dc)
-            (define-values (font-width font-height baseline space)
-                           (send dc get-text-extent (number-space)))
-            (restore-dc-state dc saved-dc)
-            (define clipped (make-object region% dc))
-            (define all (make-object region% dc))
-            (define copy (make-object region% dc))
-            (send all set-rectangle
-                  (+ dx left) (+ dy top)
-                  (- right left) (- bottom top))
-            (if old-clipping
-              (send copy union old-clipping)
-              (send copy union all))
-            (send clipped set-rectangle
-                  0 (+ dy top)
-                  (text-width dc (number-space+1))
-                  (- bottom top))
-            #;
-            (define (print-region name region)
-              (define-values (a b c d) (send region get-bounding-box))
-              (printf "~a: ~a, ~a, ~a, ~a\n" name a b c d))
-            (send copy subtract clipped)
-            (send dc set-clipping-region copy)
-            (send dc set-origin (+ x (text-width dc (number-space+1))) y)
-            ;; (set! line-numbers-space (text-width dc (number-space+1)))
-            )
-          (begin
-            ;; rest the origin and draw the line numbers
-            (send dc set-origin old-origin-x old-origin-y)
-            (send dc set-clipping-region old-clipping)
-            (draw-line-numbers dc left top right bottom dx dy))))
       (super on-paint before? dc left top right bottom dx dy draw-caret))
 
-    (constructor)
-    ))
+    (super-new)
+    (setup-padding)))

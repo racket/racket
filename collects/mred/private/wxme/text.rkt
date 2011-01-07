@@ -81,7 +81,6 @@
   (inherit on-change
            on-local-event
            on-local-char
-           scroll-editor-to
            free-old-copies
            install-copy-buffer
            begin-copy-buffer
@@ -237,6 +236,7 @@
   (define final-descent 0.0) ; descent of last line
   (define initial-space 0.0) ; space from first line
   (define initial-line-base 0.0) ; inverse descent from first line
+  (define reported-padding (vector 0.0 0.0 0.0 0.0))
 
   (define/public (get-s-snips) snips)
   (define/public (get-s-last-snip) last-snip)
@@ -2503,13 +2503,21 @@
                            [nonnegative-real? t]
                            [nonnegative-real? r]
                            [nonnegative-real? b])
-    (set! padding-l (exact->inexact l))
-    (set! padding-t (exact->inexact t))
-    (set! padding-r (exact->inexact r))
-    (set! padding-b (exact->inexact b))
-    (unless (= 0.0 max-width)
-      (set! max-line-width (max (- max-width padding-t padding-r)
-                                ZERO-LINE-WIDTH))))
+    (unless (and (= l padding-l)
+                 (= t padding-t)
+                 (= r padding-r)
+                 (= b padding-b))
+      (set! padding-l (exact->inexact l))
+      (set! padding-t (exact->inexact t))
+      (set! padding-r (exact->inexact r))
+      (set! padding-b (exact->inexact b))
+      (unless (= 0.0 max-width)
+        (set! max-line-width (max (- max-width padding-t padding-r)
+                                  ZERO-LINE-WIDTH)))
+      (set! flow-invalid? #t)
+      (set! graphic-maybe-invalid? #t)
+      (set! changed? #t)
+      (need-refresh -1 -1)))
 
   (def/override (get-max-width)
     (if (max-width . <= . 0)
@@ -3888,6 +3896,14 @@
           #t]
          [else #f]))]))
 
+  (define/override (scroll-editor-to localx localy w h refresh? bias)
+    (super scroll-editor-to 
+           (- localx padding-l)
+           (- localy padding-t)
+           (+ w padding-l padding-r)
+           (+ h padding-t padding-b)
+           refresh? bias))
+
   (def/public (scroll-to [snip% snip] [real? localx] [real? localy]
                          [nonnegative-real? w] [nonnegative-real? h]
                          [any? refresh?]
@@ -4777,13 +4793,17 @@
                                      (not (= total-width X))
                                      (not (= final-descent descent))
                                      (not (= initial-space space))
-                                     (not (= line-base initial-line-base)))
+                                     (not (= line-base initial-line-base))
+                                     (not (equal? reported-padding
+                                                  (vector padding-l padding-t padding-r padding-b))))
                                  (begin
                                    (set! total-height Y)
                                    (set! total-width X)
                                    (set! final-descent descent)
                                    (set! initial-space space)
                                    (set! initial-line-base line-base)
+                                   (set! reported-padding
+                                         (vector padding-l padding-t padding-r padding-b))
                                    #t)
                                  #f)])
 
