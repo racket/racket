@@ -48,7 +48,9 @@
                    g)))))
 
     ;; Use a quartz bitmap so that text looks good:
-    (define/override (make-backing-bitmap w h) (make-object quartz-bitmap% w h))
+    (define trans? transparent?)
+    (define/override (make-backing-bitmap w h) 
+      (make-object quartz-bitmap% w h trans?))
     (define/override (can-combine-text? sz) #t)
 
     (define/override (get-backing-size xb yb)

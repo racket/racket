@@ -14,11 +14,13 @@
 
 (define quartz-bitmap%
   (class bitmap%
-    (init w h)
+    (init w h [with-alpha? #t])
     (super-make-object (make-alternate-bitmap-kind w h))
 
     (define s
-      (let ([s (cairo_quartz_surface_create CAIRO_FORMAT_ARGB32
+      (let ([s (cairo_quartz_surface_create (if with-alpha?
+                                                CAIRO_FORMAT_ARGB32
+                                                CAIRO_FORMAT_RGB24)
                                             w
                                             h)])
         ;; initialize bitmap to empty - needed?
@@ -34,8 +36,14 @@
 
     (define/override (is-color?) #t)
 
+    (define has-alpha? with-alpha?)
+    (define/override (has-alpha-channel?) has-alpha?)
+
     (define/override (get-cairo-surface) s)
-    (define/override (get-cairo-alpha-surface) s)
+    (define/override (get-cairo-alpha-surface) 
+      (if has-alpha?
+          s
+          (super get-cairo-alpha-surface)))
 
     (define/override (release-bitmap-storage)
       (atomically
