@@ -2,7 +2,6 @@
 
 (require "grammar.ss" 
          "reduce.rkt"
-         (only-in "model-impl.rkt" runtime-error runtime-error?)
          (except-in redex/reduction-semantics plug)
          racket/runtime-path)
 
@@ -91,13 +90,18 @@
 (define impl-program
   (match-lambda
     [`(<> ,s [] ,e)
-     `(parameterize ([first-error (box #f)])
-        (define result
-          (with-handlers ([runtime-error? void])
-            (letrec ,s ,e)))
-        (match (first-error)
-          [(box #f) result]
-          [(box err) (raise err)]))]
+     `(let* ([previous-error #f]
+             [result 
+              (with-handlers ([exn:fail? void])
+                (call-with-exception-handler
+                 (λ (exn)
+                   (when (and (exn:fail? exn) (not previous-error))
+                     (set! previous-error exn))
+                   exn)
+                 (λ () (letrec ,s ,e))))])
+            (if (exn:fail? previous-error)
+                (raise previous-error)
+                result))]
     [e e]))
 
 (define-runtime-module-path model-impl "model-impl.rkt")
@@ -115,12 +119,12 @@
     (λ (test)
       (define output (open-output-string))
       (define result
-        (with-handlers ([exn:fail? (compose error exn-message)]
-                        [runtime-error?
+        (with-handlers ([exn:fail?
                          (match-lambda
-                           [(runtime-error '% "non-procedure" _)
+                           [(exn:fail (regexp "%: expected argument of type <non-procedure>") _)
                             (bad-test "procedure as tag")]
-                           [e (error e)])])
+                           [(exn:fail m _)
+                            (error m)])])
           (parameterize ([current-output-port output])
             (eval test ns))))
       (if (or (error? result) (bad-test? result))
