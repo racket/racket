@@ -1,4 +1,4 @@
-#lang scribble/doc
+#lang scribble/manual
 @(require "mz.ss" 
           scribble/core 
           scribble/html-properties
