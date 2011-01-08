@@ -448,6 +448,16 @@ If @racket[underline?] is @racket[#f], then the hyperlink is rendered
 in HTML without an underline.}
 
 
+@defproc[(Secref [tag string?]
+                 [#:doc module-path (or/c module-path? false/c) #f]
+                 [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]
+                 [#:underline? underline? any/c #t])
+         element?]{
+
+Like @racket[secref], but if the rendered form of the reference starts
+with a word (e.g., ``section''), then the word is capitalized.}
+
+
 @defproc[(seclink [tag string?] 
                   [#:doc module-path (or/c module-path? false/c) #f]
                   [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]
