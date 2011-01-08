@@ -339,7 +339,7 @@ path of an included file as it expands an @racket[include] form.}
 The @DFlag{no-deps} mode for @exec{raco make} is an improverished
 form of the compilation, because it does not track import
 dependencies. It does, however, support compilation of non-module
-source in an namespace that iniitially imports @racketmodname[scheme].
+source in an namespace that initially imports @racketmodname[scheme].
 
 Outside of a module, top-level @racket[define-syntaxes],
 @racket[module], @racket[#%require],
@@ -352,7 +352,7 @@ For example, when compiling the file containing
 
 @racketblock[
 (require racket/class)
-(define f (class% object% (super-new)))
+(define f (class object% (super-new)))
 ]
 
 the @racket[class] form from the @racketmodname[racket/class] library
