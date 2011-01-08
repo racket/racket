@@ -6947,7 +6947,10 @@ static int MyPipe(int *ph, int near_index) {
 # define GC_write_barrier(x) /* empty */
 #endif
 
-SHARED_OK static void *unused_groups;
+/* See `unused_pid_statuses' in "places.c" for
+   a reminder of why this is needed (in both 
+   implementations): */
+SHARED_OK static void *unused_pids;
 
 static int need_to_check_children;
 
@@ -6996,18 +6999,18 @@ static void init_sigchld(void)
 static void check_child_done(pid_t pid)
 {
   pid_t result, check_pid;
-  int status, is_group;
+  int status, is_unused;
   System_Child *sc, *prev;
-  void **unused = (void **)unused_groups, **unused_prev = NULL;
+  void **unused = (void **)unused_pids, **unused_prev = NULL;
 
   if (scheme_system_children) {
     do {
       if (!pid && unused) {
         check_pid = (pid_t)(intptr_t)unused[0];
-        is_group = 1;
+        is_unused = 1;
       } else {
         check_pid = pid;
-        is_group = 0;
+        is_unused = 0;
       }
 
       do {
@@ -7017,14 +7020,14 @@ static void check_child_done(pid_t pid)
       } while ((result == -1) && (errno == EINTR));
 
       if (result > 0) {
-        if (is_group) {
+        if (is_unused) {
           /* done with an inaccessible group id */
           void *next;
           next = (void **)unused[1];
           if (unused_prev)
             unused_prev[1] = unused[1];
           else
-            unused_groups = unused[1];
+            unused_pids = unused[1];
           free(unused);
           unused = (void **)next;
         }
@@ -7051,12 +7054,12 @@ static void check_child_done(pid_t pid)
           }
         }
       } else {
-        if (is_group) {
+        if (is_unused) {
           unused_prev = unused;
           unused = unused[1];
         }
       }
-    } while ((result > 0) || is_group);
+    } while ((result > 0) || is_unused);
   }
 }
 
@@ -7292,7 +7295,9 @@ static int subp_done(Scheme_Object *so)
   {
     System_Child *sc;
     sc = (System_Child *)sp->handle;
-    check_child_done(sp->is_group ? sp->pid : 0);
+    /* Check specific pid, in case the child has its own group
+       (either given by Racket or given to itself): */
+    check_child_done(sp->pid);
     if (sc->done)
       child_mref_done(sp);
     return sc->done;
@@ -7350,7 +7355,7 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
   }
 # else
   System_Child *sc = (System_Child *)sp->handle;
-  check_child_done(sp->is_group ? sp->pid : 0);
+  check_child_done(sp->pid);
 
   if (sc->done) {
     child_mref_done(sp);
@@ -7574,7 +7579,7 @@ static Scheme_Object *subproc_group_on (int argc, Scheme_Object *argv[])
 }
 
 #ifdef UNIX_PROCESSES
-static void unused_process_group(void *_sp, void *ignored)
+static void unused_process_record(void *_sp, void *ignored)
 {
   Scheme_Subprocess *sp = (Scheme_Subprocess *)_sp;
 
@@ -7582,11 +7587,13 @@ static void unused_process_group(void *_sp, void *ignored)
   if (!sp->done)
     scheme_done_with_process_id(sp->pid, sp->is_group);
 # else
-  void **unused_group;
-  unused_group = malloc(sizeof(void *) * 2);
-  unused_group[0] = (void *)(intptr_t)sp->pid;
-  unused_group[1] = unused_groups;
-  need_to_check_children = 1;
+  if (!((System_Child *)sp->handle)->done) {
+    void **unused_pid;
+    unused_pid = malloc(sizeof(void *) * 2);
+    unused_pid[0] = (void *)(intptr_t)sp->pid;
+    unused_pid[1] = unused_pids;
+    need_to_check_children = 1;
+  }
 # endif
 }
 #endif
@@ -8254,8 +8261,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 # if defined(WINDOWS_PROCESSES)
   scheme_add_finalizer(subproc, close_subprocess_handle, NULL);
 # else
-  if (new_process_group)
-    scheme_add_finalizer(subproc, unused_process_group, NULL);
+  scheme_add_finalizer(subproc, unused_process_record, NULL);
 # endif
 
   if (SCHEME_TRUEP(cust_mode)) {

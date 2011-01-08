@@ -234,19 +234,22 @@ typedef struct Child_Status {
   char is_group;
   void *signal_fd;
   struct Child_Status *next;
-  struct Child_Status *next_group; /* see child_group_statuses */
+  struct Child_Status *next_unused; /* see unused_pid_statuses */
 } Child_Status;
 
 SHARED_OK static Child_Status *child_statuses = NULL;
 SHARED_OK static mzrt_mutex* child_status_lock = NULL;
 SHARED_OK static mzrt_mutex* child_wait_lock = NULL; /* ordered before status lock */
 
-/* When a process for a process group becomes unreachable 
-   before a waitpid() on the process, then we need to keep
-   waiting on it to let the OS gc the process. Otherwise,
-   we wait only on processes in the same group as Racket. 
+/* When the Racket process value for a process in a different group becomes 
+   GC-unreachable before a waitpid() on the process, then we 
+   need to keep waiting on the pid to let the OS gc the process.
+   This list is especially needed for processes that we create in
+   their own group, but it's also needed for processes that put
+   themselves in their own group (which we conservatively assume
+   can be any child process).
    This list is protect by the wait lock. */
-SHARED_OK static Child_Status *child_group_statuses = NULL;
+SHARED_OK static Child_Status *unused_pid_statuses = NULL;
 
 static void add_group_signal_fd(void *signal_fd);
 static void remove_group_signal_fd(void *signal_fd);
@@ -270,7 +273,7 @@ static void add_child_status(int pid, int status) {
     st->signal_fd = NULL;
     st->next = child_statuses;
     child_statuses = st;
-    st->next_group = NULL;
+    st->next_unused = NULL;
     st->unneeded = 0;
     st->is_group = 0;
   }
@@ -317,9 +320,9 @@ static int raw_get_child_status(int pid, int *status, int done_only, int do_remo
 int scheme_get_child_status(int pid, int is_group, int *status) {
   int found = 0;
 
-  if (is_group) {
-    /* need to specifically try the pid, since we don't
-       wait on other process groups in the background thread */
+  /* Check specific pid, in case the child has its own group
+     (either given by Racket or given to itself): */
+  {
     pid_t pid2;
     int status;
 
@@ -361,7 +364,7 @@ int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *st
 
     st->next = child_statuses;
     child_statuses = st;
-    st->next_group = NULL;
+    st->next_unused = NULL;
 
     if (is_group)
       add_group_signal_fd(signal_fd);
@@ -375,7 +378,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
   int status;
   int pid, check_pid, is_group;
   sigset_t set;
-  Child_Status *group_status, *prev_group, *next;
+  Child_Status *unused_status, *prev_unused, *next;
 
   sigemptyset(&set);
   sigaddset(&set, SIGCHLD);
@@ -399,14 +402,18 @@ static void *mz_proc_thread_signal_worker(void *data) {
 
     mzrt_mutex_lock(child_wait_lock);
 
-    group_status = child_group_statuses;
-    prev_group = NULL;
+    unused_status = unused_pid_statuses;
+    prev_unused = NULL;
 
     do {
-      if (group_status) {
-        check_pid = group_status->pid;
+      if (unused_status) {
+        /* See unused_pid_statuses above */
+        check_pid = unused_status->pid;
         is_group = 1;
       } else {
+        /* We wait only on processes in the same group as Racket,
+           because detecting the termination of a group's main process
+           disables our ability to terminate all processes in the group. */
         check_pid = 0; /* => processes in the same group as Racket */
         is_group = 0;
       }
@@ -423,26 +430,26 @@ static void *mz_proc_thread_signal_worker(void *data) {
           fprintf(stderr, "unexpected error from waitpid(%d[%d]): %d\n", 
                   check_pid, is_group, errno);
           if (is_group) {
-            prev_group = group_status;
-            group_status = group_status->next;
+            prev_unused = unused_status;
+            unused_status = unused_status->next;
           } 
         }
       } else if (pid > 0) {
         /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
         if (is_group) {
-          next = group_status->next;
-          if (prev_group)
-            prev_group->next_group = next;
+          next = unused_status->next;
+          if (prev_unused)
+            prev_unused->next_unused = next;
           else
-            child_group_statuses = next;
-          free(group_status);
-          group_status = next;
+            unused_pid_statuses = next;
+          free(unused_status);
+          unused_status = next;
         } else
           add_child_status(pid, status);
       } else {
         if (is_group) {
-          prev_group = group_status;
-          group_status = group_status->next;
+          prev_unused = unused_status;
+          unused_status = unused_status->next;
         }
       }
     } while ((pid > 0) || is_group);
@@ -456,16 +463,17 @@ static void *mz_proc_thread_signal_worker(void *data) {
 void scheme_done_with_process_id(int pid, int is_group)
 {
   Child_Status *st;
+  int keep_unused = 1; /* assume that any process can be in a new group */
 
-  mzrt_mutex_lock(child_wait_lock); /* protects child_group_statuses */
+  mzrt_mutex_lock(child_wait_lock); /* protects unused_pid_statuses */
   mzrt_mutex_lock(child_status_lock);
 
   for (st = child_statuses; st; st = st->next) {
     if (st->pid == pid) {
       if (!st->done) {
-        if (is_group) {
-          st->next_group = child_group_statuses;
-          child_group_statuses = st;
+        if (keep_unused) {
+          st->next_unused = unused_pid_statuses;
+          unused_pid_statuses = st;
           if (st->signal_fd)
             remove_group_signal_fd(st->signal_fd);
         } else
@@ -476,7 +484,7 @@ void scheme_done_with_process_id(int pid, int is_group)
     }
   }
       
-  if (st && (is_group || st->done)) {
+  if (st && (keep_unused || st->done)) {
     /* remove it from normal list: */
     raw_get_child_status(pid, NULL, 0, 1, !st->done);
   }
