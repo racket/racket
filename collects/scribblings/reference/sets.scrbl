@@ -7,14 +7,14 @@
 @(interaction-eval #:eval set-eval (require racket/set))
 
 A @deftech{set} represents a set of distinct elements. For a given
-set, elements are equivalent via @scheme[equal?], @scheme[eqv?], or
-@scheme[eq?]. Two sets are @scheme[equal?] when they use the same
-element-comparison procedure (@scheme[equal?], @scheme[eqv?], or
-@scheme[eq?]) and have equivalent elements.
+set, elements are equivalent via @racket[equal?], @racket[eqv?], or
+@racket[eq?]. Two sets are @racket[equal?] when they use the same
+element-comparison procedure (@racket[equal?], @racket[eqv?], or
+@racket[eq?]) and have equivalent elements.
 
 A set can be used as a single-valued sequence (see
 @secref["sequences"]). The elements of the set serve as elements
-of the sequence. See also @scheme[in-set].
+of the sequence. See also @racket[in-set].
 
 Operations on sets that contain elements that are mutated are
 unpredictable in much the same way that @tech{hash table} operations are
@@ -24,18 +24,18 @@ unpredictable when keys are mutated.
 
 @defproc[(set? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{set}, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a @tech{set}, @racket[#f]
 otherwise.}
 
-@defproc[(set-eqv? [set set?]) boolean?]{
+@defproc[(set-eqv? [st set?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[set] compares elements with @scheme[eqv?],
-@scheme[#f] if it compares with @scheme[equal?] or @scheme[eq?].}
+Returns @racket[#t] if @racket[st] compares elements with @racket[eqv?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eq?].}
 
-@defproc[(set-eq? [set set?]) boolean?]{
+@defproc[(set-eq? [st set?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[set] compares elements with @scheme[eq?],
-@scheme[#f] if it compares with @scheme[equal?] or @scheme[eqv?].}
+Returns @racket[#t] if @racket[st] compares elements with @racket[eq?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
 
 @deftogether[(
 @defproc[(set [v any/c] ...) set?]
@@ -43,51 +43,51 @@ Returns @scheme[#t] if @scheme[set] compares elements with @scheme[eq?],
 @defproc[(seteq [v any/c] ...) set?]
 )]{
 
-Creates a set that uses @scheme[equal?], @scheme[eq?], or
-@scheme[eqv?], respectively, to compare elements.  The given
-@scheme[v]s are added to the set. The elements are added in the order
-that they appear as @scheme[v]s, so in the first two cases, an earlier
-element that is @scheme[equal?] or @scheme[eqv?] but not @scheme[eq?]
+Creates a set that uses @racket[equal?], @racket[eq?], or
+@racket[eqv?], respectively, to compare elements.  The given
+@racket[v]s are added to the set. The elements are added in the order
+that they appear as @racket[v]s, so in the first two cases, an earlier
+element that is @racket[equal?] or @racket[eqv?] but not @racket[eq?]
 to a later element takes precedence over the later element.}
 
 
-@defproc[(set-empty? [set set?]) boolean?]{
+@defproc[(set-empty? [st set?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[set] has no members, @scheme[#f]
+Returns @racket[#t] if @racket[st] has no members, @racket[#f]
 otherwise.}
 
-@defproc[(set-count [set set?]) exact-nonnegative-integer?]{
+@defproc[(set-count [st set?]) exact-nonnegative-integer?]{
 
-Returns the number of elements in @scheme[set].}
+Returns the number of elements in @racket[st].}
 
-@defproc[(set-member? [set set?] [v any/c]) boolean?]{
+@defproc[(set-member? [st set?] [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is in @scheme[set], @scheme[#f]
+Returns @racket[#t] if @racket[v] is in @racket[st], @racket[#f]
 otherwise.}
 
 
-@defproc[(set-add [set set?] [v any/c]) set?]{
+@defproc[(set-add [st set?] [v any/c]) set?]{
 
 @margin-note{Like operations on immutable hash tables, ``constant
 time'' set operations actually require @math{O(log N)} time for a set
 of size @math{N}.}
 
-Produces a set that includes @scheme[v] plus all elements of
-@scheme[set]. This operation runs in constant time.}
+Produces a set that includes @racket[v] plus all elements of
+@racket[st]. This operation runs in constant time.}
 
 
-@defproc[(set-remove [set set?] [v any/c]) set?]{
+@defproc[(set-remove [st set?] [v any/c]) set?]{
 
-Produces a set that includes all elements of @scheme[set] except
-@scheme[v]. This operation runs in constant time.}
+Produces a set that includes all elements of @racket[st] except
+@racket[v]. This operation runs in constant time.}
 
 
-@defproc[(set-union [set set?] ...+) set?]{
+@defproc[(set-union [st set?] ...+) set?]{
 
-Produces a set that includes all elements of all given @scheme[set]s,
-which must all use the same equivalence predicate (@scheme[equal?],
-@scheme[eq?], or @scheme[eqv?]). This operation runs in time
-proportional to the total size of all given @scheme[set]s except for
+Produces a set that includes all elements of all given @racket[st]s,
+which must all use the same equivalence predicate (@racket[equal?],
+@racket[eq?], or @racket[eqv?]). This operation runs in time
+proportional to the total size of all given @racket[st]s except for
 the largest.
 
 At least one set must be provided to @racket[set-union] even though
@@ -106,54 +106,54 @@ you desire.
 ]}
 
 
-@defproc[(set-intersect [set set?] ...+) set?]{
+@defproc[(set-intersect [st set?] ...+) set?]{
 
 Produces a set that includes only the elements in all of the given
-@scheme[set]s, which must all use the same equivalence predicate
-(@scheme[equal?], @scheme[eq?], or @scheme[eqv?]). This operation
+@racket[st]s, which must all use the same equivalence predicate
+(@racket[equal?], @racket[eq?], or @racket[eqv?]). This operation
 runs in time proportional to the total size of all given
-@scheme[set]s except for the largest.}
+@racket[st]s except for the largest.}
 
 
-@defproc[(set-subtract [set set?] ...+) set?]{
+@defproc[(set-subtract [st set?] ...+) set?]{
 
-Produces a set that includes all elements the first @scheme[set]s that
-are not present in any of the other given @scheme[sets]s.  All of the
-given @scheme[set]s must use the same equivalence predicate
-(@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
+Produces a set that includes all elements the first @racket[st]s that
+are not present in any of the other given @racket[sts]s.  All of the
+given @racket[st]s must use the same equivalence predicate
+(@racket[equal?], @racket[eq?], or @racket[eqv?]).  This operation
 runs in time proportional to the total size of all given
-@scheme[set]s except the first one.}
+@racket[st]s except the first one.}
 
 
-@defproc[(subset? [set set?] [set2 set?]) boolean?]{
+@defproc[(subset? [st set?] [st2 set?]) boolean?]{
 
-Returns @scheme[#t] if every member of @scheme[set] is in
-@scheme[set2], @scheme[#f] otherwise. The @scheme[set] and
-@scheme[set2] must use the same equivalence predicate
-(@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
-runs in time proportional to the size of @scheme[set].}
+Returns @racket[#t] if every member of @racket[st] is in
+@racket[st2], @racket[#f] otherwise. The @racket[st] and
+@racket[st2] must use the same equivalence predicate
+(@racket[equal?], @racket[eq?], or @racket[eqv?]).  This operation
+runs in time proportional to the size of @racket[st].}
 
 
-@defproc[(set-map [set set?]
+@defproc[(set-map [st set?]
                   [proc (any/c . -> . any/c)])
          (listof any/c)]{
 
-Applies the procedure @scheme[proc] to each element in
-@scheme[set] in an unspecified order, accumulating the results
+Applies the procedure @racket[proc] to each element in
+@racket[st] in an unspecified order, accumulating the results
 into a list.}
 
 
-@defproc[(set-for-each [set set?]
+@defproc[(set-for-each [st set?]
                        [proc (any/c . -> . any)])
          void?]{
 
-Applies @scheme[proc] to each element in @scheme[set] (for the
-side-effects of @scheme[proc]) in an unspecified order.}
+Applies @racket[proc] to each element in @racket[st] (for the
+side-effects of @racket[proc]) in an unspecified order.}
 
 
-@defproc[(in-set [set set?]) sequence?]{
+@defproc[(in-set [st set?]) sequence?]{
 
-Explicitly converts a set to a sequence for use with @scheme[for] and
+Explicitly converts a set to a sequence for use with @racket[for] and
 other forms.}
 
 @deftogether[(
@@ -165,7 +165,10 @@ other forms.}
 @defform[(for*/seteqv (for-clause ...) body ...+)]
 )]{
 
-Analogous to @scheme[for/list] and @scheme[for*/list], but to
+Analogous to @racket[for/list] and @racket[for*/list], but to
 construct a set instead of a list.}
 
 @close-eval[set-eval]
+
+@(define i #'set)
+@(define i2 #'set-union)
