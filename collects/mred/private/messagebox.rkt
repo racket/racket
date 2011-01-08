@@ -41,6 +41,27 @@
 			 l))
 		   style)
 
+      (let ([go (lambda ()
+                  (create-message-box/custom
+                   who title message
+                   button1 button2 button3
+                   parent style close-result
+                   check? two-results? check-message))])
+        (if (eq? (current-thread) (wx:eventspace-handler-thread (wx:current-eventspace)))
+            ;; In the right thread:
+            (go)
+            ;; Not in the right thread:
+            (let ([ch (make-channel)])
+              (wx:queue-callback
+               (lambda ()
+                 (channel-put ch (call-with-values go list))))
+              (apply values (channel-get ch)))))))
+
+  (define create-message-box/custom
+    (lambda (who title message
+		 button1 button2 button3
+		 parent style close-result
+		 check? two-results? check-message)
       (let* ([strings (regexp-split #rx"\n" message)]
 	     [single? (and (< (length strings) 10) 
 			   (andmap (lambda (s) (< (string-length s) 60)) strings))]
@@ -212,7 +233,7 @@
 			     #f #f #f)))
 
   (define do-message-box
-    (opt-lambda (who title message parent style check? check-message)
+    (lambda (who title message parent style check? check-message)
       (check-label-string who title)
       (check-string/false who message)
       (when check?

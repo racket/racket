@@ -180,9 +180,8 @@ See also @scheme[path-dialog%].
                       [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
                       [style (listof (one-of/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
          (one-of/c 'ok 'cancel 'yes 'no)]{
+
 See also @scheme[message-box/custom].
-
-
 
 Displays a message to the user in a (modal) dialog, using
  @scheme[parent] as the parent window if it is specified. The dialog's
@@ -220,12 +219,11 @@ In addition, @scheme[style] can contain @scheme['caution] to make the
 The class that implements the dialog provides a @scheme[get-message]
  method that takes no arguments and returns the text of the message as
  a string. (The dialog is accessible through the
-@scheme[get-top-level-windows] function.)
+ @scheme[get-top-level-windows] function.)
 
-
-
-
-}
+The @racket[message-box] function can be called int a thread other
+ than the current eventspace's handler thread, in which case the
+ current thread blocks while the dialog runs on the handler thread.}
 
 @defproc[(message-box/custom [title label-string?]
                              [message string]
@@ -307,9 +305,9 @@ The class that implements the dialog provides a @scheme[get-message]
  a string. (The dialog is accessible through the
 @scheme[get-top-level-windows] function.)
 
-
-
-}
+The @racket[message-box/custom] function can be called int a thread
+ other than the current eventspace's handler thread, in which case the
+ current thread blocks while the dialog runs on the handler thread.}
 
 @defproc[(message+check-box [title label-string?]
                             [message string]
