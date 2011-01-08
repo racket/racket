@@ -1279,9 +1279,20 @@
     (define r2
       (extend-reduction-relation r1 l2))
     
-    ;; test that the domain is re-interpreted for the extended reduction-relation
+    ;; test that the domain is re-interpreted wrt the new language
     (test (apply-reduction-relation r2 3)
           '(3)))
+  
+  (let ()
+    (define-language L)
+    (define R
+      (reduction-relation L (--> 1 1 "a")))
+    (define S
+      (extend-reduction-relation R L (--> 2 2 "a")))
+    
+    ;; test that overridden rules do not appear (twice)
+    (test (reduction-relation->rule-names S)
+          '(a)))
   
   (let ()
     (define-language l1
