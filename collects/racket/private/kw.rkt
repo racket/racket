@@ -193,7 +193,7 @@
        #f
        plain-proc)]))
                          
-  (define (keyword-apply proc kws kw-vals . normal-argss)
+  (define (keyword-apply proc kws kw-vals normal-args . normal-argss)
     (let ([type-error
            (lambda (what which)
              (apply raise-type-error
@@ -203,6 +203,7 @@
                     proc
                     kws
                     kw-vals
+                    normal-args
                     normal-argss))])
       (unless (procedure? proc)
         (type-error "procedure" 0))
@@ -229,7 +230,7 @@
           kws)
          kw-vals))
       (let ([normal-args
-             (let loop ([normal-argss normal-argss][pos 3])
+             (let loop ([normal-argss (cons normal-args normal-argss)][pos 3])
                (if (null? (cdr normal-argss))
                    (let ([l (car normal-argss)])
                      (if (list? l)
