@@ -7509,55 +7509,55 @@
 ;                                                                           
 
   (test/spec-passed
-   'instanceof-first-order-1
+   'instanceof/c-first-order-1
    '(let* ([c% object%]
            [c%/c (class/c)])
-      (contract (instanceof c%/c) (new c%) 'pos 'neg)))
+      (contract (instanceof/c c%/c) (new c%) 'pos 'neg)))
   
   (test/pos-blame
-   'instanceof-first-order-2
+   'instanceof/c-first-order-2
    '(let* ([c% object%]
            [c%/c (class/c (field [f number?]))])
-      (contract (instanceof c%/c) (new c%) 'pos 'neg)))
+      (contract (instanceof/c c%/c) (new c%) 'pos 'neg)))
   
   (test/pos-blame
-   'instanceof-first-order-3
+   'instanceof/c-first-order-3
    '(let* ([c% object%]
            [c%/c (class/c [m (->m number? number?)])])
-      (contract (instanceof c%/c) (new c%) 'pos 'neg)))
+      (contract (instanceof/c c%/c) (new c%) 'pos 'neg)))
   
   (test/spec-passed
-   'instanceof-first-order-4
+   'instanceof/c-first-order-4
    '(let* ([c% (class object% (super-new) (field [f 3]))]
            [c%/c (class/c (field [f number?]))])
-      (contract (instanceof c%/c) (new c%) 'pos 'neg)))
+      (contract (instanceof/c c%/c) (new c%) 'pos 'neg)))
   
   (test/spec-passed
-   'instanceof-first-order-5
+   'instanceof/c-first-order-5
    '(let* ([c% (class object% (super-new) (define/public (m x) x))]
            [c%/c (class/c [m (->m number? number?)])])
-      (contract (instanceof c%/c) (new c%) 'pos 'neg)))
+      (contract (instanceof/c c%/c) (new c%) 'pos 'neg)))
   
   (test/spec-passed/result
-   'instanceof-higher-order-1
+   'instanceof/c-higher-order-1
    '(let* ([c% (class object% (super-new) (field [f 3]))]
            [c%/c (class/c (field [f number?]))]
-           [o (contract (instanceof c%/c) (new c%) 'pos 'neg)])
+           [o (contract (instanceof/c c%/c) (new c%) 'pos 'neg)])
       (get-field f o))
    3)
   
   (test/neg-blame
-   'instanceof-higher-order-2
+   'instanceof/c-higher-order-2
    '(let* ([c% (class object% (super-new) (field [f 3]))]
            [c%/c (class/c (field [f number?]))]
-           [o (contract (instanceof c%/c) (new c%) 'pos 'neg)])
+           [o (contract (instanceof/c c%/c) (new c%) 'pos 'neg)])
       (set-field! f o #t)))
   
   (test/pos-blame
-   'instanceof-higher-order-3
+   'instanceof/c-higher-order-3
    '(let* ([c% (class object% (super-new) (define/public (m x) (zero? x)))]
            [c%/c (class/c [m (->m number? number?)])]
-           [o (contract (instanceof c%/c) (new c%) 'pos 'neg)])
+           [o (contract (instanceof/c c%/c) (new c%) 'pos 'neg)])
       (send o m 3)))
 
 ;                                                                                    

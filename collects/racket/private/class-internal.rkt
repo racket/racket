@@ -58,7 +58,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c ->m ->*m ->dm case->m object/c instanceof
+           class/c ->m ->*m ->dm case->m object/c instanceof/c
            
            ;; "keywords":
            private public override augment
@@ -3141,20 +3141,20 @@
          (syntax/loc stx
            (make-base-object/c methods method-ctcs fields field-ctcs))))]))
 
-(define-struct (base-instanceof base-object/c) (class-ctc)
+(define-struct (base-instanceof/c base-object/c) (class-ctc)
   #:property prop:contract
   (build-contract-property 
    #:projection object/c-proj
    #:name
    (λ (ctc)
-     (build-compound-type-name 'instanceof (base-instanceof-class-ctc ctc)))
+     (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
    #:first-order object/c-first-order))
 
-(define (instanceof cctc)
-  (let ([ctc (coerce-contract 'instanceof cctc)])
+(define (instanceof/c cctc)
+  (let ([ctc (coerce-contract 'instanceof/c cctc)])
     (unless (class/c? ctc)
       (error "expected class contract, got ~v" ctc))
-    (make-base-instanceof (class/c-methods ctc) (class/c-method-contracts ctc)
+    (make-base-instanceof/c (class/c-methods ctc) (class/c-method-contracts ctc)
                           (class/c-fields ctc) (class/c-field-contracts ctc)
                           ctc)))
 
@@ -4687,5 +4687,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c ->m ->*m ->dm case->m object/c instanceof)
+         class/c ->m ->*m ->dm case->m object/c instanceof/c)
 

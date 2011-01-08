@@ -1626,7 +1626,7 @@ behaves as if its class had been wrapped with the equivalent
 @scheme[class/c] contract.
 }
                              
-@defproc[(instanceof [class-contract contract?]) contract?]{
+@defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an instance of a class that conforms
 to @scheme[class-contract].
 
