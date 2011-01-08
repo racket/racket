@@ -1223,6 +1223,14 @@
 	(when config:printing?
 	  (do-print)))
 
+      (when config:printing?
+        ;; Just before exiting normally, print the slides:
+        (let ([h (executable-yield-handler)])
+          (executable-yield-handler
+           (lambda (v)
+             (viewer:done-making-slides)
+             (h v)))))
+
       (let ([eh (uncaught-exception-handler)])
 	(uncaught-exception-handler
 	 (lambda (exn)

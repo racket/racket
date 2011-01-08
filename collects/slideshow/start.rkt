@@ -65,8 +65,7 @@
 			    (lambda (who where-name where-port-num mode)
 			      (error 'slideshow
 				     "slide program attempted to make a network connection")))))
-    (dynamic-require (path->complete-path content) #f)
-    (done-making-slides))
+    (dynamic-require (path->complete-path content) #f))
 
   (when (file-to-load)
     (load-content (string->path (file-to-load))))
