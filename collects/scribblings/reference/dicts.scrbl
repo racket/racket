@@ -619,15 +619,15 @@ iterators, respectively, if @racket[d] implements the
 @deftogether[(
 @defproc[(make-custom-hash [eql? (any/c any/c . -> . any/c)]
                            [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?)])
+                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
          dict?]
 @defproc[(make-immutable-custom-hash [eql? (any/c any/c . -> . any/c)]
                            [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?)])
+                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
          dict?]
 @defproc[(make-weak-custom-hash [eql? (any/c any/c . -> . any/c)]
                            [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?)])
+                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
          dict?]
 )]{
 
