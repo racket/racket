@@ -40,6 +40,8 @@
                                       -> _void
                                       -> (values w h)))
 (define-gtk gtk_window_set_decorated (_fun _GtkWidget _gboolean -> _void))
+(define-gtk gtk_window_set_keep_above (_fun _GtkWidget _gboolean -> _void))
+(define-gtk gtk_window_set_focus_on_map (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_window_maximize (_fun _GtkWidget -> _void))
 (define-gtk gtk_window_unmaximize (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_set_uposition (_fun _GtkWidget _int _int -> _void))
@@ -149,7 +151,10 @@
     (define gtk (as-gtk-window-allocation
                  (gtk_window_new GTK_WINDOW_TOPLEVEL)))
     (when (memq 'no-caption style)
-      (gtk_window_set_decorated gtk #f))    
+      (gtk_window_set_decorated gtk #f))
+    (when (memq 'float style)
+      (gtk_window_set_keep_above gtk #t)
+      (gtk_window_set_focus_on_map gtk #f))
     (define-values (vbox-gtk panel-gtk)
       (atomically
        (let ([vbox-gtk (gtk_vbox_new #f 0)]
