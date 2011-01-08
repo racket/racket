@@ -11,6 +11,7 @@
         (namespace-require '(for-syntax scheme/base))
         (namespace-require '(for-template scheme/base))
         (namespace-require 'scheme/contract)
+        (namespace-require 'scheme/set)
         (namespace-require '(only racket/contract/private/arrow procedure-accepts-and-more?))
         (namespace-require 'scheme/class)
         (namespace-require 'scheme/promise)
@@ -9665,6 +9666,11 @@ so that propagation occurs.
   (test-name '(couple/dc [hd any/c] [tl ...])
              (couple/dc [hd any/c] [tl (hd) any/c]))
 
+  (test-name '(set/c integer?) (set/c integer?))
+  (test-name '(set/c boolean? #:cmp 'equal) (set/c boolean? #:cmp 'equal))
+  (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
+  (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
+  
   ;; NOT YET RELEASED
   #;
   (test-name '(pr/dc [x integer?]
@@ -10247,6 +10253,60 @@ so that propagation occurs.
                  'neg)
        11))
    11)
+  
+  
+;                                 ;        
+;                                ;         
+;                    ;           ;         
+;    ;;;;    ;;;;  ;;;;;;       ;     ;;;; 
+;   ;        ;   ;   ;         ;     ;     
+;   ;;      ;    ;   ;         ;    ;      
+;     ;;    ;;;;;;   ;        ;     ;      
+;       ;   ;        ;        ;     ;      
+;       ;   ;        ;       ;       ;     
+;   ;;;;     ;;;;;    ;;;   ;         ;;;; 
+;                           ;              
+;                          ;               
+;                                          
+
+  (test/spec-passed/result
+   'set/c1
+   '(contract (set/c integer?)
+              (set 0)
+              'pos 'neg)
+   (contract-eval '(set 0)))
+  
+  (test/pos-blame 
+   'set/c2
+   '(contract (set/c integer?)
+              (set #t)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'set/c3
+   '(contract (set/c integer? #:cmp 'eq)
+              (set 0)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'set/c4
+   '(contract (set/c integer? #:cmp 'eqv)
+              (set 0)
+              'pos 'neg))
+  
+  (test/pos-blame
+   'set/c5
+   '(contract (set/c integer? #:cmp 'equal)
+              (seteq 0)
+              'pos 'neg))
+  
+  (test/spec-passed/result
+   'set/c6
+   '(set-map (contract (set/c integer?)
+                       (set 0)
+                       'pos 'neg)
+             values)
+   (list 0))
   
 ;                                                        
 ;                                                        

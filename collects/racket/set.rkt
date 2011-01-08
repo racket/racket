@@ -1,7 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/serialize
-         racket/pretty)
+         racket/pretty
+         racket/contract)
 
 (provide set seteq seteqv
          set? set-eq? set-eqv? set-equal?
@@ -12,7 +13,8 @@
          set-map set-for-each 
          (rename-out [*in-set in-set])
          for/set for/seteq for/seteqv
-         for*/set for*/seteq for*/seteqv)
+         for*/set for*/seteq for*/seteqv
+         set/c)
 
 (define-serializable-struct set (ht)
   #:omit-define-syntaxes
@@ -24,9 +26,19 @@
                          [(integer? mode) (lambda (p port) (print p port mode))]
                          [else write]))
     (define (print-prefix port)
-      (if (equal? 0 mode)
-          (write-string "(set" port)
-          (write-string "#<set:" port)))
+      (cond
+        [(equal? 0 mode)
+         (write-string "(set" port)
+         (print-prefix-id port)]
+        [else
+         (write-string "#<set" port)
+         (print-prefix-id port)
+         (write-string ":" port)]))
+    (define (print-prefix-id port)
+      (cond
+        [(set-equal? s) (void)]
+        [(set-eqv? s) (write-string "eqv" port)]
+        [(set-eq? s) (write-string "eq" port)]))
     (define (print-suffix port)
       (if (equal? 0 mode)
           (write-string ")" port)
@@ -281,3 +293,66 @@
 (define-for for*/fold/derived for*/seteq seteq)
 (define-for for/fold/derived for/seteqv seteqv)
 (define-for for*/fold/derived for*/seteqv seteqv)
+
+(define (get-pred a-set/c)
+  (case (set/c-cmp a-set/c)
+    [(dont-care) set?]
+    [(eq) set-eq?]
+    [(eqv) set-eqv?]
+    [(equal) set-equal?]))
+
+(define (get-name a-set/c)
+  (case (set/c-cmp a-set/c)
+    [(dont-care) 'set]
+    [(eq) 'set-eq]
+    [(eqv) 'set-eqv]
+    [(equal) 'set-equal]))
+
+(define (set/c ctc #:cmp [cmp 'dont-care])
+  (unless (memq cmp '(dont-care equal eq eqv))
+    (raise-type-error 'set/c 
+                      "(or/c 'dont-care 'equal? 'eq? 'eqv)" 
+                      cmp))
+  (make-set/c ctc cmp))
+
+(define-struct set/c (ctc cmp)
+  #:omit-define-syntaxes
+  #:property prop:contract
+  (build-contract-property 
+   #:name
+   (λ (c) `(set/c ,(contract-name (set/c-ctc c))
+                  ,@(if (eq? (set/c-cmp c) 'dont-care)
+                        '()
+                        `(#:cmp ',(set/c-cmp c)))))
+   #:first-order
+   get-pred
+   #:stronger
+   (λ (this that)
+     (and (set/c? that)
+          (or (eq? (set/c-cmp this)
+                   (set/c-cmp that))
+              (eq? (set/c-cmp that) 'dont-care))
+          (contract-stronger? (set/c-ctc this)
+                              (set/c-ctc that))))
+   #:projection
+   (λ (c)
+     (let ([proj (contract-projection (set/c-ctc c))]
+           [pred (get-pred c)])
+       (λ (blame)
+         (let ([pb (proj blame)])
+           (λ (s)
+             (if (pred s)
+                 (cond
+                   [(set-equal? s)
+                    (for/set ((e (in-set s)))
+                             (pb e))]
+                   [(set-eqv? s)
+                    (for/seteqv ((e (in-set s)))
+                                (pb e))]
+                   [(set-eq? s)
+                    (for/seteq ((e (in-set s)))
+                               (pb e))])
+                 (raise-blame-error
+                  blame
+                  s
+                  "expected a <~a>, got ~v" (get-name c))))))))))

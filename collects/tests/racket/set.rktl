@@ -105,6 +105,24 @@
 
   (void))
 
+(test "#<set: 1>" 
+      'print-set1
+      (let ([sp (open-output-string)])
+        (write (set 1) sp)
+        (get-output-string sp)))
+
+(test "#<seteq: 1>" 
+      'print-set1
+      (let ([sp (open-output-string)])
+        (write (seteq 1) sp)
+        (get-output-string sp)))
+
+(test "#<seteqv: 1>" 
+      'print-set1
+      (let ([sp (open-output-string)])
+        (write (seteqv 1) sp)
+        (get-output-string sp)))
+
 ;; ----------------------------------------
 
 (test (set 1 2 3) 'for/set (for/set ([i '(0 1 2)]) (add1 i)))
