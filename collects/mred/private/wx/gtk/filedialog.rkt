@@ -86,8 +86,11 @@
   (for ([f (in-list filters)])
     (match f
       [(list name glob)
-       (let ([ff (gtk_file_filter_new)])
-         (gtk_file_filter_set_name ff name)
+       (let ([ff (gtk_file_filter_new)]
+             [glob (if (equal? glob "*.*") "*" glob)])
+         (gtk_file_filter_set_name ff (if (equal? glob "*")
+                                          name
+                                          (format "~a (~a)" name glob)))
          (gtk_file_filter_add_pattern ff glob)
          (gtk_file_chooser_add_filter dlg ff))]))
   (define ans (and (eq? 'accept (show-dialog dlg))

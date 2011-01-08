@@ -57,6 +57,7 @@ Under Windows and X, @scheme[filters] determines a set of filters from
  which the user can choose in the dialog. Each element of the
  @scheme[filters] list contains two strings: a description of the filter
  as seen by the user, and a filter pattern matched against file names.
+ Under X, a @racket["*.*"] pattern is implicitly replaced with @racket["*"].
 
 See also @scheme[path-dialog%].
 
@@ -115,7 +116,7 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  @scheme[extension] is used as the default extension when the user's
  @scheme[filters] choice has the pattern @scheme["*.*"].  Meanwhile, the
  @scheme[filters] argument has the same format and auxiliary role as for
-@scheme[get-file]. In particular, if the only pattern in @scheme[filters]
+ @scheme[get-file]. In particular, if the only pattern in @scheme[filters]
  is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
  to have an extension mapping @scheme[extension].
 
@@ -136,8 +137,8 @@ Under Mac OS X versions before 10.5, the returned path will get a
  @scheme[filters] contains only @scheme[(string-append "*."
  extension)].
 
-The @scheme[extension] argument is ignored under X, and
- @scheme[filters] can be used to specify glob-patterns.
+Under X, @racket[extension] is ignored, and @racket[filters] is used
+ to filter the visible list of files as in @racket[get-file].
 
 The @scheme[style] list is treated as for @scheme[get-file].
 
@@ -171,8 +172,6 @@ specified.  The latter
  ``.app'') that the Finder normally displays like a file.
 
 See also @scheme[path-dialog%].
-
-
 }
 
 @defproc[(message-box [title label-string?]
