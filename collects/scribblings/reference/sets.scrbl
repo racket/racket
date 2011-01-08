@@ -22,21 +22,6 @@ unpredictable when keys are mutated.
 
 @note-lib[racket/set]
 
-@defproc[(set? [v any/c]) boolean?]{
-
-Returns @racket[#t] if @racket[v] is a @tech{set}, @racket[#f]
-otherwise.}
-
-@defproc[(set-eqv? [st set?]) boolean?]{
-
-Returns @racket[#t] if @racket[st] compares elements with @racket[eqv?],
-@racket[#f] if it compares with @racket[equal?] or @racket[eq?].}
-
-@defproc[(set-eq? [st set?]) boolean?]{
-
-Returns @racket[#t] if @racket[st] compares elements with @racket[eq?],
-@racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
-
 @deftogether[(
 @defproc[(set [v any/c] ...) set?]
 @defproc[(seteqv [v any/c] ...) set?]
@@ -150,6 +135,35 @@ into a list.}
 Applies @racket[proc] to each element in @racket[st] (for the
 side-effects of @racket[proc]) in an unspecified order.}
 
+               
+@defproc[(set? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a @tech{set}, @racket[#f]
+otherwise.}
+
+@defproc[(set-equal? [st set?]) boolean?]{
+
+Returns @racket[#t] if @racket[st] compares elements with @racket[equal?],
+@racket[#f] if it compares with @racket[eqv?] or @racket[eq?].}
+
+
+@defproc[(set-eqv? [st set?]) boolean?]{
+
+Returns @racket[#t] if @racket[st] compares elements with @racket[eqv?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eq?].}
+
+@defproc[(set-eq? [st set?]) boolean?]{
+
+Returns @racket[#t] if @racket[st] compares elements with @racket[eq?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
+
+@defproc[(set/c [contract contract?] [#:cmp cmp (or/c 'dont-care 'equal 'eqv 'eq) 'dont-care]) contract?]{
+  Constructs a contract that recognizes sets whose elements match @racket[contract].
+                                                                 
+  If @racket[cmp] is @racket['dont-care], then the equality notion of the set is not considered
+  when checking the contract. Otherwise, the contract accepts only sets with the corresponding
+  notion of equality.
+}
 
 @defproc[(in-set [st set?]) sequence?]{
 
