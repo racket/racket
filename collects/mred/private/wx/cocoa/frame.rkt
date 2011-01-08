@@ -50,7 +50,10 @@
       (let ([wx (->wx wxb)])
         (and wx
              (not (other-modal? wx))))]
-  [-a _BOOL (canBecomeMainWindow)  #t]
+  [-a _BOOL (canBecomeMainWindow)
+      (let ([wx (->wx wxb)])
+        (or (not wx)
+            (not (send wx floating?))))]
   [-a _BOOL (windowShouldClose: [_id win])
       (queue-window*-event wxb (lambda (wx)
                                  (unless (other-modal? wx)
@@ -86,9 +89,14 @@
               (set! front wx)
               (send wx install-wait-cursor)
               (send wx install-mb)
-              (send wx notify-responder #t)
               (queue-window-event wx (lambda ()
                                        (send wx on-activate #t)))))))]
+  [-a _void (windowDidBecomeKey: [_id notification])
+      (when (tell #:type _BOOL self isVisible)
+        (when wxb
+          (let ([wx (->wx wxb)])
+            (when wx
+              (send wx notify-responder #t)))))]
   [-a _void (windowDidResignMain: [_id notification])
       (when wxb
         (let ([wx (->wx wxb)])
@@ -99,9 +107,13 @@
             (if root-fake-frame
                 (send root-fake-frame install-mb)
                 (send empty-mb install))
-            (send wx notify-responder #f)
             (queue-window-event wx (lambda ()
                                      (send wx on-activate #f))))))]
+  [-a _void (windowDidResignKey: [_id notification])
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (send wx notify-responder #f))))]
   [-a _void (toggleToolbarShown: [_id sender])
       (when wxb
         (let ([wx (->wx wxb)])
@@ -156,11 +168,11 @@
                       [init-rect (make-NSRect (make-init-point x y)
                                               (make-NSSize (max 30 w) 
                                                            (max (if (memq 'no-caption style)
-                                                                    0
+                                                                    1
                                                                     22)
                                                                 h)))])
                   (let ([c (as-objc-allocation
-                            (tell (tell (if is-sheet?
+                            (tell (tell (if (or is-sheet? (memq 'float style))
                                             MyPanel
                                             MyWindow)
                                         alloc)
@@ -234,7 +246,12 @@
     (define/public (set-sheet s) (set! child-sheet s))
 
     (define caption? (not (memq 'no-caption style)))
+    (define float? (memq 'float style))
     (define/public (can-have-sheet?) caption?)
+    (define/public (floating?) float?)
+
+    (when float?
+      (tell cocoa setFloatingPanel: #:type _BOOL #t))
 
     (define/public (direct-show on?)
       ;; in atomic mode
@@ -259,7 +276,9 @@
                        modalDelegate: #f
                        didEndSelector: #:type _SEL #f
                        contextInfo: #f))
-              (tellv cocoa makeKeyAndOrderFront: #f))
+              (if float?
+                  (tellv cocoa orderFront: #f)
+                  (tellv cocoa makeKeyAndOrderFront: #f)))
           (begin
             (when is-a-dialog?
               (let ([p (get-parent)])
@@ -550,6 +569,7 @@
        (for/or ([i (in-range (tell #:type _NSUInteger wins count))])
          (let ([win (tell wins objectAtIndex: #:type _NSUInteger i)])
            (and (tell #:type _BOOL win isVisible)
+                (tell #:type _BOOL win canBecomeMainWindow)
                 (not (tell win parentWindow))
                 (or (not root-fake-frame)
                     (not (ptr-equal? win (send root-fake-frame get-cocoa))))
