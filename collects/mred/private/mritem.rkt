@@ -333,11 +333,12 @@
 		       (lambda ()
 			 (let ([cwho '(constructor radio-box)])
 			   (check-container-ready cwho parent)
-			   (unless (< selection (length choices))
-			     (raise-mismatch-error (who->name cwho)
-						   (format "initial selection is too large, given only ~a choices: "
-							   (length choices))
-						   selection))))
+                           (when selection
+                             (unless (< selection (length choices))
+                               (raise-mismatch-error (who->name cwho)
+                                                     (format "initial selection is too large, given only ~a choices: "
+                                                             (length choices))
+                                                     selection)))))
 		       label parent callback #f)))
 	(when (or (not selection) (positive? selection))
 	  (set-selection selection)))))
