@@ -4024,9 +4024,7 @@ module browser threading seems wrong.
         (define/public (set-color-status! v?)
           (when color-status-canvas
             (set! color-valid? v?) 
-            (send (send color-status-canvas get-dc) erase)
-            (send color-status-canvas on-paint)
-            (send color-status-canvas flush)))
+            (send color-status-canvas refresh-now)))
         
         (define running-canvas
           (new running-canvas% [parent (get-info-panel)]))
