@@ -451,7 +451,13 @@
       (and m (zero? (caar m))
            (= (cdar m)
               (cond [(bytes? s) (bytes-length s)]
-                    [(or (byte-regexp? p) (bytes? p)) (string-utf-8-length s)]
-                    [else (string-length s)])))))
+                    [(or (byte-regexp? p) (bytes? p)) 
+                     (if (path? s)
+                         (bytes-length (path->bytes s))
+                         (string-utf-8-length s))]
+                    [else 
+                     (if (path? s)
+                         (string-length (path->string s))
+                         (string-length s))])))))
 
   )

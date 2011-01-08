@@ -457,7 +457,7 @@ match succeeds, @racket[#f] otherwise.
 
 
 @defproc[(regexp-match-exact? [pattern (or/c string? bytes? regexp? byte-regexp?)]
-                              [input (or/c string? bytes? path? input-port?)])
+                              [input (or/c string? bytes? path?)])
           boolean?]{
 
 Like @racket[regexp-match?], but @racket[#t] is only returned when the
