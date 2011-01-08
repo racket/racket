@@ -138,7 +138,7 @@
                                    (cdr style)
                                    (list (car style)))
                                (cons 'border style)))
-        (send (mred->wx this) set-callback callback))
+        (send (mred->wx this) set-callback (lambda (wx e) (callback (wx->mred wx) e))))
 
       (public
 	[get-number (lambda () (length save-choices))]
