@@ -1239,7 +1239,7 @@
           (with-handlers ((exn? exn-message))
             (apply-reduction-relation red 1)
             'no-exception-raised))
-        "reduction-relation: relation reduced to x via rule #0 (counting from 0), which is outside its domain")
+        "reduction-relation: relation reduced to x via an unnamed rule, which is outside its domain")
 
   (let* ([red1
           (reduction-relation 
@@ -1286,6 +1286,20 @@
   (let ()
     (define-language L)
     (define R
+      (reduction-relation L #:domain 1 (--> any any)))
+    (define S
+      (extend-reduction-relation R L #:domain 2))
+    
+    ;; test that the new domain applies to inherited rules
+    (test (apply-reduction-relation S 2)
+          '(2))
+    (test (with-handlers ([exn:fail? exn-message])
+            (apply-reduction-relation S 1))
+          #rx"not defined"))
+  
+  (let ()
+    (define-language L)
+    (define R
       (reduction-relation L (--> 1 1 "a")))
     (define S
       (extend-reduction-relation R L (--> 2 2 "a")))
@@ -1293,6 +1307,24 @@
     ;; test that overridden rules do not appear (twice)
     (test (reduction-relation->rule-names S)
           '(a)))
+  
+  (let ()
+    (define-language L)
+    
+    ;; test that symbol-named rules replace string-named rules
+    (test (apply-reduction-relation
+           (extend-reduction-relation
+            (reduction-relation L (--> 1 1 "a"))
+            L (--> 1 2 a))
+           1)
+          '(2))
+    ;; and vice versa
+    (test (apply-reduction-relation
+           (extend-reduction-relation
+            (reduction-relation L (--> 1 1 a))
+            L (--> 1 2 "a"))
+           1)
+          '(2)))
   
   (let ()
     (define-language l1

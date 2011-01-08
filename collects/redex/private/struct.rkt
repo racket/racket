@@ -8,7 +8,7 @@
          reduction-relation-rule-names
          reduction-relation-lws
          reduction-relation-procs
-         build-reduction-relation
+         build-reduction-relation make-reduction-relation
          reduction-relation?
          empty-reduction-relation
          make-rewrite-proc rewrite-proc? rewrite-proc-name 
@@ -48,59 +48,40 @@
                                                           '()
                                                           '()))
 
-;; the domain pattern isn't actually used here.
-;; I started to add it, but didn't finish. -robby
-(define (build-reduction-relation orig-reduction-relation lang make-procs rule-names lws domain-pattern)
-  (let* ([make-procs/check-domain
-          (let loop ([make-procs make-procs]
-                     [i 0])
-            (cond
-              [(null? make-procs) null]
-              [else
-               (let ([make-proc (car make-procs)])
-                 (cons (make-rewrite-proc
-                        (λ (lang)
-                          (let ([compiled-domain-pat (compile-pattern lang domain-pattern #f)]
-                                [proc (make-proc lang)])
-                            (λ (tl-exp exp f acc)
-                              (unless (match-pattern compiled-domain-pat tl-exp)
-                                (error 'reduction-relation "relation not defined for ~s" tl-exp))
-                              (let ([ress (proc tl-exp exp f acc)])
-                                (for-each
-                                 (λ (res)
-                                   (let ([term (caddr res)])
-                                     (unless (match-pattern compiled-domain-pat term)
-                                       (error 'reduction-relation "relation reduced to ~s via ~a, which is outside its domain"
-                                              term
-                                              (let ([name (rewrite-proc-name make-proc)])
-                                                (if name
-                                                    (format "the rule named ~a" name)
-                                                    (format "rule #~a (counting from 0)" i)))))))
-                                 ress)
-                                ress))))
-                        (rewrite-proc-name make-proc)
-                        (rewrite-proc-lhs make-proc)
-                        (rewrite-proc-lhs-src make-proc)
-                        (rewrite-proc-id make-proc))
-                       (loop (cdr make-procs)
-                             (+ i 1))))]))])
-    (cond
-      [orig-reduction-relation
-       (let* ([new-names (map rewrite-proc-name make-procs)]
-              [all-make-procs
-               (append
-                (filter (λ (x) (or (not (rewrite-proc-name x))
-                                   (not (member (rewrite-proc-name x) new-names))))
-                        (reduction-relation-make-procs orig-reduction-relation))
-                make-procs/check-domain)])
-         (make-reduction-relation lang 
-                                  all-make-procs
-                                 (remove-duplicates
-                                  (append rule-names
-                                          (reduction-relation-rule-names orig-reduction-relation)))
-                                  lws ;; only keep new lws for typesetting
-                                  (map (λ (make-proc) (make-proc lang)) all-make-procs)))]
-      [else
-       (make-reduction-relation lang make-procs/check-domain rule-names lws 
-                                (map (λ (make-proc) (make-proc lang)) 
-                                     make-procs/check-domain))])))
+(define (build-reduction-relation original language rules rule-names lws domain)
+  (define combined-rules
+    (if original
+        (append 
+         (filter (λ (rule)
+                   (or (not (rewrite-proc-name rule))
+                       (not (member (string->symbol (rewrite-proc-name rule)) rule-names))))
+                 (reduction-relation-make-procs original))
+         rules)
+        rules))
+  (define combined-rule-names
+    (if original
+        (remove-duplicates (append rule-names (reduction-relation-rule-names original)))
+        rule-names))
+  (define compiled-domain
+    (compile-pattern language domain #f))
+  (make-reduction-relation
+   language combined-rules combined-rule-names lws
+   (map (λ (rule)
+          (define specialized (rule language))
+          (λ (tl-exp exp f acc)
+            (unless (match-pattern compiled-domain tl-exp)
+              (error 'reduction-relation "relation not defined for ~s" tl-exp))
+            (let ([ress (specialized tl-exp exp f acc)])
+              (for-each
+               (λ (res)
+                 (let ([term (caddr res)])
+                   (unless (match-pattern compiled-domain term)
+                     (error 'reduction-relation "relation reduced to ~s via ~a, which is outside its domain"
+                            term
+                            (let ([name (rewrite-proc-name rule)])
+                              (if name
+                                  (format "the rule named ~a" name)
+                                  "an unnamed rule"))))))
+               ress)
+              ress)))
+        combined-rules)))

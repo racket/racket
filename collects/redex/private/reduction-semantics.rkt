@@ -976,13 +976,12 @@
                    (set! counter (+ counter 1)))
                  (reduction-relation-rule-names red)))
      (reverse lst)) ;; reverse here so the names get put into the hash in the proper (backwards) order
-    (build-reduction-relation
-     #f
+    (make-reduction-relation
      first-lang
      (reverse (apply append (map reduction-relation-make-procs lst)))
      (map car (sort (hash-map name-ht list) < #:key cadr))
-     (apply append (map reduction-relation-lws lst))
-     `any)))
+     (apply append (map reduction-relation-lws lst)) 
+     (reverse (apply append (map reduction-relation-procs lst))))))
 
 (define (do-node-match lhs-frm-id lhs-to-id pat rhs-proc child-make-proc rhs-from)
   (define (subst from to in)
