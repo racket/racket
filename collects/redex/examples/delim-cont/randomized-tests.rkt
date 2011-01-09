@@ -41,7 +41,7 @@
    ["--log"
     p
     "Log generated tests to path p"
-    (log-test (curryr pretty-display (open-output-file p #:exists 'truncate)))]
+    (log-test (curryr pretty-write (open-output-file p #:exists 'truncate)))]
    ["--repetitions"
     n
     "Repeats the command n times"
