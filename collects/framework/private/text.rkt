@@ -3689,23 +3689,6 @@ designates the character that triggers autocompletion
     (send e set-position (send e last-position) (send e last-position))
     (send f show #t)))
 
-(define basic% (basic-mixin (editor:basic-mixin text%)))
-(define hide-caret/selection% (hide-caret/selection-mixin basic%))
-(define nbsp->space% (nbsp->space-mixin basic%))
-(define normalize-paste% (normalize-paste-mixin basic%))
-(define delegate% (delegate-mixin basic%))
-(define wide-snip% (wide-snip-mixin basic%))
-(define standard-style-list% (editor:standard-style-list-mixin wide-snip%))
-(define input-box% (input-box-mixin standard-style-list%))
-(define -keymap% (editor:keymap-mixin standard-style-list%))
-(define return% (return-mixin -keymap%))
-(define autowrap% (editor:autowrap-mixin -keymap%))
-(define file% (file-mixin (editor:file-mixin autowrap%)))
-(define clever-file-format% (clever-file-format-mixin file%))
-(define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
-(define searching% (searching-mixin backup-autosave%))
-(define info% (info-mixin (editor:info-mixin searching%)))
-
 ;; ============================================================
 ;; line number text%
 
@@ -3990,3 +3973,21 @@ designates the character that triggers autocompletion
 
     (super-new)
     (setup-padding)))
+
+
+(define basic% (basic-mixin (editor:basic-mixin text%)))
+(define hide-caret/selection% (hide-caret/selection-mixin basic%))
+(define nbsp->space% (nbsp->space-mixin basic%))
+(define normalize-paste% (normalize-paste-mixin basic%))
+(define delegate% (delegate-mixin basic%))
+(define wide-snip% (wide-snip-mixin basic%))
+(define standard-style-list% (editor:standard-style-list-mixin wide-snip%))
+(define input-box% (input-box-mixin standard-style-list%))
+(define -keymap% (editor:keymap-mixin standard-style-list%))
+(define return% (return-mixin -keymap%))
+(define autowrap% (editor:autowrap-mixin -keymap%))
+(define file% (file-mixin (editor:file-mixin autowrap%)))
+(define clever-file-format% (clever-file-format-mixin file%))
+(define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
+(define searching% (searching-mixin backup-autosave%))
+(define info% (info-mixin (editor:info-mixin searching%)))
