@@ -7920,8 +7920,8 @@ static void inform_GC(int major_gc, intptr_t pre_used, intptr_t post_used)
     intptr_t buflen;
 
     sprintf(buf,
-            "GC [%s] at %" PRIxPTR " bytes; %" PRIxPTR 
-	    " collected in %" PRIxPTR " msec",
+            "GC [%s] at %" PRIdPTR " bytes; %" PRIdPTR 
+	    " collected in %" PRIdPTR " msec",
             (major_gc ? "major" : "minor"),
             pre_used, pre_used - post_used,
             end_this_gc_time - start_this_gc_time);
