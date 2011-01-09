@@ -14,7 +14,8 @@
           [prefix finder: framework:finder^]
           [prefix handler: framework:handler^]
           [prefix frame: framework:frame^]
-          [prefix editor: framework:editor^])
+          [prefix editor: framework:editor^]
+          [prefix text: framework:text^])
   (export (rename framework:keymap^
                   [-get-file get-file]))
   (init-depend mred^)
@@ -1013,7 +1014,28 @@
                           (send text end-edit-sequence))))))))]
            
            [greek-letters "αβγδεζηθι κλμνξοπρςστυφχψω"]
-           [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]) ;; don't have a capital ς, just comes out as \u03A2 (or junk) 
+           [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]
+           ;; don't have a capital ς, just comes out as \u03A2 (or junk) 
+     
+           
+           [find-beginning-of-line
+            (λ (txt)
+              (cond
+                [(is-a? txt text:basic<%>)
+                 (send txt get-start-of-line (send txt get-start-position))]
+                [(is-a? txt text%)
+                 (send txt line-start-position (send txt position-line (send txt get-start-position)))]
+                [else #f]))]
+           [beginning-of-line
+             (λ (txt event)
+               (define pos (find-beginning-of-line txt))
+               (when pos
+                 (send txt set-position pos pos)))]
+           [select-to-beginning-of-line
+            (λ (txt event)
+              (define pos (find-beginning-of-line txt))
+              (when pos
+                (send txt set-position pos (send txt get-end-position))))])
       
       (λ (kmap)
         (let* ([map (λ (key func) 
@@ -1103,6 +1125,9 @@
           (add "mouse-popup-menu" mouse-popup-menu)
           
           (add "make-read-only" make-read-only)
+        
+          (add "beginning-of-line" beginning-of-line)
+          (add "selec-to-beginning-of-line" select-to-beginning-of-line)
           
           ; Map keys to functions
           
@@ -1442,13 +1467,13 @@
   (define global (make-object aug-keymap%))
   (define global-main (make-object aug-keymap%))
   (send global chain-to-keymap global-main #f)
-  (setup-global global-main)
   (generic-setup global-main)
+  (setup-global global-main)
   (define (get-global) global)
   
   (define file (make-object aug-keymap%))
-  (setup-file file)
   (generic-setup file)
+  (setup-file file)
   (define (-get-file) file)
   
   (define search (make-object aug-keymap%))

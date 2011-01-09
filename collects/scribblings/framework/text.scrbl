@@ -141,6 +141,13 @@
      The number is updated in @xmethod[text% after-insert] and
      @xmethod[text% after-delete].
   }
+ 
+  @defmethod[(get-start-of-line [pos exact-nonnegative-integer?]) exact-nonnegative-integer?]{
+    This method is used by @racket[keymap:setup-global] to implement 
+    a keybinding for the @racket["home"] key and for @racket["c:a"].
+    
+    Its default implementation is @racket[(#,(method text% line-start-position) (#,(method text% position-line) pos))].
+  }
   
 }
 @defmixin[text:basic-mixin (editor:basic<%> text%) (text:basic<%>)]{

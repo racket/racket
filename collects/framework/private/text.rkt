@@ -73,7 +73,8 @@
     move/copy-to-edit
     initial-autowrap-bitmap
     get-port-name
-    port-name-matches?))
+    port-name-matches?
+    get-start-of-line))
 
 (define basic-mixin
   (mixin (editor:basic<%> (class->interface text%)) (basic<%>)
@@ -533,8 +534,12 @@
                          ""
                          parent)))
     
+    (define/public (get-start-of-line pos)
+      (line-start-position (position-line pos)))
+    
     (super-new)
     (set-autowrap-bitmap (initial-autowrap-bitmap))))
+
 
 (define (hash-cons! h k v) (hash-set! h k (cons v (hash-ref h k '()))))
 
@@ -3973,7 +3978,6 @@ designates the character that triggers autocompletion
 
     (super-new)
     (setup-padding)))
-
 
 (define basic% (basic-mixin (editor:basic-mixin text%)))
 (define hide-caret/selection% (hide-caret/selection-mixin basic%))

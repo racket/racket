@@ -1171,6 +1171,26 @@
         [else 
          (insert-paren this)]))
     
+    (define/override (get-start-of-line pos)
+      (define para (position-paragraph pos))
+      (define para-start (paragraph-start-position para))
+      (define para-end (paragraph-end-position para))
+      (define first-non-whitespace 
+        (let loop ([i para-start])
+          (cond
+            [(= i para-end) #f]
+            [(char-whitespace? (get-character i))
+             (loop (+ i 1))]
+            [else i])))
+      (define new-pos 
+        (cond 
+          [(not first-non-whitespace) para-start]
+          [(= pos para-start) first-non-whitespace]
+          [(<= pos first-non-whitespace) para-start]
+          [else first-non-whitespace]))
+      new-pos)
+
+    
     (super-new)))
 
 (define -text-mode<%>
@@ -1409,7 +1429,7 @@
       
       (map-meta "c:space" "select-forward-sexp")
       (map-meta "c:t" "transpose-sexp")
-      
+
       ;(map-meta "c:m" "mark-matching-parenthesis")
       ; this keybinding doesn't interact with the paren colorer
       )

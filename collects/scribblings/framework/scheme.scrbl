@@ -234,6 +234,11 @@
     as the prefix for auto-completion.
 
   }
+  
+  @defmethod[#:mode override (get-start-of-line [pos exact-nonnegative-integer?]) exact-nonnegative-integer?]{
+     Returns the first non-whitespace character in the paragraph containing @racket[pos],
+     unless the position is already there, in which case it returns the first position of the paragraph.
+  }
 }
 @definterface[scheme:text-mode<%> ()]{
   The result of
