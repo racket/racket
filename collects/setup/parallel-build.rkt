@@ -6,36 +6,67 @@
          racket/path
          setup/collects
          setup/parallel-do
-         unstable/generics)
+         racket/class)
+
+(define Lock-Manager% (class object%
+  (field (locks (make-hash)))
+  (define/public (lock fn wrkr)
+    (let ([v (hash-ref locks fn #f)])
+      (hash-set! locks fn
+        (if v
+          (match v [(list w waitlst) (list w (append waitlst (list wrkr)))])
+          (begin
+            (send wrkr send/msg 'locked)
+            (list wrkr null))))
+      (not v)))
+  (define/public (unlock fn)
+    (for ([x (second (hash-ref locks fn))])
+      (wrkr/send x 'compiled))
+    (hash-remove! locks fn))
+  (super-new)))
 
 (provide parallel-compile
          parallel-build-worker)
 
-(define-struct collects-queue (cclst hash collects-dir printer append-error) #:transparent
-  #:mutable
-  #:property prop:jobqueue
-  (define-methods jobqueue
-    (define (work-done jobqueue work workerid msg)
-      (match (list work msg)
-        [(list (list cc file last) (list result-type out err))
-          (let ([cc-name (cc-name cc)])
-            (match result-type
-              [(list 'ERROR msg)
-                ((collects-queue-append-error jobqueue) cc "making" (exn msg (current-continuation-marks)) out err "error")]
-              ['DONE
-                (when (or (not (zero? (string-length out))) (not (zero? (string-length err))))
-                  ((collects-queue-append-error jobqueue) cc "making" null out err "output"))])
-            (when last ((collects-queue-printer jobqueue) (current-output-port) "made" "~a" cc-name )))]
-        [else
-          (match work 
-            [(list-rest (list cc file last) message)
-              ((collects-queue-append-error jobqueue) cc "making" null "" "" "error")
-              (eprintf "work-done match cc failed.\n")
-              (eprintf "trying to match:\n~a\n" (list work msg))])]))
+
+(define CollectsQueue% (class* object% (WorkQueue<%>) 
+  (init-field cclst collects-dir printer append-error)
+  (field (lock-mgr (new Lock-Manager%)))
+  (field (hash (make-hash)))
+  (inspect #f)
+
+  (define/public (work-done work wrkr msg)
+    (match (list work msg)
+      [(list (list cc file last) (list result-type out err))
+        (begin0
+          (match result-type
+            [(list 'ERROR msg)
+              (append-error cc "making" (exn msg (current-continuation-marks)) out err "error")
+              #t]
+            ;[(list 'LOCK fn) (lock fn wrkr) #f]
+            ;[(list 'UNLOCK fn) (unlock fn) #f]
+            ['DONE
+              (define (string-!empty? s) (not (zero? (string-length s))))
+              (when (ormap string-!empty? (list out err))
+                (append-error cc "making" null out err "output"))
+                #t])
+          (when last (printer (current-output-port) "made" "~a" (cc-name cc))))]
+      [else
+        (match work 
+          [(list-rest (list cc file last) message)
+            (append-error cc "making" null "" "" "error")
+            (eprintf "work-done match cc failed.\n")
+            (eprintf "trying to match:\n~a\n" (list work msg))
+            #t]
+          [else
+            (eprintf "work-done match cc failed.\n")
+            (eprintf "trying to match:\n~a\n" (list work msg))
+            (eprintf "FATAL\n")
+            (exit 1)])]))
          
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
-    (define (get-job jobqueue workerid)
+    (define/public (get-job workerid)
       (define (hash/first-pair hash)
          (match (hash-iterate-first hash)
            [#f #f]
@@ -46,12 +77,12 @@
                                 [#f #f]
                                 [x (hash-set! hash key x) x]))))
       (define (take-cc)
-        (match (collects-queue-cclst jobqueue)
+        (match cclst
           [(list) #f]
           [(cons h t)
-            (set-collects-queue-cclst! jobqueue t)
+            (set! cclst t)
             (list h)]))
-      (let ([w-hash (collects-queue-hash jobqueue)])
+      (let ([w-hash hash])
         (define (build-job cc file last)
           (define (->bytes x)
             (cond [(path? x) (path->bytes x)]
@@ -87,22 +118,26 @@
                 (match (hash/first-pair w-hash)
                   [(cons id cc) (find-job-in-cc cc id)])]
             [cc (find-job-in-cc cc workerid)]))))
-    (define (has-jobs? jobqueue)
+
+    (define/public (has-jobs?)
       (define (hasjob?  cct)
         (let loop ([cct cct])
           (ormap (lambda (x) (or ((length (second x)) . > . 0) (loop (third x)))) cct)))
 
-      (or (hasjob? (collects-queue-cclst jobqueue))
-          (for/or ([cct (in-hash-values (collects-queue-hash jobqueue))])
+      (or (hasjob? cclst)
+          (for/or ([cct (in-hash-values hash)])
             (hasjob? cct))))
-    (define (jobs-cnt jobqueue)
+
+    (define/public (jobs-cnt)
       (define (count-cct cct)
         (let loop ([cct cct])
           (apply + (map (lambda (x) (+ (length (second x)) (loop (third x)))) cct))))
 
-      (+ (count-cct (collects-queue-cclst jobqueue))
-         (for/fold ([cnt 0]) ([cct (in-hash-values (collects-queue-hash jobqueue))])
-            (+ cnt (count-cct cct)))))))
+      (+ (count-cct cclst)
+         (for/fold ([cnt 0]) ([cct (in-hash-values hash)])
+            (+ cnt (count-cct cct)))))
+    (define/public (get-results) (void))
+    (super-new)))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (let ([collects-dir (current-collects-path)]) 
@@ -114,10 +149,15 @@
                                   (path->string collects-dir)
                                   "-l"
                                   "setup/parallel-build-worker.rkt")
-                            (make-collects-queue collects-tree (make-hash) collects-dir setup-fprintf append-error)
+                            (make-object CollectsQueue% collects-tree collects-dir setup-fprintf append-error)
                             worker-count 999999999)))
 
 (define (parallel-build-worker)
+  (define prev-uncaught-exception-handler (uncaught-exception-handler))
+  (uncaught-exception-handler (lambda (x)
+    (when (exn:break? x) (exit 1))
+    (prev-uncaught-exception-handler x)))
+
   (let ([cmc (make-caching-managed-compile-zo)]
         [worker-id (read)])
    (let loop ()
