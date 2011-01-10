@@ -116,6 +116,20 @@
    [cbData _DWORD]
    [lpData _pointer]))
 
+(define-cstruct _TRACKMOUSEEVENT
+  ([cbSize _DWORD]
+   [dwFlags _DWORD]
+   [hwndTrack _HWND]
+   [dwHoverTime _DWORD]))
+
+(define TME_LEAVE #x02)
+(define TME_NONCLIENT #x10)
+
+(define-user32 TrackMouseEvent (_wfun _TRACKMOUSEEVENT-pointer -> (r : _BOOL)
+                                      -> (unless r (failed 'TrackMouseEvent))))
+(define-user32 GetCursorPos (_wfun _POINT-pointer -> (r : _BOOL)
+                                   -> (unless r (failed 'GetCursorPos))))
+
 (defclass window% object%
   (init-field parent hwnd)
   (init style
@@ -524,7 +538,11 @@
      [(= msg WM_MOUSEMOVE)
       (do-mouse w msg #f 'motion wParam lParam)]
      [(= msg WM_MOUSELEAVE)
-      (do-mouse w msg #f 'leave wParam lParam)]
+      (let ([p (make-POINT 0 0)])
+        (GetCursorPos p)
+        (let ([f (location->window (POINT-x p) (POINT-y p))])
+          (unless (eq? f (get-top-frame))
+            (do-mouse w msg #f 'leave wParam lParam))))]
      [else #f]))
 
   (define/private (do-mouse control-hwnd msg nc? type wParam lParam)
@@ -556,28 +574,38 @@
                     [alt-down #f]
                     [time-stamp 0]
                     [caps-down #f]))])
-        (unless nc?
-          (when (wants-mouse-capture? control-hwnd)
-            (when (memq type '(left-down right-down middle-down))
-              (SetCapture control-hwnd))
-            (when (memq type '(left-up right-up middle-up))
-              (ReleaseCapture))))
-        (if mouse-in?
-            (if (send-child-leaves (lambda (type) (make-e type)))
-                (cursor-updated-here)
-                (if (send (get-top-frame) is-wait-cursor-on?)
-                    (void (SetCursor (get-wait-cursor)))
-                    (when effective-cursor-handle
-                      (void (SetCursor effective-cursor-handle)))))
-            (let ([c (generate-mouse-ins this (lambda (type) (make-e type)))])
-              (when c
-                (set! effective-cursor-handle c)
-                (void (SetCursor (if (send (get-top-frame) is-wait-cursor-on?)
-                                     (get-wait-cursor)
-                                     c))))))
-        (when (memq type '(left-down right-down middle-down))
-          (set-focus))
-        (handle-mouse-event control-hwnd msg wParam (make-e type)))))
+        (if (eq? type 'leave)
+            (let ([t (get-top-frame)])
+              (send t send-child-leaves make-e)
+              (send t send-leaves make-e))
+            (begin
+              (unless nc?
+                (when (wants-mouse-capture? control-hwnd)
+                  (when (memq type '(left-down right-down middle-down))
+                    (SetCapture control-hwnd))
+                  (when (memq type '(left-up right-up middle-up))
+                    (ReleaseCapture))))
+              (if mouse-in?
+                  (if (send-child-leaves make-e)
+                      (cursor-updated-here)
+                      (if (send (get-top-frame) is-wait-cursor-on?)
+                          (void (SetCursor (get-wait-cursor)))
+                          (when effective-cursor-handle
+                            (void (SetCursor effective-cursor-handle)))))
+                  (let ([c (generate-mouse-ins this (lambda (type) (make-e type)))])
+                    (TrackMouseEvent (make-TRACKMOUSEEVENT 
+                                      (ctype-sizeof _TRACKMOUSEEVENT)
+                                      (bitwise-ior TME_LEAVE)
+                                      control-hwnd
+                                      0))
+                    (when c
+                      (set! effective-cursor-handle c)
+                      (void (SetCursor (if (send (get-top-frame) is-wait-cursor-on?)
+                                           (get-wait-cursor)
+                                           c))))))
+              (when (memq type '(left-down right-down middle-down))
+                (set-focus))
+              (handle-mouse-event control-hwnd msg wParam (make-e type)))))))
 
   (define/private (handle-mouse-event w msg wParam e)
     (if (definitely-wants-event? w msg wParam e)
@@ -604,14 +632,15 @@
     (send parent generate-mouse-ins this mk))
 
   (define/public (send-leaves mk)
-    (set! mouse-in? #f)
-    (when mk
-      (let ([e (mk 'leave)])
-        (if (eq? (current-thread) 
-                 (eventspace-handler-thread eventspace))
-            (handle-mouse-event (get-client-hwnd) 0 0 e)
-            (queue-window-event this
-                                (lambda () (dispatch-on-event/sync e)))))))
+    (when mouse-in?
+      (set! mouse-in? #f)
+      (when mk
+        (let ([e (mk 'leave)])
+          (if (eq? (current-thread) 
+                   (eventspace-handler-thread eventspace))
+              (handle-mouse-event (get-client-hwnd) 0 0 e)
+              (queue-window-event this
+                                  (lambda () (dispatch-on-event/sync e))))))))
 
   (define/public (send-child-leaves mk)
     #f)
