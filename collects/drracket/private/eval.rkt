@@ -40,39 +40,37 @@
               [settings (drracket:language-configuration:language-settings-settings
                          language-settings)])
           (λ (input iter complete-program?)
-            (let-values ([(port src)
-                          (cond
-                            [(input-port? input) (values input #f)]
-                            [else (values
-                                   (let* ([text (drracket:language:text/pos-text input)]
-                                          [start (drracket:language:text/pos-start input)]
-                                          [end (drracket:language:text/pos-end input)]
-                                          [text-port (open-input-text-editor text start end values
-                                                                             (send text get-port-name))])
-                                     (port-count-lines! text-port)
-                                     (let* ([line (send text position-paragraph start)]
-                                            [column (- start (send text paragraph-start-position line))]
-                                            [relocated-port (relocate-input-port text-port 
-                                                                                 (+ line 1)
-                                                                                 column
-                                                                                 (+ start 1))])
-                                       (port-count-lines! relocated-port)
-                                       relocated-port))
-                                   (drracket:language:text/pos-text input))])])
-              (parameterize ([current-eventspace eventspace])
-                (queue-callback
-                 (λ ()
-                   (let ([read-thnk 
-                          (if complete-program?
-                              (send language front-end/complete-program port settings)
-                              (send language front-end/interaction port settings))])
-                     (let loop ()
-                       (let ([in (read-thnk)])
-                         (cond
-                           [(eof-object? in)
-                            (iter in (λ () (void)))]
-                           [else
-                            (iter in (λ () (loop)))]))))))))))))
+            (define port
+              (cond
+                [(input-port? input) input]
+                [else (let* ([text (drracket:language:text/pos-text input)]
+                             [start (drracket:language:text/pos-start input)]
+                             [end (drracket:language:text/pos-end input)]
+                             [text-port (open-input-text-editor text start end values
+                                                                (send text get-port-name))])
+                        (port-count-lines! text-port)
+                        (let* ([line (send text position-paragraph start)]
+                               [column (- start (send text paragraph-start-position line))]
+                               [relocated-port (relocate-input-port text-port 
+                                                                    (+ line 1)
+                                                                    column
+                                                                    (+ start 1))])
+                          (port-count-lines! relocated-port)
+                          relocated-port))]))
+            (parameterize ([current-eventspace eventspace])
+              (queue-callback
+               (λ ()
+                 (let ([read-thnk 
+                        (if complete-program?
+                          (send language front-end/complete-program port settings)
+                          (send language front-end/interaction port settings))])
+                   (let loop ()
+                     (let ([in (read-thnk)])
+                       (cond
+                         [(eof-object? in)
+                          (iter in (λ () (void)))]
+                         [else
+                          (iter in (λ () (loop)))])))))))))))
     
     (define (expand-program/multiple language-settings
                                      eval-compile-time-part? 
