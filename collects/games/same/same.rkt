@@ -15,7 +15,7 @@
     (define board-width 20)
     (define board-height 10)
     (define colors (map (lambda (x) (make-object color% x))
-                        (list "blue" "red" "brown" "forestgreen" "darkviolet")))
+                        (list "blue" "red" "brown" "forestgreen" "purple")))
     (define pale-colors (map (λ (x) 
                                (define (paleize x) (- 255 (floor (/ (- 255 x) 2))))
                                (make-object color%
@@ -45,20 +45,7 @@
           board-height
           (lambda (j)
             (vector
-             (begin
-               (if (zero? (modulo (+ j i) 4))
-                   0
-                   1)
-               #;
-               (if (zero? (modulo (+ j i) 2))
-                   0
-                   1)
-               #;
-               (if (= j (- board-height 1))
-                   (- (length colors) 1)
-                   (modulo i (- (length colors) 1)))
-               ;0
-               #;(random (length colors)))
+             (random (length colors))
              #f))))))
     
     (define board (build-board))
@@ -421,6 +408,4 @@
     (send canvas min-width (* board-width cell-w 2))
     (send canvas min-height (* board-height cell-h 2))
     (send frame show #t)
-    (yield semaphore)))
-
-(invoke-unit game@)
+    (void (yield semaphore))))
