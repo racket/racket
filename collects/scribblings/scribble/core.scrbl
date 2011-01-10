@@ -707,7 +707,7 @@ For each string in @racket[suffixes], if the rendered works with the
 corresponding suffix, the suffix is added to @racket[path] and used if
 the resulting path refers to a file that exists. The order in
 @racket[suffixes] determines the order in which suffixes are
-tried. The HTML renderer supports @racket[".png"] and @racket[".gif"],
+tried. The HTML renderer supports @racket[".png"], @racket[".gif"], and @racket[".svg"],
 while the Latex renderer supports @racket[".png"], @racket[".pdf"],
 and @racket[".ps"] (but rendering Latex output to PDF will not work
 with @racket[".ps"] files, while rendering to Latex DVI output works
