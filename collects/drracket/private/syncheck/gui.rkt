@@ -1243,7 +1243,6 @@ If the namespace does not, they are colored the unbound color.
                              (λ () ; =drs=
                                (send the-tab set-breakables old-break-thread old-custodian)
                                (send the-tab enable-evaluation)
-                               (send definitions-text end-edit-sequence)
                                (close-status-line 'drracket:check-syntax:status)
                                
                                ;; do this with some lag ... not great, but should be okay.
@@ -1314,9 +1313,18 @@ If the namespace does not, they are colored the unbound color.
                                (set! user-directory (current-directory)) ;; set by set-directory above
                                (set! user-namespace (current-namespace)))])
                        (send the-tab disable-evaluation) ;; this locks the editor, so must be outside.
-                       (send definitions-text begin-edit-sequence #f)
+
+                       (define definitions-text-copy 
+                         (new (class text:basic%
+                                ;; overriding get-port-name like this ensures
+                                ;; that the resulting syntax objects are connected
+                                ;; to the actual definitions-text, not this copy
+                                (define/override (get-port-name)
+                                  (send definitions-text get-port-name))
+                                (super-new))))
+                       (send definitions-text copy-self-to definitions-text-copy)
                        (with-lock/edit-sequence
-                        definitions-text
+                        definitions-text-copy
                         (λ ()
                           (send the-tab clear-annotations)
                           (send the-tab reset-offer-kill)
@@ -1324,7 +1332,7 @@ If the namespace does not, they are colored the unbound color.
                           (define settings (send definitions-text get-next-settings))
                           (drracket:eval:expand-program
                            #:gui-modules? #f
-                           (drracket:language:make-text/pos definitions-text 0 (send definitions-text last-position))
+                           (drracket:language:make-text/pos definitions-text-copy 0 (send definitions-text-copy last-position))
                            settings
                            (not (is-a? (drracket:language-configuration:language-settings-language settings)
                                        drracket:module-language:module-language<%>))
