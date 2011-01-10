@@ -581,7 +581,7 @@
     (define/public (dispatch-on-event e just-pre?) 
       (pre-event-refresh)
       (cond
-       [(other-modal? this) #t]
+       [(other-modal? this e) #t]
        [(call-pre-on-event this e) #t]
        [just-pre? #f]
        [else (when enabled? (on-event e)) #t]))

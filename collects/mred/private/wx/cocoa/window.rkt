@@ -675,7 +675,7 @@
       (dispatch-on-event e #f))
     (define/public (dispatch-on-event e just-pre?) 
       (cond
-       [(other-modal? this) #t]
+       [(other-modal? this e) #t]
        [(call-pre-on-event this e) #t]
        [just-pre? block-all-mouse-events?]
        [else (when enabled? (on-event e)) #t]))

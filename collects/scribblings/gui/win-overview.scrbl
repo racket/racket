@@ -809,11 +809,11 @@ An @deftech{eventspace} is a context for processing GUI
  handle events while the dialog is shown. (See also
  @secref["espacethreads"] for information about threads and modal
  dialogs.) Furthermore, when a modal dialog is shown, the system
- disables all other top-level windows in the dialog's eventspace, but
+ disables key and mouse press/release events to other top-level 
+ windows in the dialog's eventspace, but
  windows in other eventspaces are unaffected by the modal dialog.
- (Disabling a window prevents mouse and keyboard events from reaching
- the window, but other kinds of events, such as update events, are
- still delivered.)
+ (Mouse motion, enter, and leave events are still delivered to
+ all windows when a modal dialog is shown.)
 
 
 @subsection{Event Types and Priorities}

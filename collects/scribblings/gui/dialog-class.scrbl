@@ -4,11 +4,8 @@
 @defclass/title[dialog% object% (top-level-window<%>)]{
 
 A dialog is a top-level window that is @defterm{modal}: while the
- dialog is shown, all other top-level windows in the dialog's
- eventspace are disabled.
-
-
-
+ dialog is shown, key and mouse press/release events are disabled for
+ all other top-level windows in the dialog's eventspace.
 
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
