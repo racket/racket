@@ -62,16 +62,19 @@
       (set! clicked-score (+ clicked-score (* balls-going-away balls-going-away)))
       (set-score-label))
     (define (set-score-label)
-      (define penalty 0)
+      (define cells-filled-in 0)
       (for ([v (in-vector board)])
         (for ([v (in-vector v)])
           (when (vector-ref v 0)
-            (set! penalty (+ penalty 10)))))
+            (set! cells-filled-in (+ cells-filled-in 1)))))
+      (define bonus (if (<= cells-filled-in 10)
+                        (* 100 (- 10 cells-filled-in))
+                        0))
       (send score-message set-label 
-            (format "~a - ~a = ~a"
+            (format "~a + ~a = ~a"
                     clicked-score
-                    penalty
-                    (- clicked-score penalty))))
+                    bonus
+                    (+ clicked-score bonus))))
                     
     
     (define same-canvas%

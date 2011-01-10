@@ -11,10 +11,13 @@ new blobs as pieces of the old blobs fall down to fill in the empty space.
 If an entire column is wiped out, all of the blobs from the
 right will slide left to take up the empty column's space.
 
-Your score increases for each ball removed from the board. In general,
-when you remove a blob, you get as many points as the square of the number
-of cells the blob occupied, so removing bigger blobs is better. Also,
-there is a penalty of 10 points for each colored cell left behind on the board,
-so try to clear out the entire board.
+Your score increases for each ball removed from the board, in two ways.
+First, when you remove a blob, you get as many points as the square of the number
+of cells the blob occupied, so removing bigger blobs is better. Second, if there
+are fewer than 10 cells occupied on the board, you get a bonus.
+Specifically if you have 9 cells left, you
+get a 100 point bonus, 8 cells left yields a 200 point bonus, 
+7 cells a 300 point bonus etc., and if there
+are no cells left, you get a 1000 point bonus.
 
 Click the @onscreen{New Game} button to play again.
