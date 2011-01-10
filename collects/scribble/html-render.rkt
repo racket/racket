@@ -1004,14 +1004,21 @@
                              [height ,(to-num (read-bytes 4 in))])]
                           [else
                            null])))])])
-           `((,(if svg? 'iframe 'img)
-              ([src ,(let ([p (install-file src)])
-                       (if (path? p)
-                           (url->string (path->url (path->complete-path p)))
-                           p))]
-               [alt ,(content->string (element-content e))]
-               ,@sz
-               ,@(attribs)))))]
+           (let ([srcref (let ([p (install-file src)])
+                           (if (path? p)
+                               (url->string (path->url (path->complete-path p)))
+                               p))])
+             `((,(if svg? 'object 'img)
+                ([,(if svg? 'data 'src) ,srcref]
+                 [alt ,(content->string (element-content e))]
+                 ,@(if svg?
+                       `([type "image/svg+xml"])
+                       null)
+                 ,@sz
+                 ,@(attribs))
+                ,@(if svg? 
+                      `((param ([name "src"] [value ,srcref])))
+                      null)))))]
         [(and (or (element? e) (multiarg-element? e))
               (ormap (lambda (v) (and (script-property? v) v))
                      (let ([s (if (element? e)
