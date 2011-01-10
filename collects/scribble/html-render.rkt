@@ -966,24 +966,52 @@
                    (number->string
                     (inexact->exact
                      (floor (* scale (integer-bytes->integer s #f #t))))))]
-                [src (select-suffix src suffixes '(".png" ".gif"))]
-                [sz (if (= 1.0 scale)
-                        null
-                        ;; Try to extract file size:
-                        (call-with-input-file*
-                         src
-                         (lambda (in)
-                           (if (regexp-try-match #px#"^\211PNG.{12}" in)
-                               `([width ,(to-num (read-bytes 4 in))]
-                                 [height ,(to-num (read-bytes 4 in))])
-                               null))))])
-           `((img ([src ,(let ([p (install-file src)])
-                           (if (path? p)
-                               (url->string (path->url (path->complete-path p)))
-                               p))]
-                   [alt ,(content->string (element-content e))]
-                   ,@sz
-                   ,@(attribs)))))]
+                [src (select-suffix src suffixes '(".png" ".gif" ".svg"))]
+                [svg? (regexp-match? #rx#"[.]svg$" (if (path? src) (path->bytes src) src))]
+                [sz (cond
+                     [svg?
+                      (call-with-input-file*
+                       src
+                       (lambda (in)
+                         (with-handlers ([exn:fail? (lambda (exn) 
+                                                      (log-warning
+                                                       (format "warning: error while reading SVG file for size: ~a"
+                                                               (if (exn? exn)
+                                                                   (exn-message exn)
+                                                                   (format "~e" exn))))
+                                                      null)])
+                           (let* ([d (xml:read-xml in)]
+                                  [attribs (xml:element-attributes 
+                                            (xml:document-element d))]
+                                  [check-name (lambda (n)
+                                                (lambda (a)
+                                                  (and (eq? n (xml:attribute-name a))
+                                                       (xml:attribute-value a))))]
+                                  [w (ormap (check-name 'width) attribs)]
+                                  [h (ormap (check-name 'height) attribs)])
+                             (if (and w h)
+                                 `([width ,w][height ,h])
+                                 null)))))]
+                     [(= 1.0 scale) null]
+                     [else
+                      ;; Try to extract file size:
+                      (call-with-input-file*
+                       src
+                       (lambda (in)
+                         (cond
+                          [(regexp-try-match #px#"^\211PNG.{12}" in)
+                           `([width ,(to-num (read-bytes 4 in))]
+                             [height ,(to-num (read-bytes 4 in))])]
+                          [else
+                           null])))])])
+           `((,(if svg? 'iframe 'img)
+              ([src ,(let ([p (install-file src)])
+                       (if (path? p)
+                           (url->string (path->url (path->complete-path p)))
+                           p))]
+               [alt ,(content->string (element-content e))]
+               ,@sz
+               ,@(attribs)))))]
         [(and (or (element? e) (multiarg-element? e))
               (ormap (lambda (v) (and (script-property? v) v))
                      (let ([s (if (element? e)

@@ -329,8 +329,8 @@ See also @racket[verbatim].}
  
  The strings in @racket[suffixes] are filtered to those supported by
  given renderer, and then the acceptable suffixes are tried in
- order. The HTML renderer supports @racket[".png"] and
- @racket[".gif"], while the Latex renderer supports @racket[".png"],
+ order. The HTML renderer supports @racket[".png"],
+ @racket[".gif"], and @racket[".svg"], while the Latex renderer supports @racket[".png"],
  @racket[".pdf"], and @racket[".ps"] (but @racket[".ps"] works only
  when converting Latex output to DVI, and @racket[".png"] and
  @racket[".pdf"] work only for converting Latex output to PDF).
