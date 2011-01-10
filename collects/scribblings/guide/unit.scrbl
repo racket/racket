@@ -595,7 +595,7 @@ As a form for modularity, @racket[unit] complements @racket[module]:
 
  @item{The @racket[unit] form is for parameterizing a code fragment
        with respect to most any kind of run-time value. For example,
-       it allows a code fragement for work with a @racket[car]
+       it allows a code fragment for work with a @racket[car]
        function that accepts a single argument, where the specific
        function is determined later by linking the fragment to
        another. In other words, the @racket[unit] construct lets you
