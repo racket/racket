@@ -203,9 +203,9 @@
        [vp (make-object vertical-panel% f)]
        [hp0 (make-object horizontal-panel% vp)]
        [hp (make-object horizontal-panel% vp)]
+       [hp3 (make-object horizontal-panel% vp)]
        [hp2 hp]
        [hp2.5 hp0]
-       [hp3 hp]
        [hp4 (new horizontal-panel% [parent vp]
                  [stretchable-height #f])]
        [bb (make-object bitmap% (sys-path "bb.gif") 'gif)]
@@ -222,6 +222,7 @@
        [use-bad? #f]
        [depth-one? #f]
        [cyan? #f]
+       [multi-page? #f]
        [smoothing 'unsmoothed]
        [save-filename #f]
        [save-file-format #f]
@@ -995,6 +996,14 @@
 		  (let ([dc (if kind
 				(let ([dc (case kind
                                             [(print) (make-object printer-dc%)]
+                                            [(svg)
+                                             (let ([fn (put-file)])
+                                               (and fn
+                                                    (new svg-dc%
+                                                         [width (* xscale DRAW-WIDTH)]
+                                                         [height (* yscale DRAW-HEIGHT)]
+                                                         [output fn]
+                                                         [exists 'truncate])))]
                                             [(ps pdf)
                                              (let ([page?
                                                     (eq? 'yes (message-box
@@ -1178,7 +1187,12 @@
 
 		      (send dc set-clipping-region #f)
 
-		      (send dc end-page)
+
+                      (send dc end-page)
+                      (when (and kind multi-page?)
+                        (send dc start-page)
+                        (send dc draw-text "Page 2" 0 0)
+                        (send dc end-page))
 		      (send dc end-doc)))
 		  
 		  (when save-filename
@@ -1202,6 +1216,28 @@
     (make-object button% "PDF" hp
 		 (lambda (self event)
 		   (send canvas on-paint 'pdf)))
+    (make-object button% "SVG" hp
+		 (lambda (self event)
+		   (send canvas on-paint 'svg)))
+    (make-object check-box% "Multiple Pages" hp
+                 (lambda (self event)
+                   (set! multi-page? (send self get-value))))
+    (make-object button% "Save" hp
+		 (lambda (b e)
+		   (unless use-bitmap?
+		     (error 'save-file "only available for pixmap/bitmap mode"))
+		   (let ([f (put-file)])
+		     (when f
+		       (let ([format
+			      (cond 
+			       [(regexp-match "[.]xbm$" f) 'xbm]
+			       [(regexp-match "[.]xpm$" f) 'xpm]
+			       [(regexp-match "[.]jpe?g$" f) 'jpeg]
+			       [(regexp-match "[.]png$" f) 'png]
+			       [else (error 'save-file "unknown suffix: ~e" f)])])
+			 (set! save-filename f)
+			 (set! save-file-format format)
+			 (send canvas refresh))))))
     (make-object choice% #f '("1" "*2" "/2" "1,*2" "*2,1") hp
 		 (lambda (self event)
 		   (send canvas set-scale 
@@ -1246,22 +1282,6 @@
     (make-object check-box% "Kern" hp2.5
 		 (lambda (self event)
 		   (send canvas set-kern (send self get-value))))
-    (make-object button% "Save" hp0
-		 (lambda (b e)
-		   (unless use-bitmap?
-		     (error 'save-file "only available for pixmap/bitmap mode"))
-		   (let ([f (put-file)])
-		     (when f
-		       (let ([format
-			      (cond 
-			       [(regexp-match "[.]xbm$" f) 'xbm]
-			       [(regexp-match "[.]xpm$" f) 'xpm]
-			       [(regexp-match "[.]jpe?g$" f) 'jpeg]
-			       [(regexp-match "[.]png$" f) 'png]
-			       [else (error 'save-file "unknown suffix: ~e" f)])])
-			 (set! save-filename f)
-			 (set! save-file-format format)
-			 (send canvas refresh))))))
     (make-object choice% "Clip" 
 		 '("None" "Rectangle" "Rectangle2" "Octagon" 
 		   "Circle" "Wedge" "Round Rectangle" "Lambda"

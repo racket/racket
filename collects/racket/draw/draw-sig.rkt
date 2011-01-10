@@ -27,6 +27,7 @@ post-script-dc%
 ps-setup%
 radial-gradient%
 region%
+svg-dc%
 the-brush-list
 the-color-database
 the-font-list

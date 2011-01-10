@@ -13,6 +13,7 @@
          "draw/private/bitmap-dc.rkt"
          "draw/private/post-script-dc.rkt"
          "draw/private/ps-setup.rkt"
+         "draw/private/svg-dc.rkt"
          "draw/private/gl-config.rkt"
          "draw/private/gl-context.rkt")
 
@@ -32,6 +33,7 @@
          post-script-dc%
          pdf-dc%
          ps-setup% current-ps-setup
+         svg-dc%
          get-face-list
          get-family-builtin-face
          gl-config%

@@ -439,10 +439,10 @@ See also @method[dc<%> set-text-foreground], @method[dc<%>
 @defmethod[(end-doc)
            void?]{
 
-Ends a document, relevant only when drawing to a printer or PostScript
- device (including to a PostScript file).
+Ends a document, relevant only when drawing to a printer, PostScript,
+ PDF, or SVG device.
 
-For printer or PostScript output, an exception is raised if
+For relevant devices, an exception is raised if
 @scheme[end-doc] is called when the document is not started with
 @method[dc<%> start-doc], when a page is currently started by
 @method[dc<%> start-page] and not ended with @method[dc<%> end-page],
@@ -454,10 +454,10 @@ or when the document has been ended already.
 @defmethod[(end-page)
            void?]{
 
-Ends a single page, relevant only when drawing to a printer or
- PostScript device (including to a PostScript file).
+Ends a single page, relevant only when drawing to a printer,
+ PostScript, PDF, or SVG device.
 
-For printer or PostScript output, an exception is raised if
+For relevant devices, an exception is raised if
 @scheme[end-page] is called when a page is not currently started by
 @method[dc<%> start-page].}
 
@@ -1065,12 +1065,12 @@ get-transformation] for information about @racket[t].}
 @defmethod[(start-doc [message string?])
            boolean?]{
 
-Starts a document, relevant only when drawing to a printer or
- PostScript device (including to a PostScript file).  For some
+Starts a document, relevant only when drawing to a printer,
+ PostScript, PDF, or SVG device.  For some
  platforms, the @scheme[message] string is displayed in a dialog until
  @method[dc<%> end-doc] is called.
 
-For printer or PostScript output, an exception is raised if
+For relevant devices, an exception is raised if
  @scheme[start-doc] has been called already (even if @method[dc<%>
  end-doc] has been called as well). Furthermore, drawing methods raise
  an exception if not called while a page is active as determined by
@@ -1081,10 +1081,10 @@ For printer or PostScript output, an exception is raised if
 @defmethod[(start-page)
            void?]{
 
-Starts a page, relevant only when drawing to a printer or PostScript
- device (including to a PostScript file).
+Starts a page, relevant only when drawing to a printer, PostScript,
+ SVG, or PDF device.
 
-For printer or PostScript output, an exception is raised if
+Relevant devices, an exception is raised if
  @scheme[start-page] is called when a page is already started, or when
  @method[dc<%> start-doc] has not been called, or when @method[dc<%>
  end-doc] has been called already. In addition, in the case of

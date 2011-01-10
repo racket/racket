@@ -95,8 +95,8 @@ backward-compatibile. Methods like `get-translation',
 `set-translation', `scale', etc. help hide the reundancy.
 
 
-PostScript and PDF Drawing Contexts
------------------------------------
+PostScript, PDF, and SVG Drawing Contexts
+-----------------------------------------
 
 The dimensions for PostScript output are no longer inferred from the
 drawing. Instead, the width and height must be supplied when the
@@ -104,6 +104,9 @@ drawing. Instead, the width and height must be supplied when the
 
 The new `pdf-dc%' drawing context is like `post-script-dc%', but it
 generates PDF output.
+
+The new `svg-dc%' drawing context is similar to `post-script-dc%',
+but it generates SVG output.
 
 
 Other Drawing-Context Changes

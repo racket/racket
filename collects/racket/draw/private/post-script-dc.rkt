@@ -6,13 +6,12 @@
          "syntax.rkt"
          racket/gui/dynamic
          ffi/unsafe
-         ffi/unsafe/alloc
          "../unsafe/cairo.ss"
-         "../unsafe/bstr.ss"
 	 "dc.ss"
          "font.ss"
          "local.ss"
-         "ps-setup.ss")
+         "ps-setup.ss"
+         "write-bytes.rkt")
 
 (provide post-script-dc%
          pdf-dc%)
@@ -183,12 +182,3 @@
                           (super-new)))
 (define pdf-dc% (class (dc-mixin (make-dc-backend #t))
                   (super-new)))
-
-(define (write-port-bytes port-box bytes len)
-  (write-bytes (scheme_make_sized_byte_string bytes len 0) 
-               (ptr-ref port-box _racket))
-  CAIRO_STATUS_SUCCESS)
-
-(define write_port_bytes (function-ptr write-port-bytes _cairo_write_func_t))
-
-(define make-immobile ((allocator free-immobile-cell) malloc-immobile-cell))

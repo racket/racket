@@ -183,6 +183,7 @@ style-list%
 style<%>
 subarea<%>
 subwindow<%>
+svg-dc%
 system-position-ok-before-cancel?
 tab-snip%
 text%
