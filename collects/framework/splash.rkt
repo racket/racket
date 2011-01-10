@@ -257,7 +257,7 @@
       (printf "PLTDRCM/PLTDRDEBUG: reinstalling CM trace handler after setting splash load handler\n")
       (manager-trace-handler
        (λ (x) 
-         (when (regexp-match #rx"compiling" x)
+         (when (regexp-match #rx"compiling:|end compile:" x)
            (display "2: ") (display x) (newline)))))))
 
 (define funny-gauge%

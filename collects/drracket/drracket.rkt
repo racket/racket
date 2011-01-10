@@ -37,7 +37,7 @@
       (flprintf "PLTDRDEBUG: enabling CM tracing\n")
       (manager-trace-handler
        (λ (x) 
-         (when (regexp-match #rx"compiling" x)
+         (when (regexp-match #rx"compiling:|end compile:" x)
            (display "1: ") (display x) (newline) (flush-output)))))))
 
 (when install-cm?
