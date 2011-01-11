@@ -19,10 +19,14 @@
 (define (unavailable name)
   (lambda () (lambda x (error name "unavailable on this system"))))
 
+(define win32?
+  (and (eq? 'windows stype)
+       (equal? "win32\\i386" (path->string (system-library-subpath #f)))))
+
 (define-syntax _fun*
   (syntax-rules ()
     [(_fun* x ...)
-     (if (eq? 'windows stype) (_fun #:abi 'stdcall x ...) (_fun x ...))]))
+     (if win32? (_fun #:abi 'stdcall x ...) (_fun x ...))]))
 
 (define-syntax define-foreign-lib
   (syntax-rules (->)
