@@ -1296,6 +1296,18 @@ please adhere to these guidelines:
  (stepper-no-such-step/title "Step Not Found")
  (stepper-no-such-step "Couldn't find a step matching that criterion.")
  (stepper-no-such-step/earlier "Couldn't find an earlier step matching that criterion.")
+ 
+ (stepper-no-earlier-application-step "No earlier application steps.")
+ (stepper-no-later-application-step "No more application steps.")
+ 
+ (stepper-no-earlier-step "No earlier steps.")
+ (stepper-no-later-step "No more steps.")
+  
+ (stepper-no-selected-step "No steps taken in the highlighted region. Perhaps it's commented out?")
+  
+ (stepper-no-last-step "No final step available yet.")
+ 
+  
   
 
   

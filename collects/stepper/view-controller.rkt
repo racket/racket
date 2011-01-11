@@ -87,8 +87,8 @@
       (let loop ([step 0] 
                  [remaining view-history]
                  [seen-final? #f])
-        (cond [(null? remaining) (cond [seen-final? (list 'nomatch/seen-final (- step 1))]
-                                       [else (list 'nomatch (- step 1))])]
+        (cond [(null? remaining) (cond [seen-final? (list `nomatch/seen-final (- step 1))]
+                                       [else (list `nomatch (- step 1))])]
               [(and (> step n-as-num) (p (car remaining))) step]
               [else (loop (+ step 1)
                           (cdr remaining)
@@ -102,7 +102,7 @@
     (let* ([to-search (reverse (take view-history n))])
       (let loop ([step (- n 1)]
                  [remaining to-search])
-        (cond [(null? remaining) 'nomatch]
+        (cond [(null? remaining) `nomatch]
               [(p (car remaining)) step]
               [else (loop (- step 1) (cdr remaining))]))))
   
@@ -130,39 +130,36 @@
 
   ;; next-of-specified-kind : starting at the current view, search forward for the
   ;; desired step or wait for it if not found
-  (define (next-of-specified-kind right-kind?)
-    (next-of-specified-kind/helper right-kind? view))
+  (define (next-of-specified-kind right-kind? msg)
+    (next-of-specified-kind/helper right-kind? view msg))
   
   ;; first-of-specified-kind : similar to next-of-specified-kind, but always start at zero
-  (define (first-of-specified-kind right-kind?)
-    (next-of-specified-kind/helper right-kind? #f))
+  (define (first-of-specified-kind right-kind? msg)
+    (next-of-specified-kind/helper right-kind? #f msg))
   
   ;; next-of-specified-kind/helper : if the desired step is already in the list, display
   ;; it; otherwise, give up.
-  (define (next-of-specified-kind/helper right-kind? starting-step)
+  (define (next-of-specified-kind/helper right-kind? starting-step msg)
     (match (find-later-step right-kind? starting-step)
       [(? number? n)
        (update-view/existing n)]
-      [(list 'nomatch step)
-       (message-box (string-constant stepper-no-such-step/title)
-                    (string-constant stepper-no-such-step))
+      [(list `nomatch step)
+       (message-box (string-constant stepper-no-such-step/title) msg)
        (when (>= num-steps-available 0)
          (update-view/existing step))]
-      [(list 'nomatch/seen-final step)
-       (message-box (string-constant stepper-no-such-step/title)
-                    (string-constant stepper-no-such-step))
+      [(list `nomatch/seen-final step)
+       (message-box (string-constant stepper-no-such-step/title) msg)
        (when (>= num-steps-available 0)
          (update-view/existing step))]))
   
   ;; prior-of-specified-kind: if the desired step is already in the list, display
   ;; it; otherwise, put up a dialog and jump to the first step.
-  (define (prior-of-specified-kind right-kind?)
+  (define (prior-of-specified-kind right-kind? msg)
     (match (find-earlier-step right-kind? view)
       [(? number? found-step)
        (update-view/existing found-step)]
-      ['nomatch
-       (message-box (string-constant stepper-no-such-step/title)
-                    (string-constant stepper-no-such-step/earlier))
+      [`nomatch
+       (message-box (string-constant stepper-no-such-step/title) msg)
        (when (>= num-steps-available 0)
          (update-view/existing 0))]))
   
@@ -171,11 +168,13 @@
   
   ;; respond to a click on the "next" button
   (define (next)
-    (next-of-specified-kind (lambda (x) #t)))
+    (next-of-specified-kind (lambda (x) #t) 
+                            (string-constant stepper-no-later-step)))
   
   ;; previous : the action of the 'previous' button
   (define (previous)
-    (prior-of-specified-kind (lambda (x) #t)))
+    (prior-of-specified-kind (lambda (x) #t)
+                             (string-constant stepper-no-earlier-step)))
   
   ;; respond to a click on the "Jump To..." choice
   (define (jump-to control event)
@@ -183,7 +182,32 @@
   
   ;; jump-to-beginning : the action of the choice menu entry
   (define (jump-to-beginning)
-    (first-of-specified-kind (lambda (x) #t)))
+    (first-of-specified-kind (lambda (x) #t)
+                             ;; I don't believe this can fail...
+                             "internal error 2010-01-10 21:48"))
+  
+  ;; jump-to-end : the action of the jump-to-end choice box option
+  (define (jump-to-end)
+    (first-of-specified-kind finished-stepping-step?
+                             (string-constant stepper-no-last-step)))
+  
+  ;; jump-to-selected : the action of the jump to selected choice box option
+  (define (jump-to-selected)
+    (first-of-specified-kind selected-exp-step?
+                             (string-constant stepper-no-selected-step)))
+  
+  ;; jump-to-next-application : the action of the jump to next application
+  ;; choice box option
+  (define (jump-to-next-application)
+    (next-of-specified-kind application-step?
+                            (string-constant stepper-no-later-application-step)))
+  
+  ;; jump-to-prior-application : the action of the "jump to prior application"
+  ;; choice box option
+  (define (jump-to-prior-application)
+    (prior-of-specified-kind application-step?
+                             (string-constant stepper-no-earlier-application-step)))
+  
   
   ;; GUI ELEMENTS:
   (define s-frame
@@ -204,11 +228,11 @@
          [enabled #f]))
   
   (define pulldown-choices
-    `((,(string-constant stepper-jump-to-beginning)            ,(lambda () (first-of-specified-kind (lambda (x) #t))))
-      (,(string-constant stepper-jump-to-end)                  ,(lambda () (next-of-specified-kind finished-stepping-step?)))
-      (,(string-constant stepper-jump-to-selected)             ,(lambda () (first-of-specified-kind selected-exp-step?)))
-      (,(string-constant stepper-jump-to-next-application)     ,(lambda () (next-of-specified-kind application-step?)))
-      (,(string-constant stepper-jump-to-previous-application) ,(lambda () (prior-of-specified-kind application-step?)))))
+    `((,(string-constant stepper-jump-to-beginning)            ,jump-to-beginning)
+      (,(string-constant stepper-jump-to-end)                  ,jump-to-end)
+      (,(string-constant stepper-jump-to-selected)             ,jump-to-selected)
+      (,(string-constant stepper-jump-to-next-application)     ,jump-to-next-application)
+      (,(string-constant stepper-jump-to-previous-application) ,jump-to-prior-application)))
   
   (define previous-button             (add-button (string-constant stepper-previous) previous))
   (define next-button                 (add-button (string-constant stepper-next) next))
