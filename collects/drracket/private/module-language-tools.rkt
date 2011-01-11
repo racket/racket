@@ -68,9 +68,11 @@
       ;; move button panel to the front of the list
       (send (get-button-panel) change-children 
             (λ (l) (cons toolbar-button-panel (remq toolbar-button-panel l))))
-      (let ([defs (get-definitions-text)])
-        (when (send defs get-in-module-language?)
-          (send defs move-to-new-language)))))
+      
+      (define/public (initialize-module-language)
+        (let ([defs (get-definitions-text)])
+          (when (send defs get-in-module-language?)
+            (send defs move-to-new-language))))))
   
   (define definitions-text<%> (interface ()))
   (define definitions-text-mixin

@@ -4696,6 +4696,7 @@ module browser threading seems wrong.
             (when pos
               (send frame move (car pos) (cdr pos)))))
         (send frame update-toolbar-visibility)
+        (send frame initialize-module-language)
         (send frame show #t)
         (send (send frame get-interactions-text) initialize-console)
         (set! first-frame? #f)
