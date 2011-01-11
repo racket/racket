@@ -2,10 +2,10 @@
 @(begin
 (require scribble/manual
          "common.rkt"
-         (for-label scheme/gui/base)
+         (for-label racket/gui/base)
          (for-label drracket/tool-lib)
-         (for-label scheme/unit scheme/contract scheme/class)
-         (for-label scheme/base)
+         (for-label racket/unit racket/contract racket/class)
+         (for-label racket/base)
          (for-label framework/framework)
          (for-label drracket/syncheck-drracket-button))
 
@@ -13,7 +13,7 @@
 (define (FileFirst x) @tt[x]) ;; indexing missing
 
 (define-syntax-rule (item/cap x . ys)
-  (item (indexed-scheme x) ": " . ys)) ;; indexing missing
+  (item (indexed-racket x) ": " . ys)) ;; indexing missing
 )
 
 @title{@bold{Plugins}: Extending DrRacket}
@@ -71,35 +71,35 @@ the @File{info.rkt} files).  DrRacket checks for these
 fields:
 @itemize[
 @item/cap[drracket-tools]{
-  @scheme[(listof (listof string[subcollection-name]))]
+  @racket[(listof (listof string[subcollection-name]))]
 }
-@item/cap[drracket-tool-names]{@scheme[(listof (or/c #f string))]}
+@item/cap[drracket-tool-names]{@racket[(listof (or/c #f string))]}
 @item/cap[drracket-tool-icons]{
-@schemeblock[(listof (or/c #f
+@racketblock[(listof (or/c #f
                            string[relative-pathname] 
                            (cons string[filename] 
                                  (listof string[collection-name]))))]
 }
 @item/cap[drracket-tool-urls]{
-@scheme[(listof (or/c #f string[url]))]
+@racket[(listof (or/c #f string[url]))]
 }]
 
-The @scheme[drracket-tools] field names a list of tools in this
+The @racket[drracket-tools] field names a list of tools in this
 collection. Each tool is specified as a collection path,
 relative to the collection where the @File{info.rkt} file
 resides. As an example, if there is only one tool named
 @File{tool.rkt}, this suffices:
-@schemeblock[
+@racketblock[
 (define drracket-tools (list (list "tool.rkt")))
 ]
-If the @scheme[drracket-tool-icons] or @scheme[drracket-tool-names] fields are
-present, they must be the same length as @scheme[drracket-tools]. The
-@scheme[drracket-tool-icons] field specifies the path to an icon for each
-tool and the name of each tool. If it is @scheme[#f], no
+If the @racket[drracket-tool-icons] or @racket[drracket-tool-names] fields are
+present, they must be the same length as @racket[drracket-tools]. The
+@racket[drracket-tool-icons] field specifies the path to an icon for each
+tool and the name of each tool. If it is @racket[#f], no
 tool is shown. If it is a relative pathname, it must refer
 to a bitmap and if it is a list of strings, it is treated
-the same as the arguments to @scheme[lib], inside
-@scheme[require].
+the same as the arguments to @racket[lib], inside
+@racket[require].
 
 This bitmap and the name show up in the about box, the
 bug report form, and the splash screen as the tool is
@@ -107,32 +107,32 @@ loaded at DrRacket's startup.
 
 @index{phase1}
 @index{phase2}
-Each of the @scheme[drracket-tools] files must contain a module that
-@scheme[provide]s @scheme[tool@], which must be bound to a
-@scheme[unit]. The unit
-must import the @scheme[drracket:tool^] signature, which is
+Each of the @racket[drracket-tools] files must contain a module that
+@racket[provide]s @racket[tool@], which must be bound to a
+@racket[unit]. The unit
+must import the @racket[drracket:tool^] signature, which is
 provided by the @FileFirst{tool.rkt} library in the
-@scheme[drscheme] collection. The @as-index{@scheme[drracket:tool^]}
+@racket[drscheme] collection. The @as-index{@racket[drracket:tool^]}
 signature contains all of the names listed in this manual.
-The unit must export the @scheme[drracket:tool-exports^]
+The unit must export the @racket[drracket:tool-exports^]
 signature. 
 
-The @as-index{@scheme[drracket:tool-exports^]} signature contains two
-names: @scheme[phase1] and @scheme[phase2]. These names must
+The @as-index{@racket[drracket:tool-exports^]} signature contains two
+names: @racket[phase1] and @racket[phase2]. These names must
 be bound to thunks. After all of the tools are loaded, all of
 the @tt{phase1} functions are called and then all of the
 @tt{phase2} functions are called. Certain primitives can
 only be called during the dynamic extent of those calls.
 
 This mechanism is designed to support DrRacket's
-@scheme[drracket:language:language<%>] extension
+@racket[drracket:language:language<%>] extension
 capabilities. That is, this mechanism enables two tools to
 cooperate via new capabilities of languages. The first phase
 is used for adding functionality that each language must
 support and the second is used for creating instances of
 languages. As an example, a tool may require certain
 specialized language-specific information. It uses phase1 to
-extend the @scheme[drracket:language:language<%>] interface
+extend the @racket[drracket:language:language<%>] interface
 and supply a default implementation of the interface
 extension. Then, other languages that are aware of the
 extension can supply non-default implementations of the
@@ -140,33 +140,33 @@ additional functionality.
 
 Phase 1 functions:
 @itemize[
-@item{@scheme[drracket:language:extend-language-interface]}
-@item{@scheme[drracket:unit:add-to-program-editor-mixin]}
+@item{@racket[drracket:language:extend-language-interface]}
+@item{@racket[drracket:unit:add-to-program-editor-mixin]}
 ]
 
 Phase 2 functions:
 @itemize[
-@item{@scheme[drracket:language-configuration:add-language]}
-@item{@scheme[drracket:language:get-default-mixin]}
-@item{@scheme[drracket:language:get-language-extensions]}
+@item{@racket[drracket:language-configuration:add-language]}
+@item{@racket[drracket:language:get-default-mixin]}
+@item{@racket[drracket:language:get-language-extensions]}
 ]
 
 If the tool raises an error as it is loaded, invoked, or as
-the @scheme[phase1] or @scheme[phase2] thunks are called,
+the @racket[phase1] or @racket[phase2] thunks are called,
 DrRacket catches the error and displays a message box. Then,
 DrRacket continues to start up, without the tool.
 
 For example, if the @File{info.rkt} file in a collection
 contains:
-@schememod[
+@racketmod[
 setup/infotab
 (define drracket-name "Tool Name")
 (define drracket-tools (list (list "tool.rkt")))
 ]
 then the same collection would be expected to contain a
 @File{tool.rkt} file. It might contain something like this:
-@schememod[
-scheme/gui
+@racketmod[
+racket/gui
 (require drracket/tool)
 
 (provide tool@)
@@ -180,7 +180,7 @@ scheme/gui
     (message-box "tool example" "unit invoked")))
 ]
 This tool just opens a few windows to indicate that it has
-been loaded and that the @scheme[phase1] and @scheme[phase2]
+been loaded and that the @racket[phase1] and @racket[phase2]
 functions have been called.
 
 @section[#:tag "adding-languages"]{Adding Languages to DrRacket}
@@ -188,7 +188,7 @@ functions have been called.
 
 @subsection{Adding Module-based Languages to DrRacket}
 If a language can be implemented as a module
-(see @scheme[module] for details), then the simplest and
+(see @racket[module] for details), then the simplest and
 best way to use the language is via the ``Use the language
 declared the in source'' checkbox in the @onscreen{Language} dialog.
 
@@ -202,11 +202,11 @@ such languages. Include these definitions:
   list of collection path specifications or strings, one for
   each language in the collection. Each collection path
   specification is the quoted form of what might appear as
-  an argument to @scheme[require], using the
+  an argument to @racket[require], using the
   @tt{lib} argument (but without the @tt{lib}). The
   strings represent relative paths starting at the directory
   containing the @File{info.rkt} file.  They are interpreted
-  like string arguments to @scheme[require].
+  like string arguments to @racket[require].
 }
 @item/cap[drscheme-language-positions]{
 This must be bound to a
@@ -235,7 +235,7 @@ This is
 @item/cap[drscheme-language-urls]{
 This is
   optional. If present, it must be a list whose elements are
-  either strings or @scheme[#f].
+  either strings or @racket[#f].
   Clicking the corresponding language's name in
   the interactions window opens a web browser to the url.
 }
@@ -243,23 +243,23 @@ This is
 This is optional. If
   present, it must be bound to a quoted list of module
   specifications (that is, a quoted version of the argument
-  to @scheme[require]). Each
+  to @racket[require]). Each
   specification must be a module that exports a function
-  named @scheme[read-syntax].  Each of these
-  @scheme[read-syntax] functions must match Racket's
-  @scheme[read-syntax] primitive's contract, but may
+  named @racket[read-syntax].  Each of these
+  @racket[read-syntax] functions must match Racket's
+  @racket[read-syntax] primitive's contract, but may
   read different concrete syntax.
 
   If the module specification is a plain string, it 
   represents a relative path starting at the directory
   containing the @File{info.rkt} file.  It is interpreted
-  like the string arguments to @scheme[require].
+  like the string arguments to @racket[require].
 }]
 The lists must have the same length.
 
 As an example, the @italic{Essentials of Programming Languages}
 language specification's @File{info.rkt} used to look like this:
-@schememod[
+@racketmod[
 setup/infotab
 (require string-constants)
 (define name "EoPL Support")
@@ -275,18 +275,18 @@ language is the @File{eopl-lang.rkt} file in the same directory as
 the @File{info.rkt} file. Additionally, the language dialog will contain
 @tt{Essentials of Programming Languages} as a potential
 language. The use of the string constant
-@scheme[teaching-languages] ensures that EoPL's language is
+@racket[teaching-languages] ensures that EoPL's language is
 placed properly in foreign language versions of DrRacket.
 
 For collections that define multiple (related) languages, if
 the language-positions contain multiple strings, the
 languages whose leading strings match are grouped together.
 That is, if two languages have strings:
-@schemeblock[
+@racketblock[
   '("My Text" "First Language")
 ]
 and
-@schemeblock[
+@racketblock[
   '("My Text" "Second Language")
 ]
 the two languages will be grouped together in the language
@@ -296,23 +296,23 @@ dialog.
 With some additional work, any language that can be compiled
 to Racket is supported by the tools interface,
 not just those that use standard configurations and
-@scheme[module].
+@racket[module].
 
 Each language is a class that implement the
-@scheme[drracket:language:language<%>] interface.  DrRacket also
+@racket[drracket:language:language<%>] interface.  DrRacket also
   provides two simpler interfaces:
-  @scheme[drracket:language:module-based-language<%>] and
-  @scheme[drracket:language:simple-module-based-language<%>],
+  @racket[drracket:language:module-based-language<%>] and
+  @racket[drracket:language:simple-module-based-language<%>],
   and 
-  @scheme[mixin]s
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[mixin]s
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   and
-  @scheme[drracket:language:module-based-language->language-mixin]
-  that build implementations of @scheme[drracket:language:language<%>]s from these simpler interfaces.
+  @racket[drracket:language:module-based-language->language-mixin]
+  that build implementations of @racket[drracket:language:language<%>]s from these simpler interfaces.
 
 Once you have an implementation of the
-@scheme[drracket:language:language<%>] interface, call
-@scheme[drracket:language-configuration:add-language] to add the language
+@racket[drracket:language:language<%>] interface, call
+@racket[drracket:language-configuration:add-language] to add the language
 to DrRacket.
 
 Each language comes with its own type, called
@@ -328,10 +328,10 @@ the current settings for each language.
 @subsection{Language Extensions}
 
 Some tools may require additional functionality from the
-@scheme[drracket:language:language<%>] interface. The
-@scheme[drracket:language:extend-language-interface]
+@racket[drracket:language:language<%>] interface. The
+@racket[drracket:language:extend-language-interface]
 function and the
-@scheme[drracket:language:get-default-mixin]
+@racket[drracket:language:get-default-mixin]
 mixin make this possible.
 
 For example, the MrFlow tool expands a program, analyzes it
@@ -339,14 +339,14 @@ and then displays sets of values for each program point.
 These sets of values should be rendered in the syntax of the
 language that MrFlow analyzes. Since MrFlow doesn't 
 know which languages are available, it can call
-@scheme[drracket:language:extend-language-interface]
-to extend the @scheme[drracket:language:language<%>]
+@racket[drracket:language:extend-language-interface]
+to extend the @racket[drracket:language:language<%>]
 interface with a method for rendering sets of values and
 provide a default implementation of that method. Tools that
 know about MrFlow can then override the value rendering
 method to provide a language-specific implementation of
 value rendering.  Additionally, since the
-@scheme[drracket:language:get-default-mixin]
+@racket[drracket:language:get-default-mixin]
 adds the default implementation for the value-set rendering
 method, all languages at least have some form of value-set
 rendering.
@@ -365,7 +365,7 @@ extending it. For example, if the MrFlow tool provides the
 @tt{render-value<%>} interface, then a tool that overrides
 that method can first test to see if the superclass
 implements that method before overriding it:
-@schemeblock[
+@racketblock[
 (define (my-language-mixin %)
   (if (implementation? % mrflow:render-value<%>)
       (class % 
@@ -383,7 +383,7 @@ environment variable to load it in isolation.
 Each frame in DrRacket has certain menus and functionality,
 most of which is achieved by using the framework.
 Additionally, there is one mixin that DrRacket provides to
-augment that. It is @scheme[drracket:frame:basics-mixin].
+augment that. It is @racket[drracket:frame:basics-mixin].
 Be sure to mix it into any new frame class that you add to
 DrRacket.
 
@@ -391,12 +391,12 @@ DrRacket.
 
 Each of the names:
 @itemize[
-@item{@scheme[drracket:get/extend:extend-interactions-text]}
-@item{@scheme[drracket:get/extend:extend-definitions-text]}
-@item{@scheme[drracket:get/extend:extend-interactions-canvas]}
-@item{@scheme[drracket:get/extend:extend-definitions-canvas]}
-@item{@scheme[drracket:get/extend:extend-unit-frame]}
-@item{@scheme[drracket:get/extend:extend-tab]}]
+@item{@racket[drracket:get/extend:extend-interactions-text]}
+@item{@racket[drracket:get/extend:extend-definitions-text]}
+@item{@racket[drracket:get/extend:extend-interactions-canvas]}
+@item{@racket[drracket:get/extend:extend-definitions-canvas]}
+@item{@racket[drracket:get/extend:extend-unit-frame]}
+@item{@racket[drracket:get/extend:extend-tab]}]
 is bound to an extender function. In order to change the
 behavior of DrRacket, you can derive new classes from the
 standard classes for the frame, texts, canvases. Each
@@ -404,7 +404,7 @@ extender accepts a function as input. The function it
 accepts must take a class as it's argument and return a
 classes derived from that class as its result. For example:
 
-@schemeblock[
+@racketblock[
 (drracket:get/extend:extend-interactions-text
   (lambda (super%)
     (class super%
@@ -421,7 +421,7 @@ extends the interactions text class with a method named @tt{method1}.
 Macro-expanding a program may involve arbitrary computation
 and requires the setup of the correct language. To aid this,
 DrRacket's tool interface provides
-@scheme[drracket:eval:expand-program] to help. Use
+@racket[drracket:eval:expand-program] to help. Use
 this method to extract the fully expanded program text in a
 particular language.
 
@@ -450,10 +450,11 @@ has.
 @section{Editor Modes}
 @index{modes}
 @index{scheme mode}
+@index{racket mode}
 
 DrRacket provides support for multiple editor modes. Tools
 register modes via
-@scheme[drracket:modes:add-mode]. Each mode is
+@racket[drracket:modes:add-mode]. Each mode is
 visible in the @onscreen{Modes} submenu of the @onscreen{Edit}
 menu. Initially, DrRacket only supports two modes: Racket
 mode and text mode.
@@ -490,13 +491,13 @@ DrRacket's capability interface provides a mechanism for
 tools to allow languages to hide their GUI interface, if the
 tool does not apply to the language. Tools register
 capabilities keyed with symbols via.
-@scheme[drracket:language:register-capability]. Once
+@racket[drracket:language:register-capability]. Once
 registered, a tool can query a language, via the 
 @method[drracket:language:language<%> capability-value]
 method. The result from this method controls whether or not
 the tool shows this part of the GUI for DrRacket.
 
-See @scheme[drracket:language:register-capability]
+See @racket[drracket:language:register-capability]
 for a list of the capabilities registered by default.
 
 @section{Check Syntax}
@@ -512,13 +513,13 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
            (-> (is-a?/c
                 top-level-window<%>)
                any))]{
-   This is meant to be used with the @scheme['drscheme:toolbar-buttons] 
+   This is meant to be used with the @racket['drscheme:toolbar-buttons] 
    argument to the info proc returned
-   from @scheme[read-language].
+   from @racket[read-language].
 }
 
 @defidform[syncheck:button-callback]{
-  This is defined with @scheme[define-local-member-name] and
+  This is defined with @racket[define-local-member-name] and
   is bound to a method of no arguments of the DrRacket frame that runs Check
   Syntax.
 }
