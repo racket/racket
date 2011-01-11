@@ -629,7 +629,8 @@
                        255
                        0)])
             (send dest set v v v))
-          (send dest copy-from c)))
+          (send dest copy-from c))
+      (void))
 
     (define clipping-region #f)
 
