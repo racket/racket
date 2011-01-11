@@ -21,7 +21,7 @@
 (define-syntax-rule (indexing index-type)
   (make-env
    
-   [build-list (-poly (a) (index-type (-NonnegativeFixnum . -> . a) . -> . (-lst a)))]
+   [build-list (-poly (a) (index-type (-Index . -> . a) . -> . (-lst a)))]
    [make-list (-poly (a) (index-type a . -> . (-lst a)))]
    
    [string-ref (-> -String index-type -Char)]
@@ -31,31 +31,31 @@
    [string-copy! (-String index-type -String [index-type index-type] . ->opt . -Void)]
 
    [read-string (index-type [-Input-Port] . ->opt . (Un -String (-val eof)))]
-   [read-string! (-String [-Input-Port index-type index-type] . ->opt . (Un -NonnegativeFixnum (-val eof)))]
+   [read-string! (-String [-Input-Port index-type index-type] . ->opt . (Un -Index (-val eof)))]
    [read-bytes (index-type [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
 
    [write-byte (cl-> [(index-type) -Void]
                      [(index-type -Output-Port) -Void])]
-   [write-string (cl-> [(-String) -NonnegativeFixnum]
-                       [(-String -Output-Port) -NonnegativeFixnum]
-                       [(-String -Output-Port index-type) -NonnegativeFixnum]
-                       [(-String -Output-Port index-type index-type) -NonnegativeFixnum])]
-   [write-bytes  (cl-> [(-Bytes) -NonnegativeFixnum]
-                       [(-Bytes -Output-Port) -NonnegativeFixnum]
-                       [(-Bytes -Output-Port index-type) -NonnegativeFixnum]
-                       [(-Bytes -Output-Port index-type index-type) -NonnegativeFixnum])]
-   [write-bytes-avail  (cl-> [(-Bytes) -NonnegativeFixnum]
-                             [(-Bytes -Output-Port) -NonnegativeFixnum]
-                             [(-Bytes -Output-Port index-type) -NonnegativeFixnum]
-                             [(-Bytes -Output-Port index-type index-type) -NonnegativeFixnum])]
-   [write-bytes-avail*  (cl-> [(-Bytes) (-opt -NonnegativeFixnum)]
-                              [(-Bytes -Output-Port) (-opt -NonnegativeFixnum)]
-                              [(-Bytes -Output-Port index-type) (-opt -NonnegativeFixnum)]
-                              [(-Bytes -Output-Port index-type index-type) (-opt -NonnegativeFixnum)])]
-   [write-bytes-avail/enable-break (cl-> [(-Bytes) -NonnegativeFixnum]
-                                         [(-Bytes -Output-Port) -NonnegativeFixnum]
-                                         [(-Bytes -Output-Port index-type) -NonnegativeFixnum]
-                                         [(-Bytes -Output-Port index-type index-type) -NonnegativeFixnum])]
+   [write-string (cl-> [(-String) -Index]
+                       [(-String -Output-Port) -Index]
+                       [(-String -Output-Port index-type) -Index]
+                       [(-String -Output-Port index-type index-type) -Index])]
+   [write-bytes  (cl-> [(-Bytes) -Index]
+                       [(-Bytes -Output-Port) -Index]
+                       [(-Bytes -Output-Port index-type) -Index]
+                       [(-Bytes -Output-Port index-type index-type) -Index])]
+   [write-bytes-avail  (cl-> [(-Bytes) -Index]
+                             [(-Bytes -Output-Port) -Index]
+                             [(-Bytes -Output-Port index-type) -Index]
+                             [(-Bytes -Output-Port index-type index-type) -Index])]
+   [write-bytes-avail*  (cl-> [(-Bytes) (-opt -Index)]
+                              [(-Bytes -Output-Port) (-opt -Index)]
+                              [(-Bytes -Output-Port index-type) (-opt -Index)]
+                              [(-Bytes -Output-Port index-type index-type) (-opt -Index)])]
+   [write-bytes-avail/enable-break (cl-> [(-Bytes) -Index]
+                                         [(-Bytes -Output-Port) -Index]
+                                         [(-Bytes -Output-Port index-type) -Index]
+                                         [(-Bytes -Output-Port index-type index-type) -Index])]
 
 
    
@@ -110,7 +110,7 @@
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
           [-InpBts (Un -Input-Port -Bytes)])
-      (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (optlist (-pair -NonnegativeFixnum -NonnegativeFixnum))))]
+      (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (optlist (-pair -Index -Index))))]
    [regexp-match-positions*
     (let ([?outp   (-opt -Output-Port)]
           [?N      (-opt index-type)]
@@ -118,7 +118,7 @@
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
           [-InpBts (Un -Input-Port -Bytes)])
-      (->opt -Pattern (Un -String -InpBts) [index-type ?N ?outp] (-lst (-pair -NonnegativeFixnum -NonnegativeFixnum))))]
+      (->opt -Pattern (Un -String -InpBts) [index-type ?N ?outp] (-lst (-pair -Index -Index))))]
    
    
    [take   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
@@ -133,7 +133,7 @@
    [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
-   [build-vector (-poly (a) (index-type (-NonnegativeFixnum . -> . a) . -> . (-vec a)))]
+   [build-vector (-poly (a) (index-type (-Index . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector*-set! (-poly (a) (-> (-vec a) index-type a -Void))]
@@ -141,8 +141,8 @@
    [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Integer a))]
                                  [(index-type a) (-vec a)]))]
 
-   [bytes-ref (-> -Bytes index-type -NonnegativeFixnum)]
-   [unsafe-bytes-ref (-> -Bytes index-type -NonnegativeFixnum)]
+   [bytes-ref (-> -Bytes index-type -Byte)]
+   [unsafe-bytes-ref (-> -Bytes index-type -Byte)]
    [bytes-set! (-> -Bytes index-type index-type -Void)]
    [unsafe-bytes-set! (-> -Bytes index-type index-type -Void)]
    [subbytes (cl-> [(-Bytes index-type) -Bytes] [(-Bytes index-type index-type) -Bytes])]
@@ -154,10 +154,10 @@
    [string->bytes/utf-8 (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
    [string->bytes/locale (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
    [string->bytes/latin-1 (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
-   [string-utf-8-length (-String [index-type index-type] . ->opt . -NonnegativeFixnum)]
-   [bytes-utf-8-length (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -NonnegativeFixnum)]
+   [string-utf-8-length (-String [index-type index-type] . ->opt . -Index)]
+   [bytes-utf-8-length (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -Index)]
    [bytes-utf-8-ref (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Char)]
-   [bytes-utf-8-index (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -NonnegativeFixnum)]
+   [bytes-utf-8-index (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Index)]
 
    [integer->integer-bytes (-Integer index-type Univ [Univ -Bytes index-type] . ->opt . -Bytes)]
    [integer-bytes->integer (-Bytes Univ [Univ index-type index-type] . ->opt . -Integer)]
