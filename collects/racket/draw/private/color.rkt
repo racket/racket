@@ -71,7 +71,7 @@
     (if immutable?
         (error (method-name 'color% 'copy-from) "object is immutable")
         (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
-               this)))
+               this))))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
