@@ -70,7 +70,8 @@
   (def/public (copy-from [color% c])
     (if immutable?
         (error (method-name 'color% 'copy-from) "object is immutable")
-        (set (color-red c) (color-green c) (color-blue c) (color-alpha c)))))
+        (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
+               this)))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
