@@ -1,5 +1,5 @@
 #lang s-exp htdp/bsl/reader
-lang/htdp-intermediate-lambda
+lang/htdp-advanced
 '(abbreviate-cons-as-list
   read-accept-quasiquote
   show-sharing)
