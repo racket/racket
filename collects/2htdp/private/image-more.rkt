@@ -1264,8 +1264,14 @@
                  arg
                  (or (current-load-relative-directory)
                      (current-directory)))])])
-       ;; the rotate does a coercion to a 2htdp/image image
-       #`(rotate 0 (make-object image-snip% (make-object bitmap% #,path 'unknown/mask))))]))
+       #`(bitmap/proc #,path))]))
+
+(define (bitmap/proc arg)
+  (when (and (path? arg)
+             (not (file-exists? arg)))
+    (error 'bitmap "could not find the file ~a" (path->string arg)))
+  ;; the rotate does a coercion to a 2htdp/image image
+  (rotate 0 (make-object image-snip% (make-object bitmap% arg 'unknown/mask))))
 
 (define/chk (image->color-list image)
   (let* ([w (image-width image)]
