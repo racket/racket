@@ -164,9 +164,9 @@
                       (begin
                         (queue/work-done jobqueue node wrkr (string-append msg (port->string out))) 
                         (kill/remove-dead-worker node-worker wrkr)))))))]
-              [else 
-                (eprintf "parallel-do-event-loop match node-worker failed.\n")
-                (eprintf "trying to match:\n~a\n" node-worker)])))])))
+                [else 
+                  (eprintf "parallel-do-event-loop match node-worker failed.\n")
+                  (eprintf "trying to match:\n~a\n" node-worker)])))])))
      (lambda () 
       (for ([p workers]) (with-handlers ([exn? void]) (wrkr/send p (list 'DIE))))
       (for ([p workers]) (send p wait)))))

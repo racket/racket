@@ -16,14 +16,20 @@
         (if v
           (match v [(list w waitlst) (list w (append waitlst (list wrkr)))])
           (begin
-            (send wrkr send/msg 'locked)
+            (wrkr/send wrkr (list 'locked))
             (list wrkr null))))
       (not v)))
   (define/public (unlock fn)
-    (for ([x (second (hash-ref locks fn))])
-      (wrkr/send x 'compiled))
-    (hash-remove! locks fn))
+    (match (hash-ref locks fn)
+      [(list w waitlst)
+        (for ([x (second (hash-ref locks fn))])
+          (wrkr/send x (list 'compiled)))
+        (hash-remove! locks fn)]))
   (super-new)))
+
+(define/class/generics Lock-Manager%
+  (lm/lock lock fn wrkr)
+  (lm/unlock unlock fn))
 
 (provide parallel-compile
          parallel-build-worker)
@@ -43,14 +49,14 @@
             [(list 'ERROR msg)
               (append-error cc "making" (exn msg (current-continuation-marks)) out err "error")
               #t]
-            ;[(list 'LOCK fn) (lock fn wrkr) #f]
-            ;[(list 'UNLOCK fn) (unlock fn) #f]
+            [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
+            [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
             ['DONE
               (define (string-!empty? s) (not (zero? (string-length s))))
               (when (ormap string-!empty? (list out err))
                 (append-error cc "making" null out err "output"))
-                #t])
-          (when last (printer (current-output-port) "made" "~a" (cc-name cc))))]
+              (when last (printer (current-output-port) "made" "~a" (cc-name cc)))
+              #t]))]
       [else
         (match work 
           [(list-rest (list cc file last) message)

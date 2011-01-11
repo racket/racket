@@ -20,13 +20,16 @@
          (rename-out [trace manager-trace-handler])
          get-file-sha1
          get-compiled-file-sha1
-         with-compile-output)
+         with-compile-output
+         parallel-lock-client)
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
 (define indent (make-parameter ""))
 (define trust-existing-zos (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
+(define depth (make-parameter 0))
+(define parallel-lock-client (make-parameter #f))
 
 (define (file-stamp-in-collection p)
   (file-stamp-in-paths p (current-library-collection-paths)))
@@ -359,8 +362,6 @@
         (verify-times path tmp-name)
         (write-deps code mode path src-sha1 external-deps reader-deps up-to-date read-src-syntax)))))
 
-(define depth (make-parameter 0))
-
 (define (actual-source-path path)
   (if (file-exists? path) 
       path
@@ -406,21 +407,31 @@
                      #f)
                    ((if sha1-only? values (lambda (build) (build) #f))
                     (lambda ()
-                      (when zo-exists? (try-delete-file zo-name #f))
-                      (log-info (format "cm: ~acompiling ~a" 
-                                        (build-string 
-                                         (depth)
-                                         (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                        actual-path))
-                      (parameterize ([depth (+ (depth) 1)])
-                        (with-handlers
-                            ([exn:get-module-code?
-                              (lambda (ex)
-                                (compilation-failure mode path zo-name
-                                                     (exn:get-module-code-path ex)
-                                                     (exn-message ex))
-                                (raise ex))])
-                          (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date))))))))))
+                      (let* ([lc (parallel-lock-client)]
+                             [locked? (and lc (lc 'lock zo-name))]
+                             [ok-to-compile? (or (not lc) locked?)])
+                        (dynamic-wind
+                          (lambda () (void))
+                          (lambda ()
+                            (when ok-to-compile?
+                              (when zo-exists? (try-delete-file zo-name #f))
+                              (log-info (format "cm: ~acompiling ~a" 
+                                                (build-string 
+                                                 (depth)
+                                                 (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                                actual-path))
+                              (parameterize ([depth (+ (depth) 1)])
+                                (with-handlers
+                                    ([exn:get-module-code?
+                                      (lambda (ex)
+                                        (compilation-failure mode path zo-name
+                                                             (exn:get-module-code-path ex)
+                                                             (exn-message ex))
+                                        (raise ex))])
+                                  (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date)))))
+                          (lambda ()
+                            (when locked?
+                              (lc 'unlock zo-name))))))))))))
      (unless sha1-only?
        (trace-printf "end compile: ~a" actual-path)))))
 
