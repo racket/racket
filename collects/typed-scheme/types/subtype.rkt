@@ -250,7 +250,7 @@
               [((Base: 'String _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Char t*)]
               [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
-               (subtype* A0 -Nat t*)]
+               (subtype* A0 -Byte t*)]
               [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
