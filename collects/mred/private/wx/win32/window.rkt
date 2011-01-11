@@ -542,7 +542,9 @@
         (GetCursorPos p)
         (let ([f (location->window (POINT-x p) (POINT-y p))])
           (unless (eq? f (get-top-frame))
-            (do-mouse w msg #f 'leave wParam lParam))))]
+            (do-mouse w msg #f 'leave wParam lParam))))
+      ;; send message on to default handling (e.g., for buttons):
+      #f]
      [else #f]))
 
   (define/private (do-mouse control-hwnd msg nc? type wParam lParam)
