@@ -227,7 +227,7 @@
         
 (define-syntax (parallel-do stx)
   (syntax-case stx ()
-    [(_ initalmsg list-of-work create-job-thunk job-success-thunk job-failure-thunk workerthunk)
+    [(_ worker-count initalmsg list-of-work create-job-thunk job-success-thunk job-failure-thunk workerthunk)
       (begin
         (define (gen-parallel-do-event-loop-syntax cmdline initial-stdin-data)
           (with-syntax ([cmdline cmdline]
@@ -236,7 +236,7 @@
                 ;(printf "CMDLINE ~v\n" cmdline)
                 ;(printf "INITIALTHUNK ~v\n" initial-stdin-data)
                 (let ([jobqueue (make-list-queue list-of-work null create-job-thunk job-success-thunk job-failure-thunk)])
-                  (parallel-do-event-loop initial-stdin-data initalmsg cmdline jobqueue (processor-count) 999999999)
+                  (parallel-do-event-loop initial-stdin-data initalmsg cmdline jobqueue worker-count 999999999)
                   (reverse (list-queue-results jobqueue))))))
         (define (gen-dynamic-require-current-module funcname)
           (with-syntax ([funcname funcname])

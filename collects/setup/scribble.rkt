@@ -134,6 +134,7 @@
                  (if (not (worker-count . > . 1))
                     (map (get-doc-info only-dirs latex-dest auto-main? auto-user? with-record-error setup-printf) docs)
                     (parallel-do 
+                      worker-count
                       (lambda (workerid) (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?))
                       docs
                       (lambda (x) (s-exp->fasl (serialize x)))
@@ -315,6 +316,7 @@
                     (say-rendering i)
                     (update-info i (build-again! latex-dest i with-record-error))) need-rerun)
               (parallel-do 
+                worker-count
                 (lambda (workerid) (list workerid (verbose) latex-dest))
                 need-rerun
                 (lambda (i) 
