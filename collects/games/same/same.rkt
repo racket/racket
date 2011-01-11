@@ -3,6 +3,7 @@
          racket/unit
          racket/list
          racket/gui/base
+         racket/math
          "../show-scribbling.ss")
 
 (provide game@)
@@ -59,7 +60,7 @@
       (set! clicked-score 0)
       (set-score-label))
     (define (update-score balls-going-away)
-      (set! clicked-score (+ clicked-score (* balls-going-away balls-going-away)))
+      (set! clicked-score (+ clicked-score (calc-score balls-going-away)))
       (set-score-label))
     (define (set-score-label)
       (define cells-filled-in 0)
@@ -274,17 +275,40 @@
               [(send evt button-down?) (values bx by)]
               [(send evt button-up?) (values #f #f)]
               [else (values mouse-clicked-x mouse-clicked-y)]))
+          
+          (define this-score-needs-update? #f)
+          
           (unless (and (equal? mouse-clicked-x new-mouse-clicked-x)
                        (equal? mouse-clicked-y new-mouse-clicked-y))
             (set! mouse-clicked-x new-mouse-clicked-x)
             (set! mouse-clicked-y new-mouse-clicked-y)
+            (set! this-score-needs-update? #t)
             (refresh))
           
           (unless (and (equal? bx mouse-current-x)
                        (equal? by mouse-current-y))
             (set! mouse-current-x bx)
             (set! mouse-current-y by)
-            (refresh)))
+            (set! this-score-needs-update? #t)
+            (refresh))
+          
+          (when this-score-needs-update?
+            (update-this-score (if mouse-clicked-x
+                                   mouse-clicked-x
+                                   mouse-current-x)
+                               (if mouse-clicked-y
+                                   mouse-clicked-y
+                                   mouse-current-y))))
+        
+        (define/private (update-this-score x y)
+          (send this-score-message set-label 
+                (cond
+                  [(and x y)
+                   (define num (length (find-same-colors x y)))
+                   (if (= num 1)
+                       ""
+                       (format "~a" (calc-score num)))]
+                  [else ""])))
           
         (define/private (make-a-move)
           (define i mouse-clicked-x)
@@ -391,6 +415,8 @@
     (define hp (new horizontal-panel% [parent panel] [stretchable-height #f]))
     (new message% [label "Total Score: "] [parent hp])
     (define score-message (new message% [label ""] [parent hp] [stretchable-width #t]))
+    (new message% [label "This Score: "] [parent hp])
+    (define this-score-message (new message% [label ""] [parent hp] [stretchable-width #t]))
     (define button (make-object button% "New Game" hp (lambda x (new-game-callback #t))))
     
     (define help-button (make-object button% "Help"
