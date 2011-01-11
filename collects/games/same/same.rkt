@@ -17,7 +17,7 @@
     (define colors (map (lambda (x) (make-object color% x))
                         (list "blue" "red" "brown" "forestgreen" "purple")))
     (define pale-colors (map (λ (x) 
-                               (define (paleize x) (- 255 (floor (/ (- 255 x) 2))))
+                               (define (paleize x) (- 255 (floor (* (- 255 x) 1/2))))
                                (make-object color%
                                  (paleize (send x red))
                                  (paleize (send x green))
@@ -67,15 +67,14 @@
         (for ([v (in-vector v)])
           (when (vector-ref v 0)
             (set! cells-filled-in (+ cells-filled-in 1)))))
-      (define bonus (if (<= cells-filled-in 10)
-                        (* 100 (- 10 cells-filled-in))
+      (define bonus (if (<= cells-filled-in 20)
+                        (* 50 (- 20 cells-filled-in))
                         0))
       (send score-message set-label 
             (format "~a + ~a = ~a"
                     clicked-score
                     bonus
                     (+ clicked-score bonus))))
-                    
     
     (define same-canvas%
       (class canvas%
@@ -139,13 +138,8 @@
              (cond 
                [(and mouse-over? mouse-clicked-over? multiple-cells?)
                 (send dc set-pen
-                      (list-ref colors color)
-                      (* pen-size 2/3)
-                      'solid)
-                (draw-blob blob i j)
-                (send dc set-pen
                       (list-ref pale-colors color)
-                      (* pen-size 2/3 1/2)
+                      (* pen-size 2/3)
                       'solid)
                 (draw-blob blob i j)]
                [(and mouse-over? mouse-clicked-over?)
@@ -161,14 +155,16 @@
                    'solid)
                 (draw-blob blob i j)])]
             [else
-             (send dc set-pen (list-ref colors color) pen-size 'solid)
-             (draw-blob blob i j)
-             (when mouse-over?
-               (send dc set-pen
-                     (list-ref pale-colors color)
-                     (* pen-size 2/3)
-                     'solid)
-               (draw-blob blob i j))]))
+             (cond
+               [mouse-over?
+                (send dc set-pen
+                      (list-ref pale-colors color)
+                      pen-size
+                      'solid)
+                (draw-blob blob i j)]
+               [else
+                (send dc set-pen (list-ref colors color) pen-size 'solid)
+                (draw-blob blob i j)])]))
         
         (define (draw-blob blob i j)
           (define dc (get-dc))
@@ -408,7 +404,7 @@
     
     (send canvas update-game-over)
     (reset-score)
-    (send canvas min-width (* board-width cell-w 2))
-    (send canvas min-height (* board-height cell-h 2))
+    (send canvas min-width (* board-width cell-w 3))
+    (send canvas min-height (* board-height cell-h 3))
     (send frame show #t)
     (void (yield semaphore))))
