@@ -14,7 +14,7 @@
     (export)
     
     (define board-width 20)
-    (define board-height 10)
+    (define board-height 16)
     (define colors (map (lambda (x) (make-object color% x))
                         (list "blue" "red" "brown" "forestgreen" "purple")))
     (define pale-colors (map (λ (x) 
@@ -39,15 +39,27 @@
     ;   the piece and a node to mark for the depth-first traversal.
     ;   #f for the color index indicates an eliminated piece.
     (define (build-board)
-      (build-vector
-       board-width
-       (lambda (i)
-         (build-vector
-          board-height
-          (lambda (j)
-            (vector
-             (random (length colors))
-             #f))))))
+      (define board
+        (build-vector
+         board-width
+         (lambda (i)
+           (build-vector
+            board-height
+            (lambda (j)
+              (vector
+               (random (length colors))
+               #f))))))
+      (for* ([x (in-range 1 board-width)]
+             [y (in-range 1 board-height)])
+        (when (zero? (random 5))
+          (define-values (prev-x prev-y)
+            (if (zero? (random 2))
+                (values x (- y 1))
+                (values (- x 1) y)))
+          (define this-vector (vector-ref (vector-ref board x) y))
+          (define prev-vector (vector-ref (vector-ref board prev-x) prev-y))
+          (vector-set! this-vector 0 (vector-ref prev-vector 0))))
+      board)
     
     (define board (build-board))
     
