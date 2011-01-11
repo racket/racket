@@ -16,9 +16,6 @@
                   [(macosx) (ffi-lib "/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU")]
                   [else (ffi-lib "libGLU" '("1" ""))]))
 
-(define (unavailable name)
-  (lambda () (lambda x (error name "unavailable on this system"))))
-
 (define win32?
   (and (eq? 'windows stype)
        (equal? "win32\\i386" (path->string (system-library-subpath #f)))))
@@ -27,6 +24,27 @@
   (syntax-rules ()
     [(_fun* x ...)
      (if win32? (_fun #:abi 'stdcall x ...) (_fun x ...))]))
+
+(define wglGetProcAddress
+  (if (eq? 'windows stype)
+      (get-ffi-obj 'wglGetProcAddress gl-lib (_fun* _string -> _fpointer))
+      (lambda (x) #f)))
+
+(define (unavailable name fun-type)
+  (if (eq? 'windows stype)
+      ;; Windows: try to get proc via wglGetProcAddress;
+      ;; note that we need to delay the lookup until the
+      ;; function is called, because wglGetProcAddress is
+      ;; sensitive to the current GL context
+      (lambda ()
+	 (let ([sname (symbol->string name)])
+	   (lambda args
+	     (let ([f (wglGetProcAddress sname)])
+	       (if f
+		   (apply (function-ptr f fun-type) args)
+		   (error name "unavailable on this system"))))))
+      ;; Other platforms: proc is not available
+      (lambda () (lambda x (error name "unavailable on this system")))))
 
 (define-syntax define-foreign-lib
   (syntax-rules (->)
@@ -37,7 +55,9 @@
        ;; (printf "~a\n" 'name)
        (provide name)
        (define name
-         (get-ffi-obj 'name lib (_fun* type ...) (unavailable 'name))))]))
+	 (let ([fun-type (_fun* type ...) ])
+	   (get-ffi-obj 'name lib fun-type
+			(unavailable 'name fun-type)))))]))
 
 (define-syntax define-foreign
   (syntax-rules ()
