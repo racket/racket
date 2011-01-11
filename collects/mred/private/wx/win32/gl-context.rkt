@@ -82,7 +82,7 @@
       (dynamic-wind
           (lambda ()
             (wglMakeCurrent hdc hglrc))
-          t
+	  t
           (lambda ()
             (wglMakeCurrent #f #f))))
         
@@ -117,7 +117,7 @@
 (define PFD_MAIN_PLANE   0)
 
 (define (create-gl-context hdc config offscreen? 
-                           #:try-ms? [try-ms? #t])
+                           #:try-ms? [try-ms? (not offscreen?)])
   (when try-ms? (unless tried-multisample? (init-multisample! config)))
   (let* ([config (or config (new gl-config%))]
          [accum (send config get-accum-size)]
@@ -152,7 +152,8 @@
            )]
          [ms (send config get-multisample-size)]
          [pixelFormat (or
-		       (and wglChoosePixelFormatARB 
+		       (and try-ms?
+			    wglChoosePixelFormatARB 
 			    (or (choose-multisample hdc config offscreen? ms)
 				(choose-multisample hdc config offscreen? 2)))
 		       (ChoosePixelFormat hdc pfd))])
