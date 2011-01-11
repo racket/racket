@@ -1077,7 +1077,7 @@
                                           (bytes->string/utf-8
                                            (base64-encode
                                             (string->bytes/utf-8
-                                             (format "~a" (serialize
+                                             (format "~s" (serialize
                                                            (link-element-tag e)))))))
                                     (url-query u))])))]
                         [else
