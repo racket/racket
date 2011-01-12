@@ -333,7 +333,7 @@ parallel builder should continue without compiling @racket[zo-path].
 @examples[
   #:eval cm-eval
 (let* ([lc (parallel-lock-client)]
-       [zo-name  #"collects/racket/draw.rkt"]
+       [zo-name  #"collects/racket/compiled/draw_rkt.zo"]
        [locked? (and lc (lc 'lock zo-name))]
        [ok-to-compile? (or (not lc) locked?)])
   (dynamic-wind
