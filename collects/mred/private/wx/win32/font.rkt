@@ -18,7 +18,9 @@
   (let* ([pfont (pango_font_map_load_font display-font-map
                                           display-context
                                           (send f get-pango))]
-         [logfont (pango_win32_font_logfont pfont)])
-    (begin0
-     (pango_win32_font_cache_load font-cache logfont)
-     (g_free logfont))))
+         [logfont (and pfont
+		       (pango_win32_font_logfont pfont))])
+    (and logfont
+	 (begin0
+	  (pango_win32_font_cache_load font-cache logfont)
+	  (g_free logfont)))))

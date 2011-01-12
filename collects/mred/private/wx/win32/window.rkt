@@ -338,7 +338,8 @@
     (unless theme-hfont
       (set! theme-hfont (CreateFontIndirectW (get-theme-logfont))))
     (let ([hfont (if font
-                     (font->hfont font)
+                     (or (font->hfont font)
+			 theme-hfont)
                      theme-hfont)])
       (SendMessageW hwnd WM_SETFONT (cast hfont _HFONT _LPARAM) 0)))
 
