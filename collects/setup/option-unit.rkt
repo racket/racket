@@ -25,7 +25,7 @@
   (import)
   (export setup-option^)
 
-  (define setup-program-name (make-parameter "setup-plt"))
+  (define setup-program-name (make-parameter "raco setup"))
 
   (define-flag-param parallel-workers (min (processor-count) 8))
   (define-flag-param verbose #f)

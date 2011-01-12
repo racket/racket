@@ -9,6 +9,9 @@
                      compiler/option
                      compiler/option-unit
                      compiler/comp-unit
+                     dynext/compile-sig
+                     dynext/link-sig
+                     dynext/file-sig
                      launcher/launcher))
 
 @title{API for Raw Compilation}

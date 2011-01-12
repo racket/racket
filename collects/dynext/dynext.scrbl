@@ -178,7 +178,7 @@ Includes everything exported by the @schememodname[dynext/compile] module.
 
 @defmodule[dynext/compile-unit]
 
-@defthing[dyntex:compile@ unit?]{
+@defthing[dynext:compile@ unit?]{
 
 Imports nothing, exports @scheme[dynext:compile^].}
 
@@ -318,7 +318,7 @@ Includes everything exported by the @schememodname[dynext/link] module.
 
 @defmodule[dynext/link-unit]
 
-@defthing[dyntex:link@ unit?]{
+@defthing[dynext:link@ unit?]{
 
 Imports nothing, exports @scheme[dynext:link^].}
 
@@ -401,7 +401,7 @@ Includes everything exported by the @schememodname[dynext/file] module.
 
 @defmodule[dynext/file-unit]
 
-@defthing[dyntex:file@ unit?]{
+@defthing[dynext:file@ unit?]{
 
 Imports nothing, exports @scheme[dynext:file^].}
 

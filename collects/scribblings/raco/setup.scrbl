@@ -3,6 +3,7 @@
 @(require scribble/manual
           scribble/bnf
          (for-label racket
+                    racket/future
                     setup/setup-unit
                     setup/option-unit
                     setup/option-sig
@@ -20,6 +21,7 @@
                     launcher/launcher
                     compiler/sig
                     launcher/launcher-sig
+                    dynext/file-sig
                     racket/gui/base
                     racket/future))
 
@@ -412,7 +414,7 @@ initialized between them, e.g.:
 (compound-unit
   _...
   (link _...
-    [(OPTIONS : setup-option^) setup:option@]
+    [((OPTIONS : setup-option^)) setup:option@]
     [() my-init-options@ OPTIONS]
     [() setup@ OPTIONS _...])
   _...)
@@ -426,11 +428,13 @@ initialized between them, e.g.:
 
 Imports
 
-@itemize[#:style "compact"]{
+  @itemize[#:style "compact"]{
     @item{@racket[setup-option^]}
     @item{@racket[compiler^]}
     @item{@racket[compiler:option^]}
-    @item{@racket[launcher^]}}
+    @item{@racket[launcher^]}
+    @item{@racket[dynext:file^]}
+  }
 
 and exports nothing. Invoking @racket[setup@] starts the setup process.}
 
@@ -455,6 +459,11 @@ Imports nothing and exports @racket[setup-option^].}
 @signature-desc{Provides parameters used to control @exec{raco setup} in unit
 form.}
 
+  @defparam[setup-program-name name string?]{
+    The prefix used when printing status messages.
+    @defaults[@racket["raco setup"]]
+  }
+  
 @defboolparam[verbose on?]{
   If on, prints message from @exec{make} to @envvar{stderr}.
   @defaults[@racket[#f]]}
@@ -478,16 +487,28 @@ form.}
 @defboolparam[make-zo on?]{
   If on, compile @filepath{.zo}. @defaults[@racket[#t]]}
 
-@defboolparam[make-so on?]{
-  If on, compile @filepath{.so}/@filepath{.dll} files. @defaults[@racket[#f]]}
-
-@defboolparam[make-launchers on?]{
-  If on, make collection @filepath{info.rkt}-specified launchers. @defaults[@racket[#t]]}
-
 @defboolparam[make-info-domain on?]{
   If on, update @filepath{info-domain/compiled/cache.rkt} for each
   collection path. @defaults[@racket[#t]]}
 
+@defboolparam[make-launchers on?]{
+  If on, make collection @filepath{info.rkt}-specified launchers. @defaults[@racket[#t]]}
+
+  @defboolparam[make-docs on?]{
+    If on, build documentation.
+    @defaults[@racket[#t]]
+  }
+  
+  @defboolparam[make-user on?]{
+    If on, build the user-specific collection tree.
+    @defaults[@racket[#t]]
+  }
+  
+  @defboolparam[make-planet on?]{
+    If on, build the planet cache.
+    @defaults[@racket[#t]]
+  }
+  
 @defboolparam[avoid-main-installation on?]{
  If on, avoid building bytecode in the main installation tree when building
  other bytecode (e.g., in a user-specific collection). @defaults[@racket[#f]]}
@@ -496,18 +517,38 @@ form.}
   If on, call collection @filepath{info.rkt}-specified setup code.
   @defaults[@racket[#t]]}
 
-@defboolparam[force-unpack on?]{
-  If on, ignore version and already-installed errors when unpacking a
-  @filepath{.plt} archive. @defaults[@racket[#f]]}
+@defboolparam[call-post-install on?]{
+  If on, call collection @filepath{info.rkt}-specified post-install code.
+  @defaults[@racket[#t]]}
 
 @defboolparam[pause-on-errors on?]{
   If on, in the event of an error, prints a summary error and waits for
   @envvar{stdin} input before terminating. @defaults[@racket[#f]]}
 
-@defparam[specific-collections coll (listof path-string?)]{
+  @defparam[parallel-workers num exact-nonnegative-integer?]{
+    Determines the number of places to use for compiling bytecode
+    and for building the documentation.
+    @defaults[@racket[(min (processor-count) 8)]]
+  }
+  
+@defboolparam[force-unpacks on?]{
+  If on, ignore version and already-installed errors when unpacking a
+  @filepath{.plt} archive. @defaults[@racket[#f]]}
+  
+@defparam[specific-collections colls (listof (listof path-string?))]{
   A list of collections to set up; the empty list means set-up all
-  collections if the archives list is also empty @defaults[@racket[null]]}
+  collections if the archives list and @racket[specific-planet-dirs] is
+  is also @racket['()]. @defaults[@racket['()]]}
 
+  @defparam[specific-planet-dirs dir (listof (list/c string?
+                                                     string?
+                                                     exact-nonnegative-integer?
+                                                     exact-nonnegative-integer?))]{
+    A list of planet package version specs to set up; the empty list means to
+    set-up all planet collections if the archives list and @racket[specific-collections]
+    is also @racket['()]. @defaults[@racket['()]]
+  }
+  
 @defparam[archives arch (listof path-string?)]{
   A list of @filepath{.plt} archives to unpack; any collections specified
   by the archives are set-up in addition to the collections listed in
