@@ -28,11 +28,12 @@
   (lift:make
    (lambda (request)
      (semaphore-post sema)
-     `(html (head (title "Server Stopped")
-              (link ([rel "stylesheet"] [href "/error.css"])))
-            (body (div ([class "section"])
-                    (div ([class "title"]) "Server Stopped")
-                    (p "Return to DrRacket.")))))))
+     (response/xexpr
+      `(html (head (title "Server Stopped")
+                   (link ([rel "stylesheet"] [href "/error.css"])))
+             (body (div ([class "section"])
+                        (div ([class "title"]) "Server Stopped")
+                        (p "Return to DrRacket."))))))))
 
 (define-runtime-path default-web-root
   (list 'lib
@@ -97,8 +98,9 @@
          [manager
           (make-threshold-LRU-manager
            (lambda (request)
-             `(html (head (title "Page Has Expired."))
-                    (body (p "Sorry, this page has expired. Please go back."))))
+             (response/xexpr
+              `(html (head (title "Page Has Expired."))
+                     (body (p "Sorry, this page has expired. Please go back.")))))
            (* 128 1024 1024))]
 
          #:servlet-path
