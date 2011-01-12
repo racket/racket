@@ -289,12 +289,14 @@
 (define the-font-list (new font-list%))
 
 (define (get-face-list [mode 'all])
-  (map pango_font_family_get_name
-       (let ([fams (pango_font_map_list_families
-                    (pango_cairo_font_map_get_default))])
-         (if (eq? mode 'mono)
-             (filter pango_font_family_is_monospace fams)
-             fams))))
+  (sort
+   (map pango_font_family_get_name
+	(let ([fams (pango_font_map_list_families
+		     (pango_cairo_font_map_get_default))])
+	  (if (eq? mode 'mono)
+	      (filter pango_font_family_is_monospace fams)
+	      fams)))
+   string<?))
 
 (define (make-font #:size [size 12]
                    #:face [face #f]
