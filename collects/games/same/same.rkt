@@ -17,13 +17,13 @@
     (define board-height 16)
     (define colors (map (lambda (x) (make-object color% x))
                         (list "blue" "red" "brown" "forestgreen" "purple")))
-    (define pale-colors (map (λ (x) 
-                               (define (paleize x) (- 255 (floor (* (- 255 x) 1/2))))
-                               (make-object color%
-                                 (paleize (send x red))
-                                 (paleize (send x green))
-                                 (paleize (send x blue))))
-                             colors))
+    (define pale-colors 
+      (for/list ([x (in-list colors)])
+        (define (paleize x) (- 255 (floor (* (- 255 x) 2/3))))
+        (make-object color%
+          (paleize (send x red))
+          (paleize (send x green))
+          (paleize (send x blue)))))
     
     ;; these are the sizes that the on-paint callback draws at;
     ;; a scaling factor is applied to make the board fit the window
@@ -80,8 +80,10 @@
         (for ([v (in-vector v)])
           (when (vector-ref v 0)
             (set! cells-filled-in (+ cells-filled-in 1)))))
-      (define bonus (if (<= cells-filled-in 20)
-                        (* 50 (- 20 cells-filled-in))
+      (define bonus-start 50) ;; bonus for getting down to 49 (or fewer) balls
+      (define bonus-per-ball 50) ;; number of points for clearing each of those last 'bonus-start' balls
+      (define bonus (if (<= cells-filled-in bonus-start)
+                        (* bonus-per-ball (- bonus-start cells-filled-in))
                         0))
       (send score-message set-label 
             (format "~a + ~a = ~a"
@@ -150,10 +152,7 @@
             [mouse-clicked-x ;; has the mouse been clicked in a clickable place?
              (cond 
                [(and mouse-over? mouse-clicked-over? multiple-cells?)
-                (send dc set-pen
-                      (list-ref pale-colors color)
-                      (* pen-size 2/3)
-                      'solid)
+                (send dc set-pen (list-ref pale-colors color) (* pen-size 2/3) 'solid)
                 (draw-blob blob i j)]
                [(and mouse-over? mouse-clicked-over?)
                 (send dc set-pen
@@ -170,10 +169,7 @@
             [else
              (cond
                [mouse-over?
-                (send dc set-pen
-                      (list-ref pale-colors color)
-                      pen-size
-                      'solid)
+                (send dc set-pen (list-ref pale-colors color) (* pen-size 2/3) 'solid)
                 (draw-blob blob i j)]
                [else
                 (send dc set-pen (list-ref colors color) pen-size 'solid)
