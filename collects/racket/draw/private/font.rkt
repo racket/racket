@@ -7,7 +7,8 @@
          "../unsafe/cairo.ss"
          "font-syms.ss"
          "font-dir.ss"
-         "local.ss")
+         "local.ss"
+	 "xp.rkt")
 
 (provide font%
          font-list% the-font-list
@@ -25,6 +26,10 @@
                            (pango_attr_list_insert l (pango_attr_underline_new
                                                       PANGO_UNDERLINE_SINGLE))
                            l))
+(define fallback-attrs (and xp? 
+			    (let ([l (pango_attr_list_new)])
+			      (pango_attr_list_insert l (pango_attr_fallback_new #f))
+			      l)))
 
 (define (size? v) (and (exact-positive-integer? v)
                        (byte? v)))
@@ -83,13 +88,19 @@
   (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 1 1)]
          [cr (cairo_create s)]
          [context (pango_cairo_create_context cr)]
-         [layout (pango_layout_new context)])
+         [layout (pango_layout_new context)]
+	 ;; Under Windows XP, there's no font 
+	 ;; fallback/substitution in control labels:
+	 [no-subs? (and xp? for-label?)])
     (pango_layout_set_font_description layout desc)
     (pango_layout_set_text layout (string c))
+    (when no-subs?
+      (pango_layout_set_attributes layout fallback-attrs))
     (pango_cairo_update_layout cr layout)
     (begin0
      (or (zero? (pango_layout_get_unknown_glyphs_count layout))
          (and substitute-fonts?
+	      (not no-subs?)
               (install-alternate-face c layout font desc #f context)
               (zero? (pango_layout_get_unknown_glyphs_count layout))))
      (g_object_unref layout)

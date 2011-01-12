@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/draw
+	 racket/draw/private/xp
          ffi/unsafe
           "../../syntax.rkt"
           "../../lock.rkt"
@@ -18,10 +19,6 @@
               button%))
 
 (define BM_SETSTYLE #x00F4)
-
-(define-kernel32 GetVersion (_wfun -> _DWORD))
-
-(define xp? (= 5 (bitwise-and #xFF (GetVersion))))
 
 (define base-button% 
   (class item%
@@ -136,6 +133,8 @@
         (auto-size font label 60 20 12 0 #:scale-w 1.1 #:scale-h 1.1)]))
     (auto-size-button font label)
 
+    ;; XP doesn't show both bitmap and string labels,
+    ;; so we synthesize a bitmap label when we have both
     (define xp-label-bitmap (and xp? orientation (car label)))
     (define xp-label-string (and xp? orientation (string->immutable-string (cadr label))))
     (define xp-label-font (and xp? orientation font))
