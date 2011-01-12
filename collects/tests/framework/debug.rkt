@@ -14,7 +14,7 @@
 (define schedule? #t)
 
 ;; all of the sexpression transactions between mz and mred
-(define messages? #t)
+(define messages? #f)
 
 (define-syntax (debug-when stx)
   (syntax-case stx (mr-tcp mz-tcp admin schedule messages)
