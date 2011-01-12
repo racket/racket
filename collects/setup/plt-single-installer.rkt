@@ -74,6 +74,8 @@
                       (make-info-domain #t)
                       (call-install #f)
                       (make-docs #f))
+                    
+                    (setup-program-name "raco setup")
 
                     (parallel-workers 1))
                   (invoke-unit

@@ -1,5 +1,5 @@
 #lang at-exp racket/base
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (require scribble/manual
          scribble/basic
@@ -17,7 +17,7 @@
                     racket/class
                     racket/contract
                     racket/base
-                    drscheme/tool-lib
+                    drracket/tool-lib
 		    mrlib/switchable-button
                     framework))
 (provide (for-label (all-from-out racket/gui/base)
@@ -25,7 +25,7 @@
                     (all-from-out racket/class)
                     (all-from-out racket/contract)
                     (all-from-out racket/base)
-                    (all-from-out drscheme/tool-lib)
+                    (all-from-out drracket/tool-lib)
                     (all-from-out mrlib/switchable-button)
                     (all-from-out framework)))
 

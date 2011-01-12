@@ -1,20 +1,22 @@
 #lang scribble/doc
 @(begin
-(require scribble/manual
-         "common.rkt"
-         (for-label racket/gui/base)
-         (for-label drracket/tool-lib)
-         (for-label racket/unit racket/contract racket/class)
-         (for-label racket/base)
-         (for-label framework/framework)
-         (for-label drracket/syncheck-drracket-button))
+   (require scribble/manual
+            "common.rkt"
+            scribble/racket
+            (for-syntax racket/base
+                        "example-src.rkt")
+            (for-label drracket/tool-lib)
+            (for-label racket/unit racket/contract)
+            (for-label racket/base racket/gui)
+            (for-label framework/framework)
+            (for-label drracket/syncheck-drracket-button))
+   
+   (define (File x) @tt[x])
+   (define (FileFirst x) @tt[x]) ;; indexing missing
+   
+   (define-syntax-rule (item/cap x . ys)
+     (item (indexed-racket x) ": " . ys))) ;; indexing missing
 
-(define (File x) @tt[x])
-(define (FileFirst x) @tt[x]) ;; indexing missing
-
-(define-syntax-rule (item/cap x . ys)
-  (item (indexed-racket x) ": " . ys)) ;; indexing missing
-)
 
 @title{@bold{Plugins}: Extending DrRacket}
 
@@ -22,14 +24,19 @@
 
 @defmodule*[(drracket/tool-lib drscheme/tool-lib)]
 
-This manual describes DrRacket's tools interface. It assumes
+This manual describes DrRacket's plugins interface. It assumes
 familiarity with 
-Racket, as described in 
+Racket, as described in the
 @(other-manual '(lib "scribblings/guide/guide.scrbl")),
+and the
+@(other-manual '(lib "scribblings/reference/reference.scrbl")),
 DrRacket, as described in
 @(other-manual '(lib "scribblings/drracket/drracket.scrbl")),
-and the Framework, as described in
-@(other-manual '(lib "scribblings/framework/framework.scrbl")).
+and the GUI library, as described in
+@(other-manual '(lib "scribblings/gui/gui.scrbl")).
+The Framework, as described in
+@(other-manual '(lib "scribblings/framework/framework.scrbl")),
+may also come in handy.
 
 The @racketmodname[drscheme/tool-lib] library is for backward
 compatibility; it exports all of the bindings of
@@ -39,21 +46,24 @@ compatibility; it exports all of the bindings of
 
 @bold{Thanks}
 
-Thanks especially to 
+Thanks to PLT and the early adopters of the 
+tools interface for
+their feedback and help.
+
+A special thanks to
 Eli Barzilay, 
 John Clements, 
 Matthias Felleisen,
 Cormac Flanagan,
 Matthew Flatt, 
 Max Hailperin, 
-Philippe Meunier, 
-Christian Queinnec,
-PLT at large, and many others for
-their feedback and help.
+Philippe Meunier, and
+Christian Queinnec for their
+help being early clients for DrRacket plugins.
 
-@section[#:tag "implementing-tools"]{Implementing DrRacket Tools}
+@section[#:tag "implementing-tools"]{Implementing DrRacket Plugins}
 
-Tools are designed for major extensions in DrRacket's
+Plugins are designed for major extensions in DrRacket's
 functionality.  To extend the appearance
 or the functionality the DrRacket window (say, to annotate
 programs in certain ways, to add buttons to the DrRacket
@@ -182,6 +192,67 @@ racket/gui
 This tool just opens a few windows to indicate that it has
 been loaded and that the @racket[phase1] and @racket[phase2]
 functions have been called.
+
+Finally, here is a more involved example. This 
+module defines a plugin that adds a button to the DrRacket
+frame that, when clicked, reverses the contents of the definitions
+window. It also adds an easter egg. Whenever the definitions text is
+modified, it checks to see if the definitions text contains the
+text ``egg''. If so, it adds ``easter '' just before.
+
+@(let ()
+ 
+   (define-syntax-rule (define-linked-method name interface)
+     (define-syntax name 
+       (make-element-id-transformer
+        (lambda (stx)
+          #'(method interface name)))))
+   
+   (define-linked-method begin-edit-sequence editor<%>)
+   (define-linked-method end-edit-sequence editor<%>)
+   (define-linked-method find-first-snip editor<%>)
+   (define-linked-method on-insert text%)
+   (define-linked-method on-delete text%)
+   (define-linked-method after-insert text%)
+   (define-linked-method after-delete text%)
+   
+   (define-linked-method insert text%)
+   (define-linked-method get-text text%)
+   (define-linked-method split-snip text%)
+   
+   (define-linked-method next snip%)
+   (define-linked-method release-from-owner snip%)
+   
+   (define-linked-method change-children area-container<%>)
+   
+   (define-linked-method get-button-panel drracket:unit:frame%)
+   (define-linked-method register-toolbar-button drracket:unit:frame<%>)
+   (define-linked-method get-definitions-text drracket:unit:frame<%>)
+   
+   (define-linked-method erase dc<%>)
+   (define-linked-method set-smoothing dc<%>)
+   (define-linked-method set-pen dc<%>)
+   (define-linked-method set-brush dc<%>)
+   (define-linked-method draw-ellipse dc<%>)
+   (define-linked-method set-bitmap bdc%)
+   
+   (define-syntax (get-src stx)
+     (define file (list-ref files 1))
+     #`(racketmod
+        #,@(let loop ([sw (list-ref file 1)])
+             (cond
+               [(src-wrap? sw)
+                (datum->syntax #'here
+                               (loop (src-wrap-obj sw))
+                               (src-wrap-srcloc sw))]
+               [(pair? sw)
+                (cons (loop (car sw)) (loop (cdr sw)))]
+               [else
+                sw]))))
+   
+   (get-src))
+
+
 
 @section[#:tag "adding-languages"]{Adding Languages to DrRacket}
 @index{adding languages to DrRacket}
