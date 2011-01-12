@@ -1,18 +1,18 @@
 
-; do not remove all these blank lines, I use them to make sure a translation 
+; Do not remove all these blank lines, I use them to make sure a translation 
 ; in this file appears on the same line as in english-string-constants.ss
 
 ; "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
 
-; Note: http://www.jargonf.org/ (ex http://www.linux-france.org/prj/jargonf/) peut etre utile...
-; Les dictionnaires online anglais->francais sont tres pauvres en ce qui concerne le jargon technique,
-; et l'academie francaise (http://www-rocq.inria.fr/qui/Philippe.Deschamp/RETIF/) a quelques longueures
-; de retard. http://www-03.ibm.com/ondemand/ca/fr/dictionary/dictionnaire_u.html peut aider aussi...
-; http://www.dicofr.com/ permet les recherches a partir du mot anglais.
-; http://www.francophonie.hachette-livre.fr/ est un dico standard de base
-; http://zeus.inalf.fr/academie9.htm est le dico de l'academie (A-M pour l'instant seulement)
+; The following can be useful: http://www.jargonf.org/  http://deschamp.free.fr/exinria/RETIF/
+; http://www.dicofr.com/  http://w3.oqlf.gouv.qc.ca/banque/index.asp
+; http://www.olf.gouv.qc.ca/ressources/bibliotheque/dictionnaires/Internet/Index/index.html
+; http://atilf.atilf.fr/academie9.htm est le dico de l'academie (A-P seulement pour l'instant)
 ; http://www.google.com/language_tools?hl=en peut servir...
 ; http://www.lexilogos.com/francais_langue_dictionnaires.htm a beaucoup de liens
+
+
+
 
 
 
@@ -158,7 +158,14 @@
   (bug-report-synthesized-information "Information Synthétisée")  ;; dialog title
   (bug-report-show-synthesized-info "Montrer l'information synthétisée")
   (bug-report-submit "Soumettre")
+  (close-and-save-bug-report "Fermer && Sauvegarder") ;; button in bug report dialog, next to cancel and bug-report-submit
   (bug-report-submit-menu-item "Soumettre un rapport de bogue...") ;; in Help Menu (drs & help desk)
+  (saved-bug-reports-menu-item "Rapports de bogues sauvegardés") ;; in Help Menu, submenu title
+  (disacard-all-saved-bug-reports "Abondonner tous les rapports de bogues sauvegardés") ;; menu item: only shows up when there is more than one saved bug report
+  (no-saved-bug-reports "Aucun rapport de bogue n'a été sauvegardé") ;; an info message that shows up as a disabled menu item when no saved bug reports are around
+  (new-bug-report "Nouveau rapport de bogue") ;; button label the user sees when there are saved bug reports, but the user asks to save another one.
+  (close-and-save "Fermer et sauvegarder") ;; button on the bottom of the bug report form
+  (saved-unsubmitted-bug-reports "Rapports de bogues sauvegardés mais non-soumis :") ;; next to previous line in same dialog, followed by list of bug report subjects (as buttons)
   (error-sending-bug-report "Erreur durant la soumission du rapport de bogue.")
   (error-sending-bug-report-expln "Une erreur s'est produite pendant la soumission de votre rapport de bogue. Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.racket-lang.org/\n\net soumettre votre bogue en utilisant notre formulaire web en ligne. Je suis vraiment profondément désolé pour toutes vos difficultés.\n\nLe message d'erreur est :\n~a")
   (illegal-bug-report "Formulaire de soumission de bogue incomplet.")
@@ -196,6 +203,12 @@
   (cs-set!d-variable "variables modifiées à l'aide de set!")
   (cs-imported-variable "variables importées")
 
+  ;; mode sub-menu in the "view" menu
+  (cs-check-syntax-mode "Mode de vérification syntaxique")
+  (cs-mode-menu-show-my-obligations "Mes obligations to contrat")
+  (cs-mode-menu-show-client-obligations "Les obligations de contrat du client")
+  (cs-mode-menu-show-syntax "Catégories syntaxiques")
+  
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
   (read-only "Lecture seulement")
@@ -441,12 +454,16 @@
   (show-interactions-on-execute "Automatiquement montrer la fenêtre d'interaction lors de l'exécution d'un programme")
   (switch-to-module-language-automatically "Automatiquement utiliser le langage \"module\" lors de l'ouverture d'un fichier contenant un module")
   (interactions-beside-definitions "Mettre la fenêtre d'interaction à côté de la fenêtre de définition") ;; in preferences, below the checkbox one line above this one
+  (show-line-numbers "Montrer les numéros de lignes")
+  (show-line-numbers/menu "Montrer les numéros de lignes")  ;; just like the above, but capitalized for appearance in a menu item
+  (hide-line-numbers/menu "Cacher les numéros de lignes")
   (limit-interactions-size "Limiter la taille de la fenêtre d'interaction")
   (background-color "Couleur d'arrière-plan")
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "Sélectionnez une couleur d'avant-plan")
   (revert-to-defaults "Retour aux valeurs par défaut")
-  
+  (undo-changes "Fermer sans rien changer") ;; used in the preferences dialog to undo preference changes
+
   (black-on-white-color-scheme "Noir sur blanc") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "Blanc sur noir") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
 
@@ -546,6 +563,7 @@
   (mfs-case-sensitive-label "Différentier les lettres majuscules des minuscules")
   (mfs-no-matches-found "Rien n'a été trouvé.")
   (mfs-search-interrupted "Recherche avortée.")
+  (mfs-drscheme-multi-file-search-title "Recherche dans des fichiers multiples pour \"~a\" - DrRacket") ;; the ~a format specifier is filled in with the search string
   
   ;;;reverting a file
   (are-you-sure-revert
@@ -590,6 +608,7 @@
   (edit-menu "Editer")
   (help-menu "Aide")
   (windows-menu "Fenêtres")
+  (tabs-menu "Onglets") ;; this is the name of the "Windows" menu under linux & windows
   
   ;;; menus
   ;;; - in menu labels, the & indicates a alt-key based shortcut.
@@ -721,6 +740,7 @@
   
   ;; windows menu
   (windows-menu-label "Fe&nêtres")
+  (tabs-menu-label "Ongle&ts") ;; this is the name of the menu under linux & windows
   (minimize "Minimiser") ;; minimize and zoom are only used under mac os x
   (zoom "Agrandir") ; Zoomer?
   (bring-frame-to-front "Amener une fenêtre au premier plan")       ;;; title of dialog
@@ -975,6 +995,8 @@
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
   (compiling-teachpack "Compilation du teachpack ~a...")
   (teachpack-pre-installed "Teachpacks préinstallés")
+  (teachpack-pre-installed/htdp "Teachpacks HtDP préinstallés")
+  (teachpack-pre-installed/2htdp "Teachpacks HtDP/2e préinstallés")
   (teachpack-user-installed "Teachpacks installés par l'utilisateur")
   (add-teachpack-to-list... "Ajouter un teachpack à la liste...")
   (teachpack-already-installed "Un teachpack nommé '~a' a déjà été installé.  Voulez-vous l'écraser ?")
@@ -1058,6 +1080,12 @@
   (module-language-one-line-summary "Le langage utilisé est spécifié par la ligne #lang")
   (module-language-auto-text "Ligne #lang automatique") ;; shows up in the details section of the module language
   
+  ;; for the upper portion of the language dialog
+  (use-language-in-source "Utiliser le langage indiqué dans le code source")
+  (choose-a-language "Sélectionner un langage")
+  (lang-in-source-discussion
+   "La ligne #lang en début de programme spécifie le langage. Ceci est le mode par défaut (et préféré) pour DrRacket.")
+  
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrRacket ne peut pas traiter un programme avant que vous aillez sélectionné un langage.")
   
@@ -1070,6 +1098,7 @@
   (start-with-after "")
 
   (seasoned-plt-schemer? "Programmeur PLT Scheme chevronné ?")
+  (racketeer? "Êtes-vous un racketteur ?")
   (looking-for-standard-scheme? "À la recherche d'un langage Scheme standard ?")
 
   ; the three string constants are concatenated together and the middle
@@ -1191,8 +1220,8 @@
   (module-browser-show-lib-paths/short "(require (lib ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-show-planet-paths/short "(require (planet ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Rafraîchir") ;; button label in show module browser pane in drscheme window.
-;  (module-browser-only-in-plt-and-module-langs
-;   "Le navigateur de modules n'est disponible que pour les programmes écrits dans l'un des langages PLT ou dans le langage \"module\", et seulement pour les programmes qui contiennent des modules.")
+  (module-browser-only-in-plt-and-module-langs
+   "Le navigateur de modules n'est disponible que pour les programmes qui contiennent des modules.")
   (module-browser-name-length "Noms")
   (module-browser-name-short "courts")
   (module-browser-name-medium "moyens")
@@ -1255,18 +1284,32 @@
   (stepper-language-level-message "Le Pas à Pas n'est pas disponible pour le langage \"~a\".")
   (stepper-button-label "Pas")
   
-  (stepper-previous-application "|< Application")
   (stepper-previous "< Pas")
   (stepper-next "Pas >")
-  (stepper-next-application "Application >|")
-  (stepper-jump "Sauter...") ;; this one is changed.  action?
+  (stepper-jump "Sauter...")
+  (stepper-jump-to-beginning "au début")
+  (stepper-jump-to-end "à la fin")
+  (stepper-jump-to-selected "au début de la sélection")
+  (stepper-jump-to-previous-application "au pas d'application précédent")
+  (stepper-jump-to-next-application "au pas d'application suivant")
   (stepper-out-of-steps "Arrivé à la fin de l'évaluation sans trouver le type de pas que vous recherchiez.")
   (stepper-no-such-step/title "Pas non trouvé")
   (stepper-no-such-step "Impossible de trouver un pas qui satisfasse ce critère.")
   (stepper-no-such-step/earlier "Impossible de trouver un pas précédent qui satisfasse ce critère.")
-  (stepper-jump-to-beginning "au début") ;; name changed from stepper-home to stepper-jump-to-beginning
-  (stepper-jump-to-end "à la fin") ;; content changed
-  (stepper-jump-to-selected "au début de la sélection") ;; new
+
+  (stepper-no-earlier-application-step "Pas de pas d'application précédent.")
+  (stepper-no-later-application-step "Pas de pas d'application suivant.")
+ 
+  (stepper-no-earlier-step "Pas de pas précédent.")
+  (stepper-no-later-step "Pas de pas suivant.")
+  
+  (stepper-no-selected-step "Pas de pas effectué dans la région sélectionnée.  Peut-être est-elle commentée ?")
+  
+  (stepper-no-last-step "Pas de pas final pour l'instant.")
+ 
+  
+  
+  
   
   (debug-tool-button-name "Déboguer")
   
@@ -1421,11 +1464,23 @@
    "check-error a rencontré l'erreur suivante au lieu du ~a attendu~n   :: ~a")
   (test-engine-expected-error-error
    "check-error attendait l'erreur suivante au lieu de la valeur ~F reçue.~n ~a")
+  (test-engine-expected-an-error-error
+   "check-error attendait une erreur au lieu de la valeur ~F.")
+  ;; members are appended to the message
+  (test-engine-not-mem-error "La valeur actuelle ~F est différente de tous les membres dans ")
+  (test-engine-not-range-error "La valeur actuelle ~F n'est pas entre ~F et ~F, inclusif.")
+
+  ;; followed by list of variable bindings
+  (test-engine-property-fail-error "Propriété falsifiable par")
+  (test-engine-property-error-error "check-property a rencontré l'erreur suivante~n:: ~a")
+
+  (signature-enable-checks "Permettre la vérification des signatures")
+  (signature-disable-checks "Désactiver la vérification des signatures")
 
   ; section header
-  (test-engine-check-failures "Échecs de \"check\"s :")
+  (test-engine-check-failures "Échecs de vérfications :")
   ; section header
-  (test-engine-signature-violations "Violations de contrats :")
+  (test-engine-signature-violations "Violations de signatures :")
 
   ; part of one phrase "signature <at line ...> to blame: procedure <...>
   (test-engine-signature "Le signature")
@@ -1516,6 +1571,7 @@
   (planet-downloading "PLaneT: téléchargement de ~a...")
   (planet-installing "PLaneT: installation de ~a...")
   (planet-finished "PLaneT: ~a à jour.")
+  (planet-docs-building "PLaneT: compilation des docs (déclenché par ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
   ;; string normalization. To see this, paste some text with a ligature into DrRacket
@@ -1526,4 +1582,4 @@
   (normalize-string-preference "Normaliser les chaînes de caractères durant le collage")
   (ask-about-normalizing-strings "Demander à propos de la normalisation des chaînes de caractères")
 
-  ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz"
+  ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
