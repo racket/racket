@@ -405,6 +405,14 @@
       (set-box! x (POINT-x p))
       (set-box! y (POINT-y p))))
 
+  (define/public (in-content? p)
+    (ScreenToClient (get-client-hwnd) p)
+    (let ([r (GetClientRect (get-client-hwnd))])
+      (and (< 0 (POINT-x p) (- (RECT-right r)
+			       (RECT-left r)))
+	   (< 0 (POINT-y p) (- (RECT-bottom r)
+			       (RECT-top r))))))
+
   (define/public (drag-accept-files on?)
     (DragAcceptFiles (get-hwnd) on?))
 
@@ -496,28 +504,6 @@
 
   (define/public (try-mouse w msg wParam lParam)
     (cond
-     [(= msg WM_NCRBUTTONDOWN)
-      (do-mouse w msg #t 'right-down wParam lParam)]
-     [(= msg WM_NCRBUTTONUP)
-      (do-mouse w msg #t 'right-up wParam lParam)]
-     [(= msg WM_NCRBUTTONDBLCLK)
-      (do-mouse w msg #t 'right-down wParam lParam)]
-     [(= msg WM_NCMBUTTONDOWN)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
-     [(= msg WM_NCMBUTTONUP)
-      (do-mouse w msg #t 'middle-up wParam lParam)]
-     [(= msg WM_NCMBUTTONDBLCLK)
-      (do-mouse w msg #t 'middle-down wParam lParam)]
-     [(= msg WM_NCLBUTTONDOWN)
-      (do-mouse w msg #t 'left-down wParam lParam)]
-     [(= msg WM_NCLBUTTONUP)
-      (do-mouse w msg #t 'left-up wParam lParam)]
-     [(= msg WM_NCLBUTTONDBLCLK)
-      (do-mouse w msg #t 'left-down wParam lParam)]
-     [(and (= msg WM_NCMOUSEMOVE)
-           (not (= wParam HTVSCROLL))
-           (not (= wParam HTHSCROLL)))
-      (do-mouse w msg #t 'motion wParam lParam)]
      [(= msg WM_RBUTTONDOWN)
       (do-mouse w msg #f 'right-down wParam lParam)]
      [(= msg WM_RBUTTONUP)
@@ -542,10 +528,41 @@
       (let ([p (make-POINT 0 0)])
         (GetCursorPos p)
         (let ([f (location->window (POINT-x p) (POINT-y p))])
-          (unless (eq? f (get-top-frame))
+          (unless (and (eq? f (get-top-frame))
+		       (send f in-content? p))
             (do-mouse w msg #f 'leave wParam lParam))))
       ;; send message on to default handling (e.g., for buttons):
       #f]
+     [else (try-nc-mouse w msg wParam lParam)]))
+
+  ;; Breaking out NC mouse operations lets us not handle
+  ;; them for frames (where this method is overridden), 
+  ;; since handling them intereferes with the cursor and
+  ;; resize handling for frames.
+  (define/public (try-nc-mouse w msg wParam lParam)
+    (cond
+     [(= msg WM_NCRBUTTONDOWN)
+      (do-mouse w msg #t 'right-down wParam lParam)]
+     [(= msg WM_NCRBUTTONUP)
+      (do-mouse w msg #t 'right-up wParam lParam)]
+     [(= msg WM_NCRBUTTONDBLCLK)
+      (do-mouse w msg #t 'right-down wParam lParam)]
+     [(= msg WM_NCMBUTTONDOWN)
+      (do-mouse w msg #t 'middle-down wParam lParam)]
+     [(= msg WM_NCMBUTTONUP)
+      (do-mouse w msg #t 'middle-up wParam lParam)]
+     [(= msg WM_NCMBUTTONDBLCLK)
+      (do-mouse w msg #t 'middle-down wParam lParam)]
+     [(= msg WM_NCLBUTTONDOWN)
+      (do-mouse w msg #t 'left-down wParam lParam)]
+     [(= msg WM_NCLBUTTONUP)
+      (do-mouse w msg #t 'left-up wParam lParam)]
+     [(= msg WM_NCLBUTTONDBLCLK)
+      (do-mouse w msg #t 'left-down wParam lParam)]
+     [(and (= msg WM_NCMOUSEMOVE)
+           (not (= wParam HTVSCROLL))
+           (not (= wParam HTHSCROLL)))
+      (do-mouse w msg #t 'motion wParam lParam)]
      [else #f]))
 
   (define/private (do-mouse control-hwnd msg nc? type wParam lParam)

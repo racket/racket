@@ -257,6 +257,9 @@
       0]
      [else (super wndproc w msg wParam lParam default)]))
 
+  (define/override (try-nc-mouse w msg wParam lParam)
+    #f)
+
   (define/override (set-size x y w h)
     (unless (and (= w -1) (= h -1))
       (maximize #f))
