@@ -73,11 +73,41 @@
        `(<> ,(map list xs (map (fix-expr xs) vs)) [] ,((fix-expr xs) e)))]))
 
 (define (fix-expr top-vars) 
-  (compose drop-duplicate-binders
-           proper-wcms
-           proper-conts ; before fixing wcm!
-           consistent-dws
-           (curry close top-vars '())))
+  (define rewrite
+    (compose drop-duplicate-binders
+             proper-wcms
+             proper-conts
+             consistent-dws
+             (curry close top-vars '())))
+  ; Must call proper-wcm after proper-conts because the latter
+  ; exposes opportunities to the former.
+  ;
+  ; (% 1 
+  ;    (cont 1
+  ;          (wcm ([2 3])
+  ;               (% 1
+  ;                  (wcm ([2 4])
+  ;                       hole)
+  ;                  (λ (x) x))))
+  ;   (λ (x) x))
+  ;
+  ; But proper-conts sometimes cannot do its job until proper-wcms
+  ; turns an arbitrary context into an evaluation context.
+  ;
+  ; (% 1 
+  ;  (cont 1
+  ;        (wcm ([2 3])
+  ;             (wcm ([2 4])
+  ;                  (% 1 hole (λ (x) x)))))
+  ;  (λ (x) x))
+  ;
+  ; It might work to make proper-conts work in more contexts,
+  ; but it's easier to iterate the rules to a fixed point (and
+  ; there may be more dependencies that require iteration anyway).
+  (λ (e)
+    (let loop ([e e])
+      (define e’ (rewrite e))
+      (if (equal? e e’) e (loop e’)))))
 
 (struct error (cause) #:transparent)
 (struct answer (output result) #:transparent)
@@ -204,10 +234,11 @@
               (random-member bound)]
              [else (random-literal)]))]
     [`(set! ,x ,e)
-     (if (empty? top-vars)
-         (close top-vars loc-vars e)
-         `(set! ,(random-member top-vars)
-                ,(close top-vars loc-vars e)))]
+     (define e’ (close top-vars loc-vars e))
+     (cond [(memq x top-vars)
+            `(set! ,x ,e’)]
+           [(empty? top-vars) e’]
+           [else `(set! ,(random-member top-vars) ,e’)])]
     [`(λ ,xs ,e) 
      `(λ ,xs 
         ,(close (filter (negate (curryr member xs)) top-vars) 
