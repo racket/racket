@@ -2,12 +2,15 @@
 @(require scribble/manual
           scribble/bnf
           "common.ss"
+          scribble/eval
           (for-label racket/base
                      racket/include
                      racket/contract
                      compiler/cm
                      compiler/cm-accomplice))
 
+@(define cm-eval (make-base-eval))
+@(interaction-eval #:eval cm-eval (require compiler/cm))
 @title[#:tag "make"]{@exec{raco make}: Compiling Source to Bytecode}
 
 The @exec{raco make} command accept filenames for Racket modules to be
@@ -310,6 +313,39 @@ closed and the @racket[tmp-path] file is reliably deleted if there's a
 break. The result of @racket[proc] is the result of the
 @racket[with-compile-output] call.}
 
+@defparam[parallel-lock-client proc ([command (or/c 'lock 'unlock)] [zo-path bytes?] . -> . boolean?)]{
+
+Holds the parallel compilation lock client, which prevents compilation races
+between parallel builders.  The @racket[proc] function takes a command argument
+of either @racket['lock] or @racket['unlock].  The @racket[zo-path] argument
+specifies the path of the zo for which compilation should be locked.
+
+When the @racket[proc] @racket['lock] command returns @racket[#t], the current
+builder has obtained the lock for @racket[zo-path].
+Once compilation of @racket[zo-path] is complete, the builder process must
+release the lock by calling @racket[proc] @racket['unlock] with the exact same
+@racket[zo-path].
+
+When the @racket[proc] @racket['lock] command returns @racket[#f], another
+parallel builder obtained the lock first and has already compiled the zo.  The
+parallel builder should continue without compiling @racket[zo-path].  
+
+@examples[
+  #:eval cm-eval
+(let* ([lc (parallel-lock-client)]
+       [zo-name  #"collects/racket/draw.rkt"]
+       [locked? (and lc (lc 'lock zo-name))]
+       [ok-to-compile? (or (not lc) locked?)])
+  (dynamic-wind
+    (lambda () (void))
+    (lambda ()
+      (when ok-to-compile?
+        (printf "Do compile here ...\n")))
+    (lambda ()
+     (when locked?
+       (lc 'unlock zo-name)))))
+]
+}
 @; ----------------------------------------------------------------------
 
 @section{Compilation Manager Hook for Syntax Transformers}
@@ -378,3 +414,5 @@ compiling the source files specified on the command line.
 
 In general, a better solution is to put all code to compile into a
 module and use @exec{raco make} in its default mode.
+
+@(close-eval cm-eval)
