@@ -48,6 +48,6 @@ unboxed-for.rkt line 51 col 0 - (letrec-values (((for-loop) (lambda (sum pos) (i
 
 
 
-(for/fold: : Inexact-Complex ((sum : Inexact-Complex 0.0+0.0i))
-           ((i : Inexact-Complex '(1.0+2.0i 2.0+4.0i)))
+(for/fold: : Float-Complex   ((sum : Float-Complex   0.0+0.0i))
+           ((i : Float-Complex   '(1.0+2.0i 2.0+4.0i)))
       (+ i sum))

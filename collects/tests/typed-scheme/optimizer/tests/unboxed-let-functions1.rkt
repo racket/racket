@@ -25,5 +25,5 @@ unboxed-let-functions1.rkt line 29 col 3 - f - call to fun with unboxed args
 
 
 ;; simple case, function with single complex arg
-(let ((f (lambda: ((x : Inexact-Complex)) (+ x 3.0+6.0i))))
+(let ((f (lambda: ((x :   Float-Complex)) (+ x 3.0+6.0i))))
   (f (+ 1.0+2.0i 2.0+4.0i)))

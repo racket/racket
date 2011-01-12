@@ -27,7 +27,7 @@ unboxed-let-functions7.rkt line 30 col 6 - loop - unboxed let loop
 
 
 
-(let: loop : Inexact-Complex ((z : Inexact-Complex 0.0+0.0i)
+(let: loop : Float-Complex   ((z : Float-Complex   0.0+0.0i)
                               (l : (Listof Integer) '(1 2 3)))
   (if (null? l)
       z ; boxed use. z should be unboxed anyway

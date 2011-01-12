@@ -25,7 +25,7 @@ unboxed-let-functions4.rkt line 30 col 3 - f - call to fun with unboxed args
 
 
 ;; function with a mix of complex and non-complex args, non-complex first
-(let ((f (lambda: ((y : Float) (x : Inexact-Complex))
+(let ((f (lambda: ((y : Float) (x : Float-Complex))
                   (+ x y))))
   (f 3.0
      (+ 1.0+2.0i 2.0+4.0i)))

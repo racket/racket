@@ -29,7 +29,7 @@ unboxed-let-functions6.rkt line 32 col 6 - loop - unboxed let loop
 
 
 
-(let: loop : Inexact-Complex ((z : Inexact-Complex 0.0+0.0i)
+(let: loop :   Float-Complex ((z : Float-Complex   0.0+0.0i)
                               (l : (Listof Integer) '(1 2 3)))
       (if (null? l)
           (+ z 0.0+1.0i)

@@ -31,7 +31,7 @@ unboxed-let-functions2.rkt line 36 col 3 - f - call to fun with unboxed args
 
 
 ;; function with multiple complex args
-(let ((f (lambda: ((x : Inexact-Complex) (y : Inexact-Complex))
+(let ((f (lambda: ((x :   Float-Complex) (y : Float-Complex))
                   (+ x y))))
   (f (+ 1.0+2.0i 2.0+4.0i)
      3.0+6.0i))

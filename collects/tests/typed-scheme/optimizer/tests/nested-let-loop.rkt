@@ -44,14 +44,14 @@ nested-let-loop.rkt line 47 col 6 - loop1 - unboxed let loop
 
 
 
-(let: loop1 : Inexact-Complex
-      ((x : (Listof Inexact-Complex) '(1.0+2.0i 2.0+4.0i))
-       (r : Inexact-Complex 0.0+0.0i))
+(let: loop1 : Float-Complex
+      ((x : (Listof Float-Complex)   '(1.0+2.0i 2.0+4.0i))
+       (r : Float-Complex   0.0+0.0i))
       (if (null? x)
           r
-          (let: loop2 : Inexact-Complex
-                ((y : (Listof Inexact-Complex) '(3.0+6.0i 4.0+8.0i))
-                 (s : Inexact-Complex 0.0+0.0i))
+          (let: loop2 : Float-Complex
+                ((y : (Listof Float-Complex)   '(3.0+6.0i 4.0+8.0i))
+                 (s : Float-Complex   0.0+0.0i))
                 (if (null? y)
                     (loop1 (cdr x) (+ r s))
                     (loop2 (cdr y) (+ s (car x) (car y)))))))
