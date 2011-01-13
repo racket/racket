@@ -248,12 +248,13 @@ directory (on the same disk) as well as rename a file/directory within
 a directory. Unless @racket[exists-ok?]  is provided as a true value,
 @racket[new] cannot refer to an existing file or directory. Even if
 @racket[exists-ok?] is true, @racket[new] cannot refer to an existing
-file when @racket[old] is a directory, and vice versa. (If
-@racket[new] exists and is replaced, the replacement is atomic in the
-filesystem, except under Windows 95, 98, or Me. However, the check for
-existence is not included in the atomic action, which means that race
-conditions are possible when @racket[exists-ok?] is false or not
-supplied.)
+file when @racket[old] is a directory, and vice versa.
+
+If @racket[new] exists and is replaced, the replacement is atomic
+under Unix and Mac OS X, but it is not guaranteed to be atomic under
+Windows. Furthermore, if @racket[new] exists and is opened by any
+process for reading or writing, then attempting to replace it will
+typically fail under Windows.
 
 If @racket[old] is a link, the link is renamed rather than the
 destination of the link, and it counts as a file for replacing any
