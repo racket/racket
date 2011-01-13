@@ -84,7 +84,7 @@
     (define/override (collapse-bitmap-b&w?) b&w?)
 
     (define/override (get-clear-operator)
-      (if (send bm has-alpha-channel?)
+      (if (or b&w? (send bm has-alpha-channel?))
           CAIRO_OPERATOR_CLEAR
           CAIRO_OPERATOR_OVER))
 
