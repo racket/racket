@@ -26,6 +26,7 @@ AC_CONFIG_HEADERS([racket/mzconfig.h])
 AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
 AC_ARG_ENABLE(plot,    [  --enable-plot           compile plot libraries (enabled by default)], , enable_plot=yes )
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
+AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled libtool], LIBTOOLPROG="$enableval", enable_lt=no)
@@ -262,6 +263,7 @@ show_explicitly_enabled()
 show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
+show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
@@ -1033,10 +1035,16 @@ if test "${enable_jit}" = "no" ; then
    PREFLAGS="${PREFLAGS} -DMZ_DONT_USE_JIT"
 fi
 
+############## usersetup ################
+
+if test "${enable_usersetup}" != "yes" ; then  
+  INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-user"
+fi
+
 ############## docs ################
 
 if test "${enable_docs}" = "no" ; then  
-  INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} -D"
+  INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
 fi
 
 ############## libtool ################
