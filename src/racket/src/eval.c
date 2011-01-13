@@ -2489,6 +2489,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   Scheme_Object *val;
   int i, expected;
   int *flags, flag;
+  Optimize_Info *sub_info;
 
   expected = data->num_params;
 
@@ -2565,7 +2566,14 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   else
     lh->body = p;
 
-  p = scheme_optimize_lets((Scheme_Object *)lh, info, 1, context);
+  sub_info = scheme_optimize_info_add_frame(info, 0, 0, 0);
+  sub_info->inline_fuel >>= 1;
+
+  p = scheme_optimize_lets((Scheme_Object *)lh, sub_info, 1, context);
+
+  info->single_result = sub_info->single_result;
+  info->preserves_marks = sub_info->preserves_marks;
+  scheme_optimize_info_done(sub_info);
 
   if (le_prev) {
     *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;

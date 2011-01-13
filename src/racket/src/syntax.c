@@ -3281,9 +3281,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   else
     rhs_info = body_info;
 
-  if (for_inline)
-    body_info->inline_fuel >>= 1;
-
   body = head->body;
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_Compiled_Let_Value *)body;
