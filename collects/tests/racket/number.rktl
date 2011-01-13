@@ -99,6 +99,30 @@
 (test #f rational? +nan.0)
 (test #f integer? +nan.0)
 
+(test #t number? +inf.f)
+(test #t complex? +inf.f)
+(test #t real? +inf.f)
+(test #f rational? +inf.f)
+(test #f integer? +inf.f)
+
+(test #t number? -inf.f)
+(test #t complex? -inf.f)
+(test #t real? -inf.f)
+(test #f rational? -inf.f)
+(test #f integer? -inf.f)
+
+(test #t number? +nan.f)
+(test #t complex? +nan.f)
+(test #t real? +nan.f)
+(test #f rational? +nan.f)
+(test #f integer? +nan.f)
+
+(test #t number? -nan.f)
+(test #t complex? -nan.f)
+(test #t real? -nan.f)
+(test #f rational? -nan.f)
+(test #f integer? -nan.f)
+
 (arity-test inexact? 1 1)
 (arity-test number? 1 1)
 (arity-test complex? 1 1)

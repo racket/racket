@@ -60,6 +60,13 @@ READ_ONLY static char *infinity_str = "+inf.0";
 READ_ONLY static char *minus_infinity_str = "-inf.0";
 READ_ONLY static char *not_a_number_str = "+nan.0";
 READ_ONLY static char *other_not_a_number_str = "-nan.0";
+/* Single-precision float literals.
+   Due to the structure of the reader, they have to be exactly 6
+   characters long. */
+READ_ONLY static char *single_infinity_str = "+inf.f";
+READ_ONLY static char *single_minus_infinity_str = "-inf.f";
+READ_ONLY static char *single_not_a_number_str = "+nan.f";
+READ_ONLY static char *single_other_not_a_number_str = "-nan.f";
 
 #if !defined(SIXTY_FOUR_BIT_INTEGERS) && defined(NO_LONG_LONG_TYPE)
 SHARED_OK static Scheme_Object *num_limits[3];
@@ -237,6 +244,30 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 #ifdef USE_SINGLE_FLOATS_AS_DEFAULT
       return scheme_single_nan_object;
 #else      
+      return scheme_nan_object;
+#endif
+    }
+    /* Single-precision specials
+       If single-precision float support is disabled, promote. */
+    else if (!u_strcmp(s, single_infinity_str)) {
+#ifdef MZ_USE_SINGLE_FLOATS
+      return scheme_single_inf_object;
+#else
+      return scheme_inf_object;
+#endif
+    }
+    else if (!u_strcmp(s, single_minus_infinity_str)) {
+#ifdef MZ_USE_SINGLE_FLOATS
+      return scheme_single_minus_inf_object;
+#else
+      return scheme_minus_inf_object;
+#endif
+    }
+    else if (!u_strcmp(s, single_not_a_number_str)
+	     || !u_strcmp(s, single_other_not_a_number_str)) {
+#ifdef MZ_USE_SINGLE_FLOATS
+      return scheme_single_nan_object;
+#else
       return scheme_nan_object;
 #endif
     }

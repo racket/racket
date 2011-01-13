@@ -230,6 +230,10 @@ an exponent and specify a numerical precision. If single-precision
 IEEE floating point is supported (see @secref["numbers"]), the marks
 @litchar{f} and @litchar{s} specifies single-precision. Otherwise, or
 with any other mark, double-precision IEEE floating point is used.
+In addition, single- and double-precision specials are distinct;
+specials with the @litchar{.0} suffix, like @racket[-nan.0] are
+double-precision, wheras specials with the @litchar{.f} suffix are
+single-precision.
 
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
                                      @nunterm{inexact}])
@@ -251,7 +255,7 @@ with any other mark, double-precision IEEE floating point is used.
      (list @nunterm{inexact-simple} @BNF-seq[@nunterm{digits#} @optional{@litchar{.}} @kleenestar{@litchar{#}}]
                                     @BNF-seq[@optional{@nunterm{exact-integer}} @litchar{.} @nunterm{digits#}]
                                     @BNF-seq[@nunterm{digits#} @litchar{/} @nunterm{digits#}])
-     (list @nunterm{inexact-special} @BNF-alt[@litchar{inf.0} @litchar{nan.0}])
+     (list @nunterm{inexact-special} @BNF-alt[@litchar{inf.0} @litchar{nan.0} @litchar{inf.f} @litchar{nan.f}])
      (list @nunterm{digits#} @BNF-seq[@kleeneplus{@nunterm{digit}} @kleenestar{@litchar{#}}])
      (list @nunterm{inexact-complex} @BNF-seq[@optional{@nunterm{inexact-real}} @nonterm{sign} @nunterm{inexact-unsigned} @litchar{i}]
                                      @BNF-seq[@nunterm{inexact-real} @litchar["@"] @nunterm{inexact-real}])
