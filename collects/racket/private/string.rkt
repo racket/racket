@@ -404,7 +404,7 @@
                                                              (check
                                                               replacement
                                                               (for/list ([m ms])
-                                                                (sub buf (car m) (cdr m))))
+                                                                (and m (sub buf (car m) (cdr m)))))
                                                              (replac ms replacement))
                                                          (sub buf start mstart)
                                                          acc))

@@ -1090,6 +1090,8 @@
          ((equal? what #"trout") (bytes-append color #" fish"))
          (else (bytes-append color #" " what)))))
 
+(test "foofoo" regexp-replace* #px"(.)?" "a" (lambda args "foo"))
+
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
   (test #f regexp-match "e" (open-input-string ""))
