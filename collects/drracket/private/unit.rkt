@@ -2089,8 +2089,8 @@ module browser threading seems wrong.
                  ;; be sure asterisk is at the end of each list,
                  ;; since that's a relatively safe character
                  (case (system-type)
-                   [(unix windows) '("★ " "◆ " "* ")]
-                   [else '("◆ " "★ " "* ")])])
+                   [(unix windows) '("★ " "◆ " "• " "* ")]
+                   [else '("◆ " "★ " "• " "* ")])])
             (ormap
              (lambda (candidate)
                (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x #t))
