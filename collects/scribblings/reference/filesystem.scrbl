@@ -853,10 +853,20 @@ desired access and flags (probably using the @racket['truncate] flag;
 see @racket[open-output-file]) and to delete it when it is no longer
 needed.}
 
+
 @defproc[(get-preference [name symbol?]
                          [failure-thunk (-> any) (lambda () #f)]
                          [flush-mode any/c 'timestamp]
-                         [filename (or/c string-path? #f) #f])
+                         [filename (or/c string-path? #f) #f]
+                         [#:lock-there 
+                          lock-there
+                          (or/c (path? . -> . any) #f)
+                          (make-handle-get-preference-locked 0.01
+                                                             name
+                                                             fail-thunk
+                                                             refresh-cache?
+                                                             filename)]
+                         [#:use-lock? use-lock? #t])
          any]{
 
 Extracts a preference value from the file designated by
@@ -886,6 +896,16 @@ cache is used instead of the re-consulting the preferences file. If
 then the cache is used only if the file has a timestamp that is the
 same as the last time the file was read. Otherwise, the file is
 re-consulted.
+
+Under platforms for which @racket[preferences-lock-file-mode] returns
+@racket['file-lock] and when @racket[use-lock?] is true,
+preference-file reading is guarded by a lock; multiple readers can
+share the lock, but writers take the lock exclusively. If the
+preferences file cannot be read because the lock is unavailable,
+@racket[lock-there] is called on the path of the lock file; if
+@racket[lock-there] is @racket[#f], an exception is raised. The
+default @racket[lock-there] handler retries about 5 times (with
+increasing delays between each attempt) before raising an exception.
 
 See also @racket[put-preferences]. For a more elaborate preference
 system, see @racket[preferences:get].
@@ -924,21 +944,66 @@ whose @racket[write] output is @racket[read]able (i.e., the
 writing preferences).
 
 Current preference values are read from the preference file before
-updating, and an update ``lock'' is held starting before the file
+updating, and a write lock is held starting before the file
 read, and lasting until after the preferences file is updated. The
 lock is implemented by the existence of a file in the same directory
-as the preference file. If the directory of the preferences file does
+as the preference file; see @racket[preferences-lock-file-mode] for 
+more information. If the directory of the preferences file does
 not already exist, it is created.
 
-If the update lock is already held (i.e., the lock file exists), then
+If the write lock is already held, then
 @racket[locked-proc] is called with a single argument: the path of the lock
 file. The default @racket[locked-proc] reports an error; an alternative
 thunk might wait a while and try again, or give the user the choice to
 delete the lock file (in case a previous update attempt encountered
-disaster).
+disaster and locks are implemented by the presence of the lock file).
 
 If @racket[filename] is @racket[#f] or not supplied, and the
 preference file does not already exist, then values read from the
 @filepath{defaults} collection (if any) are written for preferences
 that are not mentioned in @racket[names].}
 
+
+@defproc[(preferences-lock-file-mode) (or/c 'exists 'file-lock)]{
+
+Reports the way that the lock file is used to implement
+preference-file locking on the current platform.
+
+The @racket['exists] mode is currently used on all platforms except
+Windows. In @racket['exists] mode, the existence of the lock file
+indicates that a write lock is held, and readers need no lock (because
+the preferences file is atomically updated via
+@racket[rename-file-or-directory]).
+
+The @racket['file-lock] mode is currently used under Windows. In
+@racket['file-lock] mode, shared and exclusive locks (in the sense of
+@racket[port-try-file-lock?]) on the lock file reflect reader and
+writer locks on the preference-file content. (The preference file
+itself is not locked, because a lock would interfere with replacing
+the file via @racket[rename-file-or-directory].)}
+
+
+@defproc[(make-handle-get-preference-locked
+          [delay real?]
+          [name symbol?]
+          [failure-thunk (-> any) (lambda () #f)]
+          [flush-mode any/c 'timestamp]
+          [filename (or/c string-path? #f) #f]
+          [#:lock-there lock-there (or/c (path? . -> . any) #f) #f]
+          [#:max-delay max-delay real? 0.2])
+         (path-string? . -> . any)]{
+
+Creates a procedure suitable for use as the @racket[#:lock-there]
+argument to @racket[get-preference], where the @racket[name],
+@racket[failure-thunk], @racket[flush-mode], and @racket[filename]
+are all passed on to @racket[get-preference] by the result procedure
+to retry the preferences lookup.
+
+Before calling @racket[get-preference], the result procedure uses
+@racket[(sleep delay)] to pause. Then, if @racket[(* 2 delay)] is less
+than @racket[max-delay], the result procedure calls
+@racket[make-handle-get-preference-locked] to generate a new retry
+procedure to pass to @racket[get-preference], but with a
+@racket[delay] of @racket[(* 2 delay)]. If @racket[(* 2 delay)] is not
+less than @racket[max-delay], then @racket[get-preference] is called
+with the given @racket[lock-there], instead.}

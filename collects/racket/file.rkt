@@ -7,6 +7,8 @@
 
          get-preference
          put-preferences
+         preferences-lock-file-mode
+         make-handle-get-preference-locked
 
          fold-files
          find-files
@@ -139,19 +141,93 @@
     (unless (eq? table (weak-box-value pref-cache))
       (set! pref-cache (make-weak-box table)))))
 
-(define (get-prefs flush-mode filename)
+
+(define make-lock-file-name
+  (case-lambda
+   [(path) (let-values ([(dir name dir?) (split-path path)])
+             (make-lock-file-name dir name))]
+   [(dir name)
+    (build-path dir
+                (bytes->path-element
+                 (bytes-append
+                  (if (eq? 'windows (system-type))
+                      #"_"
+                      #".")
+                  #"LOCK"
+                  (path-element->bytes name))))]))
+
+(define (preferences-lock-file-mode)
+  (case (system-type)
+    [(windows) 'file-lock]
+    [else 'exists]))
+
+(define (call-with-file-lock who kind get-lock-file thunk lock-there)
+  (case (preferences-lock-file-mode)
+    [(file-lock)
+     (let ([lock-file (get-lock-file)])
+       ;; Create the lock file if it doesn't exist:
+       (unless (file-exists? lock-file)
+         (with-handlers ([exn:fail:filesystem:exists? (lambda (exn) 'ok)])
+           (close-output-port (open-output-file lock-file #:exists 'error))))
+       ((call-with-input-file* 
+         lock-file
+         (lambda (p)
+           (if (port-try-file-lock? p kind)
+               ;; got lock:
+               (let ([v (dynamic-wind
+                            void
+                            thunk
+                            (lambda ()
+                              (port-file-unlock p)))])
+                 (lambda () v))
+               ;; didn't get lock:
+               (if lock-there
+                   (lambda () (lock-there lock-file))
+                   (error who
+                          "~a ~a: ~e"
+                          "some other process has a lock"
+                          "on the preferences lock file"
+                          lock-file)))))))]
+    [else ; = 'exists
+     ;; Only a write lock is needed, and the file lock 
+     ;; is implemented by the presence of the file:
+     (case kind
+       [(shared) (thunk)]
+       [(exclusive)
+        (let ([lock-file (get-lock-file)])
+          (with-handlers ([exn:fail:filesystem:exists?
+                           (lambda (x)
+                             (if lock-there
+                                 (lock-there lock-file)
+                                 (error who
+                                        "~a, ~a: ~e"
+                                        "some other process has the preference-file lock"
+                                        "as indicated by the existence of the lock file"
+                                        lock-file)))])
+            ;; Grab lock:
+            (close-output-port (open-output-file lock-file #:exists 'error)))
+          (dynamic-wind 
+              void
+              thunk
+              (lambda ()
+                ;; Release lock:
+                (delete-file lock-file))))])]))
+
+(define (get-prefs flush-mode filename use-lock? lock-there)
   (define (read-prefs default-pref-file)
     (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-      (let* ([pref-file
-              (or filename
-                  (let ([f default-pref-file])
-                    (if (file-exists? f)
-                        ;; Using `file-exists?' means there's technically a
-                        ;; race condition, but something has gone really wrong
-                        ;; if the file disappears.
-                        f
-                        ;; Look for old PLT Scheme pref file:
-                        (let ([alt-f (case (system-type)
+      (let-values ([(pref-file use-lock?)
+                    (if filename
+                        (values filename use-lock?)
+                        (let ([f default-pref-file])
+                          (if (file-exists? f)
+                              ;; Using `file-exists?' means there's technically a
+                              ;; race condition, but something has gone really wrong
+                              ;; if the file disappears.
+                              (values f use-lock?)
+                              ;; Look for old PLT Scheme pref file:
+                              (let ([alt-f 
+                                     (case (system-type)
                                        [(windows)
                                         (build-path (find-system-path 'pref-dir)
                                                     'up "PLT Scheme" "plt-prefs.ss")]
@@ -160,23 +236,34 @@
                                                     "org.plt-scheme.prefs.ss")]
                                        [(unix)
                                         (expand-user-path "~/.plt-scheme/plt-prefs.ss")])])
-                          (if (file-exists? alt-f)
-                              alt-f
-                              ;; Last chance: check for a "defaults" collection:
-                              ;; (error here in case there's no "defaults"
-                              ;;  bails out through above `with-handlers')
-                              (collection-file-path "racket-prefs.rktd"
-                                                    "defaults"))))))]
-             [prefs (with-pref-params
-                     (lambda ()
-                       (with-input-from-file pref-file read)))])
-        ;; Make sure file content had the right shape:
-        (if (and (list? prefs)
-                 (andmap (lambda (x)
-                           (and (pair? x) (pair? (cdr x)) (null? (cddr x))))
-                         prefs))
-            prefs
-            null))))
+                                (if (file-exists? alt-f)
+                                    (values alt-f #f)
+                                    ;; Last chance: check for a "defaults" collection:
+                                    ;; (error here in case there's no "defaults"
+                                    ;;  bails out through above `with-handlers')
+                                    (values
+                                     (collection-file-path "racket-prefs.rktd"
+                                                           "defaults")
+                                     #f))))))])
+        (let ([prefs (with-pref-params
+                      (lambda ()
+                        (if use-lock? 
+                            (call-with-file-lock
+                             'get-preferences
+                             'shared
+                             (lambda ()
+                               (make-lock-file-name pref-file))
+                             (lambda ()
+                               (with-input-from-file pref-file read))
+                             lock-there)
+                            (with-input-from-file pref-file read))))])
+          ;; Make sure file content had the right shape:
+          (if (and (list? prefs)
+                   (andmap (lambda (x)
+                             (and (pair? x) (pair? (cdr x)) (null? (cddr x))))
+                           prefs))
+              prefs
+              null)))))
   (let* ([fn (path->complete-path
               (or filename
                   (find-system-path 'pref-file)))]
@@ -193,17 +280,49 @@
           (pref-cache-install! fn fn f)
           f))))
 
+(define (make-handle-get-preference-locked delay 
+                                           name 
+                                           [fail-thunk (lambda () #f)]
+                                           [refresh-cache? 'timestamp]
+                                           [filename #f]
+                                           #:lock-there [lock-there #f]
+                                           #:max-delay [max-delay 0.2])
+  (lambda (lock-filename)
+    (sleep delay)
+    (get-preference name fail-thunk refresh-cache? filename 
+                    #:lock-there (let ([new-delay (* 2 delay)])
+                                   (if (new-delay . < . max-delay)
+                                       (make-handle-get-preference-locked
+                                        new-delay
+                                        name fail-thunk refresh-cache? filename
+                                         #:lock-there lock-there
+                                         #:max-delay max-delay)
+                                       lock-there)))))
+
 (define (get-preference name [fail-thunk (lambda () #f)]
                         [refresh-cache? 'timestamp]
-                        [filename #f])
+                        [filename #f]
+                        #:lock-there [lock-there 
+                                      (make-handle-get-preference-locked
+                                       0.01
+                                       name
+                                       fail-thunk
+                                       refresh-cache?
+                                       filename)]
+                        #:use-lock? [use-lock? #t])
   (unless (symbol? name)
     (raise-type-error 'get-preference "symbol" name))
   (unless (and (procedure? fail-thunk)
                (procedure-arity-includes? fail-thunk 0))
     (raise-type-error 'get-preference "procedure (arity 0)" fail-thunk))
-  (let ([f (get-prefs refresh-cache? filename)])
-    (let ([m (assq name f)])
-      (if m (cadr m) (fail-thunk)))))
+  ((let/ec esc
+     (let ([f (get-prefs refresh-cache? filename use-lock? 
+                         (and lock-there
+                              (lambda (file)
+                                (esc (lambda () (lock-there file))))))])
+       (lambda ()
+         (let ([m (assq name f)])
+           (if m (cadr m) (fail-thunk))))))))
 
 (define (put-preferences names vals [lock-there #f] [filename #f])
   (unless (and (list? names) (andmap symbol? names))
@@ -226,82 +345,66 @@
                         (make-directory* dir))
                       (values
                        filename
-                       (build-path dir
-                                   (bytes->path-element
-                                    (bytes-append
-                                     (if (eq? 'windows (system-type))
-                                         #"_"
-                                         #".")
-                                     #"LOCK"
-                                     (path-element->bytes name))))
+                       (make-lock-file-name dir name)
                        dir))))])
-    (with-handlers ([exn:fail:filesystem:exists?
-                     (lambda (x)
-                       (if lock-there
-                           (lock-there lock-file)
-                           (error 'put-preferences
-                                  "some other process has the preference-file lock, as indicated by the existence of the lock file: ~e"
-                                  lock-file)))])
-      ;; Grab lock:
-      (close-output-port (open-output-file lock-file #:exists 'error))
-      (dynamic-wind
-          void
-          (lambda ()
-            (let ([f (get-prefs #t filename)])
-              (set! f (let loop ([f f][a null])
-                        (cond
-                         [(null? f) (reverse
-                                     (append (map list names vals)
-                                             a))]
-                         [else (if (memq (caar f) names)
-                                   (loop (cdr f) a)
-                                   (loop (cdr f) (cons (car f) a)))])))
-              ;; To write the file, copy the old one to a temporary name
-              ;; (preserves permissions, etc), write to the temp file,
-              ;; then move (atomicly) the temp file to the normal name.
-              (let ([tmp-file (make-temporary-file
-                               "TMPPREF~a"
-                               (and (file-exists? pref-file) pref-file)
-                               pref-dir)])
-                ;; If something goes wrong, try to delete the temp file.
-                (with-handlers ([exn:fail? (lambda (exn)
-                                             (with-handlers ([exn:fail:filesystem? void])
-                                               (delete-file tmp-file))
-                                             (raise exn))])
-                  ;; Write to temp file...
-                  (with-output-to-file tmp-file
-                    #:exists 'truncate/replace
-                    (lambda ()
-                      (with-pref-params
-                       (lambda ()
-                         ;; If a pref value turns out to be unreadable, raise
-                         ;;  an exception instead of creating a bad pref file.
-                         (parameterize ([print-unreadable #f])
-                           ;; Poor man's pretty-print: one line per entry.
-                           (printf "(\n")
-                           (for-each (lambda (a)
-                                       (if (and (list? (cadr a))
-                                                (< 4 (length (cadr a))))
-                                           (begin
-                                             (printf " (~s\n  (\n" (car a))
-                                             (for-each (lambda (i) (printf "   ~s\n" i)) (cadr a))
-                                             (printf "  ))\n"))
-                                           (printf " ~s\n" a)))
-                                     f)
-                           (printf ")\n"))))))
-                  ;; Install the new table in the cache. It's possible that this
-                  ;; cache entry will be replaced by a reading thread before we
-                  ;; move the file, but that's ok. It just means that a future
-                  ;; reading thread will have to read again.
-                  (pref-cache-install! (path->complete-path
-                                        (or filename
-                                            (find-system-path 'pref-file)))
-                                       tmp-file
-                                       f)
-                  (rename-file-or-directory tmp-file pref-file #t)))))
-          (lambda ()
-            ;; Release lock:
-            (delete-file lock-file))))))
+    (call-with-file-lock
+     'put-preferences
+     'exclusive
+     (lambda () lock-file)
+     (lambda ()
+       (let ([f (get-prefs #t filename #f #f)])
+         (set! f (let loop ([f f][a null])
+                   (cond
+                    [(null? f) (reverse
+                                (append (map list names vals)
+                                        a))]
+                    [else (if (memq (caar f) names)
+                              (loop (cdr f) a)
+                              (loop (cdr f) (cons (car f) a)))])))
+         ;; To write the file, copy the old one to a temporary name
+         ;; (preserves permissions, etc), write to the temp file,
+         ;; then move (atomicly) the temp file to the normal name.
+         (let ([tmp-file (make-temporary-file
+                          "TMPPREF~a"
+                          (and (file-exists? pref-file) pref-file)
+                          pref-dir)])
+           ;; If something goes wrong, try to delete the temp file.
+           (with-handlers ([exn:fail? (lambda (exn)
+                                        (with-handlers ([exn:fail:filesystem? void])
+                                          (delete-file tmp-file))
+                                        (raise exn))])
+             ;; Write to temp file...
+             (with-output-to-file tmp-file
+               #:exists 'truncate/replace
+               (lambda ()
+                 (with-pref-params
+                  (lambda ()
+                    ;; If a pref value turns out to be unreadable, raise
+                    ;;  an exception instead of creating a bad pref file.
+                    (parameterize ([print-unreadable #f])
+                      ;; Poor man's pretty-print: one line per entry.
+                      (printf "(\n")
+                      (for-each (lambda (a)
+                                  (if (and (list? (cadr a))
+                                           (< 4 (length (cadr a))))
+                                      (begin
+                                        (printf " (~s\n  (\n" (car a))
+                                        (for-each (lambda (i) (printf "   ~s\n" i)) (cadr a))
+                                        (printf "  ))\n"))
+                                      (printf " ~s\n" a)))
+                                f)
+                      (printf ")\n"))))))
+             ;; Install the new table in the cache. It's possible that this
+             ;; cache entry will be replaced by a reading thread before we
+             ;; move the file, but that's ok. It just means that a future
+             ;; reading thread will have to read again.
+             (pref-cache-install! (path->complete-path
+                                   (or filename
+                                       (find-system-path 'pref-file)))
+                                  tmp-file
+                                  f)
+             (rename-file-or-directory tmp-file pref-file #t)))))
+     lock-there)))
 
 ;; fold-files : (pathname sym alpha -> alpha) alpha pathname/#f -> alpha
 (define (fold-files f init [path #f] [follow-links? #t])
