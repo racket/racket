@@ -56,7 +56,7 @@
    [lpSetupTemplateName _pointer]
    [hPrintTemplate _HGLOBAL]
    [hSetupTemplate _HGLOBAL])
-  #:alignment 2)
+  #:alignment (if is-win64? #f 2))
 
 (define-cstruct _DOCINFO
   ([cbSize _int]

@@ -16,6 +16,7 @@
               define-uxtheme
               define-winmm
               failed
+	      is-win64?
 
               GetLastError
 
