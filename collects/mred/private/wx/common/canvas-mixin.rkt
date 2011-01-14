@@ -148,7 +148,7 @@
           (let ([dc (get-dc)])
             (send dc suspend-flush)
             (send dc ensure-ready)
-            (send dc erase) ; start with a clean slate
+            (send dc clean-slate)
             (let ([bg (get-canvas-background-for-backing)])
               (when bg 
                 (let ([old-bg (send dc get-background)])

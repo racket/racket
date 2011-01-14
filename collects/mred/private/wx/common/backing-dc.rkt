@@ -14,6 +14,7 @@
               backing-draw-bm
               
               ;; scoped method names:
+              clean-slate
               get-backing-size
               queue-backing-flush
               on-backing-flush
@@ -26,6 +27,7 @@
               end-delay))
 
 (define-local-member-name
+  clean-slate
   get-backing-size
   queue-backing-flush
   on-backing-flush
@@ -45,7 +47,8 @@
              internal-set-bitmap
              reset-cr
              set-recording-limit
-             get-recorded-command)
+             get-recorded-command
+             get-clear-operator)
 
     (super-new)
 
@@ -131,6 +134,12 @@
         (queue-backing-flush)))
 
     (define/override (erase)
+      (super erase)
+      (when (= (get-clear-operator)
+               CAIRO_OPERATOR_CLEAR)
+        (set! nada? #t)))
+
+    (define/public (clean-slate)
       (super erase)
       (set! nada? #t))
 
