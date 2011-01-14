@@ -1468,6 +1468,12 @@
                   (define-language good-lang (a 1 2))
                   (define-extended-language bad-lang5 good-lang (a) (b 2)))
                 #rx"at least one production")
+  (test-syn-err (define-language bad-lang5 (x 1) (x 2)) #rx"same non-terminal" 2)
+  (test-syn-err (define-language bad-lang6 ((x x) 1)) #rx"same non-terminal" 2)
+  (test-syn-err (let ()
+                  (define-language good-lang)
+                  (define-extended-language bad-lang7 good-lang ((x x) 1)))
+                #rx"same non-terminal" 2)
   
   (test-syn-err (redex-match grammar m_1) #rx"before underscore")
   (test-syn-err (redex-match grammar (variable-except a 2 c)) #rx"expected an identifier")

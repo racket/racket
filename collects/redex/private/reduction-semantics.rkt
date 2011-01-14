@@ -1743,7 +1743,17 @@
                           stx (or delim (car left))))
     (check-each prods delim? "expected production")
     (cons names prods))
-  (map parse-non-terminal (syntax->list nt-defs)))
+  (define parsed (map parse-non-terminal (syntax->list nt-defs)))
+  (define defs (make-hash))
+  (for ([p parsed])
+    (define ns (car p))
+    (for ([n ns])
+      (define m (hash-ref defs (syntax-e n) #f))
+      (if m
+          (raise-syntax-error #f "same non-terminal defined twice"
+                              stx n (list m))
+          (hash-set! defs (syntax-e n) n))))
+  parsed)
 
 (define-syntax (define-language stx)
   (syntax-case stx ()
