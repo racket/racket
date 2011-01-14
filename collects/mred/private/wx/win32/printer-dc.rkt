@@ -142,19 +142,17 @@
                            (begin
                              (show-print-setup #f #t)
                              (send (current-ps-setup) get-native))))
-    
+
     (define-values (page-width page-height)
       (let ([scale (if (zero? (bitwise-and (PAGESETUPDLG-Flags page-setup)
                                            PSD_INTHOUSANDTHSOFINCHES))
                        ;; 100ths of mm
-                       (/ SCREEN-DPI (/ 10.0 2.54))
+                       (/ SCREEN-DPI (* 10.0 2.54))
                        ;; 1000ths of in
                        (/ SCREEN-DPI 1000.0))])
       (values
        (* scale (POINT-x (PAGESETUPDLG-ptPaperSize page-setup)))
        (* scale (POINT-y (PAGESETUPDLG-ptPaperSize page-setup))))))
-
-
 
     (define/override (get-size) (values page-width page-height))
 
