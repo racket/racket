@@ -58,7 +58,7 @@
            (define (start request)
             (response/xexpr)
              '(html
-               (body "Hello World"))))}
+               (body "Hello World")))}
      @desc{This example implements a web server using the
        @elemcode{web-server/insta} language.  Each time a connection is made to
        the server, the @elemcode{start} function is called to get the HTML to
