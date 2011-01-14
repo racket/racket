@@ -1666,7 +1666,8 @@
                                           (memq name (current-traced-metafunctions)))
                                       (parameterize ([current-trace-print-args
                                                       (λ (name args kws kw-args level)
-                                                        (if (eq? not-in-cache (hash-ref cache exp not-in-cache))
+                                                        (if (or (not (caching-enabled?))
+                                                                (eq? not-in-cache (hash-ref cache exp not-in-cache)))
                                                             (display " ")
                                                             (display "c"))
                                                         (ot name (car args) kws kw-args level))]
