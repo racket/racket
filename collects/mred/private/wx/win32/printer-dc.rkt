@@ -78,6 +78,11 @@
 (define-gdi32 EndPage (_wfun _HDC -> (r : _int) -> (unless (positive? r) (failed 'EndPage))))
 (define-gdi32 EndDoc (_wfun _HDC -> (r : _int) -> (unless (positive? r) (failed 'EndDoc))))
 
+(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
+
+(define LOGPIXELSX    88)
+(define LOGPIXELSY    90)
+
 (define needs-delete ((allocator DeleteDC) values))
 
 (define (clone-page-setup p)
@@ -111,6 +116,14 @@
          ;; the hDevModes and hDevNames fields
          r)))))
 
+;; Pango uses the resolution of the screen to make point<->pixel
+;;  decisions for all devices (by default). So, we make on drawing unit in
+;;  a printing context match the relative drawing unit for the screen.
+(define SCREEN-DPI (let ([hdc (GetDC #f)])
+		     (begin0
+		      (exact->inexact (GetDeviceCaps hdc LOGPIXELSX))
+		      (ReleaseDC #f hdc))))
+
 (define printer-dc%
   (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))
     (init [parent #f])
@@ -134,9 +147,9 @@
       (let ([scale (if (zero? (bitwise-and (PAGESETUPDLG-Flags page-setup)
                                            PSD_INTHOUSANDTHSOFINCHES))
                        ;; 100ths of mm
-                       (/ 72.0 (/ 10.0 2.54))
+                       (/ SCREEN-DPI (/ 10.0 2.54))
                        ;; 1000ths of in
-                       (/ 72.0 1000.0))])
+                       (/ SCREEN-DPI 1000.0))])
       (values
        (* scale (POINT-x (PAGESETUPDLG-ptPaperSize page-setup)))
        (* scale (POINT-y (PAGESETUPDLG-ptPaperSize page-setup))))))
@@ -206,14 +219,9 @@
                (EndDoc hdc))
              (DeleteDC hdc))))))))
 
-(define-gdi32 GetDeviceCaps (_wfun _HDC _int -> _int))
-
-(define LOGPIXELSX    88)
-(define LOGPIXELSY    90)
-
 (define (set-point-scale hdc cr)
   (let* ([lpx (GetDeviceCaps hdc LOGPIXELSX)]
          [lpy (GetDeviceCaps hdc LOGPIXELSY)]
-         [lx (/ (if (zero? lpx) 300 lpx) 72.0)]
-         [ly (/ (if (zero? lpy) 300 lpy) 72.0)])
+         [lx (/ (if (zero? lpx) 300 lpx) SCREEN-DPI)]
+         [ly (/ (if (zero? lpy) 300 lpy) SCREEN-DPI)])
     (cairo_scale cr lx ly)))
