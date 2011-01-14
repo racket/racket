@@ -251,10 +251,6 @@
            #f
            (let* ([get (caar fns)] [<? (cdar fns)] [x1 (get i1)] [x2 (get i2)])
              (or (<? x1 x2) (and (equal? x1 x2) (loop (cdr fns)))))))))))
-(with-output-to-file "/tmp/x" #:exists 'truncate
-  (lambda ()
-    (for ([i all-installers])
-      (printf "~s ~s\n" (installer-platform i) (installer-path i)))))
 
 (define package->name
   (let ([t (make-hasheq)])
