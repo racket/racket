@@ -1548,6 +1548,7 @@ path/s is either such a string or a list of them.
 "collects/tests/planet" responsible (robby jay)
 "collects/tests/planet/cmdline-tool.rkt" drdr:command-line #f
 "collects/tests/planet/examples/dummy-module.rkt" drdr:command-line #f
+"collects/tests/planet/examples/scribblings-package" drdr:command-line #f
 "collects/tests/plot/run-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
