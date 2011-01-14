@@ -139,7 +139,7 @@
                       docs
                       (lambda (x) (s-exp->fasl (serialize x)))
                       (lambda (work r outstr errstr) (printf "~a" outstr) (printf "~a" errstr) (deserialize (fasl->s-exp r)))
-                      (lambda (work errmsg outstr errstr) (parallel-do-default-error-handler work errmsg outstr errstr) #f)
+                      (lambda (work errmsg outstr errstr) (parallel-do-default-error-handler work errmsg outstr errstr) #t)
                       (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest auto-main? auto-user?) 
                         (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) doc)
                           (define (setup-printf subpart formatstr . rest)
@@ -326,7 +326,7 @@
                   (printf "~a" outstr) 
                   (printf "~a" errstr)
                   (update-info i (deserialize (fasl->s-exp r))))
-                (lambda (i errmsg outstr errstr) (parallel-do-default-error-handler i errmsg outstr errstr) #f)
+                (lambda (i errmsg outstr errstr) (parallel-do-default-error-handler i errmsg outstr errstr) #t)
                 (define-worker (build-again!-worker2  workerid verbosev latex-dest)
                   (define (with-record-error cc go fail-k)
                     (with-handlers ([exn:fail?
