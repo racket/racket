@@ -63,7 +63,7 @@
           (when (vector-ref v 0)
             (set! cells-filled-in (+ cells-filled-in 1)))))
       (define bonus-start 50) ;; bonus for getting down to 49 (or fewer) balls
-      (define bonus-per-ball 50) ;; number of points for clearing each of those last 'bonus-start' balls
+      (define bonus-per-ball 100) ;; number of points for clearing each of those last 'bonus-start' balls
       (define bonus (if (<= cells-filled-in bonus-start)
                         (* bonus-per-ball (- bonus-start cells-filled-in))
                         0))
