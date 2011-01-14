@@ -70,8 +70,7 @@ highest precision possible.
 
 On a similar note, the @racket[Float-Complex] type is preferable to
 the @racket[Complex] type for the same reason. Typed Racket can keep
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
-"inexact numbers"]{inexact}
+float
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
 unboxed; as such, programs using
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
@@ -80,9 +79,7 @@ represent
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{complex numbers}
 as two
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{real numbers}.
-As with floating-point literals,
-@tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
-"inexact numbers"]{inexact}
+As with floating-point literals, float
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl") #:key
 "complex numbers"]{complex}
 literals (such as @racket[1.0+1.0i]) should be preferred over exact
