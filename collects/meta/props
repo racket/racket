@@ -403,7 +403,10 @@ path/s is either such a string or a list of them.
           (let ([n (find-relative-path root (normalize-path p))])
             (if (equal? n root)
               ""
-              (let ([n (path->string n)])
+              (let* ([n (path->string n)]
+                     [n (case (system-type)
+                          [(windows) (regexp-replace* #rx"\\\\" n "/")]
+                          [else n])])
                 (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
                   (error* #f "path is not in the racket tree: ~s" p)
                   n)))))
