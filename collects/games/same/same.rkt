@@ -15,24 +15,6 @@
     
     (define board-width 20)
     (define board-height 16)
-    (define colors (map (lambda (x) (make-object color% x))
-                        (list "blue" "red" "brown" "forestgreen" "purple")))
-    (define pale-colors 
-      (for/list ([x (in-list colors)])
-        (define (paleize x) (- 255 (floor (* (- 255 x) 2/3))))
-        (make-object color%
-          (paleize (send x red))
-          (paleize (send x green))
-          (paleize (send x blue)))))
-    
-    ;; these are the sizes that the on-paint callback draws at;
-    ;; a scaling factor is applied to make the board fit the window
-    (define cell-w 11)
-    (define cell-h 11)
-    (define pen-size 10)
-    
-    (define (blob-sel-x b) (vector-ref b 1))
-    (define (blob-sel-y b) (vector-ref b 2))
     
     ;; build-board : (-> (vectorof (vectorof (vector (union num #f) boolean))))
     ;   this represents the board. Each entry is the color index of
@@ -56,8 +38,8 @@
             (if (zero? (random 2))
                 (values x (- y 1))
                 (values (- x 1) y)))
-          (define this-vector (vector-ref (vector-ref board x) y))
-          (define prev-vector (vector-ref (vector-ref board prev-x) prev-y))
+          (define this-vector (board-ref board x y))
+          (define prev-vector (board-ref board prev-x prev-y))
           (vector-set! this-vector 0 (vector-ref prev-vector 0))))
       board)
     
@@ -103,132 +85,88 @@
         (define mouse-current-y #f)
         (define mouse-clicked-x #f)
         (define mouse-clicked-y #f)
-        (define mouse-over-chosen? #t)
+        
+        (define background-valid? #f)
+        (define background #f)
+        
+        (define/public (invalidate-board-bitmap)
+          (set! background-valid? #f))
+          
+        (define/override (on-size w h)
+          (define-values (cw ch) (get-client-size))
+          (when background
+            (unless (and (= cw (send background get-width))
+                         (= ch (send background get-height)))
+              (set! background #f)
+              (set! background-valid? #f))))
         
         (define/override (on-paint)
-          (define dc (get-dc))
-          (send dc erase)
           (define-values (cw ch) (get-client-size))
-          (define pen-size (- (floor (min cell-w cell-h)) 2))
-          (send dc set-brush "black" 'transparent)
+          (define dc (get-dc))
           (send dc set-smoothing 'smoothed)
-          (send dc set-scale 
-                (/ cw (* board-width cell-w)) 
-                (/ ch (* board-height cell-h)))
-          (define painted (make-hash))
-          (for* ([i (in-range 0 board-width)]
-                 [j (in-range 0 board-height)])
-            (unless (hash-ref painted (xy->key i j) #f)
-              (define color (vector-ref (vector-ref (vector-ref board i) j) 0))
-              (when color
-                (define blob (find-same-colors i j))
-                (for ([x (in-list blob)])
-                  (hash-set! painted (xy->key (blob-sel-x x) (blob-sel-y x)) #t))
-                (update-pen/draw-blob blob dc color cell-w cell-h i j))))
-          (when game-over?
-            (paint-game-over)))
-        
-        (define/private (update-pen/draw-blob blob dc color cell-w cell-h i j)
-          (define mouse-over? #f)
-          (define mouse-clicked-over? #f)
-          (define multiple-cells? #f)
+          (build-background)
+          (send dc set-scale 1 1)
+          (send dc draw-bitmap background 0 0)
           
-          (when (or (number? mouse-current-x)
-                    (number? mouse-clicked-x))
-            (for ([obj (in-list blob)])
-              (define x (blob-sel-x obj))
-              (define y (blob-sel-y obj))
-              (when (or (not (equal? x i))
-                        (not (equal? y j)))
-                (set! multiple-cells? #t))
-              (when (and (equal? x mouse-current-x)
-                         (equal? y mouse-current-y))
-                (set! mouse-over? #t))
-              (when (and (equal? x mouse-clicked-x)
-                         (equal? y mouse-clicked-y))
-                (set! mouse-clicked-over? #t))))
-          
+          (define current-blob 
+            (and mouse-current-x 
+                 (find-same-colors board board-width board-height 
+                                   mouse-current-x
+                                   mouse-current-y)))
           (cond
-            [mouse-clicked-x ;; has the mouse been clicked in a clickable place?
-             (cond 
-               [(and mouse-over? mouse-clicked-over? multiple-cells?)
-                (send dc set-pen (list-ref pale-colors color) (* pen-size 2/3) 'solid)
-                (draw-blob blob i j)]
-               [(and mouse-over? mouse-clicked-over?)
-                (send dc set-pen
-                      (list-ref colors color)
-                      pen-size
-                      'solid)
-                (draw-blob blob i j)]
-               [else
-                (send dc set-pen
-                   (list-ref colors color)
-                   pen-size
-                   'solid)
-                (draw-blob blob i j)])]
-            [else
-             (cond
-               [mouse-over?
-                (send dc set-pen (list-ref pale-colors color) (* pen-size 2/3) 'solid)
-                (draw-blob blob i j)]
-               [else
-                (send dc set-pen (list-ref colors color) pen-size 'solid)
-                (draw-blob blob i j)])]))
+            [(and mouse-clicked-x
+                  mouse-current-x
+                  (equal? mouse-clicked-x mouse-current-x)
+                  (equal? mouse-clicked-y mouse-current-y))
+             
+             ;; don't know what to do here
+             
+             (define blob
+               (find-same-colors board board-width board-height 
+                                 mouse-current-x
+                                 mouse-current-y))
+             (unless (null? blob)
+               (define color
+                 (vector-ref (board-ref board mouse-current-x mouse-current-y)
+                             0))
+               (define-values (cw ch) (get-client-size))
+               (update-dc-scale dc cw ch board-width board-height)
+               (update-pen/draw-blob
+                blob dc color
+                mouse-current-x mouse-current-y
+                mouse-clicked-x mouse-clicked-y))]
+            [mouse-current-x
+             (define blob
+               (find-same-colors board board-width board-height 
+                                 mouse-current-x
+                                 mouse-current-y))
+             (unless (null? blob)
+               (define color
+                 (vector-ref (board-ref board mouse-current-x mouse-current-y)
+                             0))
+               (define-values (cw ch) (get-client-size))
+               (update-dc-scale dc cw ch board-width board-height)
+               (update-pen/draw-blob
+                blob dc color
+                mouse-current-x mouse-current-y
+                mouse-clicked-x mouse-clicked-y))]))
         
-        (define (draw-blob blob i j)
+        (define/private (build-background)
+          (unless background-valid?
+            (define-values (cw ch) (get-client-size))
+            (unless background
+              (set! background (make-bitmap cw ch)))
+            (define bdc (make-object bitmap-dc% background))
+            (draw-board bdc board-width board-height board cw ch #f #f #f #f)
+            (send bdc set-bitmap #f)
+            (set! background-valid? #t)))
+        
+        (define/private (paint-game-over)
           (define dc (get-dc))
-          (define (connect x1 y1 x2 y2)
-            (send dc draw-line 
-                  (+ (/ cell-w 2) (* x1 cell-w))
-                  (+ (/ cell-h 2) (* y1 cell-h))
-                  (+ (/ cell-w 2) (* x2 cell-w))
-                  (+ (/ cell-h 2) (* y2 cell-h))))
-          (cond
-            [(null? (cdr blob))
-             (define pt (car blob))
-             (connect (blob-sel-x pt) (blob-sel-y pt) (blob-sel-x pt) (blob-sel-y pt))]
-            [else
-             (for* ([b1 (in-list blob)]
-                    [b2 (in-list blob)])
-               (when (= (+ (abs (- (blob-sel-x b1) (blob-sel-x b2)))
-                           (abs (- (blob-sel-y b1) (blob-sel-y b2))))
-                        1)
-                 (connect (blob-sel-x b1) (blob-sel-y b1) (blob-sel-x b2) (blob-sel-y b2))))]))
-        
-        (define/private (xy->key x y) (+ (* board-width y) x))
-        
-        (define/public (find-same-colors i j)
-          (let* ([index (vector-ref (vector-ref (vector-ref board i) j) 0)]
-                 [ans
-                  (let loop ([i i]
-                             [j j]
-                             [ps null])
-                    (cond
-                      [(not (and (<= 0 i) (< i board-width)
-                                 (<= 0 j) (< j board-height)))
-                       ps]
-                      [(vector-ref (vector-ref (vector-ref board i) j) 1) ps]
-                      [(not (vector-ref (vector-ref (vector-ref board i) j) 0)) ps]
-                      [(= index (vector-ref (vector-ref (vector-ref board i) j) 0))
-                       (let ([v (vector-ref (vector-ref board i) j)])
-                         (vector-set! v 1 #t)
-                         (loop (+ i 1)
-                               j
-                               (loop (- i 1)
-                                     j
-                                     (loop i
-                                           (- j 1)
-                                           (loop i
-                                                 (+ j 1)
-                                                 (cons (vector v i j)
-                                                       ps))))))]
-                      [else ps]))])
-            (for-each (lambda (p) (vector-set! (vector-ref p 0) 1 #f)) ans)
-            ans))
-        
-        (define/public (paint-game-over)
-          (define dc (get-dc))
-          (send dc set-font font)
+          (define game-over "Game Over")
+          (send dc set-font 
+                (send the-font-list find-or-create-font
+                      24 'decorative 'normal 'normal #f))
           (define border 5)
           (define-values (text-width text-height d l)
             (send dc get-text-extent game-over))
@@ -243,20 +181,6 @@
                 (+ text-height border border))
           (send dc set-alpha 1)
           (send dc draw-text game-over x y))
-        
-        
-        [define game-over "Game Over"]
-        [define font (make-object font% 24 'decorative 'normal 'normal #f)]
-        [define turned null]
-        
-        [define/public (call-with-dc proc)
-          ;; Since we're not in `on-paint', need to manually
-          ;; suspend and resume flushing, so that intermediate
-          ;; states are not flushed to the screen.
-          (let ([dc (get-dc)])
-            (send dc suspend-flush)
-            (proc dc)
-            (send dc resume-flush))]
         
         (inherit refresh) 
         (define/override (on-event evt)
@@ -312,7 +236,10 @@
           (send this-score-message set-label 
                 (cond
                   [(and x y)
-                   (define num (length (find-same-colors x y)))
+                   (define num (length (find-same-colors board
+                                                         board-width
+                                                         board-height
+                                                         x y)))
                    (if (= num 1)
                        ""
                        (format "~a" (calc-score num)))]
@@ -321,7 +248,8 @@
         (define/private (make-a-move)
           (define i mouse-clicked-x)
           (define j mouse-clicked-y)
-          (let ([same-colors (find-same-colors i j)])
+          (invalidate-board-bitmap)
+          (let ([same-colors (find-same-colors board board-width board-height i j)])
             
             (when (>= (length same-colors) 2)
               
@@ -336,12 +264,12 @@
                      (let loop ([x j])
                        (cond
                          [(<= 1 x)
-                          (let ([next (vector-ref (vector-ref board i) (- x 1))]
-                                [this (vector-ref (vector-ref board i) x)])
+                          (let ([next (board-ref board i (- x 1))]
+                                [this (board-ref board i x)])
                             (vector-set! this 0 (vector-ref next 0))
                             (loop (- x 1)))]
                          [else
-                          (vector-set! (vector-ref (vector-ref board i) x) 0 #f)]))))
+                          (vector-set! (board-ref board i x) 0 #f)]))))
                  (sort same-colors
                        (lambda (x y) (<= (blob-sel-y x) (blob-sel-y y)))))
                 
@@ -350,7 +278,7 @@
                 (let ([empty-is 
                        (filter (lambda (i)
                                  (not (vector-ref 
-                                       (vector-ref (vector-ref board i) (- board-height 1))
+                                       (board-ref board i (- board-height 1))
                                        0)))
                                is)])
                   (let ([is (if (null? empty-is)
@@ -394,7 +322,12 @@
                                 (or continue?
                                     (loop
                                      (sub1 j)
-                                     (> (length (find-same-colors (sub1 i) (sub1 j))) 1)))]))))])))))
+                                     (> (length (find-same-colors board 
+                                                                  board-width
+                                                                  board-height
+                                                                  (sub1 i)
+                                                                  (sub1 j)))
+                                        1)))]))))])))))
         
         
         
@@ -413,6 +346,7 @@
       (set! game-over? #f)
       (set! board (build-board))
       (reset-score)
+      (send canvas invalidate-board-bitmap)
       (send canvas update-game-over)
       (when redraw?
         (send canvas refresh)))
@@ -422,9 +356,14 @@
     (define canvas (make-object same-canvas% panel))
     (define hp (new horizontal-panel% [parent panel] [stretchable-height #f]))
     (new message% [label "Total Score: "] [parent hp])
-    (define score-message (new message% [label ""] [parent hp] [stretchable-width #t]))
+    (define score-message (new message% 
+                               [label "1000 + 1000 = 2000"] ;; get a reasonable min size
+                               [parent hp] [stretchable-width #t]))
     (new message% [label "This Score: "] [parent hp])
-    (define this-score-message (new message% [label ""] [parent hp] [stretchable-width #t]))
+    (define this-score-message (new message% 
+                                    [label "100"] ;; get a reasonable min size
+                                    [parent hp]
+                                    [stretchable-width #t]))
     (define button (make-object button% "New Game" hp (lambda x (new-game-callback #t))))
     
     (define help-button (make-object button% "Help"
@@ -438,7 +377,163 @@
     
     (send canvas update-game-over)
     (reset-score)
-    (send canvas min-width (* board-width cell-w 3))
-    (send canvas min-height (* board-height cell-h 3))
+    (send canvas min-width (ceiling (* board-width cell-w #e2.5)))
+    (send canvas min-height (ceiling (* board-height cell-h #e2.5)))
     (send frame show #t)
     (void (yield semaphore))))
+
+;; these are the sizes that the on-paint callback draws at;
+;; a scaling factor is applied to make the board fit the window
+(define cell-w 11)
+(define cell-h 11)
+(define pen-size 10)
+
+(define colors (map (lambda (x) (make-object color% x))
+                    (list "blue" "red" "brown" "forestgreen" "purple")))
+(define pale-colors 
+  (for/list ([x (in-list colors)])
+    (define (paleize x) (- 255 (floor (* (- 255 x) 2/3))))
+    (make-object color%
+      (paleize (send x red))
+      (paleize (send x green))
+      (paleize (send x blue)))))
+
+(define (draw-board dc board-width board-height board cw ch
+                    mouse-current-x mouse-current-y mouse-clicked-x mouse-clicked-y)
+  (send dc erase) 
+  (send dc set-smoothing 'smoothed)
+  (update-dc-scale dc cw ch board-width board-height)
+  (define painted (make-hash))
+  (for* ([i (in-range 0 board-width)]
+         [j (in-range 0 board-height)])
+    (unless (hash-ref painted (xy->key board-width i j) #f)
+      (define color (vector-ref (board-ref board i j) 0))
+      (when color
+        (define blob (find-same-colors board board-width board-height i j))
+        (for ([x (in-list blob)])
+          (hash-set! painted (xy->key board-width (blob-sel-x x) (blob-sel-y x)) #t))
+        (update-pen/draw-blob
+         blob dc color
+         mouse-current-x mouse-current-y mouse-clicked-x mouse-clicked-y)))))
+
+(define (update-dc-scale dc cw ch board-width board-height)
+  (send dc set-scale 
+        (/ cw (* board-width cell-w)) 
+        (/ ch (* board-height cell-h))))
+
+(define (update-pen/draw-blob
+         blob dc color
+         mouse-current-x mouse-current-y mouse-clicked-x mouse-clicked-y)
+  (define mouse-over? #f)
+  (define mouse-clicked-over? #f)
+  (define multiple-cells? (not (or (null? blob) (null? (cdr blob)))))
+  
+  (when (or (number? mouse-current-x)
+            (number? mouse-clicked-x))
+    (for ([obj (in-list blob)])
+      (define x (blob-sel-x obj))
+      (define y (blob-sel-y obj))
+      (when (and (equal? x mouse-current-x)
+                 (equal? y mouse-current-y))
+        (set! mouse-over? #t))
+      (when (and (equal? x mouse-clicked-x)
+                 (equal? y mouse-clicked-y))
+        (set! mouse-clicked-over? #t))))
+  
+  (cond
+    [mouse-clicked-x ;; has the mouse been clicked in a clickable place?
+     (cond 
+       [(and mouse-over? mouse-clicked-over? multiple-cells?)
+        (send dc set-pen (list-ref pale-colors color) (* pen-size 2/3) 'solid)
+        (draw-blob dc blob)]
+       [else
+        (send dc set-pen
+              (list-ref colors color)
+              pen-size
+              'solid)
+        (draw-blob dc blob)])]
+    [else
+     (cond
+       [mouse-over?
+        (send dc set-pen (list-ref pale-colors color) pen-size 'solid)
+        (draw-blob dc blob)]
+       [else
+        (send dc set-pen (list-ref colors color) pen-size 'solid)
+        (draw-blob dc blob)])]))
+
+(define (draw-blob dc blob)
+  (define (connect x1 y1 x2 y2)
+    (send dc draw-line 
+          (+ (/ cell-w 2) (* x1 cell-w))
+          (+ (/ cell-h 2) (* y1 cell-h))
+          (+ (/ cell-w 2) (* x2 cell-w))
+          (+ (/ cell-h 2) (* y2 cell-h))))
+  (cond
+    [(null? (cdr blob))
+     (define pt (car blob))
+     (connect (blob-sel-x pt) (blob-sel-y pt) (blob-sel-x pt) (blob-sel-y pt))]
+    [else
+     (for* ([b1 (in-list blob)]
+            [b2 (in-list blob)])
+       (when (= (+ (abs (- (blob-sel-x b1) (blob-sel-x b2)))
+                   (abs (- (blob-sel-y b1) (blob-sel-y b2))))
+                1)
+         (connect (blob-sel-x b1) (blob-sel-y b1) (blob-sel-x b2) (blob-sel-y b2))))]))
+
+(define (xy->key board-width x y) (+ (* board-width y) x))
+
+(define (find-same-colors board board-width board-height i j)
+  (let* ([index (vector-ref (board-ref board i j) 0)]
+         [ans
+          (let loop ([i i]
+                     [j j]
+                     [ps null])
+            (cond
+              [(not (and (<= 0 i) (< i board-width)
+                         (<= 0 j) (< j board-height)))
+               ps]
+              [else
+               (let ([v (board-ref board i j)])
+                 (cond 
+                   [(vector-ref v 1) ps]
+                   [(not (vector-ref v 0)) ps]
+                   [(= index (vector-ref v 0))
+                    (vector-set! v 1 #t)
+                    (loop (+ i 1)
+                          j
+                          (loop (- i 1)
+                                j
+                                (loop i
+                                      (- j 1)
+                                      (loop i
+                                            (+ j 1)
+                                            (cons (vector v i j)
+                                                  ps)))))]
+                   [else ps]))]))])
+    (for-each (lambda (p) (vector-set! (vector-ref p 0) 1 #f)) ans)
+    ans))
+
+(define (blob-sel-x b) (vector-ref b 1))
+(define (blob-sel-y b) (vector-ref b 2))
+
+(define (board-ref b x y) (vector-ref (vector-ref b x) y))
+
+(define (make-same-bitmap pth)
+  (define bw 32)
+  (define bh 32)
+  (define bitmap (make-bitmap bw bh))
+  (define bdc (make-object bitmap-dc% bitmap))
+  (define board-width 3)
+  (define board-height 3)
+  (define board 
+    (vector (vector (vector 0 #f) (vector 1 #f) (vector 4 #f))
+            (vector (vector 0 #f) (vector 1 #f) (vector 1 #f))
+            (vector (vector 3 #f) (vector 3 #f) (vector 2 #f))))
+  (draw-board bdc board-width board-height board bw bh
+              #f #f #f #f)
+  (send bdc set-bitmap #f)
+  (send bitmap save-file pth 'png))
+  
+; (make-same-bitmap "same.png")
+
+(invoke-unit game@)
