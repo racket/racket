@@ -74,6 +74,10 @@
   (_fun _pointer -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_win32_printing_surface_create
+  (_fun _pointer -> _cairo_surface_t)
+  #:make-fail make-not-available
+  #:wrap (allocator cairo_surface_destroy))
 
 (define-cairo cairo_surface_create_similar
   (_fun _cairo_surface_t _int _int _int -> _cairo_surface_t))

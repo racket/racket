@@ -190,7 +190,7 @@
                      [page-no (in-naturals 1)])
                  (when (<= from-page page-no to-page)
                    (StartPage hdc)
-                   (let* ([s (cairo_win32_surface_create hdc)]
+                   (let* ([s (cairo_win32_printing_surface_create hdc)]
                           [cr (cairo_create s)])
                      (set-point-scale hdc cr)
                      (proc
