@@ -140,6 +140,17 @@
 (test "+nan.0" number->string +nan.0)
 (test "+nan.0" number->string +nan.0)
 
+(test "+inf.f" number->string +inf.f)
+(test "-inf.f" number->string -inf.f)
+(test "+nan.f" number->string +nan.f)
+(test "+nan.f" number->string +nan.f)
+(test "0.0f0" number->string 0.0f0)
+(test "0.0f0" number->string 0.0f1)
+(test "0.0f0" number->string 0.0f17)
+(test "13.25f0" number->string 13.25f0)
+(test "13.25f0" number->string 1.325f1)
+(test "-4.25f0" number->string -4.25f0)
+
 (map (lambda (n)
        ;; test that fresh strings are generated:
        (let ([n1 (number->string n)]

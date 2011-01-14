@@ -1521,27 +1521,54 @@ string_to_number (int argc, Scheme_Object *argv[])
 }
 
 
-static char *double_to_string (double d, int alloc)
+static char *double_to_string (double d, int alloc, int was_single)
 {
   char buffer[100], *s;
   int l, i, digits;
 
   if (MZ_IS_NAN(d))
-    s = not_a_number_str;
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (was_single)
+      s = single_not_a_number_str;
+    else
+#endif
+      s = not_a_number_str;
   else if (MZ_IS_POS_INFINITY(d))
-    s = infinity_str;
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (was_single)
+      s = single_infinity_str;
+    else
+#endif
+      s = infinity_str;
   else if (MZ_IS_NEG_INFINITY(d))
-    s = minus_infinity_str;
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (was_single)
+      s = single_minus_infinity_str;
+    else
+#endif
+      s = minus_infinity_str;
   else if (d == 0.0) {
     /* Check for -0.0, since some printers get it wrong. */
     if (scheme_minus_zero_p(d))
-      s = "-0.0";
+#ifdef MZ_USE_SINGLE_FLOATS
+      if (was_single)
+	/* The f0 suffix causes the string to be read as a single-
+	   precision float. */
+	s = "-0.0f0";
+      else
+#endif
+	s = "-0.0";
     else
-      s = "0.0";
+#ifdef MZ_USE_SINGLE_FLOATS
+      if (was_single)
+	s = "0.0f0";
+      else
+#endif
+	s = "0.0";
   } else {
     /* Initial count for significant digits is 14. That's big enough to
        get most right, small enough to avoid nonsense digits. But we'll
-	 loop in case it's not precise enough to get read-write invariance: */
+       loop in case it's not precise enough to get read-write invariance: */
     digits = 14;
     while (digits < 30) {
       double check;
@@ -1568,6 +1595,17 @@ static char *double_to_string (double d, int alloc)
       buffer[i + 2] = 0;
       l += 2;
     }
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (was_single) {
+      /* In case of a single-precision float, add the f0 suffix to
+	 cause the string to be read back as a single-precision
+	 float. */
+      buffer[l] = 'f';
+      buffer[l + 1] = '0';
+      buffer[l + 2] = 0;
+      l += 2;
+    }
+#endif
     
     s = (char *)scheme_malloc_atomic(strlen(buffer) + 1);
     strcpy(s, buffer);
@@ -1594,7 +1632,7 @@ static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		       "number->string: "
 		       "inexact numbers can only be printed in base 10");
-    s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc);
+    s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc, SCHEME_FLTP(obj));
   } else if (SCHEME_RATIONALP(obj)) {
     Scheme_Object *n, *d;
     char *ns, *ds;
@@ -1659,7 +1697,7 @@ int scheme_check_double(const char *where, double d, const char *dest)
 		       "%s: no %s representation for %s",
 		       where, 
 		       dest,
-		       double_to_string(d, 0));
+		       double_to_string(d, 0, 0));
     return 0;
   }
 
