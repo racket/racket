@@ -1199,6 +1199,16 @@
  (stepper-no-such-step "Kein Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-no-such-step/earlier "Kein früherer Schritt gefunden, der das Kriterium erfüllt.")
  
+ (stepper-no-earlier-application-step "Keine vorherigen Applikationsschritte.")
+ (stepper-no-later-application-step "Keine weiteren Applikationsschritte..")
+ 
+ (stepper-no-earlier-step "Keine vorherigen Schritte.")
+ (stepper-no-later-step "Keine weiteren Schritte.")
+  
+ (stepper-no-selected-step "Keine Schritte im markierten Bereich. Vielleicht ist es auskommentiert?")
+  
+ (stepper-no-last-step "Der letzte Schritt ist nocht nicht verfügbar.")
+
  (debug-tool-button-name "Debugger")
 
  (dialog-back "Zurück")
