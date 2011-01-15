@@ -127,8 +127,7 @@
 
 (define-user32 TrackMouseEvent (_wfun _TRACKMOUSEEVENT-pointer -> (r : _BOOL)
                                       -> (unless r (failed 'TrackMouseEvent))))
-(define-user32 GetCursorPos (_wfun _POINT-pointer -> (r : _BOOL)
-                                   -> (unless r (failed 'GetCursorPos))))
+(define-user32 GetCursorPos (_wfun _POINT-pointer -> _BOOL))
 
 (defclass window% object%
   (init-field parent hwnd)
@@ -526,8 +525,8 @@
       (do-mouse w msg #f 'motion wParam lParam)]
      [(= msg WM_MOUSELEAVE)
       (let ([p (make-POINT 0 0)])
-        (GetCursorPos p)
-        (let ([f (location->window (POINT-x p) (POINT-y p))])
+        (let ([f (and (GetCursorPos p)
+		      (location->window (POINT-x p) (POINT-y p)))])
           (unless (and (eq? f (get-top-frame))
 		       (send f in-content? p))
             (do-mouse w msg #f 'leave wParam lParam))))
