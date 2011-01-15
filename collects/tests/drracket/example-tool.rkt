@@ -5,8 +5,9 @@
          racket/gui/base)
 
 (define new-collection-root 
+  #;
   (string->path "C:\\tmp")
-  #;(make-temporary-file "drracket-test-example-tool~a"
+  (make-temporary-file "drracket-test-example-tool~a"
                        'directory))
 (define coll (build-path new-collection-root "coll"))
 (unless (directory-exists? coll) (make-directory coll))
