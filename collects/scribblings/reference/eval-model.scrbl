@@ -540,7 +540,7 @@ For example, given the module declaration
   (define x 10))
 ]
 
-the evaluation of @racket[(require m)] creates the variable @racket[x]
+the evaluation of @racket[(require 'm)] creates the variable @racket[x]
 and installs @racket[10] as its value. This @racket[x] is unrelated to
 any top-level definition of @racket[x].
 
