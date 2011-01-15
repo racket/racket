@@ -4575,8 +4575,6 @@ void scheme_thread_block_enable_break(float sleep_time, int enable_break)
 
 void scheme_start_atomic(void)
 {
-  if (!do_atomic)
-    missed_context_switch = 0;
   do_atomic++;
 }
 
@@ -4607,6 +4605,7 @@ void scheme_end_atomic(void)
 {
   scheme_end_atomic_no_swap();
   if (!do_atomic && missed_context_switch) {
+    missed_context_switch = 0;
     scheme_thread_block(0.0);
     scheme_current_thread->ran_some = 1;    
   }
