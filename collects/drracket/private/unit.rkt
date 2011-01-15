@@ -486,7 +486,8 @@ module browser threading seems wrong.
                          text:info%)))))))))))])
         ((get-program-editor-mixin)
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
+          (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line
+                   is-printing?)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -739,8 +740,6 @@ module browser threading seems wrong.
                  (is-lang-line? l)))
           
           (inherit get-filename)
-          (field
-           [tmp-date-string #f])
           
           (inherit get-filename/untitled-name)
           (define/private (get-date-string)
@@ -750,18 +749,20 @@ module browser threading seems wrong.
              (get-filename/untitled-name)))
           
           (define/override (on-paint before dc left top right bottom dx dy draw-caret)
-            (when (and before
-                       (or (is-a? dc post-script-dc%)
-                           (is-a? dc printer-dc%)))
-              (set! tmp-date-string (get-date-string))
-              (let-values ([(w h d s) (send dc get-text-extent tmp-date-string)])
-                (send (current-ps-setup) set-editor-margin 0 (inexact->exact (ceiling h)))))
             (super on-paint before dc left top right bottom dx dy draw-caret)
-            (when (and (not before)
-                       (or (is-a? dc post-script-dc%)
-                           (is-a? dc printer-dc%)))
-              (send dc draw-text (get-date-string) 0 0)
-              (void))
+
+            ;; For printing, put date and filename in the top margin:
+            (when (and before (is-printing?))
+              (let ([h (box 0)]
+                    [w (box 0)])
+                (send (current-ps-setup) get-editor-margin w h)
+                (unless ((unbox h) . < . 2)
+                  (let ([font (make-font #:size (inexact->exact (ceiling (* 1/2 (unbox h))))
+                                         #:family 'modern)]
+                        [old-font (send dc get-font)])
+                    (send dc set-font font)
+                    (send dc draw-text (get-date-string) 0 0)
+                    (send dc set-font old-font)))))
             
             ;; draw the arrows
             (when before
