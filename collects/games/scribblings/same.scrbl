@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          racket/class
+          racket/draw
+          "../same/same-lib.rkt")
 
 @gametitle["Same" "same" "Dot-Removing Game"]
 
@@ -10,6 +13,30 @@ the remaining pieces of the board shift around, breaking up blobs into
 new blobs as pieces of the old blobs fall down to fill in the empty space.
 If an entire column is wiped out, all of the blobs from the
 right will slide left to take up the empty column's space.
+
+As an example, imagine a fragment of the board looked like this:
+
+@(let ()
+   (define w 100)
+   (define h 100)
+   (define bm (make-bitmap w h))
+   (define bdc (make-object bitmap-dc% bm))
+   (define board-width 6)
+   (define board-height 4)
+   (define board 
+     (build-vector
+      board-width
+      (lambda (i)
+        (build-vector
+         board-height
+         (lambda (j)
+           (vector
+            (modulo (+ i j) 3)
+            #f))))))
+   (draw-board bdc board-width board-height board w h
+               #f #f #f #f)
+   (send bdc set-bitmap #f)
+   bm)
 
 Your score increases for each ball removed from the board, in two ways.
 First, when you remove a blob, you get as many points as the square of the number
