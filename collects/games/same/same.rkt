@@ -309,11 +309,11 @@
     (define hp (new horizontal-panel% [parent panel] [stretchable-height #f]))
     (new message% [label "Total Score: "] [parent hp])
     (define score-message (new message% 
-                               [label "1000 + 1000 = 2000"] ;; get a reasonable min size
+                               [label "10000 + 10000 = 20000"] ;; get a reasonable min size
                                [parent hp] [stretchable-width #t]))
     (new message% [label "This Score: "] [parent hp])
     (define this-score-message (new message% 
-                                    [label "100"] ;; get a reasonable min size
+                                    [label "10000"] ;; get a reasonable min size
                                     [parent hp]
                                     [stretchable-width #t]))
     (define button (make-object button% "New Game" hp (lambda x (new-game-callback #t))))
