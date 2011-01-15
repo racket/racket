@@ -15,7 +15,9 @@
          racket/snip/private/snip-flags
          "standard-snip-admin.rkt"
          "keymap.ss"
-         (only-in "cycle.ss" set-text%!)
+         (only-in "cycle.ss" 
+                  printer-dc%
+                  set-text%!)
          "wordbreak.ss"
          "stream.ss"
          "wx.ss")

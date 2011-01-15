@@ -443,7 +443,7 @@ Ends a document, relevant only when drawing to a printer, PostScript,
  PDF, or SVG device.
 
 For relevant devices, an exception is raised if
-@scheme[end-doc] is called when the document is not started with
+@method[dc<%> end-doc] is called when the document is not started with
 @method[dc<%> start-doc], when a page is currently started by
 @method[dc<%> start-page] and not ended with @method[dc<%> end-page],
 or when the document has been ended already.
@@ -458,7 +458,7 @@ Ends a single page, relevant only when drawing to a printer,
  PostScript, PDF, or SVG device.
 
 For relevant devices, an exception is raised if
-@scheme[end-page] is called when a page is not currently started by
+@method[dc<%> end-page] is called when a page is not currently started by
 @method[dc<%> start-page].}
 
 
@@ -1071,7 +1071,7 @@ Starts a document, relevant only when drawing to a printer,
  @method[dc<%> end-doc] is called.
 
 For relevant devices, an exception is raised if
- @scheme[start-doc] has been called already (even if @method[dc<%>
+ @method[dc<%> start-doc] has been called already (even if @method[dc<%>
  end-doc] has been called as well). Furthermore, drawing methods raise
  an exception if not called while a page is active as determined by
  @method[dc<%> start-doc] and @method[dc<%> start-page].
@@ -1085,7 +1085,7 @@ Starts a page, relevant only when drawing to a printer, PostScript,
  SVG, or PDF device.
 
 Relevant devices, an exception is raised if
- @scheme[start-page] is called when a page is already started, or when
+ @method[dc<%> start-page] is called when a page is already started, or when
  @method[dc<%> start-doc] has not been called, or when @method[dc<%>
  end-doc] has been called already. In addition, in the case of
  PostScript output, Encapsulated PostScript (EPS) cannot contain

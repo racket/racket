@@ -10,6 +10,7 @@
          "font.ss"
          "local.ss"
          "ps-setup.ss"
+         "page-dc.rkt"
          "write-bytes.rkt")
 
 (provide svg-dc%)
@@ -80,7 +81,10 @@
     (define/override (can-combine-text? sz)
       #t)
 
+    (define/public (multiple-pages-ok?) #t)
+
     (super-new)))
 
-(define svg-dc% (class (dc-mixin dc-backend%)
+(define svg-dc% (class (doc+page-check-mixin (dc-mixin dc-backend%)
+                                             'svg-dc%)
                   (super-new)))

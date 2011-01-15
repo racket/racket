@@ -4,7 +4,8 @@
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
 	   (prefix wx: racket/snip)
-	   (prefix wx: "wxme/cycle.ss")
+	   (rename "wxme/cycle.ss" wx:set-editor-get-file! set-editor-get-file!)
+	   (rename "wxme/cycle.ss" wx:set-editor-put-file! set-editor-put-file!)
 	   "lock.ss"
 	   "wx.ss"
 	   "cycle.ss"

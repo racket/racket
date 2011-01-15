@@ -3,7 +3,7 @@
 	   mzlib/class100
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
-           (prefix wx: "wxme/cycle.ss")
+           (rename "wxme/cycle.ss" wx:set-popup-menu%! set-popup-menu%!)
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"

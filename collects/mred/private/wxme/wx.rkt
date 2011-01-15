@@ -27,7 +27,6 @@
          bitmap%
          dc<%>
          post-script-dc%
-         printer-dc%
          current-eventspace
          clipboard-client%
          clipboard<%>
@@ -37,7 +36,6 @@
          begin-busy-cursor
          end-busy-cursor
          hide-cursor
-         run-printout
          current-ps-setup
          get-highlight-background-color
          get-highlight-text-color)

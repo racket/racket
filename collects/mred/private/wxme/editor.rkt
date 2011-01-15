@@ -14,6 +14,7 @@
          "keymap.ss"
          "editor-data.rkt"
          (only-in "cycle.ss" 
+                  printer-dc%
                   text%
                   pasteboard%
                   editor-snip%
@@ -735,6 +736,27 @@
   (define/public (print-to-dc) (void))
   (define/public (do-end-print) (void))
   (define/public (do-has-print-page?) (void))
+
+  (define/private (run-printout
+                   parent
+                   interactive? ; currently ignored
+                   fit-to-page? ; ignored
+                   begin-doc-proc
+                   has-page?-proc
+                   print-page-proc
+                   end-doc-proc)
+    (let ([dc (make-object printer-dc% parent)])
+      (send dc start-doc "printing")
+      (begin-doc-proc dc)
+      (let loop ([i 1])
+        (when (has-page?-proc dc i)
+          (begin
+            (send dc start-page)
+            (print-page-proc dc i)
+            (send dc end-page)
+            (loop (add1 i)))))
+      (end-doc-proc)
+      (send dc end-doc)))
 
   (def/public (print [bool? [interactive? #t]]
                      [bool? [fit-to-page? #t]]

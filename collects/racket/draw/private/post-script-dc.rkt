@@ -11,6 +11,7 @@
          "font.ss"
          "local.ss"
          "ps-setup.ss"
+         "page-dc.rkt"
          "write-bytes.rkt")
 
 (provide post-script-dc%
@@ -176,9 +177,14 @@
     (define/override (can-mask-bitmap?)
       #f)
 
+    (define is-eps? (and as-eps #t))
+    (define/public (multiple-pages-ok?) (not is-eps?))
+
     (super-new)))
 
-(define post-script-dc% (class (dc-mixin (make-dc-backend #f))
+(define post-script-dc% (class (doc+page-check-mixin (dc-mixin (make-dc-backend #f))
+                                                     'post-script-dc%)
                           (super-new)))
-(define pdf-dc% (class (dc-mixin (make-dc-backend #t))
+(define pdf-dc% (class (doc+page-check-mixin (dc-mixin (make-dc-backend #t))
+                                             'pdf-dc%)
                   (super-new)))

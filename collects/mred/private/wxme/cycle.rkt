@@ -24,4 +24,5 @@
 
 (decl popup-menu% set-popup-menu%!)
 
+(decl printer-dc% set-printer-dc%!)
 

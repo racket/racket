@@ -14,7 +14,6 @@
          "dc.rkt"
          "bitmap.rkt"
          "printer-dc.rkt"
-         "../common/printer.rkt"
          "menu-bar.rkt"
          "agl.rkt"
          "sound.rkt"
@@ -35,7 +34,6 @@
   register-collecting-blit
   unregister-collecting-blit
   shortcut-visible-in-label?
-  run-printout
   get-double-click-time
   get-control-font-face
   get-control-font-size
@@ -78,8 +76,6 @@
 (define (unregister-collecting-blit canvas)
   (send canvas unregister-collecting-blits))
 (define (shortcut-visible-in-label? [x #f]) #f)
-
-(define run-printout (make-run-printout printer-dc%))
 
 (define (get-double-click-time)
   500)

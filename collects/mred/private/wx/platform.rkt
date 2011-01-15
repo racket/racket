@@ -54,7 +54,6 @@
                 get-control-font-size
                 get-control-font-size-in-pixels?
                 get-double-click-time
-                run-printout
                 file-creator-and-type
                 location->window
                 shortcut-visible-in-label?
