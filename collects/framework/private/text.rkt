@@ -2036,6 +2036,7 @@
                (start . >= . unread-start-point))
            (inner #t can-delete? start len)))
     
+    (inherit set-position)
     (define/override (on-local-char key)
       (let ([start (get-start-position)]
             [end (get-end-position)]
@@ -2048,7 +2049,8 @@
           [(and (insertion-point . <= . start)
                 (= start end)
                 (submit-to-port? key))
-           (insert "\n")
+           (insert "\n" (last-position) (last-position))
+           (set-position (last-position) (last-position))
            (for-each/snips-chars
             unread-start-point
             (last-position)
