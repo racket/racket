@@ -107,6 +107,9 @@
        (set-PAGESETUPDLG-Flags! p (if just-create?
                                       PSD_RETURNDEFAULT
                                       0))
+       (set-PAGESETUPDLG-hwndOwner! p (and parent
+					   (send parent is-shown?)
+					   (send parent get-hwnd)))
        (let ([r (PageSetupDlgW p)])
          (when r
            (let ([new-p (clone-page-setup p)])
@@ -127,6 +130,8 @@
 (define printer-dc%
   (class (record-dc-mixin (dc-mixin bitmap-dc-backend%))
     (init [parent #f])
+
+    (define parent-frame parent)
 
     (super-make-object (make-object win32-bitmap% 1 1 #f))
 
@@ -168,6 +173,9 @@
                        (set-cpointer-tag! p PRINTDLG-tag)
                        (memset p 0 1 _PRINTDLG)
                        (set-PRINTDLG-lStructSize! p (ctype-sizeof _PRINTDLG))
+		       (set-PRINTDLG-hwndOwner! p (and parent-frame
+						       (send parent-frame is-shown?)
+						       (send parent-frame get-hwnd)))
                        (set-PRINTDLG-hDevMode! p (PAGESETUPDLG-hDevMode page-setup))
                        (set-PRINTDLG-hDevNames! p (PAGESETUPDLG-hDevNames page-setup))
                        (set-PRINTDLG-Flags! p (bitwise-ior PD_RETURNDC))
