@@ -325,8 +325,8 @@
 			 #:check-failures-expected (check-failures-expected '())
 			 #:signature-violations-expected (signature-violations-expected '()))
   (let* ([drs (wait-for-drscheme-frame)]
-         [interactions-text (send drs get-interactions-text)]
-         [definitions-text (send drs get-definitions-text)]
+         [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
+         [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
          [handle-insertion
           (lambda (item)
             (cond
@@ -367,9 +367,11 @@
     (let ([got
            (fetch-output
             drs
-            (send interactions-text paragraph-start-position 2)
-            (send interactions-text paragraph-end-position
-                  (- (send interactions-text last-paragraph) 1)))])
+            (queue-callback/res (λ () (send interactions-text paragraph-start-position 2)))
+            (queue-callback/res
+             (λ ()
+               (send interactions-text paragraph-end-position
+                     (- (send interactions-text last-paragraph) 1)))))])
       (when (regexp-match re:out-of-sync got)
         (error 'test-expression "got out of sync message"))
       (unless (check-expectation defs-expected got)
@@ -406,27 +408,28 @@
 		(length check-failures-expected) (length signature-violations-expected)))))
     ; #### do same for REPL
     
-    (let ([s (make-semaphore 0)])
-      (queue-callback
-       (λ ()
-         (send definitions-text select-all)
-         (send definitions-text copy)
-         (send interactions-text set-position
-               (send interactions-text last-position)
-               (send interactions-text last-position))
-         (send interactions-text paste)
-         (semaphore-post s)))
-      (semaphore-wait s))
+    (queue-callback/res
+     (λ ()
+	(send definitions-text select-all)
+	(send definitions-text copy)
+	(send interactions-text set-position
+	      (send interactions-text last-position)
+	      (send interactions-text last-position))
+	(send interactions-text paste)))
     
-    (let ([last-para (send interactions-text last-paragraph)])
+    (let ([last-para (queue-callback/res (lambda () (send interactions-text last-paragraph)))])
       (alt-return-in-interactions drs)
       (wait-for-computation drs)
       (let ([got
              (fetch-output
               drs
-              (send interactions-text paragraph-start-position (+ last-para 1))
-              (send interactions-text paragraph-end-position
-                    (- (send interactions-text last-paragraph) 1)))])
+              (queue-callback/res
+               (λ ()
+                 (send interactions-text paragraph-start-position (+ last-para 1))))
+              (queue-callback/res
+               (λ ()
+                 (send interactions-text paragraph-end-position
+                       (- (send interactions-text last-paragraph) 1)))))])
         (when (regexp-match re:out-of-sync got)
           (error 'test-expression "got out of sync message"))
         (unless (check-expectation repl-expected got)
