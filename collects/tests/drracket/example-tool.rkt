@@ -2,7 +2,8 @@
 (require "drracket-test-util.rkt"
          scribblings/tools/example-src
          racket/unit
-         racket/gui/base)
+         racket/gui/base
+         racket/file)
 
 (define new-collection-root 
   #;
