@@ -108,14 +108,16 @@ elements to indicate the lack of a value.}
 @defproc[(continuation-mark-set-first 
           [mark-set (or/c continuation-mark-set? #f)]
           [key-v any/c]
+          [none-v any/c #f]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          any]{
 Returns the first element of the list that would be returned by
 @racket[(continuation-mark-set->list (or mark-set
 (current-continuation-marks prompt-tag)) key-v prompt-tag)], or
-@racket[#f] if the result would be the empty list. Typically, this
+@racket[none-v] if the result would be the empty list. Typically, this
 result can be computed more quickly using
-@racket[continuation-mark-set-first].}
+@racket[continuation-mark-set-first] than using
+@racket[continuation-mark-set->list].}
 
 @defproc[(call-with-immediate-continuation-mark
           [key-v any/c]

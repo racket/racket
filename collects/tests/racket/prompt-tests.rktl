@@ -855,11 +855,16 @@
                        (lambda ()
                          (k (lambda () (continuation-mark-set-first #f 'x #f catch-tag))))
                        catch-tag)
-                 (test 8
+                 (test #f
                        call-with-continuation-prompt
                        (lambda ()
                          (k (lambda () (continuation-mark-set-first #f 'y #f catch-tag))))
                        catch-tag)
+                 (test (if (eq? catch-tag (default-continuation-prompt-tag)) #f 8)
+                       call-with-continuation-prompt
+                       (lambda ()
+                         (k (lambda () (continuation-mark-set-first #f 'y #f catch-tag))))
+                       (default-continuation-prompt-tag))
                  (test (if blocked?
                            '(17)
                            '(17 18))

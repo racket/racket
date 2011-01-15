@@ -8125,6 +8125,8 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
     while (chain) {
       if (chain->key == key)
 	return chain->val;
+      else if (SAME_OBJ(chain->key, prompt_tag))
+        break;
       else 
 	chain = chain->next;
     }
@@ -8164,6 +8166,8 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
         if (SAME_OBJ(seg[pos].key, key)) {
           val = seg[pos].val;
           vpos = seg[pos].pos;
+          break;
+        } else if (SAME_OBJ(seg[pos].key, prompt_tag)) {
           break;
         } else {
           cache = seg[pos].cache;
@@ -8347,7 +8351,8 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
     }
   } 
 
-  r = scheme_extract_one_cc_mark_to_tag(SCHEME_TRUEP(argv[0]) ? argv[0] : NULL, argv[1], prompt_tag);
+  r = scheme_extract_one_cc_mark_to_tag(SCHEME_TRUEP(argv[0]) ? argv[0] : NULL, argv[1], 
+                                        prompt_tag ? SCHEME_PTR_VAL(prompt_tag) : NULL);
   if (!r) {
     if (argc > 2)
       r = argv[2];
