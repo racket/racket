@@ -41,8 +41,14 @@
   (define (sleep/yield secs)
     (unless (and (real? secs) (not (negative? secs)))
       (raise-type-error 'sleep/yield "non-negative real number" secs))
-    (wx:yield (alarm-evt (+ (current-inexact-milliseconds)
-			    (* secs 1000))))
+    (let ([evt (alarm-evt (+ (current-inexact-milliseconds)
+                             (* secs 1000)))])
+      ;; First, allow at least some events to be handled even if 
+      ;; the alarm is immediately ready. This makes `sleep/yield'
+      ;; more like `sleep':
+      (wx:yield) 
+      ;; Now, realy sleep:
+      (wx:yield evt))
     (void))
 
   (define file-creator-and-type
