@@ -180,7 +180,9 @@
     (define is-eps? (and as-eps #t))
     (define/public (multiple-pages-ok?) (not is-eps?))
 
-    (super-new)))
+    (super-new)
+    
+    (when c (init-cr-matrix c))))
 
 (define post-script-dc% (class (doc+page-check-mixin (dc-mixin (make-dc-backend #f))
                                                      'post-script-dc%)
