@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/class
-         racket/gui/base)
+         racket/draw)
 
 (provide make-a-move
          
