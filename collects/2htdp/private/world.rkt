@@ -43,6 +43,7 @@
 (provide
  (rename-out (create-package make-package)) ;; World S-expression -> Package
  package? ;; Any -> Package
+ package-world
  )
 
 (define world%
@@ -145,7 +146,7 @@
           (create-frame)
           (show fst-scene)))
       
-      (define/private (deal-with-key %)
+      (define/public (deal-with-key %)
         (if (not on-key) %
             (class %
               (super-new)
@@ -156,7 +157,7 @@
                         (prelease (key-release->parts e))
                         (pkey e:str))))))))
       
-      (define/private (deal-with-mouse %)
+      (define/public (deal-with-mouse %)
         (if (not on-mouse) 
             ;; No mouse handler => discard mouse events (so snip are not selected
             ;;  in the pasteboard, for example
@@ -175,8 +176,12 @@
                     [(member me '("leave" "enter")) (pmouse x y me)]
                     [else (void)]))))))
       
+      ;; allows embedding of the world-canvas in other GUIs
+      (define/public (create-frame)
+        (create-frame/universe))
+      
       ;; effect: create, show and set the-frame
-      (define/pubment (create-frame)
+      (define/pubment (create-frame/universe)
         (define play-back:cust (make-custodian))
         (define frame (new (class frame%
                              (super-new)
@@ -199,7 +204,7 @@
         (send editor-canvas min-client-width (+ width INSET INSET))
         (send editor-canvas min-client-height (+ height INSET INSET))
         (set!-values (enable-images-button disable-images-button)
-                     (inner (values void void) create-frame frame play-back:cust))
+                     (inner (values void void) create-frame/universe frame play-back:cust))
         (send editor-canvas focus)
         (send frame show #t))
       
@@ -385,7 +390,7 @@
     ;; Frame Custodian ->* (-> Void) (-> Void)
     ;; adds the stop animation and image creation button, 
     ;; whose callbacks runs as a thread in the custodian
-    (define/augment (create-frame frm play-back-custodian)
+    (define/augment (create-frame/universe frm play-back-custodian)
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
       (define (pb)
         (parameterize ([current-custodian play-back-custodian])
@@ -477,7 +482,7 @@
     ;; Frame Custodian ->* (-> Void) (-> Void)
     ;; adds the stop animation and image creation button, 
     ;; whose callbacks runs as a thread in the custodian
-    (define/augment (create-frame frm play-back-custodian)
+    (define/augment (create-frame/universe frm play-back-custodian)
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
       (define (pb)
         (parameterize ([current-custodian play-back-custodian])
