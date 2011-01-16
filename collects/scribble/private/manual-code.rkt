@@ -92,7 +92,7 @@
            ;; This makes sense when `expand' actually expands, and
            ;; probably not otherwise:
            [mods (let loop ([e e])
-                   (syntax-case e (module require begin)
+                   (syntax-case e (module #%require begin)
                      [(module name lang (mod-beg form ...))
                       (apply append
                              (link-mod #'lang 2)
