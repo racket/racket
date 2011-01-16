@@ -56,5 +56,5 @@ devenv libmysterx.sln /Build "3m|%BUILDMODE%"
 if errorlevel 1 exit /B 1
 cd ..
 
-..\..\racket -l setup -N "raco setup"
+..\..\racket -N "raco setup" -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1
