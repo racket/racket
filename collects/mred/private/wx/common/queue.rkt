@@ -366,8 +366,9 @@
 (define (queue-refresh-event eventspace thunk)
   ((eventspace-queue-proc eventspace) (cons 'refresh thunk)))
 
-(define (handle-event thunk)
+(define (handle-event thunk e)
   (let/ec esc
+    ((event-dispatch-handler) e)
     (let ([done? #f])
       (dynamic-wind
        void
@@ -386,7 +387,7 @@
       (if (eq? (current-thread) (eventspace-handler-thread e))
           (let ([v (sync/timeout 0 ((eventspace-queue-proc e)))])
             (if v
-                (begin (handle-event v) #t)
+                (begin (handle-event v e) #t)
                 #f))
           #f))]
    [(evt)
@@ -407,7 +408,7 @@
                         evt)
                     (handle-evt ((eventspace-queue-proc e))
                                 (lambda (v)
-                                  (when v (handle-event v))
+                                  (when v (handle-event v e))
                                   (yield evt))))
               (sync evt)))
         (if (evt? evt)
@@ -424,7 +425,7 @@
              (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f))])
                (if v
                    (begin
-                     (handle-event v)
+                     (handle-event v e)
                      (loop #t))
                    result)))))))
 
