@@ -17,6 +17,8 @@
      ;; Fails if `mred/private/dynamic' is not declared
      ;;  (without loading it if not):
      (module->language-info 'mred/private/dynamic #f)
+     ;; Fails if `mred/private/dynamic' is not instantiated:
+     (namespace-attach-module (current-namespace) 'mred/private/dynamic)
      ;; Double check that it seems to have started ok:
      (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
           'done))))
