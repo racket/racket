@@ -6,13 +6,41 @@
   ;; int(size) random-generator -> val
   (proc generator-proc))
 
-(define (lift->generator proc . gens)
+; for transliteration from Haskell
+(define (return val)
   (make-generator
    (lambda (size rgen)
-     (apply proc 
-	    (map (lambda (gen)
-		   ((generator-proc gen) size rgen))
-		 gens)))))
+     val)))
+
+(define (>>= m1 k)
+  (let ((proc1 (generator-proc m1)))
+    (make-generator
+     (lambda (size rgen)
+       (call-with-values
+	   (lambda ()
+	     (random-generator-split rgen))
+	 (lambda (rgen1 rgen2)
+	   (let ((gen (k (proc1 size rgen1))))
+	     ((generator-proc gen) size rgen2))))))))
+
+(define (sequence gens)
+  (if (null? gens)
+      (return '())
+      (>>= (car gens)
+	   (lambda (val)
+	     (>>= (sequence (cdr gens))
+		  (lambda (rest)
+		    (return (cons val rest))))))))
+
+; for export
+(define generator-unit return)
+(define generator-bind >>=)
+(define generator-sequence sequence)
+
+(define (lift->generator proc . gens)
+  (>>= (sequence gens)
+       (lambda (vals)
+	 (return (apply proc vals)))))
 
 ; [lower, upper]
 (define (choose-integer lower upper)
@@ -131,37 +159,6 @@
 
 (define (choose-vector el-gen n)
   (lift->generator list->vector (choose-list el-gen n)))
-
-; for transliteration from Haskell
-(define (return val)
-  (make-generator
-   (lambda (size rgen)
-     val)))
-
-(define (>>= m1 k)
-  (let ((proc1 (generator-proc m1)))
-    (make-generator
-     (lambda (size rgen)
-       (call-with-values
-	   (lambda ()
-	     (random-generator-split rgen))
-	 (lambda (rgen1 rgen2)
-	   (let ((gen (k (proc1 size rgen1))))
-	     ((generator-proc gen) size rgen2))))))))
-
-(define (sequence gens)
-  (if (null? gens)
-      (return '())
-      (>>= (car gens)
-	   (lambda (val)
-	     (>>= (sequence (cdr gens))
-		  (lambda (rest)
-		    (return (cons val rest))))))))
-
-; for export
-(define generator-unit return)
-(define generator-bind >>=)
-(define generator-sequence sequence)
 
 ; (list (promise (generator a))) -> (generator a)
 (define (choose-mixed gens)
