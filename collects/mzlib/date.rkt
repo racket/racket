@@ -7,16 +7,17 @@
 
 (provide/contract
  [current-date (-> date?)]
- [date->seconds (date? . -> . exact-integer?)]
+ [date->seconds ((date?) (any/c) . ->* . exact-integer?)]
  [date->string ((date?) (any/c) . ->* . string?)]
  [date-display-format (parameter/c (symbols 'american 'chinese 'german 'indian 'irish 'julian 'iso-8601 'rfc2822))]
- [find-seconds ((integer-in 0 61)
-                (integer-in 0 59)
-                (integer-in 0 23)
-                (integer-in 1 31)
-                (integer-in 1 12)
-                exact-nonnegative-integer?
-                . -> .
+ [find-seconds (((integer-in 0 61)
+                 (integer-in 0 59)
+                 (integer-in 0 23)
+                 (integer-in 1 31)
+                 (integer-in 1 12)
+                 exact-nonnegative-integer?)
+                (any/c)
+                . ->* .
                 exact-integer?)]
  [date->julian/scalinger (date? . -> . exact-integer?)]
  [julian/scalinger->string (exact-integer? . -> . string?)])
@@ -252,16 +253,17 @@
     (lambda ()
       (force d))))
 
-(define (date->seconds date)
+(define (date->seconds date [local-time? #t])
   (find-seconds 
    (date-second date) 
    (date-minute date) 
    (date-hour date) 
    (date-day date) 
    (date-month date) 
-   (date-year date)))
+   (date-year date)
+   local-time?))
 
-(define (find-seconds sec min hour day month year)
+(define (find-seconds sec min hour day month year [local-time? #t])
   (define (signal-error msg)
     (error 'find-secs (string-append 
                        msg 
@@ -270,7 +272,7 @@
   (let loop ([below-secs (get-min-seconds)]
              [secs (floor (/ (+ (get-min-seconds) (get-max-seconds)) 2))]
              [above-secs (get-max-seconds)])
-    (let* ([date (seconds->date secs)]
+    (let* ([date (seconds->date secs local-time?)]
            [compare
             (let loop ([inputs (list year month day 
                                      hour min sec)]

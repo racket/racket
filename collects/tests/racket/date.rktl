@@ -6,18 +6,22 @@
 (require mzlib/date)
 
 (define (test-find s m h d mo y)
-  (let* ([secs (find-seconds s m h d mo y)]
-	 [date (seconds->date secs)])
-    (test #t 'same
-	  (and (= s (date-second date))
-	       (= m (date-minute date))
-	       (= h (date-hour date))
-	       (= d (date-day date))
-	       (= mo (date-month date))
-	       (= y (date-year date))))))
+  (for ([local-time? (in-list '(#f #t))])
+    (let* ([secs (find-seconds s m h d mo y local-time?)]
+           [date (seconds->date secs local-time?)])
+      (test #t 'same
+            (and (= s (date-second date))
+                 (= m (date-minute date))
+                 (= h (date-hour date))
+                 (= d (date-day date))
+                 (= mo (date-month date))
+                 (= y (date-year date)))))))
 
 (test-find 0 0 0 1 4 1975)
 (test-find 0 0 0 1 4 2005)
+
+(test 0 find-seconds 0 0 0 1 1 1970 #f)
+(test 32416215 find-seconds 15 30 4 11 1 1971 #f)
 
 ; date->string
 (let* ([secs (find-seconds 1 2 3 4 5 2006)]
