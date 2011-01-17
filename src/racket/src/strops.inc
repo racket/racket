@@ -245,7 +245,7 @@ X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
   i = scheme_extract_index(XSTRINGSTR "-ref", 1, argc, argv, len, 0);
 
   if (i >= len) {
-    scheme_out_of_string_range(XSTRINGSTR "-ref", "", argv[1], argv[0], 0, len - 1);
+    scheme_out_of_string_range(XSTRINGSTR "-ref", "", argv[1], argv[0], -1, len);
     return NULL;
   }
 
