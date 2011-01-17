@@ -1,6 +1,6 @@
-(module r6rs mzscheme
+#lang racket
   (require redex/reduction-semantics
-           (lib "plt-match.ss"))
+           racket/match)
   
   (provide lang 
            reductions
@@ -24,7 +24,7 @@
   
   (define-syntax (metafunction-type stx)
     ;; these are only used in the figures
-    #''ignore)
+    #'(void))
 
   (define-language lang
     (p* (store (sf ...) es) (uncaught-exception v) (unknown string))
@@ -976,4 +976,4 @@
   (define (unique? l)
     (or (null? l)
         (and (andmap (lambda (e) (not (equal? (car l) e))) (cdr l))
-             (unique? (cdr l))))))
+             (unique? (cdr l)))))

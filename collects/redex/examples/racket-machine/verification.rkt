@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (require redex/reduction-semantics)
 (require "grammar.ss" "util.ss")

@@ -1,3 +1,4 @@
+#lang racket
 #|
 
 This is the semantics of Beginner Scheme, one of the
@@ -9,7 +10,6 @@ reflects the (broken) spec).
 
 |#
 
-#lang scheme
 (require redex/reduction-semantics) 
 
 (provide run-tests

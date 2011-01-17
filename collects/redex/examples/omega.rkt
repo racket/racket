@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require redex "subst.ss")
 
 (reduction-steps-cutoff 10)

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; this is a formulation of the pi-calculus in redex, following Milner's 1990 paper,
 ;; "Functions as Processes", available online (for now, anyhow) at:
