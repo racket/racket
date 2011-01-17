@@ -923,86 +923,31 @@ An eventspace is a @techlink[#:doc reference-doc]{synchronizable
  parent. (Note that the blocking state of an eventspace is unrelated
  to whether an event is ready for dispatching.)
 
-@subsection[#:tag "evtcontjump"]{Exceptions, Continuations, and Jumps}
+@subsection[#:tag "evtcontjump"]{Continuations and Event Dispatch}
 
 Whenever the system dispatches an event, the call to the handler is
- wrapped with a @deftech{continuation prompt} that delimits
- continuations captured by the handler (see
- @racket[call-with-continuation-prompt]). For example, if a button
- callback captures a continuation, then applying the continuation
- later reinstalls only the work to be done by the handler up until the
- point that it returns; the dispatch machinery to invoke the button
- callback is not included in the continuation. The delimited
- continuation prompt is installed outside the call to the @tech{event
- dispatch handler}, so any captured continuation includes the
- invocation of the @tech{event dispatch handler}.
+ wrapped with a @deftech{continuation prompt} (see
+ @racket[call-with-continuation-prompt]) that delimits continuation
+ aborts (such as when an exception is raised) and continuations
+ captured by the handler. The delimited continuation prompt is
+ installed outside the call to the @tech{event dispatch handler}, so
+ any captured continuation includes the invocation of the @tech{event
+ dispatch handler}.
 
-An event-handling callback (and the @tech{event dispatch handler}) is
- further wrapped with a @deftech{continuation barrier} and a
- @racket[dynamic-wind] that blocks jumps (using continuation prompts
- other than the default one) that escape past the dispatch site. The
- following @scheme[block] procedure illustrates how the system blocks
- escape continuation jumps:
+For example, if a button callback raises an exception, than the abort
+ performed by the default exception handler returns to the event-dispatch
+ point, rather than terminating the program or escaping past an enclosing 
+ @racket[(yield)]. If @racket[with-handlers] wraps a @racket[(yield)] that
+ leads to an exception raised by a button callback, however, the exception
+ can be captured by the @racket[with-handlers].
 
-@def+int[
-(define (block f)
-  (code:comment @#,t{calls @scheme[f] and returns void if @scheme[f] tries to escape})
-  (let ([done? #f])
-    (let/ec k
-      (dynamic-wind
-        void
-        (lambda () (begin0 (f) (set! done? #t)))
-        (lambda () (unless done? (k (void))))))))
-
-(block (lambda () 5))
-(let/ec k (block (lambda () (k 10))))
-(let/ec k ((lambda () (k 10))) 11)
-(let/ec k (block (lambda () (k 10))) 11)
-]
-
-This blocking of continuation jumps complicates the interaction
- between @scheme[with-handlers] and @scheme[yield] (or the default
- @tech{event dispatch handler}). For example, in evaluating the expression
-
-@schemeblock[
-(with-handlers ([(lambda (x) #t)
-                 (lambda (x) (error "error during yield"))])
-   (yield))
-]
-
-the @scheme["error during yield"] handler is @italic{never} called,
- even if a callback procedure invoked by @scheme[yield] raises an
- exception.  The @scheme[with-handlers] expression installs an
- exception handler that tries to jump back to the context of the
- @scheme[with-handlers] expression before invoking a handler
- procedure; this jump is blocked by the dispatch within
- @scheme[yield], so @scheme["error during yield"] is never
- printed. Exceptions during @scheme[yield] are ``handled'' in the
- sense that control jumps out of the event handler, but @scheme[yield]
- may dispatch another event rather than escaping or returning.
-
-The following expression demonstrates a more effective way to handle
- exceptions within @scheme[yield], for the rare cases where such
- handling is useful:
-
-@schemeblock[
-(let/ec k
-  (call-with-exception-handler
-   (lambda (x)
-     (error "error during yield")
-     (k))
-   (lambda ()
-     (yield))))
-]
-
-This expression installs an exception handler that prints an error
- message @italic{before} trying to escape. Like the continuation escape
- associated with @scheme[with-handlers], the escape to @scheme[k] never
- succeeds.  Nevertheless, if an exception is raised by an event
- handler during the call to @scheme[yield], an error message is
- printed before control returns to the event dispatcher within
- @scheme[yield].
-
+Along similar lines, if a button callback captures a continuation
+ (using the default continuation prompt tag), then applying the
+ continuation re-installs only the work to be done by the handler up
+ until the point that it returns; the dispatch machinery to invoke the
+ button callback is not included in the continuation. A continuation
+ captured during a button callback is therefore potentially useful
+ outside of the same callback.
 
 @section[#:tag "animation"]{Animation in Canvases}
 

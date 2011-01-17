@@ -151,7 +151,9 @@ into the control.
 Event callbacks are delimited by a continuation prompt using the
 default continuation prompt tag. As a result, continuations can be
 usufully captured during one event callback and applied during other
-callbacks or outside of an even callback.
+callbacks or outside of an even callback. The continuation barrier and
+jump-defeating `dynamic-wind' that formerly guarded callbacks has been
+removed.
 
 
 Removed Functions

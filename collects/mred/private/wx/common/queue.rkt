@@ -390,31 +390,21 @@
 (define event-dispatch-handler (make-parameter really-dispatch-event))
 
 (define (handle-event thunk e)
-  (let/ec esc ; used to disable continuation aborts/jumps past here
-    (let ([done? #f])
-      (dynamic-wind
-       void
-       (lambda ()
-         (call-with-continuation-barrier
-          (lambda ()
-            (call-with-continuation-prompt ; to delimit continuations
-             (lambda ()
-               (call-with-continuation-prompt ; to delimit search for dispatch-event-key
-                (lambda ()
-                  ;; communicate the thunk to `really-dispatch-event':
-                  (let ([b (box thunk)])
-                    ;; use the event-dispatch handler:
-                    (with-continuation-mark dispatch-event-key b
-                      ((event-dispatch-handler) e))
-                    ;; if the event-dispatch handler doesn't chain
-                    ;; to the original one, then do so now:
-                    (when (unbox b)
-                      (set-box! b #f)
-                      (thunk))))
-                dispatch-event-prompt)))))
-         (set! done? #t))
-       (lambda ()
-         (unless done? (esc (void))))))))
+  (call-with-continuation-prompt ; to delimit continuations
+   (lambda ()
+     (call-with-continuation-prompt ; to delimit search for dispatch-event-key
+      (lambda ()
+        ;; communicate the thunk to `really-dispatch-event':
+        (let ([b (box thunk)])
+          ;; use the event-dispatch handler:
+          (with-continuation-mark dispatch-event-key b
+            ((event-dispatch-handler) e))
+          ;; if the event-dispatch handler doesn't chain
+          ;; to the original one, then do so now:
+          (when (unbox b)
+            (set-box! b #f)
+            (thunk))))
+      dispatch-event-prompt))))
 
 (define yield
   (case-lambda
