@@ -1339,7 +1339,7 @@ Optional Features:
   --enable-account        3m: use memory-accounting GC (enabled by default)
   --enable-compact        3m: use compact GC (no accounting)
   --enable-backtrace      3m: support GC backtrace dumps
-  --enable-float          include support for single-precision floats
+  --enable-float          single-precision floats support (enabled by default)
   --enable-floatinstead   compile to use single-precision by default
   --enable-pthread        link with pthreads
   --enable-stackup        assume "up" if stack direction cannot be determined
@@ -1913,6 +1913,8 @@ fi
 # Check whether --enable-float was given.
 if test "${enable_float+set}" = set; then
   enableval=$enable_float;
+else
+  enable_float=yes
 fi
 
 # Check whether --enable-floatinstead was given.
@@ -2225,7 +2227,7 @@ show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
-show_explicitly_enabled "${enable_float}" "Single-precision floats"
+show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"

@@ -43,11 +43,10 @@ imaginary part is a real number.
 
 Inexact real numbers are implemented as either single- or
 double-precision @as-index{IEEE floating-point numbers}---the latter
-by default, and the former only when support for 32-bit inexact
-numbers is specifically enabled when the run-time system is built, and
-only when a computation starts with numerical constants specified as
-single-precision numbers. Inexact real numbers that are represented as
-double-precision floating-point numbers are @deftech{flonums}.
+by default, and the former only when a computation starts with
+numerical constants specified as single-precision numbers. Inexact
+real numbers that are represented as double-precision floating-point
+numbers are @deftech{flonums}.
 
 The precision and size of exact numbers is limited only by available
 memory (and the precision of operations that can produce irrational
