@@ -384,9 +384,9 @@
 (define set_width (function-ptr dc-set-width
                                 (_fun _pointer _int -> _void)))
 (define set_color (function-ptr dc-set-color
-                                (_fun _pointer _int -> _void)))
+                                (_fun _pointer _short -> _void)))
 (define set_color_rgb (function-ptr dc-set-color/rgb
-                                    (_fun _pointer _int _int _int -> _void)))
+                                    (_fun _pointer _short _short _short -> _void)))
 (define start_page (function-ptr dc-start-page
                                  (_fun _pointer -> _void)))
 (define end_page (function-ptr dc-end-page
