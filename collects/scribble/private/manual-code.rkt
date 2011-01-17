@@ -68,7 +68,11 @@
                    [(and (identifier? e)
                          (syntax-original? e))
                     (let ([pos (sub1 (syntax-position e))])
-                      (list (list (to-element e)
+                      (list (list (lambda (str)
+                                    (to-element (syntax-property
+                                                 e
+                                                 'display-string
+                                                 str)))
                                   pos
                                   (+ pos (syntax-span e))
                                   1)))]
@@ -142,18 +146,22 @@
             [(null? tokens) (split-lines default-color (substring* bstr pos))]
             [(eq? (caar tokens) 'white-space) (loop pos (cdr tokens))]
             [(= pos (cadar tokens))
-             (append (let ([style (caar tokens)])
-                       (if (symbol? style)
-                           (let ([scribble-style
-                                  (case style
-                                    [(symbol) symbol-color]
-                                    [(parenthesis) paren-color]
-                                    [(constant string) value-color]
-                                    [(comment) comment-color]
-                                    [else default-color])])
-                             (split-lines scribble-style
-                                          (substring* bstr (cadar tokens) (caddar tokens))))
-                           (list (caar tokens))))
+             (append (let ([style (caar tokens)]
+                           [get-str (lambda ()
+                                      (substring* bstr (cadar tokens) (caddar tokens)))])
+                       (cond
+                        [(symbol? style)
+                         (let ([scribble-style
+                                (case style
+                                  [(symbol) symbol-color]
+                                  [(parenthesis) paren-color]
+                                  [(constant string) value-color]
+                                  [(comment) comment-color]
+                                  [else default-color])])
+                           (split-lines scribble-style (get-str)))]
+                        [(procedure? style)
+                         (list (style (get-str)))]
+                        [else (list style)]))
                      (loop (caddar tokens) (cdr tokens)))]
             [(> pos (cadar tokens))
              (loop pos (cdr tokens))]
