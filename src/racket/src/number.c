@@ -64,6 +64,7 @@ static Scheme_Object *exact_positive_integer_p (int argc, Scheme_Object *argv[])
 static Scheme_Object *fixnum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *inexact_real_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flonum_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *single_flonum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
@@ -364,6 +365,10 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(flonum_p, "flonum?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("flonum?", p, env);
+
+  p = scheme_make_folding_prim(single_flonum_p, "single-flonum?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("single-flonum?", p, env);
 
   scheme_add_global_constant("exact?", 
 			     scheme_make_folding_prim(exact_p,
@@ -1329,6 +1334,18 @@ flonum_p (int argc, Scheme_Object *argv[])
   if (SCHEME_DBLP(n))
     return scheme_true;
   else
+    return scheme_false;
+}
+
+static Scheme_Object *
+single_flonum_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(n))
+    return scheme_true;
+  else
+#endif
     return scheme_false;
 }
 

@@ -21,6 +21,7 @@
                               with-output-to-file
                               regexp-replace*
                               new-apply-proc)
+             (rename flonum? double-flonum?) ; for symmetry with single-flonum?
              struct
              (all-from "hash.rkt")
              (all-from "list.rkt")

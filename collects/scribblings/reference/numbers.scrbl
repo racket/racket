@@ -159,6 +159,12 @@ syntax transformers can lead to platform-dependent bytecode files.}
 Return @racket[#t] if @racket[v] is a @techlink{flonum}, @racket[#f]
 otherwise.}
 
+@defproc[(double-flonum? [v any/c]) boolean?]{
+Identical to @racket[flonum?]}.
+
+@defproc[(single-flonum? [v any/c]) boolean?]{
+Return @racket[#t] if @racket[v] is a single-precision floating-point
+number, @racket[#f] otherwise.}
 
 @defproc[(zero? [z number?]) boolean?]{ Returns @racket[(= 0 z)].
 
