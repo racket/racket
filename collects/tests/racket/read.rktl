@@ -1079,6 +1079,24 @@
                     (not (exn:fail:read:eof? x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; read-language
+
+(test #t procedure? (read-language (open-input-string "#lang racket/base")))
+(test #t procedure? (read-language (open-input-string ";;\n#lang racket/base")))
+(test #t procedure? (read-language (open-input-string ";;\n#|\n\n   |#\n#lang racket/base")))
+(test #t procedure? (read-language (open-input-string "#! /bin/env \n#lang racket/base")))
+(test #t procedure? (read-language (open-input-string "#!/bin/env \n#lang racket/base")))
+(test #t procedure? (read-language (open-input-string "#!racket/base")))
+(let ([check-nothing
+       (lambda (str exn?)
+         (err/rt-test (read-language (open-input-string str)) exn?)
+         (test 'no read-language (open-input-string str) (lambda () 'no)))])
+  (check-nothing "" exn:fail:read:eof?)
+  (check-nothing ";" exn:fail:read:eof?)
+  (check-nothing "#| |#" exn:fail:read:eof?)
+  (check-nothing "8 9" exn:fail:read?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

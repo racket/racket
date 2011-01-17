@@ -1088,6 +1088,8 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  if (ch == EOF) {
             if (comment_mode & RETURN_FOR_COMMENT)
               return NULL;
+            if (get_info)
+              return expected_lang("", ch, port, stxsrc, line, col, pos, get_info);
 	    return scheme_eof;
           }
 	  if (ch == SCHEME_SPECIAL)

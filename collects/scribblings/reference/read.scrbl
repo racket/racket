@@ -163,7 +163,7 @@ exception is propagated by @racket[read-language].
 If @racket[in] does not specify a @tech{reader language} with
 @litchar{#lang} or @litchar{#!}, then @racket[fail-thunk] is
 called. The default @racket[fail-thunk] raises
-@racket[exn:fail:contract].}
+@racket[exn:fail:read] or @racket[exn:fail:read:eof].}
 
 
 @defboolparam[read-case-sensitive on?]{
