@@ -39,6 +39,18 @@
   (test #f regexp-match/fail-without-reading #rx"hello there!!!" s)
   (test "hello there" read-string 50 s))
 
+;; Check remaining `regexp-match/fail-without-reading' arguments
+(let ([s (open-input-string "hello there")]
+      [o (open-output-bytes)])
+  (test #f regexp-match/fail-without-reading #rx"not there" s 0 5 o)
+  (test #"" get-output-bytes o)
+  (test #f regexp-match/fail-without-reading #rx"^hello" s 1 #f o)
+  (test #"" get-output-bytes o)
+  (test #f regexp-match/fail-without-reading #rx"^hello" s 0 #f o #"_")
+  (test #"" get-output-bytes o)
+  (test '(#"ello") regexp-match/fail-without-reading #rx"ello" s 0 #f o)
+  (test #"h" get-output-bytes o))
+
 (let ([g->re-test
        (lambda (glob . more)
          (let ([re (apply glob->regexp glob more)])

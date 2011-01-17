@@ -87,14 +87,14 @@
           (or (hash-ref t key #f)
               (let ([rx* (run-tweak)]) (hash-set! t key rx*) rx*))))))
 
-  (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f])
+  (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f] [prefix #""])
     (unless (input-port? input-port)
       (raise-type-error 'regexp-try-match
                         "input port" input-port))
     (unless (or (not out) (output-port? out))
       (raise-type-error 'regexp-try-match
                         "output port or #f" out))
-    (let ([m (regexp-match-peek-positions pattern input-port start-k end-k)])
+    (let ([m (regexp-match-peek-positions pattern input-port start-k end-k #f prefix)])
       (and m
            ;; What happens if someone swipes our bytes before we can get them?
            (let ([drop (caar m)])
