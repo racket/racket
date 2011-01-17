@@ -366,16 +366,52 @@
 (define (queue-refresh-event eventspace thunk)
   ((eventspace-queue-proc eventspace) (cons 'refresh thunk)))
 
+(define dispatch-event-prompt (make-continuation-prompt-tag))
+(define dispatch-event-key (gensym))
+
+(define (really-dispatch-event e)
+  (let ([b (continuation-mark-set-first
+            #f
+            dispatch-event-key
+            #f
+            dispatch-event-prompt)])
+    (unless b
+      (error 'default-event-dispatch-handler
+             "not in an event-dispatch context"))
+    (let ([thunk (atomically
+                  (begin0
+                   (unbox b)
+                   (set-box! b #f)))])
+      (unless thunk
+        (error 'default-event-dispatch-handler
+               "event in current context was already dispatched"))
+      (thunk))))
+
+(define event-dispatch-handler (make-parameter really-dispatch-event))
+
 (define (handle-event thunk e)
-  (let/ec esc
-    ((event-dispatch-handler) e)
+  (let/ec esc ; used to disable continuation aborts/jumps past here
     (let ([done? #f])
       (dynamic-wind
        void
        (lambda ()
          (call-with-continuation-barrier
           (lambda ()
-            (call-with-continuation-prompt thunk)))
+            (call-with-continuation-prompt ; to delimit continuations
+             (lambda ()
+               (call-with-continuation-prompt ; to delimit search for dispatch-event-key
+                (lambda ()
+                  ;; communicate the thunk to `really-dispatch-event':
+                  (let ([b (box thunk)])
+                    ;; use the event-dispatch handler:
+                    (with-continuation-mark dispatch-event-key b
+                      ((event-dispatch-handler) e))
+                    ;; if the event-dispatch handler doesn't chain
+                    ;; to the original one, then do so now:
+                    (when (unbox b)
+                      (set-box! b #f)
+                      (thunk))))
+                dispatch-event-prompt)))))
          (set! done? #t))
        (lambda ()
          (unless done? (esc (void))))))))
@@ -429,7 +465,6 @@
                      (loop #t))
                    result)))))))
 
-(define event-dispatch-handler (make-parameter void))
 (define (main-eventspace? e)
   (eq? e main-eventspace))
 
