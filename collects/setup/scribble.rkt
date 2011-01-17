@@ -59,6 +59,10 @@
          docs]
         [else (filter main-doc? docs)])) ; Don't need them, so drop them
 
+(define (parallel-do-error-handler setup-printf doc errmsg outstr errstr)
+  (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
+  (eprintf errstr))
+
 (define (setup-scribblings
          worker-count       ; number of cores to use to create documentation
          program-name       ; name of program that calls setup-scribblings
@@ -139,7 +143,7 @@
                       docs
                       (lambda (x) (s-exp->fasl (serialize x)))
                       (lambda (work r outstr errstr) (printf "~a" outstr) (printf "~a" errstr) (deserialize (fasl->s-exp r)))
-                      (lambda (work errmsg outstr errstr) (parallel-do-default-error-handler work errmsg outstr errstr) #t)
+                      (lambda (work errmsg outstr errstr) (parallel-do-error-handler setup-printf work errmsg outstr errstr))
                       (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest auto-main? auto-user?) 
                         (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user?) doc)
                           (define (setup-printf subpart formatstr . rest)
@@ -151,7 +155,7 @@
                           (define (with-record-error cc go fail-k)
                             (with-handlers ([exn:fail?
                                              (lambda (exn)
-                                                   (eprintf "get-doc-info-worker error: ~a\n" (exn-message exn))
+                                                   (eprintf "~a\n" (exn-message exn))
                                                    (raise exn))])
                               (go)))
                           (s-exp->fasl (serialize ((get-doc-info only-dirs latex-dest auto-main? auto-user?  with-record-error setup-printf)
@@ -326,12 +330,12 @@
                   (printf "~a" outstr) 
                   (printf "~a" errstr)
                   (update-info i (deserialize (fasl->s-exp r))))
-                (lambda (i errmsg outstr errstr) (parallel-do-default-error-handler i errmsg outstr errstr) #t)
+                (lambda (i errmsg outstr errstr) (parallel-do-error-handler setup-printf (info-doc i) errmsg outstr errstr))
                 (define-worker (build-again!-worker2  workerid verbosev latex-dest)
                   (define (with-record-error cc go fail-k)
                     (with-handlers ([exn:fail?
                                      (lambda (x)
-                                           (eprintf "build-again!-worker error: ~a\n" (exn-message x))
+                                           (eprintf "~a\n" (exn-message x))
                                            (raise x))])
                       (go)))
                   (verbose verbosev)
