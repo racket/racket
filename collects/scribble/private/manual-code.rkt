@@ -62,7 +62,13 @@
                        (if context
                            (replace-context context stx)
                            stx)))
-                 (read-syntax 'prog (open-input-bytes bstr))))]
+                 (let ([p (open-input-bytes bstr)])
+                   (let loop ()
+                     (let ([v (read-syntax 'prog p)])
+                       (cond
+                        [expand v]
+                        [(eof-object? v) null]
+                        [else (datum->syntax #f (cons v (loop)) v v)]))))))]
            [ids (let loop ([e e])
                   (cond
                    [(and (identifier? e)
@@ -113,7 +119,8 @@
                       (apply append
                              (map loop (syntax->list #'(form ...))))]
                      [else null]))]
-           [language (if (regexp-match? #rx"^#lang " bstr)
+           [has-hash-lang? (regexp-match? #rx"^#lang " bstr)]
+           [language (if has-hash-lang?
                          (let ([m (regexp-match #rx"^#lang ([-a-zA-Z/._+]+)" bstr)])
                            (if m
                                (link-mod
@@ -128,8 +135,10 @@
                                  mods
                                  language
                                  (filter (lambda (x) (not (eq? (car x) 'symbol)))
-                                         ;; Drop #lang entry:
-                                         (cdr tokens)))
+                                         (if has-hash-lang?
+                                             ;; Drop #lang entry:
+                                             (cdr tokens)
+                                             tokens)))
                          (lambda (a b)
                            (or (< (cadr a) (cadr b))
                                (and (= (cadr a) (cadr b))

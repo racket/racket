@@ -31,19 +31,30 @@ includes a @racket[latex-defaults] @tech{style property}.
 @section[#:tag "scribble:manual:code"]{Typesetting Code}
 
 @defform/subs[(codeblock option ... str-expr ...+)
-              ([option (code:line #:indent indent-expr)
+              ([option (code:line #:keep-lang-line? keep-expr)
+                       (code:line #:indent indent-expr)
                        (code:line #:expand expand-expr)
-                       (code:line #:context context-expr)
-                       (code:line #:keep-lang-line? keep-expr)])
-              #:contracts ([indent-expr exact-nonnegative-integer?]
+                       (code:line #:context context-expr)])
+              #:contracts ([keep-expr any/c]
+                           [indent-expr exact-nonnegative-integer?]
                            [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
-                           [context-expr syntax-object?]
-                           [keep-expr any/c])]{
+                           [context-expr syntax-object?])]{
 
 Parses the code formed by the strings produced by the
-@racket[str-expr]s as a Racket module and produces a @tech{block} that
-typesets the code. The code is indented by the amount specified by
-@racket[indent-expr], which defaults to @racket[2].
+@racket[str-expr]s as a Racket module (roughly) and produces a
+@tech{block} that typesets the code. The @racket[str-expr]s should
+normally start with @hash-lang[] to determine the reader syntax for
+the module, but the resulting ``module'' need not expand or
+compile---except as needed by @racket[expand-expr]. If
+@racket[expand-expr] is omitted or produces false, then the input
+formed by @racket[str-expr] is read until an end-of-file is
+encountered, otherwise a single form is read from the input.
+
+When @racket[keep-expr] produces a true value (the default), the first
+line in the input (which is typically @hash-lang[]) is preserved in
+the typeset output, otherwise the first line is dropped. The typeset
+code is indented by the amount specified by @racket[indent-expr],
+which defaults to @racket[2].
 
 When @racket[expand-expr] produces @racket[#f] (which is the default),
 identifiers in the typeset code are colored and linked based on
@@ -54,10 +65,6 @@ has the same lexical context as the first @racket[str-expr].
 When @racket[expand-expr] produces a procedure, it is used to
 macro-expand the parsed program, and syntax coloring is based on the
 parsed program.
-
-When @racket[keep-lang-line?-expr] produces a true value (the
-default), the @hash-lang[] line in the input is preserved in the
-typeset output, otherwise the first line is dropped.
 
 For example,
 
