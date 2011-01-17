@@ -1,5 +1,7 @@
 (module view mzscheme
-  (require plot/plplot plot/math mzlib/class mzlib/file mred mzlib/math)
+  (require plot/plplot plot/math mzlib/class mzlib/file 
+           racket/draw racket/snip
+           mzlib/math)
 
   ;; including suggested fix from Doug Williams
 
