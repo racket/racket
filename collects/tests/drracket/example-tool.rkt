@@ -29,4 +29,6 @@
                 (cons
                  new-collection-root
                  (current-library-collection-paths))])
-  (namespace-require 'tests/drracket/private/run-example-tool))
+  (namespace-require 'tests/drracket/private/run-example-tool)
+  (eval '(go)))
+
