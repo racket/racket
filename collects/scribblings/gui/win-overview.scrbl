@@ -862,7 +862,7 @@ An eventspace's event queue is actually a priority queue with events
 
 Although a programmer has no direct control over the order in which
  events are dispatched, a programmer can control the timing of
- dispatches by setting the event dispatch handler via the
+ dispatches by setting the @deftech{event dispatch handler} via the
  @scheme[event-dispatch-handler] parameter. This parameter and other
  eventspace procedures are described in more detail in
  @secref["eventspace-funcs"].
@@ -923,13 +923,26 @@ An eventspace is a @techlink[#:doc reference-doc]{synchronizable
  parent. (Note that the blocking state of an eventspace is unrelated
  to whether an event is ready for dispatching.)
 
-@subsection[#:tag "evtcontjump"]{Exceptions and Continuation Jumps}
+@subsection[#:tag "evtcontjump"]{Exceptions, Continuations, and Jumps}
 
-Whenever the system dispatches an event, the call to the handler
- procedure is wrapped so that full continuation jumps are not allowed
- to escape from the dispatch, and escape continuation jumps are
- blocked at the dispatch site. The following @scheme[block] procedure
- illustrates how the system blocks escape continuation jumps:
+Whenever the system dispatches an event, the call to the handler is
+ wrapped with a @deftech{continuation prompt} that delimits
+ continuations captured by the handler (see
+ @racket[call-with-continuation-prompt]). For example, if a button
+ callback captures a continuation, then applying the continuation
+ later reinstalls only the work to be done by the handler up until the
+ point that it returns; the dispatch machinery to invoke the button
+ callback is not included in the continuation. The delimited
+ continuation prompt is installed outside the call to the @tech{event
+ dispatch handler}, so any captured continuation includes the
+ invocation of the @tech{event dispatch handler}.
+
+An event-handling callback (and the @tech{event dispatch handler}) is
+ further wrapped with a @deftech{continuation barrier} and a
+ @racket[dynamic-wind] that blocks jumps (using continuation prompts
+ other than the default one) that escape past the dispatch site. The
+ following @scheme[block] procedure illustrates how the system blocks
+ escape continuation jumps:
 
 @def+int[
 (define (block f)
@@ -947,12 +960,9 @@ Whenever the system dispatches an event, the call to the handler
 (let/ec k (block (lambda () (k 10))) 11)
 ]
 
-Calls to the event dispatch handler are also protected with
- @scheme[block].
-
 This blocking of continuation jumps complicates the interaction
  between @scheme[with-handlers] and @scheme[yield] (or the default
- event dispatch handler). For example, in evaluating the expression
+ @tech{event dispatch handler}). For example, in evaluating the expression
 
 @schemeblock[
 (with-handlers ([(lambda (x) #t)
@@ -971,9 +981,9 @@ the @scheme["error during yield"] handler is @italic{never} called,
  sense that control jumps out of the event handler, but @scheme[yield]
  may dispatch another event rather than escaping or returning.
 
-The following expression demonstrates a more useful way to handle
- exceptions within @scheme[yield], for the rare cases where
- such handling is useful:
+The following expression demonstrates a more effective way to handle
+ exceptions within @scheme[yield], for the rare cases where such
+ handling is useful:
 
 @schemeblock[
 (let/ec k
@@ -1022,4 +1032,6 @@ animation frame with @method[canvas<%> suspend-flush] and
 are not flushed to the screen. Use @method[canvas<%> flush] to ensure
 that canvas content is flushed when it is ready if a @method[canvas<%>
 suspend-flush] will soon follow, because the process of flushing to
-the screen can be starved if flushing is frequently suspend.
+the screen can be starved if flushing is frequently suspend.  The
+method @xmethod[canvas% refresh-now] conveniently encapsulates this
+sequence.

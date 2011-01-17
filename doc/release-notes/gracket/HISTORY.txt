@@ -1,3 +1,12 @@
+Version 5.1, February 2011
+
+The GRacket executable is now a thin wrapper on the Racket executable,
+with the drawing and GUI libraries re-implemented as plain Racket
+libraries. See "Draw_and_GUI_5_1.txt" in the Racket release-notes
+directory. These notes will be discontinued.
+
+----------------------------------------------------------------------
+
 Version 5.0.2, October 2010
 
 Minor bug fixes

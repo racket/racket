@@ -148,6 +148,11 @@ content of the combo-box popup menu, but the default implementation no
 longer triggers the popup menu; instead, the popup behavior is built
 into the control.
 
+Event callbacks are delimited by a continuation prompt using the
+default continuation prompt tag. As a result, continuations can be
+usufully captured during one event callback and applied during other
+callbacks or outside of an even callback.
+
 
 Removed Functions
 -----------------
