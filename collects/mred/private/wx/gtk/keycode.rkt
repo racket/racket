@@ -18,6 +18,7 @@
          (#xff55 . prior)
          (#xff56 . next)
          (#xff57 . end)
+         (#xff63 . insert)
          (#xff80 . #\space) ; keypad
          (#xff89 . #\tab) ; keypad
          (#xff8d . #\u3)  ; enter
