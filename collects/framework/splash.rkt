@@ -203,6 +203,7 @@
 (define splash-max-width 1)
 
 (define (close-splash)
+  (printf "splash-current-width ~s\n" splash-current-width)
   (unless (= splash-max-width splash-current-width)
     (splash-set-preference (get-splash-width-preference-name) (max 1 splash-current-width)))
   (on-splash-eventspace/ret (set! quit-on-close? #f))
@@ -312,10 +313,10 @@
 (define (splash-get-preference name default)
   (get-preference
    name
-   (λ ()
-     default)))
+   (λ () default)
+   #:timeout-lock-there (λ (path) default)))
 (define (splash-set-preference name value)
-  (put-preferences (list name) (list value)))
+  (put-preferences (list name) (list value) void))
 
 ;; only modified (or read) on the splash eventspace handler thread
 (define quit-on-close? #t)

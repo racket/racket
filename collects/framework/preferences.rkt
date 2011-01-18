@@ -505,10 +505,10 @@ the state transitions / contracts are:
  
  (parameter-doc
   preferences:low-level-get-preference
-  (parameter/c (->* [symbol?] [(-> any)] any))
+  (parameter/c (->* (symbol?) [(-> any)] any))
   get-preference
   @{This parameter's value is called to get a preference from the preferences
-    file. Its interface should be just like mzlib's @racket[get-preference].})
+    file. Its interface should be just like @racket[get-preference].})
  
  (proc-doc/names
   preferences:snapshot? 

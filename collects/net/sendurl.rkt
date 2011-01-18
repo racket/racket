@@ -13,7 +13,9 @@
 
 (define separate-by-default?
   ;; internal configuration, 'browser-default lets some browsers decide
-  (get-preference 'new-browser-for-urls (lambda () 'browser-default)))
+  (get-preference 'new-browser-for-urls 
+                  (lambda () 'browser-default)
+                  #:timeout-lock-there (lambda (path) 'browser-default)))
 
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found

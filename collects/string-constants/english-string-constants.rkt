@@ -420,10 +420,18 @@ please adhere to these guidelines:
  (error-saving-preferences "Error saving preferences: ~a")
  (error-saving-preferences-title "Error saving preferences")
  (steal-the-lock-and-retry "Steal the lock && retry") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
+ 
  (error-reading-preferences "Error reading preferences")
+ (error-reading-preferences-explanation "The preferences file is locked and thus the ~a preference cannot be read") ;; ~a is filled with the name of the preference (a symbol)
+ (dont-ask-again-until-drracket-restarted "Don't ask again (until DrRacket is restarted)")
+ ; difference between the above and below is one comes with a question (steal the lock or not) and the other with just a notation saying "the file is locked"
+ (dont-notify-again-until-drracket-restarted "Don't notify again (until DrRacket is restarted)") 
  (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
  (try-again "Try again") ;; button label
+ (give-up-and-use-the-default "Give up and use the default") ;; button label
+  
  (prefs-file-still-locked "The preferences file is still locked (because the file ~a exists), so your preference change will not be saved.")
+ (prefs-file-locked-nothing-doing "The preferences file is locked (via ~s) so changes to the preferences not be saved.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
  (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")

@@ -1,15 +1,15 @@
-(module external mzscheme
+#lang racket/base
   (require string-constants
            mred
-           mzlib/class
-           mzlib/file
-           mzlib/list
-           mzlib/match
-           (prefix raw: net/sendurl)
+           racket/class
+           racket/file
+           racket/list
+           racket/match
+           (prefix-in raw: net/sendurl)
            net/url
-           (prefix fw: framework))
+           (prefix-in fw: framework))
   (provide send-url
-           (rename raw:browser-preference? browser-preference?)
+           (rename-out [raw:browser-preference? browser-preference?])
            update-browser-preference
            install-help-browser-preference-panel
            add-to-browser-prefs-panel)
@@ -20,7 +20,9 @@
 
   (fw:preferences:set-default
    'external-browser
-   (let ([pref (get-preference 'external-browser (lambda () #f))])
+   (let ([pref (get-preference 'external-browser 
+                               (lambda () #f)
+                               #:timeout-lock-there (lambda (path) #f))])
      (and (raw:browser-preference? pref) pref))
    raw:browser-preference?)
 
@@ -49,7 +51,7 @@
 
   (fw:preferences:set-default http-proxy-preference #f proxy-pref?)
   (sync-current-proxy-servers (fw:preferences:get http-proxy-preference))
-  (fw:preferences:add-callback http-proxy-preference (lambda (p v) (sync-current-proxy-servers v)))
+  (void (fw:preferences:add-callback http-proxy-preference (lambda (p v) (sync-current-proxy-servers v))))
 
   (define send-url
     (if (unix-browser?)
@@ -299,4 +301,4 @@
              (send bad-host show #f)))
 
          (set! synchronized? #t)
-         (values pref-panel callbacks))))))
+         (values pref-panel callbacks)))))

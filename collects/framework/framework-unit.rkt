@@ -1,35 +1,36 @@
 #lang scheme/base
 
-(require mzlib/unit
+(require racket/unit
          mred/mred-sig)
 
-(require "private/sig.ss"
-         "private/number-snip.ss"
-         "private/comment-box.ss"
-         "private/application.ss"
-         "private/version.ss"
-         "private/color-model.ss"
-         "private/exit.ss"
-         "private/menu.ss"
-         "private/preferences.ss"
-         "private/autosave.ss"
-         "private/color.ss"
-         "private/color-prefs.ss"
-         "private/handler.ss" 
-         "private/keymap.ss"
-         "private/path-utils.ss"
-         "private/icon.ss"
-         "private/editor.ss"
-         "private/pasteboard.ss"
-         "private/text.ss"
-         "private/finder.ss"
-         "private/group.ss"
-         "private/canvas.ss"
-         "private/panel.ss"
-         "private/frame.ss"
-         "private/scheme.ss"
-         "private/main.ss"
-         "private/mode.ss")
+(require "private/sig.rkt"
+         "private/number-snip.rkt"
+         "private/comment-box.rkt"
+         "private/application.rkt"
+         "private/version.rkt"
+         "private/color-model.rkt"
+         "private/exit.rkt"
+         "private/menu.rkt"
+         "private/preferences.rkt"
+         "private/autosave.rkt"
+         "private/color.rkt"
+         "private/color-prefs.rkt"
+         "private/handler.rkt" 
+         "private/keymap.rkt"
+         "private/path-utils.rkt"
+         "private/icon.rkt"
+         "private/editor.rkt"
+         "private/pasteboard.rkt"
+         "private/text.rkt"
+         "private/finder.rkt"
+         "private/group.rkt"
+         "private/canvas.rkt"
+         "private/panel.rkt"
+         "private/frame.rkt"
+         "private/scheme.rkt"
+         "private/main.rkt"
+         "private/mode.rkt"
+         "private/early-init.rkt")
 
 (provide framework-separate@ framework@)
 
@@ -62,8 +63,9 @@
           framework:scheme^ 
           framework:main^)
   (link
+   preferences@ early-init@
    application@ version@ color-model@ mode@ exit@ menu@
-   preferences@ number-snip@ autosave@ path-utils@ icon@ keymap@
+   number-snip@ autosave@ path-utils@ icon@ keymap@
    editor@ pasteboard@ text@ color@ color-prefs@ comment-box@ 
    finder@ group@ canvas@ panel@ frame@ handler@ scheme@ main@))
 

@@ -1,5 +1,5 @@
-#lang scheme/unit
-(require mzlib/class
+#lang racket/unit
+(require racket/class
          "sig.ss"
          "../preferences.ss"
          mred/mred-sig)
@@ -11,11 +11,13 @@
         [prefix handler: framework:handler^]
         [prefix editor: framework:editor^]
         [prefix color-prefs: framework:color-prefs^]
-        [prefix scheme: framework:scheme^])
+        [prefix scheme: framework:scheme^]
+        [prefix early-init: framework:early-init^])
 (export framework:main^)
 (init-depend framework:preferences^ framework:exit^ framework:editor^
-             framework:color-prefs^ framework:scheme^)
+             framework:color-prefs^ framework:scheme^ framework:early-init^)
 
+(preferences:low-level-get-preference preferences:get-preference/gui)
 (preferences:low-level-put-preferences preferences:put-preferences/gui)
 
 (application-preferences-handler (λ () (preferences:show-dialog)))

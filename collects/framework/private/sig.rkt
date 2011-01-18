@@ -71,6 +71,7 @@
     ())
   (define-signature preferences^ extends preferences-class^
     (put-preferences/gui
+     get-preference/gui
      add-panel
      add-font-panel
      
@@ -451,6 +452,8 @@
      rgb-color-distance
      rgb->xyz
      xyz->rgb))
+  
+  (define-signature early-init^ ())
   
   (define-signature framework^
     ((open (prefix application: application^))
