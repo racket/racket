@@ -108,6 +108,52 @@
 (define-gdk gdk_gc_set_rgb_fg_color (_fun _pointer _GdkColor-pointer -> _void))
 (define-gdk gdk_draw_rectangle (_fun _GdkWindow _pointer _gboolean _int _int _int _int -> _void))
 
+(define _GtkIMContext (_cpointer 'GtkIMContext))
+(define-gtk gtk_im_multicontext_new (_fun -> _GtkIMContext))
+(define-gtk gtk_im_context_set_use_preedit (_fun _GtkIMContext _gboolean -> _void))
+(define-gtk gtk_im_context_focus_in (_fun _GtkIMContext -> _void))
+(define-gtk gtk_im_context_focus_out (_fun _GtkIMContext -> _void))
+(define-gtk gtk_im_context_filter_keypress (_fun _GtkIMContext _GdkEventKey-pointer -> _gboolean))
+(define-gtk gtk_im_context_set_client_window (_fun _GtkIMContext _GdkWindow -> _void))
+(define-gtk gtk_im_context_set_cursor_location (_fun _GtkIMContext _GdkRectangle-pointer -> _void))
+
+(define im-string-result #f)
+(define im-filtering? #f)
+(define im-canvas #f)
+
+(define-signal-handler connect-commit "commit"
+  (_fun _GtkIMContext _string -> _void)
+  (lambda (im str)
+    (cond
+     [im-filtering?
+      ;; filtering an event => we can handle the string
+      ;; result directly
+      (set! im-string-result str)]
+     [(and im-canvas
+	   (weak-box-value im-canvas))
+      ;; not filtering, but there's a target canvas =>
+      ;; queue a made-up key press event for each character
+      ;; of the string
+      => (lambda (wx)
+	   (for ([c (in-string str)])
+	     (let ([e (new key-event%
+			   [key-code c]
+			   [shift-down #f]
+			   [control-down #f]
+			   [meta-down #f]
+			   [alt-down #f]
+			   [x 0]
+			   [y 0]
+			   [time-stamp 0]
+			   [caps-down #f])])
+	       (queue-window-event wx (lambda () 
+					(send wx dispatch-on-char e #f))))))])))
+
+(define im (gtk_im_multicontext_new))
+(void (connect-commit (cast im _pointer _GtkWidget)))
+
+(gtk_im_context_set_use_preedit im #f)
+
 ;; We rely some on the implementation of GtkComboBoxEntry to replace
 ;; the drawing routine.
 (define-cstruct _GList ([data _pointer]))
@@ -595,6 +641,40 @@
 
      (define/public (set-combo-text t) (void))
 
+     (define/override (focus-change on?)
+       ;; input-method management
+       (if on?
+	   (begin
+	     (set! im-canvas (make-weak-box this))
+	     (gtk_im_context_focus_in im)
+	     (gtk_im_context_set_client_window im (widget-window client-gtk))
+	     (let ([w (box 0)]
+		   [h (box 0)])
+	       (get-client-size w h)
+	       (gtk_im_context_set_cursor_location 
+		im 
+		(make-GdkRectangle 0 0 (unbox w) (unbox h)))))
+	   (when (and im-canvas
+		      (eq? this (weak-box-value im-canvas)))
+	     (gtk_im_context_focus_out im)
+	     (set! im-canvas #f))))
+
+     (define/override (filter-key-event e)
+       ;; give the input method a chance to handle the
+       ;; key event; see call in "window.rkt" for
+       ;; information on the results
+       (if (and im-canvas
+		(eq? this (weak-box-value im-canvas)))
+	   (begin
+	     (set! im-filtering? #t)
+	     (set! im-string-result #f)
+	     (if (begin0
+		  (gtk_im_context_filter_keypress im e)
+		  (set! im-filtering? #f))
+		 im-string-result
+		 'none))
+	   'none))
+     
      (define/public (do-scroll direction)
        (if (is-auto-scroll?)
            (refresh-for-autoscroll)

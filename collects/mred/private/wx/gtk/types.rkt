@@ -31,6 +31,7 @@
               (struct-out GdkEventExpose)
 	      _GdkEventSelection _GdkEventSelection-pointer
               (struct-out GdkEventSelection)
+	      _GdkRectangle _GdkRectangle-pointer
               (struct-out GdkRectangle)
               _GdkColor _GdkColor-pointer
               (struct-out GdkColor)))

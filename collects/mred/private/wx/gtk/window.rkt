@@ -130,6 +130,7 @@
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
       (when wx
+        (send wx focus-change #t)
         (send (send wx get-top-win) on-focus-child #t)
         (queue-window-event wx (lambda () (send wx on-set-focus))))
       #f)))
@@ -138,6 +139,7 @@
   (lambda (gtk event)
     (let ([wx (gtk->wx gtk)])
       (when wx
+        (send wx focus-change #f)
         (send (send wx get-top-win) on-focus-child #f)
         (queue-window-event wx (lambda () (send wx on-kill-focus))))
       #f)))
@@ -180,60 +182,71 @@
   (let ([wx (gtk->wx gtk)])
     (and
      wx
-     (let* ([modifiers (if scroll?
-                           (GdkEventScroll-state event)
-                           (GdkEventKey-state event))]
-            [bit? (lambda (m v) (positive? (bitwise-and m v)))]
-            [keyval->code (lambda (kv)
-                            (or
-                             (map-key-code kv)
-                             (integer->char (gdk_keyval_to_unicode kv))))]
-            [key-code (if scroll?
-                          (if (= (GdkEventScroll-direction event)
-                                 GDK_SCROLL_UP)
-                              'wheel-up
-                              'wheel-down)
-                          (keyval->code (GdkEventKey-keyval event)))]
-            [k (new key-event%
-                    [key-code key-code]
-                    [shift-down (bit? modifiers GDK_SHIFT_MASK)]
-                    [control-down (bit? modifiers GDK_CONTROL_MASK)]
-                    [meta-down (bit? modifiers GDK_MOD1_MASK)]
-                    [alt-down (bit? modifiers GDK_META_MASK)]
-                    [x 0]
-                    [y 0]
-                    [time-stamp (if scroll?
-                                    (GdkEventScroll-time event)
-                                    (GdkEventKey-time event))]
-                    [caps-down (bit? modifiers GDK_LOCK_MASK)])])
-       (when (or (and (not scroll?)
-                      (let-values ([(s ag sag cl) (get-alts event)]
-                                   [(keyval->code*) (lambda (v)
-                                                      (and v
-                                                           (let ([c (keyval->code v)])
-                                                             (and (not (equal? #\u0000 c))
-                                                                  c))))])
-                        (let ([s (keyval->code* s)]
-                              [ag (keyval->code* ag)]
-                              [sag (keyval->code* sag)]
-                              [cl (keyval->code* cl)])
-                          (when s (send k set-other-shift-key-code s))
-                          (when ag (send k set-other-altgr-key-code ag))
-                          (when sag (send k set-other-shift-altgr-key-code sag))
-                          (when cl (send k set-other-caps-key-code cl))
-                          (or s ag sag cl))))
-                 (not (equal? #\u0000 key-code)))
-         (unless (or scroll? down?)
-           ;; swap altenate with main
-           (send k set-key-release-code (send k get-key-code))
-           (send k set-key-code 'release))
-         (if (send wx handles-events? gtk)
-             (begin
-               (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
-               #t)
-             (constrained-reply (send wx get-eventspace)
-                                (lambda () (send wx dispatch-on-char k #t))
-                                #t)))))))
+     (let ([im-str (if scroll?
+		       'none
+		       ;; Result from `filter-key-event' is one of
+		       ;;  - #f => drop the event
+		       ;;  - 'none => no replacement; handle as usual
+		       ;;  - a string => use as the keycode
+		       (send wx filter-key-event event))])
+       (when im-str
+	 (let* ([modifiers (if scroll?
+			       (GdkEventScroll-state event)
+			       (GdkEventKey-state event))]
+		[bit? (lambda (m v) (positive? (bitwise-and m v)))]
+		[keyval->code (lambda (kv)
+				(or
+				 (map-key-code kv)
+				 (integer->char (gdk_keyval_to_unicode kv))))]
+		[key-code (if scroll?
+			      (if (= (GdkEventScroll-direction event)
+				     GDK_SCROLL_UP)
+				  'wheel-up
+				  'wheel-down)
+			      (keyval->code (GdkEventKey-keyval event)))]
+		[k (new key-event%
+			[key-code (if (and (string? im-str)
+					   (= 1 (string-length im-str)))
+				      (string-ref im-str 0)
+				      key-code)]
+			[shift-down (bit? modifiers GDK_SHIFT_MASK)]
+			[control-down (bit? modifiers GDK_CONTROL_MASK)]
+			[meta-down (bit? modifiers GDK_MOD1_MASK)]
+			[alt-down (bit? modifiers GDK_META_MASK)]
+			[x 0]
+			[y 0]
+			[time-stamp (if scroll?
+					(GdkEventScroll-time event)
+					(GdkEventKey-time event))]
+			[caps-down (bit? modifiers GDK_LOCK_MASK)])])
+	   (when (or (and (not scroll?)
+			  (let-values ([(s ag sag cl) (get-alts event)]
+				       [(keyval->code*) (lambda (v)
+							  (and v
+							       (let ([c (keyval->code v)])
+								 (and (not (equal? #\u0000 c))
+								      c))))])
+			    (let ([s (keyval->code* s)]
+				  [ag (keyval->code* ag)]
+				  [sag (keyval->code* sag)]
+				  [cl (keyval->code* cl)])
+			      (when s (send k set-other-shift-key-code s))
+			      (when ag (send k set-other-altgr-key-code ag))
+			      (when sag (send k set-other-shift-altgr-key-code sag))
+			      (when cl (send k set-other-caps-key-code cl))
+			      (or s ag sag cl))))
+		     (not (equal? #\u0000 key-code)))
+	     (unless (or scroll? down?)
+	       ;; swap altenate with main
+	       (send k set-key-release-code (send k get-key-code))
+	       (send k set-key-code 'release))
+	     (if (send wx handles-events? gtk)
+		 (begin
+		   (queue-window-event wx (lambda () (send wx dispatch-on-char k #f)))
+		   #t)
+		 (constrained-reply (send wx get-eventspace)
+				    (lambda () (send wx dispatch-on-char k #t))
+				    #t)))))))))
 
 (define-signal-handler connect-button-press "button-press-event"
   (_fun _GtkWidget _GdkEventButton-pointer -> _gboolean)
@@ -561,6 +574,9 @@
 
     (define/public (on-set-focus) (void))
     (define/public (on-kill-focus) (void))
+
+    (define/public (focus-change on?) (void))
+    (define/public (filter-key-event e) 'none)
 
     (define/private (pre-event-refresh)
       ;; Since we break the connection between the
