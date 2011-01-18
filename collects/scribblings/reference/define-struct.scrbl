@@ -256,6 +256,7 @@ and the only constraint on the form is that it starts with some
 (posn-x (make-posn 1 2))
 (define-xy-struct posn #:mutable)
 (set-posn-x! (make-posn 1 2) 0)
+(code:comment "this next line will cause an error due to a bad keyword")
 (define-xy-struct posn #:bad-option)
 ]}
 
