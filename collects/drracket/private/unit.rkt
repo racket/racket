@@ -695,7 +695,8 @@ module browser threading seems wrong.
           (define/public (this-and-next-language-the-same?)
             (let ([execute-lang (drracket:language-configuration:language-settings-language execute-settings)]
                   [next-lang (drracket:language-configuration:language-settings-language next-settings)])
-              (and (eq? execute-lang next-lang)
+              (and (equal? (send execute-lang get-language-position)
+                           (send next-lang get-language-position))
                    (equal?
                     (send execute-lang marshall-settings 
                           (drracket:language-configuration:language-settings-settings execute-settings))
