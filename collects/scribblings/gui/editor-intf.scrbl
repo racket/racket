@@ -1709,7 +1709,7 @@ To extend or re-implement copying, override the @xmethod[text%
 
 @defmethod[(print [interactive? any/c #t]
                   [fit-on-page? any/c #t]
-                  [output-mode (or/c 'standard 'postscript) 'standard]
+                  [output-mode (or/c 'standard 'postscript 'pdf) 'standard]
                   [parent (or/c (or/c (is-a?/c frame%) (is-a?/c dialog%)) #f) #f]
                   [force-ps-page-bbox? any/c #t]
                   [as-eps? any/c #f])
@@ -1728,20 +1728,22 @@ If @scheme[fit-on-page?] is a true value, then during printing for a
  @scheme[text%] editor, the editor's maximum width is set to the width
  of the page (less margins) and the autowrapping bitmap is removed.
 
-The @scheme[output-mode] setting is used for Windows and Mac OS X. It
+The @scheme[output-mode] setting
  determines whether the output is generated directly as a PostScript
- file (using Racket's built-in PostScript system) or generated
+ file, generated directly as a PDF file, or generated
  using the platform-specific standard printing mechanism. The possible
  values are
 
 @itemize[
 
  @item{@scheme['standard] --- print using the platform-standard
- mechanism (via a @scheme[printer-dc%]) under Windows and
- Mac OS X, PostScript for Unix (via a @scheme[post-script-dc%])}
+ mechanism (via a @scheme[printer-dc%])}
 
  @item{@scheme['postscript] --- print to a PostScript file (via a
  @scheme[post-script-dc%])}
+
+ @item{@scheme['pdf] --- print to a PDF file (via a
+ @scheme[pdf-dc%])}
 
 ]
 
@@ -1753,20 +1755,21 @@ If @scheme[parent] is not @scheme[#f], it is used as the parent window
  configuration dialogs will have no parent.
 
 The @scheme[force-ps-page-bbox?] argument is used for PostScript
- printing, and is used as the third initialization argument when
- creating the @scheme[post-script-dc%] instance. Unless it is
- @scheme[#f], the bounding-box of the resulting PostScript file is set
+ and PDF printing, and is used as the third initialization argument when
+ creating the @scheme[post-script-dc%] or @racket[pdf-dc%] instance. Unless it is
+ @scheme[#f], the bounding-box of the resulting PostScript/PDF file is set
  to the current paper size.
 
-The @scheme[as-eps?] argument is used for PostScript printing, and is
+The @scheme[as-eps?] argument is used for PostScript and PDF printing, and is
  used as the fourth initialization argument when creating the
- @scheme[post-script-dc%] instance. Unless it is @scheme[#f], the
+ @scheme[post-script-dc%] or @racket[pdf-dc%] instance. Unless it is @scheme[#f], a
  resulting PostScript file is identified as Encapsulated PostScript
  (EPS).
 
 The printing margins are determined by @method[ps-setup%
  get-editor-margin] in the current @scheme[ps-setup%] object (as
- determined by @scheme[current-ps-setup]).
+ determined by @scheme[current-ps-setup]), but they are ignored when
+ @racket[as-eps?] is true.
 
 }
 
@@ -1778,11 +1781,13 @@ The printing margins are determined by @method[ps-setup%
 Prints the editor into the given drawing context. See also
  @method[editor<%> print].
 
-If @scheme[page-number] is a non-negative integer, then just the
+If @scheme[page-number] is a positive integer, then just the
 indicated page is printed, where pages are numbered from
-@scheme[1]. (So, supplying @scheme[0] as @scheme[page-number] produces
-no output.) When @scheme[page-number] is negative, the
-@method[dc<%> start-page] and @scheme[dc<%> end-page] methods of @scheme[dc] are
+@scheme[1]. If @racket[page-number] is @scheme[0], then the
+entire content of the editor is printed on a single page.
+When @scheme[page-number] is negative, then the editor content is
+split across pages as needed to fit, and the
+@method[dc<%> start-page] and @method[dc<%> end-page] methods of @scheme[dc<%>] are
 called for each page.
 
 }

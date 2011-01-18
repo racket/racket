@@ -5593,7 +5593,8 @@
               (begin
                 (when (or (zero? (unbox W)) (zero? (unbox H)))
                   (get-default-print-size W H))
-                (send (current-ps-setup) get-editor-margin hm vm))
+                (when (not (zero? page))
+                  (send (current-ps-setup) get-editor-margin hm vm)))
             (let ([H (- H (* 2 vm))]
                   [W (- W (* 2 hm))])
 
@@ -5619,7 +5620,8 @@
                      (cond
                       [(or (zero? h)
                            (and (i . < . num-valid-lines)
-                                ((mline-h line) . < . (- H h))
+                                (or (zero? page)
+                                    ((mline-h line) . < . (- H h)))
                                 can-continue?))
                        (let ([lh (mline-h line)]
                              [new-page? (new-page-line? line)])
@@ -5631,7 +5633,8 @@
                       [else
                        (let-values ([(h i line)
                                      (cond
-                                      [(and (h . < . H)
+                                      [(and (not (zero? page))
+                                            (h . < . H)
                                             (i . < . num-valid-lines)
                                             ((mline-h line) . > . H))
                                        ;; we'll have to break it up anyway; start now?
@@ -5646,7 +5649,8 @@
                                       [else
                                        (values h i line)])])
                          (let-values ([(next-h h)
-                                       (if (h . > . H)
+                                       (if (and (not (zero? page))
+                                                (h . > . H))
                                            ;; only happens if we have something that's too big to fit on a page;
                                            ;; look for internal scroll positions
                                            (let* ([pos (find-scroll-line (+ y H))]
@@ -5659,16 +5663,17 @@
                                            (values next-h h))])
                            (or (if print?
                                    (begin
-                                     (when (or (negative? page) (= this-page page))
+                                     (when (or (page . <= . 0)
+                                               (= this-page page))
                                        (begin
-                                         (when (negative? page)
+                                         (when (page . <= . 0)
                                            (send dc start-page))
                                          (do-redraw dc 
                                                     (+ y (if (zero? i) 0 1))
                                                     (+ y (- h 1 unline))
                                                     0 W (+ (- y) vm) hm
                                                     'no-caret #f #f)
-                                         (when (negative? page)
+                                         (when (page . <= . 0)
                                            (send dc end-page))))
                                      #f)
                                    (= this-page page))

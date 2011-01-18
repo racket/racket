@@ -2118,36 +2118,41 @@
             (when (or (zero? (unbox w))
                       (zero? (unbox h)))
               (get-default-print-size w h))
-            (send (current-ps-setup) get-editor-margin hm vm))
+            (unless (zero? page)
+              (send (current-ps-setup) get-editor-margin hm vm)))
         (let ([W (- w (* 2 hm))]
-              [H (- h (* 2 vm))])
+              [H (- h (* 2 vm))]
+              [eps? (zero? page)])
           (let-boxes ([w 0.0]
                       [h 0.0])
               (get-extent w h)
 
-            (let ([hcount (->long (ceiling (/ w W)))]
-                  [vcount (->long (ceiling (/ h H)))])
+            (let ([hcount (if eps? 1 (->long (ceiling (/ w W))))]
+                  [vcount (if eps? 1 (->long (ceiling (/ h H))))])
 
               (if (not print?)
                   (page . <= . (* hcount vcount))
                   (let-values ([(start end)
-                                (if (negative? page)
-                                    (values 1 (* hcount vcount))
-                                    (values page page))])
+                                (cond
+                                 [(zero? page) (values 1 1)]
+                                 [(negative? page)
+                                  (values 1 (* hcount vcount))]
+                                 [else
+                                  (values page page)])])
                     (for ([p (in-range start (add1 end))])
                       (let ([vpos (quotient (- p 1) hcount)]
                             [hpos (modulo (- p 1) hcount)])
-                        (let ([x (* hpos w)]
-                              [y (* vpos h)])
-                          (when (negative? page)
+                        (let ([x (* hpos W)]
+                              [y (* vpos H)])
+                          (when (page . <= . 0)
                             (send dc start-page))
                             
                           (draw dc (+ (- x) hm) (+ (- y) vm)
-                                x y (+ x w) (+ y h)
+                                x y (+ x (if eps? w W)) (+ y (if eps? h H))
                                 'no-caret
                                 #f)
 
-                          (when (negative? page)
+                          (when (page . <= . 0)
                             (send dc end-page)))))))))))))
 
   ;; ----------------------------------------

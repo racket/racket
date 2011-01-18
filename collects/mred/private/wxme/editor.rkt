@@ -2,6 +2,7 @@
 (require scheme/class
          (for-syntax scheme/base)
          scheme/file
+         racket/port
          "../syntax.ss"
          "private.ss"
          racket/snip
@@ -760,25 +761,52 @@
 
   (def/public (print [bool? [interactive? #t]]
                      [bool? [fit-to-page? #t]]
-                     [(symbol-in standard postscript) [output-mode 'standard]]
+                     [(symbol-in standard postscript pdf) [output-mode 'standard]]
                      [any? [parent #f]] ; checked in ../editor.ss
                      [bool? [force-page-bbox? #t]]
                      [bool? [as-eps? #f]])
-    (let ([ps? (eq? output-mode 'postscript)]
+    (let ([ps? (or (eq? output-mode 'postscript)
+                   (eq? output-mode 'pdf))]
           [parent (or parent
                       (extract-parent))])
       (cond
        [ps?
-        (let ([dc (make-object post-script-dc% interactive? parent force-page-bbox? as-eps?)])
+        (let* ([ps-dc% (if (eq? output-mode 'postscript) post-script-dc% pdf-dc%)]
+               [dc (if as-eps?
+                       ;; just for size:
+                       (new ps-dc% [interactive #f] [output (open-output-nowhere)])
+                       ;; actual target:
+                       (make-object ps-dc% interactive? parent force-page-bbox? #f))])
           (when (send dc ok?)
             (send dc start-doc "printing buffer")
             (set! printing dc)
             (let ([data (do-begin-print dc fit-to-page?)])
-              (print-to-dc dc)
-              (set! printing #f)
-              (do-end-print dc data)
-              (send dc end-doc)
-              (invalidate-bitmap-cache 0.0 0.0 'end 'end))))]
+              (let ([new-dc 
+                     (if as-eps?
+                         ;; now that we know the size, create the actual target:
+                         (let ([w (box 0)]
+                               [h (box 0)]
+                               [sx (box 0)]
+                               [sy (box 0)])
+                           (get-extent w h)
+                           (send (current-ps-setup) get-scaling sx sy)
+                           (let ([dc (make-object ps-dc% interactive? parent force-page-bbox?
+                                                  #t 
+                                                  (* (unbox w) (unbox sx))
+                                                  (* (unbox h) (unbox sy)))])
+                             (and (send dc ok?)
+                                  (send dc start-doc "printing buffer")
+                                  (set! printing dc)
+                                  dc)))
+                         dc)])
+                (when new-dc
+                  (print-to-dc new-dc (if as-eps? 0 -1))
+                  (when as-eps?
+                    (send new-dc end-doc)))
+                (set! printing #f)
+                (do-end-print dc data)
+                (send dc end-doc)
+                (invalidate-bitmap-cache 0.0 0.0 'end 'end)))))]
        [else
         (let ([data #f])
           (run-printout ;; from wx

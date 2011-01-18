@@ -27,6 +27,7 @@
          bitmap%
          dc<%>
          post-script-dc%
+         pdf-dc%
          current-eventspace
          clipboard-client%
          clipboard<%>
