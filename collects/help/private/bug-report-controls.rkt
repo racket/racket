@@ -260,20 +260,24 @@
                #:top-panel synthesized-panel))))
          (get-bug-report-infos)))
   
-  (define (save-this-bug-report) 
-    (save-bug-report 
-     (saved-report-id init-bug-report)
-     #:severity (send severity get-string-selection)
-     #:class (send bug-class get-string-selection)
-     #:subject (send summary get-value)
-     #:description (get-content description)
-     #:how-to-repeat (get-content reproduce)))
+  (define still-save? #t)
+  (define (no-more-saving) (set! still-save? #f))
+  
+  (define (save-this-bug-report)
+    (when still-save?
+      (save-bug-report 
+       (saved-report-id init-bug-report)
+       #:severity (send severity get-string-selection)
+       #:class (send bug-class get-string-selection)
+       #:subject (send summary get-value)
+       #:description (get-content description)
+       #:how-to-repeat (get-content reproduce))))
   
   (define timer 
     (new timer%
          [notify-callback save-this-bug-report]
          [just-once? #t]))
-  (define (bug-report-out-of-date) 
+  (define (bug-report-out-of-date)
     (send timer stop)
     (send timer start 200 #t))
   
@@ -332,11 +336,11 @@
     (make-object button%
       (string-constant bug-report-show-synthesized-info)
       button-panel (lambda x (show-synthesized-info))))
-  (new horizontal-pane% (parent button-panel))
   (new button% 
        [parent button-panel]
        [label (string-constant close-and-save)]
        [callback (λ (a b) (close-and-save))])
+  (new horizontal-pane% (parent button-panel))
   (gui-utils:ok/cancel-buttons button-panel
                                (λ (a b) (ok))
                                (λ (a b) (cancel))
@@ -401,6 +405,18 @@
   (send (send collections get-editor) auto-wrap #t)
   (align-labels)
 
+  (define (empty-bug-report?)
+    (define (empty-editor? c) 
+      (define t (send c get-editor))
+      (zero? (send t last-position)))
+    (and (empty-editor? reproduce)
+         (empty-editor? description)
+         (empty-editor? summary)
+         (equal? (send severity get-selection) default-severity)
+         (equal? (send bug-class get-selection) default-class)))
+  
   (values compose-view-focus
           get-query
-          sanity-checking))
+          sanity-checking
+          no-more-saving
+          empty-bug-report?))

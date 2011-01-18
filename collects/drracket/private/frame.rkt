@@ -208,12 +208,11 @@
                                   [callback void])
                              enable #f)]
                       [else
-                       (unless (null? (cdr this-time))
-                         (new menu-item%
-                              [parent saved-bug-reports-menu]
-                              [label (string-constant disacard-all-saved-bug-reports)]
-                              [callback (λ (x y) (discard-all-saved-bug-reports))])
-                         (new separator-menu-item% [parent saved-bug-reports-menu]))
+                       (new menu-item%
+                            [parent saved-bug-reports-menu]
+                            [label (string-constant disacard-all-saved-bug-reports)]
+                            [callback (λ (x y) (discard-all-saved-bug-reports))])
+                       (new separator-menu-item% [parent saved-bug-reports-menu])
                        (for ([a-brinfo (in-list this-time)])
                          (new menu-item%
                            [parent saved-bug-reports-menu]

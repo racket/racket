@@ -1,13 +1,5 @@
 #lang racket/base
 
-#|
-
-If there are saved reports when a window opens, offer to open the saved ones.
-
-Put the saved things in the help menu.
-
-|#
-
 (require racket/match
          racket/contract
          racket/serialize
@@ -58,9 +50,12 @@ Put the saved things in the help menu.
                 (for/list ([key (in-list valid-keys)])
                   (list key
                         (case key
-                          [(class) (car (car bug-classes))]
-                          [(severity) (list-ref bug-severities 1)]
+                          [(class) (car (list-ref bug-classes default-class))]
+                          [(severity) (list-ref bug-severities default-severity)]
                           [else ""])))))
+
+(define default-class 0)
+(define default-severity 1)
 
 
 ;; valid? : any -> boolean?
@@ -146,7 +141,7 @@ Put the saved things in the help menu.
 (define (saved-report-lookup a-saved-report key)
   (cadr (assoc key (saved-report-table a-saved-report))))
 
-(define (save-bug-report id  
+(define (save-bug-report id
                          #:severity severity
                          #:class class
                          #:subject subject
@@ -164,6 +159,7 @@ Put the saved things in the help menu.
       (filter (λ (saved-report) 
                 (not (equal? id (saved-report-id saved-report))))
               reports)))))
+
   
 (define (unsave-bug-report id)
   (with-pref
@@ -185,7 +181,9 @@ Put the saved things in the help menu.
          bug-classes
          translate-class
          (struct-out brinfo)
-         saved-report?)
+         saved-report?
+         default-severity
+         default-class)
 (provide/contract
  [register-new-bug-id (-> saved-report?)]
  [lookup-bug-report (-> number? saved-report?)]

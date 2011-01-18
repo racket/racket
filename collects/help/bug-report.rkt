@@ -53,6 +53,35 @@
       
       (define editing? #t)
       (define/public (no-longer-editing) (set! editing? #f))
+      (define close-box-clicked? #t)
+      (define/public (set-close-box-not-clicked) (set! close-box-clicked? #f))
+      (define/augment (can-close?)
+        (cond
+          [close-box-clicked?
+           (cond
+             [(empty-bug-report?)
+              (no-more-saving)
+              (unsave-bug-report bug-id)
+              (set! editing? #f)]
+             [else
+              (define user-choice
+                (message-box/custom (string-constant cancel-bug-report?)
+                                    (string-constant do-you-want-to-discard-or-save-this-bug-report)
+                                    (string-constant save)
+                                    (string-constant cancel)
+                                    (string-constant discard)
+                                    this
+                                    '(default=1)
+                                    1))
+              (case user-choice
+                [(1) #t] ;; saving happens automatically
+                [(2) #f]
+                [(3) 
+                 (no-more-saving)
+                 (unsave-bug-report bug-id)
+                 (set! editing? #f)
+                 #t])])]
+          [else #t]))
       (define/augment (on-close)
         (inner (void) on-close)
         (set! open-frames (remq this open-frames)))
@@ -79,7 +108,7 @@
   
   (define cancel-kill-cust #f)
   
-  (define-values (compose-view-focus get-query sanity-checking)
+  (define-values (compose-view-focus get-query sanity-checking no-more-saving empty-bug-report?)
     (add-bug-report-controls compose-panel
                              init-bug-report
                              (λ () (ok))
@@ -133,6 +162,7 @@
 			      [label (string-constant close)]
                               [callback
 			       (lambda (x y)
+                                 (send bug-frame set-close-box-not-clicked)
                                  (send bug-frame close))]))
   (new grow-box-spacer-pane% [parent finished-button-panel])
   
@@ -152,7 +182,8 @@
   (define (switch-to-finished-view finished-text)
     (send finished-ec set-editor finished-text)
     (unsave-bug-report (saved-report-id init-bug-report))
-    (send single active-child finished-panel))
+    (send single active-child finished-panel)
+    (send finished-close focus))
   
   ; send-bug-report : (-> void)
   ;; initiates sending the bug report and switches the GUI's mode
@@ -231,13 +262,16 @@
       (send-bug-report)))
   
   (define (cancel)
-    (when (ask-yes-or-no (string-constant cancel-bug-report?)
-                         (string-constant are-you-sure-cancel-bug-report?)
-                         bug-frame)
+    (when (or (empty-bug-report?)
+              (ask-yes-or-no (string-constant cancel-bug-report?)
+                             (string-constant are-you-sure-cancel-bug-report?)
+                             bug-frame))
       (unsave-bug-report (saved-report-id init-bug-report))
+      (send bug-frame set-close-box-not-clicked)
       (send bug-frame close)))
   
   (define (close-and-save)
+    (send bug-frame set-close-box-not-clicked)
     (send bug-frame close))
   
   ;; Currently, the help-menu is left empty

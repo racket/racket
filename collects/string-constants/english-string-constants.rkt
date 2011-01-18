@@ -140,6 +140,9 @@ please adhere to these guidelines:
  (cancel-bug-report? "Cancel Bug Report?")
  (are-you-sure-cancel-bug-report?
   "Are you sure that you want to cancel sending this bug report?")
+ (do-you-want-to-discard-or-save-this-bug-report
+  "Do you want to discard or save this bug report?")
+ (discard "Discard") ;; a button label for a dialog box with the above question
  (bug-report-form "Bug Report Form")
  (bug-report-field-name "Name")
  (bug-report-field-email "Email")
