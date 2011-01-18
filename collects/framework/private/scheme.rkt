@@ -617,7 +617,8 @@
                        1))))
                (define close-first-curley (get-forward-sexp first-curley))
                (define para (position-paragraph pos))
-               (when (<= (paragraph-start-position para) close-first-curley (paragraph-end-position para))
+               (when (and close-first-curley
+                          (<= (paragraph-start-position para) close-first-curley (paragraph-end-position para)))
                  (set! containing-curleys (max 0 (- containing-curleys 1))))
                (do-indent (* containing-curleys 2))]
               [(not last) 
