@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp racket/base
 #|
 
 There are three attributes for each preference:
@@ -27,9 +26,9 @@ the state transitions / contracts are:
 
 |#
 
-(require scribble/srcdoc scheme/class scheme/gui/base 
-         scheme/contract scheme/file)
-(require/doc scheme/base scribble/manual (for-label racket/serialize))
+(require scribble/srcdoc racket/class racket/gui/base 
+         racket/contract racket/file)
+(require/doc racket/base scribble/manual (for-label racket/serialize))
 
 (provide exn:struct:unknown-preference)
 
@@ -344,27 +343,27 @@ the state transitions / contracts are:
   preferences:get
   (symbol? . -> . any/c)
   (symbol)
-  @{See also @scheme[preferences:set-default].
+  @{See also @racket[preferences:set-default].
         
-        @scheme[preferences:get] returns the value for the preference
-        @scheme[symbol]. It raises
-        @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
+        @racket[preferences:get] returns the value for the preference
+        @racket[symbol]. It raises
+        @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
         if the preference's default has not been set.})
 
  (proc-doc/names
   preferences:set
   (symbol? any/c . -> . void?)
   (symbol value)
-  @{See also @scheme[preferences:set-default].
+  @{See also @racket[preferences:set-default].
         
-        @scheme[preferences:set-preference] sets the preference
-        @scheme[symbol] to @scheme[value]. This should be called when the
+        @racket[preferences:set-preference] sets the preference
+        @racket[symbol] to @racket[value]. This should be called when the
         users requests a change to a preference.
         
         This function immediately writes the preference value to disk.
         
         It raises
-        @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
+        @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
         if the preference's default has not been set.})
  
  (proc-doc/names
@@ -381,10 +380,10 @@ the state transitions / contracts are:
    ((weak? #f)))
   @{This function adds a callback which is called with a symbol naming a
     preference and its value, when the preference changes.
-    @scheme[preferences:add-callback] returns a thunk, which when
+    @racket[preferences:add-callback] returns a thunk, which when
     invoked, removes the callback from this preference.
     
-    If @scheme[weak?] is true, the preferences system will only hold on to
+    If @racket[weak?] is true, the preferences system will only hold on to
     the callback weakly.
     
     The callbacks will be called in the order in which they were added.
@@ -392,11 +391,11 @@ the state transitions / contracts are:
     If you are adding a callback for a preference that requires
     marshalling and unmarshalling, you must set the marshalling and
     unmarshalling functions by calling
-    @scheme[preferences:set-un/marshall] before adding a callback.
+    @racket[preferences:set-un/marshall] before adding a callback.
     
     This function raises
-    @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
-    @scheme[exn:unknown-preference]
+    @index['("exn:unknown-preference")]{@racket[exn:unknown-preference]}
+    @racket[exn:unknown-preference]
     if the preference has not been set.})
  (proc-doc/names
   preferences:set-default
@@ -407,26 +406,26 @@ the state transitions / contracts are:
   ((symbol value test)
    ((aliases '()) (rewrite-aliases (map (lambda (x) values) aliases))))
   @{This function must be called every time your application starts up, before
-    any call to @scheme[preferences:get] or @scheme[preferences:set]
+    any call to @racket[preferences:get] or @racket[preferences:set]
     (for any given preference).
     
-    If you use @scheme[preferences:set-un/marshall],
+    If you use @racket[preferences:set-un/marshall],
     you must call this function before calling it.
     
-    This sets the default value of the preference @scheme[symbol] to
-    @scheme[value]. If the user has chosen a different setting,
+    This sets the default value of the preference @racket[symbol] to
+    @racket[value]. If the user has chosen a different setting,
     the user's setting will take precedence over the default value.
     
-    The @scheme[test] argument is used as a safeguard. That function is
+    The @racket[test] argument is used as a safeguard. That function is
     called to determine if a preference read in from a file is a valid
-    preference. If @scheme[test] returns @scheme[#t], then the preference is
-    treated as valid. If @scheme[test] returns @scheme[#f] then the default is
+    preference. If @racket[test] returns @racket[#t], then the preference is
+    treated as valid. If @racket[test] returns @racket[#f] then the default is
     used.
 
-    The @scheme[aliases] and @scheme[rewrite-aliases] arguments aids
-    in renaming preferences. If @scheme[aliases] is present, it is 
+    The @racket[aliases] and @racket[rewrite-aliases] arguments aids
+    in renaming preferences. If @racket[aliases] is present, it is 
     expected to be a list of symbols that correspond to old versions
-    of the preferences. It defaults to @scheme['()]. If @scheme[rewrite-aliases]
+    of the preferences. It defaults to @racket['()]. If @racket[rewrite-aliases]
     is present, it is used to adjust the old values of the preferences
     when they are present in the saved file.})
 
@@ -434,28 +433,28 @@ the state transitions / contracts are:
   preferences:set-un/marshall
   (symbol? (any/c . -> . printable/c) (printable/c . -> . any/c) . -> . void?)
   (symbol marshall unmarshall)
-  @{@scheme[preferences:set-un/marshall] is used to specify marshalling and
+  @{@racket[preferences:set-un/marshall] is used to specify marshalling and
     unmarshalling functions for the preference
-    @scheme[symbol]. @scheme[marshall] will be called when the users saves their
-    preferences to turn the preference value for @scheme[symbol] into a
-    printable value. @scheme[unmarshall] will be called when the user's
+    @racket[symbol]. @racket[marshall] will be called when the users saves their
+    preferences to turn the preference value for @racket[symbol] into a
+    printable value. @racket[unmarshall] will be called when the user's
     preferences are read from the file to transform the printable value
-    into its internal representation. If @scheme[preferences:set-un/marshall]
+    into its internal representation. If @racket[preferences:set-un/marshall]
     is never called for a particular preference, the values of that
     preference are assumed to be printable.
     
     If the unmarshalling function returns a value that does not meet the
-    guard passed to @scheme[preferences:set-default]
+    guard passed to @racket[preferences:set-default]
     for this preference, the default value is used.
     
-    The @scheme[marshall] function might be called with any value returned
-    from @scheme[read] and it must not raise an error 
+    The @racket[marshall] function might be called with any value returned
+    from @racket[read] and it must not raise an error 
     (although it can return arbitrary results if it gets bad input). This might
     happen when the preferences file becomes corrupted, or is edited
     by hand.
     
-    @scheme[preferences:set-un/marshall] must be called before calling
-    @scheme[preferences:get],@scheme[preferences:set].
+    @racket[preferences:set-un/marshall] must be called before calling
+    @racket[preferences:get],@racket[preferences:set].
 
     See also @racket[serialize] and @racket[deserialize].
    })
@@ -464,7 +463,7 @@ the state transitions / contracts are:
   preferences:restore-defaults
   (-> void?)
   ()
-  @{@scheme[(preferences:restore-defaults)] restores the users' configuration
+  @{@racket[(preferences:restore-defaults)] restores the users' configuration
     to the default preferences.})
  
  (proc-doc/names
@@ -502,14 +501,14 @@ the state transitions / contracts are:
   (parameter/c ((listof symbol?) (listof any/c) . -> . any))
   put-preferences
   @{This parameter's value is called to save preference the preferences file.
-    Its interface should be just like mzlib's @scheme[put-preferences].})
+    Its interface should be just like mzlib's @racket[put-preferences].})
  
  (parameter-doc
   preferences:low-level-get-preference
   (parameter/c (->* [symbol?] [(-> any)] any))
   get-preference
   @{This parameter's value is called to get a preference from the preferences
-    file. Its interface should be just like mzlib's @scheme[get-preference].})
+    file. Its interface should be just like mzlib's @racket[get-preference].})
  
  (proc-doc/names
   preferences:snapshot? 
@@ -517,15 +516,15 @@ the state transitions / contracts are:
   (arg)
   @{Determines if its argument is a preferences snapshot.
     
-    See also @scheme[preferences:get-prefs-snapshot] and
-    @scheme[preferences:restore-prefs-snapshot].})
+    See also @racket[preferences:get-prefs-snapshot] and
+    @racket[preferences:restore-prefs-snapshot].})
  (proc-doc/names
   preferences:restore-prefs-snapshot 
   (-> preferences:snapshot? void?)
   (snapshot)
-  @{Restores the preferences saved in @scheme[snapshot].
+  @{Restores the preferences saved in @racket[snapshot].
     
-    See also @scheme[preferences:get-prefs-snapshot].})
+    See also @racket[preferences:get-prefs-snapshot].})
  
  (proc-doc/names
   preferences:get-prefs-snapshot 
@@ -533,8 +532,8 @@ the state transitions / contracts are:
   ()
   @{Caches all of the current values of the preferences and returns them.
     For any preference that has marshalling and unmarshalling set
-    (see @scheme[preferences:set-un/marshall]), the preference value is
+    (see @racket[preferences:set-un/marshall]), the preference value is
     copied by passing it through the marshalling and unmarshalling process.
     Other values are not copied, but references to them are instead saved.
 
-    See also @scheme[preferences:restore-prefs-snapshot].}))
+    See also @racket[preferences:restore-prefs-snapshot].}))
