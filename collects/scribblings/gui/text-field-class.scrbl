@@ -10,7 +10,7 @@ A @scheme[text-field%] object is an editable text field with an
 @itemize[
 
  @item{A single line of text is visible, and a special control event
- is generated when the user presses Enter (when the text field has the
+ is generated when the user presses Return or Enter (when the text field has the
  focus) and the event is not handled by the text field's frame or
  dialog (see @xmethod[top-level-window<%> on-traverse-char] ).}
 
