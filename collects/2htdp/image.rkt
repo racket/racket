@@ -128,7 +128,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          step-count?
          save-image
          
-         freeze)
+         freeze
+         bitmap/url)
 
 (provide bitmap
          empty-image)

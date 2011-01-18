@@ -1110,6 +1110,14 @@ more expensive than with the other shapes.
                   (bitmap icons/b-run.png)]
 }
 
+@defproc[(bitmap/url [url string?]) image?]{
+  Goes out on the web and downloads the image at @racket[url].
+
+  Downloading the image happens each time this function is called, so
+  you may find it simpler to download the image once with a browser 
+  and then paste it into your program or download it and use @racket[bitmap].
+}
+                                 
 @defproc[(image->color-list [image image?]) (listof color?)]{
   Returns a list of colors that correspond to the colors in the
   image, reading from left to right, top to bottom.

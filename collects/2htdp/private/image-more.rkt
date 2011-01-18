@@ -11,7 +11,8 @@
          racket/math
          (for-syntax racket/base
                      racket/list)
-         lang/posn)
+         lang/posn
+         net/url)
 
 ;; for testing
 ; (require racket/gui/base)
@@ -97,12 +98,6 @@
 ;                                          ;   
 ;                                         ;;   
                                                                             
-
-;; bitmap : string -> image
-;; gets one of the bitmaps that comes with drracket, scales it down by 1/8 or something
-;; so that later scaling /translation/whatever will look reasonable.
-;; (the error message for a bad argument will list all of the currently installed example images;
-;; we may want to have some way teachers can stick new ones in there)
 
 ;; scale : number image -> image
 (define/chk (scale factor image)
@@ -1273,6 +1268,16 @@
   ;; the rotate does a coercion to a 2htdp/image image
   (rotate 0 (make-object image-snip% (make-object bitmap% arg 'unknown/mask))))
 
+(define/chk (bitmap/url string)
+  ;; the rotate does a coercion to a 2htdp/image image
+  (rotate
+   0
+   (call/input-url (string->url string)
+                   get-pure-port
+                   (λ (port)
+                     (make-object bitmap% port 'unknown #f #t)))))
+                      
+
 (define/chk (image->color-list image)
   (let* ([w (image-width image)]
          [h (image-height image)]
@@ -1443,6 +1448,7 @@
          color-list->bitmap
          
          bitmap
+         bitmap/url
          
          swizzle
          
