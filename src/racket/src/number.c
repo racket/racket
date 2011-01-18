@@ -65,6 +65,8 @@ static Scheme_Object *fixnum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *inexact_real_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flonum_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *single_flonum_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *real_to_single_flonum (int argc, Scheme_Object *argv[]);
+static Scheme_Object *real_to_double_flonum (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
@@ -163,6 +165,9 @@ static Scheme_Object *u16_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
+Scheme_Object *scheme_TO_DOUBLE(const Scheme_Object *n);
 
 /* globals */
 READ_ONLY double scheme_infinity_val;
@@ -370,6 +375,12 @@ scheme_init_number (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("single-flonum?", p, env);
 
+  p = scheme_make_folding_prim(real_to_single_flonum, "real->single-flonum", 1, 1, 1);
+  scheme_add_global_constant("real->single-flonum", p, env);
+
+  p = scheme_make_folding_prim(real_to_double_flonum, "real->double-flonum", 1, 1, 1);
+  scheme_add_global_constant("real->double-flonum", p, env);
+  
   scheme_add_global_constant("exact?", 
 			     scheme_make_folding_prim(exact_p,
 						      "exact?",
@@ -1347,6 +1358,28 @@ single_flonum_p (int argc, Scheme_Object *argv[])
   else
 #endif
     return scheme_false;
+}
+
+static Scheme_Object *
+real_to_single_flonum (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+
+  if (!SCHEME_REALP(n))
+    NEED_REAL(real->single-flonum);
+
+  return TO_FLOAT(n);
+}
+
+static Scheme_Object *
+real_to_double_flonum (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+
+  if (!SCHEME_REALP(n))
+    NEED_REAL(real->double-flonum);
+
+  return scheme_TO_DOUBLE(n);
 }
 
 int scheme_is_exact(const Scheme_Object *n)

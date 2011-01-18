@@ -217,6 +217,14 @@ number, @racket[#f] otherwise.}
 
 @mz-examples[(exact->inexact 1) (exact->inexact 1.0)]}
 
+@defproc[(real->single-flonum [z real?]) single-flonum?]{ Coerces @racket[z]
+ to a single-precision floating-point number. If @racket[z] is already
+ a single-precision floating-point number, it is returned.}
+
+@defproc[(real->double-flonum [z real?]) flonum?]{ Coerces @racket[z]
+ to a double-precision floating-point number. If @racket[z] is already
+ a double-precision floating-point number, it is returned.}
+
 @; ----------------------------------------
 @section[#:tag "generic-numbers"]{Generic Numerics}
 

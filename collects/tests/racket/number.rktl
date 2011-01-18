@@ -679,6 +679,13 @@
 (err/rt-test (inexact->exact -inf.0))
 (err/rt-test (inexact->exact +nan.0))
 
+(test 2.0f0 real->single-flonum 2)
+(test 2.25f0 real->single-flonum 2.25)
+(test 2.25f0 real->single-flonum 2.25f0)
+(test 2.0 real->double-flonum 2)
+(test 2.25 real->double-flonum 2.25)
+(test 2.25 real->double-flonum 2.25f0)
+
 (err/rt-test (* 'a 0))
 (err/rt-test (+ 'a 0))
 (err/rt-test (/ 'a 0))
