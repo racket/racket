@@ -164,6 +164,7 @@
       (unless (do-key-event wxb event self #f #f)
         (super-tell #:type _void keyUp: event))]
   [-a _void (insertText: [_NSStringOrAttributed str])
+      (set-saved-marked! wxb #f #f)
       (let ([cit (current-insert-text)])
         (if cit
             (set-box! cit str)
@@ -178,17 +179,22 @@
   [-a _id (validAttributesForMarkedText)
       (tell NSArray array)]
   [-a _void (unmarkText) 
-      (set-saved-marked! wxb #f)]
+      (set-saved-marked! wxb #f #f)]
   [-a _NSRange (markedRange)
       (let ([saved-marked (get-saved-marked wxb)])
-        (make-NSRange 0 (if saved-marked 0 (length saved-marked))))]
-  [-a _NSRange (selectedRange) (make-NSRange 0 0)]
+        (make-NSRange 0 (if saved-marked (string-length saved-marked) 0)))]
+  [-a _NSRange (selectedRange) 
+      (or (let ([s (get-saved-selected wxb)])
+            (and s
+                 (make-NSRange (car s) (cdr s))))
+          (make-NSRange 0 0))]
   [-a _void (setMarkedText: [_NSStringOrAttributed aString] selectedRange: [_NSRange selRange])
       ;; We interpreter a call to `setMarkedText:' as meaning that the
       ;; key is a dead key for composing some other character.
       (let ([m (current-set-mark)]) (when m (set-box! m #t)))
       ;; At the same time, we need to remember the text:
-      (set-saved-marked! wxb (range-substring aString selRange))
+      (set-saved-marked! wxb aString (cons (NSRange-location selRange) 
+                                           (NSRange-length selRange)))
       (void)]
   [-a _id (validAttributesForMarkedText) #f]
   [-a _id (attributedSubstringFromRange: [_NSRange theRange])
@@ -234,17 +240,22 @@
                                          (lambda ()
                                            (send wx do-on-drop-file s)))))))))))
       #t])
-(define (set-saved-marked! wxb str)
+(define (set-saved-marked! wxb str sel)
   (let ([wx (->wx wxb)])
     (when wx
-      (send wx set-saved-marked str))))
+      (send wx set-saved-marked str sel))))
 (define (get-saved-marked wxb)
   (let ([wx (->wx wxb)])
     (and wx
          (send wx get-saved-marked))))
+(define (get-saved-selected wxb)
+  (let ([wx (->wx wxb)])
+    (and wx
+         (send wx get-saved-selected))))
 (define (range-substring s range)
   (let ([start (min (max 0 (NSRange-location range)) (string-length s))])
-    (substring s start (max (min start (NSRange-length range)) (string-length s)))))
+    (substring s start (max (+ start (NSRange-length range)) 
+                            (string-length s)))))
 
 
 (define-objc-mixin (KeyMouseTextResponder Superclass)
@@ -264,8 +275,9 @@
     (and
      wx
      (let ([inserted-text (box #f)]
-           [set-mark (box #f)])
-       (unless wheel?
+           [set-mark (box #f)]
+           [had-saved-text? (and (send wx get-saved-marked) #t)])
+       (when down?
          ;; Calling `interpretKeyEvents:' allows key combinations to be
          ;; handled, such as option-e followed by e to produce é. The
          ;; call to `interpretKeyEvents:' typically calls `insertText:',
@@ -289,6 +301,7 @@
                     [(unbox inserted-text)]
                     [else
                      (tell #:type _NSString event characters)])]
+              [dead-key? (unbox set-mark)]
               [control? (bit? modifiers NSControlKeyMask)]
               [option? (bit? modifiers NSAlternateKeyMask)]
               [delta-y (and wheel?
@@ -297,6 +310,7 @@
                       [wheel? (if (positive? delta-y)
                                   '(wheel-up)
                                   '(wheel-down))]
+                      [had-saved-text? str]
                       [(map-key-code (tell #:type _ushort event keyCode))
                        => list]
                       [(string=? "" str) '(#\nul)]
@@ -310,7 +324,7 @@
                                               (string-ref alt-str 0)))))))
                        => list]
                       [else str])])
-         (for/fold ([result #f]) ([one-code codes])
+         (for/fold ([result dead-key?]) ([one-code codes])
            (or
             ;; Handle one key event
             (let-values ([(x y) (send wx window-point-to-view pos)])
@@ -794,8 +808,10 @@
 
     ;; For multi-key character composition:
     (define saved-marked #f)
-    (define/public (set-saved-marked v) (set! saved-marked v))
-    (define/public (get-saved-marked) saved-marked)))
+    (define saved-sel #f)
+    (define/public (set-saved-marked v sel) (set! saved-marked v) (set! saved-sel sel))
+    (define/public (get-saved-marked) saved-marked)
+    (define/public (get-saved-selected) saved-sel)))
 
 ;; ----------------------------------------
 
