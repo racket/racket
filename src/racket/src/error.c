@@ -2917,7 +2917,7 @@ void scheme_glib_log_message(const char *log_domain,
     together = (char *)scheme_malloc_atomic(len1 + len2 + 3);
     memcpy(together, log_domain, len1);
     memcpy(together + len1, ": ", 2);
-    memcpy(together + len1 + 2 + 1, message, len2);
+    memcpy(together + len1 + 2, message, len2);
     len2 += len1 + 2;
   } else
     together = (char *)message;
