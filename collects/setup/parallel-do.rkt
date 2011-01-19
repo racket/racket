@@ -14,7 +14,6 @@
 
 (provide parallel-do
          parallel-do-event-loop
-         parallel-do-default-error-handler
          current-executable-path
          current-collects-path
          match-message-loop
@@ -171,11 +170,6 @@
       (for ([p workers]) (with-handlers ([exn? void]) (wrkr/send p (list 'DIE))))
       (for ([p workers]) (send p wait)))))
 
-(define (parallel-do-default-error-handler work error-message outstr errstr)
-  (printf "WORKER ERROR ~a\n" error-message)
-  (printf "STDOUT\n~a=====\n" outstr)
-  (printf "STDERR\n~a=====\n" errstr))
- 
 (define ListQueue% (class* object% (WorkQueue<%>)
   (init-field queue create-job-thunk success-thunk failure-thunk)
   (field [results null])
