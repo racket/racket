@@ -140,6 +140,8 @@
 [exact-integer? (make-pred-ty -Integer)]
 [real? (make-pred-ty -Real)]
 [flonum? (make-pred-ty -Flonum)]
+[single-flonum? (make-pred-ty -SmallFloat)]
+[double-flonum? (make-pred-ty -Flonum)]
 [inexact-real? (make-pred-ty -InexactReal)]
 [complex? (make-pred-ty N)]
 [rational? (make-pred-ty -Real)]
@@ -388,6 +390,18 @@
 [fl->exact-integer (cl->*
                     (-NonnegativeFlonum . -> . -Nat)
                     (-Flonum . -> . -Integer))]
+[real->single-flonum (cl->* (-PosReal . -> . -PosSmallFloat)
+                            (-NegReal . -> . -NegSmallFloat)
+                            (-RealZero . -> . -SmallFloatZero)
+                            (-NonNegReal . -> . -NonNegSmallFloat)
+                            (-NonPosReal . -> . -NonPosSmallFloat)
+                            (-Real . -> . -SmallFloat))]
+[real->double-flonum (cl->* (-PosReal . -> . -PosFlonum)
+                            (-NegReal . -> . -NegFlonum)
+                            (-RealZero . -> . -FlonumZero)
+                            (-NonNegReal . -> . -NonNegFlonum)
+                            (-NonPosReal . -> . -NonPosFlonum)
+                            (-Real . -> . -Flonum))]
 
 [floor rounder]
 [ceiling rounder]
