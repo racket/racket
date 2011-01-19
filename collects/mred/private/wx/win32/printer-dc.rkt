@@ -82,6 +82,8 @@
 
 (define LOGPIXELSX    88)
 (define LOGPIXELSY    90)
+(define PHYSICALOFFSETX 112)
+(define PHYSICALOFFSETY 113)
 
 (define needs-delete ((allocator DeleteDC) values))
 
@@ -92,6 +94,7 @@
     new-p))
 
 (define PSD_RETURNDEFAULT #x00000400)
+(define PSD_MARGINS                       #x00000002)
 
 (define (show-print-setup parent [just-create? #f])
   (let* ([pss (current-ps-setup)]
@@ -104,9 +107,11 @@
            (begin
              (memset p 0 1 _PAGESETUPDLG)
              (set-PAGESETUPDLG-lStructSize! p (ctype-sizeof _PAGESETUPDLG))))
-       (set-PAGESETUPDLG-Flags! p (if just-create?
-                                      PSD_RETURNDEFAULT
-                                      0))
+       (set-PAGESETUPDLG-Flags! p (bitwise-ior 
+				   (if just-create?
+				       PSD_RETURNDEFAULT
+				       0)
+				   PSD_MARGINS))
        (set-PAGESETUPDLG-hwndOwner! p (and parent
 					   (send parent is-shown?)
 					   (send parent get-hwnd)))
@@ -148,16 +153,31 @@
                              (show-print-setup #f #t)
                              (send (current-ps-setup) get-native))))
 
-    (define-values (page-width page-height)
+    (define-values (page-width page-height margin-left margin-top)
+      ;; We would like to make the size of the DC match the
+      ;; printable area of the device. Unfortunately, we can't get
+      ;; the printable area until after we get a DC, which is too
+      ;; late for determining a page count (that can depend on the page
+      ;; size). So, we treat the area within the user's chosen margins
+      ;; are the printable area; starting out with PSD_MARGINS with 0 margins
+      ;; and PSD_RETURNDEFAULT seems to fill in the minimum margins,
+      ;; which is probably as good an approximation as any to the value
+      ;; that we want. See also `set-point-scale' below, which has to bridge
+      ;; the printable-area coordinate system and the within-paper-margins
+      ;; coordinate system.
       (let ([scale (if (zero? (bitwise-and (PAGESETUPDLG-Flags page-setup)
                                            PSD_INTHOUSANDTHSOFINCHES))
                        ;; 100ths of mm
                        (/ SCREEN-DPI (* 10.0 2.54))
                        ;; 1000ths of in
-                       (/ SCREEN-DPI 1000.0))])
-      (values
-       (* scale (POINT-x (PAGESETUPDLG-ptPaperSize page-setup)))
-       (* scale (POINT-y (PAGESETUPDLG-ptPaperSize page-setup))))))
+                       (/ SCREEN-DPI 1000.0))]
+	    [r (PAGESETUPDLG-rtMargin page-setup)]
+	    [p (PAGESETUPDLG-ptPaperSize page-setup)])
+	(values
+	 (* scale (- (POINT-x p) (RECT-left r) (RECT-right r)))
+	 (* scale (- (POINT-y p) (RECT-top r) (RECT-bottom r)))
+	 (* scale (RECT-left r))
+	 (* scale (RECT-top r)))))
 
     (define/override (get-size) (values page-width page-height))
 
@@ -211,7 +231,7 @@
                    (StartPage hdc)
                    (let* ([s (cairo_win32_printing_surface_create hdc)]
                           [cr (cairo_create s)])
-                     (set-point-scale hdc cr)
+                     (set-point-scale hdc cr margin-left margin-top)
                      (proc
                       (make-object
                        (class (dc-mixin default-dc-backend%)
@@ -225,9 +245,20 @@
                (EndDoc hdc))
              (DeleteDC hdc))))))))
 
-(define (set-point-scale hdc cr)
+(define (set-point-scale hdc cr margin-left margin-top)
   (let* ([lpx (GetDeviceCaps hdc LOGPIXELSX)]
          [lpy (GetDeviceCaps hdc LOGPIXELSY)]
+         [dpx (GetDeviceCaps hdc PHYSICALOFFSETX)]
+         [dpy (GetDeviceCaps hdc PHYSICALOFFSETY)]
          [lx (/ (if (zero? lpx) 300 lpx) SCREEN-DPI)]
          [ly (/ (if (zero? lpy) 300 lpy) SCREEN-DPI)])
-    (cairo_scale cr lx ly)))
+    ;; We declared the size of the page based on paper,
+    ;; while DC reflcts just the printable area for the device,
+    ;; so compensate by shifting (and assume that margins
+    ;; are use appropriately)
+    (cairo_translate cr (- dpx) (- dpy))
+    ;; Scale to make printer scale simulate screen resolution:
+    (cairo_scale cr lx ly)
+    ;; Shift again to skip over th emargin, which we subtracted
+    ;; from the paper size:
+    (cairo_translate cr margin-left margin-top)))
