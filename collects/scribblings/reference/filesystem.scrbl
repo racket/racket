@@ -859,15 +859,15 @@ needed.}
                          [flush-mode any/c 'timestamp]
                          [filename (or/c string-path? #f) #f]
                          [#:use-lock? use-lock? any/c #t]
+                         [#:timeout-lock-there timeout-lock-there 
+                                               (or/c (path? . -> . any) #f)
+                                               #f]
                          [#:lock-there 
                           lock-there
                           (or/c (path? . -> . any) #f)
                           (make-handle-get-preference-locked 
-                           0.01 name fail-thunk refresh-cache? filename
-                           #:lock-there timeout-lock-there)]
-                         [#:timeout-lock-there timeout-lock-there 
-                                               (or/c (path? . -> . any) #f)
-                                               #f])
+                           0.01 name failure-thunk flush-mode filename
+                           #:lock-there timeout-lock-there)])
          any]{
 
 Extracts a preference value from the file designated by
