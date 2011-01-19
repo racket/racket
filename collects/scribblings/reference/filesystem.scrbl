@@ -906,9 +906,9 @@ preferences file cannot be read because the lock is unavailable,
 @racket[lock-there] is called on the path of the lock file; if
 @racket[lock-there] is @racket[#f], an exception is raised. The
 default @racket[lock-there] handler retries about 5 times (with
-increasing delays between each attempt) before raising an exception.
-The @racket[timeout-lock-there] argument is used only be the default
-@racket[lock-there] value.
+increasing delays between each attempt) before trying 
+@racket[timeout-lock-there], and the default @racket[timeout-lock-there] 
+triggers an exception.
 
 See also @racket[put-preferences]. For a more elaborate preference
 system, see @racket[preferences:get].
