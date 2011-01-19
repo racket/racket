@@ -752,8 +752,8 @@ module browser threading seems wrong.
           (define/override (on-paint before dc left top right bottom dx dy draw-caret)
             (super on-paint before dc left top right bottom dx dy draw-caret)
 
-            ;; For printing, put date and filename in the top margin:
-            (when (and before (is-printing?))
+            ;; [Disabled] For printing, put date and filename in the top margin:
+            (when (and #f before (is-printing?))
               (let ([h (box 0)]
                     [w (box 0)])
                 (send (current-ps-setup) get-editor-margin w h)
