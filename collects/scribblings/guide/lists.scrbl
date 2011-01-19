@@ -218,7 +218,7 @@ list is exhausted.
 
 You can avoid piling up additions by adding along the way. To
 accumulate a length this way, we need a function that takes both a
-list and the length of the list seem so far; the code below uses a
+list and the length of the list seen so far; the code below uses a
 local function @racket[iter] that accumulates the length in an
 argument @racket[len]:
 
