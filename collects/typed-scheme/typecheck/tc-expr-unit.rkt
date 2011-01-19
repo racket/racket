@@ -51,12 +51,12 @@
     [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
     [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
     [(~var i (3d flonum?)) -Flonum] ; for nan
-    ;; Small float literals can't be assigned a type normally.
-    ;; Since small floats can't live in a zo, the compilation process
-    ;; promotes them silently to plain floats. Thus, a small float
-    ;; literal can, at runtime turn into either a small float (if the
-    ;; program is not compiled) or a plain float (if it is).
-    ;; That means that if we see a small float literal, we have to
+    ;; Single flonum literals can't be assigned a type normally.
+    ;; Since single flonums can't live in a zo, the compilation process
+    ;; promotes them silently to plain flonums. Thus, a single float
+    ;; literal can, at runtime turn into either a single flonum (if the
+    ;; program is not compiled) or a plain flonum (if it is).
+    ;; That means that if we see a single flonum literal, we have to
     ;; give it an Inexact-Real type, which covers both cases.
     [(~var i (3d (lambda (x) (eq? x 0.0f0)))) -InexactRealPosZero]
     [(~var i (3d (lambda (x) (eq? x -0.0f0)))) -InexactRealNegZero]
@@ -68,7 +68,7 @@
     [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
                                                    (flonum? (real-part x)))))))
      -FloatComplex]
-    ;; same issue as small floats
+    ;; same issue as single flonums
     [(~var i (3d (conjoin number? (lambda (x) (and (inexact-real? (imag-part x))
                                                    (inexact-real? (real-part x)))))))
      -InexactComplex]

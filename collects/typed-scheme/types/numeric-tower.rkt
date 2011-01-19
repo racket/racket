@@ -127,47 +127,47 @@
 (define -NonPosFlonum (*Un -NegFlonum -FlonumNegZero))
 (define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
 ;; inexact reals can be flonums (64-bit floats) or 32-bit floats
-(define -SmallFloatPosZero ; disjoint from Flonum 0s
-  (make-Base 'Small-Float-Positive-Zero
+(define -SingleFlonumPosZero ; disjoint from Flonum 0s
+  (make-Base 'Single-Flonum-Positive-Zero
              ;; eqv? equates 0.0f0 with itself, but not eq?
-             ;; we also need to check for small-float? since eqv? also equates
+             ;; we also need to check for single-flonum? since eqv? also equates
              ;; 0.0f0 and 0.0e0
-             #'(and/c small-float? (lambda (x) (eqv? x 0.0f0)))
+             #'(and/c single-flonum? (lambda (x) (eqv? x 0.0f0)))
              (lambda (x) #f) ; can't assign that type at compile-time. see tc-lit for more explanation
-	     #'-SmallFloatPosZero))
-(define -SmallFloatNegZero
-  (make-Base 'Small-Float-Negative-Zero
-             #'(and/c small-float? (lambda (x) (eqv? x -0.0f0)))
+	     #'-SingleFlonumPosZero))
+(define -SingleFlonumNegZero
+  (make-Base 'Single-Flonum-Negative-Zero
+             #'(and/c single-flonum? (lambda (x) (eqv? x -0.0f0)))
              (lambda (x) #f)
-	     #'-SmallFloatNegZero))
-(define -SmallFloatZero (*Un -SmallFloatPosZero -SmallFloatNegZero))
-(define -SmallFloatNan (make-Base 'Small-Float-Nan
-                                  #'(and/c small-float?
+	     #'-SingleFlonumNegZero))
+(define -SingleFlonumZero (*Un -SingleFlonumPosZero -SingleFlonumNegZero))
+(define -SingleFlonumNan (make-Base 'Single-Flonum-Nan
+                                  #'(and/c single-flonum?
                                            ;; eqv? equates single and double precision nans
                                            (lambda (x) (eqv? x +nan.0)))
                                   (lambda (x) #f)
-				  #'-SmallFloatNan))
-(define -InexactRealPosZero (*Un -SmallFloatPosZero -FlonumPosZero))
-(define -InexactRealNegZero (*Un -SmallFloatNegZero -FlonumNegZero))
+				  #'-SingleFlonumNan))
+(define -InexactRealPosZero (*Un -SingleFlonumPosZero -FlonumPosZero))
+(define -InexactRealNegZero (*Un -SingleFlonumNegZero -FlonumNegZero))
 (define -InexactRealZero    (*Un -InexactRealPosZero -InexactRealNegZero))
-(define -PosSmallFloat
-  (make-Base 'Positive-Small-Float
-             #'(and/c small-float? positive?)
+(define -PosSingleFlonum
+  (make-Base 'Positive-Single-Flonum
+             #'(and/c single-flonum? positive?)
              (lambda (x) #f)
-	     #'-PosSmallFloat))
-(define -PosInexactReal    (*Un -PosSmallFloat -PosFlonum))
-(define -NonNegSmallFloat  (*Un -PosSmallFloat -SmallFloatPosZero))
+	     #'-PosSingleFlonum))
+(define -PosInexactReal    (*Un -PosSingleFlonum -PosFlonum))
+(define -NonNegSingleFlonum  (*Un -PosSingleFlonum -SingleFlonumPosZero))
 (define -NonNegInexactReal (*Un -PosInexactReal -InexactRealPosZero))
-(define -NegSmallFloat
-  (make-Base 'Negative-Small-Float
-             #'(and/c small-float? negative?)
+(define -NegSingleFlonum
+  (make-Base 'Negative-Single-Flonum
+             #'(and/c single-flonum? negative?)
              (lambda (x) #f)
-	     #'-NegSmallFloat))
-(define -NegInexactReal    (*Un -NegSmallFloat -NegFlonum))
-(define -NonPosSmallFloat  (*Un -NegSmallFloat -SmallFloatNegZero))
+	     #'-NegSingleFlonum))
+(define -NegInexactReal    (*Un -NegSingleFlonum -NegFlonum))
+(define -NonPosSingleFlonum  (*Un -NegSingleFlonum -SingleFlonumNegZero))
 (define -NonPosInexactReal (*Un -NegInexactReal -InexactRealNegZero))
-(define -SmallFloat        (*Un -NegSmallFloat -SmallFloatNegZero -SmallFloatPosZero -PosSmallFloat -SmallFloatNan))
-(define -InexactReal       (*Un -SmallFloat -Flonum))
+(define -SingleFlonum        (*Un -NegSingleFlonum -SingleFlonumNegZero -SingleFlonumPosZero -PosSingleFlonum -SingleFlonumNan))
+(define -InexactReal       (*Un -SingleFlonum -Flonum))
 
 ;; Reals
 (define -RealZero   (*Un -Zero -InexactRealZero))
@@ -190,7 +190,7 @@
 
 ;; Both parts of a complex number must be of the same exactness.
 ;; Thus, the only possible kinds of complex numbers are:
-;; Real/Real, Flonum/Flonum, SmallFloat/SmallFloat
+;; Real/Real, Flonum/Flonum, SingleFlonum/SingleFlonum
 (define -FloatComplex (make-Base 'Float-Complex
                                  #'(and/c number?
                                           (lambda (x)
@@ -201,17 +201,17 @@
                                             (and (flonum? (imag-part x))
                                                  (flonum? (real-part x)))))
                                  #'-FloatComplex))
-(define -SmallFloatComplex (make-Base 'Small-Float-Complex
+(define -SingleFlonumComplex (make-Base 'Single-Flonum-Complex
                                       #'(and/c number?
                                                (lambda (x)
-                                                 (and (small-float? (imag-part x))
-                                                      (small-float? (real-part x)))))
+                                                 (and (single-flonum? (imag-part x))
+                                                      (single-flonum? (real-part x)))))
                                       (conjoin number?
                                                (lambda (x)
-                                                 (and (small-float? (imag-part x))
-                                                      (small-float? (real-part x)))))
-                                      #'-SmallFloatComplex))
-(define -InexactComplex (*Un -FloatComplex -SmallFloatComplex))
+                                                 (and (single-flonum? (imag-part x))
+                                                      (single-flonum? (real-part x)))))
+                                      #'-SingleFlonumComplex))
+(define -InexactComplex (*Un -FloatComplex -SingleFlonumComplex))
 (define -ExactComplexNotReal
   (make-Base 'Complex-Not-Real
              #'(and/c number?

@@ -2,7 +2,7 @@
 
 (require unstable/function)
 
-(provide index? exact-rational? small-float?)
+(provide index? exact-rational?)
 
 ;; this is required for template in numeric-tower.rkt
 
@@ -12,5 +12,3 @@
 (define (index? x) (and (fixnum? x) (fixnum? (* x 4))))
 
 (define exact-rational? (conjoin rational? exact?))
-
-(define (small-float? x) (and (inexact-real? x) (not (flonum? x))))

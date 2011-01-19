@@ -140,7 +140,7 @@
 [exact-integer? (make-pred-ty -Integer)]
 [real? (make-pred-ty -Real)]
 [flonum? (make-pred-ty -Flonum)]
-[single-flonum? (make-pred-ty -SmallFloat)]
+[single-flonum? (make-pred-ty -SingleFlonum)]
 [double-flonum? (make-pred-ty -Flonum)]
 [inexact-real? (make-pred-ty -InexactReal)]
 [complex? (make-pred-ty N)]
@@ -390,12 +390,12 @@
 [fl->exact-integer (cl->*
                     (-NonnegativeFlonum . -> . -Nat)
                     (-Flonum . -> . -Integer))]
-[real->single-flonum (cl->* (-PosReal . -> . -PosSmallFloat)
-                            (-NegReal . -> . -NegSmallFloat)
-                            (-RealZero . -> . -SmallFloatZero)
-                            (-NonNegReal . -> . -NonNegSmallFloat)
-                            (-NonPosReal . -> . -NonPosSmallFloat)
-                            (-Real . -> . -SmallFloat))]
+[real->single-flonum (cl->* (-PosReal . -> . -PosSingleFlonum)
+                            (-NegReal . -> . -NegSingleFlonum)
+                            (-RealZero . -> . -SingleFlonumZero)
+                            (-NonNegReal . -> . -NonNegSingleFlonum)
+                            (-NonPosReal . -> . -NonPosSingleFlonum)
+                            (-Real . -> . -SingleFlonumZero))]
 [real->double-flonum (cl->* (-PosReal . -> . -PosFlonum)
                             (-NegReal . -> . -NegFlonum)
                             (-RealZero . -> . -FlonumZero)
