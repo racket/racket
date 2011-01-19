@@ -1,6 +1,7 @@
 (module const mzscheme
   (require mzlib/class
 	   mzlib/file
+           racket/snip/private/prefs
 	   (prefix wx: "kernel.ss"))
   (provide (protect (all-defined)))
 
@@ -38,11 +39,9 @@
   (define arrow-cursor (make-object wx:cursor% 'arrow))
 
   (define default-x-prefix (if (eq? 'unix (system-type))
-			       (let ([v (get-preference 
+			       (let ([v (get-preference*
                                          '|GRacket:defaultMenuPrefix| 
-                                         ;; on fail, fall back to old name of pref:
-                                         (lambda () (get-preference '|MrEd:defaultMenuPrefix| 
-                                                                    (lambda () 'ctl))))])
+                                         (lambda () 'ctl))])
 				 (if (memq v '(meta ctl alt ctl-m))
 				     v
 				     'ctl))

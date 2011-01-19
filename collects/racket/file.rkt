@@ -302,13 +302,15 @@
 (define (get-preference name [fail-thunk (lambda () #f)]
                         [refresh-cache? 'timestamp]
                         [filename #f]
+                        #:timeout-lock-there [timeout-lock-there #f]
                         #:lock-there [lock-there 
                                       (make-handle-get-preference-locked
                                        0.01
                                        name
                                        fail-thunk
                                        refresh-cache?
-                                       filename)]
+                                       filename
+                                       #:lock-there timeout-lock-there)]
                         #:use-lock? [use-lock? #t])
   (unless (symbol? name)
     (raise-type-error 'get-preference "symbol" name))

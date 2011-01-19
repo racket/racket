@@ -5,7 +5,8 @@
          racket/draw
          racket/draw/private/syntax
 	 racket/draw/private/font-syms
-         racket/snip/private/private)
+         racket/snip/private/private
+         "prefs.rkt")
 
 (provide mult-color<%>
          add-color<%>
@@ -22,7 +23,7 @@
 (define editor-stream-out% object%)
 
 (define default-size 
-  (or (get-preference 'MrEd:default-font-size)
+  (or (get-preference* 'MrEd:default-font-size)
       (case (system-type)
         [(windows) 10]
         [else 12])))

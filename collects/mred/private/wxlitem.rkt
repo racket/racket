@@ -3,6 +3,7 @@
 	   mzlib/class100
            mzlib/file
            (only racket/base remq)
+           racket/snip/private/prefs
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"
@@ -126,7 +127,7 @@
        (private
 	 [scroll (lambda (dir)
 		   (unless list-box-wheel-step
-		     (set! list-box-wheel-step (get-preference '|MrEd:wheelStep| (lambda () 3)))
+		     (set! list-box-wheel-step (get-preference* '|GRacket:wheelStep| (lambda () 3)))
 		     (unless (and (number? list-box-wheel-step)
 				  (exact? list-box-wheel-step)
 				  (integer? list-box-wheel-step)

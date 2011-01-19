@@ -44,15 +44,6 @@
   (define (res-sym s)
     (string->symbol (string-append "GRacket:" s)))
 
-  (define (Resource s)
-    @elem{@to-element[`(quote ,(res-sym s))]
-          preference})
-  (define (ResourceFirst s) ; fixme -- add index
-    (let ([r (Resource s)])
-      (index* (list (format "~a preference" (res-sym s)))
-              (list r) 
-              r)))
-
   (define (boxisfill which what)
     @elem{The @|which| box is filled with @|what|.})
   (define (boxisfillnull which what)

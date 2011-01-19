@@ -2,7 +2,8 @@
   (require mzlib/class
 	   mzlib/file
 	   mzlib/process
-	   (prefix wx: "kernel.ss"))
+	   (prefix wx: "kernel.ss")
+           racket/snip/private/prefs)
 
   (provide file-creator-and-type
 	   hide-cursor-until-moved
@@ -63,7 +64,7 @@
     (delay
       (let* (;; check user-set preference first
              ;;  (can be a string with `~a', or a name of an executable)
-             [cmd (get-preference '|MrEd:playcmd| (lambda () #f))]
+             [cmd (get-preference* '|GRacket:playcmd| (lambda () #f))]
              [cmd (cond [(not (string? cmd)) #f]
                         [(regexp-match? #rx"~[aA]" cmd) cmd]
                         [(find-executable-path cmd) => values]

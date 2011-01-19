@@ -2,6 +2,7 @@
   (require mzlib/class mzlib/list mzlib/string mzlib/file
 	   (prefix wx: "kernel.ss")
 	   (prefix wx: racket/snip)
+           racket/snip/private/prefs
 	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
            "messagebox.ss" "mrmenu.ss" (only scheme/base compose))
   (provide path-dialog%)
@@ -199,7 +200,7 @@
                       (if put? "Save File" "Open File"))))
 
       (define size
-        (let ([s (get-preference 'mred:path-dialog:size (lambda () #f))])
+        (let ([s (get-preference* 'mred:path-dialog:size (lambda () #f))])
           (or (and (list? s) (= 2 (length s)) (andmap integer? s) s)
               '(300 300))))
 
@@ -521,7 +522,7 @@
         (let ([new (list width height)])
           (unless (equal? new size)
             (set! size new)
-            (put-preferences '(mred:path-dialog:size) (list size)))))
+            (put-preferences* '(mred:path-dialog:size) (list size)))))
 
       ;;-----------------------------------------------------------------------
       ;; Delayed Filename Completion

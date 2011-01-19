@@ -246,10 +246,8 @@
     (init       count)
     (init-field id
                 parity?)
-    (unless id
-      (set! id (if parity?
-                   (cons this #f)
-                   (cons #f this))))
+    (unless id (set! id (mcons #f #f)))
+    ((if parity? set-mcar! set-mcdr!) id this)
     (define seq (make-vector count))
     (super-new)
 
@@ -259,7 +257,7 @@
 
     (define/override (undo editor)
       (for ([c (in-vector seq)])
-        (send c undo))
+        (send c undo editor))
       #f)
 
     (define/override (drop-set-unmodified)
@@ -284,10 +282,12 @@
     (init-field id
                 parity?)
 
+    (super-new)
+
     (define/private (get)
       (if parity?
-          (car id)
-          (cdr id)))
+          (mcar id)
+          (mcdr id)))
 
     (define/override (cancel)
       ;; Avoid double-frees by not doing anything

@@ -9,6 +9,7 @@
          racket/snip/private/private
 	 racket/snip/private/style
          racket/snip/private/snip-flags
+         racket/snip/private/prefs
          "editor-admin.ss"
          "stream.ss"
          "undo.ss"
@@ -108,7 +109,7 @@
 
 ;; ----------------------------------------
 
-(define emacs-style-undo? (and (get-preference 'MrEd:emacs-undo) #t))
+(define emacs-style-undo? (and (get-preference* 'GRacket:emacs-undo) #t))
 (define (max-undo-value? v) (or (exact-nonnegative-integer? v)
                                 (eq? v 'forever)))
 
@@ -863,7 +864,7 @@
             (let loop ([e redochanges-end])
               (unless (= redochanges-start e)
                 (let ([e (modulo (+ e -1 redochanges-size) redochanges-size)])
-                  (append-undo (vector-ref redochanges (send (vector-ref redochanges e) inverse)) #f)
+                  (append-undo (send (vector-ref redochanges e) inverse) #f)
                   (loop e))))
             (let loop ()
               (unless (= redochanges-start redochanges-end)
@@ -969,12 +970,12 @@
                                      cnt
                                      (loop e (add1 cnt))))))])
                 (when (positive? cnt)
-                  (let ([cu (new composite-record% [cnt cnt] [id id] [parity (not parity)])])
+                  (let ([cu (new composite-record% [count cnt] [id id] [parity? (not parity)])])
                     (for ([i (in-range cnt)])
                       (let ([e (modulo (+ (- end cnt) i size) size)])
                         (send cu add-undo i (vector-ref c e))
                         (vector-set! c e #f)))
-                    (let ([e (modulo (+ (- end cnt) cnt size) size)])
+                    (let ([e (modulo (+ (- end cnt) size) size)])
                       (vector-set! c e cu)
                       (set! redochanges-end (modulo (add1 e) size))))))))))))
 

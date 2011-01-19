@@ -9,8 +9,6 @@
            (for-syntax scheme/base)
            (only-in scribblings/draw/blurbs
                     res-sym
-                    Resource
-                    ResourceFirst
                     boxisfill
                     boxisfillnull
                     MismatchExn))
@@ -263,5 +261,13 @@ information@|details|, even if the editor currently has delayed refreshing (see
   (define (slant . s)
     (make-element "slant" (decode-content s)))
 
+  (define (Resource s)
+    @elem{@to-element[`(quote ,(res-sym s))]
+          preference})
+  (define (ResourceFirst s) ; fixme -- add index
+    (let ([r (Resource s)])
+      (index* (list (format "~a preference" (res-sym s)))
+              (list r) 
+              r)))
   )
 

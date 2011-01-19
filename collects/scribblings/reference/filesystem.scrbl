@@ -858,15 +858,16 @@ needed.}
                          [failure-thunk (-> any) (lambda () #f)]
                          [flush-mode any/c 'timestamp]
                          [filename (or/c string-path? #f) #f]
+                         [#:use-lock? use-lock? any/c #t]
                          [#:lock-there 
                           lock-there
                           (or/c (path? . -> . any) #f)
-                          (make-handle-get-preference-locked 0.01
-                                                             name
-                                                             fail-thunk
-                                                             refresh-cache?
-                                                             filename)]
-                         [#:use-lock? use-lock? #t])
+                          (make-handle-get-preference-locked 
+                           0.01 name fail-thunk refresh-cache? filename
+                           #:lock-there timeout-lock-there)]
+                         [#:timeout-lock-there timeout-lock-there 
+                                               (or/c (path? . -> . any) #f)
+                                               #f])
          any]{
 
 Extracts a preference value from the file designated by
@@ -906,6 +907,8 @@ preferences file cannot be read because the lock is unavailable,
 @racket[lock-there] is @racket[#f], an exception is raised. The
 default @racket[lock-there] handler retries about 5 times (with
 increasing delays between each attempt) before raising an exception.
+The @racket[timeout-lock-there] argument is used only be the default
+@racket[lock-there] value.
 
 See also @racket[put-preferences]. For a more elaborate preference
 system, see @racket[preferences:get].

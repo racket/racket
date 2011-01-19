@@ -8,6 +8,7 @@
          "mline.ss"
          "private.ss"
          racket/snip/private/private
+         racket/snip/private/prefs
          "editor.ss"
          "editor-data.rkt"
          "undo.ss"
@@ -50,7 +51,7 @@
 (define ZERO-LINE-WIDTH 0.1)
 
 (define show-outline-for-inactive?
-  (and (get-preference 'MrEd:outline-inactive-selection) #t))
+  (and (get-preference* 'GRacket:outline-inactive-selection) #t))
 
 (define caret-pen (send the-pen-list find-or-create-pen "BLACK" 1 'xor))
 (define outline-pen (send the-pen-list find-or-create-pen "BLACK" 0 'transparent))

@@ -5,6 +5,7 @@
          "editor.ss"
          "editor-admin.ss"
          "private.ss"
+         racket/snip/private/prefs
          racket/snip/private/private
          (only-in "cycle.ss" popup-menu%)
          (only-in "../helper.ss" queue-window-callback)
@@ -131,7 +132,7 @@
 ;; ----------------------------------------
 
 (define default-wheel-amt
-  (let ([v (get-preference 'MrEd:wheelStep)])
+  (let ([v (get-preference* 'GRacket:wheelStep)])
     (if (exact-integer? v)
         (max 3 (min 1000 v))
         3)))
