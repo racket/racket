@@ -40,7 +40,7 @@
                   (output-port? output))
         (raise-type-error (get-name) "path string, output port, or #f" output)))
 
-    (define-values (s port-box close-port? width height landscape?)
+    (define-values (s port close-port? writer width height landscape?)
       (let ([su (if interactive
                     ((gui-dynamic-require 'get-ps-setup-from-user) #f parent)
                     (current-ps-setup))])
@@ -68,7 +68,7 @@
                          #f)])
             (if (and to-file?
                      (not fn))
-                (values #f #f #f #f #f #f)
+                (values #f #f #f #f #f #f #f)
                 (let* ([paper (assoc (send pss get-paper-name) paper-sizes)]
                        [w (if (or (not init-w) use-paper-bbox)
                               (cadr paper)
@@ -83,26 +83,26 @@
                                   (or fn (make-temporary-file (if pdf?
                                                                   "draw~a.pdf"
                                                                   "draw~a.ps")))
-                                  #:exists 'truncate/replace))]
-                       [port-box (make-immobile file)])
+                                  #:exists 'truncate/replace))])
                   (let-values ([(w h) (if (and pdf? landscape?)
                                           (values h w)
-                                          (values w h))])
+                                          (values w h))]
+                               [(writer proc) (make-port-writer file)])
                     (values
                      ((if pdf?
                           cairo_pdf_surface_create_for_stream 
                           cairo_ps_surface_create_for_stream)
-                      write_port_bytes
-                      port-box
+                      proc
                       w
                       h)
-                     port-box ; needs to be accessible as long as `s'
+                     file
                      (not (output-port? fn))
+                     writer
                      w
                      h
                      landscape?)))))]
          [else
-          (values #f #f #f #f #f #f)])))
+          (values #f #f #f #f #f #f #f)])))
 
     (define-values (margin-x margin-y)
       (if as-eps
@@ -147,9 +147,11 @@
       (cairo_destroy c)
       (set! c #f)
       (set! s #f)
+      (port-writer-wait writer)
+      (set! writer #f)
       (when close-port?
-        (close-output-port (ptr-ref port-box _racket)))
-      (set! port-box #f))
+        (close-output-port port))
+      (set! port #f))
 
     (define/override (init-cr-matrix c)
       (cairo_translate c trans-x trans-y)

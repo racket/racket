@@ -40,16 +40,17 @@
     (define height init-h)
     (define close-port? (path-string? init-output))
 
-    (define port-box ; needs to be accessible as long as `s' or `c'
-      (let ([output (if (output-port? init-output)
-                        init-output
-                        (open-output-file init-output #:exists exists))])
-        (make-immobile output)))
-    (define s (cairo_svg_surface_create_for_stream 
-               write_port_bytes
-               port-box
-               width
-               height))
+    (define port
+      (if (output-port? init-output)
+          init-output
+          (open-output-file init-output #:exists exists)))
+    (define-values (s writer)
+      (let-values ([(writer proc) (make-port-writer port)])
+        (values (cairo_svg_surface_create_for_stream 
+                 proc
+                 width
+                 height)
+                writer)))
 
     (define c (and s (cairo_create s)))    
     (when s (cairo_surface_destroy s))
@@ -66,9 +67,11 @@
       (cairo_destroy c)
       (set! c #f)
       (set! s #f)
+      (port-writer-wait writer)
+      (set! writer #f)
       (when close-port?
-        (close-output-port (ptr-ref port-box _racket)))
-      (set! port-box #f))
+        (close-output-port port))
+      (set! port #f))
 
     (define/override (get-pango font)
       (send font get-pango))

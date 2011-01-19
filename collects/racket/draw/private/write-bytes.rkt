@@ -4,14 +4,25 @@
          "../unsafe/cairo.ss"
          "../unsafe/bstr.ss")
 
-(provide write_port_bytes
-         make-immobile)
+(provide make-port-writer
+         port-writer-wait)
 
-(define (write-port-bytes port-box bytes len)
-  (write-bytes (scheme_make_sized_byte_string bytes len 0) 
-               (ptr-ref port-box _racket))
-  CAIRO_STATUS_SUCCESS)
+(define (make-port-writer port) 
+  (let ([t (thread/suspend-to-kill
+            (lambda ()
+              (let loop ()
+                (let ([msg (thread-receive)])
+                  (when (bytes? msg)
+                    (write-bytes msg port)
+                    (loop))))))])
+    (values t
+            (lambda (bytes len)
+              (thread-send t (scheme_make_sized_byte_string bytes len 1) 
+                           void)
+              CAIRO_STATUS_SUCCESS))))
 
-(define write_port_bytes (function-ptr write-port-bytes _cairo_write_func_t))
+(define (port-writer-wait t)
+  (thread-resume t)
+  (thread-send t eof void)
+  (thread-wait t))
 
-(define make-immobile ((allocator free-immobile-cell) malloc-immobile-cell))

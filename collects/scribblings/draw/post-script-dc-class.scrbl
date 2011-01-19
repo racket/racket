@@ -57,7 +57,12 @@ If @scheme[use-paper-bbox] is @scheme[#f], then the PostScript
 When @racket[output] is not @racket[#f], then file-mode output is
  written to @racket[output]. If @racket[output] is @racket[#f], then
  the destination is determined via @racket[current-ps-setup] or by
- prompting the user for a pathname.
+ prompting the user for a pathname. When @racket[output] is a port,
+ then data is written to @racket[port] by a thread that is created
+ with the @racket[post-script-dc%] instance; in case that writing
+ thread's custodian is shut down, calling @method[dc<%> end-doc]
+ resumes the port-writing thread with @racket[thread-resume]
+ and @racket[(current-thread)] as the second argument.
 
 See also @scheme[ps-setup%] and @scheme[current-ps-setup]. The
 settings for a particular @scheme[post-script-dc%] object are fixed to

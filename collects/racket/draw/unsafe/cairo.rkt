@@ -237,21 +237,44 @@
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_ps_surface_create (_fun _path _double* _double* -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy))
-(define-cairo cairo_ps_surface_create_for_stream 
-  ;; The _fpointer argument is _cairo_write_func_t
-  ;; but it's saved as a callback, so care is needed with
-  ;; allocation.
-  (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
-  #:wrap (allocator cairo_surface_destroy))
+
+;; Stream surfaces
+
+;;  The first argument to a stream-surface creation
+;;  function is a procedure, and we need the procedure to
+;;  live just as long as the surface. Implement that by
+;;  saving the closure via user data on the surface.
+;;  Externally, a stream-creation function takes
+;;  just a closure --- not a function and data.
+(define _cairo_write_func_t 
+  (_fun #:atomic? #t _pointer _pointer _uint -> _int))
+(define _stream-surface-proc 
+  (_fun _cairo_write_func_t _pointer _double* _double* -> _cairo_surface_t))
+(define cell-key (malloc 1 'raw))
+(define stream-surface-allocator 
+  (lambda (p)
+    ((allocator cairo_surface_destroy)
+     (lambda (proc w h)
+       (let* ([new-proc (lambda (null bytes len)
+                          (proc bytes len))]
+              [s (p new-proc #f w h)]
+              [b (malloc-immobile-cell new-proc)])
+         (cairo_surface_set_user_data s cell-key b free-immobile-cell)
+         s)))))
+(define-cairo cairo_ps_surface_create_for_stream
+  _stream-surface-proc
+  #:wrap stream-surface-allocator)
 (define-cairo cairo_pdf_surface_create_for_stream 
-  ;; As above:
-  (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
-  #:wrap (allocator cairo_surface_destroy))
+  _stream-surface-proc
+  #:wrap stream-surface-allocator)
 (define-cairo cairo_svg_surface_create_for_stream 
-  ;; As above:
-  (_fun  _fpointer _pointer _double* _double* -> _cairo_surface_t)
-  #:wrap (allocator cairo_surface_destroy))
-(define/provide _cairo_write_func_t (_fun _pointer _pointer _uint -> _int))
+  _stream-surface-proc
+  #:wrap stream-surface-allocator)
+
+(define-cairo cairo_surface_set_user_data 
+  (_fun _cairo_surface_t _pointer _pointer (_fun #:atomic? #t _pointer -> _void)
+        -> _int))
+
 (define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void)
   #:fail (lambda ()
 	   ;; cairo_ps_surface_set_eps is in version 1.6 and later;
