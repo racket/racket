@@ -4,6 +4,10 @@
                      racket/runtime-path
                      setup/dirs))
 
+@(define file-eval (make-base-eval))
+@(interaction-eval #:eval file-eval (begin (require racket/file) (define filename (make-temporary-file))))
+
+
 @title{Filesystem}
 
 @;------------------------------------------------------------------------
@@ -991,7 +995,7 @@ the file via @racket[rename-file-or-directory].)}
           [name symbol?]
           [failure-thunk (-> any) (lambda () #f)]
           [flush-mode any/c 'timestamp]
-          [filename (or/c string-path? #f) #f]
+          [filename (or/c path-string? #f) #f]
           [#:lock-there lock-there (or/c (path? . -> . any) #f) #f]
           [#:max-delay max-delay real? 0.2])
          (path-string? . -> . any)]{
@@ -1005,8 +1009,67 @@ to retry the preferences lookup.
 Before calling @racket[get-preference], the result procedure uses
 @racket[(sleep delay)] to pause. Then, if @racket[(* 2 delay)] is less
 than @racket[max-delay], the result procedure calls
+
 @racket[make-handle-get-preference-locked] to generate a new retry
 procedure to pass to @racket[get-preference], but with a
 @racket[delay] of @racket[(* 2 delay)]. If @racket[(* 2 delay)] is not
 less than @racket[max-delay], then @racket[get-preference] is called
 with the given @racket[lock-there], instead.}
+
+@defproc[(call-with-file-lock/timeout
+          [filename (or/c path-string? #f)]
+          [kind (or/c 'shared 'exclusive)]
+          [thunk (-> any)]
+          [failure-thunk (-> any)]
+          [#:get-lock-file get-lock-file (-> path-string?) (lambda () (make-lock-filename filename))]
+          [#:delay delay real? 0.01]
+          [#:max-delay max-delay real? 0.2])
+         any]{
+
+Obtains a lock for the filename returned from @racket[(get-lock-file)] and then
+calls @racket[thunk].  When @racket[thunk] returns,
+@racket[call-with-file-lock] releases the lock, returning the result of
+@racket[thunk]. The @racket[call-with-file-lock/timeout] function will retry
+after @racket[#:delay] seconds and continue retrying with exponential backoff
+until delay reaches @racket[#:max-delay]. If
+@racket[call-with-file-lock/timeout] fails to obtain the lock,
+@racket[failure-thunk] is called in tail position.  The @racket[kind] argument
+specifies whether the lock is @racket['shared] or @racket['exclusive]
+
+The @racket[filename] argument specifies a file path prefix that is only used
+to generate the lock filename, when @racket[#:get-lock-file] is not present.
+The @racket[call-with-file-lock/timeout] function uses a separate lock file to
+prevent race conditions on @racket[filename], when @racket[filename] has not yet
+been created.  On the Windows platfom, the @racket[call-with-file-lock/timeout]
+function uses a separate lock file (@racket["_LOCKfilename"]), because a lock
+on @racket[filename] would interfere with replacing @racket[filename]] via
+@racket[rename-file-or-directory].
+}
+
+@examples[
+  #:eval file-eval
+  (call-with-file-lock/timeout filename 'exclusive
+    (lambda () (printf "File is locked\n"))
+    (lambda () (printf "Failed to obtain lock for file\n")))
+
+  (call-with-file-lock/timeout #f 'exclusive
+    (lambda () 
+      (call-with-file-lock/timeout filename 'shared
+        (lambda () (printf "Shouldn't get here\n"))
+        (lambda () (printf "Failed to obtain lock for file\n"))))
+    (lambda () (printf "Shouldn't ger here eithere\n"))
+    #:get-lock-file (lambda () (make-lock-file-name filename)))]
+
+@defproc*[([(make-lock-file-name [path path-string?]) path-string?]
+           [(make-lock-file-name [dir path-string?] [name path-string?]) path-string?])]{
+Creates a lock filename by prepending @racket["_LOCK"] on windows or @racket[".LOCK"] on all other platforms
+to the file portion of the path.
+}
+
+@examples[
+  #:eval file-eval
+  (make-lock-file-name "/home/george/project/important-file")]
+
+
+@(interaction-eval #:eval file-eval (delete-file filename))
+@(close-eval file-eval)

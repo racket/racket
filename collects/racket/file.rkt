@@ -9,6 +9,8 @@
          put-preferences
          preferences-lock-file-mode
          make-handle-get-preference-locked
+         make-lock-file-name
+         call-with-file-lock/timeout
 
          fold-files
          find-files
@@ -161,57 +163,98 @@
     [(windows) 'file-lock]
     [else 'exists]))
 
-(define (call-with-file-lock who kind get-lock-file thunk lock-there)
-  (case (preferences-lock-file-mode)
+(define (call-with-file-lock/timeout fn kind thunk failure-thunk
+    #:get-lock-file [get-lock-file (make-lock-file-name fn)]
+    #:delay [delay 0.01]
+    #:max-delay [max-delay 0.2])
+
+  (unless (or (path-string? fn) (eq? fn #f))
+    (raise-type-error 'call-with-file-lock/timeout "path-string? or #f" fn))
+  (unless (or (eq? kind 'shared) (eq? kind 'exclusive))
+    (raise-type-error 'call-with-file-lock/timeout "'shared or 'exclusive" kind))
+  (unless (= (procedure-arity thunk) 0)
+    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" thunk))
+  (unless (= (procedure-arity failure-thunk) 0)
+    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" failure-thunk))
+  (unless (or (path-string? get-lock-file)
+              (= (procedure-arity get-lock-file) 0))
+    (raise-type-error 'call-with-file-lock/timeout "procedure (arity 0)" get-lock-file))
+  (unless (and (real? delay) (not (negative? delay)))
+    (raise-type-error 'call-with-file-lock/timeout "non-negative real" delay))
+  (unless (and (real? max-delay) (not (negative? max-delay)))
+    (raise-type-error 'call-with-file-lock/timeout "non-negative real" max-delay))
+ 
+  (define real-get-lock-file 
+    (if (procedure? get-lock-file) (get-lock-file) get-lock-file))
+  (call-with-file-lock 
+    kind 
+    real-get-lock-file
+    thunk
+    (lambda ()
+      (if (delay . < . max-delay)
+        (begin
+          (sleep delay)
+          (call-with-file-lock/timeout fn kind thunk failure-thunk #:delay (* 2 delay)
+            #:get-lock-file real-get-lock-file 
+            #:max-delay max-delay))
+      (failure-thunk)))))
+    
+(define (call-with-preference-file-lock who kind get-lock-file thunk lock-there)
+  (define lock-style (preferences-lock-file-mode))
+  (define lock-file (get-lock-file))
+  (define failure-thunk 
+    (if lock-there 
+        (lambda () (lock-there lock-file))
+        (case lock-style
+              [(file-lock) (error who
+                                  "~a ~a: ~e"
+                                  "some other process has a lock"
+                                  "on the preferences lock file"
+                                  lock-file)]
+              [else (error who
+                           "~a, ~a: ~e"
+                           "some other process has the preference-file lock"
+                           "as indicated by the existence of the lock file"
+                           lock-file)])))
+                                  
+  (call-with-file-lock kind lock-file thunk failure-thunk #:lock-style lock-style))
+
+(define (call-with-file-lock kind lock-file thunk failure-thunk #:lock-style [lock-style 'file-lock])
+  (case lock-style
     [(file-lock)
-     (let ([lock-file (get-lock-file)])
-       ;; Create the lock file if it doesn't exist:
-       (unless (file-exists? lock-file)
-         (with-handlers ([exn:fail:filesystem:exists? (lambda (exn) 'ok)])
-           (close-output-port (open-output-file lock-file #:exists 'error))))
-       ((call-with-input-file* 
-         lock-file
-         (lambda (p)
-           (if (port-try-file-lock? p kind)
-               ;; got lock:
-               (let ([v (dynamic-wind
-                            void
-                            thunk
-                            (lambda ()
-                              (port-file-unlock p)))])
-                 (lambda () v))
-               ;; didn't get lock:
-               (if lock-there
-                   (lambda () (lock-there lock-file))
-                   (error who
-                          "~a ~a: ~e"
-                          "some other process has a lock"
-                          "on the preferences lock file"
-                          lock-file)))))))]
+      ;; Create the lock file if it doesn't exist:
+      (unless (file-exists? lock-file)
+        (with-handlers ([exn:fail:filesystem:exists? (lambda (exn) 'ok)])
+          (close-output-port (open-output-file lock-file #:exists 'error))))
+      ((call-with-input-file* 
+        lock-file
+        (lambda (p)
+          (if (port-try-file-lock? p kind)
+              ;; got lock:
+              (let ([v (dynamic-wind
+                           void
+                           thunk
+                           (lambda ()
+                             (port-file-unlock p)))])
+                (lambda () v))
+              ;; didn't get lock:
+              (lambda () (failure-thunk))))))]
     [else ; = 'exists
      ;; Only a write lock is needed, and the file lock 
      ;; is implemented by the presence of the file:
      (case kind
        [(shared) (thunk)]
        [(exclusive)
-        (let ([lock-file (get-lock-file)])
-          (with-handlers ([exn:fail:filesystem:exists?
-                           (lambda (x)
-                             (if lock-there
-                                 (lock-there lock-file)
-                                 (error who
-                                        "~a, ~a: ~e"
-                                        "some other process has the preference-file lock"
-                                        "as indicated by the existence of the lock file"
-                                        lock-file)))])
-            ;; Grab lock:
-            (close-output-port (open-output-file lock-file #:exists 'error)))
-          (dynamic-wind 
-              void
-              thunk
-              (lambda ()
-                ;; Release lock:
-                (delete-file lock-file))))])]))
+        (with-handlers ([exn:fail:filesystem:exists? 
+                         (lambda (x) (failure-thunk))])
+          ;; Grab lock:
+          (close-output-port (open-output-file lock-file #:exists 'error)))
+        (dynamic-wind 
+            void
+            thunk
+            (lambda ()
+              ;; Release lock:
+              (delete-file lock-file)))])]))
 
 (define (get-prefs flush-mode filename use-lock? lock-there)
   (define (read-prefs default-pref-file)
@@ -248,8 +291,8 @@
         (let ([prefs (with-pref-params
                       (lambda ()
                         (if use-lock? 
-                            (call-with-file-lock
-                             'get-preference
+                            (call-with-preference-file-lock
+                             'get-preferences
                              'shared
                              (lambda ()
                                (make-lock-file-name pref-file))
@@ -349,7 +392,7 @@
                        filename
                        (make-lock-file-name dir name)
                        dir))))])
-    (call-with-file-lock
+    (call-with-preference-file-lock
      'put-preferences
      'exclusive
      (lambda () lock-file)
