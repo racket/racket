@@ -15,16 +15,19 @@
 (define scheme_restore_on_atomic_timeout 
   (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun _pointer -> _pointer)))
 
+(define freezer-tag (make-continuation-prompt-tag))
 (define freezer-box-key (gensym))
 (define in-try-atomic-key (gensym))
 (define freeze-tag (make-continuation-prompt-tag))
 (define force-timeout (make-parameter #f))
 
 (define (freezer-box)
-  (continuation-mark-set-first #f freezer-box-key))
+  (and (continuation-prompt-available? freezer-tag)
+       (continuation-mark-set-first #f freezer-box-key #f freezer-tag)))
 
 (define (in-try-atomic?)
-  (continuation-mark-set-first #f in-try-atomic-key))
+  (and (continuation-prompt-available? freezer-tag)
+       (continuation-mark-set-first #f in-try-atomic-key #f freezer-tag)))
 
 ;; Runs `thunk' atomically, but cooperates with 
 ;; `try-atomic' to continue a frozen
@@ -43,14 +46,17 @@
                     ;; Start with an empty list of things to finish:
                     null))])
     (begin0
-     (with-continuation-mark freezer-box-key b
-       ;; In atomic mode (but not using call-as-atomic, because we
-       ;; don't want to change the exception handler, etc.)
-       (begin
-         (start-atomic)
-         (begin0 
-          (thunk)
-          (end-atomic))))
+     (call-with-continuation-prompt
+      (lambda ()
+        (with-continuation-mark freezer-box-key b
+          ;; In atomic mode (but not using call-as-atomic, because we
+          ;; don't want to change the exception handler, etc.)
+          (begin
+            (start-atomic)
+            (begin0 
+             (thunk)
+             (end-atomic)))))
+      freezer-tag) ; so we can look past any default prompts for `freezer-box-key'
      ;; Retries out of atomic mode:
      (let ([l (unbox b)])
        (for ([k (in-list (reverse l))])
