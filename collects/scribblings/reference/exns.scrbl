@@ -275,17 +275,18 @@ handler that reports both the original and newly raised exception).
 
 The default uncaught-exception handler prints an error message using
 the current @tech{error display handler} (see @racket[error-display-handler])
-and then escapes by calling the current error escape handler (see
+and then escapes by calling the current @tech{error escape handler} (see
 @racket[error-escape-handler]). The call to each handler is
 @racket[parameterize]d to set @racket[error-display-handler] to the
 default @tech{error display handler}, and it is @racket[parameterize-break]ed
-to disable breaks. The call to the error escape handler is further
+to disable breaks. The call to the @tech{error escape handler} is further
 parameterized to set @racket[error-escape-handler] to the default
-error escape handler.
+@tech{error escape handler}; if the @tech{error escape handler} returns, then
+the default @tech{error escape handler} is called.
 
 When the current @tech{error display handler} is the default handler, then the
 error-display call is parameterized to install an emergency error
-display handler that attempts to print directly to a console and never
+display handler that logs an error (see @racket[log-error]) and never
 fails.}
 
 @defform[(with-handlers ([pred-expr handler-expr] ...)

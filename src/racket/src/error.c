@@ -662,23 +662,6 @@ void scheme_init_logger_config() {
 }
 
 static void
-scheme_inescapeable_error(const char *a, const char *b)
-{
-  int al, bl;
-  char *t;
-
-  al = strlen(a);
-  bl = strlen(b);
-  t = scheme_malloc_atomic(al + bl + 2);
-  memcpy(t, a, al);
-  memcpy(t + al, b, bl);
-  t[al + bl] = '\n';
-  t[al + bl + 1] = 0;
-
-  scheme_console_output(t, al + bl + 1);
-}
-
-static void
 call_error(char *buffer, int len, Scheme_Object *exn)
 {
   if (scheme_current_thread->constant_folding) {
@@ -763,9 +746,8 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     scheme_pop_break_enable(&cframe2, 0);
     scheme_pop_continuation_frame(&cframe);
 
-    /* Uh-oh; record the error and fall back to the default escaper */
-    scheme_inescapeable_error("error escape handler did not escape; calling the default error escape handler", "");
-    scheme_longjmp(savebuf, 1); /* force an exit */
+    /* Didn't escape, so fall back to the default escaper: */
+    def_error_escape_proc(0, NULL);
   }
 }
 
@@ -2418,9 +2400,9 @@ emergency_error_display_proc(int argc, Scheme_Object *argv[])
 
   s = scheme_char_string_to_byte_string(argv[0]);
 
-  scheme_console_output(SCHEME_BYTE_STR_VAL(s),
-			SCHEME_BYTE_STRTAG_VAL(s));
-  scheme_console_output("\n", 1);
+  scheme_log_message(NULL, SCHEME_LOG_ERROR, 
+                     SCHEME_BYTE_STR_VAL(s), SCHEME_BYTE_STRTAG_VAL(s), 
+                     scheme_false);
 
   return scheme_void;
 }

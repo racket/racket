@@ -1349,4 +1349,36 @@
 
 ; --------------------
 
+;; Check that the default uncaught-exception handler falls
+;; back to the default error escape handler if the current
+;; one doesn't escape.
+(test 'done
+      'error-non-escape-handler
+      (begin
+        (call-with-continuation-prompt
+         (lambda ()
+           (parameterize ([error-escape-handler void]
+                          [error-display-handler void])
+             (raise 'oops))))
+        'done))
+
+;; Check that if the current error port is broken,
+;; so that the default error display handler fails,
+;; then check that an error is logged.
+(test #t
+      regexp-match? 
+      #rx"output port is closed" 
+      (let* ([p (open-output-bytes)]
+             [l (make-logger)]
+             [r (make-log-receiver l 'error)])
+        (close-output-port p)
+        (call-with-continuation-prompt
+         (lambda ()
+           (parameterize ([current-error-port p]
+                          [current-logger l])
+             (raise 'ack))))
+        (vector-ref (sync r) 1)))
+      
+; --------------------
+
 (report-errs)
