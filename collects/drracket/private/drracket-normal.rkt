@@ -119,7 +119,7 @@
    [else
     (collection-file-path "plt-flat.gif" "icons")])
  "DrRacket"
- 99
+ 700
  #:allow-funny? #t)
 
 (when (getenv "PLTDRBREAK")

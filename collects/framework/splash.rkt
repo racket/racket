@@ -203,7 +203,6 @@
 (define splash-max-width 1)
 
 (define (close-splash)
-  (printf "splash-current-width ~s\n" splash-current-width)
   (unless (= splash-max-width splash-current-width)
     (splash-set-preference (get-splash-width-preference-name) (max 1 splash-current-width)))
   (on-splash-eventspace/ret (set! quit-on-close? #f))
