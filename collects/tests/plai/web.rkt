@@ -4,4 +4,5 @@
   [mta])
 
 (define (start req)
-  "Hello")
+  (response/xexpr
+   "Hello"))

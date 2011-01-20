@@ -1,9 +1,9 @@
-#lang scheme
+#lang racket
 (require plai/datatype
          plai/test-harness)
 
 (provide (all-from-out plai/datatype)
-         (except-out (all-from-out scheme) error (for-syntax error) #%module-begin provide)
+         (except-out (all-from-out racket) error (for-syntax error) #%module-begin provide)
          (except-out (all-from-out plai/test-harness) plai-error)
          (rename-out [plai-error error] 
                      [plai-module-begin #%module-begin])
