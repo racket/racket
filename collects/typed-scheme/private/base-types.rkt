@@ -16,17 +16,34 @@
 [Nonpositive-Inexact-Real -NonPosInexactReal]
 [Nonpositive-Single-Flonum -NonPosSingleFlonum]
 [Negative-Inexact-Real -NegInexactReal]
+[Negative-Single-Flonum -NegSingleFlonum]
 [Nonnegative-Inexact-Real -NonNegInexactReal]
 [Nonnegative-Single-Flonum -NonNegSingleFlonum]
 [Positive-Inexact-Real -PosInexactReal]
+[Positive-Single-Flonum -PosSingleFlonum]
 [Inexact-Real-Zero -InexactRealZero]
 [Inexact-Real-Negative-Zero -InexactRealNegZero]
 [Inexact-Real-Positive-Zero -InexactRealPosZero]
 [Single-Flonum-Zero -SingleFlonumZero]
-[Float -Flonum] ; these are the default, 64-bit floats, can be optimized
-[Nonpositive-Float -NonPosFlonum]
-[Nonnegative-Float -NonNegFlonum]
-[Float-Zero -FlonumZero]
+[Single-Flonum-Negative-Zero -SingleFlonumNegZero]
+[Single-Flonum-Positive-Zero -SingleFlonumPosZero]
+;; these are the default, 64-bit floats, can be optimized
+[Float -Flonum] ; both of these are valid
+[Flonum -Flonum]
+[Nonpositive-Float -NonPosFlonum] ; both of these are valid
+[Nonpositive-Flonum -NonPosFlonum]
+[Negative-Float -NegFlonum] ; both of these are valid
+[Negative-Flonum -NegFlonum]
+[Nonnegative-Float -NonNegFlonum] ; both of these are valid
+[Nonnegative-Flonum -NonNegFlonum]
+[Positive-Float -PosFlonum] ; both of these are valid
+[Positive-Flonum -PosFlonum]
+[Float-Zero -FlonumZero] ; both of these are valid
+[Flonum-Zero -FlonumZero]
+[Float-Negative-Zero -FlonumNegZero] ; both of these are valid
+[Flonum-Negative-Zero -FlonumNegZero]
+[Float-Positive-Zero -FlonumPosZero] ; both of these are valid
+[Flonum-Positive-Zero -FlonumPosZero]
 [Exact-Rational -Rat]
 [Nonpositive-Exact-Rational -NonPosRat]
 [Negative-Exact-Rational -NegRat]

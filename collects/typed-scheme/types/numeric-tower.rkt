@@ -7,13 +7,34 @@
          unstable/function
          (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
 
-(provide (all-defined-out))
+(provide portable-fixnum? portable-index?
+         -Zero -One -PosByte -Byte -PosIndex -Index
+         -PosFixnum -NonNegFixnum -NegFixnum -NonPosFixnum -Fixnum
+         -PosInt -Nat -NegInt -NonPosInt -Int
+         -PosRat -NonNegRat -NegRat -NonPosRat -Rat
+         -FlonumPosZero -FlonumNegZero -FlonumZero -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum -Flonum
+         -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
+         -InexactRealPosZero -InexactRealNegZero -InexactRealZero -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
+         -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
+         -FloatComplex -SingleFlonumComplex -InexactComplex -Number
+         ;; for backward compatibility
+         (rename-out [-NonNegFlonum -NonnegativeFlonum]
+                     [-Rat -ExactRational]
+                     [-Int -Integer]
+                     [-PosInt -ExactPositiveInteger]
+                     [-PosFixnum -PositiveFixnum]
+                     [-NegFixnum -NegativeFixnum]
+                     [-NonNegFixnum -NonnegativeFixnum]
+                     [-Nat -ExactNonnegativeInteger]))
+
 
 ;; Numeric hierarchy
 ;; All built as unions of non-overlapping base types.
 ;; This should make encoding mathematical properties in the base env easier.
-;; Most of the weird base types will probably never be exposed to the user
-;; and some probably won't show up in the base env either.
+;; The base types that don't have an interesting mathematical meaning
+;; (e.g. -Byte>1, -PosFixnumNotIndex, etc.) should not be used anywhere, as
+;; they should not be exposed to the user and could easily be misused in
+;; the base type environment. They are not provided.
 ;; A lot of these contracts will be overriden in type->contract, so their
 ;; hairiness should not be of much consequence.
 
@@ -223,13 +244,3 @@
              #'-ExactComplexNotReal))
 (define -Complex (*Un -Real -InexactComplex -ExactComplexNotReal))
 (define -Number -Complex)
-
-;; TODO for compatibility
-(define -NonnegativeFlonum -NonNegFlonum)
-(define -ExactRational -Rat)
-(define -Integer -Int)
-(define -ExactPositiveInteger -PosInt)
-(define -PositiveFixnum -PosFixnum)
-(define -NegativeFixnum -NegFixnum)
-(define -NonnegativeFixnum -NonNegFixnum)
-(define -ExactNonnegativeInteger -Nat)
