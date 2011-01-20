@@ -5,6 +5,12 @@
 (require "test-display.scm")
 (provide tool@)
 
+(preferences:set-default 'test-engine:test-dock-size 
+                         '(2/3 1/3) 
+                         (λ (x) (and (list? x) (= (length x) 2) (andmap number? x) (= 1 (apply + x)))))
+(preferences:set-default 'test-engine:test-window:docked? #f boolean?)
+(preferences:set-default 'test-engine:enable? #t boolean?)
+
 (define tool@
   (unit (import drscheme:tool^) (export drscheme:tool-exports^)
 
@@ -71,9 +77,8 @@
           (send test-panel update-editor editor)
           (unless (send test-panel is-shown?)
             (send test-frame add-child test-panel)
-            (let ([test-box-size
-                   (get-preference 'test:test-dock-size (lambda () '(2/3 1/3)))])
-              (send test-frame set-percentages test-box-size))))
+            (send test-frame set-percentages
+                  (get-preference 'test-engine:test-dock-size))))
         (define test-panel null)
         (define test-frame null)
 
@@ -107,7 +112,7 @@
         (define/augment (on-tab-change from-tab to-tab)
           (let ([test-editor (send to-tab get-test-editor)]
                 [panel-shown? (send test-panel is-shown?)]
-                [dock? (get-preference 'test:test-window:docked? (lambda () #f))])
+                [dock? (preferences:get 'test-engine:test-window:docked?)])
             (cond [(and test-editor panel-shown? dock?)
                    (send test-panel update-editor test-editor)]
                   [(and test-editor dock?)
@@ -135,14 +140,14 @@
                   (send this set-label undock-label))
               (set! docked? (not docked?)))
             (define/public (dock-report) 
-              (unless docked? (dock-tests) (put-preferences '(test:test-window:docked?) '(#t))))
+              (unless docked? (dock-tests) (preferences:set 'test-engine:test-window:docked? #t)))
             (define/public (undock-report) 
-              (when docked? (undock-tests) (put-preferences '(test:test-window:docked?) '(#f))))
+              (when docked? (undock-tests) (preferences:set 'test-engine:test-window:docked? #f)))
             (super-instantiate ())))
         
         (define/override (add-show-menu-items show-menu)
           (super add-show-menu-items show-menu)
-          (let ([dock? (get-preference 'test:test-window:docked? (lambda () #t))])
+          (let ([dock? (preferences:get 'test-engine:test-window:docked?)])
             (when (eq? dock-menu-item 'not-init)
               (set! dock-menu-item 
                     (make-object dock-menu-item% 
@@ -171,14 +176,14 @@
                           (unless enabled?
                             (set! enabled? #t)
                             (send this set-label disable-label)
-                            (put-preferences '(tests:enable?) '(#t))))
+                            (preferences:set 'test-engine:enable? #t)))
                         (define/public (disable-tests)
                           (when enabled?
                             (set! enabled? #f)
                             (send this set-label enable-label)
-                            (put-preferences '(tests:enable?) '(#f))))
+                            (preferences:set 'test-engine:enable? #t)))
                         (super-instantiate ()))]
-                     [enable? (get-preference 'tests:enable? (lambda () #t))]
+                     [enable? (preferences:get 'test-engine:enable?)]
                      [enable-menu-item (make-object enable-menu-item%
                                          (if enable? disable-label enable-label)
                                          language-menu 

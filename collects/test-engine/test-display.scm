@@ -31,8 +31,7 @@
 
     (define (docked?)
       (and drscheme-frame
-           (get-preference 'test:test-window:docked? 
-                           (lambda () (put-preferences '(test:test-window:docked?) '(#f)) #f))))
+           (preferences:get 'test-engine:test-window:docked?)))
     
     (define/public (report-success)
       (when current-rep
@@ -489,8 +488,7 @@
                          (lambda (b c)
                            (when (eq? 'button (send c get-event-type))
                              (send this show #f)
-                             (put-preferences '(test:test-window:docked?)
-                                              '(#t))
+                             (preferences:set 'test-engine:test-window:docked? #t)
                              (switch-func))))
             (make-object grow-box-spacer-pane% button-panel)))
 
@@ -543,7 +541,7 @@
                  button-panel
                  (lambda (b c)
                    (when (eq? 'button (send c get-event-type))
-                     (put-preferences '(test:test-window:docked?) '(#f))
+                     (preferences:set 'test-engine:test-window:docked? #f)
                      (send frame undock-tests))))
 
     (define/public (update-editor e)
@@ -555,8 +553,7 @@
 
     (define/public (remove)
       (let ([parent (get-parent)])
-        (put-preferences '(test:test-dock-size)
-                         (list (send parent get-percentages)))
+        (preferences:set 'test-engine:test-dock-size (send parent get-percentages))
         (send parent delete-child this)))))
 
 (provide test-panel% test-window% test-display%)
