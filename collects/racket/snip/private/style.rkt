@@ -23,7 +23,7 @@
 (define editor-stream-out% object%)
 
 (define default-size 
-  (or (get-preference* 'MrEd:default-font-size)
+  (or (get-preference* 'GRacket:default-font-size)
       (case (system-type)
         [(windows) 10]
         [else 12])))
