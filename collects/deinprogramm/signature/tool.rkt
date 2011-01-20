@@ -6,6 +6,8 @@
          string-constants)
 (provide tool@)
 
+(preferences:set-default 'signatures:enable-checking? #t boolean?)
+
 (define tool@
   (unit (import drracket:tool^) (export drracket:tool-exports^)
 
@@ -35,14 +37,14 @@
                           (unless enabled?
                             (set! enabled? #t)
                             (set-label disable-label)
-                            (put-preferences '(signatures:enable-checking?) '(#t))))
+                            (preferences:set 'signatures:enable-checking? '#f)))
                         (define/public (disable-signature-checking)
                           (when enabled?
                             (set! enabled? #f)
                             (set-label enable-label)
-                            (put-preferences '(signatures:enable-checking?) '(#f))))
+                            (preferences:set 'signatures:enable-checking? '#f)))
                         (super-instantiate ()))]
-                     [enable? (get-preference 'signatures:enable-checking? (lambda () #t))]
+                     [enable? (preferences:get 'signatures:enable-checking?)]
                      [enable-menu-item (make-object enable-menu-item%
                                          (if enable? disable-label enable-label)
                                          language-menu 

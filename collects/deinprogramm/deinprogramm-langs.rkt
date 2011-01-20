@@ -202,7 +202,7 @@
 				 obj signature message blame))))))
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
-		 (signature-checking-enabled? (get-preference 'signatures:enable-checking? (lambda () #t)))
+		 (signature-checking-enabled? (preferences:get 'signatures:enable-checking?))
                  (test-format (make-formatter (lambda (v o)
 						(render-value/format (if (procedure? v)
 									 generic-proc
