@@ -413,8 +413,9 @@ The currently recognized @tech{style properties} are as follows:
 @itemize[
 
  @item{@racket['omitable] --- When a table cell contains a single
-       @racket[omitable-paragraph], then when rendering to HTML, no
-       @tt{p} tag wraps the cell content.}
+       @racket[paragraph] with the @racket['omitable] style property,
+       then when rendering to HTML, no @tt{<p>} tag wraps the cell
+       content.}
 
  @item{@racket['div] --- Generates @tt{<div>} HTML output instead of
        @tt{<p>}.}
@@ -529,8 +530,8 @@ The following @tech{style properties} are currently recognized:
 
 A @techlink{nested flow} has a style and a @tech{flow}.
 
-In @racket[style], the @racket{style name} is normally a string that
-corresponds to a CSS class for HTML @tt{blockquote} output or a Latex
+In @racket[style], the @tech{style name} is normally a string that
+corresponds to a CSS class for HTML @tt{<blockquote>} output or a Latex
 environment (see @secref["extra-style"]). The following symbolic style
 names are recognized:
 
@@ -678,7 +679,7 @@ The following @tech{style properties} are currently recognized:
        script alternative to @racket[content].}
 
   @item{@racket[body-id] structure --- For HTML uses the given
-        string as an @tt{id} attribute of the @tt{span} tag.}
+        string as an @tt{id} attribute of the @tt{<span>} tag.}
 
   @item{@racket['aux] --- Intended for use in titles, where the
         auxiliary part of the title can be omitted in hyperlinks. See,
