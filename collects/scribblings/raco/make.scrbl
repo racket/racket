@@ -311,7 +311,15 @@ returns, @racket[with-compile-output] renames @racket[tmp-path] to
 exception.  Breaks are managed so that the @racket[port] is reliably
 closed and the @racket[tmp-path] file is reliably deleted if there's a
 break. The result of @racket[proc] is the result of the
-@racket[with-compile-output] call.}
+@racket[with-compile-output] call.
+
+Windows prevents programs from overwriting files that are open. As a result,
+@racket[with-compile-output] calls to @racket[rename-file-or-directory] will
+fail if the destination file argument is an open file. Windows, however, does 
+allow you to rename an open file. To avoid overwriting open files
+windows, @racket[with-compile-output] creates a second temporary file
+@racket[tmp-path2], renames @racket[p] to @racket[tmp-path2], renames
+@racket[tmp-path] to @racket[p], and finally deletes @racket[tmp-path2].}
 
 @defparam[parallel-lock-client proc ([command (or/c 'lock 'unlock)] [zo-path bytes?] . -> . boolean?)]{
 

@@ -180,7 +180,13 @@
          (set! ok? #t)))
      (lambda ()
        (if ok?
-           (rename-file-or-directory tmp-path path #t)
+           (if (eq? (system-type) 'windows)
+              (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
+                (with-handlers ([exn:fail:filesystem? void])
+                  (rename-file-or-directory path tmp-path2 #t))
+                (rename-file-or-directory tmp-path path #t)
+                (try-delete-file tmp-path2))
+              (rename-file-or-directory tmp-path path #t))
            (try-delete-file tmp-path))))))
 
 (define (get-source-sha1 p)

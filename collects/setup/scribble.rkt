@@ -643,7 +643,7 @@
                    (let ([data (list (get-compiled-file-sha1 src-zo)
                                      (get-compiled-file-sha1 renderer-path)
                                      (get-file-sha1 css-path))])
-                     (with-output-to-file stamp-file #:exists 'truncate/replace (lambda () (write data)))
+                     (with-compile-output stamp-file (lambda (out tmp-filename) (write data out)))
                      (let ([m (max aux-time src-time)])
                        (unless (equal? m +inf.0)
                          (file-or-directory-modify-seconds stamp-file m)))))
