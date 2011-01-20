@@ -57,12 +57,17 @@
 
 (define SPI_GETWORKAREA            #x0030)
 
-(define (display-size xb yb ?)
-  (atomically
-   (let ([hdc (GetDC #f)])
-     (set-box! xb (GetDeviceCaps hdc HORZRES))
-     (set-box! yb (GetDeviceCaps hdc VERTRES))
-     (ReleaseDC #f hdc))))
+(define (display-size xb yb all?)
+  (if all?
+      (atomically
+       (let ([hdc (GetDC #f)])
+	 (set-box! xb (GetDeviceCaps hdc HORZRES))
+	 (set-box! yb (GetDeviceCaps hdc VERTRES))
+	 (ReleaseDC #f hdc)))
+      (let ([r (make-RECT 0 0 0 0)])
+	(SystemParametersInfoW SPI_GETWORKAREA 0 r 0)
+	(set-box! xb (- (RECT-right r) (RECT-left r)))
+	(set-box! yb (- (RECT-bottom r) (RECT-top r))))))
 
 (define (display-origin xb yb avoid-bars?)
   (if avoid-bars?
@@ -363,17 +368,35 @@
           [w (box 0)]
           [h (box 0)]
           [x (box 0)]
-          [y (box 0)])
+          [y (box 0)]
+	  [ww (box 0)]
+	  [wh (box 0)]
+	  [wx (box 0)]
+	  [wy (box 0)])
       (display-size sw sh #f)
+      (if wrt
+	  (begin
+	    (send wrt get-size ww wh)
+	    (set-box! wx (send wrt get-x))
+	    (set-box! wy (send wrt get-y)))
+	  (begin
+	    (set-box! ww (unbox sw))
+	    (set-box! wh (unbox sh))))
       (get-size w h)
       (MoveWindow hwnd
                   (if (or (eq? mode 'both)
                           (eq? mode 'horizontal))
-                      (quotient (- (unbox sw) (unbox w)) 2)
+                      (max 0 
+			   (min (- (unbox sw) (unbox w))
+				(+ (quotient (- (unbox ww) (unbox w)) 2) 
+				   (unbox wx))))
                       (get-x))
                   (if (or (eq? mode 'both)
                           (eq? mode 'vertical))
-                      (quotient (- (unbox sh) (unbox h)) 2)
+		      (max 0
+			   (min (- (unbox sh) (unbox h))
+				(+ (quotient (- (unbox wh) (unbox h)) 2) 
+				   (unbox wy))))
                       (get-x))
                   (unbox w)
                   (unbox h)
