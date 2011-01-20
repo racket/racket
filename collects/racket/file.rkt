@@ -205,17 +205,18 @@
   (define failure-thunk 
     (if lock-there 
         (lambda () (lock-there lock-file))
-        (case lock-style
-              [(file-lock) (error who
-                                  "~a ~a: ~e"
-                                  "some other process has a lock"
-                                  "on the preferences lock file"
-                                  lock-file)]
-              [else (error who
-                           "~a, ~a: ~e"
-                           "some other process has the preference-file lock"
-                           "as indicated by the existence of the lock file"
-                           lock-file)])))
+        (lambda ()
+          (case lock-style
+            [(file-lock) (error who
+                                "~a ~a: ~e"
+                                "some other process has a lock"
+                                "on the preferences lock file"
+                                lock-file)]
+            [else (error who
+                         "~a, ~a: ~e"
+                         "some other process has the preference-file lock"
+                         "as indicated by the existence of the lock file"
+                         lock-file)]))))
                                   
   (call-with-file-lock kind lock-file thunk failure-thunk #:lock-style lock-style))
 
