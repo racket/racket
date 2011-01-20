@@ -471,33 +471,33 @@
      (match expected
        [(tc-result1: (Vector: t))
         (tc-expr/check #'n (ret -Integer))
-        (tc-expr/check #'proc (ret (-NonnegativeFixnum . -> . t)))
+        (tc-expr/check #'proc (ret (-NonNegFixnum . -> . t)))
         expected]
        [(or #f (tc-result1: _))
         (tc/funapp #'op #'(n elt) (single-value #'op)
                    (list (single-value #'n)
                          (match (tc/funapp #'proc #'(1) ; valid nonnegative-fixnum
                                            (single-value #'proc)
-                                           (list (ret -NonnegativeFixnum))
+                                           (list (ret -NonNegFixnum))
                                            #f)
-                           [(tc-result1: t) (ret (-> -NonnegativeFixnum (generalize t)))]))
+                           [(tc-result1: t) (ret (-> -NonNegFixnum (generalize t)))]))
                    expected)]
        [_ (int-err "bad expected: ~a" expected)])]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 (ret -PositiveFixnum))
+     (add-typeof-expr #'arg2 (ret -PosFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
        (cond
-        [(subtype t -PositiveFixnum) (ret -NonnegativeFixnum)]
-        [(subtype t -NonnegativeFixnum) (ret -Fixnum)]
-        [(subtype t -ExactPositiveInteger) (ret -Nat)]
+        [(subtype t -PosFixnum) (ret -NonNegFixnum)]
+        [(subtype t -NonNegFixnum) (ret -Fixnum)]
+        [(subtype t -PosInt) (ret -Nat)]
         [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
     ;; idem for fx-
     [(#%plain-app (~and op (~or (~literal fx-) (~literal unsafe-fx-))) v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 (ret -PositiveFixnum))
+     (add-typeof-expr #'arg2 (ret -PosFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
        (cond
-        [(subtype t -ExactPositiveInteger) (ret -NonnegativeFixnum)]
+        [(subtype t -PosInt) (ret -NonNegFixnum)]
         [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)

@@ -55,7 +55,7 @@
 (define-syntax-class nonzero-fixnum-expr
   #:commit
   (pattern e:expr
-           #:when (or (subtypeof? #'e -PositiveFixnum) (subtypeof? #'e -NegativeFixnum))
+           #:when (or (subtypeof? #'e -PosFixnum) (subtypeof? #'e -NegFixnum))
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class fixnum-opt-expr

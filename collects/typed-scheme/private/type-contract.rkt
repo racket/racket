@@ -138,7 +138,7 @@
         [(== t:-Nat type-equal?) #'(flat-named-contract 'Natural (and/c exact-integer? (lambda (x) (>= x 0))))]
         [(== t:-NegInt type-equal?) #'(flat-named-contract 'Negative-Integer (and/c exact-integer? negative?))]
         [(== t:-NonPosInt type-equal?) #'(flat-named-contract 'Nonpositive-Integer (and/c exact-integer? (lambda (x) (<= x 0))))]
-        [(== t:-Integer type-equal?) #'(flat-named-contract 'Integer exact-integer?)]
+        [(== t:-Int type-equal?) #'(flat-named-contract 'Integer exact-integer?)]
         [(== t:-PosRat type-equal?) #'(flat-named-contract 'Positive-Rational (and/c exact-rational? positive?))]
         [(== t:-NonNegRat type-equal?) #'(flat-named-contract 'Nonnegative-Rational (and/c exact-rational? (lambda (x) (>= x 0))))]
         [(== t:-NegRat type-equal?) #'(flat-named-contract 'Negative-Rational (and/c exact-rational? negative?))]

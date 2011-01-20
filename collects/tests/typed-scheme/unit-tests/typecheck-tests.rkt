@@ -40,7 +40,7 @@
 (define N -Number)
 (define B -Boolean)
 (define Sym -Symbol)
-(define -Pos -ExactPositiveInteger)
+(define -Pos -PosInt)
 (define R -Real)
 
 (define (g) (run typecheck-tests))
@@ -159,8 +159,8 @@
         (tc-e/t -268435456 -NegFixnum)
         (tc-e/t 268435456 -PosFixnum)
         (tc-e/t -268435457 -NegFixnum)
-        (tc-e/t 1073741823 -PositiveFixnum)
-        (tc-e/t -1073741824 -NegativeFixnum)
+        (tc-e/t 1073741823 -PosFixnum)
+        (tc-e/t -1073741824 -NegFixnum)
         (tc-e/t 1073741824 -PosInt)
         (tc-e/t -1073741825 -NegInt)
         (tc-e/t "foo" -String)
@@ -861,7 +861,7 @@
   (test-suite
    "tc-literal tests"
    (tc-l 5 -PosByte)
-   (tc-l -5 -NegativeFixnum)
+   (tc-l -5 -NegFixnum)
    (tc-l 0 -Zero)
    (tc-l 0.0 -FlonumPosZero)
    (tc-l -0.0 -FlonumNegZero)

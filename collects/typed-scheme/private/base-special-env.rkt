@@ -69,18 +69,18 @@
   [(syntax-parse (local-expand #'(in-range 1) 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (cl->* (-PositiveFixnum -Fixnum [-Nat] . ->opt . (-seq -PositiveFixnum))
-          (-NonnegativeFixnum [-Fixnum -Nat] . ->opt . (-seq -NonnegativeFixnum))
-          (-Fixnum [-Fixnum -Integer] . ->opt . (-seq -Fixnum))
-          (-ExactPositiveInteger -Integer [-Nat] . ->opt . (-seq -ExactPositiveInteger))
-          (-Nat [-Integer -Nat] . ->opt . (-seq -Nat))
-          (-Integer [-Integer -Integer] . ->opt . (-seq -Integer)))]
+   (cl->* (-PosFixnum -Fixnum [-Nat] . ->opt . (-seq -PosFixnum))
+          (-NonNegFixnum [-Fixnum -Nat] . ->opt . (-seq -NonNegFixnum))
+          (-Fixnum [-Fixnum -Int] . ->opt . (-seq -Fixnum))
+          (-PosInt -Int [-Nat] . ->opt . (-seq -PosInt))
+          (-Nat [-Int -Nat] . ->opt . (-seq -Nat))
+          (-Int [-Int -Int] . ->opt . (-seq -Int)))]
   ;; in-naturals
   [(syntax-parse (local-expand #'(in-naturals) 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (cl->* (-> -ExactPositiveInteger (-seq -ExactPositiveInteger))
-          (-> -Integer (-seq -Nat)))]
+   (cl->* (-> -PosInt (-seq -PosInt))
+          (-> -Int (-seq -Nat)))]
   ;; in-list
   [(syntax-parse (local-expand #'(in-list '(1 2 3)) 'expression #f)
      [(i-n _ ...)
@@ -90,17 +90,17 @@
   [(syntax-parse (local-expand #'(in-vector (vector 1 2 3)) 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (-poly (a) (->opt (-vec a) [-Integer (-opt -Integer) -Integer] (-seq a)))]
+   (-poly (a) (->opt (-vec a) [-Int (-opt -Int) -Int] (-seq a)))]
   ;; in-string
   [(syntax-parse (local-expand #'(in-string "abc") 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (->opt -String [-Integer (-opt -Integer) -Integer] (-seq -Char))]
+   (->opt -String [-Int (-opt -Int) -Int] (-seq -Char))]
   ;; in-bytes
   [(syntax-parse (local-expand #'(in-bytes #"abc") 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (->opt -Bytes [-Integer (-opt -Integer) -Integer] (-seq -Byte))]
+   (->opt -Bytes [-Int (-opt -Int) -Int] (-seq -Byte))]
   ;; in-port
   [(syntax-parse (local-expand #'(in-port) 'expression #f)
      [(i-n _ ...)

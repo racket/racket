@@ -17,15 +17,7 @@
          -InexactRealPosZero -InexactRealNegZero -InexactRealZero -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
          -FloatComplex -SingleFlonumComplex -InexactComplex -Number
-         ;; for backward compatibility
-         (rename-out [-NonNegFlonum -NonnegativeFlonum]
-                     [-Rat -ExactRational]
-                     [-Int -Integer]
-                     [-PosInt -ExactPositiveInteger]
-                     [-PosFixnum -PositiveFixnum]
-                     [-NegFixnum -NegativeFixnum]
-                     [-NonNegFixnum -NonnegativeFixnum]
-                     [-Nat -ExactNonnegativeInteger]))
+         (rename-out (-Int -Integer)))
 
 
 ;; Numeric hierarchy

@@ -49,7 +49,7 @@
 [Negative-Exact-Rational -NegRat]
 [Nonnegative-Exact-Rational -NonNegRat]
 [Positive-Exact-Rational -PosRat]
-[Integer -Integer]
+[Integer -Int]
 [Nonpositive-Integer -NonPosInt]
 [Negative-Integer -NegInt]
 [Exact-Nonnegative-Integer -Nat] ; both of these are valid

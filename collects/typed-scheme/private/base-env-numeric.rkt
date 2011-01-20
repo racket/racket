@@ -3,20 +3,20 @@
 (begin
   (require
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base)
-   (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos]))
+   (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
   
-  (define all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -InexactReal -Real N))
+  (define all-num-types (list -Pos -Nat -Int -Rat -Flonum -InexactReal -Real N))
 
   (define binop 
     (lambda (t [r t])
       (t t . -> . r)))
   (define rounder 
-    (cl->* (-> -PositiveFixnum -PositiveFixnum)
-           (-> -NonnegativeFixnum -NonnegativeFixnum)
+    (cl->* (-> -PosFixnum -PosFixnum)
+           (-> -NonNegFixnum -NonNegFixnum)
            (-> -Fixnum -Fixnum)
            (-> -Pos -Pos)
            (-> -Nat -Nat)
-           (-> -ExactRational -Integer)
+           (-> -Rat -Int)
            (-> -NonNegFlonum -NonNegFlonum)
            (-> -NonPosFlonum -NonPosFlonum)
            (-> -Flonum -Flonum)
@@ -29,115 +29,115 @@
   (define fl-op (binop -Flonum))
   (define fl-unop (unop -Flonum))
   (define fl-rounder
-    (cl->* (-> -NonnegativeFlonum -NonnegativeFlonum)
+    (cl->* (-> -NonNegFlonum -NonNegFlonum)
            (-> -Flonum -Flonum)))
   
-  (define int-op (binop -Integer))
+  (define int-op (binop -Int))
   (define nat-op (binop -Nat))
   
-  (define fx-comp (binop -Integer B))
-  (define fx-op (cl->* (-Pos -Pos . -> . -PositiveFixnum)
-                                  (-Nat -Nat . -> . -NonnegativeFixnum)
-                                  (-Integer -Integer . -> . -Fixnum)))
-  (define fx-natop (cl->* (-Nat -Nat . -> . -NonnegativeFixnum)
-                                     (-Integer -Integer . -> . -Fixnum)))
-  (define fx-unop (-Integer . -> . -Fixnum))
+  (define fx-comp (binop -Int B))
+  (define fx-op (cl->* (-Pos -Pos . -> . -PosFixnum)
+                                  (-Nat -Nat . -> . -NonNegFixnum)
+                                  (-Int -Int . -> . -Fixnum)))
+  (define fx-natop (cl->* (-Nat -Nat . -> . -NonNegFixnum)
+                                     (-Int -Int . -> . -Fixnum)))
+  (define fx-unop (-Int . -> . -Fixnum))
 
   (define real-comp (->* (list R R) R B))
 
   ;; types for specific operations, to avoid repetition between safe and unsafe versions
   (define fx+-type
-    (cl->* (-Pos -Nat . -> . -PositiveFixnum)
-           (-Nat -Pos . -> . -PositiveFixnum)
-           (-Nat -Nat . -> . -NonnegativeFixnum)
-           (-Integer -Integer . -> . -Fixnum)))
+    (cl->* (-Pos -Nat . -> . -PosFixnum)
+           (-Nat -Pos . -> . -PosFixnum)
+           (-Nat -Nat . -> . -NonNegFixnum)
+           (-Int -Int . -> . -Fixnum)))
   (define fx--type
-    (-Integer -Integer . -> . -Fixnum))
+    (-Int -Int . -> . -Fixnum))
   (define fx=-type
     (cl->*
-     (-> -Integer (-val 0) B : (-FS (-filter (-val 0) 0) -top))
-     (-> (-val 0) -Integer B : (-FS (-filter (-val 0) 1) -top))
-     (-> -Integer -Pos B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -Pos -Integer B : (-FS (-filter -PositiveFixnum 1) -top))
-     (-> -Integer -Nat B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -Nat -Integer B : (-FS (-filter -NonnegativeFixnum 1) -top))
-     (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
-     (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
+     (-> -Int (-val 0) B : (-FS (-filter (-val 0) 0) -top))
+     (-> (-val 0) -Int B : (-FS (-filter (-val 0) 1) -top))
+     (-> -Int -Pos B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -Pos -Int B : (-FS (-filter -PosFixnum 1) -top))
+     (-> -Int -Nat B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -Nat -Int B : (-FS (-filter -NonNegFixnum 1) -top))
+     (-> -Int -NegFixnum B : (-FS (-filter -NegFixnum 0) -top))
+     (-> -NegFixnum -Int B : (-FS (-filter -NegFixnum 1) -top))
      fx-comp))
   (define fx<-type
     (cl->*
-     (-> -Integer (-val 0) B : (-FS (-filter -NegativeFixnum 0) (-filter -NonnegativeFixnum 0)))
-     (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
-     (-> -Nat -Integer B : (-FS (-filter -PositiveFixnum 1) -top))
+     (-> -Int (-val 0) B : (-FS (-filter -NegFixnum 0) (-filter -NonNegFixnum 0)))
+     (-> -Int -NegFixnum B : (-FS (-filter -NegFixnum 0) -top))
+     (-> -Nat -Int B : (-FS (-filter -PosFixnum 1) -top))
      fx-comp))
   (define fx>-type
     (cl->*
-     (-> -Integer (-val 0) B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
-     (-> -Integer -Nat B : (-FS (-filter -PositiveFixnum 0) -top))
+     (-> -Int (-val 0) B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -NegFixnum -Int B : (-FS (-filter -NegFixnum 1) -top))
+     (-> -Int -Nat B : (-FS (-filter -PosFixnum 0) -top))
      fx-comp))
   (define fx<=-type
     (cl->*
-     (-> -Integer (-val 0) B : (-FS -top (-filter -PositiveFixnum 0)))
-     (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
-     (-> -Pos -Integer B : (-FS (-filter -Pos 1) -top))
-     (-> -Nat -Integer B : (-FS (-filter -Nat 1) -top))
+     (-> -Int (-val 0) B : (-FS -top (-filter -PosFixnum 0)))
+     (-> -Int -NegFixnum B : (-FS (-filter -NegFixnum 0) -top))
+     (-> -Pos -Int B : (-FS (-filter -Pos 1) -top))
+     (-> -Nat -Int B : (-FS (-filter -Nat 1) -top))
      fx-comp))
   (define fx>=-type
     (cl->*
-     (-> -Integer (-val 0) B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
-     (-> -Integer -Pos B : (-FS (-filter -Pos 0) -top))
-     (-> -Integer -Nat B : (-FS (-filter -Nat 0) -top))
+     (-> -Int (-val 0) B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -NegFixnum -Int B : (-FS (-filter -NegFixnum 1) -top))
+     (-> -Int -Pos B : (-FS (-filter -Pos 0) -top))
+     (-> -Int -Nat B : (-FS (-filter -Nat 0) -top))
      fx-comp))
   (define fxmin-type
     (cl->*
-     (-> -NegativeFixnum -Integer -NegativeFixnum)
-     (-> -Integer -NegativeFixnum -NegativeFixnum)
-     (-> -Pos -Pos -PositiveFixnum)
-     (-> -Nat -Nat -NonnegativeFixnum)
-     (-> -Integer -Integer -Fixnum)))
+     (-> -NegFixnum -Int -NegFixnum)
+     (-> -Int -NegFixnum -NegFixnum)
+     (-> -Pos -Pos -PosFixnum)
+     (-> -Nat -Nat -NonNegFixnum)
+     (-> -Int -Int -Fixnum)))
   (define fxmax-type
     (cl->*
-     (-> -NegativeFixnum -NegativeFixnum -NegativeFixnum)
-     (-> -Pos -Integer -PositiveFixnum)
-     (-> -Integer -Pos -PositiveFixnum)
-     (-> -Nat -Integer -NonnegativeFixnum)
-     (-> -Integer -Nat -NonnegativeFixnum)
-     (-> -Integer -Integer -Fixnum)))
+     (-> -NegFixnum -NegFixnum -NegFixnum)
+     (-> -Pos -Int -PosFixnum)
+     (-> -Int -Pos -PosFixnum)
+     (-> -Nat -Int -NonNegFixnum)
+     (-> -Int -Nat -NonNegFixnum)
+     (-> -Int -Int -Fixnum)))
 
   (define fl+*-type
-    (cl->* (-NonnegativeFlonum -NonnegativeFlonum . -> . -NonnegativeFlonum)
+    (cl->* (-NonNegFlonum -NonNegFlonum . -> . -NonNegFlonum)
            (-Flonum -Flonum . -> . -Flonum)))
   (define fl=-type
     (cl->*
-     (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
-     (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS (-filter -NonNegFlonum 0) -top))
+     (-> -NonNegFlonum -Flonum B : (-FS (-filter -NonNegFlonum 1) -top))
      fl-comp))
   (define fl<-type
     (cl->*
-     (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
+     (-> -NonNegFlonum -Flonum B : (-FS (-filter -NonNegFlonum 1) -top))
      fl-comp))
   (define fl>-type
     (cl->*
-     (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS (-filter -NonNegFlonum 0) -top))
      fl-comp))
   (define flmin-type
-    (cl->* (-> -NonnegativeFlonum -NonnegativeFlonum -NonnegativeFlonum)
+    (cl->* (-> -NonNegFlonum -NonNegFlonum -NonNegFlonum)
            (-> -Flonum -Flonum -Flonum)))
   (define flmax-type
-    (cl->* (-> -NonnegativeFlonum -Flonum -NonnegativeFlonum)
-           (-> -Flonum -NonnegativeFlonum -NonnegativeFlonum)
+    (cl->* (-> -NonNegFlonum -Flonum -NonNegFlonum)
+           (-> -Flonum -NonNegFlonum -NonNegFlonum)
            (-> -Flonum -Flonum -Flonum)))
   )
 
 ;; numeric predicates
-[zero? (asym-pred N B (-FS (-filter (Un -NonnegativeFlonum -Zero) 0)
+[zero? (asym-pred N B (-FS (-filter (Un -NonNegFlonum -Zero) 0)
                            (-not-filter -Zero 0)))]
 [number? (make-pred-ty N)]
-[integer? (asym-pred Univ B (-FS (-filter (Un -Integer -Flonum) 0)
-                                 (-not-filter -Integer 0)))]
-[exact-integer? (make-pred-ty -Integer)]
+[integer? (asym-pred Univ B (-FS (-filter (Un -Int -Flonum) 0)
+                                 (-not-filter -Int 0)))]
+[exact-integer? (make-pred-ty -Int)]
 [real? (make-pred-ty -Real)]
 [flonum? (make-pred-ty -Flonum)]
 [single-flonum? (make-pred-ty -SingleFlonum)]
@@ -145,93 +145,93 @@
 [inexact-real? (make-pred-ty -InexactReal)]
 [complex? (make-pred-ty N)]
 [rational? (make-pred-ty -Real)]
-[exact? (asym-pred N B (-FS -top (-not-filter -ExactRational 0)))]
+[exact? (asym-pred N B (-FS -top (-not-filter -Rat 0)))]
 [inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -FloatComplex) 0)))]
 [fixnum? (make-pred-ty -Fixnum)]
-[positive? (cl->* (-> -Fixnum B : (-FS (-filter -PositiveFixnum 0) -top))
-                  (-> -Integer B : (-FS (-filter -ExactPositiveInteger 0) -top))
-                  (-> -Flonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
+[positive? (cl->* (-> -Fixnum B : (-FS (-filter -PosFixnum 0) -top))
+                  (-> -Int B : (-FS (-filter -PosInt 0) -top))
+                  (-> -Flonum B : (-FS (-filter -NonNegFlonum 0) -top))
                   (-> -Real B))]
-[negative? (cl->* (-> -Fixnum B : (-FS (-filter -NegativeFixnum 0) (-filter -NonnegativeFixnum 0)))
-                  (-> -Integer B : (-FS -top (-filter -Nat 0)))
-                  (-> -Flonum B : (-FS -top (-filter -NonnegativeFlonum 0)))
+[negative? (cl->* (-> -Fixnum B : (-FS (-filter -NegFixnum 0) (-filter -NonNegFixnum 0)))
+                  (-> -Int B : (-FS -top (-filter -Nat 0)))
+                  (-> -Flonum B : (-FS -top (-filter -NonNegFlonum 0)))
                   (-> -Real B))]
 [exact-positive-integer? (make-pred-ty -Pos)]
 [exact-nonnegative-integer? (make-pred-ty -Nat)]
 
-[odd? (-> -Integer B : (-FS -top (-filter (-val 0) 0)))]
-[even? (-> -Integer B)]
+[odd? (-> -Int B : (-FS -top (-filter (-val 0) 0)))]
+[even? (-> -Int B)]
 
-[modulo (cl->* (-Nat -NonnegativeFixnum . -> . -NonnegativeFixnum)
-               (-Integer -Fixnum . -> . -Fixnum)
+[modulo (cl->* (-Nat -NonNegFixnum . -> . -NonNegFixnum)
+               (-Int -Fixnum . -> . -Fixnum)
                (-Nat -Nat . -> . -Nat)
-               (-Integer -Integer . -> . -Integer))]
+               (-Int -Int . -> . -Int))]
 
 [=  (cl->*
-     (-> -Integer (-val 0) B : (-FS (-filter (-val 0) 0) -top))
-     (-> (-val 0) -Integer B : (-FS (-filter (-val 0) 1) -top))
-     (-> -Integer -PositiveFixnum B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -PositiveFixnum -Integer B : (-FS (-filter -PositiveFixnum 1) -top))
-     (-> -Integer -NonnegativeFixnum B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -NonnegativeFixnum -Integer B : (-FS (-filter -NonnegativeFixnum 1) -top))
-     (-> -Integer -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
-     (-> -NegativeFixnum -Integer B : (-FS (-filter -NegativeFixnum 1) -top))
-     (-> -Integer -Pos B : (-FS (-filter -Pos 0) -top))
-     (-> -Pos -Integer B : (-FS (-filter -Pos 1) -top))
-     (-> -Integer -Nat B : (-FS (-filter -Nat 0) -top))
-     (-> -Nat -Integer B : (-FS (-filter -Nat 1) -top))
+     (-> -Int (-val 0) B : (-FS (-filter (-val 0) 0) -top))
+     (-> (-val 0) -Int B : (-FS (-filter (-val 0) 1) -top))
+     (-> -Int -PosFixnum B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -PosFixnum -Int B : (-FS (-filter -PosFixnum 1) -top))
+     (-> -Int -NonNegFixnum B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -NonNegFixnum -Int B : (-FS (-filter -NonNegFixnum 1) -top))
+     (-> -Int -NegFixnum B : (-FS (-filter -NegFixnum 0) -top))
+     (-> -NegFixnum -Int B : (-FS (-filter -NegFixnum 1) -top))
+     (-> -Int -Pos B : (-FS (-filter -Pos 0) -top))
+     (-> -Pos -Int B : (-FS (-filter -Pos 1) -top))
+     (-> -Int -Nat B : (-FS (-filter -Nat 0) -top))
+     (-> -Nat -Int B : (-FS (-filter -Nat 1) -top))
      (->* (list N N) N B))]
 
 [>  (cl->*
-     (-> -Fixnum (-val 0) B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -Integer (-val 0) B : (-FS (-filter -Pos 0) -top))
-     (-> -NegativeFixnum -Fixnum B : (-FS (-filter -NegativeFixnum 1) -top))
-     (-> -Fixnum -NonnegativeFixnum B : (-FS (-filter -PositiveFixnum 1) -top))
+     (-> -Fixnum (-val 0) B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -Int (-val 0) B : (-FS (-filter -Pos 0) -top))
+     (-> -NegFixnum -Fixnum B : (-FS (-filter -NegFixnum 1) -top))
+     (-> -Fixnum -NonNegFixnum B : (-FS (-filter -PosFixnum 1) -top))
      (-> -Fixnum -Nat B : (-FS (-filter -Fixnum 1) -top))
-     (-> -Integer -Nat B : (-FS (-filter -ExactPositiveInteger 0) -top))
-     (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
-     (-> -NonnegativeFlonum -Flonum B : (-FS -top (-filter -NonnegativeFlonum 1)))
+     (-> -Int -Nat B : (-FS (-filter -PosInt 0) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS (-filter -NonNegFlonum 0) -top))
+     (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -NonNegFlonum 1)))
      real-comp)]
 [>= (cl->*
-     (-> -Fixnum (-val 0) B : (-FS (-filter -NonnegativeFixnum 0) (-filter -NegativeFixnum 0)))
-     (-> -Integer (-val 0) B : (-FS (-filter -ExactNonnegativeInteger 0) -top))
-     (-> -Fixnum -PositiveFixnum B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -Fixnum -NonnegativeFixnum B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -Fixnum -Pos B : (-FS (-filter -PositiveFixnum 1) -top))
-     (-> -Fixnum -Nat B : (-FS (-filter -NonnegativeFixnum 1) -top))
-     (-> -Integer -Pos B : (-FS (-filter -Pos 0) -top))
-     (-> -Integer -Nat B : (-FS (-filter -Nat 0) -top))
-     (-> -Flonum -NonnegativeFlonum B : (-FS (-filter -NonnegativeFlonum 0) -top))
-     (-> -NonnegativeFlonum -Flonum B : (-FS -top (-filter -NonnegativeFlonum 1)))
+     (-> -Fixnum (-val 0) B : (-FS (-filter -NonNegFixnum 0) (-filter -NegFixnum 0)))
+     (-> -Int (-val 0) B : (-FS (-filter -Nat 0) -top))
+     (-> -Fixnum -PosFixnum B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -Fixnum -NonNegFixnum B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -Fixnum -Pos B : (-FS (-filter -PosFixnum 1) -top))
+     (-> -Fixnum -Nat B : (-FS (-filter -NonNegFixnum 1) -top))
+     (-> -Int -Pos B : (-FS (-filter -Pos 0) -top))
+     (-> -Int -Nat B : (-FS (-filter -Nat 0) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS (-filter -NonNegFlonum 0) -top))
+     (-> -NonNegFlonum -Flonum B : (-FS -top (-filter -NonNegFlonum 1)))
      real-comp)]
 [<  (cl->*
-     (-> -Fixnum (-val 0) B : (-FS (-filter -NegativeFixnum 0) (-filter -NonnegativeFixnum 0)))
-     (-> -Integer (-val 0) B : (-FS -top (-filter -ExactNonnegativeInteger 0)))
-     (-> -NonnegativeFixnum -Fixnum B : (-FS (-filter -PositiveFixnum 1) -top))
-     (-> -Fixnum -NegativeFixnum B : (-FS (-filter -NegativeFixnum 0) -top))
-     (-> -Nat -Fixnum B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -Nat -Integer B : (-FS (-filter -Pos 1) -top))
-     (-> -Integer -Nat B : (-FS -top (-filter -Nat 0)))
-     (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
-     (-> -Flonum -NonnegativeFlonum B : (-FS -top (-filter -NonnegativeFlonum 0)))
+     (-> -Fixnum (-val 0) B : (-FS (-filter -NegFixnum 0) (-filter -NonNegFixnum 0)))
+     (-> -Int (-val 0) B : (-FS -top (-filter -Nat 0)))
+     (-> -NonNegFixnum -Fixnum B : (-FS (-filter -PosFixnum 1) -top))
+     (-> -Fixnum -NegFixnum B : (-FS (-filter -NegFixnum 0) -top))
+     (-> -Nat -Fixnum B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -Nat -Int B : (-FS (-filter -Pos 1) -top))
+     (-> -Int -Nat B : (-FS -top (-filter -Nat 0)))
+     (-> -NonNegFlonum -Flonum B : (-FS (-filter -NonNegFlonum 1) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -NonNegFlonum 0)))
      real-comp)]
 [<= (cl->*
-     (-> -Fixnum (-val 0) B : (-FS -top (-filter -PositiveFixnum 0)))
-     (-> -Integer (-val 0) B : (-FS -top (-filter -ExactPositiveInteger 0)))
-     (-> -PositiveFixnum -Fixnum B : (-FS (-filter -PositiveFixnum 1) -top))
-     (-> -NonnegativeFixnum -Fixnum B : (-FS (-filter -NonnegativeFixnum 1) -top))
-     (-> -Pos -Fixnum B : (-FS (-filter -PositiveFixnum 0) -top))
-     (-> -Nat -Fixnum B : (-FS (-filter -NonnegativeFixnum 0) -top))
-     (-> -Pos -Integer B : (-FS (-filter -Pos 1) -top))
-     (-> -Nat -Integer B : (-FS (-filter -Nat 1) -top))
-     (-> -NonnegativeFlonum -Flonum B : (-FS (-filter -NonnegativeFlonum 1) -top))
-     (-> -Flonum -NonnegativeFlonum B : (-FS -top (-filter -NonnegativeFlonum 0)))
+     (-> -Fixnum (-val 0) B : (-FS -top (-filter -PosFixnum 0)))
+     (-> -Int (-val 0) B : (-FS -top (-filter -PosInt 0)))
+     (-> -PosFixnum -Fixnum B : (-FS (-filter -PosFixnum 1) -top))
+     (-> -NonNegFixnum -Fixnum B : (-FS (-filter -NonNegFixnum 1) -top))
+     (-> -Pos -Fixnum B : (-FS (-filter -PosFixnum 0) -top))
+     (-> -Nat -Fixnum B : (-FS (-filter -NonNegFixnum 0) -top))
+     (-> -Pos -Int B : (-FS (-filter -Pos 1) -top))
+     (-> -Nat -Int B : (-FS (-filter -Nat 1) -top))
+     (-> -NonNegFlonum -Flonum B : (-FS (-filter -NonNegFlonum 1) -top))
+     (-> -Flonum -NonNegFlonum B : (-FS -top (-filter -NonNegFlonum 0)))
      real-comp)]
 
 
 [* (apply cl->*
-          (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -NonnegativeFlonum -Flonum)]) (->* (list) t t))
-                  (list (->* (list) (Un -Pos -NonnegativeFlonum) -NonnegativeFlonum))
+          (append (for/list ([t (list -Pos -Nat -Int -Rat -NonNegFlonum -Flonum)]) (->* (list) t t))
+                  (list (->* (list) (Un -Pos -NonNegFlonum) -NonNegFlonum))
                   (list (->* (list) (Un -Pos -Flonum) -Flonum))
                   (list (->* (list -Flonum) (Un -InexactReal -Flonum) -Flonum))
                   (list (->* (list -InexactReal -Flonum) (Un -InexactReal -Flonum) -Flonum))
@@ -244,10 +244,10 @@
                   (list (-> -Byte -Byte -Index))
                   (list (->* (list -Pos) -Nat -Pos))
                   (list (->* (list -Nat -Pos) -Nat -Pos))
-                  (for/list ([t (list -Nat -Integer -ExactRational -NonnegativeFlonum -Flonum)]) (->* (list) t t))
+                  (for/list ([t (list -Nat -Int -Rat -NonNegFlonum -Flonum)]) (->* (list) t t))
                   ;; special cases for promotion to inexact, not exhaustive
                   ;; valid for + and -, but not for * and /, since (* <float> 0) is exact 0 (i.e. not a float)
-                  (list (->* (list) (Un -Nat -NonnegativeFlonum) -NonnegativeFlonum))
+                  (list (->* (list) (Un -Nat -NonNegFlonum) -NonNegFlonum))
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list) -InexactReal -InexactReal))
@@ -258,7 +258,7 @@
                   (list (->* (list) N N))))]
 
 [- (apply cl->*
-          (append (for/list ([t (list -Integer -ExactRational -Flonum)])
+          (append (for/list ([t (list -Int -Rat -Flonum)])
                             (->* (list t) t t))
                   (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real -Flonum) -Real -Flonum))
@@ -269,8 +269,8 @@
                   (list (->* (list N -FloatComplex) N -FloatComplex))
                   (list (->* (list N) N N))))]
 [/ (apply cl->*
-          (append (list (->* (list -Integer) -Integer -ExactRational))
-                  (for/list ([t (list -ExactRational -Flonum)])
+          (append (list (->* (list -Int) -Int -Rat))
+                  (for/list ([t (list -Rat -Flonum)])
                             (->* (list t) t t))
                   ;; only exact 0 as first argument can cause the result of a division involving inexacts to be exact
                   (list (->* (list -Flonum) -Real -Flonum))
@@ -281,28 +281,28 @@
                   (list (->* (list -FloatComplex) -FloatComplex -FloatComplex))
                   (list (->* (list N) N N))))]
 
-[max (cl->* (->* (list -PositiveFixnum) -Fixnum -PositiveFixnum)
-            (->* (list -NonnegativeFixnum) -Fixnum -NonnegativeFixnum)
-            (->* (list -NegativeFixnum) -NegativeFixnum -NegativeFixnum)
+[max (cl->* (->* (list -PosFixnum) -Fixnum -PosFixnum)
+            (->* (list -NonNegFixnum) -Fixnum -NonNegFixnum)
+            (->* (list -NegFixnum) -NegFixnum -NegFixnum)
             (->* (list -Fixnum) -Fixnum -Fixnum)
-            (->* (list -Pos) -Integer -Pos)
-            (->* (list -Nat) -Integer -Nat)
-            (->* (list -Integer) -Integer -Integer)
-            (->* (list -ExactRational) -ExactRational -ExactRational)
-            (->* (list -NonnegativeFlonum) -Flonum -NonnegativeFlonum)
+            (->* (list -Pos) -Int -Pos)
+            (->* (list -Nat) -Int -Nat)
+            (->* (list -Int) -Int -Int)
+            (->* (list -Rat) -Rat -Rat)
+            (->* (list -NonNegFlonum) -Flonum -NonNegFlonum)
             (->* (list -Flonum) -Flonum -Flonum)
             (->* (list -InexactReal) -InexactReal -InexactReal)
             (->* (list -Real) -Real -Real))]
-[min (cl->* (->* (list -PositiveFixnum) -PositiveFixnum -PositiveFixnum)
-            (->* (list -NonnegativeFixnum) -NonnegativeFixnum -NonnegativeFixnum)
-            (->* (list -NegativeFixnum) -Fixnum -NegativeFixnum)
-            (->* (list -Fixnum) -NegativeFixnum -NegativeFixnum)
+[min (cl->* (->* (list -PosFixnum) -PosFixnum -PosFixnum)
+            (->* (list -NonNegFixnum) -NonNegFixnum -NonNegFixnum)
+            (->* (list -NegFixnum) -Fixnum -NegFixnum)
+            (->* (list -Fixnum) -NegFixnum -NegFixnum)
             (->* (list -Fixnum) -Fixnum -Fixnum)
             (->* (list -Pos) -Pos -Pos)
             (->* (list -Nat) -Nat -Nat)
-            (->* (list -Integer) -Integer -Integer)
-            (->* (list -ExactRational) -ExactRational -ExactRational)
-            (->* (list -NonnegativeFlonum) -NonnegativeFlonum -NonnegativeFlonum)
+            (->* (list -Int) -Int -Int)
+            (->* (list -Rat) -Rat -Rat)
+            (->* (list -NonNegFlonum) -NonNegFlonum -NonNegFlonum)
             (->* (list -Flonum) -Flonum -Flonum)
             (->* (list -InexactReal) -InexactReal -InexactReal)
             (->* (list -Real) -Real -Real))]
@@ -310,9 +310,9 @@
 
 [add1 (cl->* (-> -Pos -Pos)
              (-> -Nat -Pos)
-             (-> -Integer -Integer)
-             (-> -ExactRational -ExactRational)
-             (-> -NonnegativeFlonum -NonnegativeFlonum)
+             (-> -Int -Int)
+             (-> -Rat -Rat)
+             (-> -NonNegFlonum -NonNegFlonum)
              (-> -Flonum -Flonum)
              (-> -InexactReal -InexactReal)
              (-> -Real -Real)
@@ -320,61 +320,61 @@
              (-> N N))]
 
 [sub1 (cl->* (-> -Pos -Nat)
-             (-> -Integer -Integer)
-             (-> -ExactRational -ExactRational)
+             (-> -Int -Int)
+             (-> -Rat -Rat)
              (-> -Flonum -Flonum)
              (-> -InexactReal -InexactReal)
              (-> -Real -Real)
              (-> -FloatComplex -FloatComplex)
              (-> N N))]
 
-[quotient (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
+[quotient (cl->* (-NonNegFixnum -NonNegFixnum . -> . -NonNegFixnum)
                  (-Fixnum -Fixnum . -> . -Fixnum)
                  (-Nat -Nat . -> . -Nat)
-                 (-Integer -Integer . -> . -Integer))]
-[remainder (cl->* (-Nat -NonnegativeFixnum . -> . -NonnegativeFixnum)
-                  (-Integer -Fixnum . -> . -Fixnum)
+                 (-Int -Int . -> . -Int))]
+[remainder (cl->* (-Nat -NonNegFixnum . -> . -NonNegFixnum)
+                  (-Int -Fixnum . -> . -Fixnum)
                   (-Nat -Nat . -> . -Nat)
-                  (-Integer -Integer . -> . -Integer))]
-[quotient/remainder (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . (-values (list -NonnegativeFixnum -NonnegativeFixnum)))
-                           (-Nat -NonnegativeFixnum . -> . (-values (list -Nat -NonnegativeFixnum)))
+                  (-Int -Int . -> . -Int))]
+[quotient/remainder (cl->* (-NonNegFixnum -NonNegFixnum . -> . (-values (list -NonNegFixnum -NonNegFixnum)))
+                           (-Nat -NonNegFixnum . -> . (-values (list -Nat -NonNegFixnum)))
                            (-Fixnum -Fixnum . -> . (-values (list -Fixnum -Fixnum)))
-                           (-Integer -Fixnum . -> . (-values (list -Integer -Fixnum)))
+                           (-Int -Fixnum . -> . (-values (list -Int -Fixnum)))
                            (-Nat -Nat . -> . (-values (list -Nat -Nat)))
-                           (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
+                           (-Int -Int . -> . (-values (list -Int -Int))))]
 
-[arithmetic-shift (cl->* ((-val 0) (Un -NegativeFixnum (-val 0)) . -> . (-val 0))
-                         (-NonnegativeFixnum (Un -NegativeFixnum (-val 0)) . -> . -NonnegativeFixnum)
-                         (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
-                         (-Nat -Integer . -> . -Nat)
-                         (-Integer -Integer . -> . -Integer))]
+[arithmetic-shift (cl->* ((-val 0) (Un -NegFixnum (-val 0)) . -> . (-val 0))
+                         (-NonNegFixnum (Un -NegFixnum (-val 0)) . -> . -NonNegFixnum)
+                         (-Fixnum (Un -NegFixnum (-val 0)) . -> . -Fixnum)
+                         (-Nat -Int . -> . -Nat)
+                         (-Int -Int . -> . -Int))]
 
-[bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
-                    ((list -Integer) -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+[bitwise-and (cl->* (null -NonNegFixnum . ->* . -NonNegFixnum)
+                    ((list -Int) -NonNegFixnum . ->* . -NonNegFixnum)
                     (null -Fixnum . ->* . -Fixnum)
-                    ((list -Integer) -Fixnum . ->* . -Fixnum)
+                    ((list -Int) -Fixnum . ->* . -Fixnum)
                     (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-ior (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    (null -Int . ->* . -Int))]
+[bitwise-ior (cl->* (null -NonNegFixnum . ->* . -NonNegFixnum)
                     (null -Fixnum . ->* . -Fixnum)
                     (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
+                    (null -Int . ->* . -Int))]
 [bitwise-not (cl->* (null -Fixnum . ->* . -Fixnum)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-xor (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    (null -Int . ->* . -Int))]
+[bitwise-xor (cl->* (null -NonNegFixnum . ->* . -NonNegFixnum)
                     (null -Fixnum . ->* . -Fixnum)
                     (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-bit-set? (-> -Integer -Integer B)]
-[bitwise-bit-field (-> -Integer -Integer -Integer -Integer)]
-[integer-length (-> -Integer -NonnegativeFixnum)]
+                    (null -Int . ->* . -Int))]
+[bitwise-bit-set? (-> -Int -Int B)]
+[bitwise-bit-field (-> -Int -Int -Int -Int)]
+[integer-length (-> -Int -NonNegFixnum)]
 
-[abs (cl->* (-PositiveFixnum . -> . -PositiveFixnum)
-            (-Fixnum . -> . -NonnegativeFixnum)
+[abs (cl->* (-PosFixnum . -> . -PosFixnum)
+            (-Fixnum . -> . -NonNegFixnum)
             (-Pos . -> . -Pos)
-            (-Integer . -> . -Nat)
-            (-ExactRational . -> . -ExactRational)
-            (-Flonum . -> . -NonnegativeFlonum)
+            (-Int . -> . -Nat)
+            (-Rat . -> . -Rat)
+            (-Flonum . -> . -NonNegFlonum)
             (-InexactReal . -> . -InexactReal)
             (-Real . -> . -Real))]
 
@@ -385,11 +385,11 @@
                  (-Real . -> . -Flonum)
                  (N . -> . -FloatComplex))]
 [inexact->exact (cl->*
-                 (-Real . -> . -ExactRational)
+                 (-Real . -> . -Rat)
                  (N . -> . N))]
 [fl->exact-integer (cl->*
-                    (-NonnegativeFlonum . -> . -Nat)
-                    (-Flonum . -> . -Integer))]
+                    (-NonNegFlonum . -> . -Nat)
+                    (-Flonum . -> . -Int))]
 [real->single-flonum (cl->* (-PosReal . -> . -PosSingleFlonum)
                             (-NegReal . -> . -NegSingleFlonum)
                             (-RealZero . -> . -SingleFlonumZero)
@@ -419,30 +419,30 @@
                   (N . -> . -Real))]
 [angle     (cl->* (-FloatComplex . -> . -Flonum)
                   (N . -> . -Real))]
-[numerator   (cl->* (-ExactRational . -> . -Integer)
+[numerator   (cl->* (-Rat . -> . -Int)
                     (-Real . -> . -Real))]
-[denominator (cl->* (-ExactRational . -> . -Integer)
+[denominator (cl->* (-Rat . -> . -Int)
                     (-Real . -> . -Real))]
-[rationalize (cl->* (-ExactRational -ExactRational . -> . -ExactRational)
+[rationalize (cl->* (-Rat -Rat . -> . -Rat)
                     (-Flonum -Flonum . -> . -Flonum)
                     (-InexactReal -InexactReal . -> . -InexactReal)
                     (-Real -Real . -> . -Real))]
 [expt (cl->* (-Nat -Nat . -> . -Nat)
-             (-Integer -Nat . -> . -Integer)
-             (-Integer -Integer . -> . -ExactRational)
-             (-Real -Integer . -> . -Real)
+             (-Int -Nat . -> . -Int)
+             (-Int -Int . -> . -Rat)
+             (-Real -Int . -> . -Real)
              (-FloatComplex -FloatComplex . -> . -FloatComplex)
              (N N . -> . N))]
 [sqrt (cl->*
        (-Nat . -> . -Real)
-       (-NonnegativeFlonum . -> . -NonnegativeFlonum)
+       (-NonNegFlonum . -> . -NonNegFlonum)
        (-FloatComplex . -> . -FloatComplex)
        (N . -> . N))]
 [integer-sqrt (cl->*
                (-Zero . -> . -Zero)
-               (-NonnegativeFixnum . -> . -NonnegativeFixnum)
+               (-NonNegFixnum . -> . -NonNegFixnum)
                (-Nat . -> . -Nat)
-               (-NonnegativeFlonum . -> . -NonnegativeFlonum)
+               (-NonNegFlonum . -> . -NonNegFlonum)
                (-Real . -> . N))]
 [log (cl->*
       (-Pos . -> . -Real)
@@ -459,24 +459,24 @@
 [acos (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
 [asin (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N))]
 [atan (cl->* (-Flonum . -> . -Flonum) (-InexactReal . -> . -InexactReal) (-Real . -> . -Real) (-FloatComplex . -> . -FloatComplex) (N . -> . N) (-Real -Real . -> . N))]
-[gcd  (cl->* (null -Fixnum . ->* . -Fixnum) (null -Integer . ->* . -Integer))]
-[lcm  (null -Integer . ->* . -Integer)]
+[gcd  (cl->* (null -Fixnum . ->* . -Fixnum) (null -Int . ->* . -Int))]
+[lcm  (null -Int . ->* . -Int)]
 
 ;; scheme/math
 
 [sgn (cl->* (-Zero . -> . -Zero)
-            (-ExactPositiveInteger . -> . -PositiveFixnum)
-            (-ExactNonnegativeInteger . -> . -NonnegativeFixnum)
-            (-ExactRational . -> . -Fixnum)
+            (-PosInt . -> . -PosFixnum)
+            (-Nat . -> . -NonNegFixnum)
+            (-Rat . -> . -Fixnum)
             (-Flonum . -> . -Flonum)
             (-InexactReal . -> . -InexactReal)
             (-Real . -> . -Real))]
 
-[pi -NonnegativeFlonum]
+[pi -NonNegFlonum]
 [sqr (cl->* (-> -Pos -Pos)
-            (-> -Integer -Nat)
-            (-> -ExactRational -ExactRational)
-            (-> -Flonum -NonnegativeFlonum)
+            (-> -Int -Nat)
+            (-> -Rat -Rat)
+            (-> -Flonum -NonNegFlonum)
             (-> -InexactReal -InexactReal)
             (-> -Real -Real)
             (-> -FloatComplex -FloatComplex)
@@ -491,7 +491,7 @@
              (N . -> . N))]
 
 ;; unsafe numeric ops
-[unsafe-flabs (-> -Flonum -NonnegativeFlonum)]
+[unsafe-flabs (-> -Flonum -NonNegFlonum)]
 [unsafe-fl+ fl+*-type]
 [unsafe-fl- fl-op]
 [unsafe-fl* fl+*-type]
@@ -516,7 +516,7 @@
 [unsafe-fllog fl-unop]
 [unsafe-flexp fl-rounder]
 [unsafe-flsqrt fl-rounder]
-[unsafe-fx->fl (cl->* (-Nat . -> . -NonnegativeFlonum) (-Integer . -> . -Flonum))]
+[unsafe-fx->fl (cl->* (-Nat . -> . -NonNegFlonum) (-Int . -> . -Flonum))]
 [unsafe-make-flrectangular (-Flonum -Flonum . -> . -FloatComplex)]
 [unsafe-flreal-part (-FloatComplex . -> . -Flonum)]
 [unsafe-flimag-part (-FloatComplex . -> . -Flonum)]
@@ -527,7 +527,7 @@
 [unsafe-fxquotient fx-natop]
 [unsafe-fxremainder fx-natop]
 [unsafe-fxmodulo fx-natop]
-[unsafe-fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
+[unsafe-fxabs (-Int . -> . (Un -PosFixnum (-val 0)))]
 
 [unsafe-fxand fx-op]
 [unsafe-fxior fx-op]
@@ -552,7 +552,7 @@
 [fxquotient fx-natop]
 [fxremainder fx-natop]
 [fxmodulo fx-natop]
-[fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
+[fxabs (-Int . -> . (Un -PosFixnum (-val 0)))]
 
 [fxand fx-op]
 [fxior fx-op]
@@ -571,7 +571,7 @@
 
 
 ;; safe flonum ops
-[flabs (-> -Flonum -NonnegativeFlonum)]
+[flabs (-> -Flonum -NonNegFlonum)]
 [fl+ fl+*-type]
 [fl- fl-op]
 [fl* fl+*-type]
@@ -596,7 +596,7 @@
 [fllog fl-unop]
 [flexp fl-unop]
 [flsqrt fl-unop]
-[->fl (-Integer . -> . -Flonum)]
+[->fl (-Int . -> . -Flonum)]
 [make-flrectangular (-Flonum -Flonum . -> . -FloatComplex)]
 [flreal-part (-FloatComplex . -> . -Flonum)]
 [flimag-part (-FloatComplex . -> . -Flonum)]
@@ -605,14 +605,14 @@
 
 [flvector? (make-pred-ty -FlVector)]
 [flvector (->* (list) -Flonum -FlVector)]
-[make-flvector (cl->* (-> -Integer -FlVector)
-                      (-> -Integer -Flonum -FlVector))]
-[flvector-length (-> -FlVector -NonnegativeFixnum)]
-[flvector-ref (-> -FlVector -Integer -Flonum)]
-[flvector-set! (-> -FlVector -Integer -Flonum -Void)]
+[make-flvector (cl->* (-> -Int -FlVector)
+                      (-> -Int -Flonum -FlVector))]
+[flvector-length (-> -FlVector -NonNegFixnum)]
+[flvector-ref (-> -FlVector -Int -Flonum)]
+[flvector-set! (-> -FlVector -Int -Flonum -Void)]
 
 ;; unsafe flvector ops
 
-[unsafe-flvector-length (-> -FlVector -NonnegativeFixnum)]
-[unsafe-flvector-ref (-> -FlVector -Integer -Flonum)]
-[unsafe-flvector-set! (-> -FlVector -Integer -Flonum -Void)]
+[unsafe-flvector-length (-> -FlVector -NonNegFixnum)]
+[unsafe-flvector-ref (-> -FlVector -Int -Flonum)]
+[unsafe-flvector-set! (-> -FlVector -Int -Flonum -Void)]
