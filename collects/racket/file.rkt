@@ -293,7 +293,7 @@
                       (lambda ()
                         (if use-lock? 
                             (call-with-preference-file-lock
-                             'get-preferences
+                             'get-preference
                              'shared
                              (lambda ()
                                (make-lock-file-name pref-file))
