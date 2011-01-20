@@ -221,7 +221,8 @@ The class that implements the dialog provides a @scheme[get-message]
  @scheme[get-top-level-windows] function.)
 
 The @racket[message-box] function can be called int a thread other
- than the current eventspace's handler thread, in which case the
+ than the handler thread of the relevant eventspace (i.e., the eventspace of
+ @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
  current thread blocks while the dialog runs on the handler thread.}
 
 @defproc[(message-box/custom [title label-string?]
@@ -305,7 +306,8 @@ The class that implements the dialog provides a @scheme[get-message]
 @scheme[get-top-level-windows] function.)
 
 The @racket[message-box/custom] function can be called int a thread
- other than the current eventspace's handler thread, in which case the
+ other than the handler thread of the relevant eventspace (i.e., the eventspace of
+ @racket[parent], or the current eventspace if @racket[parent] is @racket[#f]), in which case the
  current thread blocks while the dialog runs on the handler thread.}
 
 @defproc[(message+check-box [title label-string?]

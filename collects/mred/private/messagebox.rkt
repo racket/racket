@@ -46,15 +46,19 @@
                    who title message
                    button1 button2 button3
                    parent style close-result
-                   check? two-results? check-message))])
-        (if (eq? (current-thread) (wx:eventspace-handler-thread (wx:current-eventspace)))
+                   check? two-results? check-message))]
+	    [es (if parent
+		    (send parent get-eventspace)
+		    (wx:current-eventspace))])
+        (if (eq? (current-thread) (wx:eventspace-handler-thread es))
             ;; In the right thread:
             (go)
             ;; Not in the right thread:
             (let ([ch (make-channel)])
-              (wx:queue-callback
-               (lambda ()
-                 (channel-put ch (call-with-values go list))))
+	      (parameterize ([wx:current-eventspace es])
+                (wx:queue-callback
+                 (lambda ()
+                   (channel-put ch (call-with-values go list)))))
               (apply values (channel-get ch)))))))
 
   (define create-message-box/custom
