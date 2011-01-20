@@ -469,20 +469,24 @@
 
     (define/override (center dir wrt)
       (let ([f (tell #:type _NSRect cocoa frame)]
-            [s (tell #:type _NSRect (tell cocoa screen) frame)])
+            [w (if wrt
+                   (tell #:type _NSRect (send wrt get-cocoa) frame)
+                   (tell #:type _NSRect (tell cocoa screen) frame))])
         (tellv cocoa setFrame: 
                #:type _NSRect (make-NSRect (make-NSPoint 
                                             (if (or (eq? dir 'both)
                                                     (eq? dir 'horizontal))
-                                                (quotient (- (NSSize-width (NSRect-size s))
-                                                             (NSSize-width (NSRect-size f)))
-                                                          2)
+                                                (+ (quotient (- (NSSize-width (NSRect-size w))
+                                                                (NSSize-width (NSRect-size f)))
+                                                             2)
+                                                   (NSPoint-x (NSRect-origin w)))
                                                 (NSPoint-x (NSRect-origin f)))
                                             (if (or (eq? dir 'both)
                                                     (eq? dir 'vertical))
-                                                (quotient (- (NSSize-height (NSRect-size s))
-                                                             (NSSize-height (NSRect-size f)))
-                                                          2)
+                                                (+ (quotient (- (NSSize-height (NSRect-size w))
+                                                                (NSSize-height (NSRect-size f)))
+                                                             2)
+                                                   (NSPoint-y (NSRect-origin w)))
                                                 (NSPoint-x (NSRect-origin f))))
                                            (NSRect-size f))
                display: #:type _BOOL #t)))
