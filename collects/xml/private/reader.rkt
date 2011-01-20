@@ -26,21 +26,19 @@
                   [(misc0 start) (read-misc in pos)])
       (make-document (make-prolog misc0 #f empty)
                      (read-xml-element-helper pos in start)
-                     (let ([loc-before (pos)])
-                       (let-values ([(misc1 end-of-file) (read-misc in pos)])
-                         (unless (eof-object? end-of-file)
-                           (let ([loc-after (pos)])
-                             (parse-error (list
-                                           (make-srcloc
-                                            (object-name in)
-                                            #f
-                                            #f
-                                            (location-offset loc-before)
-                                            (- (location-offset loc-after)
-                                               (location-offset loc-before))))
-                                          "extra stuff at end of document ~e"
-                                          end-of-file)))
-                         misc1))))))
+                     (let-values ([(misc1 end-of-file) (read-misc in pos)])
+                       (unless (EOF? end-of-file)
+                         (parse-error (list
+                                       (make-srcloc
+                                        (object-name in)
+                                        #f
+                                        #f
+                                        (location-offset (source-start end-of-file))
+                                        (- (location-offset (source-stop end-of-file))
+                                           (location-offset (source-start end-of-file)))))
+                                      "extra stuff at end of document ~e"
+                                      end-of-file))
+                       misc1)))))
 
 ;; read-xml/element : [Input-port] -> Element
 (define read-xml/element
@@ -54,15 +52,26 @@
   (cond
     [(start-tag? start) (read-element start in pos)]
     [(element? start) start]
-    [else (parse-error (list
-                        (make-srcloc
-                         (object-name in)
-                         #f
-                         #f
-                         1
-                         (- (location-offset (pos)) 1)))
-                       "expected root element - received ~e"
-                       (if (pcdata? start) (pcdata-string start) start))]))
+    [else 
+     (parse-error
+      (list
+       (make-srcloc
+        (object-name in)
+        #f
+        #f
+        ; XXX Some data structures should really be changed to be sources
+        (if (source? start)
+            (location-offset (source-start start))
+            #f)
+        (if (source? start)
+            (- (location-offset (source-stop start))
+               (location-offset (source-start start)))
+            #f)))
+      "expected root element - received ~e"
+      (cond
+        [(pcdata? start) (pcdata-string start)]
+        [(EOF? start) eof]
+        [else start]))]))
 
 ;; read-misc : Input-port (-> Location) -> (listof Misc) Token
 (define (read-misc in pos)
@@ -92,7 +101,7 @@
                              body))])
       (let ([x (lex in pos)])
         (cond
-          [(eof-object? x)
+          [(EOF? x)
            (parse-error (list
                          (make-srcloc
                           (object-name in)
@@ -159,11 +168,13 @@
     [(apos) "'"]
     [else #f]))
 
+(define-struct (EOF source) ())
+
 ;; lex : Input-port (-> Location) -> (U Token special)
 (define (lex in pos)
   (let ([c (peek-char-or-special in)])
     (cond
-      [(eof-object? c) c]
+      [(eof-object? c) (EOF (pos) (pos))]
       [(eq? c #\&) (lex-entity in pos)]
       [(eq? c #\<) (lex-tag-cdata-pi-comment in pos)]
       [(not (char? c)) (read-char-or-special in)]
