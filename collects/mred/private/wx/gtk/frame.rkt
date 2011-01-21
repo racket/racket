@@ -51,7 +51,7 @@
 (define-gtk gtk_window_set_gravity (_fun _GtkWindow _int -> _void))
 (define-gtk gtk_window_set_icon_list (_fun _GtkWindow _GList -> _void))
 (define-gtk gtk_window_fullscreen (_fun _GtkWindow -> _void))
-(define-gtk gtk_window_get_focus (_fun _GtkWindow -> _GtkWidget))
+(define-gtk gtk_window_get_focus (_fun _GtkWindow -> (_or-null _GtkWidget)))
 
 (define-gtk gtk_window_resize (_fun _GtkWidget _int _int -> _void))
 
