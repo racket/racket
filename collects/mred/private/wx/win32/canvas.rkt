@@ -228,6 +228,13 @@
                  (get-virtual-v-pos)
                  0)))
 
+     (define/override (show-children)
+       (when (dc . is-a? . dc<%>)
+         ;; if the canvas was never shown, then it has never
+         ;; been refreshed --- but it may have been drawn
+         ;; outside `on-paint', so force a refresh
+         (reset-dc)))
+
      (define/override (get-client-hwnd)
        canvas-hwnd)
 

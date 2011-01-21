@@ -177,15 +177,29 @@
 
   (define/override (show on?)
     (let ([es (get-eventspace)])
-      (when (and on?
-		 (eventspace-shutdown? es))
-	(error (string->symbol
-		(format "show method in ~a"
-			(if (is-dialog?)
-			    'dialog%
-			    'frame%)))
-	       "eventspace has been shutdown")))
-    (super show on?))
+      (when on?
+        (when (eventspace-shutdown? es)
+          (error (string->symbol
+                  (format "show method in ~a"
+                          (if (is-dialog?)
+                              'dialog%
+                              'frame%)))
+                 "eventspace has been shutdown"))
+        (when saved-child
+          (if (eq? (current-thread) (eventspace-handler-thread es))
+              (do-paint-children)
+              (let ([s (make-semaphore)])
+                (queue-callback (lambda ()
+                                  (do-paint-children)
+                                  (semaphore-post s)))
+                (sync/timeout 1 s))))))
+    ;; calling `direct-show' instead of `show' avoids
+    ;;  calling `show-children':
+    (atomically (direct-show on?)))
+
+  (define/private (do-paint-children)
+    (when saved-child
+      (send saved-child paint-children)))
 
   (define/override (direct-show on?)
     ;; atomic mode

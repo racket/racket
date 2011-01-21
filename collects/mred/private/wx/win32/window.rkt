@@ -245,6 +245,7 @@
   (define/public (control-scrolled) #f)
 
   (define/public (show on?)
+    (when on? (show-children))
     (atomically (direct-show on?)))
 
   (define shown? #f)
@@ -294,8 +295,6 @@
 
   (define/public (is-shown?)
     shown?)
-
-  (define/public (paint-children) (void))
 
   (define/public (get-x)
     (let ([r (GetWindowRect hwnd)]
@@ -484,6 +483,9 @@
   (define/public (register-child-in-parent on?)
     (when parent
       (send parent register-child this on?)))
+
+  (define/public (show-children) (void))
+  (define/public (paint-children) (void))
 
   (define/public (get-top-frame)
     (send parent get-top-frame))

@@ -70,6 +70,13 @@
             #t)
           #f))
 
+    (define/override (show-children)
+      (for ([c (in-list children)])
+        (send c show-children)))
+    (define/override (paint-children)
+      (for ([c (in-list children)])
+        (send c show-children)))
+
     (define/override (wants-mouse-capture? control-hwnd)
       (ptr-equal? (get-client-hwnd) control-hwnd))
 
