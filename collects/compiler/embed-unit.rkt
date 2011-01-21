@@ -811,6 +811,16 @@
                   p2
                   path)))]
        [else path]))
+
+    (define (path-extra-suffix p sfx)
+      ;; Library names may have a version number preceded
+      ;; by a ".", which looks like a suffix, so add the
+      ;; shared-library suffix using plain-old bytes append:
+      (let-values ([(base name dir?) (split-path p)])
+        (let ([name (bytes->path (bytes-append (path->bytes name) sfx))])
+          (if (path? base)
+              (build-path base name)
+              name))))
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
@@ -946,8 +956,8 @@
                                                                                (eq? 'so (car p)))
                                                                           (let ([fs (list
                                                                                      (cadr p)
-                                                                                     (path-replace-suffix (cadr p) 
-                                                                                                          (system-type 'so-suffix)))])
+                                                                                     (path-extra-suffix (cadr p) 
+                                                                                                        (system-type 'so-suffix)))])
                                                                             (ormap (lambda (f)
                                                                                      (ormap (lambda (p)
                                                                                               (let ([p (build-path p f)])
