@@ -1395,7 +1395,7 @@
                     (loop (list (syntax-source stx)
                                 (syntax-position stx)
                                 (syntax-span stx))))))))
-          (define to-be-renamed (sort (hash-map all-stxs (λ (k v) k)) > #:key syntax-position))
+          (define to-be-renamed (hash-map all-stxs (λ (k v) k)))
           (define do-renaming?
             (or (not (name-duplication? to-be-renamed id-sets new-sym))
                 (equal?
@@ -1412,22 +1412,30 @@
           (when do-renaming?
             (unless (null? to-be-renamed)
               (let ([txts (list defs-text)])
+                (define positions-to-rename 
+                  (remove-duplicates
+                   (sort (map (λ (stx) (list (find-source-editor/defs stx defs-text)
+                                             (syntax-position stx)
+                                             (syntax-span stx)))
+                              to-be-renamed)
+                         >
+                         #:key cadr)))
                 (send defs-text begin-edit-sequence)
-                (for-each (λ (stx) 
-                            (let ([source-editor (find-source-editor/defs stx defs-text)])
-                              (when (is-a? source-editor text%)
-                                (unless (memq source-editor txts)
-                                  (send source-editor begin-edit-sequence)
-                                  (set! txts (cons source-editor txts)))
-                                (let* ([start (- (syntax-position stx) 1)]
-                                       [end (+ start (syntax-span stx))])
-                                  (send source-editor delete start end #f)
-                                  (send source-editor insert new-sym start start #f)))))
-                          to-be-renamed)
+                (for ([info (in-list positions-to-rename)])
+                  (define source-editor (list-ref info 0))
+                  (define position (list-ref info 1))
+                  (define span (list-ref info 2))
+                  (when (is-a? source-editor text%)
+                    (unless (memq source-editor txts)
+                      (send source-editor begin-edit-sequence)
+                      (set! txts (cons source-editor txts)))
+                    (let* ([start (- position 1)]
+                           [end (+ start span)])
+                      (send source-editor delete start end #f)
+                      (send source-editor insert new-sym start start #f))))
                 (send defs-text invalidate-bitmap-cache)
-                (for-each
-                 (λ (txt) (send txt end-edit-sequence))
-                 txts)))))))
+                (for ([txt (in-list txts)])
+                  (send txt end-edit-sequence))))))))
     
     ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
     ;; returns #t if the name chosen would be the same as another name in this scope.

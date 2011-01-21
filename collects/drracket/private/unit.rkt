@@ -144,7 +144,13 @@ module browser threading seems wrong.
                         (set! added? #t)
                         (new separator-menu-item% [parent menu]))))])
              
-             (add-search-help-desk-menu-item text menu event add-sep)
+             (add-search-help-desk-menu-item text menu
+                                             (let-values ([(x y)
+                                                           (send text dc-location-to-editor-location
+                                                                 (send event get-x)
+                                                                 (send event get-y))])
+                                               (send text find-position x y))
+                                             add-sep)
              
              (when (is-a? text editor:basic<%>)
                (let-values ([(pos text) (send text get-pos/text event)])
@@ -181,20 +187,12 @@ module browser threading seems wrong.
              
              (void))))))
     
-    (define (add-search-help-desk-menu-item text menu event [add-sep void])
+    (define (add-search-help-desk-menu-item text menu position [add-sep void])
       (let* ([end (send text get-end-position)]
              [start (send text get-start-position)])
         (unless (= 0 (send text last-position))
           (let* ([str (if (= end start)
-                          (find-symbol
-                           text
-                           (call-with-values
-                            (λ ()
-                              (send text dc-location-to-editor-location
-                                    (send event get-x)
-                                    (send event get-y)))
-                            (λ (x y)
-                              (send text find-position x y))))
+                          (find-symbol text position)
                           (send text get-text start end))]
                  ;; almost the same code as "search-help-desk" in "rep.rkt"
                  [l (send text get-canvas)]

@@ -1,3 +1,4 @@
+#lang racket/base
 
 #|
 
@@ -5,15 +6,14 @@ tests involving object% are commented out, since they
 trigger runtime errors in check syntax.
 
 |#
-#lang scheme/base
 
   (require "drracket-test-util.rkt"
            string-constants/string-constant
            tests/utils/gui
-           scheme/path
-           scheme/class
-           scheme/list
-           scheme/file
+           racket/path
+           racket/class
+           racket/list
+           racket/file
            mred
            framework
            mrlib/text-string-style-desc)
@@ -24,8 +24,10 @@ trigger runtime errors in check syntax.
   ;; type test = (make-test string
   ;;                        (listof str/ann)
   ;;                        (listof (cons (list number number) (listof (list number number)))))
-  (define-struct test (input expected arrows))
-  (define-struct (dir-test test) ())
+  (define-struct test (input expected arrows) #:transparent)
+  (define-struct (dir-test test) () #:transparent)
+  
+  (define-struct rename-test (input pos old-name new-name output) #:transparent)
   
   (define build-test
     (λ (input expected [arrow-table '()])
@@ -34,7 +36,6 @@ trigger runtime errors in check syntax.
   ;; tests : (listof test)
   (define tests
     (list 
-     
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -877,7 +878,103 @@ trigger runtime errors in check syntax.
                    (") "            default-color)
                    ("#'"            imported)
                    ("1))"           default-color))
-                 (list '((27 33) (19 26) (36 49) (53 59) (64 66))))))
+                 (list '((27 33) (19 26) (36 49) (53 59) (64 66))))
+     
+     (rename-test "(lambda (x) x)"
+                  9
+                  "x"
+                  "y"
+                  "(lambda (y) y)")
+     
+     (rename-test "(lambda (x) x)"
+                  9
+                  "x"
+                  "yy"
+                  "(lambda (yy) yy)")
+     
+     (rename-test "(lambda (x) x)"
+                  9
+                  "x"
+                  "yxy"
+                  "(lambda (yxy) yxy)")
+     (rename-test "(lambda (x) x x)"
+                  9
+                  "x"
+                  "yxy"
+                  "(lambda (yxy) yxy yxy)")
+     (rename-test "(lambda (x) x x)"
+                  12
+                  "x"
+                  "yxy"
+                  "(lambda (yxy) yxy yxy)")
+     (rename-test "(lambda (x) x x)"
+                  14
+                  "x"
+                  "yxy"
+                  "(lambda (yxy) yxy yxy)")
+     
+     (rename-test "(define-syntax-rule (m x) (λ (x) x))(m z)"
+                  39
+                  "z"
+                  "qq"
+                  "(define-syntax-rule (m x) (λ (x) x))(m qq)")
+     
+     (rename-test (string-append
+                   "#lang racket"
+                   "\n"
+                   "(define player%\n"
+                   " (class object%\n"
+                   "   (init-field strategy player# tiles)\n"
+                   "   (field [score (set)])\n"
+                   "\n"
+                   "   (super-new)\n"
+                   "\n"
+                   "   (define/private (put t pl)\n"
+                   "     (set! tiles(remove t tiles)))))\n")
+                  80
+                  "tiles"
+                  "*tiles"
+                  (string-append
+                   "#lang racket"
+                   "\n"
+                   "(define player%\n"
+                   " (class object%\n"
+                   "   (init-field strategy player# *tiles)\n"
+                   "   (field [score (set)])\n"
+                   "\n"
+                   "   (super-new)\n"
+                   "\n"
+                   "   (define/private (put t pl)\n"
+                   "     (set! *tiles(remove t *tiles)))))\n"))
+     
+     (rename-test (string-append
+                   "#lang racket"
+                   "\n"
+                   "(define player%\n"
+                   " (class object%\n"
+                   "   (init-field strategy player# *tiles)\n"
+                   "   (field [score (set)])\n"
+                   "\n"
+                   "   (super-new)\n"
+                   "\n"
+                   "   (define/private (put t pl)\n"
+                   "     (set! *tiles(remove t *tiles)))))\n")
+                  80
+                  "*tiles"
+                  "tiles"
+                  (string-append
+                   "#lang racket"
+                   "\n"
+                   "(define player%\n"
+                   " (class object%\n"
+                   "   (init-field strategy player# tiles)\n"
+                   "   (field [score (set)])\n"
+                   "\n"
+                   "   (super-new)\n"
+                   "\n"
+                   "   (define/private (put t pl)\n"
+                   "     (set! tiles(remove t tiles)))))\n"))))
+                  
   
   (define (main)
     (fire-up-drscheme-and-run-tests
@@ -917,45 +1014,76 @@ trigger runtime errors in check syntax.
   (define ((run-one-test save-dir) test)
     (set! total-tests-run (+ total-tests-run 1))
     (let* ([drs (wait-for-drscheme-frame)]
-           [defs (queue-callback/res (λ () (send drs get-definitions-text)))]
-           [input (test-input test)]
-           [expected (test-expected test)]
-           [arrows (test-arrows test)]
-           [relative (find-relative-path save-dir (collection-path "mzlib"))])
+           [defs (queue-callback/res (λ () (send drs get-definitions-text)))])
       (clear-definitions drs)
       (cond
-        [(dir-test? test)
-         (insert-in-definitions drs (format input (path->string relative)))]
-        [else (insert-in-definitions drs input)])
-      (click-check-syntax-button drs)
-      (wait-for-computation drs)
-      
-      (when (queue-callback/res (λ () (send defs in-edit-sequence?)))
-        (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
-      
-      (let ([err (queue-callback/res (λ () (send drs syncheck:get-error-report-contents)))]) 
-        (when err
-          (fprintf (current-error-port)
-                   "FAILED ~s\n   error report window is visible:\n   ~a\n"
-                   input
-                   err)))
-      
-      ;; need to check for syntax error here
-      (let ([got (get-annotated-output drs)])
-        (compare-output (cond
-                          [(dir-test? test)
-                           (map (lambda (x)
-                                  (list (if (eq? (car x) 'relative-path)
-                                            (path->string relative)
-                                            (car x))
-                                        (cadr x)))
-                                expected)]
-                          [else
-                           expected])
-                        got
-                        arrows 
-                        (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))
-                        input))))
+        [(test? test)
+         (let ([input (test-input test)]
+               [expected (test-expected test)]
+               [arrows (test-arrows test)]
+               [relative (find-relative-path save-dir (collection-path "mzlib"))])
+           (cond
+             [(dir-test? test)
+              (insert-in-definitions drs (format input (path->string relative)))]
+             [else (insert-in-definitions drs input)])
+           (click-check-syntax-and-check-errors drs test)
+           
+           ;; need to check for syntax error here
+           (let ([got (get-annotated-output drs)])
+             (compare-output (cond
+                               [(dir-test? test)
+                                (map (lambda (x)
+                                       (list (if (eq? (car x) 'relative-path)
+                                               (path->string relative)
+                                               (car x))
+                                             (cadr x)))
+                                     expected)]
+                               [else
+                                expected])
+                             got
+                             arrows 
+                             (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))
+                             input)))]
+        [(rename-test? test)
+         (insert-in-definitions drs (rename-test-input test))
+         (click-check-syntax-and-check-errors drs test)
+         (define menu-item
+           (queue-callback/res
+            (λ ()
+              (define defs (send drs get-definitions-text))
+              (define menu (send defs syncheck:build-popup-menu (rename-test-pos test) defs))
+              (define item-name (format "Rename ~a" (rename-test-old-name test)))
+              (define menu-item
+                (for/or ([x (in-list (send menu get-items))])
+                  (and (is-a? x labelled-menu-item<%>)
+                       (equal? (send x get-label) item-name)
+                       x)))
+              (cond
+                [menu-item
+                 menu-item]
+                [else
+                 (fprintf (current-error-port)
+                          "syncheck-test.rkt: rename test ~s didn't find menu item named ~s in ~s"
+                          test
+                          item-name
+                          (map (λ (x) (and (is-a? x labelled-menu-item<%>) (send x get-label)))
+                               (send menu get-items)))
+                 #f]))))
+         (when menu-item
+           (queue-callback (λ () (send menu-item command (make-object control-event% 'menu))))
+           (wait-for-new-frame drs)
+           (for ([x (in-string (rename-test-new-name test))])
+             (test:keystroke x))
+           (test:button-push "OK")
+           (define result
+             (queue-callback/res (λ () 
+                                   (define defs (send drs get-definitions-text))
+                                   (send defs get-text 0 (send defs last-position)))))
+           (unless (equal? result (rename-test-output test))
+             (fprintf (current-error-port)
+                      "syncheck-test.rkt FAILED\n   test ~s\n  got ~s\n" 
+                      test
+                      result)))])))
   
   
   (define remappings
@@ -1043,6 +1171,19 @@ trigger runtime errors in check syntax.
   ;; get-annotate-output : drscheme-frame -> (listof str/ann)
   (define (get-annotated-output drs)
     (queue-callback/res (λ () (get-string/style-desc (send drs get-definitions-text)))))
+  
+  (define (click-check-syntax-and-check-errors drs test)
+    (click-check-syntax-button drs)
+    (wait-for-computation drs)
+    (when (queue-callback/res (λ () (send (send drs get-definitions-text) in-edit-sequence?)))
+      (error 'syncheck-test.rkt "still in edit sequence for ~s" test))
+    
+    (let ([err (queue-callback/res (λ () (send drs syncheck:get-error-report-contents)))]) 
+      (when err
+        (fprintf (current-error-port)
+                 "FAILED ~s\n   error report window is visible:\n   ~a\n"
+                 test
+                 err))))
   
   (define (click-check-syntax-button drs)
     (test:run-one (lambda () (send (send drs syncheck:get-button) command))))

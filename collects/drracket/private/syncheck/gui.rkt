@@ -69,6 +69,7 @@ If the namespace does not, they are colored the unbound color.
                          (λ (x) (memq x '(default-mode 
                                            my-obligations-mode 
                                            client-obligations-mode))))
+
 (define tool@ 
   (unit 
     (import drracket:tool^)
@@ -691,90 +692,99 @@ If the namespace does not, they are colored the unbound color.
                             (invalidate-bitmap-cache))]))
                      (super on-event event)]
                     [(send event button-down? 'right)
-                     (let-values ([(pos text) (get-pos/text event)])
-                       (if (and pos (is-a? text text%))
-                           (let ([arrow-record (hash-ref arrow-records text #f)])
-                             (when arrow-record
-                               (let ([vec-ents (interval-map-ref arrow-record pos null)]
-                                     [start-selection (send text get-start-position)]
-                                     [end-selection (send text get-end-position)])
-                                 (cond
-                                   [(and (null? vec-ents) (= start-selection end-selection))
-                                    (super on-event event)]
-                                   [else
-                                    (let* ([menu (make-object popup-menu% #f)]
-                                           [arrows (filter arrow? vec-ents)]
-                                           [def-links (filter def-link? vec-ents)]
-                                           [var-arrows (filter var-arrow? arrows)]
-                                           [add-menus (map cdr (filter pair? vec-ents))])
-                                      (unless (null? arrows)
-                                        (make-object menu-item%
-                                          (string-constant cs-tack/untack-arrow)
-                                          menu
-                                          (λ (item evt) (tack/untack-callback arrows))))
-                                      (unless (null? def-links)
-                                        (let ([def-link (car def-links)])
-                                          (make-object menu-item%
-                                            jump-to-definition
-                                            menu
-                                            (λ (item evt)
-                                              (jump-to-definition-callback def-link)))))
-                                      (unless (null? var-arrows)
-                                        (make-object menu-item%
-                                          jump-to-next-bound-occurrence
-                                          menu
-                                          (λ (item evt) (jump-to-next-callback pos text arrows)))
-                                        (make-object menu-item%
-                                          jump-to-binding
-                                          menu
-                                          (λ (item evt) (jump-to-binding-callback arrows))))
-                                      (unless (= start-selection end-selection)
-                                        (let ([arrows-menu
-                                               (make-object menu%
-                                                            "Arrows crossing selection"
-                                                            menu)]
-                                              [callback
-                                               (lambda (accept)
-                                                 (tack-crossing-arrows-callback
-                                                  arrow-record
-                                                  start-selection
-                                                  end-selection
-                                                  text
-                                                  accept))])
-                                          (make-object menu-item%
-                                                       "Tack arrows"
-                                                       arrows-menu
-                                                       (lambda (item evt)
-                                                         (callback
-                                                          '(lexical top-level imported))))
-                                          (make-object menu-item%
-                                                       "Tack non-import arrows"
-                                                       arrows-menu
-                                                       (lambda (item evt)
-                                                         (callback
-                                                          '(lexical top-level))))
-                                          (make-object menu-item%
-                                                       "Untack arrows"
-                                                       arrows-menu
-                                                       (lambda (item evt)
-                                                         (untack-crossing-arrows
-                                                          arrow-record
-                                                          start-selection
-                                                          end-selection)))))
-                                      (for-each (λ (f) (f menu)) add-menus)
-                                      
-                                      (drracket:unit:add-search-help-desk-menu-item
-                                       text
-                                       menu
-                                       event
-                                       (λ () (new separator-menu-item% [parent menu])))
-                                      
-                                      (send (get-canvas) popup-menu menu
-                                            (+ 1 (inexact->exact (floor (send event get-x))))
-                                            (+ 1 (inexact->exact (floor (send event get-y))))))]))))
-                           (super on-event event)))]
+                     (define menu
+                       (let-values ([(pos text) (get-pos/text event)])
+                         (syncheck:build-popup-menu pos text)))
+                     (cond
+                       [menu
+                        (send (get-canvas) popup-menu menu
+                              (+ 1 (inexact->exact (floor (send event get-x))))
+                              (+ 1 (inexact->exact (floor (send event get-y)))))]
+                       [else
+                        (super on-event event)])]
                     [else (super on-event event)])
                   (super on-event event)))
+
+            (define/public (syncheck:build-popup-menu pos text)
+              (and pos
+                   (is-a? text text%)
+                   (let ([arrow-record (hash-ref arrow-records text #f)])
+                     (and arrow-record
+                          (let ([vec-ents (interval-map-ref arrow-record pos null)]
+                                [start-selection (send text get-start-position)]
+                                [end-selection (send text get-end-position)])
+                            (cond
+                              [(and (null? vec-ents) (= start-selection end-selection))
+                               #f]
+                              [else
+                               (let* ([menu (make-object popup-menu% #f)]
+                                      [arrows (filter arrow? vec-ents)]
+                                      [def-links (filter def-link? vec-ents)]
+                                      [var-arrows (filter var-arrow? arrows)]
+                                      [add-menus (map cdr (filter pair? vec-ents))])
+                                 (unless (null? arrows)
+                                   (make-object menu-item%
+                                     (string-constant cs-tack/untack-arrow)
+                                     menu
+                                     (λ (item evt) (tack/untack-callback arrows))))
+                                 (unless (null? def-links)
+                                   (let ([def-link (car def-links)])
+                                     (make-object menu-item%
+                                       jump-to-definition
+                                       menu
+                                       (λ (item evt)
+                                         (jump-to-definition-callback def-link)))))
+                                 (unless (null? var-arrows)
+                                   (make-object menu-item%
+                                     jump-to-next-bound-occurrence
+                                     menu
+                                     (λ (item evt) (jump-to-next-callback pos text arrows)))
+                                   (make-object menu-item%
+                                     jump-to-binding
+                                     menu
+                                     (λ (item evt) (jump-to-binding-callback arrows))))
+                                 (unless (= start-selection end-selection)
+                                   (let ([arrows-menu
+                                          (make-object menu%
+                                            "Arrows crossing selection"
+                                            menu)]
+                                         [callback
+                                          (lambda (accept)
+                                            (tack-crossing-arrows-callback
+                                             arrow-record
+                                             start-selection
+                                             end-selection
+                                             text
+                                             accept))])
+                                     (make-object menu-item%
+                                       "Tack arrows"
+                                       arrows-menu
+                                       (lambda (item evt)
+                                         (callback
+                                          '(lexical top-level imported))))
+                                     (make-object menu-item%
+                                       "Tack non-import arrows"
+                                       arrows-menu
+                                       (lambda (item evt)
+                                         (callback
+                                          '(lexical top-level))))
+                                     (make-object menu-item%
+                                       "Untack arrows"
+                                       arrows-menu
+                                       (lambda (item evt)
+                                         (untack-crossing-arrows
+                                          arrow-record
+                                          start-selection
+                                          end-selection)))))
+                                 (for-each (λ (f) (f menu)) add-menus)
+                                 
+                                 (drracket:unit:add-search-help-desk-menu-item
+                                  text
+                                  menu
+                                  pos
+                                  (λ () (new separator-menu-item% [parent menu])))
+                               
+                                 menu)]))))))
             
             (define/private (update-status-line eles)
               (let ([has-txt? #f])

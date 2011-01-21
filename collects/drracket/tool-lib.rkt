@@ -627,19 +627,18 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:unit:add-search-help-desk-menu-item
-  (->* ((is-a?/c text%) (is-a?/c menu-item-container<%>) (is-a?/c mouse-event%)) ((-> any)) void?)
-  ((text menu event)
+  (->* ((is-a?/c text%) (is-a?/c menu-item-container<%>) exact-nonnegative-integer?) ((-> any)) void?)
+  ((text menu position)
    ((add-sep void)))
-  @{Assuming that @racket[event] represents a mouse click in @racket[text], this
-                  adds a menu item to @racket[menu] that searches in Help Desk
-                  for the text around the point where the click happened.
-                  
-                  If there is only whitespace around the insertion point,
-                  then no @racket[menu-item%]s are added, and
-                  @racket[add-sep] is not called. If there is something to be
-                  added, then @racket[add-sep] is called before the menu item is
-                  created.
-                  })
+  @{Adds a menu item to @racket[menu] that searches in Help Desk
+  for the word around @racket[position] in @racket[text].
+  
+  If there is only whitespace around @racket[position],
+  then no @racket[menu-item%]s are added, and
+  @racket[add-sep] is not called. If there is something to be
+  added, then @racket[add-sep] is called before the menu item is
+  created.
+  })
   
  
  ;                                            
