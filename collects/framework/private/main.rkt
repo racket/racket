@@ -57,15 +57,19 @@
                              values)
 
 (preferences:set-default 'framework:paren-color-scheme 'basic-grey symbol?)
-
+  
 (preferences:set-default 'framework:square-bracket:cond/offset
                          '(("case-lambda" 0)
+                           ("match-lambda" 0)
+                           ("match-lambda*" 0)
                            ("cond" 0)
                            ("field" 0)
                            ("provide/contract" 0)
                            ("match" 1)
                            ("new" 1)
                            ("case" 1)
+                           ("match" 1)
+                           ("match*" 1)
                            ("syntax-rules" 1)
                            ("syntax-case" 2)
                            ("syntax-case*" 3)
@@ -88,6 +92,7 @@
                                    '("let" 
                                      "let*" "let-values" "let*-values"
                                      "let-syntax" "let-struct" "let-syntaxes"
+                                     "match-let" "match-let*" "match-letrec"
                                      "letrec"
                                      "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
                                      "parameterize"
@@ -216,7 +221,8 @@
             '(struct
               local
                      
-              define-type))
+              define-type
+              match-define))
   (for-each (λ (x) 
               (hash-set! hash-table x 'begin))
             '(case-lambda
@@ -232,7 +238,7 @@
               cases
                  instantiate super-instantiate
                syntax/loc quasisyntax/loc
-               
+               match match* match-let match-let* match-letrec
                
                λ lambda let let* letrec recur
                lambda/kw
