@@ -729,7 +729,7 @@ This produces an ACK message
    
    ;; breaking tests
    (mktest "(semaphore-wait (make-semaphore 0))"
-           ("{stop-multi.png} {stop-22x22.png} user break"
+           (#rx"user break"
             #rx"user break"
             #rx"user break"
             #rx"user break"
@@ -741,7 +741,7 @@ This produces an ACK message
            void)
    
    (mktest "(let l()(l))"
-           (#rx"{stop-multi.png} {stop-22x22.png} user break"
+           (#rx"user break"
             #rx"user break"
             #rx"user break"
             #rx"user break"
