@@ -174,7 +174,7 @@
 (define (lex in pos)
   (let ([c (peek-char-or-special in)])
     (cond
-      [(eof-object? c) (EOF (pos) (pos))]
+      [(eof-object? c) (read-char in) (EOF (pos) (pos))]
       [(eq? c #\&) (lex-entity in pos)]
       [(eq? c #\<) (lex-tag-cdata-pi-comment in pos)]
       [(not (char? c)) (read-char-or-special in)]
