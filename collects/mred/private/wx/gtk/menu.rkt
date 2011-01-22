@@ -166,7 +166,6 @@
                 (cb this e)))))))
   
   (define/private (adjust-shortcut item-gtk title)
-    (printf "~s\n" title)
     (let ([m (regexp-match #rx"\t(Ctrl[+])?(Shift[+])?(Meta[+])?(Alt[+])?(.|[0-9]+)$" 
                            title)])
       (when m
