@@ -251,14 +251,7 @@
   (when (and make-compilation-manager-load/use-compiled-handler
              manager-trace-handler)
     (printf "PLTDRCM/PLTDRDEBUG: reinstalling CM load handler after setting splash load handler\n")
-    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
-    (when (or (equal? (getenv "PLTDRCM") "trace")
-              (equal? (getenv "PLTDRDEBUG") "trace"))
-      (printf "PLTDRCM/PLTDRDEBUG: reinstalling CM trace handler after setting splash load handler\n")
-      (manager-trace-handler
-       (λ (x) 
-         (when (regexp-match #rx"compiling:|end compile:" x)
-           (display "2: ") (display x) (newline)))))))
+    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))))
 
 (define funny-gauge%
   (class canvas% 
