@@ -220,7 +220,7 @@
 		 #'(begin
 		     signature-def
 		     ;; the signature might be used in the definitions, hence this ordering
-		     struct-type-defs constructor-def predicate-def accessor-defs mutator-defs))))))
+		     struct-type-defs predicate-def constructor-def accessor-defs mutator-defs))))))
       ((_ ?type-name
 	  ?signature-constructor-name
 	  ?constructor
