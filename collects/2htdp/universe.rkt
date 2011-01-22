@@ -226,10 +226,15 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")])
-       (stepper-syntax-property
-        #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
-        'stepper-skip-completely #t))]))
+             (->args 'big-bang stx #'w #'(clause ...) WldSpec ->rec? "world")]
+            [dom (syntax->list #'(clause ...))])
+       (cond
+         [(and (not (contains-clause? #'to-draw dom)) (not (contains-clause? #'on-draw dom)))
+          (raise-syntax-error #f "missing to-draw clause" stx)]
+         [else 
+          (stepper-syntax-property
+           #`(run-it ((new-world (if #,rec? aworld% world%)) w #,@args))
+           'stepper-skip-completely #t)]))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
@@ -310,11 +315,11 @@
     [(universe u bind ...)
      (let* ([args
              (->args 'universe stx #'u #'(bind ...) UniSpec void "universe")]
-            [dom (map (compose car syntax->datum) (syntax->list #'(bind ...)))])
+            [dom (syntax->list #'(bind ...))])
        (cond
-         [(not (memq 'on-new dom))
+         [(not (contains-clause? #'on-new dom))
           (raise-syntax-error #f "missing on-new clause" stx)]
-         [(not (memq 'on-msg dom))
+         [(not (contains-clause? #'on-msg dom))
           (raise-syntax-error #f "missing on-msg clause" stx)]
          [else ; (and (memq #'on-new dom) (memq #'on-msg dom))
           #`(run-it ((new-universe universe%) u #,@args))]))]))

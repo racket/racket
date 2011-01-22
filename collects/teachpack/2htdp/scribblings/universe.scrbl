@@ -189,6 +189,40 @@ The design of a world program demands that you come up with a data
  closes the canvas.
 }
 
+The only mandatory clause of a @scheme[big-bang] description is
+@scheme[to-draw] (or @scheme[on-draw] for backwards compatibility): 
+@itemize[
+
+@item{
+ 
+@defform[(to-draw render-expr)
+         #:contracts
+         ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
+
+ tells DrRacket to call the function @scheme[render-expr] whenever the
+ canvas must be drawn. The external canvas is usually re-drawn after DrRacket has
+ dealt with an event. Its size is determined by the size of the first
+ generated @tech{scene}.}
+
+@defform/none[#:literals (to-draw)
+              (to-draw render-expr width-expr height-expr)
+              #:contracts
+              ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
+	       [width-expr natural-number/c]
+               [height-expr natural-number/c])]{ 
+
+ tells DrRacket to use a @scheme[width-expr] by @scheme[height-expr]
+ canvas instead of one determine by the first generated @tech{scene}.
+}
+
+For compatibility reasons, the teachpack also supports the keyword
+@defidform/inline[on-draw] in lieu of @scheme[to-draw] but the latter is preferred
+now. 
+}
+
+]
+
+All remaining clauses are optional: 
 @itemize[
 
 @item{
@@ -391,33 +425,6 @@ All @tech{MouseEvent}s are represented via strings:
  Note: the computer's software doesn't really notice every single movement
  of the mouse (across the mouse pad). Instead it samples the movements and
  signals most of them.}
-}
-
-@item{
- 
-@defform[(to-draw render-expr)
-         #:contracts
-         ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
-
- tells DrRacket to call the function @scheme[render-expr] whenever the
- canvas must be drawn. The external canvas is usually re-drawn after DrRacket has
- dealt with an event. Its size is determined by the size of the first
- generated @tech{scene}.}
-
-@defform/none[#:literals (to-draw)
-              (to-draw render-expr width-expr height-expr)
-              #:contracts
-              ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
-	       [width-expr natural-number/c]
-               [height-expr natural-number/c])]{ 
-
- tells DrRacket to use a @scheme[width-expr] by @scheme[height-expr]
- canvas instead of one determine by the first generated @tech{scene}.
-}
-
-For compatibility reasons, the teachpack also supports the keyword
-@defidform/inline[on-draw] in lieu of @scheme[to-draw] but the latter is preferred
-now. 
 }
 
 @item{

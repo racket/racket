@@ -7,7 +7,8 @@
          ->args
          function-with-arity expr-with-check except err 
          ->kwds-in
-         clauses-use-kwd)
+         clauses-use-kwd
+         contains-clause?)
 
 (require 
  (for-syntax "syn-aux-aux.rkt" syntax/parse)
@@ -45,21 +46,7 @@
                [(_ para (... ...))
                 (let*-values
                     ([(kwds defs)
-                      (values (map car the-list) '())
-                      #;
-                      (let L ([the-list the-list][kwds '()][defs '()])
-                        (if (null? the-list)
-                            (values kwds defs)
-                            (let* ([kw-alt-c-d (car the-list)]
-                                   [kw0 (car kw-alt-c-d)]
-                                   [kw1 (cadr kw-alt-c-d)]
-                                   [coe (caddr kw-alt-c-d)]
-                                   [def (cadddr kw-alt-c-d)])
-                              (if (eq? (syntax-e kw0) (syntax-e kw1))
-                                  (L (cdr the-list) (cons kw0 kwds) (cons def defs))
-                                  (L (cdr the-list)
-                                     (list* kw0 kw1 kwds)
-                                     (list* def def defs))))))]
+                      (values (map car the-list) '())]
                      ;; the defaults list defs is no longer needed
                      [(args) (lambda (para*)
                                (append para* (foldr cons '() kwds)))]
@@ -102,20 +89,11 @@
                 (syntax->list (cdar spec))]
                [else (loop (cdr spec))])))
          (if r ((third s) r) (fourth s)))
-       Spec)
-  #;
-  (apply append
-         (map (lambda (x) 
-                (define kw (car x))
-                (define-values (key coercion)
-                  (let loop ([kwds kwds][Spec Spec])
-                    (if (free-identifier=? (car kwds) kw)
-                        ;; -- the original keyword, which is also the init-field name
-                        ;; -- the coercion that comes with it 
-                        (values (cadar Spec) (caddar Spec))
-                        (loop (cdr kwds) (cdr Spec)))))
-                (list (mk-kwd key) (coercion (cdr x))))
-              spec)))
+       Spec))
+
+(define (contains-clause? kw clause-list)
+  (memf (lambda (clause) (free-identifier=? kw (car (syntax->list clause)))) clause-list))
+
 
 ;; Syntax -> Syntax 
 ;; eventually: convert syntax to keyword
@@ -147,7 +125,7 @@
              (raise-syntax-error tag (format "duplicate ~a clause" id) (cdar x))
              (duplicates? (rest lox))))])))
 
-;; check whether rec? occurs, produce list of keywords 
+;; check whether rec? occurs, produce list of keyword x clause pairs 
 (define (clauses-use-kwd stx:list ->rec? legal-clause kwds)
   (define kwd-in? (->kwds-in kwds))
   (define double (string-append legal-clause ", ~a has been redefined"))

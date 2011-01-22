@@ -28,6 +28,8 @@ gracket test-image.rkt
 echo "done:--- test-image.rkt  ---" echo ""
 gracket ufo-rename.rkt 
 echo "done:--- ufo-rename.rkt  ---" echo ""
+gracket server-rename.rkt 
+echo "done:--- server-rename.rkt  ---" echo ""
 gracket world0-stops.rkt 
 echo "done:--- world0-stops.rkt  ---" echo ""
 gracket record.rkt 
