@@ -434,7 +434,12 @@
                                                              (exn:get-module-code-path ex)
                                                              (exn-message ex))
                                         (raise ex))])
-                                  (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date)))))
+                                  (compile-zo* mode path src-sha1 read-src-syntax zo-name up-to-date)))
+                              (log-info (format "cm: ~acompiled  ~a" 
+                                                (build-string 
+                                                 (depth)
+                                                 (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                                actual-path))))
                           (lambda ()
                             (when locked?
                               (lc 'unlock zo-name))))))))))))
