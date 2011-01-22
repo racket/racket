@@ -480,6 +480,9 @@
     (define/public (get-parent)
       parent)
 
+    (define/public (set-parent p)
+      (set! parent p))
+
     (define/public (get-eventspace) eventspace)
 
     (define is-on? #f)

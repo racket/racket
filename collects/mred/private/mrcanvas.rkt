@@ -38,7 +38,7 @@
     area%-keywords)
 
   (define basic-canvas%
-    (class100* (make-window% #f (make-subarea% area%)) (canvas<%>) (mk-wx mismatches parent)
+    (class100* (make-subwindow% (make-window% #f (make-subarea% area%))) (canvas<%>) (mk-wx mismatches parent)
       (public
 	[on-char (lambda (e) (send wx do-on-char e))]
 	[on-event (lambda (e) (send wx do-on-event e))]

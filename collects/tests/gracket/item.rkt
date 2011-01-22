@@ -476,14 +476,16 @@
   (add-testers "Text" txt)
   (add-change-label "Text" txt lp #f OTHER-LABEL)
   
-  (let ([items (list l il 
+  (let ([items (list ip
+                     l il 
 		     b ib 
 		     lb
 		     cb icb 
 		     rb irb 
 		     ch
 		     txt)]
-	[names (list "label" "image label"
+	[names (list "panel"
+                     "label" "image label"
 		     "button" "image button"
 		     "list box"
 		     "checkbox" "image checkbox"
@@ -498,6 +500,17 @@
 		   (let ([v (send c get-selection)])
 		     (when (positive? v)
 		       (send (list-ref items (sub1 v)) focus)
+		       (send c set-selection 0)))))
+    (make-object choice%
+		 "Reparent"
+		 (cons "..." names)
+		 lp
+		 (lambda (c e)
+		   (let ([v (send c get-selection)])
+		     (when (positive? v)
+                       (define f (new frame% [label "New Parent"]))
+		       (send (list-ref items (sub1 v)) reparent f)
+                       (send f show #t)
 		       (send c set-selection 0)))))
     (cons (make-object popup-test-canvas% 
 		       items

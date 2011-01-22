@@ -23,7 +23,8 @@
 	   subwindow<%>
 	   (protect make-window%)
            
-           (protect set-get-outer-panel))
+           (protect set-get-outer-panel
+                    set-parent))
 
   (define area<%>
     (interface ()
@@ -39,7 +40,8 @@
     [stretchable-height no-val])
 
   (define-local-member-name
-    set-get-outer-panel)
+    set-get-outer-panel
+    set-parent)
 
   (define area%
     (class100* mred% (area<%>) (mk-wx get-wx-pan get-outer-wx-pan mismatches prnt
@@ -57,6 +59,7 @@
        [get-wx-outer-panel get-outer-wx-pan]
        [parent prnt])
       (public
+        [set-parent (lambda (p) (set! parent p))] ; called in atomic mode
 	[get-parent (lambda () parent)]
 	[get-top-level-window (entry-point (lambda () (wx->mred (send wx get-top-level))))]
 	[(minw min-width) (param get-wx-outer-panel min-width)]
@@ -121,7 +124,8 @@
   (define-keywords window%-keywords [enabled #t])
 
   (define subwindow<%> 
-    (interface (window<%> subarea<%>)))
+    (interface (window<%> subarea<%>)
+      reparent))
 
   (define (make-window% top? %) ; % implements area<%>
     (class100* % (window<%>) (mk-wx get-wx-panel get-outer-wx-panel mismatches lbl parent crsr

@@ -16,7 +16,8 @@
 	   (protect internal-container<%>
 		    check-container-parent
 		    container%-keywords
-		    make-container%)
+		    make-container%
+                    make-subwindow%)
 	   area-container-window<%>
 	   (protect make-area-container-window%))
 
@@ -40,6 +41,10 @@
     [border no-val]
     [spacing no-val]
     [alignment no-val])
+
+  (define-local-member-name
+    has-wx-child?
+    adopt-wx-child)
 
   (define (make-container% %) ; % implements area<%>
     (class100* % (area-container<%> internal-container<%>) (mk-wx get-wx-pan get-wx-outer-pan mismatches parent
@@ -120,7 +125,13 @@
 	[delete-child (entry-point
 		       (lambda (c) 
 			 (check-instance '(method area-container<%> delete-child) subwindow<%> 'subwindow<%> #f c)
-			 (send (get-wx-panel) delete-child (mred->wx c))))])
+			 (send (get-wx-panel) delete-child (mred->wx c))))]
+        [has-wx-child? (lambda (child-wx) ; called in atomic mode
+                         (memq child-wx (send (get-wx-panel) get-children)))]
+        [adopt-wx-child (lambda (child-wx) ; called in atomic mode
+                          (let ([wxp (get-wx-panel)])
+                            (send child-wx set-area-parent wxp)
+                            (send wxp adopt-child child-wx)))])
       (sequence
 	(super-init mk-wx get-wx-panel get-wx-outer-pan mismatches parent)
 	(unless (eq? border no-val) (bdr border))
@@ -133,6 +144,55 @@
   (define (make-area-container-window% %) ; % implements window<%> (and area-container<%>)
     (class100* % (area-container-window<%>) (mk-wx get-wx-pan get-wx-outer-pan mismatches label parent cursor) 
       (sequence
-	(super-init mk-wx get-wx-pan get-wx-outer-pan mismatches label parent cursor)))))
+	(super-init mk-wx get-wx-pan get-wx-outer-pan mismatches label parent cursor))))
 
 
+  (define (make-subwindow% %)
+    (class %
+      (super-new)
+      (inherit set-parent 
+               get-parent
+               is-shown?
+               show)
+      (define/public (reparent new-parent)
+        (check-container-parent '(subwindow<%> reparent) new-parent)
+        (unless (as-entry
+                 (lambda ()
+                   (let ([p1 (send (mred->wx this) get-top-level)]
+                         [p2 (send (mred->wx new-parent) get-top-level)])
+                     (eq? (send p1 get-eventspace) (send p1 get-eventspace)))))
+          (raise-mismatch-error 
+           (who->name '(subwindow<%> reparent))
+           "current parent's eventspace is not the same as the eventspace of the new parent: "
+           new-parent))
+        (let loop ([p new-parent])
+          (when p
+            (when (eq? p this)
+              (raise-mismatch-error 
+               (who->name '(subwindow<%> reparent))
+               (if (eq? new-parent this)
+                   "cannot set parent to self: "
+                   "cannot set parent to a descedant: ")
+               new-parent))
+            (loop (send p get-parent))))
+        (let* ([added? (memq this (send (get-parent) get-children))]
+               [shown? (and added? (is-shown?))])
+          (when added?
+            (send (get-parent) delete-child this))
+          (as-entry
+           (lambda ()
+             (let ([wx (mred->wx this)])
+               ;; double-check that delete succeeded:
+               (unless (send (get-parent) has-wx-child? wx)
+                 ;; double-check that we're not creating a loop at the wx level:
+                 (unless (let loop ([p (mred->wx new-parent)])
+                           (and p
+                                (or (eq? p wx)
+                                    (loop (send p get-parent)))))
+                   ;; Ok --- really reparent:
+                   (send new-parent adopt-wx-child wx)
+                   (set-parent new-parent))))))
+          (when added?
+            (send new-parent add-child this))
+          (when shown?
+            (show #t)))))))

@@ -54,9 +54,10 @@
     control%-nofont-keywords)
 
   (define basic-control%
-    (class100* (make-window% #f (make-subarea% area%)) (control<%>) (mk-wx mismatches lbl parent cb cursor
-									   ;; for keyword use
-									   [font no-val])
+    (class100* (make-subwindow% (make-window% #f (make-subarea% area%))) (control<%>) 
+      (mk-wx mismatches lbl parent cb cursor
+             ;; for keyword use
+             [font no-val])
       (rename [super-set-label set-label])
       (private-field [label lbl][callback cb] 
                      [can-bitmap? (or (lbl . is-a? . wx:bitmap%)

@@ -71,7 +71,10 @@
     area%-keywords)
 
   (define panel%
-    (class100*/kw (make-area-container-window% (make-window% #f (make-subarea% (make-container% area%)))) (subwindow<%>) 
+    (class100*/kw (make-subwindow%
+                   (make-area-container-window% 
+                    (make-window% #f (make-subarea% (make-container% area%)))) )
+                  (subwindow<%>)
 		  [(parent [style null]) panel%-keywords]
       (private-field [wx #f])
       (public [get-initial-label (lambda () #f)])

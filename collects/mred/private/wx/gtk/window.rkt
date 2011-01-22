@@ -57,6 +57,7 @@
 ;; ----------------------------------------
 
 (define-gtk gtk_container_add (_fun _GtkWidget _GtkWidget -> _void))
+(define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_widget_realize (_fun _GtkWidget -> _void))
 (define-gtk gtk_widget_add_events (_fun _GtkWidget _int -> _void))
 
@@ -516,6 +517,13 @@
     (define/public (get-height) save-h)
 
     (define/public (get-parent) parent)
+    (define/public (set-parent p)
+      ;; in atomic mode
+      (g_object_ref gtk)
+      (gtk_container_remove (send parent get-client-gtk) gtk)
+      (set! parent p)
+      (gtk_container_add (send parent get-client-gtk) gtk)
+      (g_object_unref gtk))
 
     (define/public (get-top-win) (send parent get-top-win))
 

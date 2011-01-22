@@ -71,6 +71,8 @@
 
 (define-user32 WindowFromPoint (_fun _POINT -> _HWND))
 (define-user32 GetParent (_fun _HWND -> _HWND))
+(define-user32 SetParent (_fun _HWND _HWND -> (r : _HWND)
+                               -> (unless r (failed 'SetParent))))
 
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
@@ -387,6 +389,11 @@
   (define/public (center a b) (void))
 
   (define/public (get-parent) parent)
+  (define/public (set-parent p) 
+    ;; in atomic mode
+    (set! parent p)
+    (SetParent hwnd (send parent get-client-hwnd)))
+
   (define/public (is-frame?) #f)
 
   (define/public (refresh) (void))

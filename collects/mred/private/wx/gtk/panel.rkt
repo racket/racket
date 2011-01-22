@@ -28,6 +28,10 @@
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
 
+    (define/public (adopt-child child)
+      ;; in atomic mode
+      (send child set-parent this))
+
     (define/override (reset-child-dcs)
       (when (pair? children)
         (for ([child (in-list children)])

@@ -20,7 +20,7 @@
 (define (panel-mixin %)
   (class %
     (inherit register-as-child on-new-child
-             is-window-enabled?)
+             is-window-enabled? get-cocoa)
 
     (define lbl-pos 'horizontal)
     (define children null)
@@ -29,6 +29,10 @@
     
     (define/public (get-label-position) lbl-pos)
     (define/public (set-label-position pos) (set! lbl-pos pos))
+
+    (define/public (adopt-child p)
+      ;; in atomic mode
+      (send p set-parent this))
 
     (define/override (fix-dc)
       (for ([child (in-list children)])

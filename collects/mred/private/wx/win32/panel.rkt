@@ -20,6 +20,10 @@
 
     (super-new)
 
+    (define/public (adopt-child child)
+      ;; in atomic mode
+      (send child set-parent this))
+
     (define children null)
     (define/override (register-child child on?)
       (let ([on? (and on? #t)]
