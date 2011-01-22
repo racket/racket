@@ -137,7 +137,6 @@ added get-regions
                         (new paren-tree% (matches pairs))))
 
     (define lexer-states (list (make-new-lexer-state 0 'end)))
-
     (define/public (get-up-to-date?) 
       (andmap lexer-state-up-to-date? lexer-states))
 
@@ -246,6 +245,7 @@ added get-regions
         (on-lexer-valid lexers-all-valid?)))
     (define/pubment (on-lexer-valid valid?)
       (inner (void) on-lexer-valid valid?))
+    (define/public-final (is-lexer-valid?) lexers-all-valid?)
     
     (define/private (reset-tokens)
       (for-each

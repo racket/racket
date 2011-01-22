@@ -229,6 +229,10 @@
     The default method just returns @racket[(void)].
   }
   
+  @defmethod[#:mode public-final (is-lexer-valid?) boolean?]{
+    Indicates if the lexer is currently valid for this editor.
+  }
+  
 }
 @defmixin[color:text-mixin (text:basic<%>) (color:text<%>)]{
   Adds the functionality needed for on-the-fly coloring and parenthesis

@@ -2810,6 +2810,7 @@ module browser threading seems wrong.
                       definitions-canvases)
             (for-each (λ (ints-canvas) (send ints-canvas refresh))
                       interactions-canvases)
+            (set-color-status! (send definitions-text is-lexer-valid?))
             (end-container-sequence)))
         
         (define/pubment (on-tab-change from-tab to-tab)
@@ -4122,6 +4123,10 @@ module browser threading seems wrong.
         
         (set-label-prefix (string-constant drscheme))
         (set! newest-frame this)
+        ;; a callback might have happened that initializes set-color-status! before the
+        ;; definitions text is connected to the frame, so we do an extra initialization
+        ;; now, once we know we have the right connection
+        (set-color-status! (send definitions-text is-lexer-valid?))
         (send definitions-canvas focus)))
     
     ;; get-define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string)) boolean -> (or/c #f string?)
