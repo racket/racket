@@ -16,6 +16,7 @@
          "filedialog.rkt"
          "colordialog.rkt"
          "sound.rkt"
+         "key.rkt"
 	 racket/draw)
 
 (provide
@@ -55,8 +56,8 @@
  make-gl-bitmap
  special-control-key
  special-option-key
- get-color-from-user)
-
+ get-color-from-user
+ key-symbol-to-menu-key)
 
 (define (find-graphical-system-path what)
   #f)

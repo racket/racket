@@ -86,4 +86,5 @@
    get-highlight-text-color
    make-screen-bitmap
    make-gl-bitmap
-   check-for-break))
+   check-for-break
+   key-symbol-to-menu-key))

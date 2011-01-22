@@ -17,6 +17,7 @@
          "menu-bar.rkt"
          "agl.rkt"
          "sound.rkt"
+         "keycode.rkt"
          "../../lock.rkt"
          "../common/handlers.rkt"
          (except-in "../common/default-procs.rkt"
@@ -59,7 +60,8 @@
  flush-display
  play-sound
  file-creator-and-type
- file-selector)
+ file-selector
+ key-symbol-to-menu-key)
 
 (import-class NSScreen NSCursor)
 

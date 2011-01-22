@@ -16,6 +16,7 @@
          "queue.rkt"
          "printer-dc.rkt"
          "gl-context.rkt"
+         "keycode.rkt"
          "../common/default-procs.rkt"
          "../common/handlers.rkt")
 
@@ -56,7 +57,8 @@
  special-option-key
  get-panel-background
  fill-private-color
- get-color-from-user)
+ get-color-from-user
+ key-symbol-to-menu-key)
 
 (define (find-graphical-system-path what)
   (case what

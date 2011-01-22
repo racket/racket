@@ -183,7 +183,7 @@
     (unless (or (not c) 
 		(char? c)
 		(and (symbol? c)
-		     (positive? (wx:key-symbol-to-integer c))))
+		     (wx:key-symbol-to-menu-key c)))
       (raise-type-error (who->name who) "character, key-code symbol, or #f" c)))
 
   (define (check-shortcut-prefix who p)
@@ -259,7 +259,7 @@
 							 (if (memq 'meta prefix) "Meta+" "")
 							 (if (memq 'alt prefix) "Alt+" "")
 							 (if (symbol? shortcut)
-							     (string-titlecase (symbol->string shortcut))
+							     (wx:key-symbol-to-menu-key shortcut)
 							     (char-name
 							      (char-upcase shortcut)
 							      #t)))]
@@ -273,7 +273,7 @@
 							     (char->integer #\A)))
 							 (if (char? shortcut)
 							     (char->integer (char-upcase shortcut))
-							     (wx:key-symbol-to-integer shortcut)))]))
+							     (wx:key-symbol-to-menu-key shortcut)))]))
 					     (strip-tab label))]
 			      [key-binding (and shortcut
 						(let ([base (if (symbol? shortcut)

@@ -166,18 +166,25 @@
                 (cb this e)))))))
   
   (define/private (adjust-shortcut item-gtk title)
-    (cond
-     [(regexp-match #rx"\tCtrl[+](.)$" title)
-      => (lambda (m)
-           (let ([code (gdk_unicode_to_keyval 
-                        (char->integer
-                         (string-ref (cadr m) 0)))])
-             (unless (zero? code)
-               (let ([accel-path (format "<GRacket>/Hardwired/~a" title)])
-                 (gtk_accel_map_add_entry accel-path
-                                          code
-                                          GDK_CONTROL_MASK)
-                 (gtk_menu_item_set_accel_path item-gtk accel-path)))))]))
+    (printf "~s\n" title)
+    (let ([m (regexp-match #rx"\t(Ctrl[+])?(Shift[+])?(Meta[+])?(Alt[+])?(.|[0-9]+)$" 
+                           title)])
+      (when m
+        (let ([mask (+ (if (list-ref m 1) GDK_CONTROL_MASK 0)
+                       (if (list-ref m 2) GDK_SHIFT_MASK 0)
+                       (if (list-ref m 3) GDK_MOD1_MASK 0)
+                       (if (list-ref m 4) GDK_META_MASK 0))]
+              [code (let ([s (list-ref m 5)])
+                      (if (= 1 (string-length s))
+                          (gdk_unicode_to_keyval 
+                           (char->integer (string-ref s 0)))
+                          (string->number s)))])
+          (unless (zero? code)
+            (let ([accel-path (format "<GRacket>/Hardwired/~a" title)])
+              (gtk_accel_map_add_entry accel-path
+                                       code
+                                       mask)
+              (gtk_menu_item_set_accel_path item-gtk accel-path)))))))
   
   (public [append-item append])
   (define (append-item i label help-str-or-submenu chckable?)

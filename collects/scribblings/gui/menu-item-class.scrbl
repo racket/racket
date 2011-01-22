@@ -12,7 +12,7 @@ A @scheme[menu-item%] is a plain string-labelled menu item. Its
                  [parent (or/c (is-a?/c menu% popup-menu%))]
                  [callback ((is-a?/c menu-item%) (is-a?/c control-event%) . -> . any) 
                            (lambda (i e) (void))]
-                 [shortcut (or/c char? false/c) #f]
+                 [shortcut (or/c char? symbol? false/c) #f]
                  [help-string (or/c label-string? false/c) #f]
                  [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]

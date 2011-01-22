@@ -35,7 +35,10 @@ The shortcut part of a menu item name is not included in the label
  returned by @method[labelled-menu-item<%> get-label].
 
 For a list of allowed key symbols, see @xmethod[key-event%
- get-key-code].
+ get-key-code], except that the following are disallowed: 
+ @scheme['shift], @scheme['control], @scheme['numlock],
+ @scheme['scroll], @scheme['wheel-up], @scheme['wheel-down],
+ @scheme['release], and @scheme['press].
 
 }
 

@@ -10,9 +10,6 @@
          racket/class
          racket/draw)
 
-(define (key-symbol-to-integer k)
-  (error 'key-symbol-to-integer "not yet implemented"))
-
 (provide (all-from-out "wx/platform.rkt")
          clipboard<%>
          (all-from-out "wx/common/event.rkt"
@@ -37,7 +34,6 @@
          begin-busy-cursor
          is-busy?
          end-busy-cursor
-         key-symbol-to-integer
          application-file-handler
          application-quit-handler
          application-about-handler
