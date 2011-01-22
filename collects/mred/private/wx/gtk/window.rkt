@@ -523,6 +523,8 @@
       (gtk_container_remove (send parent get-client-gtk) gtk)
       (set! parent p)
       (gtk_container_add (send parent get-client-gtk) gtk)
+      (set! save-x 0)
+      (set! save-y 0)
       (g_object_unref gtk))
 
     (define/public (get-top-win) (send parent get-top-win))
