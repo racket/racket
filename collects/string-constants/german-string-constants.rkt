@@ -42,6 +42,9 @@
  (cancel-bug-report? "Bug-Report verwerfen?")
  (are-you-sure-cancel-bug-report?
   "Sind Sie sicher, dass Sie diesen Bug-Report verwerfen wollen?")
+ (do-you-want-to-discard-or-save-this-bug-report
+  "Wollen Sie den Bug-Report verwerfen oder speichern?")
+ (discard "Verwerfen") ;; a button label for a dialog box with the above question
  (bug-report-form "Formular für Bug-Report")
  (bug-report-field-name "Name")
  (bug-report-field-email "Email")
@@ -317,9 +320,17 @@
  (error-saving-preferences-title "Fehler beim Speichern der Einstellungen")
  (steal-the-lock-and-retry "Lock an uns reißen && nochmal versuchen") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
  (error-reading-preferences "Fehler beim Lesen der Einstellungen")
+ (error-reading-preferences-explanation "Die Datei mit den Einstellungen ist gesperrt und deshalb kann die  ~a-Einstellung nicht gelesen werden") ;; ~a is filled with the name of the preference (a symbol)
+ (dont-ask-again-until-drracket-restarted "Nicht noch einmal fragen (bis DrRacket neu gestartet wird)")
+ ; difference between the above and below is one comes with a question (steal the lock or not) and the other with just a notation saying "the file is locked"
+ (dont-notify-again-until-drracket-restarted "Nicht noch einmal benachrichtigen (bis DrRacket neu gestartet wird)") 
  (prefs-file-locked "Die Datei mit den Einstellungen ist gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten. Änderung an den Einstellungen rückgängig machen?")
  (try-again "Nochmal versuchen") ;; button label
+
+ (give-up-and-use-the-default "Aufgeben und Standardeinstellung verwenden") ;; button label
+  
  (prefs-file-still-locked "Die Datei mit den Einstellungen ist immer noch gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten.")
+ (prefs-file-locked-nothing-doing "Die Datei mit den Einstellungen ist gesperrt (durch ~s), so dass Änderungen an den Einstellungen nicht gespeichert werden können.") ;; the  ~s is filled with the lockfile; this string is (currently) used only on windows where lockfiles are less friendly (and there is no steal fallback)
  (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnmeldungen")
  (editor-prefs-panel-label "Editieren")
