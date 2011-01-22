@@ -493,7 +493,8 @@
       (do-reset-matrix cr)
       (when clipping-region
         (send clipping-region install-region cr scroll-dx scroll-dy
-              (lambda (x) (align-x x)) (lambda (y) (align-y y)))))
+              (lambda (x) (align-x x)) (lambda (y) (align-y y))
+              #:init-matrix (lambda (cr) (init-cr-matrix cr)))))
 
     (define smoothing 'unsmoothed)
 
@@ -649,7 +650,8 @@
        (when clipping-region
          (send clipping-region lock-region 1)
          (send clipping-region install-region cr scroll-dx scroll-dy
-               (lambda (x) (align-x x)) (lambda (y) (align-y y))))))
+               (lambda (x) (align-x x)) (lambda (y) (align-y y))
+               #:init-matrix (lambda (cr) (init-cr-matrix cr))))))
 
     (define/public (get-clipping-matrix)
       (let* ([cm (make-cairo_matrix_t (cairo_matrix_t-xx matrix)
