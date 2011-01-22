@@ -88,12 +88,22 @@
       (define/augment (after-delete start len)
         (inner (void) after-delete start len)
         (modification-at start))
+      
+      (define timer #f)
+      
       (define/private (modification-at start)
         (when (send (send (get-tab) get-frame) initialized?) 
           (when in-module-language?
             (when (or (not hash-lang-last-location)
                       (<= start hash-lang-last-location))
-              (move-to-new-language)))))
+              
+              (unless timer
+                (set! timer (new timer% 
+                                 [notify-callback
+                                  (λ () (move-to-new-language))]
+                                 [just-once? #t])))
+              (send timer stop)
+              (send timer start 200 #t)))))
       
       (define/private (update-in-module-language? new-one)
         (unless (equal? new-one in-module-language?)
