@@ -455,7 +455,24 @@
                       gui?
                       call-create-embedding-executable)]
                     [(stand-alone)
-                     (call-create-embedding-executable executable-filename)])))))))
+                     (define c (make-custodian))
+                     (define d (new dialog% [parent parent] [label (string-constant create-executable-title)]))
+                     (new message% [parent d] [label (string-constant creating-executable-progress-status)])
+                     (new button%
+                          [parent d]
+                          [label (string-constant abort)]
+                          [callback (lambda (_1 _2)
+                                      (custodian-shutdown-all c))])
+                     (define thd
+                       (parameterize ([current-custodian c])
+                         (thread
+                          (λ ()
+                            (call-create-embedding-executable executable-filename)))))
+                     (thread
+                      (λ ()
+                        (thread-wait thd)
+                        (queue-callback (λ () (send d show #f)))))
+                     (send d show #t)])))))))
       
       (super-new
        [module #f]
