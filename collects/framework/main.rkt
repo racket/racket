@@ -193,6 +193,19 @@
             are also written at that point.}]})
 
  (proc-doc/names
+  preferences:get-preference/gui
+  (->* (symbol?)
+       ((-> void?))
+       any/c)
+  ((sym)
+   ((default (λ () (error 'get-preference/gui "unknown pref ~s" sym)))))
+  @{Like @scheme[get-preference], but has more sophisticated error handling.
+  In particular, it passes a @racket[#:timeout-lock-there] argument that
+  informs the user that the preferences file is locked (and offers the alternative
+  of not showing the message again).})
+
+ 
+ (proc-doc/names
   preferences:add-panel
   (-> (or/c string? (cons/c string? (listof string?)))
       (->i ([parent (is-a?/c area-container-window<%>)])
