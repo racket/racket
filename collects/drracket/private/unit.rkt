@@ -232,30 +232,47 @@ module browser threading seems wrong.
     ;; find-symbol : number -> string
     ;; finds the symbol around the position `pos' (approx)
     (define (find-symbol text pos)
-      (send text split-snip pos)
-      (send text split-snip (+ pos 1))
-      (let ([snip (send text find-snip pos 'after)])
-        (if (is-a? snip string-snip%)
-            (let* ([before
-                    (let loop ([i (- pos 1)]
-                               [chars null])
-                      (if (< i 0)
-                          chars
-                          (let ([char (send text get-character i)])
-                            (if (non-letter? char)
-                                chars
-                                (loop (- i 1)
-                                      (cons char chars))))))]
-                   [after
-                    (let loop ([i pos])
-                      (if (< i (send text last-position))
-                          (let ([char (send text get-character i)])
-                            (if (non-letter? char)
-                                null
-                                (cons char (loop (+ i 1)))))
-                          null))])
-              (apply string (append before after)))
-            "")))
+      (cond
+        [(is-a? text scheme:text<%>)
+         (let* ([before (send text get-backward-sexp pos)]
+                [before+ (and before (send text get-forward-sexp before))]
+                [after (send text get-forward-sexp pos)]
+                [after- (and after (send text get-backward-sexp after))])
+           (cond
+             [(and before before+ 
+                   (<= before pos before+)
+                   (eq? 'symbol (send text classify-position before))) 
+              (send text get-text before before+)]
+             [(and after after- 
+                   (<= after- pos after)
+                   (eq? 'symbol (send text classify-position after-)))
+              (send text get-text after- after)]
+             [else ""]))]
+        [else
+         (send text split-snip pos)
+         (send text split-snip (+ pos 1))
+         (let ([snip (send text find-snip pos 'after)])
+           (if (is-a? snip string-snip%)
+               (let* ([before
+                       (let loop ([i (- pos 1)]
+                                  [chars null])
+                         (if (< i 0)
+                             chars
+                             (let ([char (send text get-character i)])
+                               (if (non-letter? char)
+                                   chars
+                                   (loop (- i 1)
+                                         (cons char chars))))))]
+                      [after
+                       (let loop ([i pos])
+                         (if (< i (send text last-position))
+                             (let ([char (send text get-character i)])
+                               (if (non-letter? char)
+                                   null
+                                   (cons char (loop (+ i 1)))))
+                             null))])
+                 (apply string (append before after)))
+               ""))]))
     
     ;; non-letter? : char -> boolean
     ;; returns #t if the character belongs in a symbol (approx) and #f it is
