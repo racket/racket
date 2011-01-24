@@ -228,7 +228,7 @@ click on an identifier to get full details about its use.
 (code:line (string-append "rope" "twine" "yarn")  (code:comment @#,t{append strings}))
 (code:line (substring "corduroys" 0 4)            (code:comment @#,t{extract a substring}))
 (code:line (string-length "shoelace")             (code:comment @#,t{get a string's length}))
-(code:line (string? "c'est ne pas une string")    (code:comment @#,t{recognize strings}))
+(code:line (string? "Ceci n'est pas une string.") (code:comment @#,t{recognize strings}))
 (string? 1)
 (code:line (sqrt 16)                              (code:comment @#,t{find a square root}))
 (sqrt -16)
