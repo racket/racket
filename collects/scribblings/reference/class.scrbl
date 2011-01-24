@@ -1627,11 +1627,8 @@ behaves as if its class had been wrapped with the equivalent
 }
                              
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
-Produces a contract for an instance of a class that conforms
-to @scheme[class-contract].
-
-The resulting contract checks only the external field and method
-contracts listed in @scheme[class-contract].
+Produces a contract for an object, where the object is an
+instance of a class that conforms to @scheme[class-contract].
 }
                              
 @defform/subs[

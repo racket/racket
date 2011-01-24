@@ -3141,22 +3141,37 @@
          (syntax/loc stx
            (make-base-object/c methods method-ctcs fields field-ctcs))))]))
 
-(define-struct (base-instanceof/c base-object/c) (class-ctc)
+(define (instanceof/c-proj ctc)
+  (let ([proj (contract-projection (base-instanceof/c-class-ctc ctc))])
+    (λ (blame)
+      (let ([p (proj blame)])
+        (λ (val)
+          (unless (object? val)
+            (raise-blame-error blame val "expected an object, got ~v" val))
+          (let ([original-obj (if (has-original-object? val) (original-object val) val)]
+                [new-cls (p (object-ref val))])
+            (impersonate-struct val object-ref (λ (o c) new-cls)
+                                impersonator-prop:contracted ctc
+                                impersonator-prop:original-object original-obj)))))))
+
+(define (instanceof/c-first-order ctc)
+  (let ([cls-ctc (base-instanceof/c-class-ctc ctc)])
+    (λ (val)
+      (and (object? val)
+           (contract-first-order-passes? cls-ctc (object-ref val))))))
+
+(define-struct base-instanceof/c (class-ctc)
   #:property prop:contract
   (build-contract-property 
-   #:projection object/c-proj
+   #:projection instanceof/c-proj
    #:name
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
-   #:first-order object/c-first-order))
+   #:first-order instanceof/c-first-order))
 
 (define (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])
-    (unless (class/c? ctc)
-      (error "expected class contract, got ~v" ctc))
-    (make-base-instanceof/c (class/c-methods ctc) (class/c-method-contracts ctc)
-                          (class/c-fields ctc) (class/c-field-contracts ctc)
-                          ctc)))
+    (make-base-instanceof/c ctc)))
 
 ;;--------------------------------------------------------------------
 ;;  interfaces
