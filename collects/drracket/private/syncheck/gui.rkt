@@ -395,30 +395,21 @@ If the namespace does not, they are colored the unbound color.
             ;; syncheck:clear-arrows : -> void
             (define/public (syncheck:clear-arrows)
               (when (or arrow-records cursor-location cursor-text)
-                (let ([any-tacked? #f])
-                  (when tacked-hash-table
-                    (let/ec k
-                      (hash-for-each
-                       tacked-hash-table
-                       (λ (key val)
-                         (set! any-tacked? #t)
-                         (k (void))))))
-                  (set! tacked-hash-table #f)
-                  (set! arrow-records #f)
-                  (set! cursor-location #f)
-                  (set! cursor-text #f)
-                  (set! cursor-eles #f)
-                  (when cleanup-texts
-                    (for-each (λ (text) (send text thaw-colorer))
-                              cleanup-texts))
-                  (set! cleanup-texts #f)
-                  (set! style-mapping #f)
-                  (when any-tacked?
-                    (invalidate-bitmap-cache))
-                  (update-docs-background #f)
-                  (let ([f (get-top-level-window)])
-                    (when f
-                      (send f close-status-line 'drracket:check-syntax:mouse-over))))))
+                (set! tacked-hash-table #f)
+                (set! arrow-records #f)
+                (set! cursor-location #f)
+                (set! cursor-text #f)
+                (set! cursor-eles #f)
+                (when cleanup-texts
+                  (for-each (λ (text) (send text thaw-colorer))
+                            cleanup-texts))
+                (set! cleanup-texts #f)
+                (set! style-mapping #f)
+                (invalidate-bitmap-cache)
+                (update-docs-background #f)
+                (let ([f (get-top-level-window)])
+                  (when f
+                    (send f close-status-line 'drracket:check-syntax:mouse-over)))))
             
             ;; syncheck:apply-style/remember : (is-a?/c text%) number number style% symbol -> void
             (define/public (syncheck:apply-style/remember txt start finish style mode)
