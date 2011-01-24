@@ -28,7 +28,7 @@ means ``success'').}
 A parameter that determines a procedure to be called as the Racket
 process is about to exit normally. The procedure associated with this
 parameter is not call when @racket[exit] (or, more precisely, the
-defauly @tech{exit handler}) is used to exit early. The argument to
+default @tech{exit handler}) is used to exit early. The argument to
 the handler is the status code that is returned to the system on exit.
 The default executable-yield handler simply returns @|void-const|.
 
