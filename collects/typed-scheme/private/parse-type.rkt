@@ -152,7 +152,7 @@
   (parameterize ([current-orig-stx stx])    
     (syntax-parse
         stx
-      #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda
+      #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda t:case->
                           t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote)
       [t
        #:declare t (3d Type?)
@@ -202,7 +202,7 @@
       [((~and kw t:pred) t) 
        (add-type-name-reference #'kw)
        (make-pred-ty (parse-type #'t))]     
-      [((~and kw case-lambda) tys ...)
+      [((~and kw (~or case-lambda t:case->)) tys ...)
        (add-type-name-reference #'kw)
        (make-Function 
         (for/list ([ty (syntax->list #'(tys ...))])

@@ -98,6 +98,8 @@
     (-polydots (a) (t:-> (make-ValuesDots (list) a 'a)))]
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
+   [(case-> (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
+                                                                 [(N N) N])]
    [1 (-val 1)]
    [#t (-val #t)]
    [#f (-val #f)]

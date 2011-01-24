@@ -30,7 +30,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (require "../utils/require-contract.rkt"
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
-         (rename-in racket/contract [-> c->])
+         (rename-in racket/contract [-> c->] [case-> c:case->])
          "base-types.rkt"
          "base-types-extra.rkt"
          racket/flonum ; for for/flvector and for*/flvector
