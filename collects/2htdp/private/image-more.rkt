@@ -67,16 +67,14 @@
                         filename 
                         [width (if (image? image) (image-width image) 0)] 
                         [height (if (image? image) (image-height image) 0)])
-  (let* ([bm (make-object bitmap% 
-               (inexact->exact (ceiling width)) 
-               (inexact->exact (ceiling height)))]
+  (let* ([bm (make-bitmap (inexact->exact (ceiling width)) 
+                          (inexact->exact (ceiling height)))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
     (send bdc erase)
     (render-image image bdc 0 0)
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
-
 
 (define (get-right img) (bb-right (send img get-bb)))
 (define (get-bottom img) (bb-bottom (send img get-bb)))
