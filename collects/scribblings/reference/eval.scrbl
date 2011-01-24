@@ -317,17 +317,34 @@ the @racket[current-prompt-read], @racket[current-eval], and
 A parameter that determines a @deftech{prompt read handler}, which is
 a procedure that takes no arguments, displays a prompt string, and
 returns a top-level form to evaluate. The prompt read handler is
-called by @racket[read-eval-print-loop], and the handler typically
-should call the @tech{read interaction handler} (as determined by the
-@racket[current-read-interaction] parameter) after printing a prompt.
+called by @racket[read-eval-print-loop], and after printing a prompt,
+the handler typically should call the @tech{read interaction handler}
+(as determined by the @racket[current-read-interaction] parameter)
+with the port produced by the @tech{interaction port handler}
+(as determined by the @racket[current-get-interaction-input-port] parameter).
 
 The default prompt read handler prints @litchar{> } and returns the
 result of
 
 @racketblock[
-(let ([in (current-input-port)])
+(let ([in ((current-get-interaction-input-port))])
   ((current-read-interaction) (object-name in) in))
 ]}
+
+
+@defparam[current-get-interaction-input-port proc (-> input-port?)]{
+
+A parameter that determines the @deftech{interaction port handler},
+which returns a port to use for @racket[read-eval-print-loop] inputs.
+
+The default interaction port handler returns the current input port.
+In addition, if that port is the initial current input port,
+the initial current output and error ports are flushed.
+
+The @racketmodname[racket/gui/base] library adjusts this parameter's
+value by extending the current value. The extension wraps the result
+port so that GUI events can be handled when reading from the port
+blocks.}
 
 
 @defparam[current-read-interaction proc (any/c input-port? -> any)]{

@@ -1,3 +1,7 @@
+5.0.99.7
+add `current-get-interaction-input-port', which enables
+ `racket/gui' events to be dispatched while a REPL is blocked
+
 5.0.99.2
 proxy => impersonator
 equal? equates C pointers when they refer to the same address

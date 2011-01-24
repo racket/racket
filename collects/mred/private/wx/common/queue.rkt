@@ -3,6 +3,7 @@
          racket/draw/private/utils
          ffi/unsafe/atomic
          racket/class
+         racket/port
          "rbtree.rkt"
          "../../lock.rkt"
          "handlers.rkt"
@@ -358,6 +359,12 @@
 (define main-eventspace (make-eventspace* (current-thread)))
 (define current-eventspace (make-parameter main-eventspace))
 
+;; So we can get from a thread to the eventspace that
+;;  it handles (independent of the `current-eventspace'
+;;  parameter):
+(define handler-thread-of (make-thread-cell #f))
+(thread-cell-set! handler-thread-of main-eventspace)
+
 (define make-new-eventspace
   (let ([make-eventspace
          (lambda ()
@@ -367,8 +374,9 @@
                       (thread
                        (lambda ()
                          (sync pause)
-                         (parameterize ([current-eventspace es])
-                           (yield (make-semaphore))))))])
+                         (thread-cell-set! handler-thread-of es)
+                         (current-eventspace es)
+                         (yield (make-semaphore)))))])
              (semaphore-post pause)
              es))])
     make-eventspace))
@@ -578,3 +586,28 @@
    (lambda (v)
      (yield main-eventspace)
      (old-eyh v))))
+
+;; When using a REPL in a thread that has an eventspace,
+;; yield to events when the port would block.
+(current-get-interaction-input-port
+ (let ([orig (current-get-interaction-input-port)])
+   (lambda ()
+     (let ([e (thread-cell-ref handler-thread-of)])
+       (if e
+           (let ([filter (lambda (v)
+                           (cond
+                            [(eq? v 0) (yield) 0]
+                            [(evt? v)
+                             (parameterize ([current-eventspace e])
+                               (yield))
+                             (choice-evt v
+                                         (wrap-evt (eventspace-event-evt e)
+                                                   (lambda (_) 0)))]
+                            [else v]))])
+             (filter-read-input-port
+              (orig)
+              (lambda (str v)
+                (filter v))
+              (lambda (s skip evt v)
+                (filter v))))
+           (orig))))))
