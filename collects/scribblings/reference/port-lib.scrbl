@@ -506,6 +506,41 @@ is enabled for the resulting port. The default is @scheme[void].}
 
 Like @scheme[transplant-input-port], but for output ports.}
 
+@defproc[(filter-read-input-port [in input-port?]
+                                 [read-wrap (bytes? (or/c exact-nonnegative-integer?
+                                                          eof-object?
+                                                          procedure?
+                                                          evt?)
+                                                    . -> .
+                                                    (or/c exact-nonnegative-integer?
+                                                          eof-object?
+                                                          procedure?
+                                                          evt?))]
+                                 [peek-wrap (bytes? exact-nonnegative-integer? (or/c evt? #f)
+                                                    (or/c exact-nonnegative-integer?
+                                                     eof-object?
+                                                     procedure?
+                                                     evt?
+                                                     #f)
+                                             . -> . (or/c exact-nonnegative-integer?
+                                                     eof-object?
+                                                     procedure?
+                                                     evt?
+                                                     #f))]
+                                 [close? any/c #t])
+         input-port?]{
+
+Creates a port that draws from @racket[in], but each result from the
+port's read and peek procedures (in the sense of @racket[make-input-port]) 
+is filtered by @racket[read-wrap] and
+@racket[peek-wrap]. The filtering procedures each receive both the
+arguments and results of the read and peek procedures on @racket[in]
+for each call.
+
+If @racket[close?] is true, then closing the resulting port also
+closes @racket[in].}
+
+
 @defproc[(special-filter-input-port [in input-port?]
                                     [proc (procedure? bytes? . -> . (or/c exact-nonnegative-integer? 
                                                                           eof-object?
