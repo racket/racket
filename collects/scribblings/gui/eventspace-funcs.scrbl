@@ -50,6 +50,16 @@ An event dispatch handler must ultimately call the primitive event
  directly by the eventspace handler thread.
 }
 
+
+@defproc[(eventspace-event-evt [e eventspace? (current-eventspace)]) evt?]{
+
+Produces a synchronizable event (see @racket[sync]) that is ready when
+a GUI event (mouse or keyboard action, update event, timer, queued
+callback, etc.) is ready for dispatch in @racket[e]. That is, the
+result event is ready when @racket[(yield)] for the eventspace
+@racket[e] would dispatch a GUI event.}
+
+
 @defproc[(check-for-break)
          boolean?]{
 Inspects the event queue of the current eventspace, searching for a

@@ -28,6 +28,7 @@
          eventspace-shutdown?
          main-eventspace?
          eventspace-handler-thread
+         eventspace-event-evt
          queue-callback
          middle-queue-key
          get-top-level-windows

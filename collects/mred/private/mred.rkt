@@ -146,6 +146,7 @@
 	     queue-callback
 	     yield
 	     eventspace-shutdown?
+             eventspace-event-evt
 	     get-panel-background
 
              the-editor-wordbreak-map

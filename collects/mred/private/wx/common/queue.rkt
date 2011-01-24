@@ -26,12 +26,14 @@
               queue-refresh-event
               yield
               yield-refresh
+              eventspace-event-evt
               (rename-out [make-new-eventspace make-eventspace])
 
               event-dispatch-handler
               eventspace-shutdown?
               main-eventspace?
               eventspace-handler-thread
+              eventspace-event-evt
               eventspace-wait-cursor-count
               eventspace-extra-table
               eventspace-adjust-external-modal!
@@ -235,27 +237,66 @@
                                                         (set-mcdr! (mcdr q) p)
                                                         (set-mcar! q p))
                                                     (set-mcdr! q p)))]
-                                       [first (lambda (q)
+                                       [first (lambda (q peek?)
                                                 (and (mcar q)
-                                                     (wrap-evt
-                                                      always-evt
-                                                      (lambda (_)
-                                                        (start-atomic)
-                                                        (set! count (sub1 count))
-                                                        (check-done)
-                                                        (let ([result (mcar (mcar q))])
-                                                          (set-mcar! q (mcdr (mcar q)))
-                                                          (unless (mcar q)
-                                                            (set-mcdr! q #f))
-                                                          (end-atomic)
-                                                          result)))))]
+                                                     (if peek?
+                                                         always-evt
+                                                         (wrap-evt
+                                                          always-evt
+                                                          (lambda (_)
+                                                            (start-atomic)
+                                                            (set! count (sub1 count))
+                                                            (check-done)
+                                                            (let ([result (mcar (mcar q))])
+                                                              (set-mcar! q (mcdr (mcar q)))
+                                                              (unless (mcar q)
+                                                                (set-mcdr! q #f))
+                                                              (end-atomic)
+                                                              result))))))]
                                        [remove-timer
                                         (lambda (v timer)
                                           (set-box! timer (rbtree-remove 
                                                            timed-compare
                                                            v
                                                            (unbox timer)))
-                                          (check-done))])
+                                          (check-done))]
+                                       [timer-first-ready
+                                        (lambda (timer peek?)
+                                          (let ([rb (unbox timer)])
+                                            (and (not (null? rb))
+                                                 (let* ([v (rbtree-min (unbox timer))]
+                                                        [evt (timed-alarm-evt v)])
+                                                   (and (sync/timeout 0 evt)
+                                                        ;; It's ready
+                                                        (if peek?
+                                                            always-evt
+                                                            (wrap-evt
+                                                             always-evt
+                                                             (lambda (_)
+                                                               (start-atomic)
+                                                               (remove-timer v timer)
+                                                               (end-atomic)
+                                                               (timed-val v)))))))))]
+                                       [timer-first-wait
+                                        (lambda (timer peek?)
+                                          (let ([rb (unbox timer)])
+                                            (and (not (null? rb))
+                                                 (wrap-evt
+                                                  (timed-alarm-evt (rbtree-min (unbox timer)))
+                                                  (lambda (_) #f)))))]
+                                       [make-event-choice
+                                        (lambda (peek?)
+                                          (choice-evt
+                                           (wrap-evt (semaphore-peek-evt newly-posted-sema)
+                                                     (lambda (_) #f))
+                                           (or (first hi peek?)
+                                               (timer-first-ready timer peek?)
+                                               (first refresh peek?)
+                                               (first med peek?)
+                                               (first lo peek?)
+                                               (timer-first-wait timer peek?)
+                                               ;; nothing else ready...
+                                               never-evt)))])
                                   (case-lambda
                                    [(v)
                                     ;; Enqueue
@@ -285,46 +326,18 @@
                                    [()
                                     ;; Dequeue as evt
                                     (start-atomic)
-                                    (let ([timer-first-ready
-                                           (lambda (timer)
-                                             (let ([rb (unbox timer)])
-                                               (and (not (null? rb))
-                                                    (let* ([v (rbtree-min (unbox timer))]
-                                                           [evt (timed-alarm-evt v)])
-                                                      (and (sync/timeout 0 evt)
-                                                           ;; It's ready
-                                                           (wrap-evt
-                                                            always-evt
-                                                            (lambda (_)
-                                                              (start-atomic)
-                                                              (remove-timer v timer)
-                                                              (end-atomic)
-                                                              (timed-val v))))))))]
-                                          [timer-first-wait
-                                           (lambda (timer)
-                                             (let ([rb (unbox timer)])
-                                               (and (not (null? rb))
-                                                    (wrap-evt
-                                                     (timed-alarm-evt (rbtree-min (unbox timer)))
-                                                     (lambda (_) #f)))))])
-                                      (let ([e (choice-evt
-                                                (wrap-evt (semaphore-peek-evt newly-posted-sema)
-                                                          (lambda (_) #f))
-                                                (or (first hi)
-                                                    (timer-first-ready timer)
-                                                    (first refresh)
-                                                    (first med)
-                                                    (first lo)
-                                                    (timer-first-wait timer)
-                                                    ;; nothing else ready...
-                                                    never-evt))])
-                                        (end-atomic)
-                                        e))]
-                                   [(_1 _2)
-                                    ;; Dequeue only refresh event
+                                    (begin0 
+                                     (make-event-choice #f)
+                                     (end-atomic))]
+                                   [(only-refresh? peek?)
                                     (start-atomic)
                                     (begin0
-                                     (or (first refresh) never-evt)
+                                     (cond
+                                      [only-refresh?
+                                       ;; Dequeue only refresh event
+                                       (or (first refresh peek?) never-evt)]
+                                      [else
+                                       (make-event-choice #t)])
                                      (end-atomic))]))))
                             frames
                             (semaphore-peek-evt done-sema)
@@ -448,12 +461,18 @@
     (let ([e (current-eventspace)])
       (and (eq? (current-thread) (eventspace-handler-thread e))
            (let loop ([result #f])
-             (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f))])
+             (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #t #f))])
                (if v
                    (begin
                      (handle-event v e)
                      (loop #t))
                    result)))))))
+
+(define (eventspace-event-evt [e (current-eventspace)])
+  (unless (eventspace? e)
+    (raise-type-error 'eventspace-event-evt "eventspace" e))
+  (wrap-evt ((eventspace-queue-proc e) #f #t)
+            (lambda (_) e)))
 
 (define (main-eventspace? e)
   (eq? e main-eventspace))

@@ -62,6 +62,7 @@ editor<%>
 end-busy-cursor
 event%
 event-dispatch-handler
+eventspace-event-evt
 eventspace-handler-thread
 eventspace-shutdown?
 eventspace?
