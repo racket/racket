@@ -1,4 +1,4 @@
-#lang scheme/base 
+#lang racket/base
 
 ;; This script parses UnicodeData.txt (the standard Unicode database,
 ;; available from the web) and other such files, and it produces
@@ -16,7 +16,7 @@
 
 (define mark-cats '("Mn" "Mc" "Me"))
 (define letter-cats '("Lu" "Ll" "Lt" "Lm" "Lo"))
-(define digit-cats '("Nd"))
+(define digit-cats '("Nd" "No" "Nl"))
 (define space-cats '("Zl" "Zs" "Zp"))
 (define punc-cats '("Pc" "Pd" "Ps" "Pe" "Pi" "Pf" "Po"))
 (define sym-cats '("Sm" "Sc" "Sk" "So"))
@@ -27,14 +27,14 @@
 			     punc-cats
 			     sym-cats))
 
-(define cases (cons (make-hash-table 'equal) (box 0)))
+(define cases (cons (make-hash) (box 0)))
 
 (define (indirect t v limit)
-  (let ([r (hash-table-get (car t) v (lambda () #f))])
+  (let ([r (hash-ref (car t) v (lambda () #f))])
     (or r
 	(let ([r (unbox (cdr t))])
 	  (set-box! (cdr t) (add1 r))
-	  (hash-table-put! (car t) v r)
+	  (hash-set! (car t) v r)
 	  (when (r . > . limit)
 	    (error "too many indirects"))
 	  r))))
@@ -53,13 +53,13 @@
 (define (combine-case up down title fold combining)
   (indirect cases (list up down title fold combining) 256))
 
-(define general-categories (make-hash-table 'equal))
+(define general-categories (make-hash))
 (define (combine-cat cat)
-  (hash-table-get general-categories cat
-		  (lambda ()
-		    (let ([v (hash-table-count general-categories)])
-		      (hash-table-put! general-categories cat v)
-		      v))))
+  (hash-ref general-categories cat
+            (lambda ()
+              (let ([v (hash-count general-categories)])
+                (hash-set! general-categories cat v)
+                v))))
 ;; So they're in order:
 (with-input-from-file "schgencat.h"
   (lambda ()
@@ -73,7 +73,7 @@
 
 (define hexes (map char->integer (string->list "0123456789abcdefABCDEF")))
 
-(define combining-class-ht (make-hash-table))
+(define combining-class-ht (make-hasheq))
 
 ;; In principle, adjust this number to tune the result, but
 ;;  the macros for accessing the table (in scheme.h) need to
@@ -100,7 +100,7 @@
 (define ccount 0)
 
 (define (map1 c v v2 v3 cc)
-  (hash-table-put! combining-class-ht c cc)
+  (hash-set! combining-class-ht c cc)
   (set! ccount (add1 ccount))
   (if (= c (add1 range-top))
       (begin
@@ -176,8 +176,8 @@
 	null)))
 
 ;; This code assumes that Final_Sigma is the only condition that we care about:
-(define case-foldings (make-hash-table 'equal))
-(define special-case-foldings (make-hash-table 'equal))
+(define case-foldings (make-hash))
+(define special-case-foldings (make-hash))
 (call-with-input-file "Unicode/CaseFolding.txt"
   (lambda (i)
     (let loop ()
@@ -189,12 +189,12 @@
 		    [variant (list-ref m 2)]
 		    [folded (string->codes (list-ref m 3))])
 		(if (string=? variant "F")
-		    (hash-table-put! special-case-foldings code folded)
-		    (hash-table-put! case-foldings code (car folded))))))
+		    (hash-set! special-case-foldings code folded)
+		    (hash-set! case-foldings code (car folded))))))
 	  (loop))))))
 
 ;; This code assumes that Final_Sigma is the only condition that we care about:
-(define special-casings (make-hash-table 'equal))
+(define special-casings (make-hash))
 (define-struct special-casing (lower upper title folding final-sigma?) #:mutable)
 (call-with-input-file "Unicode/SpecialCasing.txt"
   (lambda (i)
@@ -209,13 +209,13 @@
 		    [upper (string->codes (list-ref m 4))]
 		    [title (string->codes (list-ref m 3))]
 		    [final-sigma? (and (regexp-match #rx"Final_Sigma" (list-ref m 5)) #t)])
-		(let ([folding (list (hash-table-get case-foldings code (lambda () code)))])
-		  (hash-table-put! special-casings code (make-special-casing lower upper title folding final-sigma?))))))
+		(let ([folding (list (hash-ref case-foldings code (lambda () code)))])
+		  (hash-set! special-casings code (make-special-casing lower upper title folding final-sigma?))))))
 	  (loop))))))
 
-(define lower-case  (make-hash-table 'equal))
-(define upper-case  (make-hash-table 'equal))
-(define alphabetic  (make-hash-table 'equal))
+(define lower-case  (make-hash))
+(define upper-case  (make-hash))
+(define alphabetic  (make-hash))
 
 (with-input-from-file "Unicode/DerivedCoreProperties.txt"
   (lambda ()
@@ -235,12 +235,12 @@
                          [(string=? (caddr m) "Alphabetic") alphabetic]
                          [else (error "unknown property section")])])
 		(let loop ([i start])
-		  (hash-table-put! t i #t)
+		  (hash-set! t i #t)
 		  (unless (= i end)
 		    (loop (add1 i)))))))
 	  (loop))))))
 
-(define white_spaces  (make-hash-table 'equal))
+(define white_spaces (make-hash))
 
 (with-input-from-file "Unicode/PropList.txt"
   (lambda ()
@@ -255,16 +255,16 @@
 				(string->number (cadr m) 16)
 				start))])
 		(let loop ([i start])
-		  (hash-table-put! white_spaces i #t)
+		  (hash-set! white_spaces i #t)
 		  (unless (= i end)
 		    (loop (add1 i)))))))
 	  (loop))))))
 
-(define decomp-ht (make-hash-table))
-(define k-decomp-ht (make-hash-table))
-(define compose-initial-ht (make-hash-table))
-(define compose-map (make-hash-table 'equal))
-(define do-not-compose-ht (make-hash-table 'equal))
+(define decomp-ht (make-hasheq))
+(define k-decomp-ht (make-hasheq))
+(define compose-initial-ht (make-hasheq))
+(define compose-map (make-hash))
+(define do-not-compose-ht (make-hash))
 
 (with-input-from-file "Unicode/CompositionExclusions.txt"
   (lambda ()
@@ -274,7 +274,7 @@
 	  (let ([m (regexp-match #rx"^([0-9A-F.]+)" l)])
 	    (when m
 	      (let ([code (string->number (car m) 16)])
-		(hash-table-put! do-not-compose-ht code #t))))
+		(hash-set! do-not-compose-ht code #t))))
 	  (loop))))))
 
 (define (extract-decomp decomp code)
@@ -289,15 +289,15 @@
 			 (string->number (caddr m) 16))])
 	      ;; Canonical composition?
 	      (when (and (positive? b)
-			 (not (hash-table-get do-not-compose-ht
-					      code
-					      (lambda () #f))))
-		(hash-table-put! compose-initial-ht a #t)
+			 (not (hash-ref do-not-compose-ht
+                                        code
+                                        (lambda () #f))))
+		(hash-set! compose-initial-ht a #t)
 		(let ([key (bitwise-ior (arithmetic-shift a 16) b)])
-		  (when (hash-table-get compose-map key (lambda () #f))
+		  (when (hash-ref compose-map key (lambda () #f))
 		    (error 'decomp "composition already mapped: ~e" key))
-		  (hash-table-put! compose-map key code)))
-	      (hash-table-put! decomp-ht code (cons a b))
+		  (hash-set! compose-map key code)))
+	      (hash-set! decomp-ht code (cons a b))
 	      #t)
 	    ;; Compatibility decomp
 	    (let ([seq
@@ -307,7 +307,7 @@
 			   (cons (string->number (cadr m) 16)
 				 (loop (caddr m)))
 			   null)))])
-	      (hash-table-put! k-decomp-ht code seq)
+	      (hash-set! k-decomp-ht code seq)
 	      #t)))))
 
 (call-with-input-file "Unicode/UnicodeData.txt"
@@ -328,7 +328,7 @@
 		  [up (string->number (cadddr (cddddr m)) 16)]
 		  [down (string->number (cadddr (cddddr (cdr m))) 16)]
 		  [title (string->number (cadddr (cddddr (cddr m))) 16)])
-              (let ([alphabetic? (hash-table-get alphabetic code #f)]
+              (let ([alphabetic? (hash-ref alphabetic code #f)]
                     [numeric? (not (string=? numeric ""))]
                     [symbolic? (member cat sym-cats)]
                     [punctuation? (member cat punc-cats)])
@@ -341,8 +341,8 @@
                        ;; Decomposition
                        (extract-decomp decomp code)
                        ;; special-casing
-                       (or (hash-table-get special-casings code (lambda () #f))
-                           (hash-table-get special-case-foldings code (lambda () #f)))
+                       (or (hash-ref special-casings code (lambda () #f))
+                           (hash-ref special-case-foldings code (lambda () #f)))
                        ;; case-ignoreable
                        (or (member code midletters)
                            (member cat '("Mn" "Me" "Cf" "Lm" "Sk")))
@@ -351,9 +351,9 @@
                            numeric?
                            symbolic?
                            punctuation?
-                           (member cat mark-cats))
+                           (member cat graphic-cats))
                        ;; lowercase:
-                       (hash-table-get lower-case code (lambda () #f))
+                       (hash-ref lower-case code (lambda () #f))
                        #;
                        (and (not (<= #x2000 code #x2FFF))
                             (not down)
@@ -361,7 +361,7 @@
                                 (regexp-match #rx"SMALL LETTER" name)
                                 (regexp-match #rx"SMALL LIGATURE" name)))
                        ;; uppercase;
-                       (hash-table-get upper-case code (lambda () #f))
+                       (hash-ref upper-case code (lambda () #f))
                        #;
                        (and (not (<= #x2000 code #x2FFF))
                             (not up)
@@ -381,7 +381,7 @@
                        ;; SOMETHING - this bit not yet used
                        #f
                        ;; whitespace
-                       (hash-table-get white_spaces code #f)
+                       (hash-ref white_spaces code #f)
                        #;
                        (or (member cat space-cats)
                        (member code '(#x9 #xa #xb #xc #xd #x85)))
@@ -400,7 +400,7 @@
                        (if up (- up code) 0)
                        (if down (- down code) 0)
                        (if title (- title code) 0)
-                       (let ([case-fold (hash-table-get case-foldings code (lambda () #f))])
+                       (let ([case-fold (hash-ref case-foldings code (lambda () #f))])
                          (if case-fold (- case-fold code) 0))
                        combining)
                       ;; Category
@@ -409,14 +409,14 @@
                       combining))
 	      (loop code))))))))
 
-(hash-table-for-each compose-initial-ht
-		     (lambda (k v)
-		       ;; A canonical decomposition that starts with a non-0 combining
-		       ;;  class is not re-created in a canonical composition. There
-		       ;;  are only two such leading character as of Unicode 4.0:
-		       ;;  U+0308 and U+0F71.
-		       (when (zero? (hash-table-get combining-class-ht k))
-			 (set-compose-initial! k))))
+(hash-for-each compose-initial-ht
+               (lambda (k v)
+                 ;; A canonical decomposition that starts with a non-0 combining
+                 ;;  class is not re-created in a canonical composition. There
+                 ;;  are only two such leading character as of Unicode 4.0:
+                 ;;  U+0308 and U+0F71.
+                 (when (zero? (hash-ref combining-class-ht k))
+                   (set-compose-initial! k))))
 
 ;; Remove compositions from compose map that start with
 ;;  a character whose combining class is not 0. As of Unicode
@@ -424,12 +424,12 @@
 ;;  U+0F75, and U+0F81.
 (for-each (lambda (k)
 	    (let ([a (arithmetic-shift k -16)])
-	      (unless (zero? (hash-table-get combining-class-ht a))
-		(hash-table-remove! compose-map k))))
-	  (hash-table-map compose-map (lambda (k v) k)))
+	      (unless (zero? (hash-ref combining-class-ht a))
+		(hash-remove! compose-map k))))
+	  (hash-map compose-map (lambda (k v) k)))
 
-(define k-decomp-map-ht (make-hash-table))
-(define k-decomp-strs-ht (make-hash-table 'equal))
+(define k-decomp-map-ht (make-hasheq))
+(define k-decomp-strs-ht (make-hash))
 (define k-decomp-strs-len 0)
 (define k-decomp-strs null)
 
@@ -438,12 +438,12 @@
    [(empty? s) empty]
    [(empty? (cdr s))
     (let ([code (car s)])
-      (let ([v (hash-table-get decomp-ht code (lambda () #f))])
+      (let ([v (hash-ref decomp-ht code (lambda () #f))])
 	(if v
 	    (if (zero? (cdr v))
 		(fold-decomp (list (car v)))
 		(fold-decomp (list (car v) (cdr v))))
-	    (let ([v (hash-table-get k-decomp-ht code (lambda () #f))])
+	    (let ([v (hash-ref k-decomp-ht code (lambda () #f))])
 	      (if v
 		  (fold-decomp v)
 		  (list code))))))]
@@ -454,25 +454,25 @@
  (lambda (p)
    (let* ([code (car p)]
 	  [seq (fold-decomp (cdr p))]
-	  [pos (hash-table-get k-decomp-strs-ht seq
-			       (lambda ()
-				 (begin0
-				  k-decomp-strs-len
-				  (hash-table-put! k-decomp-strs-ht seq
-						   k-decomp-strs-len)
-				  (set! k-decomp-strs
-					(append (reverse seq) k-decomp-strs))
-				  (set! k-decomp-strs-len (+ k-decomp-strs-len
-							     (length seq))))))])
-     (hash-table-put! k-decomp-map-ht code (cons pos (length seq)))))
+	  [pos (hash-ref k-decomp-strs-ht seq
+                         (lambda ()
+                           (begin0
+                            k-decomp-strs-len
+                            (hash-set! k-decomp-strs-ht seq
+                                       k-decomp-strs-len)
+                            (set! k-decomp-strs
+                                  (append (reverse seq) k-decomp-strs))
+                            (set! k-decomp-strs-len (+ k-decomp-strs-len
+                                                       (length seq))))))])
+     (hash-set! k-decomp-map-ht code (cons pos (length seq)))))
  ;; Sort to keep it deterministic:
- (sort (hash-table-map k-decomp-ht cons)
+ (sort (hash-map k-decomp-ht cons)
        (lambda (a b) (< (car a) (car b)))))
 
 
-(define vectors (make-hash-table 'equal))
-(define vectors2 (make-hash-table 'equal))
-(define vectors3 (make-hash-table 'equal))
+(define vectors (make-hash))
+(define vectors2 (make-hash))
+(define vectors3 (make-hash))
 
 (define pos 0)
 (define pos2 0)
@@ -485,9 +485,9 @@
     (unless (= i hi-count)
       (let ([vec (vector-ref top i)])
 	(when vec
-	  (unless (hash-table-get vectors vec (lambda () #f))
+	  (unless (hash-ref vectors vec (lambda () #f))
 	    (set-pos! (add1 (get-pos)))
-	    (hash-table-put! vectors vec (get-pos))))
+	    (hash-set! vectors vec (get-pos))))
 	(loop (add1 i))))))
 
 (hash-vectors! top vectors (lambda () pos) (lambda (v) (set! pos v)))
@@ -495,18 +495,18 @@
 (hash-vectors! top3 vectors3 (lambda () pos3) (lambda (v) (set! pos3 v)))
 
 ;; copy folding special cases to the special-cases table, if not there already:
-(hash-table-for-each special-case-foldings
-		     (lambda (k v)
-		       (let ([sc (hash-table-get special-casings k (lambda ()
-								     (let ([sc (make-special-casing
-										(list k)
-										(list k)
-										(list k)
-										(list k)
-										#f)])
-								       (hash-table-put! special-casings k sc)
-								       sc)))])
-			 (set-special-casing-folding! sc v))))
+(hash-for-each special-case-foldings
+               (lambda (k v)
+                 (let ([sc (hash-ref special-casings k (lambda ()
+                                                         (let ([sc (make-special-casing
+                                                                    (list k)
+                                                                    (list k)
+                                                                    (list k)
+                                                                    (list k)
+                                                                    #f)])
+                                                           (hash-set! special-casings k sc)
+                                                           sc)))])
+                   (set-special-casing-folding! sc v))))
 
 (define world-count (expt 2 10))
 
@@ -515,16 +515,16 @@
 (printf "/* Character count: ~a */\n" ccount)
 (printf "/* Total bytes for all tables: ~a */\n\n" 
 	(+ (* (add1 low) 
-	      (* 2 (add1 (length (hash-table-map vectors cons)))))
+	      (* 2 (add1 (length (hash-map vectors cons)))))
 	   (* (add1 low) 
-	      (* 1 (add1 (length (hash-table-map vectors2 cons)))))
+	      (* 1 (add1 (length (hash-map vectors2 cons)))))
 	   (* (add1 low) 
-	      (* 1 (add1 (length (hash-table-map vectors3 cons)))))
-	   (* (hash-table-count decomp-ht)
+	      (* 1 (add1 (length (hash-map vectors3 cons)))))
+	   (* (hash-count decomp-ht)
 	      8)
-	   (* (hash-table-count compose-map)
+	   (* (hash-count compose-map)
 	      2)
-	   (* (hash-table-count k-decomp-map-ht) (+ 4 1 2))
+	   (* (hash-count k-decomp-map-ht) (+ 4 1 2))
 	   (* 2 k-decomp-strs-len)
 	   (* 4 4 (unbox (cdr cases)))
 	   (* 4 (* 2 hi-count))))
@@ -534,13 +534,13 @@
 	 "   via the scheme_uchar_find() macro in scheme.h. */\n\n"))
 
 (printf "/* Character properties: */\n")
-(printf "unsigned short *scheme_uchar_table[~a];\n" hi-count)
+(printf "READ_ONLY unsigned short *scheme_uchar_table[~a];\n" hi-count)
 
 (printf "\n/* Character case mapping as index into scheme_uchar_ups, etc.: */\n")
-(printf "unsigned char *scheme_uchar_cases_table[~a];\n" hi-count)
+(printf "READ_ONLY unsigned char *scheme_uchar_cases_table[~a];\n" hi-count)
 
 (printf "\n/* Character general categories: */\n")
-(printf "unsigned char *scheme_uchar_cats_table[~a];\n" hi-count)
+(printf "READ_ONLY unsigned char *scheme_uchar_cats_table[~a];\n" hi-count)
 
 (printf "\n/* The udata... arrays are used by init_uchar_table to fill the above mappings.*/\n\n")
 
@@ -559,11 +559,11 @@
        (loop (add1 i))))))
 
 (define (print-table type suffix vectors pos hex?)
-  (printf "static unsigned ~a udata~a[] = {\n" type suffix)
+  (printf "READ_ONLY static unsigned ~a udata~a[] = {\n" type suffix)
   (print-row (make-vector (add1 low) 0) 0 pos hex?)
   (map (lambda (p)
 	 (print-row (car p) (cdr p) pos hex?))
-       (sort (hash-table-map vectors cons)
+       (sort (hash-map vectors cons)
              (lambda (a b) (< (cdr a) (cdr b)))))
   (printf "};\n"))
 (print-table "short" "" vectors pos #t)
@@ -571,14 +571,14 @@
 (print-table "char" "_cases" vectors2 pos2 #f)
 (print-table "char" "_cats" vectors3 pos3 #f)
 
-(printf "\n/* Case mapping size: ~a */\n" (hash-table-count (car cases)))
+(printf "\n/* Case mapping size: ~a */\n" (hash-count (car cases)))
 (printf "/* Find an index into the ups, downs, etc. table for a character\n")
 (printf "   by using scheme_uchar_cases_table; then, the value at the index\n")
 (printf "   is relative to the original character (except for combining class,\n")
 (printf "   of course). */\n")
   
 (define (print-shift t end select type name)
-  (printf "\n~a scheme_uchar_~a[] = {\n" type name)
+  (printf "\nREAD_ONLY ~a scheme_uchar_~a[] = {\n" type name)
   (for-each (lambda (p)
 	      (printf " ~a~a" 
 		      (select (car p))
@@ -587,7 +587,7 @@
 			  ","))
 	      (when (zero? (modulo (add1 (cdr p)) 16))
 		(newline)))
-	    (sort (hash-table-map t cons)
+	    (sort (hash-map t cons)
                   (lambda (a b) (< (cdr a) (cdr b)))))
   (printf " };\n"))
 
@@ -597,10 +597,10 @@
 (print-shift (car cases) (unbox (cdr cases)) cadddr "int" "folds")
 (print-shift (car cases) (unbox (cdr cases)) (lambda (x) (cadddr (cdr x))) "unsigned char" "combining_classes")
 
-(let ([l (sort (hash-table-map general-categories cons)
+(let ([l (sort (hash-map general-categories cons)
                (lambda (a b) (< (cdr a) (cdr b))))])
   (printf "\n#define NUM_GENERAL_CATEGORIES ~a\n" (length l))
-  (printf "static const char *general_category_names[] = {")
+  (printf "READ_ONLY static const char *general_category_names[] = {")
   (for-each (lambda (c)
 	      (printf (if (zero? (cdr c))
 			  "\n  ~s"
@@ -614,7 +614,7 @@
 
 (printf "\n#define NUM_UCHAR_RANGES ~a\n" (length ranges))
 (printf "\n#define URANGE_VARIES 0x40000000\n")
-(printf "static int mapped_uchar_ranges[] = {\n")
+(printf "READ_ONLY static int mapped_uchar_ranges[] = {\n")
 (for-each (lambda (r)
 	    (printf "  0x~x, 0x~x~a~a\n"
 		    (car r) 
@@ -643,7 +643,7 @@
 				(if (equal? vec (vector-ref top j))
 				    (loop (add1 j))
 				    (- j i)))]
-		  [vec-pos (* (add1 low) (hash-table-get vectors vec))])
+		  [vec-pos (* (add1 low) (hash-ref vectors vec))])
 	      (if (> same-count 4)
 		  (begin
 		    (printf "  for (i = ~a; i < ~a; i++) {\n"
@@ -686,10 +686,10 @@
       (set! special-count (+ special-count (length l))))
     (- special-count (length l))))
 
-(printf "#define NUM_SPECIAL_CASINGS ~a\n\n" (hash-table-count special-casings))
-(printf "static int uchar_special_casings[] = {\n")
+(printf "#define NUM_SPECIAL_CASINGS ~a\n\n" (hash-count special-casings))
+(printf "READ_ONLY static int uchar_special_casings[] = {\n")
 (printf "  /* code,  down len, off,  up len, off,  title len, off,  fold len, off,  final-sigma? */\n")
-(let ([n (hash-table-count special-casings)])
+(let ([n (hash-count special-casings)])
   (for-each (lambda (p)
 	      (set! n (sub1 n))
 	      (let ([code (car p)]
@@ -706,11 +706,11 @@
 			  (length (special-casing-folding sc)) folding-start
 			  (if (special-casing-final-sigma? sc) 1 0)
 			  (if (zero? n) " " ",\n")))))
-	    (sort (hash-table-map special-casings cons)
+	    (sort (hash-map special-casings cons)
                   (lambda (a b) (< (car a) (car b))))))
 (printf "};\n")
 (printf "\n/* Offsets in scheme_uchar_special_casings point into here: */\n")
-(printf "static int uchar_special_casing_data[] = {\n  ")
+(printf "READ_ONLY static int uchar_special_casing_data[] = {\n  ")
 (let ([n 0])
   (for-each (lambda (v)
 	      (printf
@@ -725,7 +725,7 @@
 
 (printf "\n#define SPECIAL_CASE_FOLD_MAX ~a\n" (apply 
 						max 
-						(hash-table-map 
+						(hash-map 
 						 special-casings
 						 (lambda (k v)
 						   (length (special-casing-folding v))))))
@@ -735,45 +735,45 @@
 
 (let ()
   (define canon-composes
-    (list->vector (sort (hash-table-map compose-map cons)
+    (list->vector (sort (hash-map compose-map cons)
                         (lambda (a b) (< (car a) (car b))))))
-  (define count (hash-table-count compose-map))
+  (define count (hash-count compose-map))
   
   (define-values (all-composes decomp-vector long-composes)
-    (let ([decomp-pos-ht (make-hash-table)]
+    (let ([decomp-pos-ht (make-hasheq)]
 	  [counter count]
 	  [extra null]
 	  [long-counter 0]
 	  [longs null])
-      (hash-table-for-each decomp-ht
-			   (lambda (k v)
-			     ;; Use table of composed shorts:
-			     (let ([key (+ (arithmetic-shift (car v) 16) (cdr v))])
-			       (let ([pos 
-				      (if (and ((car v) . <= . #xFFFF)
-					       ((cdr v) . <= . #xFFFF))
-					  (if (hash-table-get compose-map key (lambda () #f))
-					      ;; Find index in comp vector:
-					      (let loop ([i 0])
-						(if (= key (car (vector-ref canon-composes i)))
-						    i
-						    (loop (add1 i))))
-					      ;; Add to compose table:
-					      (begin0
-					       counter
-					       (set! extra (cons (cons key #f) extra))
-					       (set! counter (add1 counter))))
-					  ;; Use table of long+long sequences:
-					  (begin
-					    (set! long-counter (add1 long-counter))
-					    (set! longs (cons (cdr v) (cons (car v) longs)))
-					    (- long-counter)))])
-				 (hash-table-put! decomp-pos-ht k pos)))))
+      (hash-for-each decomp-ht
+                     (lambda (k v)
+                       ;; Use table of composed shorts:
+                       (let ([key (+ (arithmetic-shift (car v) 16) (cdr v))])
+                         (let ([pos 
+                                (if (and ((car v) . <= . #xFFFF)
+                                         ((cdr v) . <= . #xFFFF))
+                                    (if (hash-ref compose-map key (lambda () #f))
+                                        ;; Find index in comp vector:
+                                        (let loop ([i 0])
+                                          (if (= key (car (vector-ref canon-composes i)))
+                                              i
+                                              (loop (add1 i))))
+                                        ;; Add to compose table:
+                                        (begin0
+                                         counter
+                                         (set! extra (cons (cons key #f) extra))
+                                         (set! counter (add1 counter))))
+                                    ;; Use table of long+long sequences:
+                                    (begin
+                                      (set! long-counter (add1 long-counter))
+                                      (set! longs (cons (cdr v) (cons (car v) longs)))
+                                      (- long-counter)))])
+                           (hash-set! decomp-pos-ht k pos)))))
       (values
        (list->vector (append (vector->list canon-composes)
 			     (reverse extra)))
        (list->vector
-	(sort (hash-table-map decomp-pos-ht cons)
+	(sort (hash-map decomp-pos-ht cons)
               (lambda (a b) (< (car a) (car b)))))
        (list->vector (reverse longs)))))
 
@@ -783,7 +783,7 @@
 
   (let ([print-compose-data
 	 (lambda (type suffix which composes count hex? row-len)
-	   (printf "static ~a utable_~a[] = {\n"
+	   (printf "READ_ONLY static ~a utable_~a[] = {\n"
 		   type suffix)
 	   (let loop ([i 0])
 	     (let ([v (which (vector-ref composes i))])
@@ -826,7 +826,7 @@
 
     (let ([k-decomp-vector
 	   (list->vector
-	    (sort (hash-table-map k-decomp-map-ht cons)
+	    (sort (hash-map k-decomp-map-ht cons)
                   (lambda (a b) (< (car a) (car b)))))])
       (printf "\n")
       (printf "/* utable_kompat_decomp_keys identifies characters that have a compatability decomposition;\n")

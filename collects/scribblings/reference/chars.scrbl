@@ -179,7 +179,8 @@ Returns @scheme[#t] if @scheme[char]'s Unicode general category is
 @defproc[(char-graphic? [char char?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[char]'s Unicode general category is
-@UCat{Mn}, @UCat{Mc}, @UCat{Me}, or if one of the following produces
+@UCat{Ll}, @UCat{Lm}, @UCat{Lo}, @UCat{Lt}, @UCat{Lu}, @UCat{Nd}, @UCat{Nl}, @UCat{No}, 
+@UCat{Mn}, @UCat{Mc}, or @UCat{Me}, or if one of the following produces
 @scheme[#t] when applied to @scheme[char]: @scheme[char-alphabetic?],
 @scheme[char-numeric?], @scheme[char-symbolic?], or
 @scheme[char-punctuation?].}
