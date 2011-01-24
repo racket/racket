@@ -99,7 +99,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "inga"        "i386-freebsd"
 # defbuild "chicago-unstable" "i386-linux-debian-unstable"
 # Start the main build last
-defbuild "$workmachine" "x86_64-linux-f7" "copytobak=$maindir" "test_gui=yes"
+defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
 
 ###############################################################################
@@ -198,6 +198,7 @@ name_of_platform() {
     ( "x86_64-linux-f7"   ) echo "Linux/x86_64/Fedora 7" ;;
     ( "i386-linux-f9"     ) echo "Linux/i386/Fedora 9" ;;
     ( "i386-linux-f12"    ) echo "Linux/i386/Fedora 12" ;;
+    ( "x86_64-linux-f14"  ) echo "Linux/x86_64/Fedora 14" ;;
     ( "i386-linux-debian"          ) echo "Linux/i386/Debian-stable" ;;
     ( "i386-linux-debian-testing"  ) echo "Linux/i386/Debian-testing" ;;
     ( "i386-linux-debian-unstable" ) echo "Linux/i386/Debian-unstable" ;;
@@ -271,6 +272,7 @@ platforms_of_dist_type() {
                    "i386-linux-fc6" \
                    "i386-linux-f7" \
                    "x86_64-linux-f7" \
+                   "x86_64-linux-f14" \
                    "i386-linux-f9" \
                    "i386-linux-f12" \
                    "i386-linux-debian" \
