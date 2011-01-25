@@ -11,8 +11,7 @@
          mred/mred-sig
          mrlib/interactive-value-port
          setup/dirs
-         racket/list
-         (prefix-in srfi1: srfi/1))
+         racket/list)
 (require setup/xref
          scribble/xref
          scribble/manual-struct)
@@ -3308,7 +3307,7 @@ designates the character that triggers autocompletion
          (set! hidden? #t)
          (set! all-completions (send cursor get-completions))
          (set! all-completions-length (send cursor get-length))
-         (set! visible-completions (srfi1:take (send cursor get-completions) (autocomplete-limit)))
+         (set! visible-completions (take (send cursor get-completions) (autocomplete-limit)))
          (set! visible-completions-length (autocomplete-limit))]))
     
     (define/public (get-completions) all-completions)
@@ -3322,14 +3321,14 @@ designates the character that triggers autocompletion
     
     (define/public (scroll-down)
       (when hidden?
-        (set! all-completions (append (srfi1:drop all-completions (autocomplete-limit)) visible-completions))
-        (set! visible-completions (srfi1:take all-completions (autocomplete-limit)))))
+        (set! all-completions (append (drop all-completions (autocomplete-limit)) visible-completions))
+        (set! visible-completions (take all-completions (autocomplete-limit)))))
     
     (define/public (scroll-up)
       (when hidden?
         (let ([n (- all-completions-length (autocomplete-limit))])
-          (set! all-completions (append (srfi1:drop all-completions n) (srfi1:take all-completions n)))
-          (set! visible-completions (srfi1:take all-completions (autocomplete-limit))))))
+          (set! all-completions (append (drop all-completions n) (take all-completions n)))
+          (set! visible-completions (take all-completions (autocomplete-limit))))))
     
     (define/public (narrow char)
       (let ([new-cursor (send cursor narrow char)])
