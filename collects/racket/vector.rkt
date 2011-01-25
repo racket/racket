@@ -41,13 +41,13 @@
                                end))
        (vector)]
       [else
-       (unless (and (<= 0 start) (< start len))
+       (unless (and (<= 0 start len))
          (raise-mismatch-error
           'vector-copy
           (format "start index ~e out of range [~e, ~e] for vector: "
                   start 0 len)
           v))
-       (unless (and (<= start end) (<= end len))
+       (unless (and (<= start end len))
          (raise-mismatch-error
           'vector-copy
           (format "end index ~e out of range [~e, ~e] for vector: "
