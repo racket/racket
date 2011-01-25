@@ -92,6 +92,7 @@ i386-linux-f7     :=tag unix
 x86_64-linux-f7   :=tag unix
 i386-linux-f9     :=tag unix
 i386-linux-f12    :=tag unix
+x86_64-linux-f14  :=tag unix
 i386-linux-debian :=tag unix
 i386-linux-debian-testing  :=tag unix
 i386-linux-debian-unstable :=tag unix
@@ -707,6 +708,7 @@ platform
          x86_64-linux-f7   => "Linux x86_64, built on Fedora 7"
          i386-linux-f9     => "Linux i386, built on Fedora 9"
          i386-linux-f12    => "Linux i386, built on Fedora 12"
+         x86_64-linux-f14  => "Linux x86_64, built on Fedora 14"
          i386-linux-debian => "Linux i386, built on Debian Stable"
          i386-linux-debian-testing  => "Linux i386, built on Debian Testing"
          i386-linux-debian-unstable => "Linux i386, built on Debian Unstable"
