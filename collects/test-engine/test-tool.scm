@@ -78,7 +78,7 @@
           (unless (send test-panel is-shown?)
             (send test-frame add-child test-panel)
             (send test-frame set-percentages
-                  (get-preference 'test-engine:test-dock-size))))
+                  (preferences:get 'test-engine:test-dock-size))))
         (define test-panel null)
         (define test-frame null)
 
