@@ -123,40 +123,60 @@
 ;; chunk as one big multiline string.
 (provide readline-prompt)
 (define readline-prompt (make-parameter #f))
-(define readline-prompt-spaces (make-parameter #"  "))
-(define multiline-chunk (make-parameter '()))
 
-(define (do-multiline-chunk)
-  (let ([chunk (multiline-chunk)])
+(define-struct readline-state (prompt-spaces multiline-chunk)
+  #:mutable)
+
+(define readline-state-cell (make-thread-cell #f))
+(define (get-readline-state)
+  (or (thread-cell-ref readline-state-cell)
+      (let ([state (readline-state #"  " '())])
+        (thread-cell-set! readline-state-cell state)
+        state)))
+
+(define (do-multiline-chunk state)
+  (let ([chunk (readline-state-multiline-chunk state)])
     (when (pair? chunk)
       (drop-from-history chunk)
       (add-to-history (apply bytes-append (reverse chunk)) #f)
-      (multiline-chunk '()))))
+      (set-readline-state-multiline-chunk! state '()))))
 
-(define (readline-bytes/multiline-chunk prompt)
+(define (readline-bytes/multiline-chunk prompt state)
   (let ([line (readline-bytes/hist prompt #t)])
     (when (and (bytes? line) (not (zero? (bytes-length line))))
-      (let ([c (multiline-chunk)])
-        (multiline-chunk (if (pair? c)
-                           (list* line (readline-prompt-spaces) #"\n" c)
-                           (cons line c)))))
+      (let ([c (readline-state-multiline-chunk state)])
+        (set-readline-state-multiline-chunk!
+         state
+         (if (pair? c)
+             (list* line (readline-state-prompt-spaces state) #"\n" c)
+             (cons line c)))))
     line))
 
-(define (do-one-line)
+(define (do-one-line state k)
   (let ([p (readline-prompt)])
     (case p
-      [(#f) (do-multiline-chunk) (readline-bytes/hist #"" #f)]
-      [(space) (readline-bytes/multiline-chunk (readline-prompt-spaces))]
-      [else (do-multiline-chunk)
-            (unless (= (bytes-length (readline-prompt-spaces))
-                       (bytes-length p))
-              (readline-prompt-spaces (make-bytes (bytes-length p) 32)))
-            (readline-prompt 'space) ; use spaces next time
-            (readline-bytes/multiline-chunk p)])))
+      [(#f) (thread (lambda ()
+                      (do-multiline-chunk state) 
+                      (k (readline-bytes/hist #"" #f))))]
+      [(space) (thread
+                (lambda ()
+                  (k (readline-bytes/multiline-chunk (readline-state-prompt-spaces state)
+                                                     state))))]
+      [else (readline-prompt 'space) ; use spaces next time
+            (thread
+             (lambda ()
+               (do-multiline-chunk state)
+               (unless (= (bytes-length (readline-state-prompt-spaces state))
+                          (bytes-length p))
+                 (set-readline-state-prompt-spaces! 
+                  state
+                  (make-bytes (bytes-length p) 32)))
+               (k (readline-bytes/multiline-chunk p state))))])))
 
 (provide readline-input)
 (define readline-input
   (let ([buffer  #f]
+        [evt     #f]
         [skip    #f]
         [blen    #f]
         [closed? #f]
@@ -166,13 +186,22 @@
       (let loop ()
         (cond [closed? eof]
               [(eof-object? buffer) (set! buffer #f) eof]
+              [evt evt]
               [(not buffer)
-               (set! buffer (do-one-line))
-               (if (eof-object? buffer)
-                 (begin (save-history) (set! buffer #f) eof)
-                 (begin (set! skip 0)
-                        (set! blen (bytes-length buffer))
-                        (reader tgt)))]
+               (set! evt
+                     (wrap-evt
+                      (do-one-line
+                       (get-readline-state)
+                       (lambda (buf)
+                         (if (eof-object? buf)
+                             (save-history)
+                             (begin 
+                               (set! skip 0)
+                               (set! blen (bytes-length buf))))
+                         (set! buffer buf)
+                         (set! evt #f)))
+                      (lambda (v) 0)))
+               evt]
               [else
                ;; copy bytes
                (let ([tgtlen (bytes-length tgt)]
@@ -202,12 +231,13 @@
   (define prompt (current-prompt))
   (flush-output)
   ;; needs to set `readline-prompt' to get a prompt when reading
-  (parameterize ([read-accept-reader #t] [readline-prompt prompt])
-    (unless (eq? readline-input (current-input-port))
-      ;; not the readline port -- print the prompt (changing the
-      ;; readline-prompt and using read-complete-syntax below should still
-      ;; work fine)
-      (display prompt) (flush-output))
-    (begin0 (let ([in (current-input-port)])
-              ((current-read-interaction) (object-name in) in))
-            (do-multiline-chunk))))
+  (parameterize ([readline-prompt prompt])
+    (let ([in ((current-get-interaction-input-port))])
+      (unless (eq? 'readline-input (object-name in))
+        ;; not the readline port -- print the prompt (changing the
+        ;; readline-prompt and using read-complete-syntax below should still
+        ;; work fine)
+        (display prompt) (flush-output))
+      (begin0 ((current-read-interaction) (object-name in) in)
+              (do-multiline-chunk (get-readline-state))))))
+

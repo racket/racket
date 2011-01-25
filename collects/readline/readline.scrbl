@@ -21,8 +21,9 @@ library with the Racket @racket[read-eval-print-loop].
 @defmodule*[(readline readline/rep-start)]
 
 The @racketmodname[readline] library installs a @|readline|-based
-input port, and hooks the prompt-and-read part of Racket's
-@racket[read-eval-print-loop] to interact with it
+input port (whose name is @racket['readline-input]) and hooks the
+prompt-and-read part of Racket's @racket[read-eval-print-loop] to
+interact with it.
 
 You can start Racket with
 
@@ -63,6 +64,20 @@ useful.  In addition, the @|readline| history is stored across
 invocations in Racket's preferences file, assuming that Racket
 exits normally.
 
+The @racketmodname[readline] library adjusts
+@racket[read-eval-print-loop] by setting the prompt read handler as
+determined by @racket[current-prompt-read]. The call to the read
+interaction handler (as determined by
+@racket[current-read-interaction]) is parameterized to set
+@racket[readline-prompt], so that a prompt will be printed when
+reading starts. To compensate for the prompt printed via
+@racket[readline-prompt], when the interaction input port's name (as
+produced by function in the
+@racket[current-get-interaction-input-port] parameter) is
+@racket['readline-input], the prompt read handler skips printing a
+prompt; otherwise, it displays a prompt as determined by
+@racket[current-prompt].
+
 @defproc[(install-readline!) void?]{
 
 Adds @racket[(require readline/rep)] to the result of
@@ -76,7 +91,6 @@ file.
 For more fine-grained control, such as conditionally loading
 @|readline| based on an environment variable, edit
 @filepath{~/.racketrc} manually.}
-
 
 @section{Interacting with the @|Readline|-Enabled Input Port }
 
