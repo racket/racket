@@ -44,10 +44,17 @@ position only when line and column counting is enabled.
 
 Turns on line and column counting for a port. Counting can be turned
 on at any time, though generally it is turned on before any data is
-read from or written to a port. When a port is created, if the value
-of the @racket[port-count-lines-enabled] parameter is true, then line
+read from or written to a port. At the point that line counting is
+turned on, @racket[port-next-location] typically starts reporting as
+its last result (one more than) the number of characters read since
+line counting was enabled, instead of (one more than) bytes read since
+the port was opened.
+
+When a port is created, if the value of the
+@racket[port-count-lines-enabled] parameter is true, then line
 counting is automatically enabled for the port. Line counting cannot
 be disabled for a port after it is enabled.}
+
 
 @defproc[(port-next-location [port port?]) 
          (values (or/c exact-positive-integer? #f)
@@ -61,11 +68,21 @@ position. The next column and position normally increases as bytes are
 read from or written to the port, but if line/character counting is
 enabled for @racket[port], the column and position results can
 decrease after reading or writing a byte that ends a UTF-8 encoding
-sequence.}
+sequence.
+
+If line counting is not enabled for a port, than the first two results
+are @racket[#f], and the last result is one more than the number of
+bytes read so far. At the point when line counting is enabled, the
+first two results typically become non-@racket[#f], and last result
+starts reporting characters instead of bytes, typically starting from
+the point when line counting is enabled.
+
+Even with line counting enabled, a port may return @racket[#f] values
+if it somehow cannot keep track of lines, columns, or positions.}
+
 
 @defboolparam[port-count-lines-enabled on?]{
 
 A parameter that determines whether line counting is enabled
 automatically for newly created ports. The default value is
 @racket[#f].}
-
