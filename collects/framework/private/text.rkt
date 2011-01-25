@@ -3427,7 +3427,7 @@ designates the character that triggers autocompletion
             (cond
               [(zero? num-completions)
                (let-values ([(tw th _1 _2) (send dc get-text-extent (string-constant no-completions) 
-                                                 (get-mt-font dc))])
+                                                 (get-mt-font))])
                  (values (+ menu-padding-x tw menu-padding-x)
                          (+ menu-padding-y th menu-padding-y)))]
               [else
@@ -3439,7 +3439,7 @@ designates the character that triggers autocompletion
                  (cond
                    [(null? pc)
                     (let-values ([(hidden?) (send completions items-are-hidden?)] 
-                                 [(tw th _1 _2) (send dc get-text-extent hidden-completions-text)])
+                                 [(tw th _1 _2) (send dc get-text-extent hidden-completions-text (get-reg-font))])
                       (let ([w (if hidden? (max tw w) w)]
                             [h (if hidden? (+ th h) h)])
                         (initialize-mouse-offset-map! coord-map)
@@ -3449,7 +3449,7 @@ designates the character that triggers autocompletion
                                   (+ offset-h h)))))]
                    [else 
                     (let ([c (car pc)])
-                      (let-values ([(tw th _1 _2) (send dc get-text-extent c)])
+                      (let-values ([(tw th _1 _2) (send dc get-text-extent c (get-reg-font))])
                         (loop (cdr pc)
                               (max tw w)
                               (+ th h)
@@ -3482,48 +3482,56 @@ designates the character that triggers autocompletion
     ;; draws the menu to the given drawing context at offset dx, dy
     (define/public (draw dc dx dy)
       (let ([old-pen (send dc get-pen)]
-            [old-brush (send dc get-brush)])
+            [old-brush (send dc get-brush)]
+            [font (send dc get-font)])
+        (define-values (mx my tw th) (get-menu-coordinates))
         (send dc set-pen (send editor get-autocomplete-border-color) 1 'solid)
         (send dc set-brush (send editor get-autocomplete-background-color) 'solid)
-        (let-values ([(mx my tw th) (get-menu-coordinates)])
-          (send dc draw-rectangle (+ mx dx) (+ my dy) tw th)
-          (cond
-            [(send completions empty?)
-             (let ([font (send dc get-font)])
-               (send dc set-font (get-mt-font dc))
-               (send dc draw-text (string-constant no-completions) (+ mx dx menu-padding-x) (+ menu-padding-y my dy))
-               (send dc set-font font))]
-            [else
-             (let loop ([item-number 0] [y my] [pc (send completions get-visible-completions)])
-               (cond
-                 [(null? pc) 
-                  (when (send completions items-are-hidden?)
-                    (let-values ([(hw _1 _2 _3) (send dc get-text-extent hidden-completions-text)])
-                      (send dc draw-text 
-                            hidden-completions-text 
-                            (+ mx dx (- (/ tw 2) (/ hw 2)))
-                            (+ menu-padding-y y dy))))]
-                 [else
-                  (let ([c (car pc)])
-                    (let-values ([(w h d a) (send dc get-text-extent c)])
-                      (when (= item-number highlighted-menu-item)
-                        (send dc set-pen "black" 1 'transparent)
-                        (send dc set-brush (send editor get-autocomplete-selected-color) 'solid)
-                        (send dc draw-rectangle (+ mx dx 1) (+ dy y menu-padding-y 1) (- tw 2) (- h 1)))
-                      (send dc draw-text c (+ mx dx menu-padding-x) (+ menu-padding-y y dy))
-                      (loop (add1 item-number) (+ y h) (cdr pc))))]))]))
+        (send dc draw-rectangle (+ mx dx) (+ my dy) tw th)
+        
+        (cond
+          [(send completions empty?)
+           (let ([font (send dc get-font)])
+             (send dc set-font (get-mt-font))
+             (send dc draw-text (string-constant no-completions) (+ mx dx menu-padding-x) (+ menu-padding-y my dy))
+             (send dc set-font font))]
+          [else
+           (send dc set-font (get-reg-font))
+           (let loop ([item-number 0] [y my] [pc (send completions get-visible-completions)])
+             (cond
+               [(null? pc) 
+                (when (send completions items-are-hidden?)
+                  (let-values ([(hw _1 _2 _3) (send dc get-text-extent hidden-completions-text)])
+                    (send dc draw-text 
+                          hidden-completions-text 
+                          (+ mx dx (- (/ tw 2) (/ hw 2)))
+                          (+ menu-padding-y y dy))))]
+               [else
+                (let ([c (car pc)])
+                  (let-values ([(w h d a) (send dc get-text-extent c)])
+                    (when (= item-number highlighted-menu-item)
+                      (send dc set-pen "black" 1 'transparent)
+                      (send dc set-brush (send editor get-autocomplete-selected-color) 'solid)
+                      (send dc draw-rectangle (+ mx dx 1) (+ dy y menu-padding-y 1) (- tw 2) (- h 1)))
+                    (send dc draw-text c (+ mx dx menu-padding-x) (+ menu-padding-y y dy))
+                    (loop (add1 item-number) (+ y h) (cdr pc))))]))])
         (send dc set-pen old-pen)
-        (send dc set-brush old-brush)))
+        (send dc set-brush old-brush)
+        (send dc set-font font)))
     
-    (define/private (get-mt-font dc)
-      (let ([font (send dc get-font)])
-        (send the-font-list find-or-create-font
-              (send font get-point-size)
-              (send font get-family)
-              'italic
-              (send font get-weight)
-              (send font get-underlined)
-              (send font get-smoothing))))
+    (define/private (get-mt-font)
+      (send the-font-list find-or-create-font
+            (preferences:get 'framework:standard-style-list:font-size)
+            'default
+            'italic
+            'normal))
+    
+    (define/private (get-reg-font)
+      (send the-font-list find-or-create-font
+            (preferences:get 'framework:standard-style-list:font-size)
+            'default
+            'normal
+            'normal))
     
     ;; redraw : -> void
     ;; tells the parent to refresh enough of itself to redraw this menu
