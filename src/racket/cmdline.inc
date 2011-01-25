@@ -1269,7 +1269,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "  -c, --no-compiled : Disable loading of compiled files\n"
 	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for -i\n"
 # ifdef CMDLINE_STDIO_FLAG
-	 "  -z, --text-repl : Use text read-eval-print loop for -i\n"
+	 "  -z, --text-repl : Use text `read-eval-print-loop' for -i\n"
 # endif
          "  -I <path> : Set <init-lib> to <path>\n"
 	 "  -X <dir>, --collects <dir> : Main collects at <dir>\n"

@@ -371,18 +371,17 @@ static void do_scheme_rep(Scheme_Env *env, FinishArgs *fa)
   int ending_newline = 1;
 
 #ifdef GRAPHICAL_REPL
-  if (fa->a->alternate_rep) {
-    a[0] = scheme_intern_symbol("mred/mred");
-    a[1] = scheme_intern_symbol("textual-read-eval-print-loop");
-  } else {
+  if (!fa->a->alternate_rep) {
     a[0] = scheme_intern_symbol("mred/mred");
     a[1] = scheme_intern_symbol("graphical-read-eval-print-loop");
-  }
-  ending_newline = 0;
-#else
-  a[0] = scheme_intern_symbol("scheme/base");
-  a[1] = scheme_intern_symbol("read-eval-print-loop");
+    ending_newline = 0;
+  } else
 #endif
+    {
+      a[0] = scheme_intern_symbol("scheme/base");
+      a[1] = scheme_intern_symbol("read-eval-print-loop");
+    }
+
   rep = scheme_dynamic_require(2, a);
     
   if (rep) {

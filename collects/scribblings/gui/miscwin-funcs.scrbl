@@ -182,7 +182,7 @@ The keymap for the read-eval-print loop's editor is initialized by
 @defproc[(textual-read-eval-print-loop) void?]{
 
 Similar to @racket[read-eval-print-loop], except that evaluation uses
- a newly created eventspace.
+ a newly created eventspace like @racket[graphical-read-eval-print-loop].
 
 The @racket[current-prompt-read] parameter is used in the current
  thread to read input. The result is queued for evaluation and
