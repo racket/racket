@@ -3144,6 +3144,12 @@ designates the character that triggers autocompletion
                                    [editor this]))
         (send completions-box redraw)))
     
+    (define/augment (after-set-position)
+      (when completions-box
+        (destroy-completions-box)
+        (auto-complete))
+      (inner (void) after-set-position))
+    
     ;; on-char must handle inputs for two modes: normal text mode and in-the-middle-of-autocompleting mode
     ;; perhaps it would be better to handle this using the state machine pattern
     (define/override (on-char key-event)
