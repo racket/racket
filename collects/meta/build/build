@@ -943,13 +943,13 @@ run_part() {
     local cmd
     cmd="--dispatch ${ssh_vars_vals[@]} $runhost $runpart"
     if [[ "$exec" = "yes" ]]; then
-      exec ssh "$runhost" "$rbuild" $cmd "$@" \
+      exec ssh -x "$runhost" "$rbuild" $cmd "$@" \
         || exit_error "Errors running \"$rbuild\" on \"$runhost\""
       exit_error "Something is wrong with \"exec\""
     elif [[ "$bg" = "yes" ]]; then
-      ssh "$runhost" "$rbuild" $cmd "$@" &
+      ssh -x "$runhost" "$rbuild" $cmd "$@" &
     else
-      ssh "$runhost" "$rbuild" $cmd "$@" \
+      ssh -x "$runhost" "$rbuild" $cmd "$@" \
         || exit_error "Errors running \"$rbuild\" on \"$runhost\""
     fi
   fi
