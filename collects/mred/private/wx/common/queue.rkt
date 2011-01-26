@@ -20,6 +20,7 @@
               pre-event-sync
               boundary-tasks-ready-evt
               sometimes-delay-msec
+              set-platform-queue-sync!
 
               eventspace?
               current-eventspace
@@ -203,6 +204,10 @@
       (send f destroy))
     (hash-remove! active-eventspaces (eventspace-handler-thread e))))
 
+(define platform-queue-sync void)
+(define (set-platform-queue-sync! proc)
+  (set! platform-queue-sync proc))
+
 (define (make-eventspace* th)
   (let ([done-sema (make-semaphore 1)]
         [done-set? #t]
@@ -294,6 +299,12 @@
                                                (timer-first-ready timer peek?)
                                                (first refresh peek?)
                                                (first med peek?)
+                                               (and (not peek?)
+                                                    ;; before going with low-priority events,
+                                                    ;; make sure we're sync'ed up with the
+                                                    ;; GUI platform's event queue:
+                                                    (platform-queue-sync)
+                                                    (first med peek?))
                                                (first lo peek?)
                                                (timer-first-wait timer peek?)
                                                ;; nothing else ready...

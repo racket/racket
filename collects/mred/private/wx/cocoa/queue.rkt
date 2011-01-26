@@ -369,6 +369,11 @@
   (atomically
    (pre-event-sync #t)))
 
+(set-platform-queue-sync!
+ (lambda ()
+   ;; in atomic mode
+   (dispatch-all-ready)))
+
 ;; ------------------------------------------------------------
 ;; Install an alternate "sleep" function (in the PLT Scheme core)
 ;; that wakes up if any Cocoa event is ready.
