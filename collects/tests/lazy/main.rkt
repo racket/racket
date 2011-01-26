@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require tests/eli-tester "promise.ss" "lang.ss")
+(require tests/eli-tester "promise.rkt" "lang.rkt" "langimpl.rkt")
 
 (test do (lang-tests)
-      do (promise-tests))
+      do (promise-tests)
+      do (langimpl-tests))
