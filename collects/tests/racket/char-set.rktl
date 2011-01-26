@@ -68,7 +68,9 @@
 
 (test #t char-set= 
       (char-set-intersection char-set:graphic char-set:latin-1)
-      (char-set-intersection (char-set-union char-set:letter char-set:digit char-set:punctuation char-set:symbol)
+      (char-set-intersection (char-set-union char-set:letter char-set:digit char-set:punctuation char-set:symbol
+                                             ;; 1/4, 1/2, and 3/4:
+                                             (char-set #\uBC #\uBD #\uBE))
 			     char-set:latin-1))
 
 (test #t char-set= char-set:printing (char-set-union char-set:graphic char-set:whitespace))
