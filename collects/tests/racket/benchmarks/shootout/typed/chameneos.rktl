@@ -88,7 +88,7 @@
          [meeting-ch : MeetingChannel (make-channel)])
     (place meeting-ch n)
     (newline)
-    (for ([init inits])
+    (for: ([init : Color inits])
       (printf " ~a" init)
       (creature init meeting-ch result-ch))
     (newline)

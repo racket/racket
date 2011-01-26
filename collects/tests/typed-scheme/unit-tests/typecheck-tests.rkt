@@ -872,7 +872,8 @@
    (tc-l #"foo" -Bytes)
    [tc-l () (-val null)]
    [tc-l (3 . 4) (-pair -PositiveFixnum -PositiveFixnum)]
-   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -PositiveFixnum -PositiveFixnum)])
+   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Integer -Integer)]
+   [tc-l #hasheq((a . q) (b . w)) (make-Hashtable -Symbol -Symbol)])
   ))
 
 

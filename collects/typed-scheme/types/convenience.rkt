@@ -47,6 +47,7 @@
                t-new
                (exit t)))]
         [(ListDots: t bound) (-lst (substitute Univ bound t))]
+        [(? (lambda (t) (subtype t -Symbol))) -Symbol]
         [_ (exit t)]))))
 
 

@@ -96,7 +96,7 @@
      (let* ([h (syntax-e #'i)]
             [ks (hash-map h (lambda (x y) (tc-literal x)))]
             [vs (hash-map h (lambda (x y) (tc-literal y)))])
-       (make-Hashtable (apply Un ks) (apply Un vs)))]
+       (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))]
     [(a . b) (-pair (tc-literal #'a) (tc-literal #'b))]
     [_ Univ]))
 
