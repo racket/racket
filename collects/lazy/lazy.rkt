@@ -585,7 +585,10 @@
                    ;; to its head, which can lead to memory leaks.
                    (error 'take "index ~e too large for input list" n0)
                    '())]
-                [(pair? l) (cons (car l) (~ (loop (sub1 n) (! (cdr l)))))]
+                [(pair? l) 
+                 (if (zero? n)
+                     '()
+                     (cons (car l) (~ (loop (sub1 n) (! (cdr l))))))]
                 [else (error 'take "not a proper list: ~e" l)]))
         (raise-type-error 'take "non-negative exact integer" 0 n l))))
 
