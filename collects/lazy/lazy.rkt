@@ -575,22 +575,20 @@
   ;; Extra functionality that is useful for lazy list stuff
 
   (define* (take n l)
-    (let ([n0 (! n)] [l (! l)])
-      (if (exact-nonnegative-integer? n)
-        (let loop ([n n0] [l l])
-          (cond [(null? l)
-                 (if (n . > . 0)
+    (let ([n0 (! n)])
+      (unless (exact-nonnegative-integer? n)
+        (raise-type-error 'take "non-negative exact integer" 0 n l))
+      (let loop ([n n0] [l l])
+        (if (zero? n)
+          '()
+          (let ([l (! l)])
+            (cond [(null? l)
                    ;; it would be fine to force the whole list (since we now
                    ;; know it's finite), but doing so means keeping a reference
                    ;; to its head, which can lead to memory leaks.
-                   (error 'take "index ~e too large for input list" n0)
-                   '())]
-                [(pair? l) 
-                 (if (zero? n)
-                     '()
-                     (cons (car l) (~ (loop (sub1 n) (! (cdr l))))))]
-                [else (error 'take "not a proper list: ~e" l)]))
-        (raise-type-error 'take "non-negative exact integer" 0 n l))))
+                   (error 'take "index ~e too large for input list" n0)]
+                  [(pair? l) (cons (car l) (~ (loop (sub1 n) (cdr l))))]
+                  [else (error 'take "not a proper list: ~e" l)]))))))
 
   ;; not like Haskell's `cycle' that consumes a list
   (define* (cycle . l)
