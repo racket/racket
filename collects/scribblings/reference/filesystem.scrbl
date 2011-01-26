@@ -153,7 +153,8 @@ by @racket[kind], which must be one of the following:
 Parses a string or byte string containing a list of paths, and returns
 a list of path strings. Under @|AllUnix|, paths in a path list are
 separated by a @litchar{:}; under Windows, paths are separated by a
-@litchar{;}. Whenever the path list contains an empty path, the list
+@litchar{;}, and all @litchar{"}s in the string are discarded. Whenever the path 
+list contains an empty path, the list
 @racket[default-path-list] is spliced into the returned list of
 paths. Parts of @racket[str] that do not form a valid path are not
 included in the returned list.}
