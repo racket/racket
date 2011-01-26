@@ -704,7 +704,7 @@
                                     [position (get-scroll-pos direction)]))))))))
        (constrained-reply (get-eventspace)
                           (lambda ()
-                            (let loop () (pre-event-sync #t) (when (yield) (loop))))
+                            (let loop () (pre-event-sync #t) (when (yield/no-sync) (loop))))
                           (void)))
      (define/public (on-scroll e) (void))
      

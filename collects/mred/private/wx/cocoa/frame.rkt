@@ -72,7 +72,7 @@
             (constrained-reply (send wx get-eventspace)
                                (lambda () 
                                  (pre-event-sync #t)
-                                 (let loop () (when (yield) (loop))))
+                                 (let loop () (when (yield/no-sync) (loop))))
                                (void)))))]
   [-a _void (windowDidMove: [_id notification])
       (when wxb

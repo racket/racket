@@ -30,7 +30,7 @@
           (queue-window-event wx (lambda () (send wx changed)))
           (constrained-reply
            (send wx get-eventspace)
-           (lambda () (let loop () (pre-event-sync #t) (when (yield) (loop))))
+           (lambda () (let loop () (pre-event-sync #t) (when (yield/no-sync) (loop))))
            (void))))))
 
 (defclass slider% item%

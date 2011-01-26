@@ -27,6 +27,7 @@
               queue-event
               queue-refresh-event
               yield
+              yield/no-sync
               yield-refresh
               eventspace-event-evt
               (rename-out [make-new-eventspace make-eventspace])
@@ -291,7 +292,7 @@
                                                   (timed-alarm-evt (rbtree-min (unbox timer)))
                                                   (lambda (_) #f)))))]
                                        [make-event-choice
-                                        (lambda (peek?)
+                                        (lambda (peek? sync?)
                                           (choice-evt
                                            (wrap-evt (semaphore-peek-evt newly-posted-sema)
                                                      (lambda (_) #f))
@@ -300,6 +301,7 @@
                                                (first refresh peek?)
                                                (first med peek?)
                                                (and (not peek?)
+                                                    sync?
                                                     ;; before going with low-priority events,
                                                     ;; make sure we're sync'ed up with the
                                                     ;; GUI platform's event queue:
@@ -339,9 +341,9 @@
                                     ;; Dequeue as evt
                                     (start-atomic)
                                     (begin0 
-                                     (make-event-choice #f)
+                                     (make-event-choice #f #t)
                                      (end-atomic))]
-                                   [(only-refresh? peek?)
+                                   [(only-refresh? peek? sync?)
                                     (start-atomic)
                                     (begin0
                                      (cond
@@ -349,7 +351,7 @@
                                        ;; Dequeue only refresh event
                                        (or (first refresh peek?) never-evt)]
                                       [else
-                                       (make-event-choice #t)])
+                                       (make-event-choice peek? sync?)])
                                      (end-atomic))]))))
                             frames
                             (semaphore-peek-evt done-sema)
@@ -475,12 +477,20 @@
             (sync/timeout wait-now evt)
             (wait-now))]))]))
 
+(define (yield/no-sync)
+  (let ([e (current-eventspace)])
+    (when (eq? (current-thread) (eventspace-handler-thread e))
+      (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #f #f #f))])
+        (if v
+            (begin (handle-event v e) #t)
+            #f)))))
+
 (define yield-refresh
   (lambda ()
     (let ([e (current-eventspace)])
       (and (eq? (current-thread) (eventspace-handler-thread e))
            (let loop ([result #f])
-             (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #t #f))])
+             (let ([v (sync/timeout 0 ((eventspace-queue-proc e) #t #f #t))])
                (if v
                    (begin
                      (handle-event v e)
@@ -490,7 +500,7 @@
 (define (eventspace-event-evt [e (current-eventspace)])
   (unless (eventspace? e)
     (raise-type-error 'eventspace-event-evt "eventspace" e))
-  (wrap-evt ((eventspace-queue-proc e) #f #t)
+  (wrap-evt ((eventspace-queue-proc e) #f #t #t)
             (lambda (_) e)))
 
 (define (main-eventspace? e)
