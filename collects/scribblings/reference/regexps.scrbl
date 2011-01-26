@@ -435,7 +435,7 @@ Like @racket[regexp-match-positions], but returns multiple matches
 like @racket[regexp-match*].
 
 @examples[
-(regexp-match-positions #rx"x." "12x4x6")
+(regexp-match-positions* #rx"x." "12x4x6")
 ]}
 
 
