@@ -6,4 +6,4 @@
 #lang typed/scheme
 #:optimize
 
-(real-part (log 2.0))
+(real-part (log (ann 2.0 Float)))

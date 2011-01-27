@@ -165,6 +165,13 @@
         (tc-e/t -1073741825 -NegInt)
         (tc-e/t "foo" -String)
         (tc-e (+ 3 4) -PosIndex)
+        (tc-e (- 1) -NegFixnum)
+        (tc-e (- 1073741823) -NegFixnum)
+        (tc-e (- -4) -PosFixnum)
+        (tc-e (- 3253463567262345623) -NegInt)
+        (tc-e (- -23524623547234734568) -PosInt)
+        (tc-e (- 241.3) -NegFlonum)
+        (tc-e (- -24.3) -PosFlonum)
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-lfilter)]
@@ -285,7 +292,7 @@
         [tc-err (5 4)]
         [tc-err (apply 5 '(2))]
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
-        [tc-e (map add1 '(1)) (-pair -Pos (-lst -Pos))]
+        [tc-e (map add1 '(1)) (-pair -PosByte (-lst -PosByte))]
         
         [tc-e/t (let ([x 5])
                 (if (eq? x 1)
@@ -600,7 +607,7 @@
                 (define y 2)
                 (define z (+ x y))
                 (* x z))
-              -Pos]
+              -PosIndex]
         
         [tc-e/t (let ()
                   (define: (f [x : Number]) : Number
@@ -819,8 +826,8 @@
                 (define: x : Any 7)
                 (if (box? x) (unbox x) (+ 1)))
               Univ]        
-        [tc-e (floor 1/2) -Integer]
-        [tc-e (ceiling 1/2) -Integer]
+        [tc-e (floor 1/2) -Nat]
+        [tc-e (ceiling 1/2) -PosInt]
         [tc-e (truncate 0.5) -NonNegFlonum]
         [tc-e (truncate -0.5) -NonPosFlonum]
         [tc-e/t (ann (lambda (x) (lambda (x) x))
