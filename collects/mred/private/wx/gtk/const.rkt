@@ -3,6 +3,7 @@
 (provide (except-out (all-defined-out) <<))
 
 (define GTK_WINDOW_TOPLEVEL 0)
+(define GTK_WINDOW_POPUP 1)
 
 (define << arithmetic-shift)
 

@@ -149,7 +149,9 @@
              queue-on-size)
 
     (define gtk (as-gtk-window-allocation
-                 (gtk_window_new GTK_WINDOW_TOPLEVEL)))
+                 (gtk_window_new (if (memq 'float style)
+				     GTK_WINDOW_POPUP
+				     GTK_WINDOW_TOPLEVEL))))
     (when (memq 'no-caption style)
       (gtk_window_set_decorated gtk #f))
     (when (memq 'float style)
