@@ -19,7 +19,7 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @defproc[(ffi-lib [path (or/c path-string? #f)]
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]) any]{
 
-Returns an foreign-library value. If @scheme[path] is a path, the
+Returns a foreign-library value. If @scheme[path] is a path, the
 result represents the foreign library, which is opened in an
 OS-specific way (using @cpp{LoadLibrary} under Windows, and
 @cpp{dlopen} under Unix and Mac OS X).

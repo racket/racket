@@ -4,7 +4,7 @@
 @title[#:tag "intro"]{Overview}
 
 Although using the FFI requires writing no new C code, it provides
-very little insulation against the issues that C programmer faces
+very little insulation against the issues that C programmers face
 related to safety and memory management. An FFI programmer must be
 particularly aware of memory management issues for data that spans the
 Racket--C divide. Thus, this manual relies in many ways on the
