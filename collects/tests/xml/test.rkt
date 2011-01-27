@@ -18,7 +18,9 @@
      (read-xml (open-input-string str)))))
 
 (define test-read-xml/exn (mk-test-read-xml/exn read-xml))
-(define (test-read-xml str xml)
+(define (test-read-xml str xml #:document-different? [diff? #f])
+  (unless diff?
+   (test-equal? str (document->list (read-xml/document (open-input-string str))) xml))
   (test-equal? str (document->list (read-xml (open-input-string str))) xml))
 
 (define test-syntax:read-xml/exn (mk-test-read-xml/exn syntax:read-xml))
@@ -253,6 +255,39 @@ END
         (make-prolog (list) #f (list))
         (make-element (make-source (make-location 1 16 17) (make-location 1 22 23)) 'br (list) (list))
         (list)))
+
+     (test-read-xml
+      "<?xml version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\"?><br />"
+      '(make-document
+  (make-prolog
+   (list
+    (make-p-i
+     (make-source (make-location 1 0 1) (make-location 1 56 57))
+     xml
+     "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))
+   #f
+   (list))
+  (make-element
+   (make-source (make-location 1 56 57) (make-location 1 62 63))
+   'br
+   (list)
+   (list))
+  (list)))
+
+     (test-read-xml #:document-different? #t
+      "<br /><?xml version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\"?>"
+      '(make-document
+  (make-prolog (list) #f (list))
+  (make-element
+   (make-source (make-location 1 0 1) (make-location 1 6 7))
+   'br
+   (list)
+   (list))
+  (list
+   (make-p-i
+    (make-source (make-location 1 6 7) (make-location 1 62 63))
+    xml
+    "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))))
      
      ; XXX need more read-xml tests
      

@@ -3,6 +3,7 @@
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]
+ [read-xml/document (() (input-port?) . ->* . document?)]
  [read-xml/element (() (input-port?) . ->* . element?)]
  [read-comments (parameter/c boolean?)]
  [collapse-whitespace (parameter/c boolean?)]
@@ -39,6 +40,14 @@
                                       "extra stuff at end of document ~e"
                                       end-of-file))
                        misc1)))))
+
+;; read-xml : [Input-port] -> Document
+(define (read-xml/document [in (current-input-port)])
+  (let*-values ([(in pos) (positionify in)]
+                [(misc0 start) (read-misc in pos)])
+    (make-document (make-prolog misc0 #f empty)
+                   (read-xml-element-helper pos in start)
+                   empty)))
 
 ;; read-xml/element : [Input-port] -> Element
 (define read-xml/element
