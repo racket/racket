@@ -472,6 +472,8 @@ profile todo:
         [(pair? cms) (list (car cms))]
         [else '()])))
   
+  ;; show-syntax-error-context : 
+  ;; display the source information associated with a syntax error (if present)
   (define (show-syntax-error-context port exn)
     (let ([error-text-style-delta (make-object style-delta%)]
           [send-out
