@@ -446,7 +446,7 @@
                     (printf ">> finished ~a\n" (syntax->datum #'arg))))]))
 
 (define (run-test)
-  (put-preferences '(test:test-window:docked?) '(#t))
+  (preferences:set 'test-engine:test-window:docked? #t)
   (go beginner)
   (go beginner/abbrev)
   (go intermediate)
