@@ -4,7 +4,10 @@
            scheme/contract
 	   mzlib/process
 	   mzlib/sendevent
+           scheme/runtime-path
            "slatex.ss")
+  
+  (define-runtime-path here ".")
 
   (provide/contract
    [slatex (string? . -> . boolean?)]
@@ -90,6 +93,10 @@
               (lambda (latex-fun)
                 (lambda (filename)
                   (slatex/no-latex filename)
+                  (putenv "TEXINPUTS" 
+                          (format "~a:~a" 
+                                  (path->string here)
+                                  (or (getenv "TEXINPUTS") "")))
                   (latex-fun filename)))])
       (values 
        (meta-slatex latex)
