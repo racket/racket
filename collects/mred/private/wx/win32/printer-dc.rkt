@@ -237,7 +237,7 @@
                        (class (dc-mixin default-dc-backend%)
                          (super-new)
                          (define/override (init-cr-matrix cr)
-                           (set-point-scale hdc cr))
+                           (set-point-scale hdc cr margin-left margin-top))
                          (define/override (get-cr) cr))))
                      (cairo_destroy cr)
                      (cairo_surface_destroy s))
