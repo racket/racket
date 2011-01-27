@@ -70,6 +70,13 @@
       (when wx
         (send wx queue-changed)))))
 
+(define-signal-handler connect-activated "row-activated"
+  (_fun _GtkWidget _pointer _pointer -> _void)
+  (lambda (gtk path column)
+    (let ([wx (gtk->wx gtk)])
+      (when wx
+        (send wx queue-activated)))))
+
 (defclass list-box% item%
   (init parent cb
         label kind x y w h
@@ -132,12 +139,13 @@
   (set-auto-size)
 
   (connect-changed selection)
+  (connect-activated client-gtk)
 
   (define/override (get-client-gtk) client-gtk)
 
   (define callback cb)
   (define ignore-click? #f)
-  (define/public (queue-changed)
+  (define/private (do-queue-changed type)
     ;; Called from event-handling thread
     (unless ignore-click?
       (queue-window-event
@@ -145,8 +153,14 @@
        (lambda ()
          (unless (null? items)
            (callback this (new control-event%
-                               [event-type 'list-box]
+                               [event-type type]
                                [time-stamp (current-milliseconds)])))))))
+
+  (define/public (queue-changed)
+    (do-queue-changed 'list-box))
+
+  (define/public (queue-activated)
+    (do-queue-changed 'list-box-dclick))
 
   (define/private (get-iter i)
     (atomically
