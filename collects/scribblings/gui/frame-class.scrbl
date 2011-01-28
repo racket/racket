@@ -63,14 +63,11 @@ some platforms:
 @itemize[
 
  @item{@scheme['no-resize-border] --- omits the resizeable border
-  around the window (Windows, X MWM) or grow box in the bottom right
+  around the window (Windows, X) or grow box in the bottom right
   corner (Mac OS X)}
 
  @item{@scheme['no-caption] --- omits the title bar for the frame
- (Windows, X MWM)
-
- (X Gnome, X KDE: the frame decoration is omitted completely when
- @scheme['no-resize-border] and @scheme['no-caption] are combined.)}
+ (Windows, Mac OS X, X)}
 
  @item{@scheme['no-system-menu] --- omits the system menu
  (Windows)}
@@ -91,17 +88,14 @@ some platforms:
  the frame fullscreen (X)}
 
  @item{@scheme['float] --- causes the frame to stay in front of all
- other non-floating windows (Windows and Mac OS X always, X when
- combined with @scheme['no-caption]); under Mac OS X, a floating frame
+ other non-floating windows (Windows, Mac OS X, X); under Mac OS X, a floating frame
  shares the focus with an active non-floating frame; when this style
  is combined with @scheme['no-caption], then showing the frame does
  not cause the keyboard focus to shift to the window, and under X,
  clicking the frame does not move the focus; under Windows, a floating
  frame has no taskbar button}
 
- @item{@scheme['metal] --- draws the frame with a brushed-metal
- background (Mac OS X); this style is ignored when
- @scheme['no-caption] is specified}
+ @item{@scheme['metal] --- ignored (formerly supported for Mac OS X)}
 
 ]
 
