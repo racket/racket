@@ -25,13 +25,5 @@ The @scheme[control<%>] interface is implemented by the built-in
 Calls the control's callback function, passing on the given
  @scheme[control-event%] object.
 
-}
-
-@defmethod[(get-font)
-           (is-a?/c font%)]{
-
-Returns the font used for the control, which is optionally supplied
- when a control is created.
-
 }}
 

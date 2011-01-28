@@ -39,8 +39,7 @@
 
   (define control<%>
     (interface (subwindow<%>)
-      command
-      get-font))
+      command))
 
   (define-local-member-name hidden-child? label-checker)
 
@@ -89,8 +88,7 @@
       (public
 	[hidden-child? (lambda () #f)] ; module-local method
 	[label-checker  (lambda () check-label-string/false)] ; module-local method
-	[command (lambda (e) (void (callback this e)))] ; no entry/exit needed
-	[get-font (lambda (e) (send wx get-font))]) ; no entry/exit needed
+	[command (lambda (e) (void (callback this e)))]) ; no entry/exit needed
       (private-field
        [wx #f])
       (sequence
@@ -121,8 +119,7 @@
       (sequence ; abuse of `sequence'!
         (inherit/super [super-min-width min-width] 
                        [super-min-height min-height]
-                       [super-get-label get-label]
-                       [super-get-font get-font]))
+                       [super-get-label get-label]))
       (private-field
        [do-auto-resize? auto-resize]
        [orig-font (or (no-val->#f font)
