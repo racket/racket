@@ -3899,8 +3899,9 @@ designates the character that triggers autocompletion
       (define last-paragraph #f)
       (for ([line (in-range start-line end-line)])
         (define y (line-location line))
+        (define yb (line-location line #f))
 
-        (when (<= top y bottom)
+        (when (and (y . <= . bottom) (yb . >= . top))
           (define view (number->string (add1 (line-paragraph line))))
           (define final-x
             (+ (left-space dc dx)
