@@ -296,6 +296,14 @@ A function of multiple arities.  Note that each @racket[formals] must have a
 different arity.}
 @defform[(pcase-lambda: (a ...) [formals body] ...)]{
 A polymorphic function of multiple arities.}
+@defform/subs[(opt-lambda: formals . body)
+([formals ([v : t] ... [v : t default] ...)
+          ([v : t] ... [v : t default] ... . [v : t *])
+	  ([v : t] ... [v : t default] ... . [v : t ...])])]{
+A function with optional arguments.}
+@defform[(popt-lambda: (a ...) formals . body)]{
+A polymorphic function with optional arguments.}
+
 
 @subsection{Loops}
 
