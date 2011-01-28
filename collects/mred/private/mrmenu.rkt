@@ -24,6 +24,8 @@
 	   (protect menu-parent-only
 		    menu-or-bar-parent))
 
+  (define root-menu-frame-used? #f)
+
   ;; Most of the work is in the item. Anything that appears in a menubar or
   ;;  menu has an item. Submenus are created as instances of menu%, but
   ;;  menu% has a get-item method for manipulating the menu w.r.t. the parent
@@ -426,17 +428,13 @@
       (private-field 
        [callback demand-callback]
        [prnt (if (eq? parent 'root)
-		 (let ([f (make-object (class frame%
-					 (define/override (on-exit)
-					   (exit))
-					 (super-make-object "Root")))])
+		 (begin
 		   (as-entry
 		    (lambda ()
-		      (when root-menu-frame
+		      (when root-menu-frame-used?
 			(raise-mismatch-error (constructor-name 'menu-bar) "already has a menu bar: " parent))
-		      (send (mred->wx f) designate-root-frame)
-		      (set-root-menu-frame! f)))
-		   f)
+		      (set! root-menu-frame-used? #t)))
+		   root-menu-frame)
 		 parent)]
        [wx #f]
        [wx-parent #f]

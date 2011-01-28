@@ -14,13 +14,13 @@
 	   "wxpanel.ss"
 	   "wxitem.ss"
 	   "mrwindow.ss"
-	   "mrcontainer.ss")
+	   "mrcontainer.ss"
+           "app.ss")
 
   (provide top-level-window<%>
 	   frame%
 	   dialog%
-	   (protect root-menu-frame
-		    set-root-menu-frame!)
+	   (protect root-menu-frame)
 	   get-top-level-windows
 	   get-top-level-focus-window
 	   get-top-level-edit-target-window
@@ -266,11 +266,6 @@
 			 (let ([cwho '(constructor dialog)])
 			   (check-container-ready cwho parent)))
 		       label parent))))))
-
-  (define root-menu-frame #f)
-  (define (set-root-menu-frame! f) 
-    (set! root-menu-frame f)
-    (set-root-menu-wx-frame! (mred->wx f)))
   
   (define (get-top-level-windows)
     (remq root-menu-frame (map wx->mred (wx:get-top-level-windows))))
@@ -313,4 +308,18 @@
 
   (define (check-frame-parent/false who p)
     (unless (or (not p) (is-a? p frame%))
-      (raise-type-error (who->name who) "frame% object or #f" p))))
+      (raise-type-error (who->name who) "frame% object or #f" p)))
+
+  (define root-menu-frame
+    (and (current-eventspace-has-menu-root?)
+         ;; The very first frame shown is somehow sticky under Cocoa,
+         ;;  so create the root frame, show it , and hide it.
+         (let* ([f (make-object (class frame%
+                                  (define/override (on-exit)
+                                    (exit))
+                                  (super-make-object "Root" #f 0 0 -9000 -9000
+                                                     '(no-resize-border no-caption))))]
+                [wx (mred->wx f)])
+           (set-root-menu-wx-frame! wx)
+           (send wx designate-root-frame)
+           f))))

@@ -22,7 +22,8 @@
               set-fixup-window-locations!
               post-dummy-event
 
-              try-to-sync-refresh)
+              try-to-sync-refresh
+              sync-cocoa-events)
 
  ;; from common/queue:
  current-eventspace
@@ -315,7 +316,7 @@
        (when evt (check-menu-bar-click evt))
        (and evt
             (or (not dequeue?)
-                (let ([e (eventspace-hook (tell evt window))])
+                (let ([e (eventspace-hook evt (tell evt window))])
                   (if e
                       (let ([mouse-or-key?
                              (bitwise-bit-set? MouseAndKeyEventMask
@@ -372,6 +373,10 @@
 (set-platform-queue-sync!
  (lambda ()
    ;; in atomic mode
+   (dispatch-all-ready)))
+
+(define (sync-cocoa-events)
+  (atomically
    (dispatch-all-ready)))
 
 ;; ------------------------------------------------------------

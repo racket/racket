@@ -114,6 +114,11 @@
         (let ([wx (->wx wxb)])
           (when wx
             (send wx notify-responder #f))))]
+  [-a _void (windowDidMiniaturize: [_id notification])
+      (when wxb
+        (let ([wx (->wx wxb)])
+          (when wx
+            (send wx force-window-focus))))]
   [-a _void (toggleToolbarShown: [_id sender])
       (when wxb
         (let ([wx (->wx wxb)])
@@ -136,13 +141,25 @@
                      (values f
                              (and f (send f get-eventspace))))))
 
-(set-eventspace-hook! (lambda (w)
-                        (or (and w
-                                 (if (objc-is-a? w MyWindow)
-                                     (tell #:type _scheme w getEventspace)
-                                     #f))
-                            (and front
-                                 (send front get-eventspace)))))
+(set-eventspace-hook! (lambda (evt w)
+                        (define (is-mouse-or-key?)
+                          (bitwise-bit-set? MouseAndKeyEventMask
+                                            (tell #:type _NSInteger evt type)))
+                        (cond
+                         [w
+                          (and (or (not root-fake-frame)
+                                   ;; only mouse and key events in the root
+                                   ;; frame need to be dispatched in the root
+                                   ;; eventspace:
+                                   (not (ptr-equal? w (send root-fake-frame get-cocoa)))
+                                   (is-mouse-or-key?))
+                               (objc-is-a? w MyWindow)
+                               (tell #:type _scheme w getEventspace))]
+                         [front (send front get-eventspace)]
+                         [root-fake-frame 
+                          (and (is-mouse-or-key?)
+                               (send root-fake-frame get-eventspace))]
+                         [else #f])))
 
 (define frame%
   (class window%
@@ -287,12 +304,9 @@
                   (send p set-sheet #f)
                   (tell (tell NSApplication sharedApplication)
                         endSheet: cocoa))))
+            (tellv cocoa deminiaturize: #f)
             (tellv cocoa orderOut: #f)
-            (let ([next (get-app-front-window)])
-              (cond
-               [next (tellv next makeKeyWindow)]
-               [root-fake-frame (send root-fake-frame install-mb)]
-               [else (void)]))))
+            (force-window-focus)))
       (register-frame-shown this on?)
       (let ([num (tell #:type _NSInteger cocoa windowNumber)])
         (if on?
@@ -319,6 +333,20 @@
                   (sync/timeout 1 s))))))
       (atomically
        (direct-show on?)))
+
+    (define/public (force-window-focus)
+      (let ([next (get-app-front-window)])
+        (cond
+         [next (tellv next makeKeyWindow)]
+         [root-fake-frame 
+          ;; Make key focus shift to root frame:
+          (let ([root-cocoa (send root-fake-frame get-cocoa)])
+            (tellv root-cocoa orderFront: #f)
+            (tellv root-cocoa makeKeyWindow)
+            (tellv root-cocoa orderOut: #f))
+          ;; Install root frame's menu bar:
+          (send root-fake-frame install-mb)]
+         [else (void)])))
 
     (define/private (do-paint-children)
       (when saved-child
@@ -350,7 +378,8 @@
         (send saved-child enable-window (and on? (is-window-enabled?)))))
 
     (define/override (is-shown?)
-      (tell #:type _bool cocoa isVisible))
+      (or (tell #:type _bool cocoa isVisible)
+          (tell #:type _bool cocoa isMiniaturized)))
 
     (define/override (is-shown-to-root?)
       (is-shown?))
@@ -534,7 +563,12 @@
     (def/public-unimplemented on-mdi-activate)
     (define/public (on-close) #t)
     (define/public (designate-root-frame)
-      (set! root-fake-frame this))
+      (set! root-fake-frame this)
+      ;; The first window shown is somehow sticky, so that it becomes
+      ;; the main window if no windows are shown:
+      (tellv cocoa orderFront: #f)
+      (tellv cocoa orderOut: #f)
+      (sync-cocoa-events))
     (def/public-unimplemented system-menu)
 
     (define/public (set-modified on?)
