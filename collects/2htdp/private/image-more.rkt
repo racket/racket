@@ -1256,7 +1256,11 @@
                 (path->complete-path 
                  arg
                  (or (current-load-relative-directory)
-                     (current-directory)))])])
+                     (current-directory)))]
+               [else (raise-syntax-error 
+                      'bitmap 
+                      "expected the argument to specify a local path (via a string) or a module path (e.g. `icons/b-run.png')"
+                      stx)])])
        #`(bitmap/proc #,path))]))
 
 (define (bitmap/proc arg)
