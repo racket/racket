@@ -135,8 +135,9 @@ integer.}
 
 @defparam[current-print-convert-hook
           hook
-          (any/c/ (any/c . -> . any/c)
-                  (any/c . -> . any/c))]{
+          (any/c (any/c . -> . any/c)
+                 (any/c . -> . any/c)
+                 . -> . any/c)]{
 
 Parameter that sets a procedure used by @scheme[print-convert] and
 @scheme[print-convert-expr] to convert values. The procedure
