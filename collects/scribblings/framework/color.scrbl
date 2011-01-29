@@ -212,13 +212,23 @@
     right kind.  If @scheme[flash?] is true, the matching open parenthesis will be
     flashed.
   }
-  @defmethod*[(((classify-position (position natural-number?)) symbol?))]{
+  @defmethod*[(((classify-position (position exact-nonnegative-integer?)) symbol?))]{
 
 
     Return a symbol for the lexer-determined token type for the token that
      contains the item after @scheme[position].
 
     Must only be called while the tokenizer is started.
+  }
+  
+  @defmethod[(get-token-range [position exact-nonnegative-integer?]) 
+             (values (or/c #f exact-nonnegative-integer?)
+                     (or/c #f exact-nonnegative-integer?))]{
+    
+    Returns the range of the token surrounding @racket[position], if there is a token there.
+    
+    This method must be called only when the tokenizer is started.
+    
   }
   
   @defmethod[#:mode augment (on-lexer-valid [valid? boolean?]) any]{

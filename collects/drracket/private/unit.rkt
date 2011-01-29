@@ -238,16 +238,38 @@ module browser threading seems wrong.
                 [before+ (and before (send text get-forward-sexp before))]
                 [after (send text get-forward-sexp pos)]
                 [after- (and after (send text get-backward-sexp after))])
-           (cond
-             [(and before before+ 
-                   (<= before pos before+)
-                   (eq? 'symbol (send text classify-position before))) 
-              (send text get-text before before+)]
-             [(and after after- 
-                   (<= after- pos after)
-                   (eq? 'symbol (send text classify-position after-)))
-              (send text get-text after- after)]
-             [else ""]))]
+           
+           (define (get-tokens start end)
+             (let loop ([i start])
+               (cond
+                 [(and (< i end)
+                       (< i (send text last-position)))
+                  (define-values (tstart tend) (send text get-token-range i))
+                  (cons (list (send text classify-position i) tstart tend)
+                        (loop tend))]
+                 [else '()])))
+           
+           ;; find-searchable-tokens : number number -> (or/c #f (list symbol number number))
+           (define (find-searchable-tokens start end)
+             (define tokens (get-tokens start end))
+             (define raw-tokens (map (λ (x) (list-ref x 0)) tokens))
+             (cond
+               [(equal? raw-tokens '(symbol))
+                (car tokens)]
+               [(equal? raw-tokens '(constant symbol))
+                (cadr tokens)]
+               [else #f]))
+           
+           (define searchable-token 
+             (or (and before before+ 
+                      (<= before pos before+)
+                      (find-searchable-tokens before before+))
+                 (and after after- 
+                      (<= after- pos after)
+                      (find-searchable-tokens after- after))))
+           (if searchable-token
+             (send text get-text (list-ref searchable-token 1) (list-ref searchable-token 2))
+             ""))]
         [else
          (send text split-snip pos)
          (send text split-snip (+ pos 1))
