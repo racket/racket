@@ -28,9 +28,12 @@ evaluator is created using @racket[make-base-eval]. See also
 If the value of @racket[current-print] in the sandbox is changed from
 its default value, or if @racket[print-as-expression] in the sandbox
 is set to @racket[#f], then each evaluation result is formatted to a
-string by applying @racket[(current-print)] to the value (with the
-output port set to a string port). Otherwise, result values are
-typeset using @racket[to-element/no-color].
+port by applying @racket[(current-print)] to the value; the output
+port is set to a pipe that supports specials in the sense of
+@racket[write-special], and non-character values written to the port
+are used as @tech{content}. Otherwise, when the default
+@racket[current-print] is in place, result values are typeset using
+@racket[to-element/no-color].
 
 Uses of @racket[code:comment] and @racketidfont{code:blank} are
 stipped from each @racket[datum] before evaluation.

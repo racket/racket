@@ -8,6 +8,7 @@
            racket/sandbox
            racket/promise
            racket/string
+           racket/port
            file/convertible
            (for-syntax racket/base))
 
@@ -78,6 +79,50 @@
                                                    (literal-string style s)))))))
                         s))))))))))
 
+    (define (format-output-stream in style)
+      (define (add-string string-accum line-accum)
+        (if string-accum
+            (cons (list->string (reverse string-accum))
+                  (or line-accum null))
+            line-accum))
+      (define (add-line line-accum flow-accum)
+        (if line-accum
+            (cons (make-paragraph
+                   (cons
+                    (hspace 2)
+                    (map (lambda (s)
+                           (if (string? s)
+                               (literal-string style s)
+                               s))
+                         (reverse line-accum))))
+                  flow-accum)
+            flow-accum))
+      (let loop ([string-accum #f] [line-accum #f] [flow-accum null])
+        (let ([v (read-char-or-special in)])
+          (cond
+           [(eof-object? v)
+            (let* ([line-accum (add-string string-accum line-accum)]
+                   [flow-accum (add-line line-accum flow-accum)])
+              (list
+               (list
+                (make-flow 
+                 (list
+                  (if (= 1 (length flow-accum))
+                      (car flow-accum)
+                      (make-table
+                       #f
+                       (map (lambda (l)
+                              (list (make-flow (list l))))
+                            flow-accum))))))))]
+           [(equal? #\newline v)
+            (loop #f #f (add-line (add-string string-accum line-accum)
+                                  flow-accum))]
+           [(char? v)
+            (loop (cons v (or string-accum null)) line-accum flow-accum)]
+           [else
+            (loop #f (cons v (or (add-string string-accum line-accum) null))
+                  flow-accum)]))))
+
   (define (interleave title expr-paras val-list+outputs)
     (make-table
      #f
@@ -120,8 +165,8 @@
                                (list s)))
                          (regexp-split #rx"\n" s))))))]
               [(box? (caar val-list+outputs))
-               ;; Output formatted as string:
-               (format-output (unbox (caar val-list+outputs)) result-color)]
+               ;; Output witten to a port
+               (format-output-stream (unbox (caar val-list+outputs)) result-color)]
               [else
                ;; Normal result case:
                (let ([val-list (caar val-list+outputs)])
@@ -178,15 +223,18 @@
                                     (lambda ()
                                       (and (eq? (current-print) cp)
                                            (print-as-expression)))))
+                                 ;; default printer => get result as S-expression
                                  (make-reader-graph (copy-value v (make-hasheq)))
+                                 ;; other printer => go through a string
                                  (box
                                   (call-in-sandbox-context
                                    ev
                                    (lambda ()
-                                     (let ([s (open-output-string)])
-                                       (parameterize ([current-output-port s])
+                                     (let-values ([(in out) (make-pipe-with-specials)])
+                                       (parameterize ([current-output-port out])
                                          (map (current-print) v))
-                                       (get-output-string s)))))))
+                                       (close-output-port out)
+                                       in))))))
                            (get-output ev)
                            (get-error-output ev)))])
             (when expect
