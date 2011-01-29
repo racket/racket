@@ -32,6 +32,7 @@
          "../examples/racket-machine/reduction-test.ss"
          "../examples/racket-machine/verification-test.ss"
          "../examples/delim-cont/test.rkt"
+         "../examples/cont-mark-transform/all-test.rkt"
          ("../examples/r6rs/r6rs-tests.ss" main))
        '())))
 

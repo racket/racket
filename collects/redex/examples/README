@@ -18,6 +18,10 @@ to demonstrate various different uses of PLT Redex:
   closure. Also, one of the first examples from Matthias
   Felleisen and Matthew Flatt's monograph
 
+  cont-mark-transform: the continuation mark transformation from
+  McCarthy's ICFP '09 paper “Automatically RESTful Web Applications
+  Or, Marking Modular Serializable Continuations" 
+
   contracts.rkt: A core contract calculus, including blame, 
   with function contracts, (eager) pair contracts, 
   and a few numeric predicates
