@@ -206,8 +206,8 @@
                        (set! old-h h)
                        (as-exit (lambda () (send mred on-size w h)))))
                    (let* ([p (area-parent)]
-                          [x (- (get-x) (or (and p (send p dx)) 0))]
-                          [y (- (get-y) (or (and p (send p dy)) 0))])
+                          [x (max -10000 (min 10000 (- (get-x) (or (and p (send p dx)) 0))))]
+                          [y (max -10000 (min 10000 (- (get-y) (or (and p (send p dy)) 0))))])
                      (when (not (and (= x old-x) (= y old-y)))
                        (set! old-x x)
                        (set! old-y y)
