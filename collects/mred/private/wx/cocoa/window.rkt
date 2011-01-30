@@ -68,13 +68,15 @@
   [-a _BOOL (resignFirstResponder)
       (and (super-tell resignFirstResponder)
            (let ([wx (->wx wxb)])
-             (when wx (send wx is-responder wx #f))
+             (when wx
+               (send wx is-responder wx #f)
+               (send wx set-saved-marked #f #f))
              #t))]
   [-a _void (changeColor: [_id sender])
       (let ([wx (->wx wxb)])
         (when wx (send wx on-color-change)))])
 
-(import-class NSArray)
+(import-class NSArray NSPanel NSTextView)
 (import-protocol NSTextInput)
 
 (define current-insert-text (make-parameter #f))
@@ -257,6 +259,12 @@
     (substring s start (max (+ start (NSRange-length range)) 
                             (string-length s)))))
 
+(define-objc-class InputMethodPanel NSPanel
+  []
+  [-a _BOOL (canBecomeKeyWindow) #f]
+  [-a _BOOL (canBecomeMainWindow) #f]
+  [-a _void (windowDidResize: [_id notification])
+      (reset-input-method-window-size)])
 
 (define-objc-mixin (KeyMouseTextResponder Superclass)
   #:mixins (KeyMouseResponder)
@@ -812,9 +820,64 @@
     ;; For multi-key character composition:
     (define saved-marked #f)
     (define saved-sel #f)
-    (define/public (set-saved-marked v sel) (set! saved-marked v) (set! saved-sel sel))
+    (define/public (set-saved-marked v sel) 
+      (set! saved-marked v) 
+      (set! saved-sel sel)
+      (if (and v 
+               (not (string=? v ""))
+               ;; Don't show the window for an empty string or certain
+               ;; simple combinations (probably a better way than this);
+               (not (member v '("¨" "ˆ" "´" "`" "˜"))))
+          (create-compose-window)
+          (when compose-cocoa
+            (tellv compose-cocoa orderOut: #f))))
     (define/public (get-saved-marked) saved-marked)
-    (define/public (get-saved-selected) saved-sel)))
+    (define/public (get-saved-selected) saved-sel)
+
+    (define/private (create-compose-window)
+      (unless compose-cocoa
+        (set! compose-cocoa (tell (tell InputMethodPanel alloc)
+                                  initWithContentRect: #:type _NSRect (make-NSRect
+                                                                       (make-NSPoint 0 20)
+                                                                       (make-NSSize 300 20))
+                                  styleMask: #:type _int (bitwise-ior NSUtilityWindowMask
+                                                                      NSResizableWindowMask
+                                                                      NSClosableWindowMask)
+                                  backing: #:type _int NSBackingStoreBuffered
+                                  defer: #:type _BOOL NO))
+        (set! compose-text (tell (tell NSTextView alloc)
+                                 initWithFrame: #:type _NSRect (make-NSRect
+                                                                (make-NSPoint 0 0)
+                                                                (make-NSSize 10 10))))
+        (tellv compose-cocoa setFloatingPanel: #:type _BOOL #t)
+        (tellv (tell compose-cocoa contentView) addSubview: compose-text)
+        (tellv compose-text sizeToFit)
+        (tellv compose-cocoa setContentBorderThickness: #:type _CGFloat 5.0 forEdge: #:type _int 1)
+        (let ([h (+ (NSSize-height
+                     (NSRect-size
+                      (tell #:type _NSRect
+                            compose-cocoa frameRectForContentRect: 
+                            #:type _NSRect (make-NSRect (make-NSPoint 0 0)
+                                                        (make-NSSize 0 0)))))
+                    (NSSize-height (NSRect-size (tell #:type _NSRect compose-text frame))))])
+          (tellv compose-cocoa setMinSize: #:type _NSSize (make-NSSize 1 h))
+          (tellv compose-cocoa setMaxSize: #:type _NSSize (make-NSSize 32000 h))
+          (tellv compose-cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint 0 20)
+                                                                     (make-NSSize 300 h))
+                 display: #:type _BOOL #t))
+        (reset-input-method-window-size)
+        (tellv compose-cocoa setDelegate: compose-cocoa))
+      (tellv compose-text 
+             setMarkedText: #:type _NSString saved-marked 
+             selectedRange: #:type _NSRange (make-NSRange (car saved-sel) (cdr saved-sel)))
+      (tellv compose-cocoa orderFront: #f))))
+
+(define (reset-input-method-window-size)
+  (tell compose-text setFrame: #:type _NSRect
+        (tell #:type _NSRect (tell compose-cocoa contentView) frame)))
+
+(define compose-cocoa #f)
+(define compose-text #f)
 
 ;; ----------------------------------------
 
