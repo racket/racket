@@ -68,7 +68,7 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
                      [mode (or/c 'outline "outline")] 
                      [pen-or-color (or/c image-color? pen?)])
             image?])]{
-  Constructs an ellipsis with the given width, height, mode, and color.
+  Constructs an ellipse with the given width, height, mode, and color.
 
   @mode/color-text
   
