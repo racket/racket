@@ -1547,16 +1547,19 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                     }
                     return v;
                   } else {
+                    if (ch == EOF) --fl;
                     scheme_read_err(port, stxsrc, line, col, pos, 6, ch, indentation,
-                                    "read: expected a single space after `#lang'",
-                                    found, fl);
+                                    "read%s: expected a single space after `#lang'",
+                                    (get_info ? "-language" : ""));
                     return NULL;
                   }
                 }
               }
             }
+            if (ch == EOF) --fl;
             scheme_read_err(port, stxsrc, line, col, pos, fl, ch, indentation,
-                            "read: bad input: `#%u'",
+                            "read%s: bad input: `#%u'",
+                            (get_info ? "-language" : ""),
                             found, (intptr_t)fl);
             return NULL;
           }
