@@ -576,8 +576,8 @@
 
   (define* (take n l)
     (let ([n0 (! n)])
-      (unless (exact-nonnegative-integer? n)
-        (raise-type-error 'take "non-negative exact integer" 0 n l))
+      (unless (exact-nonnegative-integer? n0)
+        (raise-type-error 'take "non-negative exact integer" 0 n0 l))
       (let loop ([n n0] [l l])
         (if (zero? n)
           '()
