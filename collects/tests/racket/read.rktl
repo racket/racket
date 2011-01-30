@@ -1095,6 +1095,14 @@
   (check-nothing ";" exn:fail:read:eof?)
   (check-nothing "#| |#" exn:fail:read:eof?)
   (check-nothing "8 9" exn:fail:read?))
+(err/rt-test (read-language (open-input-string "#l") void) exn:fail:read:eof?)
+(err/rt-test (read-language (open-input-string "#la") void) exn:fail:read:eof?)
+(err/rt-test (read-language (open-input-string ";;\n;\n#la") void) exn:fail:read:eof?)
+(err/rt-test (read-language (open-input-string ";;\n;\n#lx") void) exn:fail:read?)
+(test (void) read-language (open-input-string ";;\n;\n#xa") void)
+;; Check error-message formatting:
+(err/rt-test (read (open-input-string "#l"))
+             (lambda (exn) (regexp-match? #rx"`#l'" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
