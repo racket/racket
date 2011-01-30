@@ -1,9 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require tests/eli-tester "promise.rkt" "lang.rkt" "langimpl.rkt")
+(require tests/eli-tester "promise.rkt" "forcers.rkt" "lang.rkt")
 
-(test do (lang-tests)
-;      do (langimpl-tests) ; not working, so import test-take directly
-      do (test-take)
-      do (promise-tests)
-)
+(test do (promise-tests)
+      do (forcer-tests)
+      do (lang-tests))

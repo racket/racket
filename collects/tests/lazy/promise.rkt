@@ -1,6 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/promise tests/eli-tester (for-syntax scheme/base))
+;; Tests for the various racket promises
+
+(require racket/promise tests/eli-tester (for-syntax racket/base))
 
 ;; check that things are `promise?'s or not
 (define (test-types)
