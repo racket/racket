@@ -24,7 +24,9 @@
         (! (first (take 4 test-lst1))) => 1
         (! (second (take 4 test-lst1))) => 2
         (! (third (take 4 test-lst1))) => 3
-        (! (fourth (take 4 test-lst1))) =error> "take: index 4 too large for input list"))
+        (! (fourth (take 4 test-lst1))) =error> "take: index 4 too large for input list"
+        (! (list-ref (take (car (list 1)) (list 2)) 0)) => 2
+        ))
 
 ; not working, only get 1 test passed
 #;(define (langimpl-tests)
