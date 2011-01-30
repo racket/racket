@@ -337,7 +337,7 @@
   (define* (~vector-set! vec i val) (~ (vector-set! (! vec) (! i) val)))
   (define* (~set-box! box val) (~ (set-box! (! box) val)))
 
-  ;; not much to do with these besides inserting strict points
+  ;; not much to do with these besides inserting strictness points and ~begin
   (define-syntax (~cond stx)
     (syntax-case stx ()
       [(_ [test body ...] ...)
@@ -598,6 +598,8 @@
   ;; --------------------------------------------------------------------------
   ;; mzlib/list functionality
 
+  ;; These are a hack, they're not the same due to different error
+  ;; messages (and they work with improper lists too).
   (define* (rest x) (~cdr x))
   (define* (first   x) (~car    x))
   (define* (second  x) (~cadr   x))
