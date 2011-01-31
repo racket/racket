@@ -58,7 +58,12 @@
                     (and r
                          (begin
                            (parameterize ([recurring-for-command #t])
-                             (tell r keyDown: evt))
+                             (let ([evt-type (tell #:type _NSInteger evt type)])
+                               (cond
+                                [(= NSKeyDown evt-type)
+                                 (tell r keyDown: evt)]
+                                [(= NSKeyUp evt-type)
+                                 (tell r keyUp: evt)])))
                            #t)))))))))
 
 (define cocoa-mb (tell (tell MyBarMenu alloc) init))
