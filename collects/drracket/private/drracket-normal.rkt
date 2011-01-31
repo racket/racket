@@ -47,7 +47,13 @@
 
 (define (load-magic-images)
   (set! load-magic-images void) ; run only once
-  (unless normal-bitmap (set! normal-bitmap (icons-bitmap "PLT-206.png")))
+  (unless normal-bitmap 
+    (set! normal-bitmap
+          (cond
+            [(path? normal-bitmap-spec)
+             (make-object bitmap% normal-bitmap-spec)]
+            [else
+             (make-object bitmap% (collection-file-path "plt-logo-red-diffuse.png" "icons"))])))
   (for-each (λ (magic-image)
               (unless (magic-image-bitmap magic-image)
                 (set-magic-image-bitmap!
@@ -96,31 +102,32 @@
 
 (when (eb-bday?) (install-eb))
 
-(start-splash
- (cond
-   [(and valentines-day? high-color?)
-    (collection-file-path "heart.png" "icons")]
-   [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
-    (set-splash-progress-bar?! #f)
-    (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
-      (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
-              size 
-              size))]
-   [texas-independence-day?
-    (collection-file-path "texas-plt-bw.gif" "icons")]
-   [(and halloween? high-color?)
-    (collection-file-path "PLT-pumpkin.png" "icons")]
-   [(and high-color? weekend?)
-    (collection-file-path "plt-logo-red-shiny.png" "icons")]
-   [high-color?
-    (collection-file-path "plt-logo-red-diffuse.png" "icons")]
-   [(= (get-display-depth) 1)
-    (collection-file-path "pltbw.gif" "icons")]
-   [else
-    (collection-file-path "plt-flat.gif" "icons")])
- "DrRacket"
- 700
- #:allow-funny? #t)
+(define normal-bitmap-spec
+  (cond
+    [(and valentines-day? high-color?)
+     (collection-file-path "heart.png" "icons")]
+    [(and (or prince-kuhio-day? kamehameha-day?) high-color?)
+     (set-splash-progress-bar?! #f)
+     (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
+       (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
+               size 
+               size))]
+    [texas-independence-day?
+     (collection-file-path "texas-plt-bw.gif" "icons")]
+    [(and halloween? high-color?)
+     (collection-file-path "PLT-pumpkin.png" "icons")]
+    [(and high-color? weekend?)
+     (collection-file-path "plt-logo-red-shiny.png" "icons")]
+    [high-color?
+     (collection-file-path "plt-logo-red-diffuse.png" "icons")]
+    [(= (get-display-depth) 1)
+     (collection-file-path "pltbw.gif" "icons")]
+    [else
+     (collection-file-path "plt-flat.gif" "icons")]))
+(start-splash normal-bitmap-spec
+              "DrRacket"
+              700
+              #:allow-funny? #t)
 
 (when (getenv "PLTDRBREAK")
   (printf "PLTDRBREAK: creating break frame\n") (flush-output)
