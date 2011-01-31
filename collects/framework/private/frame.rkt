@@ -1748,7 +1748,15 @@
     (for-each
      (λ (x) (insert x (last-position) (last-position)))
      (preferences:get pref-sym))
-    (end-edit-sequence)))
+    (end-edit-sequence)
+    
+    (define pref-callback 
+      (λ (p v)
+        (let ([c (get-canvas)])
+          (when (and c (send c get-line-count))
+            (send c set-editor (send c get-editor))))))
+    
+    (preferences:add-callback 'framework:standard-style-list:font-size pref-callback #t)))
 
 (define find-text%
   (class find/replace-text%
@@ -2312,6 +2320,7 @@
                                             [line-count 1]
                                             [stretchable-height #f]
                                             [stretchable-width #t])))
+
           (define _3 (set! replace-canvas (new searchable-canvas%
                                                [style '(hide-hscroll hide-vscroll)]
                                                [vertical-inset 2]
