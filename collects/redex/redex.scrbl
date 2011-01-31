@@ -1278,8 +1278,9 @@ The argument @racket[size-expr] bounds the height of the generated term
 The optional keyword argument @racket[attempt-num-expr] 
 (default @racket[1]) provides coarse grained control over the random
 decisions made during generation; increasing @racket[attempt-num-expr]
-tends to increase the complexity of the result. For example, the expected
-length of @pattech[pattern-sequence]s increases with @racket[attempt-num-expr].
+tends to increase the complexity of the result. For example, the absolute
+values of numbers chosen for @pattech[integer] patterns increase with
+@racket[attempt-num-expr].
 
 The random generation process does not actively consider the constraints
 imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 

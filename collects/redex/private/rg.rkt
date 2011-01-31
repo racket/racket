@@ -141,8 +141,8 @@
 (define (pick-real attempt [random generator-random])
   (pick-number attempt #:top-threshold real-threshold random))
 
-(define (pick-sequence-length attempt)
-  (random-natural (expected-value->p ((attempt->size) attempt))))
+(define (pick-sequence-length size)
+  (random-natural (expected-value->p size)))
 
 (define (min-prods nt prods base-table)
   (let* ([sizes (hash-ref base-table nt)]
@@ -371,7 +371,7 @@
                                             (let ([prior (hash-ref e class #f)])
                                               (if prior
                                                   prior
-                                                  (if (zero? s) 0 ((next-sequence-decision) a))))]
+                                                  (if (zero? s) 0 ((next-sequence-decision) s))))]
                                            [(seq env)
                                             (generate-sequence (λ (e) (elemg r s a e f)) e vars len)]
                                            [(tail env) 

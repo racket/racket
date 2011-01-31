@@ -1272,7 +1272,7 @@
 (let ([seed 0])
   (define-language L)
   (define (generate)
-    (generate-term L (number ...) 10000000 #:attempt-num 10000000))
+    (generate-term L (number ...) 100 #:attempt-num 10000000))
   (test (begin (random-seed seed) (generate))
         (begin (random-seed seed) (generate)))
   (let ([prg (make-pseudo-random-generator)])
