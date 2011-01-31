@@ -661,17 +661,21 @@ the @scheme[point-count] argument determines how many points the star has.
   }
 
 @defproc[(overlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
-  Constructs an image by overlaying @racket[i1] on top of @racket[i2] after
-  shifting @racket[i2] over by @racket[x] pixels to the right and @racket[y] 
-  pixels down.
+  Constructs an image by overlaying @racket[i1] on top of @racket[i2].
+  The images are initially lined up on their upper-left corners and 
+  then @racket[i2] is shifted to the right 
+  by @racket[x] pixels to and down by @racket[y] pixels.
+
+  This is the same as @racket[(underlay/xy i2 (- x) (- y) i1)].
+  
   @image-examples[(overlay/xy (rectangle 20 20 "outline" "black")
                               20 0
                               (rectangle 20 20 "outline" "black"))
                   (overlay/xy (rectangle 20 20 "solid" "red")
-                              20 20
+                              10 10
                               (rectangle 20 20 "solid" "black"))
                   (overlay/xy (rectangle 20 20 "solid" "red")
-                              -20 -20
+                              -10 -10
                               (rectangle 20 20 "solid" "black"))
                   (overlay/xy 
                    (overlay/xy (ellipse 40 40 "outline" "black")
@@ -738,9 +742,10 @@ the @scheme[point-count] argument determines how many points the star has.
   }
 
 @defproc[(underlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
-  Constructs an image by underlaying @racket[i1] underneath of @racket[i2] after
-  shifting @racket[i2] over by @racket[x] pixels to the right and @racket[y] 
-  pixels down.
+  Constructs an image by underlaying @racket[i1] underneath @racket[i2].
+  The images are initially lined up on their upper-left corners and 
+  then @racket[i2] is shifted to the right 
+  by @racket[x] pixels to and down by @racket[y] pixels.
   
   This is the same as @racket[(overlay/xy i2 (- x) (- y) i1)].
   
@@ -748,10 +753,10 @@ the @scheme[point-count] argument determines how many points the star has.
                                20 0
                                (rectangle 20 20 "outline" "black"))
                   (underlay/xy (rectangle 20 20 "solid" "red")
-                               20 20
+                               10 10
                                (rectangle 20 20 "solid" "black"))
                   (underlay/xy (rectangle 20 20 "solid" "red")
-                               -20 -20
+                               -10 -10
                                (rectangle 20 20 "solid" "black"))
                   (underlay/xy 
                    (underlay/xy (ellipse 40 40 "solid" "gray")
