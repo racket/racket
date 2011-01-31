@@ -23,7 +23,7 @@
    #:once-each
    [("-o") file "Write executable as <file>"
     (exe-output file)]
-   [("--gui") "Geneate GUI executable"
+   [("--gui") "Generate GUI executable"
     (gui #t)]
    [("--collects-path") path "Set <path> as main collects for executable"
     (exe-embedded-collects-path path)]

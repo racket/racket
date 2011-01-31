@@ -23,7 +23,7 @@
   (command-line
    #:program (short-program+command-name)
    #:once-each
-   [("--collect") "Pack collections instead of files and directories"
+   [("--collect") "<path>s specify collections instead of files/dirs"
     (collection? #t)]
    [("--plt-name") name "Set the printed <name> describing the archive"
     (plt-name name)]
@@ -45,8 +45,8 @@
    #:once-each
    [("-v") "Verbose mode"
     (verbose #t)]
-   #:args (dest-file . file)
-   (values dest-file file)))
+   #:args (dest-file . path)
+   (values dest-file path)))
 
 (if (not (collection?))
     ;; Files and directories
