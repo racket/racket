@@ -23,6 +23,16 @@
          wrkr/send
          define/class/generics)
 
+(define-syntax-rule (mk-generic func clss method args ...)
+  (begin
+    (define g (generic clss method))
+    (define (func obj args ...)
+      (send-generic obj g args ...))))
+
+(define-syntax-rule (define/class/generics class (func method args ...) ...)
+  (begin
+    (mk-generic func class method args ...) ...))
+
 (define Worker% (class object%
   (field [id 0]
          [process-handle null]
@@ -30,7 +40,7 @@
          [in null]
          [err null])
 
-  (define/public (spawn _id worker-cmdline-list initialcode initialmsg)
+  (define/public (spawn _id worker-cmdline-list [initialcode #f] [initialmsg #f])
     (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
       (set! id _id)
       (set! process-handle _process-handle)
@@ -49,8 +59,16 @@
     (close-output-port in)
     (close-input-port out)
     (subprocess-kill process-handle #t))
+  (define/public (kill/respawn worker-cmdline-list [initialcode #f] [initialmsg #f])
+    (kill)
+    (spawn id worker-cmdline-list [initialcode #f] [initialmsg #f]))
   (define/public (wait) (subprocess-wait process-handle))
   (super-new)))
+
+(define (wrkr/spawn id worker-cmdline-list [initialcode #f] [initialmsg #f])
+  (define wrkr (new Worker%))
+  (send wrkr spawn id worker-cmdline-list initialcode initialmsg)
+  wrkr)
 
 (define WorkQueue<%> (interface ()
   get-job
@@ -59,23 +77,12 @@
   jobs-cnt
   get-results))
 
-(define-syntax-rule (mk-generic func clss method args ...)
-  (begin
-    (define g (generic clss method))
-    (define (func obj args ...)
-      (send-generic obj g args ...))))
-
-(define-syntax-rule (define/class/generics class (func method args ...) ...)
-  (begin
-    (mk-generic func class method args ...) ...))
-
 (define/class/generics Worker%
   (wrkr/send  send/msg msg)
   (wrkr/kill  kill)
   (wrkr/recv  recv/msg)
   (wrkr/id    get-id)
-  (wrkr/out   get-out)
-  (wrkr/spawn spawn id  worker-cmdline-list initialcode initialmsg))
+  (wrkr/out   get-out))
 
 (define/class/generics WorkQueue<%>
   (queue/get        get-job wrkrid)
@@ -95,10 +102,7 @@
                                  (find-system-path 'orig-dir))))))
 
 (define (parallel-do-event-loop initialcode initialmsg worker-cmdline-list jobqueue nprocs stopat)
-  (define (spawn id)
-    (define wrkr (new Worker%))
-    (wrkr/spawn wrkr id worker-cmdline-list initialcode initialmsg)
-    wrkr)
+  (define (spawn id) (wrkr/spawn id worker-cmdline-list initialcode initialmsg))
   (define (jobs?) (queue/has jobqueue))
   (define (empty?) (not (queue/has jobqueue)))
   (define workers #f)
