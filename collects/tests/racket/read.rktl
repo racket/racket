@@ -1103,6 +1103,13 @@
 ;; Check error-message formatting:
 (err/rt-test (read (open-input-string "#l"))
              (lambda (exn) (regexp-match? #rx"`#l'" (exn-message exn))))
+;; Make sure read-language error here is this can comes from read-language
+;; and not from an ill-formed srcloc construction:
+(let ()
+  (define p (open-input-string ";\n"))
+  (port-count-lines! p)
+  (err/rt-test (read-language p)
+               (lambda (exn) (regexp-match? #rx"read-language" (exn-message exn)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

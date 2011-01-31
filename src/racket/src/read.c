@@ -992,6 +992,13 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
     dispatch_ch = ch;
 
   if (get_info && (dispatch_ch != '#') && (dispatch_ch != ';')) {
+    /* If ch is EOF, then col or pos wasn't incremented by reading ch.
+       The col and pos might be used in an error message, which expects
+       to subtract one from each --- so counteract by adding one here. */
+    if (ch == EOF) {
+      if (pos >= 0) pos++;
+      if (col >= 0) col++;
+    }
     return expected_lang("", ch, port, stxsrc, line, col, pos, get_info);
   }
 
