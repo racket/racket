@@ -16,7 +16,7 @@
          -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
          -InexactRealPosZero -InexactRealNegZero -InexactRealZero -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
          -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real
-         -FloatComplex -SingleFlonumComplex -InexactComplex -Number
+         -ExactNumber -FloatComplex -SingleFlonumComplex -InexactComplex -Number
          (rename-out (-Int -Integer)))
 
 
@@ -204,6 +204,16 @@
 ;; Both parts of a complex number must be of the same exactness.
 ;; Thus, the only possible kinds of complex numbers are:
 ;; Real/Real, Flonum/Flonum, SingleFlonum/SingleFlonum
+(define -ExactNumberNotReal
+  (make-Base 'Complex-Not-Real
+             #'(and/c number?
+                      (not/c real?)
+                      (lambda (x) (exact? (imag-part x))))
+             (conjoin number?
+                      (negate real?)
+                      (lambda (x) (exact? (imag-part x))))
+             #'-ExactNumberNotReal))
+(define -ExactNumber (*Un -ExactNumberNotReal -Rat))
 (define -FloatComplex (make-Base 'Float-Complex
                                  #'(and/c number?
                                           (lambda (x)
@@ -225,14 +235,5 @@
                                                       (single-flonum? (real-part x)))))
                                       #'-SingleFlonumComplex))
 (define -InexactComplex (*Un -FloatComplex -SingleFlonumComplex))
-(define -ExactComplexNotReal
-  (make-Base 'Complex-Not-Real
-             #'(and/c number?
-                      (not/c real?)
-                      (lambda (x) (exact? (imag-part x))))
-             (conjoin number?
-                      (negate real?)
-                      (lambda (x) (exact? (imag-part x))))
-             #'-ExactComplexNotReal))
-(define -Complex (*Un -Real -InexactComplex -ExactComplexNotReal))
+(define -Complex (*Un -Real -InexactComplex -ExactNumberNotReal))
 (define -Number -Complex)

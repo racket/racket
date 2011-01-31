@@ -59,6 +59,8 @@
     [(~var i (3d inexact-real?)) -InexactReal] ; catch-all, just in case
     [(~var i (3d real?)) -Real] ; catch-all, just in case
     ;; a complex number can't have a float imaginary part and an exact real part
+    [(~var i (3d (conjoin number? exact?)))
+     -ExactNumber]
     [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
                                                    (flonum? (real-part x)))))))
      -FloatComplex]

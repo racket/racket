@@ -871,7 +871,7 @@
    (tc-l -5# -NegFlonum)
    (tc-l -5.0 -NegFlonum)
    (tc-l -5.1 -NegFlonum)
-   (tc-l 1+1i N)
+   (tc-l 1+1i -ExactNumber)
    (tc-l 1+1.0i -FloatComplex)
    (tc-l 1.0+1i -FloatComplex)
    (tc-l 1.0+1.1i -FloatComplex)

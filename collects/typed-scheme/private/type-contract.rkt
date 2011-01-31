@@ -164,6 +164,7 @@
         [(== t:-NegReal type-equal?) #'(flat-named-contract 'Negative-Real (and/c real? negative?))]
         [(== t:-NonPosReal type-equal?) #'(flat-named-contract 'Nonpositive-Real (and/c real? (lambda (x) (<= x 0))))]
         [(== t:-Real type-equal?) #'(flat-named-contract 'Real real?)]
+        [(== t:-ExactNumber type-equal?) #'(flat-named-contract 'Exact-Number (and/c number? exact?))]
         [(== t:-InexactComplex type-equal?)
          #'(flat-named-contract 'Inexact-Complex
                                 (and/c number?

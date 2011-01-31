@@ -5,6 +5,7 @@
 [Inexact-Complex -InexactComplex]
 [Single-Flonum-Complex -SingleFlonumComplex]
 [Float-Complex -FloatComplex]
+[Exact-Number -ExactNumber]
 [Real -Real]
 [Nonpositive-Real -NonPosReal]
 [Negative-Real -NegReal]

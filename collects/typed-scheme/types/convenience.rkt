@@ -38,6 +38,7 @@
         [(? (lambda (t) (subtype t -SingleFlonum))) -SingleFlonum]
         [(? (lambda (t) (subtype t -InexactReal))) -InexactReal]
         [(? (lambda (t) (subtype t -Real))) -Real]
+        [(? (lambda (t) (subtype t -ExactNumber))) -ExactNumber]
         [(? (lambda (t) (subtype t -FloatComplex))) -FloatComplex]
         [(? (lambda (t) (subtype t -SingleFlonumComplex))) -SingleFlonumComplex]
         [(? (lambda (t) (subtype t -Number))) -Number]
