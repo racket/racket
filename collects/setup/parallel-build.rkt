@@ -6,9 +6,11 @@
          racket/path
          setup/collects
          setup/parallel-do
-         racket/class)
+         racket/class
+         racket/future)
 
-(provide parallel-compile)
+(provide parallel-compile
+         parallel-compile-files)
 
 
 (define Lock-Manager% (class object%
@@ -34,8 +36,12 @@
   (lm/lock lock fn wrkr)
   (lm/unlock unlock fn))
 
+(define (->bytes x)
+  (cond [(path? x) (path->bytes x)]
+        [(string? x) (string->bytes/locale x)]))
+
 (define CollectsQueue% (class* object% (WorkQueue<%>) 
-  (init-field cclst collects-dir printer append-error)
+  (init-field cclst printer append-error)
   (field (lock-mgr (new Lock-Manager%)))
   (field (hash (make-hash)))
   (inspect #f)
@@ -89,14 +95,11 @@
             (list h)]))
       (let ([w-hash hash])
         (define (build-job cc file last)
-          (define (->bytes x)
-            (cond [(path? x) (path->bytes x)]
-                  [(string? x) (string->bytes/locale x)]))
           (let* ([cc-name (cc-name cc)]
                  [cc-path (cc-path cc)]
                  [full-path (path->string (build-path cc-path file))])
             ;(printf "JOB ~a ~a ~a ~a\n" workerid cc-name cc-path file)
-            (values (list cc file last) (list cc-name (->bytes cc-path) (->bytes file)))))
+            (values (list cc file last) (list (->bytes cc-name) (->bytes cc-path) (->bytes file)))))
         (let retry ()
           (define (find-job-in-cc cc id)
             (match cc
@@ -144,15 +147,61 @@
     (define/public (get-results) (void))
     (super-new)))
 
+(define FileListQueue% (class* object% (WorkQueue<%>) 
+  (init-field filelist handler)
+  (field (lock-mgr (new Lock-Manager%)))
+  (inspect #f)
+
+  (define/public (work-done work wrkr msg)
+    (match msg
+      [(list result-type out err)
+        (match result-type
+          [(list 'LOCK fn) (lm/lock lock-mgr fn wrkr) #f]
+          [(list 'UNLOCK fn) (lm/unlock lock-mgr fn) #f]
+          [(list 'ERROR msg) (handler 'error work msg out err) #t]
+          ['DONE
+            (define (string-!empty? s) (not (zero? (string-length s))))
+            (if (ormap string-!empty? (list out err))
+              (handler 'output work "" out err)
+              (handler 'done work "" "" ""))
+            #t])]
+      [else
+        (handler 'fatalerror (format "Error matching work: ~a queue ~a" work filelist) "" "") #t]))
+         
+    (define/public (get-job workerid)
+      (match filelist
+        [(cons hd tail)
+            (define-values (dir file b) (split-path hd))
+            (set! filelist tail)
+            (values hd (list (->bytes hd) (->bytes dir) (->bytes file)))]
+        [(list) null]))
+    (define/public (has-jobs?) (not (null? filelist)))
+    (define/public (jobs-cnt) (length filelist))
+    (define/public (get-results) (void))
+    (super-new)))
+
+
+(define (build-parallel-build-worker-args)
+  (list (current-executable-path)
+        "-X"
+        (path->string (current-collects-path))
+        "-l"
+        "setup/parallel-build-worker.rkt"))
+  
+(define (parallel-compile-files list-of-files
+  #:worker-count [worker-count (processor-count)]
+  #:handler [handler (lambda args (void))])
+
+  (parallel-do-event-loop #f
+                          values ; identity function
+                          (build-parallel-build-worker-args)
+                          (make-object FileListQueue% list-of-files handler)
+                          worker-count 999999999))
+
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
-  (let ([collects-dir (current-collects-path)]) 
-    (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
-    (parallel-do-event-loop #f
-                            values ; identity function
-                            (list (current-executable-path)
-                                  "-X"
-                                  (path->string collects-dir)
-                                  "-l"
-                                  "setup/parallel-build-worker.rkt")
-                            (make-object CollectsQueue% collects-tree collects-dir setup-fprintf append-error)
-                            worker-count 999999999)))
+  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
+  (parallel-do-event-loop #f
+                          values ; identity function
+                          (build-parallel-build-worker-args)
+                          (make-object CollectsQueue% collects-tree setup-fprintf append-error)
+                          worker-count 999999999))

@@ -7,7 +7,9 @@
                      racket/include
                      racket/contract
                      compiler/cm
-                     compiler/cm-accomplice))
+                     compiler/cm-accomplice
+                     setup/parallel-build))
+
 
 @(define cm-eval (make-base-eval))
 @(interaction-eval #:eval cm-eval (require compiler/cm))
@@ -355,6 +357,66 @@ parallel builder should continue without compiling @racket[zo-path].
 ]
 }
 @; ----------------------------------------------------------------------
+
+@section[#:tag "api:parallel-build"]{API for Parallel-Build}
+
+@defmodule[setup/parallel-build]{
+
+The @schememodname[setup/parallel-build] library provides the parallel compilation to bytecode
+functionality of @exec{rack setup} and @exec{rack make}.}
+
+@; ----------------------------------------------------------------------
+
+
+@defproc[(parallel-compile-files [list-of-files (listof path?)] 
+  [#:worker-count worker-count non-negative-integer?] 
+  [#:handler handler ([handler-type symbol?]
+                      [path path-string?]
+                      [msg string?] 
+                      [out string?] 
+                      [err string?] -> void?)]) void?]{
+
+The @racket[parallel-compile] utility function is used by @exec{rack make} to
+compile a list of paths in parallel.  The optional keyword argument
+@racket[#:worker-count] specifies the number of compile workers to spawn during
+parallel compilation.  The callback, @racket[handler], is called with type
+@racket['done] for each successfully compiled file, @racket['output] when a
+successful compilation produces stdout/stderr output, @racket['error] when a
+compilation error has occured, or @racket['fatal-error] when a unrecoverable
+error occurs.
+ 
+  @racketblock[
+    (parallel-compile-files 
+      source-files 
+      #:worker-count 4
+      #:handler (lambda (type work msg out err)
+        (match type
+          ['done (when (verbose) (printf " Made ~a\n" work))]
+          ['output (printf " Output from: ~a\n~a~a" work out err)]
+          [else (printf " Error compiling ~a\n~a\n~a~a"
+                        work 
+                        msg 
+                        out 
+                        err)])))]
+}
+
+@defproc[(parallel-compile 
+  [worker-count non-negative-integer?] 
+  [setup-fprintf (->* ([stage string?] [format string?]) 
+                      () 
+                      #:rest (listof any/c) void)]
+  [append-error (cc? [prefix string?] [exn (or/c exn? null?)] [out string?] [err srtring?] [message string?] . -> . void?)]
+  [collects-tree (listof any/c)])  (void)]{
+
+The @racket[parallel-compile] internal utility function is used by @exec{rack
+setup} to compile collects in parallel.  The @racket[worker-count] argument
+specifies the number of compile workers to spawn during parallel compilation.
+The @racket[setup-fprintf] and @racket[append-error] functions are internal
+callback mechanisms that @exec{rack setup} uses to communicate intermediate
+compilation results.  The @racket[collects-tree] argument is a compound
+datastructure containing an in-memory tree representation of the collects
+directory.
+}
 
 @section{Compilation Manager Hook for Syntax Transformers}
 

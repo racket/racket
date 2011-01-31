@@ -3,7 +3,9 @@
          raco/command-name
          compiler/cm
          "../compiler.ss"
-         dynext/file)
+         dynext/file
+         setup/parallel-build
+         racket/match)
 
 (define verbose (make-parameter #f))
 (define very-verbose (make-parameter #f))
@@ -12,6 +14,7 @@
 (define disable-deps (make-parameter #f))
 (define prefixes (make-parameter null))
 (define assume-primitives (make-parameter #t))
+(define worker-count (make-parameter 1))
 
 (define source-files
   (command-line
@@ -27,13 +30,15 @@
     (assume-primitives #f)]
    [("-v") "Verbose mode"
     (verbose #t)]
+   [("-j") wc "Parallel job count" (worker-count (string->number wc))]
    [("--vv") "Very verbose mode"
     (verbose #t)
     (very-verbose #t)]
    #:args (file . another-file) (cons file another-file)))
 
-(if (disable-deps)
-    ;; Just compile one file:
+(cond 
+  ;; Just compile one file:
+  [(disable-deps)
     (let ([prefix
            `(begin
               (require scheme)
@@ -45,8 +50,9 @@
               (void))])
       ((compile-zos prefix #:verbose? (verbose))
        source-files
-       'auto))
-    ;; Normal make:
+       'auto))]
+  ;; Normal make:
+  [(= (worker-count) 1)
     (let ([n (make-base-empty-namespace)]
           [did-one? #f])
       (parameterize ([current-namespace n]
@@ -76,4 +82,11 @@
               (when (verbose)
                 (printf " [~a \"~a\"]\n"
                         (if did-one? "output to" "already up-to-date at")
-                        dest))))))))
+                        dest)))))))]
+  ;; Parallel make:
+  [else (parallel-compile-files source-files #:worker-count (worker-count)
+    #:handler (lambda (type work msg out err)
+      (match type
+        ['done (when (verbose) (printf " Made ~a\n" work))]
+        ['output (printf " Output from: ~a\n~a~a" work out err)]
+        [else (printf " Error compiling ~a\n~a\n~a~a" work msg out err)])))])
