@@ -103,6 +103,9 @@
          stx
          stx))))
 
+  (define-values (double-flonum?) ; for symmetry with single-flonum?
+    (lambda (x) (flonum? x)))
+
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from "misc.rkt")
              (all-from "define.rkt")
@@ -144,4 +147,5 @@
              (rename define-struct* define-struct)
              define-struct/derived
              struct-field-index
-             struct-copy))
+             struct-copy
+             double-flonum?))
