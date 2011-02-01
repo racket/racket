@@ -937,7 +937,7 @@ of length @racket[size-n], the @exnraise[exn:fail:contract].}
                                      [big-endian? any/c (system-big-endian?)]
                                      [start exact-nonnegative-integer? 0]
                                      [end exact-nonnegative-integer? (bytes-length bstr)])
-         (and/c real? inexact?)]{
+         flonum?]{
 
 Converts the IEEE floating-point number encoded in @racket[bstr] from
 position @racket[start] (inclusive) to @racket[end] (exclusive) to an

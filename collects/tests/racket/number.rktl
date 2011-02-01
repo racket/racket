@@ -2750,8 +2750,8 @@
 	   (< a -1e38))))
 
 (map (lambda (n)
-       (test #t close? (real->single-flonum n) (floating-point-bytes->real (real->floating-point-bytes n 4 #t) #t))
-       (test #t close? (real->single-flonum n) (floating-point-bytes->real (real->floating-point-bytes n 4 #f) #f))
+       (test #t close? n (floating-point-bytes->real (real->floating-point-bytes n 4 #t) #t))
+       (test #t close? n (floating-point-bytes->real (real->floating-point-bytes n 4 #f) #f))
        (test n floating-point-bytes->real (real->floating-point-bytes n 8 #t) #t)
        (test n floating-point-bytes->real (real->floating-point-bytes n 8 #f) #f))
      (append

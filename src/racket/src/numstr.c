@@ -2090,7 +2090,7 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
     {
       float f;
       memcpy(&f, buf, sizeof(float));
-#ifdef MZ_USE_SINGLE_FLOATS
+#ifdef MZ_USE_SINGLE_FLOATS_AS_DEFAULT
       return scheme_make_float(f);
 #else
       return scheme_make_double(f);
