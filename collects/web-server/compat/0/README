@@ -1,7 +1,7 @@
-In Racket 5.0.99.4 and before, the Web Server supported implicit
+In Racket 5.0.2 and before, the Web Server supported implicit
 conversion of X-expressions and lists with the format (cons/c bytes? (listof (or/c string? bytes?))) into response data structures for output.
 
-After 5.0.99.4, this implicit conversion has been generalized into any->response. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
+After 5.0.2, this implicit conversion has been generalized into any->response. In the process, implicit conversion has been completely removed from some internal plumbing AND the response structures have been streamlined---primarily for efficiency.
 
 This document describes the incompatible changes and how to restore the old behavior when that is possible.
 
