@@ -378,7 +378,9 @@
                             (let loop ([exts exts][counter counter])
                               (cond
                                [(null? exts) (values null counter)]
-                               [(eq? 'module (cadar (car exts)))
+                               [(and (pair? (car (car exts)))
+                                     (pair? (cdar (car exts)))
+                                     (eq? 'module (cadar (car exts))))
                                 (let-values ([(rest-exts counter)
                                               (loop (cdr exts) counter)])
                                   (values (cons (car exts) rest-exts) counter))]
