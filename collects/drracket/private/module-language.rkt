@@ -82,7 +82,11 @@
             (set! sandbox (make-evaluator 'racket/base)))))
       
       (define/override (first-opened settings)
-        (define ns (get-ns (get-auto-text settings)))
+        (define ns (with-handlers ((exn:fail? (lambda (x) #f)))
+                     ;; get-ns can fail in all kinds of strange ways;
+                     ;; just give up if it does, since an error here
+                     ;; means drracket won't start up.
+                     (get-ns (get-auto-text settings))))
         (when ns (current-namespace ns)))
       
       (define/private (get-ns str)
