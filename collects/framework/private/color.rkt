@@ -817,16 +817,18 @@ added get-regions
     
     ;; Determines whether a position is a 'comment, 'string, etc.
     (define/public (classify-position position)
-      (define tokens (get-tokens-at-position 'classify-position position))
+      (define-values (tokens ls) (get-tokens-at-position 'classify-position position))
       (and tokens
            (let ([root-data (send tokens get-root-data)])
              (and root-data
                   (data-type root-data)))))
 
     (define/public (get-token-range position)
-      (define tokens (get-tokens-at-position 'get-token-range position))
-      (values (and tokens (send tokens get-root-start-position))
-              (and tokens (send tokens get-root-end-position))))
+      (define-values (tokens ls) (get-tokens-at-position 'get-token-range position))
+      (values (and tokens (+ (lexer-state-start-pos ls) 
+                             (send tokens get-root-start-position)))
+              (and tokens (+ (lexer-state-start-pos ls)
+                             (send tokens get-root-end-position)))))
 
     (define/private (get-tokens-at-position who position)
       (when stopped?
@@ -836,7 +838,7 @@ added get-regions
              (let ([tokens (lexer-state-tokens ls)])
                (tokenize-to-pos ls position)
                (send tokens search! (- position (lexer-state-start-pos ls)))
-               tokens))))
+               (values tokens ls)))))
     
     (define/private (tokenize-to-pos ls position)
       (when (and (not (lexer-state-up-to-date? ls)) 
