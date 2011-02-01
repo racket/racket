@@ -68,4 +68,8 @@ typedef unsigned long uintptr_t;
 /* Enable GC2 Places Testing. */
 #undef GC2_PLACES_TESTING
 
+/* Enable single-precision floats [as default]: */
+#undef USE_SINGLE_FLOATS
+#undef USE_SINGLE_FLOATS_AS_DEFAULT
+
 #endif

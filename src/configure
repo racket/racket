@@ -1339,7 +1339,7 @@ Optional Features:
   --enable-account        3m: use memory-accounting GC (enabled by default)
   --enable-compact        3m: use compact GC (no accounting)
   --enable-backtrace      3m: support GC backtrace dumps
-  --enable-float          single-precision floats support (enabled by default)
+  --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   compile to use single-precision by default
   --enable-pthread        link with pthreads
   --enable-stackup        assume "up" if stack direction cannot be determined
@@ -2227,7 +2227,7 @@ show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
-show_explicitly_disabled "${enable_float}" "Single-precision floats"
+show_explicitly_enabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
@@ -2331,11 +2331,19 @@ fi
 
 if test "${enable_floatinstead}" = "yes" ; then
   enable_float=yes
-  OPTIONS="${OPTIONS} -DUSE_SINGLE_FLOATS_AS_DEFAULT"
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_SINGLE_FLOATS_AS_DEFAULT 1
+_ACEOF
+
 fi
 
 if test "${enable_float}" = "yes" ; then
-  OPTIONS="${OPTIONS} -DUSE_SINGLE_FLOATS"
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_SINGLE_FLOATS 1
+_ACEOF
+
 fi
 
 ###### Autoconfigure #######

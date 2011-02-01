@@ -47,7 +47,7 @@ AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (
 AC_ARG_ENABLE(compact, [  --enable-compact        3m: use compact GC (no accounting)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
 
-AC_ARG_ENABLE(float,   [  --enable-float          include support for single-precision floats])
+AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   compile to use single-precision by default])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads])
@@ -390,11 +390,11 @@ fi
 
 if test "${enable_floatinstead}" = "yes" ; then
   enable_float=yes
-  OPTIONS="${OPTIONS} -DUSE_SINGLE_FLOATS_AS_DEFAULT"
+  AC_DEFINE(USE_SINGLE_FLOATS_AS_DEFAULT,1,[Single-precision floats by default])
 fi
 
 if test "${enable_float}" = "yes" ; then
-  OPTIONS="${OPTIONS} -DUSE_SINGLE_FLOATS"
+  AC_DEFINE(USE_SINGLE_FLOATS,1,[Single-precision floats])
 fi
 
 ###### Autoconfigure #######

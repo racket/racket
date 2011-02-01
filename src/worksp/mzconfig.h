@@ -41,4 +41,7 @@
 /* Enable futures: */
 #define MZ_USE_FUTURES
 
+/* Enable single-precision floats: */
+#define USE_SINGLE_FLOATS
+
 #endif
