@@ -231,7 +231,7 @@ int scheme_eqv (Scheme_Object *obj1, Scheme_Object *obj2)
   t2 = SCHEME_TYPE(obj2);
 
   if (NOT_SAME_TYPE(t1, t2)) {
-#ifdef MZ_USE_SINGLE_FLOATS
+#ifdef EQUATE_FLOATS_OF_DIFFERENT_PRECISIONS
     /* If one is a float and the other is a double, coerce to double */
     if ((t1 == scheme_float_type) && (t2 == scheme_double_type))
       return double_eqv(SCHEME_FLT_VAL(obj1), SCHEME_DBL_VAL(obj2));

@@ -18,9 +18,9 @@
 All @deftech{numbers} are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
 represented are also @deftech{rational numbers}, except for
-@as-index{@racket[+inf.0]} (positive @as-index{infinity}),
-@as-index{@racket[-inf.0]} (negative infinity), and
-@as-index{@racket[+nan.0]} (@as-index{not-a-number}). Among the
+@as-index{@racket[+inf.0]} and @as-index{@racket[+inf.f]} (positive @as-index{infinity}),
+@as-index{@racket[-inf.0]} an @as-index{@racket[-inf.f]} (negative infinity), and
+@as-index{@racket[+nan.0]} and @as-index{@racket[+nan.f]} (@as-index{not-a-number}). Among the
 rational numbers, some are @deftech{integers}, because @racket[round]
 applied to the number produces the same number.
 
@@ -54,21 +54,26 @@ numbers). In particular, adding, multiplying, subtracting, and
 dividing exact numbers always produces an exact result.
 
 Inexact numbers can be coerced to exact form, except for the inexact
-numbers @racket[+inf.0], @racket[-inf.0], and @racket[+nan.0], which
+numbers @racket[+inf.0] (double-precision), @racket[+inf.f] (single-precision),
+@racket[-inf.0], @racket[-inf.f], @racket[+nan.0], and @racket[+nan.f] which
 have no exact form. @index["division by inexact zero"]{Dividing} a
 number by exact zero raises an exception; dividing a non-zero number
-other than @racket[+nan.0] by an inexact zero returns @racket[+inf.0]
-or @racket[-inf.0], depending on the sign of the dividend. The
+other than @racket[+nan.0] or @racket[+nan.f] by an inexact zero returns @racket[+inf.0],
+@racket[+inf.f], @racket[-inf.0]
+or @racket[-inf.f], depending on the sign and precision of the dividend. The
 @racket[+nan.0] value is not @racket[=] to itself, but @racket[+nan.0]
-is @racket[eqv?] to itself. Conversely, @racket[(= 0.0 -0.0)] is
-@racket[#t], but @racket[(eqv? 0.0 -0.0)] is @racket[#f]. The datum
-@racketvalfont{-nan.0} refers to the same constant as @racket[+nan.0].
+is @racket[eqv?] to itself, and @racket[+nan.f] is similarly @racket[eqv?] but 
+not @racket[=] to itself. Conversely, @racket[(= 0.0 -0.0)] is
+@racket[#t], but @racket[(eqv? 0.0 -0.0)] is @racket[#f], and the 
+same for @racket[0.0f0] and @racket[-0.0f0]. The datum
+@racketvalfont{-nan.0} refers to the same constant as @racket[+nan.0],
+and @racketvalfont{-nan.f} is the same as @racket[+nan.f],
 
 Calculations with infinites produce results consistent with IEEE
 double-precision floating point where IEEE specifies the result; in
 cases where IEEE provides no specification (e.g., @racket[(angle
 +inf.0+inf.0i)]), the result corresponds to the limit approaching
-infinity, or @racket[+nan.0] if no such limit exists.
+infinity, or @racket[+nan.0] or @racket[+nan.f] if no such limit exists.
 
 A @deftech{fixnum} is an exact integer whose two's complement
 representation fit into 31 bits on a 32-bit platform or 63 bits on a
@@ -79,9 +84,9 @@ Two fixnums that are @racket[=] are also the same
 according to @racket[eq?]. Otherwise, the result of @racket[eq?]
 applied to two numbers is undefined.
 
-Two numbers are @racket[eqv?] when they are both inexact or both
-exact, and when they are @racket[=] (except for @racket[+nan.0],
-@racket[+0.0], and @racket[-0.0], as noted above). Two numbers are
+Two numbers are @racket[eqv?] when they are both inexact with the same precision or both
+exact, and when they are @racket[=] (except for @racket[+nan.0], @racket[+nan.f],
+@racket[+0.0], @racket[+0.0f0], @racket[-0.0], and @racket[-0.0f0], as noted above). Two numbers are
 @racket[equal?] when they are @racket[eqv?].
 
 @local-table-of-contents[]
@@ -217,12 +222,12 @@ number, @racket[#f] otherwise.}
 
 @mz-examples[(exact->inexact 1) (exact->inexact 1.0)]}
 
-@defproc[(real->single-flonum [z real?]) single-flonum?]{ Coerces @racket[z]
- to a single-precision floating-point number. If @racket[z] is already
+@defproc[(real->single-flonum [x real?]) single-flonum?]{ Coerces @racket[x]
+ to a single-precision floating-point number. If @racket[x] is already
  a single-precision floating-point number, it is returned.}
 
-@defproc[(real->double-flonum [z real?]) flonum?]{ Coerces @racket[z]
- to a double-precision floating-point number. If @racket[z] is already
+@defproc[(real->double-flonum [x real?]) flonum?]{ Coerces @racket[x]
+ to a double-precision floating-point number. If @racket[x] is already
  a double-precision floating-point number, it is returned.}
 
 @; ----------------------------------------

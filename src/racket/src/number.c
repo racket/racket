@@ -1848,7 +1848,7 @@ static Scheme_Object *TO_FLOAT(const Scheme_Object *n)
 
 #define TO_DOUBLE_VAL scheme_get_val_as_double
 
-#ifdef USE_SINGLE_FLOATS_AS_DEFAULT
+#ifdef USE_SINGLE_FLOATS
 
 double TO_DOUBLE_VAL(const Scheme_Object *n)
 {
