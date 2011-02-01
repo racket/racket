@@ -677,7 +677,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * Predicate:   SCHEME_FLOATP(<Scheme>)
  * Scheme->C:   SCHEME_FLOAT_VAL(<Scheme>)
  * S->C offset: 0
- * C->Scheme:   scheme_make_float(<C>)
+ * C->Scheme:   scheme_make_double(<C>)
  */
 
 #define FOREIGN_double (15)
@@ -1306,7 +1306,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_ufixint: return scheme_make_integer_from_unsigned(REF_CTYPE(Tuint32));
     case FOREIGN_fixnum: return scheme_make_integer(REF_CTYPE(intptr_t));
     case FOREIGN_ufixnum: return scheme_make_integer_from_unsigned(REF_CTYPE(uintptr_t));
-    case FOREIGN_float: return scheme_make_float(REF_CTYPE(float));
+    case FOREIGN_float: return scheme_make_double(REF_CTYPE(float));
     case FOREIGN_double: return scheme_make_double(REF_CTYPE(double));
     case FOREIGN_doubleS: return scheme_make_double(REF_CTYPE(double));
     case FOREIGN_bool: return (REF_CTYPE(int)?scheme_true:scheme_false);

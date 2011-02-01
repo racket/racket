@@ -141,8 +141,12 @@ to be in range.}
             [_double* ctype?])]{
 
 The @scheme[_float] and @scheme[_double] types represent the
-corresponding C types. The type @scheme[_double*] that implicitly
-coerces any real number to a C @cpp{double}.}
+corresponding C types. Both single- and double-precision Racket
+numbers are accepted for conversion via both @scheme[_float] and 
+@scheme[_double], while both @scheme[_float] and @scheme[_double]
+coerce C values to double-precision Racket numbers.
+The type @scheme[_double*]
+coerces any Racket real number to a C @cpp{double}.}
 
 @; ------------------------------------------------------------
 
