@@ -166,7 +166,9 @@ static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[]
 static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
 
+#ifdef MZ_USE_SINGLE_FLOATS
 static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
+#endif
 Scheme_Object *scheme_TO_DOUBLE(const Scheme_Object *n);
 
 /* globals */
@@ -1368,7 +1370,11 @@ real_to_single_flonum (int argc, Scheme_Object *argv[])
   if (!SCHEME_REALP(n))
     NEED_REAL(real->single-flonum);
 
+#ifdef MZ_USE_SINGLE_FLOATS
   return TO_FLOAT(n);
+#else
+  return scheme_TO_DOUBLE(n);
+#endif
 }
 
 static Scheme_Object *
