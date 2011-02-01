@@ -1,3 +1,9 @@
+Version 5.1.0.2
+Enabled single-precision floats by default
+Added single-flonum?
+Changed eqv? so that inexacts are equivalent only when they
+ have the same precision
+
 Version 5.1, February 2011
 Renamed "proxy" to "impersonator"
 Added current-get-interaction-input-port, which enables
