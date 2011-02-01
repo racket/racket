@@ -79,6 +79,7 @@ default in Racket.
 @defidform[Input-Port]
 @defidform[Output-Port]
 @defidform[Path]
+@defidform[Path-String]
 @defidform[Regexp]
 @defidform[PRegexp]
 @defidform[Bytes]
