@@ -113,7 +113,7 @@
                                       (let ((next-check (vector-ref next 1)))
                                         (or (>= next-check max-char-num)
                                             (loop (add1 next-check) (cdr nexts))))))))))
-                   (printf "Warning: lexer at ~a can accept the empty string.\n" stx)))
+                   (eprintf "Warning: lexer at ~a can accept the empty string.\n" stx)))
                (with-syntax ((start-state-stx start)
                              (trans-table-stx trans)
                              (no-lookahead-stx no-look)
