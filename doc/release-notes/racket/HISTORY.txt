@@ -1,12 +1,9 @@
-5.0.99.7
-add `current-get-interaction-input-port', which enables
- `racket/gui' events to be dispatched while a REPL is blocked
-
-5.0.99.2
-proxy => impersonator
-equal? equates C pointers when they refer to the same address
-
-5.0.99.1
+Version 5.1, February 2011
+Renamed "proxy" to "impersonator"
+Added current-get-interaction-input-port, which enables
+ racket/gui events to be dispatched while a REPL is blocked
+Changed equal? to equate C pointers when they refer to the 
+ same address
 Internal: weak boxes are cleared before non-will-like
  finalizers; use late-weak boxes to get the old behavior
 
