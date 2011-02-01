@@ -290,7 +290,7 @@ show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
-show_explicitly_enabled "${enable_float}" "Single-precision floats"
+show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
