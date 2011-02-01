@@ -636,3 +636,34 @@ Returns a string for the current locale's encoding (i.e., the encoding
 normally identified by @scheme[""]). See also
 @scheme[system-language+country].}
 
+@section{Additional Byte String Functions}
+@note-lib[racket/bytes]
+@(define string-eval (make-base-eval))
+@(interaction-eval #:eval string-eval (require racket/bytes racket/list))
+
+@defproc[(bytes-append* [str bytes?] ... [strs (listof bytes?)]) bytes?]{
+@; Note: this is exactly the same description as the one for append*
+
+Like @racket[bytes-append], but the last argument is used as a list
+of arguments for @scheme[bytes-append], so @scheme[(bytes-append*
+str ... strs)] is the same as @scheme[(apply bytes-append str
+... strs)].  In other words, the relationship between
+@scheme[bytes-append] and @scheme[bytes-append*] is similar to the
+one between @scheme[list] and @scheme[list*].
+
+@mz-examples[#:eval string-eval
+  (bytes-append* #"a" #"b" '(#"c" #"d"))
+  (bytes-append* (cdr (append* (map (lambda (x) (list #", " x))
+                                     '(#"Alpha" #"Beta" #"Gamma")))))
+]}
+
+@defproc[(bytes-join [strs (listof bytes?)] [sep bytes?]) bytes?]{
+
+Appends the byte strings in @scheme[strs], inserting @scheme[sep] between
+each pair of bytes in @scheme[strs].
+
+@mz-examples[#:eval string-eval
+ (bytes-join '(#"one" #"two" #"three" #"four") #" potato ")
+]}
+
+@close-eval[string-eval]

@@ -16,6 +16,7 @@
          racket/list
          racket/vector
          racket/string
+         racket/bytes
          racket/function
          racket/path
          racket/file
@@ -44,6 +45,7 @@
                        racket/list
                        racket/vector
                        racket/string
+                       racket/bytes
                        racket/function
                        racket/path
                        racket/file
