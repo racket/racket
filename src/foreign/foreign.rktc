@@ -640,9 +640,9 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 @(defctype* '(ufixnum "umzintptr")
    "uintptr_t" "INT" "UINT" "integer_from_unsigned")
 
-@(defctype* 'float  "float"        "FLT"  "FLT"        "float")
+@(defctype* 'float  "float"        "FLOAT"  "FLOAT"        "float")
 
-@(defctype* 'double "double"       "DBL"  "DBL"        "double")
+@(defctype* 'double "double"       "FLOAT"  "FLOAT"        "double")
 @;
 @; Not useful?  not implemented in any case.
 @; (defctype* 'longdouble "long double" ...???...)

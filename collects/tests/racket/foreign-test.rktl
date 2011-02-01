@@ -374,7 +374,9 @@ added.
 (foo-test "foo_byte"   '(156)   (_fun _byte -> _byte))
 (foo-test "foo_ubyte"  '(156)   (_fun _ubyte -> _ubyte))
 (foo-test "foo_double" '(81.0)  (_fun _double -> _double))
+(foo-test "foo_double" '(81.0f0)  (_fun _double -> _double))
 (foo-test "foo_float"  '(81.0)  (_fun _float -> _float))
+(foo-test "foo_float"  '(81.0f0)  (_fun _float -> _float))
 
 (exit) ;=======================================================================
 (newline)

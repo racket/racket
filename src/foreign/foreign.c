@@ -674,8 +674,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Type Name:   float
  * LibFfi type: ffi_type_float
  * C type:      float
- * Predicate:   SCHEME_FLTP(<Scheme>)
- * Scheme->C:   SCHEME_FLT_VAL(<Scheme>)
+ * Predicate:   SCHEME_FLOATP(<Scheme>)
+ * Scheme->C:   SCHEME_FLOAT_VAL(<Scheme>)
  * S->C offset: 0
  * C->Scheme:   scheme_make_float(<C>)
  */
@@ -684,8 +684,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Type Name:   double
  * LibFfi type: ffi_type_double
  * C type:      double
- * Predicate:   SCHEME_DBLP(<Scheme>)
- * Scheme->C:   SCHEME_DBL_VAL(<Scheme>)
+ * Predicate:   SCHEME_FLOATP(<Scheme>)
+ * Scheme->C:   SCHEME_FLOAT_VAL(<Scheme>)
  * S->C offset: 0
  * C->Scheme:   scheme_make_double(<C>)
  */
@@ -1507,9 +1507,9 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
         delta += (sizeof(int)-sizeof(float));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_FLTP(val)) {
+      if (SCHEME_FLOATP(val)) {
         float tmp;
-        tmp = (float)(SCHEME_FLT_VAL(val));
+        tmp = (float)(SCHEME_FLOAT_VAL(val));
         (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","float",0,1,&(val));
@@ -1522,9 +1522,9 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, intptr_t delta,
         delta += (sizeof(int)-sizeof(double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
-      if (SCHEME_DBLP(val)) {
+      if (SCHEME_FLOATP(val)) {
         double tmp;
-        tmp = (double)(SCHEME_DBL_VAL(val));
+        tmp = (double)(SCHEME_FLOAT_VAL(val));
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double",0,1,&(val));
