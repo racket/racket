@@ -1061,7 +1061,7 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   GUARANTEE_ELEMENT (scm_name, 0); \
   GUARANTEE_TYPE (scm_name, 1, SCHEME_FLTP, "float"); \
   pIHTMLStyle = styleInterfaceFromElement(argv[0]); \
-  hr = pIHTMLStyle->dhtml_name(SCHEME_FLT_VAL(argv[1]); \
+  hr = pIHTMLStyle->dhtml_name(SCHEME_FLT_VAL(argv[1]));        \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
     scheme_signal_error(#dhtml_name " failed with code %X",hr); \
