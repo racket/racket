@@ -1,7 +1,7 @@
 #lang racket/base
 
 (define (configure data)
-  (printf "Configuring\n")
+  ;; (printf "Configuring\n")
   (current-read-interaction even-read))
 (provide configure)
 
