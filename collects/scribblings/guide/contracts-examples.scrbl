@@ -16,7 +16,7 @@ Mitchell and McKim's principles for design by contract DbC are derived
   from the 1970s style algebraic specifications. The overall goal of DbC is
   to specify the constructors of an algebra in terms of its
   observers. While we reformulate Mitchell and McKim's terminology and 
-  we use a mostly applicative, we
+  we use a mostly applicative approach, we
   retain their terminology of ``classes'' and ``objects'':
 
 @itemize[
@@ -28,7 +28,7 @@ Mitchell and McKim's principles for design by contract DbC are derived
     implementation a command typically returns an new object of the same
     class.}
 
-@item{@bold{Separate basic queries from derived queries}
+@item{@bold{Separate basic queries from derived queries.}
 
     A @italic{derived query} returns a result that is computable in
     terms of basic queries.}
