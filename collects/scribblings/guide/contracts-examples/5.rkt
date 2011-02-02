@@ -1,7 +1,7 @@
 #lang racket
 
 ;; Note: this queue doesn't implement the capacity restriction
-;; of McKim and Mitchell's queue but this is easy to add.
+;; of Mitchell and McKim's queue but this is easy to add.
 
 ;; a contract utility 
 (define (all-but-last l) (reverse (cdr (reverse l))))
@@ -32,7 +32,7 @@
  
  ;; primitive queries
  ;; Imagine providing this 'query' for the interface of the module
- ;; only. Then in Scheme, there is no reason to have count or is-empty? 
+ ;; only. Then in Racket there is no reason to have count or is-empty?
  ;; around (other than providing it to clients). After all items is 
  ;; exactly as cheap as count.
  [items      (->d ([q queue?]) () [result (listof (queue-p? q))])]

@@ -50,7 +50,7 @@
  [initialize
   (->d ([p contract?] [s (p p . -> . boolean?)])
        ()
-       ;; Mitchel and McKim use (= (count s) 0) here to express
+       ;; Mitchell and McKim use (= (count s) 0) here to express
        ;; the post-condition in terms of a primitive query
        [result (and/c stack? is-empty?)])]
  
