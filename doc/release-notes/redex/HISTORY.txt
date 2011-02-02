@@ -1,3 +1,17 @@
+v5.1
+
+  * adds an optional #:pred keyword argument to `test-->>' form
+
+  * added the `redex-pseudo-random-generator' parameter
+
+  * added option `::=' syntax to non-terminal definitions
+
+  * added contract support to `define-relation'
+
+  * added the `test-->∃' form
+
+  * fixed minor bugs
+
 v5.0.2
 
   * added `pretty-print-parameters' to control term pretty-printing
