@@ -863,16 +863,43 @@ has been moved out).
          (send dc set-brush (mode-color->brush mode color))
          (send dc set-smoothing (mode-color->smoothing mode color))
          (send dc draw-path path dx dy)))]
-    [(flip? np-atomic-shape) 
-     (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
-       (send dc set-smoothing 'smoothed)
-       (send dc draw-bitmap 
-             bm
-             (- dx (/ (send bm get-width) 2))
-             (- dy (/ (send bm get-height) 2))
-             'solid
-             (send the-color-database find-color "black")
-             (get-rendered-mask np-atomic-shape)))]
+    [(flip? np-atomic-shape)
+     (cond
+       [#t ; (flip-flipped? np-atomic-shape)
+        (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
+          (send dc set-smoothing 'smoothed)
+          (send dc draw-bitmap 
+                bm
+                (- dx (/ (send bm get-width) 2))
+                (- dy (/ (send bm get-height) 2))
+                'solid
+                (send the-color-database find-color "black")
+                (get-rendered-mask np-atomic-shape)))]
+       
+       [else
+        ;; this only works when the scale is 1 and there is no flipping
+        (define bitmap (flip-shape np-atomic-shape))
+        (define-values (orig-bitmap-obj orig-mask-obj) (values (ibitmap-raw-bitmap bitmap)
+                                                               (ibitmap-raw-mask bitmap)))
+        (define θ (degrees->radians (ibitmap-angle bitmap)))
+        (define w (send orig-bitmap-obj get-width))
+        (define h (send orig-bitmap-obj get-height))
+        (define c2
+          (* (- (make-rectangular dx dy)
+                (* (make-polar 1 (- θ)) 
+                   (make-rectangular (/ w 2) (/ h 2))))
+             (make-polar 1 θ)))
+        
+        (define orig-rotation (send dc get-rotation))
+        (send dc set-rotation θ)
+        (send dc draw-bitmap 
+              orig-bitmap-obj
+              (real-part c2)
+              (imag-part c2)
+              'solid
+              (send the-color-database find-color "black")
+              orig-mask-obj)
+        (send dc set-rotation orig-rotation)])]
     [(text? np-atomic-shape)
      (let ([θ (degrees->radians (text-angle np-atomic-shape))]
            [font (send dc get-font)])
