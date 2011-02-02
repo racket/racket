@@ -33,6 +33,16 @@
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 (define-gtk gtk_bin_get_child (_fun _GtkWidget -> _GtkWidget))
 
+(define _GtkSettings (_cpointer 'GtkSettings))
+(define-gtk gtk_settings_get_default (_fun -> _GtkSettings))
+(define-gobj g_object_set/boolean 
+  (_fun _GtkSettings _string _gboolean (_pointer = #f) -> _void)
+  #:c-id g_object_set)
+(define (force-button-images-on gtk)
+  ;; Globally turning on button images isn't really the right thing.
+  ;; Is there a way to enable image just for the widget `gtk'?
+  (g_object_set/boolean (gtk_settings_get_default) "gtk-button-images" #t))
+
 (define-signal-handler connect-clicked "clicked"
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
@@ -65,7 +75,8 @@
                          (release-pixbuf pixbuf)
                          (if (pair? label)
                              (begin
-                               (gtk_button_set_image gtk image-gtk)
+			       (force-button-images-on gtk)
+			       (gtk_button_set_image gtk image-gtk)
                                (gtk_button_set_image_position 
                                 gtk
                                 (case (caddr label)
