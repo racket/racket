@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
          racket/class
+	 net/uri-codec
          ffi/unsafe/atomic
          "../../syntax.rkt"
          "../../lock.rkt"
@@ -121,7 +122,10 @@
 	    => (lambda (m)
 		 (queue-window-event wx
 				     (lambda ()
-				       (let ([path (bytes->path (cadr m))])
+				       (let ([path 
+					      (string->path
+					       (uri-decode
+						(bytes->string/utf-8 (cadr m))))])
 					 (send wx on-drop-file path)))))]))))))
 
 ;; ----------------------------------------
