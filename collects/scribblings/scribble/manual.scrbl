@@ -208,7 +208,7 @@ without insetting the code.}
 @defform[(RACKETRESULTBLOCK0 datum ...)]
 )]{
 
-Like @racketblock[racketblock], etc., but colors the typeset text as a
+Like @racket[racketblock], etc., but colors the typeset text as a
 result  (i.e., a single color with no hyperlinks) instead of code.}
 
 @deftogether[(
