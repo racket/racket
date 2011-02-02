@@ -1660,6 +1660,7 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
       future->status = FINISHED;
       future->work_completed = 1;
       future->retval = 0;
+      mzrt_mutex_unlock(fs->future_mutex);
     } else {
       /* Signal the waiting worker thread that it
          can continue running machine code */
