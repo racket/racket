@@ -825,20 +825,23 @@ added get-regions
 
     (define/public (get-token-range position)
       (define-values (tokens ls) (get-tokens-at-position 'get-token-range position))
-      (values (and tokens (+ (lexer-state-start-pos ls) 
-                             (send tokens get-root-start-position)))
-              (and tokens (+ (lexer-state-start-pos ls)
-                             (send tokens get-root-end-position)))))
+      (values (and tokens ls
+                   (+ (lexer-state-start-pos ls)
+                      (send tokens get-root-start-position)))
+              (and tokens ls
+                   (+ (lexer-state-start-pos ls)
+                      (send tokens get-root-end-position)))))
 
     (define/private (get-tokens-at-position who position)
       (when stopped?
         (error who "called on a color:text<%> whose colorer is stopped."))
       (let ([ls (find-ls position)])
-        (and ls
-             (let ([tokens (lexer-state-tokens ls)])
+        (if ls
+            (let ([tokens (lexer-state-tokens ls)])
                (tokenize-to-pos ls position)
                (send tokens search! (- position (lexer-state-start-pos ls)))
-               (values tokens ls)))))
+              (values tokens ls))
+            (values #f #f))))
     
     (define/private (tokenize-to-pos ls position)
       (when (and (not (lexer-state-up-to-date? ls)) 
