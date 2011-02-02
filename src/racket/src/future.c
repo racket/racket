@@ -227,7 +227,7 @@ typedef struct Scheme_Future_State {
   future_t *future_waiting_lwc;
   int next_futureid;
 
-  mzrt_mutex *future_mutex;
+  mzrt_mutex *future_mutex; /* BEWARE: don't allocate while holding this lock */
   mzrt_sema *future_pending_sema;
   mzrt_sema *gc_ok_c;
   mzrt_sema *gc_done_c;
@@ -825,19 +825,28 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     mzrt_mutex_lock(fs->future_mutex);
     if (ft->work_completed)
       {
+        int id;
+        double time_of_start;
+        double time_of_completion;
+
         retval = ft->retval;
+
+        id = ft->id;
+        time_of_start = ft->time_of_start;
+        time_of_completion = ft->time_of_completion;
+
+        mzrt_mutex_unlock(fs->future_mutex);
 
         /* Log execution time */ 
         if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
           scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
-                 "future: %d finished. start time: %f, finish time: %f (%f ms)", 
-                  ft->id, 
-                  ft->time_of_start, 
-                  ft->time_of_completion, 
-                  ft->time_of_completion - ft->time_of_start);
+                     "future: %d finished. start time: %f, finish time: %f (%f ms)", 
+                     id, 
+                     time_of_start, 
+                     time_of_completion, 
+                     time_of_completion - time_of_start);
         }
         
-        mzrt_mutex_unlock(fs->future_mutex);
         break;
       }
     else if (ft->rt_prim)
