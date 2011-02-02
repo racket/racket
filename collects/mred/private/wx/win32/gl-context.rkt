@@ -137,7 +137,7 @@
                              PFD_SUPPORT_GDI)
                 (bitwise-ior PFD_DRAW_TO_WINDOW)))
            PFD_TYPE_RGBA ; color type
-           (if offscreen? 32 24) ; prefered color depth
+           (if offscreen? 32 24) ; preferred color depth
            0 0 0 0 0 0 ; color bits (ignored)
            0 ; no alpha buffer
            0 ; alpha bits (ignored)

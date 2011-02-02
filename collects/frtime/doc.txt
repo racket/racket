@@ -278,7 +278,7 @@ Generates a mixin that sends an event on stream-name when
 callback is called. The class has an init field called
 [stream-name]-event-processor, which is a function. The
 function is applied to an event stream that has an
-occurence every time callback is called, and the value
+occurrence every time callback is called, and the value
 of the events is a list of the arguments to the callback.
 The public method (get-[stream-name]) is a public method
 of the resulting class that gets the result of applying

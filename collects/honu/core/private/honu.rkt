@@ -1026,7 +1026,7 @@
             (if (eq? #t (syntax-e #'type-name))
                 ;; Context guarantees correct use, as long as we report our type:
                 #'(honu-report-type val orig-expr val-type protect-id)
-                ;; Context gurantees use at a particular type...
+                ;; Context guarantees use at a particular type...
                 (if (check-compatible-type #'val #'orig-expr #'val-type #'type-name type-mismatch)
                     ;; Declared type subsumes actual type:
                     (if (and (syntax-e #'protect-id)

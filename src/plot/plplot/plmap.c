@@ -47,7 +47,7 @@
  *
  * plot continental outline in world coordinates
  *
- * v1.4: machine independant version
+ * v1.4: machine independent version
  * v1.3: replaced plcontinent by plmap, added plmeridians
  * v1.2: 2 arguments:  mapform, type of plot
  *

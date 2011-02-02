@@ -38,7 +38,7 @@
 
 ;; parse-package : string (string -> 'a) -> (values string nat min-spec)
 ;; given a package specifier, returns the package name, the package major version, and a descriptor
-;; for the acceptible minor versions
+;; for the acceptable minor versions
 (define (parse-package package yell)
   (try-parsing package
                ([pkgname (get-to-next-colon-or-end)]

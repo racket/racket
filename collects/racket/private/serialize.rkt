@@ -415,7 +415,7 @@
 
   (define (lookup-shared! share n mod-map module-path-index-join)
     ;; The shared list is not necessarily in order of
-    ;;  refereds before referees. A `not-ready' object
+    ;;  referreds before referees. A `not-ready' object
     ;;  indicates a reference before a value is ready,
     ;;  so we need to recur to make it ready. Cycles
     ;;  have been broken, though, so we don't run into

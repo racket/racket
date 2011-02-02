@@ -33,7 +33,7 @@
   (super-new [parent parent]
              [cocoa (let ([cocoa (as-objc-allocation
                                   ;; Beware that a guage may be finally deallocated in 
-                                  ;; a seperate OS-level thread
+                                  ;; a separate OS-level thread
                                   (tell (tell MyProgressIndicator alloc) init))])
                       (tellv cocoa setIndeterminate: #:type _BOOL #f)
                       (tellv cocoa setMaxValue: #:type _double* rng)

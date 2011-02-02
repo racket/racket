@@ -657,7 +657,7 @@
      (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
                   [tys (reverse tys-r)])
        (ret (foldr make-Pair last tys)))]
-    ;; special case for `reverse' to propogate expected type info
+    ;; special case for `reverse' to propagate expected type info
     [(#%plain-app reverse arg)
      (match expected
        [(tc-result1: (Listof: _))

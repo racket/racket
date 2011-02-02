@@ -22,7 +22,7 @@
 /* This file implements Racket threads.
 
    Usually, Racket threads are implemented by copying the stack.
-   The scheme_thread_block() function is called occassionally by the
+   The scheme_thread_block() function is called occasionally by the
    evaluator so that the current thread can be swapped out.
    do_swap_thread() performs the actual swap. Threads can also be
    implemented by the OS; the bottom part of this file contains

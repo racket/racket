@@ -95,7 +95,7 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
   Adds a line to the image @racket[image], starting from the point (@racket[x1],@racket[y1])
   and going to the point (@racket[x2],@racket[y2]).
   Unlike @racket[scene+line], if the line passes outside of @racket[image], the image
-  gets larger to accomodate the line.
+  gets larger to accommodate the line.
   
   @image-examples[(add-line (ellipse 40 40 "outline" "maroon")
                             0 40 40 0 "maroon")
@@ -126,7 +126,7 @@ long the curve tries to stay with that angle. Larger numbers
 mean that the curve stays with the angle longer.
 
 Unlike @racket[scene+curve], if the line passes outside of @racket[image], the image
-  gets larger to accomodate the curve.
+  gets larger to accommodate the curve.
 
 
   @image-examples[(add-curve (rectangle 100 100 "solid" "black")

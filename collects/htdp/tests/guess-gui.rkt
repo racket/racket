@@ -11,7 +11,7 @@
 
 ;; convert : (listof DIGIT) -> number 
 ;; to convert a list of digits into a number 
-;; the leading digit is the least signifcant one
+;; the leading digit is the least significant one
 (define (convert alod)
   (cond
     [(empty? alod) 0]

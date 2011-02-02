@@ -1314,7 +1314,7 @@ Refined error messages
 Version 49, May 31, 1997 
 Multiple superclass inheritance is no longer supported
 Added (Java-ish) interfaces to object system
-class* syntax changed to accomodate interfaces and removed
+class* syntax changed to accommodate interfaces and removed
   multiple superclasses
 uq-ivar always takes two arguments; class is not a legal argument
 uq-make-generic accepts a class or an interface

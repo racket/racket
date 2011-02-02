@@ -252,7 +252,7 @@
                                       ;; including a match at the current state
                                       (longest-match-action 
                                        (vector-ref actions start-state))
-                                      ;; how many bytes preceed char
+                                      ;; how many bytes precede char
                                       (length-bytes 0)
                                       ;; how many characters have been read
                                       ;; including the one just read

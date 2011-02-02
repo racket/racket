@@ -15,24 +15,24 @@
 
   ; fit-int : (number* -> number) (list-of (symbol number)) (list-of (vector number [number] number number)) -> fit-result
   (define (fit-int function guesses data)
-    (let* ((independant-vars (- (procedure-arity function) (length guesses)))
+    (let* ((independent-vars (- (procedure-arity function) (length guesses)))
            (f-of-x-y (cond
-                       [(= 1 independant-vars)
+                       [(= 1 independent-vars)
                         (lambda (x y . rest)
                           (apply function x rest))]
-                       [(= 2 independant-vars)
+                       [(= 2 independent-vars)
                         function]
                        [else
-                        (error "Function provided is eitehr not of one or two independant variables or the number of
+                        (error "Function provided is either not of one or two independent variables or the number of
                         guesses given is incorrect")]))
            (x-vals (map vector-x data))
-           (y-vals (if (= 1 independant-vars)
+           (y-vals (if (= 1 independent-vars)
                        x-vals
                         (map vector-y data)))
-           (z-vals (if (= 1 independant-vars)
+           (z-vals (if (= 1 independent-vars)
                        (map vector-y data)
                        (map vector-z data)))
-           (err-vals (if (= 1 independant-vars)
+           (err-vals (if (= 1 independent-vars)
                          (map vector-z data)
                          (map (lambda (vec) (vector-ref vec 4)) data)))
            (result (fit-internal f-of-x-y x-vals y-vals z-vals err-vals (map cadr guesses))))

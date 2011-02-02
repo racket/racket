@@ -2438,7 +2438,7 @@ The line, line-span, column, and column-span correspond to
 the logical spacing for the redex program, not the actual
 spacing that will be used when they are rendered. The
 logical spacing is only used when determining where to place
-typeset portions of the program. In the absense of any
+typeset portions of the program. In the absence of any
 rewriters, these numbers correspond to the line and column
 numbers in the original program.
 

@@ -389,7 +389,7 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 
 #define SCHEME_PATHP(obj)  SAME_TYPE(SCHEME_TYPE(obj), SCHEME_PLATFORM_PATH_KIND)
 #define SCHEME_GENERAL_PATHP(obj)  ((SCHEME_TYPE(obj) >= scheme_unix_path_type) && (SCHEME_TYPE(obj) <= scheme_windows_path_type))
-  /* A path is guranteed to have the same shape as a byte string */
+  /* A path is guaranteed to have the same shape as a byte string */
 
 #define SCHEME_PATH_STRINGP(x) (SCHEME_CHAR_STRINGP(x) || SCHEME_PATHP(x))
 #define SCHEME_PATH_STRING_STR "path or string"

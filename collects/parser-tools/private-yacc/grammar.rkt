@@ -12,7 +12,7 @@
   (define-struct prod (lhs rhs index prec action) (make-inspector))
 
   ;; The dot-pos field is the index of the element in the rhs
-  ;; of prod that the dot immediately preceeds.
+  ;; of prod that the dot immediately precedes.
   ;; Thus 0 <= dot-pos <= (vector-length rhs).
   (define-struct item (prod dot-pos) (make-inspector))
   

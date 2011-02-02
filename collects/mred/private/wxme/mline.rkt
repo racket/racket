@@ -1039,7 +1039,7 @@ Debugging tools:
               [next (mline-next mline)])
           (when (or (not (eq? (mline-snip next) asnip))
                     (not (has-flag? (snip->flags (mline-last-snip next)) NEWLINE)))
-            ;; Effect can propogate to more lines, merging the
+            ;; Effect can propagate to more lines, merging the
             ;; next several. (Handle prefixing the remains of the source of
             ;; the extension to this line onto the next line. Implemented
             ;; as the next line eating the next->next line.) 

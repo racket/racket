@@ -604,7 +604,7 @@
               [(not contains)
                ;; Something went wrong matching. Should we get here?
                (do-indent 0)]
-              #;  ;; disable this to accomodate PLAI programs; return to this when a #lang capability is set up.
+              #;  ;; disable this to accommodate PLAI programs; return to this when a #lang capability is set up.
               [(curley-brace-sexp?)
                ;; when we are directly inside an sexp that uses {}s,
                ;; we indent in a more C-like fashion (to help Scribble)

@@ -4,7 +4,7 @@
   
   (require mzlib/list mzlib/etc mzlib/math)
   
-  ; using vectors for n-dimentional points
+  ; using vectors for n-dimensional points
   
   ; vector-magnitude : (vectorof number) -> number
   ; computes the magnituded of the vector by using pythegorean theorem

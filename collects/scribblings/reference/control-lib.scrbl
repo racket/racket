@@ -173,7 +173,7 @@ The essential reduction rules are:
                                    (lambda (_v) (reset0 _E[_v])))
 ]
 
-The @scheme[reset0] and @scheme[prompt0] forms are interchangable.
+The @scheme[reset0] and @scheme[prompt0] forms are interchangeable.
 Furthermore, the following reductions apply:
 
 @schemeblock[

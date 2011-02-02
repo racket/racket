@@ -2075,7 +2075,7 @@ regunicode(int negate)
   regparse += len + 1;
 
   ret = regnode(UNIPROP);
-  /* This encoding accomodates up to 63 categories: */
+  /* This encoding accommodates up to 63 categories: */
   regarg((negate << 13) | (bottom << 6) | top);
 
   return ret;

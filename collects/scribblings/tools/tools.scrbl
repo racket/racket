@@ -472,7 +472,7 @@ is bound to an extender function. In order to change the
 behavior of DrRacket, you can derive new classes from the
 standard classes for the frame, texts, canvases. Each
 extender accepts a function as input. The function it
-accepts must take a class as it's argument and return a
+accepts must take a class as its argument and return a
 classes derived from that class as its result. For example:
 
 @racketblock[

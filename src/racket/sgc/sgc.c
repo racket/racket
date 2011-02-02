@@ -315,7 +315,7 @@
    malloc() to avoid waste when obtaining the proper alignment. */
 #define SECTOR_SEGMENT_GROUP_SIZE 32
 
-/* Number of bits used in 32-bit level table for checking existance of
+/* Number of bits used in 32-bit level table for checking existence of
    a sector. Creates a table of (1 << SECTOR_LOOKUP_SHIFT) pointers
    to individual page tables of size SECTOR_LOOKUP_PAGESIZE. */
 #define SECTOR_LOOKUP_PAGESETBITS 12

@@ -346,7 +346,7 @@
   the filesystem.
 
   The class that this mixin produces uses the same initialization
-  arguments as it's input.
+  arguments as its input.
   @defmethod*[#:mode override (((set-filename (name string) (temp? boolean |#f|)) void))]{
 
     Updates the filename on each frame displaying this editor, for each

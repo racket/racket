@@ -366,7 +366,7 @@ ffi_prep_cif_machdep (ffi_cif *cif)
 
   /* Go over all arguments and determine the way they should be passed.
      If it's in a register and there is space for it, let that be so. If
-     not, add it's size to the stack byte count.  */
+     not, add its size to the stack byte count.  */
   for (bytes = 0, i = 0, avn = cif->nargs; i < avn; i++)
     {
       if (examine_argument (cif->arg_types[i], classes, 0, &ngpr, &nsse) == 0

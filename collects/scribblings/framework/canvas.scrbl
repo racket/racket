@@ -53,7 +53,7 @@
   Any
   @scheme[canvas%]
   that matches this interface will automatically
-  resize selected snips when it's size changes. Use
+  resize selected snips when its size changes. Use
   @method[canvas:wide-snip<%> add-tall-snip]
   and
   @method[canvas:wide-snip<%> add-wide-snip]

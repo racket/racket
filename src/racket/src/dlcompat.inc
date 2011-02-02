@@ -153,7 +153,7 @@ static const char * safegetenv(const char * s)
  * trying to locate a module. We first look at the values of LD_LIBRARY_PATH
  * and DYLD_LIBRARY_PATH, and then finally fall back to looking into
  * /usr/lib and /lib. Since both of the environments variables can contain a
- * list of colon seperated paths, we simply concat them and the two other paths
+ * list of colon separated paths, we simply concat them and the two other paths
  * into one big string, which we then can easily parse.
  * Splitting this string into the actual path list is done by getSearchPath()
  */

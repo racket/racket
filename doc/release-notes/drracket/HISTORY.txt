@@ -873,7 +873,7 @@ GENERAL
   now it shows `('a 'a).
 
 - The portion of space between the definitions and
-  interactions window is now interactively changable.
+  interactions window is now interactively changeable.
 
 - the bug report form now connects to bugs.drscheme.org
   instead of cs.rice.edu directly, so earthlink users
@@ -962,7 +962,7 @@ General
  - files added to projects are now stored as relative files, 
    by default. (use project menu to change the default)
 
- - project files are saved using a platform-independant syntax for
+ - project files are saved using a platform-independent syntax for
    paths now.
 
  - Using file|open and choosing a project file (based on contents) will open

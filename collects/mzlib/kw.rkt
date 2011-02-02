@@ -128,7 +128,7 @@
        [else (ormap (lambda (k) (and (assq k rests) #t)) ; suggested?
                     (car (cddddr processed-spec)))])))
   (define (make-keyword-get-expr key rest default known-vars)
-    ;; expand (for id macros) and check if its a simple expression, because if
+    ;; expand (for id macros) and check if it's a simple expression, because if
     ;; it is, evaluation cannot have side-effects and we can use keyword-get*
     (define default*
       (local-expand default 'expression (cons #'#%app known-vars)))

@@ -920,7 +920,7 @@ static void *top4;
    that multiple adjustments to the register can be collapsed; this
    mostly improves code size, rather than speed. Functions that cause
    the register to be de-sync'd are marked as such. Functions that can
-   accomodate a de-sync'd register on entry are marked as such. All
+   accommodate a de-sync'd register on entry are marked as such. All
    other fuctions can assume a sync'd regsiter and ensure a sync'd
    register. Note that branches and calls normally require a sync'd
    register. */
@@ -5289,7 +5289,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
    If rand is NULL, then we're generating part of the fast path for an
    nary arithmatic over a binary operator; the first argument is
    already in R0 (fixnum or min/max) or a floating-point register
-   (flonum) and the second arguement is in R1 (fixnum or min/max) or a
+   (flonum) and the second argument is in R1 (fixnum or min/max) or a
    floating-point register (flonum).
    For unsafe_fx or unsafe_fl, -1 means safe but specific to the type.
 */

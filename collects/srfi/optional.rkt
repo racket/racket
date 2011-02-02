@@ -1,6 +1,6 @@
 ;;;
 ;;; <optional.ss> ---- Let-optionals macros
-;;; Time-stamp: <02/07/15 09:25:27 solsona>
+;;; Time-stamp: <2011-02-02 11:44:21 dvanhorn>
 ;;;
 ;;; Usually, I would add a copyright notice, and the announce that
 ;;; this code is under the LGPL licence.  This code is been copied
@@ -39,7 +39,7 @@
 ;;
 ;; Commentary:
 ;;
-;; this is a port of commonly refered (in SRFI mostly) macros, and
+;; this is a port of commonly referred (in SRFI mostly) macros, and
 ;; utilities, to the PLT Scheme system.  I'm not sure if I should use
 ;; the word "port", because I hardly touched Olin Shivers' superiour
 ;; macros. :-)

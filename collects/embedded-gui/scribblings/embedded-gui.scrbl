@@ -81,7 +81,7 @@ t   hat are labeled from a particular set of strings.}
 
 Sets the tabbing order of @scheme[tabbable-text<%>]s by setting each
 text's @method[tabbable-text<%> set-ahead] and
-@method[tabbable-text<%> set-back] thunks to point to it's neighbor in
+@method[tabbable-text<%> set-back] thunks to point to its neighbor in
 the argument list.}
 
 

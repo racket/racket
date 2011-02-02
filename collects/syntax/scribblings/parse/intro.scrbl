@@ -52,7 +52,7 @@ to what one would write using @scheme[syntax-rules] or perhaps
 ]
 
 Note the use of @scheme[...] and @scheme[...+] in the pattern;
-@scheme[...] means match zero or more repetitions of the preceeding
+@scheme[...] means match zero or more repetitions of the preceding
 pattern; @scheme[...+] means match one or more. Only @scheme[...] may
 be used in the template, however.
 

@@ -1554,7 +1554,7 @@ Since 6.1alpha3:
  - Force 64 bit alignment with GCJ support.  (Reflects Bryce McKinley's
    patch to the gcc tree.)
  - Refined the choice of sa_handler vs. sa_sigaction in GC_dirty_init
-   to accomodate some glibc5 systems.  (Thanks to Dan Fandrich for the
+   to accommodate some glibc5 systems.  (Thanks to Dan Fandrich for the
    patch.)
  - Compensated for the fact that current versions of glibc set
    __libc_stack_end incorrectly on Linux/IA64 while initialization code

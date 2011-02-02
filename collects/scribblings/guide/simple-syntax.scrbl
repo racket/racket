@@ -379,7 +379,7 @@ clearly written as follows:
 
 The use of square brackets for @racket[cond] clauses is a
 convention. In Racket, parentheses and square brackets are actually
-interchangable, as long as @litchar{(} is matched with @litchar{)} and
+interchangeable, as long as @litchar{(} is matched with @litchar{)} and
 @litchar{[} is matched with @litchar{]}. Using square brackets in a
 few key places makes Racket code even more readable.
 

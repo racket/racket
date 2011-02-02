@@ -257,7 +257,7 @@ alignment<%>.
 
 _stretchable-editor-snip-mixin_ gives an editor snip the
 _stretchable-snip<%>_ interface allowing it to be stretched
-to fit it's alignment-parent<%>'s alloted width. Stretchable
+to fit its alignment-parent<%>'s alloted width. Stretchable
 snips are useful as the snip of a snip-wrapper%.
 
 _stretchable-editor-snip%_ is (stretcable-editor-snip-mixin editor-snip%)

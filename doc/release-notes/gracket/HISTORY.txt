@@ -1285,7 +1285,7 @@ System:
 
   Changed force-redraw to ignore refresh requests when the
   redraw-requesting window is not shown. Redraw requests are now
-  propogated to the top-level frame or dialog via child-redraw-request.
+  propagated to the top-level frame or dialog via child-redraw-request.
 - if your application is unititized, then you need to change the
   startup procedure. See the application startup section in the
   toolbox manual.
@@ -1655,7 +1655,7 @@ Bug fixes, especially Motif and memory bugs
 Rewrote editor line-maintenance
 Faster caret updating
 Upgraded garbage collector
-File format changed to accomodate nested buffers with
+File format changed to accommodate nested buffers with
   separate style lists
 Standard system standardized
 Code changes for compiling on MSWindows (almost works...)

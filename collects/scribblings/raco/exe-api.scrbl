@@ -256,7 +256,7 @@ currently supported keys are as follows:
         @racket[#t] means that, to the degree that the generated
         executable must refer to another, it can use a relative path
         (so the executables can be moved together, but not
-        seperately); a @racket[#f] value (the default) means that
+        separately); a @racket[#f] value (the default) means that
         absolute paths should be used (so the generated executable can
         be moved).}
 

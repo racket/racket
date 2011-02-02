@@ -9,7 +9,7 @@
 (define ~? promise?)
 
 ;; force a top-level list structure; works with improper lists (will force the
-;; dotted item when it checks if its a pair); does not handle cycles
+;; dotted item when it checks if it's a pair); does not handle cycles
 (define (!list x)
   (let ([x (! x)])
     (if (list? x) ; cheap check,

@@ -111,7 +111,7 @@
 
     (when (and s-admin
                (has-flag? s-flags USES-BUFFER-PATH))
-      ;; propogate a filename change:
+      ;; propagate a filename change:
       (if (and editor
                (no-permanent-filename? editor))
           (let ([b (send s-admin get-editor)])

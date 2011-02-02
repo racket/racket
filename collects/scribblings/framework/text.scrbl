@@ -156,7 +156,7 @@
   objects in the framework.
 
   The class that this mixin produces uses the same initialization
-  arguments as it's input.
+  arguments as its input.
   @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
 
     Draws the rectangles installed by

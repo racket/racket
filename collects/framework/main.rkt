@@ -802,7 +802,7 @@
                          @scheme[filename].
                          @itemize[
                            @item{If a handler is found, it is applied to
-                                 @scheme[filename] and it's result is the final
+                                 @scheme[filename] and its result is the final
                                  result.}
                            @item{If not, @scheme[make-default] is used.}]}]}
       @item{If @scheme[filename] is @scheme[#f], @scheme[make-default] is

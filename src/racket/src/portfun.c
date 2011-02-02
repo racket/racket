@@ -1829,7 +1829,7 @@ static intptr_t pipe_write_bytes(Scheme_Output_Port *p,
 	  avail = pipe->bufstart - pipe->bufend - 1;
 	}
 	if (pipe->bufmax) {
-	  /* Again, it's possible that the port grew to accomodate
+	  /* Again, it's possible that the port grew to accommodate
 	     past peeks... */
 	  intptr_t extra;
 	  extra = pipe->buflen - (pipe->bufmax + pipe->bufmaxextra);

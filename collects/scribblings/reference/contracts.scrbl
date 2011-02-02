@@ -1088,8 +1088,8 @@ on integers looks like this:
 
 Although these projections have the right error behavior,
 they are not quite ready for use as contracts, because they
-do not accomodate blame, and do not provide good error
-messages. In order to accomodate these, contracts do not
+do not accommodate blame, and do not provide good error
+messages. In order to accommodate these, contracts do not
 just use simple projections, but use functions that accept a
 @deftech{blame object} encapsulating
 the names of two parties that are the candidates for blame,

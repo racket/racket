@@ -322,7 +322,7 @@ the recursive reads.
 If the reader finds two data between the matching parentheses
 that are separated by a delimited @litchar{.}, then it creates a
 pair. More generally, if it finds two or more data where the
-last is preceeded by a delimited @litchar{.}, then it constructs
+last is preceded by a delimited @litchar{.}, then it constructs
 nested pairs: the next-to-last element is paired with the last, then
 the third-to-last is paired with that pair, and so on.
 

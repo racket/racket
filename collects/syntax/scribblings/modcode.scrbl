@@ -58,7 +58,7 @@ are ignored, unless only a native-code non-@tt{_loader} version exists
 (i.e., @scheme[path] itself does not exist). A @tt{_loader} extension
 is selected a last resort.
 
-If an extension is prefered or is the only file that exists, it is
+If an extension is preferred or is the only file that exists, it is
 supplied to @scheme[ext-proc] when @scheme[ext-proc] is @scheme[#f],
 or an exception is raised (to report that an extension file cannot be
 used) when @scheme[ext-proc] is @scheme[#f].
