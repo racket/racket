@@ -1259,7 +1259,7 @@ fi
 makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
-if test "${enable_plot}" = "yes" ; then
+if test -d "${srcdir}/plot" && test "${enable_plot}" = "yes" ; then
   makefiles="$makefiles
              plot/Makefile"
   MAKE_PLOT=plot
