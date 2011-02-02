@@ -519,7 +519,7 @@ plsurf3d(PLFLT *x, PLFLT *y, PLFLT **z, PLINT nx, PLINT ny,
 		if (ct == 2) {
 
 		  /* yes, xx and yy are the intersection points of the triangle with
-		   * the contour line -- draw a straight line betweeen the points
+		   * the contour line -- draw a straight line between the points
 		   * -- at the end this will make up the contour line */
 
 		  if (opt & SURF_CONT) {

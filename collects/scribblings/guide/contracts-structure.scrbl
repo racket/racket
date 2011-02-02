@@ -224,7 +224,7 @@ racket
   
 (code:comment "bst-between : number number -> contract")
 (code:comment "builds a contract for binary search trees")
-(code:comment "whose values are betweeen low and high")
+(code:comment "whose values are between low and high")
 (define (bst-between/c low high)
   (or/c null?
         (node/dc [val (between/c low high)]
