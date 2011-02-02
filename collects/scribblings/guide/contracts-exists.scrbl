@@ -44,7 +44,7 @@ data structure (perhaps accidentally) and thus any change in the representation
 (say to a more efficient representation that supports amortized constant time
 enqueue and dequeue operations) might break client code.
 
-To ensure that the stack representation is abstact, we can use @racket[#:∃] in the
+To ensure that the stack representation is abstract, we can use @racket[#:∃] in the
 @racket[provide/contract] expression, like this:
 @racketblock[(provide/contract
               #:∃ stack

@@ -60,7 +60,7 @@ property.
 ]}
 
 
-@defform[(make->vector struct-id)]{
+@defform[(make-->vector struct-id)]{
 
 Builds a function that accepts a structure type instance (matching
 @scheme[struct-id]) and provides a vector of the fields of the
