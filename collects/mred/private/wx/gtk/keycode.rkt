@@ -8,6 +8,7 @@
    #hash((#xff08 . #\backspace)
          (#xffff . #\rubout)
          (#xff09 . #\tab)
+         (#xfe20 . #\tab) ; left tab (sometimes from ctl-shift-tab)
          (#xff0a . #\newline)
          (#xff0d . #\return)
          (#xff1b . escape) ; escape
