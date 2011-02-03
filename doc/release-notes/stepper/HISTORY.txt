@@ -1,5 +1,12 @@
 Stepper
 -------
+Changes for v5.1:
+
+Quite a bit of rackety, retabbing, refactoring. There's no longer a closure
+table, but instead functions expand into applicable structures.  Cleanup of
+unnecessary function arguments. Got rid of '2vals' idiom. Improved jump
+to ... error messages.
+
 Changes for v5.0.2:
 
 Bug fixes, Big Bang working again. Define-struct in local not working.
