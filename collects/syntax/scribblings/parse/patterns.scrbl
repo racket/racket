@@ -147,7 +147,7 @@ One of @ref[~commit s] or @ref[~commit h]:
 
 @defidform[~delimit-cut]{
 
-One of @ref[~delimit-cut s] or @ref[~describe h]:
+One of @ref[~delimit-cut s] or @ref[~delimit-cut h]:
 @itemize[
 @item{@ref[~delimit-cut h] if the subpattern is a @tech{proper @Hpattern}}
 @item{@ref[~delimit-cut s] otherwise}
