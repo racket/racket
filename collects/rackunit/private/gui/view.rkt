@@ -222,19 +222,22 @@ still be there, just not visible?
 
     ;; Construction
 
-    ;; create-view-link : result<%> suite-result<%>/#f-> item
+    ;; create-view-link : result<%> suite-result<%>/#f-> void
     (define/public (create-view-link model parent)
-      (let ([parent-link
-             (if parent
-                 (get-view-link parent)
-                 this)])
-        (initialize-view-link (cond [(is-a? model suite<%>)
-                                     (send parent-link new-list)]
-                                    [(is-a? model case<%>)
-                                     (send parent-link new-item)])
-                              model)))
+      (let* ([parent-link
+              (if parent
+                  (get-view-link parent)
+                  this)]
+             [view-link
+              (cond [(is-a? model suite<%>)
+                     (send parent-link new-list)]
+                    [(is-a? model case<%>)
+                     (send parent-link new-item)])])
+        (initialize-view-link view-link model)
+        (when (and (is-a? model suite<%>) (not parent))
+          (send view-link open))))
 
-    ;; initialize-view-link : result<%> (U compound-item% item%) -> item
+    ;; initialize-view-link : result<%> (U compound-item% item%) -> void
     (define/private (initialize-view-link item model)
       (set-view-link model item)
       (send item user-data model)
