@@ -100,7 +100,9 @@
               (unless timer
                 (set! timer (new timer% 
                                  [notify-callback
-                                  (λ () (move-to-new-language))]
+                                  (λ () 
+                                    (when in-module-language?
+                                      (move-to-new-language)))]
                                  [just-once? #t])))
               (send timer stop)
               (send timer start 200 #t)))))
