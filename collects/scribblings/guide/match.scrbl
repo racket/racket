@@ -84,9 +84,9 @@ variables} that are bound in the result expressions:
 (match '(1 2)
   [(list x) (+ x 1)]
   [(list x y) (+ x y)])
-(match (make-hat 23 'bowler)
-  [(struct shoe (sz col)) sz] 
-  [(struct hat (sz stl)) sz])
+(match (hat 23 'bowler)
+  [(shoe sz col) sz] 
+  [(hat sz stl) sz])
 ]
 
 An ellipsis, written @litchar{...}, act like a Kleene star within a
