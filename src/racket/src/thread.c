@@ -240,6 +240,10 @@ THREAD_LOCAL_DECL(static int recycle_cc_count);
 
 THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
 
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+extern intptr_t GC_is_place();
+#endif
+
 
 #ifdef MZ_PRECISE_GC
 extern intptr_t GC_get_memory_use(void *c);
@@ -5435,31 +5439,31 @@ typedef struct Evt {
 
 
 /* PLACE_THREAD_DECL */
-FIXME_LATER static int evts_array_size;
-FIXME_LATER static Evt **evts;
+static int evts_array_size;
+static Evt **evts;
+THREAD_LOCAL_DECL(static int place_evts_array_size);
+THREAD_LOCAL_DECL(static Evt **place_evts);
 
-void scheme_add_evt(Scheme_Type type,
-		    Scheme_Ready_Fun ready, 
-		    Scheme_Needs_Wakeup_Fun wakeup, 
-		    Scheme_Sync_Filter_Fun filter,
-		    int can_redirect)
+void scheme_add_evt_worker(Evt ***evt_array,
+                           int *evt_size,
+                           Scheme_Type type,
+                           Scheme_Ready_Fun ready, 
+                           Scheme_Needs_Wakeup_Fun wakeup, 
+                           Scheme_Sync_Filter_Fun filter,
+                           int can_redirect)
 {
   Evt *naya;
 
-  if (!evts) {
-    REGISTER_SO(evts);
-  }
-
-  if (evts_array_size <= type) {
+  if (*evt_size <= type) {
     Evt **nevts;
     int new_size;
     new_size = type + 1;
     if (new_size < _scheme_last_type_)
       new_size = _scheme_last_type_;
     nevts = MALLOC_N(Evt*, new_size);
-    memcpy(nevts, evts, evts_array_size * sizeof(Evt*));
-    evts = nevts;
-    evts_array_size = new_size;
+    memcpy(nevts, (*evt_array), (*evt_size) * sizeof(Evt*));
+    (*evt_array) = nevts;
+    (*evt_size) = new_size;
   }
 
   naya = MALLOC_ONE_RT(Evt);
@@ -5472,7 +5476,31 @@ void scheme_add_evt(Scheme_Type type,
   naya->filter = filter;
   naya->can_redirect = can_redirect;
 
-  evts[type] = naya;
+  (*evt_array)[type] = naya;
+}
+
+void scheme_add_evt(Scheme_Type type,
+		    Scheme_Ready_Fun ready, 
+		    Scheme_Needs_Wakeup_Fun wakeup, 
+		    Scheme_Sync_Filter_Fun filter,
+		    int can_redirect)
+{
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  if (GC_is_place()) {
+    if (!place_evts) {
+      REGISTER_SO(place_evts);
+    }
+    scheme_add_evt_worker(&place_evts, &place_evts_array_size, type, ready, wakeup, filter, can_redirect);
+  }
+  else {
+#endif
+    if (!evts) {
+      REGISTER_SO(evts);
+    }
+    scheme_add_evt_worker(&evts, &evts_array_size, type, ready, wakeup, filter, can_redirect);
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  }
+#endif
 }
 
 void scheme_add_evt_through_sema(Scheme_Type type,
@@ -5486,21 +5514,23 @@ void scheme_add_evt_through_sema(Scheme_Type type,
 static Evt *find_evt(Scheme_Object *o)
 {
   Scheme_Type t;
-  Evt *w;
+  Evt *w = NULL;
 
   t = SCHEME_TYPE(o);
-  w = evts[t];
-  if (w) {
-    if (w->filter) {
-      Scheme_Sync_Filter_Fun filter;
-      filter = w->filter;
-      if (!filter(o))
-	return NULL;
-    }
-    return w;
-  }
+  if (t < evts_array_size)
+    w = evts[t];
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  if (place_evts && w == NULL)
+    w = place_evts[t];
+#endif
 
-  return NULL;
+  if (w && w->filter) {
+    Scheme_Sync_Filter_Fun filter;
+    filter = w->filter;
+    if (!filter(o))
+      return NULL;
+  }
+  return w;
 }
 
 int scheme_is_evt(Scheme_Object *o)

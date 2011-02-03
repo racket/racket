@@ -152,6 +152,12 @@ inline static int postmaster_and_master_gc(NewGC *gc) {
 inline static int postmaster_and_place_gc(NewGC *gc) {
   return (MASTERGC && gc != MASTERGC);
 }
+
+intptr_t GC_is_place() {
+  NewGC *gc = GC_get_GC();
+  return postmaster_and_place_gc(gc);
+}
+
 static void master_collect_initiate(NewGC *gc);
 #endif
 

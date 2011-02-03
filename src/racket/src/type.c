@@ -289,6 +289,12 @@ scheme_init_type ()
 
 Scheme_Type scheme_make_type(const char *name)
 {
+  Scheme_Type newtype;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *saved_gc; 
+  saved_gc = GC_switch_to_master_gc();
+#endif
+
   if (!type_names)
     init_type_arrays();
 
@@ -341,7 +347,12 @@ Scheme_Type scheme_make_type(const char *name)
     type_names[maxtype] = tn;
   }
 
-  return maxtype++;
+  newtype = maxtype;
+  maxtype++;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  GC_switch_back_from_master(saved_gc);
+#endif
+  return newtype;
 }
 
 char *scheme_get_type_name(Scheme_Type t)
