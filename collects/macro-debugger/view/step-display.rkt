@@ -84,9 +84,9 @@
              (show-poststep step shift-table)]))
 
     (define/public (add-syntax stx
-                               #:binders [binders #f]
+                               #:binders [binders '#hash()]
                                #:definites [definites #f]
-                               #:shift-table [shift-table #f])
+                               #:shift-table [shift-table '#hash()])
       (send/i sbview sb:syntax-browser<%> add-syntax stx
               #:binders binders
               #:definites definites
