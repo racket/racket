@@ -73,7 +73,13 @@
                 (lambda ()
                   (sleep (* 60 timeout))
                   (echo "Timeout!")
-                  (break-thread th)))))
+                  (break-thread th)
+                  (sleep 60)
+                  (echo "  A minute has passed, killing the test thread!")
+                  (kill-thread th)
+                  (sleep 60)
+                  (echo "  Another minute passed, aborting!")
+                  (abort 1 "Goodbye.")))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [current-namespace (make-base-empty-namespace)])
