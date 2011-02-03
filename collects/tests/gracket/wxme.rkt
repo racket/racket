@@ -1347,4 +1347,23 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (mk) (make-object image-snip% (collection-file-path "b-run.png" "icons") 'unknown #f #f))
+  
+  (define is (mk))
+  (define copy-is
+    (let ()
+      (define sp (open-output-string))
+      (define t (new text%))
+      (send t insert (mk))
+      (send t save-port sp)
+      (define t2 (new text%))
+      (send t2 insert-port (open-input-string (get-output-string sp)))
+      (send t2 find-first-snip)))
+  
+  (expect (send (mk) get-filename)
+          (send copy-is get-filename)))
+
+;; ----------------------------------------
+
 (done)

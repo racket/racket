@@ -787,8 +787,7 @@
   (def/override (read [editor-stream-in% f])
     (let ([scl (get-the-snip-class-list)]
           [can-inline? ((send f do-reading-version this) . > . 1)])
-      (let ([filename (let ([s (send f get-bytes #f)])
-                        (subbytes s 0 (max 0 (sub1 (bytes-length s)))))])
+      (let ([filename (send f get-bytes #f)])
         (let-boxes ([type 0]
                     [w 0.0]
                     [h 0.0]
