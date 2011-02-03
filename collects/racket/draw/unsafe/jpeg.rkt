@@ -562,11 +562,13 @@
 (define (init-destination m)
   (void))
 
-(define (empty-output-buffer m)
+(define (do-empty-output-buffer m all?)
   (let* ([d (jpeg_compress_struct-dest m)]
          [b (jpeg_destination_mgr-buffer d)]
          [bstr (scheme_make_sized_byte_string b 
-                                              (- BUFFER-SIZE (jpeg_destination_mgr-free_in_buffer d))
+                                              (if all?
+                                                  BUFFER-SIZE
+                                                  (- BUFFER-SIZE (jpeg_destination_mgr-free_in_buffer d)))
                                               0)]
          [out (ptr-ref (jpeg_compress_struct-client_data m) _scheme)])
     (write-bytes bstr out)
@@ -574,8 +576,11 @@
     (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
     #t))
 
+(define (empty-output-buffer m)
+  (do-empty-output-buffer m #t))
+
 (define (term-destination m)
-  (empty-output-buffer m)
+  (do-empty-output-buffer m #f)
   ;; Maybe add support to optionally close port as early as possible?
   (when #f
     (let ([in (ptr-ref (jpeg_decompress_struct-client_data m) _scheme)])
