@@ -1465,7 +1465,7 @@ path/s is either such a string or a list of them.
 "collects/tests/frtime" responsible (gcooper jay)
 "collects/tests/frtime/time.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/future" responsible (jamesswaine mflatt robby)
-"collects/tests/future/random-future.rkt" drdr:timeout 240
+"collects/tests/future/random-future.rkt" drdr:timeout 480
 "collects/tests/gracket" responsible (mflatt)
 "collects/tests/gracket/auto.rktl" drdr:command-line #f
 "collects/tests/gracket/blits.rkt" drdr:command-line (gracket "-f" *)
