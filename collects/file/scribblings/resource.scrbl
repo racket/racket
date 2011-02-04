@@ -2,23 +2,27 @@
 @(require "common.ss"
           (for-label file/resource))
 
+@(define-syntax-rule (compat section indexed-racket)
+   @elem{For backward compatibilty, the
+ result is @racket[#f] for platforms other than Windows, when
+ @racket[file] is not @racket[#f], or when @racket[section] is not
+ @indexed-racket["HKEY_CLASSES_ROOT"],
+ @indexed-racket["HKEY_CURRENT_CONFIG"],
+ @indexed-racket["HKEY_CURRENT_USER"],
+ @indexed-racket["HKEY_LOCAL_MACHINE"], or @indexed-racket["HKEY_USERS"].})
+
 @title[#:tag "resource"]{Windows Registry}
 
 @defmodule[file/resource]
 
-@defproc[(get-resource [section (or/c "HKEY_CLASSES_ROOT"
-                                      "HKEY_CURRENT_CONFIG"
-                                      "HKEY_CURRENT_USER"
-                                      "HKEY_LOCAL_MACHINE"
-                                      "HKEY_USERS")]
+@defproc[(get-resource [section string?]
                        [entry string?]
                        [value-box (or/f #f (box/c (or/c string? bytes? exact-integer?))) #f]
-                       [file #f #f]
+                       [file (or/c #f fail-path?) #f]
                        [#:type type (or/c 'string 'bytes 'integer) _derived-from-value-box])
          (or/c #f string? bytes? exact-integer? #t)]{
 
-Gets a value from the Windows registry. Under platforms other than
- Windows, an @racket[exn:fail:unsupported] exception is raised.
+Gets a value from the Windows registry. @compat[section indexed-racket]
 
 The resource value is keyed on the combination of @racket[section] and
  @racket[entry].  The result is @racket[#f] if no value is found for
@@ -55,9 +59,6 @@ Registry values of any format can be extracted. Values using the
 
 ]
 
-The @racket[file] argument is included for backward compatibility and
- must be @racket[#f].
-
 To get the ``default'' value for an entry, use a trailing backslash. For
 example, the following expression gets a command line for starting a
 browser:
@@ -67,20 +68,15 @@ browser:
                 "htmlfile\\shell\\open\\command\\")
 ]}
 
-@defproc[(write-resource [section (or/c "HKEY_CLASSES_ROOT"
-                                        "HKEY_CURRENT_CONFIG"
-                                        "HKEY_CURRENT_USER"
-                                        "HKEY_LOCAL_MACHINE"
-                                        "HKEY_USERS")]
+@defproc[(write-resource [section string?]
                          [entry string?]
                          [value (or/c string? bytes? exact-integer?)]
-                         [file #f #f]
+                         [file (or/c path-string? #f) #f]
                          [#:type type (or/c 'string 'bytes 'integer) 'string]
                          [#:create-key? create-key? any/c #f])
          boolean?]{
 
-Write a value to the Windows registry. Under platforms other than
- Windows, an @racket[exn:fail:unsupported] exception is raised.
+Write a value to the Windows registry. @compat[section racket]
 
 The resource value is keyed on the combination of @racket[section] and
  @racket[entry]. If @racket[create-key?] is false, the resource entry
@@ -92,9 +88,5 @@ The @racket[type] argument determines the format of the value in the
  @racket['bytes] writes using the @tt{REG_BINARY} format, and
  @racket['dword] writes using the @tt{REG_DWORD} format. Any kind of
  @racket[value] can be converted for any kind of @racket[type] using
- the inverse of the conversions for @racket[get-resource].
-
-The @racket[file] argument must be @racket[#f]. A path is allowed for
- backward compatibility of arguments, but providing a path causes an
- @racket[exn:fail:unsupported] exception to be raised.}
+ the inverse of the conversions for @racket[get-resource].}
 

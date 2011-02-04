@@ -32,13 +32,9 @@
     HKEY_LOCAL_MACHINE]
    [(equal? section "HKEY_USERS")
     HKEY_USERS]
+   [(string? section) #f]
    [else
-    (raise-type-error who
-                      (string-append
-                       "\"HKEY_CLASSES_ROOT\", \"HKEY_CURRENT_CONFIG\", "
-                       "\"HKEY_CURRENT_USER\", \"HKEY_LOCAL_MACHINE\", "
-                       "or \"HKEY_USERS\"")
-                      section)]))
+    (raise-type-error who "string" section)]))
 
 (define advapi-dll (and (eq? (system-type) 'windows)
                      (ffi-lib "Advapi32.dll")))
@@ -89,15 +85,10 @@
 
 (define-advapi RegCloseKey (_fun #:abi win_abi _HKEY -> _LONG))
 
-(define (check-platform who)
-  (unless (eq? 'windows (system-type))
-    (raise
-     (make-exn:fail:unsupported
-      (format "~a: unsupported on this platform" who)
-      (current-continuation-marks)))))
-
-(define (extract-sub-hkey hkey entry op create-key?)
+(define (extract-sub-hkey file hkey entry op create-key?)
   (cond
+   [(not (eq? 'windows (system-type))) (values #f #f)]
+   [file #f]
    [(regexp-match #rx"^(.*)\\\\+([^\\]*)$" entry)
     => (lambda (m)
          (let ([sub-hkey (RegOpenKeyExW hkey (cadr m) 0 op)]
@@ -125,15 +116,14 @@
                    (let ([value (unbox value)])
                      (or (string? value) (bytes? value) (exact-integer? value)))))
     (raise-type-error 'get-resource "box of string, byte string, or exact integer"))
-  (unless (not file)
-    (raise-type-error 'get-resource "#f" file))
+  (unless (or (not file)
+              (path-string? file))
+    (raise-type-error 'get-resource "path string or #f" file))
   (unless (memq rtype '(string bytes integer))
     (raise-type-error 'get-resource "'string, 'bytes, or 'integer" rtype))
   
-  (check-platform 'get-resource)
-
   (define-values (sub-hkey sub-entry)
-    (extract-sub-hkey hkey entry KEY_QUERY_VALUE #f))
+    (extract-sub-hkey file hkey entry KEY_QUERY_VALUE #f))
 
   (and sub-hkey
        (begin0
@@ -185,15 +175,14 @@
     (raise-type-error 'write-resource "string" entry))
   (unless (or (string? value) (bytes? value) (exact-integer? value))
     (raise-type-error 'write-resource "string, byte string, or exact integer"))
-  (unless (not file)
-    (raise-type-error 'write-resource "#f" file))
+  (unless (or (not file)
+              (path-string? file))
+    (raise-type-error 'write-resource "path string or #f" file))
   (unless (memq type '(string bytes dword))
     (raise-type-error 'write-resource "'string, 'bytes, or 'dword" type))
 
-  (check-platform 'write-resource)
-  
   (define-values (sub-hkey sub-entry)
-    (extract-sub-hkey hkey entry KEY_SET_VALUE create-key?))
+    (extract-sub-hkey file hkey entry KEY_SET_VALUE create-key?))
   
   (and sub-hkey
        (begin0
