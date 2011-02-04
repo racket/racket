@@ -83,6 +83,10 @@ still be there, just not visible?
     ;; update-lock : semaphore
     (define update-lock (make-semaphore 1))
 
+    ;; update-timer : timer%
+    (define update-timer
+      (new timer% (notify-callback (lambda () (process-updates)))))
+
     (send editor lock #t)
     (with-handlers ([exn:fail? void])
       (send -hpane set-percentages VIEW-PANE-PERCENTS))
@@ -115,26 +119,30 @@ still be there, just not visible?
       (let ([proc (lambda () (send tree-view create-view-link model parent))])
         (semaphore-wait update-lock)
         (set! add-queue (cons proc add-queue))
-        (semaphore-post update-lock)
-        (process-updates)))
+        (updates-pending!)
+        (semaphore-post update-lock)))
 
     ;; queue-for-update : model -> void
     (define/public (queue-for-update model)
       (semaphore-wait update-lock)
       (set! update-queue (hash-set update-queue model #t))
-      (semaphore-post update-lock)
-      (process-updates))
+      (updates-pending!)
+      (semaphore-post update-lock))
+
+    ;; updates-pending! : -> void
+    (define/private (updates-pending!)
+      (send update-timer start 50 #t))
 
     ;; process-updates : -> void
+    ;; ** Must be called from eventspace thread.
     (define/private (process-updates)
-      (parameterize ((current-eventspace eventspace))
-        (queue-callback
-         (lambda ()
-           (let-values ([(adds updates) (grab+clear-update-queue)])
-             (for ([add (in-list adds)])
-               (add))
-             (for ([model (in-hash-keys updates)])
-               (do-model-update model)))))))
+      (let-values ([(adds updates) (grab+clear-update-queue)])
+        (send (send tree-view get-editor) begin-edit-sequence #f)
+        (for ([add (in-list adds)])
+          (add))
+        (for ([model (in-hash-keys updates)])
+          (do-model-update model))
+        (send (send tree-view get-editor) end-edit-sequence)))
 
     ;; grab+clear-update-queue : -> (values list hash)
     ;; ** Must be called from eventspace thread.

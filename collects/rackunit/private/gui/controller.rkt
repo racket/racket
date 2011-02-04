@@ -52,8 +52,8 @@
 
     ;; on-model-status-change : model<%> -> void
     (define/public (on-model-status-change model)
-      ;; (check-ready) ;; allow completion of tests to change status
-      (send view queue-for-update model)
+      (let ([view view]) ;; view field is async. mutable!
+        (when view (send view queue-for-update model)))
       (let [(parent (send model get-parent))]
         (when parent (send parent on-child-status-change model))))
 
