@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/match
+         (for-syntax racket/base)
          "../util/eomap.rkt"
          "stx-util.rkt"
          "deriv-util.rkt"
@@ -34,9 +35,16 @@
 
 ;; Syntax
 
-(define-syntax-rule (match/count x . clauses)
+(define-syntax-rule (match/count x clause ...)
   (begin (sequence-number (add1 (sequence-number)))
-         (match x . clauses)))
+         (let ([v x])
+           (match v
+             clause ...
+             [_ (error 'match "failed to match ~e at line ~s" v (line-of x))]))))
+
+(define-syntax (line-of stx)
+  (syntax-case stx ()
+    [(line-of x) #`(quote #,(syntax-line #'x))]))
 
 ;; Derivations => Steps
 
@@ -472,7 +480,10 @@
         ;; Add remark step?
         ]]
     [(struct local-remark (contents))
-     (R [#:reductions (list (walk/talk 'remark contents))])]))
+     (R [#:reductions (list (walk/talk 'remark contents))])]
+
+    [#f
+     (R)]))
 
 ;; List : ListDerivation -> RST
 (define (List ld)
