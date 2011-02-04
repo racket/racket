@@ -27,5 +27,6 @@
 (load-in-sandbox "shared.rktl")
 (load-in-sandbox "kw.rktl")
 (load-in-sandbox "macrolib.rktl")
+(load-in-sandbox "resource.rktl")
 
 (report-errs)
