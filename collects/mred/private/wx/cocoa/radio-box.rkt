@@ -28,7 +28,7 @@
   (-a _void (clicked: [_id sender])
       ;; In case we were in 0-item mode, switch to Radio mode to
       ;; ensure that only one button is selected:
-      (tellv self setMode: #:type _int NSRadioModeMatrix)
+      (tellv self setAllowsEmptySelection: #:type _BOOL #f)
       (queue-window*-event wxb (lambda (wx) (send wx clicked)))))
 
 (define-objc-class MyImageButtonCell NSButtonCell
@@ -129,13 +129,12 @@
   (define/public (set-selection i)
     (if (= i -1)
         (begin
-          ;; Need to change to NSListModeMatrix to disable all.
-          (tellv (get-cocoa) setMode: #:type _int NSListModeMatrix)
+          (tellv (get-cocoa) setAllowsEmptySelection: #:type _BOOL #t)
           (tellv (get-cocoa) deselectAllCells))
         (begin
-          (tellv (get-cocoa) setMode: #:type _int NSRadioModeMatrix)
           (tellv (get-cocoa) selectCellAtRow: #:type _NSInteger (if horiz? 0 i)
-                 column: #:type _NSInteger (if horiz? i 0)))))
+                 column: #:type _NSInteger (if horiz? i 0))
+          (tellv (get-cocoa) setAllowsEmptySelection: #:type _BOOL #f))))
   (define/public (get-selection)
     (let ([c (tell (get-cocoa) selectedCell)]
           [pos (if horiz?
