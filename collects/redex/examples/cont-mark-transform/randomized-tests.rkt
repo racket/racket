@@ -106,7 +106,10 @@
         (parameterize ([max-normalization-steps 1000])
           (SL-eval (term (∅ / ,expr))))))
     (define TL-result
-      (TL-eval (term (∅ / (translate ,expr)))))
+      (dynamic-wind
+       (λ () (set-cache-size! 100))
+       (λ () (TL-eval (term (∅ / (translate ,expr)))))
+       (λ () (set-cache-size! 350))))
     (or (equal? SL-result TL-result)
         (compares-incomparable-keys? expr))))
 
