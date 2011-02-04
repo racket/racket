@@ -77,7 +77,7 @@ mutable variables are first-class "cells", and accessing the
 contents of a cell requires an explicit operator.  This is also not
 compatible with Scheme.  Instead we need to stick to the model
 where using a variable in most contexts means using its value,
-but refering to a variable in certain lvalue contexts (lhs of
+but referring to a variable in certain lvalue contexts (lhs of
 assignment) refers to its actual location.  Sticking to this model
 for general "lvalue expressions" in <code>set!</code> means
 that "evaluation" must be done differently from normal

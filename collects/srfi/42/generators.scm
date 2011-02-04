@@ -435,7 +435,7 @@
              [((ob ...) (oc ...) (lb ...) ne1 (((ib-var ...) ib-rhs) ...) (ic ...) ne2 (ls ...))
               (with-syntax ([(ib-tmp ...) (generate-temporaries #'(ib-var ... ...))]
                             [(false ...)  (map (lambda (x) #'f) (syntax->list #'(ib-var ... ...)))])
-                ; this trickery is neccessary to make ib-vars visible in test
+                ; this trickery is necessary to make ib-vars visible in test
                 (make-loop #'((ob ... ((ib-tmp) #f) ...)
                               (oc ...)
                               (lb ...)

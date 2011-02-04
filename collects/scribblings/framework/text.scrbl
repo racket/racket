@@ -135,7 +135,7 @@
 
   }
   @defmethod[(get-edition-number) exact-nonnegative-integer?]{
-     Returns a number that increments everytime something in
+     Returns a number that increments every time something in
      the editor changes. 
      
      The number is updated in @xmethod[text% after-insert] and

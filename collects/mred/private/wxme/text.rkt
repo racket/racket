@@ -2849,7 +2849,7 @@
                                     (set! write-locked? #t)
                                     (set! flow-locked? #t)
 
-                                    ;; linear seach for snip
+                                    ;; linear search for snip
                                     (let ([topy (mline-get-location line)])
                                       (let loop ([snip (mline-snip line)]
                                                  [X X]
@@ -3159,7 +3159,7 @@
                               (values (mline-last-snip line) (+ horiz (- (mline-w line) (mline-last-w line)))
                                       start #f)]
                              [else
-                              ;; linear seach for snip
+                              ;; linear search for snip
                               (let loop ([snip (mline-snip line)]
                                          [start start]
                                          [horiz horiz]

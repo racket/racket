@@ -1521,7 +1521,7 @@ static Scheme_Object *get_symtab_idx(Scheme_Marshal_Tables *mt, Scheme_Object *o
       if (idx) {
         idx = scheme_hash_get(mt->key_map, idx);
         if (SCHEME_INT_VAL(idx) != mt->print_now)
-          return idx; /* due to a cycle, we're refering to
+          return idx; /* due to a cycle, we're referring to
                          something before it is printed. */
         idx = NULL; /* ok to print */
       }
@@ -3861,7 +3861,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 	  print_this_string(pp, NULL, 0, 0);
 	  /* Disable maxlen, because it interferes with flushing.
 	     It would be good to improve on this (to avoid work),
-	     but it's unlikey to ever matter. */
+	     but it's unlikely to ever matter. */
 	  pp->print_maxlen = 0;
 	}
 

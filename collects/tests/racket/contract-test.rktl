@@ -10453,7 +10453,7 @@ so that propagation occurs.
 ;                                                                    
 
   ;;
-  ;; (at the end, becuase they are slow w/out .zo files)
+  ;; (at the end, because they are slow w/out .zo files)
   ;;
   
   (test/spec-passed

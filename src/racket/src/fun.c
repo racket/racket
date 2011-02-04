@@ -1599,7 +1599,7 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   }
 
   if (convert
-      && (offset || !has_tl) /* either need args, or treat as convert becasue it's fully closed */
+      && (offset || !has_tl) /* either need args, or treat as convert because it's fully closed */
       ) {
     /* Take over closure_map to be the convert map, instead. */
     convert_map = closure_map;
@@ -5954,7 +5954,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
   /* Copy stack back in: p->runstack and p->runstack_saved arrays
      are already restored, so the shape is certainly the same as
      when cont->runstack_copied was made. If we have a derived
-     continuation, then we're sharing it's base runstack. */
+     continuation, then we're sharing its base runstack. */
   copy_in_runstack(p, cont->runstack_copied, 0);
   {
     intptr_t done = cont->runstack_copied->runstack_size, size;
@@ -8478,7 +8478,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
 /* This function explicitly coorperates with the GC by storing the
    pointers it needs to save across a collection in `storage'. Also,
    if allocation fails, it can abort and return NULL. The combination
-   allows it to work in a thread for runing futures (where allocation
+   allows it to work in a thread for running futures (where allocation
    and GC in general ae disallowed). */
 {
   intptr_t len, i, j, pos;

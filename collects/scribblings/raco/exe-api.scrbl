@@ -23,7 +23,7 @@
 The @racketmodname[compiler/embed] library provides a function to
 embed Racket code into a copy of Racket or GRacket, thus creating a
 stand-alone Racket executable. To package the executable into a
-distribution that is indpendent of your Racket installation, use
+distribution that is independent of your Racket installation, use
 @racket[assemble-distribution] from
 @racketmodname[compiler/distribute].}
 

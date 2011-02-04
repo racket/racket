@@ -200,7 +200,7 @@
        (loop (car val))
        (loop (cdr val))])))
 
-;; returns #t if the result is known to be a predicate that shoudl correspond to a
+;; returns #t if the result is known to be a predicate that should correspond to a
 ;; complete obligation for the contract. If it is some unknown variable, this variable
 ;; may refer to some other contract with nested obligations, so we have to return #f here.
 ;; approximate this by just asking 'did this identifier come from the core?' (which is known

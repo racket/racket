@@ -336,7 +336,7 @@
                                             (quote-srcloc #,av-id)))))]
                          ;; a list of variables, one for each super field
                          [(super-field ...) (generate-temporaries super-refs)]
-                         ;; the contract for a super field is any/c becuase the
+                         ;; the contract for a super field is any/c because the
                          ;; super constructor will have its own contract
                          [(super-contract ...) (for/list ([i (in-list super-refs)])
                                                  (datum->syntax stx 'any/c))]

@@ -1432,7 +1432,7 @@ static int output_ready(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
   if (SAME_OBJ(scheme_user_output_port_type, op->sub_type)) {
     /* We can't call the normal ready because that might run Scheme
        code, and this function is called by the scheduler when
-       false_pos_ok is true. So, in that case, we asume that if the
+       false_pos_ok is true. So, in that case, we assume that if the
        port's evt is ready, then the port is ready. (After
        all, false positives are ok in that mode.) Even when the
        scheduler isn't requesting the status, we need sinfo. */
@@ -1475,7 +1475,7 @@ int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info 
   if (SAME_OBJ(scheme_user_input_port_type, ip->sub_type)) {
     /* We can't call the normal byte_ready because that runs Scheme
        code, and this function is called by the scheduler when
-       false_pos_ok is true. So, in that case, we asume that if the
+       false_pos_ok is true. So, in that case, we assume that if the
        port's evt is ready, then the port is ready. (After
        all, false positives are ok in that mode.) Even when the
        scheduler isn't requesting the status, we need sinfo. */

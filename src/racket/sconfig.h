@@ -941,7 +941,7 @@
      turned off for compilation on some systems.
     CLOCKS_PER_SEC relates the values returned by clock() to
      real seconds. (The difference between two clock() calls is
-     devided by this number.) Usually, this is defined in <time.h>;
+     divided by this number.) Usually, this is defined in <time.h>;
      it defaults to 1000000 */
 
  /* USE_FTIME uses ftime instead of gettimeofday; only for TIME_SYNTAX */

@@ -231,7 +231,7 @@
     ;; see ../htdch/draw/support.scm (copy) for explanation and design rationale
     (hash-set! h 'copy (lambda () (set! @vp vp*) (set! @pm pm*) [(clear-viewport pm*)]))
     ;; ---
-    ;; --- the following can't happend during a draw sequence --- 
+    ;; --- the following can't happen during a draw sequence --- 
     (set! %wait-for-mouse-click (lambda () (mouse-click-posn (get-mouse-click vp*))))      
     (set! %get-key-event
           (lambda ()

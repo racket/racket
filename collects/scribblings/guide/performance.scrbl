@@ -76,7 +76,7 @@ definition applies only to expressions evaluated later.
 
 Within a module, inlining and constant-propagation optimizations take
 additional advantage of the fact that definitions within a module
-cannot be mutated when no @racket[set!] is visable at compile
+cannot be mutated when no @racket[set!] is visible at compile
 time. Such optimizations are unavailable in the top-level
 environment. Although this optimization within modules is important
 for performance, it hinders some forms of interactive development and

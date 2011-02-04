@@ -12,13 +12,13 @@
 	   "panel.ss")
   
   ;; INVARIANT: If a snip is selected, then no ancestor or
-  ;;  decendent of the snip can be selected. Otherwise, the
+  ;;  descendant of the snip can be selected. Otherwise, the
   ;;  dragging rules get complicated (perhaps impossible).
   
   ;; INVARIANT: a child must be ordered before its parent in the
   ;;  pasteboard. Not only does this affect drawing, but it also
   ;;  affects how select-all and rubber-banding work due to the
-  ;;  ancestor/decendent-selection-exclusion rule.
+  ;;  ancestor/descendant-selection-exclusion rule.
   
   (define START-FRAME-WIDTH 100)
   (define START-FRAME-HEIGHT 100)

@@ -256,7 +256,7 @@
       
       (define/public (locate-file name)
         (let* ([normalized
-                ;; allow for the possiblity of filenames that are urls
+                ;; allow for the possibility of filenames that are urls
                 (with-handlers ([(λ (x) #t)
                                  (λ (x) name)])
                   (normal-case-path

@@ -829,7 +829,7 @@
 	    (sort (hash-map k-decomp-map-ht cons)
                   (lambda (a b) (< (car a) (car b)))))])
       (printf "\n")
-      (printf "/* utable_kompat_decomp_keys identifies characters that have a compatability decomposition;\n")
+      (printf "/* utable_kompat_decomp_keys identifies characters that have a compatibility decomposition;\n")
       (printf "   it is sorted, and scheme_needs_decompose() is true for every key (but a character\n")
       (printf "   with scheme_needs_decompose(), may instead have a mapping in the canonical table.).\n")
       (printf "   The parallel utable_kompat_decomp_indices maps the corresponding character in this table\n")

@@ -4,7 +4,7 @@
 
 'trash
 'junk
-; after GC, alpha beta are copied but the cons refernces them in the old semispace
+; after GC, alpha beta are copied but the cons references them in the old semispace
 (define my-pair (cons 'alpha 'beta))
 ; we have room for our-pair, but 'refuse forces a semi-space swap that exposes
 ; the memory corruption (if one exists)

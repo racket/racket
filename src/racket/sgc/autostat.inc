@@ -222,7 +222,7 @@ void *sysv_GetDataStart(int max_page_size, int etext_addr)
 			     & ~((unsigned long)max_page_size - 1));
   unsigned long page_offset = (text_end & ((unsigned long)max_page_size - 1));
   char * result = (char *)(next_page + page_offset);
-  /* Note that this isnt equivalent to just adding		*/
+  /* Note that this isn't equivalent to just adding		*/
   /* max_page_size to &etext if &etext is at a page boundary	*/
   
   sysv_setup_temporary_fault_handler();

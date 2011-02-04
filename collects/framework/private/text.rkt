@@ -2160,7 +2160,7 @@
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;
-    ;; output port syncronization code
+    ;; output port synchronization code
     ;;
     
     ;; flush-chan : (channel (evt void))
@@ -3121,7 +3121,7 @@ designates the character that triggers autocompletion
             (show-options word start-pos end-pos completion-cursor)))))
     
     ;; Number -> String
-    ;; The word that ends at the current positon of the editor
+    ;; The word that ends at the current position of the editor
     (define/public (get-word-at current-pos)
       (let ([start-pos (box current-pos)]) 
         (find-wordbreak start-pos #f 'caret)

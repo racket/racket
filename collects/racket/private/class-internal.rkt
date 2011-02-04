@@ -421,7 +421,7 @@
                                  (or class-name 
                                      ""))) 
          #f))
-      ;; -- tranform loop starts here --
+      ;; -- transform loop starts here --
       (let loop ([stx orig-stx][can-expand? #t][name name][locals null])
         (syntax-case stx (#%plain-lambda lambda λ case-lambda letrec-values let-values)
           [(lam vars body1 body ...)

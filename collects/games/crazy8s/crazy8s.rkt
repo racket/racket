@@ -523,7 +523,7 @@
                         (player-hand-r player)))
                 players)
 
-      ;; Opponents's cards and deck initally can't be moved
+      ;; Opponents's cards and deck initially can't be moved
       (for-each (lambda (card) (send card user-can-move #f))
                 (append
                  (apply append

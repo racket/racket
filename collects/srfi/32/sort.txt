@@ -629,7 +629,7 @@ i.e., what they do to the data (sort, stable sort, merge, and so forth).
 ** Algorithm-specific sorting packages
 ======================================
 These packages provide more specific sorting functionality, that is,
-specific committment to particular algorithms that have particular
+specific commitment to particular algorithms that have particular
 pragmatic consequences (such as memory locality, asymptotic running time)
 beyond their semantic behaviour (sorting, stable sorting, merging, etc.).
 Programmers that need a particular algorithm can use one of these packages.

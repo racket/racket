@@ -3027,7 +3027,7 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   Scheme_Closure_Data *data;
 
   /* The first in a clone pair is the one that is consulted for
-     references. The second one is the clone, and its the one whose
+     references. The second one is the clone, and it's the one whose
      flags are updated by optimization. So consult the clone, and set
      flags in both. */
 

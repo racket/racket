@@ -178,7 +178,7 @@
   
   ;; important that you cannot go back from this view, 
   ;; or else that might trigger saving the bug report in the preferences 
-  ;; (but when you're here the bug report should be succesfully submitted)
+  ;; (but when you're here the bug report should be successfully submitted)
   (define (switch-to-finished-view finished-text)
     (send finished-ec set-editor finished-text)
     (unsave-bug-report (saved-report-id init-bug-report))

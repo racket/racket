@@ -75,7 +75,7 @@
                      (not (null? (syntax-e (car p))))
                      (let ((fun-name (car (syntax-e (car p)))))
                        (and
-                        ;; if the function escapes, we can't change it's interface
+                        ;; if the function escapes, we can't change its interface
                         (not (is-var-mutated? fun-name))
                         (not (escapes? fun-name #'(begin rhs ... ...) #f))
                         (not (escapes? fun-name #'(begin body ...) let-loop?))

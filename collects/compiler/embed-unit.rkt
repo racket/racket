@@ -623,7 +623,7 @@
                                [(name)
                                 ;; a notification; if the name matches one of our special names,
                                 ;; assume that it's from a namespace that has the declaration
-                                ;; [it would be better if the noritifer told us the source]
+                                ;; [it would be better if the notifier told us the source]
                                 (let-values ([(name) (if name (resolved-module-path-name name) #f)])
                                   (let-values ([(a) (assq name mapping-table)])
                                     (if a

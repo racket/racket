@@ -259,7 +259,7 @@
                                  (done "Bust" cont)
                                  (yield cont)))]
                  ;; Callback for the hit button; the button's callback is
-                 ;; changed for diferent modes: normal, split part 1, or split
+                 ;; changed for different modes: normal, split part 1, or split
                  ;; part 2
                  [make-hit-callback
                   (lambda (get-p set-p! player-region bust)

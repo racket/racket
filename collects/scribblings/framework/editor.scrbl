@@ -379,7 +379,7 @@
 @definterface[editor:backup-autosave<%> (editor:basic<%>)]{
   Classes matching this interface support backup files and autosaving.
   @defmethod*[(((backup?) boolean?))]{
-    Indicates weather this 
+    Indicates whether this 
     @scheme[editor<%>]
     should be backed up.
 
@@ -392,7 +392,7 @@
 
   }
   @defmethod*[(((autosave?) boolean?))]{
-    Indicates weather this 
+    Indicates whether this 
     @scheme[editor<%>]
     should be autosaved.
 

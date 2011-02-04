@@ -152,7 +152,7 @@ typedef struct Module_Renames {
   Scheme_Hash_Table *marked_names; /* shared with module environment while compiling the module;
 				      this table maps a top-level-bound identifier with a non-empty mark
 				      set to a gensym created for the binding */
-  Scheme_Object *unmarshal_info; /* stores some renamings as infomation needed to consult
+  Scheme_Object *unmarshal_info; /* stores some renamings as information needed to consult
 				    imported modules and restore renames from their exports */
   Scheme_Hash_Table *free_id_renames; /* like `ht', but only for free-id=? checking,
                                          and targets can also include:

@@ -39,7 +39,7 @@ permission to re-distribute their puzzles.  Visit them online at:
 @centerline{@selflink[;"http://www02.so-net.ne.jp/~kajitani/index.html"
                       "http://nonogram.freehostia.com/pbn/index.html"]}
 
-The specific contributers who have permitted their puzzles to be
+The specific contributors who have permitted their puzzles to be
 redistributed are:
 
 @verbatim[#:indent 2]{

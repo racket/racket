@@ -319,7 +319,7 @@
 ;     [[y00 y01 y02],
 ;      [y10 y11 y12],
 ;      [y20 y21 y22]]  mod m2]
-; as a vector of length 18 of the integers as writen above:
+; as a vector of length 18 of the integers as written above:
 ;   #(x00 x01 x02 x10 x11 x12 x20 x21 x22
 ;     y00 y01 y02 y10 y11 y12 y20 y21 y22)
 ;

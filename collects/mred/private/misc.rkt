@@ -48,7 +48,7 @@
       ;; the alarm is immediately ready. This makes `sleep/yield'
       ;; more like `sleep':
       (wx:yield) 
-      ;; Now, realy sleep:
+      ;; Now, really sleep:
       (wx:yield evt))
     (void))
 

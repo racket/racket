@@ -5,7 +5,7 @@
 ;; - Each test is run in its own namespace, but there is very little
 ;;   additional sandboxing.  (There is a timeout of 10 minutes.)
 ;; - Specifically, the I/O ports are not diverted -- so please keep
-;;   output to a minimum, preferrably nothing if there are no errors.
+;;   output to a minimum, preferably nothing if there are no errors.
 ;; - Tests are only running in racket (*not* gracket), but note that
 ;;   they will run with both the default 3m and the CGC executable, and
 ;;   with the JIT enabled and disabled.

@@ -25,7 +25,7 @@
 
   (define-values (short-name long-names raco?)
     ;; Load the name module without using .zos, and in its own namespace to 
-    ;;  avoid poluting the cm-managed namespace later
+    ;;  avoid polluting the cm-managed namespace later
     (parameterize ([use-compiled-file-paths null]
                    [current-namespace (make-kernel-namespace)])
       ((dynamic-require 'setup/private/command-name 'get-names))))

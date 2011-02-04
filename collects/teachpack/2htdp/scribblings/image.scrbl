@@ -1379,7 +1379,7 @@ Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the im
 @section{Equality Testing of Images}
 
 Two images are @racket[equal?] if they draw exactly the same way at their current size
-(not neccessarily at all sizes) and, if there are pinholes, the pinholes are
+(not necessarily at all sizes) and, if there are pinholes, the pinholes are
 in the same place.
 
 @section[#:tag "pinholes"]{Pinholes}

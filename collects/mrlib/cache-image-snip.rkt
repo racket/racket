@@ -21,7 +21,7 @@
 
     The true meaning of an image is a vector of rationals,
     between 0 & 255, representing color and alpha channel
-    information. The vector's contents are analagous to
+    information. The vector's contents are analogous to
     the last argument to the get-argb-pixels method. That is,
     there are (* 4 w h) entries in the vector for an image
     of width w and height h, and the entries represent the

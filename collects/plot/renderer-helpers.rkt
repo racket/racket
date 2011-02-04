@@ -1,7 +1,7 @@
 (module renderer-helpers mzscheme
 
   ; Contains the helpers for the plot-renderers package
-  ; usefull for building your own renderers
+  ; useful for building your own renderers
 
   (require mzlib/list mzlib/math plot/math)
 

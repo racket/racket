@@ -835,7 +835,7 @@
 ;;; instance-proc of methods, which is activated when you apply the object (in
 ;;; the original, methods could not be applied).  This is defined using this
 ;;; name and arguments because it is later used directly by the generic
-;;; function (cannot use the generic in the inital make since methods need to
+;;; function (cannot use the generic in the initial make since methods need to
 ;;; be created when the generics are constructed).
 (define (method:compute-apply-method call-next-method method)
   (let* ([specializers (%method-specializers method)]

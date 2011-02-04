@@ -833,7 +833,7 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
   return 0;
 }
 
-/* Extract proc-info from the FDE starting at adress ADDR.  */
+/* Extract proc-info from the FDE starting at address ADDR.  */
 
 HIDDEN int
 dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,

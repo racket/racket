@@ -30,7 +30,7 @@
 ;;  Checks a standard-format response, checking for the given
 ;;  expected 3-digit result code if expected is not #f.
 ;;
-;;  While checking, the function sends reponse lines to
+;;  While checking, the function sends response lines to
 ;;  diagnostic-accum. This function -accum functions can return a
 ;;  value that accumulates over multiple calls to the function, and
 ;;  accum-start is used as the initial value. Use `void' and

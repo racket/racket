@@ -209,7 +209,7 @@
   (let ([current-items 
          (map (λ (x) (and (is-a? x labelled-menu-item<%>) (send x get-label)))
               (send menu get-items))]
-        ;; the new-items variable shoudl match up to what install-recent-items actually does when it creates the menu 
+        ;; the new-items variable should match up to what install-recent-items actually does when it creates the menu 
         [new-items 
          (append 
           (for/list ([recent-list-item recently-opened-files])

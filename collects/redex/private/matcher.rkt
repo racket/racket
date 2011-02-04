@@ -1013,7 +1013,7 @@ before the pattern compiler is invoked.
                         ; return the found element
                         (cdr entry)]
                        [else
-                        ;; didnt hit yet, continue searchign
+                        ;; didn't hit yet, continue searching
                         (loop previous1 current (cdr current) (+ i 1))]))]))])])))))
 
 ;; hash version, but with a vector that tells when to evict cache entries

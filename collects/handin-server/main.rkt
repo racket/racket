@@ -326,7 +326,7 @@
      (put-preferences
       (list (string->symbol username)) (list data)
       (lambda (f)
-        (error* "user database busy; please try again, and alert the adminstrator if problems persist"))
+        (error* "user database busy; please try again, and alert the administrator if problems persist"))
       "users.rktd"))
    orig-custodian))
 

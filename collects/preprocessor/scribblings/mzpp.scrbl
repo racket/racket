@@ -115,7 +115,7 @@ because doing this:
 
 Some preprocessing directives happen at the "raw level"---the stage
 where text is transformed into Scheme expressions.  These directives
-cannot be changed from withing transformed text because they change the
+cannot be changed from within transformed text because they change the
 way this transformation happens.  Some of these transformation
 
 @itemize[

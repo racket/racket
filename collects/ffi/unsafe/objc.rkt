@@ -269,7 +269,7 @@
        ((ctype-sizeof v) . <= . 16))]))
 
 ;; Make `msgSends' access atomic, so that a thread cannot be suspended
-;; or killed during access, whcih would block other threads.
+;; or killed during access, which would block other threads.
 (define-syntax-rule (as-atomic e)
   (begin (start-atomic) (begin0 e (end-atomic))))
 

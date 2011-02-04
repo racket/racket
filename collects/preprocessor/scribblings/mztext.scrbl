@@ -41,7 +41,7 @@ explanation of the @DFlag{run} flag.
 @exec{mztext} can use arbitrary magic sequences, but for convenience,
 there is a default built-in dispatcher that connects Scheme code with
 the preprocessed text---by default, it is triggered by @litchar["@"].
-When file processing encounters this marker, control is transfered to
+When file processing encounters this marker, control is transferred to
 the command dispatcher.  In its turn, the command dispatcher reads a
 Scheme expression (using @scheme[read]), evaluates it, and decides
 what to do next.  In case of a simple Scheme value, it is converted to

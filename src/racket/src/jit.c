@@ -1929,7 +1929,7 @@ void *scheme_save_lightweight_continuation_stack(Scheme_Current_LWC *lwc)
   XFORM_SKIP_PROC
 /* This function assumes that lwc won't move during an
    allocation. Also, if allocation fails, it can abort and return
-   NULL, so it can work in a thread for runing futures (where
+   NULL, so it can work in a thread for running futures (where
    allocation and GC in general are disallowed). */
 
 {
@@ -7587,7 +7587,7 @@ static int generate_three_args(Scheme_App_Rec *app, mz_jit_state *jitter)
 
   if (c1 && c2) {
     /* we expect this to be a common case for `vector-set!'-like operations,
-       where the vector and index are immediate and teh value is computed */
+       where the vector and index are immediate and the value is computed */
     mz_runstack_skipped(jitter, 2);
     mz_rs_dec(1); /* no sync */
     CHECK_RUNSTACK_OVERFLOW();

@@ -292,7 +292,7 @@ interface and gives it key bindings to tab ahead and back.
 
 The _set-tabbing_ function sets the tabbing order of
 tabbable-text<%>s by setting each text's set-ahead and
-set-back thunks to point to it's neighbor in the argument
+set-back thunks to point to its neighbor in the argument
 list.
 
 > (set-tabbing a-text ...)

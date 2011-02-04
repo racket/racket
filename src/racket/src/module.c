@@ -4226,7 +4226,7 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
     menv->insp = insp;
 
     /* These three should be set by various "finish"es, but
-       we initialize them in case there's an error runing a "finish". */
+       we initialize them in case there's an error running a "finish". */
     menv->require_names = scheme_null;
     menv->et_require_names = scheme_null;
     menv->tt_require_names = scheme_null;

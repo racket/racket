@@ -38,7 +38,7 @@
   (with-input-from-file (get-test-file)
     (lambda ()
       (unless (regexp-match #rx"^# NormalizationTest-" (read-line))
-        (error "Bad test-file contents (couldn't retreive tests?)"))
+        (error "Bad test-file contents (couldn't retrieve tests?)"))
       (let loop ([a null])
 	(let ([l (read-line)])
 	  (if (eof-object? l)

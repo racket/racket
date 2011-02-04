@@ -257,7 +257,7 @@ to @scheme[#f] and the state of the ``h'' key to
 
 
 The @scheme[empty-world] function
-generalizes the exmaple by computing the
+generalizes the example by computing the
 cats initial position as the center spot on the board.
 
 @chunk[<empty-world>

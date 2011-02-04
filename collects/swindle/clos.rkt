@@ -463,7 +463,7 @@
 ;;>     Restrict this slot value to objects of the given `type'.
 ;;>   * :lock { #t | #f | value }
 ;;>     If specified and non-`#f', then this slot is locked.  `#t' locks it
-;;>     permanently, but a diffrent value works as a key: they allow setting
+;;>     permanently, but a different value works as a key: they allow setting
 ;;>     the slot by using cons of the key and the value to set.
 ;;>   * :allocation { :class | :instance }
 ;;>     Specify that this slot is a normal one (`:instance', the default),

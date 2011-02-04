@@ -89,7 +89,7 @@
 ;; 5
 
 ;; list-length: (list-of any) -> integer
-;; Computes the lenght of a list
+;; Computes the length of a list
 (define: (list-length [loa : (Listof top)]) : number
   (if (null? loa)
       0

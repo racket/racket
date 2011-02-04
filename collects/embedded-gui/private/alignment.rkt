@@ -1,19 +1,19 @@
 #|
-This code computes the sizes for the rectangles in the space using the on dimention
-off dimention method of referencing sizes. This means for example instead of saying
-width we say off dimention for vertical alignment. Inorder to consume and return
+This code computes the sizes for the rectangles in the space using the on dimension
+off dimension method of referencing sizes. This means for example instead of saying
+width we say off dimension for vertical alignment. Inorder to consume and return
 the values in terms of width and height manipulation had to be done. I chose to create
 a struct abs-rect (abstract rectangle) and have code map horizontal and vertical rect
 stucts on to them. This code is a bit long but more readable than the other two options
 I came up with.
   1) define all functions to be letrec bound functions inside align. align then take
-     accessors for the rect struct. The caller of align swaps the order of ondimention
-     and off dimention accessors for vertical or horizontal code. This method does not
+     accessors for the rect struct. The caller of align swaps the order of ondimension
+     and off dimension accessors for vertical or horizontal code. This method does not
      allow the use of the readable, short, consis pattern matching code. As some of the
      matching code is easily removed this may be a good option but a large letrec
      is harder to write tests for.
   2) define a pattern matcher syntax that will match the struct rect but swap the fields
-     based on wich on is the on or off dimention. This would have been shorter but much
+     based on which on is the on or off dimension. This would have been shorter but much
      more confusing.
 The current implementation requires align to map over the rects and allocate new stucts
 for each one on both passing into and returning from stretch-to-fit; This is not a bottle
@@ -138,7 +138,7 @@ neck and it is the most readable solution.
                    (loop rest-rects (+ onpos onsize))))]))))
   
   #;(natural-number? . -> . (-> (union 1 0)))
-  ;; makes a thunk that returns 1 for it's first n applications, zero otherwise
+  ;; makes a thunk that returns 1 for its first n applications, zero otherwise
   (define (waner n)
     (lambda ()
       (if (zero? n)

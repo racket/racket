@@ -4325,7 +4325,7 @@ void scheme_thread_block(float sleep_time)
   if (next && (!next->running || (next->running & MZTHREAD_SUSPENDED))) {
     /* In the process of selecting another thread, it was suspended or
        removed. Very unusual, but possible if a block checker does
-       stange things??? */
+       strange things??? */
     next = NULL;
   }
 

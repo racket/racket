@@ -38,7 +38,7 @@
 
 ; apply the mixin
 ; fr-value-text-field%s will set their value to the value of 
-; the event occurances supplied in the initialization argument
+; the event occurrences supplied in the initialization argument
 ; value-set-e
 (define fr-value-text-field% (set-value-lifter text-field%))
 

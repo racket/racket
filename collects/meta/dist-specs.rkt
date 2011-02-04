@@ -50,7 +50,7 @@
 ;;     clauses.  Instead of a single <tag>, you can use a list of tags.  The
 ;;     tags are expanded using definitions made with :=tag, and the result is
 ;;     added to current tag list -- this expansion is a little different from
-;;     the normal one in that the result contains all of the defintion it went
+;;     the normal one in that the result contains all of the definition it went
 ;;     through (so if x expands to y which expands to z, expanding x will
 ;;     result in x, y, and z).
 ;; Finally, it is possible to define `macro' constructs by using a lambda spec:
@@ -164,7 +164,7 @@ gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.rkt"))
                       (srcfile: "racket/gui/dynamic.rkt"))
 tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.rkt"))
 
-;; these are in the doc directory, but are comitted in git and should be
+;; these are in the doc directory, but are committed in git and should be
 ;; considered like sources
 std-docs        := (doc: "doc-license.txt" "*-std/")
 

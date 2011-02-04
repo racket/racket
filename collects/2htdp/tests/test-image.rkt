@@ -2203,7 +2203,7 @@
     (let loop ([obj obj])
       (when (struct? obj)
         (let ([stuff (vector->list (struct->vector obj))])
-          (unless (member (car stuff) '(struct:flip struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
+          (unless (member (car stuff) '(struct:flip struct:translate struct:scale)) ;; skip these because normalization eliminates them
             (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
           (for-each loop (cdr stuff)))))
     (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))

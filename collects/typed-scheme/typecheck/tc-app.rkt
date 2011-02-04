@@ -399,7 +399,7 @@
 	      (cond [(not ival)
 		     (tc-error/expr #:stx #'e
 				    #:return (or expected (ret -Void))
-				    "expected statically known index for heterogenous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
+				    "expected statically known index for heterogeneous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
 		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
 		     (tc-expr/check #'val (ret (list-ref es ival)))
 		     (if expected 

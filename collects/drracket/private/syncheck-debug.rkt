@@ -124,7 +124,7 @@
          (send f show #t))]))
   
   ;; build-ht : stx -> hash-table
-  ;; the resulting hash-table maps from the each sub-object's to it's syntax.
+  ;; the resulting hash-table maps from the each sub-object's to its syntax.
   (define (syntax-object->datum/ht stx)
     (let ([ht (make-hash-table)])
       (values (let loop ([stx stx])

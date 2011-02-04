@@ -61,7 +61,7 @@
 ;;   -> 
 ;;   (listof (listof (union panel% button%)))
 ;; to translate a layout table into a button table 
-;;   each button is controled by (control a-bitmap)
+;;   each button is controlled by (control a-bitmap)
 (define (make-button-table panel control layout)
   (define (make-row a-row)
     (define row-panel (make-object horizontal-panel% panel))

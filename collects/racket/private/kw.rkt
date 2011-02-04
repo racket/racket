@@ -784,7 +784,7 @@
                           [(keyword? (cadr l))
                            (raise-syntax-error
                             'application
-                            "keyword in expression possition (immediately after another keyword)"
+                            "keyword in expression position (immediately after another keyword)"
                             stx
                             (cadr l))]
                           [else

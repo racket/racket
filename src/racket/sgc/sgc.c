@@ -943,7 +943,7 @@ static void *platform_plain_sector(int count)
 {
   /* Since 64k blocks are used up by each call to VirtualAlloc,
      use roughly the same trick as in the malloc-based alloc to
-     avoid wasting ther address space. */
+     avoid wasting the address space. */
 
   static int prealloced;
   static void *preallocptr;
@@ -2113,7 +2113,7 @@ intptr_t GC_get_memory_use()
 
 void GC_end_stubborn_change(void *p)
 {
-  /* stubborness is not exploited */
+  /* stubbornness is not exploited */
 }
 
 static void *zero_ptr;
