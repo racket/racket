@@ -1843,6 +1843,7 @@
 (test 0.0 atan 0.0 0)
 (test 0 atan 0 1)
 (test 0 atan 0 (expt 2 100))
+(test 0 atan 0 5/2)
 (test 0.0 atan 0 1.0)
 (test 314.0 round (* 100 (atan 0 -1)))
 (err/rt-test (atan 0 0) exn:fail:contract:divide-by-zero?)

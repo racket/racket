@@ -594,13 +594,13 @@ In the one-argument case, returns the arctangent of the inexact
  approximation of @racket[z], except that the result is an exact
  @racket[0] for an exact @racket[0] argument.
 
-In the two-argument case, the result is roughly the same as @racket[(/
- (exact->inexact y) (exact->inexact x))], but the signs of @racket[y]
+In the two-argument case, the result is roughly the same as @racket[
+ (atan (/ (exact->inexact y)) (exact->inexact x))], but the signs of @racket[y]
  and @racket[x] determine the quadrant of the result. Moreover, a
  suitable angle is returned when @racket[y] divided by @racket[x]
  produces @racket[+nan.0] in the case that neither @racket[y] nor
- @racket[x] is @racket[+nan.0]. Finally, if @racket[x] is exact
- @racket[0] and @racket[y] is an exact positive number, the result is
+ @racket[x] is @racket[+nan.0]. Finally, if @racket[y] is exact
+ @racket[0] and @racket[x] is an exact positive number, the result is
  exact @racket[0]. If both @racket[x] and @racket[y] are exact
  @racket[0], the @exnraise[exn:fail:contract:divide-by-zero].
 

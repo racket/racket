@@ -2243,7 +2243,8 @@ atan_prim (int argc, Scheme_Object *argv[])
         ESCAPED_BEFORE_HERE;
       }
       if ((SCHEME_INTP(n2) && (SCHEME_INT_VAL(n2) > 0))
-          || (SCHEME_BIGNUMP(n2) && (SCHEME_BIGPOS(n2))))
+          || (SCHEME_BIGNUMP(n2) && (SCHEME_BIGPOS(n2)))
+          || (SCHEME_RATIONALP(n2) && scheme_is_positive(n2)))
         return zeroi;
     }
 
