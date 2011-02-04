@@ -5,6 +5,7 @@
                  make-base-empty-namespace)
            scheme/class
            racket/draw racket/snip
+           file/resource
            mzlib/etc
 	   (prefix wx: "kernel.ss")
 	   (prefix wx: "wxme/editor.ss")
@@ -169,7 +170,8 @@
           [else #f])))
 
   (provide (all-from racket/draw)
-           (all-from racket/snip))
+           (all-from racket/snip)
+           (all-from file/resource))
 
   (provide button%
 	   canvas%
