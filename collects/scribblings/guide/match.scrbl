@@ -119,6 +119,22 @@ pattern variables can be bound to lists of lists of matches:
   [(list (list '! x ...) ...) x])
 ]
 
+
+The @racket[quasiquote] form  (see @secref["qq"] for more about it) can also be used to build patterns.
+While unquoted portions of a normal quasiquoted form mean regular racket evaluation, here unquoted
+portions mean go back to regular pattern matching.
+
+So, in the example below, the with expression is the pattern and it gets rewritten into the
+application expression, using quasiquote as a pattern in the first instance and quasiquote
+to build an expression in the second.
+
+@interaction[
+#:eval match-eval
+(match `{with {x 1} {+ x 1}}
+  [`{with {,id ,rhs} ,body}
+   `{{lambda {,id} ,body} ,rhs}])
+]
+
 For information on many more pattern forms, see @racketmodname[racket/match].
 
 Forms like @racket[match-let] and @racket[match-lambda] support
