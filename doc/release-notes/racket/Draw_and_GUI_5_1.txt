@@ -162,7 +162,7 @@ Registry Functions
 The `get-resource' and `write-resource' functions have moved to a
 `file/resource' library that is re-exported by `racket/gui/base'.
 These function now work only for reading and writing the Windows
-registry; they report failure for other platforms and modes.
+registry or ".ini" files; they report failure for other platforms.
 
 
 Removed Functions
