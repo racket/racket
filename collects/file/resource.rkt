@@ -38,8 +38,12 @@
 
 (define advapi-dll (and (eq? (system-type) 'windows)
                      (ffi-lib "Advapi32.dll")))
+(define kernel-dll (and (eq? (system-type) 'windows)
+                        (ffi-lib "kernel32.dll")))
 
 (define-ffi-definer define-advapi advapi-dll
+  #:default-make-fail make-not-available)
+(define-ffi-definer define-kernel kernel-dll
   #:default-make-fail make-not-available)
 
 (define win64? (equal? "win32\\x86_64" (path->string (system-library-subpath #f))))
@@ -48,6 +52,7 @@
 (define _LONG _long)
 (define _DWORD _int32)
 (define _REGSAM _DWORD)
+(define _BOOL (make-ctype _int (lambda (v) (if v 1 0)) (lambda (v) (not (zero? v)))))
 
 (define KEY_QUERY_VALUE #x1)
 (define KEY_SET_VALUE   #x2)
@@ -85,10 +90,32 @@
 
 (define-advapi RegCloseKey (_fun #:abi win_abi _HKEY -> _LONG))
 
+(define-kernel WritePrivateProfileStringW (_fun #:abi win_abi
+                                                _string/utf-16 ; app
+                                                _string/utf-16 ; key
+                                                _string/utf-16 ; val
+                                                _string/utf-16 ; filename
+                                                -> _BOOL))
+(define-kernel GetPrivateProfileStringW (_fun #:abi win_abi
+                                              _string/utf-16 ; app
+                                              _string/utf-16 ; key
+                                              _string/utf-16 ; default
+                                              _pointer ; result
+                                              _DWORD ; result size in wide chars
+                                              _string/utf-16 ; filename
+                                              -> _DWORD))
+
+(define (file->ini f)
+  (cond
+   [(not f) (file->ini 
+             (build-path (find-system-path 'home-dir) "mred.ini"))]
+   [(string? f) (file->ini (string->path f))]
+   [(path? f) (path->string (cleanse-path (path->complete-path f)))]))
+
 (define (extract-sub-hkey file hkey entry op create-key?)
   (cond
    [(not (eq? 'windows (system-type))) (values #f #f)]
-   [file #f]
+   [file (values #f #f)]
    [(regexp-match #rx"^(.*)\\\\+([^\\]*)$" entry)
     => (lambda (m)
          (let ([sub-hkey (RegOpenKeyExW hkey (cadr m) 0 op)]
@@ -122,50 +149,70 @@
   (unless (memq rtype '(string bytes integer))
     (raise-type-error 'get-resource "'string, 'bytes, or 'integer" rtype))
   
+  (define (to-rtype s)
+    (let ([to-string (lambda (s)
+                       (if (bytes? s)
+                           (bytes->string/utf-8 s #\?)
+                           s))])
+      (cond
+       [(eq? rtype 'string) (to-string s)]
+       [(eq? rtype 'integer)
+        (let ([n (string->number (to-string s))])
+          (or (and n (exact-integer? n) n)
+              0))]
+       [else
+        (if (string? s)
+            (string->bytes/utf-8 s)
+            s)])))
+
   (define-values (sub-hkey sub-entry)
     (extract-sub-hkey file hkey entry KEY_QUERY_VALUE #f))
 
-  (and sub-hkey
-       (begin0
-         (let-values ([(len type) 
-                       ;; Get size, first
-                       (RegQueryValueExW sub-hkey sub-entry #f 0)])
-           (and len
-                (let ([s (make-bytes len)])
-                  (let-values ([(len2 type2) 
-                                ;; Get value, now that we have a bytes string of the right size
-                                (RegQueryValueExW sub-hkey sub-entry s len)])
-                    (and len2
-                         (let ([r
-                                ;; Unmarhsal according to requested type:
-                                (let ([s (cond
-                                          [(= type REG_SZ)
-                                           (cast s _pointer _string/utf-16)]
-                                          [(= type REG_DWORD)
-                                           (number->string (ptr-ref s _DWORD))]
-                                          [else
-                                           s])]
-                                      [to-string (lambda (s)
-                                                   (if (bytes? s)
-                                                       (bytes->string/utf-8 s #\?)
-                                                       s))])
-                                  (cond
-                                   [(eq? rtype 'string) (to-string s)]
-                                   [(eq? rtype 'integer)
-                                    (let ([n (string->number (to-string s))])
-                                      (or (and n (exact-integer? n) n)
-                                          0))]
-                                   [else
-                                    (if (string? s)
-                                        (string->bytes/utf-8 s)
-                                        s)]))])
-                           (if (box? value)
-                               (begin
-                                 (set-box! value r)
-                                 #t)
-                               r)))))))
-         (unless (eq? hkey sub-hkey)
-           (RegCloseKey sub-hkey)))))
+  (cond
+   [sub-hkey
+    (begin0
+     (let-values ([(len type) 
+                   ;; Get size, first
+                   (RegQueryValueExW sub-hkey sub-entry #f 0)])
+       (and len
+            (let ([s (make-bytes len)])
+              (let-values ([(len2 type2) 
+                            ;; Get value, now that we have a bytes string of the right size
+                            (RegQueryValueExW sub-hkey sub-entry s len)])
+                (and len2
+                     (let ([r
+                            ;; Unmarhsal according to requested type:
+                            (let ([s (cond
+                                      [(= type REG_SZ)
+                                       (cast s _pointer _string/utf-16)]
+                                      [(= type REG_DWORD)
+                                       (number->string (ptr-ref s _DWORD))]
+                                      [else
+                                       s])])
+                              (to-rtype s))])
+                       (if (box? value)
+                           (begin
+                             (set-box! value r)
+                             #t)
+                           r)))))))
+     (unless (eq? hkey sub-hkey)
+       (RegCloseKey sub-hkey)))]
+   [(eq? 'windows (system-type))
+    (let* ([SIZE 1024]
+           [dest (make-bytes (* SIZE 2) 0)]
+           [DEFAULT "$$default"]
+           [len (GetPrivateProfileStringW section entry DEFAULT
+                                          dest SIZE
+                                          (file->ini file))])
+      (let ([s (cast dest _pointer _string/utf-16)])
+        (and (not (equal? s DEFAULT))
+             (let ([r (to-rtype s)])
+               (if value
+                   (begin
+                     (set-box! value r)
+                     #t)
+                   r)))))]
+   [else #f]))
 
 (define (write-resource section entry value [file #f]
                         #:type [type 'string]
@@ -181,38 +228,44 @@
   (unless (memq type '(string bytes dword))
     (raise-type-error 'write-resource "'string, 'bytes, or 'dword" type))
 
+  (define (to-string value)
+    (cond
+     [(exact-integer? value) (number->string value)]
+     [(string? value) value]
+     [else (bytes->string/utf-8 value #\?)]))
+
   (define-values (sub-hkey sub-entry)
     (extract-sub-hkey file hkey entry KEY_SET_VALUE create-key?))
   
-  (and sub-hkey
-       (begin0
-        (let ([v (case type
-                   [(string) 
-                    (to-utf-16
-                     (cond
-                      [(exact-integer? value) (number->string value)]
-                      [(string? value) value]
-                      [else (bytes->string/utf-8 value #\?)]))]
-                   [(bytes) 
-                    (cond
-                     [(exact-integer? value) 
-                      (string->bytes/utf-8 (number->string value))]
-                     [(string? value) (string->bytes/utf-8 value)]
-                     [else value])]
-                   [(dword) 
-                    (to-dword-ptr
-                     (cond
-                      [(exact-integer? value) value]
-                      [(string? value) (string->number value)]
-                      [(bytes? value) 
-                       (string->number (bytes->string/utf-8 value #\?))]))])]
-              [ty (case type
-                    [(string) REG_SZ]
-                    [(bytes) REG_BINARY]
-                    [(dword) REG_DWORD])])
-          (RegSetValueExW sub-hkey sub-entry ty v (bytes-length v)))
-        (unless (eq? hkey sub-hkey)
-          (RegCloseKey sub-hkey)))))
+  (cond
+   [sub-hkey
+    (begin0
+     (let ([v (case type
+                [(string) 
+                 (to-utf-16 (to-string value))]
+                [(bytes) 
+                 (cond
+                  [(exact-integer? value) 
+                   (string->bytes/utf-8 (number->string value))]
+                  [(string? value) (string->bytes/utf-8 value)]
+                  [else value])]
+                [(dword) 
+                 (to-dword-ptr
+                  (cond
+                   [(exact-integer? value) value]
+                   [(string? value) (string->number value)]
+                   [(bytes? value) 
+                    (string->number (bytes->string/utf-8 value #\?))]))])]
+           [ty (case type
+                 [(string) REG_SZ]
+                 [(bytes) REG_BINARY]
+                 [(dword) REG_DWORD])])
+       (RegSetValueExW sub-hkey sub-entry ty v (bytes-length v)))
+     (unless (eq? hkey sub-hkey)
+       (RegCloseKey sub-hkey)))]
+   [(eq? 'windows (system-type))
+    (WritePrivateProfileStringW section entry (to-string value) (file->ini file))]
+   [else #f]))
 
 (define (to-utf-16 s)
   (let ([v (malloc _gcpointer)])
