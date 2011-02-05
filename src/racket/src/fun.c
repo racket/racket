@@ -8516,6 +8516,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
 
   lw = (Scheme_Lightweight_Continuation *)storage[0];
   lw->stack_slice = stack;
+  lwc = lw->saved_lwc;
 
   len = lwc->runstack_start - lwc->runstack_end;
   runstack_slice = MALLOC_N(Scheme_Object*, len);
@@ -8535,6 +8536,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
       runstack_slice[i] = 0;
   }
 
+  lwc = lw->saved_lwc;
   len = lwc->cont_mark_stack_end - lwc->cont_mark_stack_start;
 
   if (len) {
