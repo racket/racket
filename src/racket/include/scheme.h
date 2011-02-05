@@ -1155,7 +1155,10 @@ typedef void (*Scheme_Kill_Action_Func)(void *);
       thread = NULL; \
       if (scheme_setjmp(newbuf)) { \
         scheme_pop_kill_action(); \
-        func(data); \
+        thread = scheme_get_current_thread(); \
+        if (!thread->cjs.skip_dws) { \
+          func(data); \
+        } \
         scheme_longjmp(*savebuf, 1); \
       } else {
 # define END_ESCAPEABLE() \

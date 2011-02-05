@@ -654,7 +654,8 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
         } else if (semas[i]->so.type == scheme_never_evt_type) {
           /* Never ready. */
         } else if (semas[i]->so.type == scheme_channel_syncer_type) {
-          /* Probably no need to poll */
+          if (((Scheme_Channel_Syncer *)semas[i])->picked)
+            break;
         } else if (try_channel(semas[i], syncing, i, NULL))
           break;
       }

@@ -4055,6 +4055,9 @@ static void call_on_atomic_timeout(int must)
   Scheme_Object *blocker;
   Scheme_Ready_Fun block_check;
   Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Scheme_Kill_Action_Func private_on_kill;
+  void *private_kill_data;
+  void **private_kill_next;
 
   /* Save any state that has to do with the thread blocking or 
      sleeping, in case scheme_on_atomic_timeout() runs Racket code. */
@@ -4065,6 +4068,10 @@ static void call_on_atomic_timeout(int must)
   blocker = p->blocker;
   block_check = p->block_check;
   block_needs_wakeup = p->block_needs_wakeup;
+
+  private_on_kill = p->private_on_kill;
+  private_kill_data = p->private_kill_data;
+  private_kill_next = p->private_kill_next;
 
   p->running = MZTHREAD_RUNNING;
   p->sleep_end = 0.0;
@@ -4081,6 +4088,10 @@ static void call_on_atomic_timeout(int must)
   p->blocker = blocker;
   p->block_check = block_check;
   p->block_needs_wakeup = block_needs_wakeup;
+
+  p->private_on_kill = private_on_kill;
+  p->private_kill_data = private_kill_data;
+  p->private_kill_next = private_kill_next;
 }
 
 static void find_next_thread(Scheme_Thread **return_arg) {
