@@ -6,7 +6,8 @@
 
 (Section 'resource)
 
-(require file/resource)
+(require file/resource
+         racket/file)
 
 (let ()
   (define key "HKEY_CURRENT_USER")
@@ -52,8 +53,18 @@
   (rtest #"i\377mage" get-resource key (entry "Data") #:type 'bytes)
   (rtest 0 get-resource key (entry "Data") #:type 'integer)
 
+  ;; .ini file:
+  (let ([tmp-ini (make-temporary-file "temp~a.ini")])
+    (rtest #f get-resource "Temporary" "Stuff" #f tmp-ini)
+    (rtest #t write-resource "Temporary" "Stuff" "howdy" tmp-ini)
+    (rtest "howdy" get-resource "Temporary" "Stuff" #f tmp-ini)
+    (rtest #f get-resource "Temporary" "more" #f tmp-ini)
+    (rtest #t write-resource "Temporary" "more" 10 tmp-ini)
+    (rtest 10 get-resource "Temporary" "more" #f tmp-ini #:type 'integer)
+    (when (eq? 'windows (system-type))
+      (test "[Temporary]\r\nStuff=howdy\r\nmore=10\r\n" file->string tmp-ini)
+      (delete-file tmp-ini)))
+
   (void))
 
 (report-errs)
-
-  
