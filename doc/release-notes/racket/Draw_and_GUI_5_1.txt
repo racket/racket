@@ -155,6 +155,11 @@ callbacks or outside of an even callback. The continuation barrier and
 jump-defeating `dynamic-wind' that formerly guarded callbacks has been
 removed.
 
+The `on-subwindow-char' and `on-subwindow-event' methods for controls
+are somewhat more restructed in the actions they can take without
+disabling the control's handling of key and mouse events. See the
+documentation for more information.
+
 
 Registry Functions
 -----------------
