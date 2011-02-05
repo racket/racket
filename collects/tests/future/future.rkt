@@ -202,3 +202,15 @@ We should also test deep continuations.
             (future (lambda ()
                       (and (eq? (touch f) f)
                            (current-future)))))))
+
+;; Make sure that `future' doesn't mishandle functions
+;; that aren't be JITted:
+(check-equal?
+ (for/list ([i (in-range 10)]) (void))
+ (map
+  touch
+  (for/list ([i (in-range 10)])
+    (if (even? i)
+        (future void)
+        (future (parameterize ([eval-jit-enabled #f])
+                  (eval #'(lambda () (void)))))))))
