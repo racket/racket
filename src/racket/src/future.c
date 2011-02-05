@@ -642,8 +642,13 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
     }
   }
 
-  nc = (Scheme_Native_Closure*)lambda;
-  ncd = nc->code;
+  if (SAME_TYPE(SCHEME_TYPE(lambda), scheme_native_closure_type)) {
+    nc = (Scheme_Native_Closure*)lambda;
+    ncd = nc->code;
+  } else {
+    nc = NULL;
+    ncd = NULL;
+  }
 
   /* Create the future descriptor and add to the queue as 'pending' */
   ft = MALLOC_ONE_TAGGED(future_t);     
@@ -655,17 +660,18 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   ft->status = PENDING;
    
   /* JIT the code if not already JITted */
-  if (ncd->code == scheme_on_demand_jit_code)
-    {
+  if (ncd) {
+    if (ncd->code == scheme_on_demand_jit_code)
       scheme_on_demand_generate_lambda(nc, 0, NULL);
+  
+    if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
+      /* Can't even call it in a future thread */
+      ft->status = PENDING_OVERSIZE;
     }
 
-  if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
-    /* Can't even call it in a future thread */
+    ft->code = (void*)ncd->code;
+  } else
     ft->status = PENDING_OVERSIZE;
-  }
-
-  ft->code = (void*)ncd->code;
 
   if (ft->status != PENDING_OVERSIZE) {
     mzrt_mutex_lock(fs->future_mutex);
