@@ -1891,6 +1891,17 @@
        0 0 "center" "center"
        (rectangle 10 100 'solid 'blue)))
 
+(test (clear-pinhole
+       (place-image/align
+        (center-pinhole (rectangle 100 10 'solid 'red))
+        0 0 "pinhole" "pinhole"
+        (rectangle 10 100 'solid 'blue)))
+      =>
+      (place-image/align
+       (rectangle 100 10 'solid 'red)
+       0 0 "center" "center"
+       (rectangle 10 100 'solid 'blue)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  test errors.
@@ -2030,18 +2041,7 @@
           =>
           #rx"^underlay/align")
 
-(test/exn (place-image/align
-           (center-pinhole (rectangle 10 100 'solid 'blue))
-           0 0 "pinhole" "center"
-           (rectangle 100 10 'solid 'red))
-          =>
-          #rx"^place-image/align")
-(test/exn (place-image/align
-           (center-pinhole (rectangle 10 100 'solid 'blue))
-           0 0 "center" "pinhole" 
-           (rectangle 100 10 'solid 'red))
-          =>
-          #rx"^place-image/align")
+
 (test/exn (place-image/align
            (rectangle 100 10 'solid 'red)
            0 0 "pinhole" "center"

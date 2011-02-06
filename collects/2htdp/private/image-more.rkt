@@ -382,9 +382,8 @@
 (define/chk (place-image/align image1 x1 y1 x-place y-place image2)
   (when (or (eq? x-place 'pinhole) (eq? y-place 'pinhole))
     (check-dependencies 'place-image/align
-                        (and (send image1 get-pinhole)
-                             (send image2 get-pinhole))
-                        "when x-place or y-place is ~e or ~e, then both of the image arguments must have pinholes"
+                        (send image1 get-pinhole)
+                        "when x-place or y-place is ~e or ~e, the the first image argument must have a pinhole"
                         'pinhole "pinhole"))
   (place-image/internal image1 x1 y1 image2 x-place y-place))
 
