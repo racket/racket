@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 (require "prefix-dispatcher.ss"
-         scheme/cmdline
-         (for-syntax scheme/base))
+         racket/cmdline
+         (for-syntax racket/base))
 
 (provide svn-style-command-line)
 
-;; implements an "svn-style" command-line interface as a wrapper around scheme/cmdline. At the moment,
+;; implements an "svn-style" command-line interface as a wrapper around racket/cmdline. At the moment,
 ;; it is light on error-checking and makes choices that are somewhat specific to the PLaneT commandline
 ;; tool, thus its inclusion in planet/private rather than somewhere more visible. The idea is that you
 ;; write

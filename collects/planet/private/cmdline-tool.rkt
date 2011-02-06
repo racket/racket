@@ -1,18 +1,17 @@
-(module planet mzscheme
-      #|
+#lang racket/base
+#|
 This module contains code that implements the `planet' command-line tool.
   
 PLANNED FEATURES:
 * Disable a package without removing it (disabling meaning
   that if it's a tool it won't start w/ DrRacket, etc)
 |#
-  (require mzlib/string
-           mzlib/file
-           (only racket/path simple-form-path)
-           (only mzlib/list sort)
+  (require (only-in racket/path simple-form-path)
            net/url
-           mzlib/match
+           racket/file
+           racket/match
            raco/command-name
+           (only-in mzlib/string read-from-string)
            
            "../config.rkt"
            "planet-shared.rkt"
@@ -160,7 +159,7 @@ This command does not unpack or install the named .plt file."
       (when (file-exists? pkg)
         (fail "Cannot download, there is a file named ~a in the way" pkg))
       (match (download-package full-pkg-spec)
-        [(#t path maj min) 
+        [(list #t path maj min) 
          (copy-file path pkg)
          (printf "Downloaded ~a package version ~a.~a\n" pkg maj min)]
 	[_ 
@@ -214,7 +213,9 @@ This command does not unpack or install the named .plt file."
         (for-each 
          (lambda (l) (apply printf "  ~a \t~a \t~a ~a\n" l))
          (sort-by-criteria 
-          (map (lambda (x) (match x [(_ owner pkg _ maj min) (list owner pkg maj min)])) normal-packages)
+          (map (lambda (x) (match x [(list _ owner pkg _ maj min)
+                                     (list owner pkg maj min)]))
+               normal-packages)
           (list string<? string=?)
           (list string<? string=?)
           (list < =)
@@ -226,7 +227,8 @@ This command does not unpack or install the named .plt file."
          (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n    --> ~a\n" l))
          (sort-by-criteria 
           (map 
-           (lambda (x) (match x [(dir owner pkg _ maj min) (list owner pkg maj min (path->string dir))]))
+           (lambda (x) (match x [(list dir owner pkg _ maj min)
+                                 (list owner pkg maj min (path->string dir))]))
            devel-link-packages)
           (list string<? string=?)
           (list string<? string=?)
@@ -252,7 +254,7 @@ This command does not unpack or install the named .plt file."
        (for-each 
         (lambda (link) (apply printf "    ~a\t~a\t~a ~a\n" link))
         (cdr module)))
-     (sort (current-linkage) (lambda (a b) (string<? (car a) (car b))))))
+     (sort (current-linkage) string<? #:key car)))
   
   (define (add-hard-link-cmd ownerstr pkgstr majstr minstr pathstr)
     (let* ([maj (read-from-string majstr)]
@@ -300,4 +302,4 @@ This command does not unpack or install the named .plt file."
                [(null? a) #f]
                [((caar c) (car a) (car b)) #t]
                [(not ((cadar c) (car a) (car b))) #f]
-               [else (loop (cdr a) (cdr b) (cdr c))]))))))
+               [else (loop (cdr a) (cdr b) (cdr c))])))))
