@@ -7,6 +7,7 @@ Various common pieces of code that both the client and server need to access
   
   (require (only-in mzlib/file path-only)
 	   mzlib/port
+           racket/file
            setup/getinfo
            (prefix-in srfi1: srfi/1)
            "../config.ss"
@@ -172,6 +173,8 @@ Various common pieces of code that both the client and server need to access
   ;; saves the given table, overwriting any file that might be there
   (define (save-hard-link-table table)
     (verify-well-formed-hard-link-parameter!)
+    (let-values ([(base name dir) (split-path (HARD-LINK-FILE))])
+      (make-directory* base))
     (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
       (lambda ()
         (display "")
