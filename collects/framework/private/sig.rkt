@@ -57,7 +57,10 @@
      
      horizontal-dragable<%>
      horizontal-dragable-mixin
-     horizontal-dragable%))
+     horizontal-dragable%
+
+     splitter<%>
+     splitter-mixin))
   (define-signature panel^ extends panel-class^
     (dragable-container-size
      dragable-place-children))
