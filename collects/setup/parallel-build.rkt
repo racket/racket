@@ -190,7 +190,7 @@
   
 (define (parallel-compile-files list-of-files
   #:worker-count [worker-count (processor-count)]
-  #:handler [handler (lambda args (void))])
+  #:handler [handler void])
 
   (parallel-do-event-loop #f
                           values ; identity function
