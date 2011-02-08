@@ -425,3 +425,15 @@ Includes the identifiers provided by @racketmodname[compiler/embed].}
 @defthing[compiler:embed@ unit?]{
 
 A unit that imports nothing and exports @racket[compiler:embed^].}
+
+@section{Finding the name of the executable}
+
+@defmodule[compiler/find-exe]
+
+@defproc[(find-exe [gracket? boolean?]
+                   [variant (or/c 'cgc '3m) (system-type 'gc)])
+         path?]{
+                                                                 
+  Finds the path to the racket (or gracket) executable.                                                                  
+}
+               

@@ -16,7 +16,8 @@
 	   "private/macfw.ss"
 	   "private/mach-o.ss"
 	   "private/windlldir.ss"
-	   "private/collects-path.ss")
+	   "private/collects-path.ss"
+           "find-exe.rkt")
   
   (provide compiler:embed@)
   
@@ -60,47 +61,6 @@
                         "Contents" "MacOS"
                         (path-replace-suffix name #"")))
           dest))
-    
-    ;; Find executable relative to the "mzlib"
-    ;; collection.
-    (define (find-exe mred? variant)
-      (let* ([base (if mred?
-                       (find-gui-bin-dir)
-                       (find-console-bin-dir))]
-             [fail
-              (lambda ()
-                (error 'create-embedding-executable
-                       "can't find ~a executable for variant ~a"
-                       (if mred? "GRacket" "Racket")
-                       variant))])
-        (let ([exe (build-path
-                    base
-                    (case (system-type)
-                      [(macosx)
-                       (cond
-                         [(not mred?)
-                          ;; Need Racket:
-                          (string-append "racket" (variant-suffix variant #f))]
-                         [mred?
-                          ;; Need GRacket:
-                          (let ([sfx (variant-suffix variant #t)])
-                            (build-path (format "GRacket~a.app" sfx)
-                                        "Contents" "MacOS" 
-                                        (format "GRacket~a" sfx)))])]
-                      [(windows)
-                       (format "~a~a.exe" (if mred?
-                                              "Gracket"
-                                              "Racket")
-                               (variant-suffix variant #t))]
-                      [(unix)
-                       (format "~a~a" (if mred?
-                                          "gracket"
-                                          "racket")
-                               (variant-suffix variant #f))]))])
-          (unless (or (file-exists? exe)
-                      (directory-exists? exe))
-            (fail))
-          exe)))
     
     (define exe-suffix?
       (delay (equal? #"i386-cygwin" (path->bytes (system-library-subpath)))))
