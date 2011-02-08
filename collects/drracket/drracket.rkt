@@ -70,7 +70,10 @@
    (flprintf "PLTDRPAR: loading compilation manager\n")
    (define (files-in-coll coll)
      (define dir (collection-path coll))
-     (map (λ (x) (build-path dir x)) (directory-list dir)))
+     (map (λ (x) (build-path dir x)) 
+          (filter
+           (λ (x) (regexp-match #rx"rkt$" (path->string x)))
+           (directory-list dir))))
    (define-values (make-compilation-manager-load/use-compiled-handler manager-trace-handler)
      (parameterize ([current-namespace (make-base-empty-namespace)])
        (values
@@ -84,7 +87,16 @@
      (parameterize ([current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
        (dynamic-require 'setup/parallel-build 'parallel-compile-files)))
    (flprintf "PLTDRPAR: parallel compile of framework & drracket\n")
-   (parallel-compile-files (append (files-in-coll "drracket") (files-in-coll "framework")))
+   (parallel-compile-files (append (files-in-coll "drracket") (files-in-coll "framework"))
+                           #:handler
+                           (λ (handler-type path msg out err)
+                             (case handler-type
+                               [(done) (void)]
+                               [else
+                                (printf "msg: ~s\n" msg)
+                                (printf "stdout from compiling ~a:\n~a\n" path out)
+                                (flush-output)
+                                (fprintf (current-error-port) "stderr from compiling ~a:\n~a\n" path err)])))
    (flprintf "PLTDRPAR: installing compilation manager\n")
    (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))])
 
