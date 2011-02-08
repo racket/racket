@@ -803,7 +803,7 @@
 		 ;; distinguish between tail & non-tail calls
 		 ;; implement tail calls to "simple" primitives a regular calls
 		 ;; no need to pass anything to tail here because it's already
-		 ;;  a tail value if its a tail-apply
+		 ;;  a tail value if it's a tail-apply
 		 ;; the vm-optimizer will refine the multi-ness of this application,
 		 ;;  and worry about inter & intra-vehicle calls
 		 ;;

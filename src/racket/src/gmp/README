@@ -1,6 +1,6 @@
 This is a portion of the GNU MP Library (a mixture of version 3 and
-4), mostly collapsed into a single file for easy distribution with PLT
-Scheme.
+4), mostly collapsed into a single file for easy distribution with 
+Racket.
 
 Creating a separate file instead of just using the standard GNU MP
 distrbution feels stupid, but experience suggests that it makes life

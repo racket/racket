@@ -917,7 +917,7 @@ pldeco(short int **symbol, PLINT *length, const char *text)
 /*--------------------------------------------------------------------------*\
  * PLINT plP_strpos()
  *
- * Searches string str for first occurence of character chr.  If found
+ * Searches string str for first occurrence of character chr.  If found
  * the position of the character in the string is returned (the first
  * character has position 0).  If the character is not found a -1 is
  * returned.
@@ -937,7 +937,7 @@ plP_strpos(char *str, int chr)
 /*--------------------------------------------------------------------------*\
  * PLINT plP_stindex()
  *
- * Similar to strpos, but searches for occurence of string str2.
+ * Similar to strpos, but searches for occurrence of string str2.
 \*--------------------------------------------------------------------------*/
 
 PLINT

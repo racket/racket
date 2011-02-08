@@ -451,7 +451,7 @@ module browser threading seems wrong.
         (values get-program-editor-mixin
                 add-to-program-editor-mixin)))
     
-    ;; this sends a message to it's frame when it gets the focus
+    ;; this sends a message to its frame when it gets the focus
     (define make-searchable-canvas%
       (λ (%)
         (class %

@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+Version 5.1				  [Tue Feb  8 13:05:17 EST 2011]
+
+* to-draw (old name: on-draw) is now required for big-bang expressions 
+* bug fixes in world, image, etc 
+
+------------------------------------------------------------------------
 Version 5.0.2.  			  [Wed Oct 27 18:30:26 EDT 2010]
 
 * fixed stepper-universe interaction (on my side) 

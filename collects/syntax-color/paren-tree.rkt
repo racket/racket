@@ -38,7 +38,7 @@
       ;; records whose type field is a symbol that indicates which type of
       ;; (opening or closing) parenthesis begins the range being mapped.
       ;; The length field indicates how many characters the actual parenthesis
-      ;; is.  In the special case that there is a region that is not preceeded
+      ;; is.  In the special case that there is a region that is not preceded
       ;; with a parenthesis (that is, the region before the first parenthesis in
       ;; a buffer), the type will be #f, and the length will be 0.
       
@@ -122,7 +122,7 @@
       ;; If it indicates an error, the first two results give the
       ;; starting and stoping positions for error highlighting.
       ;; If all three return #f, then there was no tree to search, or 
-      ;; the position did not immediately preceed an open.
+      ;; the position did not immediately precede an open.
       (define/public (match-forward pos)
         (send tree search! pos)
         (cond

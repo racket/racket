@@ -1249,7 +1249,7 @@ int GC_pthread_join(pthread_t pthread_id, void **retval) {
 }
 
 /* Cygwin-pthreads calls CreateThread internally, but it's not
- * easily interceptible by us..
+ * easily interceptable by us..
  *   so intercept pthread_create instead
  */
 int

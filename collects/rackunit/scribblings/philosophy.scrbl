@@ -110,7 +110,7 @@ which is the ancestor of RackUnit and the most widely used
 frameworks in Java, .Net, Python, and Ruby, and many other
 languages. That this is insufficient for all users is
 apparent if one considers the proliferation of ``simpler''
-testing frameworks in Racket such as SRFI-78, or the
+testing frameworks in Scheme such as SRFI-78, or the
 practice of beginner programmers. Unfortunately these
 simpler methods are inadequate for testing larger
 systems. To the best of my knowledge RackUnit is the only

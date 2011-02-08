@@ -71,9 +71,21 @@ still be there, just not visible?
            (view this)
            (controller controller)))
 
-    ;; for update management
-    (define update-queue (make-hasheq))
+    ;; Update management
+    ;; Do adds in order, then updates in any order (hash).
+
+    ;; add-queue : (listof (-> void))
+    (define add-queue null)
+
+    ;; update-queue : (imm-hashof model<%> #t)
+    (define update-queue '#hasheq())
+
+    ;; update-lock : semaphore
     (define update-lock (make-semaphore 1))
+
+    ;; update-timer : timer%
+    (define update-timer
+      (new timer% (notify-callback (lambda () (process-updates)))))
 
     (send editor lock #t)
     (with-handlers ([exn:fail? void])
@@ -82,12 +94,6 @@ still be there, just not visible?
     (send/i controller controller<%> register-view this)
 
     ;; View Links
-
-    (define/public (create-view-link model parent)
-      (parameterize ((current-eventspace eventspace))
-        (queue-callback
-         (lambda ()
-           (send tree-view create-view-link model parent)))))
 
     (define/private (get-view-link model)
       (send tree-view get-view-link model))
@@ -108,50 +114,57 @@ still be there, just not visible?
 
     ;; Update Management
 
+    ;; create-view-link : model suite-result<%>/#f -> void
+    (define/public (create-view-link model parent)
+      (let ([proc (lambda () (send tree-view create-view-link model parent))])
+        (semaphore-wait update-lock)
+        (set! add-queue (cons proc add-queue))
+        (updates-pending!)
+        (semaphore-post update-lock)))
+
     ;; queue-for-update : model -> void
     (define/public (queue-for-update model)
       (semaphore-wait update-lock)
-      (hash-set! update-queue model #t)
-      (semaphore-post update-lock)
-      (process-updates))
+      (set! update-queue (hash-set update-queue model #t))
+      (updates-pending!)
+      (semaphore-post update-lock))
+
+    ;; updates-pending! : -> void
+    (define/private (updates-pending!)
+      (send update-timer start 50 #t))
 
     ;; process-updates : -> void
+    ;; ** Must be called from eventspace thread.
     (define/private (process-updates)
-      (parameterize ((current-eventspace eventspace))
-        (queue-callback
-         (lambda ()
-           (let ([models-to-update (grab+clear-update-queue)])
-             (for ([model models-to-update])
-               (do-model-update model)))))))
+      (let-values ([(adds updates) (grab+clear-update-queue)])
+        (send (send tree-view get-editor) begin-edit-sequence #f)
+        (for ([add (in-list adds)])
+          (add))
+        (for ([model (in-hash-keys updates)])
+          (do-model-update model))
+        (send (send tree-view get-editor) end-edit-sequence)))
 
-    ;; grab+clear-update-queue : -> void
+    ;; grab+clear-update-queue : -> (values list hash)
     ;; ** Must be called from eventspace thread.
     (define/private (grab+clear-update-queue)
       (semaphore-wait update-lock)
-      (if (positive? (hash-count update-queue))
-          (let ([old-queue update-queue])
-            (set! update-queue (make-hasheq))
-            (semaphore-post update-lock)
-            (reverse
-             (hash-map old-queue (lambda (k v) k))))
-          (begin (semaphore-post update-lock)
-                 null)))
+      (begin0
+          (values (reverse add-queue)
+                  update-queue)
+        (set! add-queue null)
+        (set! update-queue '#hasheq())
+        (semaphore-post update-lock)))
 
     ;; do-model-update : model<%> -> void
     ;; ** Must be called from eventspace thread.
     (define/private (do-model-update model)
       (let ([view-link (get-view-link model)])
-        (cond [view-link
-               (send tree-view update-item view-link)
-               (when (eq? model (get-selected-model))
-                 (show-model model))]
-              [(not view-link)
-               ;; If the view-link has not been created,
-               ;; yield until it is.
-               (unless (yield)
-                 (error 'rackunit-gui
-                        "internal error: no progress waiting for view-link"))
-               (do-model-update model)])))
+        (unless view-link
+          ;; should not be possible
+          (error 'rackunit-gui "internal error: no view-link"))
+        (send tree-view update-item view-link)
+        (when (eq? model (get-selected-model))
+          (show-model model))))
 
     ;; Update display
 
@@ -217,19 +230,22 @@ still be there, just not visible?
 
     ;; Construction
 
-    ;; create-view-link : result<%> suite-result<%>/#f-> item
+    ;; create-view-link : result<%> suite-result<%>/#f-> void
     (define/public (create-view-link model parent)
-      (let ([parent-link
-             (if parent
-                 (get-view-link parent)
-                 this)])
-        (initialize-view-link (cond [(is-a? model suite<%>)
-                                     (send parent-link new-list)]
-                                    [(is-a? model case<%>)
-                                     (send parent-link new-item)])
-                              model)))
+      (let* ([parent-link
+              (if parent
+                  (get-view-link parent)
+                  this)]
+             [view-link
+              (cond [(is-a? model suite<%>)
+                     (send parent-link new-list)]
+                    [(is-a? model case<%>)
+                     (send parent-link new-item)])])
+        (initialize-view-link view-link model)
+        (when (and (is-a? model suite<%>) (not parent))
+          (send view-link open))))
 
-    ;; initialize-view-link : result<%> (U compound-item% item%) -> item
+    ;; initialize-view-link : result<%> (U compound-item% item%) -> void
     (define/private (initialize-view-link item model)
       (set-view-link model item)
       (send item user-data model)

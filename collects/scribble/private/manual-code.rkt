@@ -121,7 +121,7 @@
                      [else null]))]
            [has-hash-lang? (regexp-match? #rx"^#lang " bstr)]
            [language (if has-hash-lang?
-                         (let ([m (regexp-match #rx"^#lang ([-a-zA-Z/._+]+)" bstr)])
+                         (let ([m (regexp-match #rx"^#lang ([-0-9a-zA-Z/._+]+)" bstr)])
                            (if m
                                (link-mod
                                 #:orig? #t

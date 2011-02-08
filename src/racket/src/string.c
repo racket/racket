@@ -113,7 +113,7 @@ static void init_iconv()
     iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
     if (!iconv_errno) {
       /* The iconv.dll distributed with PLT Scheme links to msvcrt.dll.
-	 It's a slighly dangerous assumption that whaetever iconv we
+	 It's a slighly dangerous assumption that whatever iconv we
 	 found also uses msvcrt.dll. */
       m = LoadLibrary("msvcrt.dll");
       if (m) {

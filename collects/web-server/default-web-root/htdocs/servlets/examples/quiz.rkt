@@ -174,7 +174,7 @@
        (extract-binding/single key bindings)))
 
 ;; run-quiz: -> void
-;; run quizes until the student gets tired
+;; run quizzes until the student gets tired
 (define (run-quiz)
   (let ([*questions-per-quiz*
          (if (> *questions-per-quiz* (length all-questions))

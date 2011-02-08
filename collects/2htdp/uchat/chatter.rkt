@@ -20,7 +20,7 @@
  +------------------------------------------------------------------+
 
  Convention: the names of participants may not contain ":". 
- The first typed ":" separates the addressess from the message.
+ The first typed ":" separates the addresses from the message.
  
  TODO:
    -- the editing of too-tall send messages is a bit off screen. 

@@ -8,6 +8,7 @@
            mzlib/list
            scheme/gui/dynamic
            syntax/modread
+           (only racket/snip/private/snip int->img-type)
            "image.ss"
            "editor.ss"
            "private/compat.ss")
@@ -449,7 +450,7 @@
                      [h (read-inexact who port vers "image-snip height")]
                      [dx (read-inexact who port vers "image-snip x-offset")]
                      [dy (read-inexact who port vers "image-snip y-offset")]
-                     [rel? (read-integer who port vers "image-snip relative?")])
+                     [relative (read-integer who port vers "image-snip relative?")])
                  (let ([data
                         (and (and (equal? filename #"")
                                   (cvers . > . 1)
@@ -466,7 +467,10 @@
                                        (loop (add1 i))))))))])
                    (if (header-plain-text? header)
                        #"."
-                       (make-object image% (if data #f filename) data w h dx dy)))))]
+                       (make-object image%
+                         (if data #f filename)
+                         data w h dx dy
+                         relative (int->img-type type))))))]
             [else
              (if (header-skip-content? header)
                  #f

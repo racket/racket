@@ -399,7 +399,7 @@
 	      (cond [(not ival)
 		     (tc-error/expr #:stx #'e
 				    #:return (or expected (ret -Void))
-				    "expected statically known index for heterogenous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
+				    "expected statically known index for heterogeneous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
 		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
 		     (tc-expr/check #'val (ret (list-ref es ival)))
 		     (if expected 
@@ -657,7 +657,7 @@
      (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
                   [tys (reverse tys-r)])
        (ret (foldr make-Pair last tys)))]
-    ;; special case for `reverse' to propogate expected type info
+    ;; special case for `reverse' to propagate expected type info
     [(#%plain-app reverse arg)
      (match expected
        [(tc-result1: (Listof: _))

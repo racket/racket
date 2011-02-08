@@ -307,6 +307,8 @@ typedef struct Thread_Local_Variables {
   struct FFI_Sync_Queue *ffi_sync_queue_;
   struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_descs_;
   struct Scheme_Hash_Table *place_local_misc_table_;
+  int place_evts_array_size_;
+  struct Evt **place_evts_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -619,6 +621,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define ffi_sync_queue XOA (scheme_get_thread_local_variables()->ffi_sync_queue_)
 #define gc_prepost_callback_descs XOA (scheme_get_thread_local_variables()->gc_prepost_callback_descs_)
 #define place_local_misc_table XOA (scheme_get_thread_local_variables()->place_local_misc_table_)
+#define place_evts_array_size XOA (scheme_get_thread_local_variables()->place_evts_array_size_)
+#define place_evts XOA (scheme_get_thread_local_variables()->place_evts_)
 
 /* **************************************** */
 

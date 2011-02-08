@@ -51,7 +51,7 @@ Represents the analyzed profile result.
 @item{@scheme[thread-times] holds an association list mapping thread
   identifiers to cpu time for the corresponding threads.  As samples
   are collected, each thread that is observed is assigned a small
-  integer identifier.  These identifers are listed for each function
+  integer identifier.  These identifiers are listed for each function
   call, and the total time spent in each thread is in this field.}
 
 @item{@scheme[nodes] is a list of nodes representing all observed
@@ -65,7 +65,7 @@ Represents the analyzed profile result.
   constructed for every graph.  This node is used as the caller for
   all top-level function nodes and as the callee for all leaf nodes.
   It can therefore be used to start a scan of the call graph.  In
-  addition, the times associated with it's "callers and callees"
+  addition, the times associated with its "callers and callees"
   actually represent the time these functions spent being the root of
   the computation or its leaf.  (This can be different from a node's
   ``self'' time, since it is divided by the number of instances a

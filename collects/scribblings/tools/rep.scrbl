@@ -60,9 +60,9 @@ submitted at the prompt.
 @methimpl{
 
 The function @scheme[run-loop] is called. It is expected to loop, calling
-it's argument with a thunk that corresponds to the user's
-evaluation. It should call it's argument once for each expression the
-user is evaluating.  It should pass a thunk to it's argument that
+its argument with a thunk that corresponds to the user's
+evaluation. It should call its argument once for each expression the
+user is evaluating.  It should pass a thunk to its argument that
 actually does the users's evaluation.
 
 
@@ -297,7 +297,7 @@ This method resets the highlighting being displayed for this repl. See also:
            void?]{
 @methspec{
 
-This function runs it's arguments in the user evaluation thread. This
+This function runs its arguments in the user evaluation thread. This
 thread is the same as the user's eventspace main thread.
 
 See also  
@@ -369,7 +369,7 @@ interactions windows.}
 @definterface[drracket:rep:context<%> ()]{
 
 Objects that match this interface provide all of the services that the 
-@scheme[drracket:rep:text%] class needs to connect with it's context.
+@scheme[drracket:rep:text%] class needs to connect with its context.
 
 
 

@@ -257,7 +257,7 @@ alignment<%>.
 
 _stretchable-editor-snip-mixin_ gives an editor snip the
 _stretchable-snip<%>_ interface allowing it to be stretched
-to fit it's alignment-parent<%>'s alloted width. Stretchable
+to fit its alignment-parent<%>'s alloted width. Stretchable
 snips are useful as the snip of a snip-wrapper%.
 
 _stretchable-editor-snip%_ is (stretcable-editor-snip-mixin editor-snip%)
@@ -292,7 +292,7 @@ interface and gives it key bindings to tab ahead and back.
 
 The _set-tabbing_ function sets the tabbing order of
 tabbable-text<%>s by setting each text's set-ahead and
-set-back thunks to point to it's neighbor in the argument
+set-back thunks to point to its neighbor in the argument
 list.
 
 > (set-tabbing a-text ...)

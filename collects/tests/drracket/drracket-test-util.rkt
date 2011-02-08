@@ -570,7 +570,7 @@
   
   ;; run-one/sync : (-> A) -> A
   ;; runs the thunk `f' as a test action, and
-  ;; waits for it to complete. Also propogates
+  ;; waits for it to complete. Also propagates
   ;; exceptions.
   (define (run-one/sync f)
     (not-on-eventspace-handler-thread 'repl-in-edit-sequence?)

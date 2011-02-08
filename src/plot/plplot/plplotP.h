@@ -627,12 +627,12 @@ plP_gprec(PLINT *p_setp, PLINT *p_prec);
 PLFLT
 plstrl(const char *string);
 
-/* Similar to strpos, but searches for occurence of string str2. */
+/* Similar to strpos, but searches for occurrence of string str2. */
 
 PLINT
 plP_stindex(const char *str1, const char *str2);
 
-/* Searches string str for first occurence of character chr.  */
+/* Searches string str for first occurrence of character chr.  */
 
 PLINT
 plP_strpos(char *str, int chr);

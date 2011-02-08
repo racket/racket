@@ -7,7 +7,7 @@
 
   #|
   t accepts a function, f, and creates a thread. It returns the thread and a
-  function, g. When g is applied it passes it's argument to f, and evaluates
+  function, g. When g is applied it passes its argument to f, and evaluates
   the call of f in the time of the thread that was created. Calls to g do not
   block.
   |#

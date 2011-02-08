@@ -71,7 +71,7 @@ characters play special roles:
        terminating @litchar{|} is part of the subsequence.}
 
  @item{@as-index{@litchar{\}} outside of a @litchar{|} pair causes
-       the folowing character to be included verbatim in a delimited
+       the following character to be included verbatim in a delimited
        sequence.}
 
 ]
@@ -232,7 +232,7 @@ IEEE floating point is supported (see @secref["numbers"]), the marks
 with any other mark, double-precision IEEE floating point is used.
 In addition, single- and double-precision specials are distinct;
 specials with the @litchar{.0} suffix, like @racket[-nan.0] are
-double-precision, wheras specials with the @litchar{.f} suffix are
+double-precision, whereas specials with the @litchar{.f} suffix are
 single-precision.
 
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
@@ -322,7 +322,7 @@ the recursive reads.
 If the reader finds two data between the matching parentheses
 that are separated by a delimited @litchar{.}, then it creates a
 pair. More generally, if it finds two or more data where the
-last is preceeded by a delimited @litchar{.}, then it constructs
+last is preceded by a delimited @litchar{.}, then it constructs
 nested pairs: the next-to-last element is paired with the last, then
 the third-to-last is paired with that pair, and so on.
 

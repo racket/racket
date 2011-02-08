@@ -294,7 +294,7 @@ A parameter that indicates the target for linking, where
 @defproc[(use-standard-linker (name (one-of/c 'cc 'gcc 'msvc 'borland 'cw)))
          void?]{
 
-Sets the parameters decribed in @secref["link-params"] for a
+Sets the parameters described in @secref["link-params"] for a
 particular known linker.}
 
 

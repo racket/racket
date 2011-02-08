@@ -7,10 +7,12 @@
 (define (snoc x l) (append l (list x)))
 
 ; Define mailboxes
-(define-struct mailbox (manager control msgs))
+(define-struct mailbox (manager control))
 (define (new-mailbox)
   (define control-ch (make-channel))
-  (define msgs-ch (make-async-channel))
+  (define (thread-recv-evt)
+    (handle-evt (thread-receive-evt)
+                (lambda (e) (thread-receive))))
   ; Try to match one message
   (define (try-to-match req msg)
     (match req
@@ -32,7 +34,7 @@
            (list* msg (try-to-match* req msgs)))]))
   ; Accept new messages until we need to match one
   (define (not-on-receive msgs)
-    (sync (handle-evt msgs-ch
+    (sync (handle-evt (thread-recv-evt)
                       (lambda (new-msg)
                         (not-on-receive (snoc new-msg msgs))))
           (handle-evt control-ch
@@ -51,7 +53,7 @@
            [(not timeout) false]
            [(> elapsed timeout) 0]
            [else (/ (- timeout elapsed) 1000.0)]))
-       (define new-msg (sync/timeout wait-time msgs-ch))
+       (define new-msg (sync/timeout wait-time (thread-recv-evt)))
        (if new-msg
            (if (try-to-match req new-msg)
                (not-on-receive msgs)
@@ -63,17 +65,17 @@
     (thread
      (lambda ()
        (not-on-receive empty))))  
-  (make-mailbox manager control-ch msgs-ch))
+  (make-mailbox manager control-ch))
 
 (define-struct receive (reply-ch timeout timeout-thunk matcher))
 (define (mailbox-send! mb msg)
   (match mb
-    [(struct mailbox (thd _ msgs))
+    [(struct mailbox (thd _))
      (thread-resume thd)
-     (async-channel-put msgs msg)]))
+     (thread-send thd msg)]))
 (define (mailbox-receive mb timeout timeout-thunk matcher)
   (match mb
-    [(struct mailbox (thd control _))
+    [(struct mailbox (thd control))
      (define reply-ch (make-channel))
      (thread-resume thd)
      (channel-put control (make-receive reply-ch timeout timeout-thunk matcher))

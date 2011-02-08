@@ -1465,7 +1465,7 @@ path/s is either such a string or a list of them.
 "collects/tests/frtime" responsible (gcooper jay)
 "collects/tests/frtime/time.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/future" responsible (jamesswaine mflatt robby)
-"collects/tests/future/random-future.rkt" drdr:timeout 240
+"collects/tests/future/random-future.rkt" drdr:timeout 480
 "collects/tests/gracket" responsible (mflatt)
 "collects/tests/gracket/auto.rktl" drdr:command-line #f
 "collects/tests/gracket/blits.rkt" drdr:command-line (gracket "-f" *)
@@ -1899,6 +1899,7 @@ path/s is either such a string or a list of them.
 "collects/tests/stepper/already-defined.rktl" drdr:command-line #f
 "collects/tests/stepper/automatic-tests.rkt" drdr:timeout 600
 "collects/tests/stepper/bad-letrec-test.rktl" drdr:command-line #f
+"collects/tests/stepper/big-bang-test.rkt" drdr:command-line (mzc *)
 "collects/tests/stepper/constructor-redexes.rktl" drdr:command-line #f
 "collects/tests/stepper/global-prim-reduction.rktl" drdr:command-line #f
 "collects/tests/stepper/image-test.rktl" drdr:command-line #f

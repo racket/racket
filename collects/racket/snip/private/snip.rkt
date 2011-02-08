@@ -49,7 +49,8 @@
 
          readable-snip<%>
 
-         image-type?)
+         image-type?
+         int->img-type)
 
 ;; these are used only in contracts
 ;; we don't want the real definitions b/c they require the gui
@@ -787,8 +788,7 @@
   (def/override (read [editor-stream-in% f])
     (let ([scl (get-the-snip-class-list)]
           [can-inline? ((send f do-reading-version this) . > . 1)])
-      (let ([filename (let ([s (send f get-bytes #f)])
-                        (subbytes s 0 (max 0 (sub1 (bytes-length s)))))])
+      (let ([filename (send f get-bytes #f)])
         (let-boxes ([type 0]
                     [w 0.0]
                     [h 0.0]
@@ -827,6 +827,9 @@
                             (values filename
                                     (int->img-type type)
                                     #f))])
+            ;; the call to create an image-snip% object
+            ;; here should match the way that super-make-object
+            ;; is called in wxme/image.rkt
             (let ([snip (make-object image-snip% 
                                      (if (equal? loadfile #"")
                                          #f

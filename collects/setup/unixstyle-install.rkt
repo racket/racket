@@ -383,7 +383,7 @@
 (define (move/copy-distribution move?)
   (define do-tree (move/copy-tree move?))
   (current-directory rktdir)
-  (when (ormap (lambda (p) (regexp-match #rx"[.]so" p)) (ls "lib"))
+  (when (ormap (lambda (p) (regexp-match #rx"libracket.*[.]so" p)) (ls "lib"))
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (define binfiles (ls "bin")) ; see below

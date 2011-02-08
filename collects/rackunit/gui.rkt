@@ -4,7 +4,9 @@
          "private/gui/gui.rkt")
 
 (define (test/gui . tests)
-  (apply (make-gui-runner) tests))
+  (let ([runner (make-gui-runner)])
+    (sleep 0.1) ;; give the gui a chance to initialize
+    (apply runner tests)))
 
 (define test/c (or/c rackunit-test-case? rackunit-test-suite?))
 

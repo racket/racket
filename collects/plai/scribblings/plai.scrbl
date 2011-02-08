@@ -157,7 +157,7 @@ The syntax of @scheme[_pred?] is considered @scheme[_expected-value] for the pur
 @defform/subs[(test/exn result-expr error-message)()]{
 
 This test succeeds if the expression evaluates to a call to @scheme[error]. Moreover, the error message contained in the
-exception must contain the string @scheme[_error-message]. Note that @scheme[test/exn] only suceeds if the exception was
+exception must contain the string @scheme[_error-message]. Note that @scheme[test/exn] only succeeds if the exception was
 explicitly raised by the user.
 
 For example, the following test succeeds:

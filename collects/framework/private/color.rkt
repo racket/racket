@@ -297,6 +297,14 @@ added get-regions
                        (get-token in in-start-pos in-lexer-mode)
                        (enable-suspend #t)))])
         (unless (eq? 'eof type)
+          (unless (exact-nonnegative-integer? new-token-start)
+            (error 'color:text<%> "expected an exact nonnegative integer for the token start, got ~e" new-token-start))
+          (unless (exact-nonnegative-integer? new-token-end)
+            (error 'color:text<%> "expected an exact nonnegative integer for the token end, got ~e" new-token-end))
+          (unless (exact-nonnegative-integer? backup-delta)
+            (error 'color:text<%> "expected an exact nonnegative integer for the backup delta, got ~e" backup-delta))
+          (unless (0 . < . (- new-token-end new-token-start))
+            (error 'color:text<%> "expected the distance between the start and end position for each token to be positive, but start was ~e and end was ~e" new-token-start new-token-end))
           (enable-suspend #f)
           #; (printf "~a at ~a to ~a\n" lexeme (+ in-start-pos (sub1 new-token-start))
                      (+ in-start-pos (sub1 new-token-end)))
@@ -825,20 +833,23 @@ added get-regions
 
     (define/public (get-token-range position)
       (define-values (tokens ls) (get-tokens-at-position 'get-token-range position))
-      (values (and tokens (+ (lexer-state-start-pos ls) 
-                             (send tokens get-root-start-position)))
-              (and tokens (+ (lexer-state-start-pos ls)
-                             (send tokens get-root-end-position)))))
+      (values (and tokens ls
+                   (+ (lexer-state-start-pos ls)
+                      (send tokens get-root-start-position)))
+              (and tokens ls
+                   (+ (lexer-state-start-pos ls)
+                      (send tokens get-root-end-position)))))
 
     (define/private (get-tokens-at-position who position)
       (when stopped?
         (error who "called on a color:text<%> whose colorer is stopped."))
       (let ([ls (find-ls position)])
-        (and ls
-             (let ([tokens (lexer-state-tokens ls)])
+        (if ls
+            (let ([tokens (lexer-state-tokens ls)])
                (tokenize-to-pos ls position)
                (send tokens search! (- position (lexer-state-start-pos ls)))
-               (values tokens ls)))))
+              (values tokens ls))
+            (values #f #f))))
     
     (define/private (tokenize-to-pos ls position)
       (when (and (not (lexer-state-up-to-date? ls)) 

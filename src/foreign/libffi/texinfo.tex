@@ -3,7 +3,7 @@
 % Load plain if necessary, i.e., if running under initex.
 \expandafter\ifx\csname fmtname\endcsname\relax\input plain\fi
 %
-\def\texinfoversion{2005-07-05.19}
+\def\texinfoversion{2011-02-02.11}
 %
 % Copyright (C) 1985, 1986, 1988, 1990, 1991, 1992, 1993, 1994, 1995,
 % 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 Free Software
@@ -415,7 +415,7 @@
 \def\argremovecomment#1\comment#2\ArgTerm{\argremovec #1\c\ArgTerm}
 \def\argremovec#1\c#2\ArgTerm{\argcheckspaces#1\^^M\ArgTerm}
 
-% Each occurence of `\^^M' or `<space>\^^M' is replaced by a single space.
+% Each occurrence of `\^^M' or `<space>\^^M' is replaced by a single space.
 %
 % \argremovec might leave us with trailing space, e.g.,
 %    @end itemize  @c foo
@@ -498,7 +498,7 @@
 % used to check whether the current environment is the one expected.
 %
 % Non-false conditionals (@iftex, @ifset) don't fit into this, so they
-% are not treated as enviroments; they don't open a group.  (The
+% are not treated as environments; they don't open a group.  (The
 % implementation of @end takes care not to call \endgroup in this
 % special case.)
 

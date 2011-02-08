@@ -4618,7 +4618,7 @@ so that propagation occurs.
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; provide/contract tests
-  ;; (at the end, becuase they are slow w/out .zo files)
+  ;; (at the end, because they are slow w/out .zo files)
   ;;
   
   (test/spec-passed

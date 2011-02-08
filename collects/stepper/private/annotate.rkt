@@ -613,7 +613,7 @@
       ;     e3))))
       ;
       ; note that this elaboration looks exactly like the one for letrec, and that's
-      ; okay, becuase expand guarantees that reordering them will not cause capture.
+      ; okay, because expand guarantees that reordering them will not cause capture.
       ; this is because a bound variable answers is considered bound by a binding only when
       ; the pair answers true to bound-identifier=?, which is determined during (the first)
       ; expand.

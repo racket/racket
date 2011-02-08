@@ -79,7 +79,7 @@ When @scheme[handler-expr] is omitted, @scheme[%] is the same as
 )]{
 
 Among the earliest operators for higher-order control
-@cite["Felleisen88" "Sitaram90"].
+@cite["Felleisen88a" "Felleisen88" "Sitaram90"].
 
 The essential reduction rules are:
 @schemeblock[
@@ -173,7 +173,7 @@ The essential reduction rules are:
                                    (lambda (_v) (reset0 _E[_v])))
 ]
 
-The @scheme[reset0] and @scheme[prompt0] forms are interchangable.
+The @scheme[reset0] and @scheme[prompt0] forms are interchangeable.
 Furthermore, the following reductions apply:
 
 @schemeblock[

@@ -362,7 +362,7 @@ _modcode.ss_: getting module compiled code
   only a native-code non_loader version exists (i.e., `path' itself
   does not exist). A _loader extension is selected a last resort.
 
-  If an extension is prefered or is the only file that exists, it is
+  If an extension is preferred or is the only file that exists, it is
   supplied to `ext-proc' when `ext-proc' is #f, or an exception is
   raised (to report that an extension file cannot be used) when
   `ext-proc' is #f.

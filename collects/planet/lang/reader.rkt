@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require syntax/module-reader
          "../resolver.ss")
 

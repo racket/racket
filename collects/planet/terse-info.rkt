@@ -3,11 +3,11 @@
 #|
 
 This file is shared between the original
-namespace that drscheme first starts with
+namespace that drracket first starts with
 any other namespaces that it loads,
 so it keeps the requirements low (it could
 be in the '#%kernel language, but 
-drscheme already shares mred/mred, so there
+drracket already shares mred/mred, so there
 seems little point to that).
 
 |#

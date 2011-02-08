@@ -36,7 +36,7 @@
 
 ;; make-2d-renderer : (2d-view% -> void)
 ;; provides a user with the ability to create their own renderers
-;; without providing the implimentation
+;; without providing the implementation
 (define custom identity)
 
 ;;

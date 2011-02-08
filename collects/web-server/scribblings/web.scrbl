@@ -97,7 +97,7 @@ functions of interest for the servlet developer.
                    "+")))))))))
   ]
  Notice that in this example the result of the handlers are returned to the continuation of @racket[send/suspend/dispatch].
- However, it is very common that the return value of @racket[send/suspend/dispatch] is irrevelant in
+ However, it is very common that the return value of @racket[send/suspend/dispatch] is irrelevant in
  your application and you may think of it as ``embedding'' value-less callbacks. Here is the same example in this style:
  @racketblock[
   (define (count-dot-com i)

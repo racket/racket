@@ -374,6 +374,14 @@ Called when this window or a child window receives a keyboard event.
 @method[window<%> on-subwindow-char] method returns @scheme[#f], the event is passed on to the receiver's
  normal key-handling mechanism.
 
+The @scheme[event] argument is the event that was generated for the
+ @scheme[receiver] window.
+
+The atomicity limitation @method[window<%> on-subwindow-event] applies
+ to @method[window<%> on-subwindow-char] as well. That is, an insufficiently cooperative
+ @method[window<%> on-subwindow-char] method can effectively disable
+ a control's handling of key events, even when it returns @racket[#f]
+
 BEWARE: The default
 @xmethod[frame% on-subwindow-char] and
 @xmethod[dialog% on-subwindow-char] methods consume certain keyboard events (e.g., arrow keys, Enter) used
@@ -381,9 +389,6 @@ BEWARE: The default
  the first chance to handle the keyboard event, some events never
  reach the ``receiver'' child unless the default frame or dialog
  method is overridden.
-
-The @scheme[event] argument is the event that was generated for the
- @scheme[receiver] window.
 
 }
 @methimpl{
@@ -408,6 +413,13 @@ Called when this window or a child window receives a mouse event.
 
 The @scheme[event] argument is the event that was generated for the
  @scheme[receiver] window.
+
+If the @method[window<%> on-subwindow-event] method chain does not complete
+ atomically (i.e., without requiring other threads to run) or does not complete
+ fast enough, then the corresponding event may not be delivered to a target
+ control, such as a button. In other words, an insufficiently cooperative
+ @method[window<%> on-subwindow-event] method can effectively disable a
+ control's handling of mouse events, even when it returns @racket[#f].
 
 }
 @methimpl{

@@ -46,7 +46,7 @@ END_XFORM_SKIP;
 #endif
 
 /* We'll get some Scheme primitives so we can calculate with numbers
-   taht are potentially bignums: */
+   that are potentially bignums: */
 static Scheme_Object *mult, *add, *sub, *modulo, *neg;
 
 /* The type tag for bit matrixes, initialized with scheme_make_type */

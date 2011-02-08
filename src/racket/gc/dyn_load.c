@@ -1194,7 +1194,7 @@ void GC_register_dynamic_libraries()
           PCR_IL_LoadedFile * p = PCR_IL_GetLastLoadedFile();
           PCR_IL_LoadedSegment * q;
           
-          /* Skip uncommited files */
+          /* Skip uncommitted files */
           while (p != NIL && !(p -> lf_commitPoint)) {
               /* The loading of this file has not yet been committed	*/
               /* Hence its description could be inconsistent.  		*/

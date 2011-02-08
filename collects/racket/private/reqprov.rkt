@@ -32,7 +32,7 @@
   (define-for-syntax (xlate-path stx)
     (if (pair? (syntax-e stx))
         (let ([kw
-               ;; symbolic-identifier=? identifers are not necessarily free-identifier=?
+               ;; symbolic-identifier=? identifiers are not necessarily free-identifier=?
                (syntax-case stx (lib planet file quote)
                  [(quote . _) 'quote]
                  [(lib . _) 'lib]

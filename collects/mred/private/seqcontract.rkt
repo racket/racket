@@ -410,13 +410,13 @@ Matthew
      set-before ;SetBefore
      set-after ;SetAfter
      ;ReallyCanEdit -- only when op != wxEDIT_COPY
-     ;Refresh has wierd code checking writeLocked -- what does < 0 mean?
+     ;Refresh has weird code checking writeLocked -- what does < 0 mean?
      do-paste ; DoPaste
      paste ; Paste
      insert-port ; InsertPort
      insert-file ; InsertFile
      read-from-file ; ReadFromFile
-     ; BeginEditSequence ;; -- wierd flag check
-     ; EndEditSequence ;; -- wierd flag check, like BeginEditSequence
+     ; BeginEditSequence ;; -- weird flag check
+     ; EndEditSequence ;; -- weird flag check, like BeginEditSequence
   
   |#

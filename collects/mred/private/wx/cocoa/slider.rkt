@@ -8,6 +8,7 @@
          "const.rkt"
          "utils.rkt"
          "window.rkt"
+         "queue.rkt"
          "../common/event.rkt"
          "../common/queue.rkt"
          "../common/freeze.rkt"
@@ -157,6 +158,12 @@
 
   (define/public (update-message [val (get-value)])
     (tellv message-cocoa setTitleWithMnemonic: #:type _NSString (format "~a" val)))
+
+  (inherit get-cocoa-window)
+  (define/override (post-mouse-down)
+    ;; For some reason, dragging a slider disabled mouse-moved
+    ;;  events for the window, so turn them back on:
+    (tellv (get-cocoa-window) setAcceptsMouseMovedEvents: #:type _BOOL #t))
 
   (define/override (maybe-register-as-child parent on?)
     (register-as-child parent on?)))

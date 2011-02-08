@@ -1561,7 +1561,7 @@
      'sql-param-success-with-info
      'sql-param-error
      'sql-param-unused
-     'sql-param-diag-unavilable
+     'sql-param-diag-unavailable
 
 > (get-stmt-option hstmt option)
 

@@ -505,3 +505,119 @@
   
   (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin panel%)))
 
+(define splitter<%> (interface () split-horizontal split-vertical collapse))
+;; we need a private interface so we can use `generic' because `generic'
+;; doesn't work on mixins
+(define splitter-private<%> (interface () self-vertical? self-horizontal?))
+
+(define splitter-mixin
+  (mixin (area-container<%> dragable<%>) (splitter<%> splitter-private<%>)
+    (super-new)
+    (inherit get-children add-child
+             delete-child
+             change-children
+             begin-container-sequence
+             end-container-sequence)
+
+    (field [horizontal-panel% horizontal-dragable%]
+           [vertical-panel% vertical-dragable%])
+
+    (define/public (self-vertical?)
+      (send this get-vertical?))
+    
+    (define/public (self-horizontal?)
+      (not (send this get-vertical?)))
+
+    ;; insert an item into a list after some element
+    ;; FIXME: this is probably a library function somewhere
+    (define/private (insert-after list before item)
+      (let loop ([so-far '()]
+                 [list list])
+        (cond
+          [(null? list) (reverse so-far)]
+          [(eq? (car list) before) (loop (cons item (cons before so-far))
+                                         (cdr list))]
+          [else (loop (cons (car list) so-far) (cdr list))])))
+
+    ;; replace an element with a list of stuff
+    ;; FIXME: this is probably a library function somewhere
+    (define/private (replace list at stuff)
+      (let loop ([so-far '()]
+                 [list list])
+        (cond
+          [(null? list) (reverse so-far)]
+          [(eq? (car list) at) (append (reverse so-far) stuff (cdr list))]
+          [else (loop (cons (car list) so-far) (cdr list))])))
+
+    ;; remove a canvas and merge split panels if necessary
+    ;; TODO: restore percentages
+    (define/public (collapse canvas)
+      (begin-container-sequence)
+      (for ([child (get-children)])
+        (cond
+          [(eq? child canvas)
+           (when (> (length (get-children)) 1)
+             (change-children
+               (lambda (old-children)
+                 (remq canvas old-children))))]
+          [(is-a? child splitter<%>)
+           (send child collapse canvas)]))
+      (change-children
+        (lambda (old-children)
+          (for/list ([child old-children])
+            (if (and (is-a? child splitter<%>)
+                     (= (length (send child get-children)) 1))
+              (let ()
+                (define single (car (send child get-children)))
+                (send single reparent this)
+                single)
+              child))))
+      (end-container-sequence))
+
+    ;; split a canvas by creating a new editor and either
+    ;; 1) adding it to the panel if the panel is already using the same
+    ;;   orientation as the split that is about to occur
+    ;; 2) create a new panel with the orientation of the split about to
+    ;;   occur and add a new editor
+    ;;
+    ;; in both cases the new editor is returned
+    (define/private (do-split canvas maker orientation? orientation% split)
+      (define new-canvas #f)
+      (for ([child (get-children)])
+        (cond
+          [(eq? child canvas)
+           (begin-container-sequence)
+           (change-children
+             (lambda (old-children)
+               (if (send-generic this orientation?)
+                 (let ([new (maker this)])
+                   (set! new-canvas new)
+                   (insert-after old-children child new))
+                 (let ()
+                   (define container (new (splitter-mixin orientation%)
+                                          [parent this]))
+                   (send canvas reparent container)
+                   (define created (maker container))
+                   (set! new-canvas created)
+                   ;; this throws out the old child but we should probably
+                   ;; try to keep it
+                   (replace old-children child (list container))))))
+           (end-container-sequence)]
+
+          [(is-a? child splitter<%>)
+           (let ([something (send-generic child split canvas maker)])
+             (when something
+               (set! new-canvas something)))]))
+        new-canvas)
+
+    ;; canvas (widget -> editor) -> editor
+    (define/public (split-horizontal canvas maker)
+      (do-split canvas maker (generic splitter-private<%> self-horizontal?)
+                horizontal-panel% (generic splitter<%> split-horizontal)))
+
+    ;; canvas (widget -> editor) -> editor
+    (define/public (split-vertical canvas maker)
+      (do-split canvas maker (generic splitter-private<%> self-vertical?)
+                vertical-panel% (generic splitter<%> split-vertical)))
+
+    ))

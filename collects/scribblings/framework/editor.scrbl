@@ -346,7 +346,7 @@
   the filesystem.
 
   The class that this mixin produces uses the same initialization
-  arguments as it's input.
+  arguments as its input.
   @defmethod*[#:mode override (((set-filename (name string) (temp? boolean |#f|)) void))]{
 
     Updates the filename on each frame displaying this editor, for each
@@ -379,7 +379,7 @@
 @definterface[editor:backup-autosave<%> (editor:basic<%>)]{
   Classes matching this interface support backup files and autosaving.
   @defmethod*[(((backup?) boolean?))]{
-    Indicates weather this 
+    Indicates whether this 
     @scheme[editor<%>]
     should be backed up.
 
@@ -392,7 +392,7 @@
 
   }
   @defmethod*[(((autosave?) boolean?))]{
-    Indicates weather this 
+    Indicates whether this 
     @scheme[editor<%>]
     should be autosaved.
 

@@ -1093,7 +1093,7 @@ READ_ONLY static short utable_decomp_indices[] = {
  1863, 1732, -113
 };
 
-/* utable_kompat_decomp_keys identifies characters that have a compatability decomposition;
+/* utable_kompat_decomp_keys identifies characters that have a compatibility decomposition;
    it is sorted, and scheme_needs_decompose() is true for every key (but a character
    with scheme_needs_decompose(), may instead have a mapping in the canonical table.).
    The parallel utable_kompat_decomp_indices maps the corresponding character in this table

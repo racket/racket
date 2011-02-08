@@ -36,7 +36,7 @@
 ;; Compatbility:
 ;;   * recognize 'r5rs, etc, and wrap them as a list.
 ;;   * 'begin form of reqs
-;;   * more agressively extract requires from lang and reqs
+;;   * more aggressively extract requires from lang and reqs
 (define *make-evaluator
   (case-lambda
     [(lang reqs . progs)

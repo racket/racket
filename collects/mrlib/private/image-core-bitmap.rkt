@@ -27,7 +27,7 @@ instead of this scaling code, we use the dc<%>'s scaling code.
  
                   
 ; bmbytes: a bytes which represents an image -- 
-; it's size is a multiple of 4, and each
+; its size is a multiple of 4, and each
 ; four consecutive bytes represent alpha,r,g,b.
 
                   

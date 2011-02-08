@@ -126,7 +126,7 @@
                              (check-hand you (car cards))
                              (send t set-status YOUR-TURN-MESSAGE))))
 
-;; More card setup: Opponents's cards and deck initally can't be moved
+;; More card setup: Opponents's cards and deck initially can't be moved
 (for-each (lambda (card) (send card user-can-move #f))
           (append (player-hand player-1) (player-hand player-2) deck))
 

@@ -117,8 +117,8 @@
             (send -text change-style clickback-style a b)))))
 
     (define/public (add-syntax stx
-                               #:binders [binders #f]
-                               #:shift-table [shift-table #f]
+                               #:binders [binders '#hash()]
+                               #:shift-table [shift-table '#hash()]
                                #:definites [definites #f]
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]

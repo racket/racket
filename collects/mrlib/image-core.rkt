@@ -255,7 +255,7 @@ has been moved out).
                  (or (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
                           (equal? (get-normalized-shape) (send that get-normalized-shape)))
                      (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]    ;; some shapes (ie, rectangles) draw 1 outside the bounding box
-                           [h (+ 1 (round (inexact->exact (bb-bottom bb))))])  ;; so we make the bitmap slightly bigger to accomodate that.
+                           [h (+ 1 (round (inexact->exact (bb-bottom bb))))])  ;; so we make the bitmap slightly bigger to accommodate that.
                        (or ;(zero? w)
                            ;(zero? h)
                            (let ([bm1 (make-bitmap w h #t)]

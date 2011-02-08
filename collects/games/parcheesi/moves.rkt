@@ -396,7 +396,7 @@
                [(safety? end)
                 (bad-move "cannot move onto a safety if someone else is already there")]
                
-               ;; succesful bop
+               ;; successful bop
                [else
                 (values
                  (move-piece2 board

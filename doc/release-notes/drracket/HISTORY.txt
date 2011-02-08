@@ -609,7 +609,7 @@
    language.
 
  - Help Desk's status messages are now in the frame and
-   it's break button is also in the frame (no more modal
+   its break button is also in the frame (no more modal
    dialog)
 
  - Check Syntax now does a better job of navigating amoung
@@ -873,7 +873,7 @@ GENERAL
   now it shows `('a 'a).
 
 - The portion of space between the definitions and
-  interactions window is now interactively changable.
+  interactions window is now interactively changeable.
 
 - the bug report form now connects to bugs.drscheme.org
   instead of cs.rice.edu directly, so earthlink users
@@ -956,13 +956,13 @@ General
 -------
 
  - typing characters in to the definitions and interactions window
-   should be more responsive now (it was noticably slow on slower
+   should be more responsive now (it was noticeably slow on slower
    machines)
 
  - files added to projects are now stored as relative files, 
    by default. (use project menu to change the default)
 
- - project files are saved using a platform-independant syntax for
+ - project files are saved using a platform-independent syntax for
    paths now.
 
  - Using file|open and choosing a project file (based on contents) will open
@@ -1156,7 +1156,7 @@ Tools and Framework
  - framework:
    - added canonicalize-keybinding-string
    - added aug-keymap%, aug-keymap<%>
-   - editor:basic now sets it's keymap to an
+   - editor:basic now sets its keymap to an
      aug-keymap<%> during initialization.
 
  - the framework's info frame mixins no longer require frame:editor<%> 
@@ -1168,7 +1168,7 @@ Tools and Framework
    - ensure-interactions-shown is now ensure-rep-shown
    - do-many-buffer-evals is now do-many-text-evals
 
- - clever-file-format now symetrically changes the file's format to
+ - clever-file-format now symmetrically changes the file's format to
    'standard. It used to rever the file format to 'text when there
    were no more images in it. Now, it also changes back to non-'text
    when images (and other non-string-snips) are added back.

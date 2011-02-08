@@ -627,7 +627,7 @@
 								  l))))
 						  pats (caddr old-list))))
 				     nt-ids patss)
-				    ;; Build a definiton for each non-term:
+				    ;; Build a definition for each non-term:
 				    (loop (cdr clauses)
 					  cfg-start
 					  (map (lambda (nt pats handles $ctxs)

@@ -32,7 +32,7 @@ when the event should just be the value of the first
 argument of the callback. split-*-events/type sets up an
 appropriate split (see FrTime docs for split information,
 GRacket docs for key-event codes and mouse-event types) over
-the type of event occurence.
+the type of event occurrence.
 
                                                     
 events->callbacks and callbacks->args-evts are the backbone

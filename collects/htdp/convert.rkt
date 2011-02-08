@@ -226,7 +226,7 @@
 
 ;; make-reader-for-f : (number -> number) -> ( -> void)
 ;; make-reader-for-f creates a function that reads numbers from a file
-;; converts them accoring to f, and prints the results
+;; converts them according to f, and prints the results
 ;; effect: if any of the S-expressions in the file aren't numbers or
 ;;         if any of f's results aren't numbers,
 ;;         the function signals an error

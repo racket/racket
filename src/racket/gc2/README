@@ -195,7 +195,7 @@ Racket allocates the following kinds of memory objects:
      void GC_free_immobile_box(void **b);
 
 Of course, an implementation of the collector may collapse any of
-these catagories internally.
+these categories internally.
 
 Finalization
 ------------
@@ -226,7 +226,7 @@ The `f' and `data' arguments define the finalizer closure to be called
 for `p'. If a finalizer is already installed for `p', it is replaced,
 and `oldf' and `olddata' are filled with the old closure. If `f' is
 NULL, any existing finalizer is removed and no new one is
-installed. The single-callback rulle applies across level 1 and level
+installed. The single-callback rule applies across level 1 and level
 2 finalizers (but scheme_register_finalizer(), etc., in "salloc.c" can
 merge them).
 

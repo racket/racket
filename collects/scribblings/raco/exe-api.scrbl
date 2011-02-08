@@ -23,7 +23,7 @@
 The @racketmodname[compiler/embed] library provides a function to
 embed Racket code into a copy of Racket or GRacket, thus creating a
 stand-alone Racket executable. To package the executable into a
-distribution that is indpendent of your Racket installation, use
+distribution that is independent of your Racket installation, use
 @racket[assemble-distribution] from
 @racketmodname[compiler/distribute].}
 
@@ -256,7 +256,7 @@ currently supported keys are as follows:
         @racket[#t] means that, to the degree that the generated
         executable must refer to another, it can use a relative path
         (so the executables can be moved together, but not
-        seperately); a @racket[#f] value (the default) means that
+        separately); a @racket[#f] value (the default) means that
         absolute paths should be used (so the generated executable can
         be moved).}
 
@@ -425,3 +425,15 @@ Includes the identifiers provided by @racketmodname[compiler/embed].}
 @defthing[compiler:embed@ unit?]{
 
 A unit that imports nothing and exports @racket[compiler:embed^].}
+
+@section{Finding the name of the executable}
+
+@defmodule[compiler/find-exe]
+
+@defproc[(find-exe [gracket? boolean?]
+                   [variant (or/c 'cgc '3m) (system-type 'gc)])
+         path?]{
+                                                                 
+  Finds the path to the racket (or gracket) executable.                                                                  
+}
+               

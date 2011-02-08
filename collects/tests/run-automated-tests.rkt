@@ -5,7 +5,7 @@
 ;; - Each test is run in its own namespace, but there is very little
 ;;   additional sandboxing.  (There is a timeout of 10 minutes.)
 ;; - Specifically, the I/O ports are not diverted -- so please keep
-;;   output to a minimum, preferrably nothing if there are no errors.
+;;   output to a minimum, preferably nothing if there are no errors.
 ;; - Tests are only running in racket (*not* gracket), but note that
 ;;   they will run with both the default 3m and the CGC executable, and
 ;;   with the JIT enabled and disabled.
@@ -73,7 +73,13 @@
                 (lambda ()
                   (sleep (* 60 timeout))
                   (echo "Timeout!")
-                  (break-thread th)))))
+                  (break-thread th)
+                  (sleep 60)
+                  (echo "  A minute has passed, killing the test thread!")
+                  (kill-thread th)
+                  (sleep 60)
+                  (echo "  Another minute passed, aborting!")
+                  (abort 1 "Goodbye.")))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [current-namespace (make-base-empty-namespace)])

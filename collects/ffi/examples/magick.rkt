@@ -60,7 +60,7 @@
          [(DrawingWand?   w) DrawGetException         ]
          [else (error 'raise-wand-exception "got an unknown value: ~e" w)])
    w)
-  (error 'wand-exception "an undefined error occured with ~e" w))
+  (error 'wand-exception "an undefined error occurred with ~e" w))
 
 (define-fun-syntax _status
   (syntax-id-rules (_status)

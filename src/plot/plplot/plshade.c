@@ -347,8 +347,8 @@ plfshade(PLFLT (*f2eval) (PLINT, PLINT, PLPointer),
  * parameters:
  *
  * f2eval, f2eval_data:  data to plot
- * c2eval, c2eval_data:  defined mask (not implimented)
- * defined: defined mask (old API - implimented)
+ * c2eval, c2eval_data:  defined mask (not implemented)
+ * defined: defined mask (old API - implemented)
  * missing_min, missing_max: yet another way to set data to undefined
  * nx, ny: array dimensions
  * xmin, xmax, ymin, ymax: grid coordinates

@@ -30,7 +30,7 @@
 ;;  Checks a standard-format response, checking for the given
 ;;  expected 3-digit result code if expected is not #f.
 ;;
-;;  While checking, the function sends reponse lines to
+;;  While checking, the function sends response lines to
 ;;  diagnostic-accum. This function -accum functions can return a
 ;;  value that accumulates over multiple calls to the function, and
 ;;  accum-start is used as the initial value. Use `void' and
@@ -178,7 +178,7 @@
     (fprintf (ftp-connection-out tcp-ports) "LIST\n")
     (ftp-check-response (ftp-connection-in tcp-ports)
                         (ftp-connection-out tcp-ports)
-                        #"150" void (void))
+                        (list #"150" #"125") void (void))
     (let ([dir-list (filter-tcp-data tcp-data re:dir-line)])
       (close-input-port tcp-data)
       (ftp-check-response (ftp-connection-in tcp-ports)
@@ -205,7 +205,7 @@
     (display tcpstring (ftp-connection-out tcp-ports))
     (ftp-check-response (ftp-connection-in tcp-ports)
                         (ftp-connection-out tcp-ports)
-                        #"150" print-msg (void))
+                        (list #"125" #"150") print-msg (void))
     (copy-port tcp-data new-file)
     (close-output-port new-file)
     (close-input-port tcp-data)

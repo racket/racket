@@ -33,7 +33,7 @@ place.
 
 When a marker is inserted, there may be a marker on the square where
 the insertion takes place.  In this case, all markers on the insertion
-row or column from the insertion square upto the first empty square
+row or column from the insertion square up to the first empty square
 are moved one square further to make room for the inserted marker.
 Note that the last marker of the row or column will be pushed off the
 board (and must be removed from play) if there are no empty squares on

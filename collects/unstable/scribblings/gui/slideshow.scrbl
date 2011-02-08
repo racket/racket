@@ -159,7 +159,7 @@ Shades @scheme[pict] to show with @scheme[ratio] of its normal opacity; if
 These pict control flow operators decide which pict of several to use.  All
 branches are evaluated; the resulting pict is a combination of the pict chosen
 by normal conditional flow with @scheme[ghost] applied to all the other picts.
-The result is a picture large enough to accomodate each alternative, but showing
+The result is a picture large enough to accommodate each alternative, but showing
 only the chosen one.  This is useful for staged slides, as the pict chosen may
 change with each slide but its size and position will not.
 

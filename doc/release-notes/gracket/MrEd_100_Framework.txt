@@ -115,7 +115,7 @@ The moved functions and classes are:
   mred:graph-pasteboard% 
   mred:node-snip% 
 
-The remaining existant classes: 
+The remaining existent classes: 
   
   frame:empty% = (frame:make-empty% frame%)
   frame:standard-menus% = (frame:make-standard-menus% frame:empty%)

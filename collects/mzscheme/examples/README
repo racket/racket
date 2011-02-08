@@ -28,7 +28,7 @@ end use the mzc `c-lambda', etc. forms.
    exceptions while evaluating a string. Demonstrates how to catch
    exceptions from C code.
 
- * bitmatrix.c - implements two-dimentional bit matrixes with some
+ * bitmatrix.c - implements two-dimensional bit matrixes with some
    operations. Demonstrates defining a new Scheme data type, data
    allocation, fancy integer type checking, general exception raising,
    and registering static variables. Also demonstrates supplying

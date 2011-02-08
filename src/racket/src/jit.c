@@ -920,7 +920,7 @@ static void *top4;
    that multiple adjustments to the register can be collapsed; this
    mostly improves code size, rather than speed. Functions that cause
    the register to be de-sync'd are marked as such. Functions that can
-   accomodate a de-sync'd register on entry are marked as such. All
+   accommodate a de-sync'd register on entry are marked as such. All
    other fuctions can assume a sync'd regsiter and ensure a sync'd
    register. Note that branches and calls normally require a sync'd
    register. */
@@ -1929,7 +1929,7 @@ void *scheme_save_lightweight_continuation_stack(Scheme_Current_LWC *lwc)
   XFORM_SKIP_PROC
 /* This function assumes that lwc won't move during an
    allocation. Also, if allocation fails, it can abort and return
-   NULL, so it can work in a thread for runing futures (where
+   NULL, so it can work in a thread for running futures (where
    allocation and GC in general are disallowed). */
 
 {
@@ -5302,7 +5302,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
    If rand is NULL, then we're generating part of the fast path for an
    nary arithmatic over a binary operator; the first argument is
    already in R0 (fixnum or min/max) or a floating-point register
-   (flonum) and the second arguement is in R1 (fixnum or min/max) or a
+   (flonum) and the second argument is in R1 (fixnum or min/max) or a
    floating-point register (flonum).
    For unsafe_fx or unsafe_fl, -1 means safe but specific to the type.
 */
@@ -7780,7 +7780,7 @@ static int generate_three_args(Scheme_App_Rec *app, mz_jit_state *jitter)
 
   if (c1 && c2) {
     /* we expect this to be a common case for `vector-set!'-like operations,
-       where the vector and index are immediate and teh value is computed */
+       where the vector and index are immediate and the value is computed */
     mz_runstack_skipped(jitter, 2);
     mz_rs_dec(1); /* no sync */
     CHECK_RUNSTACK_OVERFLOW();

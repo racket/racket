@@ -22,7 +22,7 @@
 /* This file implements Racket threads.
 
    Usually, Racket threads are implemented by copying the stack.
-   The scheme_thread_block() function is called occassionally by the
+   The scheme_thread_block() function is called occasionally by the
    evaluator so that the current thread can be swapped out.
    do_swap_thread() performs the actual swap. Threads can also be
    implemented by the OS; the bottom part of this file contains
@@ -239,6 +239,10 @@ THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
 
 THREAD_LOCAL_DECL(struct Scheme_Hash_Table *place_local_misc_table);
+
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+extern intptr_t GC_is_place();
+#endif
 
 
 #ifdef MZ_PRECISE_GC
@@ -4051,6 +4055,9 @@ static void call_on_atomic_timeout(int must)
   Scheme_Object *blocker;
   Scheme_Ready_Fun block_check;
   Scheme_Needs_Wakeup_Fun block_needs_wakeup;
+  Scheme_Kill_Action_Func private_on_kill;
+  void *private_kill_data;
+  void **private_kill_next;
 
   /* Save any state that has to do with the thread blocking or 
      sleeping, in case scheme_on_atomic_timeout() runs Racket code. */
@@ -4061,6 +4068,10 @@ static void call_on_atomic_timeout(int must)
   blocker = p->blocker;
   block_check = p->block_check;
   block_needs_wakeup = p->block_needs_wakeup;
+
+  private_on_kill = p->private_on_kill;
+  private_kill_data = p->private_kill_data;
+  private_kill_next = p->private_kill_next;
 
   p->running = MZTHREAD_RUNNING;
   p->sleep_end = 0.0;
@@ -4077,6 +4088,10 @@ static void call_on_atomic_timeout(int must)
   p->blocker = blocker;
   p->block_check = block_check;
   p->block_needs_wakeup = block_needs_wakeup;
+
+  p->private_on_kill = private_on_kill;
+  p->private_kill_data = private_kill_data;
+  p->private_kill_next = private_kill_next;
 }
 
 static void find_next_thread(Scheme_Thread **return_arg) {
@@ -4321,7 +4336,7 @@ void scheme_thread_block(float sleep_time)
   if (next && (!next->running || (next->running & MZTHREAD_SUSPENDED))) {
     /* In the process of selecting another thread, it was suspended or
        removed. Very unusual, but possible if a block checker does
-       stange things??? */
+       strange things??? */
     next = NULL;
   }
 
@@ -5435,31 +5450,31 @@ typedef struct Evt {
 
 
 /* PLACE_THREAD_DECL */
-FIXME_LATER static int evts_array_size;
-FIXME_LATER static Evt **evts;
+static int evts_array_size;
+static Evt **evts;
+THREAD_LOCAL_DECL(static int place_evts_array_size);
+THREAD_LOCAL_DECL(static Evt **place_evts);
 
-void scheme_add_evt(Scheme_Type type,
-		    Scheme_Ready_Fun ready, 
-		    Scheme_Needs_Wakeup_Fun wakeup, 
-		    Scheme_Sync_Filter_Fun filter,
-		    int can_redirect)
+void scheme_add_evt_worker(Evt ***evt_array,
+                           int *evt_size,
+                           Scheme_Type type,
+                           Scheme_Ready_Fun ready, 
+                           Scheme_Needs_Wakeup_Fun wakeup, 
+                           Scheme_Sync_Filter_Fun filter,
+                           int can_redirect)
 {
   Evt *naya;
 
-  if (!evts) {
-    REGISTER_SO(evts);
-  }
-
-  if (evts_array_size <= type) {
+  if (*evt_size <= type) {
     Evt **nevts;
     int new_size;
     new_size = type + 1;
     if (new_size < _scheme_last_type_)
       new_size = _scheme_last_type_;
     nevts = MALLOC_N(Evt*, new_size);
-    memcpy(nevts, evts, evts_array_size * sizeof(Evt*));
-    evts = nevts;
-    evts_array_size = new_size;
+    memcpy(nevts, (*evt_array), (*evt_size) * sizeof(Evt*));
+    (*evt_array) = nevts;
+    (*evt_size) = new_size;
   }
 
   naya = MALLOC_ONE_RT(Evt);
@@ -5472,7 +5487,31 @@ void scheme_add_evt(Scheme_Type type,
   naya->filter = filter;
   naya->can_redirect = can_redirect;
 
-  evts[type] = naya;
+  (*evt_array)[type] = naya;
+}
+
+void scheme_add_evt(Scheme_Type type,
+		    Scheme_Ready_Fun ready, 
+		    Scheme_Needs_Wakeup_Fun wakeup, 
+		    Scheme_Sync_Filter_Fun filter,
+		    int can_redirect)
+{
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  if (GC_is_place()) {
+    if (!place_evts) {
+      REGISTER_SO(place_evts);
+    }
+    scheme_add_evt_worker(&place_evts, &place_evts_array_size, type, ready, wakeup, filter, can_redirect);
+  }
+  else {
+#endif
+    if (!evts) {
+      REGISTER_SO(evts);
+    }
+    scheme_add_evt_worker(&evts, &evts_array_size, type, ready, wakeup, filter, can_redirect);
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  }
+#endif
 }
 
 void scheme_add_evt_through_sema(Scheme_Type type,
@@ -5486,21 +5525,23 @@ void scheme_add_evt_through_sema(Scheme_Type type,
 static Evt *find_evt(Scheme_Object *o)
 {
   Scheme_Type t;
-  Evt *w;
+  Evt *w = NULL;
 
   t = SCHEME_TYPE(o);
-  w = evts[t];
-  if (w) {
-    if (w->filter) {
-      Scheme_Sync_Filter_Fun filter;
-      filter = w->filter;
-      if (!filter(o))
-	return NULL;
-    }
-    return w;
-  }
+  if (t < evts_array_size)
+    w = evts[t];
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  if (place_evts && w == NULL)
+    w = place_evts[t];
+#endif
 
-  return NULL;
+  if (w && w->filter) {
+    Scheme_Sync_Filter_Fun filter;
+    filter = w->filter;
+    if (!filter(o))
+      return NULL;
+  }
+  return w;
 }
 
 int scheme_is_evt(Scheme_Object *o)

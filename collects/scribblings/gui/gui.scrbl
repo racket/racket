@@ -10,7 +10,8 @@
 @defmodule*/no-declare[(racket/gui/base)]{The
 @racketmodname[racket/gui/base] library provides all of the class,
 interface, and procedure bindings defined in this manual, in addition
-to the bindings of @racketmodname[racket/draw].}
+to the bindings of @racketmodname[racket/draw] and 
+@racketmodname[file/resource].}
 
 @defmodulelang*/no-declare[(racket/gui)]{The
 @racketmodname[racket/gui] language combines all bindings of the

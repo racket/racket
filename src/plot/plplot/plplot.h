@@ -387,7 +387,7 @@ typedef struct {
  * change the object names, but then everybody who wants to use the
  * package must throw these same switches, leading to no end of trouble.
  *
- * Note that this definition should not cause any noticable effects except
+ * Note that this definition should not cause any noticeable effects except
  * when debugging PLplot calls, in which case you will need to remember
  * the real function names (same as before but with a 'c_' prepended).
  *

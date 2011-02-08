@@ -18,7 +18,7 @@
    declaring scheme_extension_table */
 
 /* The scheme_extension_table "parser" is picky; don't leave a space
-   between a function name and it's opening parameter parenthesis. */
+   between a function name and its opening parameter parenthesis. */
 
 /* After this START tag, all comments should start & end on same line */
 

@@ -1431,7 +1431,7 @@
 		   
       )
 
-      ;; This shouldnt do anything, but it fixes drawing in 
+      ;; This shouldn't do anything, but it fixes drawing in 
       ;; Snow Leopard. Bug in the game or in Snow Leopard?
       (glEnable GL_LIGHT2)
       (glDisable GL_LIGHT2)

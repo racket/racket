@@ -121,7 +121,7 @@
                   ;; newlines can break things (ie the language text won't 
                   ;; be in the right place in the interactions window, which
                   ;; at least makes the test suites unhappy), so get rid of 
-                  ;; them from the name. Otherwise, if there is some wierd formatting,
+                  ;; them from the name. Otherwise, if there is some weird formatting,
                   ;; so be it.
                   (regexp-replace* #rx"[\r\n]+"
                                    (substring str (cdr (car pos)) (string-length str))

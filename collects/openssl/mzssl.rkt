@@ -185,7 +185,7 @@
   (define-mzscheme scheme_end_atomic (-> _void))
   (define-mzscheme scheme_make_custodian (_pointer -> _scheme))
 
-  ;; Make this bigger than 4096 to accomodate at least
+  ;; Make this bigger than 4096 to accommodate at least
   ;; 4096 of unencrypted data
   (define BUFFER-SIZE 8000)
 

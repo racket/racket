@@ -103,7 +103,7 @@ of each collection's @filepath{info.rkt} file (see @secref["info.rkt"]):
  version sequence specified in the corresponding @racket[vers].
 
  A collection's version is indicated by a @racket[version] field in
- it's @filepath{info.ss} file, and the default version is the empty list.
+ its @filepath{info.ss} file, and the default version is the empty list.
  The version sequence generalized major and minor version numbers. For
  example, version @racket['(2 5 4 7)] of a collection can be used when
  any of @racket['()], @racket['(2)], @racket['(2 5)], @racket['(2 5

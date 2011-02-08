@@ -99,7 +99,7 @@ For example
 ]
 
 moves a turtle forward 100 pixel while drawing a line, and then moves
-the turtle be immediately back to it's original position. Similarly,
+the turtle be immediately back to its original position. Similarly,
 
 @schemeblock[
 (tprompt (split (turn/radians (/ pi 2))))

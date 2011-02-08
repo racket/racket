@@ -50,7 +50,7 @@
                        (get-aligned-min-sizes type (find-first-snip)))))
       
       ;; set-algined-min-sizes (-> void?)
-      ;; set the aligned min width and height of the pasteboard based on it's children snips
+      ;; set the aligned min width and height of the pasteboard based on its children snips
       (inherit in-edit-sequence?)
       (define/public (aligned-min-sizes-invalid)
         ;; This in-edit-sequence? is not sound. It causes me to percollate invalidation

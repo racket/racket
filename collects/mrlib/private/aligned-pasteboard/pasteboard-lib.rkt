@@ -27,7 +27,7 @@
         [else pasteboard])))
 
   ;; gets the canvas or snip that the pasteboard is displayed in
-  ;; status: what if there is more than one canvas? should this be allowed? probablly not.
+  ;; status: what if there is more than one canvas? should this be allowed? probably not.
   (define (pasteboard-parent pasteboard)
     (let ([admin (send pasteboard get-admin)])
       (cond

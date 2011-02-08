@@ -1314,7 +1314,7 @@ Refined error messages
 Version 49, May 31, 1997 
 Multiple superclass inheritance is no longer supported
 Added (Java-ish) interfaces to object system
-class* syntax changed to accomodate interfaces and removed
+class* syntax changed to accommodate interfaces and removed
   multiple superclasses
 uq-ivar always takes two arguments; class is not a legal argument
 uq-make-generic accepts a class or an interface
@@ -1460,7 +1460,7 @@ stdout/stderr are not auto-flushed for read-char or peek-char on stdin
 Added port-display-handler and port-write-handler
 
 Version 45, November 12, 1996
-Multiple return values are agressively supported
+Multiple return values are aggressively supported
 IMPORTANT: let-values is now analogous to let; the old 
   let-values is now let*-values
 let-values, letrec-values, define-values, and begin0 are primitive
@@ -1626,7 +1626,7 @@ Version 0.33: December 21, 1995
 rationals and complex numbers supported
 make-class and make-class* syntax changed (one set of parens
   added). The old syntax is still supported for now, but you
-  should convert. The old syntax will eventualy go away (and
+  should convert. The old syntax will eventually go away (and
   Zodiac will never be compatible with it).
 class variables and cvar no longer allowed
 ivar always takes an object; if class included, must be first

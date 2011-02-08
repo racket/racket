@@ -720,7 +720,7 @@
   (test-values '(() (#:kw)) (lambda () (procedure-keywords (make-a 1 2)))))
 
 ;; ------------------------------------------------------------
-;; Check that struct definiton sequences work:
+;; Check that struct definition sequences work:
 
 (let ()
   (define-struct a (x y))

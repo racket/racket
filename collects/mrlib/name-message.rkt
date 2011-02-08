@@ -255,7 +255,7 @@
           (+ border-inset 
              circle-spacer
              button-label-inset
-             (if (eq? (system-type) 'windows) 1 0)  ;; becuase "(define ...)" has the wrong size under windows
+             (if (eq? (system-type) 'windows) 1 0)  ;; because "(define ...)" has the wrong size under windows
              (max 0 (inexact->exact (ceiling tw)))
              button-label-inset
              triangle-width

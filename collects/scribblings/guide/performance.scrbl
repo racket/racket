@@ -64,10 +64,10 @@ The module system aids optimization by helping to ensure that
 identifiers have the usual bindings. That is, the @racket[+] provided
 by @racketmodname[racket/base] can be recognized by the compiler and
 inlined, which is especially important for @tech{JIT}-compiled code.
-In contrast, in a traditional interactive Racket system, the top-level
+In contrast, in a traditional interactive Scheme system, the top-level
 @racket[+] binding might be redefined, so the compiler cannot assume a
 fixed @racket[+] binding (unless special flags or declarations
-act as a poor-man's module system to indicate otherwise).
+are used to compensate for the lack of a module system).
 
 Even in the top-level environment, importing with @racket[require]
 enables some inlining optimizations. Although a @racket[+] definition
@@ -76,7 +76,7 @@ definition applies only to expressions evaluated later.
 
 Within a module, inlining and constant-propagation optimizations take
 additional advantage of the fact that definitions within a module
-cannot be mutated when no @racket[set!] is visable at compile
+cannot be mutated when no @racket[set!] is visible at compile
 time. Such optimizations are unavailable in the top-level
 environment. Although this optimization within modules is important
 for performance, it hinders some forms of interactive development and

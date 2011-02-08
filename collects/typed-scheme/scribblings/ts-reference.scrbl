@@ -442,7 +442,7 @@ can be used anywhere a definition form may be used.}
 the types @racket[t], and also provides all of the @racket[v]s.}
 
 @litchar{#{v : t}} This declares that the variable @racket[v] has type
-@racket[t].  This is legal only for binding occurences of @racket[_v].
+@racket[t].  This is legal only for binding occurrences of @racket[_v].
 
 @defform[(ann e t)]{Ensure that @racket[e] has type @racket[t], or
 some subtype.  The entire expression has type @racket[t].

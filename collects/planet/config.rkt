@@ -14,7 +14,7 @@
     (CACHE-DIR                (build-path (PLANET-DIR) "cache"))
     (UNINSTALLED-PACKAGE-CACHE (build-path (PLANET-BASE-DIR) "packages"))
     (LINKAGE-FILE             (build-path (PLANET-DIR) "LINKAGE"))
-    (HARD-LINK-FILE           (build-path (PLANET-BASE-DIR) "HARD-LINKS"))
+    (HARD-LINK-FILE           (build-path (PLANET-BASE-DIR) (version) "HARD-LINKS"))
     (LOGGING-ENABLED?         #t)
     (LOG-FILE                 (build-path (PLANET-DIR) "INSTALL-LOG"))
     (DEFAULT-PACKAGE-LANGUAGE (version))

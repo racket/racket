@@ -1729,10 +1729,10 @@
               (set-box! h total-height))
             (send s-admin get-view x y w h #t))
       (let ([w (if (w . > . 1000.0)
-                   500.0 ; don't belive it
+                   500.0 ; don't believe it
                    w)]
             [h (if (h . > . 1000.0)
-                   500.0 ; don't belive it
+                   500.0 ; don't believe it
                    h)])
         (values (/ w 2)
                 (/ h 2)))))

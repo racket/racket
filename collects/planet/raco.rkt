@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "private/cmdline-tool.rkt")
 
 (with-handlers ([exn:fail? 

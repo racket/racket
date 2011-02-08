@@ -260,7 +260,7 @@ scheme_init_number (Scheme_Env *env)
 #endif
 #ifdef IGNORE_BY_MS_CONTROL_87
   /* Shouldn't be necessary, because the C library
-     should do this, but explictly masking exceptions
+     should do this, but explicitly masking exceptions
      makes Racket work under Bochs 2.1.1 with Win95 */
   _control87(_MCW_EM, _MCW_EM);
 #endif

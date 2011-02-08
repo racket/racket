@@ -484,6 +484,13 @@ GC2_EXTERN void GC_adopt_message_allocator(void *msg_memory);
    the current receiving place's gc
 */
 
+GC2_EXTERN intptr_t GC_is_place();
+/*
+   Returns 1 if current GC is a place gc.
+   Otherwise returns 0;
+*/
+
+
 
 # ifdef __cplusplus
 };

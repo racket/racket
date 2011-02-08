@@ -214,7 +214,7 @@
       mentioned above, for other platforms or something other than retrieving a
       full build.
     @~
-      This script will retreive and install a new build only when one is ready.
+      This script will retrieve and install a new build only when one is ready.
       It is suitable for running periodically via a crontab entry.  For
       example, save it in @tt{~/bin/update-full-racket}, run @tt{crontab -e} to
       edit your @tt{crontab} entries, and add a line that looks like this:
@@ -235,8 +235,8 @@
             @~ Use variable definitions to make customization easy.
             @~ Usages of @tt{$URL} and others are quoted in case they will ever
                contain spaces.
-            @~ If we fail to retreive a file, we quit the script.
-            @~ Use a temporary directory to retreive the tree, and then move it
+            @~ If we fail to retrieve a file, we quit the script.
+            @~ Use a temporary directory to retrieve the tree, and then move it
                to its real place (so if it fails we don't end up with no
                @tt{racket}) through renaming (if we delete @tt{racket} and then
                rename the new one, we might fail halfway into the deletion).

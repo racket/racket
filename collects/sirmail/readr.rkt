@@ -2010,7 +2010,7 @@
                  (sleep 10)
                  (loop)))))))
 
-      ;; copied from framerok/private/frame.sss -- be sure to propogate fixes....
+      ;; copied from framerok/private/frame.sss -- be sure to propagate fixes....
       ;; or establish single point of control.
       (define (format-number n)
 	(if n

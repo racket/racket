@@ -416,7 +416,7 @@ Also added the timing code at the end.
 
 
 ;;purpose :given the board ,square to be played,column and row label and returns a new board 
-;;with the square to be  played at the position reffered
+;;with the square to be  played at the position referred
 ;; play-on-board : board square symbol symbol -> board
 
 ;;test

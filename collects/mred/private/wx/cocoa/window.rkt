@@ -98,7 +98,10 @@
   [wxb]
   [-a _void (mouseDown: [_id event]) 
       (unless (do-mouse-event wxb event 'left-down #t #f #f 'right-down)
-        (super-tell #:type _void mouseDown: event))]
+        (super-tell #:type _void mouseDown: event)
+        (let ([wx (->wx wxb)])
+         (when wx
+           (send wx post-mouse-down))))]
   [-a _void (mouseUp: [_id event]) 
       (unless (do-mouse-event wxb event 'left-up #f #f #f 'right-up)
         (super-tell #:type _void mouseUp: event))]
@@ -726,6 +729,8 @@
                              [time-stamp (current-milliseconds)] ; FIXME
                              [caps-down #f])
                         #f))
+
+    (define/public (post-mouse-down) (void))
 
     (define/public (on-char s) (void))
     (define/public (on-event m) (void))

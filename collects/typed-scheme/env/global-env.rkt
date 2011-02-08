@@ -67,7 +67,7 @@
 
 (define (finish-register-type id)
   (unless (maybe-finish-register-type id)
-    (tc-error/expr #:stx id "Duplicate defintion for ~a" (syntax-e id)))
+    (tc-error/expr #:stx id "Duplicate definition for ~a" (syntax-e id)))
   (void))
 
 (define (check-all-registered-types)

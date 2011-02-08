@@ -14,7 +14,7 @@
                            (= (string-length x)
                               1)))))]{
 
-  This is an assocation list mapping the shortcut strings that
+  This is an association list mapping the shortcut strings that
   DrRacket uses with its @tt{control-\} (or @tt{command-\}) strings to
   their corresponding unicode characters. For example, it contains
   this mapping:

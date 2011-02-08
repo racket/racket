@@ -6,6 +6,7 @@
           (for-label racket/base
                      racket/include
                      racket/contract
+                     racket/future
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build))
@@ -363,27 +364,31 @@ parallel builder should continue without compiling @racket[zo-path].
 @defmodule[setup/parallel-build]{
 
 The @schememodname[setup/parallel-build] library provides the parallel compilation to bytecode
-functionality of @exec{rack setup} and @exec{rack make}.}
+functionality of @exec{rack setup} and @exec{raco make}.}
 
 @; ----------------------------------------------------------------------
 
 
 @defproc[(parallel-compile-files [list-of-files (listof path?)] 
-  [#:worker-count worker-count non-negative-integer?] 
-  [#:handler handler ([handler-type symbol?]
-                      [path path-string?]
-                      [msg string?] 
-                      [out string?] 
-                      [err string?] -> void?)]) void?]{
+                                 [#:worker-count worker-count non-negative-integer? (processor-count)] 
+                                 [#:handler handler (->i ([handler-type symbol?]
+                                                          [path path-string?]
+                                                          [msg string?] 
+                                                          [out string?] 
+                                                          [err string?])
+                                                         void?)
+                                            void])
+         void?]{
 
-The @racket[parallel-compile] utility function is used by @exec{rack make} to
+The @racket[parallel-compile] utility function is used by @exec{raco make} to
 compile a list of paths in parallel.  The optional keyword argument
 @racket[#:worker-count] specifies the number of compile workers to spawn during
-parallel compilation.  The callback, @racket[handler], is called with type
-@racket['done] for each successfully compiled file, @racket['output] when a
+parallel compilation.  The callback, @racket[handler], is called with the symbol
+@racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
+@racket['output] when a
 successful compilation produces stdout/stderr output, @racket['error] when a
 compilation error has occured, or @racket['fatal-error] when a unrecoverable
-error occurs.
+error occurs. The other arguments give more information for each status update.
  
   @racketblock[
     (parallel-compile-files 
