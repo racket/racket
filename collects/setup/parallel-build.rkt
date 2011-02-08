@@ -7,7 +7,8 @@
          setup/collects
          setup/parallel-do
          racket/class
-         racket/future)
+         racket/future
+         compiler/find-exe)
 
 (provide parallel-compile
          parallel-compile-files)
@@ -182,7 +183,7 @@
 
 
 (define (build-parallel-build-worker-args)
-  (list (current-executable-path)
+  (list (find-exe #f)
         "-X"
         (path->string (current-collects-path))
         "-l"
