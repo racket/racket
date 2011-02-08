@@ -3,12 +3,10 @@
 (require 2htdp/universe 2htdp/image (only-in lang/imageeq image=?))
 
 (define (draw-number n)
-  (place-image (text (number->string n) 44 'red)
-               50 50
-               (empty-scene 100 100)))
+  (place-image (text (number->string n) 44 'red) 50 50 (empty-scene 100 100)))
 
 (define (draw-stop n)
-  stop)
+  (place-image stop 50 50 (empty-scene 100 100)))
 (define stop (text "STOP" 44 'red))
 
 
@@ -28,7 +26,7 @@
             (on-draw draw-number)
             (record? dir)))
 (sleep 1)
-(unless (image=? (bitmap "images0/i1.png") (draw-number 0))
+(unless (image=? (bitmap "images0/i1.png") (draw-stop 5))
   (fprintf (current-error-port)
-           "this test needs to be revised -- image=? doesn't work\n"))
+           "this test needs to be revised -- the way 'world' writes images adds an extra pixel -- think! \n"))
 
