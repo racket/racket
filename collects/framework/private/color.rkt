@@ -320,7 +320,7 @@ added get-regions
                             (sp (+ in-start-pos (sub1 new-token-start)))
                             (ep (+ in-start-pos (sub1 new-token-end))))
                        (λ ()
-                          (change-style color sp ep #f)))
+                         (change-style color sp ep #f)))
                      colors)))
             ;; Using the non-spec version takes 3 times as long as the spec
             ;; version.  In other words, the new greatly outweighs the tree
