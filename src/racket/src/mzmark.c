@@ -5713,6 +5713,8 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->next_waiting_atomic, gc);
   gcMARK2(f->next_waiting_lwc, gc);
   gcMARK2(f->suspended_lw, gc);
+  gcMARK2(f->prev_in_fsema_queue, gc);
+  gcMARK2(f->next_in_fsema_queue, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5741,6 +5743,8 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->next_waiting_atomic, gc);
   gcFIXUP2(f->next_waiting_lwc, gc);
   gcFIXUP2(f->suspended_lw, gc);
+  gcFIXUP2(f->prev_in_fsema_queue, gc);
+  gcFIXUP2(f->next_in_fsema_queue, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5781,6 +5785,32 @@ static int sequential_future_FIXUP(void *p, struct NewGC *gc) {
 
 
 #endif
+
+/* Future semaphore */ 
+static int fsemaphore_SIZE(void *p, struct NewGC *gc) { 
+  return 
+  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+}
+
+static int fsemaphore_MARK(void *p, struct NewGC *gc) { 
+  fsemaphore_t *s = (fsemaphore_t*)p;
+  gcMARK2(s->queue_front, gc);
+  gcMARK2(s->queue_end, gc);
+  return 
+  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+} 
+
+static int fsemaphore_FIXUP(void *p, struct NewGC *gc) { 
+  fsemaphore_t *s = (fsemaphore_t*)p;
+  gcFIXUP2(s->queue_front, gc);
+  gcFIXUP2(s->queue_end, gc);
+  return 
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#define fsemaphore_IS_ATOMIC 0 
+#define fsemaphore_IS_CONST_SIZE 1
+
 
 #endif  /* FUTURE */
 

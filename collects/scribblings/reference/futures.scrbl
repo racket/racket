@@ -87,6 +87,39 @@ in parallel. See also @guidesecref["effective-futures"] in @|Guide|.
   or cores) that are available on the current machine.
 }
 
+@defproc[(make-fsemaphore [init exact-nonnegative-integer?]) fsemaphore?]{
+                                                        Creates and returns a new semaphore with the counter initially 
+                                                        set to @racket[init].
+                                                        }
+
+@defproc[(fsemaphore? [v any/c]) boolean?]{
+                                           Returns @racket[#t] if @racket[v] is an fsemaphore value, 
+                                                   @racket[#f] otherwise.
+                                                   }
+
+@defproc[(fsemaphore-post [fsema fsemaphore?]) void?]{
+                                                      Increments the semaphore's internal counter and returns @|void-const|. 
+                                                                 }
+
+@defproc[(fsemaphore-wait [fsema fsemaphore?]) void?]{
+                                                      Blocks until the internal counter for @racket[fsema] is non-zero. 
+                                                      When the counter is non-zero, it is decremented and @racket[fsemaphore-wait]
+                                                      returns @|void-const|.
+                                                                                      }
+
+@defproc[(fsemaphore-try-wait? [fsema fsemaphore?]) boolean?]{
+                                                             Like @racket[fsemaphore-wait], but @racket[fsemaphore-try-wait?] 
+                                                             never blocks execution.  If @racket[fsema]'s internal 
+                                                             counter is zero, @racket[fsemaphore-try-wait?] returns 
+                                                             @racket[#f] immediately without decrementing the counter.  
+                                                             If @racket[fsema]'s counter is positive, it 
+                                                             is decremented and @racket[#t] is returned.
+                                                                     }
+
+@defproc[(fsemaphore-count [fsema fsemaphore?]) exact-nonnegative-integer?]{
+                                                         Returns @racket[fsema]'s current internal counter value.
+                                                                 }
+
 
 @; ----------------------------------------------------------------------
 

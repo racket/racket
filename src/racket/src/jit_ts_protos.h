@@ -1,6 +1,3 @@
-#define SIG_siS_s 5
-typedef Scheme_Object* (*prim_siS_s)(Scheme_Object*, int, Scheme_Object**);
-Scheme_Object* scheme_rtcall_siS_s(const char *who, int src_type, prim_siS_s f, Scheme_Object* g139, int g140, Scheme_Object** g141);
 #define SIG_iSs_s 6
 typedef Scheme_Object* (*prim_iSs_s)(int, Scheme_Object**, Scheme_Object*);
 Scheme_Object* scheme_rtcall_iSs_s(const char *who, int src_type, prim_iSs_s f, int g142, Scheme_Object** g143, Scheme_Object* g144);
@@ -67,3 +64,6 @@ Scheme_Object* scheme_rtcall_si_s(const char *who, int src_type, prim_si_s f, Sc
 #define SIG_sis_v 27
 typedef void (*prim_sis_v)(Scheme_Object*, int, Scheme_Object*);
 void scheme_rtcall_sis_v(const char *who, int src_type, prim_sis_v f, Scheme_Object* g180, int g181, Scheme_Object* g182);
+#define SIG_siS_s 28
+typedef Scheme_Object* (*prim_siS_s)(Scheme_Object*, int, Scheme_Object**);
+Scheme_Object* scheme_rtcall_siS_s(const char *who, int src_type, prim_siS_s f, Scheme_Object* g139, int g140, Scheme_Object** g141);

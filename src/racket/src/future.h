@@ -37,6 +37,7 @@ typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 #define FINISHED 3
 #define PENDING_OVERSIZE 4
 #define WAITING_FOR_REQUEUE 5
+#define WAITING_FOR_FSEMA 6
 
 #define FSRC_OTHER 0
 #define FSRC_RATOR 1
@@ -114,7 +115,20 @@ typedef struct future_t {
 
   struct future_t *next_waiting_atomic;
   struct future_t *next_waiting_lwc;
+
+  struct future_t *prev_in_fsema_queue;
+  struct future_t *next_in_fsema_queue;
 } future_t;
+
+typedef struct fsemaphore_t {
+  Scheme_Object so;
+
+  int ready;
+  mzrt_mutex *mut; 
+  future_t *queue_front;
+  future_t *queue_end;
+} fsemaphore_t;
+
 
 /* Primitive instrumentation stuff */
 
@@ -123,6 +137,7 @@ typedef struct future_t {
 #define SIG_ALLOC              2
 #define SIG_ALLOC_MARK_SEGMENT 3
 #define SIG_ALLOC_VALUES       4
+#define SIG_MAKE_FSEMAPHORE	   5
 
 # include "jit_ts_protos.h"
 
@@ -171,5 +186,13 @@ extern Scheme_Object *future_touch(int futureid);
 /* always defined: */
 Scheme_Object *scheme_future(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[]);
+
+Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object *argv[]);
+//Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_fsemaphore_inl(int argc, Scheme_Object *ready);
+Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object *argv[]);
 
 #endif

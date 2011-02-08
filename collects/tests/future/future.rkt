@@ -202,3 +202,138 @@ We should also test deep continuations.
             (future (lambda ()
                       (and (eq? (touch f) f)
                            (current-future)))))))
+
+;Future semaphore tests 
+(let* ([m1 (make-fsemaphore 1)] 
+       [m2 (make-fsemaphore 0)] 
+       [x 2] 
+       [lst '()] 
+       [rack-sema (make-semaphore 1)]
+       [f (future (λ () 
+                   (fsemaphore? m2)))]) 
+  (check-equal? #t (fsemaphore? m1)) 
+  (check-equal? #t (fsemaphore? m2)) 
+  (check-equal? #f (fsemaphore? x)) 
+  (check-equal? #f (fsemaphore? lst)) 
+  (check-equal? #f (fsemaphore? rack-sema)) 
+  (check-equal? #t (touch f)))
+
+(let ([m (make-fsemaphore 1)]) 
+  (fsemaphore-wait m) 
+  (check-equal? 0 (fsemaphore-count m)))
+
+(let ([m (make-fsemaphore 0)]) 
+  (fsemaphore-post m) 
+  (fsemaphore-wait m)
+  (check-equal? 0 (fsemaphore-count m)))
+
+(let ([m (make-fsemaphore 37)]) 
+  (check-equal? 37 (fsemaphore-count m))) 
+
+(let ([m (make-fsemaphore 37)]) 
+  (fsemaphore-wait m) 
+  (fsemaphore-wait m)
+  (fsemaphore-post m) 
+  (fsemaphore-wait m) 
+  (check-equal? 35 (fsemaphore-count m)))
+
+(let ([m1 (make-fsemaphore 38)] 
+      [m2 (make-fsemaphore 0)]) 
+  (check-equal? #t (fsemaphore-try-wait? m1)) 
+  (check-equal? #f (fsemaphore-try-wait? m2)))
+
+(let* ([m1 (make-fsemaphore 20)] 
+       [m2 (make-fsemaphore 0)] 
+       [f1 (future (λ () 
+                    (fsemaphore-try-wait? m2)))] 
+       [f2 (future (λ () 
+                    (fsemaphore-try-wait? m1)))]) 
+  (check-equal? #f (touch f1)) 
+  (check-equal? #t (touch f2)))
+
+;Test fsemaphore wait on a future thread 
+;(here the future thread should be able to capture the cont. locally)
+(let* ([m (make-fsemaphore 0)] 
+       [f (future (λ () 
+                    (let ([l (cons 1 2)]) 
+                      (for ([i (in-range 0 10000)]) 
+                        (set! l (cons i l))) 
+                      (fsemaphore-wait m) 
+                      l)))]) 
+  (sleep 3) 
+  (fsemaphore-post m) 
+  (touch f)
+  (check-equal? 0 (fsemaphore-count m)))
+
+;The f1 future should never terminate 
+(printf "test n-4~n")
+(let* ([m (make-fsemaphore 0)]
+       [dummy 5]
+       [f1 (future (λ () (fsemaphore-wait m) (set! dummy 42)))] 
+       [f2 (future (λ () 88))]) 
+  (check-equal? 88 (touch f2)) 
+  (sleep 3)
+  (check-equal? 0 (fsemaphore-count m))
+  (check-equal? 5 dummy))
+
+(printf "test n-3~n")
+(let* ([m (make-fsemaphore 0)]
+       [dummy 5]
+       [f1 (future (λ () 
+                     (fsemaphore-wait m) 
+                     (set! dummy 42) 
+                     dummy))]
+       [f2 (future (λ () 
+                     (fsemaphore-post m) 
+                     #t))])
+  (sleep 2) 
+  (check-equal? 42 (touch f1)) 
+  (check-equal? 0 (fsemaphore-count m)))
+
+(printf "test n-2~n")
+(let* ([m1 (make-fsemaphore 0)] 
+       [m2 (make-fsemaphore 0)] 
+       [dummy 8]
+       [f1 (future (λ () 
+                     (fsemaphore-wait m2)
+                     (set! dummy 10)
+                     (fsemaphore-post m1) 
+                     #t))] 
+       [f2 (future (λ () 
+                     (fsemaphore-post m2) 
+                     (fsemaphore-wait m1) 
+                     (set! dummy (add1 dummy)) 
+                     dummy))]) 
+  (check-equal? 11 (touch f2)))
+
+(printf "test n-1~n")
+(let* ([m (make-fsemaphore 0)] 
+       [f1 (future (λ () 
+                     (sleep 1) 
+                     (fsemaphore-wait m) 
+                     5))]) 
+  (fsemaphore-post m)
+  (check-equal? 5 (touch f1)))
+
+;Test fsemaphore ops after blocking runtime call 
+;Here one future will invoke fsemaphore-wait within the context 
+;of a touch.  Meanwhile, another future is allocating (requiring 
+;the help of the runtime thread which is also "blocked" waiting 
+;for the semaphore to become ready.
+(printf "test n~n")
+(let* ([m (make-fsemaphore 0)] 
+       [f1 (future (λ () 
+                     (sleep 1) ;Currently a blocking RT call 
+                     (fsemaphore-wait m)))] 
+       [f2 (future (λ () 
+                     (let* ([lst '()]
+                            [retval (let loop ([index 10000] [l lst]) 
+                                      (cond 
+                                        [(zero? index) l] 
+                                        [else 
+                                         (loop (sub1 index) (cons index l))]))]) 
+                       (fsemaphore-post m) 
+                       (car retval))))])    
+  (sleep 3)
+  (touch f1)
+  (check-equal? 1 (touch f2)))

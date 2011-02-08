@@ -2948,6 +2948,18 @@ static void ts_on_demand(void) XFORM_SKIP_PROC
     on_demand();
 }
 
+static Scheme_Object *ts_make_fsemaphore(int argc, Scheme_Object *ready) 
+  XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall) { 
+    printf("ts_make_fsemaphore on main thread\n");
+    return scheme_rtcall_make_fsemaphore("[make_fsemaphore]", FSRC_OTHER, argc, ready);
+  } 
+  
+  printf("ts_make_fsemaphore on worker thread\n");
+  return scheme_make_fsemaphore_inl(argc, ready);
+}
+
 #ifdef MZ_PRECISE_GC
 static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
 {
@@ -2980,7 +2992,8 @@ Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
 # define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
 # define mz_direct_only(p) p
 # define ts_on_demand on_demand
-# define ts_prepare_retry_alloc prepare_retry_alloc
+# define ts_prepare_retry_alloc prepare_retry_alloc 
+# define ts_make_fsemaphore scheme_make_fsemaphore_inl
 # define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
   (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
 #endif
@@ -7488,6 +7501,186 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_retval(JIT_R0);
 #endif
 
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "future?")) { 
+      printf("Inlining future?\n");
+      generate_inlined_type_test(jitter, app, scheme_future_type, scheme_future_type, 1, for_branch, branch_short, need_sync);
+      printf("Done inlining\n");
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore?")) { 
+      GC_CAN_IGNORE jit_insn *refcont, *ref1, *ref2, *ref3;
+
+      printf("Inlining fsemaphore?\n");
+      printf("Starting IP is: %p\n", jit_get_ip().ptr);
+
+      generate_inlined_type_test(jitter, app, scheme_fsemaphore_type, scheme_fsemaphore_type, 1, for_branch, branch_short, need_sync);
+      return 1;
+
+      //My custom implementation
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);   
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object*)0x0)->type); //Move type into JIT_R1 
+
+      //REMOVE: These are only here to show register mappings for x86 in disas 
+      jit_movi_i(JIT_R2, 0x2);
+      jit_movi_i(JIT_V0, 0x3);
+      jit_movi_i(JIT_V1, 0x4);
+      jit_movi_i(JIT_V2, 0x5);
+      
+      ref2 = jit_bnei_l(jit_forward(), JIT_R1, scheme_fsemaphore_type); //Do the type test 
+      //Jump only if not equal (optimization) 
+      jit_movi_p(JIT_R0, scheme_true);
+      refcont = jit_jmpi(jit_forward());
+
+      //ref2 is the 'false' branch
+      mz_patch_branch(ref1);
+      mz_patch_branch(ref2);
+      jit_movi_p(JIT_R0, scheme_false);
+      mz_patch_ucbranch(refcont);
+     
+      //Logging
+      printf("Ending IP is: %p\n", jit_get_ip().ptr);
+      printf("Done inlining\n");
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore-count")) { 
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+        
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      /* Push the arg onto the runstack */ 
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK); /* Same as push (JIT_V1) */
+      jit_movi_i(JIT_R0, 1);
+      jit_pusharg_i(JIT_R0);
+
+      mz_finish(scheme_fsemaphore_count);
+      mz_popr_x();
+      jit_retval(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      return 1;
+
+
+      /*
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+
+      mz_prepare(2);
+      jit_pusharg_p(JIT_V0);
+      jit_movi_i(JIT_V1, 1);
+      jit_pusharg_i(JIT_V1);
+      mz_finish(scheme_fsemaphore_count);
+      mz_popr_p(JIT_R0);
+      jit_retval(JIT_R0);
+      mz_rs_sync();
+
+      return 1; */
+    } else if (IS_NAMED_PRIM(rator, "make-fsemaphore")) { 
+
+     
+      mz_runstack_skipped(jitter, 1); 
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+     
+      mz_prepare(2);
+      jit_pusharg_p(JIT_R0);
+      jit_movi_i(JIT_R0, 1);
+      jit_pusharg_i(JIT_R0);
+      mz_finish(ts_make_fsemaphore);
+      jit_retval(JIT_R0);
+     
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore-post")) { 
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_movi_i(JIT_R0, 1);
+      jit_pusharg_i(JIT_R0);
+      mz_finish(scheme_fsemaphore_post);
+      mz_popr_x();
+      jit_retval(JIT_R0);
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore-wait")) { 
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_movi_i(JIT_R0, 1);
+      jit_pusharg_i(JIT_R0);
+
+      GC_CAN_IGNORE jit_insn *refr;
+      (void)mz_finish_lwe(scheme_fsemaphore_wait, refr);
+
+      //mz_finish(scheme_fsemaphore_wait);
+      mz_popr_x();
+      jit_retval(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore-try-wait?")) { 
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      mz_prepare(2);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_movi_i(JIT_R0, 1);
+      jit_pusharg_i(JIT_R0);
+      mz_finish(scheme_fsemaphore_try_wait);
+      mz_popr_x();
+      jit_retval(JIT_R0);
+      
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       return 1;
     }
   }

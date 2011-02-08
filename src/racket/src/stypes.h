@@ -260,6 +260,7 @@ enum {
   scheme_rt_lightweight_cont,           /* 236 */
 #endif
 
+  scheme_fsemaphore_type,               /* 238 */
 
   _scheme_last_type_
 };

@@ -28,6 +28,14 @@ static Scheme_Object *future_p(int argc, Scheme_Object *argv[])
     return scheme_false;
 }
 
+Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[])
+{
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) 
+    return scheme_true;
+  else 
+    return scheme_false;
+}
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -125,6 +133,8 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
+
+
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 {
   return scheme_make_integer(1);
@@ -206,10 +216,16 @@ void scheme_init_futures_per_place()
 #define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c) LOG3("(%d, %p, %p)", a, b, c)
 #define LOG_RTCALL_ENV_ENV_VOID(a,b) LOG2("(%p, %p)", a, b) 
 
+static Scheme_Object *make_fsemaphore(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
 static void init_future_thread(struct Scheme_Future_State *fs, int i);
+static void requeue_future(struct future_t *future, struct Scheme_Future_State *fs);
+static void future_do_runtimecall(struct Scheme_Future_Thread_State *fts,
+                                  void *func,
+                                  int is_atomic);
+static int capture_future_continuation(future_t *ft, void **storage);
 
 #define THREAD_POOL_SIZE 16
 #define INITIAL_C_STACK_SIZE 500000
@@ -278,6 +294,7 @@ static void receive_special_result(future_t *f, Scheme_Object *retval, int clear
 static void send_special_result(future_t *f, Scheme_Object *retval);
 static Scheme_Object *_apply_future_lw(future_t *ft);
 static Scheme_Object *apply_future_lw(future_t *ft);
+static int fsemaphore_ready(Scheme_Object *obj);
 READ_ONLY static int cpucount;
 static void init_cpucount(void);
 
@@ -360,6 +377,55 @@ void scheme_init_futures(Scheme_Env *newenv)
                               0);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("current-future", p, newenv);
+
+  p = scheme_make_immed_prim(
+                              scheme_fsemaphore_p, 
+                              "fsemaphore?", 
+                              1, 
+                              1);
+
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fsemaphore?", p, newenv);
+
+  p = scheme_make_immed_prim(
+                              make_fsemaphore, 
+                              "make-fsemaphore", 
+                              1, 
+                              1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("make-fsemaphore", p, newenv);
+
+  p = scheme_make_immed_prim(
+                              scheme_fsemaphore_count, 
+                              "fsemaphore-count", 
+                              1, 
+                              1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fsemaphore-count", p, newenv);
+  
+  p = scheme_make_immed_prim(
+                              scheme_fsemaphore_wait, 
+                              "fsemaphore-wait",
+                              1, 
+                              1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fsemaphore-wait", p, newenv);
+
+  p = scheme_make_immed_prim(
+                              scheme_fsemaphore_post, 
+                              "fsemaphore-post", 
+                              1, 
+                              1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fsemaphore-post", p, newenv);
+
+  p = scheme_make_immed_prim(
+                              scheme_fsemaphore_try_wait, 
+                              "fsemaphore-try-wait?", 
+                              1, 
+                              1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("fsemaphore-try-wait?", p, newenv);  
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -686,6 +752,264 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   return (Scheme_Object*)ft;
 }
 
+void fsemaphore_finalize(void *p, void *data)
+{
+  fsemaphore_t *sema;
+  sema = (fsemaphore_t*)p;
+  mzrt_mutex_destroy(sema->mut);
+}
+
+Scheme_Object *scheme_make_fsemaphore_inl(int argc, Scheme_Object *ready)
+{
+  fsemaphore_t *sema;
+  printf("scheme_make_fsemaphore_inl\n");
+
+  /* Input validation */ 
+  if (argc != 1 || !SCHEME_INTP(ready)) 
+    scheme_wrong_type("future->make-fsemaphore", "exact integer", 0, argc, &ready);
+
+  sema = MALLOC_ONE_TAGGED(fsemaphore_t);
+  sema->so.type = scheme_fsemaphore_type;
+  
+  mzrt_mutex_create(&sema->mut);
+  sema->ready = SCHEME_INT_VAL(ready);
+
+  scheme_register_finalizer((void*)sema, fsemaphore_finalize, NULL, NULL, NULL);
+
+  return (Scheme_Object*)sema;
+}
+
+
+Scheme_Object *make_fsemaphore(int argc, Scheme_Object **argv)
+  /* Called in runtime thread (atomic/synchronized) */
+{
+  Scheme_Object *arg;
+  Scheme_Object *semaObj;
+
+  printf("make_fsemaphore\n");
+  arg = argv[0];
+  semaObj = scheme_make_fsemaphore_inl(argc, arg);
+  return semaObj;
+}
+
+Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC 
+{
+  fsemaphore_t *sema;
+  sema = (fsemaphore_t*)argv[0];
+
+  if (!SAME_TYPE(SCHEME_TYPE(sema), scheme_fsemaphore_type)) 
+    scheme_wrong_type("fsemaphore-count", "fsemaphore", 0, argc, argv);
+ 
+  printf("scheme_fsemaphore_count\n"); 
+  return scheme_make_integer(sema->ready);
+}
+
+Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  fsemaphore_t *sema;
+  Scheme_Future_State *fs;
+  printf("scheme_fsemaphore_post\n");
+  fflush(stdout);
+
+  sema = (fsemaphore_t*)argv[0];
+  fs = scheme_future_state;
+  mzrt_mutex_lock(sema->mut);
+ 
+  /* Check for any futures waiting on the semaphore */ 
+  if (sema->queue_front) { 
+    future_t *ft = sema->queue_front;
+    sema->queue_front = ft->next_in_fsema_queue;
+    ft->next_in_fsema_queue = NULL;
+    if (!sema->queue_front) { 
+      sema->queue_end = NULL;
+    } else { 
+      sema->queue_front->prev_in_fsema_queue = NULL;
+    }
+    
+    /* Place the waiting future back on the run queue */
+    mzrt_mutex_lock(fs->future_mutex);
+    ft->status = PENDING;
+    enqueue_future(fs, ft);
+    /* Signal that a future is now pending */
+    mzrt_sema_post(fs->future_pending_sema);
+    mzrt_mutex_unlock(fs->future_mutex);
+  } else { 
+    sema->ready++;
+  }
+
+  mzrt_mutex_unlock(sema->mut);
+  return scheme_void;
+}
+
+static void enqueue_future_for_fsema(Scheme_Object *objFt, Scheme_Object *objSema) 
+  /* This function assumed sema->mut has already been acquired! */
+{
+  future_t *ft;
+  fsemaphore_t *sema;
+  future_t *front;
+
+  ft = (future_t*)objFt;
+  sema = (fsemaphore_t*)objSema;
+
+  /* Enqueue this future in the semaphore's queue */ 
+  front = sema->queue_front;
+  if (!front) { 
+    sema->queue_front = ft;
+    sema->queue_end = ft;
+  } else {
+    future_t *end = sema->queue_end;
+    end->next_in_fsema_queue = ft;
+    ft->prev_in_fsema_queue = end;
+    sema->queue_end = ft;
+  }
+}
+
+
+Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  fsemaphore_t *sema;
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  Scheme_Future_State *fs = scheme_future_state;
+  void *storage[3];
+
+  printf("scheme_fsemaphore_wait ");
+  fflush(stdout);
+  sema = (fsemaphore_t*)argv[0];
+  mzrt_mutex_lock(sema->mut);
+  if (!sema->ready) { 
+    if (!fts) { 
+      printf("on runtime thread -- sema not ready.\n");
+      fflush(stdout);
+      /* Then we are on the runtime thread, block and wait for the 
+          fsema to be ready while cooperating with the scheduler */ 
+      mzrt_mutex_unlock(sema->mut);
+      scheme_block_until(fsemaphore_ready, NULL, (Scheme_Object*)sema, 0);
+      mzrt_mutex_lock(sema->mut);
+    } else {
+      printf("on future thread -- sema not ready.\n");
+      fflush(stdout);
+      /* On a future thread, suspend the future (to be 
+        resumed whenever the fsema becomes ready */
+      future_t *future = fts->thread->current_ft;
+      if (!future) { 
+        /* Exception? */
+        printf("No current future for fsemaphore-wait!\n");
+        return scheme_false;
+      }
+
+      mzrt_mutex_unlock(sema->mut);
+      scheme_fill_lwc_end();
+      future->lwc = scheme_current_lwc;
+      future->fts = fts;
+      future->arg_p = scheme_current_thread;   
+
+      if (GC_gen0_alloc_page_ptr 
+          && capture_future_continuation(future, storage)) {
+        /* This will set fts->thread->current_ft to NULL */
+      } else { 
+        /* Can't capture the continuation locally, so ask the runtime 
+            thread to do it (is this the right solution here?) */
+        printf("fsemaphore-wait couldn't capture continuation locally.\n");
+        future->next_waiting_lwc = fs->future_waiting_lwc;
+        fs->future_waiting_lwc = future;
+        future->want_lw = 1;
+        future->status = WAITING_FOR_FSEMA;
+      }   
+
+      scheme_signal_received_at(fs->signal_handle);
+      if (fts->thread->current_ft) { 
+        /* Wait for the signal that LW continuation was captured 
+            by the runtime thread */ 
+        future->can_continue_sema = fts->worker_can_continue_sema;
+        end_gc_not_ok(fts, fs, MZ_RUNSTACK);
+        mzrt_mutex_unlock(fs->future_mutex);
+      
+        mzrt_sema_wait(fts->worker_can_continue_sema);    
+        /* Add the future to the semaphore's wait queue */
+        //enqueue_future_for_fsema((Scheme_Object*)future, (Scheme_Object*)sema);
+        //mzrt_mutex_unlock(sema->mut);
+        //mzrt_mutex_lock(fs->future_mutex);
+        //start_gc_not_ok(fs);
+      } 
+
+      /* Check again whether the fsema has become ready -- if so, 
+          we can resume immediately */
+      mzrt_mutex_lock(sema->mut);
+      if (!sema->ready) { 
+        printf("sema still not ready after cont. capture, suspending.\n");
+        enqueue_future_for_fsema((Scheme_Object*)future, (Scheme_Object*)sema);
+        mzrt_mutex_unlock(sema->mut);
+        mzrt_mutex_lock(fs->future_mutex);
+        start_gc_not_ok(fs);
+
+        mzrt_mutex_unlock(fs->future_mutex);
+
+        /* Fetch the future instance again, in case the GC has 
+            moved the pointer or the future has been requeued. */ 
+        future = fts->thread->current_ft;
+        if (!future) { 
+          /* Future continuation was requeued */ 
+          scheme_future_longjmp(*scheme_current_thread->error_buf, 1);
+        } else if (future->no_retval) {   
+          future->no_retval = 0;
+          scheme_future_longjmp(*scheme_current_thread->error_buf, 1);
+        }
+      
+        return scheme_void;
+      } else { 
+        
+      }
+    }
+  } 
+
+  /* Semaphore is ready -- decrement and continue */
+  if (!fts) { 
+    printf("on runtime thread -- sema was ready\n"); 
+  } else { 
+    printf("on future thread -- sema was ready\n");
+  }
+  fflush(stdout);
+
+  sema->ready--;
+  mzrt_mutex_unlock(sema->mut);
+  return scheme_void;
+}
+
+Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object **argv)
+  XFORM_SKIP_PROC
+{
+  fsemaphore_t *sema;
+  future_t *cf;
+  Scheme_Object *ret;
+
+  printf("scheme_fsemaphore_try_wait\n");
+  sema = (fsemaphore_t*)argv[0];
+  mzrt_mutex_lock(sema->mut);
+  if (!sema->ready) { 
+    ret = scheme_false;
+  } else { 
+    ret = scheme_true;
+  }
+
+  mzrt_mutex_unlock(sema->mut);
+  return ret;
+}
+
+static int fsemaphore_ready(Scheme_Object *obj) 
+  /* Called in runtime thread by Scheme scheduler */
+{
+  int ret = 0;
+  fsemaphore_t *fsema = (fsemaphore_t*)obj;
+  mzrt_mutex_lock(fsema->mut);
+  ret = fsema->ready;
+  mzrt_mutex_unlock(fsema->mut);
+  return ret;
+}
+
+
 int future_ready(Scheme_Object *obj)
 /* Called in runtime thread by Scheme scheduler */
 {
@@ -850,7 +1174,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
         invoke_rtcall(fs, ft);
         LOG0("done.\n");
       }
-    else if (ft->maybe_suspended_lw)
+    else if (ft->maybe_suspended_lw && ft->status != WAITING_FOR_FSEMA)
       {
         ft->maybe_suspended_lw = 0;
         if (ft->suspended_lw
@@ -1133,7 +1457,7 @@ static Scheme_Object *apply_future_lw(future_t *ft)
 
 static int capture_future_continuation(future_t *ft, void **storage)
   XFORM_SKIP_PROC
-/* This function explicitly coorperates with the GC by storing the
+/* This function explicitly cooperates with the GC by storing the
    pointers it needs to save across a collection in `storage', so
    it can be used in a future thread. If future-thread-local 
    allocation fails, the result is 0. */
@@ -1150,7 +1474,9 @@ static int capture_future_continuation(future_t *ft, void **storage)
 
   ft->suspended_lw = lw;
   ft->maybe_suspended_lw = 1;
-  ft->status = WAITING_FOR_REQUEUE;
+  if (ft->status != WAITING_FOR_FSEMA)
+    ft->status = WAITING_FOR_REQUEUE;
+  
   ft->want_lw = 0;
   ft->fts->thread->current_ft = NULL; /* tells worker thread that it no longer
                                          needs to handle the future */
@@ -1344,6 +1670,33 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
   future_do_runtimecall(fts, (void*)f, 1);
 
   future->arg_S0 = NULL;
+}
+
+Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, int argc, Scheme_Object *ready)
+  XFORM_SKIP_PROC
+/* Called in future thread */
+{
+  Scheme_Object *retval;
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future = fts->thread->current_ft;
+  
+  future->prim_protocol = SIG_MAKE_FSEMAPHORE;
+  future->arg_i0 = argc;
+  future->arg_s1 = ready;
+  future->time_of_request = scheme_get_inexact_milliseconds();
+  future->source_of_request = who;
+  future->source_type = src_type;
+  
+  future_do_runtimecall(fts, (void*)scheme_make_fsemaphore_inl, 1);
+#ifdef MZ_PRECISE_GC 
+  retval = future->retval_s;
+  future->retval_s = NULL;
+#else 
+  retval = (Scheme_Object*)future->retval_p;
+  future->retval_p = NULL;
+#endif
+
+  return retval;
 }
 
 void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
@@ -1592,6 +1945,14 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         scheme_new_mark_segment(p_seg);
         break;
       }
+	case SIG_MAKE_FSEMAPHORE: 
+	  {
+		Scheme_Object *ret; 
+		ret = scheme_make_fsemaphore_inl(future->arg_i0, future->arg_s1);
+		future->retval_s = ret;
+		future->arg_s0 = NULL;
+		break;
+	  }
     case SIG_ALLOC_VALUES:
       {
         prim_allocate_values_t func = (prim_allocate_values_t)future->prim_func;
@@ -1736,6 +2097,8 @@ static void register_traversers(void)
 #else
   GC_REG_TRAV(scheme_future_type, sequential_future);
 #endif
+
+  GC_REG_TRAV(scheme_fsemaphore_type, fsemaphore);
 }
 
 END_XFORM_SKIP;

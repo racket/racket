@@ -2354,6 +2354,8 @@ future {
   gcMARK2(f->next_waiting_atomic, gc);
   gcMARK2(f->next_waiting_lwc, gc);
   gcMARK2(f->suspended_lw, gc);
+  gcMARK2(f->prev_in_fsema_queue, gc);
+  gcMARK2(f->next_in_fsema_queue, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -2372,6 +2374,16 @@ sequential_future {
 }
 
 #endif
+
+fsemaphore {
+  mark:
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcMARK2(s->queue_front, gc);
+    gcMARK2(s->queue_end, gc);
+  size:
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+}
+
 
 END future;
 
