@@ -174,4 +174,38 @@
 @defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin vertical-panel%)) ()]{}
 @defclass[panel:horizontal-dragable% (panel:horizontal-dragable-mixin (panel:dragable-mixin horizontal-panel%)) ()]{}
 
+@definterface[panel:splitter<%> ()]{
+  A panel that implements @scheme[panel:splitter<%>]. Children can be split
+  horizonally or vertically.
+}
+
+@defmixin[panel:splitter-mixin (area-container<%> panel:dragable<%>) (splitter<%>)]{
+  This mixin allows panels to split their children either horizontally or
+  vertically. Children that are split can be further split independant of any
+  other splitting.
+
+  @defmethod[(split-vertical (canvas (instance-of (is-a?/c canvas<%>)))
+                             (maker (-> (instance-of (is-a?/c splitter<%>))
+                                        (instance-of (is-a?/c canvas<%>)))))
+                             (instance-of (is-a?/c canvas<%>))]{
+    Splits the @scheme[canvas] vertically by creating a new instance using
+    @scheme[maker]. This splitter object is passed as the argument to
+    @scheme[maker] and should be used as the @scheme[parent] field of the newly
+    created canvas.
+  }
+
+  @defmethod[(split-horizontal (canvas (instance-of (is-a?/c canvas<%>)))
+                             (maker (-> (instance-of (is-a?/c splitter<%>))
+                                        (instance-of (is-a?/c canvas<%>)))))
+                             (instance-of (is-a?/c canvas<%>))]{
+    Similar to @scheme[split-vertical] but splits horizontally.
+  }
+
+  @defmethod[(collapse (canvas (instance-of (is-a?/c canvas<%>)))) void]{
+    Removes the given @scheme[canvas] from the splitter hierarchy and collapses
+    any split panes as necessary.
+  }
+
+}
+
 @(include-previously-extracted "main-extracts.ss" #rx"^panel:")

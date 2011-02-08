@@ -529,6 +529,7 @@
       (not (send this get-vertical?)))
 
     ;; insert an item into a list after some element
+    ;; FIXME: this is probably a library function somewhere
     (define/private (insert-after list before item)
       (let loop ([so-far '()]
                  [list list])
@@ -539,6 +540,7 @@
           [else (loop (cons (car list) so-far) (cdr list))])))
 
     ;; replace an element with a list of stuff
+    ;; FIXME: this is probably a library function somewhere
     (define/private (replace list at stuff)
       (let loop ([so-far '()]
                  [list list])
@@ -547,6 +549,8 @@
           [(eq? (car list) at) (append (reverse so-far) stuff (cdr list))]
           [else (loop (cons (car list) so-far) (cdr list))])))
 
+    ;; remove a canvas and merge split panels if necessary
+    ;; TODO: restore percentages
     (define/public (collapse canvas)
       (begin-container-sequence)
       (for ([child (get-children)])
@@ -571,7 +575,7 @@
       (end-container-sequence))
 
     ;; split a canvas by creating a new editor and either
-    ;; 1) adding it to the canvas if the canvas is already using the same
+    ;; 1) adding it to the panel if the panel is already using the same
     ;;   orientation as the split that is about to occur
     ;; 2) create a new panel with the orientation of the split about to
     ;;   occur and add a new editor
