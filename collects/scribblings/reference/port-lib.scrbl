@@ -322,7 +322,30 @@ the amount of data successfully peeked.
 
 The optional @scheme[name] argument is the name of the resulting
 port. The @scheme[skip] argument is the port initial skip count, and
-it defaults to @scheme[0].}
+it defaults to @scheme[0].
+
+The resulting port's initial position is @racket[0], no matter the
+position of @racket[in].
+
+For example, when you read from a peeking port, you
+see the same answers as when you read from the original port.
+
+@examples[#:eval port-eval
+(define an-original-port (open-input-string "123456789"))
+(define a-peeking-port (peeking-input-port an-original-port))
+(read-string 3 a-peeking-port)
+(read-string 3 an-original-port)]
+
+But beware, the read from the original port is invisible to the peeking
+port, which keeps its own separate internal counter, and thus
+interleaving reads on the two ports can produce confusing results.
+Continuing the example before, if we read three more characters from
+the peeking port, we end up skipping over the @litchar{456} in the port.
+
+@examples[#:eval port-eval
+(read-string 3 a-peeking-port)
+]
+}
 
 
 
