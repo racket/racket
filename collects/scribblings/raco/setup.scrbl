@@ -1004,7 +1004,7 @@ An @deftech{unpackable} is one of the following:
 
 @defproc[(find-include-dir) (or/c path? false/c)]{
   Returns a path to the installation's @filepath{include} directory, which
-  contains @filepath{.h} files for building MzRacket extensions and embedding
+  contains @filepath{.h} files for building Racket extensions and embedding
   programs. The result is @racket[#f] if no such directory is available.}
 
 @defproc[(find-user-include-dir) path?]{
@@ -1020,7 +1020,7 @@ An @deftech{unpackable} is one of the following:
 
 @defproc[(find-console-bin-dir) (or/c path? false/c)]{
   Returns a path to the installation's executable directory, where the
-  stand-alone MzRacket executable resides. The result is @racket[#f] if no
+  stand-alone Racket executable resides. The result is @racket[#f] if no
   such directory is available.}
 
 @defproc[(find-gui-bin-dir) (or/c path? false/c)]{
