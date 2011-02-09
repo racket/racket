@@ -17,7 +17,7 @@ API:
    Racket.
 
    The GRacket executable still offers some additional GUI-specific
-   functiontality however. Most notably, GRacket is a GUI application
+   functionality however. Most notably, GRacket is a GUI application
    under Windows (as opposed to a console application, which is
    launched slightly differently by the OS), GRacket is a bundle under
    Mac OS X (so the dock icon is the Racket logo, for example), and
@@ -91,8 +91,8 @@ The old translation and scaling transformations apply after the
 initial matrix. The new rotation transformation applies after the
 other transformations. This layering is redundant, since all
 transformations can be expressed in a single matrix, but it is
-backward-compatibile. Methods like `get-translation',
-`set-translation', `scale', etc. help hide the reundancy.
+backward-compatible. Methods like `get-translation',
+`set-translation', `scale', etc. help hide the redundancy.
 
 
 PostScript, PDF, and SVG Drawing Contexts
@@ -150,13 +150,13 @@ into the control.
 
 Event callbacks are delimited by a continuation prompt using the
 default continuation prompt tag. As a result, continuations can be
-usufully captured during one event callback and applied during other
+usefully captured during one event callback and applied during other
 callbacks or outside of an even callback. The continuation barrier and
 jump-defeating `dynamic-wind' that formerly guarded callbacks has been
 removed.
 
 The `on-subwindow-char' and `on-subwindow-event' methods for controls
-are somewhat more restructed in the actions they can take without
+are somewhat more restricted in the actions they can take without
 disabling the control's handling of key and mouse events. See the
 documentation for more information.
 
