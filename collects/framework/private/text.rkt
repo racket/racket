@@ -3720,7 +3720,7 @@ designates the character that triggers autocompletion
 
 ;; draws line numbers on the left hand side of a text% object
 (define line-numbers-mixin
-  (mixin ((class->interface text%)) (line-numbers<%>)
+  (mixin ((class->interface text%) editor:standard-style-list<%>) (line-numbers<%>)
     (inherit get-visible-line-range
              get-visible-position-range
              last-line
@@ -3732,7 +3732,7 @@ designates the character that triggers autocompletion
              set-padding
              get-padding)
 
-    (init-field [line-numbers-color "black"])
+    (init-field [line-numbers-color #f])
     (init-field [show-line-numbers? #t])
     ;; whether the numbers are aligned on the left or right
     ;; only two values should be 'left or 'right
@@ -3774,9 +3774,12 @@ designates the character that triggers autocompletion
     (define style-change-notify
       (lambda (style) (unless style (setup-padding))))
 
-    (define/private (get-style-font)
-      (let* ([style-list (send this get-style-list)]
-             [std (or (send style-list find-named-style "Standard")
+    (define/private (get-style)
+      (let* ([style-list (editor:get-standard-style-list)]
+             [std (or (send style-list
+                            find-named-style
+                            (editor:get-default-color-style-name))
+                      (send style-list find-named-style "Standard")
                       (send style-list basic-style))])
         ;; If the style changes, we should re-check the width of
         ;; drawn line numbers:
@@ -3785,8 +3788,13 @@ designates the character that triggers autocompletion
           (send style-list notify-on-change style-change-notify)
           ;; Avoid registering multiple notifications:
           (set! notify-registered-in-list style-list))
-        ;; Extract the font from the style:
-        (send std get-font)))
+        std))
+
+    (define/private (get-style-foreground)
+      (send (get-style) get-foreground))
+
+    (define/private (get-style-font)
+      (send (get-style) get-font))
 
     (define-struct saved-dc-state (pen font foreground-color))
     (define/private (save-dc-state dc)
@@ -3799,11 +3807,16 @@ designates the character that triggers autocompletion
       (send dc set-font (saved-dc-state-font dc-state))
       (send dc set-text-foreground (saved-dc-state-foreground-color dc-state)))
 
+    (define/private (get-foreground)
+      (if line-numbers-color
+        (make-object color% line-numbers-color)
+        (get-style-foreground)))
+        
     ;; set the dc stuff to values we want
     (define/private (setup-dc dc)
       (send dc set-pen "black" 1 'solid)
       (send dc set-font (get-style-font))
-      (send dc set-text-foreground (make-object color% line-numbers-color)))
+      (send dc set-text-foreground (get-foreground)))
 
     (define/private (lighter-color color)
       (define (integer number)
@@ -3914,7 +3927,7 @@ designates the character that triggers autocompletion
             (begin
               (send dc set-text-foreground (lighter-color (send dc get-text-foreground)))
               (draw-text view final-x final-y)
-              (send dc set-text-foreground (make-object color% line-numbers-color)))
+              (send dc set-text-foreground (get-foreground)))
             (draw-text view final-x final-y)))
 
         (set! last-paragraph (line-paragraph line))))
