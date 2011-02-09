@@ -116,7 +116,7 @@
                                      (if hscroll? WS_HSCROLL 0)
                                      (if vscroll? WS_VSCROLL 0))
                         0 0 w h
-                        (or panel-hwnd (send parent get-hwnd))
+                        (or panel-hwnd (send parent get-client-hwnd))
                         #f
                         hInstance
                         #f))
