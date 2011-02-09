@@ -549,7 +549,7 @@
 
     (define/public (on-activate on?) (void))
 
-    (define/public (set-icon bm1 bm2 [mode 'both]) (void)) ;; FIXME
+    (define/public (set-icon bm1 [bm2 #f] [mode 'both]) (void)) ;; FIXME
 
     (define/override (call-pre-on-event w e)
       (pre-on-event w e))

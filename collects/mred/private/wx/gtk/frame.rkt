@@ -334,7 +334,7 @@
 
     (define big-icon #f)
     (define small-icon #f)
-    (define/public (set-icon bm mask [mode 'both])
+    (define/public (set-icon bm [mask #f] [mode 'both])
       (let ([bm (if mask
 		    (let* ([nbm (make-object bitmap%
 					     (send bm get-width)
