@@ -609,10 +609,11 @@ case $OS in
         LD=gcc-4.0
       fi
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
+      need_cc_in_extras=yes
     fi
     
-    case `$UNAME -m` in
-      i386)
+    case "`$UNAME -m`" in
+      i386|x86_64)
        enable_futures_by_default=yes
        ;;
       *)
@@ -652,7 +653,7 @@ case $OS in
 
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
-      if test `${UNAME} -m` = "i386" ; then
+      if test "`${UNAME} -m`" != "Power Macintosh" ; then
         if test "${ORIG_CC}" = "" ; then
            PREFLAGS="${PREFLAGS} -m32"
            CPPFLAGS="${CPPFLAGS} -m32"
@@ -660,8 +661,13 @@ case $OS in
            # To make the libffi build work, we have to fold -m32 into CC
            # instead of CFLAGS:
            SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           need_cc_in_extras=no
         fi
       fi
+    fi
+
+    if test "${need_cc_in_extras}" = "yes" ; then
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
     fi
 
     if test "${enable_quartz}" = "yes" ; then
