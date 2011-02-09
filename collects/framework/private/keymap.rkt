@@ -1127,7 +1127,7 @@
           (add "make-read-only" make-read-only)
         
           (add "beginning-of-line" beginning-of-line)
-          (add "selec-to-beginning-of-line" select-to-beginning-of-line)
+          (add "select-to-beginning-of-line" select-to-beginning-of-line)
           
           ; Map keys to functions
           
