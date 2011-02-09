@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
           (for-label compiler/cm
+                     setup/parallel-build
                      racket/promise))
 
 @title[#:tag "extending-drracket"]{Extending DrRacket}
@@ -125,11 +126,20 @@ Several environment variables can affect DrRacket's behavior:
  @item{@indexed-envvar{PLTDRCM} : When this environment variable is
        set, DrRacket installs the compilation manager before starting
        up, which means that the @filepath{.zo} files are automatically
-       kept up to date, as DrRacket's (or a tools) source is modified.
+       kept up to date, as DrRacket's (or a tool's) source is modified.
 
-       If the variable is set to @litchar{trace} then the compilation
-       manager's output is traced, using the
-       @racket[manager-trace-handler] procedure.}
+       If the variable is set to @litchar{trace} then the files that are
+       actually recompiled are shown.}
+
+ @item{@indexed-envvar{PLTDRPAR} : When this environment variable is
+       set, DrRacket uses @racket[parallel-compile-files] to compile
+       the framework and the drracket collections in parallel and then
+       installs the compilation manager before starting
+       up, which means that the @filepath{.zo} files are automatically
+       kept up to date, as DrRacket's (or a tool's) source is modified.
+
+       If the variable is set to @litchar{trace} then the files that are
+       actually recompiled are shown.}
 
  @item{@indexed-envvar{PLTDRDEBUG} : When this environment variable is
        set, DrRacket starts up with errortrace enabled. If the

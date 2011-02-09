@@ -36,14 +36,12 @@
   [debugging?
    (flprintf "PLTDRDEBUG: loading CM to load/create errortrace zos\n")
    (let-values ([(zo-compile
-                  make-compilation-manager-load/use-compiled-handler
-                  manager-trace-handler)
+                  make-compilation-manager-load/use-compiled-handler)
                  (parameterize ([current-namespace (make-base-empty-namespace)]
                                 [use-compiled-file-paths '()])
                    (values
                     (dynamic-require 'errortrace/zo-compile 'zo-compile)
-                    (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)
-                    (dynamic-require 'compiler/cm 'manager-trace-handler)))])
+                    (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)))])
      (flprintf "PLTDRDEBUG: installing CM to load/create errortrace zos\n")
      (current-compile zo-compile)
      (use-compiled-file-paths (list (build-path "compiled" "errortrace")))
@@ -55,12 +53,9 @@
        (run-trace-thread)))]
   [install-cm?
    (flprintf "PLTDRCM: loading compilation manager\n")
-   (let-values ([(make-compilation-manager-load/use-compiled-handler
-                  manager-trace-handler)
-                 (parameterize ([current-namespace (make-base-empty-namespace)])
-                   (values
-                    (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)
-                    (dynamic-require 'compiler/cm 'manager-trace-handler)))])
+   (let ([make-compilation-manager-load/use-compiled-handler
+          (parameterize ([current-namespace (make-base-empty-namespace)])
+            (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler))])
      (flprintf "PLTDRCM: installing compilation manager\n")
      (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
      (when cm-trace?
@@ -74,11 +69,9 @@
           (filter
            (λ (x) (regexp-match #rx"rkt$" (path->string x)))
            (directory-list dir))))
-   (define-values (make-compilation-manager-load/use-compiled-handler manager-trace-handler)
+   (define make-compilation-manager-load/use-compiled-handler
      (parameterize ([current-namespace (make-base-empty-namespace)])
-       (values
-        (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)
-        (dynamic-require 'compiler/cm 'manager-trace-handler))))
+       (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)))
    (when cm-trace?
      (flprintf "PLTDRPAR: enabling CM tracing\n")
      (run-trace-thread))
@@ -93,7 +86,7 @@
                              (case handler-type
                                [(done) (void)]
                                [else
-                                (printf "msg: ~s\n" msg)
+                                (printf "~a\n" msg)
                                 (printf "stdout from compiling ~a:\n~a\n" path out)
                                 (flush-output)
                                 (fprintf (current-error-port) "stderr from compiling ~a:\n~a\n" path err)])))
