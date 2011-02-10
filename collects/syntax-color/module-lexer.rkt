@@ -40,7 +40,7 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
         ;; look for #lang:
         (define p (peeking-input-port in))
         (port-count-lines! p)
-        (define get-info (with-handlers ([exn:fail:read? values]) (read-language p (λ () 'fail))))
+        (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
         (cond
           [(procedure? get-info)
            (define end-pos (file-position p))
