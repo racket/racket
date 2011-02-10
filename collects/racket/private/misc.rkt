@@ -22,10 +22,17 @@
                (lambda (user-stx)
                  (syntax-case** dr #t user-stx () free-identifier=?
                    [(_ . pattern) (syntax/loc user-stx template)]
-                   [_ (let*-values ([(sexpr) (syntax->datum user-stx)]
-                                    [(msg) (format
-                                            "~.s did not match pattern ~.s"
-                                            sexpr (cons (car sexpr) 'pattern))])
+                   [_ (let*-values
+                          ([(sexpr) (syntax->datum user-stx)]
+                           [(msg)
+                            (if (pair? sexpr)
+                              (format "~.s did not match pattern ~.s"
+                                      sexpr (cons (car sexpr) 'pattern))
+                              (if (symbol? sexpr)
+                                (format "must be used in a pattern ~.s"
+                                        (cons sexpr 'pattern))
+                                (error 'internal-error
+                                       "something bad happened")))])
                            (raise-syntax-error #f msg user-stx))]))))]
           [(_ (name . ptrn) tmpl)         (err "expected an identifier" #'name)]
           [(_ (name . ptrn))              (err "missing template")]
