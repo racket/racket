@@ -527,7 +527,7 @@
   (define small-hicon #f)
   (define big-hicon #f)
 
-  (define/public (set-icon bm mask [mode 'both])
+  (define/public (set-icon bm [mask #f] [mode 'both])
     (let* ([bg-hbitmap
             (let* ([bm (make-object bitmap% (send bm get-width) (send bm get-height))]
                    [dc (make-object bitmap-dc% bm)])

@@ -25,7 +25,6 @@
 
 (define _GtkClipboard (_cpointer 'GtkClipboard))
 (define _GtkDisplay _pointer)
-(define _GtkSelectionData (_cpointer 'GtkSelectionData))
 
 ;; Recent versions of Gtk provide function calls to
 ;;  access data, but use structure when the functions are
@@ -38,6 +37,7 @@
 				    [length _int]
 				    [display _GtkDisplay]))
 				  
+(define _GtkSelectionData _GtkSelectionDataT-pointer)
 
 (define-gdk gdk_atom_intern (_fun _string _gboolean -> _GdkAtom))
 

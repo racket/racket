@@ -3533,6 +3533,18 @@
       (reverse x))
    '(3 1 2 4))
   
+  (test/spec-passed/result
+   'and/c-isnt
+   '(and (regexp-match #rx"isn't even?"
+                       (with-handlers ((exn:fail? exn-message))
+                         (contract (and/c integer? even? positive?)
+                                   -3
+                                   'pos
+                                   'neg)
+                         "not the error!"))
+         #t)
+   #t)
+  
   (test/spec-passed
    'contract-flat1 
    '(contract not #f 'pos 'neg))

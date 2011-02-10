@@ -19,6 +19,8 @@
 (define plt-setup-collections (make-parameter null))
 (define plt-include-compiled (make-parameter #f))
 
+(define mzc-symbol (string->symbol (short-program+command-name)))
+
 (define-values (plt-output source-files)
   (command-line
    #:program (short-program+command-name)
@@ -53,7 +55,7 @@
     (begin
       (for ([fd source-files])
         (unless (relative-path? fd)
-          (error 'mzc
+          (error mzc-symbol
                  "file/directory is not relative to the current directory: \"~a\""
                  fd)))
       (pack-plt plt-output

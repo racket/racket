@@ -1,52 +1,78 @@
 #lang scheme/base
 (require scheme/port
          "scheme-lexer.rkt")
-
 (provide module-lexer)
+
+#|
+
+mode : (or/c #f 'before-lang-line
+             'no-lang-line
+             (cons lexer mode)
+             lexer)
+
+the module lexer tracks any white-space and comments before
+the #lang line (if any) explicitly by wrapping calls to the 
+scheme-lexer (in #f or 'before-lang-line mode). 
+Once it finds a non-white-space and non-comment
+token, it checks to see if there is a #lang line and, if so
+changes the mode to be the lexer that the #lang indicates,
+delegating to it (the last two modes listed above).
+If there is no #lang line, then it continues
+to delegate to the scheme-lexer (in the 'no-lang-line mode).
+
+|#
+
 
 (define (module-lexer in offset mode)
   (cond
-   [(not mode)
-    ;; Starting out: look for #lang:
-    (let*-values ([(p) (peeking-input-port in)]
-                  [(init) (file-position p)]
-                  [(start-line start-col start-pos) (port-next-location p)])
-      (let ([get-info (with-handlers ([exn:fail? (lambda (exn) 'fail)])
-                        (read-language p (lambda () #f)))]
-            [sync-ports (lambda ()
-                          (read-bytes (- (file-position p) init) in))])
+    [(or (not mode) (eq? mode 'before-lang-line))
+     (define lexer-port (peeking-input-port in))
+     (port-count-lines! lexer-port)
+     (define-values (lexeme type data raw-new-token-start raw-new-token-end) (scheme-lexer lexer-port))
+     (define new-token-start (and raw-new-token-start (+ raw-new-token-start (file-position in))))
+     (define new-token-end (and raw-new-token-end (+ raw-new-token-end (file-position in))))
+     (cond
+       [(or (eq? type 'comment) (eq? type 'white-space))
+        (define lexer-end (file-position lexer-port))
+        (read-string lexer-end in) ;; sync ports
+        (values lexeme type data new-token-start new-token-end 0 'before-lang-line)]
+       [else
+        ;; look for #lang:
+        (define p (peeking-input-port in))
+        (port-count-lines! p)
+        (define get-info (with-handlers ([exn:fail? values]) (read-language p (λ () 'fail))))
         (cond
-         [(procedure? get-info)
-          ;; Produce language as first token:
-          (sync-ports)
-          (let-values ([(end-line end-col end-pos) (port-next-location in)])
-            (values
-             "#lang"
-             'other
-             #f
-             start-pos
-             end-pos
-             0
-             (or (let ([v (get-info 'color-lexer #f)])
-                   (and v
-                        (if (procedure-arity-includes? v 3)
-                            (cons v #f)
-                            v)))
-                 scheme-lexer)))]
-         [(eq? 'fail get-info)
-          (sync-ports)
-          (let*-values ([(end-line end-col end-pos) (port-next-location in)])
-            (values #f 'error #f start-pos end-pos 0 scheme-lexer))]
-         [else
-          ;; Start over using the Scheme lexer
-          (module-lexer in offset scheme-lexer)])))]
-   [(pair? mode)
-    ;; #lang-selected language consumes and produces a mode:
-    (let-values ([(lexeme type data new-token-start new-token-end backup-delta new-mode) 
-                  ((car mode) in offset (cdr mode))])
-      (values lexeme type data new-token-start new-token-end backup-delta (cons (car mode) new-mode)))]
-   [else
-    ;; #lang-selected language (or default) doesn't deal with modes:
-    (let-values ([(lexeme type data new-token-start new-token-end) 
-                  (mode in)])
-      (values lexeme type data new-token-start new-token-end 0 mode))]))
+          [(procedure? get-info)
+           (define end-pos (file-position p))
+           (read-string end-pos in) ;; sync ports
+           ;; Produce language as first token:
+           (values
+            "#lang"
+            'other
+            #f
+            1 ;; start-pos
+            (+ end-pos 1)
+            0
+            (or (let ([v (get-info 'color-lexer #f)])
+                  (and v
+                       (if (procedure-arity-includes? v 3)
+                           (cons v #f)
+                           v)))
+                scheme-lexer))]
+          [else
+           (read-string (file-position lexer-port) in) ;; sync ports
+           (values lexeme type data new-token-start new-token-end 0 'no-lang-line)])])]
+    [(eq? mode 'no-lang-line)
+     (let-values ([(lexeme type data new-token-start new-token-end) 
+                   (scheme-lexer in)])
+       (values lexeme type data new-token-start new-token-end 0 'no-lang-line))]
+    [(pair? mode)
+     ;; #lang-selected language consumes and produces a mode:
+     (let-values ([(lexeme type data new-token-start new-token-end backup-delta new-mode) 
+                   ((car mode) in offset (cdr mode))])
+       (values lexeme type data new-token-start new-token-end backup-delta (cons (car mode) new-mode)))]
+    [else
+     ;; #lang-selected language (or default) doesn't deal with modes:
+     (let-values ([(lexeme type data new-token-start new-token-end) 
+                   (mode in)])
+       (values lexeme type data new-token-start new-token-end 0 mode))]))
