@@ -20,6 +20,7 @@
          send/success
          send/error
          WorkQueue<%>
+         Worker<%>
          wrkr/send
          define/class/generics)
 
@@ -33,7 +34,21 @@
   (begin
     (mk-generic func class method args ...) ...))
 
-(define Worker% (class object%
+(define-syntax-rule (define/class/generics/provide class (func method args ...) ...)
+  (begin
+    (begin
+      (mk-generic func class method args ...)
+      (provide func)) ...))
+
+
+(define Worker<%> (interface ()
+  send/msg
+  kill
+  recv/msg
+  get-id
+  get-out))
+
+(define Worker% (class* object% (Worker<%>)
   (field [id 0]
          [process-handle null]
          [out null]
@@ -77,23 +92,24 @@
   jobs-cnt
   get-results))
 
-(define/class/generics Worker%
+(define/class/generics/provide Worker<%>
   (wrkr/send  send/msg msg)
   (wrkr/kill  kill)
   (wrkr/recv  recv/msg)
   (wrkr/id    get-id)
   (wrkr/out   get-out))
 
-(define/class/generics WorkQueue<%>
+
+(define/class/generics/provide WorkQueue<%>
   (queue/get        get-job wrkrid)
   (queue/work-done  work-done node wrkr msg)
   (queue/has        has-jobs?)
   (queue/count      jobs-cnt))
 
-
 (define (current-executable-path) 
  (parameterize ([current-directory (find-system-path 'orig-dir)])
   (find-executable-path (find-system-path 'exec-file) #f)))
+
 (define (current-collects-path)
  (let ([p (find-system-path 'collects-dir)])
   (if (complete-path? p)
@@ -164,9 +180,9 @@
                                 (add1 count)
                                 error-count)
                           (loop idle inflight count error-count))
-                      (begin
-                        (queue/work-done jobqueue node wrkr (string-append msg (port->string out))) 
-                        (kill/remove-dead-worker node-worker wrkr)))))))]
+                        (begin
+                          (queue/work-done jobqueue node wrkr (string-append msg (port->string out))) 
+                          (kill/remove-dead-worker node-worker wrkr)))))))]
                 [else 
                   (eprintf "parallel-do-event-loop match node-worker failed.\n")
                   (eprintf "trying to match:\n~a\n" node-worker)])))])))
