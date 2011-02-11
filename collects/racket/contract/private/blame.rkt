@@ -7,6 +7,7 @@
          blame-source
          blame-positive
          blame-negative
+         blame-user
          blame-contract
          blame-value
          blame-original?
