@@ -26,10 +26,10 @@
                           ([(sexpr) (syntax->datum user-stx)]
                            [(msg)
                             (if (pair? sexpr)
-                              (format "~.s did not match pattern ~.s"
-                                      sexpr (cons (car sexpr) 'pattern))
+                              (format "use does not match pattern: ~.s"
+                                      (cons (car sexpr) 'pattern))
                               (if (symbol? sexpr)
-                                (format "must be used in a pattern ~.s"
+                                (format "use does not match pattern: ~.s"
                                         (cons sexpr 'pattern))
                                 (error 'internal-error
                                        "something bad happened")))])
