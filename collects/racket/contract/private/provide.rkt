@@ -100,7 +100,7 @@
                               #`(contract contract-id
                                           id
                                           pos-module-source
-                                          (first-requiring-module (quote-syntax loc-id) (quote-module-path))
+                                          (quote-module-path)
                                           'external-id
                                           #,srcloc-code))))))])
                (when key
