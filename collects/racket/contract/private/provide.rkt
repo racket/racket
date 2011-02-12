@@ -39,32 +39,6 @@
                                      (current-inspector) #f '(0))])
     make-))
 
-(define (first-requiring-module id self)
-  (define (resolved-module-path->module-path rmp)
-    (cond
-      [(not rmp) 'top-level]
-      [(path? (resolved-module-path-name rmp))
-       `(file ,(path->string (resolved-module-path-name rmp)))]
-      [(symbol? (resolved-module-path-name rmp))
-       `(module ,(resolved-module-path-name rmp))]))  
-  ;; Here we get the module-path-index corresponding to the identifier.
-  ;; We know we can split it at least once, because the contracted identifier
-  ;; we've provided must have been required.  If the second returned value is #f,
-  ;; we just fall back on the old behavior.  If we split again without getting
-  ;; either "self", that is, the first value returned is not #f, then we should
-  ;; use the second mpi result as the module that required the value.
-  (let ([mpi (syntax-source-module id)])
-    (let*-values ([(first-mp second-mpi)
-                   (module-path-index-split mpi)]
-                  [(second-mp third-mpi)
-                   (if second-mpi
-                       (module-path-index-split second-mpi)
-                       (values #f #f))])
-      (if second-mp
-          (resolved-module-path->module-path
-           (module-path-index-resolve second-mpi))
-          self))))
-
 (define-for-syntax (make-provide/contract-transformer contract-id id external-id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])

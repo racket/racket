@@ -21,8 +21,7 @@
                      name
                      (unpack-blame pos)
                      "<<unknown party>>"
-                     #t
-                     "<<unknown party>>")
+                     #t)
          x
          fmt
          args))
