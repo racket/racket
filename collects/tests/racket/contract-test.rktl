@@ -11306,9 +11306,9 @@ so that propagation occurs.
 
     (define exn:fail:contract:blame-object (contract-eval 'exn:fail:contract:blame-object))
     (define (get-last-part-of-path sexp)
-      (define m (regexp-match #rx"/([-a-z0-9.]*)[^/]*$" (format "~s" sexp)))
-      (printf "sexp: ~s => ~s\n" (format "~s" sexp) m)
-      (and m (cadr m)))
+      (define str (format "orig-blame: ~s" sexp))
+      (define m (regexp-match #rx"[/\\]([-a-z0-9.]*)[^/\\]*$" str))
+      (if m (cadr m) str))
     
     ;; basic negative blame case
     (let ([blame
@@ -11329,10 +11329,7 @@ so that propagation occurs.
              (,get-last-part-of-path (blame-positive ,blame)))
       (ctest "b.rkt"
              'multi-file-blame1-negative
-             (,get-last-part-of-path (blame-negative ,blame)))
-      (ctest "a.rkt"
-             'multi-file-blame1-user
-             (,get-last-part-of-path (blame-user ,blame))))
+             (,get-last-part-of-path (blame-negative ,blame))))
     
     ;; basic positive blame case
     (let ([blame
@@ -11353,10 +11350,7 @@ so that propagation occurs.
              (,get-last-part-of-path (blame-positive ,blame)))
       (ctest "a.rkt"
              'multi-file-blame2-negative
-             (,get-last-part-of-path (blame-negative ,blame)))
-      (ctest "a.rkt"
-             'multi-file-blame2-user
-             (,get-last-part-of-path (blame-user ,blame))))
+             (,get-last-part-of-path (blame-negative ,blame))))
     
     ;; positive blame via a re-provide
     (let ([blame
@@ -11379,12 +11373,9 @@ so that propagation occurs.
       (ctest "c.rkt"
              'multi-file-blame3-positive
              (,get-last-part-of-path (blame-positive ,blame)))
-      (ctest "b.rkt"
+      (ctest "a.rkt"
              'multi-file-blame3-negative
-             (,get-last-part-of-path (blame-negative ,blame)))
-      (ctest "?.rkt"
-             'multi-file-blame3-user
-             (,get-last-part-of-path (blame-user ,blame))))
+             (,get-last-part-of-path (blame-negative ,blame))))
     
     ;; negative blame via a re-provide
     (let ([blame
@@ -11404,15 +11395,12 @@ so that propagation occurs.
                            '(require racket/contract)
                            '(provide/contract [f (-> integer? integer?)])
                            '(define (f x) 1))))))])
-      (ctest "b.rkt"
+      (ctest "a.rkt"
              'multi-file-blame4-positive
              (,get-last-part-of-path (blame-positive ,blame)))
       (ctest "c.rkt"
              'multi-file-blame4-negative
-             (,get-last-part-of-path (blame-negative ,blame)))
-      (ctest "?.rkt"
-             'multi-file-blame4-user
-             (,get-last-part-of-path (blame-user ,blame))))
+             (,get-last-part-of-path (blame-negative ,blame))))
     
     ;; have some sharing in the require graph
     (let ([blame
@@ -11436,10 +11424,7 @@ so that propagation occurs.
              (,get-last-part-of-path (blame-positive ,blame)))
       (ctest "server.rkt"
              'multi-file-blame5-negative
-             (,get-last-part-of-path (blame-negative ,blame)))
-      (ctest "server.rkt"
-             'multi-file-blame5-user
-             (,get-last-part-of-path (blame-user ,blame)))))
+             (,get-last-part-of-path (blame-negative ,blame)))))
   
   
   
