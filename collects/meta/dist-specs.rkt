@@ -394,17 +394,12 @@ mz-src := (+ (- (src: "README" "configure" "Makefile.in" "lt/" "racket/"
                 (cond (not mr) => (src: "worksp/starters/mrstart.ico")))
              foreign-src)
 
-mr-src := (src: "gracket/" "mred/" "wxcommon/"
-                (cond unix => "wxxt/"
-                      mac  => "mac/" "a-list/" "wxmac/"
-                      win  => "wxwindow/"
-                              "worksp/{jpeg|libgracket|gracket|mrstart}/"
-                              "worksp/{png|wxme|wxs|wxutils|wxwin|zlib}/"))
+mr-src := (src: "gracket/" (cond mac => "mac/"
+                                 win => "worksp/{gracket|mrstart}/"))
 
 foreign-src := (src: "foreign/{Makefile.in|README}"
                      "foreign/{foreign.*|rktc-utils.rkt}"
-                     (cond win  => "foreign/libffi_msvc"
-                           else => "foreign/libffi"))
+                     "foreign/libffi")
 
 ;; ============================================================================
 ;; Binary definitions (`in-binary-tree' is used with binary trees, these
