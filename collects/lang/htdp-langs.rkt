@@ -439,7 +439,8 @@
           
           (define/override (first-opened settings)
             (for ([tp (in-list (htdp-lang-settings-teachpacks settings))])
-              (namespace-require/constant tp)))
+              (with-handlers ((exn:fail? void))
+                (namespace-require/constant tp))))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
