@@ -17,7 +17,7 @@
   get-all-numerics)
 
 (define paper-sizes
-  '(("A4 210 x 297\n mm" 595 842)
+  '(("A4 210 x 297 mm" 595 842)
     ("A3 297 x 420 mm" 842 1191)
     ("Letter 8 1/2 x 11 in" 612 791)
     ("Legal 8 1/2 x 14 in" 612 1009)))
