@@ -209,8 +209,8 @@
 
 (require slideshow/code)
 (slide
- #:title "Scheme Code"
- (para "For Scheme code, the" (code slideshow/code)
+ #:title "Racket Code"
+ (para "For Racket code, the" (code slideshow/code)
             "library provides a handy" (code code) "macro for"
             "typesetting literal code")
  (para "The" (code code) "macro uses source-location information"
@@ -870,7 +870,7 @@
 
 (slide
  #:title "Your Own Slides"
- (para "A Slideshow presentation is a Scheme program in a module,"
+ (para "A Slideshow presentation is a Racket program in a module,"
             "so to make your own:")
  (scale/improve-new-text ; a macro that improves font selection
   (code #,(tt "#lang") slideshow

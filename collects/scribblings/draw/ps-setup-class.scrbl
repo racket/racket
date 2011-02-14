@@ -108,10 +108,9 @@ Landscaped orientation affects the size of the drawing area as
 @defmethod[(get-paper-name)
            string?]{
 
-Returns the name of the current paper type: @scheme["A4 210 x 297
- mm"], @scheme["A3 297 x 420 mm"], @scheme["Letter 8 1/2 x 11 in"], or
- @scheme["Legal 8 1/2 x 14 in"]. The default is @scheme["Letter 8 1/2
- x 11 in"].
+Returns the name of the current paper type: @scheme["A4 210 x 297 mm"], 
+ @scheme["A3 297 x 420 mm"], @scheme["Letter 8 1/2 x 11 in"], or
+ @scheme["Legal 8 1/2 x 14 in"]. The default is @scheme["Letter 8 1/2 x 11 in"].
 
 The paper name determines the size of the drawing area as reported by
  @method[dc<%> get-size] (along with landscape transformations from

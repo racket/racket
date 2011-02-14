@@ -21,8 +21,7 @@
                      name
                      (unpack-blame pos)
                      "<<unknown party>>"
-                     #t
-                     "<<unknown party>>")
+                     #t)
          x
          fmt
          args))
@@ -59,8 +58,7 @@
                         name
                         (unpack-blame (if original? pos neg))
                         (unpack-blame (if original? neg pos))
-                        original? 
-                        (unpack-blame (if original? neg pos)))))))
+                        original?)))))
 
 (define (legacy-property name)
   (define-values [ prop pred get ]

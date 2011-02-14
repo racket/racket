@@ -142,13 +142,16 @@ Extends the path's @tech{open sub-path} with a line to the given
 
 }
 
-@defmethod[(lines [points (listof (is-a?/c point%))]
+@defmethod[(lines [points (or/c (listof (is-a?/c point%))
+                                (listof (cons/c real? real?)))]
                   [xoffset real? 0]
                   [yoffset real? 0])
            void?]{
 
 Extends the path's @tech{open sub-path} with a sequences of lines to
- the given points. If the path has no @tech{open sub-path},
+ the given points. A pair is treated as a point where the @racket[car]
+ of the pair is the x-value and the @racket[cdr] is the y-value.
+ If the path has no @tech{open sub-path},
  @|MismatchExn|.  (This convenience method is implemented in terms of
  @method[dc-path% line-to].)
 

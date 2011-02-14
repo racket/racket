@@ -113,7 +113,7 @@
                        #f
                        (map (lambda (l)
                               (list (make-flow (list l))))
-                            flow-accum))))))))]
+                            (reverse flow-accum)))))))))]
            [(equal? #\newline v)
             (loop #f #f (add-line (add-string string-accum line-accum)
                                   flow-accum))]

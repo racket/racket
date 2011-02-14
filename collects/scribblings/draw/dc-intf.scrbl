@@ -214,13 +214,16 @@ See also @method[dc<%> set-smoothing] for information on the
 
 }
 
-@defmethod[(draw-lines [points (listof (is-a?/c point%))]
+@defmethod[(draw-lines [points (or/c (listof (is-a?/c point%))
+                                     (listof (cons/c real? real?)))]
                        [xoffset real? 0]
                        [yoffset real? 0])
            void?]{
 
-Draws lines using a list of @scheme[points], adding @scheme[xoffset]
- and @scheme[yoffset] to each point. The current pen is used for
+Draws lines using a list @scheme[points] of points, adding @scheme[xoffset]
+ and @scheme[yoffset] to each point. A pair is treated as a point where the
+ @racket[car] of the pair is the x-value and the @racket[cdr] is the y-value.
+ The current pen is used for
  drawing the lines.
 
 See also @method[dc<%> set-smoothing] for information on the
@@ -274,14 +277,18 @@ Plots a single point using the current pen.
 
 }
 
-@defmethod[(draw-polygon [points (listof (is-a?/c point%))]
+@defmethod[(draw-polygon [points (or/c (listof (is-a?/c point%))
+                                       (listof (cons/c real? real?)))]
                          [xoffset real? 0]
                          [yoffset real? 0]
                          [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
            void?]{
 
-Draw a filled polygon using a list of @scheme[points], adding
- @scheme[xoffset] and @scheme[yoffset] to each point. The polygon is
+Draw a filled polygon using a list @scheme[points] of points, adding
+ @scheme[xoffset] and @scheme[yoffset] to each point. 
+ A pair is treated as a point where the
+ @racket[car] of the pair is the x-value and the @racket[cdr] is the y-value.
+ The polygon is
  automatically closed, so the first and last point can be
  different. The current pen is used for drawing the outline, and the
  current brush for filling the shape.

@@ -63,12 +63,43 @@
        (run-trace-thread)))]
   [first-parallel?
    (flprintf "PLTDRPAR: loading compilation manager\n")
+   (define tools? (not (getenv "PLTNOTOOLS")))
    (define (files-in-coll coll)
      (define dir (collection-path coll))
      (map (λ (x) (build-path dir x)) 
           (filter
            (λ (x) (regexp-match #rx"rkt$" (path->string x)))
            (directory-list dir))))
+   (define (randomize lst)
+     (define vec (make-vector (length lst) #f))
+     (let loop ([i 0]
+                [lst lst])
+       (cond
+         [(= i (vector-length vec)) (void)]
+         [else
+          (define index (random (- (vector-length vec) i)))
+          (define ele (list-ref lst index))
+          (vector-set! vec i ele)
+          (loop (+ i 1) (remq ele lst))]))
+     (vector->list vec))
+   
+   (define (tool-files id)
+     (apply 
+      append
+      (map
+       (λ (x)
+         (define-values (base name dir) (split-path x))
+         (define proc (get-info/full x))
+         (if proc
+             (map (λ (dirs)
+                    (apply build-path base
+                           (if (list? dirs)
+                               dirs
+                               (list dirs))))
+                  (proc id (λ () '())))
+             '()))
+       (find-relevant-directories (list id)))))
+   
    (define make-compilation-manager-load/use-compiled-handler
      (parameterize ([current-namespace (make-base-empty-namespace)])
        (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)))
@@ -76,15 +107,27 @@
      (flprintf "PLTDRPAR: enabling CM tracing\n")
      (run-trace-thread))
    (flprintf "PLTDRPAR: loading setup/parallel-build\n")
-   (define parallel-compile-files
+   (define-values (parallel-compile-files get-info/full find-relevant-directories)
      (parameterize ([current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)])
-       (dynamic-require 'setup/parallel-build 'parallel-compile-files)))
-   (flprintf "PLTDRPAR: parallel compile of framework & drracket\n")
-   (parallel-compile-files (append (files-in-coll "drracket") (files-in-coll "framework"))
+       (values (dynamic-require 'setup/parallel-build 'parallel-compile-files)
+               (and tools? (dynamic-require 'setup/getinfo 'get-info/full))
+               (and tools? (dynamic-require 'setup/getinfo 'find-relevant-directories)))))
+   (if tools?
+       (flprintf "PLTDRPAR: parallel compile of framework, drracket, and tools\n")
+       (flprintf "PLTDRPAR: parallel compile of framework and drracket\n"))
+   
+   (parallel-compile-files (randomize (append (files-in-coll "drracket") 
+                                              (files-in-coll "framework")
+                                              (if tools?
+                                                  (append (tool-files 'drracket-tools)
+                                                          (tool-files 'tools))
+                                                  '())))
                            #:handler
                            (λ (handler-type path msg out err)
                              (case handler-type
-                               [(done) (void)]
+                               [(done) 
+                                (when cm-trace?
+                                  (printf "PLTDRPAR: made ~a\n" path))]
                                [else
                                 (printf "~a\n" msg)
                                 (printf "stdout from compiling ~a:\n~a\n" path out)

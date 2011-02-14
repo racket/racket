@@ -150,12 +150,16 @@ The fill style affects how well the region reliably combines with
 
 }
 
-@defmethod[(set-polygon [points (listof (is-a?/c point%))]
+@defmethod[(set-polygon [points (or/c (listof (is-a?/c point%))
+                                      (listof (cons/c real? real?)))]
                         [xoffset real? 0]
                         [yoffset real? 0]
                         [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
            void?]{
-Sets the region to the interior of the specified polygon.
+
+Sets the region to the interior of the polygon specified by
+ @racket[points]. A pair is treated as a point where the @racket[car]
+ of the pair is the x-value and the @racket[cdr] is the y-value.
 
 See also @xmethod[dc<%> draw-polygon], since the region content is
  determined the same way as brush-based filling in a @scheme[dc<%>].

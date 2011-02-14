@@ -1457,5 +1457,26 @@
              exn:fail?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; define-syntax-rule
+
+(define-syntax-rule (a-rule-pattern x [y z])
+  (list 'x 'y 'z))
+
+(test '(1 2 3) 'a-rule (a-rule-pattern 1 [2 3]))
+(test '(1 2 3) 'a-rule (a-rule-pattern 1 . ([2 3])))
+(test '(1 2 3) 'a-rule (a-rule-pattern 1 [2 . (3)]))
+(syntax-test #'a-rule-pattern)
+(syntax-test #'(a-rule-pattern 1 2 3))
+(syntax-test #'(a-rule-pattern 1 . 2))
+(syntax-test #'(a-rule-pattern . 1))
+(syntax-test #'(a-rule-pattern 1 [2 3] 4))
+
+(let ([no-match? (lambda (exn) 
+                   (regexp-match? #"does not match pattern" (exn-message exn)))])
+  (error-test #'a-rule-pattern no-match?)
+  (error-test #'(a-rule-pattern) no-match?)
+  (error-test #'(a-rule-pattern 1) no-match?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

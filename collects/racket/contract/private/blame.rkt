@@ -35,7 +35,7 @@
                (hash/recur (blame-original? b))))
 
 (define-struct blame
-  [source value contract positive negative user original?]
+  [source value contract positive negative original?]
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
 
@@ -100,16 +100,11 @@
         contract-message+at)]
       [else
        (define negative-message (show/display (blame-negative b)))
-       (define user-message
-         (if (equal? (blame-positive b) (blame-user b))
-             ""
-             (format " via ~a" (show/display (blame-user b)))))
        (string-append
         (format "contract violation: ~a\n" custom-message)
-        (format "  contract~a from ~a~a~a blaming ~a~a" 
+        (format "  contract~a from ~a~a blaming ~a~a" 
                 value-message
                 negative-message 
-                user-message
                 (if (regexp-match #rx"\n" negative-message)
                     " "
                     ",")

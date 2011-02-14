@@ -49,7 +49,7 @@
 
 (define-objc-class MyApplicationDelegate NSObject #:protocols (NSApplicationDelegate)
   []
-  [-a _int (applicationShouldTerminate: [_id app])
+  [-a _NSUInteger (applicationShouldTerminate: [_id app])
       (queue-quit-event)
       0]
   [-a _BOOL (openPreferences: [_id app])
@@ -120,7 +120,7 @@
 (import-class NSEvent)
 (define wake-evt
   (tell NSEvent 
-        otherEventWithType: #:type _int NSApplicationDefined
+        otherEventWithType: #:type _NSUInteger NSApplicationDefined
         location: #:type _NSPoint (make-NSPoint 0.0 0.0)
         modifierFlags: #:type _NSUInteger 0 
         timestamp: #:type _double 0.0

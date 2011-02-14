@@ -469,7 +469,9 @@ Equivalent to
   (syntax-rules ()
    [(id . pattern) template]))
 ]
-}
+
+but with syntax errors potentially phrased in terms of 
+@racket[pattern].}
 
 
 @defidform[...]{
