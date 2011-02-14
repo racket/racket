@@ -1,7 +1,7 @@
 ;;;============================================================================
 ;;; GCalc
 ;;;   based on http://www.grame.fr/Research/GCalcul/Graphic_Calculus.html
-;;;   implemented by Eli Barzilay: Maze is Life! (eli@barzilay.org)
+;;;   implemented by Eli Barzilay.
 
 #lang mzscheme
 
@@ -25,7 +25,7 @@
 
 (defcustom EVAL-NOW    #t 'bool      "Evaluate immediately on application")
 (defcustom EVAL-DEPTH  18 '(int 100) "Evaluation depth limit")
-(defcustom DRAW-CUTOFF 8 '(int 50)  "Cutoff evaluation when smaller")
+(defcustom DRAW-CUTOFF  8 '(int 50)  "Cutoff evaluation when smaller")
 (defcustom SPLIT-ARGS  #f 'bool      "Split arg by function body structure")
 (defcustom COLOR-OPS   #f 'bool      "Use colors as functions")
 (defcustom NOBMP-PRINT #f 'bool      "Never use bitmaps to print")
@@ -76,10 +76,12 @@
 
 (define SHOW-CELL-SIZE 600)
 
-(define BG-PEN/BRUSH  (list (instantiate pen%   ["BLACK" 1 'solid])
-                            (instantiate brush% ["GRAY" 'solid])))
-(define XOR-PEN/BRUSH (list (instantiate pen%   ["BLACK" 0 'xor])
-                            (instantiate brush% ["BLACK" 'xor])))
+(define BG-PEN/BRUSH (list (instantiate pen%   ["BLACK" 1 'solid])
+                           (instantiate brush% ["GRAY" 'solid])))
+(define HIGHLIGHT-WIDTH 4)
+(define HIGHLIGHT-PEN/BRUSH
+  (list (instantiate pen% ["BLACK" HIGHLIGHT-WIDTH 'solid])
+        (instantiate brush% ("BLACK" 'transparent))))
 
 (define DOUBLE-MILISECS 250)
 
@@ -755,19 +757,11 @@
     (define/public (eval-next-expr) (set! evaluate-next #t))
     (define/public (get-dropper) dropper)
     ;; highlighting
-    (define/private (frame-xor-bitmap)
-      (set-pen/brush dc XOR-PEN/BRUSH)
-      (send* dc
-        (draw-rectangle 1 1 size size)
-        (draw-rectangle CELL-BORDER CELL-BORDER
-                        (- size CELL-BORDER CELL-BORDER -1)
-                        (- size CELL-BORDER CELL-BORDER -1)))
-      (on-paint))
     (define highlighted? #f)
     (define/public (highlight!)
-      (unless highlighted? (frame-xor-bitmap) (set! highlighted? #t)))
+      (unless highlighted? (set! highlighted? #t) (on-paint)))
     (define/public (unhighlight!)
-      (when highlighted? (frame-xor-bitmap) (set! highlighted? #f)))
+      (when highlighted? (set! highlighted? #f) (on-paint)))
     ;; cell operations
     (define (make-cell-op: op . enabled?)
       (let ([enabled?
@@ -823,7 +817,13 @@
         [(show:) show:] [(print:) print:] [(eval:) eval:] [(rename:) rename:]))
     ;; events
     (define/override (on-paint)
-      (send (get-dc) draw-bitmap bitmap 0 0))
+      (let ([dc (get-dc)])
+        (send dc draw-bitmap bitmap 0 0)
+        (when highlighted?
+          (set-pen/brush dc HIGHLIGHT-PEN/BRUSH)
+          (let ([w1 (round (/ HIGHLIGHT-WIDTH 2))]
+                [w2 (- size HIGHLIGHT-WIDTH -1)])
+            (send dc draw-rectangle w1 w1 w2 w2)))))
     (define right-menu-thread #f)
     (define dragging? #f)
     (define drag-to   #f)
@@ -836,8 +836,7 @@
         [(enter)
          (set! current-cell this)
          (send this focus)
-         (when (and draggable? (not (null-expr? expr)))
-           (highlight!))]
+         (when (and draggable? (not (null-expr? expr))) (highlight!))]
         [(leave)
          (unless dragging? (set! current-cell #f) (unhighlight!))]
         [(left-down)
