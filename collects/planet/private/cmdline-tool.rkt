@@ -272,7 +272,7 @@ This command does not unpack or install the named .plt file."
            [min (read-from-string minstr)])
       (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
         (fail "Invalid major/minor version"))
-      (remove-hard-link ownerstr pkgstr maj min quiet?)))
+      (remove-hard-link ownerstr pkgstr maj min #:quiet? quiet?)))
       
   (define (get-download-url ownerstr pkgstr majstr minstr)
     (let ([fps (params->full-pkg-spec ownerstr pkgstr majstr minstr)])
