@@ -144,8 +144,11 @@
     (send-sexp-to-mred
      `(let ([thunk (lambda () ,sexp)]  ;; low tech hygiene
             [c (make-channel)])
-        (queue-callback (lambda () (channel-put c (thunk))))
-        (channel-get c)))))
+        (queue-callback (lambda () (channel-put c (with-handlers ((exn:fail? (λ (x) (list 'exn x)))) (list 'normal (thunk))))))
+        (let ([res (channel-get c)])
+          (if (eq? (list-ref res 0) 'normal)
+              (list-ref res 1)
+              (raise (list-ref res 1))))))))
 
 (define re:tcp-read-error (regexp "tcp-read:"))
 (define re:tcp-write-error (regexp "tcp-write:"))
