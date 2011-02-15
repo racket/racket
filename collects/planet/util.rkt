@@ -68,7 +68,8 @@
  [add-hard-link 
   (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
-  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c void?)]
+  (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c boolean?
+      void?)]
  [remove-pkg
   (-> string? (and/c string? #rx"[.]plt") natural-number/c natural-number/c void?)]
  [erase-pkg
@@ -766,12 +767,16 @@
                  (path->string path))))
   (add-hard-link! pkg-name (list owner) maj min path))
 
-;; remove-hard-link : string string num num -> void
+;; remove-hard-link : string string num num boolean -> void
 ;; removes any development association from the given package spec
-(define (remove-hard-link owner pkg-name maj min)
+(define (remove-hard-link owner pkg-name maj min quiet?)
+  (define (matching-link? row)
+    (points-to? row pkg-name (list owner) maj min))
+  (when (and (empty? (filter matching-link? (get-hard-link-table)))
+             (not quiet?))
+    (error "no existing links match the given specification"))
   (filter-link-table!
-   (lambda (row) 
-     (not (points-to? row pkg-name (list owner) maj min)))
+   (lambda (row) (not (matching-link? row)))
    (lambda (row) 
      (let ([p (row->package row)])
        (when p
