@@ -93,7 +93,7 @@
              (if (zero? n)
                (triangle 2 'solid 'red)
                (let ([t (sierpinski (- n 1))])
-                 (above t (beside t t)))))}
+                 (freeze (above t (beside t t))))))}
      @desc{The @elemcode{2htdp/image} library provides easy-to-use functions
        for constructing images, and DrRacket can display an image result as
        easily as it can display a number result.  In this case, a
