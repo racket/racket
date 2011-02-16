@@ -2344,6 +2344,7 @@ future {
   gcMARK2(f->arg_s2, gc);
   gcMARK2(f->arg_S2, gc);
   gcMARK2(f->arg_p, gc);
+  gcMARK2(f->arg_S4, gc);
   gcMARK2(f->retval_s, gc);
   gcMARK2(f->retval, gc);
   gcMARK2(f->multiple_array, gc);
@@ -2360,6 +2361,15 @@ future {
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
+fsemaphore {
+  mark:
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcMARK2(s->queue_front, gc);
+    gcMARK2(s->queue_end, gc);
+  size:
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+}
+
 #else
 
 sequential_future {
@@ -2373,16 +2383,15 @@ sequential_future {
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
-#endif
-
-fsemaphore {
+sequential_fsemaphore {
   mark:
-    fsemaphore_t *s = (fsemaphore_t*)p;
-    gcMARK2(s->queue_front, gc);
-    gcMARK2(s->queue_end, gc);
+    fsemaphore_t *fsema = (fsemaphore_t*)p;
   size:
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
+
+#endif
+
 
 
 END future;

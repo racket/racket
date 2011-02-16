@@ -90,6 +90,11 @@ typedef struct future_t {
   Scheme_Object **arg_S2;
   int arg_i2;
 
+  const char *arg_str0;
+  const char *arg_str1;
+  int arg_i3;
+  Scheme_Object **arg_S4;
+
   Scheme_Thread *arg_p;
   struct Scheme_Current_LWC *lwc;
   struct Scheme_Future_Thread_State *fts;
@@ -138,6 +143,7 @@ typedef struct fsemaphore_t {
 #define SIG_ALLOC_MARK_SEGMENT 3
 #define SIG_ALLOC_VALUES       4
 #define SIG_MAKE_FSEMAPHORE	   5
+#define SIG_WRONG_TYPE_EXN     200
 
 # include "jit_ts_protos.h"
 
@@ -181,6 +187,8 @@ extern Scheme_Object *touch(int argc, Scheme_Object **argv);
 extern Scheme_Object *future_touch(int futureid);
 #endif
 
+#else 
+Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[]);
 #endif /* MZ_USE_FUTURES */
 
 /* always defined: */

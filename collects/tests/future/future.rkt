@@ -242,12 +242,60 @@ We should also test deep continuations.
   (check-equal? #t (fsemaphore-try-wait? m1)) 
   (check-equal? #f (fsemaphore-try-wait? m2)))
 
+;Test for errors when passing bad arguments 
+(check-exn exn:fail:contract? (λ () (make-fsemaphore -1)))
+(check-exn exn:fail:contract? (λ () (make-fsemaphore (cons "a" "b"))))
+(check-exn exn:fail:contract? (λ () (fsemaphore-count (cons "foo" "goo"))))
+(check-exn exn:fail:contract? (λ () (fsemaphore-post (cons 1 2))))
+(check-exn exn:fail:contract? (λ () (fsemaphore-wait (cons 1 2)))) 
+(check-exn exn:fail:contract? (λ () (fsemaphore-try-wait? (cons 1 2))))
+
+(check-exn exn:fail:contract? (λ () 
+                                (let ([f (future (λ () 
+                                                   (make-fsemaphore (cons "go" 
+                                                                          "mavs"))))]) 
+                                  (sleep 0.5) 
+                                  (touch f))))
+
+(check-exn exn:fail:contract? (λ () 
+                                (let ([f (future (λ () 
+                                                   (make-fsemaphore -1)))]) 
+                                  (sleep 0.5) 
+                                  (touch f))))
+
+(let ([f (future (λ () 
+                   (fsemaphore-post 33)))]) 
+  (sleep 0.5) 
+  (check-exn exn:fail? (λ () (touch f))))
+
+(let ([f (future (λ () 
+                   (fsemaphore-count 33)))]) 
+  (sleep 0.5) 
+  (check-exn exn:fail? (λ () (touch f))))
+
+(let ([f (future (λ () 
+                   (fsemaphore-wait 33)))]) 
+  (sleep 0.5) 
+  (check-exn exn:fail? (λ () (touch f))))
+
+(let ([f (future (λ () 
+                   (fsemaphore-try-wait? 33)))]) 
+  (sleep 0.5) 
+  (check-exn exn:fail? (λ () (touch f))))
+
+;try-wait
+(let ([m1 (make-fsemaphore 20)] 
+      [m2 (make-fsemaphore 0)]) 
+  (check-equal? #t (fsemaphore-try-wait? m1)) 
+  (check-equal? #f (fsemaphore-try-wait? m2)))
+
 (let* ([m1 (make-fsemaphore 20)] 
        [m2 (make-fsemaphore 0)] 
        [f1 (future (λ () 
                     (fsemaphore-try-wait? m2)))] 
        [f2 (future (λ () 
                     (fsemaphore-try-wait? m1)))]) 
+  (sleep 0.5)
   (check-equal? #f (touch f1)) 
   (check-equal? #t (touch f2)))
 
@@ -265,18 +313,18 @@ We should also test deep continuations.
   (touch f)
   (check-equal? 0 (fsemaphore-count m)))
 
-;The f1 future should never terminate 
-(printf "test n-4~n")
 (let* ([m (make-fsemaphore 0)]
        [dummy 5]
        [f1 (future (λ () (fsemaphore-wait m) (set! dummy 42)))] 
        [f2 (future (λ () 88))]) 
   (check-equal? 88 (touch f2)) 
-  (sleep 3)
+  (sleep 1)
   (check-equal? 0 (fsemaphore-count m))
-  (check-equal? 5 dummy))
+  (check-equal? 5 dummy)
+  (fsemaphore-post m) 
+  (touch f1)
+  (check-equal? 42 dummy))
 
-(printf "test n-3~n")
 (let* ([m (make-fsemaphore 0)]
        [dummy 5]
        [f1 (future (λ () 
@@ -286,11 +334,10 @@ We should also test deep continuations.
        [f2 (future (λ () 
                      (fsemaphore-post m) 
                      #t))])
-  (sleep 2) 
+  (sleep 1) 
   (check-equal? 42 (touch f1)) 
   (check-equal? 0 (fsemaphore-count m)))
 
-(printf "test n-2~n")
 (let* ([m1 (make-fsemaphore 0)] 
        [m2 (make-fsemaphore 0)] 
        [dummy 8]
@@ -306,7 +353,6 @@ We should also test deep continuations.
                      dummy))]) 
   (check-equal? 11 (touch f2)))
 
-(printf "test n-1~n")
 (let* ([m (make-fsemaphore 0)] 
        [f1 (future (λ () 
                      (sleep 1) 
@@ -320,7 +366,6 @@ We should also test deep continuations.
 ;of a touch.  Meanwhile, another future is allocating (requiring 
 ;the help of the runtime thread which is also "blocked" waiting 
 ;for the semaphore to become ready.
-(printf "test n~n")
 (let* ([m (make-fsemaphore 0)] 
        [f1 (future (λ () 
                      (sleep 1) ;Currently a blocking RT call 
@@ -334,9 +379,36 @@ We should also test deep continuations.
                                          (loop (sub1 index) (cons index l))]))]) 
                        (fsemaphore-post m) 
                        (car retval))))])    
-  (sleep 3)
+  (sleep 1)
   (touch f1)
   (check-equal? 1 (touch f2)))
+
+(let* ([m (make-fsemaphore 0)] 
+       [f1 (future (λ () 
+                     (fsemaphore-wait m)
+                     42))] 
+       [f2 (future (λ () 
+                     (fsemaphore-wait m) 
+                     99))]) 
+  ;sleep to ensure that both futures will queue up waiting for the fsema 
+  (sleep 1) 
+  (fsemaphore-post m) 
+  (fsemaphore-post m)
+  (check-equal? 42 (touch f1)) 
+  (check-equal? 99 (touch f2)))
+                     
+(let* ([m (make-fsemaphore 0)]
+       [fs (for/list ([i (in-range 0 19)]) 
+             (future (λ () 
+                       (fsemaphore-wait m) 
+                       i)))]) 
+  (sleep 1)
+  (for ([i (in-range 0 19)]) 
+    (fsemaphore-post m)) 
+  (check-equal? 171 (foldl (λ (f acc) 
+                             (+ (touch f) acc)) 
+                           0 
+                           fs)))
 
 ;; Make sure that `future' doesn't mishandle functions
 ;; that aren't be JITted:
