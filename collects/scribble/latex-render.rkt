@@ -468,7 +468,7 @@
                                               (loop (cdr flows) (add1 n))]
                                              [else n]))])
                             (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                            (render-table-cell (car flows) part ri twidth (car cell-styles))
+                            (render-table-cell (car flows) part ri (/ twidth cnt) (car cell-styles))
                             (unless (= cnt 1) (printf "}"))
                             (unless (null? (list-tail flows cnt)) (printf " &\n"))))
                         (unless (null? (cdr flows)) (loop (cdr flows)
