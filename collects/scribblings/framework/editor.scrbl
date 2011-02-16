@@ -25,7 +25,7 @@
     for more info about edit sequences.
 
   }
-  @defmethod*[(((run-after-edit-sequence (thunk (-> void)) (tag (union symbol? |#f|) |#f|)) void))]{
+  @defmethod*[(((run-after-edit-sequence (thunk (-> void)) (tag (union symbol? #f) #f)) void))]{
     This method is used to install callbacks that will be run after any
     edit-sequence completes.
 
@@ -40,7 +40,7 @@
     @method[editor:basic<%> run-after-edit-sequence]'s argument will be called.
 
   }
-  @defmethod*[(((get-top-level-window) (union |#f| (is-a?/c top-level-window<%>))))]{
+  @defmethod*[(((get-top-level-window) (union #f (is-a?/c top-level-window<%>))))]{
     Returns the 
     @scheme[top-level-window<%>]
     currently associated with this buffer.
@@ -53,7 +53,7 @@
     Returns @scheme[#t] if the file on disk has been modified, by some other program.
 
   }
-  @defmethod*[(((save-file/gui-error (filename (union path |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean?))]{
+  @defmethod*[(((save-file/gui-error (filename (union path #f) #f) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> save-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -63,7 +63,7 @@
     no error occurred and @scheme[#f] if an error occurred.
 
   }
-  @defmethod*[(((load-file/gui-error (filename (union string |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean?))]{
+  @defmethod*[(((load-file/gui-error (filename (union string #f) #f) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> load-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -347,7 +347,7 @@
 
   The class that this mixin produces uses the same initialization
   arguments as its input.
-  @defmethod*[#:mode override (((set-filename (name string) (temp? boolean |#f|)) void))]{
+  @defmethod*[#:mode override (((set-filename (name string) (temp? boolean #f)) void))]{
 
     Updates the filename on each frame displaying this editor, for each
     frame that matches
@@ -399,7 +399,7 @@
 
     Returns @scheme[#t].
   }
-  @defmethod*[(((do-autosave) (union |#f| string)))]{
+  @defmethod*[(((do-autosave) (union #f string)))]{
     This method is called to perform the autosaving.
     See also
     @scheme[autosave:register]

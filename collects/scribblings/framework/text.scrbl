@@ -107,7 +107,7 @@
     moved. A snip may refuse to be moved by returning @scheme[#f] from
     @method[snip% release-from-owner].
   }
-  @defmethod*[(((initial-autowrap-bitmap) (union |#f| (instance bitmap%))))]{
+  @defmethod*[(((initial-autowrap-bitmap) (union #f (instance bitmap%))))]{
     The result of this method is used as the initial autowrap
     bitmap. Override this method to change the initial 
     @scheme[bitmap%]. See also
@@ -488,13 +488,13 @@
   The contents of the two
   editor are kept in sync, as modifications
   to this object happen.
-  @defmethod*[(((get-delegate) (union |#f| (instanceof text%))))]{
+  @defmethod*[(((get-delegate) (union #f (instanceof text%))))]{
     The result of this method is the @scheme[text%] object
     that the contents of this editor are being delegated to, or
     @scheme[#f], if there is none.
 
   }
-  @defmethod*[(((set-delegate (delegate (union |#f| (instanceof text%)))) void))]{
+  @defmethod*[(((set-delegate (delegate (union #f (instanceof text%)))) void))]{
     This method sets the current delegate. 
 
 
@@ -531,7 +531,17 @@
     Creates and returns an instance of 
     @scheme[text:1-pixel-string-snip%].
   }
-  @defmethod*[#:mode override (((get-extent (dc (instanceof dc<%>)) (x real) (y real) (w (box (union non-negative-real-number |#f|)) |#f|) (h (box (union non-negative-real-number |#f|)) |#f|) (descent (box (union non-negative-real-number |#f|)) |#f|) (space (box (union non-negative-real-number |#f|)) |#f|) (lspace (box (union non-negative-real-number |#f|)) |#f|) (rspace (box (union non-negative-real-number |#f|)) |#f|)) void))]{
+  @defmethod*[#:mode override
+              (((get-extent
+                 (dc (instanceof dc<%>))
+                 (x real) (y real)
+                 (w (box (union non-negative-real-number #f)) #f)
+                 (h (box (union non-negative-real-number #f)) #f)
+                 (descent (box (union non-negative-real-number #f)) #f)
+                 (space (box (union non-negative-real-number #f)) #f)
+                 (lspace (box (union non-negative-real-number #f)) #f)
+                 (rspace (box (union non-negative-real-number #f)) #f))
+                void))]{
 
     Sets the descent, space, lspace, and rspace to zero. Sets
     the height to 1. Sets the width to the number of characters
@@ -573,7 +583,7 @@
     Creates and returns an instance of 
     @scheme[text:1-pixel-tab-snip%].
   }
-  @defmethod*[#:mode override (((get-extent (dc (instanceof dc<%>)) (x real) (y real) (w (box (union non-negative-real-number |#f|)) |#f|) (h (box (union non-negative-real-number |#f|)) |#f|) (descent (box (union non-negative-real-number |#f|)) |#f|) (space (box (union non-negative-real-number |#f|)) |#f|) (lspace (box (union non-negative-real-number |#f|)) |#f|) (rspace (box (union non-negative-real-number |#f|)) |#f|)) void))]{
+  @defmethod*[#:mode override (((get-extent (dc (instanceof dc<%>)) (x real) (y real) (w (box (union non-negative-real-number #f)) #f) (h (box (union non-negative-real-number #f)) #f) (descent (box (union non-negative-real-number #f)) #f) (space (box (union non-negative-real-number #f)) #f) (lspace (box (union non-negative-real-number #f)) #f) (rspace (box (union non-negative-real-number #f)) #f)) void))]{
 
     Sets the descent, space, lspace, and rspace to zero. Sets
     the height to 1. Sets the width to the width of tabs as
