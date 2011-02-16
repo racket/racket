@@ -7552,6 +7552,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
      
       return 1;
     } else if (IS_NAMED_PRIM(rator, "fsemaphore-post")) { 
+      GC_CAN_IGNORE jit_insn *refr;
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -7569,7 +7570,6 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_movi_i(JIT_R0, 1);
       jit_pusharg_i(JIT_R0);
 
-      GC_CAN_IGNORE jit_insn *refr;
       (void)mz_finish_lwe(scheme_fsemaphore_post, refr);
       mz_popr_x();
       jit_retval(JIT_R0);
@@ -7578,6 +7578,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       return 1;
     } else if (IS_NAMED_PRIM(rator, "fsemaphore-wait")) { 
+      GC_CAN_IGNORE jit_insn *refr;
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -7595,10 +7596,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_movi_i(JIT_R0, 1);
       jit_pusharg_i(JIT_R0);
 
-      GC_CAN_IGNORE jit_insn *refr;
       (void)mz_finish_lwe(scheme_fsemaphore_wait, refr);
 
-      //mz_finish(scheme_fsemaphore_wait);
       mz_popr_x();
       jit_retval(JIT_R0);
       mz_rs_sync();
