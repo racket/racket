@@ -2362,11 +2362,11 @@ future {
 }
 
 fsemaphore {
-  mark:
+ mark:
     fsemaphore_t *s = (fsemaphore_t*)p;
     gcMARK2(s->queue_front, gc);
     gcMARK2(s->queue_end, gc);
-  size:
+ size:
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
@@ -2384,9 +2384,8 @@ sequential_future {
 }
 
 sequential_fsemaphore {
-  mark:
-    fsemaphore_t *fsema = (fsemaphore_t*)p;
-  size:
+ mark:
+ size:
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 

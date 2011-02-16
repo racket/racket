@@ -164,6 +164,8 @@ extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 extern void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
                                           prim_allocate_values_t f);
+extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, 
+                                                    int argc, Scheme_Object *ready);
 #else 
 
 #define IS_WORKER_THREAD 0

@@ -5754,29 +5754,31 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
 #define future_IS_ATOMIC 0
 #define future_IS_CONST_SIZE 1
 
-static int fsemaphore_SIZE(void *p, struct NewGC *gc) { 
-  return 
-  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+
+static int fsemaphore_SIZE(void *p, struct NewGC *gc) {
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
-static int fsemaphore_MARK(void *p, struct NewGC *gc) { 
-  fsemaphore_t *s = (fsemaphore_t*)p;
-  gcMARK2(s->queue_front, gc);
-  gcMARK2(s->queue_end, gc);
-  return 
-  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
-} 
-
-static int fsemaphore_FIXUP(void *p, struct NewGC *gc) { 
-  fsemaphore_t *s = (fsemaphore_t*)p;
-  gcFIXUP2(s->queue_front, gc);
-  gcFIXUP2(s->queue_end, gc);
-  return 
-  gcBYTES_TO_WORDS(sizeof(future_t));
+static int fsemaphore_MARK(void *p, struct NewGC *gc) {
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcMARK2(s->queue_front, gc);
+    gcMARK2(s->queue_end, gc);
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
-#define fsemaphore_IS_ATOMIC 0 
+static int fsemaphore_FIXUP(void *p, struct NewGC *gc) {
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcFIXUP2(s->queue_front, gc);
+    gcFIXUP2(s->queue_end, gc);
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+}
+
+#define fsemaphore_IS_ATOMIC 0
 #define fsemaphore_IS_CONST_SIZE 1
+
 
 #else
 
@@ -5808,27 +5810,29 @@ static int sequential_future_FIXUP(void *p, struct NewGC *gc) {
 #define sequential_future_IS_ATOMIC 0
 #define sequential_future_IS_CONST_SIZE 1
 
-static int sequential_fsemaphore_SIZE(void *p, struct NewGC *gc) { 
-  return 
-  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+
+static int sequential_fsemaphore_SIZE(void *p, struct NewGC *gc) {
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
-static int sequential_fsemaphore_MARK(void *p, struct NewGC *gc) { 
-  fsemaphore_t *s = (fsemaphore_t*)p;
-  return 
-  gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
-} 
-
-static int sequential_fsemaphore_FIXUP(void *p, struct NewGC *gc) { 
-  fsemaphore_t *s = (fsemaphore_t*)p;
-  return 
-  gcBYTES_TO_WORDS(sizeof(future_t));
+static int sequential_fsemaphore_MARK(void *p, struct NewGC *gc) {
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
-#define sequential_fsemaphore_IS_ATOMIC 0 
+static int sequential_fsemaphore_FIXUP(void *p, struct NewGC *gc) {
+  return
+    gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+}
+
+#define sequential_fsemaphore_IS_ATOMIC 1
 #define sequential_fsemaphore_IS_CONST_SIZE 1
 
+
 #endif
+
+
 
 #endif  /* FUTURE */
 

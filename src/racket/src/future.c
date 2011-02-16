@@ -1104,7 +1104,6 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object **argv)
   XFORM_SKIP_PROC
 {
   fsemaphore_t *sema;
-  future_t *cf;
   Scheme_Object *ret;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_fsemaphore_type)) { 
