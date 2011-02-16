@@ -1825,6 +1825,9 @@
 (define-struct committer (kr commit-peeker-evt done-evt resp-chan resp-nack))
 
 (define msec-timeout 500)
+
+;; this value (4096) is also mentioned in the test suite (collects/tests/framework/test.rkt)
+;; so if you change it, be sure to change things over there too
 (define output-buffer-full 4096)
 
 (define-local-member-name 
@@ -1872,6 +1875,17 @@
   (let ([value-sd (make-object style-delta% 'change-nothing)])
     (send value-sd set-delta-foreground (make-object color% 0 0 175))
     (create-style-name value-style-name value-sd)))
+
+;; data : any
+;; to-insert-chan : (or/c #f channel)
+;;   if to-insert-chan is a channel, this means
+;;   the eventspace handler thread is the one that
+;;   is initiating the communication, so instead of
+;;   queueing a callback to do the update of the editor,
+;;   just send the work back directly and it will be done
+;;   syncronously there. If it is #f, then we queue a callback
+;;   to do the work
+(define-struct data/chan (data to-insert-chan))
 
 (define ports-mixin
   (mixin (wide-snip<%>) (ports<%>)
@@ -2241,7 +2255,7 @@
           (after-io-insertion))))
     
     (define/public (after-io-insertion) (void))
-    
+
     (define output-buffer-thread
       (let ([converter (bytes-open-converter "UTF-8-permissive" "UTF-8")])
         (thread
@@ -2257,13 +2271,16 @@
                    (alarm-evt (+ last-flush msec-timeout))
                    (λ (_)
                      (let-values ([(viable-bytes remaining-queue) (split-queue converter text-to-insert)])
+                       ;; we always queue the work here since the always event means no one waits for the callback
                        (queue-insertion viable-bytes always-evt)
                        (loop remaining-queue (current-inexact-milliseconds))))))
               (handle-evt
                flush-chan
-               (λ (return-evt)
+               (λ (return-evt/to-insert-chan)
                  (let-values ([(viable-bytes remaining-queue) (split-queue converter text-to-insert)])
-                   (queue-insertion viable-bytes return-evt)
+                   (if (channel? return-evt/to-insert-chan)
+                       (channel-put return-evt/to-insert-chan viable-bytes) 
+                       (queue-insertion viable-bytes return-evt/to-insert-chan))
                    (loop remaining-queue (current-inexact-milliseconds)))))
               (handle-evt
                clear-output-chan
@@ -2271,16 +2288,22 @@
                  (loop (empty-queue) (current-inexact-milliseconds))))
               (handle-evt
                write-chan
-               (λ (pr)
+               (λ (pr-pr)
+                 (define return-chan (car pr-pr))
+                 (define pr (cdr pr-pr))
                  (let ([new-text-to-insert (enqueue pr text-to-insert)])
                    (cond
                      [((queue-size text-to-insert) . < . output-buffer-full)
+                      (when return-chan
+                        (channel-put return-chan '()))
                       (loop new-text-to-insert last-flush)]
                      [else
                       (let ([chan (make-channel)])
                         (let-values ([(viable-bytes remaining-queue) 
                                       (split-queue converter new-text-to-insert)])
-                          (queue-insertion viable-bytes (channel-put-evt chan (void)))
+                          (if return-chan
+                              (channel-put return-chan viable-bytes)
+                              (queue-insertion viable-bytes (channel-put-evt chan (void))))
                           (channel-get chan)
                           (loop remaining-queue (current-inexact-milliseconds))))]))))))))))
     
@@ -2300,16 +2323,23 @@
         (λ (to-write start end block/buffer? enable-breaks?)
           (cond
             [(= start end) (flush-proc)]
-            [(eq? (current-thread) (eventspace-handler-thread eventspace))
-             (error 'write-bytes-proc "cannot write to port on eventspace main thread")]
             [else
-             (channel-put write-chan (cons (subbytes to-write start end) style))])
+             (define pair (cons (subbytes to-write start end) style))
+             (cond
+               [(eq? (current-thread) (eventspace-handler-thread eventspace))
+                (define return-channel (make-channel))
+                (thread (λ () (channel-put write-chan (cons return-channel pair))))
+                (do-insertion (channel-get return-channel) #f)]
+               [else
+                (channel-put write-chan (cons #f pair))])])
           (- end start)))
       
       (define (flush-proc)
         (cond
           [(eq? (current-thread) (eventspace-handler-thread eventspace))
-           (error 'flush-proc "cannot flush port on eventspace main thread")]
+           (define to-insert-channel (make-channel))
+           (thread (λ () (channel-put flush-chan to-insert-channel)))
+           (do-insertion (channel-get to-insert-channel) #f)]
           [else
            (sync
             (nack-guard-evt
@@ -2327,17 +2357,18 @@
       
       (define (make-write-special-proc style)
         (λ (special can-buffer? enable-breaks?)
+          (define str/snp (cond
+                            [(string? special) special]
+                            [(is-a? special snip%) special]
+                            [else (format "~s" special)]))
+          (define to-send (cons str/snp style))
           (cond
             [(eq? (current-thread) (eventspace-handler-thread eventspace))
-             (error 'write-bytes-proc "cannot write to port on eventspace main thread")]
+             (define return-chan (make-channel))
+             (thread (λ () (channel-put write-chan (cons return-chan to-send))))
+             (do-insertion (channel-get return-chan) #f)]
             [else
-             (let ([str/snp (cond
-                              [(string? special) special]
-                              [(is-a? special snip%) special]
-                              [else (format "~s" special)])])
-               (channel-put 
-                write-chan 
-                (cons str/snp style)))])
+             (channel-put write-chan (cons #f to-send))])
           #t))
       
       (let* ([add-standard

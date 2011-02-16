@@ -197,7 +197,7 @@ Various common pieces of code that both the client and server need to access
                           original-table))])
         (save-hard-link-table new-table))))
   
-  ;; filter-link-table! : (row -> boolean) -> void
+  ;; filter-link-table! : (row -> boolean) (row -> any/c) -> void
   ;; removes all rows from the hard link table that don't match the given predicate.
   ;; also updates auxiliary datastructures that might have dangling pointers to
   ;; the removed links

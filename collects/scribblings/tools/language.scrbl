@@ -440,7 +440,7 @@ This method is the same as
 }
 
 @defmethod[(on-execute [settings settings]
-                       [run-in-user-thread ((-> void) -> void)])
+                       [run-on-user-thread ((-> void) -> void)])
            vod]{
 This method is the same as
 @method[drracket:language:language<%> on-execute].
@@ -628,7 +628,7 @@ default settings obtained via
 
 }
 
-@defmethod*[([(first-opened [settings settings]) void?])]{
+@defmethod[(first-opened [settings settings]) void?]{
 
 This method is called after the language is initialized, but
 no program has yet been run. It is called from the user's 
@@ -637,8 +637,8 @@ eventspace's main thread.
 See also
 @method[drracket:rep:text% initialize-console].
 
-Calling this method should not raise an exception (or otherwise
-try to escape). DrRacket calls this method in a @racket[parameterize]
+Calling this method should not escape. 
+DrRacket calls this method in a @racket[parameterize]
 where the @racket[error-escape-handler] is set to an escaping
 continuation that continues initializing the interactions window.
 Thus, raising an exception will report the error in the user's
@@ -646,7 +646,14 @@ interactions window as if this were a bug in the user's program.
 Escaping in any other way, however, can cause DrRacket to fail
 to start up.
 
-Contrary to the method contract space, DrRacket will also invoke this
+Also, IO system will deadlock if the @racket[first-opened] method
+does IO on the user's IO ports, so the calling context of
+@racket[first-opened] sets the @racket[current-output-port] and
+@racket[current-error-port] to ports that just collect all of the
+IO that happened and then replay it later in the initialization of the
+user's program.
+
+Contrary to the method contract spec, DrRacket will also invoke this
 method if it has zero arguments, passing nothing; the zero argument
 version is for backwards compatibility and is not recommended.
 
@@ -932,7 +939,7 @@ the settings for this language.
 }
 
 @defmethod[(on-execute [settings settings]
-                       [run-in-user-thread ((-> any) -> any)])
+                       [run-on-user-thread ((-> any) -> any)])
            any]{
 The @scheme[on-execute] method is called on DrRacket's
 eventspace's main thread before any evaluation happens
@@ -1015,13 +1022,16 @@ that error message into the definitions window.}
 
 ]
 
-The @scheme[run-in-user-thread] arguments accepts thunks and
-runs them on the user's eventspace's main thread. These
-thunks must not raise an exceptions (or DrRacket itself will
-get stuck). In addition, the output ports are not yet
+The @scheme[run-on-user-thread] arguments accepts thunks and
+runs them on the user's eventspace's main thread. 
+The output ports are not yet
 functioning, so print outs should be directed to the
 original DrRacket output port, if necessary.
 
+This thunk is wrapped in a @racket[with-handlers] that 
+catches all exceptions matching @racket[exn:fail?] and
+then prints out the exception message to the original
+output port of the DrRacket process.
 }
 
 @defmethod[(order-manuals [manuals (listof bytes?)])

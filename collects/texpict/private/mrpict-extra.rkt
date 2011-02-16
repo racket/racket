@@ -457,12 +457,15 @@
                (send bm save-file s 'png)
                (get-output-bytes s)))]
           [(eps-bytes pdf-bytes)
-           (let ([s (open-output-bytes)])
+           (let ([s (open-output-bytes)]
+                 [xs (box 1)]
+                 [ys (box 1)])
+             (send (current-ps-setup) get-scaling xs ys)
              (let ([dc (new (if (eq? format 'eps-bytes) post-script-dc% pdf-dc%)
                             [interactive #f]
                             [as-eps #t]
-                            [width (pict-width p)]
-                            [height (pict-height p)]
+                            [width (* (pict-width p) (unbox xs))]
+                            [height (* (pict-height p) (unbox ys))]
                             [output s])])
                (send dc start-doc "pict")
                (send dc start-page)

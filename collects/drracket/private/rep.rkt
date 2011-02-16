@@ -1312,7 +1312,7 @@ TODO
                   (let ([run-on-user-thread (lambda (t) 
                                               (queue-user/wait 
                                                (λ ()
-                                                 (with-handlers ((exn? (λ (x) (printf "~s\n" (exn-message x)))))
+                                                 (with-handlers ((exn? (λ (x) (oprintf "~s\n" (exn-message x)))))
                                                    (t)))))])
                     run-on-user-thread))
             
@@ -1653,10 +1653,39 @@ TODO
         (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)]
               [drr-evtspace (current-eventspace)]
               [s (make-semaphore 0)])
+          
+          (define-values (sp-err-other-end sp-err) (make-pipe))
+          (define-values (sp-out-other-end sp-out) (make-pipe))
+          (define io-chan (make-channel))
+          
+          ;; collect the IO to replay later
+          (thread
+           (λ () 
+             (let loop ([ports (list sp-err-other-end sp-out-other-end)]
+                        [io '()])
+               (cond
+                 [(null? ports) (channel-put io-chan io)]
+                 [else
+                  (apply sync
+                         (map (λ (port) (handle-evt 
+                                         port 
+                                         (λ (_) 
+                                           (define byte (read-byte port))
+                                           (if (eof-object? byte)
+                                               (loop (remq port ports) io)
+                                               (loop ports (cons (cons port byte) 
+                                                                 io))))))
+                              ports))]))))
+             
           (run-in-evaluation-thread
            (λ ()
              (let/ec k
-               (parameterize ([error-escape-handler (λ () (k (void)))])
+               ;; we set the io ports here to ones that just collect the data
+               ;; since we're blocking the eventspace handler thread (and thus IO to 
+               ;; the user's ports can deadlock)
+               (parameterize ([error-escape-handler (λ () (k (void)))]
+                              [current-output-port sp-out]
+                              [current-error-port sp-err])
                  (cond
                    ;; this is for backwards compatibility; drracket used to
                    ;; expect this method to be a thunk (but that was a bad decision)
@@ -1667,7 +1696,21 @@ TODO
                     ;; this is the backwards compatible case.
                     (send lang first-opened)])))
              (semaphore-post s)))
-          (semaphore-wait s))
+          
+          ;; wait for the first-opened method to finish up
+          (semaphore-wait s)
+          
+          ;; close the output ports to get the above thread to terminate
+          (close-output-port sp-err)
+          (close-output-port sp-out)
+          
+          ;; duplicate it over to the user's ports, now that there is
+          ;; no danger of deadlock
+          (for ([i (in-list (reverse (channel-get io-chan)))])
+            (write-byte (cdr i)
+                        (if (eq? (car i) sp-err-other-end)
+                            (get-err-port)
+                            (get-out-port)))))
         
         (send context enable-evaluation)
         (end-edit-sequence)

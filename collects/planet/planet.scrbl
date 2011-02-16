@@ -400,9 +400,12 @@ package specifier and the specified directory name.
 @subsection[#:tag "unlink"]{@exec{unlink}}
 
 Usage:
-@commandline{raco planet unlink <owner> <pkg> <maj> <min>}
+@commandline{raco planet unlink [ <option> ] <owner> <pkg> <maj> <min>}
 Remove any development link (see @secref{devlinks}) associated with
 the given package.
+
+@exec{<option>} can only be:
+@itemize[@item{@exec{-q, --quiet}: don't signal an error on nonexistent links}]
 
 @subsection[#:tag "fetch"]{@exec{fetch}}
 
@@ -696,11 +699,15 @@ The @racket[pkg] argument must end with the string @racket[".plt"].
 @defproc[(remove-hard-link [owner string?]
 	 		   [pkg   (and/c string? #rx"[.]plt")]
 			   [maj   natural-number/c]
-			   [min   natural-number/c])
+			   [min   natural-number/c]
+                           [#:quiet? quiet? boolean? #false])
  	 any]{
 Removes any hard link that may be associated with the given package.
 
 The @racket[pkg] argument must end with the string @racket[".plt"].
+The @racket[maj] and @racket[min] arguments must be integers. This
+procedure signals an error if no such link exists, unless
+@racket[#:quiet?] is @racket[#true].
 }
 
 @defproc[(resolve-planet-path [spec quoted-planet-require-spec?])

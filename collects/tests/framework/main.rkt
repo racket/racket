@@ -58,12 +58,12 @@
  `("Names of the tests; defaults to all non-interactive tests"))
 
 (when (file-exists? preferences-file)
-  (debug-printf admin "   saving preferences file ~s\n" preferences-file)
-  (debug-printf admin "                        to ~s\n" old-preferences-file)
+  (debug-printf admin "   saving prefs file ~a\n" preferences-file)
+  (debug-printf admin "                  to ~a\n" old-preferences-file)
   (if (file-exists? old-preferences-file)
-    (debug-printf admin "   backup preferences file exists, using that one\n")
+    (debug-printf admin "   backup prefs file exists, using that one\n")
     (begin (copy-file preferences-file old-preferences-file)
-           (debug-printf admin "   saved preferences file\n"))))
+           (debug-printf admin "   saved prefs file\n"))))
 
 (define jumped-out-tests '())
 
@@ -96,12 +96,12 @@
 (debug-printf schedule "ran ~a test~a\n" number-of-tests (if (= 1 number-of-tests) "" "s"))
 
 (when (file-exists? old-preferences-file)
-  (debug-printf admin "   restoring preferences file ~s\n" old-preferences-file)
-  (debug-printf admin "                           to ~s\n" preferences-file)
+  (debug-printf admin "   restoring prefs file ~a\n" old-preferences-file)
+  (debug-printf admin "                     to ~a\n" preferences-file)
   (delete-file preferences-file)
   (copy-file old-preferences-file preferences-file)
   (delete-file old-preferences-file)
-  (debug-printf admin "   restored preferences file\n"))
+  (debug-printf admin "   restored prefs file\n"))
 
 (shutdown-listener)
 

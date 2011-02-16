@@ -818,7 +818,7 @@
 }
 @definterface[text:ports<%> ()]{
   Classes implementing this interface (via the associated
-  mixin) support input and output ports that read from the
+  mixin) support input and output ports that read from and to the
   editor. 
 
   There are two input ports: the normal input port just reads
@@ -826,6 +826,11 @@
   inserts an editor snip into this text and uses input typed
   into the box as input into the port.
 
+  There are three output ports, designed to match stdout, stderr,
+  and a special port for printing values. The only difference
+  between them is the output is rendered in different colors
+  when it comes in via the different ports.
+  
   They create three threads to mediate access to the input and
   output ports (one for each input port and one for all of the
   output ports).

@@ -111,7 +111,9 @@ The @scheme[complete-program?] argument determines if the
   how it finishes).
 }
 
-@defmethod[#:mode augment (on-execute [run-on-user-thread (-> any)]) any]{
+@defmethod[(on-execute [run-on-user-thread (-> any)]) any]{
+
+  Use @scheme[run-on-user-thread] to initialize the user's parameters, etc.
 
   Called from the DrRacket thread after the language's
   @method[drracket:language:language<%> on-execute]
@@ -119,8 +121,12 @@ The @scheme[complete-program?] argument determines if the
   special values have been setup (the ones registered
   via @scheme[drracket:language:add-snip-value]).
 
-  Use @scheme[run-on-user-thread] to initialize the user's parameters, etc.
-
+  Do not print to @racket[current-output-port] or @racket[current-error-port]
+  during the dynamic extent of the thunk passed to @racket[run-on-user-thread] becuase
+  this can deadlock. IO is still, in general, fine, but the @racket[current-error-port]
+  and @racket[current-output-port] are set to the user's ports that print
+  into the interactions window and are not in a good state during those calls.
+  
 }
 
 @defmethod[(get-error-range)

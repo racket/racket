@@ -196,3 +196,145 @@
        (send dc clear)
        (send t print-to-dc dc 1)
        'no-error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  text:ports
+;;
+
+;; there is an internal buffer of this size, so writes that are larger and smaller are interesting
+(define buffer-size 4096)
+
+(let ([big-str (build-string (* buffer-size 2) (λ (i) (integer->char (+ (modulo i 26) (char->integer #\a)))))]
+      [non-ascii-str "λαβ一二三四五"])
+  
+  (define (do/separate-thread str mtd)
+    (queue-sexp-to-mred
+     `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+             [op (send t ,mtd)]
+             [exn #f])
+        (yield
+         (thread
+          (λ () 
+            (with-handlers ((exn:fail? (λ (x) (set! exn x))))
+              (display ,str op)
+              (flush-output op)))))
+        (when exn (raise exn))
+        (send t get-text 0 (send t last-position)))))
+  
+  (test 
+   'text:ports%.1
+   (λ (x) (equal? x "abc"))
+   (λ () (do/separate-thread "abc" 'get-out-port)))
+  
+  (test 
+   'text:ports%.2
+   (λ (x) (equal? x big-str))
+   (λ () (do/separate-thread big-str 'get-out-port)))
+  
+  (test 
+   'text:ports%.3
+   (λ (x) (equal? x non-ascii-str))
+   (λ () (do/separate-thread non-ascii-str 'get-out-port)))
+  
+  (test 
+   'text:ports%.4
+   (λ (x) (equal? x "abc"))
+   (λ () (do/separate-thread "abc" 'get-err-port)))
+  
+  (test 
+   'text:ports%.5
+   (λ (x) (equal? x big-str))
+   (λ () (do/separate-thread big-str 'get-err-port)))
+  
+  (test 
+   'text:ports%.6
+   (λ (x) (equal? x non-ascii-str))
+   (λ () (do/separate-thread non-ascii-str 'get-err-port)))
+  
+  
+  (test 
+   'text:ports%.7
+   (λ (x) (equal? x "abc"))
+   (λ () (do/separate-thread "abc" 'get-value-port)))
+  
+  (test 
+   'text:ports%.8
+   (λ (x) (equal? x big-str))
+   (λ () (do/separate-thread big-str 'get-value-port)))
+  
+  (test 
+   'text:ports%.9
+   (λ (x) (equal? x non-ascii-str))
+   (λ () (do/separate-thread non-ascii-str 'get-value-port)))
+  
+  ;; display the big string, one char at a time
+  (test
+   'text:ports%.10
+   (λ (x) (equal? x big-str))
+   (λ () 
+     (queue-sexp-to-mred
+      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+              [op (send t get-out-port)]
+              [big-str ,big-str]
+              [exn #f])
+         (yield
+          (thread
+           (λ () 
+             (with-handlers ((exn:fail? (λ (x) (set! exn x))))
+               (let loop ([i 0])
+                 (when (< i (string-length big-str))
+                   (display (string-ref big-str i) op)
+                   (loop (+ i 1))))
+               (flush-output op)))))
+         (when exn (raise exn))
+         (send t get-text 0 (send t last-position))))))
+     
+  ;; the next tests test the interaction when the current
+  ;; thread is the same as the handler thread of the eventspace
+  ;; where the text was created
+  
+  (test 
+   'text:ports%.thd1
+   (λ (x) (equal? x "abc"))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+              [op (send t get-out-port)]
+              [exn #f])
+         (display "abc" op)
+         (flush-output op)
+         (send t get-text 0 (send t last-position))))))
+  
+  (test 
+   'text:ports%.thd2
+   (λ (x) (equal? x big-str))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+              [op (send t get-out-port)])
+         (display ,big-str op)
+         (flush-output op)
+         (send t get-text 0 (send t last-position))))))
+  
+  (test 
+   'text:ports%.thd3
+   (λ (x) (equal? x non-ascii-str))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+              [op (send t get-out-port)])
+         (display ,non-ascii-str op)
+         (flush-output op)
+         (send t get-text 0 (send t last-position))))))
+  
+  (test 
+   'text:ports%.thd4
+   (λ (x) (equal? x non-ascii-str))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let* ([t (new (text:ports-mixin text:wide-snip%))]
+              [op (send t get-out-port)])
+         (display ,non-ascii-str op)
+         (flush-output op)
+         (send t get-text 0 (send t last-position)))))))

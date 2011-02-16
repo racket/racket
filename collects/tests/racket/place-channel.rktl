@@ -101,7 +101,7 @@ END
 
   (define-values (pc5 pc6) (place-channel))
   (place-channel-send pl pc5)
-  (test "Ready5" sync (handle-evt pc6 (lambda (p) (place-channel-recv p))))
+  (test "Ready5" sync pc6)
 
   (place-wait pl)
 )
