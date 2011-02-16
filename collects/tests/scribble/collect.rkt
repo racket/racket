@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require tests/eli-tester scribble/text/syntax-utils)
 

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require tests/eli-tester scheme/runtime-path scheme/port scheme/sandbox
+(require tests/eli-tester racket/runtime-path racket/port racket/sandbox
          (prefix-in doc: (lib "scribblings/scribble/preprocessor.scrbl")))
 
 (provide preprocessor-tests)

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require tests/eli-tester (prefix-in scr: scribble/reader) scheme/list)
+(require tests/eli-tester (prefix-in scr: scribble/reader) racket/list)
 
 (provide reader-tests)
 
