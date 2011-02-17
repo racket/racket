@@ -88,11 +88,11 @@
       append
       (map
        (λ (x)
-         (define-values (base name dir) (split-path x))
          (define proc (get-info/full x))
          (if proc
              (map (λ (dirs)
-                    (apply build-path base
+                    (apply build-path 
+                           x
                            (if (list? dirs)
                                dirs
                                (list dirs))))
