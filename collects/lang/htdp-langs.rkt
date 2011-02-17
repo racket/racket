@@ -1124,63 +1124,10 @@
                 (parameterize ([current-eventspace drs-eventspace])
                   (queue-callback
                    (λ ()
-                     (let ([on-sd (make-object style-delta%)]
-                           [off-sd (make-object style-delta%)])
-                       (cond
-                         [(preferences:get 'framework:white-on-black?)
-                          (send on-sd set-delta-foreground "white")
-                          (send off-sd set-delta-foreground "indianred")]
-                         [else
-                          ;; picture 1.png
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground "black")
-                            (send off-sd set-delta-foreground "lightgray")
-                            (send off-sd set-delta-background "firebrick"))
-                          
-                          ;; picture 2.png
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground "darkgreen")
-                            (send off-sd set-delta-foreground "firebrick")
-                            (send off-sd set-delta-background "Khaki"))
-                          
-                          ;; picture 3.png
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground "darkgreen")
-                            (send off-sd set-delta-foreground "Khaki")
-                            (send off-sd set-delta-background "black"))
-                          
-                          ;; picture 4.png
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground "black")
-                            (send off-sd set-delta-foreground "Khaki")
-                            (send off-sd set-delta-background "darkblue"))
-                          
-                          ;; picture 5.png
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground (make-object color% 0 80 0))
-                            (send off-sd set-delta-foreground "orange")
-                            (send off-sd set-delta-background "black"))
-                          
-                          ;; variation on 5.
-                          (begin
-                            (send on-sd set-delta-foreground "black")
-                            (send on-sd set-transparent-text-backing-off #f)
-                            (send on-sd set-transparent-text-backing-on #t)
-                            (send off-sd set-delta-foreground "orange")
-                            (send off-sd set-delta-background "black"))
-                          
-                          ;; mike's preferred color scheme, but looks just like the selection
-                          #;
-                          (begin
-                            (send on-sd set-delta-foreground "black")
-                            (send off-sd set-delta-background "lightblue")
-                            (send off-sd set-delta-foreground "black"))])
-                       (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
+                     (define sl (editor:get-standard-style-list))
+                     (define on-s (send sl find-named-style test-coverage-on-style-name))
+                     (define off-s (send sl find-named-style test-coverage-off-style-name))
+                     (send rep set-test-coverage-info ht on-s off-s #f))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
             (hash-set! ht expr #;(box #f) (mcons #f #f)))))
@@ -1362,4 +1309,54 @@
            (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
-	   (stepper:show-lambdas-as-lambdas #f))))))
+	   (stepper:show-lambdas-as-lambdas #f))))
+      
+      (define test-coverage-on-style-name "plt:htdp:test-coverage-on")
+      (define test-coverage-off-style-name "plt:htdp:test-coverage-off")
+      (define test-coverage-on-style-pref (string->symbol test-coverage-on-style-name))
+      (define test-coverage-off-style-pref (string->symbol test-coverage-off-style-name))
+      
+      (color-prefs:register-color-preference test-coverage-on-style-pref
+                                             test-coverage-on-style-name
+                                             (send the-color-database find-color "black")
+                                             (send the-color-database find-color "white"))
+      (color-prefs:register-color-preference test-coverage-off-style-pref
+                                             test-coverage-off-style-name
+                                             (send the-color-database find-color "orange")
+                                             (send the-color-database find-color "indianred")
+                                             #:background (send the-color-database find-color "black"))
+      (color-prefs:add-to-preferences-panel 
+       "HtDP Languages"
+       (λ (parent)
+         (color-prefs:build-color-selection-panel parent
+                                                  test-coverage-on-style-pref
+                                                  test-coverage-on-style-name
+                                                  (string-constant test-coverage-on))
+         (color-prefs:build-color-selection-panel parent
+                                                  test-coverage-off-style-pref
+                                                  test-coverage-off-style-name
+                                                  (string-constant test-coverage-off)
+                                                  #:background? #t)))
+      
+      (define (update-sds white-on-black?)
+        (define sl (editor:get-standard-style-list))
+        (define on-s (send sl find-named-style test-coverage-on-style-name))
+        (define off-s (send sl find-named-style test-coverage-off-style-name))
+        (define on-sd (make-object style-delta%))
+        (define off-sd (make-object style-delta%))
+        (send on-s get-delta on-sd)
+        (send off-s get-delta off-sd)
+        (cond
+          [white-on-black?
+           (send on-sd set-delta-foreground "white")
+           (send off-sd set-delta-foreground "indianred")
+           (send off-sd set-delta-background "black")]
+          [else
+           (send on-sd set-delta-foreground "black")
+           (send off-sd set-delta-foreground "orange")
+           (send off-sd set-delta-background "black")])
+        (preferences:set test-coverage-on-style-pref on-sd)
+        (preferences:set test-coverage-off-style-pref off-sd))
+      
+      (preferences:add-callback 'framework:white-on-black?
+                                (λ (p v) (update-sds v)))))

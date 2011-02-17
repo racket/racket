@@ -1554,10 +1554,12 @@
  (proc-doc/names
   color-prefs:register-color-preference
   (->* (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)))
-       ((or/c string? (is-a?/c color%) false/c))
+       ((or/c string? (is-a?/c color%) #f)
+        #:background (or/c (is-a?/c color%) #f))
        void?)
   ((pref-name style-name color/sd)
-   ((white-on-black-color #f)))
+   ((white-on-black-color #f)
+    (background #f)))
   @{This function registers a color preference and initializes the style list
     returned from @scheme[editor:get-standard-style-list].  In particular, it
     calls @scheme[preferences:set-default] and
@@ -1578,7 +1580,13 @@
     If @scheme[white-on-black-color] is not @scheme[#f], then the color of the
     @scheme[color/sd] argument is used in combination with
     @scheme[white-on-black-color] to register this preference with
-    @scheme[color-prefs:set-default/color-scheme].})
+    @scheme[color-prefs:set-default/color-scheme].
+    
+    If either @racket[background] is
+    not @racket[#f], then it is used to construct the default background color
+    for the style delta.
+    
+    })
 
  (proc-doc/names
   color-prefs:add-background-preferences-panel
@@ -1596,9 +1604,13 @@
 
  (proc-doc/names
   color-prefs:build-color-selection-panel
-  ((is-a?/c area-container<%>) symbol? string? string? . -> . void?)
-  (parent pref-sym style-name example-text)
-  @{Builds a panel with a number of controls for configuring a font: the color
+  (->* ((is-a?/c area-container<%>) symbol? string? string?)
+       (#:background? boolean?)
+       void?)
+  ((parent pref-sym style-name example-text)
+   ((background? #f)))
+  @{Builds a panel with a number of controls for configuring a font: its color
+    (including a background configuration if @racket[background] is @racket[#t])
     and check boxes for bold, italic, and underline.  The @scheme[parent]
     argument specifies where the panel will be placed.  The @scheme[pref-sym]
     should be a preference (suitable for use with @scheme[preferences:get] and

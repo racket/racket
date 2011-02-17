@@ -182,6 +182,8 @@ please adhere to these guidelines:
  (cs-bold "Bold")
  (cs-underline "Underline")
  (cs-change-color "Change Color")
+ (cs-foreground-color "Foreground Color")
+ (cs-background-color "Background Color")
  (cs-tack/untack-arrow "Tack/Untack Arrow(s)")
  (cs-jump-to-next-bound-occurrence "Jump to Next Bound Occurrence")
  (cs-jump-to-binding "Jump to Binding Occurrence")
@@ -1158,6 +1160,9 @@ please adhere to these guidelines:
  (test-coverage-clear? "Changing the definitions window invalidates the test coverage information. Continue?")
  (test-coverage-clear-and-do-not-ask-again "Yes, and don't ask again")
  (test-coverage-ask? "Ask about clearing test coverage")
+  
+ (test-coverage-on "Tests covered")
+ (test-coverage-off "Tests didn't cover")
   
  ;; tracing
  (tracing-enable-tracing "Enable tracing")

@@ -19,7 +19,7 @@
   
   ;; build-color-selection-panel : (is-a?/c area-container<%>) symbol string string -> void
   ;; constructs a panel containg controls to configure the preferences panel.
-  (define (build-color-selection-panel parent pref-sym style-name example-text)
+  (define (build-color-selection-panel parent pref-sym style-name example-text #:background? [background? #f])
     (define (update-style-delta func)
       (let ([working-delta (new style-delta%)])
         (send working-delta copy (preferences:get pref-sym))
@@ -118,10 +118,12 @@
                        (list-ref smoothing-options
                                  (send c get-selection))))))]))
     
-    (define color-button
+    (define foreground-color-button
       (and (>= (get-display-depth) 8)
            (new button%
-                [label (string-constant cs-change-color)]
+                [label (if background? 
+                           (string-constant cs-foreground-color)
+                           (string-constant cs-change-color))]
                 [parent hp]
                 [callback
                  (λ (color-button evt)
@@ -139,6 +141,29 @@
                        (update-style-delta
                         (λ (delta)
                           (send delta set-delta-foreground users-choice))))))])))
+    (define background-color-button
+      (and (>= (get-display-depth) 8)
+           background?
+           (new button%
+                [label (string-constant cs-background-color)]
+                [parent hp]
+                [callback
+                 (λ (color-button evt)
+                   (let* ([add (send (preferences:get pref-sym) get-background-add)]
+                          [color (make-object color%
+                                   (send add get-r)
+                                   (send add get-g)
+                                   (send add get-b))]
+                          [users-choice
+                           (get-color-from-user
+                            (format (string-constant syntax-coloring-choose-color) example-text)
+                            (send color-button get-top-level-window)
+                            color)])
+                     (when users-choice
+                       (update-style-delta
+                        (λ (delta)
+                          (send delta set-delta-background users-choice))))))])))
+    
     (define style (send (send e get-style-list) find-named-style style-name))
     
     (send c set-line-count 1)
@@ -426,29 +451,33 @@
          panel))))
   
   ;; see docs
-  (define register-color-preference
-    (opt-lambda (pref-name style-name color/sd 
-                           [white-on-black-color #f]
-                           [use-old-marshalling? #t])
-      (let ([sd (cond 
-                  [(is-a? color/sd style-delta%)
-                   color/sd]
-                  [else
-                   (let ([sd (new style-delta%)])
-                     (send sd set-delta-foreground color/sd)
-                     sd)])])
-        (preferences:set-default pref-name sd (λ (x) (is-a? x style-delta%)))
-        (when white-on-black-color
-          (set! color-scheme-colors
-                (cons (list pref-name
-                            color/sd
-                            (to-color white-on-black-color))
-                      color-scheme-colors)))
-        (preferences:set-un/marshall pref-name marshall-style-delta unmarshall-style-delta)
-        (preferences:add-callback pref-name
-                                  (λ (sym v)
-                                    (editor:set-standard-style-list-delta style-name v)))
-        (editor:set-standard-style-list-delta style-name (preferences:get pref-name)))))
+  (define (register-color-preference pref-name style-name color/sd 
+                                     [white-on-black-color #f]
+                                     [use-old-marshalling? #t]
+                                     #:background [background #f])
+    (let ([sd (cond 
+                [(is-a? color/sd style-delta%)
+                 color/sd]
+                [else
+                 (let ([sd (new style-delta%)])
+                   (send sd set-delta-foreground color/sd)
+                   sd)])])
+      
+      (when background
+        (send sd set-delta-background background))
+      
+      (preferences:set-default pref-name sd (λ (x) (is-a? x style-delta%)))
+      (when white-on-black-color
+        (set! color-scheme-colors
+              (cons (list pref-name
+                          color/sd
+                          (to-color white-on-black-color))
+                    color-scheme-colors)))
+      (preferences:set-un/marshall pref-name marshall-style-delta unmarshall-style-delta)
+      (preferences:add-callback pref-name
+                                (λ (sym v)
+                                  (editor:set-standard-style-list-delta style-name v)))
+      (editor:set-standard-style-list-delta style-name (preferences:get pref-name))))
   
   (define color-scheme-colors '())
   
