@@ -40,7 +40,7 @@ Returns the style's base style. See @|stylediscuss| for more
 @defmethod[(get-delta [delta (is-a?/c style-delta%)])
            void?]{
 
-Returns the style's delta information if the style is not a join
+Mutates @racket[delta], changing it to match the style's delta, if the style is not a join
  style. See @|stylediscuss| for more information.
 
 }
