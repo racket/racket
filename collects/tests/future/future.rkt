@@ -299,6 +299,18 @@ We should also test deep continuations.
   (check-equal? #f (touch f1)) 
   (check-equal? #t (touch f2)))
 
+(let ([m (make-fsemaphore 3)]) 
+  (fsemaphore-try-wait? m) 
+  (check-equal? 2 (fsemaphore-count m))) 
+
+(let* ([m (make-fsemaphore 0)] 
+       [f (future (λ () 
+                    (fsemaphore-post m) 
+                    42))]) 
+  (sleep 0.5) 
+  (fsemaphore-try-wait? m) 
+  (check-equal? 0 (fsemaphore-count m)))
+
 ;Test fsemaphore wait on a future thread 
 ;(here the future thread should be able to capture the cont. locally)
 (let* ([m (make-fsemaphore 0)] 

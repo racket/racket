@@ -1015,6 +1015,7 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
   }
 
   sema = (fsemaphore_t*)argv[0];
+  jit_future_storage[0] = (void*)sema;
   mzrt_mutex_lock(sema->mut);
   if (!sema->ready) { 
     if (!fts) { 
@@ -1022,11 +1023,15 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
           fsema to be ready while cooperating with the scheduler */ 
       mzrt_mutex_unlock(sema->mut);
       scheme_block_until(fsemaphore_ready, NULL, (Scheme_Object*)sema, 0);
+
+      /* Fetch the sema pointer again, in case it was moved during a GC */ 
+      sema = (fsemaphore_t*)jit_future_storage[0];
       mzrt_mutex_lock(sema->mut);
     } else {
       /* On a future thread, suspend the future (to be 
         resumed whenever the fsema becomes ready */
       future_t *future = fts->thread->current_ft;
+      jit_future_storage[1] = (void*)future;
       if (!future) { 
         /* Should never be here */
         scheme_log_abort("fsemaphore-wait: future was NULL for future thread.");
@@ -1075,6 +1080,10 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
         abort();
       }
 
+      /* Fetch the future and sema pointers again, in case moved by a GC */
+      sema = (fsemaphore_t*)jit_future_storage[0];
+      future = (future_t*)jit_future_storage[1];
+
       /* Check again to see whether the sema has become ready */ 
       mzrt_mutex_lock(sema->mut);
       if (sema->ready) { 
@@ -1121,6 +1130,7 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object **argv)
   if (!sema->ready) { 
     ret = scheme_false;
   } else { 
+    sema->ready--;
     ret = scheme_true;
   }
 
@@ -1807,9 +1817,10 @@ static void future_raise_wrong_type_exn(const char *who, const char *expected_ty
 
   future->time_of_request = scheme_get_inexact_milliseconds();
   future->source_of_request = who;
-  //future->src_type = ?? 
   future_do_runtimecall(fts, (void*)scheme_wrong_type, 0);
   
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
   future->arg_str0 = NULL;
   future->arg_str1 = NULL;
   future->arg_i2 = 0; 
@@ -1834,6 +1845,9 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
 
   future_do_runtimecall(fts, (void*)f, 1);
 
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
+
   future->arg_S0 = NULL;
 }
 
@@ -1853,6 +1867,10 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, int 
   future->source_type = src_type;
   
   future_do_runtimecall(fts, (void*)scheme_make_fsemaphore_inl, 1);
+
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
+
 #ifdef MZ_PRECISE_GC 
   retval = future->retval_s;
   future->retval_s = NULL;
@@ -1882,6 +1900,9 @@ void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Sch
   future->source_type = src_type;
 
   future_do_runtimecall(fts, (void*)f, 1);
+
+  /* Fetch the future again, in case moved by a GC */ 
+  future = fts->thread->current_ft;
 
   future->arg_s0 = NULL;
 }
