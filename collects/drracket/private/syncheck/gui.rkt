@@ -1033,15 +1033,17 @@ If the namespace does not, they are colored the unbound color.
           (syncheck:clear-highlighting))
         
         (define/public (syncheck:clear-error-message)
+          (send report-error-text clear-output-ports)
+          (send report-error-text lock #f)
+          (send report-error-text delete/io 0 (send report-error-text last-position))
+          (send report-error-text lock #t)
           (when error-report-visible?
-            (set! error-report-visible? #f)
-            (send report-error-text clear-output-ports)
-            (send report-error-text lock #f)
-            (send report-error-text delete/io 0 (send report-error-text last-position))
-            (send report-error-text lock #t)
-            (when (is-current-tab?)
-              (send (get-frame) hide-error-report)
-              (send (get-frame) update-menu-status this))))
+            (cond
+              [(is-current-tab?)
+               (send (get-frame) hide-error-report)
+               (send (get-frame) update-menu-status this)]
+              [else
+               (set! error-report-visible? #f)])))
         
         (define/public (syncheck:clear-highlighting)
           (let ([definitions (get-defs)])
