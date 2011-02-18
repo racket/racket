@@ -126,14 +126,14 @@ elements.
 There is only one writer function at the moment: 
 @itemlist[
 
-@item{@defproc[(write-file [f string?] [cntnt string?]) boolean?]{
+@item{@defproc[(write-file [f string?] [cntnt string?]) string?]{
  turns @scheme[cntnt] into the content of file @scheme[f], located in the
- same folder (directory) as the program. If the file exists when the
- function is called, the function produces @scheme[true]; otherwise it
- produces @scheme[false].}
+ same folder (directory) as the program. If the write succeeds, the
+ function produces the name of the file (@scheme[f]); otherwise it signals
+ an error.}
 
 @examples[#:eval (examples-batch-io)
-(if (write-file "output.txt" "good bye")
+(if (string=? (write-file "output.txt" "good bye") "output.txt")
     (write-file "output.txt" "cruel world")
     (write-file "output.txt" "cruel world"))
 ]

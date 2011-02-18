@@ -39,10 +39,9 @@
  ;; read the specified file as a file of comma-separated values, apply the second
  ;; argument to each row, i.e., list of CSV on one line 
  
- write-file ;; String String -> Boolean
- ;; write the second argument to specified file in the same folder as the program
- ;; produce false, if f exists
- ;; produce true, if f doesn't exist
+ write-file ;; String String -> String 
+ ;; (write-file filename str) writes str to filename; 
+ ;; produces the file name as a confirmation that the write succeeded 
  )      
 
 ;; -----------------------------------------------------------------------------
@@ -126,7 +125,7 @@
     (with-output-to-file f 
       (lambda () (printf "~a" str))
       #:exists 'replace)
-    #t))
+    f))
 
 ;; -----------------------------------------------------------------------------
 ;; auxiliaries 
