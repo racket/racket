@@ -73,18 +73,7 @@
 ;; corresponds to an uncovered region of the editor
 (define (is-uncovered? ele)
   (let ([style (list-ref ele 1)])
-    (and (list? style)
-         (let loop ([style style])
-           (cond
-             [(null? style) #f]
-             [else
-              (let ([fst (car style)]
-                    [snd (cadr style)])
-                (cond
-                  [(eq? fst 'background)
-                   (equal? snd '(0 0 0))]
-                  [else
-                   (loop (cddr style))]))])))))
+    (eq? style 'test-coverage-off)))
 
 ;; find-uncovered-text : list[get-string/style-desc result] -> (listof string)
 ;; returns strings containing the uncovered text in the editor (in the order they appear in the file)
