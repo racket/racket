@@ -223,25 +223,33 @@ Scheme_Object *scheme_make_sema(intptr_t v)
   return (Scheme_Object *)sema;
 }
 
-static Scheme_Object *make_sema(int n, Scheme_Object **p)
+intptr_t scheme_get_semaphore_init(const char *who, int n, Scheme_Object **p)
 {
   intptr_t v;
 
   if (n) {
     if (!SCHEME_INTP(p[0])) {
       if (!SCHEME_BIGNUMP(p[0]) || !SCHEME_BIGPOS(p[0]))
-	scheme_wrong_type("make-semaphore", "non-negative exact integer", 0, n, p);
+	scheme_wrong_type(who, "non-negative exact integer", 0, n, p);
     }
 
     if (!scheme_get_int_val(p[0], &v)) {
       scheme_raise_exn(MZEXN_FAIL,
-		       "make-semaphore: starting value %s is too large",
+		       "%s: starting value %s is too large",
+                       who,
 		       scheme_make_provided_string(p[0], 0, NULL));
     } else if (v < 0)
-      scheme_wrong_type("make-semaphore", "non-negative exact integer", 0, n, p);
+      scheme_wrong_type(who, "non-negative exact integer", 0, n, p);
   } else
     v = 0;
+  
+  return v;
+}
 
+static Scheme_Object *make_sema(int n, Scheme_Object **p)
+{
+  intptr_t v;
+  v = scheme_get_semaphore_init("make-semaphore", n, p);
   return scheme_make_sema(v);
 }
 

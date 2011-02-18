@@ -1604,6 +1604,8 @@ void scheme_post_syncing_nacks(Syncing *syncing);
 int scheme_try_channel_get(Scheme_Object *ch);
 int scheme_try_channel_put(Scheme_Object *ch, Scheme_Object *v);
 
+intptr_t scheme_get_semaphore_init(const char *who, int n, Scheme_Object **p);
+
 /*========================================================================*/
 /*                                 numbers                                */
 /*========================================================================*/

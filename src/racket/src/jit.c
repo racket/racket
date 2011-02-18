@@ -2948,14 +2948,14 @@ static void ts_on_demand(void) XFORM_SKIP_PROC
     on_demand();
 }
 
-static Scheme_Object *ts_make_fsemaphore(int argc, Scheme_Object *ready) 
+static Scheme_Object *ts_make_fsemaphore(int argc, Scheme_Object **argv) 
   XFORM_SKIP_PROC
 {
   if (scheme_use_rtcall) { 
-    return scheme_rtcall_make_fsemaphore("[make_fsemaphore]", FSRC_OTHER, argc, ready);
+    return scheme_rtcall_make_fsemaphore("[make_fsemaphore]", FSRC_OTHER, argv[0]);
   } 
   
-  return scheme_make_fsemaphore_inl(argc, ready);
+  return scheme_make_fsemaphore_inl(argv[0]);
 }
 
 #ifdef MZ_PRECISE_GC
@@ -7504,10 +7504,17 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       generate_inlined_type_test(jitter, app, scheme_future_type, scheme_future_type, 1, for_branch, branch_short, need_sync);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "fsemaphore?")) { 
-      GC_CAN_IGNORE jit_insn *refcont, *ref1, *ref2, *ref3;
       generate_inlined_type_test(jitter, app, scheme_fsemaphore_type, scheme_fsemaphore_type, 1, for_branch, branch_short, need_sync);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "fsemaphore-count")) { 
+    } else if (IS_NAMED_PRIM(rator, "fsemaphore-count")
+               || IS_NAMED_PRIM(rator, "make-fsemaphore")
+               || IS_NAMED_PRIM(rator, "fsemaphore-post")
+               || IS_NAMED_PRIM(rator, "fsemaphore-wait")
+               || IS_NAMED_PRIM(rator, "fsemaphore-try-wait?")) {
+      /* Inline calls to future functions that specially support
+         running in the future thread: */
+      GC_CAN_IGNORE jit_insn *refr;
+
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -7520,112 +7527,22 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       mz_pushr_p(JIT_R0);
       mz_rs_sync();
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_prepare(2);
-      jit_pusharg_p(JIT_RUNSTACK); /* Same as push (JIT_V1) */
-      jit_movi_i(JIT_R0, 1);
-      jit_pusharg_i(JIT_R0);
-
-      mz_finish(scheme_fsemaphore_count);
-      mz_popr_x();
-      jit_retval(JIT_R0);
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "make-fsemaphore")) { 
-     
-      mz_runstack_skipped(jitter, 1); 
-      generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
-      mz_runstack_unskipped(jitter, 1);
-
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-     
-      mz_prepare(2);
-      jit_pusharg_p(JIT_R0);
-      jit_movi_i(JIT_R0, 1);
-      jit_pusharg_i(JIT_R0);
-      mz_finish(ts_make_fsemaphore);
-      jit_retval(JIT_R0);
-     
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "fsemaphore-post")) { 
-      GC_CAN_IGNORE jit_insn *refr;
-      mz_runstack_skipped(jitter, 1);
-      generate_non_tail(app->rand, jitter, 0, 1, 0);
-      CHECK_LIMIT();
-      mz_runstack_unskipped(jitter, 1);
-
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_pushr_p(JIT_R0);
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
 
       mz_prepare(2);
       jit_pusharg_p(JIT_RUNSTACK);
       jit_movi_i(JIT_R0, 1);
       jit_pusharg_i(JIT_R0);
 
-      (void)mz_finish_lwe(scheme_fsemaphore_post, refr);
-      mz_popr_x();
+      if (IS_NAMED_PRIM(rator, "make-fsemaphore"))
+        (void)mz_finish_lwe(ts_make_fsemaphore, refr);
+      else
+        (void)mz_finish_lwe(((Scheme_Primitive_Proc *)rator)->prim_val, refr);
+
       jit_retval(JIT_R0);
 
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "fsemaphore-wait")) { 
-      GC_CAN_IGNORE jit_insn *refr;
-      mz_runstack_skipped(jitter, 1);
-      generate_non_tail(app->rand, jitter, 0, 1, 0);
-      CHECK_LIMIT();
-      mz_runstack_unskipped(jitter, 1);
+      mz_popr_x(); /* remove arg */
 
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_pushr_p(JIT_R0);
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_prepare(2);
-      jit_pusharg_p(JIT_RUNSTACK);
-      jit_movi_i(JIT_R0, 1);
-      jit_pusharg_i(JIT_R0);
-
-      (void)mz_finish_lwe(scheme_fsemaphore_wait, refr);
-
-      mz_popr_x();
-      jit_retval(JIT_R0);
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "fsemaphore-try-wait?")) { 
-      mz_runstack_skipped(jitter, 1);
-      generate_non_tail(app->rand, jitter, 0, 1, 0);
-      CHECK_LIMIT();
-      mz_runstack_unskipped(jitter, 1);
-
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_pushr_p(JIT_R0);
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_prepare(2);
-      jit_pusharg_p(JIT_RUNSTACK);
-      jit_movi_i(JIT_R0, 1);
-      jit_pusharg_i(JIT_R0);
-      mz_finish(scheme_fsemaphore_try_wait);
-      mz_popr_x();
-      jit_retval(JIT_R0);
-      
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       return 1;
     }
   }

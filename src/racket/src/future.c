@@ -57,7 +57,7 @@ typedef struct future_t {
 
 typedef struct fsemaphore_t {
   Scheme_Object so;
-  int ready;
+  Scheme_Object *sema;
 } fsemaphore_t;
 
 Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
@@ -155,14 +155,16 @@ Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[])
 {
+  intptr_t v;
   fsemaphore_t *fsema;
-
-  if (argc != 1 || !SCHEME_INTP(argv[0])) 
-    scheme_wrong_type("make-fsemaphore", "exact integer", 0, argc, &(argv[0]));
+  Scheme_Object *sema;
+  
+  v = scheme_get_semaphore_init("make-fsemaphore", argc, argv);
 
   fsema = MALLOC_ONE_TAGGED(fsemaphore_t);
   fsema->so.type = scheme_fsemaphore_type;
-  fsema->ready = SCHEME_INT_VAL(argv[0]); 
+  sema = scheme_make_sema(v);
+  fsema->sema = sema;
 
   return (Scheme_Object*)fsema;
 }
@@ -174,7 +176,7 @@ Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[])
     scheme_wrong_type("fsemaphore-post", "fsemaphore", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
-  fsema->ready++;
+  scheme_post_sema(fsema->sema);
 
   return scheme_void;
 }
@@ -186,11 +188,8 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[])
     scheme_wrong_type("fsemaphore-wait", "fsemaphore", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
-  /* If 0, raise an error */
-  if (!fsema->ready)
-    scheme_signal_error("fsemaphore-wait: attempted to wait on a semaphore with a 0 count");
+  scheme_wait_sema(fsema->sema, 0);
 
-  fsema->ready--;
   return scheme_void;
 }
 
@@ -201,7 +200,7 @@ Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object *argv[])
     scheme_wrong_type("fsemaphore-try-wait?", "fsemaphore", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
-  if (fsema->ready)
+  if (scheme_wait_sema(fsema->sema, 1))
     return scheme_true;
 
   return scheme_false;
@@ -214,7 +213,7 @@ Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object *argv[])
     scheme_wrong_type("fsemaphore-count", "fsemaphore", 0, argc, argv);
 
   fsema = (fsemaphore_t*)argv[0];
-  return scheme_make_integer(fsema->ready);
+  return scheme_make_integer(((Scheme_Sema *)fsema->sema)->value);
 }
 
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
@@ -846,29 +845,13 @@ void fsemaphore_finalize(void *p, void *data)
   mzrt_mutex_destroy(sema->mut);
 }
 
-Scheme_Object *scheme_make_fsemaphore_inl(int argc, Scheme_Object *ready)
+Scheme_Object *scheme_make_fsemaphore_inl(Scheme_Object *ready)
 /* Called in runtime thread */
 {
   fsemaphore_t *sema;
   intptr_t v;
 
-  /* Input validation */ 
-  if (argc == 1) { 
-    if (!SCHEME_INTP(ready)) { 
-      if (!SCHEME_BIGNUMP(ready) || !SCHEME_BIGPOS(ready)) 
-        scheme_wrong_type("make-fsemaphore", "non-negative exact integer", 0, argc, &ready);
-    }
-
-    if (!scheme_get_int_val(ready, &v)) { 
-      scheme_raise_exn(MZEXN_FAIL, 
-                        "make-fsemaphore: starting value %s is too large", 
-                        scheme_make_provided_string(ready, 0, NULL));
-    } else if (v < 0) { 
-      scheme_wrong_type("make-fsemaphore", "non-negative exact integer", 0, argc, &ready);
-    }
-  } else { 
-    scheme_wrong_type("make-fsemaphore", "non-negative exact integer", 0, argc, &ready);
-  }
+  v = scheme_get_semaphore_init("make-fsemaphore", 1, &ready);
 
   sema = MALLOC_ONE_TAGGED(fsemaphore_t);
   sema->so.type = scheme_fsemaphore_type;
@@ -885,12 +868,7 @@ Scheme_Object *scheme_make_fsemaphore_inl(int argc, Scheme_Object *ready)
 Scheme_Object *make_fsemaphore(int argc, Scheme_Object **argv)
   /* Called in runtime thread (atomic/synchronized) */
 {
-  Scheme_Object *arg;
-  Scheme_Object *semaObj;
-
-  arg = argv[0];
-  semaObj = scheme_make_fsemaphore_inl(argc, arg);
-  return semaObj;
+  return scheme_make_fsemaphore_inl(argv[0]);
 }
 
 Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object **argv)
@@ -1851,7 +1829,7 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
   future->arg_S0 = NULL;
 }
 
-Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, int argc, Scheme_Object *ready)
+Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -1860,7 +1838,6 @@ Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, int 
   future_t *future = fts->thread->current_ft;
   
   future->prim_protocol = SIG_MAKE_FSEMAPHORE;
-  future->arg_i0 = argc;
   future->arg_s1 = ready;
   future->time_of_request = scheme_get_inexact_milliseconds();
   future->source_of_request = who;
@@ -2131,14 +2108,14 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         scheme_new_mark_segment(p_seg);
         break;
       }
-	case SIG_MAKE_FSEMAPHORE: 
-	  {
-		Scheme_Object *ret; 
-		ret = scheme_make_fsemaphore_inl(future->arg_i0, future->arg_s1);
-		future->retval_s = ret;
-		future->arg_s0 = NULL;
-		break;
-	  }
+    case SIG_MAKE_FSEMAPHORE: 
+      {
+        Scheme_Object *s = future->arg_s1; 
+        future->arg_s0 = NULL;
+        s = scheme_make_fsemaphore_inl(s);
+        future->retval_s = s;
+        break;
+      }
     case SIG_ALLOC_VALUES:
       {
         prim_allocate_values_t func = (prim_allocate_values_t)future->prim_func;

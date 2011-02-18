@@ -347,6 +347,7 @@ We should also test deep continuations.
                      (fsemaphore-post m) 
                      #t))])
   (sleep 1) 
+  (check-equal? #t (touch f2))
   (check-equal? 42 (touch f1)) 
   (check-equal? 0 (fsemaphore-count m)))
 
@@ -360,6 +361,7 @@ We should also test deep continuations.
                      #t))] 
        [f2 (future (λ () 
                      (fsemaphore-post m2) 
+                     (touch f1)
                      (fsemaphore-wait m1) 
                      (set! dummy (add1 dummy)) 
                      dummy))]) 
@@ -392,7 +394,7 @@ We should also test deep continuations.
                        (fsemaphore-post m) 
                        (car retval))))])    
   (sleep 1)
-  (touch f1)
+  (thread (lambda () (touch f1)))
   (check-equal? 1 (touch f2)))
 
 (let* ([m (make-fsemaphore 0)] 
@@ -408,7 +410,7 @@ We should also test deep continuations.
   (fsemaphore-post m)
   (check-equal? 42 (touch f1)) 
   (check-equal? 99 (touch f2)))
-                     
+
 (let* ([m (make-fsemaphore 0)]
        [fs (for/list ([i (in-range 0 19)]) 
              (future (λ () 

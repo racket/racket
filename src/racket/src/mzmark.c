@@ -5817,16 +5817,20 @@ static int sequential_fsemaphore_SIZE(void *p, struct NewGC *gc) {
 }
 
 static int sequential_fsemaphore_MARK(void *p, struct NewGC *gc) {
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcMARK2(s->sema, gc);
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
 static int sequential_fsemaphore_FIXUP(void *p, struct NewGC *gc) {
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcFIXUP2(s->sema, gc);
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
 
-#define sequential_fsemaphore_IS_ATOMIC 1
+#define sequential_fsemaphore_IS_ATOMIC 0
 #define sequential_fsemaphore_IS_CONST_SIZE 1
 
 

@@ -94,21 +94,28 @@ parallel. See also @guidesecref["effective-futures"] in @|Guide|.
 
 @defproc[(make-fsemaphore [init exact-nonnegative-integer?]) fsemaphore?]{
 
-  Creates and returns a new semaphore with the counter initially set to
-  @racket[init].
+  Creates and returns a new @deftech{future semaphore} with the
+  counter initially set to @racket[init].
+
+  A future semaphore is similar to a plain @tech{semaphore}, but
+  future-semaphore operations can be performed safely in parallel (to synchronize
+  parallel computations). In contrast, operations on plain @tech{semaphores}
+  are not safe to perform in parallel, and they therefore prevent
+  a computation from continuing in parallel.
 
 }
 
 @defproc[(fsemaphore? [v any/c]) boolean?]{
 
-  Returns @racket[#t] if @racket[v] is an fsemaphore value, @racket[#f]
-  otherwise.
+  Returns @racket[#t] if @racket[v] is an @tech{future semaphore}
+  value, @racket[#f] otherwise.
 
 }
 
 @defproc[(fsemaphore-post [fsema fsemaphore?]) void?]{
 
-  Increments the semaphore's internal counter and returns @|void-const|.
+  Increments the @tech{future semaphore}'s internal counter and
+  returns @|void-const|.
 
 }
 

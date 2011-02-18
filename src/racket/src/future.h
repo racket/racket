@@ -142,7 +142,7 @@ typedef struct fsemaphore_t {
 #define SIG_ALLOC              2
 #define SIG_ALLOC_MARK_SEGMENT 3
 #define SIG_ALLOC_VALUES       4
-#define SIG_MAKE_FSEMAPHORE	   5
+#define SIG_MAKE_FSEMAPHORE    5
 #define SIG_WRONG_TYPE_EXN     200
 
 # include "jit_ts_protos.h"
@@ -164,8 +164,7 @@ extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 extern void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
                                           prim_allocate_values_t f);
-extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, 
-                                                    int argc, Scheme_Object *ready);
+extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready);
 #else 
 
 #define IS_WORKER_THREAD 0
@@ -199,8 +198,7 @@ Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object *argv[]);
-//Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_make_fsemaphore_inl(int argc, Scheme_Object *ready);
+Scheme_Object *scheme_make_fsemaphore_inl(Scheme_Object *ready);
 Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_try_wait(int argc, Scheme_Object *argv[]);

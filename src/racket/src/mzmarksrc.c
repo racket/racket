@@ -2385,6 +2385,8 @@ sequential_future {
 
 sequential_fsemaphore {
  mark:
+    fsemaphore_t *s = (fsemaphore_t*)p;
+    gcMARK2(s->sema, gc);
  size:
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
 }
