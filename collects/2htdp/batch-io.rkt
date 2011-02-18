@@ -124,6 +124,7 @@
   (let ([result (not (file-exists? f))])
     (with-output-to-file f 
       (lambda () (printf "~a" str))
+      #:mode 'text
       #:exists 'replace)
     f))
 
