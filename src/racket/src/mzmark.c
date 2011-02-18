@@ -4171,18 +4171,16 @@ static int mark_config_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_config_MARK(void *p, struct NewGC *gc) {
   Scheme_Config *config = (Scheme_Config *)p;
-  gcMARK2(config->key, gc);
-  gcMARK2(config->cell, gc);
-  gcMARK2(config->next, gc);
+  gcMARK2(config->ht, gc);
+  gcMARK2(config->root, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }
 
 static int mark_config_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Config *config = (Scheme_Config *)p;
-  gcFIXUP2(config->key, gc);
-  gcFIXUP2(config->cell, gc);
-  gcFIXUP2(config->next, gc);
+  gcFIXUP2(config->ht, gc);
+  gcFIXUP2(config->root, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }

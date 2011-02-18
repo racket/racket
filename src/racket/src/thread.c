@@ -6418,24 +6418,21 @@ Scheme_Config *scheme_current_config()
   return (Scheme_Config *)v;
 }
 
-static Scheme_Config *do_extend_config(Scheme_Config *c, Scheme_Object *key, Scheme_Object *cell)
+static Scheme_Config *do_extend_config(Scheme_Config *c, Scheme_Object *key, Scheme_Object *val)
 {
   Scheme_Config *naya;
+  Scheme_Hash_Tree *ht;
 
   /* In principle, the key+cell link should be weak, but it's
      difficult to imagine a parameter being GC'ed while an active
      `parameterize' is still on the stack (or, at least, difficult to
      imagine that it matters). */
 
-  if (c->depth > 50)
-    scheme_flatten_config(c);
-
   naya = MALLOC_ONE_TAGGED(Scheme_Config);
   naya->so.type = scheme_config_type;
-  naya->depth = c->depth + 1;
-  naya->key = key;
-  naya->cell = cell; /* could be just a value */
-  naya->next = c;
+  ht = scheme_hash_tree_set(c->ht, key, scheme_make_thread_cell(val, 1));
+  naya->ht = ht;
+  naya->root = c->root;
 
   return naya;
 }
@@ -6451,30 +6448,22 @@ void scheme_install_config(Scheme_Config *config)
 }
 
 Scheme_Object *find_param_cell(Scheme_Config *c, Scheme_Object *k, int force_cell)
-     /* Unless force_cell, the result may actually be a value, if there has been
-	no reason to set it before */
 {
-  while (1) {
-    if (SAME_OBJ(c->key, k)) {
-      if (force_cell && !SCHEME_THREAD_CELLP(c->cell)) {
-	Scheme_Object *cell;
-	cell = scheme_make_thread_cell(c->cell, 1);
-	c->cell = cell;
-      }
-      return c->cell;
-    } else if (!c->next) {
-      /* Eventually bottoms out here */
-      Scheme_Parameterization *p = (Scheme_Parameterization *)c->cell;
-      if (SCHEME_INTP(k))
-	return p->prims[SCHEME_INT_VAL(k)];
-      else {
-	if (p->extensions)
-	  return scheme_lookup_in_table(p->extensions, (const char *)k);
-	else
-	  return NULL;
-      }
-    } else
-      c = c->next;
+  Scheme_Object *v;
+  Scheme_Parameterization *p;
+
+  v = scheme_hash_tree_get(c->ht, k);
+  if (v)
+    return v;
+  
+  p = c->root;
+  if (SCHEME_INTP(k))
+    return p->prims[SCHEME_INT_VAL(k)];
+  else {
+    if (p->extensions)
+      return scheme_lookup_in_table(p->extensions, (const char *)k);
+    else
+      return NULL;
   }
 }
 
@@ -6483,9 +6472,7 @@ Scheme_Object *scheme_get_thread_param(Scheme_Config *c, Scheme_Thread_Cell_Tabl
   Scheme_Object *cell;
 
   cell = find_param_cell(c, scheme_make_integer(pos), 0);
-  if (SCHEME_THREAD_CELLP(cell))
-    return scheme_thread_cell_get(cell, cells);
-  return cell;
+  return scheme_thread_cell_get(cell, cells);
 }
 
 Scheme_Object *scheme_get_param(Scheme_Config *c, int pos)
@@ -6512,83 +6499,6 @@ static Scheme_Parameterization *malloc_paramz()
 
 void scheme_flatten_config(Scheme_Config *orig_c)
 {
-  int pos, i;
-  Scheme_Parameterization *paramz, *paramz2;
-  Scheme_Object *key;
-  Scheme_Bucket *b, *b2;
-  Scheme_Config *c;
-
-  if (orig_c->next) {
-    paramz = malloc_paramz();
-#ifdef MZTAG_REQUIRED
-    paramz->type = scheme_rt_parameterization;
-#endif
-    
-    c = orig_c;
-    while (1) {
-      if (c->key) {
-	if (SCHEME_INTP(c->key)) {
-	  pos = SCHEME_INT_VAL(c->key);
-	  if (!paramz->prims[pos]) {
-	    if (!SCHEME_THREAD_CELLP(c->cell)) {
-	      Scheme_Object *cell;
-	      cell = scheme_make_thread_cell(c->cell, 1);
-	      c->cell = cell;
-	    }
-	    paramz->prims[pos] = c->cell;
-	  }
-	} else {
-	  if (!paramz->extensions) {
-	    Scheme_Bucket_Table *t;
-	    t = scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
-	    paramz->extensions = t;
-	  }
-	  b = scheme_bucket_from_table(paramz->extensions, (const char *)c->key);
-	  if (!b->val) {
-	    if (!SCHEME_THREAD_CELLP(c->cell)) {
-	      Scheme_Object *cell;
-	      cell = scheme_make_thread_cell(c->cell, 1);
-	      c->cell = cell;
-	    }
-	    b->val = c->cell;
-	  }
-	}
-	c = c->next;
-      } else {
-	paramz2 = (Scheme_Parameterization *)c->cell;
-
-	for (i = 0; i < max_configs; i++) {
-	  if (!paramz->prims[i])
-	    paramz->prims[i] = paramz2->prims[i];
-	}
-
-	if (paramz2->extensions) {
-	  if (!paramz->extensions) {
-	    /* Re-use the old hash table */
-	    paramz->extensions = paramz2->extensions;
-	  } else {
-	    for (i = paramz2->extensions->size; i--; ) {
-	      b = paramz2->extensions->buckets[i];
-	      if (b && b->val && b->key) {
-		key = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
-		if (key) {
-		  b2 = scheme_bucket_from_table(paramz->extensions, (const char *)key);
-		  if (!b2->val)
-		    b2->val = b->val;
-		}
-	      }
-	    }
-	  }
-	}
-
-	break;
-      }
-    }
-
-    orig_c->cell = (Scheme_Object *)paramz;
-    orig_c->key = NULL;
-    orig_c->next = NULL;
-  }
 }
 
 static Scheme_Object *parameterization_p(int argc, Scheme_Object **argv)
@@ -6662,6 +6572,7 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
   Scheme_Config *c, *naya;
   Scheme_Parameterization *pz, *npz;
   Scheme_Object *v;
+  Scheme_Hash_Tree *ht;
   int i;
 
   if (!SCHEME_CONFIGP(argv[0]))
@@ -6670,16 +6581,15 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
   c = (Scheme_Config *)argv[0];
   scheme_flatten_config(c);
 
-  pz = (Scheme_Parameterization *)c->cell;
+  pz = c->root;
   npz = malloc_paramz();
   memcpy(npz, pz, sizeof(Scheme_Parameterization));
 
   naya = MALLOC_ONE_TAGGED(Scheme_Config);
   naya->so.type = scheme_config_type;
-  naya->depth = 0;
-  naya->key = NULL;
-  naya->cell = (Scheme_Object *)npz;
-  naya->next = NULL;
+  ht = scheme_make_hash_tree(0);
+  naya->ht = ht;
+  naya->root = npz;
 
   for (i = 0; i < max_configs; i++) {
     v = scheme_thread_cell_get(pz->prims[i], scheme_current_thread->cell_values);
@@ -6850,7 +6760,7 @@ static void init_param(Scheme_Thread_Cell_Table *cells,
 void scheme_set_root_param(int p, Scheme_Object *v)
 {
   Scheme_Parameterization *paramz;
-  paramz = (Scheme_Parameterization *)scheme_current_thread->init_config->cell;
+  paramz = scheme_current_thread->init_config->root;
   ((Thread_Cell *)(paramz->prims[p]))->def_val = v;
 }
 
@@ -6871,7 +6781,12 @@ static void make_initial_config(Scheme_Thread *p)
 
   config = MALLOC_ONE_TAGGED(Scheme_Config);
   config->so.type = scheme_config_type;
-  config->cell = (Scheme_Object *)paramz;
+  config->root = paramz;
+  {
+    Scheme_Hash_Tree *ht;
+    ht = scheme_make_hash_tree(0);
+    config->ht = ht;
+  }
 
   p->init_config = config;
 

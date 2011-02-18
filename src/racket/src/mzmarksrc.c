@@ -1704,9 +1704,8 @@ mark_parameterization {
 mark_config {
  mark:
   Scheme_Config *config = (Scheme_Config *)p;
-  gcMARK2(config->key, gc);
-  gcMARK2(config->cell, gc);
-  gcMARK2(config->next, gc);
+  gcMARK2(config->ht, gc);
+  gcMARK2(config->root, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }
