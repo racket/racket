@@ -8,7 +8,7 @@
          (r:infer infer)
          (only-in (r:infer infer-dummy) infer-param)
          (except-in (rep object-rep filter-rep type-rep) make-arr)
-         (types convenience union)
+         (types convenience union filter-ops)
          (only-in (types convenience) [make-arr* make-arr]))
 
 (define-syntax (-#%module-begin stx)
@@ -34,4 +34,4 @@
          require
          (except-out (all-from-out scheme/base) #%module-begin)
          types rep private utils         
-         (types-out convenience union))
+         (types-out convenience union filter-ops))

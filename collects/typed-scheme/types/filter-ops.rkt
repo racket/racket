@@ -162,3 +162,26 @@
                     (loop (cdr fs) result)]
                    [else
                     (loop (cdr fs) (cons t result))])]))))
+
+;; ands the given type filter to both sides of the given arr for each argument
+;; useful to express properties of the form: if this function returns at all,
+;; we learn this about its arguments (like fx primitives, or car/cdr, etc.)
+(define (add-unconditional-filter-all-args arr type)
+  (match arr
+    [(Function: (list (arr: dom rng rest drest kws)))
+     (match rng
+       [(Values: (list (Result: tp (FilterSet: true-filter
+                                               false-filter)
+                                op)))
+        (let ([new-filters (apply -and (build-list (length dom)
+                                                   (lambda (i)
+                                                     (-filter type i))))])
+          (make-Function
+           (list (make-arr
+                  dom
+                  (make-Values
+                   (list (-result tp
+                                  (-FS (-and true-filter new-filters)
+                                       (-and false-filter new-filters))
+                                  op)))
+                  rest drest kws))))])]))
