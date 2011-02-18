@@ -5452,8 +5452,10 @@ typedef struct Evt {
 /* PLACE_THREAD_DECL */
 static int evts_array_size;
 static Evt **evts;
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 THREAD_LOCAL_DECL(static int place_evts_array_size);
 THREAD_LOCAL_DECL(static Evt **place_evts);
+#endif
 
 void scheme_add_evt_worker(Evt ***evt_array,
                            int *evt_size,

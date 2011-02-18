@@ -158,7 +158,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object **fixup_runstack_base_;
   int fixup_already_in_place_;
   void *retry_alloc_r1_;
-  double save_fp_;
+  double scheme_jit_save_fp_;
   struct Scheme_Bucket_Table *starts_table_;
   struct Scheme_Modidx *modidx_caching_chain_;
   struct Scheme_Object *global_shift_cache_;
@@ -472,7 +472,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define fixup_runstack_base XOA (scheme_get_thread_local_variables()->fixup_runstack_base_)
 #define fixup_already_in_place XOA (scheme_get_thread_local_variables()->fixup_already_in_place_)
 #define retry_alloc_r1 XOA (scheme_get_thread_local_variables()->retry_alloc_r1_)
-#define save_fp XOA (scheme_get_thread_local_variables()->save_fp_)
+#define scheme_jit_save_fp XOA (scheme_get_thread_local_variables()->scheme_jit_save_fp_)
 #define starts_table XOA (scheme_get_thread_local_variables()->starts_table_)
 #define modidx_caching_chain XOA (scheme_get_thread_local_variables()->modidx_caching_chain_)
 #define global_shift_cache XOA (scheme_get_thread_local_variables()->global_shift_cache_)

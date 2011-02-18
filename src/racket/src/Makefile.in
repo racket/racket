@@ -28,6 +28,13 @@ OBJS =  salloc.@LTO@ \
         gmp.@LTO@ \
 	hash.@LTO@ \
 	jit.@LTO@ \
+	jitalloc.@LTO@ \
+	jitarith.@LTO@ \
+	jitcall.@LTO@ \
+	jitcommon.@LTO@ \
+	jitinline.@LTO@ \
+	jitstack.@LTO@ \
+	jitstate.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	mzrt.@LTO@ \
@@ -71,6 +78,13 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/gmp/gmp.c \
 	$(srcdir)/hash.c \
 	$(srcdir)/jit.c \
+	$(srcdir)/jitalloc.c \
+	$(srcdir)/jitarith.c \
+	$(srcdir)/jitcall.c \
+	$(srcdir)/jitcommon.c \
+	$(srcdir)/jitinline.c \
+	$(srcdir)/jitstack.c \
+	$(srcdir)/jitstate.c \
 	$(srcdir)/list.c \
 	$(srcdir)/module.c \
 	$(srcdir)/mzrt.c \
@@ -180,6 +194,20 @@ hash.@LTO@: $(srcdir)/hash.c
 	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
 jit.@LTO@: $(srcdir)/jit.c
 	$(CC) $(CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
+jitalloc.@LTO@: $(srcdir)/jitalloc.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitalloc.c -o jitalloc.@LTO@
+jitarith.@LTO@: $(srcdir)/jitarith.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitarith.c -o jitarith.@LTO@
+jitcall.@LTO@: $(srcdir)/jitcall.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitcall.c -o jitcall.@LTO@
+jitcommon.@LTO@: $(srcdir)/jitcommon.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitcommon.c -o jitcommon.@LTO@
+jitinline.@LTO@: $(srcdir)/jitinline.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitinline.c -o jitinline.@LTO@
+jitstack.@LTO@: $(srcdir)/jitstack.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitstack.c -o jitstack.@LTO@
+jitstate.@LTO@: $(srcdir)/jitstate.c
+	$(CC) $(CFLAGS) -c $(srcdir)/jitstate.c -o jitstate.@LTO@
 list.@LTO@: $(srcdir)/list.c
 	$(CC) $(CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
 module.@LTO@: $(srcdir)/module.c
@@ -242,6 +270,17 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
                  $(srcdir)/../include/schthread.h 
+JIT_HEADERS = $(srcdir)/../src/jit.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
+        $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
+        $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
+        $(srcdir)/lightning/i386/funcs.h $(srcdir)/lightning/i386/funcs-common.h \
+        $(srcdir)/lightning/i386/fp.h $(srcdir)/lightning/i386/fp-common.h \
+        $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \
+        $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
+        $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
+        $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
+        $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 
 salloc.@LTO@: $(COMMON_HEADERS) \
             $(srcdir)/../gc/gc.h $(srcdir)/mzmark.c
@@ -276,17 +315,14 @@ future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-jit.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
-        $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
-        $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
-        $(srcdir)/lightning/i386/funcs.h $(srcdir)/lightning/i386/funcs-common.h \
-        $(srcdir)/lightning/i386/fp.h $(srcdir)/lightning/i386/fp-common.h \
-        $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \
-        $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
-        $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
-        $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
-        $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
+jit.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitalloc.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitarith.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitcall.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitcommon.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitinline.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+jitstack.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS) $(srcdir)/codetab.inc
+jitstate.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(COMMON_HEADERS) \

@@ -189,7 +189,6 @@ extern Scheme_Object *future_touch(int futureid);
 #endif
 
 #else 
-Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[]);
 #endif /* MZ_USE_FUTURES */
 
 /* always defined: */
@@ -198,6 +197,7 @@ Scheme_Object *scheme_current_future(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_p(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_fsemaphore(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_make_fsemaphore_inl(Scheme_Object *ready);
 Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object *argv[]);

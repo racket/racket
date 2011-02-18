@@ -52,6 +52,13 @@ OBJS =  salloc.@LTO@ \
 	future.@LTO@ \
 	hash.@LTO@ \
 	jit.@LTO@ \
+	jitalloc.@LTO@ \
+	jitarith.@LTO@ \
+	jitcall.@LTO@ \
+	jitcommon.@LTO@ \
+	jitinline.@LTO@ \
+	jitstack.@LTO@ \
+	jitstate.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	mzrt.@LTO@ \
@@ -97,6 +104,13 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/future.c \
 	$(XSRCDIR)/hash.c \
 	$(XSRCDIR)/jit.c \
+	$(XSRCDIR)/jitalloc.c \
+	$(XSRCDIR)/jitarith.c \
+	$(XSRCDIR)/jitcall.c \
+	$(XSRCDIR)/jitcommon.c \
+	$(XSRCDIR)/jitinline.c \
+	$(XSRCDIR)/jitstack.c \
+	$(XSRCDIR)/jitstate.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
@@ -183,6 +197,20 @@ $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
+$(XSRCDIR)/jitalloc.c: ../src/jitalloc.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitalloc.c $(SRCDIR)/jitalloc.c
+$(XSRCDIR)/jitarith.c: ../src/jitarith.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitarith.c $(SRCDIR)/jitarith.c
+$(XSRCDIR)/jitcall.c: ../src/jitcall.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitcall.c $(SRCDIR)/jitcall.c
+$(XSRCDIR)/jitcommon.c: ../src/jitcommon.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitcommon.c $(SRCDIR)/jitcommon.c
+$(XSRCDIR)/jitinline.c: ../src/jitinline.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitinline.c $(SRCDIR)/jitinline.c
+$(XSRCDIR)/jitstack.c: ../src/jitstack.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitstack.c $(SRCDIR)/jitstack.c
+$(XSRCDIR)/jitstate.c: ../src/jitstate.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitstate.c $(SRCDIR)/jitstate.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
@@ -266,6 +294,20 @@ hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
+jitalloc.@LTO@: $(XSRCDIR)/jitalloc.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitalloc.c -o jitalloc.@LTO@
+jitarith.@LTO@: $(XSRCDIR)/jitarith.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitarith.c -o jitarith.@LTO@
+jitcall.@LTO@: $(XSRCDIR)/jitcall.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitcall.c -o jitcall.@LTO@
+jitcommon.@LTO@: $(XSRCDIR)/jitcommon.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitcommon.c -o jitcommon.@LTO@
+jitinline.@LTO@: $(XSRCDIR)/jitinline.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitinline.c -o jitinline.@LTO@
+jitstack.@LTO@: $(XSRCDIR)/jitstack.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstack.c -o jitstack.@LTO@
+jitstate.@LTO@: $(XSRCDIR)/jitstate.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c

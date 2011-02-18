@@ -61,7 +61,7 @@ static void **malloc_node()
   return v;
 }
 
-static void add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_able)
+void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_able)
 {
   uintptr_t k1, k2, split_t_start = 0, split_t_end = 0, i;
   int m;

@@ -610,6 +610,34 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\jitalloc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitarith.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitcall.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitcommon.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitinline.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitstack.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\jitstate.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\List.c"
 				>
 			</File>

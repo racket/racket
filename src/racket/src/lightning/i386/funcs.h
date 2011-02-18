@@ -34,14 +34,7 @@
 #ifndef __lightning_funcs_h
 #define __lightning_funcs_h
 
-static void
-jit_notify_freed_code(void)
-{
-}
-
-static void
-jit_flush_code(void *dest, void *end)
-{
-}
+#define jit_notify_freed_code() /* empty */
+#define jit_flush_code(d, e) /* empty */
 
 #endif /* __lightning_funcs_h */
