@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket/base
 (provide process
          process*
          process/ports
@@ -33,15 +33,20 @@
            (format "~a: don't know what shell to use for platform: " who)
            (system-type))]))
 
-(define (if-stream-out p)
-  (cond [(or (not p) (file-stream-port? p)) p]
+(define (if-stream-out who p [sym-ok? #f])
+  (cond [(and sym-ok? (eq? p 'stdout)) p]
+        [(or (not p) (and (output-port? p) (file-stream-port? p))) p]
         [(output-port? p) #f]
-        [else (raise-type-error 'subprocess "output port" p)]))
+        [else (raise-type-error who
+                                (if sym-ok?
+                                    "output port, #f, or 'stdout" 
+                                    "output port or #f")
+                                p)]))
 
-(define (if-stream-in p)
-  (cond [(or (not p) (file-stream-port? p)) p]
+(define (if-stream-in who p)
+  (cond [(or (not p) (and (input-port? p) (file-stream-port? p))) p]
         [(input-port? p) #f]
-        [else (raise-type-error 'subprocess "input port" p)]))
+        [else (raise-type-error who "input port or #f" p)]))
 
 (define (streamify-in cin in ready-for-break)
   (if (and cin (not (file-stream-port? cin)))
@@ -58,22 +63,52 @@
     in))
 
 (define (streamify-out cout out)
-  (if (and cout (not (file-stream-port? cout)))
-    (thread (lambda ()
-              (dynamic-wind
-                void
-                (lambda () (copy-port out cout))
-                (lambda () (close-input-port out)))))
-    out))
+  (if (and cout 
+           (not (eq? cout 'stdout))
+           (not (file-stream-port? cout)))
+      (thread (lambda ()
+                (dynamic-wind
+                    void
+                    (lambda () (copy-port out cout))
+                    (lambda () (close-input-port out)))))
+      out))
+
+(define (check-exe who exe)
+  (unless (or (path-string? exe)
+              (eq? exe 'exact))
+    (raise-type-error who "path, string, or 'exact" exe))
+  exe)
+
+(define (check-args who exe args)
+  (cond
+   [(eq? exe 'exact)
+    (unless (and (= 1 (length args))
+                 (string? (car args))
+                 (path-string? (car args)))
+      (raise-mismatch-error "expected a single string argument with 'exact, given: "
+                            args))]
+   [else
+    (for ([s (in-list args)])
+      (unless (or (path-string? s)
+                  (and (bytes? s)
+                       (for/and ([b (in-bytes s)]) (positive? b))))
+        (raise-type-error who "path, string, or byte string (no with nuls)" s)))])
+  args)
+
+(define (check-command who str)
+  (unless (or (string? str)
+              (bytes? str))
+    (raise-type-error who "string or byte string" str)))
 
 ;; Old-style functions: ----------------------------------------
 
-(define (process*/ports cout cin cerr exe . args)
+(define (do-process*/ports who cout cin cerr exe . args)
   (let-values ([(subp out in err) (apply subprocess
-                                         (if-stream-out cout)
-                                         (if-stream-in cin)
-                                         (if-stream-out cerr)
-                                         exe args)]
+                                         (if-stream-out who cout)
+                                         (if-stream-in who cin)
+                                         (if-stream-out who cerr #t)
+                                         (check-exe who exe)
+                                         (check-args who exe args))]
                [(it-ready) (make-semaphore)])
     (let ([so (streamify-out cout out)]
           [si (streamify-in cin in (lambda (ok?)
@@ -121,27 +156,32 @@
               (aport se)
               control)))))
 
+(define (process*/ports cout cin cerr exe . args)
+  (apply do-process*/ports 'process*/ports cout cin cerr exe args))
+
 (define (process/ports out in err str)
-  (apply process*/ports out in err (shell-path/args 'process/ports str)))
+  (apply do-process*/ports 'process/ports out in err (shell-path/args 'process/ports str)))
 
 (define (process* exe . args)
-  (apply process*/ports #f #f #f exe args))
+  (apply do-process*/ports 'process* #f #f #f exe args))
 
 (define (process str)
-  (apply process* (shell-path/args 'process str)))
+  (check-command 'process str)
+  (apply do-process*/ports 'process #f #f #f (shell-path/args 'process str)))
 
 ;; Note: these always use current ports
-(define (system*/exit-code exe . args)
+(define (do-system*/exit-code who exe . args)
   (let ([cout (current-output-port)]
         [cin (current-input-port)]
         [cerr (current-error-port)]
         [it-ready (make-semaphore)])
     (let-values ([(subp out in err)
                   (apply subprocess
-                         (if-stream-out cout)
-                         (if-stream-in cin)
-                         (if-stream-out cerr)
-                         exe args)])
+                         (if-stream-out who cout)
+                         (if-stream-in who cin)
+                         (if-stream-out who cerr #t)
+                         (check-exe who exe)
+                         (check-args who exe args))])
       (let ([ot (streamify-out cout out)]
             [it (streamify-in cin in (lambda (ok?)
                                        (if ok?
@@ -161,11 +201,16 @@
         (when in (close-output-port in)))
       (subprocess-status subp))))
 
+(define (system*/exit-code exe . args)
+  (apply do-system*/exit-code 'system*/exit-code exe args))
+
 (define (system* exe . args)
-  (zero? (apply system*/exit-code exe args)))
+  (zero? (apply do-system*/exit-code 'system* exe args)))
 
 (define (system str)
-  (apply system* (shell-path/args 'system str)))
+  (check-command 'system str)
+  (zero? (apply do-system*/exit-code 'system (shell-path/args 'system str))))
 
 (define (system/exit-code str)
-  (apply system*/exit-code (shell-path/args 'system/exit-code str)))
+  (check-command 'system/exit-code str)
+  (apply do-system*/exit-code 'system/exit-code (shell-path/args 'system/exit-code str)))

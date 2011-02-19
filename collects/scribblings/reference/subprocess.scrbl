@@ -6,9 +6,9 @@
 
 @defproc*[([(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
                         [stdin (or/c (and/c input-port? file-stream-port?) #f)]
-                        [stderr (or/c (and/c output-port? file-stream-port?) #f)]
+                        [stderr (or/c (and/c output-port? file-stream-port?) #f 'stdout)]
                         [command path-string?]
-                        [arg string?] ...)
+                        [arg (or/c path? string? bytes?)] ...)
             (values subprocess?
                     (or/c (and/c input-port? file-stream-port?) #f)
                     (or/c (and/c output-port? file-stream-port?) #f)
@@ -30,8 +30,11 @@ Creates a new process in the underlying operating system to execute
 
 The @racket[command] argument is a path to a program executable, and
 the @racket[arg]s are command-line arguments for the program. Under
-Unix and Mac OS X, command-line arguments are passed as byte strings
-using the current locale's encoding (see @secref["encodings"]).
+Unix and Mac OS X, command-line arguments are passed as byte strings,
+and string @racket[args] are converted using the current locale's
+encoding (see @secref["encodings"]). Under Windows, command-line
+arguments are passed as strings, and bytes strings are converted using
+UTF-8.
 
 Under Windows, the first @racket[arg] can be replaced with
 @indexed-racket['exact], which triggers a Windows-specific behavior:
@@ -46,12 +49,15 @@ the @exnraise[exn:fail:contract].
 search for ``command line parsing'' at
 @tt{http://msdn.microsoft.com/}.}
 
-Unless it is @racket[#f], @racket[stdout] is used for the launched
+When provided as a port, @racket[stdout] is used for the launched
 process's standard output, @racket[stdin] is used for the process's
 standard input, and @racket[stderr] is used for the process's standard
 error.  All provided ports must be file-stream ports. Any of the ports
 can be @racket[#f], in which case a system pipe is created and
-returned by @racket[subprocess]. For each port that is provided, no
+returned by @racket[subprocess]. The @racket[stderr] argument can be 
+@racket['stdout], in which case the same file-stream port or system pipe
+that is supplied as standard output is also used for standard error.
+For each port or @racket['stdout] that is provided, no
 pipe is created and the corresponding returned value is @racket[#f].
 
 The @racket[subprocess] procedure returns four values:
@@ -67,7 +73,7 @@ The @racket[subprocess] procedure returns four values:
  @racket[#f] if @racket[stdin-input-port] was a port;}
 
  @item{an input port piped from the process's standard error, or
- @racket[#f] if @racket[stderr-output-port] was a port.}
+ @racket[#f] if @racket[stderr-output-port] was a port or @racket['stdout].}
 
 ]
 
@@ -311,12 +317,12 @@ real process ID).}
 
 @note-lib[racket/system]
 
-@defproc[(system [command string?]) boolean?]{
+@defproc[(system [command (or/c string? bytes?)]) boolean?]{
 
 Executes a Unix, Mac OS X, or Windows shell command synchronously
 (i.e., the call to @racket[system] does not return until the
 subprocess has ended). The @racket[command] argument is a string
-containing no nul characters. If the command succeeds, the return
+or byte string containing no nul characters. If the command succeeds, the return
 value is @racket[#t], @racket[#f] otherwise.
 
 See also @racket[current-subprocess-custodian-mode] and
@@ -324,7 +330,7 @@ See also @racket[current-subprocess-custodian-mode] and
 implement @racket[system].}
 
 
-@defproc*[([(system* [command path-string?] [arg string?] ...) boolean?]
+@defproc*[([(system* [command path-string?] [arg (or/c path? string? bytes?)] ...) boolean?]
            [(system* [command path-string?] [exact 'exact] [arg string?]) boolean?])]{
 
 Like @racket[system], except that @racket[command] is a filename that
@@ -344,7 +350,7 @@ Like @racket[system], except that the result is the exit code returned
 by the subprocess. A @racket[0] result normally indicates success.}
 
 
-@defproc*[([(system*/exit-code [command path-string?] [arg string?] ...) (integer-in 0 255)]
+@defproc*[([(system*/exit-code [command path-string?] [arg (or/c path? string? bytes?)] ...) (integer-in 0 255)]
            [(system*/exit-code [command path-string?] [exact 'exact] [arg string?]) (integer-in 0 255)])]{
 
 Like @racket[system*], but returns the exit code like
@@ -420,7 +426,7 @@ implement @racket[process]. In particular, the @racket['interrupt] and
 of a single process.}
  
 
-@defproc*[([(process* [command path-string?] [arg string?] ...) list?]
+@defproc*[([(process* [command path-string?] [arg (or/c path? string? bytes?)] ...) list?]
            [(process* [command path-string?] [exact 'exact] [arg string?]) list?])]{
 
 Like @racket[process], except that @racket[command] is a filename that
@@ -431,7 +437,7 @@ replaced with @racket['exact].}
 
 @defproc[(process/ports [out (or/c #f output-port?)]
                         [in (or/c #f input-port?)]
-                        [error-out (or/c #f output-port?)]
+                        [error-out (or/c #f output-port? 'stdout)]
                         [command string?])
          list?]{
 
@@ -439,19 +445,21 @@ Like @racket[process], except that @racket[out] is used for the
 process's standard output, @racket[in] is used for the process's
 standard input, and @racket[error-out] is used for the process's
 standard error.  Any of the ports can be @racket[#f], in which case a
-system pipe is created and returned, as in @racket[process]. For each
-port that is provided, no pipe is created, and the corresponding value
-in the returned list is @racket[#f].}
+system pipe is created and returned, as in @racket[process]. If
+@racket[error-out] is @racket['stdout], then standard error is
+redirected to standard output.  For each port or @racket['stdout] that
+is provided, no pipe is created, and the corresponding value in the
+returned list is @racket[#f].}
 
 @defproc*[([(process*/ports [out (or/c #f output-port?)]
                             [in (or/c #f input-port?)]
-                            [error-out (or/c #f output-port?)]
+                            [error-out (or/c #f output-port? 'stdout)]
                             [command path-string?]
-                            [arg string?] ...)
+                            [arg (or/c path? string? bytes?)] ...)
             list?]
            [(process*/ports [out (or/c #f output-port?)]
                             [in (or/c #f input-port?)]
-                            [error-out (or/c #f output-port?)]
+                            [error-out (or/c #f output-port? 'stdout)]
                             [command path-string?]
                             [exact 'exact]
                             [arg string?])

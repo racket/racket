@@ -7782,6 +7782,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *inport;
   Scheme_Object *outport;
   Scheme_Object *errport;
+  int stderr_is_stdout = 0;
   Scheme_Object *a[4];
   Scheme_Subprocess *subproc;
   Scheme_Object *cust_mode;
@@ -7817,7 +7818,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       mzCOPY_FILE_HANDLE(from_subprocess, 1);
 #endif
     } else
-      scheme_wrong_type(name, "file-stream-output-port", 0, c, args);
+      scheme_wrong_type(name, "file-stream-output-port or #f", 0, c, args);
   } else
     outport = NULL;
 
@@ -7841,11 +7842,15 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       mzCOPY_FILE_HANDLE(to_subprocess, 0);
 #endif
     } else
-      scheme_wrong_type(name, "file-stream-input-port", 1, c, args);
+      scheme_wrong_type(name, "file-stream-input-port or #f", 1, c, args);
   } else
     inport = NULL;
 
-  if (SCHEME_TRUEP(args[2])) {
+  if (SCHEME_SYMBOLP(args[2]) && !SCHEME_SYM_WEIRDP(args[2])
+      && !strcmp("stdout", SCHEME_SYM_VAL(args[2]))) {
+    errport = NULL;
+    stderr_is_stdout = 1;
+  } else if (SCHEME_TRUEP(args[2])) {
     errport = args[2];
     if (SCHEME_OUTPUT_PORTP(errport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &errport))) {
 #ifdef PROCESS_FUNCTION
@@ -7865,7 +7870,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       mzCOPY_FILE_HANDLE(err_subprocess, 1);
 #endif
     } else
-      scheme_wrong_type(name, "file-stream-output-port", 2, c, args);
+      scheme_wrong_type(name, "file-stream-output-port, #f, or 'stdout", 2, c, args);
   } else
     errport = NULL;
 
@@ -7913,11 +7918,16 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 #endif
   } else {
     for (i = 4; i < c; i++) {
-      if (!SCHEME_CHAR_STRINGP(args[i]) || scheme_any_string_has_null(args[i]))
-	scheme_wrong_type(name, CHAR_STRING_W_NO_NULLS, i, c, args);
+      if (((!SCHEME_CHAR_STRINGP(args[i]) && !SCHEME_BYTE_STRINGP(args[i]))
+           || scheme_any_string_has_null(args[i]))
+          && !SCHEME_PATHP(args[i]))
+	scheme_wrong_type(name, "path, string, or byte string (without nuls)", i, c, args);
+        
       {
 	Scheme_Object *bs;
-	bs = scheme_char_string_to_byte_string_locale(args[i]);
+        bs = args[i];
+        if (SCHEME_CHAR_STRINGP(args[i]))
+          bs = scheme_char_string_to_byte_string_locale(bs);
 	argv[i - 3] = SCHEME_BYTE_STR_VAL(bs);
       }
     }
@@ -7952,7 +7962,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     if (errport) { mzCLOSE_FILE_HANDLE(err_subprocess, 1); }
     scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
   }
-  if (!errport && PIPE_FUNC(err_subprocess, 0 _EXTRA_PIPE_ARGS)) {
+  if (!errport && stderr_is_stdout) {
+    err_subprocess[0] = from_subprocess[0];
+    err_subprocess[1] = from_subprocess[1];
+  } else if (!errport && PIPE_FUNC(err_subprocess, 0 _EXTRA_PIPE_ARGS)) {
     if (!inport) {
       MSC_IZE(close)(to_subprocess[0]);
       MSC_IZE(close)(to_subprocess[1]);
@@ -8113,8 +8126,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	mzCLOSE_FILE_HANDLE(from_subprocess, 1);
       }
       if (!errport) {
-	MSC_IZE(close)(err_subprocess[0]);
-	MSC_IZE(close)(err_subprocess[1]);
+        if (!stderr_is_stdout) {
+          MSC_IZE(close)(err_subprocess[0]);
+          MSC_IZE(close)(err_subprocess[1]);
+        }
       } else {
 	mzCLOSE_FILE_HANDLE(err_subprocess, 1);
       }
@@ -8139,8 +8154,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	  MSC_IZE(close)(from_subprocess[1]);
 	}
 	if (!errport) {
-	  MSC_IZE(close)(err_subprocess[0]);
-	  MSC_IZE(close)(err_subprocess[1]);
+          if (!stderr_is_stdout) {
+            MSC_IZE(close)(err_subprocess[0]);
+            MSC_IZE(close)(err_subprocess[1]);
+          }
 	}
 
 #ifdef CLOSE_ALL_FDS_AFTER_FORK
@@ -8232,7 +8249,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     in = scheme_false;
   }
   if (!errport) {
-    mzCLOSE_PIPE_END(err_subprocess[1]);
+    if (!stderr_is_stdout)
+      mzCLOSE_PIPE_END(err_subprocess[1]);
     err = NULL;
   } else {
     mzCLOSE_FILE_HANDLE(err_subprocess, 1);
@@ -8245,7 +8263,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   in = (in ? in : make_fd_input_port(from_subprocess[0], scheme_intern_symbol("subprocess-stdout"), 0, 0, NULL, 0));
   out = (out ? out : make_fd_output_port(to_subprocess[1], scheme_intern_symbol("subprocess-stdin"), 0, 0, 0, -1));
-  err = (err ? err : make_fd_input_port(err_subprocess[0], scheme_intern_symbol("subprocess-stderr"), 0, 0, NULL, 0));
+  if (stderr_is_stdout)
+    err = scheme_false;
+  else
+    err = (err ? err : make_fd_input_port(err_subprocess[0], scheme_intern_symbol("subprocess-stderr"), 0, 0, NULL, 0));
 
   /*--------------------------------------*/
   /*          Return result info          */

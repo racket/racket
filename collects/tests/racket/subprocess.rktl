@@ -37,20 +37,43 @@
 
 ;; Generate output to stderr as well as stdout
 
-(let ([p (process* cat "-" "nosuchfile")])
+(define (nosuchfile-test dash nosuchfile)
+  (let ([p (process* cat dash nosuchfile)])
+    (fprintf (cadr p) "Hello\n")
+    (close-output-port (cadr p))
+    (test "Hello" read-line (car p))
+    (test eof read-line (car p))
+    (test '("nosuchfile")
+          regexp-match "nosuchfile" (read-line (cadddr p)))
+    (test eof read-line (cadddr p))
+
+    ((list-ref p 4) 'wait)
+    (test 'done-error (list-ref p 4) 'status)
+
+    (close-input-port (car p))
+    (close-input-port (cadddr p))))
+(nosuchfile-test "-" "nosuchfile")
+(nosuchfile-test #"-" (string->path "nosuchfile"))
+(nosuchfile-test (string->path "-") "nosuchfile")
+
+;; Redirect stderr to stdout:
+
+(let ([p (process*/ports #f #f 'stdout cat "-" "nosuchfile")])
+  (test #t file-stream-port? (car p))
+  (test #t file-stream-port? (cadr p))
+  (test #f cadddr p)
+
   (fprintf (cadr p) "Hello\n")
   (close-output-port (cadr p))
   (test "Hello" read-line (car p))
-  (test eof read-line (car p))
   (test '("nosuchfile")
-	regexp-match "nosuchfile" (read-line (cadddr p)))
-  (test eof read-line (cadddr p))
+        regexp-match "nosuchfile" (read-line (car p)))
+  (test eof read-line (car p))
 
   ((list-ref p 4) 'wait)
   (test 'done-error (list-ref p 4) 'status)
-
-  (close-input-port (car p))
-  (close-input-port (cadddr p)))
+  
+  (close-input-port (car p)))
 
 ;; Supply file for stdout
 
@@ -73,20 +96,23 @@
 
 ;; Supply file for stdout & stderr, only stdout writes
 
-(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
-  (let ([p (process*/ports f #f f cat)])
-    (test #f car p)
-    (test #f cadddr p)
+(define (stderr-to-stdout-test stderr-filter)
+  (let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
+    (let ([p (process*/ports f #f (stderr-filter f) cat)])
+      (test #f car p)
+      (test #f cadddr p)
 
-    (fprintf (cadr p) "Hello\n")
-    (close-output-port (cadr p))
+      (fprintf (cadr p) "Hello\n")
+      (close-output-port (cadr p))
 
-    ((list-ref p 4) 'wait)
-    (test 'done-ok (list-ref p 4) 'status)
+      ((list-ref p 4) 'wait)
+      (test 'done-ok (list-ref p 4) 'status)
 
-    (close-output-port f)
-    (test 6 file-size tmpfile)
-    (test 'Hello with-input-from-file tmpfile read)))
+      (close-output-port f)
+      (test 6 file-size tmpfile)
+      (test 'Hello with-input-from-file tmpfile read))))
+(stderr-to-stdout-test values)
+(stderr-to-stdout-test (lambda (x) 'stdout))
 
 ;; Supply file for stderr
 
@@ -246,6 +272,56 @@
     (test f2 f2 f2)
     (test f2 f f)))
 
+;; system* ------------------------------------------------------
+
+(let ([out (open-output-string)])
+  (test #t 'system*
+        (parameterize ([current-input-port (open-input-string "Hi\n")]
+                       [current-output-port out])
+          (system* cat "-")))
+  (test "Hi\n" get-output-string out))
+
+(let ([out (open-output-string)])
+  (test 0 'system*/exit-code
+        (parameterize ([current-input-port (open-input-string "Hi\n")]
+                       [current-output-port out])
+          (system*/exit-code cat "-")))
+  (test "Hi\n" get-output-string out))
+
+;; shells ------------------------------------------------------
+
+(let ([go
+       (lambda (path->string)
+         (let ([p (process (path->string cat))])
+           (fprintf (cadr p) "Hi\n")
+           (close-output-port (cadr p))
+           (test "Hi" read-line (car p) 'any)
+           (close-input-port (car p))
+           (close-input-port (cadddr p))
+           (test 'done-ok (list-ref p 4) 'status)))])
+  (go path->string)
+  (go path->bytes))
+
+(let ([p (process/ports #f (open-input-string "Hi\n") 'stdout (path->string cat))])
+  (test "Hi" read-line (car p) 'any)
+  (close-input-port (car p))
+  (test #f cadddr p)
+  (test 'done-ok (list-ref p 4) 'status))
+
+(let ([out (open-output-string)])
+  (test #t 'system
+        (parameterize ([current-input-port (open-input-string "Hi\n")]
+                       [current-output-port out])
+          (system (path->string cat))))
+  (test "Hi\n" get-output-string out))
+
+(let ([out (open-output-string)])
+  (test 0 'system
+        (parameterize ([current-input-port (open-input-string "Hi\n")]
+                       [current-output-port out])
+          (system/exit-code (path->string cat))))
+  (test "Hi\n" get-output-string out))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; nested tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -310,9 +386,10 @@
                              (equal?
                               (list (number->string sub-pid))
                               (regexp-match
-                               (format "(?m:^~a(?=[^0-9]))" sub-pid)
+                               (format "(?m:^ *~a(?=[^0-9]))" sub-pid)
                                (let ([s (open-output-string)])
-                                 (parameterize ([current-output-port s])
+                                 (parameterize ([current-output-port s]
+                                                [current-input-port (open-input-string "")])
                                    (system (format "ps x")))
                                  (get-output-string s)))))])
              (let ([sub-pid (read (car l))])
@@ -323,7 +400,8 @@
                (test 'done-error (list-ref l 4) 'status)
                (test post-shutdown? running? sub-pid)
                (when post-shutdown?
-                 (system (format "kill ~a" sub-pid))))))])
+                 (parameterize ([current-input-port (open-input-string "")])
+                   (system (format "kill ~a" sub-pid)))))))])
     (try #t)
     (try #f)))
   
