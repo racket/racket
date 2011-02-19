@@ -637,6 +637,29 @@
                                             (string-constant repl-out-color))))
 
 
+(define test-coverage-on-style-pref (string->symbol drracket:debug:test-coverage-on-style-name))
+(define test-coverage-off-style-pref (string->symbol drracket:debug:test-coverage-off-style-name))
+
+(color-prefs:register-color-preference test-coverage-on-style-pref
+                                       drracket:debug:test-coverage-on-style-name
+                                       (send the-color-database find-color "forest green"))
+(color-prefs:register-color-preference test-coverage-off-style-pref
+                                       drracket:debug:test-coverage-off-style-name
+                                       (send the-color-database find-color "maroon"))
+(color-prefs:add-to-preferences-panel 
+ "Module Language"
+ (λ (parent)
+   (color-prefs:build-color-selection-panel parent
+                                            test-coverage-on-style-pref
+                                            drracket:debug:test-coverage-on-style-name
+                                            (string-constant test-coverage-on))
+   (color-prefs:build-color-selection-panel parent
+                                            test-coverage-off-style-pref
+                                            drracket:debug:test-coverage-off-style-name
+                                            (string-constant test-coverage-off))))
+
+
+
 (let* ([find-frame
         (λ (item)
           (let loop ([item item])

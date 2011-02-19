@@ -1042,12 +1042,8 @@ profile todo:
       
       (super-new)))
   
-  (define test-covered-style-delta (make-object style-delta%))
-  (define test-not-covered-style-delta (make-object style-delta%))
-  
-  ;; test colors chosen to try to be color-blindness friendly
-  (send test-covered-style-delta set-delta-foreground "forest green")
-  (send test-not-covered-style-delta set-delta-foreground "maroon")
+  (define test-coverage-on-style-name "plt:module-language:test-coverage-on")
+  (define test-coverage-off-style-name "plt:module-language:test-coverage-off")
   
   (define erase-test-coverage-style-delta (make-object style-delta% 'change-normal-color))
   (send erase-test-coverage-style-delta set-transparent-text-backing-on #t)
@@ -1181,8 +1177,14 @@ profile todo:
                           [span (srcloc-span srcloc)])
                      (send src change-style
                            (if on?
-                               (or on-style test-covered-style-delta)
-                               (or off-style test-not-covered-style-delta))
+                               (or on-style 
+                                   (send (editor:get-standard-style-list)
+                                         find-named-style 
+                                         test-coverage-on-style-name))
+                               (or off-style 
+                                   (send (editor:get-standard-style-list)
+                                         find-named-style 
+                                         test-coverage-off-style-name)))
                            (- pos 1)
                            (+ (- pos 1) span)
                            #f))))

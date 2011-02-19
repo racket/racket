@@ -76,6 +76,8 @@
 
    srcloc->edition/pair
    
+   test-coverage-on-style-name
+   test-coverage-off-style-name
    
    ;show-error-and-highlight
    ;print-bug-to-stderr
