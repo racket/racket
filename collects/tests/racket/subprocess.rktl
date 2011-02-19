@@ -298,6 +298,7 @@
            (test "Hi" read-line (car p) 'any)
            (close-input-port (car p))
            (close-input-port (cadddr p))
+           ((list-ref p 4) 'wait)
            (test 'done-ok (list-ref p 4) 'status)))])
   (go path->string)
   (go path->bytes))
@@ -306,6 +307,7 @@
   (test "Hi" read-line (car p) 'any)
   (close-input-port (car p))
   (test #f cadddr p)
+  ((list-ref p 4) 'wait)
   (test 'done-ok (list-ref p 4) 'status))
 
 (let ([out (open-output-string)])
