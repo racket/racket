@@ -239,7 +239,7 @@
            [ignored-name #f]
            [gl-config #f])
 
-     (inherit get-gtk set-size get-size get-client-size 
+     (inherit get-gtk get-size get-client-size 
               get-top-win
               set-auto-size 
               adjust-client-delta infer-client-delta
@@ -336,6 +336,10 @@
                                         (list client-gtk))))])
 
      (set-size x y w h)
+
+     (define/override (set-size x y w h)
+       (super set-size x y w h)
+       (on-size))
      
      (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
 
@@ -361,7 +365,7 @@
                                                     GDK_KEY_RELEASE_MASK
                                                     GDK_BUTTON_PRESS_MASK
                                                     GDK_BUTTON_RELEASE_MASK
-                                                    GDK_POINTER_MOTION_MASK
+                                                    GDK_POINTER_MOTION_HINT_MASK
                                                     GDK_FOCUS_CHANGE_MASK
                                                     GDK_ENTER_NOTIFY_MASK
                                                     GDK_LEAVE_NOTIFY_MASK))
@@ -486,6 +490,7 @@
      (define/override (on-client-size w h) 
        (on-size))
 
+     ;; this `on-size' method is for `editor-canvas%', only:
      (define/public (on-size) (void))
 
      (define/public (show-scrollbars h? v?)

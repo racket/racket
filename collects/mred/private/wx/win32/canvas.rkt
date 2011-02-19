@@ -249,6 +249,7 @@
            (MoveWindow combo-hwnd 0 0 (max 1 w) (- h 2) #t)))
        (on-size))
 
+     ;; this `on-size' method is for `editor-canvas%', only:
      (define/public (on-size) (void))
 
      ;; The `queue-paint' and `paint-children' methods

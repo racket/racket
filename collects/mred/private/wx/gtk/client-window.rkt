@@ -36,13 +36,19 @@
 
     (define/public (on-client-size w h) (void))
 
+    (define client-size-key #f)
+
     (define/public (save-client-size x y w h)
       ;; Called in the Gtk event-loop thread
       (set! client-x x)
       (set! client-y y)
-      (queue-window-event this (lambda () 
-				 (internal-on-client-size w h)
-				 (on-client-size w h))))
+      (when client-size-key (set-box! client-size-key #f))
+      (let ([key (box #t)])
+        (set! client-size-key key)
+        (queue-window-event this (lambda () 
+                                   (when (unbox key)
+                                     (internal-on-client-size w h)
+                                     (on-client-size w h))))))
 
     (define/public (internal-on-client-size w h)
       (void))

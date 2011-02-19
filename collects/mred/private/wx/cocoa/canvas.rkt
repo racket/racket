@@ -457,6 +457,7 @@
          (reset-auto-scroll 0 0))
        (on-size))
 
+     ;; this `on-size' method is for `editor-canvas%', only:
      (define/public (on-size) (void))
 
      (define/public (show-scrollbars h? v?)
