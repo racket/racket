@@ -429,7 +429,6 @@
   (define/override (get-top-frame) this)
 
   (define/public (designate-root-frame) (void))
-  (def/public-unimplemented system-menu)
 
   (define modified? #f)
   (define/public (set-modified on?)
@@ -561,5 +560,7 @@
 
   (define/public (popup-menu-with-char c)
     (DefWindowProcW hwnd WM_SYSKEYDOWN (char->integer c) (arithmetic-shift 1 29))
-    (DefWindowProcW hwnd WM_SYSCHAR (char->integer c) (arithmetic-shift 1 29))))
+    (DefWindowProcW hwnd WM_SYSCHAR (char->integer c) (arithmetic-shift 1 29)))
 
+  (define/public (system-menu)
+    (popup-menu-with-char #\space)))
