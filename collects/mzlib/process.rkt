@@ -74,19 +74,30 @@
       out))
 
 (define (check-exe who exe)
-  (unless (or (path-string? exe)
-              (eq? exe 'exact))
-    (raise-type-error who "path, string, or 'exact" exe))
+  (unless (path-string? exe)
+    (raise-type-error who "path or string" exe))
   exe)
 
-(define (check-args who exe args)
+(define (check-args who args)
   (cond
-   [(eq? exe 'exact)
-    (unless (and (= 1 (length args))
-                 (string? (car args))
-                 (path-string? (car args)))
-      (raise-mismatch-error "expected a single string argument with 'exact, given: "
-                            args))]
+   [(null? args) (void)]
+   [(eq? (car args) 'exact)
+    (when (null? (cdr args))
+      (raise-mismatch-error 
+       who
+       "expected a single string argument after: "
+       (car args)))
+    (unless (and (>= 2 (length args))
+                 (string? (cadr args))
+                 (path-string? (cadr args)))
+      (raise-mismatch-error who
+                            "expected a single string argument after 'exact, given: "
+                            (cadr args)))
+    (when (pair? (cddr args))
+      (raise-mismatch-error 
+       who
+       "expected a single string argument after 'exact, given additional argument: "
+       (caddr args)))]
    [else
     (for ([s (in-list args)])
       (unless (or (path-string? s)
@@ -108,7 +119,7 @@
                                          (if-stream-in who cin)
                                          (if-stream-out who cerr #t)
                                          (check-exe who exe)
-                                         (check-args who exe args))]
+                                         (check-args who args))]
                [(it-ready) (make-semaphore)])
     (let ([so (streamify-out cout out)]
           [si (streamify-in cin in (lambda (ok?)
@@ -181,7 +192,7 @@
                          (if-stream-in who cin)
                          (if-stream-out who cerr #t)
                          (check-exe who exe)
-                         (check-args who exe args))])
+                         (check-args who args))])
       (let ([ot (streamify-out cout out)]
             [it (streamify-in cin in (lambda (ok?)
                                        (if ok?
