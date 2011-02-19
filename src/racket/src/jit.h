@@ -51,7 +51,19 @@ END_XFORM_ARITH;
 # endif
 #endif
 
+#ifdef MZ_USE_JIT_PPC
+# ifndef DEFINE_LIGHTNING_FUNCS
+#  define SUPPRESS_LIGHTNING_FUNCS
+# endif
+# define DEFINE_LIGHTNING_FUNCS_STATIC /* empty */
+# define jit_notify_freed_code scheme_jit_notify_freed_code
+# define jit_flush_code scheme_jit_flush_code
+# define _jit_prolog scheme_jit_prolog
+# define _jit_epilog scheme_jit_epilog
+#endif
+
 #include "lightning/lightning.h"
+#define _jit (jitter->js)
 
 #ifdef MZ_USE_JIT_X86_64
 # define JIT_LOG_WORD_SIZE 3
@@ -61,6 +73,8 @@ END_XFORM_ARITH;
 #define JIT_WORD_SIZE (1 << JIT_LOG_WORD_SIZE)
 #define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
+
+#define NATIVE_ARG_COUNT 3
 
 #define JIT_LOG_DOUBLE_SIZE 3
 #define JIT_DOUBLE_SIZE (1 << JIT_LOG_DOUBLE_SIZE)
@@ -631,7 +645,10 @@ int check_location;
 # define jit_unshuffle_saved_regs() /* empty */
 # define mz_push_locals() /* empty */
 # define mz_pop_locals() /* empty */
-static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
+# ifdef SUPPRESS_LIGHTNING_FUNCS
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg);
+# else
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 {
   /* This must be consistent with _jit_prolog in many ways: */
   int frame_size;
@@ -658,6 +675,8 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
   STWrm(ret_addr_reg, frame_size + 4, 1); /* stw   r0, x+4(r1)		   */
 #endif
 }
+# endif
+# define _jit_prolog_again scheme_jit_prolog_again
 #else
 /* From frame pointer, -1 is saved frame pointer, -2 is saved ESI/R12,
    and -3 is saved EDI/R13. On entry to a procedure, prolog pushes 4
@@ -989,7 +1008,6 @@ static void emit_indentation(mz_jit_state *jitter)
 /*                             jitstate                               */
 /**********************************************************************/
 
-#define _jit (jitter->js)
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define JIT_BUFFER_PAD_SIZE 200
 #else

@@ -825,7 +825,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
     (void)jit_bnei_l(refloop, JIT_V1, 0);
     CHECK_LIMIT();
 
-    jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+    (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
     
     mz_epilog(JIT_R1);
     CHECK_LIMIT();

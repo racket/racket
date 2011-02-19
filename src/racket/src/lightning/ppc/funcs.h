@@ -34,7 +34,18 @@
 #ifndef __lightning_funcs_h
 #define __lightning_funcs_h
 
-static void
+#ifndef DEFINE_LIGHTNING_FUNCS_STATIC
+# define DEFINE_LIGHTNING_FUNCS_STATIC static
+#endif
+
+#ifdef SUPPRESS_LIGHTNING_FUNCS
+void jit_notify_freed_code(void);
+void jit_flush_code(void *start, void *end);
+void _jit_prolog(jit_state *jit, int n);
+void _jit_epilog(jit_state *jit);
+#else
+
+DEFINE_LIGHTNING_FUNCS_STATIC void
 jit_notify_freed_code(void)
 {
 }
@@ -43,7 +54,7 @@ jit_notify_freed_code(void)
 #error Go get GNU C, I do not know how to flush the cache
 #error with this compiler.
 #else
-static void
+DEFINE_LIGHTNING_FUNCS_STATIC void
 jit_flush_code(void *start, void *end)
 {
 #ifndef LIGHTNING_CROSS
@@ -90,7 +101,7 @@ jit_flush_code(void *start, void *end)
 
 #define _jit (*jit)
 
-static void
+DEFINE_LIGHTNING_FUNCS_STATIC void
 _jit_epilog(jit_state *jit)
 {
   int n = _jitl.nbArgs;
@@ -135,7 +146,7 @@ _jit_epilog(jit_state *jit)
    offset = 32 is enough to hold eight 4 bytes arguments.  This is less
    than perfect but is a reasonable work around for now. 
    Better solution must be investigated.  */
-static void
+DEFINE_LIGHTNING_FUNCS_STATIC void
 _jit_prolog(jit_state *jit, int n)
 {
   int frame_size;
@@ -169,5 +180,7 @@ _jit_prolog(jit_state *jit, int n)
 }
 
 #undef _jit
+
+#endif
 
 #endif /* __lightning_funcs_h */

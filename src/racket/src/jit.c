@@ -24,6 +24,8 @@
 
 #ifdef MZ_USE_JIT
 
+#define DEFINE_LIGHTNING_FUNCS
+
 #include "jit.h"
 
 #ifdef MZ_PRECISE_GC
@@ -2827,8 +2829,6 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 /*========================================================================*/
 /*                          procedure codegen                             */
 /*========================================================================*/
-
-#define NATIVE_ARG_COUNT 3
 
 static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_let_depth)
 {

@@ -2860,7 +2860,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         jit_movi_l(JIT_R0, 0);
         jit_stxi_l(((int)&((Scheme_Thread *)0x0)->ku.multiple.count), JIT_R2, JIT_R0);
         jit_stxi_p(((int)&((Scheme_Thread *)0x0)->ku.multiple.array), JIT_R2, JIT_R0);
-        jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+        (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
       }
 
       return 1;
