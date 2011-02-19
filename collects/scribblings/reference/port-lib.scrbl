@@ -689,13 +689,15 @@ Like @racket[read-line-evt], but returns a byte string instead of a
 string.}
 
 @defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?] [skip exact-nonnegative-integer?]
-                            [progress evt?] [in input-port?]) evt?]
+                            [progress (or/c evt? #f)] [in input-port?]) evt?]
            [(peek-bytes!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
                              [progress (or/c evt? #f)] [in input-port?]) evt?]
            [(peek-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
                                    [progress (or/c evt? #f)] [in input-port?]) evt?]
-           [(peek-string-evt [k exact-nonnegative-integer?] [in input-port?]) evt?]
-           [(peek-string!-evt [str (and/c string? (not/c immutable?))] [in input-port?]) evt?])]{
+           [(peek-string-evt [k exact-nonnegative-integer?] [skip exact-nonnegative-integer?]
+                             [progress (or/c evt? #f)] [in input-port?]) evt?]
+           [(peek-string!-evt [str (and/c string? (not/c immutable?))] [skip exact-nonnegative-integer?]
+                              [progress (or/c evt? #f)] [in input-port?]) evt?])]{
 
 Like the @racket[read-...-evt] functions, but for peeking. The
 @racket[skip] argument indicates the number of bytes to skip, and
