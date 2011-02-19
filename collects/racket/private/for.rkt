@@ -529,7 +529,7 @@
           [(v start stop) (in-vector-name v start stop 1)]
           [(v start stop step)
            (let-values (([v start stop step]
-                         (normalise-inputs in-vector-name type-name-str vector?-id vector-length-id
+                         (normalise-inputs 'in-vector-name type-name-str vector?-id vector-length-id
                                           v start stop step)))
              (make-do-sequence (lambda () (:vector-gen-id v start stop step))))]))]))
 

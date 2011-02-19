@@ -135,7 +135,11 @@
                               procedure->method procedure-rename
                               chaperone-procedure impersonate-procedure)
              (all-from "reqprov.rkt")
-             (all-from "for.rkt")
+             (all-from-except "for.rkt"
+                              define-in-vector-like
+                              define-:vector-like-gen
+                              make-in-vector-like
+                              normalise-inputs)
              (all-from "kernstruct.rkt")
              #%top-interaction
 

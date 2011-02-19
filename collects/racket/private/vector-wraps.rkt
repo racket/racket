@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require '#%flfxnum
+         "for.rkt"
          (for-syntax racket/base))
 
 (provide define-vector-wraps)
