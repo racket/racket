@@ -59,15 +59,15 @@
 ;; ignored by WM_KEYDOWN and processed by WM_CHAR instead
 (define win32->symbol
   (hasheq VK_CANCEL 'cancel
-          VK_BACK 'back
-          VK_TAB 'tab
+          VK_BACK #\backspace
+          VK_TAB #\tab
           VK_CLEAR 'clear
-          VK_RETURN 'return
+          VK_RETURN #\return
           VK_SHIFT 'shift
           VK_CONTROL 'control
           VK_MENU  'menu
           VK_PAUSE 'pause
-          VK_SPACE 'space
+          VK_SPACE #\space
           VK_ESCAPE 'escape
           VK_PRIOR 'prior
           VK_NEXT  'next
