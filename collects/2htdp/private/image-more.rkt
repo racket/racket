@@ -403,6 +403,20 @@
                 (if (< dy 0) (- dy) 0)
                 #f))))
 
+(define (overlay/offset image1 dx dy image2)
+  (overlay/offset/internal image1 dx dy image2 'middle 'middle))
+
+(define (overlay/offset/internal image orig-dx orig-dy scene x-place y-place)
+  (let ([dx (- orig-dx (find-x-spot x-place image))]
+        [dy (- orig-dy (find-y-spot y-place image))])
+    (overlay/δ image
+               (if (< dx 0) 0 dx)
+               (if (< dy 0) 0 dy)
+               scene
+               (if (< dx 0) (- dx) 0)
+               (if (< dy 0) (- dy) 0)
+               #f)))
+
 (define/chk (scene+line image x1 y1 x2 y2 color)
   (let* ([dx (abs (min 0 x1 x2))]
          [dy (abs (min 0 y1 y2))])
