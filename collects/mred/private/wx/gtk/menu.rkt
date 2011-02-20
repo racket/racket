@@ -33,6 +33,10 @@
                                  _pointer _uint _uint32
                                  -> _void))
 
+(define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
+(define-gdk gdk_screen_get_width (_fun _GdkScreen -> _int))
+(define-gdk gdk_screen_get_height (_fun _GdkScreen -> _int))
+
 (define-signal-handler connect-menu-item-activate "activate"
   (_fun _GtkWidget -> _void)
   (lambda (gtk)
@@ -122,8 +126,20 @@
                     #f 
                     #f
                     (lambda (menu _x _y _push)
-                      (ptr-set! _x _int x)
-                      (ptr-set! _y _int y)
+                      (let ([r (make-GtkRequisition 0 0)])
+                        (gtk_widget_size_request menu r)
+                        ;; Try to keep the menu on the screen:
+                        (let* ([s (gtk_widget_get_screen menu)]
+                               [sw (gdk_screen_get_width s)]
+                               [sh (gdk_screen_get_height s)])
+                          (ptr-set! _x _int (min x
+                                                 (max 0
+                                                      (- sw
+                                                         (GtkRequisition-width r)))))
+                          (ptr-set! _y _int (min y
+                                                 (max 0
+                                                      (- sh
+                                                         (GtkRequisition-height r)))))))
                       (ptr-set! _push _gboolean #t))
                     #f
                     0
