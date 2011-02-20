@@ -675,11 +675,62 @@
        (make-bb 100 100 100)
        #f))
 
+(test (overlay/offset (rectangle 10 100 'solid 'red)
+                      0 0
+                      (rectangle 100 10 'solid 'blue))
+      =>
+      (overlay (rectangle 10 100 'solid 'red)
+               (rectangle 100 10 'solid 'blue)))
+
+(test (overlay/align/offset "center" "center"
+                            (rectangle 10 100 'solid 'red)
+                            0 0
+                            (rectangle 100 10 'solid 'blue))
+      =>
+      (overlay/align "center" "center"
+                     (rectangle 10 100 'solid 'red)
+                     (rectangle 100 10 'solid 'blue)))
+
+(test (overlay/align/offset "right" "top"
+                            (rectangle 10 100 'solid 'red)
+                            0 0
+                            (rectangle 100 10 'solid 'blue))
+      =>
+      (overlay/align "right" "top"
+                     (rectangle 10 100 'solid 'red)
+                     (rectangle 100 10 'solid 'blue)))
+
+(test (underlay/offset (rectangle 10 100 'solid 'red)
+                       0 0
+                       (rectangle 100 10 'solid 'blue))
+      =>
+      (underlay (rectangle 10 100 'solid 'red)
+                (rectangle 100 10 'solid 'blue)))
+
+(test (underlay/align/offset "center" "center"
+                             (rectangle 10 100 'solid 'red)
+                             0 0
+                             (rectangle 100 10 'solid 'blue))
+      =>
+      (underlay/align "center" "center"
+                      (rectangle 10 100 'solid 'red)
+                      (rectangle 100 10 'solid 'blue)))
+
+(test (underlay/align/offset "left" "bottom"
+                             (rectangle 10 100 'solid 'red)
+                             0 0
+                             (rectangle 100 10 'solid 'blue))
+      =>
+      (underlay/align "left" "bottom"
+                      (rectangle 10 100 'solid 'red)
+                      (rectangle 100 10 'solid 'blue)))
+
 (test (empty-scene 185 100)
       =>
       (crop 0 0 185 100
             (overlay (rectangle 185 100 'outline (pen "black" 2 'solid 'round 'round))
                      (rectangle 185 100 'solid 'white))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

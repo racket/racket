@@ -660,14 +660,59 @@ the @scheme[point-count] argument determines how many points the star has.
   
   }
 
+@defproc[(overlay/offset [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
+  Just like @racket[overlay], this function lines up its image arguments on top of
+  each other. Unlike @racket[overlay], it moves @racket[i2] by @racket[x] pixels to
+  the right and @racket[y] down before overlaying them.
+  
+  @image-examples[(overlay/offset (circle 40 "solid" "red")
+                                  10 10
+                                  (circle 40 "solid" "blue"))
+                  
+                  (overlay/offset (overlay/offset (rectangle 60 20 "solid" "black")
+                                                  -50 0
+                                                  (circle 20 "solid" "darkorange"))
+                                  70 0
+                                  (circle 20 "solid" "darkorange"))
+                  (overlay/offset
+                   (overlay/offset (circle 30 'solid (color 0 150 0 127))
+                                   26 0
+                                   (circle 30 'solid (color 0 0 255 127)))
+                   0 26
+                   (circle 30 'solid (color 200 0 0 127)))]
+}
+
+@defproc[(overlay/align/offset [x-place x-place?] [y-place y-place?] [i1 image?] [x real?] [y real?] [i2 image?])
+         image?]{
+  Overlays image @racket[i1] on top of @racket[i2], using @racket[x-place] and @racket[y-place] as the 
+  starting points for the overlaying, and then adjusts @racket[i2] by @racket[x] to the right and
+  @racket[y] pixels down. 
+  
+  This function combines the capabilities of @racket[overlay/align] and @racket[overlay/offset].
+  
+  @image-examples[(overlay/align/offset
+                   "right" "bottom"
+                   (star-polygon 20 20 3 "solid" "navy")
+                   10 10
+                   (circle 30 "solid" "cornflowerblue"))
+                  (overlay/align/offset
+                   "left" "bottom"
+                   (star-polygon 20 20 3 "solid" "navy")
+                   -10 10
+                   (circle 30 "solid" "cornflowerblue"))]
+  
+}
+
 @defproc[(overlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
   Constructs an image by overlaying @racket[i1] on top of @racket[i2].
   The images are initially lined up on their upper-left corners and 
   then @racket[i2] is shifted to the right 
   by @racket[x] pixels to and down by @racket[y] pixels.
-
-  This is the same as @racket[(underlay/xy i2 (- x) (- y) i1)].
   
+  This is the same as @racket[(underlay/xy i2 (- x) (- y) i1)].
+
+  See also @racket[overlay/offset] and @racket[underlay/offset].
+
   @image-examples[(overlay/xy (rectangle 20 20 "outline" "black")
                               20 0
                               (rectangle 20 20 "outline" "black"))
@@ -684,13 +729,7 @@ the @scheme[point-count] argument determines how many points the star has.
                                (ellipse 10 10 "solid" "forestgreen"))
                    20
                    15
-                   (ellipse 10 10 "solid" "forestgreen"))
-                  (overlay/xy
-                   (overlay/xy (circle 30 'solid (color 0 150 0 127))
-                               26 0
-                               (circle 30 'solid (color 0 0 255 127)))
-                   13 26
-                   (circle 30 'solid (color 200 0 0 127)))]
+                   (ellipse 10 10 "solid" "forestgreen"))]
 }
 
 @defproc[(underlay [i1 image?] [i2 image?] [is image?] ...) image?]{
@@ -741,6 +780,56 @@ the @scheme[point-count] argument determines how many points the star has.
   
   }
 
+
+@defproc[(underlay/offset [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
+  Just like @racket[overlay], this function lines up its image arguments on top of
+  each other. Unlike @racket[overlay], it moves @racket[i2] by @racket[x] pixels to
+  the right and @racket[y] down before overlaying them.
+  
+  @image-examples[(underlay/offset (circle 40 "solid" "red")
+                                  10 10
+                                  (circle 40 "solid" "blue"))
+                  
+                  (underlay/offset (circle 40 "solid" "gray")
+                                   0 -10
+                                   (underlay/offset (circle 10 "solid" "navy")
+                                                   -30 0
+                                                   (circle 10 "solid" "navy")))]
+}
+
+@defproc[(underlay/align/offset [x-place x-place?] [y-place y-place?] [i1 image?] [x real?] [y real?] [i2 image?])
+         image?]{
+  Underlays image @racket[i1] underneath @racket[i2], using @racket[x-place] and @racket[y-place] as the 
+  starting points for the combination, and then adjusts @racket[i2] by @racket[x] to the right and
+  @racket[y] pixels down. 
+  
+  This function combines the capabilities of @racket[underlay/align] and @racket[underlay/offset].
+  
+  @image-examples[(underlay/align/offset
+                   "right" "bottom"
+                   (star-polygon 20 20 3 "solid" "navy")
+                   10 10
+                   (circle 30 "solid" "cornflowerblue"))
+                  (underlay/align/offset
+                   "right" "bottom"
+                   (underlay/align/offset
+                    "left" "bottom"
+                    (underlay/align/offset
+                     "right" "top"
+                     (underlay/align/offset
+                      "left" "top"
+                      (rhombus 120 90 "solid" "navy")
+                      16 16
+                      (star-polygon 20 11 3 "solid" "cornflowerblue"))
+                     -16 16
+                     (star-polygon 20 11 3 "solid" "cornflowerblue"))
+                    16 -16
+                    (star-polygon 20 11 3 "solid" "cornflowerblue"))
+                   -16 -16
+                   (star-polygon 20 11 3 "solid" "cornflowerblue"))]
+  
+}
+
 @defproc[(underlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
   Constructs an image by underlaying @racket[i1] underneath @racket[i2].
   The images are initially lined up on their upper-left corners and 
@@ -749,6 +838,8 @@ the @scheme[point-count] argument determines how many points the star has.
   
   This is the same as @racket[(overlay/xy i2 (- x) (- y) i1)].
   
+  See also @racket[underlay/offset] and @racket[overlay/offset].
+
   @image-examples[(underlay/xy (rectangle 20 20 "outline" "black")
                                20 0
                                (rectangle 20 20 "outline" "black"))

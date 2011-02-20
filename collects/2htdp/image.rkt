@@ -42,9 +42,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (provide-primitives
          overlay
          overlay/align
+         overlay/offset
+         overlay/align/offset
          overlay/xy
+         
          underlay
          underlay/align
+         underlay/offset
+         underlay/align/offset
          underlay/xy
          
          beside

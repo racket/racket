@@ -328,6 +328,33 @@
                           #t)
                (cdr rst)))])))
 
+(define/chk (overlay/offset image1 dx dy image2)
+  (overlay/offset/internal 'middle 'middle image1 dx dy image2))
+
+(define/chk (overlay/align/offset x-place y-place image1 dx dy image2)
+  (overlay/offset/internal x-place y-place image1 dx dy image2))
+
+(define/chk (underlay/offset image1 dx dy image2)
+  (overlay/offset/internal 'middle 'middle  image2 (- dx) (- dy) image1))
+
+(define/chk (underlay/align/offset x-place y-place image1 dx dy image2)
+  (overlay/offset/internal x-place y-place image2 (- dx) (- dy) image1))
+
+(define (overlay/offset/internal x-place y-place fst orig-dx orig-dy snd)
+  (let* ([fst-x-spot (find-x-spot x-place fst)]
+         [fst-y-spot (find-y-spot y-place fst)]
+         [snd-x-spot (find-x-spot x-place snd)]
+         [snd-y-spot (find-y-spot y-place snd)]
+         [dx (+ (- fst-x-spot snd-x-spot) orig-dx)]
+         [dy (+ (- fst-y-spot snd-y-spot) orig-dy)])
+    (overlay/δ fst
+               (if (< dx 0) (- dx) 0) 
+               (if (< dy 0) (- dy) 0)
+               snd
+               (if (< dx 0) 0 dx)
+               (if (< dy 0) 0 dy)
+               #t)))
+
 
 ;                                                                                                  
 ;                                                                                                  
@@ -402,20 +429,6 @@
                 (if (< dx 0) (- dx) 0)
                 (if (< dy 0) (- dy) 0)
                 #f))))
-
-(define (overlay/offset image1 dx dy image2)
-  (overlay/offset/internal image1 dx dy image2 'middle 'middle))
-
-(define (overlay/offset/internal image orig-dx orig-dy scene x-place y-place)
-  (let ([dx (- orig-dx (find-x-spot x-place image))]
-        [dy (- orig-dy (find-y-spot y-place image))])
-    (overlay/δ image
-               (if (< dx 0) 0 dx)
-               (if (< dy 0) 0 dy)
-               scene
-               (if (< dx 0) (- dx) 0)
-               (if (< dy 0) (- dy) 0)
-               #f)))
 
 (define/chk (scene+line image x1 y1 x2 y2 color)
   (let* ([dx (abs (min 0 x1 x2))]
@@ -1396,9 +1409,14 @@
 
 (provide overlay
          overlay/align
+         overlay/offset
+         overlay/align/offset
          overlay/xy
+         
          underlay
          underlay/align
+         underlay/align/offset
+         underlay/offset
          underlay/xy
          
          beside
