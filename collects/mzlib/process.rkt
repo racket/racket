@@ -101,9 +101,10 @@
    [else
     (for ([s (in-list args)])
       (unless (or (path-string? s)
-                  (and (bytes? s)
-                       (for/and ([b (in-bytes s)]) (positive? b))))
-        (raise-type-error who "path, string, or byte string (no with nuls)" s)))])
+                  (and (bytes? s) ((bytes-length s) . > . 0)
+                       (not (regexp-match? #rx"\0" s))))
+        (raise-type-error who "path, string, or byte string (without NULs)"
+                          s)))])
   args)
 
 (define (check-command who str)
