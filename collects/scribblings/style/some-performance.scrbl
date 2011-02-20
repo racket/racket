@@ -3,10 +3,9 @@
 @(require "shared.rkt")
 
 @; -----------------------------------------------------------------------------
-@(define (rurl x) (format "http://docs.racket-lang.org/reference/index.html?q=racket/~a" x))
-@(define (rkt) @hyperlink[(rurl "")]{racket})
-@(define (rkt/base) @hyperlink[(rurl "base")]{racket/base})
-@(define (rkt/gui) @hyperlink[(rurl "gui")]{racket/gui})
+@(define (rkt) @racketmodname[racket])
+@(define (rkt/base) @racketmodname[racket/base])
+@(define (rkt/gui) @racketmodname[racket/gui])
 
 @title{Some Performance Hints}
 
