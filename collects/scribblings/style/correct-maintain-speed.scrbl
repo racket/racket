@@ -1,5 +1,7 @@
 #lang scribble/base
 
+@(require "shared.rkt")
+
 @title[#:tag "correct-maintain-speed"]{Basic Facts of Life}
 
 @nested[#:style 'inset]{ Favor readers over writers.
@@ -29,11 +31,11 @@ watching Matthew, Robby, Shriram and others create the original code base}
 @nested[#:style 'inset]{It is the way we choose to fight our bugs that
  determines our character, not their presence or absence. -- Robby, in response}
 
-Correctness is a perfectionist goal beyond the reach of PLT.  All software
- has mistakes. If they are unknown, the software isn't being used. The goal
- is, however, to ensure some basic level of correctness before a
- feature is released and to ensure that the same mistake isn't introduced
- again.
+Complete correctness is a perfectionist goal beyond the reach of PLT.  All
+ software has mistakes. If they are unknown, the software isn't being
+ used. The goal is, however, to ensure some basic level of correctness
+ before a feature is released and to ensure that the same mistake isn't
+ introduced again.
 
 Formulate test suites. Use unit testing. Use random testing. Use fuzz
  testing. Test!
@@ -41,15 +43,13 @@ Formulate test suites. Use unit testing. Use random testing. Use fuzz
 Run the test suites before you commit. Read DrDr's emails; don't ignore
  them.
 
-Add tests to test suites during debugging. That is, first, write an
- automated test that exposes the mistake in the existing
- implementation. Put this in the software's test suite so it will never be
- accidentally introduced again.  Second, modify the code to fix the
- mistake. Do this second to be sure you didn't introduce a mistake in your
- tests; it is all too easy to think you've fixed a mistake when in reality
- your new test just doesn't properly reveal the old mistake.  Third, re-run
- the test suite to ensure that the mistake is fixed and no existing tests
- fail.
+When you debug, formulate a test case first. Put it into the test suite for
+ the component so the mistake will never be accidentally re-introduced.
+ Second, modify the code to fix the mistake. Do this second to be sure you
+ didn't introduce a mistake in your tests; it is all too easy to think
+ you've fixed a mistake when in reality your new test just doesn't properly
+ reveal the old mistake.  Third, re-run the test suite to ensure that the
+ mistake is fixed and no existing tests fail.
 
 Create test suites. Editing code without an existing test suite is like
  flying blind.  If there is no existing test suite, you have no idea
@@ -62,7 +62,7 @@ Create test suites. Editing code without an existing test suite is like
  and you should be able to turn that into a test case. If you cannot, you
  have a few options:
 
- @itemlist[#:style 'ordered
+@itemlist[#:style 'ordered
 
   @item{Add an end-to-end test that may have to be verified by a human.  For
    example, it might be hard to test Slideshow, so you could create a slide
@@ -84,16 +84,18 @@ Comprehensible code is maintainable.
 Code is comprehensible when you can understand its external purpose. To
  this end, code must come with external documentation. Released code must
  have documentation. A change to the external behavior of code must induce
- an immediate change to its documentation.
+ a simultaneous change to its documentation---"simultaneous" means that the
+ two changes are in the same commit to the code base.
 
 In order to document code, refer to the
  @hyperlink["http://docs.racket-lang.org/scribble/how-to-doc.html#%28part._reference-style%29"]{style
  guide} in the Scribble manual.  Ideally documentation comes in two parts:
  a "Guide" section, which explains the purpose and suggests use cases, and
  a traditional "Reference" section, which presents the minutae.  Also
- consider adding examples to each function in your "Reference" section.
- Finally, ensure you have all the correct @tt{for-label} @tt{require}s
- and make use of other useful cross-references.
+ consider adding examples for each function and construct in your
+ "Reference" section.  Finally, ensure you have all the correct
+ @tt{for-label} @tt{require}s and make use of other useful
+ cross-references.
 
 Code comprehension also requires adherence to basic elements of style and
  some internal documentation. The rest of this document is mostly about
@@ -108,29 +110,34 @@ Making code fast is an endless task.
 Making code @emph{reasonably} fast is the goal.
 
 It is especially the goal for all pieces of the code base that are reused
-elsewhere.
+ elsewhere. Write them using @racketmod[racket] so that they don't affect
+ the load-time for scripts. See the next section.
 
-Just as for correctness, strive for basic tests, that is, tests that
- exercise your code on reasonably large inputs. While a regular test suite
- for a Universe display deals with a 50 x 50 display window, the stress test
- suite should check whether Universe event handlers and drawing routines
+As with correctness, performance demands some "testing". At a minimum,
+ exercise your code on some reasonably large inputs. Add a file to the test
+ suite that runs large inputs regularly. For example, a regular test suite
+ for a Universe display deals with a 50 x 50 display window; one of its
+ stress tests checks whether Universe event handlers and drawing routines
  can cope with laptop size displays or even a 30in display. Or, if you were
  to write a library for a queue data structure, a regular test suite
- ensures that it deals correctly with enqueue and dequeue for small
- queues, including empty ones;  a stress test suite for the same library
- would run the queue operations on a variety of queue sizes, including very
- large queues of say 10,000 elements.
+ ensures that it deals correctly with enqueue and dequeue for small queues,
+ including empty ones; a stress test suite for the same library would run
+ the queue operations on a variety of queue sizes, including very large
+ queues of say 10,000 elements.
 
 Stress tests don't normally have an expected output, so they never
  "pass". The practice of writing stress tests exposes implementation flaws
  or provides comparative data to be used when choosing between two
  APIs. Just writing them and keeping them around reminds us that things can
  go bad and we can detect when performance degrades through some other
- door. Most importantly, a stress test suite may reveal that your code
- isn't implementing an algorithm with the expected O(.) running
- time. Finding out that much alone is useful. If you can't think of an
- improvement, just document the weakness in the external library and move
- on.
+ door. Most importantly, a stress test may reveal that your code isn't
+ implementing an algorithm with the expected O(.) running time. Finding out
+ that much alone is useful. If you can't think of an improvement, just
+ document the weakness in the external library and move on.
 
-We are not perfectionists. We produce reasonable software.
+And as you read on, keep in mind that we are not perfectionists. We produce
+ reasonable software.
 
+@nested[#:style 'inset]{When you fix a bug, make sure to commit (1) the
+ code delta, (2) the new test case, and (3) the revised docs (if
+ applicable) in one batch.}

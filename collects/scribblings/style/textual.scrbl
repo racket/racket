@@ -33,22 +33,24 @@ that it follows DrRacket's indentation style.
 
 Examples:
 
-@racketmod[#:file
-@tt{good}
-racket
+@compare[
+         @racketmod[#:file
+                    @tt{good}
+                    racket
 
-(if (positive? x)
-    (send rocket-object launch)
-    (redirect (- x)))
-]
+                    (if (positive? (rocket-x r))
+                        (launch r)
+                        (redirect (- x)))
+                                         ]
 
-@racketmod[#:file
-@tt{bad}
-racket
+          @racketmod[#:file
+                     @tt{bad}
+                     racket
 
-(if (positive? x)
-  (send rocket-object launch)
-  (redirect (- x)))
+                     (if (positive? (rocket-x r))
+                       (launch r)
+                       (redirect (- x)))
+ ]
 ]
 
 @margin-note{We need more of these rules}
@@ -60,32 +62,35 @@ Next to indentation, proper line breaks are critical.
 
 For an @scheme[if] expression, put each alternative on a separate line.
 
+@compare[
 @racketmod[#:file
 @tt{good}
 racket
 
 (if (positive? x)
-    (send rocket-object launch)
+    (launch r)
     (redirect (- x)))
-]
+                                         ]
 
 @racketmod[#:file
 @tt{bad}
 racket
 
-(if (positive? x) (send rocket-object launch)
+(if (positive? x) (launch r)
     (redirect (- x)))
+]
 ]
 
 Each definition and each local definition deserves at least one line.
 
+@compare[
 @racketmod[#:file
 @tt{good}
 racket
 
-(define (start-reactor x)
-  (define width (* 10 x))
-  (define height (* 3 x))
+(define (launch x)
+  (define wdt (* 10 x))
+  (define hgt (* 3 x))
   ...)
 ]
 
@@ -93,9 +98,10 @@ racket
 @tt{bad}
 racket
 
-(define (start-reactor x)
-  (define width (* 10 x)) (define height (* 3 x))
+(define (launch x)
+  (define wdt (* 10 x)) (define hgt (* 3 x))
   ...)
+]
 ]
 @margin-note{We need more of these rules}
 
