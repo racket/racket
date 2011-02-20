@@ -324,6 +324,34 @@
           (system/exit-code (path->string cat))))
   (test "Hi\n" get-output-string out))
 
+;; empty strings and nul checks ------------------------------------------------------
+
+(err/rt-test (subprocess #f #f #f ""))
+(err/rt-test (process* ""))
+(err/rt-test (system* ""))
+
+(let ([no-nuls (lambda (thunk)
+                 (err/rt-test (thunk) (lambda (exn)
+                                        (regexp-match? #rx"without nuls" (exn-message exn)))))])
+  (no-nuls (lambda () (subprocess #f #f #f cat "\0")))
+  (no-nuls (lambda () (subprocess #f #f #f cat #"\0")))
+  (no-nuls (lambda () (process "\0")))
+  (no-nuls (lambda () (process* cat "\0")))
+  (no-nuls (lambda () (process*/ports #f #f #f cat "\0")))
+  (no-nuls (lambda () (system "\0")))
+  (no-nuls (lambda () (system* cat "\0"))))
+
+(let ([call-empty-arg
+       (lambda (empty-arg)
+         (let ([out (open-output-string)])
+           (test #t 'system-empty-string
+                 (parameterize ([current-input-port (open-input-string "Hi\n")]
+                                [current-output-port out])
+                   (system* self "-e" "(current-command-line-arguments)" empty-arg)))
+           (test "'#(\"\")\n" get-output-string out)))])
+  (call-empty-arg "")
+  (call-empty-arg #""))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; nested tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

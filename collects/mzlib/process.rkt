@@ -78,6 +78,19 @@
     (raise-type-error who "path or string" exe))
   exe)
 
+(define (path-or-ok-string? s)
+  ;; use `path-string?' t check for nul characters in a string,
+  ;; but allow the empty string (which is not an ok path), too:
+  (or (path-string? s)
+      (equal? "" s)))
+
+(define (string-no-nuls? s)
+  (and (string? s) (path-or-ok-string? s)))
+
+(define (bytes-no-nuls? s)
+  (and (bytes? s)
+       (not (regexp-match? #rx#"\0" s))))
+
 (define (check-args who args)
   (cond
    [(null? args) (void)]
@@ -89,7 +102,7 @@
        (car args)))
     (unless (and (>= 2 (length args))
                  (string? (cadr args))
-                 (path-string? (cadr args)))
+                 (path-or-ok-string? (cadr args)))
       (raise-mismatch-error who
                             "expected a single string argument after 'exact, given: "
                             (cadr args)))
@@ -100,17 +113,16 @@
        (caddr args)))]
    [else
     (for ([s (in-list args)])
-      (unless (or (path-string? s)
-                  (and (bytes? s) ((bytes-length s) . > . 0)
-                       (not (regexp-match? #rx"\0" s))))
-        (raise-type-error who "path, string, or byte string (without NULs)"
+      (unless (or (path-or-ok-string? s)
+                  (bytes-no-nuls? s))
+        (raise-type-error who "path, string, or byte string (without nuls)"
                           s)))])
   args)
 
 (define (check-command who str)
-  (unless (or (string? str)
-              (bytes? str))
-    (raise-type-error who "string or byte string" str)))
+  (unless (or (string-no-nuls? str)
+              (bytes-no-nuls? str))
+    (raise-type-error who "string or byte string (without nuls)" str)))
 
 ;; Old-style functions: ----------------------------------------
 
