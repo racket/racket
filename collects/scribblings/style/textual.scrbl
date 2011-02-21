@@ -103,6 +103,48 @@ racket
   ...)
 ]
 ]
+
+All of the arguments to a function belong on a single line unless the line
+becomes too long, in which case you want to put each argument expression on
+its own line
+
+@compare[
+@racketmod[#:file
+@tt{good}
+racket
+
+(place-image img 10 10 background)
+
+(code:comment #, @t{and})
+
+(composition img
+             (- width  hdelta)
+             (- height vdelta)
+	     bg)
+
+]
+
+@racketmod[#:file
+@tt{bad}
+racket
+
+(composition ufo-with-flames
+             10 v-delta bg)
+
+]]
+
+Here is an exception:
+@racketmod[#:file
+@tt{good}
+racket
+
+(overlay/offset (rectangle 100 10 "solid" "blue")
+                10 10
+                (rectangle 10 100 "solid" "red"))
+]
+ In this case, the two arguments on line 2 are both short and conceptually
+ related.
+
 @margin-note{We need more of these rules}
 
 @; -----------------------------------------------------------------------------

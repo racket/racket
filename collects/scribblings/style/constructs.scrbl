@@ -42,9 +42,10 @@ racket
 @; -----------------------------------------------------------------------------
 @section{Conditionals}
 
-Like definitional constructs, conditionals come in many flavors, too. Because
-@scheme[cond] and its relatives now allow local uses of @scheme[define], you
-should prefer them over @scheme[if].
+Like definitional constructs, conditionals come in many flavors,
+too. Because @scheme[cond] and its relatives (@scheme[case],
+@scheme[match], etc) now allow local uses of @scheme[define], you should
+prefer them over @scheme[if].
 
 @compare[
 @racketmod[#:file
@@ -71,3 +72,6 @@ racket
 	   (curved fst (chk rst)))))
 ]
 ]
+
+Of course you should also favor @scheme[cond] (and its relatives) over
+@scheme[if] to match the shape of the data definition.

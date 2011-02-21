@@ -123,8 +123,8 @@ Making code fast is an endless task.
 Making code @emph{reasonably} fast is the goal.
 
 It is especially the goal for all pieces of the code base that are reused
- elsewhere. Write them using @racketmod[racket] so that they don't affect
- the load-time for scripts. See the next section.
+ elsewhere. Write them using @rkt/base[] so that they don't affect the
+ load-time for scripts. See the next section.
 
 As with correctness, performance demands some "testing". At a minimum,
  exercise your code on some reasonably large inputs. Add a file to the test
@@ -156,5 +156,7 @@ And as you read on, keep in mind that we are not perfectionists. We produce
 So what is the major lesson of this section? When you fix a bug, make sure
  to commit (1) the code delta, (2) the new test case, and (3) the revised
  docs (if applicable) in one batch. If the creation of a single commit is
- to complex, please push all pieces at once so that the readers can see how
- things belong together.
+ too complex of if you wish to factor out one of the commits, please push
+ all pieces at once. That way the code base is always in a state where
+ code, tests, and documentation are in sync, and readers of commit messages
+ can evaluate changes completely.

@@ -3,9 +3,6 @@
 @(require "shared.rkt")
 
 @; -----------------------------------------------------------------------------
-@(define (rkt) @racketmodname[racket])
-@(define (rkt/base) @racketmodname[racket/base])
-@(define (rkt/gui) @racketmodname[racket/gui])
 
 @title{Some Performance Hints}
 
