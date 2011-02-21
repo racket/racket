@@ -112,6 +112,24 @@ The created names must not be the same as a primitive or another defined name.}
 
 @; ----------------------------------------------------------------------
 
+@section{@scheme[define-wish]}
+
+@defform[(define-wish id)]{                           
+                           
+Defines a function, named id, that we wish exists but have not implemented yet. 
+The name of the function cannot be that of a primitive or another definition.
+The wished for function can be called with one value @scheme[(id expr)]. }
+
+@defform[(define-wish id expr)] {
+Similar to the above form, this defines a wished for function named id. If the 
+wished for function is called with on value, the result of @scheme[expr] is
+returned as the default value. }
+
+Wished for functions are reported in the test report for the current program.
+                           
+
+@; ----------------------------------------------------------------------
+
 @section[#:tag "beginner-call"]{Function Calls}
 
 @defform/none[(id expr expr ...)]{
