@@ -31,13 +31,13 @@ Many pieces of the code base don't live up to our suggestions yet.  Here
  unintended effects.  In the past Eli has done a great job catching
  problems; now everyone is asked to do so.
 
-Also, help us improve the existing files. If you need to edit and
- understand an imperfect file, take the time to fix some of it as soon as
- comprehending the file takes longer than a few minutes. After all, if
- the inconsistencies throw you off for that much time, others are likely
- to have the same problems. If you help fixing it, we reduce future
- maintenance time. In other words, whoever touches the file next will be
- grateful to you.
+Also, help us improve the existing files. If you need to edit an imperfect
+ file, you will need to spend some time understanding its workings. If
+ doing so takes quite a while, please take the time to fix portions of the
+ file. After all, if the inconsistencies throw you off for that much time,
+ others are likely to have the same problems. If you help fixing it, we
+ reduce future maintenance time. In other words, whoever touches the file
+ next will be grateful to you.
 
 @bold{Request} This document isn't complete and it isn't perfect. In other
  words, it is also a call for improvements and suggestions.  If you have

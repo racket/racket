@@ -12,6 +12,13 @@ adjectives is critical: correct is more important than maintainable;
 maintainable is more important than fast; and fast is important to include,
 because nobody wants to live with slow programs.
 
+@margin-note{This ordering is occasionally wrong. For example, we could
+ avoid IEEE floating point numbers nearly all of the time. To make this
+ precise, the @scheme[sqrt] function could return a rational number whose
+ value was the same as the IEEE float result.  We don't do such silly
+ things, however, because we have decided to value speed over precision in
+ this context.}
+
 Code is correct.
 
 Code is maintainable.
@@ -97,10 +104,16 @@ In order to document code, refer to the
  @tt{for-label} @tt{require}s and make use of other useful
  cross-references.
 
-Code comprehension also requires adherence to basic elements of style and
- some internal documentation. The rest of this document is mostly about
- these elements of style, including some suggestions on internal
- documentation.
+Without adherence to basic elements of style and some internal
+ documentation, code comprehension becomes impossible. The rest of this
+ document is mostly about these elements of style, including some
+ suggestions on internal documentation.
+
+Having said that, the production of a system like Racket occasionally
+ requires experimentation and experimental code. Once we understand this
+ new pieces of functionality, though, it is imperative to return and
+ improve maintainability and work on correctness. You may even consider
+ converting to Typed Racket eventually.
 
 @; -----------------------------------------------------------------------------
 @section{Speed}
@@ -138,6 +151,10 @@ Stress tests don't normally have an expected output, so they never
 And as you read on, keep in mind that we are not perfectionists. We produce
  reasonable software.
 
-@nested[#:style 'inset]{When you fix a bug, make sure to commit (1) the
- code delta, (2) the new test case, and (3) the revised docs (if
- applicable) in one batch.}
+@section{Commit}
+
+So what is the major lesson of this section? When you fix a bug, make sure
+ to commit (1) the code delta, (2) the new test case, and (3) the revised
+ docs (if applicable) in one batch. If the creation of a single commit is
+ to complex, please push all pieces at once so that the readers can see how
+ things belong together.
