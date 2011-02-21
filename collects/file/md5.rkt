@@ -5,9 +5,7 @@
 ;;; Copyright (c) 2005-2011, PLT Scheme Inc.
 ;;; Copyright (c) 2002, Jens Axel Soegaard
 ;;;
-;;; Permission to copy this software, in whole or in part, to use this software
-;;; for any lawful purpose, and to redistribute this software is hereby
-;;; granted.
+;;; Distributed under the same terms as Racket, by permission.
 ;;;
 ;;; md5.scm  --  Jens Axel Soegaard, 16 oct 2002
 
