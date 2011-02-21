@@ -28,6 +28,10 @@
 ;; (make-not-range src format scheme-val scheme-val scheme-val)
 (define-struct (not-range check-fail) (test min max))
 
+;;Wishes
+(define-struct (unimplemented-wish check-fail) (name args))
+
+
 (define-struct signature-got (value format))
 
 (define-struct signature-violation (obj signature message srcloc blame))
@@ -49,8 +53,10 @@
     (define failed-tsts 0)
     (define total-cks 0)
     (define failed-cks 0)
+    (define total-called-wishes 0)
 
     (define failures null)
+    (define wishes null)
 
     (define/public (test-style) style)
     (define/public (tests-run) total-tsts)
@@ -61,8 +67,15 @@
       (cond [(and (zero? total-tsts) (zero? total-cks)) 'no-tests]
             [(and (zero? failed-cks) (zero? failed-tsts)) 'all-passed]
             [else 'mixed-results]))
+    (define/public (called-wishes) total-called-wishes)
 
     (define/public (failed-checks) failures)
+    (define/public (unimplemented-wishes) wishes)
+    
+    (define/pubment (add-wish-call name)
+      (set! total-called-wishes (add1 total-called-wishes))
+      (unless (memq name wishes) (set! wishes (cons name wishes)))
+      (inner (void) add-wish-call name))
 
     (define/pubment (add-check)
       (set! total-cks (add1 total-cks))
@@ -76,6 +89,11 @@
       (set! failed-cks (add1 failed-cks))
       (set! failures (cons (make-failed-check fail exn?) failures))
       (inner (void) add-check-failure fail exn?))
+    
+    (define/pubment (add-wish name)
+      (unless (memq name wishes)
+        (set! wishes (cons name wishes)))
+      (inner (void) add-wish name))
 
     ;; check-failed: (U check-fail (list (U string snip%))) src (U exn false) -> void
     (define/pubment (check-failed msg src exn?)
@@ -139,6 +157,10 @@
              (formatter (not-range-test fail))
              (formatter (not-range-min fail))
              (formatter (not-range-max fail)))]
+     [(unimplemented-wish? fail)
+      (print "Test relies on a call to wished for function ~F that has not been implemented, with arguments ~F."
+             (unimplemented-wish-name fail)
+             (formatter (unimplemented-wish-args fail)))]
      [(property-fail? fail)
       (print-string "Property falsifiable with")
       (for-each (lambda (arguments)

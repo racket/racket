@@ -48,7 +48,7 @@
 	   (rename lang/private/signature-syntax signature:property property)
 	   (all-except deinprogramm/quickcheck/quickcheck property)
 	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
-	   test-engine/scheme-tests
+	   test-engine/racket-tests
 	   scheme/class
            "../posn.rkt"
 	   (only lang/private/teachprims
@@ -66,7 +66,8 @@
 		      (only racket/base syntax->datum datum->syntax)
                       (rename racket/base kw-app #%app)
 		      racket/struct-info
-                      stepper/private/shared)
+                      stepper/private/shared
+                      test-engine/racket-tests)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; run-time helpers
@@ -216,7 +217,9 @@
 			      advanced-case
                               advanced-match
 			      advanced-shared
-			      advanced-delay)
+			      advanced-delay
+                              
+                              define-wish)
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; compile-time helpers
@@ -630,14 +633,31 @@
 
     (define (beginner-define/proc stx)
       (define/proc #t #f stx #'beginner-lambda))
-
+    
+    (define (define-wish/proc stx)
+      (syntax-case stx ()
+       [(_ name) 
+        (define/proc #t #f 
+          #`(define (#,#'name x) 
+              (begin 
+                (send (send (get-test-engine) get-info) add-wish-call (quote #,#'name))
+                (raise (exn:fail:wish (format "wished for function ~a not implemented" (quote #,#'name))
+                                      (current-continuation-marks) (quote #,#'name) x)))) #'lambda)]
+        [(_ name default-value)
+         (define/proc #t #f
+           #`(define (#,#'name x) 
+               (begin 
+                (send (send (get-test-engine) get-info) add-wish-call (quote #,#'name))
+                #,#'default-value))
+           #'lambda)]))               
+    
     (define (intermediate-define/proc stx)
       (define/proc #f #f stx #'intermediate-pre-lambda))
 
     (define (intermediate-lambda-define/proc stx)
       ;; no special treatment of intermediate-lambda:
       (define/proc #f #f stx #'beginner-lambda))
-
+    
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; lambda (beginner; only works with define)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

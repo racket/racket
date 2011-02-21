@@ -3,6 +3,22 @@
 (require racket/class
          "test-info.scm")
 
+(define test-display-base%
+  (class* object% ()
+    
+    (init-field (current-rep #f))
+    (define test-info #f)
+    
+    (define/pubment (install-info t)
+      (set! test-info t)
+      (inner (void) install-info t))
+    (define/public (get-info) test-info)
+    
+    (define/public (display-results)
+      '...)
+    
+    (super-instantiate ())))
+
 (define test-display-textual%
   (class* object% ()
 

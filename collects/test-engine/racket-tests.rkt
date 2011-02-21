@@ -1,15 +1,15 @@
-#lang mzscheme
+#lang racket
 
 (require lang/private/teachprims
          scheme/class
          scheme/match
 	 lang/private/continuation-mark-key
-         (only scheme/base for memf findf)
+         (only-in scheme/base for memf findf)
          "test-engine.rkt"
 	 "test-info.scm"
          )
 
-(require-for-syntax stepper/private/shared)
+(require (for-syntax stepper/private/shared))
 
 (provide
  check-expect ;; syntax : (check-expect <expression> <expression>)
@@ -21,7 +21,9 @@
 
 ; for other modules implementing check-expect-like forms
 (provide
- (for-syntax check-expect-maker))
+ (for-syntax check-expect-maker)
+ get-test-engine
+ exn:fail:wish)
 
 (define INEXACT-NUMBERS-FMT
   "check-expect cannot compare inexact numbers. Try (check-within test ~a range).")
@@ -285,7 +287,13 @@
 ;;                ( -> scheme-val) scheme-val scheme-val test-engine symbol? -> void
 (define (run-and-check check maker test expect range src test-engine kind)
   (match-let ([(list result result-val exn)
-               (with-handlers ([exn:fail?
+               (with-handlers ([exn:fail:wish?
+                                (lambda (e)
+                                  (let ([display (error-display-handler)])
+                                    (list (unimplemented-wish src (test-format) (exn:fail:wish-name e) (exn:fail:wish-args e))
+                                          'error
+                                          #f)))]
+                               [exn:fail?
                                 (lambda (e)
                                   (let ([display (error-display-handler)])
                                     (list (make-unexpected-error src (test-format) expect
@@ -299,11 +307,11 @@
                           (list (maker src (test-format) test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
            (send (send test-engine get-info) check-failed result (check-fail-src result) exn)
-           (if exn
-	       (raise exn)
-	       #f)]
-          [else
-           #t])))
+           (if exn (raise exn) #f)]
+          [else #t])))
+
+;;Wishes
+(struct exn:fail:wish exn:fail (name args))
 
 (define (reset-tests)
   (let ([test-engine (namespace-variable-value
@@ -315,6 +323,9 @@
   (let ([te (build-test-engine)])
     (namespace-set-variable-value! 'test~object te (current-namespace))
     te))
+
+(define (get-test-engine)
+  (namespace-variable-value 'test~object #f builder (current-namespace)))
 
 (define-syntax (test stx) 
   (syntax-case stx ()
@@ -408,6 +419,12 @@
     (define/pubment (property-error exn src-info)
       (add-check-failure (make-property-error src-info (test-format) (exn-message exn) exn) exn))
 
+    (super-instantiate ())))
+
+(define wish-test-info%
+  (class* test-info-base% ()
+    (inherit add-check-failure)
+    
     (super-instantiate ())))
 
 (define scheme-test%

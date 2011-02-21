@@ -40,6 +40,7 @@
            check-error
            check-member-of
            check-range
+           define-wish
 	   #%datum
            #%top-interaction
 	   empty true false
@@ -50,7 +51,7 @@
 ; 	   Property
 ; 	   check-property for-all ==> expect expect-within expect-member-of expect-range
 	   )
-
+  
   (require (for-syntax "private/firstorder.ss"))
     
   ;; This is essentially a specialized version of `define-primitive'
