@@ -81,7 +81,7 @@
                                    (set! choice-dropped? #f))))
       (= cmd CBN_SELENDOK))
 
-    (define/public (do-command cmd control-hwnd)
+    (define/override (do-command cmd control-hwnd)
       (queue-window-event this (lambda ()
                                  (callback this
                                            (new control-event%

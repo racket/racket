@@ -6,6 +6,7 @@
          mouse-event%
          key-event%
          control-event%
+         column-control-event%
          scroll-event%
          popup-event%)
 
@@ -90,12 +91,23 @@
 
 (defclass control-event% event%
   (init-properties [[(symbol-in button check-box choice
-                                list-box list-box-dclick text-field
+                                list-box list-box-dclick list-box-column text-field
                                 text-field-enter slider radio-box
                                 menu-popdown menu-popdown-none tab-panel) 
                      event-type]])
   (init [time-stamp 0])
   (super-new [time-stamp time-stamp]))
+
+(defclass column-control-event% control-event%
+  (init-properties [[exact-nonnegative-integer? column]])
+  (init event-type
+        [time-stamp 0])
+  (unless (eq? event-type 'list-box-column)
+    (raise-type-error (init-name 'column-control-event%)
+                      "'list-box-column"
+                      event-type))
+  (super-new [event-type event-type]
+             [time-stamp time-stamp]))
 
 (defclass popup-event% control-event%
   (properties [[any? menu-id] 0])

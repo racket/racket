@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@(define lbnumnote @elem{List box items are indexed from @scheme[0].})
+@(define lbnumnote @elem{List box rows are indexed from @scheme[0].})
+@(define lbcnumnote @elem{List box rows and columns are indexed from @scheme[0].})
 
 
 @defclass/title[list-box% object% (list-control<%>)]{
@@ -16,7 +17,14 @@ Whenever the user changes the selection in a list box, the list box's
  callback procedure is called. A callback procedure is provided as an
  initialization argument when each list box is created.
 
-@|lbnumnote|
+A list box can have multiple columns with optional column headers. An
+ item in the list corresponds to a row that spans all columns. When
+ column headers are displayed, the column widths can be changed by a
+ user. In addition, columns can optionally support dragging by the
+ user to change the display order of columns, while the logical order
+ remains fixed.
+
+@|lbcnumnote|
 
 See also @scheme[choice%].
 
@@ -30,6 +38,8 @@ See also @scheme[choice%].
                            (lambda (c e) (void))]
                  [style (listof (one-of/c 'single 'multiple 'extended 
                                           'vertical-label 'horizontal-label 
+                                          'variable-columns 'column-headers 
+                                          'clickable-headers 'reorderable-headers 
                                           'deleted)) 
                         '(single)]
                  [selection (or/c exact-nonnegative-integer? false/c) #f]
@@ -41,7 +51,10 @@ See also @scheme[choice%].
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
                  [stretchable-width any/c #t]
-                 [stretchable-height any/c #t])]{
+                 [stretchable-height any/c #t]
+                 [columns (cons/c label-string? (listof label-string?))
+                          '("Column")]
+                 [column-order (or/c #f (listof exact-nonnegative-integer?)) #f])]{
 
 If @scheme[label] is not @scheme[#f], it is used as the list box
  label.  Otherwise, the list box will not display its label.
@@ -49,13 +62,23 @@ If @scheme[label] is not @scheme[#f], it is used as the list box
 @labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the list box}]
 
 The @scheme[choices] list specifies the initial list of items
- to appear in the list box.
+ to appear in the list box. If the list box has multiple columns, 
+ @racket[choices] determines the content of the first column, and
+ other columns are initialized to the empty string.
 
 The @scheme[callback] procedure is called when the user changes the list
  box selection, by either selecting, re-selecting, deselecting, or
  double-clicking an item.  The type of the event provided to the
  callback is @indexed-scheme['list-box-dclick] when the user double-clicks
  on an item, or @indexed-scheme['list-box] otherwise.
+
+The @racket[columns] list determines the number of columns in the list
+ box. The column titles in @racket[columns] are shown only if
+ @racket[style] includes @racket['column-headers]. If @racket[style]
+ also includes @racket['clickable-headers], then a click on a header
+ triggers a call to @racket[callback] with a
+ @racket[column-control-event%] argument whose event type is
+ @indexed-scheme['list-box-column].
 
 The @scheme[style] specification must include exactly one of the
  following:
@@ -85,17 +108,29 @@ The @scheme['multiple] and @scheme['extended] styles determine a
 
 @HVLabelNote[@scheme[style]]{list box} @DeletedStyleNote[@scheme[style] @scheme[parent]]{list box}
 
+If @racket[style] includes @racket['variable-columns], then the number
+of columns in the list box can be changed via @method[list-box% append-column]
+and @method[list-box% delete-column].
+
 If @scheme[selection] is an integer, it is passed to
 @method[list-control<%> set-selection] to set the initial selection. The @scheme[selection] must be less than
  the length of @scheme[choices].
 
 @FontLabelKWs[@scheme[font] @scheme[label-font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
+It the @racket[column-order] argument is not @racket[#f], it
+determines the order in which logical columns are initially displayed. See
+@method[list-box% set-column-order] for more information. If
+@racket[style] includes @racket['column-headers] and
+@racket['reorderable-headers], then a user can reorder columns as
+displayed (but the display order does not change the logical order of
+the columns).
+
 }
 
 
 @defmethod[#:mode override
-           (append [item string]
+           (append [item label-string?]
                    [data any/c #f])
            void?]{
 
@@ -110,6 +145,15 @@ See also @xmethod[list-control<%> append].
 }
 
 
+@defmethod[(append-column [label label-string?])
+           void?]{
+
+Adds a new column with title @racket[label] to the list box, but only
+if the list box is created with the @racket['variable-columns]
+style. The new column is logically the last column, and it is initially
+displayed as the last column.}
+
+
 @defmethod[(delete [n exact-nonnegative-integer?])
            void?]{
 
@@ -117,9 +161,47 @@ Deletes the item indexed by @scheme[n]. @|lbnumnote| If @scheme[n] is equal
  to or larger than the number of items in the control, @|MismatchExn|.
 
 Selected items that are not deleted remain selected, and no other
- items are selected.
+ items are selected.}
 
-}
+
+@defmethod[(delete-column [n exact-nonnegative-integer?])
+           void?]{
+
+Deletes the column with logical position @racket[n], but only if the
+list box is created with the @racket['variable-columns] style, and
+only if the list box currently has more than one column (i.e., the
+number of columns can never be zero).}
+
+
+@defmethod[(get-column-labels) (cons/c label-string? (listof label-string?))]{
+
+Returns the labels of the list box's columns, and the number of
+returned strings indicates the number of columns in the list box.}
+
+
+@defmethod[(get-column-order) (listof exact-nonnegative-integer?)]{
+
+Returns the display order of logical columns. Each column is
+represented by its logical position in the result list, and the order
+of the column positions indicates the display order.
+
+See also @method[list-box% set-column-order].}
+
+
+@defmethod[(get-column-width [column exact-nonnegative-integer?])
+           (values exact-nonnegative-integer?
+                   exact-nonnegative-integer?
+                   exact-nonnegative-integer?)]{
+
+Gets the width of the column identified by @racket[column] (in logical
+positions, as opposed to display positions), which must be between 0
+and one less than the number of columns.
+
+The result includes the column's current width as well as its minimum
+and maximum widths to constrain the column size as adjusted by a user.
+
+See also @method[list-box set-column-width].}
+
 
 @defmethod[(get-data [n exact-nonnegative-integer?])
            any/c]{
@@ -165,7 +247,7 @@ For single-selection lists, the result is always either @scheme[null] or
 @defmethod[(is-selected? [n exact-nonnegative-integer?])
            boolean?]{
 
-Returns @scheme[#t] if the item index by @scheme[n] is selected,
+Returns @scheme[#t] if the items indexed by @scheme[n] is selected,
  @scheme[#f] otherwise. @|lbnumnote| If @scheme[n] is equal to or
  larger than the number of choices, @|MismatchExn|.
 
@@ -204,12 +286,55 @@ The control's callback procedure is @italic{not} invoked.
 }
 
 
-@defmethod[(set [choices (listof label-string?)])
+@defmethod[(set [choices (listof label-string?)]
+                ...)
            void?]{
 
-Clears the list box and installs a new list of items.
+Clears the list box and installs a new list of items. The number of
+@racket[choices] lists must match the number of columns, and all
+@racket[choices] lists must have the same number of items, otherwise
+@|MismatchExn|.}
 
-}
+
+@defmethod[(set-column-label [column exact-nonnegative-integer?]
+                             [label label-string?])
+            void?]{
+
+Sets the label of the column identified by @racket[column] (in logical
+positions, as opposed to display positions), which must be between 0
+and one less than the number of columns.}
+
+
+@defmethod[(set-column-order [column-order (listof exact-nonnegative-integer?)])
+            void?]{
+
+Sets the order in which logical columns are displayed. Each element of
+@racket[column-order] must identify a unique column by its logical
+position, and all logical columns must be represented in the list.
+
+See also @method[list-box% get-column-order].}
+
+
+@defmethod[(set-column-width [column exact-nonnegative-integer?]
+                             [width exact-nonnegative-integer?]
+                             [min-width exact-nonnegative-integer?]
+                             [max-width exact-nonnegative-integer?])
+            void?]{
+
+Sets the width of the column identified by @racket[column] (in logical
+positions, as opposed to display positions), which must be between 0
+and one less than the number of columns.
+
+The @racket[width] argument sets the current display width, while
+@racket[min-width] and @racket[max-width] constrain the width of the
+column when the user resizes it. The @racket[width] argument must be
+no less than @racket[min-width] and no more than @racket[max-width].
+
+The default width of a column is platform-specific, and the last
+column of a list box may extend to the end of the control independent
+of its requested size.
+
+See also @method[list-box% get-column-width].}
 
 
 @defmethod[(set-data [n exact-nonnegative-integer?]
@@ -239,11 +364,14 @@ Scrolls the list box so that the item indexed by @scheme[n] is at the
 
 
 @defmethod[(set-string [n exact-nonnegative-integer?]
-                       [label label-string?])
+                       [label label-string?]
+                       [column exact-nonnegative-integer? 0])
            void?]{
 
-Sets the item indexed by @scheme[n]. @|lbnumnote| If @scheme[n] is
-equal to or larger than the number of choices, @|MismatchExn|.
+Sets the item indexed by @scheme[n] in logical column @racket[column]. 
+@|lbcnumnote| If @scheme[n] is
+equal to or larger than the number of choices, or if @racket[column]
+is equal to or larger than the number of columns, @|MismatchExn|.
 
 }
 }

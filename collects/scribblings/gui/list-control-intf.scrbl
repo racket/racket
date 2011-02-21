@@ -22,7 +22,7 @@ In either case, the set of user-selectable items can be changed
 
 
 
-@defmethod[(append [item string])
+@defmethod[(append [item label-string?])
            void?]{
 Adds a new item to the list of user-selectable items. The current
  selection is unchanged (unless the list control is an empty choice

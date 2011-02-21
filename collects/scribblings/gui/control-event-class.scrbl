@@ -8,9 +8,10 @@ A @scheme[control-event%] object contains information about a
  provided to a control or menu item callback procedure.
 
 @defconstructor[([event-type (one-of/c 'button 'check-box 'choice
-                                       'list-box 'list-box-dclick 'text-field 
-                                       'text-field-enter 'slider 'radio-box 
-                                       'menu-popdown 'menu-popdown-none 'tab-panel)]
+                                       'list-box 'list-box-dclick 'list-box-column
+                                       'text-field 'text-field-enter 
+                                       'slider 'radio-box 'tab-panel
+                                       'menu-popdown 'menu-popdown-none)]
                 [time-stamp exact-integer? 0])]{
 
 The @scheme[event-type] argument is one of the following:
@@ -20,14 +21,16 @@ The @scheme[event-type] argument is one of the following:
 @item{@scheme['choice] --- for @scheme[choice%] item selections}
 @item{@scheme['list-box] --- for @scheme[list-box%] selections and deselections}
 @item{@scheme['list-box-dclick] --- for @scheme[list-box%] double-clicks}
+@item{@scheme['list-box-column] --- for @scheme[list-box%] column clicks in
+                                    a @racket[column-control-event%] instance}
 @item{@scheme['text-field] --- for @scheme[text-field%] changes}
 @item{@scheme['text-field-enter] --- for single-line @scheme[text-field%] Enter event}
 @item{@scheme['menu] --- for @scheme[selectable-menu-item<%>] callbacks}
 @item{@scheme['slider] --- for @scheme[slider%] changes}
 @item{@scheme['radio-box] --- for @scheme[radio-box%] selection changes}
+@item{@scheme['tab-panel] --- for @scheme[tab-panel%] tab changes}
 @item{@scheme['menu-popdown] --- for @scheme[popup-menu%] callbacks (item selected)}
 @item{@scheme['menu-popdown-none] --- for @scheme[popup-menu%] callbacks (no item selected)}
-@item{@scheme['tab-panel] --- for @scheme[tab-panel%] tab changes}
 ]
 
 This value is extracted out of a @scheme[control-event%] object with

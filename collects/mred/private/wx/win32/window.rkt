@@ -28,7 +28,9 @@
 	      get-default-control-font
 
               GetWindowRect
-              GetClientRect))
+              GetClientRect
+
+              _NMHDR))
 
 (define (unhide-cursor) (void))
 
@@ -213,7 +215,7 @@
                  [cmd (LOWORD (NMHDR-code nmhdr))])
             (if (and wx (send wx is-command? cmd))
                 (begin
-                  (send wx do-command cmd control-hwnd)
+                  (send wx do-command-ex cmd control-hwnd nmhdr)
                   0)
                 (default w msg wParam lParam)))]
          [(or (= msg WM_HSCROLL)
@@ -245,6 +247,11 @@
 
   (define/public (is-command? cmd) #f)
   (define/public (control-scrolled) #f)
+
+  (define/public (do-command cmd control-hwnd)
+    (void))
+  (define/public (do-command-ex cmd control-hwnd nmhdr)
+    (do-command cmd control-hwnd))
 
   (define/public (show on?)
     (when on? (show-children))

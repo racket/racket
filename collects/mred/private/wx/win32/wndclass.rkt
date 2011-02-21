@@ -307,3 +307,4 @@
 (register-no-cursor "msctls_trackbar32")
 (register-no-cursor "msctls_progress32")
 (register-no-cursor "SysTabControl32")
+(register-no-cursor "SysListView32")

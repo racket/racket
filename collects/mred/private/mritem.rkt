@@ -1,8 +1,8 @@
-(module mritem mzscheme
+(module mritem racket/base
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/list
-	   (prefix wx: "kernel.ss")
+	   (prefix-in wx: "kernel.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "kw.ss"
@@ -16,8 +16,8 @@
 	   "mrcontainer.ss")
 
   (provide control<%>
-	   (protect control%-keywords
-		    basic-control%)
+	   (protect-out control%-keywords
+                        basic-control%)
 	   message%
 	   button%
 	   check-box%
@@ -29,13 +29,13 @@
 	   choice%
 	   list-box%
 
-	   (protect wrap-callback
-		    check-list-control-args
-		    check-list-control-selection
-		    
-		    ;; Local methods:
-		    hidden-child?
-		    label-checker))
+	   (protect-out wrap-callback
+                        check-list-control-args
+                        check-list-control-selection
+                        
+                        ;; Local methods:
+                        hidden-child?
+                        label-checker))
 
   (define control<%>
     (interface (subwindow<%>)
@@ -555,26 +555,138 @@
   (define list-box%
     (class100*/kw basic-list-control%  ()
 		  [(label choices parent [callback (lambda (b e) (void))] [style '(single)] [selection #f] [font no-val] [label-font no-val])
-		   control%-nofont-keywords]
+		   control%-nofont-keywords
+                   [columns (list "Column")]
+                   [column-order #f]]
       (sequence 
 	(let ([cwho '(constructor list-box)])
 	  (check-list-control-args cwho label choices parent callback)
-	  (check-style cwho '(single multiple extended) '(vertical-label horizontal-label deleted) style)
+	  (check-style cwho '(single multiple extended) 
+                       '(vertical-label horizontal-label deleted variable-columns
+                                        column-headers clickable-headers reorderable-headers) 
+                       style)
 	  (check-non-negative-integer/false cwho selection)
 	  (check-font cwho font)
-	  (check-font cwho label-font)))
+	  (check-font cwho label-font)
+          (unless (and (list? columns)
+                       (not (null? columns))
+                       (andmap label-string? columns))
+            (raise-type-error (who->name cwho) "non-empty list of strings (up to 200 characters)" columns))
+          (when column-order
+            (check-column-order cwho column-order (length columns)))))
+      (private
+        [check-column-order
+         (lambda (cwho column-order count)
+           (unless (and (list? column-order)
+                        (andmap exact-integer? column-order)
+                        (equal? (sort column-order <)
+                                (for/list ([i (in-range (length column-order))]) i)))
+             (raise-type-error (who->name cwho) 
+                               "#f or list of distinct exact integers from 0 to one less than the list length" 
+                               column-order))
+           (unless (= (length column-order) count)
+             (raise-mismatch-error (who->name cwho) 
+                                   (format "column count ~a does not match length of column-order list: "
+                                           count)
+                                   column-order)))]
+        [check-column-number
+         (lambda (who i)
+           (unless (exact-nonnegative-integer? i)
+             (raise-type-error (who->name who) "exact nonnegative integer" i))
+           (unless (i . < . num-columns)
+             (raise-mismatch-error (who->name who) 
+                                   (format
+                                    "index is too large for ~a-column list box: "
+                                    num-columns)
+                                   i)))])
+      (private-field
+       [column-labels (map string->immutable-string columns)]
+       [num-columns (length columns)]
+       [variable-columns? (memq 'variable-columns style)])
       (rename [super-append append])
       (override
-	[append (entry-point
-		 (case-lambda
-		  [(i) 
-		   (super-append i)]
-		  [(i d) 
-		   (check-label-string '(method list-control<%> append) i)
-		   (send this -append-list-string i)
-		   (send wx append i d)]))])
+	[(-append append)
+         (entry-point
+          (case-lambda
+           [(i) 
+            (super-append i)]
+           [(i d) 
+            (check-label-string '(method list-control<%> append) i)
+            (send this -append-list-string i)
+            (send wx append i d)]))])
       (public
-	[delete (entry-point (lambda (n) 
+        [get-column-labels (lambda () column-labels)]
+        [get-column-order (lambda () (send wx get-column-order))]
+        [set-column-order (lambda (co) 
+                            (check-column-order '(method list-box% set-column-order) co num-columns)
+                            (send wx set-column-order co))]
+        [set-column-label (lambda (i str)
+                            (let ([who '(method list-box% set-column-label)])
+                              (check-column-number who i)
+                              (check-label-string who str))
+                            (let ([str (string->immutable-string str)])
+                              (set! column-labels (let loop ([i i] [l column-labels])
+                                                    (cond
+                                                     [(zero? i) (cons str (cdr l))]
+                                                     [else (cons (car l) (loop (sub1 i) (cdr l)))])))
+                              (send wx set-column-label i str)))]
+	[set-column-size (lambda (i w min-size max-size) 
+                            (let ([who '(method list-box% set-column-size)])
+                              (check-column-number who i)
+                              (check-dimension who w)
+                              (check-dimension who min-size)
+                              (check-dimension who max-size)
+                              (unless (<= min-size w)
+                                (raise-mismatch-error (who->name who)
+                                                      (format
+                                                       "size ~a is less than mininum size: "
+                                                       w)
+                                                      min-size))
+                              (unless (>= max-size w)
+                                (raise-mismatch-error (who->name who)
+                                                      (format
+                                                       "size ~a is less than maximum size: "
+                                                       w)
+                                                      max-size)))
+                            (send wx set-column-size i w min-size max-size))]
+        [get-column-size (lambda (i)
+                           (check-column-number '(method list-box% get-column-size) i)
+                           (send wx get-column-size i))]
+        [delete-column (lambda (i)
+                         (let ([who '(method list-box% delete-column)])
+                           (check-column-number who i)
+                           (unless variable-columns?
+                             (raise-mismatch-error 
+                              (who->name who)
+                              "list box without 'variable-columns style cannot delete column: "
+                              i))
+                           (unless (num-columns . > . 1)
+                             (raise-mismatch-error (who->name who)
+                                                   "cannot delete only column: "
+                                                   i)))
+                         (as-entry
+                          (lambda ()
+                            (set! num-columns (sub1 num-columns))
+                            (set! column-labels (let loop ([i i] [l column-labels])
+                                                  (cond
+                                                   [(zero? i) (cdr l)]
+                                                   [else (cons (car l) (loop (sub1 i) (cdr l)))])))
+                            (send wx delete-column i))))]
+        [append-column (lambda (label)
+                         (let ([who '(method list-box% append-column)])
+                           (check-label-string who label)
+                           (unless variable-columns?
+                             (raise-mismatch-error 
+                              (who->name who)
+                              "list box without 'variable-columns style cannot add column: "
+                              label)))
+                         (as-entry
+                          (lambda ()
+                            (set! num-columns (add1 num-columns))
+                            (set! column-labels (append column-labels (list label)))
+                            (send wx append-column label))))]
+
+        [delete (entry-point (lambda (n) 
 			       (check-item 'delete n) 
 			       (send this -delete-list-item n)
 			       (send wx delete n)))]
@@ -583,19 +695,43 @@
 	[get-selections (entry-point (lambda () (send wx get-selections)))]
 	[number-of-visible-items (entry-point (lambda () (send wx number-of-visible-items)))]
 	[is-selected? (entry-point (lambda (n) (check-item 'is-selected? n) (send wx selected? n)))]
-	[set (entry-point (lambda (l) 
-			    (unless (and (list? l) (andmap label-string? l))
-			      (raise-type-error (who->name '(method list-box% set)) 
-						"list of strings (up to 200 characters)" l))
+	[set (entry-point (lambda (l . more) 
+                            (let ([cwho '(method list-box% set)])
+                              (unless (= num-columns (+ 1 (length more)))
+                                (raise-mismatch-error (who->name cwho) 
+                                                      (format
+                                                       "column count ~a doesn't match number of arguments: "
+                                                       num-columns)
+                                                      (add1 (length more))))
+                              (for ([l (in-list (cons l more))])
+                                (unless (and (list? l) (andmap label-string? l))
+                                  (raise-type-error (who->name cwho) 
+                                                    "list of strings (up to 200 characters)" l)))
+                              (for ([more-l (in-list more)])
+                                (unless (= (length more-l) (length l))
+                                  (raise-mismatch-error 
+                                   (who->name cwho)
+                                   (format "first list length ~a does not match length of later argument: "
+                                           (length l))
+                                   more-l))))
 			    (send this -set-list-strings l)
-			    (send wx set l)))]
+			    (send wx set l . more)))]
 	[set-string (entry-point
-		     (lambda (n d)
-		       (check-non-negative-integer '(method list-box% set-string) n) ; int error before string
-		       (check-label-string '(method list-box% set-string) d) ; string error before range mismatch
+		     (lambda (n d [col 0])
+                       (let ([cwho '(method list-box% set-string)])
+                         (check-non-negative-integer cwho n) ; int error before string
+                         (check-label-string cwho d) ; string error before range mismatch
+                         (unless (exact-nonnegative-integer? col)
+                           (raise-type-error (who->name cwho) "exact nonnegative integer" col))
+                         (unless (< -1 col num-columns)
+                           (raise-mismatch-error (who->name cwho) 
+                                                 (format 
+                                                  "column number is not in the list box's allowed range [0, ~a]: " 
+                                                  (sub1 num-columns))
+                                                 col)))
 		       (check-item 'set-string n)
 		       (send this -set-list-string n d)
-		       (send wx set-string n d)))]
+		       (send wx set-string n d col)))]
 	[set-data (entry-point (lambda (n d) (check-item 'set-data n) (send wx set-data n d)))]
 	[get-first-visible-item (entry-point (lambda () (send wx get-first-item)))]
 	[set-first-visible-item (entry-point (lambda (n) 
@@ -631,7 +767,9 @@
 					      (mred->wx-container parent) (wrap-callback callback)
 					      label kind
 					      -1 -1 -1 -1 choices style 
-					      (no-val->#f font) (no-val->#f label-font))))
+					      (no-val->#f font) (no-val->#f label-font)
+                                              column-labels
+                                              column-order)))
 		      wx)
 		    (lambda ()
 		      (let ([cwho '(constructor list-box)])

@@ -108,7 +108,7 @@
     (define/override (is-command? cmd)
       (= cmd BN_CLICKED))
     
-    (define/public (do-command cmd control-hwnd)
+    (define/override (do-command cmd control-hwnd)
       (let ([val (for/fold ([i 0]) ([radio-hwnd (in-list radio-hwnds)]
                                     [pos (in-naturals)])
                    (if (ptr-equal? control-hwnd radio-hwnd)

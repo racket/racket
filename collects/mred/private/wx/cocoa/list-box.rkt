@@ -28,7 +28,7 @@
       (let ([wx (->wx wxb)])
         (tell
          (let ([c (tell (tell NSCell alloc) initTextCell: #:type _NSString 
-                        (if wx (send wx get-row row) "???"))]
+                        (if wx (send wx get-cell column row) "???"))]
                [font (and wx (send wx get-cell-font))])
            (when font
              (tellv c setFont: font))
@@ -37,7 +37,12 @@
   [-a _void (doubleClicked: [_id sender])
       (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box-dclick)))]
   [-a _void (tableViewSelectionDidChange: [_id aNotification])
-      (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box)))])
+      (queue-window*-event wxb (lambda (wx) (send wx clicked 'list-box)))]
+  [-a _void (tableView: [_id view] didClickTableColumn: [_id col])
+      (queue-window*-event wxb (lambda (wx) (send wx clicked-column col)))]
+  [-a _void (tableViewColumnDidMove: [_id view])
+      (let ([wx (->wx wxb)])
+        (when wx (send wx reset-column-order)))])
 
 (define-objc-class MyDataSource NSObject
   #:protocols (NSTableViewDataSource)
@@ -50,7 +55,7 @@
                             row: [_NSInteger rowIndex])
       (let ([wx (->wx wxb)])
         (if wx
-            (send wx get-row rowIndex)
+            (send wx get-cell aTableColumn rowIndex)
             "???"))])
 
 (define (remove-nth data i)
@@ -62,7 +67,8 @@
   (init parent cb
         label kind x y w h
         choices style
-        font label-font)
+        font label-font 
+        columns column-order)
   (inherit set-size init-font
            register-as-child)
 
@@ -70,30 +76,74 @@
                   (tell (tell MyDataSource alloc) init)))
   (set-ivar! source wxb (->wxb this))
 
-  (define items choices)
+  (define itemss (cons choices
+                       (for/list ([i (in-list (cdr columns))])
+                         (for/list ([i choices])
+                           ""))))
+  (define num-columns (length columns))
   (define data (map (lambda (x) (box #f)) choices))
   (define count (length choices))
 
   (define cocoa (as-objc-allocation
                  (tell (tell NSScrollView alloc) init)))
-  (define content-cocoa (let ([content-cocoa 
-                               (as-objc-allocation
-                                (tell (tell MyTableView alloc) init))])
-                         (tellv content-cocoa setDelegate: content-cocoa)
-                         (tellv content-cocoa setDataSource: source)
-                         (tellv content-cocoa addTableColumn:
-                                (as-objc-allocation
-                                 (tell (tell NSTableColumn alloc) initWithIdentifier: content-cocoa)))
-                         (init-font content-cocoa font)
-                         content-cocoa))
+  (define-values (content-cocoa column-cocoas)
+    (let ([content-cocoa 
+           (as-objc-allocation
+            (tell (tell MyTableView alloc) init))])
+      (tellv content-cocoa setDelegate: content-cocoa)
+      (tellv content-cocoa setDataSource: source)
+      (define cols
+        (for/list ([title (in-list columns)])
+          (let ([col (as-objc-allocation
+                      (tell (tell NSTableColumn alloc) initWithIdentifier: content-cocoa))])
+            (tellv content-cocoa addTableColumn: col)
+            (tellv (tell col headerCell) setStringValue: #:type _NSString title)
+            col)))
+      (init-font content-cocoa font)
+      (values content-cocoa cols)))
   (set-ivar! content-cocoa wxb (->wxb this))
 
   (tellv cocoa setDocumentView: content-cocoa)
   (tellv cocoa setHasVerticalScroller: #:type _BOOL #t)
-  (tellv content-cocoa setHeaderView: #f)
+  (unless (memq 'column-headers style)
+    (tellv content-cocoa setHeaderView: #f))
   (define allow-multi? (not (eq? kind 'single)))
   (when allow-multi?
     (tellv content-cocoa setAllowsMultipleSelection: #:type _BOOL #t))
+  (unless (memq 'reorderable-headers style)
+    (tellv content-cocoa setAllowsColumnReordering: #:type _BOOL #f))
+
+  (when column-order
+    (set-column-order column-order))
+  (define/public (set-column-order column-order)
+    (atomically
+     (for ([c (in-list column-cocoas)])
+       (tellv c retain)
+       (tellv content-cocoa removeTableColumn: c))
+     (for ([pos (in-list column-order)])
+       (let ([c (list-ref column-cocoas pos)])
+         (tellv content-cocoa addTableColumn: c)
+         (tellv c release)))
+     (reset-column-order)))
+
+  (define/public (set-column-label i s)
+    (let ([col (list-ref column-cocoas i)])
+      (tellv (tell col headerCell) setStringValue: #:type _NSString s)
+      (reset)))
+
+  (define/public (set-column-size i w min-w max-w)
+    (let ([col (list-ref column-cocoas i)])
+      (tellv col setMinWidth: #:type _CGFloat min-w)
+      (tellv col setMaxWidth: #:type _CGFloat max-w)
+      (tellv col setWidth: #:type _CGFloat w)))
+
+  (define/public (get-column-size i)
+    (let ([col (list-ref column-cocoas i)]
+          [int (lambda (v) (inexact->exact (round v)))])
+      (values
+       (int (tell #:type _CGFloat col width))
+       (int (tell #:type _CGFloat col minWidth))
+       (int (tell #:type _CGFloat col maxWidth)))))
 
   (define/override (get-cocoa-content) content-cocoa)
   (define/override (get-cocoa-control) content-cocoa)
@@ -145,19 +195,87 @@
     ;; FIXME: visble doesn't mean at top:
     (tellv content-cocoa scrollRowToVisible: #:type _NSInteger i))
 
-  (define/public (set-string i s)
-    (set! items
-          (append (take items i)
-                  (list s)
-                  (drop items (add1 i))))
+  (define/private (replace items i s)
+    (append (take items i)
+            (list s)
+            (drop items (add1 i))))
+
+  (define/public (set-string i s [col 0])
+    (let ([new-itemss (replace 
+                       itemss
+                       col
+                       (replace (list-ref itemss col)
+                                i
+                                s))])
+      (set! itemss new-itemss))
     (reset))
 
   (define/public (number)
     ;; Can be called by event-handling thread
     count)
-  (define/public (get-row n)
+  (define/public (get-cell col n)
     ;; Can be called by event-handling thread
-    (list-ref items n))
+    (let ([col (if (number? col)
+                   (order->number col)
+                   (col->number col))])
+      (if (col . > . num-columns) ; can happen as column is deleted
+          ""
+          (list-ref (list-ref itemss col) n))))
+
+  (define/private (col->number col)
+    (let loop ([l column-cocoas] [pos 0])
+      (cond
+       [(null? l) #f]
+       [(ptr-equal? (car l) col) pos]
+       [else (loop (cdr l) (add1 pos))])))
+
+  ;; When columns are rearranged, we have to be able to map
+  ;; from current column numbers to original column numbers
+  (define order-vector #f)
+  (define/private (order->number col)
+    (prep-order-vector)
+    (vector-ref order-vector col))
+  (define/private (prep-order-vector)
+    (unless order-vector
+      (let ([vec (make-vector (length column-cocoas))])
+        (let ([array (tell content-cocoa tableColumns)])
+          (for/list ([i (in-range (tell #:type _NSUInteger array count))])
+            (let ([col (tell array objectAtIndex: #:type _NSUInteger i)])
+              (vector-set! vec i (col->number col)))))
+        (set! order-vector vec))))
+  (define/public (reset-column-order)
+    (set! order-vector #f))
+
+  (define/public (get-column-order)
+    (prep-order-vector)
+    (vector->list order-vector))
+
+  (define/public (append-column title)
+    (atomically
+     (let ([col (as-objc-allocation
+                 (tell (tell NSTableColumn alloc) initWithIdentifier: content-cocoa))])
+       (tellv content-cocoa addTableColumn: col)
+       (tellv (tell col headerCell) setStringValue: #:type _NSString title)
+       (set! column-cocoas (append column-cocoas (list col)))
+       (set! itemss (append itemss
+                            (list (for/list ([i (in-list (car itemss))])
+                                    ""))))
+       (set! num-columns (add1 num-columns))
+       (reset-column-order)))
+    (reset))
+
+  (define/public (delete-column i)
+    (atomically
+     (let ([c (list-ref column-cocoas i)])
+       (define (drop-nth l i)
+         (cond
+          [(zero? i) (cdr l)]
+          [else (cons (car l) (drop-nth (cdr l) (sub1 i)))]))
+       (set! num-columns (sub1 num-columns))
+       (tellv content-cocoa removeTableColumn: c)
+       (set! column-cocoas (drop-nth column-cocoas i))
+       (set! itemss (drop-nth itemss i))))
+    (reset))
 
   (define callback cb)
   (define/public (clicked event-type)
@@ -165,6 +283,15 @@
       (callback this (new control-event%
                           [event-type event-type]
                           [time-stamp (current-milliseconds)]))))
+
+  (define can-click-column? (memq 'clickable-headers style))
+  (define/public (clicked-column col)
+    (when can-click-column?
+      (let ([pos (col->number col)])
+        (callback this (new column-control-event%
+                            [event-type 'list-box-column]
+                            [time-stamp (current-milliseconds)]
+                            [column pos])))))
 
   (define/public (set-data i v) (set-box! (list-ref data i) v))
   (define/public (get-data i) (unbox (list-ref data i)))
@@ -185,26 +312,34 @@
     (select i #t #f))
 
   (define/public (delete i)
-    (set! count (sub1 count))
-    (set! items (remove-nth items i))
-    (set! data (remove-nth data i))
+    (atomically
+     (set! count (sub1 count))
+     (set! itemss (for/list ([items (in-list itemss)])
+                    (remove-nth items i)))
+     (set! data (remove-nth data i)))
     (reset))
   (define/public (clear)
-    (set! count 0)
-    (set! items null)
-    (set! data null)
+    (atomically
+     (set! count 0)
+     (set! itemss (for/list ([items (in-list itemss)])
+                    null))
+     (set! data null))
     (reset))
-  (define/public (set choices)
-    (set! items choices)
-    (set! data (map (lambda (x) (box #f)) choices))
-    (set! count (length choices))
+  (define/public (set choices . more-choices)
+    (atomically
+     (set! itemss (cons choices more-choices))
+     (set! data (map (lambda (x) (box #f)) choices))
+     (set! count (length choices)))
     (reset))
 
   (public [append* append])
   (define (append* s [v #f])
-    (set! count (add1 count))
-    (set! items (append items (list s)))
-    (set! data (append data (list (box v))))
+    (atomically
+     (set! count (add1 count))
+     (set! itemss (cons (append (car itemss) (list s))
+                        (for/list ([items (in-list (cdr itemss))])
+                          (append items (list "")))))
+     (set! data (append data (list (box v)))))
     (reset))
 
   (define/public (reset)

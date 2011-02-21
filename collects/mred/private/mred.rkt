@@ -107,6 +107,7 @@
 	     clipboard<%>
 	     clipboard-client%
 	     control-event%
+	     column-control-event%
 	     current-eventspace
 	     cursor%
 	     get-display-depth

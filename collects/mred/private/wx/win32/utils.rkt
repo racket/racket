@@ -22,7 +22,7 @@
 
               GetWindowLongPtrW
               SetWindowLongPtrW
-              SendMessageW SendMessageW/str
+              SendMessageW SendMessageW/str SendMessageW/ptr
               GetSysColor GetRValue GetGValue GetBValue make-COLORREF
               CreateBitmap
               CreateCompatibleBitmap
@@ -81,6 +81,8 @@
 
 (define-user32 SendMessageW (_wfun _HWND _UINT _WPARAM _LPARAM -> _LRESULT))
 (define-user32 SendMessageW/str (_wfun _HWND _UINT _WPARAM _string/utf-16 -> _LRESULT)
+  #:c-id SendMessageW)
+(define-user32 SendMessageW/ptr (_wfun _HWND _UINT _WPARAM _pointer -> _LRESULT)
   #:c-id SendMessageW)
 
 (define-user32 GetSysColor (_wfun _int -> _DWORD))

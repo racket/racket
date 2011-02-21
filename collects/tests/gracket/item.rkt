@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 (require mzlib/class
 	 mzlib/class100
@@ -1402,7 +1402,8 @@
   (instructions p "radiobox-steps.txt")
   (send f show #t))
 
-(define (choice-or-list-frame list? list-style empty?)
+(define (choice-or-list-frame list? list-style empty? 
+                              [columns '("Choice")] [more-styles '()] [column-order #f])
   (define f (make-frame frame% (if list? "List Test" "Choice Test")))
   (define p f)
   (define-values (actual-content actual-user-data)
@@ -1412,7 +1413,10 @@
 		(list #f #f #f))))
   (define commands 
     (if list?
-	(list 'list-box 'list-box-dclick)
+	(append (list 'list-box 'list-box-dclick)
+                (if (memq 'clickable-headers more-styles)
+                    (list 'list-box-column)
+                    null))
 	(list 'choice)))
   (define old-list null)
   (define multi? (or (memq 'multiple list-style)
@@ -1428,6 +1432,8 @@
 	(printf "Double-click\n")
 	(unless (send cx get-selection)
 	  (error "no selection for dclick"))]
+       [(eq? (send e get-event-type) 'list-box-column)
+        (printf "Column: ~a\n" (send e get-column))]
        [else
 	; misc multi-selection
 	(printf "Changed: ~a\n" (if list?
@@ -1435,12 +1441,21 @@
 				    (send cx get-selection)))])
       (check-callback-event c cx e commands #f)))
   (define c (if list?
-		(make-object list-box% "Tester" actual-content p callback list-style)
+		(new list-box% [label "Tester"]
+                     [choices actual-content]
+                     [parent p]
+                     [callback callback]
+                     [style (append list-style more-styles)]
+                     [columns columns]
+                     [column-order column-order])
 		(make-object choice% "Tester" actual-content p callback)))
   (define counter 0)
   (define append-with-user-data? #f)
+  (define ap (new horizontal-panel% [parent p]
+                  [stretchable-width #f]
+                  [stretchable-height #f]))
   (define ab (make-object button%
-			  "Append" p
+			  "Append" ap
 			  (lambda (b e)
 			    (set! counter (add1 counter))
 			    (let ([naya (format "~aExtra ~a" 
@@ -1463,14 +1478,55 @@
 						naya-data))))
 			      (set! append-with-user-data?
 				    (not append-with-user-data?))))))
-  (define cs (when list? 
-	       (make-object button%
-			    "Visible Indices" p
-			    (lambda (b e)
-			      (printf "top: ~a\nvisible count: ~a\n"
-				      (send c get-first-visible-item)
-				      (send c number-of-visible-items))))))
-  (define cdp (make-object horizontal-panel% p))
+  (new button% 
+       [label "Add Column"]
+       [parent ap]
+       [callback (lambda (b e)
+                   (let ([s (format "New ~a" (length columns))])
+                     (send c append-column s)
+                     (set! columns (append columns (list s)))))])
+  (new button% 
+       [label "Delete Right Column"]
+       [parent ap]
+       [callback (lambda (b e)
+                   (let ([pos (last (send c get-column-order))])
+                     (send c delete-column pos)
+                     (set! columns (send c get-column-labels))))])
+  (when list? 
+    (let ([hp (new horizontal-panel% 
+                   [parent p]
+                   [stretchable-width #f]
+                   [stretchable-height #f])])
+      (make-object button%
+                   "Visible Indices" hp
+                   (lambda (b e)
+                     (printf "top: ~a\nvisible count: ~a\n"
+                             (send c get-first-visible-item)
+                             (send c number-of-visible-items))))
+      (define (mk which pos)
+        (new button% [label (format "Set ~a Top" which)]
+             [parent hp]
+             [callback (lambda (b e) (send c set-first-visible-item pos))]))
+      (mk "First" 0)
+      (mk "Third" 2)
+      (mk "Tenth" 9)
+      (new button% [label "Reverse Columns"]
+           [parent hp]
+           [callback (lambda (b e) (send c set-column-order (reverse (send c get-column-order))))])
+      (new button% [label "Set Column Label"]
+           [parent hp]
+           [callback (lambda (b e) 
+                       (send c set-column-label (sub1 (length columns)) "Last")
+                       (send c set-column-label 0 "First"))])
+      (new button% [label "Set Column Size"]
+           [parent hp]
+           [callback (lambda (b e) 
+                       (send c set-column-size 0 50 10 100)
+                       (unless (= 1 (length columns))
+                         (let-values ([(w mn mx) (send c get-column-size 0)])
+                           (send c set-column-size (sub1 (length columns)) w mn mx))))])))
+  (define cdp (new horizontal-panel% [parent p]
+                   [stretchable-height #f]))
   (define rb (make-object button% "Clear" cdp
 			  (lambda (b e)
 			    (set! actual-content null)
@@ -1510,7 +1566,11 @@
 		   (make-object button%
 				"Reset" cdp
 				(lambda (b e)
-				  (send c set '("Alpha" "Beta" "Gamma"))
+                                  (let ([extras (for/list ([in-list (cdr columns)]
+                                                           [col (in-naturals 1)])
+                                                  (for/list ([i (in-range 3)])
+                                                    (format "~a, ~a" col i)))])
+                                    (send c set '("Alpha" "Beta" "Gamma") . extras))
 				  (set! actual-content '("Alpha" "Beta" "Gamma"))
 				  (set! actual-user-data (list #f #f #f))))
 		   null))
@@ -1533,6 +1593,11 @@
 						(let ([p (send c get-selection)])
 						  (when p
 						    (send c set-string p "New Name")
+                                                    (for ([in-list (cdr columns)]
+                                                          [col (in-naturals 1)])
+                                                      (send c set-string p 
+                                                            (format "new ~a" col)
+                                                            col))
 						    (set! actual-content
 							  (let loop ([ac actual-content][p p])
 							    (if (zero? p)
@@ -2300,12 +2365,39 @@
 (make-object button% "Make Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #f)))
 (make-object button% "Make Empty Choice Frame" cp (lambda (b e) (choice-or-list-frame #f null #t)))
 (make-object button% "Make Combo Frame" cp (lambda (b e) (combo-frame #f)))
+(define lcp (make-object horizontal-pane% ap))
+(send lcp stretchable-width #f)
+(define list-columns-choice (new choice% 
+                                 [parent lcp]
+                                 [label "List Type"]
+                                 [choices '("Single Column"
+                                            "Multiple Columns")]))
+(define (get-columns) (if (zero? (send list-columns-choice get-selection))
+                          '("Column")
+                          '("Main Entry" "Extra" "Final")))
+(define list-headers-choice (new check-box%
+                                 [parent lcp]
+                                 [label "Show Columns"]))
+(define (get-headers) (if (send list-headers-choice get-value)
+                          '(column-headers clickable-headers reorderable-headers variable-columns)
+                          '()))
+(define list-order-choice (new check-box%
+                               [parent lcp]
+                               [label "Swap Last Two"]))
+(define (get-order) (if (and (positive? (send list-columns-choice get-selection))
+                             (send list-order-choice get-value))
+                        '(0 2 1)
+                        #f))
 (define lp (make-object horizontal-pane% ap))
 (send lp stretchable-width #f)
-(make-object button% "Make List Frame" lp (lambda (b e) (choice-or-list-frame #t '(single) #f)))
-(make-object button% "Make Empty List Frame" lp (lambda (b e) (choice-or-list-frame #t '(single) #t)))
-(make-object button% "Make MultiList Frame" lp (lambda (b e) (choice-or-list-frame #t '(multiple) #f)))
-(make-object button% "Make MultiExtendList Frame" lp (lambda (b e) (choice-or-list-frame #t '(extended) #f)))
+(make-object button% "Make List Frame" lp 
+             (lambda (b e) (choice-or-list-frame #t '(single) #f (get-columns) (get-headers) (get-order))))
+(make-object button% "Make Empty List Frame" lp 
+             (lambda (b e) (choice-or-list-frame #t '(single) #t (get-columns) (get-headers) (get-order))))
+(make-object button% "Make MultiList Frame" lp 
+             (lambda (b e) (choice-or-list-frame #t '(multiple) #f (get-columns) (get-headers) (get-order))))
+(make-object button% "Make MultiExtendList Frame" lp 
+             (lambda (b e) (choice-or-list-frame #t '(extended) #f (get-columns) (get-headers) (get-order))))
 (define gsp (make-object horizontal-pane% ap))
 (send gsp stretchable-height #f)
 (make-object button% "Make Gauge Frame" gsp (lambda (b e) (gauge-frame)))

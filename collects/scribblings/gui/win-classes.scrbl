@@ -33,6 +33,7 @@ Alphabetical:
 @include-section["clipboard-intf.scrbl"]
 @include-section["combo-field-class.scrbl"]
 @include-section["control-intf.scrbl"]
+@include-section["column-control-event-class.scrbl"]
 @include-section["control-event-class.scrbl"]
 @include-section["cursor-class.scrbl"]
 @include-section["dialog-class.scrbl"]

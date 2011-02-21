@@ -495,7 +495,7 @@
        (or (= cmd CBN_SELENDOK)
            (= cmd CBN_DROPDOWN)))
 
-     (define/public (do-command cmd control-hwnd)
+     (define/override (do-command cmd control-hwnd)
        (cond
         [(= cmd CBN_SELENDOK)
          (let ([i (SendMessageW combo-hwnd CB_GETCURSEL 0 0)])
