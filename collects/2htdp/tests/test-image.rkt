@@ -1507,15 +1507,18 @@
         =>
         (count-crops (normalize-shape (image-shape an-image+crop)))))
 
-(check-exn #rx"crop" (λ () (crop 100 100 10 10 (rectangle 20 20 "solid" "black"))))
-(check-exn #rx"crop" (λ () (crop 9 100 10 10 (rectangle 20 20 "solid" "black"))))
-(check-exn #rx"crop" (λ () (crop 100 9 10 10 (rectangle 20 20 "solid" "black"))))
-(check-exn #rx"crop" (λ () (crop -9 9 10 10 (rectangle 20 20 "solid" "black"))))
-(check-exn #rx"crop" (λ () (crop 9 -9 10 10 (rectangle 20 20 "solid" "black"))))
-
-(test (crop 20 20 100 100 (rectangle 40 40 "solid" "black"))
+(test (image-width (crop 0 0 101 61 (rectangle 100 60 'outline 'black)))
       =>
-      (rectangle 20 20 "solid" "black"))
+      101)
+(test (image-height (crop 0 0 101 61 (rectangle 100 60 'outline 'black)))
+      => 
+      61)
+(test (image-width (crop -1 -1 12 12 (rectangle 10 10 'outline (pen "black" 2 "solid" "round" "round"))))
+      =>
+      12)
+(test (image-height (crop -1 -1 12 12 (rectangle 10 10 'outline (pen "black" 4 "solid" "round" "round"))))
+      =>
+      12)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

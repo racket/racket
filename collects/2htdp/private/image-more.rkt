@@ -376,19 +376,7 @@
 ;; crop : number number number number image -> image
 ;; crops an image to be w x h from (x,y)
 (define/chk (crop x1 y1 width height image)
-  (check-arg 'crop
-             (<= 0 x1 (image-width image))
-             (format "number that is between 0 than the width (~a)" (image-width image))
-             1
-             x1)
-  (check-arg 'crop
-             (<= 0 y1 (image-height image))
-             (format "number that is between 0 and the height (~a)" (image-height image))
-             2
-             y1)
-  (let ([w (min width (- (image-width image) x1))]
-        [h (min height (- (image-height image) y1))])
-    (crop/internal x1 y1 w h image)))
+  (crop/internal x1 y1 width height image))
 
 (define (crop/internal x1 y1 width height image)
   (let ([points (rectangle-points width height)]

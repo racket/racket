@@ -1141,8 +1141,8 @@ the parts that fit onto @racket[scene].
                           (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
 }
 
-@defproc[(crop [x (and/c real? (between/c 0 (image-width image)))]
-               [y (and/c real? (between/c 0 (image-height image)))] 
+@defproc[(crop [x real?]
+               [y real?] 
                [width (and/c real? (not/c negative?))]
                [height (and/c real? (not/c negative?))]
                [image image?])
@@ -1150,9 +1150,6 @@ the parts that fit onto @racket[scene].
 
  Crops @racket[image] to the rectangle with the upper left at the point (@racket[x],@racket[y])
  and with @racket[width] and @racket[height]. 
- 
- The @racket[x] and @racket[y] arguments must be between 0 and
- the @racket[width] or @racket[height], respectively.
  
  @image-examples[(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
                  (crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))
@@ -1288,13 +1285,27 @@ more expensive than with the other shapes.
 
 @defproc[(image-baseline [i image?]) (and/c integer? (not/c negative?) exact?)]{
   Returns the distance from the top of the image to its baseline. 
-  Unless the image was constructed with @racket[text] or @racket[text/font],
-  this will be the same as its height.
+  Unless the image was constructed with @racket[text], @racket[text/font] 
+  or, in some cases, @racket[crop], this will be the same as its height.
   
   @image-examples[(image-baseline (text "Hello" 24 "black"))
                   (image-height (text "Hello" 24 "black"))
                   (image-baseline (rectangle 100 100 "solid" "black"))
                   (image-height (rectangle 100 100 "solid" "black"))]
+
+  A @racket[crop]ped image's baseline is the same as the image's baseline, if the
+  cropping stays within the original image's bounding box. But if the cropping actually
+  enlarges the image, then the baseline can end up being smaller.
+  
+  @image-examples[(image-height (rectangle 20 20 "solid" "black"))
+                  (image-baseline (rectangle 20 20 "solid" "black"))
+                  
+                  (image-height (crop 10 10 5 5 (rectangle 20 20 "solid" "black")))
+                  (image-baseline (crop 10 10 5 5 (rectangle 20 20 "solid" "black")))
+                  
+                  (image-height (crop 10 10 30 30 (rectangle 20 20 "solid" "black")))
+                  (image-baseline (crop 10 10 30 30 (rectangle 20 20 "solid" "black")))]
+                  
 }
 
 @section{Image Predicates}
