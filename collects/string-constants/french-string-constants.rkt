@@ -1035,7 +1035,7 @@
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
   (enforce-primitives-group-box-label "Définitions initiales")
   (enforce-primitives-check-box-label "Interdire la redéfinition des définition initiales")
-  (automatically-compile "Peupler les répertoires \"compiled/\" (pour un chargement plus rapide)")
+  (automatically-compile "Peupler les répertoires \"compiled\" (pour un chargement plus rapide)")
   (preserve-stacktrace-information "Préserver la trace de la pile (ceci invalide certaines optimisations)")
   (expression-level-stacktrace "Traçage de la pile au niveau des expressions")
   (function-level-stacktrace "Traçage de la pile au niveau des fonctions")
