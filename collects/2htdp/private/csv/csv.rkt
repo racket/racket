@@ -9,15 +9,7 @@
 ;; $Id: csv.ss,v 1.199 2010/04/13 17:56:20 neilpair Exp $
 
 ;;; @legal
-;;; Copyright @copyright{} 2004--2009 Neil Van Dyke.  This program is Free
-;;; Software; you can redistribute it and/or modify it under the terms of the
-;;; GNU Lesser General Public License as published by the Free Software
-;;; Foundation; either version 3 of the License (LGPL 3), or (at your option)
-;;; any later version.  This program is distributed in the hope that it will be
-;;; useful, but without any warranty; without even the implied warranty of
-;;; merchantability or fitness for a particular purpose.  See
-;;; @indicateurl{http://www.gnu.org/licenses/} for details.  For other licenses
-;;; and consulting, please contact the author.
+;;; Distributed under the same terms as Racket, by permission.
 ;;; @end legal
 
 #lang scheme/base
