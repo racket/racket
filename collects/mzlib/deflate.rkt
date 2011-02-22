@@ -1,12 +1,16 @@
 #|
 /* deflate.c -- compress data using the deflation algorithm
  * Copyright (C) 1992-1993 Jean-loup Gailly
- * This is free software; you can redistribute it and/or modify it under the
- * terms of the GNU General Public License, see the file COPYING.
  */
 |#
 ;; Taken from the gzip source distribution
 ;; Translated directly from C (obviously) by Matthew, July 2000
+
+;; *** The original version that this code was taken from was
+;; distributed with a GPL license, but later the code (later version of
+;; it) was also included in zlib, which is distributed with an
+;; LGPL-compatible license.  I (Eli Barzilay) have tried to contact the
+;; author, but no reply yet.
 
 (module deflate mzscheme
 
