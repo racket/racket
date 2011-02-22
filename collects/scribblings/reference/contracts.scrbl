@@ -6,7 +6,7 @@
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract))
+       (the-eval '(require racket/contract racket/contract/parametric))
        the-eval)))
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
@@ -84,9 +84,13 @@ Constructs a @tech{flat contract} from @racket[predicate]. A value
 satisfies the contract if the predicate returns a true value.}
 
 
-@defproc[(flat-named-contract [type-name any/c] 
-                              [predicate (or/c flat-contract? (any/c . -> . any))])
+@defproc[(flat-named-contract [type-name any/c]
+                              [predicate (or/c flat-contract? (any/c . -> . any))]
+                              [#:generate generator (-> contract (-> int? 'a-val))])
          flat-contract?]{
+
+The generator argument adds a generator for the flat-named-contract. See 
+@racket[contract-generate] for more information.
 
 On predicates like @racket[flat-contract], but the first argument must be the
 (quoted) name of a contract used for error reporting. 
@@ -2082,4 +2086,12 @@ parts of the contract system.
   The resulting function accepts the information that is in a @racket[blame]
   struct and returns a projection function that checks the contract.
   
+}
+@section{Random generation}
+
+@defproc[(contract-generate [ctc contract?] [fuel int?]) any/c]{
+Attempts to randomly generate a value which will match the contract. The fuel
+argument limits the depth that the argument generation can go and thus the
+memory used. In order to know which contracts to generate, it may be necessary
+to add a generator for the generate keyword argument in @racket[struct]
 }

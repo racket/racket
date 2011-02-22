@@ -18,10 +18,12 @@ v4 todo:
 
 |#
 
+
 (require "guts.rkt"
          "blame.rkt"
          "prop.rkt"
          "misc.rkt"
+         "generate.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
          (for-syntax "helpers.rkt")
@@ -30,9 +32,12 @@ v4 todo:
          (for-syntax "arr-util.rkt"))
 
 (provide ->
+         base->?
          ->*
          ->d
          case->
+         base->-rngs/c
+         base->-doms/c
          unconstrained-domain->
          the-unsupplied-arg
          (rename-out [-predicate/c predicate/c])
@@ -520,13 +525,54 @@ v4 todo:
        (= (length (base->-rngs/c that)) (length (base->-rngs/c this)))
        (andmap contract-stronger? (base->-rngs/c this) (base->-rngs/c that))))
 
+(define (->-generate ctc)
+  (let ([doms-l (length (base->-doms/c ctc))])
+    (λ (fuel)
+       (let ([rngs-gens (map (λ (c) (generate/choose c (/ fuel 2)))
+                             (base->-rngs/c ctc))])
+         (if (member #t (map generate-ctc-fail? rngs-gens))
+           (make-generate-ctc-fail)
+           (procedure-reduce-arity
+             (λ args
+                ; Make sure that the args match the contract
+                (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
+                           (error "Arg(s) ~a do(es) not match contract ~a\n" ctc))
+                       ; Stash the valid value
+                       ;(env-stash (generate-env) ctc args)
+                       (apply values rngs-gens)))
+             doms-l))))))
+
+(define (->-exercise ctc) 
+  (λ (args fuel)
+     (let* ([new-fuel (/ fuel 2)]
+            [gen-if-fun (λ (c v)
+                           ; If v is a function we need to gen the domain and call
+                           (if (procedure? v)
+                             (let ([newargs (map (λ (c) (contract-generate c new-fuel))
+                                                 (base->-doms/c c))])
+                               (let* ([result (call-with-values 
+                                                (λ () (apply v newargs))
+                                                list)]
+                                      [rngs (base->-rngs/c c)])
+                                 (andmap (λ (c v) 
+                                            ((contract-struct-exercise c) v new-fuel))
+                                         rngs 
+                                         result)))
+                             ; Delegate to check-ctc-val
+                             ((contract-struct-exercise c) v new-fuel)))])
+       (andmap gen-if-fun (base->-doms/c ctc) args))))
+
+
+
 (define-struct (chaperone-> base->) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:projection (->-proj chaperone-procedure)
    #:name ->-name
    #:first-order ->-first-order
-   #:stronger ->-stronger?))
+   #:stronger ->-stronger?
+   #:generate ->-generate
+   #:exercise ->-exercise))
 
 (define-struct (impersonator-> base->) ()
   #:property prop:contract
@@ -534,7 +580,9 @@ v4 todo:
    #:projection (->-proj impersonate-procedure)
    #:name ->-name
    #:first-order ->-first-order
-   #:stronger ->-stronger?))
+   #:stronger ->-stronger?
+   #:generate ->-generate
+   #:exercise ->-exercise))
 
 (define (build--> name
                   pre post
@@ -659,9 +707,9 @@ v4 todo:
                         #f))]))))]))
 
 (define-for-syntax (maybe-a-method/name stx)
-   (if (syntax-parameter-value #'making-a-method)
-       (syntax-property stx 'method-arity-error #t)
-       stx))
+  (if (syntax-parameter-value #'making-a-method)
+      (syntax-property stx 'method-arity-error #t)
+      stx))
 
 ;; ->/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->/proc/main stx)

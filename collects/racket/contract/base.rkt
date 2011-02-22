@@ -20,8 +20,7 @@
              procedure-accepts-and-more?
              check-procedure
              check-procedure/more
-             make-contracted-function
-             
+
              contracted-function?
              contracted-function-proc
              contracted-function-ctc
