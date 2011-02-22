@@ -209,7 +209,7 @@ END
                                                    pasv2-port-maj pasv2-port-min
                                                    ))))
   
-  (define server "localhost")
+  (define server "127.0.0.1")
   (define port main-port)
   (define user "anonymous")
   (define passwd "nonny")
