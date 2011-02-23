@@ -243,7 +243,7 @@ The result of @racket[make-struct-type] is five values:
 (make-p 'x 'y 'z)
 ]
 
-@defproc[(make-struct-field-accessor [accessor-proc struct-accessot-procedure?]
+@defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]
                                      [field-name (or/c symbol? #f) 
                                                  (symbol->string (format "field~a" field-pos))])
