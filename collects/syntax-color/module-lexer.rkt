@@ -61,7 +61,12 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
                 scheme-lexer))]
           [else
            (read-string (file-position lexer-port) in) ;; sync ports
-           (values lexeme type data new-token-start new-token-end 0 'no-lang-line)])])]
+           (if (and (eq? type 'other)
+                    (string? lexeme)
+                    ;; the read-language docs say that this is all it takes to commit to a #lang
+                    (regexp-match #rx"^#[!l]" lexeme))
+               (values lexeme 'error data new-token-start new-token-end 0 'no-lang-line)
+               (values lexeme type data new-token-start new-token-end 0 'no-lang-line))])])]
     [(eq? mode 'no-lang-line)
      (let-values ([(lexeme type data new-token-start new-token-end) 
                    (scheme-lexer in)])
