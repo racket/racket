@@ -6,7 +6,7 @@
          scribble/base
          scribble/manual
          scribble/struct
-         (only-in scribble/core table-columns style)
+         (only-in scribble/core table-columns style plain)
          scribble/html-properties
          racket/list)
 
@@ -17,6 +17,8 @@
   compare ;; create a comparison box for two code snippets
   ;; good    ;; label a code fragment 'good' [doesn't work]
   ;; bad     ;; label a code fragment 'bad' [doesn't work]
+  column-table
+  row-table
   rkt rkt/base rkt/gui)
 
 (define (rkt) (racketmodname racket))
@@ -26,13 +28,32 @@
 ;; compare: two code snippets, in two columns: left is good, right is bad
 (define (compare stuff1 stuff2)
   (define stuff (list (list stuff1) (list stuff2)))
-  (define space (style #f (list (attributes '((width . "500") (valign . "top"))))))
-  (table
-   (style #f
-          (list
-           (attributes '((border . "1") (cellpadding . "10")))
-           (table-columns (make-list (length stuff) space))))
-   (apply map (compose make-flow list) stuff)))
+  (table (sty 2 500) (apply map (compose make-flow list) stuff)))
+
+(define-syntax (column-table stx)
+  (syntax-case stx (col)
+    [(_ (col x ...) ...)
+     #`(begin
+	 (define stuff (list (list (paragraph plain (format "~a" 'x)) ...) ...))
+	 (table (sty (length stuff) 200)
+	        (apply map (compose make-flow list) stuff)))]))
+
+(define-syntax (row-table stx)
+  (syntax-case stx (row)
+    [(_ (row x ...) ...)
+     #`(begin
+	 (define stuff (list (list (paragraph plain (format "~a" 'x)) ...) ...))
+	 (table (sty (length (first stuff)) 200)
+	        (map make-flow stuff)))]))
+
+(define (sty columns width)
+  (define space
+    (style #f `(,(attributes `((width . ,(format "~a" width)) (align . "center") (valign . "top"))))))
+  ;; -- in --
+  (style #f
+    (list
+      (attributes '((border . "1") (cellpadding . "10")))
+      (table-columns (make-list columns space)))))
 
 ;; ===================================================================================================
 ;; the following doesn't work
