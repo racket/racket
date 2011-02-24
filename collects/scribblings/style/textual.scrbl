@@ -17,6 +17,67 @@ on the indentation of a file. This is extremely rare but you should be
 aware of it.}
 
 @; -----------------------------------------------------------------------------
+@section{Where to Put Parentheses}
+
+Racket isn't C. Put all closing parentheses on one line, the last line of
+your code.
+
+@compare[
+ @racketmod[#:file
+ @tt{good}
+ racket
+
+ (define (conversion f)
+   (* 5/9 (- f 32)))
+]
+@racketmod[#:file
+ @tt{really bad}
+ racket
+
+ (define (conversion f)
+   (* 5/9 (- f 32)
+     )
+   )
+ ]
+]
+
+You are allowed to place all closing parenthesis on a line by itself at the
+end of long sequences, be those definitions or pieces of data.
+
+@compare[
+ @racketmod[#:file
+ @tt{acceptable}
+ racket
+
+ (define modes
+   '(edit
+     help
+     debug
+     test
+     trace
+     step
+     )) ;; <--- bug in scribble: the last two are on their own line
+]
+@racketmod[#:file
+ @tt{also acceptable}
+ racket
+
+ (define turn%
+   (class object%
+     (init-field state)
+
+     (super-new)
+
+     (define/public (place where tile)
+       (send state where tile))
+
+     (define/public (is-placable? place)
+       (send state legal? place))
+     )) ;; <--- bug in scribble: the last two are on their own line
+ ]
+]
+
+@; -----------------------------------------------------------------------------
 @section{Indentation}
 
 DrRacket indents code and it is the only tool that everyone in PLT agrees
@@ -155,8 +216,3 @@ A line in a Racket file is at most 102 characters wide.
 When you create a file, add a line with ";; " followed by ctrl-U 99 and "-".
 When you separate "sections" of code in a file, insert the same line. This
 provides some line-width orientation in the middle of a file, too.
-
-@; -----------------------------------------------------------------------------
-@section{Where to Put Parentheses}
-
-Racket isn't C. Put all closing parentheses on one line.

@@ -8,9 +8,9 @@
  --- Yaron Minsky, JaneStreet, 2010 at Northeastern}
 
 Write code that is correct; maintainable; and fast. The ordering of these
-adjectives is critical: correct is more important than maintainable;
-maintainable is more important than fast; and fast is important to include,
-because nobody wants to live with slow programs.
+ adjectives is critical: correct is more important than maintainable;
+ maintainable is more important than fast; and fast is important to include,
+ because nobody wants to live with slow programs.
 
 @margin-note{This ordering is occasionally wrong. For example, we could
  avoid IEEE floating point numbers nearly all of the time. To make this
@@ -86,7 +86,10 @@ Create test suites. Editing code without an existing test suite is like
 @; -----------------------------------------------------------------------------
 @section{Maintenance}
 
-Comprehensible code is maintainable.
+Comprehensible code is maintainable.  Maintainable code must be easily
+ readable, and the difficulty is that Racket naturally favors the writer,
+ not the reader. And it is precisely for this reason that we need to obey
+ rules.
 
 Code is comprehensible when you can understand its external purpose. To
  this end, code must come with external documentation. Released code must
@@ -94,7 +97,13 @@ Code is comprehensible when you can understand its external purpose. To
  a simultaneous change to its documentation---"simultaneous" means that the
  two changes are in the same commit to the code base.
 
-In order to document code, refer to the
+Without adherence to basic elements of style and some internal
+ documentation, code comprehension becomes impossible. The rest of this
+ document is mostly about these elements of style, including some
+ suggestions on internal documentation.
+
+Readability is not the same as code with documentation, but documentation
+ is a part of it all.  For style rules on documenting code, refer to the
  @hyperlink["http://docs.racket-lang.org/scribble/how-to-doc.html#%28part._reference-style%29"]{style
  guide} in the Scribble manual.  Ideally documentation comes in two parts:
  a "Guide" section, which explains the purpose and suggests use cases, and
@@ -104,10 +113,6 @@ In order to document code, refer to the
  @tt{for-label} @tt{require}s and make use of other useful
  cross-references.
 
-Without adherence to basic elements of style and some internal
- documentation, code comprehension becomes impossible. The rest of this
- document is mostly about these elements of style, including some
- suggestions on internal documentation.
 
 Having said that, the production of a system like Racket occasionally
  requires experimentation and experimental code. Once we understand this
