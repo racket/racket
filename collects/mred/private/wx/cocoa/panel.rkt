@@ -2,9 +2,9 @@
 (require racket/class
          ffi/unsafe
          ffi/unsafe/objc
-          "../../syntax.rkt"
-          "types.rkt"
-          "utils.rkt"
+         "../../syntax.rkt"
+         "types.rkt"
+         "utils.rkt"
          "window.rkt")
 
 (provide 
@@ -35,6 +35,7 @@
       (send p set-parent this))
 
     (define/override (fix-dc)
+      (super fix-dc)
       (for ([child (in-list children)])
         (send child fix-dc)))
 
@@ -59,6 +60,7 @@
         (send child child-accept-drag on?)))
 
     (define/override (enable-window on?)
+      (super enable-window on?)
       (let ([on? (and on? (is-window-enabled?))])
         (for ([child (in-list children)])
           (send child enable-window on?))))

@@ -3,6 +3,9 @@ Enabled single-precision floats by default
 Added single-flonum?
 Changed eqv? so that inexacts are equivalent only when they
  have the same precision
+racket/gui: added multi-column support to list-box%
+racket/gui: added scrollbar support to panel%, vertical-panel%,
+ and horizontal-panel%
 
 Version 5.1, February 2011
 Renamed "proxy" to "impersonator"

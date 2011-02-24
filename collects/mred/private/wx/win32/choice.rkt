@@ -33,7 +33,7 @@
                                             WS_HSCROLL WS_VSCROLL
                                             WS_BORDER WS_CLIPSIBLINGS)
                                0 0 0 0
-                               (send parent get-client-hwnd)
+                               (send parent get-content-hwnd)
                                #f
                                hInstance
                                #f))

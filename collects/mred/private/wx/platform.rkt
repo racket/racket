@@ -16,6 +16,7 @@
 
 (define-values (button%
                 canvas%
+                canvas-panel%
                 check-box%
                 choice%
                 clipboard-driver%

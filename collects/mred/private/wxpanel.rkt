@@ -21,7 +21,10 @@
                         wx-pane%
                         wx-vertical-pane%
                         wx-horizontal-pane%
-                        wx-grow-box-pane%))
+                        wx-grow-box-pane%
+                        wx-canvas-panel%
+                        wx-vertical-canvas-panel%
+                        wx-horizontal-canvas-panel%))
 
   (define wx:windowless-panel%
     (class100 object% (prnt x y w h style label)
@@ -88,7 +91,19 @@
 		;; Needed for windowless panes
 		[move-children? #f]
 
-		[ignore-redraw-request? #f])
+		[ignore-redraw-request? #f]
+
+
+                [auto-scroll-x? (and (memq 'auto-hscroll style) #t)]
+                [auto-scroll-y? (and (memq 'auto-vscroll style) #t)]
+
+                [can-scroll-x? (or auto-scroll-x?
+                                   (and (memq 'hscroll style) #t))]
+                [can-scroll-y? (or auto-scroll-y?
+                                   (and (memq 'vscroll style) #t))]
+                
+                [scroll-x? can-scroll-x?]
+                [scroll-y? can-scroll-y?])
 	       
 	       (override
 		 [has-tabbing-children? (lambda () #t)]
@@ -252,15 +267,19 @@
 		 ;;   entire panel (not just client) as a list of two elements:
 		 ;;   (min-x min-y). 
 		 [do-graphical-size
-		  (lambda (compute-x compute-y)
+		  (lambda (ignore-scroll? compute-x compute-y)
 		    (letrec ([gms-help
 			      (lambda (kid-info x-accum y-accum first?)
 				(if (null? kid-info)
 				    (list x-accum y-accum)
 				    (gms-help
 				     (cdr kid-info)
-				     (compute-x x-accum kid-info (and hidden-child first?))
-				     (compute-y y-accum kid-info (and hidden-child first?))
+                                     (if (and can-scroll-x? (not ignore-scroll?))
+                                         x-accum
+                                         (compute-x x-accum kid-info (and hidden-child first?)))
+                                     (if (and can-scroll-y? (not ignore-scroll?))
+                                         y-accum
+                                         (compute-y y-accum kid-info (and hidden-child first?)))
 				     #f)))])
 		      (let-values ([(client-w client-h)
 				    (get-two-int-values (lambda (a b) (get-client-size a b)))])
@@ -269,9 +288,9 @@
 				(gms-help (get-children-info)
 					  (* 2 border) (* 2 border)
 					  #t)]
-			       [delta-w (- (get-width) client-w)]
-			       [delta-h (- (get-height) client-h)])
-			  (list (+ delta-w (car min-client-size) (if hidden-child (* 2 tab-h-border) 0))
+			       [delta-w (if ignore-scroll? 0 (- (get-width) client-w))]
+			       [delta-h (if ignore-scroll? 0 (- (get-height) client-h))])
+                          (list (+ delta-w (car min-client-size) (if hidden-child (* 2 tab-h-border) 0))
 				(+ delta-h (cadr min-client-size)))))))]
 		 
 		 ;; do-get-min-graphical-size: poll children and return minimum possible
@@ -283,8 +302,9 @@
 		 ;; effects: none
 		 [get-graphical-min-size (lambda () (void))]
 		 [do-get-graphical-min-size
-		  (lambda ()
+		  (lambda ([ignore-scroll? #f])
 		    (do-graphical-size 
+                     ignore-scroll?
 		     (lambda (x-accum kid-info first?)
 		       (max x-accum (+ (* 2 (border))
 				       (child-info-x-min (car kid-info)))))
@@ -390,14 +410,47 @@
 			      (force-redraw))]
 		 [get-alignment (lambda () (values h-align v-align))]
 
+                 [adjust-panel-size (lambda (w h) 
+                                      (if (or can-scroll-x? can-scroll-y?)
+                                          (let ([ms (do-get-graphical-min-size #t)])
+                                            ;; loop for fix-point on x and y scroll
+                                            (let loop ([w w] [h h] [iters 0])
+                                              (let ([want-scroll-x?
+                                                     (if auto-scroll-x?
+                                                         ((car ms) . > . w)
+                                                         scroll-x?)]
+                                                    [want-scroll-y?
+                                                     (if auto-scroll-y?
+                                                         ((cadr ms) . > . h)
+                                                         scroll-y?)])
+                                                (if (and (eq? scroll-x? want-scroll-x?)
+                                                         (eq? scroll-y? want-scroll-y?))
+                                                    (values (if can-scroll-x?
+                                                                (max w (car ms))
+                                                                w)
+                                                            (if can-scroll-y?
+                                                                (max h (cadr ms))
+                                                                h))
+                                                    (begin
+                                                      (set! scroll-x? want-scroll-x?)
+                                                      (set! scroll-y? want-scroll-y?)
+                                                      (send this show-scrollbars scroll-x? scroll-y?)
+                                                      (let-values ([(w h)
+                                                                    (get-two-int-values (lambda (a b) (get-client-size a b)))])
+                                                        (if (= iters 2)
+                                                            (values w h)
+                                                            (loop w h (add1 iters)))))))))
+                                          (values w h)))]
+
 		 ;; redraw: redraws panel and all children
 		 ;; input: width, height: size of area area in panel.
 		 ;; returns: nothing
 		 ;; effects: places children at default positions in panel.
 		 [redraw
-		  (lambda (width height)
-		    (let ([children-info (get-children-info)]
-			  [children children]) ; keep list of children matching children-info
+		  (lambda (in-width in-height)
+		    (let-values ([(children-info) (get-children-info)]
+                                 [(children) children] ; keep list of children matching children-info
+                                 [(width height) (adjust-panel-size in-width in-height)])
 		      (let ([l (place-children (map (lambda (i)
 						      (list (child-info-x-min i) (child-info-y-min i)
 							    (child-info-x-stretch i) (child-info-y-stretch i)))
@@ -431,6 +484,36 @@
 								 l)))))]
 		 [panel-redraw
 		  (lambda (childs child-infos placements)
+                    (when (or scroll-y? scroll-x?)
+                      (let ([w (if scroll-x?
+                                   (+ (for/fold ([x 0]) ([p (in-list placements)]
+                                                         [i (in-list child-infos)])
+                                        (max x (+ (max 0 (car p))
+                                                  (max (+ (child-info-x-min i)
+                                                          (* 2 (child-info-x-margin i)))
+                                                       (caddr p)))))
+                                      (* 2 (border)))
+                                   0)]
+                            [h (if scroll-y?
+                                   (+ (for/fold ([y 0]) ([p (in-list placements)]
+                                                         [i (in-list child-infos)])
+                                        (max y (+ (max 0 (cadr p))
+                                                  (max (+ (child-info-y-min i)
+                                                          (* 2 (child-info-y-margin i)))
+                                                       (cadddr p)))))
+                                      (* 2 (border)))
+                                   0)]
+                            [wb (box 0)]
+                            [hb (box 0)])
+                        (get-client-size wb hb)
+                        (let ([do-x-scroll? (w . > . (unbox wb))]
+                              [do-y-scroll? (h . > . (unbox hb))])
+                          (send this set-scrollbars
+                                (if do-x-scroll? 1 0) (if do-y-scroll? 1 0)
+                                w h
+                                (unbox wb) (unbox hb)
+                                -1 -1
+                                #t))))
 		    (for-each
 		     (lambda (child info placement)
 		       (let-values ([(x y w h) (apply values placement)])
@@ -451,7 +534,10 @@
 		     child-infos
 		     placements))])
 	       (sequence
-		 (super-init style parent -1 -1 0 0 (cons 'deleted style) label)
+		 (super-init style parent -1 -1
+                             (if can-scroll-y? 20 (if can-scroll-x? 1 0))
+                             (if can-scroll-x? 20 (if can-scroll-y? 1 0))
+                             (cons 'deleted style) label)
                  (unless (memq 'deleted style)
                    (send (get-top-level) show-control this #t)))))
 
@@ -499,7 +585,7 @@
        [minor-align-pos 'center])
       
       (inherit force-redraw border get-width get-height
-	       get-graphical-min-size)
+               do-get-graphical-min-size)
       (private-field [curr-spacing const-default-spacing])
       (override
 	[spacing
@@ -565,17 +651,12 @@
 				 (count-stretchable (cdr kid-info))))))])
 	     (let* ([spacing (spacing)]
 		    [border (border)]
-		    [full-w (get-width)]
-		    [full-h (get-height)]
-		    [delta-list (list
-				 (- full-w width)
-				 (- full-h height))]
 		    [num-stretchable (count-stretchable kid-info)]
-		    [extra-space (- (major-dim width height)
-				    (- (apply 
-					major-dim
-					(get-graphical-min-size))
-				       (apply major-dim delta-list)))]
+		    [extra-space (max 0
+                                      (- (major-dim width height)
+                                         (apply 
+                                          major-dim
+                                          (do-get-graphical-min-size #t))))]
 		    [extra-per-stretchable (if (zero? num-stretchable)
 					       0
 					       (inexact->exact
@@ -657,9 +738,10 @@
 	[get-alignment (λ () (do-get-alignment (if horizontal? (λ (x y) x) (λ (x y) y))))]
         
 	[do-get-graphical-min-size
-	 (lambda ()
+	 (lambda ([ignore-scroll? #f])
            (if horizontal?
                (do-graphical-size 
+                ignore-scroll?
                 (lambda (x-accum kid-info hidden?)
                   (+ x-accum (child-info-x-min (car kid-info))
                      (if (or hidden? (null? (cdr kid-info)))
@@ -670,6 +752,7 @@
                        (+ (child-info-y-min (car kid-info))
                           (* 2 (border))))))
                (do-graphical-size
+                ignore-scroll?
                 (lambda (x-accum kid-info hidden?)
                   (max x-accum
                        (+ (child-info-x-min (car kid-info))
@@ -725,9 +808,11 @@
 
   (define wx-panel% (wx-make-panel% wx:panel%))
   (define wx-control-panel% (wx-make-panel% wx:panel% const-default-x-margin const-default-y-margin))
+  (define wx-canvas-panel% (wx-make-panel% wx:canvas-panel%))
   (define wx-tab-panel% (wx-make-panel% wx:tab-panel%))
   (define wx-group-panel% (wx-make-panel% wx:group-panel%))
   (define wx-linear-panel% (wx-make-linear-panel% wx-panel%))
+  (define wx-linear-canvas-panel% (wx-make-linear-panel% wx-canvas-panel%))
   (define wx-control-linear-panel% (wx-make-linear-panel% wx-control-panel%))
   (define wx-linear-tab-panel% (wx-make-linear-panel% wx-tab-panel%))
   (define wx-linear-group-panel% (wx-make-linear-panel% wx-group-panel%))
@@ -736,6 +821,8 @@
   (define wx-vertical-tab-panel% (wx-make-vertical-panel% wx-linear-tab-panel%))
   (define wx-vertical-group-panel% (wx-make-vertical-panel% wx-linear-group-panel%))
   (define wx-control-horizontal-panel% (wx-make-horizontal-panel% wx-control-linear-panel%))
+  (define wx-horizontal-canvas-panel% (wx-make-horizontal-panel% wx-linear-canvas-panel%))
+  (define wx-vertical-canvas-panel% (wx-make-vertical-panel% wx-linear-canvas-panel%))
 
   (define wx-pane% (wx-make-pane% wx:windowless-panel% #t))
   (define wx-grow-box-pane%

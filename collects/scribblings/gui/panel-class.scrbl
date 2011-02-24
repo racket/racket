@@ -17,7 +17,9 @@ A @scheme[panel%] object has a degenerate placement strategy for
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [style (listof (one-of/c 'border 'deleted)) null]
+                 [style (listof (one-of/c 'border 'deleted
+                                          'hscroll 'auto-hscroll
+                                          'vscroll 'auto-vscroll)) null]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
@@ -32,8 +34,19 @@ A @scheme[panel%] object has a degenerate placement strategy for
                  [stretchable-height any/c #t])]{
 
 If the @scheme['border] style is specified, the window is created with
- a thin border (only in this case, the client size of the panel may be
+ a thin border (in which case the client size of the panel may be
  less than its total size). @DeletedStyleNote[@scheme[style] @scheme[parent]]{panel}
+
+If the @racket['hscroll] or @racket['vscroll] style is specified, then
+ the panel includes a scrollbar in the corresponding direction, and
+ the panel's own size in the corresponding direction is not
+ constrained by the size of its children subareas. The @racket['auto-hscroll]
+ and @racket['auto-vscroll] styles are like @racket['hscroll] or
+ @racket['vscroll], but they cause the corresponding scrollbar to
+ disappear when no scrolling is needed in the corresponding direction;
+ the @racket['auto-vscroll] and @racket['auto-hscroll] modes assume that
+ children subareas are placed using the default algorithm for a @racket[panel%],
+ @racket[vertical-panel%], or @racket[horizontal-panel%].
 
 @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
 

@@ -38,10 +38,10 @@
     style))
 
 (define make-frame
-  (opt-lambda (% name [parent #f] [x #f] [y #f] [w #f] [h #f] [style '()])
+  (opt-lambda (% name [parent #f] [w #f] [h #f] [x #f] [y #f] [style '()])
     (make-object % name
 		 (or parent mdi-frame default-parent-frame)
-		 x y w h
+		 w h x y 
 		 (if mdi-frame
 		     (cons 'mdi-child style)
 		     (add-frame-style style)))))
@@ -564,18 +564,20 @@
 (define float-frame? #f)
 (define no-caption? #f)
 
-(define (big-frame h-radio? v-label? null-label? stretchy? font initially-disabled? alternate-init? msg-auto?)
+(define (big-frame h-radio? v-label? null-label? stretchy? font initially-disabled? 
+                   alternate-init? msg-auto? panel-style)
   (define f (make-frame (if use-dialogs?
 			    active-dialog%
 			    active-frame%)
-			"T\u03A3ster")) ; \u03A3 is eta
+			"T\u03A3ster"  ; \u03A3 is eta
+                        #f #f 100))
   
   (define hp (make-object horizontal-panel% f))
   
-  (define ip (make-object vertical-panel% hp))
-  (define cp (make-object vertical-panel% hp))
-  (define ep (make-object vertical-panel% hp))
-  (define lp (make-object vertical-panel% hp))
+  (define ip (new vertical-panel% [parent hp] [style panel-style]))
+  (define cp (new vertical-panel% [parent hp] [style panel-style]))
+  (define ep (new vertical-panel% [parent hp] [style panel-style]))
+  (define lp (new vertical-panel% [parent hp] [style panel-style]))
   
   (define (basic-add-testers name w)
     (add-hide name w cp)
@@ -618,18 +620,20 @@
   (set! prev-frame f)
   f)
 
-(define (med-frame plain-slider? label-h? null-label? stretchy? font initially-disabled? alternate-init? msg-auto?)
+(define (med-frame plain-slider? label-h? null-label? stretchy? font initially-disabled? 
+                   alternate-init? msg-auto? panel-style)
   (define f2 (make-frame (if use-dialogs?
 			    active-dialog%
 			    active-frame%)
-			 "Tester2"))
+			 "Tester2"
+                         #f #f 100))
 
   (define hp2 (make-object horizontal-panel% f2))
   
-  (define ip2-0 (make-object vertical-panel% hp2))
-  (define cp2 (make-object vertical-panel% hp2))
-  (define ep2 (make-object vertical-panel% hp2))
-  (define lp2 (make-object vertical-panel% hp2))
+  (define ip2-0 (new vertical-panel% [parent hp2] [style panel-style]))
+  (define cp2 (new vertical-panel% [parent hp2] [style panel-style]))
+  (define ep2 (new vertical-panel% [parent hp2] [style panel-style]))
+  (define lp2 (new vertical-panel% [parent hp2] [style panel-style]))
   
   (define (basic-add-testers2 name w)
     (add-hide name w cp2)
@@ -2515,13 +2519,33 @@
 		      (positive? (send enabled-radio get-selection))
 		      (positive? (send selection-radio get-selection))
                       (and message-auto
-                           (send message-auto get-value))))))
+                           (send message-auto get-value))
+                      (append
+                       (case (send panel-h-mode get-selection)
+                         [(0) '()]
+                         [(1) '(hscroll)]
+                         [(2) '(auto-hscroll)])
+                       (case (send panel-v-mode get-selection)
+                         [(0) '()]
+                         [(1) '(vscroll)]
+                         [(2) '(auto-vscroll)]))))))
 
     (define message-auto
       (and msg?
            (new check-box% 
                 [parent p2]
                 [label "Auto-Size Message"])))
+
+    (define panel-h-mode
+      (new choice% 
+           [parent p2]
+           [label "Panels"]
+           [choices '("No HScroll" "HScroll" "Auto HScroll")]))
+    (define panel-v-mode
+      (new choice% 
+           [parent p2]
+           [label "Panels"]
+           [choices '("No VScroll" "VScroll" "Auto VScroll")]))
     
     #t))
 

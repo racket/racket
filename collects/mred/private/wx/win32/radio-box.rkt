@@ -41,7 +41,7 @@
                        #f
                        (bitwise-ior WS_CHILD)
                        0 0 w h
-                       (send parent get-client-hwnd)
+                       (send parent get-content-hwnd)
                        #f
                        hInstance
                        #f))

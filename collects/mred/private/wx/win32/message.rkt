@@ -90,7 +90,7 @@
                                                               SS_ICON
                                                               0)))
                                          0 0 0 0
-                                         (send parent get-client-hwnd)
+                                         (send parent get-content-hwnd)
                                          #f
                                          hInstance
                                          #f)]

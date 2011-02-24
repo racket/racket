@@ -35,7 +35,7 @@
     (init w h gdk-win)
     (super-make-object (make-alternate-bitmap-kind w h))
 
-    (define pixmap (gdk_pixmap_new gdk-win w h 
+    (define pixmap (gdk_pixmap_new gdk-win (max 1 w) (max 1 h)
 				   (if gdk-win 
 				       -1
 				       (GdkVisual-rec-depth
@@ -126,7 +126,7 @@
              (send canvas get-canvas-background))
 	(make-object win32-bitmap% w h (widget-window (send canvas get-client-gtk)))]
        [else
-	(super make-backing-bitmap w h)]))
+	(super make-backing-bitmap (max 1 w) (max 1 h))]))
 
     (define/override (get-backing-size xb yb)
       (send canvas get-client-size xb yb))

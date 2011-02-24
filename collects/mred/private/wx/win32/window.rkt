@@ -150,6 +150,7 @@
 
   (define/public (get-hwnd) hwnd)
   (define/public (get-client-hwnd) hwnd)
+  (define/public (get-content-hwnd) (get-client-hwnd))
   (define/public (get-focus-hwnd) hwnd)
   (define/public (get-eventspace) eventspace)
 
@@ -272,7 +273,7 @@
   (define/public (on-set-focus) (void))
   (define/public (on-kill-focus) (void))
   (define/public (get-handle) hwnd)
-  (define/public (get-client-handle) (get-client-hwnd))
+  (define/public (get-client-handle) (get-content-hwnd))
 
   (define enabled? #t)
   (define parent-enabled? #t)
@@ -307,11 +308,11 @@
 
   (define/public (get-x)
     (let ([r (GetWindowRect hwnd)]
-          [pr (GetWindowRect (send parent get-client-hwnd))])
+          [pr (GetWindowRect (send parent get-content-hwnd))])
       (- (RECT-left r) (RECT-left pr))))
   (define/public (get-y)
     (let ([r (GetWindowRect hwnd)]
-          [pr (GetWindowRect (send parent get-client-hwnd))])
+          [pr (GetWindowRect (send parent get-content-hwnd))])
       (- (RECT-top r) (RECT-top pr))))
 
   (define/public (get-width)
@@ -321,19 +322,23 @@
     (let ([r (GetWindowRect hwnd)])
       (- (RECT-bottom r) (RECT-top r))))
 
+  (define/public (notify-child-extent x y)
+    (void))
+
   (define/public (set-size x y w h)
-    (if (or (= x -11111)
-            (= y -11111)
-            (= w -1)
-            (= h -1))
-        (let ([r (GetWindowRect hwnd)])
-          (MoveWindow hwnd 
-                      (if (= x -11111) (RECT-left r) x)
-                      (if (= y -11111) (RECT-top r) y)
-                      (if (= w -1) (- (RECT-right r) (RECT-left r)) w)
-                      (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)
-                      #t))
-        (MoveWindow hwnd x y w h #t))
+    (let-values ([(x y w h)
+                  (if (or (= x -11111)
+                          (= y -11111)
+                          (= w -1)
+                          (= h -1))
+                      (let ([r (GetWindowRect hwnd)])
+                        (values (if (= x -11111) (RECT-left r) x)
+                                (if (= y -11111) (RECT-top r) y)
+                                (if (= w -1) (- (RECT-right r) (RECT-left r)) w)
+                                (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)))
+                      (values x y w h))])
+      (when parent (send parent notify-child-extent (+ x w) (+ y h)))
+      (MoveWindow hwnd x y w h #t))
     (unless (and (= w -1) (= h -1))
       (on-resized))
     (queue-on-size)
@@ -399,7 +404,7 @@
   (define/public (set-parent p) 
     ;; in atomic mode
     (set! parent p)
-    (SetParent hwnd (send parent get-client-hwnd)))
+    (SetParent hwnd (send parent get-content-hwnd)))
 
   (define/public (is-frame?) #f)
 

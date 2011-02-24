@@ -10,7 +10,11 @@
 
 (provide 
  (protect-out panel%
-              panel-mixin))
+              panel-mixin
+              panel-container-mixin
+
+              gtk_fixed_new
+              gtk_fixed_move))
 
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 (define-gtk gtk_event_box_new (_fun -> _GtkWidget))
@@ -33,11 +37,13 @@
       (send child set-parent this))
 
     (define/override (reset-child-dcs)
+      (super reset-child-dcs)
       (when (pair? children)
         (for ([child (in-list children)])
           (send child reset-child-dcs))))
     
     (define/override (paint-children)
+      (super paint-children)
       (when (pair? children)
         (for ([child (in-list children)])
           (send child paint-children))))
@@ -56,8 +62,16 @@
 
     (define/public (set-item-cursor x y) (void))))
 
+(define (panel-container-mixin %)
+  (class %
+    (inherit get-container-gtk)
+    (super-new)
+    (define/override (set-child-size child-gtk x y w h)
+      (gtk_fixed_move (get-container-gtk) child-gtk x y)
+      (gtk_widget_set_size_request child-gtk w h))))
+
 (define panel%
-  (class (panel-mixin window%)
+  (class (panel-container-mixin (panel-mixin window%))
     (init parent
           x y w h
           style
@@ -85,8 +99,4 @@
                                             GDK_POINTER_MOTION_HINT_MASK
                                             GDK_FOCUS_CHANGE_MASK
                                             GDK_ENTER_NOTIFY_MASK
-                                            GDK_LEAVE_NOTIFY_MASK))
-
-    (define/override (set-child-size child-gtk x y w h)
-      (gtk_fixed_move client-gtk child-gtk x y)
-      (gtk_widget_set_size_request child-gtk w h))))
+                                            GDK_LEAVE_NOTIFY_MASK))))

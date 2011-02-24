@@ -418,10 +418,11 @@
     (connect-size-allocate gtk)
 
     (when add-to-parent?
-      (gtk_container_add (send parent get-client-gtk) gtk))
+      (gtk_container_add (send parent get-container-gtk) gtk))
 
     (define/public (get-gtk) gtk)
     (define/public (get-client-gtk) gtk)
+    (define/public (get-container-gtk) (get-client-gtk))
     (define/public (get-window-gtk) (send parent get-window-gtk))
 
     (define/public (move x y)
@@ -474,7 +475,7 @@
             [creq (make-GtkRequisition 0 0)]
             [hreq (make-GtkRequisition 0 0)])
         (gtk_widget_size_request gtk req)
-        (gtk_widget_size_request (get-client-gtk) creq)
+        (gtk_widget_size_request (get-container-gtk) creq)
         (when sub-h-gtk
           (gtk_widget_size_request sub-h-gtk hreq))
         (when w?
@@ -524,9 +525,9 @@
     (define/public (set-parent p)
       ;; in atomic mode
       (g_object_ref gtk)
-      (gtk_container_remove (send parent get-client-gtk) gtk)
+      (gtk_container_remove (send parent get-container-gtk) gtk)
       (set! parent p)
-      (gtk_container_add (send parent get-client-gtk) gtk)
+      (gtk_container_add (send parent get-container-gtk) gtk)
       (set! save-x 0)
       (set! save-y 0)
       (g_object_unref gtk))
@@ -642,7 +643,7 @@
     (define/public (on-drop-file path) (void))
 
     (define/public (get-handle) (get-gtk))
-    (define/public (get-client-handle) (get-client-gtk))
+    (define/public (get-client-handle) (get-container-gtk))
 
     (define/public (popup-menu m x y)
       (let ([gx (box x)]

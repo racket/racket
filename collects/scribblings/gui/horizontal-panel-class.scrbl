@@ -8,7 +8,9 @@ A horizontal panel arranges its subwindows in a single row. See also
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [style (listof (one-of/c 'border 'deleted)) null]
+                 [style (listof (one-of/c 'border 'deleted
+                                          'hscroll 'auto-hscroll
+                                          'vscroll 'auto-vscroll)) null]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
@@ -22,9 +24,7 @@ A horizontal panel arranges its subwindows in a single row. See also
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-If the @scheme['border] style is specified, the window is created with
- a thin border (only in this case, the client size of the panel may be
- less than its total size). @DeletedStyleNote[@scheme[style] @scheme[parent]]{panel}
+The @racket[style] flags are the same as for @racket[panel%].
 
 @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
 }

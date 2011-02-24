@@ -15,15 +15,12 @@
  (protect-out tab-panel%))
 
 (define-gtk gtk_notebook_new (_fun -> _GtkWidget))
-(define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 
 (define-gtk gtk_notebook_append_page (_fun _GtkWidget _GtkWidget (_or-null _GtkWidget) -> _void))
 (define-gtk gtk_notebook_remove_page (_fun _GtkWidget _int -> _void))
 (define-gtk gtk_notebook_set_scrollable (_fun _GtkWidget _gboolean -> _void))
 (define-gtk gtk_notebook_get_current_page (_fun _GtkWidget -> _int))
 (define-gtk gtk_notebook_set_current_page (_fun _GtkWidget _int -> _void))
-
-(define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
 
 (define-gtk gtk_container_remove (_fun _GtkWidget _GtkWidget -> _void))
 
@@ -40,7 +37,7 @@
         (send wx page-changed i)))))
 
 (define tab-panel%
-  (class (client-size-mixin (panel-mixin window%))
+  (class (client-size-mixin (panel-container-mixin (panel-mixin window%)))
     (init parent
           x y w h
           style
@@ -165,8 +162,4 @@
     (define/public (set-selection i)
       (gtk_notebook_set_current_page gtk i))
     (define/public (get-selection)
-      (gtk_notebook_get_current_page gtk))
-
-    (define/override (set-child-size child-gtk x y w h)
-      (gtk_fixed_move client-gtk child-gtk x y)
-      (gtk_widget_set_size_request child-gtk w h))))
+      (gtk_notebook_get_current_page gtk))))

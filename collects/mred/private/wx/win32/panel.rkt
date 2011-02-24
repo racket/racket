@@ -110,7 +110,7 @@
                                  #f
                                  (bitwise-ior WS_CHILD WS_CLIPSIBLINGS)
                                  0 0 w h
-                                 (send parent get-client-hwnd)
+                                 (send parent get-content-hwnd)
                                  #f
                                  hInstance
                                  #f)]
