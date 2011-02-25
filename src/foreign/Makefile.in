@@ -31,4 +31,4 @@ foreign.@LTO@: $(srcdir)/foreign.c \
 
 clean:
 	rm -f foreign.@LTO@
-	cd libffi; $(MAKE) clean
+	if [ -d libffi ] ; then cd libffi ; $(MAKE) clean ; fi
