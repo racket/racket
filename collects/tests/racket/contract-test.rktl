@@ -2500,38 +2500,6 @@
    '((contract (->i ([x number?]) #:pre () (= 1 2) any)
 	       (λ (x) 1)
 	       'pos 'neg) 2))
-  
-  (test/neg-blame
-   '->i35-b
-   '((contract (->i ([x number?]) #:pre () #t #:pre () (= 1 2) any)
-	       (λ (x) 1)
-	       'pos 'neg) 2))
-  
-  (test/neg-blame
-   '->i35-c
-   '((contract (->i ([x number?]) #:pre (x) (even? x) #:pre (x) (positive? x) any)
-	       (λ (x) 1)
-	       'pos 'neg) 3))
-  
-  (test/neg-blame
-   '->i35-d
-   '((contract (->i ([x number?]) #:pre (x) (even? x) #:pre (x) (positive? x) any)
-	       (λ (x) 1)
-	       'pos 'neg) -2))
-  
-  (test/neg-blame
-   '->i35-e
-   '((contract (->i ([x any/c]) #:pre (x) (pair? x) #:pre (x) (car x) any)
-	       (λ (x) 1)
-	       'pos 'neg)
-     (cons #f 1)))
-  
-  (test/neg-blame
-   '->i35-f
-   '((contract (->i ([x any/c]) #:pre/name (x) "pair" (pair? x) #:pre/name (x) "car" (car x) any)
-	       (λ (x) 1)
-	       'pos 'neg) 
-     (cons #f 1)))
 
   (test/spec-passed/result
    '->i36
@@ -2602,95 +2570,51 @@
   (test/spec-passed/result
    '->i44
    '((contract (->i ([x () any/c])
-                    [y any/c]
-                    #:post (x) x)
-               (lambda (x) x)
-               'pos
-               'neg)
-     #t)
+					[y any/c]
+					#:post (x) x)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #t)
    '#t)
-  
+
   (test/pos-blame
    '->i45
    '((contract (->i ([x () any/c])
-                    [y any/c]
-                    #:post (x) x)
-               (lambda (x) x)
-               'pos
-               'neg)
-     #f))
+					[y any/c]
+					#:post (x) x)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #f))
 
   (test/spec-passed/result
    '->i46
    '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post (y) y)
-               (lambda (x) x)
-               'pos
-               'neg)
-     #t)
+					[y () any/c]
+					#:post (y) y)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #t)
    '#t)
-  
+
   (test/pos-blame
    '->i47
    '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post (y) y)
-               (lambda (x) x)
-               'pos
-               'neg)
-     #f))
-  
-  (test/pos-blame
-   '->i47-b
-   '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post (y) (even? y)
-                    #:post (y) (positive? y))
-               (lambda (x) x)
-               'pos
-               'neg)
-     -2))
-  
-  (test/pos-blame
-   '->i47-c
-   '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post (y) (even? y)
-                    #:post (y) (positive? y))
-               (lambda (x) x)
-               'pos
-               'neg)
-     3))
-  
-  (test/pos-blame
-   '->i47-d
-   '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post (y) (pair? y)
-                    #:post (y) (car y))
-               (lambda (x) x)
-               'pos
-               'neg)
-     (cons #f 1)))
-  
-  (test/pos-blame
-   '->i47-e
-   '((contract (->i ([x any/c])
-                    [y () any/c]
-                    #:post/name (y) "pair" (pair? y)
-                    #:post/name (y) "car" (car y))
-               (lambda (x) x)
-               'pos
-               'neg)
-     (cons #f 1)))
+					[y () any/c]
+					#:post (y) y)
+			   (lambda (x) x)
+			   'pos
+			   'neg)
+	 #f))
 
   (test/spec-passed/result
    '->i48
    '(let ([x '()])
       ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
-                      [res () (begin
-                                (set! x (cons 'res-eval x))
+		      [res () (begin
+				(set! x (cons 'res-eval x))
 				(λ (res)
 				   (set! x (cons 'res-check x))))])
 		 (λ (arg) 

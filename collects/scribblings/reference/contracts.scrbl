@@ -600,17 +600,13 @@ symbols, and that return a symbol.
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
  [dependent-rest (code:line) (code:line #:rest id+ctc)]
- [pre-condition (code:line #:pre (id ...) boolean-expr pre-condition)
-                (code:line #:pre/name (id ...) string boolean-expr pre-condition)
-                (code:line)]
+ [pre-condition (code:line) (code:line #:pre (id ...) boolean-expr)]
  [dependent-range any
                   id+ctc
                   un+ctc
                   (values id+ctc ...)
                   (values un+ctc ...)]
- [post-condition (code:line #:post (id ...) boolean-expr post-condition)
-                 (code:line #:post/name (id ...) string boolean-expr post-condition)
-                 (code:line)]
+ [post-condition (code:line) (code:line #:post (id ...) boolean-expr)]
  [id+ctc [id contract-expr]
          [id (id ...) contract-expr]]
  [un+ctc [_ contract-expr]
@@ -627,8 +623,7 @@ The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional
 rest-args contract, and an optional pre-condition. The pre-condition is
 introduced with the @racket[#:pre] keyword followed by the list of names on
-which it depends. If the @racket[#:pre/name] keyword is used, the string
-supplied is used as part of the error message; similarly with @racket[#:post/name].
+which it depends. 
 
 The @racket[dep-range] non-terminal specifies the possible result
 contracts. If it is @racket[any], then any value is allowed. Otherwise, the
@@ -669,7 +664,7 @@ argument, with its contract checked, is available for the other).  When
 there is no dependency between two arguments (or the result and an
 argument), then the contract that appears earlier in the source text is
 evaluated first.  
-
+#;
 Finally, if all of the identifier positions of the range
 contract are @racket[_]s (underscores), then the range contract expressions
 are evaluated when the function is called and the underscore is not bound
