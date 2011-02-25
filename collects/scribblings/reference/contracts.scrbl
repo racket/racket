@@ -600,13 +600,17 @@ symbols, and that return a symbol.
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
  [dependent-rest (code:line) (code:line #:rest id+ctc)]
- [pre-condition (code:line) (code:line #:pre (id ...) boolean-expr)]
+ [pre-condition (code:line)
+                (code:line #:pre (id ...) boolean-expr pre-condition)
+                (code:line #:pre/name (id ...) string boolean-expr pre-condition)]
  [dependent-range any
                   id+ctc
                   un+ctc
                   (values id+ctc ...)
                   (values un+ctc ...)]
- [post-condition (code:line) (code:line #:post (id ...) boolean-expr)]
+ [post-condition (code:line)
+                 (code:line #:post (id ...) boolean-expr post-condition)
+                 (code:line #:post/name (id ...) string boolean-expr post-condition)]
  [id+ctc [id contract-expr]
          [id (id ...) contract-expr]]
  [un+ctc [_ contract-expr]
@@ -623,7 +627,8 @@ The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional
 rest-args contract, and an optional pre-condition. The pre-condition is
 introduced with the @racket[#:pre] keyword followed by the list of names on
-which it depends. 
+which it depends. If the @racket[#:pre/name] keyword is used, the string
+supplied is used as part of the error message; similarly with @racket[#:post/name].
 
 The @racket[dep-range] non-terminal specifies the possible result
 contracts. If it is @racket[any], then any value is allowed. Otherwise, the
@@ -642,14 +647,14 @@ second argument (@scheme[y]) demands that it is greater than the first
 argument. The result contract promises a number that is greater than the
 sum of the two arguments. While the dependency specification for @scheme[y] 
 signals that the argument contract depends on the value of the first
-argument, the dependency list for @scheme[result] indicates that the
+argument, the dependency sequence for @scheme[result] indicates that the
 contract depends on both argument values. @margin-note*{In general, an
-empty list is (nearly) equivalent to not adding
-a list at all except that the former is more expensive than the latter.} 
+empty sequence is (nearly) equivalent to not adding
+a sequence at all except that the former is more expensive than the latter.} 
 Since the contract for @racket[x] does not depend on anything else, it does
-not come with any dependency list, not even @scheme[()]. 
+not come with any dependency sequence, not even @scheme[()]. 
 
-The contract expressions are not evaluated in
+The contract expressions are not always evaluated in
 order. First, if there is no dependency for a given contract expression,
 the contract expression is evaluated at the time that the @racket[->i]
 expression is evaluated rather than the time when the function is called or
@@ -664,7 +669,7 @@ argument, with its contract checked, is available for the other).  When
 there is no dependency between two arguments (or the result and an
 argument), then the contract that appears earlier in the source text is
 evaluated first.  
-#;
+
 Finally, if all of the identifier positions of the range
 contract are @racket[_]s (underscores), then the range contract expressions
 are evaluated when the function is called and the underscore is not bound

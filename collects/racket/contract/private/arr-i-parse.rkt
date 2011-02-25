@@ -19,9 +19,9 @@ code does the parsing and validation of the syntax.
 
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
-;; pre  : (or/c pre/post? #f)
+;; pre  : (listof pre/post?)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
-;; post : (or/c pre/post? #f)
+;; post : (listof pre/post?)
 (struct istx (args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
@@ -46,7 +46,8 @@ code does the parsing and validation of the syntax.
 
 ;; vars : (listof identifier?)
 ;; exp  : syntax[expr]
-(struct pre/post (vars exp) #:transparent)
+;; str  : (or/c #f syntax[expr])
+(struct pre/post (vars str exp) #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -105,7 +106,7 @@ code does the parsing and validation of the syntax.
             (raise-syntax-error #f
                                 (if arg? 
                                     "an argument cannot depend on a result"
-                                    "the #:pre condition cannot depend on a result")
+                                    "a #:pre or #:pre/name condition cannot depend on a result")
                                 stx arg-var)))))
     
     ;; no dups in the domains
@@ -146,8 +147,8 @@ code does the parsing and validation of the syntax.
           (not-range-bound a-vars #t))))
     
     ;; pre-condition variables are all bound, but not to a range variable
-    (when (istx-pre istx)
-      (let ([vars (pre/post-vars (istx-pre istx))])
+    (for ([pre (in-list (istx-pre istx))])
+      (let ([vars (pre/post-vars pre)])
         (ensure-bound vars)
         (not-range-bound vars #f)))
 
@@ -158,8 +159,8 @@ code does the parsing and validation of the syntax.
           (ensure-bound (arg/res-vars a-res)))))
     
     ;; post-condition variables are all bound
-    (when (istx-post istx)
-      (let ([vars (pre/post-vars (istx-post istx))])
+    (for ([post (in-list (istx-post istx))])
+      (let ([vars (pre/post-vars post)])
         (ensure-bound vars)))))
 
 (define (ensure-no-cycles stx istx)
@@ -328,6 +329,8 @@ code does the parsing and validation of the syntax.
                     (values '() leftover)]
                    [(dep-range #:post . stuff)
                     (values '() leftover)]
+                   [(dep-range #:post/name . stuff)
+                    (values '() leftover)]
                    [((opts ...) . rest)
                     (values #'(opts ...) #'rest)]
                    [_ (values '() leftover)])]
@@ -358,48 +361,103 @@ code does the parsing and validation of the syntax.
                      "expected something to follow #:rest"
                      stx #'x)]
                    [_ (values #f leftover)])]
-                [(pre-cond leftover)
-                 (syntax-case leftover ()
-                   [(#:pre (id ...) pre-cond . pre-leftover)
-                    (begin
-                      (syntax-case #'pre-leftover ()
-                        [() (raise-syntax-error 
-                             #f
-                             "expected #:pre to be followed by at least three subterms (a sequence of identifiers, the pre-condition and the range contract), but found only two" 
-                             stx
-                             (car (syntax->list leftover)))]
-                        [x (void)])
-                      (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
-                      (values (pre/post (syntax->list #'(id ...)) #'pre-cond) #'pre-leftover))]
-                   [_ (values #f leftover)])]
+                [(pre-conds leftover)
+                 (let loop ([leftover leftover]
+                            [conditions '()])
+                   (syntax-case leftover ()
+                     [(#:pre (id ...) pre-cond . pre-leftover)
+                      (begin
+                        (syntax-case #'pre-leftover ()
+                          [() (raise-syntax-error 
+                               #f
+                               "expected #:pre to be followed by at least three subterms (a sequence of identifiers, the pre-condition, and the range contract), but found only two" 
+                               stx
+                               (car (syntax->list leftover)))]
+                          [x (void)])
+                        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                        (loop #'pre-leftover 
+                              (cons (pre/post (syntax->list #'(id ...)) #f #'pre-cond) conditions)))]
+                     [(#:pre . rest)
+                      (raise-syntax-error #f
+                                          "expected a sequence of identifiers and an expression to follow #:pre"
+                                          stx
+                                          (car (syntax->list leftover)))]
+                     [(#:pre/name (id ...) str pre-cond . pre-leftover)
+                      (begin
+                        (syntax-case #'pre-leftover ()
+                          [() (raise-syntax-error 
+                               #f
+                               "expected #:pre/name to be followed by at least four subterms (a sequence of identifiers, a name, the pre-condition, and the range contract), but found only three" 
+                               stx
+                               (car (syntax->list leftover)))]
+                          [x (void)])
+                        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                        (unless (string? (syntax-e #'str))
+                          (raise-syntax-error 
+                           #f
+                           "expected #:pre/name to have a string after the sequence of variables"
+                           stx
+                           #'str))
+                        (loop #'pre-leftover
+                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'pre-cond) conditions)))]
+                     [(#:pre/name . rest)
+                      (raise-syntax-error #f
+                                          "expected a sequence of identifiers, a string, and an expression to follow #:pre/name"
+                                          stx
+                                          (car (syntax->list leftover)))]
+                     [_ (values (reverse conditions) leftover)]))]
                 [(range leftover) 
-                 (syntax-case leftover ()
-                   [(range . leftover) 
-                    (not (keyword? (syntax-e #'range)))
-                    (values #'range #'leftover)]
-                   [(a . b)
-                    (raise-syntax-error #f "expected a range expression" stx #'a)]
-                   [()
-                    (raise-syntax-error #f "expected a range expression, but found nothing" stx)])]
-                [(post-cond leftover) 
-                 (syntax-case leftover ()
-                   [(#:post (id ...) post-cond . leftover)
-                    (begin
-                      (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
-                      (syntax-case range (any)
-                        [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
-                        [_ (void)])
-                      (values (pre/post (syntax->list #'(id ...)) #'post-cond) #'leftover))]
-                   [(#:post a b . stuff)
-                    (begin
-                      (raise-syntax-error #f "expected a sequence of variables to follow #:post" stx #'a))]
-                   [(#:post a)
-                    (begin
-                      (raise-syntax-error #f "expected a sequence of variables and an expression to follow #:post" stx #'a))]
-                   [_ (values #f leftover)])])
+                 (begin
+                   (syntax-case leftover ()
+                     [(range . leftover) 
+                      (not (keyword? (syntax-e #'range)))
+                      (values #'range #'leftover)]
+                     [(a . b)
+                      (raise-syntax-error #f "expected a range expression" stx #'a)]
+                     [()
+                      (raise-syntax-error #f "expected a range expression, but found nothing" stx)]))]
+                [(post-conds leftover) 
+                 (let loop ([leftover leftover]
+                            [post-conds '()])
+                   (syntax-case leftover ()
+                     [(#:post (id ...) post-cond . leftover)
+                      (begin
+                        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                        (syntax-case range (any)
+                          [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
+                          [_ (void)])
+                        (loop #'leftover
+                              (cons (pre/post (syntax->list #'(id ...)) #f #'post-cond) post-conds)))]
+                     [(#:post a b . stuff)
+                      (begin
+                        (raise-syntax-error #f "expected a sequence of variables to follow #:post" stx #'a))]
+                     [(#:post a)
+                      (begin
+                        (raise-syntax-error #f "expected a sequence of variables and an expression to follow #:post" stx #'a))]
+                     [(#:post/name (id ...) str post-cond . leftover)
+                      (begin
+                        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
+                        (syntax-case range (any)
+                          [any (raise-syntax-error #f "cannot have a #:post with any as the range" stx #'post-cond)]
+                          [_ (void)])
+                        (unless (string? (syntax-e #'str))
+                          (raise-syntax-error #f
+                                              "expected the error message part of a #:post/name declaraction to be a string"
+                                              stx
+                                              #'str))
+                        (loop #'leftover
+                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond) post-conds)))]
+                     [(#:post/name . stuff)
+                      (begin
+                        (raise-syntax-error #f "expected a sequence of variables, a string, and an expression to follow #:post/name" 
+                                            stx
+                                            (car (syntax-e leftover))))]
+                     
+                     [_
+                      (values (reverse post-conds) leftover)]))])
     (syntax-case leftover ()
       [() 
-       (values raw-mandatory-doms raw-optional-doms id/rest-id pre-cond range post-cond)]
+       (values raw-mandatory-doms raw-optional-doms id/rest-id pre-conds range post-conds)]
       [(a . b)
        (raise-syntax-error #f "bad syntax" stx #'a)]
       [_
