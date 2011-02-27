@@ -5673,7 +5673,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 int
 main ()
 {
-getaddrinfo(NULL, NULL, NULL, NULL);
+getaddrinfo(0, 0, 0, 0);
   ;
   return 0;
 }

@@ -793,7 +793,7 @@ AC_MSG_CHECKING([for getaddrinfo])
 AC_TRY_LINK([#include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>],
-	[getaddrinfo(NULL, NULL, NULL, NULL);],
+	[getaddrinfo(0, 0, 0, 0);],
    AC_DEFINE(HAVE_GETADDRINFO,1,[Have getaddrinfo])
    have_getaddrinfo=yes,
    have_getaddrinfo=no)
