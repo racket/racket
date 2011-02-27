@@ -14,6 +14,7 @@
          (all-from-out scribble/manual))
 
 (provide
+  codebox
   compare ;; create a comparison box for two code snippets
   ;; good    ;; label a code fragment 'good' [doesn't work]
   ;; bad     ;; label a code fragment 'bad' [doesn't work]
@@ -29,6 +30,11 @@
 (define (compare stuff1 stuff2)
   (define stuff (list (list stuff1) (list stuff2)))
   (table (sty 2 500) (apply map (compose make-flow list) stuff)))
+
+;; good: a code snippet in a box
+(define (codebox stuff1)
+  (define stuff (list (list stuff1)))
+  (table (sty 1 700) (apply map (compose make-flow list) stuff)))
 
 (define-syntax (column-table stx)
   (syntax-case stx (col)

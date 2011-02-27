@@ -52,6 +52,6 @@ create code for the PLT code base.
 
 @include-section["correct-maintain-speed.scrbl"]
 @include-section["some-performance.scrbl"]
-@include-section["size.scrbl"]
+@include-section["unit.scrbl"]
 @include-section["constructs.scrbl"]
 @include-section["textual.scrbl"]
