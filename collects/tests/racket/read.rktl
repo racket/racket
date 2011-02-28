@@ -1052,6 +1052,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Prefab
 
+(test #t struct? (readstr "#s(v)"))
 (test #t struct? (readstr "#s(v 1)"))
 (test #t struct? (readstr "#s((v 1) 1)"))
 (test #t struct? (readstr "#s((v 1 #()) 1)"))
@@ -1077,6 +1078,8 @@
              (lambda (x)
                (and (exn:fail:read? x)
                     (not (exn:fail:read:eof? x)))))
+
+(test #t struct? (syntax-e (read-syntax 'string (open-input-string "#s(v)"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; read-language

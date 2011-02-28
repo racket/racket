@@ -3929,7 +3929,7 @@ static void struct_type_set_if_immutable(Scheme_Struct_Type *struct_type) {
     size = struct_type->num_islots;
     if (struct_type->name_pos)
       size -= struct_type->parent_types[struct_type->name_pos - 1]->num_islots;
-    if (struct_type->immutables) {
+    if (!size || struct_type->immutables) {
       for (i = 0; i < size; i++) {
         if (!struct_type->immutables[i])
           return;
