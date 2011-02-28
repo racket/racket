@@ -20,6 +20,7 @@
          racket/function
          racket/path
          racket/file
+         racket/place
          racket/port
          racket/cmdline
          racket/promise
@@ -49,6 +50,7 @@
                        racket/function
                        racket/path
                        racket/file
+                       racket/place
                        racket/port
                        racket/cmdline
                        racket/promise

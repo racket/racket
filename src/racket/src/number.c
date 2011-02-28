@@ -100,19 +100,15 @@ static Scheme_Object *flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[]);
-#endif
 
 static Scheme_Object *fxvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fxvector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fxvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_fxvector (int argc, Scheme_Object *argv[]);
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *shared_fxvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_shared_fxvector (int argc, Scheme_Object *argv[]);
-#endif
 
 static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[]);
@@ -604,13 +600,8 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
                                                     1, 2),
 			     env);
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   GLOBAL_PRIM_W_ARITY("shared-flvector", shared_flvector, 0, -1, env);
   GLOBAL_PRIM_W_ARITY("make-shared-flvector", make_shared_flvector, 1, 2, env);
-#else
-  GLOBAL_PRIM_W_ARITY("shared-flvector", flvector, 0, -1, env); 
-  GLOBAL_PRIM_W_ARITY("make-shared-flvector", make_flvector, 1, 2, env);
-#endif
 
   p = scheme_make_immed_prim(flvector_length, "flvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -647,13 +638,8 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
                                                     1, 2),
 			     env);
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   GLOBAL_PRIM_W_ARITY("shared-fxvector", shared_fxvector, 0, -1, env);
   GLOBAL_PRIM_W_ARITY("make-shared-fxvector", make_shared_fxvector, 1, 2, env);
-#else
-  GLOBAL_PRIM_W_ARITY("shared-fxvector", fxvector, 0, -1, env); 
-  GLOBAL_PRIM_W_ARITY("make-shared-fxvector", make_fxvector, 1, 2, env);
-#endif
 
   p = scheme_make_immed_prim(fxvector_length, "fxvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -3347,20 +3333,22 @@ Scheme_Double_Vector *scheme_alloc_flvector(intptr_t size)
   return vec;
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Double_Vector *alloc_shared_flvector(intptr_t size)
 {
   Scheme_Double_Vector *vec;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *original_gc;
 
   original_gc = GC_switch_to_master_gc();
+#endif
   vec = scheme_alloc_flvector(size);
   SHARED_ALLOCATED_SET(vec); 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   GC_switch_back_from_master(original_gc);
+#endif
 
   return vec;
 }
-#endif
 
 static Scheme_Object *do_flvector (const char *name, Scheme_Double_Vector *vec, int argc, Scheme_Object *argv[])
 {
@@ -3382,12 +3370,10 @@ static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
   return do_flvector("flvector", scheme_alloc_flvector(argc), argc, argv);
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *shared_flvector (int argc, Scheme_Object *argv[])
 {
   return do_flvector("shared-flvector", alloc_shared_flvector(argc), argc, argv);
 }
-#endif
 
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[])
 {
@@ -3423,11 +3409,9 @@ static Scheme_Object *do_make_flvector (const char *name, int as_shared, int arg
       scheme_wrong_type(name, "flonum", 1, argc, argv);
   }
   
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   if (as_shared)
     vec = alloc_shared_flvector(size);
   else
-#endif
     vec = scheme_alloc_flvector(size);
 
   if (argc > 1)
@@ -3446,12 +3430,10 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
   return do_make_flvector("make-flvector", 0, argc, argv);
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *make_shared_flvector (int argc, Scheme_Object *argv[])
 {
   return do_make_flvector("make-shared-flvector", 1, argc, argv);
 }
-#endif
 
 Scheme_Object *scheme_flvector_length(Scheme_Object *vec)
 {
@@ -3535,20 +3517,22 @@ Scheme_Vector *scheme_alloc_fxvector(intptr_t size)
   return vec;
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Vector *alloc_shared_fxvector(intptr_t size)
 {
   Scheme_Vector *vec;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *original_gc;
 
   original_gc = GC_switch_to_master_gc();
+#endif
   vec = scheme_alloc_fxvector(size);
   SHARED_ALLOCATED_SET(vec); 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   GC_switch_back_from_master(original_gc);
+#endif
 
   return vec;
 }
-#endif
 
 static Scheme_Object *do_fxvector (const char *name, Scheme_Vector *vec, int argc, Scheme_Object *argv[])
 {
@@ -3570,12 +3554,10 @@ static Scheme_Object *fxvector (int argc, Scheme_Object *argv[])
   return do_fxvector("fxvector", scheme_alloc_fxvector(argc), argc, argv);
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *shared_fxvector (int argc, Scheme_Object *argv[])
 {
   return do_fxvector("shared-fxvector", alloc_shared_fxvector(argc), argc, argv);
 }
-#endif
 
 static Scheme_Object *fxvector_p (int argc, Scheme_Object *argv[])
 {
@@ -3609,11 +3591,9 @@ static Scheme_Object *do_make_fxvector (const char *name, int as_shared, int arg
       scheme_wrong_type(name, "fixnum", 1, argc, argv);
   }
   
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   if (as_shared)
     vec = alloc_shared_fxvector(size);
   else
-#endif
     vec = scheme_alloc_fxvector(size);
 
   {
@@ -3632,12 +3612,10 @@ static Scheme_Object *make_fxvector (int argc, Scheme_Object *argv[])
   return do_make_fxvector("make-fxvector", 0, argc, argv);
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *make_shared_fxvector (int argc, Scheme_Object *argv[])
 {
   return do_make_fxvector("make-shared-fxvector", 1, argc, argv);
 }
-#endif
 
 Scheme_Object *scheme_fxvector_length(Scheme_Object *vec)
 {

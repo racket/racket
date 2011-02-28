@@ -493,21 +493,29 @@
             (eval e)
             (loop)))))))
 
+
 ;; ----------------------------------------
 ;; A module that collects all the built-in modules,
 ;;  so that it's easier to keep them attached in new
 ;;  namespaces.
 
-(module #%builtin '#%kernel
-  (#%require '#%expobs
-             (only '#%foreign)  ; so it's attached, but doesn't depend on any exports
-             (only '#%unsafe)   ; ditto
-             (only '#%flfxnum)  ; ditto
-             '#%paramz
-             '#%network
-             '#%utils
-             (only '#%place)
-             (only '#%futures)))
+(module #%place-struct '#%kernel
+  
+  (define-values (struct:TH-place-channel TH-place-channel TH-place-channel? 
+                  TH-place-channel-ref TH-place-channel-set!)
+    (make-struct-type 'TH-place-channel #f 2 0 #f (list (cons prop:evt (lambda (x) (TH-place-channel-ref x 0))))))
+
+  (define-values (TH-place-channel-in TH-place-channel-out) 
+    (values
+      (lambda (x) (TH-place-channel-ref x 0))
+      (lambda (x) (TH-place-channel-ref x 1))))
+
+ (#%provide 
+    struct:TH-place-channel
+    TH-place-channel 
+    TH-place-channel? 
+    TH-place-channel-in
+    TH-place-channel-out))
 
 ;; ----------------------------------------
 ;; Handlers to install on startup
@@ -515,7 +523,7 @@
 (module #%boot '#%kernel
   (#%require '#%min-stx '#%utils '#%paramz)
 
-  (#%provide boot seal)
+  (#%provide boot seal orig-paramz)
 
   (define-values (dll-suffix)
     (system-type 'so-suffix))
@@ -915,3 +923,22 @@
       (set! orig-paramz
             (reparameterize 
              (continuation-mark-set-first #f parameterization-key))))))
+
+;; ----------------------------------------
+;; A module that collects all the built-in modules,
+;;  so that it's easier to keep them attached in new
+;;  namespaces.
+
+(module #%builtin '#%kernel
+  (#%require '#%expobs
+             (only '#%foreign)  ; so it's attached, but doesn't depend on any exports
+             (only '#%unsafe)   ; ditto
+             (only '#%flfxnum)  ; ditto
+             '#%boot
+             '#%place-struct
+             '#%paramz
+             '#%network
+             '#%utils
+             (only '#%place)
+             (only '#%futures)))
+

@@ -331,6 +331,7 @@ static Scheme_Object *evt_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *args[]);
 
 static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
@@ -632,6 +633,7 @@ void scheme_init_paramz(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("extend-parameterization" , extend_parameterization , 1, -1, newenv);
   GLOBAL_PRIM_W_ARITY("check-for-break"         , check_break_now         , 0,  0, newenv);
   GLOBAL_PRIM_W_ARITY("reparameterize"          , reparameterize          , 1,  1, newenv);
+  GLOBAL_PRIM_W_ARITY("make-custodian-from-main", make_custodian_from_main, 0,  0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -1407,6 +1409,11 @@ static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[])
 			(Scheme_Object *)m);
 
   return (Scheme_Object *)scheme_make_custodian(m);
+}
+
+static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[])
+{
+  return (Scheme_Object *)scheme_make_custodian(NULL);
 }
 
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[])

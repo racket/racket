@@ -1,6 +1,7 @@
 #include "schpriv.h"
 
-/* READ ONLY SHARABLE GLOBALS */
+static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]);
+static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
 #ifdef MZ_USE_PLACES
 
@@ -10,6 +11,7 @@
 #endif
 
 READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
+SHARED_OK static int scheme_places_enabled = 1;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
@@ -27,12 +29,8 @@ static Scheme_Place_Async_Channel *scheme_place_async_channel_create();
 static Scheme_Place_Bi_Channel *scheme_place_bi_channel_create();
 static Scheme_Place_Bi_Channel *scheme_place_bi_peer_channel_create(Scheme_Place_Bi_Channel *orig);
 static int scheme_place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo);
-
-
-
 static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
 static Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
-
 static Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so);
 /* Scheme_Object *scheme_places_deep_copy(Scheme_Object *so); */
 
@@ -50,6 +48,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base);
 # define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 #else
+
+SHARED_OK static int scheme_places_enabled = 0;
 
 # define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, not_implemented, a1, a2, env)
 
@@ -78,14 +78,16 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",          scheme_place,       2, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-sleep",    scheme_place_sleep, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-wait",     scheme_place_wait,  1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place?",         scheme_place_p,     1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel",  scheme_place_channel,  0, 0, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-send",  scheme_place_send,  1, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-recv",  scheme_place_recv,  1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel?",      scheme_place_channel_p,  1, 1, plenv);
+  GLOBAL_PRIM_W_ARITY("place-enabled?",    scheme_place_enabled,   0, 0, plenv);
+  GLOBAL_PRIM_W_ARITY("place-shared?",     scheme_place_shared,    1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place",              scheme_place,           2, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-sleep",        scheme_place_sleep,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-wait",         scheme_place_wait,      1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place?",             scheme_place_p,         1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel",      scheme_place_channel,   0, 0, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-send", scheme_place_send,      1, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-recv", scheme_place_recv,      1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel?",     scheme_place_channel_p, 1, 1, plenv);
 
 #ifdef MZ_USE_PLACES
   REGISTER_SO(scheme_def_place_exit_proc);
@@ -94,6 +96,16 @@ void scheme_init_place(Scheme_Env *env)
   scheme_finish_primitive_module(plenv);
 
 }
+
+static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]) {
+  return (scheme_places_enabled == 0) ? scheme_false : scheme_true;
+}
+
+static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]) {
+  return SHARED_ALLOCATEDP(args[0]) ? scheme_true : scheme_false;
+}
+
+
 
 void scheme_init_places_once() {
 #ifdef MZ_USE_PLACES
