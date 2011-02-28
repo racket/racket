@@ -84,6 +84,8 @@
  (cs-bold "Fett")
  (cs-underline "Unterstrichen")
  (cs-change-color "Farbe ändern")
+ (cs-foreground-color "Vordergrundfarbe")
+ (cs-background-color "Hintergrundfarbe")
  (cs-tack/untack-arrow "Pfeil befestigen/lösen")
  (cs-jump-to-next-bound-occurrence "Zum nächsten gebundenen Vorkommen springen")
  (cs-jump-to-binding "Zu bindendem Vorkommen springen")
@@ -945,7 +947,7 @@
  (enforce-primitives-group-box-label "Initiale Bindungen")
  (enforce-primitives-check-box-label "Änderungen von initialen Bindungen verbieten")
 
- (automatically-compile "compiled/-Verzeichnisse bestücken (für schnelleres laden)")
+ (automatically-compile "\"compiled\"-Verzeichnisse bestücken (für schnelleres laden)")
  (preserve-stacktrace-information "Stack-Trace behalten (einige Optimierungen werden abgeschaltet)")
  (expression-level-stacktrace "Stack-Trace mit Ausdrücken")
  (function-level-stacktrace "Stack-Trace mit Funktionen")
@@ -1059,6 +1061,8 @@
  (test-coverage-clear? "Änderungen im Definitionsfenster machen die Information über Testabdeckung ungültig. Weitermachen?")
  (test-coverage-clear-and-do-not-ask-again "Ja, und nicht nicht wieder fragen")
  (test-coverage-ask? "Frage nach dem Löschen der Testabdeckungs-Information")
+ (test-coverage-on "Durch Tests abgedeckt")
+ (test-coverage-off "Durch Tests nicht abgedeckt")
   
  ;; tracing
  (tracing-enable-tracing "Tracing einschalten")
