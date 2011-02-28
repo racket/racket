@@ -33,9 +33,20 @@
 	   ssl-load-private-key!
 	   ssl-load-verify-root-certificates!
 	   ssl-load-suggested-certificate-authorities!
-	   ssl-set-verify!
 
-	   ports->ssl-ports
+     ssl-set-verify!
+           
+     ;sets the ssl server to try an verify certificates
+     ;it does not require verification though.
+     ssl-try-verify!
+
+     ;call on an ssl port, this will return true if the peer
+     ;presented a valid certificate and was verified
+     ssl-peer-verified?
+     ssl-peer-subject-name
+     ssl-peer-issuer-name
+
+     ports->ssl-ports
 
 	   ssl-listen
 	   ssl-close
@@ -90,6 +101,7 @@
   (typedef _SSL_CTX* _pointer)
   (typedef _SSL* _pointer)
   (typedef _X509_NAME* _pointer)
+  (typedef _X509* _pointer)
 
   (define-ssl SSLv2_client_method (-> _SSL_METHOD*))
   (define-ssl SSLv2_server_method (-> _SSL_METHOD*))
@@ -120,6 +132,7 @@
   (define-ssl SSL_CTX_use_certificate_chain_file (_SSL_CTX* _bytes -> _int))
   (define-ssl SSL_CTX_load_verify_locations (_SSL_CTX* _bytes _pointer -> _int))
   (define-ssl SSL_CTX_set_client_CA_list (_SSL_CTX* _X509_NAME* -> _int))
+  (define-ssl SSL_CTX_set_session_id_context (_SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_CTX_use_RSAPrivateKey_file (_SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_CTX_use_PrivateKey_file (_SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_load_client_CA_file (_bytes -> _X509_NAME*))
@@ -132,6 +145,14 @@
   (define-ssl SSL_read (_SSL* _bytes _int -> _int))
   (define-ssl SSL_write (_SSL* _bytes _int -> _int))
   (define-ssl SSL_shutdown (_SSL* -> _int))
+  (define-ssl SSL_get_verify_result (_SSL* -> _long))
+  (define-ssl SSL_get_peer_certificate (_SSL* -> _X509*))
+  
+  
+  
+  (define-crypto X509_get_subject_name ( _X509* -> _X509_NAME*))
+  (define-crypto X509_get_issuer_name ( _X509* -> _X509_NAME*))
+  (define-crypto X509_NAME_oneline (_X509_NAME* _bytes _int -> _bytes))
 
   (define-ssl SSL_get_error (_SSL* _int -> _int))
 
@@ -140,6 +161,8 @@
 
   (define-ssl SSL_library_init (-> _void))
   (define-ssl SSL_load_error_strings (-> _void))
+  
+  (define X509_V_OK 0)
 
   (define SSL_ERROR_WANT_READ 2)
   (define SSL_ERROR_WANT_WRITE 3)
@@ -390,7 +413,23 @@
 					   SSL_VERIFY_FAIL_IF_NO_PEER_CERT)
 			      SSL_VERIFY_NONE)
 			  #f)))
-
+   
+  (define (ssl-try-verify! ssl-context-or-listener on?)
+    (let ([ctx (get-context/listener 'ssl-set-verify!
+				     ssl-context-or-listener)])
+      
+      ;required by openssl. This is more for when calling i2d_SSL_SESSION/d2i_SSL_SESSION
+      ;for instance if we were saving sessions in a database etc... We aren't using that
+      ;so a generic session name should be fine.
+      (let ([bytes #"racket"])
+        (SSL_CTX_set_session_id_context ctx bytes (bytes-length bytes)))
+      
+      (SSL_CTX_set_verify ctx
+                          (if on?
+                              SSL_VERIFY_PEER
+                              SSL_VERIFY_NONE)
+                          #f)))
+  
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL ports
 
@@ -932,6 +971,28 @@
       (when input?
 	(raise-type-error 'ssl-abandon-port "SSL output port" p))
       (set-mzssl-shutdown-on-close?! mzssl #f)))
+  
+  (define (ssl-peer-verified? p)
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? "SSL port" p)])
+      (and (eq? X509_V_OK (SSL_get_verify_result (mzssl-ssl mzssl)))
+           (SSL_get_peer_certificate (mzssl-ssl mzssl))
+           #t)))
+  
+  (define (ssl-peer-subject-name p)
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "SSL port" p)])
+      (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
+        (if cert
+            (let ([bytes (make-bytes 1024 0)])
+              (X509_NAME_oneline (X509_get_subject_name cert) bytes (bytes-length bytes)))
+            #f))))
+  
+  (define (ssl-peer-issuer-name p)
+    (let-values ([(mzssl input?) (lookup 'ssl-peer-subject-name "SSL port" p)])
+      (let ([cert (SSL_get_peer_certificate (mzssl-ssl mzssl))])
+        (if cert
+            (let ([bytes (make-bytes 1024 0)])
+              (X509_NAME_oneline (X509_get_issuer_name cert) bytes (bytes-length bytes)))
+            #f))))
 
   (define (ssl-port? v)
     (and (hash-ref ssl-ports v #f) #t))
@@ -977,7 +1038,7 @@
 
   (define (ssl-accept/enable-break ssl-listener)
     (do-ssl-accept 'ssl-accept/enable-break tcp-accept/enable-break ssl-listener))
-
+  
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL connect
 
