@@ -29,7 +29,7 @@
 
 (d/c (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results? . c:-> . any/c)
-       (listof (listof identifier?)) (listof tc-results?)
+       (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
       (#:abstract any/c)
       . c:->* . 
