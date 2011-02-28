@@ -1317,11 +1317,11 @@
 ;; TCP
 
 (let ([do-once
-       (lambda (evt?)
+       (lambda (evt? localhost)
 	 (let* (
 	  [l (tcp-listen 0 5 #t)]
     [pn (listen-port l)])
-	   (let-values ([(r1 w1) (tcp-connect "localhost" pn)]
+	   (let-values ([(r1 w1) (tcp-connect localhost pn)]
 			[(r2 w2) (if evt?
 				     (apply values (sync (tcp-accept-evt l)))
 				     (tcp-accept l))])
@@ -1339,8 +1339,10 @@
 	   (when evt?
 	     (test #f sync/timeout 0 (tcp-accept-evt l)))
 	   (tcp-close l)))])
-  (do-once #f)
-  (do-once #t))
+  (do-once #f "localhost")
+  (do-once #t "localhost")
+  (do-once #f "::1")
+  (do-once #t "::1"))
 
 (test #f tcp-port? (current-input-port))
 (test #f tcp-port? (current-output-port))
