@@ -189,9 +189,9 @@ See also @method[list-box% set-column-order].}
 
 
 @defmethod[(get-column-width [column exact-nonnegative-integer?])
-           (values exact-nonnegative-integer?
-                   exact-nonnegative-integer?
-                   exact-nonnegative-integer?)]{
+           (values (integer-in 0 10000)
+                   (integer-in 0 10000)
+                   (integer-in 0 10000))]{
 
 Gets the width of the column identified by @racket[column] (in logical
 positions, as opposed to display positions), which must be between 0
@@ -316,9 +316,9 @@ See also @method[list-box% get-column-order].}
 
 
 @defmethod[(set-column-width [column exact-nonnegative-integer?]
-                             [width exact-nonnegative-integer?]
-                             [min-width exact-nonnegative-integer?]
-                             [max-width exact-nonnegative-integer?])
+                             [width (integer-in 0 10000)]
+                             [min-width (integer-in 0 10000)]
+                             [max-width (integer-in 0 10000)])
             void?]{
 
 Sets the width of the column identified by @racket[column] (in logical

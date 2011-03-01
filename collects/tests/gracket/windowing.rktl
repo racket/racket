@@ -830,7 +830,7 @@
 					(test-control-event e '(list-box))
 					(set! side-effect 'list-box)
 					'oops)
-				      (list style))])
+				      style)])
 	       (label-test l "List Box")
 	       (stv l command (make-object control-event% 'list-box))
 	       (test 'list-box 'list-box-callback side-effect)
@@ -838,15 +838,42 @@
 	       (stv l set-data 0 'a)
 	       (stv l set-data 2 'c-&-d)
 	       
-	       (test-list-control l #f (and (memq style '(multiple extended)) #t))
+	       (test-list-control l #f (and (or (memq 'multiple style) 
+                                                (memq 'extended style))
+                                            #t))
 	       
 	       (containee-window-tests l #t #t parent frame 2)
 
+               (st '("Column") l get-column-labels)
+               (st '(0) l get-column-order)
+               (let ([check-col-width
+                      (lambda (col)
+                        (let-values ([(val lo hi) (send l get-column-width col)])
+                          (test #t 'col-width (<= 0 lo val hi 10000))))])
+                 (check-col-width 0)
+
+                 (when (memq 'variable-columns style)
+                   (stv l append-column "Second")
+                   (st '("Column" "Second") l get-column-labels)
+                   (st '(0 1) l get-column-order)
+                   (stv l set-column-order '(1 0))
+                   (st '(1 0) l get-column-order)
+                   (stv l set-string 0 "A2" 1)
+                   (check-col-width 1)
+                   (stv l append-column "Three")
+                   (check-col-width 2)
+                   (st '("Column" "Second" "Three") l get-column-labels)
+                   (st '(1 0 2) l get-column-order)
+                   (stv l delete-column 1)
+                   (st '("Column" "Three") l get-column-labels)
+                   (st '(0 1) l get-column-order)))
+               
 	       (stv parent delete-child l)))])
 
-      (mk-list 'single)
-      (mk-list 'multiple)
-      (mk-list 'extended))
+      (mk-list '(single))
+      (mk-list '(multiple))
+      (mk-list '(extended))
+      (mk-list '(single variable-columns)))
 
     'done-lists)
   (let ([l (make-object list-box% "List Two"

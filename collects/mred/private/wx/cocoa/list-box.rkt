@@ -143,7 +143,7 @@
       (values
        (int (tell #:type _CGFloat col width))
        (int (tell #:type _CGFloat col minWidth))
-       (int (tell #:type _CGFloat col maxWidth)))))
+       (min 10000 (int (tell #:type _CGFloat col maxWidth))))))
 
   (define/override (get-cocoa-content) content-cocoa)
   (define/override (get-cocoa-control) content-cocoa)
@@ -274,7 +274,8 @@
        (set! num-columns (sub1 num-columns))
        (tellv content-cocoa removeTableColumn: c)
        (set! column-cocoas (drop-nth column-cocoas i))
-       (set! itemss (drop-nth itemss i))))
+       (set! itemss (drop-nth itemss i))
+       (reset-column-order)))
     (reset))
 
   (define callback cb)

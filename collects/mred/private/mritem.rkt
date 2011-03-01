@@ -630,8 +630,8 @@
                                                      [(zero? i) (cons str (cdr l))]
                                                      [else (cons (car l) (loop (sub1 i) (cdr l)))])))
                               (send wx set-column-label i str)))]
-	[set-column-size (lambda (i w min-size max-size) 
-                            (let ([who '(method list-box% set-column-size)])
+	[set-column-width (lambda (i w min-size max-size) 
+                            (let ([who '(method list-box% set-column-width)])
                               (check-column-number who i)
                               (check-dimension who w)
                               (check-dimension who min-size)
@@ -649,8 +649,8 @@
                                                        w)
                                                       max-size)))
                             (send wx set-column-size i w min-size max-size))]
-        [get-column-size (lambda (i)
-                           (check-column-number '(method list-box% get-column-size) i)
+        [get-column-width (lambda (i)
+                           (check-column-number '(method list-box% get-column-width) i)
                            (send wx get-column-size i))]
         [delete-column (lambda (i)
                          (let ([who '(method list-box% delete-column)])

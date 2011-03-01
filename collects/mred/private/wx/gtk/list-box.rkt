@@ -62,9 +62,9 @@
 (define-gtk gtk_tree_view_column_get_width (_fun _GtkTreeViewColumn -> _int))
 (define-gtk gtk_tree_view_column_get_min_width (_fun _GtkTreeViewColumn -> _int))
 (define-gtk gtk_tree_view_column_get_max_width (_fun _GtkTreeViewColumn -> _int))
-(define-gtk gtk_tree_view_column_set_fixed_width (_fun _GtkTreeViewColumn _int -> _int))
-(define-gtk gtk_tree_view_column_set_min_width (_fun _GtkTreeViewColumn _int -> _int))
-(define-gtk gtk_tree_view_column_set_max_width (_fun _GtkTreeViewColumn _int -> _int))
+(define-gtk gtk_tree_view_column_set_fixed_width (_fun _GtkTreeViewColumn _int -> _void))
+(define-gtk gtk_tree_view_column_set_min_width (_fun _GtkTreeViewColumn _int -> _void))
+(define-gtk gtk_tree_view_column_set_max_width (_fun _GtkTreeViewColumn _int -> _void))
 
 (define _GList (_cpointer 'List))
 (define-glib g_list_foreach (_fun _GList (_fun _pointer -> _void) _pointer -> _void))
