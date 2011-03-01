@@ -34,7 +34,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
      (cond
        [(or (eq? type 'comment) (eq? type 'white-space))
         (define lexer-end (file-position lexer-port))
-        (read-string lexer-end in) ;; sync ports
+        ;; sync ports
+        (for ([i (in-range 0 lexer-end)])
+          (read-char-or-special in))
         (values lexeme type data new-token-start new-token-end 0 'before-lang-line)]
        [else
         ;; look for #lang:
@@ -44,7 +46,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
         (cond
           [(procedure? get-info)
            (define end-pos (file-position p))
-           (read-string end-pos in) ;; sync ports
+           ;; sync ports
+           (for ([i (in-range 0 end-pos)])
+             (read-char-or-special in))
            ;; Produce language as first token:
            (values
             "#lang"
@@ -60,7 +64,9 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
                            v)))
                 scheme-lexer))]
           [else
-           (read-string (file-position lexer-port) in) ;; sync ports
+           ;; sync ports
+           (for ([i (in-range 0 (file-position lexer-port))])
+             (read-char-or-special in))
            (if (and (eq? type 'other)
                     (string? lexeme)
                     ;; the read-language docs say that this is all it takes to commit to a #lang
