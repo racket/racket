@@ -320,6 +320,12 @@
           ;; CG-Top
           [(_ (Univ:)) empty]
 
+          ;; they're subtypes. easy.
+          [(a b) (=> nevermind)
+           (if (subtype a b)
+               empty
+               (nevermind))]
+
           ;; refinements are erased to their bound
           [((Refinement: S _ _) T)
            (cg S T)]
@@ -525,11 +531,8 @@
                              (cgen/filter-set V X Y f-s f-t)
                              (cgen/object V X Y o-s o-t)))]
           [(_ _)
-           (cond 
-             ;; subtypes are easy - should this go earlier?
-             [(subtype S T) empty]
-             ;; or, nothing worked, and we fail
-             [else (fail! S T)])]))))
+           ;; nothing worked, and we fail
+           (fail! S T)]))))
 
 ;; C : cset? - set of constraints found by the inference engine
 ;; Y : (listof symbol?) - index variables that must have entries
