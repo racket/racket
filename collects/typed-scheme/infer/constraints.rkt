@@ -6,7 +6,9 @@
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash
          "signatures.rkt" "constraint-structs.rkt"
-         racket/match)
+         unstable/debug
+         racket/match
+         racket/list)
 
 (import restrict^ dmap^)
 (export constraints^)
@@ -67,8 +69,8 @@
    [((struct cset (maps1)) (struct cset (maps2)))
     (let ([maps (filter values
                         (for*/list
-                         ([(map1 dmap1) (in-pairs maps1)]
-                          [(map2 dmap2) (in-pairs maps2)])
+                         ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
+                          [(map2 dmap2) (in-pairs (remove-duplicates maps2))])
                          (with-handlers ([exn:infer? (lambda (_) #f)])
                            (cons 
                             (hash-union map1 map2 #:combine c-meet)
