@@ -104,10 +104,14 @@
 % The \refpara command corresponds to `margin-note'. The
 % refcolumn and refcontent environments also wrap the note,
 % because they simplify the CSS side.
-\newcommand{\refpara}[1]{\marginpar{\raggedright \footnotesize #1}}
+\newcommand{\refpara}[1]{\normalmarginpar\marginpar{\raggedright \footnotesize #1}}
 \newcommand{\refelem}[1]{\refpara{#1}}
 \newenvironment{refcolumn}{}{}
 \newenvironment{refcontent}{}{}
+
+\newcommand{\refparaleft}[1]{\reversemarginpar\marginpar{\raggedright \footnotesize #1}}
+\newcommand{\refelemleft}[1]{\refparaleft{#1}}
+\newenvironment{refcolumnleft}{\begin{refcolumn}}{\end{refcolumn}}
 
 % Macros used by `title' and `author':
 \newcommand{\titleAndVersionAndAuthors}[3]{\title{#1\\{\normalsize Version #2}}\author{#3}\maketitle}

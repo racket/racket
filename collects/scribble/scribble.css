@@ -8,7 +8,7 @@
    see if any font is set. */
 
 /* Monospace: */
-.maincolumn, .refpara, .tocset, .stt, .hspace {
+.maincolumn, .refpara, .refelem, .tocset, .stt, .hspace, .refparaleft, .refelemleft {
   font-family: monospace;
 }
 
@@ -161,7 +161,7 @@ table td {
   margin: 0em -13em 0em 0em;
 }
 
-.refpara {
+.refpara, .refparaleft {
   top: -1em;
 }
 
@@ -183,6 +183,26 @@ table td {
   margin-top: 0;
   margin-bottom: 0;
 }
+
+.refparaleft {
+  position: relative;
+  float: left;
+  right: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em 0em 0em -13em;
+}
+
+.refcolumnleft, .refelemleft {
+  background-color: #F5F5DC;
+  display: block;
+  position: relative;
+  width: 13em;
+  font-size: 85%;
+  border: 0.5em solid #F5F5DC;
+  margin: 0 0 0 0;
+}
+
 
 /* ---------------------------------------- */
 /* Table of contents, inline */

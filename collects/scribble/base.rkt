@@ -510,8 +510,8 @@
                  #:rest (listof pre-content?)
                  element?)]
  [url (-> string? element?)]
- [margin-note (->* () () #:rest (listof pre-flow?) block?)]
- [margin-note* (->* () () #:rest (listof pre-content?) element?)]
+ [margin-note (->* () (#:left? any/c) #:rest (listof pre-flow?) block?)]
+ [margin-note* (->* () (#:left? any/c) #:rest (listof pre-content?) element?)]
  [centered (->* () () #:rest (listof pre-flow?) block?)]
  [verbatim (->* (string?) (#:indent exact-nonnegative-integer?) #:rest (listof string?) block?)])
 
@@ -534,22 +534,24 @@
 (define (url str)
   (hyperlink str (make-element 'url str)))
 
-(define (margin-note . c)
+(define (margin-note #:left? [left? #f] . c)
   (make-nested-flow
-   (make-style "refpara" '(command never-indents))
+   (make-style (if left? "refparaleft" "refpara")
+               '(command never-indents))
    (list
     (make-nested-flow
-     (make-style "refcolumn" null)
+     (make-style (if left? "refcolumnleft" "refcolumn")
+                 null)
      (list
       (make-nested-flow
        (make-style "refcontent" null)
        (decode-flow c)))))))
 
-(define (margin-note* . c)
+(define (margin-note* #:left? [left? #f] . c)
   (make-element
-   (make-style "refelem" null)
+   (make-style (if left? "refelemleft" "refelem") null)
    (make-element
-    (make-style "refcolumn" null)
+    (make-style (if left? "refcolumnleft" "refcolumn") null)
     (make-element
      (make-style "refcontent" null)
      (decode-content c)))))

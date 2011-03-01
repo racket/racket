@@ -168,13 +168,21 @@ address-harvesting robots.}
 Produces a @tech{nested flow} whose content is centered.}
 
 
-@defproc[(margin-note [pre-flow pre-flow?] ...) block?]{
+@defproc[(margin-note [pre-flow pre-flow?] ...
+                      [#:left? left? any/c #f])
+         block?]{
 
 Produces a @tech{nested flow} that is typeset in the margin, instead
-of inlined.}
+of inlined.
+
+If @racket[left?] is true, then the note is shown on the opposite as
+it would normally be shown (which is the left-hand side for HTML
+output). Beware of colliding with output for a table of contents.}
 
 
-@defproc[(margin-note* [pre-content pre-content?] ...) element?]{
+@defproc[(margin-note* [pre-content pre-content?] ...
+                       [#:left? left? any/c #f]) 
+         element?]{
 
 Produces an @racket[element] that is typeset in the margin, instead of
 inlined. Unlike @racket[margin-note], @racket[margin-note*] can be
