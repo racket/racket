@@ -1,5 +1,8 @@
 #lang typed-scheme
 
+;; Changes to the numeric tower cause this test to generate a ridiculous
+;; number of inference constraints. Inference takes 5+ minutes.
+
 (apply (plambda: (a ...) [ys : (a ... a -> Number) *]
          (lambda: [zs : a ... a]
             (map (lambda: ([y : (a ... a -> Number)])

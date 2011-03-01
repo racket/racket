@@ -640,12 +640,21 @@
 ;; Y : the set of index variables to be constrained
 ;; S : a list of types to be the subtypes of T
 ;; T : a list of types
+;; expected-cset : a cset representing the expected type, to meet early and
+;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
-(d/c (cgen/list V X Y S T)
-  ((listof symbol?) (listof symbol?) (listof symbol?) (listof Type?) (listof Type?) . -> . cset?)
+(d/c (cgen/list V X Y S T
+                #:expected-cset [expected-cset (empty-cset '() '())])
+  (((listof symbol?) (listof symbol?) (listof symbol?) (listof Type?) (listof Type?))
+   (#:expected-cset cset?) . ->* . cset?)
   (unless (= (length S) (length T))
     (fail! S T))
-  (cset-meet* (for/list ([s S] [t T]) (cgen V X Y s t))))
+  (cset-meet*
+   (for/list ([s S] [t T])
+             ;; We meet early to prune the csets to a reasonable size.
+             ;; This weakens the inference a bit, but sometimes avoids
+             ;; constraint explosion.
+             (cset-meet (cgen V X Y s t) expected-cset))))
 
 ;; X : variables to infer
 ;; Y : indices to infer
@@ -658,10 +667,11 @@
 ;; just return a boolean result
 (define (infer X Y S T R [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
-    (let* ([cs (cgen/list null X Y S T)]
-           [cs* (if expected 
-                    (cset-meet cs (cgen null X Y R expected))
-                    cs)])
+    (let* ([expected-cset (if expected
+                              (cgen null X Y R expected)
+                              (empty-cset '() '()))]
+           [cs  (cgen/list null X Y S T #:expected-cset expected-cset)]
+           [cs* (cset-meet cs expected-cset)])
           (if R (subst-gen cs* Y R) #t))))
 
 ;; like infer, but T-var is the vararg type:
@@ -676,16 +686,19 @@
   (with-handlers ([exn:infer? (lambda _ #f)])
     (let* ([short-S (take S (length T))]
            [rest-S (drop S (length T))]
-           [cs-short (cgen/list null X (list dotted-var) short-S T)]
+           [expected-cset (if expected
+                              (cgen null X (list dotted-var) R expected)
+                              (empty-cset '() '()))]
+           [cs-short (cgen/list null X (list dotted-var) short-S T
+                                #:expected-cset expected-cset)]
            [new-vars (var-store-take dotted-var T-dotted (length rest-S))]
            [new-Ts (for/list ([v new-vars])
                      (substitute (make-F v) dotted-var 
                                  (substitute-dots (map make-F new-vars) #f dotted-var T-dotted)))]
-           [cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts)]
+           [cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts
+                                 #:expected-cset expected-cset)]
            [cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars)]
            [cs (cset-meet cs-short cs-dotted*)])
-      (if (not expected)
-          (subst-gen cs (list dotted-var) R)
-          (subst-gen (cset-meet cs (cgen null X (list dotted-var) R expected)) (list dotted-var) R)))))
+      (subst-gen (cset-meet cs expected-cset) (list dotted-var) R))))
 
 ;(trace cgen)
