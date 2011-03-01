@@ -107,6 +107,32 @@
               [(dcon-exact null rest) rest]
               [_ (int-err "did not get a rest-only dcon when moving to the dmap")])))))
 
+
+;; Maps dotted vars (combined with dotted types, to ensure global uniqueness)
+;; to "fresh" symbols.
+;; That way, we can share the same "fresh" variables between the elements of a
+;; cset if they're talking about the same dotted variable.
+;; This makes it possible to reduce the size of the csets, since we can detect
+;; identical elements that would otherwise differ only by these fresh vars.
+;; The domain of this map is pairs (var . dotted-type).
+;; The range is this map is a list of symbols generated on demand, as we need
+;; more dots.
+(define dotted-var-store (make-hash))
+;; Take (generate as needed) n symbols that correspond to variable var used in
+;; the context of type t.
+(define (var-store-take var t n)
+  (let* ([key (cons var t)]
+         [res (hash-ref dotted-var-store key '())])
+    (if (>= (length res) n)
+        ;; there are enough symbols already, take n
+        (take res n)
+        ;; we need to generate more
+        (let* ([new (build-list (- n (length res))
+                                (lambda (x) (gensym var)))]
+               [all (append res new)])
+          (hash-set! dotted-var-store key all)
+          all))))
+
 (define (cgen/filter V X Y s t)
   (match* (s t)
     [(e e) (empty-cset X Y)]
@@ -164,8 +190,7 @@
        (fail! s-arr t-arr))
      (unless (<= (length ss) (length ts))
        (fail! ss ts))
-     (let* ([vars      (for/list ([n (in-range (- (length ts) (length ss)))])
-                         (gensym dbound))]
+     (let* ([vars      (var-store-take dbound dty (- (length ts) (length ss)))]
             [new-tys   (for/list ([var vars])
                          (substitute (make-F var) dbound dty))]
             [new-s-arr (make-arr (append ss new-tys) s #f #f null)]
@@ -178,8 +203,7 @@
        (fail! s-arr t-arr))
      (unless (<= (length ts) (length ss))
        (fail! ss ts))
-     (let* ([vars     (for/list ([n (in-range (- (length ss) (length ts)))])
-                        (gensym dbound))]
+     (let* ([vars     (var-store-take dbound dty (- (length ss) (length ts)))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
             [new-t-arr (make-arr (append ts new-tys) t #f #f null)]
@@ -230,8 +254,7 @@
                 [ret-mapping (cg s t)])
            (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
          ;; the hard case
-         (let* ([vars     (for/list ([n (in-range (- (length ss) (length ts)))])
-                            (gensym dbound))]
+         (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
                 [new-tys  (for/list ([var vars])
                             (substitute (make-F var) dbound t-dty))]
                 [new-t-arr (make-arr (append ts new-tys) t #f (cons t-dty dbound) null)]
@@ -244,8 +267,7 @@
        (fail! s-arr t-arr))
      (cond [(< (length ss) (length ts))
             ;; the hard case
-            (let* ([vars     (for/list ([n (in-range (- (length ts) (length ss)))])
-                               (gensym dbound))]
+            (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
                    [new-tys  (for/list ([var vars])
                                (substitute (make-F var) dbound s-dty))]
                    [new-s-arr (make-arr (append ss new-tys) s #f (cons s-dty dbound) null)]
@@ -399,8 +421,7 @@
           [((ListDots: s-dty dbound) (List: ts))
            (unless (memq dbound Y) (fail! S T))
            
-           (let* ([vars     (for/list ([n (in-range (length ts))])
-                              (gensym dbound))]
+           (let* ([vars     (var-store-take dbound s-dty (length ts))]
                   ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
                   [new-tys  (for/list ([var vars])
                               (substitute (make-F var) dbound s-dty))]
@@ -434,8 +455,7 @@
            (unless (>= (length ts) (length ss)) (fail! ss ts))
            (unless (memq dbound Y) (fail! S T))
            
-           (let* ([vars     (for/list ([n (in-range (- (length ts) (length ss)))])
-                              (gensym dbound))]
+           (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
                   ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
                   [new-tys  (for/list ([var vars])
                               (substitute (make-F var) dbound s-dty))]
@@ -654,7 +674,7 @@
     (let* ([short-S (take S (length T))]
            [rest-S (drop S (length T))]
            [cs-short (cgen/list null X (list dotted-var) short-S T)]
-           [new-vars (for/list ([i (in-range (length rest-S))]) (gensym dotted-var))]
+           [new-vars (var-store-take dotted-var T-dotted (length rest-S))]
            [new-Ts (for/list ([v new-vars])
                      (substitute (make-F v) dotted-var 
                                  (substitute-dots (map make-F new-vars) #f dotted-var T-dotted)))]
