@@ -792,7 +792,7 @@
                             [any? [ateol? #f]]
                             [any? [scroll? #t]]
                             [(symbol-in default x local) [seltype 'default]])
-    (do-set-position #f 'none start end ateol? scroll? seltype))
+    (do-set-position #f 'none start end ateol? scroll? seltype #f))
 
   (def/public (set-position-bias-scroll [symbol? bias]
                                         [exact-nonnegative-integer? start]
@@ -800,13 +800,13 @@
                                         [any? [ateol? #f]]
                                         [any? [scroll? #t]]
                                         [(symbol-in default x local) [seltype 'default]])
-    (do-set-position #f bias start end ateol? scroll? seltype))
+    (do-set-position #f bias start end ateol? scroll? seltype #f))
 
-  (define/private (do-set-position setflash? bias start end ateol? scroll? seltype)
+  (define/private (do-set-position setflash? bias start end ateol? scroll? seltype dont-end-cursor?)
     (unless flow-locked?
       (when (and (not setflash?)
                  (or (not flash?) (not flashautoreset?) (not flashdirectoff?)))
-        (end-streaks '(delayed)))
+        (end-streaks (if dont-end-cursor? '(cursor delayed) '(delayed))))
       
       (unless (or (start . < . 0) 
                   (and (number? end)
@@ -981,6 +981,28 @@
 
   ;; ----------------------------------------
 
+  (def/public (extend-position [exact-nonnegative-integer? dest])
+    (cond
+      [extend-streak?
+       (values extendstartpos extendendpos)]
+      [anchor-streak?
+       (set! extend-streak? #t)
+       (values extendstartpos extendendpos)]
+      [else
+       (set! extend-streak? #t)
+       (set! extendstartpos startpos)
+       (set! extendendpos endpos)])
+
+    (define-values (start end bias)
+      (cond
+        [(dest . < . extendstartpos)
+         (values dest extendendpos 'start)]
+        [(dest . > . extendendpos)
+         (values extendstartpos dest 'end)]
+        [else
+         (values extendstartpos extendendpos 'none)]))
+    (do-set-position #f bias start end #f #t 'default #t))
+  
   (def/public (move-position [(make-alts symbol? char?) code]
                              [any? [extend-selection? #f]]
                              [(symbol-in simple word page line) [kind 'simple]])
@@ -1236,6 +1258,9 @@
         (set! extendendpos endpos)
         (set! extendstartpos startpos))))
 
+  (def/public (get-extend-start-position) (if (or extend-streak? anchor-streak?) extendstartpos startpos))
+  (def/public (get-extend-end-position) (if (or extend-streak? anchor-streak?) extendendpos endpos))
+  
   (def/public (get-anchor)
     anchor-streak?)
 
@@ -2449,7 +2474,7 @@
                         [any? [ateol? #f]]
                         [any? [scroll? #t]]
                         [exact-nonnegative-integer? [timeout 500]])
-    (do-set-position #t 'none start end ateol? scroll? 'default)
+    (do-set-position #t 'none start end ateol? scroll? 'default #f)
     (when (timeout . > . 0)
       (set! flashautoreset? #t)
       (when flash-timer
@@ -2462,7 +2487,7 @@
     (when flash?
       (set! flashautoreset? #t)
       (set! flashdirectoff? #t)
-      (do-set-position #f 'none startpos endpos posateol? flashscroll? 'default)))
+      (do-set-position #f 'none startpos endpos posateol? flashscroll? 'default #f)))
 
   ;; ----------------------------------------
 

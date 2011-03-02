@@ -539,7 +539,7 @@
   (send t end-edit-sequence)
   (send t undo)
   (st "" t get-text))
-
+  
 ;; ----------------------------------------
 
 (report-errs)

@@ -15,42 +15,42 @@
          "test-editor-admin.ss"
          mred/private/wxme/stream
          mred/private/wxme/keymap
-         mred/private/wxme/editor-snip)
+         mred/private/wxme/editor-snip
+         (for-syntax racket/base))
 
 (define wrong-cnt 0)
 (define test-cnt 0)
 
-(define (expect v v2)
+(define-syntax (expect stx)
+  (syntax-case stx ()
+    [(_ a b)
+     #`(expect/proc #,(syntax-line stx) a b)]))
+
+(define (expect/proc line v v2)
   (set! test-cnt (add1 test-cnt))
   (unless (equal? v v2)
     (set! wrong-cnt (add1 wrong-cnt))
-    (printf "EXPECTED ~s:\n" v2))
-  v)
-
-(define (show v)
-  (print v)
-  (newline))
-
-(define (expect* v v2)
-  (if (equal? v v2)
-      (set! test-cnt (add1 test-cnt))
-      (show (expect v v2))))
+    (fprintf (current-error-port)
+             "FAILED: line ~a\nexpected: ~s\n     got: ~s\n" 
+             line
+             v2
+             v)))
 
 (define (done)
   (printf "\n~a tests\n" test-cnt)
   (if (zero? wrong-cnt)
       (printf "all passed\n")
-      (printf "~s FAILED\n" wrong-cnt)))
+      (fprintf (current-error-port) "~s FAILED\n" wrong-cnt)))
 
 ;; ----------------------------------------
 ;; String snips and lines
 
 (define s (make-object string-snip% "helko"))
 (send s insert "cat " 4 2)
-(send s get-text 0 (send s get-count))
+(void (send s get-text 0 (send s get-count)))
 (send s set-flags (cons 'invisible (send s get-flags)))
-(send s get-flags)
-(send (send (get-the-snip-class-list) find "wxtext") get-classname)
+(void (send s get-flags))
+(void (send (send (get-the-snip-class-list) find "wxtext") get-classname))
 
 (define root-box (box mline-NIL))
 (define m20 (mline-insert #f root-box #t))
@@ -144,8 +144,8 @@
               (mline-delete i root-box)
               (mline-check-consistent (unbox root-box)))
             (cdr added))
-  (show (expect (mline-next (car added)) #f))
-  (show (expect (mline-prev (car added)) #f))
+  (expect (mline-next (car added)) #f)
+  (expect (mline-prev (car added)) #f)
   (expect (unbox root-box)
           (car added)))
 
@@ -158,7 +158,7 @@
 (expect (send d1 equal? d2) #t)
 (send d1 set-underlined-on #t)
 (expect (send d1 equal? d2) #f)
-(send d2 collapse d1)
+(void (send d2 collapse d1))
 (expect (send d2 get-underlined-on) #t)
 (send d2 set-underlined-on #f)
 (send d1 copy d2)
@@ -411,26 +411,26 @@
                [pos 0])
       (unless (null? s+c)
         (let ([p (send t get-snip-position (caar s+c))])
-          (expect* p pos)
+          (expect p pos)
           (let ([p2 (box 0)])
             (when graphics?
               (if (send t get-snip-position-and-location (caar s+c) p2 x y)
-                  (expect* (unbox p2) pos)
-                  (show (expect #f #t))))
+                  (expect (unbox p2) pos)
+                  (expect #f #t)))
             (loop (cdr s+c) (+ pos (cdar s+c))))))))
 
   (for-each 
    (lambda (before)
      (let loop ([pos 0][s+c snips+counts][snip-pos 0])
        (if (null? s+c)
-           (show (expect pos (add1 (send t last-position))))
+           (expect pos (add1 (send t last-position)))
            (let* ([s-pos (box 0)]
                   [s (send t find-snip pos before s-pos)])
              (let ([es (if (and (= pos 0) (eq? before 'before-or-none))
                            #f
                            (caar s+c))])
-               (expect* s es)
-               (expect* (unbox s-pos) snip-pos)
+               (expect s es)
+               (expect (unbox s-pos) snip-pos)
                (let ([next? (= pos (+ snip-pos (cdar s+c)))])
                  (loop (add1 pos)
                        (if next?
@@ -453,10 +453,10 @@
                           (car prev))
                       (caar s+c))]
               [ep (if end? (if es prev-snip-pos 0) snip-pos)])
-         (expect* s es)
-         (expect* (unbox s-pos) ep)
+         (expect s es)
+         (expect (unbox s-pos) ep)
          (if end?
-             (show (expect pos (send t last-position)))
+             (expect pos (send t last-position))
              (let ([next? (= (add1 pos) (+ snip-pos (cdar s+c)))])
                (loop (add1 pos)
                      (if next?
@@ -478,30 +478,29 @@
 (send t set-admin (new test-editor-admin%))
 
 (define (check-simple-locations pl pt pr pb)
-  (list
-   (expect (let ([x (box 0.0)] [y (box 0.0)])
-             (list (begin
-                     (send t position-location 1 x y)
-                     (list (unbox x) (unbox y)))
-                   (begin
-                     (send t position-location 1 x y #f)
-                     (list (unbox x) (unbox y)))))
-           (list (list (+ pl 10.0) (+ pt 0.0))
-                 (list (+ pl 10.0) (+ pt 10.0))))
-   (expect (let ([x (box 0.0)] [y (box 0.0)])
-             (list (begin
-                     (send t position-location 14 x y)
-                     (list (unbox x) (unbox y)))
-                   (begin
-                     (send t position-location 14 x y #f)
-                     (list (unbox x) (unbox y)))))
-           (list (list (+ pl 20.0) (+ pt 11.0))
-                 (list (+ pl 20.0) (+ pt 21.0))))
-   (expect (let ([w (box 0.0)] [h (box 0.0)])
-             (send t get-extent w h)
-             (list (unbox w) (unbox h)))
-           (list (+ 192.0 pl pr)
-                 (+ 22.0 pt pb)))))
+  (expect (let ([x (box 0.0)] [y (box 0.0)])
+            (list (begin
+                    (send t position-location 1 x y)
+                    (list (unbox x) (unbox y)))
+                  (begin
+                    (send t position-location 1 x y #f)
+                    (list (unbox x) (unbox y)))))
+          (list (list (+ pl 10.0) (+ pt 0.0))
+                (list (+ pl 10.0) (+ pt 10.0))))
+  (expect (let ([x (box 0.0)] [y (box 0.0)])
+            (list (begin
+                    (send t position-location 14 x y)
+                    (list (unbox x) (unbox y)))
+                  (begin
+                    (send t position-location 14 x y #f)
+                    (list (unbox x) (unbox y)))))
+          (list (list (+ pl 20.0) (+ pt 11.0))
+                (list (+ pl 20.0) (+ pt 21.0))))
+  (expect (let ([w (box 0.0)] [h (box 0.0)])
+            (send t get-extent w h)
+            (list (unbox w) (unbox h)))
+          (list (+ 192.0 pl pr)
+                (+ 22.0 pt pb))))
 (check-simple-locations 0 0 0 0)
 
 (send t set-padding 5.0 8.0 11.0 13.0)
@@ -562,20 +561,20 @@
 (send t set-max-width 71.0)
 
 (define (check-ge&h-flow)
-  (expect* (send t last-line) 6)
-  (expect* (send t line-start-position 0) 0)
-  (expect* (send t line-start-position 1) 3)
-  (expect* (send t line-start-position 2) 7)
-  (expect* (send t line-start-position 3) 12)
-  (expect* (send t line-start-position 4) 18)
-  (expect* (send t line-start-position 5) 23)
-  (expect* (send t line-start-position 6) 27)
-  (expect* (send t last-paragraph) 1)
-  (expect* (send t paragraph-start-position 0) 0)
-  (expect* (send t paragraph-end-position 0) 11)
-  (expect* (send t paragraph-start-position 1) 12)
-  (expect* (send t paragraph-end-position 1) 31)
-  (expect* (send t paragraph-start-position 2) 31)
+  (expect (send t last-line) 6)
+  (expect (send t line-start-position 0) 0)
+  (expect (send t line-start-position 1) 3)
+  (expect (send t line-start-position 2) 7)
+  (expect (send t line-start-position 3) 12)
+  (expect (send t line-start-position 4) 18)
+  (expect (send t line-start-position 5) 23)
+  (expect (send t line-start-position 6) 27)
+  (expect (send t last-paragraph) 1)
+  (expect (send t paragraph-start-position 0) 0)
+  (expect (send t paragraph-end-position 0) 11)
+  (expect (send t paragraph-start-position 1) 12)
+  (expect (send t paragraph-end-position 1) 31)
+  (expect (send t paragraph-start-position 2) 31)
   (void))
 (check-ge&h-flow)
 
@@ -609,8 +608,8 @@
                     (list len)))])
     (for/fold ([pos 0]) ([i (in-range (add1 (send t last-line)))]
                          [len (in-list lens)])
-      (expect* (send t line-start-position i #f) pos)
-      (expect* (send t line-end-position i #f) (+ pos len))
+      (expect (send t line-start-position i #f) pos)
+      (expect (send t line-end-position i #f) (+ pos len))
       (+ pos len))))
 
 (for-each
@@ -656,6 +655,7 @@
 (send t delete 0 3)
 (send t delete (- (send t last-position) 4) (send t last-position))
 (send t end-edit-sequence)
+
 (expect (send t get-text) "you like\ngreen eggs and ")
 (send t delete 0 4)
 (expect (send t get-text) "like\ngreen eggs and ")
@@ -668,15 +668,15 @@
 
 (define fbo (make-object editor-stream-out-bytes-base%))
 (expect (send fbo tell) 0)
-(send fbo write-bytes #"abc")
+(expect (send fbo write-bytes #"abc") (void))
 (expect (send fbo tell) 3)
 (expect (send fbo get-bytes) #"abc")
 (send fbo seek 2)
-(send fbo write-bytes #"012345" 1 4)
+(expect (send fbo write-bytes #"012345" 1 4) (void))
 (expect (send fbo tell) 5)
 (expect (send fbo get-bytes) #"ab123")
 (expect (send fbo bad?) #f)
-(send fbo write '(#\o #\l #\d))
+(expect (send fbo write '(#\o #\l #\d)) (void))
 (expect (send fbo get-bytes) #"ab123old")
 
 ;; ----------------------------------------
@@ -685,14 +685,14 @@
 (define fbi (make-object editor-stream-in-bytes-base% #"ab123old"))
 (define ibuf (make-bytes 3))
 (expect (send fbi tell) 0)
-(send fbi read-bytes ibuf)
+(expect (send fbi read-bytes ibuf) 3)
 (expect ibuf #"ab1")
 (expect (send fbi tell) 3)
 (send fbi seek 2)
-(send fbi read-bytes ibuf 1 2)
+(expect (send fbi read-bytes ibuf 1 2) 1)
 (expect ibuf #"a11")
 (send fbi skip 2)
-(send fbi read-bytes ibuf 0 2)
+(expect (send fbi read-bytes ibuf 0 2) 2)
 (expect ibuf #"ol1")
 (expect (send fbi bad?) #f)
 
@@ -709,7 +709,7 @@
 (expect (send fbo2 get-bytes) #"\n2 2.0")
 (expect (send fo tell) 2)
 (send fo jump-to 0)
-(send fo put 3)
+(void (send fo put 3))
 (send fo jump-to 2)
 (expect (send fbo2 get-bytes) #"\n3 2.0")
 (void (send fo put #"hi"))
@@ -850,10 +850,10 @@
   (let* ([s (send (send t find-snip pos 'after) get-style)]
          [c (send s get-foreground)]
          [f (send s get-font)])
-    (expect* (send c red) r)
-    (expect* (send c green) g)
-    (expect* (send c blue) b)
-    (expect* (send f get-weight) w)))
+    (expect (send c red) r)
+    (expect (send c green) g)
+    (expect (send c blue) b)
+    (expect (send f get-weight) w)))
 
 (send t erase)
 (send t insert "red\nblue")
@@ -877,34 +877,34 @@
 (check-color 4 0 0 255 'normal)
 
 (define (check-random-delta d)
-  (expect* (send d get-alignment-on) 'top)
-  (expect* (send d get-alignment-off) 'base)
-  (expect* (send (send d get-background-add) get-r) 25)
-  (expect* (send (send d get-background-add) get-g) 25)
-  (expect* (send (send d get-background-add) get-b) 25)
-  (expect* (send (send d get-background-mult) get-r) 0.5)
-  (expect* (send (send d get-background-mult) get-g) 0.5)
-  (expect* (send (send d get-background-mult) get-b) 0.5)
-  (expect* (send (send d get-foreground-add) get-r) 50)
-  (expect* (send (send d get-foreground-add) get-g) 50)
-  (expect* (send (send d get-foreground-add) get-b) 50)
-  (expect* (send (send d get-foreground-mult) get-r) 0.6)
-  (expect* (send (send d get-foreground-mult) get-g) 0.6)
-  (expect* (send (send d get-foreground-mult) get-b) 0.6)
-  (expect* (send d get-face) "Purty") 
-  (expect* (send d get-family) 'decorative)
-  (expect* (send d get-size-in-pixels-on) #t)
-  (expect* (send d get-size-in-pixels-off) #f)
-  (expect* (send d get-smoothing-off) 'smoothed)
-  (expect* (send d get-smoothing-on) 'base)
-  (expect* (send d get-style-on) 'italic)
-  (expect* (send d get-style-off) 'base)
-  (expect* (send d get-transparent-text-backing-on) #t)
-  (expect* (send d get-transparent-text-backing-off) #f)
-  (expect* (send d get-underlined-off) #t)
-  (expect* (send d get-underlined-on) #f)
-  (expect* (send d get-weight-on) 'light)
-  (expect* (send d get-weight-off) 'base))
+  (expect (send d get-alignment-on) 'top)
+  (expect (send d get-alignment-off) 'base)
+  (expect (send (send d get-background-add) get-r) 25)
+  (expect (send (send d get-background-add) get-g) 25)
+  (expect (send (send d get-background-add) get-b) 25)
+  (expect (send (send d get-background-mult) get-r) 0.5)
+  (expect (send (send d get-background-mult) get-g) 0.5)
+  (expect (send (send d get-background-mult) get-b) 0.5)
+  (expect (send (send d get-foreground-add) get-r) 50)
+  (expect (send (send d get-foreground-add) get-g) 50)
+  (expect (send (send d get-foreground-add) get-b) 50)
+  (expect (send (send d get-foreground-mult) get-r) 0.6)
+  (expect (send (send d get-foreground-mult) get-g) 0.6)
+  (expect (send (send d get-foreground-mult) get-b) 0.6)
+  (expect (send d get-face) "Purty") 
+  (expect (send d get-family) 'decorative)
+  (expect (send d get-size-in-pixels-on) #t)
+  (expect (send d get-size-in-pixels-off) #f)
+  (expect (send d get-smoothing-off) 'smoothed)
+  (expect (send d get-smoothing-on) 'base)
+  (expect (send d get-style-on) 'italic)
+  (expect (send d get-style-off) 'base)
+  (expect (send d get-transparent-text-backing-on) #t)
+  (expect (send d get-transparent-text-backing-off) #f)
+  (expect (send d get-underlined-off) #t)
+  (expect (send d get-underlined-on) #f)
+  (expect (send d get-weight-on) 'light)
+  (expect (send d get-weight-off) 'base))
 
 (let ([d (new style-delta%)])
   (send d set-alignment-on 'top)
@@ -1089,8 +1089,8 @@
 (send kevt set-key-code #\m)
 (send kevt set-shift-down #f)
 (send km set-grab-key-function (lambda (str km-in ed evt)
-                                 (expect* km-in km)
-                                 (expect* evt kevt)
+                                 (expect km-in km)
+                                 (expect evt kevt)
                                  (set! hit (list str ed))
                                  #t))
 (expect (send km handle-key-event 'obj kevt) #t)
@@ -1099,16 +1099,16 @@
 (expect (send km handle-key-event 'obj kevt) #t)
 (expect hit '(#f obj))
 (send km set-grab-key-function (lambda (str km-in ed evt)
-                                 (expect* str "letter-m")
-                                 (expect* ed 'obj2)
+                                 (expect str "letter-m")
+                                 (expect ed 'obj2)
                                  (set! hit 'nope)
                                  #f))
 (send kevt set-key-code #\m)
 (expect (send km handle-key-event 'obj2 kevt) #t)
 (expect hit #\m)
 (send km set-grab-key-function (lambda (str km-in ed evt)
-                                 (expect* str #f)
-                                 (expect* ed 'obj3)
+                                 (expect str #f)
+                                 (expect ed 'obj3)
                                  (set! hit 'nope)
                                  #f))
 (send kevt set-key-code #\p)
@@ -1315,11 +1315,11 @@
 (expect (send pb find-snip 15.0 20.0) ss1)
 (expect (send pb find-snip 35.0 10.0) ss2)
 (expect (send pb find-first-snip) ss2)
-(send pb delete) "delete"
+(send pb delete) ; "delete"
 (expect (send pb find-first-snip) ss1)
 (expect (send pb find-snip 15.0 20.0) ss1)
 (expect (send pb find-snip 35.0 10.0) #f)
-(send pb undo) "undo"
+(send pb undo) ; "undo"
 (expect (send pb find-first-snip) ss2)
 (expect (send pb find-snip 35.0 10.0) ss2)
 (expect (let ([x (box 0.0)] [y (box 0.0)])
@@ -1363,6 +1363,36 @@
   
   (expect (send (mk) get-filename)
           (send copy-is get-filename)))
+
+
+;; ----------------------------------------
+;; get-extend-start-position and
+;; get-extend-end-position
+
+(let ([t (new text%)])
+  (send t insert (make-string 40 #\a))
+  (send t set-position 10 20)
+  
+  (expect (send t get-start-position) 10)
+  (expect (send t get-end-position) 20)
+  (expect (send t get-extend-start-position) 10)
+  (expect (send t get-extend-end-position) 20)
+  
+  (send t set-anchor #t)
+  (send t set-position 5 25)
+  
+  (expect (send t get-start-position) 5)
+  (expect (send t get-end-position) 25)
+  (expect (send t get-extend-start-position) 5)
+  (expect (send t get-extend-end-position) 25)
+  
+  (send t set-anchor #t)
+  (send t set-position 0 30 #f #t 'default #t)
+
+  (expect (send t get-start-position) 0)
+  (expect (send t get-end-position) 30)
+  (expect (send t get-extend-start-position) 5)
+  (expect (send t get-extend-end-position) 25))
 
 ;; ----------------------------------------
 

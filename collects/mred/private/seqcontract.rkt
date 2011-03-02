@@ -243,7 +243,7 @@ Matthew
        (and (not (locked-for-write?))
             (not (locked-for-flow?))
             (not (locked-for-read?)))
-       (set-position [(x) (x y) (x y z) (x y z p) (x y z p q)] unlocked)
+       (set-position [(x) (x y) (x y z) (x y z p) (x y z p q) (x y z p q r)] unlocked)
        (set-autowrap-bitmap [(bitmap)] unlocked)
        (print-to-dc [(dc) (dc page)] unlocked)
        (move-position [(code?) (code? extend) (code? extend kind)] unlocked)

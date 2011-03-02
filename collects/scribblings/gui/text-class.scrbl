@@ -498,6 +498,19 @@ See also @method[text% delete].
 
 }
 
+@defmethod[(extend-position [pos exact-nonnegative-integer?]) void?]{
+  Updates the selection (see @method[text% set-position]) based on 
+  the result of @method[text% get-extend-end-position], 
+  @method[text% get-extend-start-position], and @racket[pos].
+  
+  If @racket[pos] is before the extend start and extend end positions,
+  then the selection goes from @racket[pos] to the extend end position.
+  If it is after, then the selection goes from the extend start position
+  to @racket[pos].
+  
+  Use this method to implement shift-modified movement keys in order to
+  properly extend the selection.
+}
 
 @defmethod[(find-line [y real?]
                       [on-it? (or/c (box/c any/c) #f) #f])
@@ -749,7 +762,6 @@ Returns @scheme[#t] if the selection is currently auto-extending. See
 
 }
 
-
 @defmethod[(get-between-threshold)
            (and/c real? (not/c negative?))]{
 
@@ -784,6 +796,17 @@ Returns the ending @techlink{position} of the current selection. See
 
 }
 
+@defmethod[(get-extend-start-position) exact-nonnegative-integer?]{
+  Returns the beginning of the ``extend'' region if the selection
+  is currently being extended via, e.g., shift and a cursor movement key; 
+  otherwise returns the same value as @method[text% get-end-position].
+}
+
+@defmethod[(get-extend-end-position) exact-nonnegative-integer?]{
+  Returns the beginning of the ``extend'' region if the selection
+  is currently being extended via, e.g., shift and a cursor movement key; 
+  otherwise returns the same value as @method[text% get-start-position].
+}
 
 @defmethod[(get-file-format)
            (or/c 'standard 'text 'text-force-cr)]{
@@ -1294,7 +1317,8 @@ The possible values for @scheme[code] are:
 If @scheme[extend?] is not @scheme[#f], the selection range is
  extended instead of moved.  If anchoring is on (see @method[text%
  get-anchor] and @method[text% set-anchor]), then @scheme[extend?] is
- effectively forced to @scheme[#t].
+ effectively forced to @scheme[#t]. See also @method[text% get-extend-start-position]
+ and @method[text% get-extend-end-position].
 
 The possible values for @scheme[kind] are:
 
@@ -1779,7 +1803,8 @@ Turns anchoring on or off. This method can be overridden to affect or
 
 If @scheme[on?] is not @scheme[#f], then the selection will be
  automatically extended when cursor keys are used (or, more generally,
- when @method[text% move-position] is used to move the selection),
+ when @method[text% move-position] is used to move the selection or the
+ @racket[_keep-anchor?] argument to @method[text% set-position] is a true value),
  otherwise anchoring is turned off. Anchoring is automatically turned
  off if the user does anything besides cursor movements.
 
@@ -1981,7 +2006,6 @@ The system may change the selection in an editor without calling this
 See also @scheme[editor-set-x-selection-mode].
 
 }
-
 
 @defmethod[(set-position-bias-scroll [bias (or/c 'start-only 'start 'none 'end 'end-only)]
                                      [start exact-nonnegative-integer?]
