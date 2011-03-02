@@ -1,17 +1,9 @@
 #lang racket
 (require web-server/stuffers/stuffer
          racket/runtime-path
+         openssl/libcrypto
          (rename-in ffi/unsafe
                     [-> f->]))
-
-(define-runtime-path libcrypto-so
-  (case (system-type)
-    [(windows) '(so "libeay32")]
-    [else '(so "libcrypto")]))
-
-(define libcrypto
-  (with-handlers ([exn:fail? (lambda (x) #f)])
-    (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
 
 (define EVP_SHA1
   (and libcrypto

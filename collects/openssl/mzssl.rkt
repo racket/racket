@@ -17,7 +17,8 @@
 (module mzssl scheme
   (require mzlib/foreign
 	   mzlib/port
-           mzlib/runtime-path)
+           "libcrypto.rkt"
+           "libssl.rkt")
 
   (provide ssl-available?
 	   ssl-load-fail-reason
@@ -51,34 +52,11 @@
 
   (unsafe!)
 
-  ;; We need to declare because they might be distributed with PLT Scheme
-  ;; in which case they should get bundled with stand-alone executables:
-  (define-runtime-path libcrypto-so
-    (case (system-type)
-      [(windows) '(so "libeay32")]
-      [else '(so "libcrypto")]))
-  (define-runtime-path libssl-so
-    (case (system-type)
-      [(windows) '(so "ssleay32")]
-      [else '(so "libssl")]))
-
-  (define ssl-load-fail-reason #f)
+  (define ssl-load-fail-reason
+    (or libssl-load-fail-reason
+        libcrypto-load-fail-reason))
 
   (define 3m? (eq? '3m (system-type 'gc)))
-
-  (define libcrypto
-    (with-handlers ([exn:fail? (lambda (x)
-                                 (set! ssl-load-fail-reason (exn-message x))
-                                 #f)])
-      (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
-
-  (define libssl
-    (and libcrypto
-	 (with-handlers ([exn:fail?
-                          (lambda (x)
-                            (set! ssl-load-fail-reason (exn-message x))
-                            #f)])
-           (ffi-lib libssl-so '("" "0.9.8b" "0.9.8" "0.9.7")))))
 
   (define libmz (ffi-lib #f))
 

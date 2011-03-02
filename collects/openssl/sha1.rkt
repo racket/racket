@@ -2,25 +2,12 @@
 (require ffi/unsafe
          racket/runtime-path
          (for-syntax racket/base)
-         (prefix-in r: file/sha1))
+         (prefix-in r: file/sha1)
+         "libcrypto.rkt")
 
 (provide sha1
          sha1-bytes
          (rename-out [r:bytes->hex-string bytes->hex-string]))
-
-(define-runtime-path libcrypto-so
-  (case (system-type)
-    [(windows) '(so "libeay32")]
-    [else '(so "libcrypto")]))
-
-(define libcrypto
-  (with-handlers ([exn:fail? (lambda (exn) 
-                               (log-warning (format "warning: couldn't load OpenSSL library: ~a"
-                                                    (if (exn? exn)
-                                                        (exn-message exn)
-                                                        exn)))
-                               #f)])
-    (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
 
 (define _SHA_CTX-pointer _pointer)
 
