@@ -1,7 +1,7 @@
 #;
 (
 known-vector-length.rkt line 11 col 6 - vector-length - known-length vector-length
-known-vector-length.rkt line 11 col 6 - vector-length - known-length vector-length
+known-vector-length.rkt line 11 col 1 - + - fixnum bounded expr
 4
 )
 
