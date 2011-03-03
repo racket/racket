@@ -2,7 +2,8 @@
 
 (require openssl
          ffi/unsafe
-         racket/tcp)
+         racket/tcp
+         racket/runtime-path)
 
 (define (check fmt got expect)
   (unless (equal? got expect)
@@ -10,10 +11,15 @@
 
 (define ssl-server-context (ssl-make-server-context 'sslv3))
 
+(define-runtime-path server-key "server_key.pem")
+(define-runtime-path server-crt "server_crt.pem")
+(define-runtime-path client-key "client_key.pem")
+(define-runtime-path client-crt "client_crt.pem")
+(define-runtime-path cacert     "cacert.pem")
 
-(ssl-load-private-key! ssl-server-context "server_key.pem")
-(ssl-load-certificate-chain! ssl-server-context "server_crt.pem")
-(ssl-load-verify-root-certificates! ssl-server-context "cacert.pem")
+(ssl-load-private-key! ssl-server-context server-key)
+(ssl-load-certificate-chain! ssl-server-context server-crt)
+(ssl-load-verify-root-certificates! ssl-server-context cacert)
 (ssl-try-verify! ssl-server-context #t)
 
 (define ssl-listener (ssl-listen 55000
@@ -41,13 +47,13 @@
 
 (define ssl-client-context (ssl-make-client-context 'sslv3))
 
-(ssl-load-private-key! ssl-client-context "client_key.pem")
+(ssl-load-private-key! ssl-client-context client-key)
 
 ;connection will still proceed if these methods aren't called
 ;change to #f to try it
 (when #t
-  (ssl-load-certificate-chain! ssl-client-context "client_crt.pem")
-  (ssl-load-verify-root-certificates! ssl-client-context "cacert.pem")
+  (ssl-load-certificate-chain! ssl-client-context client-crt)
+  (ssl-load-verify-root-certificates! ssl-client-context cacert)
   (ssl-set-verify! ssl-client-context #t))
 
 
