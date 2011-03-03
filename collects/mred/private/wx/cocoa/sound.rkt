@@ -30,7 +30,7 @@
     (tellv s retain) ; don't use `retain', because we dont' want auto-release
     (tellv s play)
     (if async?
+        #t
         (begin
           (semaphore-wait sema)
-          (get-ivar s result))
-        #t)))
+          (get-ivar s result)))))
