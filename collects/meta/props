@@ -1536,6 +1536,7 @@ path/s is either such a string or a list of them.
 "collects/tests/net/websocket" responsible (jay)
 "collects/tests/net/websocket/example.rkt" drdr:command-line #f
 "collects/tests/net/websocket.rkt" responsible (jay)
+"collects/tests/openssl" responsible (mflatt)
 "collects/tests/plai" responsible (jay)
 "collects/tests/plai/gc/bad-mutators/mut-1.rkt" drdr:command-line #f
 "collects/tests/plai/gc/bad-mutators/mutator0.rkt" drdr:command-line #f
