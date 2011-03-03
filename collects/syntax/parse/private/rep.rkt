@@ -168,8 +168,6 @@
                                [auto-nested? 'try]
                                [else 'no])))
            (parse-variants rest decls splicing? expected-attrs)))
-       (when (null? variants)
-         (wrong-syntax #f "expected at least one variant"))
        (let ([sattrs
               (or attributes
                   (intersect-sattrss (map variant-attrs variants)))])
