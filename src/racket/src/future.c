@@ -943,6 +943,14 @@ Scheme_Object *scheme_fsemaphore_post(int argc, Scheme_Object **argv)
   }
 
   sema = (fsemaphore_t*)argv[0];
+
+#ifdef FSEMA_LOGGING 
+  printf("[Thread %p]: scheme_fsemaphore_post for sema at %p. Count before V: %d\n", 
+    pthread_self(), 
+    sema, 
+    sema->ready);
+#endif
+
   fs = scheme_future_state;
   mzrt_mutex_lock(sema->mut);
 
@@ -993,6 +1001,14 @@ Scheme_Object *scheme_fsemaphore_wait(int argc, Scheme_Object **argv)
   }
 
   sema = (fsemaphore_t*)argv[0];
+
+#ifdef FSEMA_LOGGING 
+  printf("[Thread %p]: scheme_fsemaphore_wait for sema at %p. Count before P: %d\n", 
+    pthread_self(), 
+    sema, 
+    sema->ready);
+#endif
+
   jit_future_storage[0] = (void*)sema;
   mzrt_mutex_lock(sema->mut);
   if (!sema->ready) { 
