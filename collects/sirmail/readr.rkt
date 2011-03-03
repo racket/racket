@@ -202,7 +202,12 @@
 	(status "Saving mailbox information...")
 	(with-output-to-file (build-path mailbox-dir "mailbox")
 	  (lambda ()
-	    (write (cons uid-validity (map vector->list mailbox))))
+            (printf "(\n")
+	    (for-each (lambda (l)
+                        (write l) 
+                        (newline))
+                      (cons uid-validity (map vector->list mailbox)))
+            (printf ")\n"))
 	  'truncate))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
