@@ -148,8 +148,6 @@
   (define-ssl SSL_get_verify_result (_SSL* -> _long))
   (define-ssl SSL_get_peer_certificate (_SSL* -> _X509*))
   
-  
-  
   (define-crypto X509_get_subject_name ( _X509* -> _X509_NAME*))
   (define-crypto X509_get_issuer_name ( _X509* -> _X509_NAME*))
   (define-crypto X509_NAME_oneline (_X509_NAME* _bytes _int -> _bytes))

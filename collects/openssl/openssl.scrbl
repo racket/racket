@@ -364,6 +364,28 @@ collection for testing purposes where the peer identifies itself using
 @filepath{test.pem}.}
 
 @; ----------------------------------------------------------------------
+@section[#:tag "peer-verif"]{Peer Verification}
+
+@defproc[(ssl-peer-verified? [p ssl-port?]) boolean?]{
+
+Returns @racket[#t] if the peer of SSL port @racket[p] has presented a
+valid and verified certificate, @racket[#f] otherwise.}
+
+@defproc[(ssl-peer-subject-name [p ssl-port?]) (or/c bytes? #f)]{
+
+If @racket[ssl-peer-verified?] would return @racket[#t] for
+@racket[p], the result is a byte string for the subject field of
+the certificate presented by the SSL port's peer, otherwise the result
+is @racket[#f].}
+
+@defproc[(ssl-peer-issuer-name [p ssl-port?]) (or/c bytes? #f)]{
+
+If @racket[ssl-peer-verified?] would return @racket[#t] for
+@racket[p], the result is a byte string for the issuer field of
+the certificate presented by the SSL port's peer, otherwise the result
+is @racket[#f].}
+
+@; ----------------------------------------------------------------------
 
 @section{SHA-1 Hashing}
 
