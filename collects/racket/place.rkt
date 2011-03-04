@@ -39,6 +39,10 @@
     ch))
   
 (define (th-place mod funcname)
+  (unless (or (path-string? mod) (resolved-module-path? mod))
+    (raise-type-error 'place "resolved-module-path? or path-string?" 0 mod funcname))
+  (unless (symbol? funcname)
+    (raise-type-error 'place "symbol?" 1 mod funcname))
   (define-values (pch cch) (th-place-channel))
   (define th (thread (lambda ()
     (with-continuation-mark
@@ -50,7 +54,7 @@
   (TH-place th pch))
 
 (define (th-place-sleep n) (sleep n))
-(define (th-place-wait pl) (thread-wait (TH-place-th pl)))
+(define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
