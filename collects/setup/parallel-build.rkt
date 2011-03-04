@@ -82,54 +82,51 @@
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define/public (get-job workerid)
-      (define (hash/first-pair hash)
-         (match (hash-iterate-first hash)
-           [#f #f]
-           [x (cons (hash-iterate-key hash x) (hash-iterate-value hash x))]))
-      (define (hash-ref!/true hash key thunk)
-        (hash-ref hash key (lambda ()
-                              (match (thunk)
-                                [#f #f]
-                                [x (hash-set! hash key x) x]))))
-      (define (take-cc)
-        (match cclst
-          [(list) #f]
-          [(cons h t)
-            (set! cclst t)
-            (list h)]))
-      (let ([w-hash hash])
+      (define (find-job-in-cc cc id)
+        (define (retry) (get-job workerid))
         (define (build-job cc file last)
-          (let* ([cc-name (cc-name cc)]
-                 [cc-path (cc-path cc)]
-                 [full-path (path->string (build-path cc-path file))])
-            ;(printf "JOB ~a ~a ~a ~a\n" workerid cc-name cc-path file)
-            (values (list cc file last) (list (->bytes cc-name) (->bytes cc-path) (->bytes file)))))
-        (let retry ()
-          (define (find-job-in-cc cc id)
-            (match cc
-              [(list)
-                (hash-remove! w-hash id) (retry)]
-              [(list (list cc (list) (list)))       ;empty collect
-                (hash-remove! w-hash id) (retry)]
-              [(cons (list cc (list) (list)) tail)  ;empty parent collect
-                (hash-set! w-hash id tail) (retry)]
-              [(cons (list cc (list) subs) tail)    ;empty srcs list
-                (hash-set! w-hash id (append subs tail)) (retry)]
-              [(cons (list cc (list file) subs) tail)
-                (hash-set! w-hash id (append subs tail))
-                  (build-job cc file #t)]
-              [(cons (list cc (cons file ft) subs) tail)
-                (hash-set! w-hash id (cons (list cc ft subs) tail))
-                (build-job cc file #f)]
-              [else
-                (eprintf "get-job match cc failed.\n")
-                (eprintf "trying to match:\n~a\n" cc)]))
- 
-          (match (hash-ref!/true w-hash workerid take-cc)
-            [#f 
-                (match (hash/first-pair w-hash)
-                  [(cons id cc) (find-job-in-cc cc id)])]
-            [cc (find-job-in-cc cc workerid)]))))
+          (values
+            (list cc file last) 
+            (list (->bytes (cc-name cc)) 
+                  (->bytes (cc-path cc))
+                  (->bytes file))))
+        (match cc
+          [(list)
+            (hash-remove! hash id) (retry)]
+          [(list (list cc (list) (list)))       ;empty collect
+            (hash-remove! hash id) (retry)]
+          [(cons (list cc (list) (list)) tail)  ;empty parent collect
+            (hash-set! hash id tail) (retry)]
+          [(cons (list cc (list) subs) tail)    ;empty srcs list
+            (hash-set! hash id (append subs tail)) (retry)]
+          [(cons (list cc (list file) subs) tail)
+            (hash-set! hash id (append subs tail))
+            (build-job cc file #t)]
+          [(cons (list cc (cons file ft) subs) tail)
+            (hash-set! hash id (cons (list cc ft subs) tail))
+            (build-job cc file #f)]
+          [else
+            (eprintf "get-job match cc failed.\n")
+            (eprintf "trying to match:\n~v\n" cc)]))
+
+
+      ; find a cc 
+      (cond
+        ; lookup already assigned cc 
+        [(hash-ref hash workerid #f) => (lambda (x)
+          (find-job-in-cc x workerid))]
+        ; get next cc from cclst
+        [(pair? cclst)
+          (define workercc (list (car cclst)))
+          (set! cclst (cdr cclst))
+          (hash-set! hash workerid workercc)
+          (find-job-in-cc workercc workerid)]
+        ; try to steal work from another workers cc
+        [(hash-iterate-first hash) => (lambda (x)
+          (find-job-in-cc (hash-iterate-value hash x)
+                          (hash-iterate-key hash x)))]))
+        ; no work left
+        ; should never get here, get-job only called when the queue has work
 
     (define/public (has-jobs?)
       (define (hasjob?  cct)
