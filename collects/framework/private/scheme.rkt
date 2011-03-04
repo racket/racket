@@ -413,7 +413,10 @@
              end-edit-sequence
              local-edit-sequence?
              find-string
+             extend-position
              get-character
+             get-extend-end-position
+             get-extend-start-position
              get-keymap
              get-text
              get-start-position
@@ -1018,16 +1021,20 @@
           #t))]
     
     (define/private (select-text f forward?)
-      (let* ([start-pos (get-start-position)]
-             [end-pos (get-end-position)])
-        (let-values ([(new-start new-end)
-                      (if forward?
-                          (values start-pos (f end-pos))
-                          (values (f start-pos) end-pos))])
-          (if (and new-start new-end) 
-              (set-position new-start new-end)
-              (bell))
-          #t)))
+      (define start-pos (get-start-position))
+      (define end-pos (get-end-position))
+      (define new-pos
+        (if forward?
+            (if (= (get-extend-start-position) start-pos)
+                (f end-pos)
+                (f start-pos))
+            (if (= (get-extend-end-position) end-pos)
+                (f start-pos)
+                (f end-pos))))
+      (if new-pos 
+          (extend-position new-pos)
+          (bell))
+          #t)
     (public select-forward-sexp select-backward-sexp select-up-sexp select-down-sexp)
     [define select-forward-sexp (λ () (select-text (λ (x) (get-forward-sexp x)) #t))]
     [define select-backward-sexp (λ () (select-text (λ (x) (get-backward-sexp x)) #f))]

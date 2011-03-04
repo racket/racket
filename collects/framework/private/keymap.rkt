@@ -1020,11 +1020,19 @@
            
            [find-beginning-of-line
             (λ (txt)
+              (define pos-to-start-with
+                (cond
+                  [(= (send txt get-extend-start-position)
+                      (send txt get-start-position))
+                   (send txt get-end-position)]
+                  [else
+                   (send txt get-start-position)]))
+              
               (cond
                 [(is-a? txt text:basic<%>)
-                 (send txt get-start-of-line (send txt get-start-position))]
+                 (send txt get-start-of-line pos-to-start-with)]
                 [(is-a? txt text%)
-                 (send txt line-start-position (send txt position-line (send txt get-start-position)))]
+                 (send txt line-start-position (send txt position-line pos-to-start-with))]
                 [else #f]))]
            [beginning-of-line
              (λ (txt event)
@@ -1035,7 +1043,7 @@
             (λ (txt event)
               (define pos (find-beginning-of-line txt))
               (when pos
-                (send txt set-position pos (send txt get-end-position))))])
+                (send txt extend-position pos)))])
       
       (λ (kmap)
         (let* ([map (λ (key func) 
