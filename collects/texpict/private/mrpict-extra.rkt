@@ -425,7 +425,9 @@
 							  (if (eq? (cadr x) 'thicklines)
 							      1
 							      0))
-						      'solid))
+                                                      (if (eq? (cadr x) #f)
+                                                          'transparent
+                                                          'solid)))
 			 (loop dx dy (caddr x))
 			 (set-pen p))]
 		      [(prog)

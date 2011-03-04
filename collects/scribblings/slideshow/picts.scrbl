@@ -498,10 +498,12 @@ drawing the original @racket[pict].}
 Creats a container picture that doesn't draw the child picture,
 but uses the child's size.}
 
-@defproc[(linewidth [w real?] [pict pict?]) pict?]{
+@defproc[(linewidth [w (or/c real? #f)] [pict pict?]) pict?]{
 
 Selects a specific pen width for drawing, which applies to pen drawing
-for @racket[pict] that does not already use a specific pen width.}
+for @racket[pict] that does not already use a specific pen width.
+A @racket[#f] value for @racket[w] makes the pen transparent (in contrast
+to a zero value, which means ``as thin as possible for the target device'').}
 
 @defproc[(colorize [pict pict?] [color (or/c string? 
                                              (is-a?/c color%)
