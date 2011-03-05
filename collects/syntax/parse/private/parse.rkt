@@ -180,7 +180,9 @@ Conventions:
 ;; (parse:clauses x clauses ctx)
 (define-syntax (parse:clauses stx)
   (syntax-case stx ()
-    [(parse:clauses x clauses ctx)
+    [(parse:clauses x clauses body-mode ctx)
+     ;; if templates? is true, expect one form after kwargs in clause, wrap it with syntax
+     ;; otherwise, expect non-empty body sequence (defs and exprs)
      (with-disappeared-uses
       (with-txlifts
        (lambda ()
@@ -200,17 +202,26 @@ Conventions:
                                                 #:splicing? #f
                                                 #:decls decls0
                                                 #:context #'ctx)])
-               (unless (and (stx-list? rest) (stx-pair? rest))
-                 (raise-syntax-error #f
-                                     "expected non-empty clause body"
-                                     #'ctx
-                                     clause))
                (with-syntax ([rest rest]
                              [pattern pattern]
-                             [(local-def ...) (append defs defs2)])
+                             [(local-def ...) (append defs defs2)]
+                             [body-expr
+                              (case (syntax-e #'body-mode)
+                                ((one-template)
+                                 (syntax-case rest ()
+                                   [(template)
+                                    #'(syntax template)]
+                                   [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
+                                ((body-sequence)
+                                 (syntax-case rest ()
+                                   [(e0 e ...) #'(let () e0 e ...)]
+                                   [_ (raise-syntax-error #f "expected non-empty clause body"
+                                                          #'ctx clause)]))
+                                (else
+                                 (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
                  #`(let ()
                      local-def ...
-                     (parse:S x cx pattern pr es (let () . rest)))))]))
+                     (parse:S x cx pattern pr es body-expr))))]))
         (unless (stx-list? clauses-stx)
           (raise-syntax-error #f "expected sequence of clauses" #'ctx))
         (define alternatives

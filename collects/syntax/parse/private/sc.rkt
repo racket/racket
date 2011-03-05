@@ -13,6 +13,7 @@
 
          syntax-parse
          syntax-parser
+         syntax-parser/template
 
          (except-out (all-from-out "keywords.rkt")
                      ~reflect
@@ -126,7 +127,7 @@
     [(syntax-parse stx-expr . clauses)
      (quasisyntax/loc stx
        (let ([x (datum->syntax #f stx-expr)])
-         (parse:clauses x clauses #,((make-syntax-introducer) stx))))]))
+         (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))]))
 
 (define-syntax (syntax-parser stx)
   (syntax-case stx ()
@@ -134,4 +135,12 @@
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses #,((make-syntax-introducer) stx)))))]))
+           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
+
+(define-syntax (syntax-parser/template stx)
+  (syntax-case stx ()
+    [(syntax-parser/template ctx . clauses)
+     (quasisyntax/loc stx
+       (lambda (x)
+         (let ([x (datum->syntax #f x)])
+           (parse:clauses x clauses one-template ctx))))]))

@@ -5,7 +5,7 @@
          "parse/private/lib.rkt"
          "parse/experimental/provide.rkt")
 (provide (except-out (all-from-out "parse/private/sc.rkt")
-                     parser/rhs)
+                     syntax-parser/template parser/rhs)
          (all-from-out "parse/private/litconv.rkt")
          (except-out (all-from-out "parse/private/lib.rkt")
                      static))
