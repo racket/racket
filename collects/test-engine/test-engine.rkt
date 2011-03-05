@@ -173,6 +173,7 @@
 
     (define/public (summarize-results port)
       (cond
+       ((not test-run-since-last-display?))
        ((test-execute)
         (unless test-display (setup-display #f #f))
 	(send test-display install-info test-info)
