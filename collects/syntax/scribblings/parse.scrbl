@@ -20,6 +20,7 @@ messages embedded in the macro's syntax patterns.
 @include-section["parse/parsing.scrbl"]
 @include-section["parse/stxclasses.scrbl"]
 @include-section["parse/patterns.scrbl"]
+@include-section["parse/define.scrbl"]
 @include-section["parse/litconv.scrbl"]
 @include-section["parse/lib.scrbl"]
 
