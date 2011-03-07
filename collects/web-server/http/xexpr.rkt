@@ -3,6 +3,7 @@
          racket/list
          xml
          web-server/private/xexpr
+         net/cookie
          "request-structs.rkt"
          "cookie.rkt"
          "response-structs.rkt")
@@ -27,5 +28,5 @@
 (provide/contract
  [response/xexpr 
   ((pretty-xexpr/c)
-   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?) #:preamble bytes?)
+   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:cookies (listof cookie?) #:headers (listof header?) #:preamble bytes?)
    . ->* . response?)])

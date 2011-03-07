@@ -51,6 +51,11 @@
  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nhead: value\r\n\r\n<a href=\"#\">link</a>"
  
  (write-response (response/xexpr '(a ([href "#"]) "link")
+                                      #:cookies (list (make-cookie "head" "value"))))
+ =>
+ #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\nSet-Cookie: head=value; Version=1\r\n\r\n<a href=\"#\">link</a>"
+ 
+ (write-response (response/xexpr '(a ([href "#"]) "link")
                                       #:preamble #"<<!something XMLy>>"))
  =>
  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n<<!something XMLy>><a href=\"#\">link</a>")
