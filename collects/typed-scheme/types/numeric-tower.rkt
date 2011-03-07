@@ -42,7 +42,7 @@
 (define (portable-index? n)
   (and (exact-integer? n)
        (< n (expt 2 28))
-       (>= n (- (expt 2 28)))))
+       (>= n 0)))
 
 ;; Singletons
 (define -Zero (-val 0)) ; exact

@@ -3,7 +3,8 @@
 (begin
   (require
    racket/list
-   (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base)
+   (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
+                 (only-in "../types/numeric-predicates.rkt" index?))
    (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
 
   ;; TODO having definitions only at the top is really inconvenient.
@@ -598,6 +599,7 @@
 [exact? (asym-pred N B (-FS -top (-not-filter -Rat 0)))]
 [inexact? (asym-pred N B  (-FS -top (-not-filter (Un -InexactReal -FloatComplex) 0)))]
 [fixnum? (make-pred-ty -Fixnum)]
+[index? (make-pred-ty -Index)]
 [positive? (cl->* (-> -Byte B : (-FS (-filter -PosByte 0) (-filter -Zero 0)))
                   (-> -Index B : (-FS (-filter -PosIndex 0) (-filter -Zero 0)))
                   (-> -Fixnum B : (-FS (-filter -PosFixnum 0) (-filter -NonPosFixnum 0)))

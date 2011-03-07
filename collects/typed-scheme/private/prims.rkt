@@ -48,7 +48,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"	  
           "../env/type-name-env.rkt"
           "type-contract.rkt"
-          "for-clauses.rkt"))
+          "for-clauses.rkt")
+         "../types/numeric-predicates.rkt")
+(provide index?) ; useful for assert, and racket doesn't have it
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 
