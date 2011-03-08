@@ -57,6 +57,10 @@
       (tellv ns setCanChooseDirectories: #:type _BOOL #t)
       (tellv ns setCanChooseFiles: #:type _BOOL #f)])
 
+    (when (or (memq 'put style)
+              (memq 'dir style))
+      (tellv ns setCanCreateDirectories: #:type _BOOL #t))
+
     (when message
       (tellv ns setMessage: #:type _NSString message))
     (when directory
