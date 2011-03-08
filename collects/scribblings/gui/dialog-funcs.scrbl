@@ -121,7 +121,7 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  to have an extension mapping @scheme[extension].
 
 Under Mac OS X 10.5 and later, if @scheme[extension] is not
- @scheme[#f], the returned path will get a default extension if the
+ @scheme[#f] or @racket[""], the returned path will get a default extension if the
  user does not supply one.  If @scheme[filters] contains as
  @scheme["*.*"] pattern, then the user can supply any extension that
  is recognized by the system; otherwise, the extension on the returned
@@ -133,7 +133,8 @@ Under Mac OS X 10.5 and later, if @scheme[extension] is not
  extension mapping @scheme[extension].
 
 Under Mac OS X versions before 10.5, the returned path will get a
- default extension only if @scheme[extension] is not @scheme[#f] and
+ default extension only if @scheme[extension] is not @scheme[#f], 
+ @scheme[extension] is not @racket[""], and
  @scheme[filters] contains only @scheme[(string-append "*."
  extension)].
 

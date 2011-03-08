@@ -29,7 +29,10 @@
                      parent)])
 
     (let ([extensions (append
-                       (if extension (list extension) null)
+                       (if (and extension 
+                                (not (equal? "" extension)))
+                           (list extension) 
+                           null)
                        (if (memq 'packages style) (list "app") null)
                        (for/list ([e (in-list filters)]
                                   #:when (and (regexp-match #rx"[*][.][^.]+$" (cadr e))

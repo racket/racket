@@ -60,10 +60,6 @@
            message directory filename extension
            ;; file types:
            filters
-           #;
-           (apply string-append
-           (map (lambda (s) (format "~a|~a|" (car s) (cadr s)))
-           filters))
            ;; style:
            (cons (cond [dir?   'dir]
                        [put?   'put]
