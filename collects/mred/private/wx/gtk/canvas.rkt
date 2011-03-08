@@ -392,6 +392,7 @@
                                                     GDK_BUTTON_PRESS_MASK
                                                     GDK_BUTTON_RELEASE_MASK
                                                     GDK_POINTER_MOTION_HINT_MASK
+                                                    GDK_BUTTON_MOTION_MASK
                                                     GDK_FOCUS_CHANGE_MASK
                                                     GDK_ENTER_NOTIFY_MASK
                                                     GDK_LEAVE_NOTIFY_MASK))
