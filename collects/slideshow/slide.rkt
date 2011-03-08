@@ -1,7 +1,6 @@
-
-(module slide mzscheme
-  (require mzlib/unit
-	   mzlib/contract
+(module slide racket/base
+  (require racket/unit
+	   racket/contract
 	   texpict/mrpict
 	   texpict/utils
 	   "sig.ss"
@@ -33,18 +32,27 @@
   (define (slide-sequence? l) #t)
 
   (define slide-contract
-    (() slide-sequence? . ->* . any))
+    (() () #:rest slide-sequence? . ->* . any))
   (define slide/title-contract
-    ((string?) slide-sequence? . ->* . any))
+    ((string?) () #:rest slide-sequence? . ->* . any))
   (define slide/inset-contract
-    ((sinset?) slide-sequence? . ->* . any))
+    ((sinset?) () #:rest slide-sequence? . ->* . any))
   (define slide/title/inset-contract
-    ((string? sinset?) slide-sequence? . ->* . any))
+    ((string? sinset?) () #:rest slide-sequence? . ->* . any))
 
   (define (side-inset? n) (and (number? n)
 			       (exact? n)
 			       (integer? n)
 			       (n . >= . 0)))
+
+  (define elem/c (flat-rec-contract elem/c (or/c string? pict? (listof elem/c))))
+  (define item-contract (() (#:bullet pict?
+                                      #:width real? 
+                                      #:align (or/c 'left 'center 'right)
+                                      #:fill? any/c 
+                                      #:decode? any/c)
+                         #:rest elem/c
+                         . ->* . pict?))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                 Exports                       ;;
@@ -59,7 +67,7 @@
   (define-accessor client-h get-client-h)
   (define-accessor full-page get-full-page)
   (define-accessor titleless-page get-titleless-page)
-  
+
   (provide/contract [slide slide-contract]
 		    [slide/title slide/title-contract]
 		    [slide/title/tall slide/title-contract]
@@ -76,21 +84,36 @@
 		    [slide/name/inset slide/title/inset-contract]
 		    [slide/name/tall/inset slide/title/inset-contract]
 		    [slide/name/center/inset slide/title/inset-contract]
-		    [comment (() (listof (or/c string? pict?)) . ->* . any)])
+		    [comment (() () #:rest (listof (or/c string? pict?)) . ->* . any)]
+                    [para/kw (() (#:width real? 
+                                          #:align (or/c 'left 'center 'right)
+                                          #:fill? any/c 
+                                          #:decode? any/c)
+                              #:rest elem/c
+                             . ->* . pict?)]
+                    [item/kw item-contract]
+                    [subitem/kw item-contract]
+                    [t (string? . -> . pict?)]
+                    [bt (string? . -> . pict?)]
+                    [it (string? . -> . pict?)]
+                    [bit (string? . -> . pict?)]
+                    [tt (string? . -> . pict?)]
+                    [titlet (string? . -> . pict?)]
+                    [rt (string? . -> . pict?)]
+                    [tt* (() () #:rest (listof string?) . ->* . pict?)])
   (provide slide/kw
            most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
 	   scroll-transition pause-transition
 	   make-outline
-	   item/kw item item* page-item page-item*
+	   item item* page-item page-item*
 	   item/bullet item*/bullet page-item/bullet page-item*/bullet
-	   subitem/kw subitem subitem* page-subitem page-subitem*
+	   subitem subitem* page-subitem page-subitem*
 	   itemize itemize* page-itemize page-itemize*
-	   para/kw para para* page-para page-para*
+	   para para* page-para page-para*
 	   para/c para/r para*/c para*/r page-para/c page-para/r page-para*/c page-para*/r
 	   font-size gap-size current-font-size current-line-sep line-sep title-size 
 	   main-font current-main-font with-font current-title-color
 	   red green blue purple orange size-in-pixels
-	   t it bt bit tt titlet tt* rt
 	   bullet o-bullet
 	   margin get-margin set-margin! 
 	   client-w client-h get-client-w get-client-h
@@ -107,13 +130,13 @@
            slide/title/timeout
            slide/center/timeout
            slide/title/center/timeout
-           (rename sinset? slide-inset?))
+           (rename-out [sinset? slide-inset?]))
   (provide/contract [clickback 
 		     ((pict? (lambda (x)
 			       (and (procedure? x)
 				    (procedure-arity-includes? x 0))))
 		      (any/c)
-		      . opt-> .
+		      . ->* .
 		      pict?)]
 		    [make-slide-inset
 		     (side-inset? side-inset? side-inset? side-inset?
@@ -122,5 +145,5 @@
 		    [apply-slide-inset
 		     (sinset? pict? . -> . pict?)])
   ;; Things not at all in the core unit:
-  (provide (all-from texpict/mrpict)
-	   (all-from texpict/utils)))
+  (provide (all-from-out texpict/mrpict)
+	   (all-from-out texpict/utils)))
