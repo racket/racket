@@ -75,7 +75,7 @@
          test-exn
          test-not-exn
 
-         foldts
+         foldts-test-suite
          fold-test-results
          run-test-case
          run-test

@@ -155,7 +155,7 @@ test results without you having to take care of all the expected setup
 and teardown.  For example, @racket[fold-test-results] will run test
 suite before and after actions for you.  However it is still flexible
 enough, via its keyword arguments, to do almost anything that
-@racket[foldts] can.  Hence it should be used in preference to @racket[foldts].
+@racket[foldts-test-suite] can.  Hence it should be used in preference to @racket[foldts-test-suite].
 
 The @racket[result-fn] argument is a function from the results of
 @racket[run] (defaults to a @racket[test-result]) and the seed to a
@@ -203,14 +203,14 @@ value of @racket[run].
    #:run (lambda (name action) 'burp)))]
 
 
-@defproc[(foldts [fdown (test-suite string thunk thunk 'a -> 'a)]
+@defproc[(foldts-test-suite [fdown (test-suite string thunk thunk 'a -> 'a)]
 		 [fup (test-suite string thunk thunk 'a 'a -> 'a)]
 		 [fhere(test-case string thunk 'a -> 'a)]
 		 [seed 'a]
 		 [test (or/c test-case? test-suite?)])
     		 'a]{
 
-The @racket[foldts] function is a nifty tree fold (created by Oleg
+The @racket[foldts-test-suite] function is a nifty tree fold (created by Oleg
 Kiselyov) that folds over a test in a useful way
 (@racket[fold-test-results] isn't that useful as you can't specify
 actions around test cases).
@@ -234,11 +234,11 @@ turn would allow test cases that are, for example, ignored).
 Example:
 
 Here's the implementation of @racket[fold-test-results] in terms of
-@racket[foldts]:
+@racket[foldts-test-suite]:
 
 @racketblock[
 (define (fold-test-results suite-fn case-fn seed test)
-  (foldts
+  (foldts-test-suite
    (lambda (suite name before after seed)
      (before)
      (suite-fn name seed))
@@ -254,7 +254,7 @@ Here's the implementation of @racket[fold-test-results] in terms of
 ]
 
 If you're used to folds you'll probably be a bit surprised that the
-functions you pass to @racket[foldts] receive both the structure they
+functions you pass to @racket[foldts-test-suite] receive both the structure they
 operate on, and the contents of that structure.  This is indeed
 unusual.  It is done to allow subtypes of test-case and test-suite to
 be run in customised ways.  For example, you might define subtypes of

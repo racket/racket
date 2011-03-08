@@ -40,8 +40,8 @@
     (run-case case model)
     state)
 
-  (foldts for-suite-entry for-suite-exit for-case
-          #f test))
+  (foldts-test-suite for-suite-entry for-suite-exit for-case
+                     #f test))
 
 ;; From old suite-runner:
 #|

@@ -33,7 +33,7 @@
 
 (provide (all-defined-out))
 
-;; foldts :
+;; foldts-test-suite :
 ;;   (test-suite string thunk thunk 'a -> 'a)
 ;;   (test-suite string thunk thunk 'a 'a -> 'a)
 ;;   (test-case string thunk 'a -> 'a)
@@ -49,7 +49,7 @@
 ;; between OO and FP.  FP gives up extensibility on
 ;; functions, OO on data.  Here we want extensibility on
 ;; data so FP is a bit ugly].
-(define (foldts fdown fup fhere seed test)
+(define (foldts-test-suite fdown fup fhere seed test)
   (cond
    ((rackunit-test-case? test)
     (fhere test
@@ -61,7 +61,7 @@
    (else
     (raise
      (make-exn:test
-      (format "foldts: Don't know what to do with ~a.  It isn't a test case or test suite." test)
+      (format "foldts-test-suite: Don't know what to do with ~a.  It isn't a test case or test suite." test)
       (current-continuation-marks))))))
 
 
@@ -87,7 +87,7 @@
                            #:run   [run run-test-case]
                            #:fdown [fdown 2nd-arg]
                            #:fup   [fup 2nd-arg])
-  (foldts
+  (foldts-test-suite
    (lambda (suite name before after seed)
      '(printf "into ~a\n" name)
      (before)
