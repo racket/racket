@@ -165,10 +165,10 @@
       (check-equal? foo 3)))
      
    (test-case
-    "Test simple foldts"
+    "Test simple foldts-test-suite"
     (check-equal?
      '(S (C C C))
-     (foldts
+     (foldts-test-suite
       (lambda (suite name before after seed)
         seed)
       (lambda (suite name before after seed kid-seed)

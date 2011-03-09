@@ -166,5 +166,5 @@
  #;[fold-test-results
     XXX]
  ; XXX Requires knowing more about test cases and structs
- #;[foldts
+ #;[foldts-test-suite
     XXX])
