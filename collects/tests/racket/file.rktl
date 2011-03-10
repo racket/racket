@@ -666,6 +666,9 @@
   (close-input-port p)
   (close-input-port q))
 
+;; We should be able to install the current permissions:
+(test (void) file-or-directory-permissions "tmp1" (file-or-directory-permissions "tmp1" 'bits))
+
 (define test-file 
   (open-output-file "tmp2" #:exists 'truncate))
 (write-char #\; test-file)
@@ -1459,6 +1462,9 @@
   (err/rt-test (rename-file-or-directory "tmp1" "tmp11") (fs-reject? 'rename-file-or-directory))
   (err/rt-test (copy-file "tmp1" "tmp11") (fs-reject? 'copy-file))
   (err/rt-test (make-file-or-directory-link "tmp1" "tmp11") (fs-reject? 'make-file-or-directory-link))
+  (err/rt-test (file-or-directory-permissions "tmp1" 7) (fs-reject? 'file-or-directory-permissions))
+  (err/rt-test (file-or-directory-permissions "tmp1" 0) (fs-reject? 'file-or-directory-permissions))
+  (test #t exact-integer? (file-or-directory-permissions "tmp1" 'bits))
   (let ([p (open-input-file "tmp1")])
     (test #t input-port? p)
     (close-input-port p))

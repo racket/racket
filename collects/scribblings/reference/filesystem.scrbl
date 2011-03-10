@@ -286,13 +286,46 @@ called, and the default @racket[fail-thunk] raises
 @racket[exn:fail:filesystem].}
 
 
-@defproc[(file-or-directory-permissions [path path-string?]) (listof symbol?)]{
+@defproc*[([(file-or-directory-permissions [path path-string?] [mode #f #f]) (listof (or/c 'read 'write 'execute))]
+           [(file-or-directory-permissions [path path-string?] [mode 'bits]) (integer-in 0 #xFFFF)]
+           [(file-or-directory-permissions [path path-string?] [mode (integer-in 0 #xFFFF)]) void])]{
 
-Returns a list containing @indexed-racket['read],
-@indexed-racket['write], and/or @indexed-racket['execute] for the
-given file or directory path. On error (e.g., if no such file exists),
-the @exnraise[exn:fail:filesystem]. Under @|AllUnix|, permissions are
-checked for the current effective user instead of the real user.}
+When given one argument or @racket[#f] as the second argument, returns
+a list containing @indexed-racket['read], @indexed-racket['write],
+and/or @indexed-racket['execute] to indicate permission the given file
+or directory path by the current user and group. Under @|AllUnix|,
+permissions are checked for the current effective user instead of the
+real user.
+
+If @racket['bits] is supplied as the second argument, the result is a
+platform-specific integer encoding of the file or directory properties
+(mostly permissions), and the result is independent of the current
+user and group. The lowest nine bits of the encoding are somewhat
+portable, reflecting permissions for the file or directory's owner,
+members of the file or directory's group, or other users:
+
+@itemlist[
+ @item{@racketvalfont{#o100} : owner has read permission}
+ @item{@racketvalfont{#o200} : owner has write permission}
+ @item{@racketvalfont{#o400} : owner has execute permission}
+ @item{@racketvalfont{#o010} : group has read permission}
+ @item{@racketvalfont{#o020} : group has write permission}
+ @item{@racketvalfont{#o040} : group has execute permission}
+ @item{@racketvalfont{#o001} : others have read permission}
+ @item{@racketvalfont{#o002} : others have write permission}
+ @item{@racketvalfont{#o004} : others have execute permission}
+]
+
+See also @racket[user-read-bit], etc. Under Windows, permissions from
+all three (owner, group, and others) are always the same, and read and
+execute permission are always available. Under @|AllUnix|,
+higher bits have a platform-specific meaning.
+
+If an integer is supplied as the second argument, its is used as an
+encoding of properties (mostly permissions) to install for the file.
+
+In all modes, the @exnraise[exn:fail:filesystem] on error (e.g., if no
+such file exists).}
 
 
 @defproc[(file-or-directory-identity [path path-string?]
@@ -1065,11 +1098,26 @@ on @racket[filename] would interfere with replacing @racket[filename]] via
            [(make-lock-file-name [dir path-string?] [name path-string?]) path-string?])]{
 Creates a lock filename by prepending @racket["_LOCK"] on windows or @racket[".LOCK"] on all other platforms
 to the file portion of the path.
-}
 
 @examples[
   #:eval file-eval
-  (make-lock-file-name "/home/george/project/important-file")]
+  (make-lock-file-name "/home/george/project/important-file")]}
+
+@deftogether[(
+@defthing[user-read-bit    @#,schemevalfont{#o100}]
+@defthing[user-write-bit   @#,schemevalfont{#o200}]
+@defthing[user-execute-bit @#,schemevalfont{#o400}]
+@defthing[group-read-bit    @#,schemevalfont{#o010}]
+@defthing[group-write-bit   @#,schemevalfont{#o020}]
+@defthing[group-execute-bit @#,schemevalfont{#o040}]
+@defthing[other-read-bit    @#,schemevalfont{#o001}]
+@defthing[other-write-bit   @#,schemevalfont{#o002}]
+@defthing[other-execute-bit @#,schemevalfont{#o004}]
+)]{
+
+Constants that are useful with @racket[file-or-directory-permissions]
+and bitwise operations such as @racket[bitwise-ior], and
+@racket[bitwise-and].}
 
 
 @(interaction-eval #:eval file-eval (delete-file filename))

@@ -495,7 +495,7 @@ void scheme_init_file(Scheme_Env *env)
   scheme_add_global_constant("file-or-directory-permissions",
 			     scheme_make_prim_w_arity(file_or_dir_permissions,
 						      "file-or-directory-permissions",
-						      1, 1), 
+						      1, 2), 
 			     env);
   scheme_add_global_constant("file-or-directory-identity",
 			     scheme_make_prim_w_arity(file_identity,
@@ -2102,7 +2102,7 @@ static time_t convert_date(const FILETIME *ft)
 # define MZ_UNC_EXEC 0x4
 
 static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Object **date,
-		    mzlonglong *filesize)
+		    mzlonglong *filesize, int set_flags)
   /* dirname must be absolute */
 {
   /* Note: stat() doesn't work with UNC "drive" names or \\?\ paths.
@@ -2147,22 +2147,36 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
     errno = -1;
     return 0;
   } else {
-    if (must_be_dir && !(GET_FF_ATTRIBS(fd) & FF_A_DIR))
-      return 0;
-    if (flags)
-      *flags = MZ_UNC_READ | MZ_UNC_EXEC | ((GET_FF_ATTRIBS(fd) & FF_A_RDONLY) ? 0 : MZ_UNC_WRITE);
-    if (date) {
-      Scheme_Object *dt;
-      time_t mdt;
-      mdt = GET_FF_MODDATE(fd);
-      dt = scheme_make_integer_value_from_time(mdt);
-      *date = dt;
-    }
-    if (isdir) {
-      *isdir = (GET_FF_ATTRIBS(fd) & FF_A_DIR);
-    }
-    if (filesize) {
-      *filesize = ((mzlonglong)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+    if (set_flags != -1) {
+      DWORD attrs = GET_FF_ATTRIBS(fd);
+
+      if (!(set_flags & MZ_UNC_WRITE))
+        attrs |= FF_A_RDONLY;
+      else if (attrs & FF_A_RDONLY)
+        attrs -= FF_A_RDONLY;
+      
+      if (!SetFileAttributesW(WIDE_PATH(copy), attrs)) {
+        errno = -1;
+        return 0;
+      }
+    } else {
+      if (must_be_dir && !(GET_FF_ATTRIBS(fd) & FF_A_DIR))
+        return 0;
+      if (flags)
+        *flags = MZ_UNC_READ | MZ_UNC_EXEC | ((GET_FF_ATTRIBS(fd) & FF_A_RDONLY) ? 0 : MZ_UNC_WRITE);
+      if (date) {
+        Scheme_Object *dt;
+        time_t mdt;
+        mdt = GET_FF_MODDATE(fd);
+        dt = scheme_make_integer_value_from_time(mdt);
+        *date = dt;
+      }
+      if (isdir) {
+        *isdir = (GET_FF_ATTRIBS(fd) & FF_A_DIR);
+      }
+      if (filesize) {
+        *filesize = ((mzlonglong)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+      }
     }
     return 1;
   }
@@ -2188,7 +2202,7 @@ int scheme_file_exists(char *filename)
 
   {
     int isdir;
-    return (UNC_stat(filename, strlen(filename), NULL, &isdir, NULL, NULL)
+    return (UNC_stat(filename, strlen(filename), NULL, &isdir, NULL, NULL, -1)
 	    && !isdir);
   }
 #  else
@@ -2212,7 +2226,7 @@ int scheme_directory_exists(char *dirname)
 #  ifdef DOS_FILE_SYSTEM
   int isdir;
 
-  return (UNC_stat(dirname, strlen(dirname), NULL, &isdir, NULL, NULL)
+  return (UNC_stat(dirname, strlen(dirname), NULL, &isdir, NULL, NULL, -1)
 	  && isdir);
 #  else
   struct MSC_IZE(stat) buf;
@@ -5283,7 +5297,7 @@ static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)
     int len = strlen(file);
     Scheme_Object *secs;
 
-    if (UNC_stat(file, len, NULL, NULL, &secs, NULL))
+    if (UNC_stat(file, len, NULL, NULL, &secs, NULL, -1))
       return secs;
   } else 
 # endif
@@ -5359,14 +5373,38 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *l = scheme_null;
   char *filename;
+  int as_bits = 0, set_bits = 0, new_bits = 0;
+  int err_val = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_type("file-or-directory-permissions", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (argc > 1) {
+    l = argv[1];
+    if (SCHEME_FALSEP(l)) {
+    } else if (SCHEME_SYMBOLP(l) && !SCHEME_SYM_WEIRDP(l)
+        && !strcmp("bits", SCHEME_SYM_VAL(l))) {
+      as_bits = 1;
+    } else {
+      as_bits = -1;
+      l = argv[1];
+      if (SCHEME_INTP(l) 
+          && (SCHEME_INT_VAL(l) >= 0) 
+          && (SCHEME_INT_VAL(l) <= 0xFFFF)) {
+        set_bits = 1;
+        new_bits = SCHEME_INT_VAL(l);
+      } else
+        scheme_wrong_type("file-or-directory-permissions", 
+                          "#f, 'bits, or an exact integer in [0, 65535]",
+                          1, argc, argv);
+    }
+  }
 
   filename = scheme_expand_string_filename(argv[0],
 					   "file-or-directory-permissions",
 					   NULL,
-					   SCHEME_GUARD_FILE_READ);
+					   (set_bits
+                                            ? SCHEME_GUARD_FILE_WRITE
+                                            : SCHEME_GUARD_FILE_READ));
 
 # ifdef NO_STAT_PROC
   return scheme_null;
@@ -5383,7 +5421,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
     egid = getegid();
   }
 
-  if ((uid == euid) && (gid == egid)) {
+  if (!as_bits && (uid == euid) && (gid == egid)) {
     /* Not setuid; use access() */
     int read, write, execute, ok;
     
@@ -5430,68 +5468,119 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
     {
       /* Use stat, because setuid, or because or no user info available */
       struct stat buf;
-      int read, write, execute;
+      int ok, read, write, execute;
 
-      if (stat(filename, &buf))
+      do {
+        ok = stat(filename, &buf);
+      } while ((ok == -1) && (errno == EINTR));
+
+      if (ok)
 	l = NULL;
       else {
+        if (as_bits) {
+          if (set_bits) {
+            do {
+              ok = chmod(filename, new_bits);
+            } while ((ok == -1) && (errno == EINTR));
+            if (ok)
+              l = NULL;
+            else
+              l = scheme_void;
+          } else {
+            int bits = buf.st_mode;
+#   ifdef S_IFMT
+            bits -= (bits & S_IFMT);
+#   endif
+            l = scheme_make_integer(bits);
+          }
+        } else {
 #   ifndef NO_UNIX_USERS
-	if (euid == 0) {
-	  /* Super-user can read/write anything, and can
-	     execute anything that someone can execute */
-	  read = 1;
-	  write = 1;
-	  execute = !!(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
-	} else if (buf.st_uid == euid) {
-	  read = !!(buf.st_mode & S_IRUSR);
-	  write = !!(buf.st_mode & S_IWUSR);
-	  execute = !!(buf.st_mode & S_IXUSR);
-	} else if ((egid == buf.st_gid) || user_in_group(euid, buf.st_gid)) {
-	  read = !!(buf.st_mode & S_IRGRP);
-	  write = !!(buf.st_mode & S_IWGRP);
-	  execute = !!(buf.st_mode & S_IXGRP);
-	} else {
-	  read = !!(buf.st_mode & S_IROTH);
-	  write = !!(buf.st_mode & S_IWOTH);
-	  execute = !!(buf.st_mode & S_IXOTH);
-	}
+          if (euid == 0) {
+            /* Super-user can read/write anything, and can
+               execute anything that someone can execute */
+            read = 1;
+            write = 1;
+            execute = !!(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
+          } else if (buf.st_uid == euid) {
+            read = !!(buf.st_mode & S_IRUSR);
+            write = !!(buf.st_mode & S_IWUSR);
+            execute = !!(buf.st_mode & S_IXUSR);
+          } else if ((egid == buf.st_gid) || user_in_group(euid, buf.st_gid)) {
+            read = !!(buf.st_mode & S_IRGRP);
+            write = !!(buf.st_mode & S_IWGRP);
+            execute = !!(buf.st_mode & S_IXGRP);
+          } else {
+            read = !!(buf.st_mode & S_IROTH);
+            write = !!(buf.st_mode & S_IWOTH);
+            execute = !!(buf.st_mode & S_IXOTH);
+          }
 #   else
-	read = !!(buf.st_mode & (S_IRUSR | S_IRGRP | S_IROTH));
-	write = !!(buf.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH));
-	execute = !!(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
+          read = !!(buf.st_mode & (S_IRUSR | S_IRGRP | S_IROTH));
+          write = !!(buf.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH));
+          execute = !!(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
 #   endif
 	
-	if (read)
-	  l = scheme_make_pair(read_symbol, l);
-	if (write)
-	  l = scheme_make_pair(write_symbol, l);
-	if (execute)
-	  l = scheme_make_pair(execute_symbol, l);
+          if (read)
+            l = scheme_make_pair(read_symbol, l);
+          if (write)
+            l = scheme_make_pair(write_symbol, l);
+          if (execute)
+            l = scheme_make_pair(execute_symbol, l);
+        }
       }
     }
+  if (!l)
+    err_val = errno;
 #  endif  
 #  ifdef DOS_FILE_SYSTEM
   {
     int len = strlen(filename);
     int flags;
-    
-    if (UNC_stat(filename, len, &flags, NULL, NULL, NULL)) {
-      if (flags & MZ_UNC_READ)
-	l = scheme_make_pair(read_symbol, l);
-      if (flags & MZ_UNC_WRITE)
-	l = scheme_make_pair(write_symbol, l);
-      if (flags & MZ_UNC_EXEC)
-	l = scheme_make_pair(execute_symbol, l);
+
+    if (set_bits) {
+      int ALWAYS_SET_BITS = ((MZ_UNC_READ | MZ_UNC_EXEC)
+                             | ((MZ_UNC_READ | MZ_UNC_EXEC) << 3)
+                             | ((MZ_UNC_READ | MZ_UNC_EXEC) << 6));
+      if (((new_bits & ALWAYS_SET_BITS) != ALWAYS_SET_BITS)
+          || ((new_bits & MZ_UNC_WRITE) != ((new_bits & (MZ_UNC_WRITE << 3)) >> 3))
+          || ((new_bits & MZ_UNC_WRITE) != ((new_bits & (MZ_UNC_WRITE << 6)) >> 6))
+          || (new_bits >= (1 << 9)))
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "file-or-directory-permissions: update of \"%q\" failed:"
+                         " unsupported bit combination in %d",
+                         filename_for_error(argv[0]),
+                         new_bits);
+      l = scheme_void;
     } else
+      new_bits = -1;
+    
+    if (UNC_stat(filename, len, &flags, NULL, NULL, NULL, new_bits)) {
+      if (set_bits)
+	l = scheme_void;
+      else if (as_bits)
+        l = scheme_make_integer(flags | (flags << 3) | (flags << 6));
+      else {
+        if (flags & MZ_UNC_READ)
+          l = scheme_make_pair(read_symbol, l);
+        if (flags & MZ_UNC_WRITE)
+          l = scheme_make_pair(write_symbol, l);
+        if (flags & MZ_UNC_EXEC)
+          l = scheme_make_pair(execute_symbol, l);
+      }
+    } else {
       l = NULL;
+      err_val = GetLastError();
+    }
   }
 #  endif
 # endif
   
   if (!l) {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		     "file-or-directory-permissions: file or directory not found: \"%q\"",
-		     filename_for_error(argv[0]));
+		     "file-or-directory-permissions: %s of \"%q\" failed: %e",
+                     set_bits ? "update" : "access",
+		     filename_for_error(argv[0]),
+                     err_val);
   }
 
   return l;
@@ -5531,7 +5620,7 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 
 #ifdef DOS_FILE_SYSTEM
  {
-   if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, &len)) {
+   if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, &len, -1)) {
      return scheme_make_integer_value_from_long_long(len);
    }
  }
