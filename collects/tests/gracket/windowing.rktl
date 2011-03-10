@@ -1037,20 +1037,28 @@
 
 (test-controls frame frame)
 
-(define (panel-tests frame% show?)
-  (define (panel-test % win?)
+(define (panel-tests frame% show? #:shorter? [shorter? shorter?])
+  (define (panel-test % win? 
+                      #:choices? [choices? #f]
+                      #:label? [label? #f]
+                      #:margin [m 0])
     (let* ([frame (make-object frame% "Panel Test" #f 100 100)]
            [panel (if %
-		      (make-object % frame)
+                      (cond
+                       [choices?
+                        (new % [parent frame] [choices '("A" "B")])]
+                       [label?
+                        (new % [parent frame] [label "Stuff"])]
+                       [else (new % [parent frame])])
 		      frame)])
       (let ([go
 	     (lambda ()
 	       (test-controls panel frame)
 	       (if win?
-		   ((if % containee-window-tests window-tests) panel #t #t (and % frame) frame 0)
+		   ((if % containee-window-tests window-tests) panel #t #t (and % frame) frame m)
 		   (area-tests panel #t #t #f #f))
                (when (is-a? panel panel%)
-                 (st #t panel get-orientation (is-a? panel horizontal-panel%)))
+                 (st (is-a? panel horizontal-panel%) panel get-orientation))
 	       (container-tests panel win?)
 	       (send frame show #f))])
 	(when (eq? show? 'dialog)
@@ -1064,12 +1072,13 @@
     (panel-test vertical-pane% #f)
     (panel-test horizontal-pane% #f)
     (panel-test vertical-panel% #t)
-    (panel-test horizontal-panel% #t)))
+    (panel-test horizontal-panel% #t))
+  (panel-test tab-panel% #t #:choices? #t)
+  (panel-test group-box-panel% #t #:label? #t #:margin 2))
 
 (panel-tests dialog% #f)
-(panel-tests frame% #t)
+(panel-tests frame% #t #:shorter? #f)
 (panel-tests frame% #f)
 (panel-tests dialog% 'dialog)
-
 
 (report-errs)
