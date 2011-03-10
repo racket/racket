@@ -24,7 +24,7 @@ In addition to the parameters defined in this section,
 @scheme[print-as-expression] parameters.
 
 The pretty printer detects structures that have the
-@scheme[prop:custom-write] property and it calls the corresponding
+@scheme[prop:custom-write] property and calls the corresponding
 custom-write procedure. The custom-write procedure can check the
 parameter @scheme[pretty-printing] to cooperate with the
 pretty-printer. Recursive printing to the port automatically uses
@@ -88,7 +88,7 @@ the output.}
 Parameter that controls the default depth for recursive pretty
 printing. Printing to @scheme[depth] means that elements nested more
 deeply than @scheme[depth] are replaced with ``...''; in particular, a
-depth of 0 indicates that only simple values are printed. A depth of
+depth of @racket[0] indicates that only simple values are printed. A depth of
 @scheme[#f] (the default) allows printing to arbitrary
 depths.}
 
@@ -122,7 +122,7 @@ printed with a leading @litchar{#i}. The initial value is @scheme[#f].}
 @defboolparam[pretty-print-abbreviate-read-macros abbrev?]{
 
 A parameter that controls whether or not @schemeidfont{quote},
-@schemeidfont{unquote}, @schemeidfont{unquote-splicing}, @|etc| are
+@schemeidfont{unquote}, @schemeidfont{unquote-splicing}, @|etc|, are
 abbreviated with @litchar{'}, @litchar{,}, @litchar[",@"], etc. 
 By default, the abbreviations are enabled.
 
@@ -153,7 +153,7 @@ Creates a new style table by extending an existing
 corresponding symbol of @scheme[symbol-list] in the new table. The
 @scheme[symbol-list] and @scheme[like-symbol-list] lists must have the
 same length. The @scheme[style-table] argument can be @scheme[#f], in
-which case with default mappings are used for the original table (see
+which case the default mappings are used from the original table (see
 below).
 
 The style mapping for a symbol controls the way that whitespace is
@@ -193,12 +193,12 @@ A parameter that controls remapping for styles and for the determination of
 the reader shorthands.
 
 This procedure is
-called with each subexpression that appears as the first element in a
+called with each sub-expression that appears as the first element in a
 sequence. If it returns a symbol, the style table is used, as if that
 symbol were at the head of the sequence. If it returns @scheme[#f],
 the style table is treated normally.
-Similarly, when determining whether or not to abbreviate reader macros,
-the parameter is consulted.
+Similarly, when determining whether to abbreviate reader macros,
+this parameter is consulted.
 }
 
 
@@ -234,8 +234,8 @@ beginning of the new line.
 
 The @scheme[proc] procedure is called before any characters are
 printed with @scheme[0] as the line number and @scheme[0] as the old
-line length; @scheme[proc] is called after the last character for a
-value is printed with @scheme[#f] as the line number and with the
+line length; @scheme[proc] is called after the last character of a
+value has been printed with @scheme[#f] as the line number and with the
 length of the last line. Whenever the pretty-printer starts a new
 line, @scheme[proc] is called with the new line's number (where the
 first new line is numbered @scheme[1]) and the just-finished line's
@@ -278,7 +278,7 @@ called to actually print the value (see
 @scheme[pretty-print-print-hook]).
 
 The sizing hook receives three arguments. The first argument is the
-value to print.  The second argument is a Boolean: @scheme[#t] for
+value to print.  The second argument is a boolean: @scheme[#t] for
 printing like @scheme[display] and @scheme[#f] for printing like
 @scheme[write]. The third argument is the destination port; the port
 is the one supplied to @scheme[pretty-print] or
@@ -356,7 +356,7 @@ decremented to leave room for a terminator. The
 @scheme[overflow-thunk] procedure is called if more than
 @scheme[width] items are printed to the port or if a newline is
 printed to the port via @racket[pretty-print-newline]; it can escape from the
-recursive print through a continuation as a short cut, but
+recursive print through a continuation as a shortcut, but
 @scheme[overflow-thunk] can also return, in which case it is called
 every time afterward that additional output is written to the port.
 

@@ -27,7 +27,7 @@ input port makes more space available. (Peeks effectively extend the
 port's capacity until the peeked bytes are read.)
 
 The optional @racket[input-name] and @racket[output-name] are used
-as the names for the returned input and out ports, respectively.}
+as the names for the returned input and output ports, respectively.}
 
 @defproc[(pipe-content-length [pipe-port port?]) exact-nonnegative-integer?]{
 

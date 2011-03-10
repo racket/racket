@@ -640,7 +640,7 @@ Each @scheme[public], @scheme[override], @scheme[augment],
 @scheme[augment-final], and @scheme[private] clause in a class
 declares one or more method names. Each method name must have a
 corresponding @scheme[method-definition]. The order of
-@scheme[public], @|etc| clauses and their corresponding definitions
+@scheme[public], @|etc|, clauses and their corresponding definitions
 (among themselves, and with respect to other clauses in the class)
 does not matter.
 

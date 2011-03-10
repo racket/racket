@@ -19,17 +19,17 @@ thread is eventually unblocked.
 In addition to its use with semaphore-specific procedures, semaphores
 can be used as events; see @secref["sync"].
 
+@defproc[(semaphore? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{semaphore}, 
+@scheme[#f] otherwise.}
+
+
 @defproc[(make-semaphore [init exact-nonnegative-integer? 0]) semaphore?]{
 
 Creates and returns a new semaphore with the counter initially set to
 @scheme[init]. If @scheme[init] is larger than a semaphore's maximum
 internal counter value, the @exnraise[exn:fail].}
-
-
-@defproc[(semaphore? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a semaphore created by
-@scheme[make-semaphore], @scheme[#f] otherwise.}
 
 
 @defproc[(semaphore-post [sema semaphore?]) void?]{Increments the

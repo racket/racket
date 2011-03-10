@@ -26,7 +26,7 @@ bindings introduced by @racket[pat] (if any). The last @racket[body]
 in the matching clause is evaluated in tail position with respect to
 the @racket[match] expression.
 
-The @racket[clause]s are tried in order to find a match. If no
+To find a match, the @racket[clause]s are tried in order. If no
 @racket[clause] matches, then the @exnraise[exn:misc:match?].
 
 An optional @racket[(=> id)] between a @racket[pat] and the
@@ -95,9 +95,9 @@ In more detail, patterns match as follows:
        corresponds to a ``spliced'' list of greedy matches.
 
        For spliced lists, @racketidfont{...} and @racketidfont{___}
-       are synonyms for zero or more matches. The
+       are aliases for zero or more matches. The
        @racketidfont{..}@racket[_k] and @racketidfont{__}@racket[_k]
-       forms are also synonyms, specifying @racket[_k] or more
+       forms are also aliases, specifying @racket[_k] or more
        matches. Pattern variables that precede these splicing
        operators are bound to lists of matching forms.
 
@@ -439,14 +439,14 @@ A predicate for the exception raised in the case of a match failure.
 
 Binds @racket[id] to a @deftech{match expander}.
 
-The first @racket[proc-expr] subexpression must evaluate to a
+The first @racket[proc-expr] sub-expression must evaluate to a
  transformer that produces a @racket[_pat] for @racket[match].
  Whenever @racket[id] appears as the beginning of a pattern, this
  transformer is given, at expansion time, a syntax object
  corresponding to the entire pattern (including @racket[id]).  The
  pattern is replaced with the result of the transformer.
 
-A transformer produced by a second @racket[proc-expr] subexpression is
+A transformer produced by a second @racket[proc-expr] sub-expression is
  used when @racket[id] is used in an expression context. Using the
  second @racket[proc-expr], @racket[id] can be given meaning both
  inside and outside patterns.}

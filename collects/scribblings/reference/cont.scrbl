@@ -181,7 +181,7 @@ than @racket[call-with-current-continuation].
 
 A continuation obtained from @racket[call-with-escape-continuation] is
 actually a kind of prompt. Escape continuations are provided mainly
-for backward compatibility, since they pre-date general prompts in
+for backwards compatibility, since they pre-date general prompts in
 Racket, and because @racket[call/ec] is often an easy replacement
 for @racket[call/cc] to improve performance.}
 

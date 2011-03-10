@@ -1041,10 +1041,11 @@ context of the @racket[phaseless-spec] form.}
 The following forms support more complex selection and manipulation of
 sets of imported identifiers.
 
-@defform[(matching-identifiers-in regexp require-spec)]{ Like
-  @racket[require-spec], but including only imports whose names match
-  @racket[regexp].  The @racket[regexp] must be a literal regular
-  expression (see @secref["regexp"]).
+@defform[(matching-identifiers-in regexp require-spec)]{
+
+Like @racket[require-spec], but including only imports whose names
+ match @racket[regexp].  The @racket[regexp] must be a literal regular
+ expression (see @secref["regexp"]).
 
 @defexamples[#:eval (syntax-eval)
 (module zoo racket/base
@@ -1064,8 +1065,9 @@ blowfish
 monkey
 ]}
 
-@defform[(subtract-in require-spec subtracted-spec ...)]{ Like
-  @racket[require-spec], but omitting those imports that would be
+@defform[(subtract-in require-spec subtracted-spec ...)]{
+
+Like @racket[require-spec], but omitting those imports that would be
   imported by one of the @racket[subtracted-spec]s.
 
 @defexamples[#:eval (syntax-eval)
@@ -1119,17 +1121,18 @@ directory, etc., all the way to the root directory. The discovered
 path relative to the enclosing source becomes part of the expanded
 form.
 
-This form is useful in setting up a ``project environment''.  For
-example, you can write a @filepath{config.ss} file in the root
-directory of your project with:
+This form is useful in setting up a ``project environment.''  For
+example, using the following @filepath{config.rkt} file in the root
+directory of your project:
 @racketmod[
   racket/base
-  (require racket/require-syntax (for-syntax "utils/in-here.ss"))
+  (require racket/require-syntax 
+           (for-syntax "utils/in-here.rkt"))
   ;; require form for my utilities
   (provide utils-in)
   (define-require-syntax utils-in in-here-transformer)
 ]
-and in @filepath{utils/in-here.ss} in the root:
+and using @filepath{utils/in-here.rkt} under the same root directory:
 @racketmod[
   racket/base
   (require racket/runtime-path)
@@ -1139,22 +1142,26 @@ and in @filepath{utils/in-here.ss} in the root:
     (syntax-case stx ()
       [(_ sym)
        (identifier? #'sym)
-       (let ([path (build-path here (format "~a.ss" (syntax-e #'sym)))])
+       (let ([path (build-path here (format "~a.rkt" (syntax-e #'sym)))])
          (datum->syntax stx `(file ,(path->string path)) stx))]))
 ]
-Finally, you can use it via @racket[path-up]:
+then @racket[path-up] works for any other module under the project
+ directory to find @filepath{config.rkt}:
 @racketblock[
-  (require racket/require (path-up "config.ss") (utils-in foo))]
-Note that the order of requires in this example is important, as each of
+  (require racket/require 
+           (path-up "config.rkt")
+           (utils-in foo))]
+Note that the order of requires in the example is important, as each of
 the first two bind the identifier used in the following.
 
 An alternative in this scenario is to use @racket[path-up] directly to
-get to the utility module:
+find the utility module:
 @racketblock[
-  (require racket/require (path-up "utils/foo.ss"))]
-but then you need to be careful with subdirectories that are called
-@filepath{utils}, which will override the one in the project's root.
-In other words, the previous method requires a single unique name.}
+  (require racket/require 
+           (path-up "utils/foo.rkt"))]
+but then sub-directories that are called
+@filepath{utils} override the one in the project's root.
+In other words, the previous method requires only a single unique name.}
 
 @; --------------------
 

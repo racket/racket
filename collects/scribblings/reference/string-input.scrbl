@@ -118,7 +118,7 @@ modified. If no bytes are available before an end-of-file, then
 @scheme[eof] is returned. Otherwise, the return value is the number of
 characters read. If @math{m} characters are read and
 @math{m<@scheme[end-pos]-@scheme[start-pos]}, then @scheme[str] is
-not modified at indices @math{@scheme[start-pos]+m} though
+not modified at indices @math{@scheme[start-pos]+m} through
 @scheme[end-pos].}
 
 @defproc[(read-bytes! [bstr bytes?]
@@ -135,8 +135,8 @@ string, and returns the number of bytes read.}
                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-positive-integer? eof-object? procedure?)]{
 
-Like @scheme[read-bytes!], but it returns without blocking after
-reading immediately-available bytes, and it may return a procedure for
+Like @scheme[read-bytes!], but returns without blocking after having
+read the immediately available bytes, and it may return a procedure for
 a ``special'' result. The @scheme[read-bytes-avail!] procedure blocks
 only if no bytes (or specials) are yet available. Also unlike
 @scheme[read-bytes!], @scheme[read-bytes-avail!] never drops bytes; if
@@ -284,10 +284,10 @@ with @scheme[skip-bytes-amt] and @scheme[progress] arguments like
 @defproc[(read-char-or-special [in input-port? (current-input-port)])
          (or/c character? eof-object? any/c)]{
 
-Like @scheme[read-char], but that if the input port returns a non-byte
+Like @scheme[read-char], but if the input port returns a non-byte
 value (through a value-generating procedure in a custom port; see
 @secref["customport"] and @secref["special-comments"] for
-details), the non-byte value is returned.}
+details), then the non-byte value is returned.}
 
 @defproc[(read-byte-or-special [in input-port? (current-input-port)])
          (or/c byte? eof-object? any/c)]{
@@ -299,7 +299,7 @@ instead of a character.}
                     [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c character? eof-object?)]{
 
-Like @scheme[read-char], but peeks instead of reading, and skipping
+Like @scheme[read-char], but peeks instead of reading, and skips
 @scheme[skip-bytes-amt] bytes (not characters) at the start of the
 port.}
 
@@ -315,7 +315,7 @@ character.}
          (or/c character? eof-object? any/c)]{
 
 Like @scheme[peek-char], but if the input port returns a non-byte
-value after @scheme[skip-bytes-amt] byte positions, it is returned.}
+value after @scheme[skip-bytes-amt] byte positions, then it is returned.}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
@@ -332,7 +332,7 @@ like @scheme[peek-bytes-avail!].}
 Returns an event that becomes ready after any subsequent read from
 @scheme[in], or after @scheme[in] is closed. After the event becomes
 ready, it remains ready.  If progress events are unavailable for
-@scheme[in] (as reported by @scheme[port-provides-progress-evts?]) the
+@scheme[in] (as reported by @scheme[port-provides-progress-evts?]), then the
 @exnraise[exn:fail:contract].}
 
 @defproc[(port-provides-progress-evts? [in input-port?]) boolean]{
@@ -352,7 +352,7 @@ Attempts to commit as read the first @scheme[amt] previously peeked
 bytes, non-byte specials, and @scheme[eof]s from @scheme[in], or the
 first @scheme[eof] or special value peeked from
 @scheme[in]. (Only mid-stream @scheme[eof]s can be
-committed. A @scheme[eof] when the port is exhausted does not
+committed. An @scheme[eof] when the port is exhausted does not
 correspond to data in the stream.)
 
 The read commits only if @scheme[progress] does not become ready first
@@ -364,7 +364,7 @@ channel, semaphore, semaphore-peek event, always event, or never
 event. Suspending the thread that calls @scheme[port-commit-peeked]
 may or may not prevent the commit from proceeding.
 
-The result from @scheme[port-commit-peeked] is @scheme[#t] if data is
+The result from @scheme[port-commit-peeked] is @scheme[#t] if data has been
 committed, and @scheme[#f] otherwise.
 
 If no data has been peeked from @scheme[in] and @scheme[progress] is

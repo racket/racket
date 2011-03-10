@@ -15,7 +15,7 @@ The @scheme[racket/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
 in terms of @scheme[call-with-continuation-prompt],
-@scheme[call-with-composable-continuations], etc., and they generally
+@scheme[call-with-composable-continuations], @|etc|, and they generally
 work sensibly together. Many are redundant; for example,
 @scheme[reset] and @scheme[prompt] are aliases.
  
@@ -160,7 +160,7 @@ tags.}
 @defform[(shift0 id expr ...+)]
 )]{
 
-Generalizations of @scheme[prompt], etc. @cite["Shan04"].
+Generalizations of @scheme[prompt], @|etc| @cite["Shan04"].
 
 The essential reduction rules are:
 
@@ -200,7 +200,7 @@ behavior, otherwise the non-@scheme[0] behavior applies.}
 @defform[(shift0-at prompt-tag-expr id expr ...+)]
 )]{
 
-Variants of @scheme[prompt0], @|etc| that accept a prompt tag.}
+Variants of @scheme[prompt0], @|etc|, that accept a prompt tag.}
 
 @; ----------------------------------------------------------------------
 

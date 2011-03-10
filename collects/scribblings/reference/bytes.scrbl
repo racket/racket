@@ -157,7 +157,7 @@ string.
 @defproc[(bytes->list [bstr bytes?]) (listof byte?)]{ Returns a new
  list of bytes corresponding to the content of @scheme[bstr]. That is,
  the length of the list is @scheme[(bytes-length bstr)], and the
- sequence of bytes of @scheme[bstr] is the same sequence in the
+ sequence of bytes in @scheme[bstr] is the same sequence in the
  result list.
 
 @mz-examples[(bytes->list #"Apple")]}
@@ -166,7 +166,7 @@ string.
 @defproc[(list->bytes [lst (listof byte?)]) bytes?]{ Returns a new
  mutable byte string whose content is the list of bytes in @scheme[lst].
  That is, the length of the byte string is @scheme[(length lst)], and
- the sequence of bytes in @scheme[lst] is in the same sequence in
+ the sequence of bytes in @scheme[lst] is the same sequence in
  the result byte string.
 
 @mz-examples[(list->bytes (list 65 112 112 108 101))]}
@@ -229,7 +229,7 @@ When @secref["places"] are enabled, the new byte string is allocated in the
  substring of @scheme[bstr] as a UTF-8 encoding of Unicode code
  points.  If @scheme[err-char] is not @scheme[#f], then it is used for
  bytes that fall in the range @scheme[#o200] to @scheme[#o377] but are
- not part of a valid encoding sequence. (This is consistent with
+ not part of a valid encoding sequence. (This rule is consistent with
  reading characters from a port; see @secref["encodings"] for more
  details.)  If @scheme[err-char] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a

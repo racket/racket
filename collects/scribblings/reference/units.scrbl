@@ -117,7 +117,7 @@ As suggested by the grammar, these adjustments to a signature can be
 nested arbitrarily.
 
 A unit's declared imports are matched with actual supplied imports by
-signature. That is, the order in which imports are suppplied to a unit
+signature. That is, the order in which imports are supplied to a unit
 when linking is irrelevant; all that matters is the signature
 implemented by each supplied import. One actual import must be
 provided for each declared import. Similarly, when a unit implements

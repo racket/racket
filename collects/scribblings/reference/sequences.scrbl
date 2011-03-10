@@ -518,7 +518,7 @@ in the sequence.
 
 @defform[(infinite-generator body ...)]{
   Creates a function similar to @scheme[generator] but when the last
-  @scheme[body] is evaluated, the function will re-evaluates all the bodies
+  @scheme[body] is evaluated, the function will re-evaluate all of the bodies
   in a loop.
 
   @examples[#:eval generator-eval

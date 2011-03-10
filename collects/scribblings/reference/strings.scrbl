@@ -145,7 +145,7 @@ contains the concatenated characters of the given @scheme[str]s. If no
 @defproc[(string->list [str string?]) (listof char?)]{ Returns a new
  list of characters corresponding to the content of @scheme[str]. That is,
  the length of the list is @scheme[(string-length str)], and the
- sequence of characters of @scheme[str] is the same sequence in the
+ sequence of characters in @scheme[str] is the same sequence in the
  result list.
 
 @mz-examples[(string->list "Apple")]}
@@ -154,7 +154,7 @@ contains the concatenated characters of the given @scheme[str]s. If no
 @defproc[(list->string [lst (listof char?)]) string?]{ Returns a new
  mutable string whose content is the list of characters in @scheme[lst].
  That is, the length of the string is @scheme[(length lst)], and
- the sequence of characters in @scheme[lst] is in the same sequence in
+ the sequence of characters in @scheme[lst] is the same sequence in
  the result string.
 
 @mz-examples[(list->string (list #\A #\p #\p #\l #\e))]}

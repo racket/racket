@@ -15,15 +15,15 @@ Each property value can be either of the following:
 @itemize[
  
  @item{An input port (for @scheme[prop:input-port]) or output port
-  (for @scheme[prop:input-port]): In this case, using the structure
-  as port is equivalent to using the given one.}
+  (for @scheme[prop:output-port]): In this case, using the structure
+  as port is equivalent to using the given input or output port.}
 
  @item{An exact, non-negative integer between @scheme[0] (inclusive) and
-  number of non-automatic fields in the structure type (exclusive, not
+  the number of non-automatic fields in the structure type (exclusive, not
   counting supertype fields): The integer identifies a field in
   the structure, and the field must be designated as immutable. If the
   field contains an input port (for @scheme[prop:input-port]) or
-  output port (for @scheme[prop:input-port]), the port is used.
+  output port (for @scheme[prop:output-port]), the port is used.
   Otherwise, an empty string input port is used for @scheme[prop:input-port],
   and a port that discards all data is used for @scheme[prop:output-port].}
 

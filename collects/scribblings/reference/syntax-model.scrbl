@@ -573,9 +573,9 @@ way that unexported and protected @tech{module bindings} are used. See
 @secref["stxcerts"] for more information on @tech{syntax
 certificates}.
 
-The expander's handling of @racket[letrec-values+syntaxes] is similar
+The expander's handling of @racket[letrec-syntaxes+values] is similar
 to its handling of @racket[define-syntaxes]. A
-@racket[letrec-values+syntaxes] might be expanded in an arbitrary phase
+@racket[letrec-syntaxes+values] can be expanded in an arbitrary phase
 level @math{n} (not just 0), in which case the expression for the
 @tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
@@ -633,7 +633,7 @@ recursively expands only until the form becomes one of the following:
        @racket[define-values] form before expansion continues. When a
        @racket[define-syntaxes] form is discovered, the right-hand
        side is expanded and evaluated (as for a
-       @racket[letrec-values+syntaxes] form), and a transformer
+       @racket[letrec-syntaxes+values] form), and a transformer
        binding is installed for the body sequence before expansion
        continues.}
 

@@ -221,7 +221,7 @@ Like @racket[struct], except that the syntax for supplying a
 a @racketidfont{make-} prefix on @racket[id] is implicitly supplied
 via @racket[#:extra-constructor-name].
 
-This form is provided for backward compatibility; @racket[struct] is
+This form is provided for backwards compatibility; @racket[struct] is
 preferred.
 
 @defexamples[

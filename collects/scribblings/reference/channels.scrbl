@@ -16,6 +16,11 @@ often, then the thread eventually participates in a transaction.
 
 For buffered asynchronous channels, see @secref["async-channel"].
 
+@defproc[(channel? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{channel}, 
+@scheme[#f] otherwise.}
+
 @defproc[(make-channel) channel?]{
 
 Creates and returns a new channel. The channel can be used with
@@ -24,12 +29,6 @@ Creates and returns a new channel. The channel can be used with
 through the channel. The channel can be used with @scheme[channel-put]
 or through the result of @scheme[channel-put-evt] to send a value
 through the channel.}
-
-@defproc[(channel? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a channel created by
-@scheme[make-channel], @scheme[#f] otherwise.}
-
 
 @defproc[(channel-get [ch channel?]) any]{
 

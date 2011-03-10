@@ -50,7 +50,7 @@ readtable is ignored until the comment's terminating newline is
 discovered. Similarly, the readtable does not affect string parsing
 until a closing double-quote is found.  Meanwhile, if a character is
 mapped to the default behavior of @litchar{(}, then it starts sequence
-that is closed by any character that is mapped to a close parenthesis
+that is closed by any character that is mapped to a closing parenthesis
 @litchar{)}. An apparent exception is that the default parsing of
 @litchar{|} quotes a symbol until a matching character is found, but
 the parser is simply using the character that started the quote; it
@@ -130,7 +130,7 @@ The possible combinations for @racket[key], @racket[mode], and
 
  @item{@racket[(code:line #f (unsyntax @indexed-racket['non-terminating-macro]) _proc)] ---
  replaces the macro used to parse characters with no specific mapping:
- i.e., characters (other than @litchar{#} or @litchar{|}) that can
+ i.e., the characters (other than @litchar{#} or @litchar{|}) that can
  start a symbol or number with the default readtable.}
 
 ]
@@ -171,7 +171,7 @@ Produces information about the mappings in @racket[readtable] for
 
 @itemize[
 
- @item{either a character (mapping is to same behavior as the
+ @item{either a character (mapping to same behavior as the
  character in the default readtable), @racket['terminating-macro], or
  @racket['non-terminating-macro]; this result reports the main (i.e.,
  non-@racket['dispatch-macro]) mapping for @racket[key]. When the result
@@ -333,11 +333,11 @@ can be triggered by calls to @racket[read-honu],
 @racket[read-honu/recursive], @racket[read-honu-syntax],
 @racket[read-honu-syntax/recursive], @racket[read-char-or-special], or
 by the context of @racket[read-bytes-avail!],
-@racket[read-bytes-avail!*], @racket[read-bytes-avail!], and
+@racket[peek-bytes-avail!*], @racket[read-bytes-avail!], and
 @racket[peek-bytes-avail!*].
 
 Optional arities for reader-macro and special-result procedures allow
-them to distinguish reads via @racket[read], @|etc| from reads via
+them to distinguish reads via @racket[read], @|etc|, from reads via
 @racket[read-syntax], @|etc| (where the source value is @racket[#f] and
 no other location information is available).
 
@@ -365,7 +365,7 @@ Also, in either context, the result may be copied to prevent mutation
 to vectors or boxes before the read result is completed, and to
 support the construction of graphs with cycles. Mutable boxes,
 vectors, and @tech{prefab} structures are copied, along with any
-pairs, boxes, vectors, pre prefab structures that lead to such mutable
+pairs, boxes, vectors, prefab structures that lead to such mutable
 values, to placeholders produced by a recursive read (see
 @racket[read/recursive]), or to references of a shared value. Graph
 structure (including cycles) is preserved in the copy.
@@ -376,7 +376,7 @@ structure (including cycles) is preserved in the copy.
 @defproc[(make-special-comment [v any/c]) special-comment?]{
 
 Creates a special-comment value that encapsulates @racket[v]. The
-@racket[read], @racket[read-syntax], @|etc| procedures treat values
+@racket[read], @racket[read-syntax], @|etc|, procedures treat values
 constructed with @racket[make-special-comment] as delimiting
 whitespace when returned by a reader-extension procedure (see
 @secref["reader-procs"]).}
@@ -390,5 +390,5 @@ Returns @racket[#t] if @racket[v] is the result of
 
 Returns the value encapsulated by the special-comment value
 @racket[sc]. This value is never used directly by a reader, but it
-might be used by the context of a @racket[read-char-or-special], @|etc|
+might be used by the context of a @racket[read-char-or-special], @|etc|,
 call that detects a special comment.}

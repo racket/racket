@@ -53,5 +53,5 @@ terminal, @scheme[#f] otherwise.}
 @defthing[eof eof-object?]{A value (distinct from all other values)
 that represents an end-of-file.}
 
-@defproc[(eof-object? [a any/c]) boolean?]{Returns @scheme[#t] is
+@defproc[(eof-object? [a any/c]) boolean?]{Returns @scheme[#t] if
 @scheme[v] is @scheme[eof], @scheme[#f] otherwise.}

@@ -25,7 +25,7 @@ return-linefeed combinations as a line terminator and as a single
 position (on all platforms). Each tab advances the column count to one
 before the next multiple of @math{8}. When a sequence of bytes in the
 range 128 to 253 forms a UTF-8 encoding of a character, the
-position/column is incremented is incremented once for each byte, and
+position/column is incremented once for each byte, and
 then decremented appropriately when a complete encoding sequence is
 discovered. See also @secref["ports"] for more information on UTF-8
 decoding for ports.
@@ -64,7 +64,7 @@ be disabled for a port after it is enabled.}
 Returns three values: an integer or @racket[#f] for the line number of
 the next read/written item, an integer or @racket[#f] for the next
 item's column, and an integer or @racket[#f] for the next item's
-position. The next column and position normally increases as bytes are
+position. The next column and position normally increase as bytes are
 read from or written to the port, but if line/character counting is
 enabled for @racket[port], the column and position results can
 decrease after reading or writing a byte that ends a UTF-8 encoding

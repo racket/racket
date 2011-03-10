@@ -120,22 +120,22 @@ racket
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
-  Returns two @tech{place channels}. Data send through the first
-  channel can be received through the second channel, and data send
+  Returns two @tech{place channels}. Data sent through the first
+  channel can be received through the second channel, and data sent
   through the second channel can be received from the first.
 
   Typically, one place channel is used by the current @tech{place} to
   send messages to a destination @tech{place}; the other place channel
-  us sent to the destination @tech{place} (via an existing @tech{place
+  is sent to the destination @tech{place} (via an existing @tech{place
   channel}).
 }
 
 @defproc[(place-channel-send [pch place-channel?] [v any/c]) void]{
-  Sends a message @racket[v] on channel @racket[pch].
+  Sends an immutable message @racket[v] on channel @racket[pch].
 }
 
 @defproc[(place-channel-recv [pch place-channel?]) any/c]{
-  Returns a message received on channel @racket[pch].
+  Returns an immutable message received on channel @racket[pch].
 }
 
 @defproc[(place-channel-send/recv [pch place-channel?] [v any/c]) void]{

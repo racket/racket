@@ -72,7 +72,7 @@ See also the @racketmodname[racket/date] library.}
 
 Returns the current ``time'' in @tech{fixnum} milliseconds (possibly
 negative). This time is based on a platform-specific starting date or
-on the machine's startup time. Since the result is a @tech{fixnum},
+on the machine's start-up time. Since the result is a @tech{fixnum},
 the value increases only over a limited (though reasonably long)
 time.}
 

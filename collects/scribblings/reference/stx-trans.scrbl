@@ -178,7 +178,7 @@ value and @scheme[cons] it onto the current result of
 @scheme[syntax-local-context] if it is a list.
 
 When an identifier in @scheme[stop-ids] is encountered by the expander
-in a subexpression, expansions stops for the subexpression. If
+in a sub-expression, expansions stops for the sub-expression. If
 @scheme[stop-ids] is a non-empty list, then
 @scheme[begin], @scheme[quote], @scheme[set!], @scheme[lambda],
 @scheme[case-lambda], @scheme[let-values], @scheme[letrec-values],
@@ -347,7 +347,7 @@ Binds each identifier in @scheme[id-list] within the
 @scheme[expr] when the identifiers correspond to
 @scheme[define-values] bindings, and supply a compile-time expression
 when the identifiers correspond to @scheme[define-syntaxes] bindings;
-the latter case, the number of values produced by the expression should
+in the latter case, the number of values produced by the expression should
 match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 

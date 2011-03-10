@@ -12,8 +12,8 @@ The Racket printer supports three modes:
        using @racket[read] on the output produces a value that is
        @racket[equal?] to the printed value;}
 
- @item{@racket[display] mode prints core datatypes is a form in a more
-       ``end-user'' style rather than ``programmer' style; for
+ @item{@racket[display] mode prints core datatypes in a more
+       ``end-user'' style rather than ``programmer'' style; for
        example, a string @racket[display]s as its content characters
        without surrounding @litchar{"}s or escapes;}
 
@@ -53,7 +53,7 @@ automatically.
 
 With the exception of displaying byte strings, printing is defined in
 terms of Unicode characters; see @secref["ports"] for information
-on how a character stream is written to an port's underlying byte
+on how a character stream is written to a port's underlying byte
 stream.
 
 
@@ -62,7 +62,7 @@ stream.
 Symbols containing spaces or special characters @scheme[write] using
 escaping @litchar{\} and quoting @litchar{|}s. When the
 @scheme[read-case-sensitive] parameter is set to @scheme[#f], then
-symbols containing uppercase characters also use escaping escaping
+symbols containing uppercase characters also use escaping
 @litchar{\} and quoting @litchar{|}s. In addition, symbols are
 quoted with @litchar{|}s or leading @litchar{\} when they would
 otherwise print the same as a numerical constant or as a delimited
@@ -70,7 +70,7 @@ otherwise print the same as a numerical constant or as a delimited
 
 When @scheme[read-accept-bar-quote] is @scheme[#t], @litchar{|}s are
 used in printing when one @litchar{|} at the beginning and one
-@litchar{|} at the end suffices to correctly print the
+@litchar{|} at the end suffice to correctly print the
 symbol. Otherwise, @litchar{\}s are always used to escape special
 characters, instead of quoting them with @litchar{|}s.
 
@@ -80,7 +80,7 @@ special characters:
 
 @t{
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
-  @litchar{[} @litchar{]}
+  @litchar["}"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
   @litchar{;} @litchar{\}
 }
@@ -93,7 +93,7 @@ characters. That is, the display form of a symbol is the same as the
 display form of @scheme[symbol->string] applied to the symbol.
 
 Symbols @scheme[print] the same as they @scheme[write], unless
-@scheme[print-as-expression] is set to @scheme[#t] and the current
+@scheme[print-as-expression] is set to @scheme[#t] (as is the default) and the current
 @tech{quoting depth} is @scheme[0]. In that case, the symbol's
 @scheme[print]ed form is prefixed with @litchar{'}. For the purposes
 of printing enclosing datatypes, a symbol is @tech{quotable}.
@@ -121,11 +121,11 @@ does not start with @scheme[0].
 
 A positive, exact, real, non-integer number prints as
 @nonterm{m}@litchar{/}@nonterm{n}, where @nonterm{m} and @nonterm{n}
-are the printed forms of the number's numerators and denominator (as
+are the printed forms of the number's numerator and denominator (as
 determined by @scheme[numerator] and @scheme[denominator]).
 
 A negative @tech{exact number} prints with a @litchar{-} prefix on the
-printed form of its exact negation.
+printed form of the number's exact negation.
 
 @section{Printing Booleans}
 
@@ -160,7 +160,7 @@ If @scheme[print-reader-abbreviations] is set to @scheme[#t], then
 pair printing in @scheme[write] mode is adjusted in the case of a pair
 that starts a two-element list whose first element is @scheme['quote],
 @scheme['quasiquote], @scheme['unquote], @scheme['unquote-splicing],
-@scheme['syntax], @scheme['quasisyntax], @scheme['unsyntax],
+@scheme['syntax], @scheme['quasisyntax], @scheme['unsyntax], or
 @scheme['unsyntax-splicing]. In that case, the pair is printed with
 the corresponding reader syntax: @litchar{'}, @litchar{`},
 @litchar{,}, @litchar[",@"], @litchar{#'}, @litchar{#`}, @litchar{#,},
@@ -173,8 +173,8 @@ including the tail as two elements of the enclosing list.
 The printed form of a pair is the same in both @scheme[write] and
 @scheme[display] modes, except as the printed form of the pair's
 @scheme[car] and @scheme[cdr] vary with the mode. The @scheme[print]
-form is also the same is @scheme[print-as-expression] is @scheme[#f]
-or when the quoting depth is @scheme[1].
+form is also the same if @scheme[print-as-expression] is @scheme[#f]
+or the quoting depth is @scheme[1].
 
 For @scheme[print] mode when @scheme[print-as-expression] is
 @scheme[#t] and the @tech{quoting depth} is @scheme[0], then the empty
@@ -198,7 +198,7 @@ same as pairs for @scheme[write] and @scheme[display], except that
 @litchar["{"] and @litchar["}"] are used instead of @litchar{(} and
 @litchar{)}. Note that the reader treats @litchar["{"]...@litchar["}"]
 and @litchar{(}...@litchar{)} equivalently on input, creating
-immutable pairs in both cases. Mutable in @scheme[print] mode with
+immutable pairs in both cases. Mutable pairs in @scheme[print] mode with
 @scheme[print-as-expression] as @scheme[#f] or a @tech{quoting depth}
 of @scheme[1] also use @litchar["{"] and @litchar["}"]. In
 @scheme[print] mode with @scheme[print-as-expression] as @scheme[#t]
@@ -208,8 +208,8 @@ and a @tech{quoting depth} of @scheme[0], a mutable pair prints as
 closing @litchar{)}.
 
 If the @scheme[print-pair-curly-braces] parameter is set to
-@scheme[#t], then pairs print using @litchar["{"] and @litchar["}"] in
-when not using @scheme[print] mode with @scheme[print-as-expression] a
+@scheme[#t], then pairs print using @litchar["{"] and @litchar["}"]
+when not using @scheme[print] mode with @scheme[print-as-expression] as
 @scheme[#t] and a @tech{quoting depth} of @scheme[0].  If the
 @scheme[print-mpair-curly-braces] parameter is set to @scheme[#f],
 then mutable pairs print using @litchar{(} and @litchar{)} in that
@@ -242,8 +242,8 @@ All byte strings @scheme[display] as their literal byte sequence; this
 byte sequence may not be a valid UTF-8 encoding, so it may not
 correspond to a sequence of characters.
 
-The @scheme[write] or @scheme[print] form a byte string starts with @litchar{#"} and
-ends with another @litchar{"}. Between the @litchar{"}s, each byte is
+The @scheme[write] or @scheme[print] form of a byte string starts with @litchar{#"} and
+ends with a @litchar{"}. Between the @litchar{"}s, each byte is
 written using the corresponding ASCII decoding if the byte is between
 0 and 127 and the character is graphic or blank (according to
 @scheme[char-graphic?] and @scheme[char-blank?]). Otherwise, the byte
@@ -288,7 +288,7 @@ for which the structure is an instance:
  @item{If the structure type is a @tech{prefab} structure type,
        then it prints in @scheme[write] or @scheme[display] mode using
        @litchar{#s(} followed by the @tech{prefab} structure type key,
-       then the printed form each field in the structure, and then
+       then the printed form of each field in the structure, and then
        @litchar{)}.
 
        In @scheme[print] mode when @scheme[print-as-expression] is set
@@ -340,7 +340,7 @@ for which the structure is an instance:
        depth of @scheme[1].}
 
  @item{If the structure's type is transparent or if any ancestor is
-       transparent (i.e,. @scheme[struct?] on the instance produces
+       transparent (i.e., @scheme[struct?] on the instance produces
        @scheme[#t]), then the structure prints as the vector produced
        by @scheme[struct->vector] in @scheme[display] mode, in
        @scheme[write] mode, or in @scheme[print] mode when
@@ -349,8 +349,8 @@ for which the structure is an instance:
 
        In @scheme[print] mode with @scheme[print-as-expression] as
        @scheme[#t] and a @tech{quoting depth} of @scheme[0], the
-       structure content is printed with a @litchar{(} followed by the
-       list is the structure's type name (as determined by
+       structure content is printed with a @litchar{(} followed by
+       the structure's type name (as determined by
        @scheme[object-name]) in @scheme[write] mode; the remaining
        elements are @scheme[print]ed at @tech{quoting depth}
        @scheme[0] and separated by a space, and finally a closing
@@ -376,15 +376,15 @@ When the @scheme[print-hash-table] parameter is set to @scheme[#t], in
 @scheme[write] and @scheme[display] modes, a hash table prints
 starting with @litchar{#hash(}, @litchar{#hasheqv(}, or
 @litchar{#hasheq(} for a table using @scheme[equal?], @scheme[eqv?],
-or @scheme[eq?] key comparisons, respectively. After this prefix, each
+or @scheme[eq?] key comparisons, respectively. After the prefix, each
 key--value mapping is shown as @litchar{(}, the printed form of a key,
 a space, @litchar{.}, a space, the printed form the corresponding
 value, and @litchar{)}, with an additional space if the key--value
-pair is not the last to be printed.  After all key-value pairs, the
+pair is not the last to be printed.  After all key--value pairs, the
 printed form completes with @litchar{)}.
 
 In @scheme[print] mode when @scheme[print-as-expression] is
-@scheme[#f] or the @tech{quoting depth} is @scheme[1], the printed for
+@scheme[#f] or the @tech{quoting depth} is @scheme[1], the printed form
 is the same as for @scheme[write]. Otherwise, if the hash table's keys
 and values are all @tech{quotable}, the table prints with a
 @litchar{'} prefix, and the table's key and values are @racket[print]ed
@@ -404,7 +404,7 @@ hash table prints as @litchar{#<hash>} and counts as @tech{quotable}.
 
 When the @scheme[print-box] parameter is set to @scheme[#t], a box
 prints as @litchar{#&} followed by the printed form of its content in
-@scheme[write] mode, @scheme[display], or @scheme[print] mode when
+@scheme[write], @scheme[display], or @scheme[print] mode when
 @scheme[print-as-expression] is @scheme[#f] or the @tech{quoting
 depth} is @scheme[1].
 
@@ -426,12 +426,12 @@ Characters with the special names described in
 @secref["parse-character"] @scheme[write] and @scheme[print] using the
 same name.  (Some characters have multiple names; the
 @scheme[#\newline] and @scheme[#\nul] names are used instead of
-@scheme[#\linefeed] and @scheme[#\null]).  Other graphic characters
+@schemevalfont{#\linefeed} and @schemevalfont{#\null}.)  Other graphic characters
 (according to @scheme[char-graphic?]) @scheme[write] as @litchar{#\}
 followed by the single character, and all others characters are
 written in @scheme[#\u] notation with four digits or @scheme[#\U]
 notation with eight digits (using the latter only if the character
-value it does not fit in four digits).
+value does not fit in four digits).
 
 All characters @scheme[display] directly as themselves (i.e., a single
 character).
@@ -443,10 +443,10 @@ For the purposes of printing enclosing datatypes, a character is
 @section{Printing Keywords}
 
 Keywords @scheme[write], @scheme[print], and @scheme[display] the same
-as symbols, except (see @secref["print-symbol"]) with a leading
+as symbols (see @secref["print-symbol"]) except with a leading
 @litchar{#:} (after any @litchar{'} prefix added in @scheme[print]
-mode), and without special handing for an initial @litchar{#} or when
-the printed form would matches a number or a delimited @litchar{.}
+mode), and without special handling for an initial @litchar{#} or when
+the printed form would match a number or a delimited @litchar{.}
 (since @litchar{#:} distinguishes the keyword).
 
 For the purposes of printing enclosing datatypes, a keyword is
@@ -480,7 +480,7 @@ information when converting a path to a string. For a path that is
 intended to be re-read on the same platform, a byte string is probably
 the right choice, since it preserves information in an unportable
 way. Paths do not print in a readable way so that programmers are not
-mislead into thinking that either choice is always appropriate.
+misled into thinking that either choice is always appropriate.
 
 
 @section[#:tag "print-unreadable"]{Printing Unreadable Values}
@@ -501,13 +501,13 @@ unreadably nevertheless counts as @tech{quotable}.
 
 Compiled code as produced by @racket[compile] prints using
 @litchar{#~}. Compiled code printed with @litchar{#~} is essentially
-assembly code for Racket, and reading such an form produces a compiled
+assembly code for Racket, and reading such a form produces a compiled
 form when the @racket[read-accept-compiled] parameter is set to
 @racket[#t].
 
 When a compiled form contains syntax object constants, the
 @litchar{#~}-marshaled form drops source-location information and
-properties (@secref["stxprops"]) for the @tech{syntax objects}.
+properties (see @secref["stxprops"]) for the @tech{syntax objects}.
 
 Compiled code parsed from @litchar{#~} may contain references to
 unexported or protected bindings from a module. At read time, such

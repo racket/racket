@@ -8,7 +8,7 @@ internally buffered:
 
 @itemize[
 
- @item{An input port is typically block buffered by default, which
+ @item{An input port is typically block-buffered by default, which
        means that on any read, the buffer is filled with
        immediately-available bytes to speed up future reads. Thus, if
        a file is modified between a pair of reads to the file, the
@@ -16,8 +16,8 @@ internally buffered:
        @scheme[file-position] to set an input port's file position
        flushes its buffer.}
 
- @item{And output port is typically block buffered by default, though
-       a terminal output port is line buffered, and the initial error
+ @item{An output port is typically block-buffered by default, though
+       a terminal output port is line-buffered, and the initial error
        output port is unbuffered.  An output buffer is filled with a
        sequence of written bytes to be committed as a group, either
        when the buffer is full (in block mode), when a newline is
@@ -44,7 +44,7 @@ buffered bytes, but no further bytes are read.
 
 In addition, the initial current output and error ports are
 automatically flushed when @scheme[read], @scheme[read-line],
-@scheme[read-bytes], @scheme[read-string], etc. are performed on the
+@scheme[read-bytes], @scheme[read-string], etc., are performed on the
 initial standard input port; more precisely, flushing is performed by
 the default port read handler (see @scheme[port-read-handler]).
 
@@ -87,13 +87,13 @@ been read from that port if the position is known (see
 @secref["linecol"]), otherwise the @exnraise[exn:fail:filesystem].
 
 For @tech{file-stream ports} and string ports, the position-setting
-variants sets the read/write position to @scheme[pos] relative to the
+variant sets the read/write position to @scheme[pos] relative to the
 beginning of the file/string if @scheme[pos] is a number, or to the
 current end of the file/string if @scheme[pos] is @scheme[eof]. In
 position-setting mode, @scheme[file-position] raises the
 @scheme[exn:fail:contract] exception for port kinds other than
 file-stream and string ports. Furthermore, not all @tech{file-stream
-ports} support setting the position; f @scheme[file-position] is
+ports} support setting the position; if @scheme[file-position] is
 called with a position argument on such a @tech{file-stream port}, the
 @exnraise[exn:fail:filesystem].
 

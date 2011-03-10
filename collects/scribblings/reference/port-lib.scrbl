@@ -72,7 +72,7 @@ lines like @racket[read-bytes-line].
                         [#:separator separator any/c #"\n"])
          void?]{
 
-Use @racket[display] to each each element of @racket[lst] to @racket[out], adding
+Uses @racket[display] on each element of @racket[lst] to @racket[out], adding
 @racket[separator] after each element.}
 
 @defproc[(call-with-output-string [proc (output-port? . -> . any)]) string?]{
@@ -90,7 +90,7 @@ accumulated data.}
 
 @defproc[(call-with-output-bytes [proc (output-port? . -> . any)]) bytes?]{
 
-Like @racket[call-with-output-string], but returns accumulated results
+Like @racket[call-with-output-string], but returns the accumulated result
 in a @tech{byte string} instead of a string. Furthermore, the port's
 content is emptied when @racket[call-with-output-bytes] returns, so
 that if control jumps back into @racket[proc] and returns a second
@@ -238,7 +238,7 @@ procedure, so it can be an integer or any result from
 
 Returns a port whose content is drawn from @racket[in], but where an
 end-of-file is reported after @racket[limit] bytes (and non-byte
-special values) are read.  If @racket[close-orig?] is true, then the
+special values) have been read.  If @racket[close-orig?] is true, then the
 original port is closed if the returned port is closed.
 
 Bytes are consumed from @racket[in] only when they are consumed from
@@ -278,7 +278,7 @@ determine the names of the result ports.}
 
 Accepts two input ports and returns a new input port. The new port
 merges the data from two original ports, so data can be read from the
-new port whenever it is available from either original port. The data
+new port whenever it is available from either of the two original ports. The data
 from the original ports are interleaved. When an end-of-file has been
 read from an original port, it no longer contributes characters to the
 new port. After an end-of-file has been read from both original ports,
@@ -396,14 +396,14 @@ incomplete encoding sequence.)}
 Produces an output port that directs bytes to @racket[out], but
 converts its byte stream using @racket[(bytes-open-converter "UTF-8"
 encoding-str)]. In addition, if @racket[newline-bytes] is not
-@racket[#f], then byets written to the port that are the UTF-8
+@racket[#f], then bytes written to the port that are the UTF-8
 encoding of @racket["\n"] are first converted to
 @racket[newline-bytes] (before applying the convert from UTF-8 to
 @racket[encoding-str]).
  
 If @racket[error-bytes] is provided and not @racket[#f], then the
-given byte sequence is used in place of bytes send to the output port
-that trigger conversion errors. Otherwise, @racket[enc-error] is
+given byte sequence is used in place of bytes that have been sent to the output port
+and that trigger conversion errors. Otherwise, @racket[enc-error] is
 called, which must raise an exception.
 
 If @racket[close?] is true, then closing the result output port also
@@ -506,7 +506,7 @@ Like @racket[relocate-input-port], but for output ports.}
 
 Like @racket[relocate-input-port], except that arbitrary position
 information can be produced (when line counting is enabled) via
-@racket[get-location], which used as for @racket[make-input-port]. If
+@racket[get-location], which is used as for @racket[make-input-port]. If
 @racket[get-location] is @racket[#f], then the port counts lines in
 the usual way starting from @racket[init-pos], independent of
 locations reported by @racket[in].
@@ -572,13 +572,13 @@ closes @racket[in].}
                                     [close? any/c #t])
           input-port?]{
 
-Produces an input port that that is equivalent to @racket[in], except
+Produces an input port that is equivalent to @racket[in], except
 that when @racket[in] produces a procedure to access a special value,
 @racket[proc] is applied to the procedure to allow the special value
 to be replaced with an alternative. The @racket[proc] is called with
 the special-value procedure and the byte string that was given to the
 port's read or peek function (see @racket[make-input-port]), and the
-result is used as te read or peek function's result.  The
+result is used as the read or peek function's result.  The
 @racket[proc] can modify the byte string to substitute a byte for the
 special value, but the byte string is guaranteed only to hold at least
 one byte.
@@ -593,7 +593,7 @@ closes @racket[in].}
 
 @defproc[(eof-evt [in input-port?]) evt?]{
 
-Returns a @tech{synchronizable event} is that is ready when
+Returns a @tech{synchronizable event} that is ready when
 @racket[in] produces an @racket[eof]. If @racket[in] produces a
 mid-stream @racket[eof], the @racket[eof] is consumed by the event
 only if the event is chosen in a synchronization.}
@@ -602,12 +602,12 @@ only if the event is chosen in a synchronization.}
 @defproc[(read-bytes-evt [k exact-nonnegative-integer?] [in input-port?]) 
          evt?]{
 
-Returns a @tech{synchronizable event} is that is ready when @racket[k]
+Returns a @tech{synchronizable event} that is ready when @racket[k]
 bytes can be read from @racket[in], or when an end-of-file is
 encountered in @racket[in]. If @racket[k] is @racket[0], then the
 event is ready immediately with @racket[""]. For non-zero @racket[k],
 if no bytes are available before an end-of-file, the event's result is
-@racket[eof]. Otherwise the event's result is a byte string of up to
+@racket[eof]. Otherwise, the event's result is a byte string of up to
 @racket[k] bytes, which contains as many bytes as are available (up to
 @racket[k]) before an available end-of-file. (The result is a byte
 string on less than @racket[k] bytes only when an end-of-file is
@@ -671,7 +671,7 @@ a byte string.}
          evt?]{
 
 Returns a @tech{synchronizable event} that is ready when a line of
-characters or end-of-file can be read from @racket[inport]. The
+characters or end-of-file can be read from @racket[in]. The
 meaning of @racket[mode] is the same as for @racket[read-line]. The
 event result is the read line of characters (not including the line
 separator).
@@ -704,7 +704,7 @@ Like the @racket[read-...-evt] functions, but for peeking. The
 @racket[progress] indicates an event that effectively cancels the peek
 (so that the event never becomes ready). The @racket[progress]
 argument can be @racket[#f], in which case the event is never
-cancelled.}
+canceled.}
 
 
 @defproc[(regexp-match-evt [pattern (or/c string? bytes? regexp? byte-regexp?)]
@@ -741,18 +741,18 @@ treated like @racket[eof].}
 
 @defproc[(convert-stream [from-encoding string?]
                          [in input-port?]
-                         [from-encoding string?]
+                         [to-encoding string?]
                          [out output-port?])
          void?]{
 
 Reads data from @racket[in], converts it using
-@racket[(bytes-open-converter from-encoding-string
-to-encoding-string)] and writes the converted bytes to
+@racket[(bytes-open-converter from-encoding
+to-encoding)] and writes the converted bytes to
 @racket[out]. The @racket[convert-stream] procedure returns after
 reaching @racket[eof] in @racket[in].
 
 If opening the converter fails, the @exnraise[exn:fail]. Similarly, if
-a conversion error occurs at any point while reading @racket[in], then
+a conversion error occurs at any point while reading from @racket[in], then
 @exnraise[exn:fail].}
 
 
@@ -774,7 +774,7 @@ written to every @racket[out]. The different @racket[out]s block
 output to each other, because each block of data read from @racket[in]
 is written completely to one @racket[out] before moving to the next
 @racket[out]. The @racket[out]s are written in the provided order, so
-non-blocking ports (e.g., to a file) should be placed first in the
+non-blocking ports (e.g., file output ports) should be placed first in the
 argument list.}
 
 @close-eval[port-eval]

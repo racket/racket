@@ -182,7 +182,7 @@ input to be a real number between @racket[n] and @racket[m] or equal to
 one of them.}
 
 @defproc[(real-in [n real?] [m real?]) flat-contract?]{
-This is an alias for @racket[between/c].}
+An alias for @racket[between/c].}
 
 @defproc[(integer-in [j exact-integer?] [k exact-integer?]) flat-contract?]{
 
@@ -203,7 +203,7 @@ Returns a flat contract that recognizes strings that have fewer than
 
 @defthing[false/c flat-contract?]{
 
-This is just @racket[#f]. It is here for backwards compatibility.}
+An alias @racket[#f] for backwards compatibility.}
 
 
 @defthing[printable/c flat-contract?]{
@@ -217,8 +217,8 @@ read back in with @racket[write] and @racket[read].}
 Accepts any number of atomic values and returns a flat contract that
 recognizes those values, using @racket[eqv?]  as the comparison
 predicate.  For the purposes of @racket[one-of/c], atomic values are
-defined to be: characters, symbols, booleans, null keywords, numbers,
-void, and undefined.}
+defined to be: @tech{characters}, @tech{symbols}, @tech{booleans}, @racket[null], @tech{keywords}, @tech{numbers},
+@|void-const|, and @|undefined-const|.}
 
 
 @defproc[(symbols [sym symbol?] ...+) flat-contract?]{
@@ -249,8 +249,8 @@ and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors.}
 
 @defproc[(vector-immutableof [c contract?]) contract?]{
 
-Returns the same contract as @racket[(vectorof c #:immutable #t)]. This exists for
-reasons of backwards compatibility, and may be removed in the future.}
+Returns the same contract as @racket[(vectorof c #:immutable #t)]. This form exists for
+backwards compatibility.}
 
 @defproc[(vector/c [c contract?] ...
                    [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
@@ -275,8 +275,8 @@ and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors.}
 
 @defproc[(vector-immutable/c [c contract?] ...) contract?]{
 
-Returns the same contract as @racket[(vector/c c ... #:immutable #t)]. This exists for
-reasons of backwards compatibility, and may be removed in the future.}
+Returns the same contract as @racket[(vector/c c ... #:immutable #t)]. This form exists for
+reasons of backwards compatibility.}
 
 
 @defproc[(box/c [c contract?] 
@@ -301,8 +301,8 @@ and either a @tech{chaperone} or @tech{impersonator} of the input for mutable bo
 
 @defproc[(box-immutable/c [c contract?]) contract?]{
 
-Returns the same contract as @racket[(box/c c #:immutable #t)]. This exists for
-reasons of backwards compatibility, and may be removed in the future.}
+Returns the same contract as @racket[(box/c c #:immutable #t)]. This form exists for
+reasons of backwards compatibility.}
 
 
 @defproc[(listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
@@ -320,7 +320,7 @@ a value, the result is not necessarily @racket[eq?] to the input.}
 
 @defproc[(cons/c [car-c contract?] [cdr-c contract?]) contract?]{
 
-Produces a contract the recognizes pairs whose first and second elements
+Produces a contract that recognizes pairs whose first and second elements
 match @racket[car-c] and @racket[cdr-c], respectively. Beware that
 when this contract is applied to a value, the result is not
 necessarily @racket[eq?] to the input.}
@@ -402,7 +402,7 @@ For example, the contract
 
 is a flat contract that checks for (a limited form of)
 S-expressions. It says that a @racket[sexp] is either two
-@racket[sexp] combined with @racket[cons], or a number, or a symbol.
+@racket[sexp]s combined with @racket[cons], or a number, or a symbol.
 
 Note that if the contract is applied to a circular value, contract
 checking will not terminate.}
@@ -449,7 +449,7 @@ result value meets the contract produced by @racket[expr].}
   Then, when the function returns, it is checked to determine whether the result is wrapped, since
   the second @racket[a] appears in a positive position.
 
-  This is a dual to @racket[new-∃/c].
+  The @racket[new-∀/c] construct constructor is dual to @racket[new-∃/c].
   
 }
 
@@ -474,7 +474,7 @@ result value meets the contract produced by @racket[expr].}
   Then, when the function returns, it is checked to see if the result is wrapped, since
   the second @racket[a] appears in a negative position.
   
-  This is a dual to @racket[new-∀/c].
+  The @racket[new-∃/c] construct constructor is dual to @racket[new-∀/c].
 }
 
 
@@ -519,7 +519,7 @@ result of the function.
 
 @margin-note{Using a @racket[->] between two whitespace-delimited
 @racketparenfont{.}s is the same as putting the @racket[->] right
-after the enclosing open parenthesis. See
+after the enclosing opening parenthesis. See
 @guidesecref["lists-and-syntax"] or @secref["parse-pair"] for more
 information.}
 
@@ -661,7 +661,7 @@ expression is evaluated rather than the time when the function is called or
 returns.  These dependency-free contract expressions are evaluated in the
 order in which they are listed.
 @;
-Second, the dependent contract subexpressions are evaluated when the
+Second, the dependent contract sub-expressions are evaluated when the
 contracted function is called or returns in some order that satisfies the
 dependencies. That is, if a contract for an argument depends on the value
 of some other contract, the former is evaluated first (so that the
@@ -720,7 +720,7 @@ will allow @racket[f] to be called with @racket[#f], trigger whatever bad
 behavior the author of @scheme[f] was trying to prohibit by insisting that
 @racket[f]'s contract accept only integers.
 
-The @racket[#:pre-cond] and @racket[#:post-cond] keywords are synonyms for
+The @racket[#:pre-cond] and @racket[#:post-cond] keywords are aliases for
 @racket[#:pre] and @racket[#:post] and are provided for backwards compatibility.
 
 }
@@ -1062,7 +1062,7 @@ accepted by the third argument to @racket[datum->syntax].
 
 Contracts are represented internally as functions that
 accept information about the contract (who is to blame,
-source locations, etc) and produce projections (in the
+source locations, @|etc|) and produce projections (in the
 spirit of Dana Scott) that enforce the contract. A
 projection is a function that accepts an arbitrary value,
 and returns a value that satisfies the corresponding
@@ -1165,7 +1165,7 @@ blames what it sees as positive, we can swap the blame parties by
 calling @racket[blame-swap] on the given @tech{blame object}, replacing
 the positive party with the negative party and vice versa.
 
-This is not just a cheap trick to get this example to work,
+This technique is not merely a cheap trick to get the example to work,
 however. The reversal of the positive and the negative is a
 natural consequence of the way functions behave. That is,
 imagine the flow of values in a program between two
@@ -1624,7 +1624,7 @@ combinators, use the following properties:
                 list and @racket[#:pre] in the second list.}
                 
           @item{@racketblock0['racket/contract:negative-position : symbol?]
-                 This property should be attached to subexpressions of
+                 This property should be attached to sub-expressions of
                  a contract combinator that are expected to be other contracts.
                  The value of the property should be the key (the first element from
                  the vector for the @racket['racket/contract:contract] property)
@@ -1634,7 +1634,7 @@ combinators, use the following properties:
                  that clients are responsible for. }
          
           @item{@racketblock0['racket/contract:positive-position : symbol?]
-                 This is just like @racket['racket/contract:negative-position],
+                 This form is just like @racket['racket/contract:negative-position],
                  except that it should be used when the expression's value is 
                  a contract that the original party should be responsible for.
                  }
@@ -1758,7 +1758,7 @@ name @racket[sexp-name] when signaling a contract violation.}
           proc 
           (-> blame? any/c string? string?)]{
 
-This is a parameter that is used when constructing a
+A parameter that is used when constructing a
 contract violation error. Its value is procedure that
 accepts three arguments: 
 @itemize[

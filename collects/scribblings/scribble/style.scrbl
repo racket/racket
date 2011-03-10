@@ -40,7 +40,7 @@ Use the word ``list'' only when you mean a run-time value consisting
 of the empty list and cons cells; use the word ``sequence'' in other
 cases, if you must use any word. For example, do not write that
 @racket[begin] has a ``list of sub-forms;'' instead, it has a
-``sequence of subforms.'' Similarly, do not refer to a ``list of
+``sequence of sub-forms.'' Similarly, do not refer to a ``list of
 arguments'' in a function call; just write ``arguments'' if possible,
 or write ``sequence of argument expressions.''  (Unfortunately,
 ``@tech[#:doc '(lib
@@ -55,6 +55,8 @@ explicit prose abstraction, such as ``@racket[x] is like @racket[y],
 except that ...,'' instead of abstracting the source and instantiating
 it multiple times; often, a prose abstraction is clearer to the reader
 than a hidden abstraction in the document implementation.
+
+Hyphenate the words ``sub-form'' and ``sub-expression.''
 
 @section{Typesetting Code}
 
@@ -148,6 +150,10 @@ noun; use it as an annotation.
 Do not start a sentence with a Racket variable name, since it is
 normally lowercase. For example, use ``The @racket[_thing] argument
 is...'' instead of ``@racket[_thing] is...''
+
+Use @racket[etc] for ``@|etc|'' when it does not end a sentence, and
+include a comma after ``@|etc|'' unless it ends a sentence of is
+followed by other punctuation (such as a parenthesis).
 
 @section{Section Titles}
 

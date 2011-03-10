@@ -79,7 +79,7 @@ attempting to use @racket['text] with other kinds of files triggers an
 @racket[exn:fail:filesystem] exception.
 
 Otherwise, the file specified by @racket[path] need not be a regular
-file. It might a device that is connected through the filesystem, such
+file. It might be a device that is connected through the filesystem, such
 as @filepath{aux} under Windows or @filepath{/dev/null} under Unix. In all
 cases, the port is buffered by default.
 
@@ -88,7 +88,7 @@ closed, either though @racket[close-input-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
 handle. The input port will not be closed automatically if it is
 otherwise available for garbage collection (see
-@secref["gc-model"]); a @tech{will} could be associated input port
+@secref["gc-model"]); a @tech{will} could be associated with an input port
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
@@ -168,17 +168,17 @@ files that already exist:
 ]
 
 The file specified by @racket[path] need not be a regular file. It
-might a device that is connected through the filesystem, such as
+might be a device that is connected through the filesystem, such as
 @filepath{aux} under Windows or @filepath{/dev/null} under Unix. The output
 port is block-buffered by default, unless the file corresponds to a
-terminal, in which case is it line buffered bu default.
+terminal, in which case it is line-buffered by default.
 
 The port produced by @racket[open-output-port] should be explicitly
 closed, either though @racket[close-output-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
 handle. The output port will not be closed automatically if it is
 otherwise available for garbage collection (see
-@secref["gc-model"]); a @tech{will} could be associated input port
+@secref["gc-model"]); a @tech{will} could be associated with an output port
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
@@ -215,13 +215,13 @@ Calls @racket[open-input-file] with the @racket[path] and
 @racket[mode-flag] arguments, and passes the resulting port
 to @racket[proc]. The result of @racket[proc] is the result of the
 @racket[call-with-input-file] call, but the newly opened port is closed
-when @racket[thunk] return.
+when @racket[proc] returns.
 
 @file-examples[
 (with-output-to-file some-file
   (lambda () (printf "text in a file")))
 (call-with-input-file some-file
-  (lambda (in) (read-string 15 in)))
+  (lambda (in) (read-string 14 in)))
 ]}
 
 @defproc[(call-with-output-file [path path-string?]

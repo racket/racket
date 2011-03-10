@@ -54,9 +54,9 @@ as many bytes as it can immediately flush. It blocks only if no bytes
 can be flushed immediately. The result is the number of bytes written
 and flushed to @racket[out]; if @racket[start-pos] is the same as
 @racket[end-pos], then the result can be @racket[0] (indicating a
-successful flush of any buffered data), otherwise the result is at
-least @racket[1] but possibly less than @racket[(- end-pos
-start-pos)].
+successful flush of any buffered data), otherwise the result is between
+@racket[1] and @racket[(- end-pos
+start-pos)], inclusive.
 
 The @racket[write-bytes-avail] procedure never drops bytes; if
 @racket[write-bytes-avail] successfully writes some bytes and then

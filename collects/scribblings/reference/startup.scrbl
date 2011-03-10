@@ -42,7 +42,7 @@ The core Racket run-time system is available in two main variants:
 
 @section[#:tag "init-actions"]{Initialization}
 
-On startup, the top-level environment contains no bindings---not even
+On start-up, the top-level environment contains no bindings---not even
 @racket[#%app] for function application. Primitive modules with names
 that start with @racketidfont{#%} are defined, but they are not meant
 for direct use, and the set of such modules can change.  For example,

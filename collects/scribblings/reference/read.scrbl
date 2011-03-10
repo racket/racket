@@ -84,7 +84,7 @@ Analogous to calling @racket[read/recursive], but the resulting value
 encapsulates S-expression structure with source-location
 information. As with @racket[read/recursive], when
 @racket[read-syntax/recursive] is used within the dynamic extent of
-@racket[read-syntax], the result of from
+@racket[read-syntax], the result from
 @racket[read-syntax/recursive] is either a special-comment value,
 end-of-file, or opaque graph-structure placeholder (not a syntax
 object). The placeholder can be embedded in an S-expression or syntax
@@ -109,7 +109,7 @@ See @secref["readtables"] for an extended example that uses
                         [fail-thunk (-> any) (lambda () (error ...))])
          (any/c any/c . -> . any)]{
 
-Reads @racket[in] in the same way as @racket[read], but stopping as
+Reads from @racket[in] in the same way as @racket[read], but stopping as
 soon as a @tech{reader language} (or its absence) is determined.
 
 A @deftech{reader language} is specified by @litchar{#lang} or
@@ -124,7 +124,7 @@ or @litchar{#!}.
 
 When it finds a @litchar{#lang} or @litchar{#!} specification, instead
 of dispatching to a @racketidfont{read} or @racketidfont{read-syntax}
-form as @racket[read] and @racket[read-syntax] do,
+function as @racket[read] and @racket[read-syntax] do,
 @racket[read-language] dispatches to a @racketidfont{get-info}
 function (if any) exported by the same module. The result of the
 @racketidfont{get-info} function is the result of
@@ -278,7 +278,7 @@ is @racket[#t].
 
 Even when parsing is delayed, compiled code is loaded into memory. If
 the @as-index{@envvar{PLT_DELAY_FROM_ZO}} environment variable is set
-(to any value) on start up, however, even loading from disk is
+(to any value) on start-up, however, even loading from disk is
 delayed. If the file at @tech{path} changes before the delayed code or
 syntax object is demanded, the read-on-demand most likely will
 encounter garbage, leading to an exception.}

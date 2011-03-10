@@ -482,7 +482,7 @@ Returns @scheme[(remove* v-lst lst eqv?)].
 
 Returns a list sorted according to the @scheme[less-than?] procedure,
  which takes two elements of @scheme[lst] and returns a true value if
- the first is less than (i.e., should be sorted earlier) the
+ the first is less (i.e., should be sorted earlier) than the
  second.
 
 The sort is stable; if two elements of @scheme[lst] are ``equal''

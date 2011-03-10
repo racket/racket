@@ -54,7 +54,7 @@ Puts @scheme[v] into @scheme[ach], blocking if @scheme[ach]'s buffer
 is full until space is available.}
 
 
-@defproc[(async-channel-put-evt [ach channel?] [v any/c]) 
+@defproc[(async-channel-put-evt [ach async-channel?] [v any/c]) 
          evt?]{
 
 Returns a @tech{synchronizable event} that is blocked while

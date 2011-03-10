@@ -74,7 +74,7 @@ The arguments implement the port as follows:
       @item{a @tech{synchronizable event} (see @secref["sync"]) other
       than a pipe input port or procedure of arity four; the event
       becomes ready when the read is complete (roughly): the event's
-      value can one of the above three results or another event like
+      value can be one of the above three results or another event like
       itself; in the last case, a reading process loops with
       @scheme[sync] until it gets a non-event result.}
 
@@ -116,8 +116,8 @@ The arguments implement the port as follows:
     @scheme[peek-in] procedure is called again (instead of using the
     pipe, for whatever reason). If @scheme[read-in] or
     @scheme[peek-in] is called, any previously associated pipe (as
-    returned by a previous call) will have been disassociated from the
-    port, and is not in use by any other thread as a result of the
+    returned by a previous call) is disassociated from the
+    port and is not in use by any other thread as a result of the
     previous association.
 
     If @scheme[peek], @scheme[get-progress-evt], and
@@ -278,12 +278,12 @@ The arguments implement the port as follows:
      given progress event is ready, whichever is first.}
 
      @item{It can report an error by raising an exception, but only if
-      no data is committed. In other words, no data should be lost due to
+      no data has been committed. In other words, no data should be lost due to
       an exception, including a break exception.}
 
-     @item{It must return a true value if data is committed,
+     @item{It must return a true value if data has been committed,
      @scheme[#f] otherwise. When it returns a value, the given
-     progress event must be ready (perhaps because data was just
+     progress event must be ready (perhaps because data has just been
      committed).}
 
      @item{It must raise an exception if no data (including
@@ -336,7 +336,7 @@ The arguments implement the port as follows:
 
  @elemtag["special"]{@bold{``Special'' results:}} When
  @scheme[read-in] or @scheme[peek] (or an event produced by one of
- these) returns a procedure, and the procedure is used to obtain a
+ these) returns a procedure, the procedure is used to obtain a
  non-byte result. (This non-byte result is @italic{not} intended to
  return a character or @scheme[eof]; in particular, @scheme[read-char]
  raises an exception if it encounters a special-result procedure, even
@@ -813,7 +813,7 @@ procedures.
     will be @scheme[#t], which indicates that @scheme[write-out] should
     re-enable breaks while blocking.
 
-    If the writing procedure raises an exception, due either to write
+    If the writing procedure raises an exception, due to write
     or commit operations, it must not have committed any bytes
     (though it may have committed previously buffered bytes).
 
@@ -861,7 +861,7 @@ procedures.
 
     Since @scheme[write-out-special] can return an event,
     passing the first argument to an implementation of
-    @scheme[get-write-special-evt] is acceptable as an
+    @scheme[get-write-special-evt] is acceptable as a
     @scheme[write-out-special].
 
     As for @scheme[write-out], the @scheme[#f] result is discouraged,
@@ -880,7 +880,7 @@ procedures.
      @item{an immutable byte string containing bytes to write;}
 
      @item{a non-negative exact integer for a starting offset
-     (inclusive) into the byte string, and}
+     (inclusive) into the byte string; and}
 
      @item{a non-negative exact integer for an ending offset
      (exclusive) into the byte string.}
@@ -897,7 +897,6 @@ procedures.
     @scheme[port-writes-atomic?] will produce @scheme[#f] when applied
     to the port, and the port will not be a valid argument to
     procedures such as @scheme[write-bytes-avail-evt].
-
     Otherwise, an event returned by @scheme[get-write-evt] must
     not cause data to be written to the port unless the event is
     chosen in a synchronization, and it must write to the port if the
@@ -911,7 +910,7 @@ procedures.
     when the buffer is completely flushed. (If the port has no buffer,
     then it is effectively always flushed.)
 
-    If the event raises an exception, due either to write or commit
+    If the event raises an exception, due to write or commit
     operations, it must not have committed any new bytes (though it
     may have committed previously buffered bytes).
 
@@ -931,7 +930,7 @@ procedures.
     write. The resulting event (with its constraints) is analogous to
     the result of @scheme[get-write-evt].
 
-    If the event raises an exception, due either to write or commit
+    If the event raises an exception, due to write or commit
     operations, it must not have committed the special value (though
     it may have committed previously buffered bytes and values).}
 

@@ -761,7 +761,7 @@ outermost frame of the continuation for any new thread.
 
 A @deftech{custodian} manages a collection of threads,
 @tech{file-stream ports}, TCP ports, @tech{TCP listeners}, @tech{UDP
-sockets}, and @tech{byte converters}.  Whenever a thread, etc. is
+sockets}, and @tech{byte converters}.  Whenever a thread, @|etc|, is
 created, it is placed under the management of the @deftech{current
 custodian} as determined by the @racket[current-custodian]
 @tech{parameter}.
@@ -775,7 +775,7 @@ custodian's owner.
 
 When a @tech{custodian} is shut down via
 @racket[custodian-shutdown-all], it forcibly and immediately closes
-the ports, TCP connections, etc. that it manages, as well as
+the ports, TCP connections, @|etc|, that it manages, as well as
 terminating (or suspending) its threads. A custodian that has been
 shut down cannot manage new objects.  If the current custodian is shut
 down before a procedure is called to create a managed resource (e.g.,

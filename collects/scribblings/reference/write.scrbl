@@ -168,14 +168,14 @@ Formats to a string. The result is the same as
 
 @defboolparam[print-pair-curly-braces on?]{
 
-A parameter that control pair printing. If the value is true, then
+A parameter that controls pair printing. If the value is true, then
 pairs print using @litchar["{"] and @litchar["}"] instead of
 @litchar{(} and @litchar{)}. The default is @racket[#f].}
 
 
 @defboolparam[print-mpair-curly-braces on?]{
 
-A parameter that control pair printing. If the value is true, then
+A parameter that controls pair printing. If the value is true, then
 mutable pairs print using @litchar["{"] and @litchar["}"] instead of
 @litchar{(} and @litchar{)}. The default is @racket[#t].}
 
@@ -225,7 +225,7 @@ A parameter that controls printing hash tables; defaults to
 A parameter that controls printing of booleans. When the parameter's
 value is true, @racket[#t] and @racket[#f] print as @litchar{#true}
 and @litchar{#false}, otherwise they print as @litchar{#t}
-and @litchar{#f}.}
+and @litchar{#f}. The default is @racket[#f].}
 
 
 @defboolparam[print-reader-abbreviations on?]{
@@ -245,7 +245,7 @@ to @racket[write] or @racket[display]); defaults to @racket[#t]. See
 @defboolparam[print-honu on?]{
 
 A parameter that controls printing values in an alternate syntax.  See
-@|HonuManual| for more information.}
+@|HonuManual| for more information. The default is @racket[#f].}
 
 
 @defparam[print-syntax-width width (or/c +inf.0 0 (and/c exact-integer? (>/c 3)))]{
@@ -266,7 +266,7 @@ names. When not @racket[#f], paths that syntactically extend the
 parameter's value are converted to relative paths; when the resulting
 compiled code is read, relative paths are converted back to complete
 paths using the @racket[current-load-relative-directory] parameter (if
-it is not @racket[#f], otherwise the path is left relative).}
+it is not @racket[#f]; otherwise, the path is left relative).}
 
 
 
@@ -287,7 +287,7 @@ it is not @racket[#f], otherwise the path is left relative).}
 
 Gets or sets the @deftech{port write handler}, @deftech{port display
 handler}, or @deftech{port print handler} for @racket[out]. This
-handler is call to output to the port when @racket[write],
+handler is called to output to the port when @racket[write],
 @racket[display], or @racket[print] (respectively) is applied to the
 port.  Each handler must accept two arguments: the value to be printed and
 the destination port. The handler's return value is ignored.

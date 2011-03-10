@@ -219,13 +219,13 @@ non-@racket[#f] value when applied to the structure.
 (equal? west south)
 ]}
 
-@section{Boolean Synonyms}
+@section{Boolean Aliases}
 
 @note-lib[racket/bool]
 
-@defthing[true boolean?]{A synonym for @scheme[#t].}
+@defthing[true boolean?]{An alias for @scheme[#t].}
 
-@defthing[false boolean?]{A synonym for @scheme[#f].}
+@defthing[false boolean?]{An alias for @scheme[#f].}
 
 @defproc[(symbol=? [a symbol?] [b symbol?]) boolean?]{
 

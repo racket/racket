@@ -479,7 +479,7 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 
 
 @defproc[(>= [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t]
- if the arguments in the given order are in non-increasing,
+ if the arguments in the given order are non-increasing,
  @racket[#f] otherwise.
 
 @mz-examples[(>= 1 1) (>= 1 2 1)]}

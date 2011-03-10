@@ -36,8 +36,8 @@ same as @scheme[open-output-bytes].}
          bytes?]{
 
 Returns the bytes accumulated in @scheme[out] so far in a
-freshly-allocated byte string (including any bytes written after the
-port's current position, if any). the @scheme[out] port must be a
+freshly allocated byte string (including any bytes written after the
+port's current position, if any). The @scheme[out] port must be a
 string output port produced by @scheme[open-output-bytes] (or
 @scheme[open-output-string]) or a structure whose
 @scheme[prop:output-port] property refers to such an output port

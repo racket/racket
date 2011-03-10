@@ -5,7 +5,7 @@
 
 @defthing[prop:custom-write struct-type-property?]{
 
-Associates a procedure to a structure type to used by the default
+Associates a procedure to a structure type used by the default
 printer to @scheme[display], @scheme[write], or @scheme[print]
 instances of the structure type.
 
@@ -27,8 +27,8 @@ the port through @scheme[display], @scheme[write], or @scheme[print]
 prints a value recursively with sharing annotations. To avoid a
 recursive print (i.e., to print without regard to sharing with a value
 currently being printed), print instead to a string or pipe and
-transfer the result to the target port using @scheme[write-string] and
-@scheme[write-special]. To recursively print but to a port other than
+transfer the result to the target port using @scheme[write-string] or
+@scheme[write-special]. To print recursively to a port other than
 the one given to the custom-write procedure, copy the given port's
 write handler, display handler, and print handler to the other port.
 
@@ -85,7 +85,7 @@ property, @scheme[#f] otherwise.}
 
 
 @defproc[(custom-write-accessor [v custom-write?])
-         (custom-write? output-port? boolean?. -> . any)]{
+         (custom-write? output-port? boolean? . -> . any)]{
 
 Returns the custom-write procedure associated with @scheme[v].}
 
