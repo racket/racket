@@ -41,7 +41,6 @@
     ;=⇒ \Longrightarrow 
     ;􏰃→ \mapsto
     
-    
     ("aleph" "א")
     ("prime" "′")
     ("emptyset" "∅")
@@ -164,6 +163,7 @@
     ("propto" "∝")
     ("vdash" "⊢")
     ("dashv" "⊣")
+    ("cdot" "·")
     
     ("sqrt" "√")
     
