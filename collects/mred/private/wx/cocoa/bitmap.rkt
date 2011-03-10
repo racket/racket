@@ -24,9 +24,10 @@
                                             w
                                             h)])
         ;; initialize bitmap to empty - needed?
-        #;
         (let ([cr (cairo_create s)])
-          (cairo_set_operator cr CAIRO_OPERATOR_CLEAR)
+          (cairo_set_operator cr (if with-alpha?
+                                     CAIRO_OPERATOR_CLEAR
+                                     CAIRO_OPERATOR_SOURCE))
           (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
           (cairo_paint cr)
           (cairo_destroy cr))
