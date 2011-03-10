@@ -6,7 +6,7 @@
 ;; without using bytecode.
 
 (define url-host "download.racket-lang.org")
-(define url-path "/libs/1/")
+(define url-path "/libs/2/")
 (define url-base (string-append "http://" url-host url-path))
 
 (provide all-files+sizes)
@@ -40,7 +40,7 @@
       ["libpixman-1.0.dylib" 459304]
       ["libgthread-2.0.0.dylib" 24592]
       ["libpng14.14.dylib" 182992]
-      ["PSMTabBarControl.tgz" 89039 "PSMTabBarControl.framework" 247760]]
+      ["PSMTabBarControl.tgz" 91302 "PSMTabBarControl.framework" 247768]]
      [x86_64-macosx
       ["libcairo.2.dylib" 944552]
       ["libintl.8.dylib" 61016]
@@ -54,7 +54,7 @@
       ["libpixman-1.0.dylib" 499440]
       ["libgthread-2.0.0.dylib" 21728]
       ["libpng14.14.dylib" 192224]
-      ["PSMTabBarControl.tgz" 105765 "PSMTabBarControl.framework" 316512]]
+      ["PSMTabBarControl.tgz" 107267 "PSMTabBarControl.framework" 316528]]
      [ppc-macosx
       ["libcairo.2.dylib" 2716096]
       ["libintl.8.dylib" 133156]
@@ -68,7 +68,7 @@
       ["libpixman-1.0.dylib" 1366816]
       ["libgthread-2.0.0.dylib" 25416]
       ["libpng14.14.dylib" 505920]
-      ["PSMTabBarControl.tgz" 95862 "PSMTabBarControl.framework" 229493]]
+      ["PSMTabBarControl.tgz" 85840 "PSMTabBarControl.framework" 223689]]
      [win32/i386
       ["libjpeg-7.dll" 233192]
       ["libcairo-2.dll" 921369]

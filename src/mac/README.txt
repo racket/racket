@@ -29,6 +29,11 @@ Patches:
                                 &metrics->underline_position);
   metrics->underline_position = -(metrics->underline_position 
                                   + metrics->underline_thickness);
+ PSMTabBarControl/PSMTabBarControl.m:216: change to
+     // copy _cells because removing a cell
+     // can modify the array (which is not allowed)
+     NSArray *copyOfCells = [NSArray arrayWithArray: _cells];
+     NSEnumerator *enumerator = [copyOfCells objectEnumerator];
 
 Configures (where <dest> is some temporary area):
   pkg-config: --prefix=<dest>
