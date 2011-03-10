@@ -20,17 +20,16 @@
 (define (play-sound path async?)
   (let ([s (as-objc-allocation
             (tell (tell MySound alloc)
-                  initWithContentsOfFile: #:type _NSString (if (path? path)
-                                                               (path->string path)
-                                                               path)
+                  initWithContentsOfFile: #:type _NSString (path->string 
+                                                            (path->complete-path path))
                   byReference: #:type _BOOL #t))]
         [sema (make-semaphore)])
     (tellv s setDelegate: s)
     (set-ivar! s sema sema)
     (tellv s retain) ; don't use `retain', because we dont' want auto-release
-    (tellv s play)
-    (if async?
-        #t
-        (begin
-          (semaphore-wait sema)
-          (get-ivar s result)))))
+    (and (tell #:type _BOOL s play)
+         (if async?
+             #t
+             (begin
+               (semaphore-wait sema)
+               (get-ivar s result))))))
