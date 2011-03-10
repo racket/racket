@@ -224,7 +224,7 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
       handle = NULL;
       null_ok = 1;
     } else
-      handle = LoadLibrary(name);
+      handle = LoadLibraryW(WIDE_PATH(name));
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
     handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
 #   endif /* WINDOWS_DYNAMIC_LOAD */

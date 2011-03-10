@@ -194,7 +194,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
         handle = NULL;
         null_ok = 1;
       } else
-        handle = LoadLibrary(name);
+        handle = LoadLibraryW(WIDE_PATH(name));
     }{
       handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
     }
