@@ -139,14 +139,19 @@ effectively cancels one layer of @racket[unquote] and
 or @racket[unquote-splicing] is needed.
 
 @examples[
-(eval:alts (#,qq (1 2 (#,qq (#,uq (+ 1 2) 
-                            (#,uq (#,uq (- 5 1)))))))
-           `(1 2 (,(string->uninterned-symbol "quasiquote") 
-                  (,(string->uninterned-symbol "unquote") (+ 1 2)) 
-                  (,(string->uninterned-symbol "unquote") 4))))
+(eval:alts (#,qq (1 2 (#,qq (#,uq (+ 1 2)))))
+           `(1 2 (,(string->uninterned-symbol "quasiquote")
+                  (,(string->uninterned-symbol "unquote") (+ 1 2)))))
+(eval:alts (#,qq (1 2 (#,qq (#,uq (#,uq (+ 1 2))))))
+           `(1 2 (,(string->uninterned-symbol "quasiquote")
+                  (,(string->uninterned-symbol "unquote") 3))))
+(eval:alts (#,qq (1 2 (#,qq ((#,uq (+ 1 2)) (#,uq (#,uq (- 5 1)))))))
+           `(1 2 (,(string->uninterned-symbol "quasiquote")
+                  ((,(string->uninterned-symbol "unquote") (+ 1 2))
+                   (,(string->uninterned-symbol "unquote") 4)))))
 ]
 
-The evaluation above will not actually print as shown. Instead, the
+The evaluations above will not actually print as shown. Instead, the
 shorthand form of @racket[quasiquote] and @racket[unquote] will be
 used: @litchar{`} (i.e., a backquote) and @litchar{,} (i.e., a comma).
 The same shorthands can be used in expressions:

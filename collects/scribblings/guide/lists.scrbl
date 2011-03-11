@@ -117,12 +117,12 @@ list loops.
 Racket provides a general @defterm{list comprehension} form
 @racket[for/list], which builds a list by iterating through
 @defterm{sequences}. List comprehensions and related iteration forms
-are described in see @secref["for"].
+are described in @secref["for"].
 
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
 
-Although @racket[map] and other iteration functions predefined, they
+Although @racket[map] and other iteration functions are predefined, they
 are not primitive in any interesting sense. You can write equivalent
 iterations using a handful of list primitives.
 

@@ -383,7 +383,7 @@ supported are
 
  @item{@litchar{[:upper:]} --- ASCII upper-case letters}
 
- @item{@litchar{[:word:]} --- ASCII same as @litchar{\w}}
+ @item{@litchar{[:word:]} --- ASCII letters and @litchar{_}, same as @litchar{\w}}
 
  @item{@litchar{[:xdigit:]} --- ASCII hex digits}
 
@@ -581,15 +581,6 @@ no problem doing so:
               "billions and millions")
 ]
 
-The following example corrects doubled words:
-
-@interaction[
-(regexp-replace* #px"(\\S+) \\1"
-  (string-append "now is the the time for all good men to "
-                 "to come to the aid of of the party")
-  "\\1")
-]
-
 The following example marks all immediately repeating patterns in a
 number string:
 
@@ -597,6 +588,15 @@ number string:
 (regexp-replace* #px"(\\d+)\\1"
   "123340983242432420980980234"
   "{\\1,\\1}")
+]
+
+The following example corrects doubled words:
+
+@interaction[
+(regexp-replace* #px"\\b(\\S+) \\1\\b"
+  (string-append "now is the the time for all good men to "
+                 "to come to the aid of of the party")
+  "\\1")
 ]
 
 @subsection{Non-capturing Clusters}
@@ -893,15 +893,14 @@ three dots separating them.
 #:eval ex-eval
 (define ip-re1
   (string-append
-    "^"        (code:comment @#,t{nothing before})
-    n0-255     (code:comment @#,t{the first @racket[n0-255],})
-    "(?:"      (code:comment @#,t{then the subpattern of})
-    "\\."      (code:comment @#,t{a dot followed by})
-    n0-255     (code:comment @#,t{an @racket[n0-255],})
-    ")"        (code:comment @#,t{which is})
-    "{3}"      (code:comment @#,t{repeated exactly 3 times})
-    "$"        (code:comment @#,t{with nothing following})
-    ))
+   "^"        (code:comment @#,t{nothing before})
+   n0-255     (code:comment @#,t{the first @racket[n0-255],})
+   "(?:"      (code:comment @#,t{then the subpattern of})
+   "\\."      (code:comment @#,t{a dot followed by})
+   n0-255     (code:comment @#,t{an @racket[n0-255],})
+   ")"        (code:comment @#,t{which is})
+   "{3}"      (code:comment @#,t{repeated exactly 3 times})
+   "$"))      (code:comment @#,t{with nothing following})
 ]
 
 Let's try it out:

@@ -174,7 +174,7 @@ racket
 (define (balance) amount)
 ]
 
-This module define an @racket[amount?] function as uses it as a
+This module defines an @racket[amount?] function and uses it as a
 contract within @racket[->] contracts. When a client calls the
 @racket[deposit] function as exported with the contract @racket[(->
 amount? any)], it must supply an exact, nonnegative integer, otherwise
@@ -292,9 +292,8 @@ racket
   ....
   (code:comment "convert an  amount (natural number) of cents")
   (code:comment "into a dollar based string")
-  [format-nat (-> natural-number/c 
-                  (and/c string? 
-                         #rx"[0-9]*\\.[0-9][0-9][0-9]"))])
+  [format-nat (-> natural-number/c
+                  (and/c string? #rx"[0-9]*\\.[0-9][0-9]"))])
 ]
 
 @; ------------------------------------------------------------------------
@@ -328,7 +327,7 @@ describes functions that accept other functions as its input. If a
 server exports a function @racket[twice] with this contract and the
 @racket[twice] is applied to a value other than a function of one
 argument, then the client is to blame. If @racket[twice] is applied to
-a function of one argument and @racket[twice] calls the give function
+a function of one argument and @racket[twice] calls the given function
 on a value other than an integer, then the server is to blame.
 
 @; ----------------------------------------------------------------------

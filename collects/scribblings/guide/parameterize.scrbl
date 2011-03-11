@@ -132,7 +132,7 @@ to adjust its value:
   (and (not (equal? lokation "here"))
        (not (equal? lokation "there"))))
 
-(set! location "on a bus")
+(set! lokation "on a bus")
 (would-ya-could-ya?)
 ]
 

@@ -201,7 +201,7 @@ values to flow in both directions.
 
 @ctc-section{Experimenting with Contracts and Modules}
 
-All of the contracts and module in this chapter (excluding those just
+All of the contracts and modules in this chapter (excluding those just
 following) are written using the standard @tt{#lang} syntax for
 describing modules. Since modules serve as the boundary between
 parties in a contract, examples involve multiple modules.

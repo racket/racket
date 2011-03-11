@@ -213,7 +213,7 @@ put the optional ones in the second section.
 A function defined with @racket[case-lambda] might impose different
 constraints on its arguments depending on how many are provided. For
 example, a @racket[report-cost] function might convert either a pair
-or numbers or a string into a new string:
+of numbers or a string into a new string:
 
 @margin-note{See @secref["case-lambda"] for an introduction to
 @racket[case-lambda].}
@@ -297,7 +297,7 @@ section of the reference manual. They simplify contracts tremendously
 and make them more accessible to potential clients. 
 }
 
-Going back to the back-account example, suppose that we generalize the
+Going back to the bank-account example, suppose that we generalize the
 module to support multiple accounts and that we also include a
 withdrawal operation. The improved bank-account module includes a
 @racket[account] structure type and the following functions:

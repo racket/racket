@@ -262,7 +262,7 @@ Here are some examples using each:
 
 ]
 
-Overall, @racket[print] as corresponds to the expression layer of
+Overall, @racket[print] corresponds to the expression layer of
 Racket syntax, @racket[write] corresponds to the reader layer, and
 @racket[display] roughly corresponds to the character layer.
 
@@ -294,7 +294,9 @@ After using @racket[write], as opposed to @racket[display] or
 (read in)
 (write #hash((a . "apple") (b . "banana")) out)
 (read in)
-(write '("alphabet" soup) out)
+(print '("alphabet" soup) out)
+(read in)
+(display '("alphabet" soup) out)
 (read in)
 ]
 
@@ -315,7 +317,7 @@ Other structure types created by @racket[struct], which offer
 more abstraction than @tech{prefab} structure types, normally
 @racket[write] either using @racketresultfont{#<....>} notation (for
 opaque structure types) or using @racketresultfont{#(....)} vector
-notation (for transparent structure types). In neither can can the
+notation (for transparent structure types). In neither can the
 result be read back in as an instance of the structure type:
 
 @interaction[

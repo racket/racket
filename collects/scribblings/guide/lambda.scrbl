@@ -105,7 +105,7 @@ identifier and a default value:
       [arg-id default-expr]])
 ]{}
 
-A argument of the form @racket[[arg-id default-expr]] is
+An argument of the form @racket[[arg-id default-expr]] is
 optional. When the argument is not supplied in an application,
 @racket[_default-expr] produces the default value. The
 @racket[_default-expr] can refer to any preceding @racket[_arg-id],
