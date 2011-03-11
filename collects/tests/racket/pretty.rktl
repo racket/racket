@@ -416,6 +416,17 @@
 
 ;; ----------------------------------------
 
+;; make sure pretty printer isn't confised about
+;; quasiquote
+(let ([p (open-output-string)])
+  (pretty-print '(quote ,x ,4) p)
+  (test "'(quote ,x ,4)\n" get-output-string p))
+(let ([p (open-output-string)])
+  (pretty-print '```(quote ,,,,,x ,4) p)
+  (test "'```(quote ,,,,,x ,4)\n" get-output-string p))
+
+;; ----------------------------------------
+
 (parameterize ([print-boolean-long-form #f])
   (test "#t" pretty-format #t)
   (test "#f" pretty-format #f))

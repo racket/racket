@@ -750,7 +750,7 @@
                   (equal? open "("))
 	     (begin
 	       (out (read-macro-prefix expr car))
-	       (wr (read-macro-body expr car cdr) depth (reader-adjust-qd (car expr) qd)))
+	       (wr (read-macro-body expr car cdr) depth qd))
 	     (wr-lst expr #t depth pair? car cdr open close qd)))
 
        (define (wr-lst l check? depth pair? car cdr open close qd)
@@ -784,8 +784,7 @@
                                    (null? (cdr (cdr l))))
                               (begin
                                 (out " . ,")
-                                (wr (car (cdr l)) (dsub1 depth)
-                                    (reader-adjust-qd (car l) qd))
+                                (wr (car (cdr l)) (dsub1 depth) qd)
                                 (out close))
                               (begin
                                 (out " ")
@@ -1117,7 +1116,7 @@
 		   extra
 		   pp-expr
 		   depth
-                   (reader-adjust-qd (acar expr) qd)))
+                   qd))
 	     (let ((head (acar expr)))
 	       (if (or (and (symbol? head)
                             (not (size-hook head display?)))
@@ -1485,13 +1484,6 @@
                 unquote unquote-splicing)
                (length1? tail))
               (else #f)))))
-
-  (define (reader-adjust-qd v qd)
-    (and qd
-         (case (do-remap v)
-           [(quasiquote) (add1 qd)]
-           [(unquote unquote-splciing) (sub1 qd)]
-           [else qd])))
             
    (define (read-macro-body l car cdr)
      (car (cdr l)))
