@@ -11,6 +11,7 @@
 Similar to @scheme[syntax-local-name] except that @scheme[stx] is
 checked for an @scheme['inferred-name] property (which overrides any
 inferred name). If neither @scheme[syntax-local-name] nor
-@scheme['inferred-name] produce a name, then a name is constructed
-from the source-location information in @scheme[stx], if any. If no
-name can be constructed, the result is @scheme[#f].}
+@scheme['inferred-name] produce a name, or if the
+@scheme['inferred-name] property value is @|void-const|, then a name
+is constructed from the source-location information in @scheme[stx],
+if any. If no name can be constructed, the result is @scheme[#f].}

@@ -1944,6 +1944,10 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Inf
   name = scheme_stx_property(code, scheme_inferred_name_symbol, NULL);
   if (name && SCHEME_SYMBOLP(name)) {
     name = combine_name_with_srcloc(name, code, 0);
+  } else if (name && SCHEME_VOIDP(name)) {
+    name = scheme_source_to_name(code);
+    if (name)
+      name = combine_name_with_srcloc(name, code, 1);
   } else {
     name = rec[drec].value_name;
     if (!name || SCHEME_FALSEP(name)) {

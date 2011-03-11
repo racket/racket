@@ -821,7 +821,11 @@
                   [(keyword? (syntax-e (car l)))
                    (loop (cddr l)
                          (cdr ids)
-                         (cons (list (car ids) (cadr l)) bind-accum)
+                         (cons (list (car ids) (syntax-property (cadr l)
+                                                                'inferred-name
+                                                                ;; void hides binding name
+                                                                (void)))
+                               bind-accum)
                          arg-accum
                          (cons (cons (car l) (car ids))
                                kw-pairs))]

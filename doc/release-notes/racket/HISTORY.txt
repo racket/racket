@@ -2,6 +2,7 @@ Version 5.1.0.4
 Change file-or-directory-permission to add 'bits mode
  and permission-setting mode
 racket/file: add user-read-bit, etc.
+Added special treatment of void as an 'inferred-name property
 
 Version 5.1.0.2
 Enabled single-precision floats by default

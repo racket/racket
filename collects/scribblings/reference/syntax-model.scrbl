@@ -968,7 +968,10 @@ When an @indexed-racket['inferred-name] property is attached to a
 syntax object for an expression (see @secref["stxprops"]), the
 property value is used for naming the expression, and it overrides any
 name that was inferred from the expression's context. Normally, the
-property value should be a symbol or an identifier.
+property value should be a symbol. A @racket['inferred-name] 
+property value of @|void-const| hides a name that would otherwise be
+inferred from context (perhaps because a binding identifier's was 
+automatically generated and should not be exposed).
 
 When an inferred name is not available, but a source location is
 available, a name is constructed using the source location
