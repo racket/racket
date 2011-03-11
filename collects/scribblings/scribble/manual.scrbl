@@ -945,6 +945,13 @@ not @racket[method-id].}
 Like @racket[method], but the hyperlink shows both the method name and
 the containing class/interface.}
 
+@defform[(this-obj)]{
+
+Within a @racket[defmethod] or similar form, typesets as a
+meta-variable that stands for the target of the method call. Use
+@racket[(this-obj)] to be more precise than prose such as ``this
+method's object.''}
+
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-signatures"]{Documenting Signatures}
 
