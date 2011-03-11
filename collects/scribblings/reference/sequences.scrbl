@@ -367,6 +367,13 @@ in the sequence.
 
 @note-lib[racket/stream]
 
+Warning: the interface that this library implements is dealing with
+sequences, not with lazy lists.  (In the future, lazy lists will become
+a valid kind of sequence, hence the naming of these functions.)  Note
+also that some of these operations can result in serious efficiency
+penalties, for example, each use of @racket[stream-rest] adds a constant
+overhead for accessing the resulting sequence.
+
 @defthing[empty-stream sequence?]{
   A sequence with no elements.}
 
