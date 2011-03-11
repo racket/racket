@@ -151,14 +151,13 @@ other path is deconstructed with @racket[split-path] and
 @racket[path-element->bytes]) when ASCII-level manipulation of path
 elements is necessary.}
 
+
 @defproc[(path-element->string [path path?]) string?]{
 
-Like @racket[path->string], except any encoding prefix is removed. See
-@secref["unixpaths"] for more information on the conversion for
-@|AllUnix| paths, and see @secref["windowspaths"] for more
-information on the conversion for Windows paths.
-In addition, trailing path separators are removed, as by
-@racket[split-path].
+Like @racket[path->string], except that trailing path separators are
+removed (as by @racket[split-path]). Under Windows, any
+@litchar{\\?\REL} encoding prefix is also removed; see
+@secref["windowspaths"] for more information on Windows paths.
 
 The @racket[path] argument must be such that @racket[split-path]
 applied to @racket[path] would return @racket['relative] as its first
@@ -167,6 +166,7 @@ result and a path as its second result, otherwise the
 
 The @racket[path-element->string] procedure is generally the best
 choice for presenting a pathless file or directory name to a user.}
+
 
 @defproc[(path-element->bytes [path path-string?]) bytes?]{
 
