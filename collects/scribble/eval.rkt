@@ -183,6 +183,9 @@
                    (cdr val-list+outputs)
                     #f)))))))
 
+  ;; extracts from a datum or syntax object --- while keeping the
+  ;; syntax-objectness of the original intact, instead of always
+  ;; generating a syntax object or always generating a datum
   (define (extract s . ops)
     (let loop ([s s][ops ops])
       (cond
@@ -190,13 +193,15 @@
        [(syntax? s) (loop (syntax-e s) ops)]
        [else (loop ((car ops) s) (cdr ops))])))
 
+  (struct nothing-to-eval ())
+
   (define (extract-to-evaluate s)
     (let loop ([s s][expect #f])
       (syntax-case s (code:comment eval:alts eval:check)
         [(code:line v (code:comment . rest))
          (loop (extract s cdr car) expect)]
         [(code:comment . rest)
-         (values #f expect)]
+         (values (nothing-to-eval) expect)]
         [(eval:alts p e)
          (loop (extract s cdr cdr car) expect)]
         [(eval:check e expect)
@@ -207,7 +212,7 @@
 
   (define ((do-eval ev) s)
     (let-values ([(s expect) (extract-to-evaluate s)])
-      (if s
+      (if (not (nothing-to-eval? s))
           (let ([r (with-handlers ([(lambda (x)
                                       (not (exn:break? x)))
                                     (lambda (e)
@@ -392,7 +397,7 @@
 
   (define (do-interaction-eval ev e)
     (let-values ([(e expect) (extract-to-evaluate e)])
-      (when e
+      (unless (nothing-to-eval? e)
         (parameterize ([current-command-line-arguments #()])
           (do-plain-eval (or ev (make-base-eval)) e #f)))
       ""))
