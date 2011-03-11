@@ -197,7 +197,7 @@
 
   (define (extract-to-evaluate s)
     (let loop ([s s][expect #f])
-      (syntax-case s (code:comment eval:alts eval:check)
+      (syntax-case s (code:line code:comment eval:alts eval:check)
         [(code:line v (code:comment . rest))
          (loop (extract s cdr car) expect)]
         [(code:comment . rest)
@@ -393,7 +393,12 @@
                               [else s]))))
         list)))
 
+  ;; Quote an expression to be evaluated:
   (define-syntax-rule (quote-expr e) 'e)
+  ;; This means that sandbox evaluation always works on sexprs, to get
+  ;; it to work on syntaxes, use this definition:
+  ;;   (require syntax/strip-context)
+  ;;   (define-syntax-rule (quote-expr e) (strip-context (quote-syntax e)))
 
   (define (do-interaction-eval ev e)
     (let-values ([(e expect) (extract-to-evaluate e)])
