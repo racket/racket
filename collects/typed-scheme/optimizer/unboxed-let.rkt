@@ -59,7 +59,7 @@
                  ;; clauses of form ((v) rhs), currently only supports 1 lhs var
                  (partition
                   (lambda (p)
-                    (and (isoftype? (cadr p) -FloatComplex)
+                    (and (subtypeof? (cadr p) -FloatComplex)
                          (could-be-unboxed-in? (car (syntax-e (car p)))
                                                #'(begin body ...))))
                   (syntax-map syntax->list #'(clause ...))))

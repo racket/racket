@@ -37,7 +37,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-           #:when (isoftype? this-syntax -FloatComplex)
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -62,7 +62,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-           #:when (isoftype? this-syntax -FloatComplex)
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -89,7 +89,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-           #:when (or (isoftype? this-syntax -FloatComplex) (isoftype? this-syntax -Number))
+           #:when (or (subtypeof? this-syntax -FloatComplex) (subtypeof? this-syntax -Number))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -138,7 +138,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-           #:when (or (isoftype? this-syntax -FloatComplex) (isoftype? this-syntax -Number))
+           #:when (or (subtypeof? this-syntax -FloatComplex) (subtypeof? this-syntax -Number))
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with reals (syntax-map (lambda (x) (if (syntax->datum x) x #'0.0))
@@ -206,7 +206,7 @@
                                               res)]))))))))
 
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-float-complex-opt-expr)
-           #:when (isoftype? this-syntax -FloatComplex)
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding #'c.real-binding
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -311,7 +311,7 @@
                                         (exact->inexact (syntax->datum #'n)))))))
   
   (pattern e:expr
-           #:when (isoftype? #'e -FloatComplex)
+           #:when (subtypeof? #'e -FloatComplex)
            #:with e* (unboxed-gensym)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
@@ -321,7 +321,7 @@
                      ((real-binding) (unsafe-flreal-part e*))
                      ((imag-binding) (unsafe-flimag-part e*)))))
   (pattern e:expr
-           #:when (isoftype? #'e -Number) ; complex, maybe exact, maybe not
+           #:when (subtypeof? #'e -Number) ; complex, maybe exact, maybe not
            #:with e* (unboxed-gensym)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
@@ -332,7 +332,7 @@
                      ((imag-binding) (exact->inexact (imag-part e*))))))
   (pattern e:expr
            #:with (bindings ...)
-           (error "non exhaustive pattern match")
+           (error (format "non exhaustive pattern match" #'e))
            #:with real-binding #f
            #:with imag-binding #f))
 
@@ -354,7 +354,7 @@
 (define-syntax-class float-complex-expr
   #:commit
   (pattern e:expr
-           #:when (isoftype? #'e -FloatComplex)
+           #:when (subtypeof? #'e -FloatComplex)
            #:with opt ((optimize) #'e)))
 
 (define-syntax-class float-complex-opt-expr
@@ -382,7 +382,7 @@
                   #'(op.unsafe n.opt)))
 
   (pattern (#%plain-app (~and op (~literal make-polar)) r theta)
-           #:when (isoftype? this-syntax -FloatComplex)
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with exp*:unboxed-float-complex-opt-expr this-syntax
            #:with opt
            (begin (log-optimization "make-polar" #'op)
@@ -420,7 +420,7 @@
                       real-binding)))
 
   (pattern (#%plain-app op:float-complex-op e:expr ...)
-           #:when (isoftype? this-syntax -FloatComplex)
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with exp*:unboxed-float-complex-opt-expr this-syntax
            #:with real-binding #'exp*.real-binding
            #:with imag-binding #'exp*.imag-binding
