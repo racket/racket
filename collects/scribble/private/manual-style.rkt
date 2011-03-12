@@ -171,10 +171,18 @@
    (list (racketmodfont "#lang"))
    `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl") "hash-lang"))))
 
+(define (make-v+u-link p)
+  (make-link-element
+   module-link-color
+   p
+   `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl") "void+undefined"))))
+
 (define-on-demand void-const
-  (racketresultfont "#<void>"))
+  (make-v+u-link
+   (racketresultfont "#<void>")))
 (define-on-demand undefined-const
-  (racketresultfont "#<undefined>"))
+  (make-v+u-link
+   (racketresultfont "#<undefined>")))
 
 (define (link url 
               #:underline? [underline? #t]
