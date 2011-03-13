@@ -1569,7 +1569,9 @@ static char *double_to_string (double d, int alloc, int was_single)
     /* Initial count for significant digits is 14. That's big enough to
        get most right, small enough to avoid nonsense digits. But we'll
        loop in case it's not precise enough to get read-write invariance: */
+    GC_CAN_IGNORE char *loc;
     digits = 14;
+    loc = scheme_push_c_numeric_locale();
     while (digits < 30) {
       double check;
       GC_CAN_IGNORE char *ptr;
@@ -1583,6 +1585,7 @@ static char *double_to_string (double d, int alloc, int was_single)
 
       digits++;
     }
+    scheme_pop_c_numeric_locale(loc);
     
     l = strlen(buffer);
     for (i = 0; i < l; i++) {

@@ -3508,6 +3508,26 @@ static void reset_locale(void)
   }
 }
 
+char *scheme_push_c_numeric_locale()
+{
+#ifndef DONT_USE_LOCALE
+  GC_CAN_IGNORE char *prev;
+  prev = setlocale(LC_NUMERIC, NULL);
+  if (!strcmp(prev, "C"))
+    return NULL;
+  else
+    return setlocale(LC_NUMERIC, "C");
+#endif  
+}
+
+void scheme_pop_c_numeric_locale(char *prev)
+{
+#ifndef DONT_USE_LOCALE
+  if (prev)
+    setlocale(LC_NUMERIC, prev);
+#endif  
+}
+
 static int find_special_casing(int ch)
 {
   /* Binary search */

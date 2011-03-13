@@ -1693,6 +1693,9 @@ void scheme_clear_bignum_cache(void);
 
 intptr_t scheme_integer_length(Scheme_Object *n);
 
+char *scheme_push_c_numeric_locale();
+void scheme_pop_c_numeric_locale(char *prev);
+
 /****** Rational numbers *******/
 
 typedef struct {
