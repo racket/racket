@@ -67,7 +67,7 @@
 
 .RktKw {
   color: black;
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 .RktErr {
@@ -97,7 +97,7 @@
 .RktStxLink {
   text-decoration: none;
   color: black;
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 .RktRes {
