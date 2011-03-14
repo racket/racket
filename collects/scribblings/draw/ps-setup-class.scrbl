@@ -39,8 +39,8 @@ Gets the printer command used to print a file in X. The default is
 
 }
 
-@defmethod[(get-editor-margin [h-margin (box/c nonnegative-real?)]
-                              [v-margin (box/c nonnegative-real?)])
+@defmethod[(get-editor-margin [h-margin (box/c (and/c real? (not/c negative?)))]
+                              [v-margin (box/c (and/c real? (not/c negative?)))])
            void?]{
 
 Returns the current settings for horizontal and vertical margins when
@@ -71,8 +71,8 @@ Currently, Level 2 commands are only needed to include color bitmap
 
 }
 
-@defmethod[(get-margin [h-margin (box/c nonnegative-real?)]
-                       [v-margin (box/c nonnegative-real?)])
+@defmethod[(get-margin [h-margin (box/c (and/c real? (not/c negative?)))]
+                       [v-margin (box/c (and/c real? (not/c negative?)))])
            void?]{
 
 Returns the current settings for horizontal and vertical PostScript
@@ -130,8 +130,8 @@ Gets the command used to view a PostScript file for X. The default is
 
 }
 
-@defmethod[(get-scaling [x (box/c nonnegative-real?)]
-                        [y (box/c nonnegative-real?)])
+@defmethod[(get-scaling [x (box/c (and/c real? (not/c negative?)))]
+                        [y (box/c (and/c real? (not/c negative?)))])
            void?]{
 
 Gets the scaling factor for PostScript output.  @boxisfill[(scheme x)
@@ -146,8 +146,8 @@ This scale is in addition to a scale that can be set by @method[dc<%>
 
 }
 
-@defmethod[(get-translation [x (box/c nonnegative-real?)]
-                            [y (box/c nonnegative-real?)])
+@defmethod[(get-translation [x (box/c (and/c real? (not/c negative?)))]
+                            [y (box/c (and/c real? (not/c negative?)))])
            void?]{
 
 Gets the translation (from the bottom left corner) for PostScript

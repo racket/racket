@@ -813,10 +813,10 @@ Returns @scheme[#t] if the editor is in overwrite mode, @scheme[#f]
 }
 
 
-@defmethod[(get-padding) (values nonnegative-real?
-                                 nonnegative-real?
-                                 nonnegative-real?
-                                 nonnegative-real?)]{
+@defmethod[(get-padding) (values (and/c real? (not/c negative?))
+                                 (and/c real? (not/c negative?))
+                                 (and/c real? (not/c negative?))
+                                 (and/c real? (not/c negative?)))]{
 
 Returns the editor's padding for its left, top, right, and bottom
 sides (in that order).
@@ -1883,10 +1883,10 @@ Enables or disables overwrite mode. See @method[text%
 
 }
 
-@defmethod[(set-padding [left nonnegative-real?]
-                        [top nonnegative-real?]
-                        [right nonnegative-real?]
-                        [bottom nonnegative-real?])
+@defmethod[(set-padding [left (and/c real? (not/c negative?))]
+                        [top (and/c real? (not/c negative?))]
+                        [right (and/c real? (not/c negative?))]
+                        [bottom (and/c real? (not/c negative?))])
            void?]{
 
 Sets padding that insets the editor's content when drawn within its

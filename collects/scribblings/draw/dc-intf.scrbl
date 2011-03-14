@@ -629,7 +629,8 @@ See also @method[dc<%> set-scale] and @method[dc<%> get-transformation].
 }
 
 @defmethod[(get-size)
-           (values nonnegative-real? nonnegative-real?)]{
+           (values (and/c real? (not/c negative?))
+                   (and/c real? (not/c negative?)))]{
 
 Gets the size of the destination drawing area. For a @scheme[dc<%>]
  object obtained from a @scheme[canvas<%>], this is the (virtual
@@ -660,10 +661,10 @@ set-text-background].
                             [font (or/c (is-a?/c font%) false/c) #f]
                             [combine? any/c #f]
                             [offset exact-nonnegative-integer? 0])
-           (values nonnegative-real? 
-                   nonnegative-real?
-                   nonnegative-real? 
-                   nonnegative-real?)]{
+           (values (and/c real? (not/c negative?)) 
+                   (and/c real? (not/c negative?))
+                   (and/c real? (not/c negative?)) 
+                   (and/c real? (not/c negative?)))]{
 
 
 Returns the size of @scheme[str] at it would be drawn in the drawing
