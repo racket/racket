@@ -262,7 +262,6 @@ struct scheme_jit_common_record {
 };
 
 extern struct scheme_jit_common_record scheme_jit_common;
-extern void *scheme_on_demand_jit_code;
 
 #define sjc scheme_jit_common
 

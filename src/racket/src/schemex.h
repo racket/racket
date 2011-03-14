@@ -18,7 +18,7 @@
    declaring scheme_extension_table */
 
 /* The scheme_extension_table "parser" is picky; don't leave a space
-   between a function name and its opening parameter parenthesis. */
+   between a function name and it's opening parameter parenthesis. */
 
 /* After this START tag, all comments should start & end on same line */
 
@@ -217,6 +217,7 @@ int *scheme_uchar_downs;
 int *scheme_uchar_titles;
 int *scheme_uchar_folds;
 unsigned char *scheme_uchar_combining_classes;
+void *scheme_on_demand_jit_code;
 /*========================================================================*/
 /*                              evaluation                                */
 /*========================================================================*/

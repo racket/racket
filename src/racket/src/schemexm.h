@@ -140,6 +140,7 @@
 #define scheme_uchar_titles (scheme_extension_table->scheme_uchar_titles)
 #define scheme_uchar_folds (scheme_extension_table->scheme_uchar_folds)
 #define scheme_uchar_combining_classes (scheme_extension_table->scheme_uchar_combining_classes)
+#define scheme_on_demand_jit_code (scheme_extension_table->scheme_on_demand_jit_code)
 #define scheme_eval (scheme_extension_table->scheme_eval)
 #define scheme_eval_multi (scheme_extension_table->scheme_eval_multi)
 #define scheme_eval_with_prompt (scheme_extension_table->scheme_eval_with_prompt)

@@ -269,6 +269,8 @@ MZ_EXTERN int scheme_uchar_titles[];
 MZ_EXTERN int scheme_uchar_folds[];
 MZ_EXTERN unsigned char scheme_uchar_combining_classes[];
 
+MZ_EXTERN void *scheme_on_demand_jit_code;
+
 /*========================================================================*/
 /*                              evaluation                                */
 /*========================================================================*/

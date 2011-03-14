@@ -134,6 +134,7 @@ EXPORTS
  scheme_uchar_titles
  scheme_uchar_folds
  scheme_uchar_combining_classes
+ scheme_on_demand_jit_code
  scheme_eval
  scheme_eval_multi
  scheme_eval_with_prompt
