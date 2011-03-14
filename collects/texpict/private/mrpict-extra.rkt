@@ -447,6 +447,15 @@
 
 
       (define (convert-pict p format default)
+        (if (eq? format 'pdf-bytes+bounds)
+            (list (convert-pict/bytes p 'pdf-bytes default)
+                  (pict-width p)
+                  (pict-height p)
+                  (pict-descent p)
+                  0)
+            (convert-pict/bytes p format default)))
+      
+      (define (convert-pict/bytes p format default)
         (case format
           [(png-bytes)
            (let* ([bm (make-bitmap (max 1 (inexact->exact (ceiling (pict-width p))))

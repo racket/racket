@@ -250,13 +250,18 @@
                                  [(and (convertible? e)
                                        (not (disable-images))
                                        (let ([ftag (lambda (v suffix) (and v (list v suffix)))])
-                                         (or (ftag (convert e 'pdf-bytes) ".pdf")
-                                             (ftag (convert e 'eps-bytes) ".ps")
-                                             (ftag (convert e 'png-bytes) ".png"))))
-                                  => (lambda (bstr+suffix)
-                                       (let ([fn (install-file (format "pict~a" (cadr bstr+suffix))
-                                                               (car bstr+suffix))])
-                                         (printf "\\includegraphics{~a}" fn)))]
+                                         (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
+                                             (ftag (list (convert e 'pdf-bytes) #f #f #f #f) ".pdf")
+                                             (ftag (list (convert e 'eps-bytes) #f #f #f #f) ".ps")
+                                             (ftag (list (convert e 'png-bytes) #f #f #f #f) ".png"))))
+                                  => (lambda (bstr+info+suffix)
+                                       (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
+                                              [suffix (list-ref bstr+info+suffix 1)]
+                                              [descent (list-ref (list-ref bstr+info+suffix 0) 3)]
+                                              [fn (install-file (format "pict~a" suffix) bstr)])
+                                         (if descent
+                                             (printf "\\raisebox{-~apx}{\\includegraphics{~a}}" descent fn)
+                                             (printf "\\includegraphics{~a}" fn))))]
                                  [else
                                   (parameterize ([rendering-tt (or tt? (rendering-tt))])
                                     (super render-content e part ri))]))]

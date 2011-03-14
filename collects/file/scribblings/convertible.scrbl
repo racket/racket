@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label file/convertible))
+          (for-label file/convertible racket/base racket/contract))
 
 @title[#:tag "convertible"]{Convertible: Data-Conversion Protocol}
 
@@ -25,6 +25,9 @@ should be considered standard:
  @item{@scheme['ps-bytes] --- a byte string containing a PostScript document}
  @item{@scheme['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
  @item{@scheme['pdf-bytes] --- a byte string containing a PDF document}
+ @item{@scheme['pdf-bytes+bounds] --- a list containing a byte string and four numbers; 
+        the byte string contains a PDF document and the four numbers are sizing information for the PDF document, 
+        namely the width, height, ascent and descent in that order}
 ]
 
 @defthing[prop:convertible struct-type-property?]{
@@ -43,8 +46,17 @@ Returns @racket[#t] if @racket[v] supports the conversion protocol,
 @racket[#f] otherwise.}
 
 @defproc[(convert [v convertible?] [request symbol?] [default any/c #f])
-         any]{
-
+         (case request
+           [(text) (or/c string? (λ (x) (eq? x default)))]
+           [(gif-bytes png-bytes ps-bytes eps-bytes pdf-bytes)
+            (or/c bytes? (λ (x) (eq? x default)))]
+           [(pdf-bytes+bounds) (or/c (list/c bytes?
+                                             (and/c real? (not/c negative?))
+                                             (and/c real? (not/c negative?))
+                                             (and/c real? (not/c negative?))
+                                             (and/c real? (not/c negative?)))
+                                     (λ (x) (eq? x default)))]
+           [else any/c])]{
 
 Requests a data conversion from @racket[v], where @racket[request]
 indicates the type of requested data and @racket[default] is the value
