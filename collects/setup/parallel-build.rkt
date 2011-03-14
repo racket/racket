@@ -8,7 +8,9 @@
          setup/parallel-do
          racket/class
          racket/future
-         compiler/find-exe)
+         compiler/find-exe
+         racket/place
+         (for-syntax racket/base))
 
 (provide parallel-compile
          parallel-compile-files)
@@ -202,17 +204,11 @@
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
-  (parallel-do-event-loop #f
-                          values ; identity function
-                          (build-parallel-build-worker-args)
-                          (make-object CollectsQueue% collects-tree setup-fprintf append-error)
-                          worker-count 999999999)
-    #;
-  (places-parallel-build (make-object CollectsQueue% collects-tree setup-fprintf append-error) worker-count 999999999))
+  (define collects-queue (make-object CollectsQueue% collects-tree setup-fprintf append-error))
+  (if (place-enabled?)
+    (places-parallel-build collects-queue worker-count 999999999)
+    (parallel-do-event-loop #f values (build-parallel-build-worker-args) collects-queue worker-count 999999999)))
 
-#|
-(require racket/place)
-(require (for-syntax racket/base))
 (define-syntax-rule (define-syntax-case (N a ...) b ...)
   (define-syntax (N stx)
     (syntax-case stx ()
@@ -310,4 +306,3 @@
 
   (for ([p workers]) (wrkr/send p (list 'DIE)))
   (for ([p ps]) (place-wait p)))
-|#
