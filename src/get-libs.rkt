@@ -40,7 +40,7 @@
       ["libpixman-1.0.dylib" 459304]
       ["libgthread-2.0.0.dylib" 24592]
       ["libpng14.14.dylib" 182992]
-      ["PSMTabBarControl.tgz" 91302 "PSMTabBarControl.framework" 247768]]
+      ["PSMTabBarControl.tgz" 96039 "PSMTabBarControl.framework" 229501]]
      [x86_64-macosx
       ["libcairo.2.dylib" 944552]
       ["libintl.8.dylib" 61016]
