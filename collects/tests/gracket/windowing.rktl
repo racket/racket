@@ -986,6 +986,8 @@
 		
 	'done-sb))
 
+    (stv c init-manual-scrollbars 1000000 1000000 999999 999999 4 5)
+
     (stv c warp-pointer 21 23)
 
     (containee-window-tests c #t #t parent frame 0))

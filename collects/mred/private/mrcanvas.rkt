@@ -154,8 +154,8 @@
 	[init-manual-scrollbars 
 	 (lambda (x-len y-len x-page y-page x-val y-val)
 	   (let ([who '(method canvas% init-auto-scrollbars)])
-	     (when x-len (check-range-integer who x-len))
-	     (when y-len (check-range-integer who y-len))
+	     (when x-len (check-gauge-integer who x-len))
+	     (when y-len (check-gauge-integer who y-len))
 	     (check-gauge-integer who x-page)
 	     (check-gauge-integer who y-page)
 	     (check-range-integer who x-val)
