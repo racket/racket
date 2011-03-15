@@ -1,6 +1,6 @@
 #lang scheme/base
 (require texpict/mrpict
-         scheme/gui/base
+         racket/draw
          scheme/class
          scheme/contract)
 
@@ -28,8 +28,7 @@
                                       font-family
                                       'normal
                                       'normal))])
-    (let* ([ps-pen-width-factor 0.042] ;; factor of the height to get the pen width
-           [screen-pen-width-factor .08]
+    (let* ([pen-width-factor 0.042] ;; factor of the height to get the pen width
            [line-pos (+ a (/ (- h a) 2))]
            [head-width (/ w 5)]
            [head-height (* (- h a) 9/16)]
@@ -59,12 +58,7 @@
        (dc
         (λ (dc dx dy)
           (let ([old-pen (send dc get-pen)]
-                [old-brush (send dc get-brush)]
-                [pen-width-factor
-                 (if (or (is-a? dc printer-dc%)
-                         (is-a? dc post-script-dc%))
-                     ps-pen-width-factor
-                     screen-pen-width-factor)])
+                [old-brush (send dc get-brush)])
             (send dc set-pen (send old-pen get-color) (* h pen-width-factor) 'solid)
             
             ;; main line of arrow

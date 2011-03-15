@@ -2,7 +2,7 @@
 (require (lib "mrpict.ss" "texpict")
          (lib "utils.ss" "texpict")
          racket/contract
-         scheme/gui/base
+         racket/draw
          scheme/class
          scheme/match
          (only-in scheme/list drop-right last partition)

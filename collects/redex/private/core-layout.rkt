@@ -8,7 +8,7 @@
          texpict/mrpict
         
          scheme/match
-         scheme/gui/base
+         racket/draw
          scheme/class)
 
 (require (for-syntax scheme/base))

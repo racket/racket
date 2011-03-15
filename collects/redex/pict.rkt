@@ -5,7 +5,6 @@
          "private/core-layout.ss"
          "private/loc-wrapper.ss"
          "reduction-semantics.ss"
-         (lib "mred.ss" "mred")
          (lib "mrpict.ss" "texpict"))
 
 (define reduction-rule-style/c
