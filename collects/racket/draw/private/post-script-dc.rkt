@@ -142,6 +142,9 @@
             (values h w)
             (values w h))))
 
+    (define/override (get-device-scale)
+      (values scale-x scale-y))
+
     (define/override (end-cr)
       (cairo_surface_finish s)
       (cairo_destroy c)

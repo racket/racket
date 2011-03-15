@@ -540,6 +540,21 @@ Gets the current clipping region, returning @scheme[#f] if the drawing
 
 }
 
+
+@defmethod[(get-device-scale)
+           (values (and/c real? (not/c negative?))
+                   (and/c real? (not/c negative?)))]{
+
+Gets an ``external'' scaling factor for drawing coordinates to the
+target device. For most DCs, the result is @racket[1.0] and
+@racket[1.0].
+
+A @racket[post-script-dc%] or @racket[pdf-dc%] object returns scaling
+factors determined via @xmethod[ps-setup% get-scaling] at the time
+that the DC was created. A @racket[printer-dc%] may also have a
+user-configured scaling factor.}
+
+
 @defmethod[(get-font)
            (is-a?/c font%)]{
 

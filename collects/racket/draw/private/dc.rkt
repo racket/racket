@@ -129,8 +129,9 @@
     ;;  the color is for a background.
     install-color
 
-    ;; The public get-size method:
+    ;; The public get-size & get-device-scale methods:
     get-size
+    get-device-scale
 
     ;; set-auto-scroll : real real -> void
     ;;
@@ -197,6 +198,7 @@
     (define/public (collapse-bitmap-b&w?) #f)
 
     (define/public (get-size) (values 0.0 0.0))
+    (define/public (get-device-scale) (values 1.0 1.0))
 
     (define/public (set-auto-scroll dx dy) (void))
 
@@ -611,6 +613,10 @@
     (define/override (get-size)
       (check-ok 'get-size)
       (super get-size))
+
+    (define/override (get-device-scale)
+      (check-ok 'get-device-scale)
+      (super get-device-scale))
 
     (def/public (suspend-flush) (void))
     (def/public (resume-flush) (void))

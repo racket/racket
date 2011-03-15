@@ -32,6 +32,7 @@
     get-char-height
     get-char-width
     get-clipping-region
+    get-device-scale
     get-font
     get-gl-context
     get-initial-matrix

@@ -222,6 +222,9 @@
     (define/override (get-size)
       (values (/ page-width page-scaling) (/ page-height page-scaling)))
 
+    (define/override (get-device-scale)
+      (values page-scaling page-scaling))
+
     (define/override (end-doc)
       (send (new printout% 
                  [op-gtk (gtk_print_operation_new)]

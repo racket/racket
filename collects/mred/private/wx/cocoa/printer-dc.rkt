@@ -151,6 +151,9 @@
     (define/override (get-size)
       (values (/ page-width page-scaling) (/ page-height page-scaling)))
 
+    (define/override (get-device-scale)
+      (values page-scaling page-scaling))
+
     (define current-page 0)
 
     (define/public (get-page-count) (length pages))
