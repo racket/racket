@@ -10,13 +10,13 @@ Scribble is a collection of tools for creating prose
 documents---papers, books, library documentation, etc.---in HTML or
 PDF (via Latex) form. More generally, Scribble helps you write
 programs that are rich in textual content, whether the content is
-prose to be typeset or some other form of text to be generated
+prose to be typeset or any other form of text to be generated
 programmatically.
 
-This document itself is written using Scribble. At the time that it
-was written, its source was available at
+This document is itself written using Scribble. You can see its source
+at
 @(let ([url "http://git.racket-lang.org/plt/tree/HEAD:/collects/scribblings/scribble"])
-   (link url url))
+   (link url url)),
 starting with the @filepath{scribble.scrbl} file.
 
 @table-of-contents[]
