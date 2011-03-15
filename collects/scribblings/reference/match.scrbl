@@ -46,11 +46,11 @@ In more detail, patterns match as follows:
 
 @itemize[
 
- @item{@racket[_id], excluding the reserved names @racketidfont{_},
+ @item{@racket[_id] (excluding the reserved names @racketidfont{_},
        @racketidfont{...}, @racketidfont{.._},
        @racketidfont{..}@racket[_k], and
        @racketidfont{..}@racket[_k] for non-negative integers
-       @racket[_k] --- matches anything, and binds @racket[id] to the
+       @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[id] to the
        matching values. If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
        according to @racket[(match-equality-test)], except that

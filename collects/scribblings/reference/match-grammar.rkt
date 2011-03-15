@@ -5,6 +5,7 @@
 
 (define grammar "
 pat     ::= id                                @match anything, bind identifier
+         |  (VAR id)                          @match anything, bind identifier
          |  _                                 @match anything
          |  literal                           @match literal
          |  (QUOTE datum)                     @match equal% value

@@ -65,7 +65,7 @@
             rx-expr px-expr pred-expr
             derived-pattern)
        (match-nonterm (symbol->string s))]
-      [(QUOTE LIST LIST-REST LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT 
+      [(QUOTE VAR LIST LIST-REST LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT 
               REGEXP PREGEXP AND OR NOT APP ? QUASIQUOTE CONS MCONS)
        (make-element symbol-color (list (string-downcase (symbol->string s))))]
       [(***)
