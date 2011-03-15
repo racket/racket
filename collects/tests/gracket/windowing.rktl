@@ -1043,12 +1043,13 @@
   (define (panel-test % win? 
                       #:choices? [choices? #f]
                       #:label? [label? #f]
-                      #:margin [m 0])
+                      #:margin [m 0]
+                      #:style [style '()])
     (let* ([frame (make-object frame% "Panel Test" #f 100 100)]
            [panel (if %
                       (cond
                        [choices?
-                        (new % [parent frame] [choices '("A" "B")])]
+                        (new % [parent frame] [choices '("A" "B")] [style style])]
                        [label?
                         (new % [parent frame] [label "Stuff"])]
                        [else (new % [parent frame])])
@@ -1074,8 +1075,9 @@
     (panel-test vertical-pane% #f)
     (panel-test horizontal-pane% #f)
     (panel-test vertical-panel% #t)
-    (panel-test horizontal-panel% #t))
-  (panel-test tab-panel% #t #:choices? #t)
+    (panel-test horizontal-panel% #t)
+    (panel-test tab-panel% #t #:choices? #t))
+  (panel-test tab-panel% #t #:choices? #t #:style '(no-border))
   (panel-test group-box-panel% #t #:label? #t #:margin 2))
 
 (panel-tests dialog% #f)
