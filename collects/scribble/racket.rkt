@@ -142,7 +142,8 @@
                        (vector (syntax-e c)
                                (module-path-index->taglet (caddr b))
                                (cadddr b)
-                               (list-ref b 5))))])
+                               (list-ref b 5)
+                               (syntax-property c 'display-string))))])
       (or (and key
                (let ([b (hash-ref id-element-cache key #f)])
                  (and b
