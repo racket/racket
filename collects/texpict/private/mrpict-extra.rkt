@@ -448,11 +448,14 @@
 
       (define (convert-pict p format default)
         (if (eq? format 'pdf-bytes+bounds)
-            (list (convert-pict/bytes p 'pdf-bytes default)
-                  (pict-width p)
-                  (pict-height p)
-                  (pict-descent p)
-                  0)
+            (let ([xscale (box 1.0)]
+                  [yscale (box 1.0)])
+              (send (current-ps-setup) get-scaling xscale yscale)
+              (list (convert-pict/bytes p 'pdf-bytes default)
+                    (* (unbox xscale) (pict-width p))
+                    (* (unbox yscale) (pict-height p))
+                    (* (unbox yscale) (pict-descent p))
+                    0))
             (convert-pict/bytes p format default)))
       
       (define (convert-pict/bytes p format default)
