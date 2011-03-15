@@ -26,7 +26,11 @@
         [sema (make-semaphore)])
     (tellv s setDelegate: s)
     (set-ivar! s sema sema)
-    (tellv s retain) ; don't use `retain', because we dont' want auto-release
+
+    ; use the `retain' method instead of the `retain' function, because we
+    ; don't want a finalization-triggered release:
+    (tellv s retain)
+    
     (and (tell #:type _BOOL s play)
          (if async?
              #t
