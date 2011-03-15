@@ -10,8 +10,7 @@
          scheme/string
          scheme/list
          setup/main-collects
-         file/convertible
-         racket/draw)
+         file/convertible)
 (provide render-mixin)
 
 (define current-table-mode (make-parameter #f))
@@ -250,11 +249,12 @@
                                             (image-element-scale e) fn))]
                                  [(and (convertible? e)
                                        (not (disable-images))
-                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))])
+                                       (let ([ftag (lambda (v suffix) (and v (list v suffix)))]
+                                             [xlist (lambda (v) (and v (list v #f #f #f #f)))])
                                          (or (ftag (convert e 'pdf-bytes+bounds) ".pdf")
-                                             (ftag (list (convert e 'pdf-bytes) #f #f #f #f) ".pdf")
-                                             (ftag (list (convert e 'eps-bytes) #f #f #f #f) ".ps")
-                                             (ftag (list (convert e 'png-bytes) #f #f #f #f) ".png"))))
+                                             (ftag (xlist (convert e 'pdf-bytes)) ".pdf")
+                                             (ftag (xlist (convert e 'eps-bytes)) ".ps")
+                                             (ftag (xlist (convert e 'png-bytes)) ".png"))))
                                   => (lambda (bstr+info+suffix)
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
                                               [suffix (list-ref bstr+info+suffix 1)]
