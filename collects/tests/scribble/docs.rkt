@@ -18,11 +18,6 @@
          [r-info   (send renderer resolve  docs fns info)])
     (send renderer render docs fns r-info)))
 
-(define (check-text-build src-file expect-file)
-  (build-text-doc src-file "gen.txt")
-  (define (contents file) (regexp-replace #rx"\n+$" (file->string file) ""))
-  (string=? (contents expect-file) (contents (build-path work-dir "gen.txt"))))
-
 (provide docs-tests)
 (define (docs-tests)
   (when (or (file-exists? work-dir) (directory-exists? work-dir))
@@ -36,8 +31,14 @@
             [txt   (in-value (regexp-replace #rx"\\.scrbl$" scrbl ".txt"))]
             #:when (member txt files))
         ;; (printf "Testing ~s -> ~s\n" scrbl txt)
+        (define src-file (build-path source-dir scrbl))
+        (define expect-file (build-path source-dir txt))
+        (define generated-file (build-path work-dir "gen.txt"))
+        (define (contents file)
+          (regexp-replace #rx"\n+$" (file->string file) ""))
+        (build-text-doc src-file "gen.txt")
         (test #:failure-message
-              (format "mismatch from: \"~a\" expected: \"~a\"" scrbl txt)
-              (check-text-build (build-path source-dir scrbl)
-                                (build-path source-dir txt)))))
+              (format "mismatch for: \"~a\", expected text in: \"~a\", got:\n~a"
+                      scrbl txt (contents generated-file))
+              (string=? (contents expect-file) (contents generated-file)))))
     (lambda () (delete-directory/files work-dir))))
