@@ -1106,7 +1106,8 @@ static void managed_object_gone(void *o, void *mr)
     remove_managed(mr, o, NULL, NULL);
 }
 
-int scheme_custodian_is_available(Scheme_Custodian *m)
+int scheme_custodian_is_available(Scheme_Custodian *m) XFORM_SKIP_PROC 
+/* may be called from a future thread */
 {
   if (m->shut_down)
     return 0;
@@ -1318,6 +1319,10 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     m = next_m;
   }
 
+#ifdef MZ_USE_FUTURES
+  scheme_future_check_custodians();
+#endif
+
   return kill_self;
 }
 
@@ -1431,6 +1436,15 @@ static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr)
+{
+  return CUSTODIAN_FAM(mr);
+}
+
+int scheme_custodian_is_shut_down(Scheme_Custodian* c)
+{
+  return c->shut_down;
+}
 
 static Scheme_Object *extract_thread(Scheme_Object *o)
 {

@@ -589,6 +589,8 @@ extern void scheme_flatten_config(Scheme_Config *c);
 
 extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);
 
+Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr);
+
 /*========================================================================*/
 /*                       hash tables and globals                          */
 /*========================================================================*/

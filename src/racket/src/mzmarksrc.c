@@ -2332,6 +2332,7 @@ future {
  mark:
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
+  gcMARK2(f->cust, gc);
   gcMARK2(f->arg_s0, gc);
   gcMARK2(f->arg_t0, gc);
   gcMARK2(f->arg_S0, gc);

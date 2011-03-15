@@ -435,3 +435,62 @@ We should also test deep continuations.
         (future void)
         (future (parameterize ([eval-jit-enabled #f])
                   (eval #'(lambda () (void)))))))))
+
+;; A future shouldn't use up a background thread if its
+;; starting thread's custodian is shut down:
+(let ()
+  (define f #f)
+  (define c (make-custodian))
+  (parameterize ([current-custodian c])
+    (sync (thread (lambda ()
+                    (set! f (future (lambda ()
+                                      (let loop () (loop)))))))))
+  (sleep 0.1)
+  (custodian-shutdown-all c))
+
+;; If a future is suspended via a custodian, it should still
+;; work to touch it:
+(let ()
+  (define f #f)
+  (define s (make-fsemaphore 0))
+  (define c (make-custodian))
+  (parameterize ([current-custodian c])
+    (sync (thread (lambda ()
+                    (set! f (future (lambda ()
+                                      (fsemaphore-wait s)
+                                      10)))))))
+  (sleep 0.1)
+  (custodian-shutdown-all c)
+  (fsemaphore-post s)
+  (check-equal? 10 (touch f)))
+
+
+;; Start a future in a custodian-suspended future:
+(let ()
+  (define f #f)
+  (define s (make-fsemaphore 0))
+  (define c (make-custodian))
+  (parameterize ([current-custodian c])
+    (sync (thread (lambda ()
+                    (set! f (future (lambda ()
+                                      (fsemaphore-wait s)
+                                      (future
+                                       (lambda ()
+                                         11)))))))))
+  (sleep 0.1)
+  (custodian-shutdown-all c)
+  (fsemaphore-post s)
+  (check-equal? 11 (touch (touch f))))
+
+;; Don't get stuck on a bunch of futures that
+;; have been disabled:
+(let ()
+  (define c (make-custodian))
+  (define (loop) (loop))
+  (parameterize ([current-custodian c])
+    (sync (thread (lambda ()
+                    (for ([i (in-range 100)])
+                      (future loop))))))
+  (sleep 0.1)
+  (custodian-shutdown-all c)
+  (sleep 0.1))

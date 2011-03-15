@@ -43,6 +43,10 @@ concurrency. At the same time, operations that seem obviously safe may
 have a complex enough implementation internally that they cannot run in
 parallel. See also @guidesecref["effective-futures"] in @|Guide|.
 
+A future never runs in parallel if all of the @tech{custodians} that
+allow its creating thread to run are shut down. Such futures can
+execute through a call to @racket[touch], however.
+
 @deftogether[(
   @defproc[(future [thunk (-> any)]) future?]
   @defproc[(touch [f future?]) any]

@@ -5690,6 +5690,7 @@ static int future_SIZE(void *p, struct NewGC *gc) {
 static int future_MARK(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
+  gcMARK2(f->cust, gc);
   gcMARK2(f->arg_s0, gc);
   gcMARK2(f->arg_t0, gc);
   gcMARK2(f->arg_S0, gc);
@@ -5721,6 +5722,7 @@ static int future_MARK(void *p, struct NewGC *gc) {
 static int future_FIXUP(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
   gcFIXUP2(f->orig_lambda, gc);
+  gcFIXUP2(f->cust, gc);
   gcFIXUP2(f->arg_s0, gc);
   gcFIXUP2(f->arg_t0, gc);
   gcFIXUP2(f->arg_S0, gc);

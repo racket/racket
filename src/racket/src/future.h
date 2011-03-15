@@ -38,6 +38,7 @@ typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 #define PENDING_OVERSIZE 4
 #define WAITING_FOR_REQUEUE 5
 #define WAITING_FOR_FSEMA 6
+#define SUSPENDED 7
 
 #define FSRC_OTHER 0
 #define FSRC_RATOR 1
@@ -55,6 +56,9 @@ typedef struct future_t {
 
   Scheme_Object *orig_lambda;
   void *code;
+
+  Scheme_Custodian *cust; /* an approximate custodian; don't use a future
+                             thread if this custodian is shut down */
 
   /* Runtime call stuff */
   int rt_prim; /* flag to indicate waiting for a prim call */
@@ -178,6 +182,7 @@ void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
 void scheme_check_future_work();
 void scheme_future_gc_pause();
+void scheme_future_check_custodians();
 
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 

@@ -734,8 +734,15 @@ void scheme_future_continue_after_gc()
   for (i = 0; i < THREAD_POOL_SIZE; i++) {
     if (fs->pool_threads[i]) {
       *(fs->pool_threads[i]->need_gc_pointer) = 0;
-      *(fs->pool_threads[i]->fuel_pointer) = 1;
-      *(fs->pool_threads[i]->stack_boundary_pointer) -= INITIAL_C_STACK_SIZE;
+
+      if (!fs->pool_threads[i]->thread->current_ft
+          || scheme_custodian_is_available(fs->pool_threads[i]->thread->current_ft->cust)) {
+        *(fs->pool_threads[i]->fuel_pointer) = 1;
+        *(fs->pool_threads[i]->stack_boundary_pointer) -= INITIAL_C_STACK_SIZE;
+      } else {
+        /* leave fuel exhausted, which will force the thread into a slow 
+           path when it resumes to suspend the computation */
+      }
     }
   }
 
@@ -760,6 +767,12 @@ void scheme_future_gc_pause()
   mzrt_mutex_unlock(fs->future_mutex);
 }
 
+void scheme_future_check_custodians()
+{
+  scheme_future_block_until_gc();
+  scheme_future_continue_after_gc();
+}
+
 /**********************************************************************/
 /* Primitive implementations                                          */
 /**********************************************************************/
@@ -772,6 +785,7 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   future_t *ft;
   Scheme_Native_Closure *nc;
   Scheme_Native_Closure_Data *ncd;
+  Scheme_Custodian *c;
   Scheme_Object *lambda = argv[0];
   double time_of_start;
 
@@ -804,6 +818,14 @@ Scheme_Object *scheme_future(int argc, Scheme_Object *argv[])
   ft->id = futureid;
   ft->orig_lambda = lambda;
   ft->status = PENDING;
+
+  if (scheme_current_thread->mref)
+    c = scheme_custodian_extract_reference(scheme_current_thread->mref);
+  else {
+    /* must be in a future thread (if futures can be created in future threads) */
+    c = scheme_current_thread->current_ft->cust;
+  }
+  ft->cust = c;
    
   /* JIT the code if not already JITted */
   if (ncd) {
@@ -890,13 +912,24 @@ Scheme_Object *scheme_fsemaphore_count(int argc, Scheme_Object **argv)
   return scheme_make_integer(sema->ready);
 }
 
+static void requeue_future_within_lock(future_t *future, Scheme_Future_State *fs) 
+{
+  if (scheme_custodian_is_available(future->cust)) {
+    future->status = PENDING;
+    enqueue_future(fs, future);
+    /* Signal that a future is pending */
+    mzrt_sema_post(fs->future_pending_sema);
+  } else {
+    /* The future's constodian is shut down, so don't try to
+       run it in a future thread anymore */
+    future->status = SUSPENDED;
+  }
+}
+
 static void requeue_future(future_t *future, Scheme_Future_State *fs) 
 {
   mzrt_mutex_lock(fs->future_mutex);
-  future->status = PENDING;
-  enqueue_future(fs, future);
-  /* Signal that a future is now pending */
-  mzrt_sema_post(fs->future_pending_sema);
+  requeue_future_within_lock(future, fs);
   mzrt_mutex_unlock(fs->future_mutex);
 }
 
@@ -1254,13 +1287,14 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   mzrt_mutex_lock(fs->future_mutex);
   if ((((ft->status == PENDING) 
         && prefer_to_apply_future_in_runtime())
-       || (ft->status == PENDING_OVERSIZE))
+       || (ft->status == PENDING_OVERSIZE)
+       || (ft->status == SUSPENDED))
       && (!ft->suspended_lw
           || scheme_can_apply_lightweight_continuation(ft->suspended_lw))) {
     if (ft->status == PENDING_OVERSIZE) {
       scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
                  "future: oversize procedure deferred to runtime thread");
-    } else {
+    } else if (ft->status != SUSPENDED) {
       dequeue_future(fs, ft);
     }
     ft->status = RUNNING;
@@ -1323,8 +1357,9 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
         if (ft->suspended_lw
             && scheme_can_apply_lightweight_continuation(ft->suspended_lw)
             && prefer_to_apply_future_in_runtime()) {
+          if (ft->status != SUSPENDED)
+            dequeue_future(fs, ft);
           ft->status = RUNNING;
-          dequeue_future(fs, ft);
           /* may raise an exception or escape: */
           mzrt_mutex_unlock(fs->future_mutex);
           future_in_runtime(ft);
@@ -1460,6 +1495,7 @@ void *worker_thread_future_loop(void *arg)
     mzrt_sema_wait(fs->future_pending_sema);
     mzrt_mutex_lock(fs->future_mutex);
     start_gc_not_ok(fs);
+
     ft = get_pending_future(fs);
 
     if (ft) {
@@ -1745,6 +1781,11 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
      to suspend wouldn't accomplish anything). */
   insist_to_suspend = !is_atomic;
   prefer_to_suspend = (insist_to_suspend || fs->future_queue_count);
+
+  if (!scheme_custodian_is_available(future->cust)) {
+    insist_to_suspend = 1;
+    prefer_to_suspend = 1;
+  }
 
   if (prefer_to_suspend
       && GC_gen0_alloc_page_ptr 
@@ -2164,10 +2205,7 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
   mzrt_mutex_lock(fs->future_mutex);
   if (future->suspended_lw) {
     /* Re-enqueue the future so that some future thread can continue */
-    future->status = PENDING;
-    enqueue_future(fs, future);
-    /* Signal that a future is pending */
-    mzrt_sema_post(fs->future_pending_sema);
+    requeue_future_within_lock(future, fs);
   } else {
     /* Signal the waiting worker thread that it
        can continue running machine code */
@@ -2257,11 +2295,18 @@ future_t *get_pending_future(Scheme_Future_State *fs)
 {
   future_t *f;
 
-  f = fs->future_queue;
-  if (f)
-    dequeue_future(fs, f);
-
-  return f;
+  while (1) {
+    f = fs->future_queue;
+    if (f) {
+      dequeue_future(fs, f);
+      if (!scheme_custodian_is_available(f->cust)) {
+        f->status = SUSPENDED;
+      } else {
+        return f;
+      }
+    } else
+      return NULL;
+  }
 }
 
 #endif
