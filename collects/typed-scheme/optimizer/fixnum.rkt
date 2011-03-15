@@ -150,4 +150,15 @@
            #:when (subtypeof? #'n -NonNegFixnum) ; (abs min-fixnum) is not a fixnum
            #:with opt
            (begin (log-optimization "fixnum fxabs" #'op)
-                  #'(unsafe-fxabs n.opt))))
+                  #'(unsafe-fxabs n.opt)))
+
+  (pattern (#%plain-app (~and op (~literal add1)) n:fixnum-expr)
+           #:when (subtypeof? this-syntax -Fixnum)
+           #:with opt
+           (begin (log-optimization "fixnum add1" #'op)
+                  #'(unsafe-fx+ n.opt 1)))
+  (pattern (#%plain-app (~and op (~literal sub1)) n:fixnum-expr)
+           #:when (subtypeof? this-syntax -Fixnum)
+           #:with opt
+           (begin (log-optimization "fixnum sub1" #'op)
+                  #'(unsafe-fx- n.opt 1))))

@@ -124,4 +124,13 @@
   (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
            #:with opt
            (begin (log-optimization "float zero?" #'op)
-                  #'(unsafe-fl= f.opt 0.0))))
+                  #'(unsafe-fl= f.opt 0.0)))
+
+  (pattern (#%plain-app (~and op (~literal add1)) n:float-expr)
+           #:with opt
+           (begin (log-optimization "float add1" #'op)
+                  #'(unsafe-fl+ n.opt 1.0)))
+  (pattern (#%plain-app (~and op (~literal sub1)) n:float-expr)
+           #:with opt
+           (begin (log-optimization "float sub1" #'op)
+                  #'(unsafe-fl- n.opt 1.0))))
