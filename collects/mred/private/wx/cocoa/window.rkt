@@ -878,8 +878,9 @@
       (tellv compose-cocoa orderFront: #f))))
 
 (define (reset-input-method-window-size)
-  (tell compose-text setFrame: #:type _NSRect
-        (tell #:type _NSRect (tell compose-cocoa contentView) frame)))
+  (when compose-text
+    (tell compose-text setFrame: #:type _NSRect
+          (tell #:type _NSRect (tell compose-cocoa contentView) frame))))
 
 (define compose-cocoa #f)
 (define compose-text #f)
