@@ -11559,7 +11559,7 @@ local_eval(int argc, Scheme_Object **argv)
   names = argv[0];
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
-    if (!SCHEME_STX_SYMBOLP(a))
+    if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
       break;
     cnt++;
   }

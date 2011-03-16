@@ -540,4 +540,13 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-syntax (foo stx)
+    (define context (syntax-local-make-definition-context))
+    (with-handlers ([exn:fail:contract? (lambda (x) #''ok)])
+      (syntax-local-bind-syntaxes (list 'q) #'1 context)))
+  (test 'ok 'ok (foo)))
+
+;; ----------------------------------------
+
 (report-errs)
