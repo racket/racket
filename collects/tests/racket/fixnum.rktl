@@ -224,12 +224,12 @@
 
 ;; in-flvector tests, copied from for.rktl
 
-(test-generator [(1 2 3)] (in-fxvector (fxvector 1 2 3)))
-(test-generator [(2 3 4)] (in-fxvector (fxvector 1 2 3 4) 1))
-(test-generator [(2 3 4)] (in-fxvector (fxvector 1 2 3 4 5) 1 4))
-(test-generator [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 7 2))
-(test-generator [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 1 -2))
-(test-generator [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 6 2))
-(test-generator [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 2 -2))
+(test-sequence [(1 2 3)] (in-fxvector (fxvector 1 2 3)))
+(test-sequence [(2 3 4)] (in-fxvector (fxvector 1 2 3 4) 1))
+(test-sequence [(2 3 4)] (in-fxvector (fxvector 1 2 3 4 5) 1 4))
+(test-sequence [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 7 2))
+(test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 1 -2))
+(test-sequence [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 6 2))
+(test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 2 -2))
 
 (report-errs)

@@ -3,11 +3,92 @@
 
 (Section 'generator)
 
-(require racket/generator)
+(require racket/generator
+         "for-util.rkt")
 
 (test #f generator? 5)
 (test #f generator? void)
 (test #f generator? error)
+
+(test-sequence [(0 1 2)] (in-generator (yield 0) (yield 1) (yield 2)))
+(let ([g (lambda () (in-generator (yield 0) (yield 1) (yield 2)))])
+  (test-sequence [(0 1 2)] (g)))
+(test '((1 0) (2 1) (3 2)) 'indexed-generator
+      (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
+        (list x i)))
+
+;; test multiple values for in-generator
+(test '[(1 2) (3 4)] 'for*-generator
+      (for*/list ([(n after)
+              (in-generator
+                (yield 1 2)
+                (yield 3 4))])
+            (list n after)))
+
+;; test 0-ary yields
+(test '(0 1 2) 'no-bind-in-generator
+   (for/list ([() (in-generator (yield) (yield) (yield))]
+              [i (in-naturals)])
+     i))
+
+(let ([helper (lambda (i)
+                (yield (add1 i)))])
+  (test '(1 2 3) 'parameterized-yield
+        (for/list ([x (in-generator (helper 0) (helper 1) (helper 2))])
+                  x)))
+
+(let ([g (lambda () (generator () (yield 1) (yield 2) (yield 3)))])
+  (let ([g (g)]) (test '(1 2 3) list (g) (g) (g)))
+  (let ([g (g)]) (test '(1 2 3 10 10) list (g) (g) (g) (g 10) (g)))
+  (let ([g (generator () (yield (yield (yield 1))))])
+    (test '(1 2 3 4 4 4) list (g) (g 2) (g 3) (g 4) (g) (g)))
+  (let ([g (g)])
+    (test '(fresh 1 suspended 2 suspended 3 suspended last done)
+          list (generator-state g) (g)
+               (generator-state g) (g)
+               (generator-state g) (g)
+               (generator-state g) (g 'last)
+               (generator-state g)))
+  (letrec ([g (generator () (yield (generator-state g))
+                            (yield (generator-state g)))])
+    (test '(fresh running suspended running suspended last done)
+          list (generator-state g) (g)
+               (generator-state g) (g)
+               (generator-state g) (g 'last)
+               (generator-state g))))
+
+(let* ([helper (lambda (pred num)
+                 (for ([i (in-range 0 3)]) (yield (pred (+ i num)))))]
+       [g1 (generator () (helper odd? 1) (yield 'odd))]
+       [g2 (generator () (helper even? 1) (yield 'even))])
+  (test '(#t #f #f #t #t #f odd even) 'yield-helper
+        (list (g1) (g2) (g1) (g2) (g1) (g2) (g1) (g2))))
+
+(test '(1 2 3)
+      'sequence->generator-1
+      (let ([maker (sequence->generator '(1 2 3))])
+        (list (maker) (maker) (maker))))
+
+(test '(1 2 3)
+      'sequence->generator-2
+      (let ([maker (sequence->generator (in-list '(1 2 3)))])
+        (list (maker) (maker) (maker))))
+
+(test '(0 1 2 3 4)
+      'sequence->generator-3
+      (let ([maker (sequence->generator (in-range 0 5))])
+        (list (maker) (maker) (maker) (maker) (maker))))
+
+(test '(0 1 2 3 4)
+      'sequence->generator-4
+      (let ([maker (sequence->generator (in-naturals))])
+        (list (maker) (maker) (maker) (maker) (maker))))
+
+(test '(1 2 3 1 2 3)
+      'sequence->repeated-generator
+      (let ([maker (sequence->repeated-generator '(1 2 3))])
+        (list (maker) (maker) (maker)
+              (maker) (maker) (maker))))
 
 (let ([g (generator () 
                     (test 'next 'yield (yield 0))
