@@ -98,6 +98,53 @@
                            (open-input-string "1 2 3\n4 5"))])
     (list i j)))
 
+(let ([five-seq
+       (lambda (pos pre post)
+         (test-sequence [(1 2 3 4 5)]
+                        (make-do-sequence (lambda ()
+                                            (values add1
+                                                    add1
+                                                    0
+                                                    pos 
+                                                    pre 
+                                                    post)))))])
+  (five-seq (lambda (pos) (pos . < . 5))
+            #f
+            #f)
+  (five-seq #f
+            (lambda (val) (val . < . 6))
+            #f)
+  (five-seq #f
+            #f
+            (lambda (pos val) (val . < . 5))))
+
+(let ([fives-seq
+       (lambda (pos pre post)
+         (test-sequence [(1 2 3 4 5) ("0" "1" "2" "3" "4")]
+                        (make-do-sequence (lambda ()
+                                            (values (lambda (n) (values (add1 n)
+                                                                        (number->string n)))
+                                                    add1
+                                                    0
+                                                    pos 
+                                                    pre 
+                                                    post)))))])
+  (fives-seq (lambda (pos) (pos . < . 5))
+             #f
+             #f)
+  (fives-seq #f
+             (lambda (val1 val2) (val1 . < . 6))
+             #f)
+  (fives-seq #f
+             (lambda (val1 val2) (not (string=? val2 "5")))
+             #f)
+  (fives-seq #f
+             #f
+             (lambda (pos val1 val2) (val1 . < . 5)))
+  (fives-seq #f
+             #f
+             (lambda (pos val1 val2) (not (string=? val2 "4")))))
+
 ;; Basic sanity checks.
 (test '#(1 2 3 4) 'for/vector (for/vector ((i (in-range 4))) (+ i 1)))
 (test '#(1 2 3 4) 'for/vector-fast (for/vector #:length 4 ((i (in-range 4))) (+ i 1)))

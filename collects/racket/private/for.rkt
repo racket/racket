@@ -278,10 +278,10 @@
                      (#,((syntax-local-certifier #f) #'make-sequence) '(id ...) rhs)])
                    (void)
                    ([pos init])
-                   (pos-cont? pos)
+                   (if pos-cont? (pos-cont? pos) #t)
                    ([(id ...) (pos->vals pos)])
-                   (val-cont? id ...)
-                   (all-cont? pos id ...)
+                   (if val-cont? (val-cont? id ...) #t)
+                   (if all-cont? (all-cont? pos id ...) #t)
                    ((pos-next pos)))))))]
          [_
           (raise-syntax-error #f
@@ -392,13 +392,13 @@
     (make-do-sequence (lambda () (:list-gen l))))
   
   (define (:list-gen l)
-    (values car cdr l pair? void void))
+    (values car cdr l pair? #f #f))
   
   (define (in-mlist l)
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)
-    (values mcar mcdr l mpair? void void))
+    (values mcar mcdr l mpair? #f #f))
 
   (define (in-input-port-bytes p)
     (unless (input-port? p)
@@ -406,9 +406,9 @@
     (make-do-sequence (lambda () (:input-port-gen p))))
 
   (define (:input-port-gen p)
-    (values read-byte values p void
+    (values read-byte values p #f
             (lambda (x) (not (eof-object? x)))
-            void))
+            #f))
 
   (define (in-input-port-chars p)
     (unless (input-port? p)
@@ -478,8 +478,8 @@
             (lambda (pos) (hash-iterate-next ht pos))
             (hash-iterate-first ht)
             (lambda (pos) pos) ; #f position means stop
-            void
-            void))
+            #f
+            #f))
 
   ;; Vector-like sequences --------------------------------------------------
 
@@ -549,8 +549,8 @@
           (if (> step 0)
               (lambda (i) (< i stop))
               (lambda (i) (> i stop)))
-          void
-          void))]))
+          #f
+          #f))]))
 
   (define-for-syntax (make-in-vector-like in-vector-name
                                           type-name-str
@@ -692,9 +692,9 @@
                                        init
                                        pos-cont?
                                        (case-lambda
-                                         [(val) (and (pre-cont? val)
+                                         [(val) (and (if pre-cont? (pre-cont? val) #t)
                                                      (not (pred val)))]
-                                         [vals (and (apply pre-cont? vals)
+                                         [vals (and (if pre-cont? (apply pre-cont? vals) #t)
                                                     (not (apply pred vals)))])
                                        post-cont?)))))
 
@@ -712,9 +712,9 @@
                                        pos-cont?
                                        pre-cont?
                                        (case-lambda
-                                         [(pos val) (and (post-cont? pos val)
+                                         [(pos val) (and (if post-cont? (post-cont? pos val) #t)
                                                          (not (pred val)))]
-                                         [(pos . vals) (and (apply pos-cont? pos vals)
+                                         [(pos . vals) (and (if post-cont? (apply post-cont? pos vals) #t)
                                                             (not (apply pred vals)))]))))))
 
   (define (in-indexed g)
@@ -725,9 +725,12 @@
                                (values (lambda (pos) (values (pos->val (car pos)) (cdr pos)))
                                        (lambda (pos) (cons (pos-next (car pos)) (add1 (cdr pos))))
                                        (cons init 0)
-                                       (lambda (pos) (pos-cont? (car pos)))
-                                       (lambda (val idx) (pre-cont? val))
-                                       (lambda (pos val idx) (post-cont? pos val)))))))
+                                       (and pos-cont?
+                                            (lambda (pos) (pos-cont? (car pos))))
+                                       (and pre-cont?
+                                            (lambda (val idx) (pre-cont? val)))
+                                       (and post-cont?
+                                            (lambda (pos val idx) (post-cont? pos val))))))))
 
   (define (in-value v)
     (make-do-sequence (lambda ()
@@ -791,16 +794,22 @@
                                    pos-nexts
                                    poses))
               inits
-              (lambda (poses) (andmap (lambda (pos-cont? pos) (pos-cont? pos))
-                                      pos-cont?s
-                                      poses))
-              (lambda vals (andmap (lambda (pre-cont? val) (pre-cont? val))
-                                   pre-cont?s
-                                   vals))
-              (lambda (poses . vals) (andmap (lambda (post-cont? pos val) (post-cont? pos val))
-                                             post-cont?s
-                                             poses
-                                             vals))))))))
+              (and (ormap values pos-cont?s)
+                   (lambda (poses) (andmap (lambda (pos-cont? pos) 
+                                             (if pos-cont? (pos-cont? pos) #t))
+                                           pos-cont?s
+                                           poses)))
+              (and (ormap values pre-cont?s)
+                   (lambda vals (andmap (lambda (pre-cont? val) 
+                                          (if pre-cont? (pre-cont? val) #t))
+                                        pre-cont?s
+                                        vals)))
+              (and (ormap values post-cont?s)
+                   (lambda (poses . vals) (andmap (lambda (post-cont? pos val) 
+                                                    (if post-cont? (post-cont? pos val) #t))
+                                                  post-cont?s
+                                                  poses
+                                                  vals)))))))))
 
   (define (in-producer producer stop . more)
     (make-do-sequence
@@ -810,13 +819,13 @@
                  (lambda (_) (apply producer more)))
                void
                (void)
-               void
+               #f
                (if (procedure? stop)
                  (if (equal? 1 (procedure-arity stop))
                    (lambda (x) (not (stop x)))
                    (lambda xs (not (apply stop xs))))
                  (lambda (x) (not (eq? x stop))))
-               void))))
+               #f))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  running sequences outside of a loop:
@@ -838,11 +847,11 @@
                     (lambda () (prep-val!) (next))]
                    [init-prep-val!
                     (lambda ()
-                      (if (pos-cont? pos)
+                      (if (if pos-cont? (pos-cont? pos) #t)
                           (call-with-values
                            (lambda () (pos->val pos))
                            (lambda vals
-                             (if (apply pre-cont? vals)
+                             (if (if pre-cont? (apply pre-cont? vals) #t)
                                  (begin
                                    (set! more? (lambda () #t))
                                    (set! next
@@ -850,7 +859,9 @@
                                            (let ([v vals])
                                              (set! prep-val!
                                                    (lambda ()
-                                                     (if (apply post-cont? pos vals)
+                                                     (if (if post-cont? 
+                                                             (apply post-cont? pos vals)
+                                                             #t)
                                                          (begin
                                                            (set! pos (pos-next pos))
                                                            (set! prep-val! init-prep-val!)
