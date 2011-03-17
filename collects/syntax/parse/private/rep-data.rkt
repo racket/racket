@@ -222,6 +222,7 @@ Arguments is defined in rep-patterns.rkt
 
  [make-dummy-stxclass (-> identifier? stxclass?)]
  [stxclass-lookup-config (parameter/c (symbols 'no 'try 'yes))]
+ [stxclass-colon-notation? (parameter/c boolean?)]
 
  [new-declenv
   (->* [(listof (list/c identifier? identifier? ct-phase/c ct-phase/c))]
@@ -256,6 +257,11 @@ Arguments is defined in rep-patterns.rkt
 ;;  'yes means lookup, raise error on failure
 (define stxclass-lookup-config (make-parameter 'yes))
 
+;; stxclass-colon-notation? : (parameterof boolean)
+;;   if #t, then x:sc notation means (~var x sc)
+;;   otherwise, just a var
+(define stxclass-colon-notation? (make-parameter #t))
+
 (define (get-stxclass id)
   (define config (stxclass-lookup-config))
   (if (eq? config 'no)
@@ -274,7 +280,8 @@ Arguments is defined in rep-patterns.rkt
     sc))
 
 (define (split-id/get-stxclass id0 decls)
-  (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
+  (cond [(and (stxclass-colon-notation?)
+              (regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0))))
          => (lambda (m)
               (define id
                 (datum->syntax id0 (string->symbol (cadr m)) id0 id0))

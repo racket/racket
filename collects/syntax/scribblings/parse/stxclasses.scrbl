@@ -31,7 +31,8 @@ structures can share syntax class definitions.
                  (code:line #:literals (literal-entry ...))
                  (code:line #:literal-sets (literal-set ...))
                  (code:line #:conventions (convention-id ...))
-                 (code:line #:local-conventions (convention-rule ...))]
+                 (code:line #:local-conventions (convention-rule ...))
+                 (code:line #:disable-colon-notation)]
                 [attr-arity-decl
                  attr-name-id
                  (attr-name-id depth)]

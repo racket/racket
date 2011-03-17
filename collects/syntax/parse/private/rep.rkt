@@ -159,14 +159,15 @@
   (call/txlifts
    (lambda ()
      (parameterize ((current-syntax-context ctx))
-       (define-values (rest description transp? attributes auto-nested?
+       (define-values (rest description transp? attributes auto-nested? colon-notation?
                             decls defs options)
          (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
        (define variants
          (parameterize ((stxclass-lookup-config
                          (cond [expected-attrs 'yes]
                                [auto-nested? 'try]
-                               [else 'no])))
+                               [else 'no]))
+                        (stxclass-colon-notation? colon-notation?))
            (parse-variants rest decls splicing? expected-attrs)))
        (let ([sattrs
               (or attributes
@@ -186,14 +187,15 @@
   (define opaque? (and (assq '#:opaque chunks) #t))
   (define transparent? (not opaque?))
   (define auto-nested? (and (assq '#:auto-nested-attributes chunks) #t))
+  (define colon-notation? (not (assq '#:disable-colon-notation chunks)))
   (define commit?
     (and (assq '#:commit chunks) #t))
   (define delimit-cut?
     (not (assq '#:no-delimit-cut chunks)))
   (define attributes (options-select-value chunks '#:attributes #:default #f))
   (define-values (decls defs) (get-decls+defs chunks strict?))
-  (values rest description transparent? attributes auto-nested? decls defs
-          (make options commit? delimit-cut?)))
+  (values rest description transparent? attributes auto-nested? colon-notation?
+          decls defs (make options commit? delimit-cut?)))
 
 ;; ----
 
@@ -1546,7 +1548,8 @@ A syntax class is integrable if
 
 ;; common-parse-directive-table
 (define common-parse-directive-table
-  (list (list '#:literals check-literals-list)
+  (list (list '#:disable-colon-notation)
+        (list '#:literals check-literals-list)
         (list '#:literal-sets check-literal-sets-list)
         (list '#:conventions check-conventions-list)
         (list '#:local-conventions check-conventions-rules)))

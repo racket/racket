@@ -192,16 +192,19 @@ Conventions:
                                  #:no-duplicates? #t))
         (define context
           (options-select-value chunks '#:context #:default #'x))
+        (define colon-notation?
+          (not (assq '#:disable-colon-notation chunks)))
         (define-values (decls0 defs)
           (get-decls+defs chunks #t #:context #'ctx))
         (define (for-clause clause)
           (syntax-case clause ()
             [[p . rest]
              (let-values ([(rest pattern defs2)
-                           (parse-pattern+sides #'p #'rest
-                                                #:splicing? #f
-                                                #:decls decls0
-                                                #:context #'ctx)])
+                           (parameterize ((stxclass-colon-notation? colon-notation?))
+                             (parse-pattern+sides #'p #'rest
+                                                  #:splicing? #f
+                                                  #:decls decls0
+                                                  #:context #'ctx))])
                (with-syntax ([rest rest]
                              [pattern pattern]
                              [(local-def ...) (append defs defs2)]

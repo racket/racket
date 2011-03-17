@@ -24,7 +24,8 @@ Two parsing forms are provided: @scheme[syntax-parse] and
                              (code:line #:literals (literal ...))
                              (code:line #:literal-sets (literal-set ...))
                              (code:line #:conventions (convention-id ...))
-                             (code:line #:local-conventions (convention-rule ...))]
+                             (code:line #:local-conventions (convention-rule ...))
+                             (code:line #:disable-colon-notation)]
                [literal literal-id
                         (pattern-id literal-id)
                         (pattern-id literal-id #:phase phase-expr)]
@@ -117,6 +118,18 @@ bindings. See the section on @tech{conventions} for examples.
 Each clause consists of a @tech{syntax pattern}, an optional sequence
 of @tech{pattern directives}, and a non-empty sequence of body
 expressions.
+}
+
+@specsubform[(code:line #:disable-colon-notation)]{
+
+Suppresses the ``colon notation'' for annotated pattern variables.
+
+@myexamples[
+(syntax-parse #'(a b c)
+  [(x:y ...) 'ok])
+(syntax-parse #'(a b c) #:disable-colon-notation
+  [(x:y ...) 'ok])
+]
 }
 
 @defform[(syntax-parser parse-option ... clause ...+)]{
