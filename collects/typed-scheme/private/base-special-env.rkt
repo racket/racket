@@ -59,9 +59,9 @@
                              (-> Univ (-values a))
                              (-> Univ Univ)
                              Univ
-                             (-> Univ Univ)
-                             (->* a Univ)
-                             (->* (cons Univ a) Univ))))])
+                             (Un (-> Univ Univ) (-val #f))
+                             (Un (->* a Univ) (-val #f))
+                             (Un (->* (cons Univ a) Univ) (-val #f)))))])
             (cl->*
              (-> Univ (-seq a) (seq-vals (list a)))
              (-> Univ (-seq a b) (seq-vals (list a b))))))]
