@@ -1,5 +1,6 @@
 #lang scribble/manual
-@(require (for-label scribble/struct
+@(require (for-label scribble/core
+                     scribble/decode
                      scriblib/figure
                      scheme/base
                      scheme/contract))
