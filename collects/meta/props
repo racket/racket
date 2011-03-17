@@ -1939,7 +1939,7 @@ path/s is either such a string or a list of them.
 "collects/tests/syntax-color/paren-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/syntax-color/token-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/test-engine" responsible (kathyg)
-"collects/tests/typed-scheme" responsible (samth)
+"collects/tests/typed-scheme" responsible (samth stamourv)
 "collects/tests/typed-scheme/fail" drdr:command-line #f
 "collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
 "collects/tests/typed-scheme/nightly-run.rkt" drdr:command-line #f
@@ -1995,7 +1995,7 @@ path/s is either such a string or a list of them.
 "collects/typed/mred/mred.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/typed/rackunit" responsible (jay)
 "collects/typed/rackunit/gui.rkt" drdr:command-line (gracket "-t" *)
-"collects/typed-scheme" responsible (samth)
+"collects/typed-scheme" responsible (samth stamourv)
 "collects/typed-scheme/optimizer" responsible (stamourv)
 "collects/unstable" responsible (jay samth cce ryanc)
 "collects/unstable/byte-counting-port.rkt" responsible (jay)
