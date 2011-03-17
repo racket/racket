@@ -2937,7 +2937,7 @@ static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
 
 #if defined(MZ_USE_PLACES)
   if (SCHEME_SYMBOLP(o)) {
-    newo = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(o), 0, SCHEME_SYM_LEN(o), 1);
+    newo = scheme_make_sized_offset_byte_string(o, SCHEME_SYMSTR_OFFSET(o), SCHEME_SYM_LEN(o), 1);
   }
   else {
     newo = o;

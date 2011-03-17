@@ -806,7 +806,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         scheme_log_abort("cannot copy uninterned symbol");
         abort();
       } else {
-        new_so = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(so), 0, SCHEME_SYM_LEN(so), 1);
+        new_so = scheme_make_sized_offset_byte_string(so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
         new_so->type = scheme_serialized_symbol_type;
       }
       break;
