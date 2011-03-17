@@ -72,7 +72,7 @@
 (define -PosFixnum    (*Un -PosFixnumNotIndex -PosIndex))
 (define -NonNegFixnum (*Un -PosFixnum -Zero))
 (define -NegFixnum
-  (make-Base 'Negative-Fixnum-Not-Index
+  (make-Base 'Negative-Fixnum
              #'(and/c fixnum? negative?)
              (conjoin portable-fixnum? negative?)
              #'-NegFixnum))
@@ -205,7 +205,7 @@
 ;; Thus, the only possible kinds of complex numbers are:
 ;; Real/Real, Flonum/Flonum, SingleFlonum/SingleFlonum
 (define -ExactNumberNotReal
-  (make-Base 'Complex-Not-Real
+  (make-Base 'Exact-Number-Not-Real
              #'(and/c number?
                       (not/c real?)
                       (lambda (x) (exact? (imag-part x))))
