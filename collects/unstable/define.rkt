@@ -1,26 +1,41 @@
 #lang racket/base
 
-(require (for-syntax racket/base
-                     racket/list
-                     racket/match
-                     syntax/kerncase
-                     unstable/syntax))
+(require
+  (for-syntax
+    racket/base
+    racket/list
+    racket/match
+    syntax/kerncase
+    unstable/syntax))
 
 (provide
 
- in-phase1 in-phase1/pass2
+  in-phase1 in-phase1/pass2
 
- at-end
+  at-end
 
- declare-names
- define-renamings
- define-single-definition
- define-with-parameter
+  define-syntax-block
 
- define-if-unbound
- define-values-if-unbound
- define-syntax-if-unbound
- define-syntaxes-if-unbound)
+  declare-names
+  define-renamings
+  define-single-definition
+  define-with-parameter
+
+  define-if-unbound
+  define-values-if-unbound
+  define-syntax-if-unbound
+  define-syntaxes-if-unbound)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  Macro Definitions
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-syntax-rule
+  (define-syntax-block ([macro-name expander-name] ...) body-def ...)
+  (define-syntaxes [macro-name ...]
+    (let () body-def ... (values expander-name ...))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -7,7 +7,7 @@
 
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
-This module provides macros for creating and manipulating definitions.
+Provides macros for creating and manipulating definitions.
 
 @section{Deferred Evaluation in Modules}
 
@@ -42,7 +42,7 @@ the module.  This can be useful for calling functions before their definitions.
 @defform[(define-syntaxes-if-unbound [x ...] e)]
 )]{
 
-These forms define each @scheme[x] (or @scheme[f]) if no such binding exists, or
+Define each @scheme[x] (or @scheme[f]) if no such binding exists, or
 do nothing if the name(s) is(are) already bound.  The
 @scheme[define-values-if-unbound] and @scheme[define-syntaxes-if-unbound] forms
 raise a syntax error if some of the given names are bound and some are not.
@@ -66,7 +66,7 @@ y
 
 @defform[(define-renamings [new old] ...)]{
 
-This form establishes a rename transformer for each @scheme[new] identifier,
+Establishes a rename transformer for each @scheme[new] identifier,
 redirecting it to the corresponding @scheme[old] identifier.
 
 @defexamples[
@@ -82,7 +82,7 @@ redirecting it to the corresponding @scheme[old] identifier.
 
 @defform[(declare-names x ...)]{
 
-This form provides forward declarations of identifiers to be defined later.  It
+Provides forward declarations of identifiers to be defined later.  It
 is useful for macros which expand to mutually recursive definitions, including
 forward references, that may be used at the Racket top level.
 
@@ -106,7 +106,7 @@ to @scheme[(parameterize ([parameter value]) body ...)].
 
 @defform[(define-single-definition define-one-name define-many-name)]{
 
-This form defines a marco @scheme[define-one-name] as a single identifier
+Defines a marco @scheme[define-one-name] as a single identifier
 definition form with function shorthand like @scheme[define] and
 @scheme[define-syntax], based on an existing macro @scheme[define-many-name]
 which works like @scheme[define-values] or @scheme[define-syntaxes].
@@ -122,11 +122,37 @@ x
 
 }
 
+@section{Macro Definitions}
+
+@defform[(define-syntax-block ([macro-id expander-id] ...) body ...)]{
+
+Define a syntax transformer for each @racket[macro-id] based on the local
+definition of each @racket[expander-id] in @racket[body ...].  Especially useful
+for mutually recursive expander functions and phase 1 macro definitions.
+
+@defexamples[
+#:eval (eval/require 'unstable/define '(for-syntax racket/base))
+(define-syntax-block
+    ([implies expand-implies]
+     [nand expand-nand])
+
+  (define-syntax-rule (==> pattern template)
+    (syntax-rules () [pattern template]))
+
+  (define expand-implies (==> (_ a b) (or (not a) b)))
+  (define expand-nand (==> (_ a ...) (not (and a ...)))))
+(implies #t (printf "True!\n"))
+(implies #f (printf "False!\n"))
+(nand #t #t (printf "All True!\n"))
+(nand #t #f (printf "Some False!\n"))
+]
+}
+
 @section{Effectful Transformation}
 
 @defform[(in-phase1 e)]{
 
-This form executes @scheme[e] during phase 1 (the syntax transformation phase)
+Executes @scheme[e] during phase 1 (the syntax transformation phase)
 relative to its context, during pass 1 if it occurs in a head expansion
 position.
 
@@ -134,7 +160,7 @@ position.
 
 @defform[(in-phase1/pass2 e)]{
 
-This form executes @scheme[e] during phase 1 (the syntax transformation phase)
+Executes @scheme[e] during phase 1 (the syntax transformation phase)
 relative to its context, during pass 2 (after head expansion).
 
 }
