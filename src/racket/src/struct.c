@@ -4653,7 +4653,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
 #if defined(MZ_USE_PLACES)
     if (SCHEME_SYMBOLP(type->name)) {
       Scheme_Object *newname;
-      newname = scheme_make_sized_offset_byte_string(type->name, SCHEME_SYMSTR_OFFSET(type->name), SCHEME_SYM_LEN(type->name), 1);
+      newname = scheme_make_sized_offset_byte_string((char *)type->name, SCHEME_SYMSTR_OFFSET(type->name), SCHEME_SYM_LEN(type->name), 1);
       key = scheme_make_pair(newname, key);
     }
     else {
@@ -4748,7 +4748,7 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
 #if defined(MZ_USE_PLACES)
   if (SCHEME_SYMBOLP(key)) {
     Scheme_Object *newname;
-    newname = scheme_make_sized_offset_byte_string(key, SCHEME_SYMSTR_OFFSET(key), SCHEME_SYM_LEN(key), 1);
+    newname = scheme_make_sized_offset_byte_string((char*)key, SCHEME_SYMSTR_OFFSET(key), SCHEME_SYM_LEN(key), 1);
     key = scheme_make_pair(newname, scheme_null);
   }
   if (SCHEME_BYTE_STRINGP(key))
