@@ -30,4 +30,7 @@
 (err/rt-test (place null 10))
 (err/rt-test (place "foo.rkt" 10))
         
-
+(let ([p (place/base (p1 ch)
+          (printf "Hello form place 2\n")
+          (sync never-evt))])
+  (place-kill p))

@@ -309,6 +309,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *place_local_misc_table_;
   int place_evts_array_size_;
   struct Evt **place_evts_;
+  void *place_object_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -623,6 +624,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define place_local_misc_table XOA (scheme_get_thread_local_variables()->place_local_misc_table_)
 #define place_evts_array_size XOA (scheme_get_thread_local_variables()->place_evts_array_size_)
 #define place_evts XOA (scheme_get_thread_local_variables()->place_evts_)
+#define place_object XOA (scheme_get_thread_local_variables()->place_object_)
 
 /* **************************************** */
 

@@ -1551,6 +1551,11 @@ static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[])
 			     -1, custodian_p, "custodian", 0);
 }
 
+Scheme_Custodian *scheme_get_current_custodian()
+{
+  return (Scheme_Custodian *) current_custodian(0, NULL);
+}
+
 static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
 {
   Scheme_Custodian_Box *cb;
@@ -4155,6 +4160,10 @@ void scheme_thread_block(float sleep_time)
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   if (!do_atomic)
     GC_check_master_gc_request(); 
+#endif
+#if defined(MZ_USE_PLACES)
+  if (!do_atomic)
+    scheme_place_check_for_killed();
 #endif
   
   if (sleep_end > 0) {

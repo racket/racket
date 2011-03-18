@@ -534,6 +534,7 @@ typedef struct Scheme_Custodian_Box {
 } Scheme_Custodian_Box;
 
 Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_Func f);
+Scheme_Custodian *scheme_get_current_custodian(void);
 
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
@@ -3633,7 +3634,9 @@ typedef struct Scheme_Place_Bi_Channel {
 typedef struct Scheme_Place {
   Scheme_Object so;
   void *proc_thread;
+  void *place_obj;
   Scheme_Object *channel;
+  Scheme_Custodian_Reference *mref;
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();

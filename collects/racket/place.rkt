@@ -13,6 +13,7 @@
 (provide place
          place-sleep
          place-wait 
+         place-kill
          place-channel
          place-channel-send
          place-channel-recv
@@ -55,6 +56,7 @@
 
 (define (th-place-sleep n) (sleep n))
 (define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
+(define (th-place-kill pl) (kill-thread (TH-place-th pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
@@ -112,6 +114,7 @@
 (define-pl place              pl-place              th-place)
 (define-pl place-sleep        pl-place-sleep        th-place-sleep)
 (define-pl place-wait         pl-place-wait         th-place-wait)
+(define-pl place-kill         pl-place-kill         th-place-kill)
 (define-pl place-channel      pl-place-channel      th-place-channel)
 (define-pl place-channel-send pl-place-channel-send th-place-channel-send)
 (define-pl place-channel-recv pl-place-channel-recv th-place-channel-recv)
