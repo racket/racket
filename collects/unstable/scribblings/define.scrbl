@@ -1,5 +1,11 @@
 #lang scribble/manual
-@(require scribble/eval "utils.rkt" (for-label racket unstable/define))
+@(require
+   scribble/eval
+   "utils.rkt"
+   (for-label
+     racket
+     unstable/define
+     (only-in mzlib/etc define-syntax-set)))
 
 @title{Definitions}
 
@@ -124,27 +130,34 @@ x
 
 @section{Macro Definitions}
 
-@defform[(define-syntax-block ([macro-id expander-id] ...) body ...)]{
+@defform/subs[
+(define-syntax-block (macro-decl ...) body ...)
+([macro-decl macro-id [macro-id expander-id]])
+]{
 
-Define a syntax transformer for each @racket[macro-id] based on the local
-definition of each @racket[expander-id] in @racket[body ...].  Especially useful
-for mutually recursive expander functions and phase 1 macro definitions.
+Defines a syntax transformer for each @racket[macro-id] based on the local
+definition of each @racket[expander-id]
+(defaulting to @racket[macro-id]@racket[/proc]) in @racket[body ...].
+Especially useful for mutually recursive expander functions and phase 1 macro
+definitions.  Subsumes the behavior of @racket[define-syntax-set].
 
 @defexamples[
 #:eval (eval/require 'unstable/define '(for-syntax racket/base))
 (define-syntax-block
     ([implies expand-implies]
-     [nand expand-nand])
+     nand)
 
   (define-syntax-rule (==> pattern template)
     (syntax-rules () [pattern template]))
 
   (define expand-implies (==> (_ a b) (or (not a) b)))
-  (define expand-nand (==> (_ a ...) (not (and a ...)))))
+  (define nand/proc (==> (_ a ...) (not (and a ...)))))
 (implies #t (printf "True!\n"))
 (implies #f (printf "False!\n"))
 (nand #t #t (printf "All True!\n"))
 (nand #t #f (printf "Some False!\n"))
+(define-syntax-block (undefined-macro)
+  (define irrelevant "Whoops!"))
 ]
 }
 

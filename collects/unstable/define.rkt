@@ -5,8 +5,12 @@
     racket/base
     racket/list
     racket/match
+    racket/block
+    syntax/parse
     syntax/kerncase
-    unstable/syntax))
+    unstable/syntax
+    (for-syntax ;; phase 2!
+      racket/base)))
 
 (provide
 
@@ -32,10 +36,37 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-syntax-rule
-  (define-syntax-block ([macro-name expander-name] ...) body-def ...)
-  (define-syntaxes [macro-name ...]
-    (let () body-def ... (values expander-name ...))))
+(define-syntax define-syntax-block
+  (block
+
+    (define-syntax-class declaration
+      #:attributes [internal external]
+      (pattern external:id
+        #:attr internal
+        (format-id #'external #:source #'external
+          "~a/proc" #'external))
+      (pattern [external:id internal:id]))
+
+    (syntax-parser
+      [(_ (decl:declaration ...) body:expr ...)
+       #:fail-when (check-duplicate-identifier
+                     (syntax-list decl.external ...))
+       "duplicate defined name"
+       #'(define-syntaxes [decl.external ...]
+           ;; Easier way to ensure the internal names are bound than
+           ;; local-expand: bind them to an error macro and force the
+           ;; user to shadow them.
+           (let-syntax
+               ([decl.internal
+                 (make-set!-transformer
+                   (lambda (stx)
+                     (raise-syntax-error #f
+                       "transformer must be defined within define-syntax-block"
+                       stx)))]
+                ...)
+             (block
+               body ...
+               (values decl.internal ...))))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
