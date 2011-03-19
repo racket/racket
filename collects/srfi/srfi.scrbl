@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-syntax scheme/base)
-          (for-label scheme/base))
+          (for-label scheme/base
+                     racket/stream))
 
 @(define-syntax (srfi stx)
   (syntax-case stx ()
@@ -721,6 +722,9 @@ Superceded by @schememodname[srfi/41].
 @; ----------------------------------------
 
 @srfi[41 #:subdir #t]{Streams}
+
+The @racket[stream-cons] operation from @racketmodname[srfi/41] is the
+same as from @racketmodname[racket/stream].
 
 @redirect[41 #:subdir #t '(
  (stream-null #f "stream-null")

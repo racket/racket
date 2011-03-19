@@ -26,6 +26,7 @@
          racket/promise
          racket/bool
          racket/stream
+         racket/sequence
          racket/local
          racket/system
          (for-syntax racket/base))
@@ -56,6 +57,7 @@
                        racket/promise
                        racket/bool
                        racket/stream
+                       racket/sequence
                        racket/local
                        racket/system)
          (for-syntax (all-from-out racket/base)))

@@ -17,6 +17,8 @@
 (load-in-sandbox "date.rktl")
 (load-in-sandbox "compat.rktl")
 (load-in-sandbox "cmdline.rktl")
+(load-in-sandbox "stream.rktl")
+(load-in-sandbox "sequence.rktl")
 (load-in-sandbox "generator.rktl")
 (load-in-sandbox "pconvert.rktl")
 (load-in-sandbox "pretty.rktl")

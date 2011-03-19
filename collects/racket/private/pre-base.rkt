@@ -139,7 +139,9 @@
                               define-in-vector-like
                               define-:vector-like-gen
                               make-in-vector-like
-                              normalise-inputs)
+                              normalise-inputs
+                              stream? stream-empty? stream-first stream-rest 
+                              prop:stream in-stream empty-stream make-do-stream)
              (all-from "kernstruct.rkt")
              #%top-interaction
 
