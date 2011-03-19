@@ -550,6 +550,10 @@ The following @tech{style properties} are currently recognized:
        name} is used as a command name instead of an environment
        name.}
 
+ @item{@racket['multicommand] --- For Latex output, a string
+       @tech{style name} is used as a command name with a separate
+       argument for each block in @racket[blocks].}
+
  @item{@racket[attributes] structure --- Provides additional HTML
        attributes for the @tt{<blockquote>} tag.}
 

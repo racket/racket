@@ -357,14 +357,19 @@
                 [else (format "x~x" (char->integer c))]))
             (string->list (format "~s" s)))))
 
-    (define/override (render-flow p part ri starting-item?)
+    (define/override (render-flow p part ri starting-item? [wrap-each? #f])
       (if (null? p)
           null
           (begin
+            (when wrap-each? (printf "{"))
             (render-block (car p) part ri starting-item?)
+            (when wrap-each? (printf "}"))
             (for ([b (in-list (cdr p))])
-              (printf "\n\n")
-              (render-block b part ri #f))
+              (if wrap-each?
+                  (printf "%\n{")
+                  (printf "\n\n"))
+              (render-block b part ri #f)
+              (when wrap-each? (printf "}")))
             null)))
 
     (define/override (render-table t part ri starting-item?)
@@ -540,22 +545,26 @@
         null))
 
     (define/private (do-render-nested-flow t part ri single-column?)
-      (let ([kind (or (let ([s (style-name (nested-flow-style t))])
-                        (or (and (string? s) s)
-                            (and (eq? s 'inset) "quote")))
-                      "Subflow")]
-            [command? (memq 'command (style-properties (nested-flow-style t)))])
-        (if command?
-            (printf "\\~a{" kind)
-            (printf "\\begin{~a}" kind))
+      (let* ([kind (or (let ([s (style-name (nested-flow-style t))])
+                         (or (and (string? s) s)
+                             (and (eq? s 'inset) "quote")))
+                       "Subflow")]
+             [props (style-properties (nested-flow-style t))]
+             [command? (memq 'command props)]
+             [multicommand? (memq 'multicommand props)])
+        (cond
+         [command? (printf "\\~a{" kind)]
+         [multicommand? (printf "\\~a" kind)]
+         [else (printf "\\begin{~a}" kind)])
         (parameterize ([current-table-mode (if (or single-column?
                                                    (not (current-table-mode)))
                                                (current-table-mode)
                                                (list "nested-flow" t))])
-          (render-flow (nested-flow-blocks t) part ri #f))
-        (if command?
-            (printf "}")
-            (printf "\\end{~a}" kind))
+          (render-flow (nested-flow-blocks t) part ri #f multicommand?))
+        (cond
+         [command? (printf "}")]
+         [multicommand? (void)]
+         [else (printf "\\end{~a}" kind)])
         null))
 
     (define/override (render-nested-flow t part ri)

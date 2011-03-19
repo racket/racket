@@ -49,10 +49,13 @@ a @racket[multiarg-element], @racket[paragraph], @racket[table],
 output or a Latex macro/environment for Latex output. In Latex output,
 the string is used as a command name for a @racket[paragraph]
 and an environment name for a @racket[table], @racket[itemization],
-@racket[nested-flow], or @racket[compound-paragraph]; the if style has
+@racket[nested-flow], or @racket[compound-paragraph]; if the style has
 a @racket['command] @tech{style property} for a @racket[nested-flow] or
 @racket[compound-paragraph], then the style name is used as a command
-instead of an environment.  In addition, for an itemization, the style
+instead of an environment; and if the style has
+a @racket['multicommand] @tech{style property} for a @racket[nested-flow],
+then the style name is used as a command with multiple arguments.
+In addition, for an itemization, the style
 string is suffixed with @racket["Item"] and used as a CSS class or Latex
 macro name to use for the itemization's items (in place of @tt{item}
 in the case of Latex).
