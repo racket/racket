@@ -11,6 +11,7 @@
 (provide figure
          figure*
          figure**
+         figure-here
          Figure-target 
          Figure-ref
          figure-ref)
@@ -23,14 +24,19 @@
           (make-tex-addition (abs "figure.tex")))))
 
 (define centerfigure-style (make-style "Centerfigure" figure-style-extras))
+(define herefigure-style  (make-style "Herefigure" figure-style-extras))
 (define figureinside-style (make-style "FigureInside" figure-style-extras))
 (define legend-style (make-style "Legend" figure-style-extras))
 (define centerfiguremulti-style (make-style "CenterfigureMulti" figure-style-extras))
 (define centerfiguremultiwide-style (make-style "CenterfigureMultiWide" figure-style-extras))
 
 (define (figure tag caption . content)
+  (apply figure-helper centerfigure-style tag caption content))
+(define (figure-here tag caption . content)
+  (apply figure-helper herefigure-style tag caption content))
+(define (figure-helper style tag caption . content)
   (make-nested-flow
-   centerfigure-style
+   style
    (list
     (make-nested-flow
      figureinside-style
