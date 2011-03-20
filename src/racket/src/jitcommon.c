@@ -151,9 +151,9 @@ static void ts_scheme_on_demand(void) XFORM_SKIP_PROC
 
 /* ************************************************************ */
 
-int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
+static int common0(mz_jit_state *jitter, void *_data)
 {
-  int in, i, ii, iii;
+  int in;
   GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** check_arity_code *** */
@@ -260,6 +260,14 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   mz_patch_branch(ref);
   __END_SHORT_JUMPS__(1);
   mz_epilog(JIT_V1);
+
+  return 1;
+}
+
+static int common1(mz_jit_state *jitter, void *_data)
+{
+  int i;
+  GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** [bad_][m]{car,cdr,...,{imag,real}_part}_code *** */
   /* Argument is in R0 for car/cdr, R2 otherwise */
@@ -374,6 +382,14 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 
     scheme_jit_register_sub_func(jitter, code, scheme_false);
   }
+
+  return 1;
+}
+
+static int common1b(mz_jit_state *jitter, void *_data)
+{
+  int i;
+  GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** bad_set_{car,cdr}_code and make_[fl]rectangular_code *** */
   /* Bad argument is in R0, other is in R1 */
@@ -493,6 +509,14 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   (void)mz_finish_lwe(ts_scheme_fxvector_length, ref);
   CHECK_LIMIT();
   scheme_jit_register_sub_func(jitter, sjc.bad_fxvector_length_code, scheme_false);
+
+  return 1;
+}
+
+static int common2(mz_jit_state *jitter, void *_data)
+{
+  int in, i;
+  GC_CAN_IGNORE jit_insn *ref, *ref2;
 
   /* *** call_original_unary_arith_code *** */
   /* R0 is arg, R2 is code pointer, V1 is return address (for false);
@@ -831,6 +855,14 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
   }
 
+  return 1;
+}
+
+static int common3(mz_jit_state *jitter, void *_data)
+{
+  int i, ii, iii;
+  GC_CAN_IGNORE jit_insn *ref;
+
   /* *** {vector,string,bytes}_{ref,set}_[check_index_]code *** */
   /* R0 is vector/string/bytes, R1 is index (Scheme number in check-index mode), 
      V1 is vector/string/bytes offset in non-check-index mode (and for
@@ -1089,6 +1121,14 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
       }
     }
   }
+
+  return 1;
+}
+
+static int common4(mz_jit_state *jitter, void *_data)
+{
+  int i, ii, iii;
+  GC_CAN_IGNORE jit_insn *ref;
 
   /* *** {flvector}_{ref,set}_check_index_code *** */
   /* Same calling convention as for vector ops.    */
@@ -1458,6 +1498,13 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
     }
   }
 
+  return 1;
+}
+
+static int common5(mz_jit_state *jitter, void *_data)
+{
+  int i, ii;
+
 #ifdef CAN_INLINE_ALLOC
   /* *** retry_alloc_code[{_keep_r0_r1,_keep_fpr1}] *** */
   for (i = 0; i < 3; i++) { 
@@ -1628,6 +1675,11 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
     }
   }
 
+  return 1;
+}
+
+static int common6(mz_jit_state *jitter, void *_data)
+{
   /* wcm_[nontail_]code */
   /* key and value are on runstack */
   {
@@ -1763,7 +1815,20 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
-int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data)
+int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
+{
+  if (!common0(jitter, _data)) return 0;
+  if (!common1(jitter, _data)) return 0;
+  if (!common1b(jitter, _data)) return 0;
+  if (!common2(jitter, _data)) return 0;
+  if (!common3(jitter, _data)) return 0;
+  if (!common4(jitter, _data)) return 0;
+  if (!common5(jitter, _data)) return 0;
+  if (!common6(jitter, _data)) return 0;
+  return 1;
+}
+
+static int more_common0(mz_jit_state *jitter, void *_data)
 {
   /* *** check_proc_extract_code *** */
   /* arguments are on the Scheme stack */
@@ -1963,6 +2028,11 @@ int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data)
     scheme_jit_register_sub_func(jitter, sjc.module_start_start_code, scheme_eof);
   }
 
+  return 1;
+}
+
+static int more_common1(mz_jit_state *jitter, void *_data)
+{
   /* apply_to_list_tail_code */
   /* argc is in V1 */
   {
@@ -2393,6 +2463,13 @@ int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data)
   }
 #endif
       
+  return 1;
+}
+
+int scheme_do_generate_more_common(mz_jit_state *jitter, void *_data)
+{
+  if (!more_common0(jitter, _data)) return 0;
+  if (!more_common1(jitter, _data)) return 0;
   return 1;
 }
 
