@@ -32,21 +32,23 @@
 (define-struct (other-author-element author-element) ())
          
 (define (add-cite group bib-entry which with-specific?)
-  (hash-set! (bib-group-ht group) bib-entry #t)
-  (make-delayed-element
-   (lambda (renderer part ri)
-     (let ([s (resolve-get part ri `(,which ,(auto-bib-key bib-entry)))])
-       (list (make-link-element #f 
-                                (list (or s "???") 
-                                      (if with-specific?
-                                          (auto-bib-specific bib-entry)
-                                          ""))
-                                `(autobib ,(auto-bib-key bib-entry))))))
-   (lambda () "(???)")
-   (lambda () "(???)")))
+  (let ([key (auto-bib-key bib-entry)])
+    (hash-set! (bib-group-ht group) key bib-entry)
+    (make-delayed-element
+     (lambda (renderer part ri)
+       (let ([s (resolve-get part ri `(,which ,key))])
+         (list (make-link-element #f 
+                                  (list (or s "???") 
+                                        (if with-specific?
+                                            (auto-bib-specific bib-entry)
+                                            ""))
+                                  `(autobib ,(auto-bib-key bib-entry))))))
+     (lambda () "(???)")
+     (lambda () "(???)"))))
 
 (define (add-inline-cite group bib-entries)
-  (for ([i bib-entries]) (hash-set! (bib-group-ht group) i #t))
+  (for ([i bib-entries]) 
+    (hash-set! (bib-group-ht group) (auto-bib-key i) i))
   (when (and (pair? (cdr bib-entries)) 
              (not (apply equal? (map (compose author-element-names auto-bib-author)  bib-entries))))
     (error 'citet "citet must be used with identical authors, given ~a" 
@@ -103,7 +105,7 @@
                   (extract-bib-year a) (extract-bib-year b)
                   (< (extract-bib-year a) (extract-bib-year b)))))]
          [bibs (sort (hash-map (bib-group-ht group)
-                               (lambda (k v) k))
+                               (lambda (k v) v))
                      author/date<?)])
     (make-part
      #f
