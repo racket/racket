@@ -1837,7 +1837,8 @@ static int common7(mz_jit_state *jitter, void *_data)
     __START_SHORT_JUMPS__(1);
 
     /* R0 is hare, R1 is turtle */
-    jit_movr_p(JIT_R1, JIT_R0); 
+    jit_movr_p(JIT_R1, JIT_R0);
+    CHECK_LIMIT();
     
     /* Note: there's no fuel check in this loop, just like there isn't in
        scheme_is_list(). */
@@ -1852,6 +1853,7 @@ static int common7(mz_jit_state *jitter, void *_data)
 
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
     ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    CHECK_LIMIT();
 
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
     ref4 = jit_bmsi_ul(jit_forward(), JIT_R2, PAIR_FLAG_MASK);
@@ -1865,6 +1867,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     (void)jit_beqi_i(refloop, JIT_R2, scheme_pair_type);
 
     ref6 = jit_jmpi(jit_forward());
+    CHECK_LIMIT();
     
     /* R2 has flags, and either list or non-list is set */
     mz_patch_branch(ref1);
@@ -1894,6 +1897,7 @@ static int common7(mz_jit_state *jitter, void *_data)
 #endif
 
     __END_SHORT_JUMPS__(1);
+    CHECK_LIMIT();
 
     if (!i)
       jit_movi_p(JIT_R0, scheme_true);
@@ -1921,6 +1925,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     jit_ori_i(JIT_R2, JIT_R2, PAIR_IS_NON_LIST);
     jit_stxi_s(&MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso), JIT_R1, JIT_R2);
 #endif
+    CHECK_LIMIT();
 
     __END_SHORT_JUMPS__(1);
 
