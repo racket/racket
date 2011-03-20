@@ -432,6 +432,63 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "odd?")) {
     scheme_generate_arith(jitter, rator, app->rand, NULL, 1, 0, -4, 0, for_branch, branch_short, 0, 0, NULL);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "list?")) {
+    GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref2, *ref3, *ref4;
+
+    mz_runstack_skipped(jitter, 1);
+    
+    scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+    CHECK_LIMIT();
+
+    mz_runstack_unskipped(jitter, 1);
+
+    if (need_sync) mz_rs_sync();
+
+    __START_SHORT_JUMPS__(branch_short);
+
+    if (for_branch) {
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+    }
+
+    ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+    jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref3 = jit_beqi_p(jit_forward(), JIT_R1, scheme_null_type);
+    ref4 = jit_bnei_p(jit_forward(), JIT_R1, scheme_pair_type);
+    CHECK_LIMIT();
+
+    if (for_branch) {
+      ref0 = jit_patchable_movi_p(JIT_V1, jit_forward());
+      (void)jit_calli(sjc.list_p_branch_code);
+
+      mz_patch_branch(ref3);
+
+      scheme_add_branch_false_movi(for_branch, ref0);
+      scheme_add_branch_false(for_branch, ref1);
+      scheme_add_branch_false(for_branch, ref4);
+      scheme_branch_for_true(jitter, for_branch);
+    } else {
+      GC_CAN_IGNORE jit_insn *ref5;
+
+      (void)jit_calli(sjc.list_p_code);
+      ref5 = jit_jmpi(jit_forward());
+
+      mz_patch_branch(ref1);
+      mz_patch_branch(ref4);
+      (void)jit_movi_p(JIT_R0, scheme_false);
+      ref1 = jit_jmpi(jit_forward());
+      
+      mz_patch_branch(ref3);
+      (void)jit_movi_p(JIT_R0, scheme_true);
+
+      mz_patch_ucbranch(ref5);
+      mz_patch_ucbranch(ref1);
+    }
+    CHECK_LIMIT();
+
+    __END_SHORT_JUMPS__(branch_short);
+
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "exact-nonnegative-integer?")
              || IS_NAMED_PRIM(rator, "exact-positive-integer?")) {
     GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4;

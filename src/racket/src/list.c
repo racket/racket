@@ -223,11 +223,9 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("null?", p, env);
 
-  scheme_add_global_constant ("list?",
-			      scheme_make_immed_prim(list_p_prim,
-						     "list?",
-						     1, 1),
-			      env);
+  p = scheme_make_folding_prim(list_p_prim, "list?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("list?", p, env);
 
   REGISTER_SO(scheme_list_proc);
   p = scheme_make_immed_prim(list_prim, "list", 0, -1);
@@ -1076,6 +1074,10 @@ int scheme_is_list(Scheme_Object *obj1)
 
   obj2 = obj1;
 
+  /* There's no fuel check in this loop. Checking a very long list
+     could interfere with thread switching --- but only once, because
+     another query on the same list will take half as long. */
+  
   while (1) {
     obj1 = SCHEME_CDR(obj1);
 

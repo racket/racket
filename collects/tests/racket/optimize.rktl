@@ -15,7 +15,7 @@
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/fixnum)
   (let* ([check-error-message (lambda (name proc [fixnum? #f])
-				(unless (memq name '(eq? not null? pair?
+				(unless (memq name '(eq? not null? pair? list?
 							 real? number? boolean? 
 							 procedure? symbol?
 							 string? bytes?
@@ -146,7 +146,12 @@
 		      (tri0 v op get-arg1 arg2 arg3 check-effect))])
 
     (un #f 'null? 0)
+    (un-exact #t 'null? '())
     (un #f 'pair? 0)
+    (un-exact #t 'pair? '(1 2))
+    (un #f 'list? 0)
+    (un #f 'list? '(1 2 . 3))
+    (un-exact #t 'list? '(1 2 3))
     (un #f 'boolean? 0)
     (un #t 'boolean? #t)
     (un #t 'boolean? #f)
@@ -712,6 +717,8 @@
 	   '(expt 5 (* 5 6)))
 (test-comp 88
 	   '(if (pair? null) 89 88))
+(test-comp 89
+	   '(if (list? null) 89 88))
 (test-comp '(if _x_ 2 1)
 	   '(if (not _x_) 1 2))
 (test-comp '(if _x_ 2 1)

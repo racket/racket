@@ -267,7 +267,7 @@ static int common0(mz_jit_state *jitter, void *_data)
 static int common1(mz_jit_state *jitter, void *_data)
 {
   int i;
-  GC_CAN_IGNORE jit_insn *ref, *ref2;
+  GC_CAN_IGNORE jit_insn *ref;
 
   /* *** [bad_][m]{car,cdr,...,{imag,real}_part}_code *** */
   /* Argument is in R0 for car/cdr, R2 otherwise */
@@ -861,7 +861,6 @@ static int common2(mz_jit_state *jitter, void *_data)
 static int common3(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
-  GC_CAN_IGNORE jit_insn *ref;
 
   /* *** {vector,string,bytes}_{ref,set}_[check_index_]code *** */
   /* R0 is vector/string/bytes, R1 is index (Scheme number in check-index mode), 
@@ -1815,6 +1814,130 @@ static int common6(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common7(mz_jit_state *jitter, void *_data)
+{
+  int i;
+
+  /* list_p_[branch_]code */
+  /* argument is in R0, and it's a pair */
+  /* for branch, V1 holds return address for false */
+  for (i = 0; i < 2; i++) {
+    GC_CAN_IGNORE void *code;
+    GC_CAN_IGNORE jit_insn *refloop, *ref1, *ref2, *ref3, *ref4;
+    GC_CAN_IGNORE jit_insn *ref5, *ref6, *ref7, *ref8;
+
+    code = jit_get_ip().ptr;
+    if (!i)
+      sjc.list_p_code = code;
+    else
+      sjc.list_p_branch_code = code;
+
+    mz_prolog(JIT_R2);
+    
+    __START_SHORT_JUMPS__(1);
+
+    /* R0 is hare, R1 is turtle */
+    jit_movr_p(JIT_R1, JIT_R0); 
+    
+    /* Note: there's no fuel check in this loop, just like there isn't in
+       scheme_is_list(). */
+
+    refloop = _jit.x.pc;
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    ref1 = jit_bmsi_ul(jit_forward(), JIT_R2, PAIR_FLAG_MASK);
+    
+    jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
+    ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
+    ref8 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    ref4 = jit_bmsi_ul(jit_forward(), JIT_R2, PAIR_FLAG_MASK);
+    
+    jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
+    jit_ldxi_p(JIT_R1, JIT_R1, (intptr_t)&SCHEME_CDR(0x0));
+    ref5 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
+    ref7 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    (void)jit_beqi_i(refloop, JIT_R2, scheme_pair_type);
+
+    ref6 = jit_jmpi(jit_forward());
+    
+    /* R2 has flags, and either list or non-list is set */
+    mz_patch_branch(ref1);
+    mz_patch_branch(ref4);
+    ref1 = jit_bmci_ul(jit_forward(), JIT_R2, PAIR_IS_LIST);
+    
+    /* it's a list: */
+    mz_patch_branch(ref2);
+    mz_patch_branch(ref5);
+
+    jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+#ifdef MZ_USE_FUTURES
+    /* Need an atomic update in case another thread is setting
+       a hash code on the target pair. */
+    /* Assumes little-endian and that a short hash follows a short type tag: */
+    ref5 = jit_bmsi_i(jit_forward(), JIT_R2, PAIR_IS_LIST);
+    jit_rshi_i(JIT_R0, JIT_R2, 16);
+    jit_ori_i(JIT_R0, JIT_R0, scheme_pair_type);
+    jit_ori_i(JIT_R2, JIT_R0, (PAIR_IS_LIST << 16));
+    /* In the unlikely case that the compare-and-swap fails, then it's ok to 
+       lose the caching of the list bit: */
+    jit_lock_cmpxchgr_i(JIT_R1, JIT_R2);
+    mz_patch_branch(ref5);
+#else
+    jit_ori_i(JIT_R2, JIT_R2, PAIR_IS_LIST);
+    jit_stxi_s(&MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso), JIT_R1, JIT_R2);
+#endif
+
+    __END_SHORT_JUMPS__(1);
+
+    if (!i)
+      jit_movi_p(JIT_R0, scheme_true);
+    mz_epilog(JIT_R2);
+
+    __START_SHORT_JUMPS__(1);
+
+    /* it's a non-list: */
+    mz_patch_branch(ref1);
+    mz_patch_branch(ref3);
+    mz_patch_branch(ref7);
+    mz_patch_branch(ref8);
+    mz_patch_ucbranch(ref6);
+
+    jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+#ifdef MZ_USE_FUTURES
+    /* As above: */
+    ref5 = jit_bmsi_i(jit_forward(), JIT_R2, PAIR_IS_NON_LIST);
+    jit_rshi_i(JIT_R0, JIT_R2, 16);
+    jit_ori_i(JIT_R0, JIT_R0, scheme_pair_type);
+    jit_ori_i(JIT_R2, JIT_R0, (PAIR_IS_NON_LIST << 16));
+    jit_lock_cmpxchgr_i(JIT_R1, JIT_R2);
+    mz_patch_branch(ref5);
+#else
+    jit_ori_i(JIT_R2, JIT_R2, PAIR_IS_NON_LIST);
+    jit_stxi_s(&MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso), JIT_R1, JIT_R2);
+#endif
+
+    __END_SHORT_JUMPS__(1);
+
+    if (i) {
+      mz_epilog_without_jmp();
+      jit_jmpr(JIT_V1);
+    } else {
+      jit_movi_p(JIT_R0, scheme_false);
+      mz_epilog(JIT_R2);
+    }
+
+    scheme_jit_register_sub_func(jitter, code, scheme_false);
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -1825,6 +1948,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common4(jitter, _data)) return 0;
   if (!common5(jitter, _data)) return 0;
   if (!common6(jitter, _data)) return 0;
+  if (!common7(jitter, _data)) return 0;
   return 1;
 }
 

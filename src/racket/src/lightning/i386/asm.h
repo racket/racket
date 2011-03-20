@@ -709,6 +709,8 @@ typedef _uc		jit_insn;
 
 #define MOVSWQmr(MD, MB, MI, MS, RD)	_qOO_r_X	(0x0fbf		     ,_r1(RD)		,MD,MB,MI,MS		)
 
+#define CMPXCHGr(RS, RD)          	(_jit_B(0xF), _O_r_X(0xb1 	     ,_r4(RD)		,0,RS,0,0		))
+#define LOCK_PREFIX(i) (_jit_B(0xf0), i)
 
 #define MULBr(RS)			_O_Mrm		(0xf6		,_b11,_b100  ,_r1(RS)				)
 #define MULBm(MD,MB,MI,MS)		_O_r_X		(0xf6		     ,_b100		,MD,MB,MI,MS		)

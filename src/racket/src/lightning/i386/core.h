@@ -682,6 +682,7 @@ static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) || (diff > 127)) 
 # define jit_sti_i(id, rs) _jit_sti_i(id, rs)
 #endif
 
+# define jit_lock_cmpxchgr_i(rd, rs) LOCK_PREFIX(CMPXCHGr(rd, rs))
 
 /* Extra */
 #define jit_nop()			NOP_()
