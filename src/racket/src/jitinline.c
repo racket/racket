@@ -433,7 +433,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     scheme_generate_arith(jitter, rator, app->rand, NULL, 1, 0, -4, 0, for_branch, branch_short, 0, 0, NULL);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "list?")) {
-    GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref2, *ref3, *ref4;
+    GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref3, *ref4;
 
     mz_runstack_skipped(jitter, 1);
     
