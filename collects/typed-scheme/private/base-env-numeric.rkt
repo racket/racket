@@ -1683,9 +1683,10 @@
                  (unop -PosSingleFlonum)
                  (-> -SingleFlonum -NonNegSingleFlonum)
                  (unop -PosInexactReal)
-                 (-> -InexactReal -InexactReal)
+                 (-> -InexactReal -NonNegInexactReal)
                  (unop -PosReal)
-                 (map unop (list -Real -FloatComplex -SingleFlonumComplex
+                 (-> -Real -NonNegReal)
+                 (map unop (list -FloatComplex -SingleFlonumComplex
                                  -InexactComplex -ExactNumber N)))]
 [conjugate (from-cases
             (map unop all-real-types)
