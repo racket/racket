@@ -826,6 +826,7 @@
                             [(#\↦) "$\\mapsto$"]
                             [(#\⊤) "$\\top$"]
                             [(#\¥) "{\\textyen}"]
+                            [(#\™) "{\\texttrademark}"]
                             [else c])
                           c)])))
                 (loop (add1 i)))))))
