@@ -114,6 +114,7 @@
 
 (provide/contract
  [set-arrow-pict! (-> symbol? (-> pict?) void?)]
+ [arrow->pict (-> symbol? pict?)]
  
  [lw->pict
   (-> (or/c (listof symbol?) compiled-lang?) lw? pict?)]

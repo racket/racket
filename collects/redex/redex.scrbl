@@ -2223,6 +2223,10 @@ some part of a grammar, reduction relation, or
 metafunction. It defaults to slideshow's @racket[text] function.
 }
 
+@defproc[(arrow->pict [arrow symbol?]) pict?]{
+  Returns the pict corresponding to @racket[arrow].                                             
+}
+
 @defproc[(set-arrow-pict! [arrow symbol?] [proc  (-> pict?)]) void?]{
 
 This functions sets the pict for a given reduction-relation

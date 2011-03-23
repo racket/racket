@@ -55,7 +55,8 @@
          metafunction-cases
          compact-vertical-min-width
          extend-language-show-union
-         set-arrow-pict!)
+         set-arrow-pict!
+         arrow->pict)
 (provide/contract
  [linebreaks (parameter/c (or/c #f (listof boolean?)))])
 
