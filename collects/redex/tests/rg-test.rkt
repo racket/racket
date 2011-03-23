@@ -621,6 +621,11 @@
     (e e 4)
     (n number))
   
+  (test (let ([checked 0])
+          (parameterize ([default-check-attempts 1])
+            (redex-check lang () (set! checked (add1 checked)) #:print? #f))
+          checked)
+        1)
   (test (redex-check lang d #t #:attempts 1 #:print? (not #t)) #t)
   (test (redex-check lang d #f #:print? #f)
         (make-counterexample 5))

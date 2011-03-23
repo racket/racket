@@ -1316,7 +1316,7 @@ matches @racket[pattern] then evaluating @racket[property-expr]
 using the @racket[match-bindings] produced by @racket[match]ing
 @math{t} against @racket[pattern].
 
-@racket[redex-check] generates at most @racket[attempts-expr] (default @racket[1000])
+@racket[redex-check] generates at most @racket[attempts-expr] (default @racket[(default-check-attempts)])
 random terms in its search. The size and complexity of these terms tend to increase 
 with each failed attempt. The @racket[#:attempt-size] keyword determines the rate at which
 terms grow by supplying a function that bounds term size based on the number of failed
@@ -1470,7 +1470,11 @@ test case from the number of previously attempted tests @racket[n].
 Currently, this procedure computes the base 5 logarithm, but 
 that behavior may change in future versions.
 }
-               
+
+@defparam[default-check-attempts attempts natural-number/c]{Determines the default
+value for @racket[redex-check]'s optional @racket[#:attempts] argument. By default,
+@racket[attempts] is 1,000.}
+
 @defparam[redex-pseudo-random-generator generator pseudo-random-generator?]{
 @racket[generate-term] and the randomized testing forms (e.g., @racket[redex-check])
 use the parameter @racket[generator] to construct random terms. The parameter's

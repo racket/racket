@@ -21,7 +21,7 @@
 (define (exotic-choice? [random generator-random]) (= 0 (random 5)))
 (define (use-lang-literal? [random generator-random]) (= 0 (random 20)))
 
-(define default-check-attempts 1000)
+(define default-check-attempts (make-parameter 1000))
 
 (define ascii-chars-threshold 1000)
 (define tex-chars-threshold 1500)
@@ -740,7 +740,7 @@
             'what (if loc (string-append loc "\n") "") msg)))]))
 
 (define-for-syntax attempts-keyword
-  (list '#:attempts #'default-check-attempts
+  (list '#:attempts #'(default-check-attempts)
         (list #'natural-number/c "#:attempts argument")))
 (define-for-syntax source-keyword
   (list '#:source #f))
@@ -1011,6 +1011,7 @@
          check-reduction-relation
          check-metafunction
          default-attempt-size
+         default-check-attempts
          attempt-size/c
          exn:fail:redex:generation-failure?
          redex-pseudo-random-generator)
