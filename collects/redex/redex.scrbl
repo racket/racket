@@ -2172,19 +2172,15 @@ in-hole decompositions, which use the @racket[default-style].
 The @racket[grammar-style] is used for the ``::='' and ``|''
 in grammars.
 
-The @racket[non-terminal-style] is used for the names of non-terminals.
+The @racket[non-terminal-style] parameter is used for the names of non-terminals.
 Two parameters style the text in the (optional) "underscore" component
 of a non-terminal reference. The first, @racket[non-terminal-subscript-style],
 applies to the segment between the underscore and the first caret (@racket[^]) 
 to follow it; the second, @racket[non-terminal-superscript-style], applies
 to the segment following that caret. For example, in the non-terminal 
-reference @racket[x_y_z], @racket[x] has style @racket[non-terminal-style],
+reference @racket[x_y^z], @racket[x] has style @racket[non-terminal-style],
 @racket[y] has style @racket[non-terminal-subscript-style], and @racket[z]
 has style @racket[non-terminal-superscript-style].
-
-The
-@racket[non-terminal-subscript-style] is used for the portion
-after the underscore in non-terminal references.
 
 The @racket[default-style] is used for parenthesis, the dot in dotted
 lists, spaces, the
