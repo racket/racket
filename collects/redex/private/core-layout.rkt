@@ -90,10 +90,6 @@
                      (list (blank)
                            (list-ref args 2)
                            (blank))))
-       (hole ,(λ (args)
-                (let ([name (lw-e (list-ref args 2))])
-                  (list (basic-text "[]" (default-style)) 
-                        (basic-text (format "~a" name) (non-terminal-subscript-style))))))
        (name ,(λ (args)
                 (let ([open-paren (list-ref args 0)]
                       [the-name (list-ref args 2)]

@@ -236,5 +236,12 @@
              (side-condition/hidden (= 1 2)))))
       "rr-hidden.png")
 
+;; holes
+(let ()
+  (define-language L
+    (n (hole x) ; a "named hole" at one time
+       hole))
+  (test (render-language L) "holes.png"))
+
 (printf "bitmap-test.ss: ")
 (done)
