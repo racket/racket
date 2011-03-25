@@ -4651,7 +4651,7 @@ static Scheme_Object *variable_module_source(int argc, Scheme_Object *argv[])
     scheme_wrong_type("variable-reference->module-source", "variable-reference", 0, argc, argv);
 
   if (env->module)
-    return SCHEME_PTR_VAL(env->module->modsrc);
+    return scheme_resolved_module_path_value(env->module->modsrc);
   else
     return scheme_false;
 }

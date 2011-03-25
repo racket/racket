@@ -3129,6 +3129,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 
 #define SCHEME_RMPP(o) (SAME_TYPE(SCHEME_TYPE((o)), scheme_resolved_module_path_type))
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o);
+Scheme_Object *scheme_resolved_module_path_value(Scheme_Object *rmp);
 int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o);
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 

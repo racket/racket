@@ -131,7 +131,6 @@ static void eval_exptime(Scheme_Object *names, int count,
 static Scheme_Module_Exports *make_module_exports();
 
 static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
-static Scheme_Object *resolved_module_path_value(Scheme_Object *rmp);
 
 #define cons scheme_make_pair
 
@@ -2826,7 +2825,7 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
   m = scheme_extract_compiled_module(argv[0]);
       
   if (m) {
-    return resolved_module_path_value(m->modname);
+    return scheme_resolved_module_path_value(m->modname);
   }
 
   scheme_wrong_type("module-compiled-name", "compiled module declaration", 0, argc, argv);
@@ -2953,7 +2952,7 @@ static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
   return rmp;
 }
 
-static Scheme_Object *resolved_module_path_value(Scheme_Object *rmp)
+Scheme_Object *scheme_resolved_module_path_value(Scheme_Object *rmp)
 {
   Scheme_Object *rmp_val;
   rmp_val = SCHEME_RMP_VAL(rmp);
@@ -3040,7 +3039,7 @@ static Scheme_Object *resolved_module_path_name(int argc, Scheme_Object *argv[])
   if (!SCHEME_MODNAMEP(argv[0]))
     scheme_wrong_type("resolved-module-path-name", "resolved-module-path", 0, argc, argv);
 
-  return resolved_module_path_value(argv[0]);
+  return scheme_resolved_module_path_value(argv[0]);
 }
 
 
@@ -6055,7 +6054,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
   }
 
-  fm = scheme_stx_property(fm, module_name_symbol, resolved_module_path_value(m->modname));
+  fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(m->modname));
 
   /* phase shift to replace self_modidx of previous expansion (if any): */
   fm = scheme_stx_phase_shift(fm, 0, empty_self_modidx, self_modidx, NULL);
@@ -6074,7 +6073,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       mb = scheme_datum_to_syntax(module_begin_symbol, form, scheme_false, 0, 0);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
       fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
-      fm = scheme_stx_property(fm, module_name_symbol, resolved_module_path_value(m->modname));
+      fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(m->modname));
       /* Since fm is a newly-created syntax object, we need to re-add renamings: */
       fm = scheme_add_rename(fm, rn_set);
       
@@ -10133,8 +10132,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
     l = cons(scheme_false, l);
 
   l = cons(m->me->src_modidx, l);
-  l = cons(resolved_module_path_value(m->modsrc), l);
-  l = cons(resolved_module_path_value(m->modname), l);
+  l = cons(scheme_resolved_module_path_value(m->modsrc), l);
+  l = cons(scheme_resolved_module_path_value(m->modname), l);
 
   return l;
 }
