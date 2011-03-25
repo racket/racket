@@ -388,19 +388,24 @@ by @racket[make-struct-type-property], @racket[#f] otherwise.}
 @;------------------------------------------------------------------------
 @section[#:tag "struct-copy"]{Copying and Updating Structures}
 
-@defform[(struct-copy id struct-expr [field-id expr] ...)]{
+@defform/subs[(struct-copy id struct-expr fld-id ...)
+              ((fld-id [field-id expr]
+                       [field-id #:parent parent-id expr]))]{
 
 Creates a new instance of the structure type @racket[id] with the same
 field values as the structure produced by @racket[struct-expr], except
 that the value of each supplied @racket[field-id] is instead
-determined by the corresponding @racket[expr].
+determined by the corresponding @racket[expr]. If @racket[#:parent]
+is specified, the @racket[parent-id] must be bound to a parent
+structure type of @racket[id].
 
 The @racket[id] must have a @tech{transformer binding} that
 encapsulates information about a structure type (i.e., like the
 initial identifier bound by @racket[struct]), and the binding
 must supply a constructor, a predicate, and all field accessors.
 
-Each @racket[field-id] is combined with @racket[id] to form
+Each @racket[field-id] is combined with @racket[id] 
+(or @racket[parent-id], if present) to form
 @racket[id]@racketidfont{-}@racket[field-id] (using the lexical
 context of @racket[field-id]), which must be one of the accessor
 bindings in @racket[id]. The accessor bindings determined by different
