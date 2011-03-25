@@ -23,16 +23,38 @@
 #endif
 
 #if WAIT_FOR_GDB
-static void launchgdb() {
-  pid_t pid = getpid();
-  char inbuffer[10];
+void launchgdb() {
+  {
+    pid_t pid = getpid();
+    fprintf(stderr, "pid # %i run gdb\nsudo gdb ./racket3m %i\nor kill process.\n", pid, pid);
+    fflush(stderr);
+  }
 
-  fprintf(stderr, "pid # %i run gdb \"gdb ./racket3m %i\" or kill process.\n", pid, pid);
-  fflush(stderr);
+  pid_t fpid = fork();
+  if (fpid == 0)                // child
+  {
+    char _pidstr[20];
+    char *pidstr = (char*) _pidstr;
+    snprintf(pidstr, 20, "%i", getpid());
+    execl("/usr/bin/bash", "rgdb", pidstr);
+  }
+  else if (fpid < 0)            // failed to fork
+  {
+    printf("Failed to fork\n");
+    exit(1);
+  }
+  else                                   // parent
+  {
+    kill(getpid(), SIGSTOP);
+  }
 
-  while(read(fileno(stdin), inbuffer, 10) <= 0){
-    if(errno != EINTR){
-      fprintf(stderr, "Error detected %i\n", errno);
+  kill(getpid(), SIGSTOP);
+  {
+    char inbuffer[10];
+    while(read(fileno(stdin), inbuffer, 10) <= 0){
+      if(errno != EINTR){
+        fprintf(stderr, "Error detected %i\n", errno);
+      }
     }
   }
 }
@@ -90,6 +112,9 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
     else {
       printf("SIGSEGV ???? SI_CODE %i fault on %p\n", c, p);
     }
+#if WAIT_FOR_GDB
+    launchgdb();
+#endif
     abort();
   }
 #  define NEED_SIGSTACK
