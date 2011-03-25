@@ -168,4 +168,12 @@
 
 ;; ----------------------------------------
 
+(module va->ms racket/base
+  (provide modsrc)
+  (define modsrc (variable-reference->module-source (#%variable-reference))))
+
+(test 'va->ms dynamic-require ''va->ms 'modsrc)
+
+;; ----------------------------------------
+
 (report-errs)
