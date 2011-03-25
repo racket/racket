@@ -250,7 +250,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   intptr_t stacksize;
 
-#ifdef OS_X
+#if defined(OS_X) || defined(linux)
   stacksize = 8*1024*1024;
 #else
   stacksize = 0;
