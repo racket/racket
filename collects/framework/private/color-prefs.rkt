@@ -28,6 +28,7 @@
     (define hp (new horizontal-panel%
                     [parent parent]
                     [style '(border)]
+                    [alignment '(center top)]
                     [stretchable-height #f]))
     
     (define e (new (class standard-style-list-text%
@@ -43,6 +44,7 @@
                    [parent hp]
                    [min-width 150]
                    [editor e]
+                   [stretchable-height #t]
                    [style '(hide-hscroll hide-vscroll)]))
     
     (define (make-check name on off)
@@ -118,13 +120,22 @@
                        (list-ref smoothing-options
                                  (send c get-selection))))))]))
     
+    (define fore/back-panel
+      (and background? 
+           (new vertical-pane%
+                [parent hp]
+                [stretchable-width #f]
+                [stretchable-height #f])))
+    
     (define foreground-color-button
       (and (>= (get-display-depth) 8)
            (new button%
                 [label (if background? 
                            (string-constant cs-foreground-color)
                            (string-constant cs-change-color))]
-                [parent hp]
+                [parent (if background? 
+                            fore/back-panel
+                            hp)]
                 [callback
                  (λ (color-button evt)
                    (let* ([add (send (preferences:get pref-sym) get-foreground-add)]
@@ -146,7 +157,9 @@
            background?
            (new button%
                 [label (string-constant cs-background-color)]
-                [parent hp]
+                [parent (if background? 
+                            fore/back-panel
+                            hp)]
                 [callback
                  (λ (color-button evt)
                    (let* ([add (send (preferences:get pref-sym) get-background-add)]
