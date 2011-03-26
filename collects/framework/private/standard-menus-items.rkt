@@ -245,8 +245,8 @@
         (make-an-item 'file-menu 'save-as
                       '(string-constant save-as-info)
                       '(λ (item control) (void))
-                      #f
-                      '(get-default-shortcut-prefix)
+                      #\s
+                      '(cons 'shift (get-default-shortcut-prefix))
                       '(string-constant save-as-menu-item)
                       on-demand-do-nothing
                       #f)

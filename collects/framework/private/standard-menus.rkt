@@ -671,8 +671,8 @@
             (let ((file-menu:save-as-callback
                    (λ (item evt) (file-menu:save-as-callback item evt))))
               file-menu:save-as-callback))
-           (shortcut #f)
-           (shortcut-prefix (get-default-shortcut-prefix))
+           (shortcut #\s)
+           (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
            (help-string (file-menu:save-as-help-string))
            (demand-callback
             (λ (menu-item) (file-menu:save-as-on-demand menu-item))))))
