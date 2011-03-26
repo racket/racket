@@ -3095,6 +3095,12 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 #define GLOBAL_PRIM_W_ARITY2(name, func, a1, a2, a3, a4, env) scheme_add_global_constant(name, scheme_make_prim_w_arity2(func, name, a1, a2, a3, a4), env)
 #define GLOBAL_NONCM_PRIM(name, func, a1, a2, env)            scheme_add_global_constant(name, scheme_make_noncm_prim(func, name, a1, a2), env)
 
+#define GLOBAL_FOLDING_PRIM_UNARY_INLINED(name, func, a1, a2, a3, env)      do {\
+  Scheme_Object *p; \
+  p = scheme_make_folding_prim(func, name, a1, a2, a3); \
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED; \
+  scheme_add_global_constant(name, p, env); \
+} while(0)
 
 
 Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int mode, 

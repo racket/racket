@@ -38,7 +38,6 @@
    In addition, the need to marshal syntax objects to bytecode
    introduces some other complications. */
 
-READ_ONLY static Scheme_Object *scheme_datum_to_syntax_proc;
 ROSYM static Scheme_Object *source_symbol; /* uninterned! */
 ROSYM static Scheme_Object *share_symbol; /* uninterned! */
 ROSYM static Scheme_Object *origin_symbol;
@@ -442,163 +441,49 @@ XFORM_NONGCING static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 
 void scheme_init_stx(Scheme_Env *env)
 {
-  Scheme_Object *p;
-
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
 
-  p = scheme_make_folding_prim(syntax_p, "syntax?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
-  scheme_add_global_constant("syntax?", p, env);
+  GLOBAL_FOLDING_PRIM_UNARY_INLINED("syntax?", syntax_p, 1, 1, 1, env);
 
-  scheme_add_global_constant("syntax->datum", 
-			     scheme_make_folding_prim(syntax_to_datum,
-						      "syntax->datum",
-						      1, 1, 1),
-			     env);
+  GLOBAL_FOLDING_PRIM("syntax->datum", syntax_to_datum, 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("datum->syntax", datum_to_syntax, 2, 5, 1, env);
   
-  REGISTER_SO(scheme_datum_to_syntax_proc);
-  scheme_datum_to_syntax_proc = scheme_make_folding_prim(datum_to_syntax,
-							 "datum->syntax",
-							 2, 5, 1);
-  scheme_add_global_constant("datum->syntax", 
-			     scheme_datum_to_syntax_proc,
-			     env);
+  GLOBAL_FOLDING_PRIM_UNARY_INLINED("syntax-e", scheme_checked_syntax_e, 1, 1, 1, env);
 
-  
-  p = scheme_make_folding_prim(scheme_checked_syntax_e, "syntax-e", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
-  scheme_add_global_constant("syntax-e", p, env);
-
-  scheme_add_global_constant("syntax-line", 
-			     scheme_make_folding_prim(syntax_line,
-						      "syntax-line",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("syntax-column", 
-			     scheme_make_folding_prim(syntax_col,
-						      "syntax-column",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("syntax-position", 
-			     scheme_make_folding_prim(syntax_pos,
-						      "syntax-position",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("syntax-span", 
-			     scheme_make_folding_prim(syntax_span,
-						      "syntax-span",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("syntax-source", 
-			     scheme_make_folding_prim(syntax_src,
-						      "syntax-source",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("syntax->list", 
-			     scheme_make_folding_prim(syntax_to_list,
-						      "syntax->list",
-						      1, 1, 1),
-			     env);
-
-  scheme_add_global_constant("syntax-original?", 
-			     scheme_make_immed_prim(syntax_original_p,
-						    "syntax-original?",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("syntax-property", 
-			     scheme_make_immed_prim(syntax_property,
-						    "syntax-property",
-						    2, 3),
-			     env);
-  scheme_add_global_constant("syntax-property-symbol-keys", 
-			     scheme_make_immed_prim(syntax_property_keys,
-						    "syntax-property-symbol-keys",
-						    1, 1),
-			     env);
-
-  scheme_add_global_constant("syntax-track-origin", 
-			     scheme_make_immed_prim(syntax_track_origin,
-						    "syntax-track-origin",
-						    3, 3),
-			     env);
-
-  scheme_add_global_constant("make-syntax-delta-introducer", 
-			     scheme_make_immed_prim(scheme_syntax_make_transfer_intro,
-						    "make-syntax-delta-introducer",
-						    2, 3),
-			     env);
-
-  scheme_add_global_constant("bound-identifier=?", 
-			     scheme_make_immed_prim(bound_eq,
-						    "bound-identifier=?",
-						    2, 3),
-			     env);
-  scheme_add_global_constant("free-identifier=?", 
-			     scheme_make_immed_prim(module_eq,
-						    "free-identifier=?",
-						    2, 3),
-			     env);
-  scheme_add_global_constant("free-transformer-identifier=?", 
-			     scheme_make_immed_prim(module_trans_eq,
-						    "free-transformer-identifier=?",
-						    2, 2),
-			     env);
-  scheme_add_global_constant("free-template-identifier=?", 
-			     scheme_make_immed_prim(module_templ_eq,
-						    "free-template-identifier=?",
-						    2, 2),
-			     env);
-  scheme_add_global_constant("free-label-identifier=?", 
-			     scheme_make_immed_prim(module_label_eq,
-						    "free-label-identifier=?",
-						    2, 2),
-			     env);
-
-  scheme_add_global_constant("identifier-binding", 
-			     scheme_make_immed_prim(module_binding,
-						    "identifier-binding",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("identifier-transformer-binding", 
-			     scheme_make_immed_prim(module_trans_binding,
-						    "identifier-transformer-binding",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("identifier-template-binding", 
-			     scheme_make_immed_prim(module_templ_binding,
-						    "identifier-template-binding",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("identifier-label-binding", 
-			     scheme_make_immed_prim(module_label_binding,
-						    "identifier-label-binding",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("identifier-prune-lexical-context", 
-			     scheme_make_immed_prim(identifier_prune,
-						    "identifier-prune-lexical-context",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("identifier-prune-to-source-module", 
-			     scheme_make_immed_prim(identifier_prune_to_module,
-						    "identifier-prune-to-source-module",
-						    1, 1),
-			     env);
+  GLOBAL_FOLDING_PRIM("syntax-line"    , syntax_line   , 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("syntax-column"  , syntax_col    , 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("syntax-position", syntax_pos    , 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("syntax-span"    , syntax_span   , 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("syntax-source"  , syntax_src    , 1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("syntax->list"   , syntax_to_list, 1, 1, 1, env);
 
 
-  scheme_add_global_constant("syntax-source-module", 
-			     scheme_make_noncm_prim(syntax_src_module,
-                                                    "syntax-source-module",
-                                                    1, 2),
-			     env);
+  GLOBAL_IMMED_PRIM("syntax-original?"                 , syntax_original_p         , 1, 1, env);
+  GLOBAL_IMMED_PRIM("syntax-property"                  , syntax_property           , 2, 3, env);
+  GLOBAL_IMMED_PRIM("syntax-property-symbol-keys"      , syntax_property_keys      , 1, 1, env);
 
-  scheme_add_global_constant("syntax-recertify", 
-			     scheme_make_immed_prim(syntax_recertify,
-						    "syntax-recertify",
-						    4, 4),
-			     env);
+  GLOBAL_IMMED_PRIM("syntax-track-origin"              , syntax_track_origin       , 3, 3, env);
+
+  GLOBAL_IMMED_PRIM("make-syntax-delta-introducer"     , scheme_syntax_make_transfer_intro, 2, 3, env);
+
+  GLOBAL_IMMED_PRIM("bound-identifier=?"               , bound_eq                  , 2, 3, env);
+  GLOBAL_IMMED_PRIM("free-identifier=?"                , module_eq                 , 2, 3, env);
+  GLOBAL_IMMED_PRIM("free-transformer-identifier=?"    , module_trans_eq           , 2, 2, env);
+  GLOBAL_IMMED_PRIM("free-template-identifier=?"       , module_templ_eq           , 2, 2, env);
+  GLOBAL_IMMED_PRIM("free-label-identifier=?"          , module_label_eq           , 2, 2, env);
+
+  GLOBAL_IMMED_PRIM("identifier-binding"               , module_binding            , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-transformer-binding"   , module_trans_binding      , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-template-binding"      , module_templ_binding      , 1, 1, env);
+  GLOBAL_IMMED_PRIM("identifier-label-binding"         , module_label_binding      , 1, 1, env);
+  GLOBAL_IMMED_PRIM("identifier-prune-lexical-context" , identifier_prune          , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
+
+
+  GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
+  GLOBAL_IMMED_PRIM("syntax-recertify"                 , syntax_recertify          , 4, 4, env);
 
   REGISTER_SO(source_symbol);
   REGISTER_SO(share_symbol);
