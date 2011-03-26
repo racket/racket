@@ -49,7 +49,7 @@
       (field 
        [universe 
         (new checked-cell% [msg "UniSt"] [value0 universe0] [ok? check-with] 
-             [display (and state "your server's state")])])
+             [display (if (string? state) state (and state  "your server's state"))])])
  
       ;; -----------------------------------------------------------------------
       ;; dealing with events

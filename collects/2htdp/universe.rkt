@@ -55,7 +55,7 @@
                 (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
                       "positive number" "rate"))])]
   ;; -- state specifies whether to display the current state 
-  [state DEFAULT #'#f (expr-with-check bool> "expected a boolean")]
+  [state DEFAULT #'#f (expr-with-check any> "expected a boolean or a string")]
   ;; Any -> Boolean 
   ;; -- check-with: all states should specify this predicate 
   [check-with DEFAULT #'True (function-with-arity 1)])
