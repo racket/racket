@@ -337,32 +337,47 @@
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
 
-(define (check-pre bool val str blame)
-  (unless bool
-    (raise-blame-error blame val (or str "#:pre condition violation"))))
-
-(define (check-post bool val str blame)
-  (unless bool
-    (raise-blame-error blame val (or str "#:post condition violation"))))
+(define (signal-pre/post pre? val str blame . var-infos)
+  (define pre-str (or str 
+                      (string-append 
+                       (if pre? "#:pre" "#:post")
+                       " condition violation"
+                       (if (null? var-infos)
+                           ""
+                           "; variables are:"))))
+  (raise-blame-error blame val
+                     (apply
+                      string-append
+                      pre-str
+                      (for/list ([var-info (in-list var-infos)])
+                        (format "\n      ~s: ~e" 
+                                (list-ref var-info 0)
+                                (list-ref var-info 1))))))
 
 (define-for-syntax (add-pre-cond an-istx arg/res-to-indy-var call-stx)
   #`(begin #,@(for/list ([pre (in-list (istx-pre an-istx))]
                          [i (in-naturals)])
                 (define id (string->symbol (format "pre-proc~a" i)))
-                #`(check-pre (#,id #,@(map arg/res-to-indy-var (pre/post-vars pre)))
-                             val
-                             #,(pre/post-str pre)
-                             swapped-blame))
+                #`(unless (#,id #,@(map arg/res-to-indy-var (pre/post-vars pre)))
+                    (signal-pre/post #t
+                                     val
+                                     #,(pre/post-str pre)
+                                     swapped-blame
+                                     #,@(map (λ (x) #`(list '#,x #,(arg/res-to-indy-var x)))
+                                             (pre/post-vars pre)))))
            #,call-stx))
 
 (define-for-syntax (add-post-cond an-istx arg/res-to-indy-var call-stx)
   #`(begin #,@(for/list ([post (in-list (istx-post an-istx))]
                          [i (in-naturals)])
                 (define id (string->symbol (format "post-proc~a" i)))
-                #`(check-post (#,id #,@(map arg/res-to-indy-var (pre/post-vars post)))
-                              val
-                              #,(pre/post-str post)
-                              blame))  
+                #`(unless (#,id #,@(map arg/res-to-indy-var (pre/post-vars post)))
+                    (signal-pre/post #f
+                                     val
+                                     #,(pre/post-str post)
+                                     blame
+                                     #,@(map (λ (x) #`(list '#,x #,(arg/res-to-indy-var x)))
+                                             (pre/post-vars post)))))
            #,call-stx))
 
 ;; add-wrapper-let : syntax

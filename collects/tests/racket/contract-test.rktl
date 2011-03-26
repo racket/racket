@@ -2901,6 +2901,27 @@
                'neg)
      1))
 
+  
+  ;; test to make sure the values are in the error messages
+  (contract-error-test
+   #'((contract (->i ([x number?]) #:pre (x) #f any)
+                (λ (x) x)
+                'pos
+                'neg)
+      123456789)
+   (λ (x) 
+     (and (exn? x)
+          (regexp-match #rx"x: 123456789" (exn-message x)))))
+  (contract-error-test
+   #'((contract (->i ([|x y| number?]) #:pre (|x y|) #f any)
+                (λ (x) x)
+                'pos
+                'neg)
+      123456789)
+   (λ (x) 
+     (and (exn? x)
+          (regexp-match (regexp-quote "|x y|: 123456789") (exn-message x)))))
+   
   (test/neg-blame
    '->i-protect-shared-state
    '(let ([x 1])
