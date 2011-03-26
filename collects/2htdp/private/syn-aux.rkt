@@ -161,14 +161,14 @@
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
-           [_ (displayln p) (err tag p)])))]
+           [_ (err tag p)])))]
     [(_ arity except extra)
      (lambda (tag)
        (lambda (p)
          (syntax-case p ()
            [(_ x) #`(proc> #,tag (f2h x) arity)]
            extra
-           [_ (displayln p) (err tag p)])))]))
+           [_ (err tag p)])))]))
 
 (define (err spec p . xtras)
   (raise-syntax-error (cadr spec)
