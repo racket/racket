@@ -934,7 +934,11 @@ all non-GUI portions of Redex) and also exported by
                [(name @#,ttpattern ...) @#,tttterm extras ...] 
                ...)
              ([metafunction-contract (code:line) 
-                                     (code:line id : @#,ttpattern ... -> @#,ttpattern)]
+                                     (code:line id : @#,ttpattern ... -> range)]
+              [range @#,ttpattern
+                     (code:line @#,ttpattern or range)
+                     (code:line @#,ttpattern ∨ range)
+                     (code:line @#,ttpattern ∪ range)]
               [extras (side-condition racket-expression)
                       (side-condition/hidden racket-expression)
                       (where pat @#,tttterm)

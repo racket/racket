@@ -1175,7 +1175,7 @@
             (λ ()
               (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
          (let ([lang-nts (language-id-nts #'lang 'define-metafunction)])  ;; keep this near the beginning, so it signals the first error (PR 10062)
-           (let-values ([(contract-name dom-ctcs codom-contract pats)
+           (let-values ([(contract-name dom-ctcs codom-contracts pats)
                          (split-out-contract orig-stx syn-error-name #'rest relation?)])
              (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                            [(lhs-for-lw ...)
@@ -1273,12 +1273,14 @@
                                               syn-error-name
                                               #f
                                               dom-ctcs))]
-                                       [codom-side-conditions-rewritten
-                                        (rewrite-side-conditions/check-errs
-                                         lang-nts
-                                         syn-error-name
-                                         #f
-                                         codom-contract)]
+                                       [(codom-side-conditions-rewritten ...)
+                                        (map (λ (codom-contract)
+                                               (rewrite-side-conditions/check-errs
+                                                lang-nts
+                                                syn-error-name
+                                                #f
+                                                codom-contract))
+                                             codom-contracts)]
                                        [(rhs-fns ...)
                                         (map (λ (names names/ellipses rhs/where)
                                                (with-syntax ([(names ...) names]
@@ -1398,7 +1400,7 @@
                                                              dsc
                                                              (append cases parent-cases)))
                                                           dsc
-                                                          `codom-side-conditions-rewritten
+                                                          `(codom-side-conditions-rewritten ...)
                                                           'name
                                                           #,relation?))))
                                                    (term-define-fn name name2))])
@@ -1434,7 +1436,7 @@
     ;; initial test determines if a contract is specified or not
     (cond
       [(pair? (syntax-e (car (syntax->list rest))))
-       (values #f #f #'any (check-clauses stx syn-error-name (syntax->list rest) relation?))]
+       (values #f #f (list #'any) (check-clauses stx syn-error-name (syntax->list rest) relation?))]
       [else
        (syntax-case rest ()
          [(id colon more ...)
@@ -1468,7 +1470,7 @@
                    [else
                     (values #'id
                             (reverse arg-pats)
-                            #'any
+                            (list #'any)
                             (check-clauses stx syn-error-name more relation?))])))]
             [else
              (unless (eq? ': (syntax-e #'colon))
@@ -1479,12 +1481,31 @@
                  [(null? more)
                   (raise-syntax-error syn-error-name "expected an ->" stx)]
                  [(eq? (syntax-e (car more)) '->)
-                  (when (null? (cdr more))
-                    (raise-syntax-error syn-error-name "expected a range contract to follow the arrow" stx (car more)))
+                  (define-values (raw-clauses rev-codomains)
+                    (let loop ([prev (car more)]
+                               [more (cdr more)]
+                               [codomains '()])
+                      (cond
+                        [(null? more)
+                         (raise-syntax-error syn-error-name "expected a range contract to follow" stx prev)]
+                        [else
+                         (define after-this-one (cdr more))
+                         (cond
+                           [(null? after-this-one)
+                            (values null (cons (car more) codomains))]
+                           [else
+                            (define kwd (cadr more))
+                            (cond
+                              [(member (syntax-e kwd) '(or ∨ ∪))
+                               (loop kwd 
+                                     (cddr more)
+                                     (cons (car more) codomains))]
+                              [else
+                               (values (cdr more)
+                                       (cons (car more) codomains))])])])))
                   (let ([doms (reverse dom-pats)]
-                        [codomain (cadr more)]
-                        [clauses (check-clauses stx syn-error-name (cddr more) relation?)])
-                    (values #'id doms codomain clauses))]
+                        [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
+                    (values #'id doms (reverse rev-codomains) clauses))]
                  [else
                   (loop (cdr more) (cons (car more) dom-pats))]))])]
          [_
@@ -1558,9 +1579,10 @@
         (syntax->list stuffs)))
      (syntax->list extras))))
 
-(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pat name relation?)
+(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pats name relation?)
   (let* ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
-         [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)]
+         [codom-compiled-patterns (map (λ (codom-contract-pat) (compile-pattern lang codom-contract-pat #f))
+                                       codom-contract-pats)]
          [all-cases (append cases parent-cases)]
          [lhss-at-lang (map (λ (case) ((metafunc-case-lhs case) lang)) all-cases)]
          [rhss-at-lang (map (λ (case) ((metafunc-case-rhs case) lang)) all-cases)]
@@ -1620,7 +1642,8 @@
                                    (let ([ans
                                           (ormap (λ (mtch) (ormap values (rhs traced-metafunc (mtch-bindings mtch))))
                                                  mtchs)])
-                                     (unless (match-pattern codom-compiled-pattern ans)
+                                     (unless (ormap (λ (codom-compiled-pattern) (match-pattern codom-compiled-pattern ans))
+                                                    codom-compiled-patterns)
                                        (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
                                      (cond
                                        [ans 
@@ -1648,7 +1671,9 @@
                                                      (length mtchs))]
                                        [else
                                         (let ([ans (car anss)])
-                                          (unless (match-pattern codom-compiled-pattern ans)
+                                          (unless (ormap (λ (codom-compiled-pattern)
+                                                           (match-pattern codom-compiled-pattern ans))
+                                                         codom-compiled-patterns)
                                             (redex-error name
                                                          "codomain test failed for ~s, call was ~s"
                                                          ans 

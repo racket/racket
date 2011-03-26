@@ -880,6 +880,53 @@
     (test (term (f 1 2 3 4 5 () (6) (7 8) (9 10 11))) 'yes))
   
   (let ()
+    (define-language L 
+      [bool #t #f])
+    (define-metafunction L
+      f : any -> bool or number
+      [(f any) any])
+    (test (term (f 1)) (term 1))
+    (test (term (f #f)) (term #f)))
+  
+  (let ()
+    (define-language L 
+      [bool #t #f])
+    (define-metafunction L
+      f : any -> bool ∪ number
+      [(f any) any])
+    (test (term (f 1)) (term 1))
+    (test (term (f #f)) (term #f)))
+  
+  (let ()
+    (define-language L 
+      [bool #t #f]
+      [abc a b c]
+      [def d e f])
+    (define-metafunction L
+      f : any -> bool ∨ number ∪ abc or def
+      [(f any) any])
+    (test (term (f 1)) (term 1))
+    (test (term (f #f)) (term #f))
+    (test (term (f c)) (term c))
+    (test (term (f e)) (term e)))
+  
+  ;; test that the contracts are called in order (or else 'car' fails)
+  (let ()
+    (define x '())
+    (define-language L
+      [seq (any any ...)])
+    (define-metafunction L
+      g : any -> 
+      (side-condition any_1 (begin (set! x (cons 1 x)) #f))
+      or (side-condition any_1 (begin (set! x (cons 2 x)) #f))
+      or any
+      [(g any) any])
+    (test (begin (term (g whatever))
+                 x)
+          '(2 1)))
+  
+  
+  (let ()
     (test-syn-err
      (define-metafunction grammar
        [(f x)])
