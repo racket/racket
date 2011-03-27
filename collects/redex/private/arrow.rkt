@@ -58,7 +58,9 @@
        (dc
         (λ (dc dx dy)
           (let ([old-pen (send dc get-pen)]
-                [old-brush (send dc get-brush)])
+                [old-brush (send dc get-brush)]
+                [old-smoothing (send dc get-smoothing)])
+            (send dc set-smoothing 'smoothed)
             (send dc set-pen (send old-pen get-color) (* h pen-width-factor) 'solid)
             
             ;; main line of arrow
@@ -120,6 +122,7 @@
                   (+ dx w (- head-width))
                   (+ dy line-pos (+ (/ head-height 2))))
             
+            (send dc set-smoothing old-smoothing)
             (send dc set-pen old-pen)
             (send dc set-brush old-brush)))
         w h (- h d) d)
