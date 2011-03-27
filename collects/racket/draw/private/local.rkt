@@ -44,6 +44,7 @@
   get-font-metrics-key
   install-color
   dc-adjust-smoothing
+  get-hairline-width
   can-combine-text?
   can-mask-bitmap?
   reset-clip

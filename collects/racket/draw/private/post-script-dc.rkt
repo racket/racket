@@ -182,6 +182,8 @@
     (define/override (can-mask-bitmap?)
       #f)
 
+    (define/override (get-hairline-width cx) (/ 1.0 (* cx 4)))
+
     (define is-eps? (and as-eps #t))
     (define/public (multiple-pages-ok?) (not is-eps?))
 

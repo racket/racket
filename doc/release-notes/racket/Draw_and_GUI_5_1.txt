@@ -108,6 +108,13 @@ generates PDF output.
 The new `svg-dc%' drawing context is similar to `post-script-dc%',
 but it generates SVG output.
 
+All drawing contexts, including `post-script-dc%' support smoothing
+modes, and the default is 'unsmoothed even for `post-script-dc%' ---
+which means that PostScript drawing is aligned and pen widths are
+truncated to integer sizes by default. Drawing at pen size 0 no longer
+triggers ``hairline'' mode, but instead just uses a 1/4-width pen
+when in 'smoothed mode.
+
 
 Other Drawing-Context Changes
 -----------------------------

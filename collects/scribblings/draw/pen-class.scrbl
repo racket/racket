@@ -49,10 +49,15 @@ To avoid creating multiple pens with the same characteristics, use the
  global @scheme[pen-list%] object @indexed-scheme[the-pen-list], or
  provide a color, width, and style to @xmethod[dc<%> set-pen].
 
-A pen of size @scheme[0] uses the minimum line size for the
- destination drawing context.  In (unscaled) canvases and bitmaps, 
- a zero-width pen behaves the nearly same as a pen of
- size @scheme[1].
+When drawing in @racket['smoothed] or @racket['aligned] mode, a pen's
+ size is truncated after scaling to an integral size. A pen of size
+ @scheme[0] (after truncation, if applicable) uses a non-zero,
+ scale-insensitive line size for the destination drawing context:
+ @racket[1/4] unit (after scaling) for @racket[post-script-dc%] or
+ @racket[pdf-dc%] contexts in @racket['smoothed] mode, or @racket[1]
+ unit (after scaling) for any other context.  For example, in unscaled 
+ canvas and bitmap contexts, a zero-width pen behaves the same as a
+ pen of size @scheme[1].
 
 
 @defconstructor[([color (or/c string? (is-a?/c color%)) "black"]

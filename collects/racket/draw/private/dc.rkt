@@ -122,6 +122,11 @@
     ;; Used to keep smoothing disabled for b&w contexts
     dc-adjust-smoothing
 
+    ;; get-hairline-width
+    ;;
+    ;; Gets the pen width to use in place of 0 in 'smoothed mode
+    get-hairline-width
+
     ;; install-color : cairo_t color<%> alpha boolean? -> void
     ;; 
     ;; Installs a color, which a monochrome context might reduce
@@ -186,6 +191,7 @@
     (define/public (ok?) #t)
 
     (define/public (dc-adjust-smoothing s) s)
+    (define/public (get-hairline-width sx) (/ 1 sx))
 
     (define/public (install-color cr c a bg?)
       (let ([norm (lambda (v) (/ v 255.0))])
@@ -236,7 +242,7 @@
     (super-new)
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
-             install-color dc-adjust-smoothing reset-clip
+             install-color dc-adjust-smoothing get-hairline-width reset-clip
              collapse-bitmap-b&w?
              ok? can-combine-text? can-mask-bitmap? get-clear-operator)
 
@@ -873,11 +879,14 @@
                                  alpha
                                  #f)))
             (cairo_set_line_width cr (let* ([v (send pen get-width)]
-                                            [v (if (aligned? smoothing)
+                                            [align? (aligned? smoothing)]
+                                            [v (if align?
                                                    (/ (floor (* effective-scale-x v)) effective-scale-x)
                                                    v)])
                                        (if (zero? v)
-                                           1
+                                           (if align?
+                                               (/ 1 effective-scale-x)
+                                               (get-hairline-width effective-scale-x))
                                            v)))
             (unless (or (eq? s 'solid)
                         (eq? s 'xor))
