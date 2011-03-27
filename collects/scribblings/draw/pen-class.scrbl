@@ -74,18 +74,25 @@ When drawing in @racket['smoothed] or @racket['aligned] mode, a pen's
                  [stipple (or/c #f (is-a?/c bitmap%)) 
                           #f])]{
 
-Creates a pen with the given
- color, width, style, cap style, join style, and stipple. 
- For the case that the color is specified
- using a name, see @scheme[color-database<%>] for information about
- color names; if the name is not known, the pen's color is black.
+Creates a pen with the given color, width, style, cap style (see
+ @method[pen% get-cap]), join style (see @method[pen% get-join]), and
+ stipple.  For the case that the color is specified using a name, see
+ @scheme[color-database<%>] for information about color names; if the
+ name is not known, the pen's color is black.
 
 }
 
 @defmethod[(get-cap)
            (one-of/c 'round 'projecting 'butt)]{
 
-Returns the pen cap style. The default is @scheme['round].
+Returns the pen cap style, which determines the shape of a line at
+each of its ending points when drawn by @method[dc<%> draw-line] or at the
+non-connecting ends of lines when drawn by @method[dc<%> draw-lines] or
+@method[dc<%> draw-path]. The default is @scheme['round], which draws the
+end of a line as a semi-circle. The @racket['projecting] style draws a
+square in place of the semi-circle (i.e., past the point at which the
+line stops). The @racket['butt] style ends the line with a straight
+edge, instead of projecting past the ending point of the line.
 
 }
 
@@ -99,9 +106,19 @@ Returns the pen's color object.
 @defmethod[(get-join)
            (one-of/c 'round 'bevel 'miter)]{
 
-Returns the pen join style. The default is @scheme['round].
+Returns the pen join style that is used between multiple lines
+connected through @method[dc<%> draw-lines], @method[dc<%>
+draw-rectangle], @method[dc<%> draw-polygon], or @method[dc<%>
+draw-path].  The join style fills the space that would be left at the
+outside corner of two lines if they were draw separately with
+@racket['butt] line endings. The default join style is
+@scheme['round], which fills under an arc that lines up with the
+outside of each of the two lines. The @racket['bevel] style fills in
+the gap without adding extra pixels (i.e., it makes a blunt
+corner). The @racket['miter] style fills the gap by adding pixels that
+would be covered by both lines if they were extended past the corner
+(i.e., it makes a sharp corner).}
 
-}
 
 @defmethod[(get-stipple)
            (or/c (is-a?/c bitmap%) #f)]{
