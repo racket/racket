@@ -19,7 +19,9 @@ rendering support.}
 @deftogether[(
 @defproc[(figure [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
 @defproc[(figure* [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
-@defproc[(figure** [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
+@defproc[(figure** [tag string?] [caption content?] [pre-flow pre-flow?] ...)
+block?]
+@defproc[(figure-here [tag string?] [caption content?] [pre-flow pre-flow?] ...) block?]
 )]{
 
 Creates a figure. The given @scheme[tag] is for use with
@@ -30,6 +32,9 @@ For HTML output, the @scheme[figure*] and @scheme[figure*] functions
 center the figure content, while @scheme[figure**] allows the content
 to be wider than the document body.
 
+For latex output, @scheme[figure-here] generates a figure to be
+included at the position in the text where the call to
+@scheme[figure-here] occurs.
 For two-column latex output, @scheme[figure*] and @scheme[figure**]
 generate a figure that spans columns.}
 
