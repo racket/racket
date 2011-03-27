@@ -180,7 +180,8 @@
   (def/override (write-bytes [bytes? v]
                              [exact-nonnegative-integer? [start 0]]
                              [exact-nonnegative-integer? [end (bytes-length v)]]) 
-    (write-bytes-proc v port start end)))
+    (write-bytes-proc v port start end)
+    (void)))
 
 (defclass editor-stream-out-file-base% editor-stream-out-port-base%
   (super-new))
