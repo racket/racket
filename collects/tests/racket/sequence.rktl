@@ -172,4 +172,79 @@
 (test #t stream? (sequence-filter odd? (in-range 3)))
 (test #f stream? (sequence-filter odd? (vector 1 2 3)))
 
+;; ----------------------------------------
+
+;; Check interaction of sequence operations and side-effecting streams:
+
+(let ([s (open-input-string "012345")])
+  (test #\0 peek-char s)
+  (let ([t (sequence-tail s 3)])
+    (test #\0 peek-char s)
+    (test (char->integer #\3) 'tail (for/first ([c t]) c))))
+
+(let ([s (open-input-string "012345")])
+  (test #\0 peek-char s)
+  (let ([t (sequence-map add1 s)])
+    (test #\0 peek-char s)
+    (test (list (char->integer #\1) 
+                (char->integer #\2) 
+                (char->integer #\3))
+          'map
+          (for/list ([c t]
+                     [n (in-range 3)]) 
+            c))
+    ;; #\3 was read, but loop ended by `in-range'
+    (test #\4 peek-char s)))
+
+(let ([s (open-input-string "012345")])
+  (let ([t (sequence-tail s 6)])
+    (test '() 'tail (for/list ([i t]) i))))
+
+(let ([s (open-input-string "01234567")])
+  (test #\0 peek-char s)
+  (let ([t (sequence-filter even? s)])
+    (test #\0 peek-char s)
+    (test (list (char->integer #\0) 
+                (char->integer #\2) 
+                (char->integer #\4))
+          'map
+          (for/list ([c t]
+                     [n (in-range 3)]) 
+            c))
+    ;; #\6 was read, but loop ended by `in-range'
+    (test #\7 peek-char s)))
+
+(let ([s (open-input-string "0123")])
+  (test #\0 peek-char s)
+  (let ([t (sequence-add-between s #f)])
+    (test #\0 peek-char s)
+    (test (list (char->integer #\0)
+                #f
+                (char->integer #\1)
+                #f
+                (char->integer #\2)
+                #f
+                (char->integer #\3))
+          'map
+          (for/list ([c t]
+                     [n (in-range 30)]) 
+            c))
+    (test eof peek-char s)))
+
+(let ([s (open-input-string "012345")])
+  (test #\0 peek-char s)
+  (let ([t (sequence-add-between s #f)])
+    (test #\0 peek-char s)
+    (test (list (char->integer #\0)
+                #f
+                (char->integer #\1))
+          'map
+          (for/list ([c t]
+                     [n (in-range 3)]) 
+            c))
+    ;; #\2 was read, but loop ended by `in-range'
+    (test #\3 peek-char s)))
+
+;; ----------------------------------------
+
 (report-errs)

@@ -58,18 +58,32 @@
     (raise-type-error 'sequence-tail "nonnegative exact integer" i))
   (cond
    [(zero? i) seq]
-   [else (let loop ([s (sequence->stream seq)] [n i])
-           (cond
-            [(zero? n) (in-stream s)]
-            [(stream-empty? s) 
-             (raise-mismatch-error 
-              'sequence-ref
-              (format "sequence ended before ~e element~a: "
-                      i
-                      (if (= i 1) "" "s"))
-              seq)]
-            [else (loop (stream-rest s)
-                        (sub1 n))]))]))
+   [(stream? seq) (stream-tail seq i)]
+   [else
+    (make-do-sequence
+     (lambda ()
+       (let loop ([next (lambda () (sequence-generate* seq))] [n i])
+         (cond
+          [(zero? n)
+           (let-values ([(vals next) (next)])
+             (values (lambda (v+n) (apply values (car v+n)))
+                     (lambda (v+n) 
+                       (let-values ([(vals next) ((cdr v+n))])
+                         (cons vals next)))
+                     (cons vals next)
+                     car
+                     #f
+                     #f))]
+          [else
+           (let-values ([(vals next) (next)])
+             (if vals
+                 (loop next (sub1 n))
+                 (raise-mismatch-error 
+                  'sequence-ref
+                  (format "sequence ended before ~e element~a: "
+                          i
+                          (if (= i 1) "" "s"))
+                  seq)))]))))]))
 
 (define (sequence-append . l)
   (if (null? l)
@@ -79,21 +93,66 @@
           (apply in-sequences l))))
 
 (define (sequence-map f s)
-  (unless (procedure? f)
-    (raise-type-error 'sequence-map "expects a procedure as the first argument, given ~e" f))
+  (unless (procedure? f) (raise-type-error 'sequence-map "procedure" f))
+  (unless (sequence? s) (raise-type-error 'sequence-map "sequence" s))
   (if (stream? s)
       (stream-map f s)
-      (in-stream (stream-map f (sequence->stream s)))))
+      (make-do-sequence
+       (lambda ()
+         (let-values ([(vals next) (sequence-generate* s)])
+           (values (lambda (v+n) (apply f (car v+n)))
+                   (lambda (v+n) 
+                     (let-values ([(vals next) ((cdr v+n))])
+                       (cons vals next)))
+                   (cons vals next)
+                   car
+                   #f
+                   #f))))))
+           
 
 (define (sequence-filter f s)
   (unless (procedure? f) (raise-type-error 'sequence-filter "procedure" f))
   (unless (sequence? s) (raise-type-error 'sequence-filter "sequence" s))
   (if (stream? s)
       (stream-filter f s)
-      (in-stream (stream-filter f (sequence->stream s)))))
+      (make-do-sequence
+       (lambda ()
+         (let loop ([next (lambda () (sequence-generate* s))])
+           (let-values ([(vals next) (next)])
+             (if (apply f vals)
+                 (values (lambda (v+n) (apply values (car v+n)))
+                         (lambda (v+n) 
+                           (let loop ([next (cdr v+n)])
+                             (let-values ([(vals next) (next)])
+                               (if (or (not vals)
+                                       (apply f vals))
+                                   (cons vals next)
+                                   (loop next)))))
+                         (cons vals next)
+                         car
+                         #f
+                         #f)
+                 (loop next))))))))
 
 (define (sequence-add-between s e)
-  (unless (sequence? s) (raise-type-error 'sequence-ad-between "sequence" s))
+  (unless (sequence? s) (raise-type-error 'sequence-add-between "sequence" s))
   (if (stream? s)
       (stream-add-between s e)
-      (in-stream (stream-add-between (sequence->stream s) e))))
+      (make-do-sequence
+       (lambda ()
+         (let-values ([(vals next) (sequence-generate* s)])
+           (values (lambda (v+n) (let ([vals (car v+n)])
+                                   (if (eq? vals #t)
+                                       e
+                                       (apply values vals))))
+                   (lambda (v+n)
+                     (if (eq? (car v+n) #t)
+                         (cdr v+n)
+                         (let-values ([(vals next) ((cdr v+n))])
+                           (if vals
+                               (cons #t (cons vals next))
+                               (cons #f next)))))
+                   (cons vals next)
+                   car
+                   #f
+                   #f))))))

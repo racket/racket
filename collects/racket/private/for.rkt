@@ -67,6 +67,7 @@
 
              sequence?
              sequence-generate
+             sequence-generate*
              prop:sequence
 
              define-sequence-syntax
@@ -1068,6 +1069,11 @@
                                     next))))))
         (gen-stream init))]))
 
+  (define (no-more)
+    (raise (exn:fail:contract "sequence has no more values"
+                              (current-continuation-marks))))
+                   
+
   (define (sequence-generate g)
     (unless (sequence? g)
       (raise-type-error 'sequence-generate "sequence" g))
@@ -1077,9 +1083,7 @@
         (letrec ([more? #f]
                  [prep-val! #f]
                  [next #f])
-          (letrec ([no-more (lambda ()
-                              (error "sequence has no more values"))]
-                   [init-more?
+          (letrec ([init-more?
                     (lambda () (prep-val!) (more?))]
                    [init-next
                     (lambda () (prep-val!) (next))]
@@ -1125,6 +1129,29 @@
                   [sequence-next (lambda () (next))])
               (values sequence-more?
                       sequence-next)))))))
+
+  (define (sequence-generate* g)
+    (unless (sequence? g)
+      (raise-type-error 'sequence-generate* "sequence" g))
+    (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                  (make-sequence #f g)])
+      (letrec ([next!
+                (lambda (pos)
+                  (if (if pos-cont? (pos-cont? pos) #t)
+                      (call-with-values
+                        (lambda () (pos->val pos))
+                        (lambda vals
+                          (if (if pre-cont? (apply pre-cont? vals) #t)
+                              (values vals
+                                      (lambda ()
+                                        (if (if post-cont? 
+                                                (apply post-cont? pos vals)
+                                                #t)
+                                            (next! (pos-next pos))
+                                            (values #f no-more))))
+                              (values #f no-more))))
+                      (values #f no-more)))])
+        (next! init))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  core `for/fold' syntax
