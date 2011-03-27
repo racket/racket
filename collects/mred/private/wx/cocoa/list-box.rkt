@@ -162,6 +162,10 @@
   (def/public-unimplemented get-label-font)
 
   (define cell-font (and font (font->NSFont font)))
+  (when cell-font
+    (tellv content-cocoa setRowHeight: #:type _CGFloat
+           (+ (tell #:type _CGFloat cell-font defaultLineHeightForFont) 2)))
+
   (define/public (get-cell-font)
     cell-font)
 
