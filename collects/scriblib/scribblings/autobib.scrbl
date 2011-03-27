@@ -9,13 +9,6 @@
 @defmodule[scriblib/autobib]
 
 
-@defproc[(autobib-style-extras) list?]{
-
-Includes the content of the result list in the style of a document part
-that includes all figures. These style extras pull in HTML and Latex
-rendering support.}
-
-
 @defform[(define-cite ~cite-id citet-id generate-bibliography-id)]{
 
 Binds @scheme[~cite-id], @scheme[citet-id], and
