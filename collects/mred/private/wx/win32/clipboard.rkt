@@ -126,7 +126,10 @@
                            (RegisterClipboardFormatW t)))]
            [all-data (for/list ([t (in-list types)]
                                 [t-id (in-list type-ids)])
-                       (let ([d (send c get-data t)])
+                       (let ([d (let ([d (send c get-data t)])
+                                  (if (string? d)
+                                      (string->bytes/utf-8 d)
+                                      d))])
                          (cond
                           [(equal? t-id CF_UNICODETEXT)
                            ;; convert UTF-8 to UTF-16:

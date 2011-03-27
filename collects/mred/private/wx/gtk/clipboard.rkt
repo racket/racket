@@ -227,16 +227,19 @@
 			(list-ref client-data i)
 			(constrained-reply (send client get-client-eventspace)
 					   (lambda () 
-					     (send client get-data 
-						   (list-ref client-orig-types i)))
+                                             (send client get-data 
+                                                   (list-ref client-orig-types i)))
 					   #f))
                     #f)])
       (when bstr
-        (gtk_selection_data_set sel-data
-				(gdk_atom_intern (list-ref client-types i) #t)
-				8
-				bstr
-				(bytes-length bstr)))))
+        (let ([bstr (if (string? bstr)
+                        (string->bytes/utf-8 bstr)
+                        bstr)])
+          (gtk_selection_data_set sel-data
+                                  (gdk_atom_intern (list-ref client-types i) #t)
+                                  8
+                                  bstr
+                                  (bytes-length bstr))))))
 
   (define/public (get-data data-format)
     (let* ([data-format (if (equal? data-format "TEXT")

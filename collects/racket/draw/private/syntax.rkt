@@ -4,7 +4,7 @@
          (for-syntax scheme/base))
 
 (provide defclass defclass*
-         def/public def/public-final def/override def/override-final define/top case-args
+         def/public def/pubment def/public-final def/override def/override-final define/top case-args
          def/public-unimplemented define-unimplemented
          maybe-box? any? bool? nonnegative-real? make-or-false make-box make-list make-alts 
          make-literal symbol-in integer-in real-in make-procedure
@@ -25,6 +25,8 @@
 
 (define-syntax (def/public stx)
   #`(def/thing define/public #,stx))
+(define-syntax (def/pubment stx)
+  #`(def/thing define/pubment #,stx))
 (define-syntax (def/public-final stx)
   #`(def/thing define/public-final #,stx))
 (define-syntax (def/override stx)

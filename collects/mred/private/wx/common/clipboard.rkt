@@ -11,7 +11,21 @@
               get-the-clipboard
               get-the-x-selection))
 
-(defclass clipboard-client% object%
+(define pre-client%
+  (class object%
+    (super-new)
+
+    (def/pubment (get-data [string? format])
+      (let ([d (inner #f get-data format)])
+        (when d
+          (unless (or (string? d) (bytes? d))
+            (raise-mismatch-error 
+             '|get-data method of clipboard-client%|
+             "result is not #f, a string, or byte string: "
+             d)))
+        d))))
+
+(defclass clipboard-client% pre-client%
   (define types null)
   (define es (current-eventspace))
   (define/public (get-client-eventspace) es)
@@ -22,7 +36,7 @@
     types)
   (def/public (add-type [string? str])
     (set! types (cons (string->immutable-string str) types)))
-  (def/public (get-data [string? format])
+  (define/augride (get-data format)
     #f)
   (def/public (on-replaced)
     (void))
