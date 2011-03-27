@@ -668,11 +668,11 @@
 
 (define fbo (make-object editor-stream-out-bytes-base%))
 (expect (send fbo tell) 0)
-(expect (send fbo write-bytes #"abc") (void))
+(expect (send fbo write-bytes #"abc") 3)
 (expect (send fbo tell) 3)
 (expect (send fbo get-bytes) #"abc")
 (send fbo seek 2)
-(expect (send fbo write-bytes #"012345" 1 4) (void))
+(expect (send fbo write-bytes #"012345" 1 4) 3)
 (expect (send fbo tell) 5)
 (expect (send fbo get-bytes) #"ab123")
 (expect (send fbo bad?) #f)
@@ -1386,11 +1386,15 @@
   (expect (send t get-extend-start-position) 5)
   (expect (send t get-extend-end-position) 25)
   
-  (send t set-anchor #t)
-  (send t set-position 0 30 #f #t 'default #t)
-
-  (expect (send t get-start-position) 0)
+  (send t extend-position 30)
+  (expect (send t get-start-position) 5)
   (expect (send t get-end-position) 30)
+  (expect (send t get-extend-start-position) 5)
+  (expect (send t get-extend-end-position) 25)
+
+  (send t extend-position 0)
+  (expect (send t get-start-position) 0)
+  (expect (send t get-end-position) 25)
   (expect (send t get-extend-start-position) 5)
   (expect (send t get-extend-end-position) 25))
 
