@@ -44,6 +44,7 @@
   get-font-metrics-key
   install-color
   dc-adjust-smoothing
+  dc-adjust-cap-shape
   get-hairline-width
   can-combine-text?
   can-mask-bitmap?

@@ -122,6 +122,12 @@
     ;; Used to keep smoothing disabled for b&w contexts
     dc-adjust-smoothing
 
+    ;; dc-adjust-cap-shape
+    ;; 
+    ;; Adjusts cap shape, used to get more consistent drawing
+    ;; in bitmaps with small pens
+    dc-adjust-cap-shape
+
     ;; get-hairline-width
     ;;
     ;; Gets the pen width to use in place of 0 in 'smoothed mode
@@ -192,6 +198,10 @@
 
     (define/public (dc-adjust-smoothing s) s)
     (define/public (get-hairline-width sx) (/ 1 sx))
+    (define/public (dc-adjust-cap-shape shape sx pw)
+      (if ((* pw sx) . <= . 1.0)
+          'round
+          shape))
 
     (define/public (install-color cr c a bg?)
       (let ([norm (lambda (v) (/ v 255.0))])
@@ -242,7 +252,8 @@
     (super-new)
 
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix get-pango
-             install-color dc-adjust-smoothing get-hairline-width reset-clip
+             install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
+             reset-clip
              collapse-bitmap-b&w?
              ok? can-combine-text? can-mask-bitmap? get-clear-operator)
 
@@ -915,9 +926,9 @@
                                [(eq? s 'dot-dash) 4]
                                [else 0])))
             (cairo_set_line_cap cr
-                                (case (if ((send pen get-width) . <= . 1.0)
-                                          'round
-                                          (send pen get-cap))
+                                (case (dc-adjust-cap-shape (send pen get-cap)
+                                                           effective-scale-x
+                                                           (send pen get-width))
                                   [(butt) CAIRO_LINE_CAP_BUTT]
                                   [(round) CAIRO_LINE_CAP_ROUND]
                                   [(projecting) CAIRO_LINE_CAP_SQUARE]))
