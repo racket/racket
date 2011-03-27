@@ -39,7 +39,8 @@ If @scheme[interactive] is @scheme[#f], then the settings returned by
 
 If @scheme[use-paper-bbox] is @scheme[#f], then the PostScript
  bounding box for the output is determined by @racket[width] and
- @racket[height]. If @scheme[use-paper-bbox] is not @scheme[#f], then
+ @racket[height] (which are rounded upward using @racket[ceiling]). 
+ If @scheme[use-paper-bbox] is not @scheme[#f], then
  the bounding box is determined by the current paper size (as
  specified by @scheme[current-ps-setup]). When @racket[width] or
  @racket[height] is @racket[#f], then the corresponding dimension is
