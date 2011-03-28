@@ -56,7 +56,9 @@
                    [(windows) "Times New Roman"]
                    [(macosx) "Times"]
                    [else "Serif"])]
-        [(decorative swiss) "Helvetica"]
+        [(decorative swiss) (case (system-type)
+                              [(windows) "Arial"]
+                              [else "Helvetica"])]
         [(script) (case (system-type)
                     [(macosx) "Apple Chancery"]
                     [else "Chancery"])]
