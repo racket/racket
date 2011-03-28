@@ -4,7 +4,7 @@
            mzlib/string
            mzlib/kw
            mzlib/class
-           mzlib/contract
+           racket/contract
            mzlib/list
            scheme/gui/dynamic
            syntax/modread
@@ -707,8 +707,8 @@
         (values null null)))
 
   (provide/contract [is-wxme-stream? (input-port? . -> . any)]
-                    [wxme-port->text-port ((input-port?) (any/c) . opt-> . input-port?)]
-                    [wxme-port->port ((input-port?) (any/c (any/c . -> . any)) . opt-> . input-port?)]
+                    [wxme-port->text-port (->* (input-port?) (any/c) input-port?)]
+                    [wxme-port->port (->* (input-port?) (any/c (any/c . -> . any)) input-port?)]
                     [register-lib-mapping! (string? string? . -> . void?)]
                     [string->lib-path (string? any/c . -> . any)]
                     [extract-used-classes (input-port? . -> . any)])

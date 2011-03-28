@@ -5,7 +5,6 @@
            "text-snipclass.rkt"
            mzlib/unit
            mzlib/class
-	   mzlib/contract
            string-constants
            mrlib/include-bitmap)
   
@@ -35,4 +34,4 @@
       
       (drscheme:get/extend:extend-unit-frame text-box-mixin)
       
-      (drscheme:language:register-capability 'drscheme:special:insert-text-box (flat-contract boolean?) #t))))
+      (drscheme:language:register-capability 'drscheme:special:insert-text-box boolean? #t))))

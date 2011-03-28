@@ -1,8 +1,8 @@
 
 (module boundmap mzscheme
-  (require mzlib/contract
-	   "private/boundmap.rkt")
-
+  (require racket/contract
+           "private/boundmap.rkt")
+  
   (define-syntax provide/contract*
     (syntax-rules ()
       [(_ [(name0 name ...) contract])
@@ -26,11 +26,10 @@
 	(provide/contract*
 	 [make-identifier-mapping (-> identifier-mapping?)]
 	 [identifier-mapping?/out (any/c . -> . boolean?)]
-	 [identifier-mapping-get (opt->*
-				  (identifier-mapping?
-				   identifier?)
-				  ((-> any))
-				  any)]
+         [identifier-mapping-get (->* (identifier-mapping?
+                                       identifier?)
+                                      ((-> any))
+                                      any)]
 	 [identifier-mapping-put! (identifier-mapping?
 				   identifier?
 				   any/c

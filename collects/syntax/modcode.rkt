@@ -1,24 +1,29 @@
 (module modcode scheme/base
   (require mzlib/port
-           mzlib/contract
+           racket/contract
            "modread.ss")
 
   (provide moddep-current-open-input-file
            exn:get-module-code
            exn:get-module-code?
            exn:get-module-code-path
-           make-exn:get-module-code
-           get-module-code)
-  #;
-  ;; Contracts don't yet play well with keyword arguments:
+           make-exn:get-module-code)
+
   (provide/contract
-   [get-module-code ([path-string?]
-                     [(and/c path-string? relative-path?)
-                      (any/c . -> . any)
-                      (or/c false/c (path? boolean? . -> . any))
-		      any/c]
-                     . opt-> .
-                     any)])
+   [get-module-code (->* ((or/c path? module-path?))
+                         (#:sub-path 
+                          (and/c path-string? relative-path?)
+                          (and/c path-string? relative-path?)
+                          #:compile (-> any/c any)
+                          (-> any/c any)
+                          #:extension-handler (or/c false/c (path? boolean? . -> . any))
+                          (or/c false/c (path? boolean? . -> . any))
+                          #:choose 
+                          (path? path? path? . -> . (or/c (symbols 'src 'zo 'so) false/c))
+                          #:notify  (any/c . -> . any)
+                          #:source-reader (any/c input-port? . -> . syntax?)
+                          #:rkt-try-ss? boolean?)
+                         any)])
 
   (define moddep-current-open-input-file
     (make-parameter open-input-file))
