@@ -2,6 +2,7 @@
 @(require "mz.ss"
           (for-label framework/preferences
                      racket/runtime-path
+                     launcher/launcher
                      setup/dirs))
 
 @(define file-eval (make-base-eval))
