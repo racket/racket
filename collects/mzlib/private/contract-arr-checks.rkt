@@ -1,7 +1,8 @@
 #lang racket/base
 
 (provide (all-defined-out))
-(require racket/contract/private/guts)
+(require racket/contract/private/guts
+         racket/contract/private/blame)
 
 (define empty-case-lambda/c
   (flat-named-contract '(case->)

@@ -4,7 +4,9 @@
                      racket/list
                      racket/struct-info)
          racket/list
-         "guts.rkt")
+         "guts.rkt"
+         "blame.rkt"
+         "prop.rkt")
 
 (provide struct/c)
 

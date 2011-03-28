@@ -3,6 +3,8 @@
 (require "guts.rkt"
          "arrow.rkt"
          "opt.rkt"
+         "blame.rkt"
+         "prop.rkt"
          racket/stxparam
          
          (for-syntax racket/base

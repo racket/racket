@@ -8,9 +8,7 @@
 (require (for-syntax racket/base
                      "helpers.rkt"))
 
-(provide (except-out (all-from-out "blame.rkt") make-blame)
-         (all-from-out "prop.rkt")
-         
+(provide 
          coerce-contract
          coerce-contracts
          coerce-flat-contract

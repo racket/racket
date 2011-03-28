@@ -19,6 +19,7 @@ improve method arity mismatch contract violation error messages?
          unstable/location
          "guts.rkt"
          "blame.rkt"
+         "prop.rkt"
          "arrow.rkt")
 
 (define-syntax-parameter current-contract-region

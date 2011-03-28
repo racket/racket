@@ -1,6 +1,8 @@
 #lang racket/base
 
 (require racket/contract/private/guts
+         racket/contract/private/blame
+         racket/contract/private/prop
          racket/contract/private/opt
          "contract-arr-checks.rkt")
 (require (for-syntax racket/base)

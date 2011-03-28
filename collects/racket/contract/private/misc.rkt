@@ -5,6 +5,8 @@
                      "opt-guts.rkt")
          racket/promise
          "opt.rkt"
+         "prop.rkt"
+         "blame.rkt"
          "guts.rkt")
 
 (provide flat-rec-contract

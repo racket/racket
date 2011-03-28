@@ -4,7 +4,9 @@
 
 (require (for-syntax scheme/base))
 (require (for-template scheme/base)
-         (for-template racket/contract/private/guts)
+         (for-template racket/contract/private/guts
+                       racket/contract/private/prop
+                       racket/contract/private/blame)
          (for-template "contract-arr-checks.rkt"))
 
 (provide make-/proc ->/h ->*/h ->d/h ->d*/h ->r/h 

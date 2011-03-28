@@ -20,6 +20,8 @@ v4 todo:
 
 (require "guts.rkt"
          "opt.rkt"
+         "blame.rkt"
+         "prop.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
          (for-syntax "opt-guts.rkt")

@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "arrow.rkt"
          "guts.rkt"
+         "prop.rkt"
          racket/private/class-internal
          scheme/stxparam)
 

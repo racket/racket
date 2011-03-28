@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         "guts.ss")
+         "guts.rkt"
+         "blame.rkt"
+         "prop.rkt")
 
 (provide (rename-out [wrap-hash/c hash/c]))
 

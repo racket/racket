@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require "private/guts.rkt")
+(require "private/guts.rkt"
+         "private/prop.rkt"
+         "private/blame.rkt")
 
 (provide new-∃/c
          new-∀/c

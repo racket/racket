@@ -47,6 +47,8 @@
          racket/contract/private/misc
          racket/contract/private/provide
          racket/contract/private/guts
+         racket/contract/private/prop
+         racket/contract/private/blame
          racket/contract/private/ds
          racket/contract/private/opt
          racket/contract/private/basic-opters)
@@ -67,7 +69,9 @@
  (rename-out [string-len/c string/len])
  (except-out (all-from-out racket/contract/private/guts)
              check-flat-contract
-             check-flat-named-contract))
+             check-flat-named-contract)
+ (all-from-out racket/contract/private/prop
+               racket/contract/private/blame))
 
 
 ;; copied here because not provided by racket/contract anymore

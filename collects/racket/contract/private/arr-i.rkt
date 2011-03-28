@@ -4,6 +4,7 @@
          "prop.rkt"
          "guts.rkt"
          "opt.rkt"
+         "blame.rkt"
          unstable/location
          (for-syntax racket/base
                      racket/stxparam-exptime

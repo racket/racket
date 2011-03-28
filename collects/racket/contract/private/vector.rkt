@@ -1,7 +1,9 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
-         "guts.ss")
+         "guts.ss"
+         "prop.rkt"
+         "blame.rkt")
 
 (provide (rename-out [wrap-vectorof vectorof]
                      [wrap-vector/c vector/c])

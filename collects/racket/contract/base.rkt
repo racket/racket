@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; A stripped down version of scheme/contract for use in
+;; A stripped down version of racket/contract for use in
 ;; the PLT code base where appropriate.
 
 (require "private/arrow.rkt"
@@ -15,7 +15,9 @@
          "private/guts.rkt"
          "private/legacy.rkt"
          "private/ds.rkt"
-         "private/opt.rkt")
+         "private/opt.rkt"
+         "private/blame.rkt"
+         "private/prop.rkt")
 
 (provide
  opt/c define-opt/c ;(all-from-out "private/opt.rkt")
@@ -41,4 +43,7 @@
  (all-from-out "private/legacy.rkt")
  (except-out (all-from-out "private/guts.rkt")
              check-flat-contract
-             check-flat-named-contract))
+             check-flat-named-contract)
+ 
+ (except-out (all-from-out "private/blame.rkt") make-blame)
+ (all-from-out "private/prop.rkt"))

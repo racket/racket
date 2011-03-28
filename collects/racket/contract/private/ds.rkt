@@ -18,6 +18,8 @@ it around flattened out.
 |#
 
 (require "guts.rkt"
+         "prop.rkt"
+         "blame.rkt"
          "opt.rkt")
 (require (for-syntax scheme/base)
          (for-syntax "ds-helpers.rkt")

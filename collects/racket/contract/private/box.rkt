@@ -1,6 +1,8 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
+         "prop.rkt"
+         "blame.rkt"
          "guts.rkt")
 
 (provide box-immutable/c 
