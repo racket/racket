@@ -419,7 +419,7 @@ is bound for each @scheme[other-vers]. The @scheme[vers] and each
 Each @scheme[make-proc-expr] should produce a procedure, and the
 procedure should accept as many argument as fields in the
 corresponding version of the structure type, and it produce an
-instance of @scheme[id]. Each @scheme[graph-make-proc-expr] should
+instance of @scheme[id]. Each @scheme[cycle-make-proc-expr] should
 produce a procedure of no arguments; this procedure should return two
 values: an instance @scheme[x] of @scheme[id] (typically with
 @scheme[#f] for all fields) and a procedure that accepts another
