@@ -1,7 +1,7 @@
 #lang racket/base
 
-;; A stripped down version of racket/contract for use in
-;; the PLT code base where appropriate.
+;; A version of racket/contract without contract regions
+;; for use in the macro stepper
 
 (require "private/arrow.rkt"
          "private/arr-i.rkt"
