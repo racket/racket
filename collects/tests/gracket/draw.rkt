@@ -1053,70 +1053,71 @@
 		      ;(send dc set-clipping-region #f)
 		      (send dc clear)
 
-		      (if clock-clip?
-			  (let ([r (make-object  region% dc)])
-			    (send r set-arc 0. 60. 180. 180. clock-start clock-end)
-			       (send dc set-clipping-region r))
-			  (let ([mk-poly (lambda (mode)
-					   (let ([r (make-object region% dc)])
-					     (send r set-polygon octagon 0 0 mode) r))]
-				[mk-circle (lambda ()
-					     (let ([r (make-object region% dc)])
-					       (send r set-ellipse 0. 60. 180. 180.) r))]
-				[mk-rect (lambda ()
-					   (let ([r (make-object region% dc)])
-					     (send r set-rectangle 100 -25 10 400) r))])
-			    (case clip
-			      [(none) (void)]
-			      [(rect) (send dc set-clipping-rect 100 -25 10 400)]
-			      [(rect2) (send dc set-clipping-rect 50 -25 10 400)]
-			      [(poly) (send dc set-clipping-region (mk-poly 'odd-even))]
-			      [(circle) (send dc set-clipping-region (mk-circle))]
-			      [(wedge) (let ([r (make-object region% dc)])
-					 (send r set-arc 0. 60. 180. 180. (* 1/4 pi) (* 3/4 pi))
-					 (send dc set-clipping-region r))]
-			      [(lam) (let ([r (make-object region% dc)])
-				       (send r set-path lambda-path)
-				       (send dc set-clipping-region r))]
-			      [(rect+poly) (let ([r (mk-poly 'winding)])
-					     (send r union (mk-rect))
-                                             (send dc set-clipping-region r))]
-			      [(rect+circle) (let ([r (mk-circle)])
-					       (send r union (mk-rect))
-					       (send dc set-clipping-region r))]
-			      [(poly-rect) (let ([r (mk-poly 'odd-even)])
-					     (send r subtract (mk-rect))
-					     (send dc set-clipping-region r))]
-			      [(poly&rect) (let ([r (mk-poly 'odd-even)])
-					     (send r intersect (mk-rect))
-						(send dc set-clipping-region r))]
-			      [(poly^rect) (let ([r (mk-poly 'odd-even)])
-					     (send r xor (mk-rect))
-					     (send dc set-clipping-region r))]
-			      [(roundrect) (let ([r (make-object region% dc)])
-					     (send r set-rounded-rectangle 80 200 125 40 -0.25)
-					     (send dc set-clipping-region r))]
-			      [(empty) (let ([r (make-object region% dc)])
-					 (send dc set-clipping-region r))]
-			      [(polka) 
-			       (let ([c (send dc get-background)])
-				 (send dc set-background (send the-color-database find-color "PURPLE"))
-				 (send dc clear)
-				 (send dc set-background c))
-			       (let ([r (make-object region% dc)]
-				     [w 30]
-				     [s 10])
-				 (let xloop ([x 0])
-				   (if (> x 300)
-				       (send dc set-clipping-region r)
-				       (let yloop ([y 0])
-					 (if (> y 500)
-					     (xloop (+ x w s))
-					     (let ([r2 (make-object region% dc)])
-					       (send r2 set-ellipse x y w w)
-					       (send r union r2)
-					       (yloop (+ y w s))))))))
-			       (send dc clear)])))
+                      (let ([clip-dc dc])
+                        (if clock-clip?
+                            (let ([r (make-object  region% clip-dc)])
+                              (send r set-arc 0. 60. 180. 180. clock-start clock-end)
+                              (send dc set-clipping-region r))
+                            (let ([mk-poly (lambda (mode)
+                                             (let ([r (make-object region% clip-dc)])
+                                               (send r set-polygon octagon 0 0 mode) r))]
+                                  [mk-circle (lambda ()
+                                               (let ([r (make-object region% clip-dc)])
+                                                 (send r set-ellipse 0. 60. 180. 180.) r))]
+                                  [mk-rect (lambda ()
+                                             (let ([r (make-object region% clip-dc)])
+                                               (send r set-rectangle 100 -25 10 400) r))])
+                              (case clip
+                                [(none) (void)]
+                                [(rect) (send dc set-clipping-rect 100 -25 10 400)]
+                                [(rect2) (send dc set-clipping-rect 50 -25 10 400)]
+                                [(poly) (send dc set-clipping-region (mk-poly 'odd-even))]
+                                [(circle) (send dc set-clipping-region (mk-circle))]
+                                [(wedge) (let ([r (make-object region% clip-dc)])
+                                           (send r set-arc 0. 60. 180. 180. (* 1/4 pi) (* 3/4 pi))
+                                           (send dc set-clipping-region r))]
+                                [(lam) (let ([r (make-object region% clip-dc)])
+                                         (send r set-path lambda-path)
+                                         (send dc set-clipping-region r))]
+                                [(rect+poly) (let ([r (mk-poly 'winding)])
+                                               (send r union (mk-rect))
+                                               (send dc set-clipping-region r))]
+                                [(rect+circle) (let ([r (mk-circle)])
+                                                 (send r union (mk-rect))
+                                                 (send dc set-clipping-region r))]
+                                [(poly-rect) (let ([r (mk-poly 'odd-even)])
+                                               (send r subtract (mk-rect))
+                                               (send dc set-clipping-region r))]
+                                [(poly&rect) (let ([r (mk-poly 'odd-even)])
+                                               (send r intersect (mk-rect))
+                                               (send dc set-clipping-region r))]
+                                [(poly^rect) (let ([r (mk-poly 'odd-even)])
+                                               (send r xor (mk-rect))
+                                               (send dc set-clipping-region r))]
+                                [(roundrect) (let ([r (make-object region% clip-dc)])
+                                               (send r set-rounded-rectangle 80 200 125 40 -0.25)
+                                               (send dc set-clipping-region r))]
+                                [(empty) (let ([r (make-object region% clip-dc)])
+                                           (send dc set-clipping-region r))]
+                                [(polka) 
+                                 (let ([c (send dc get-background)])
+                                   (send dc set-background (send the-color-database find-color "PURPLE"))
+                                   (send dc clear)
+                                   (send dc set-background c))
+                                 (let ([r (make-object region% clip-dc)]
+                                       [w 30]
+                                       [s 10])
+                                   (let xloop ([x 0])
+                                     (if (> x 300)
+                                         (send dc set-clipping-region r)
+                                         (let yloop ([y 0])
+                                           (if (> y 500)
+                                               (xloop (+ x w s))
+                                               (let ([r2 (make-object region% clip-dc)])
+                                                 (send r2 set-ellipse x y w w)
+                                                 (send r union r2)
+                                                 (yloop (+ y w s))))))))
+                                 (send dc clear)]))))
 
 		      (when clip-pre-scale?
 			(send dc set-scale xscale yscale)
@@ -1131,6 +1132,13 @@
 				(send r2 xor r)
 				(send dc set-clipping-region r2))
 			      (send dc set-clipping-region #f))))
+
+                      (unless clock-clip?
+                        (let ([r (send dc get-clipping-region)])
+                          (when r
+                            (when (send r get-dc)
+                              (unless (eq? (send r is-empty?) (eq? clip 'empty))
+                                (show-error 'draw-text "region `is-empty?' mismatch"))))))
 		      
 		      ;; check default pen/brush:
 		      (send dc draw-rectangle 0 0 5 5)

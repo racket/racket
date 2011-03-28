@@ -90,7 +90,9 @@ An intersect corresponds to clipping with this region's path, and then
            boolean?]{
 
 Returns @scheme[#t] if the region is approximately empty, @scheme[#f]
- otherwise.
+ otherwise, but only if the region is associated with a drawing context.
+ If the region is unassociated to any drawing context, the 
+ @racket[exn:fail:contract] exception is raised.
 
 }
 

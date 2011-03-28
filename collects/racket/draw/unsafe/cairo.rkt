@@ -127,7 +127,15 @@
                                        (x2 : (_ptr o _double)) 
                                        (y2 : (_ptr o _double)) 
                                        -> _void
-                                       -> (values x1 y1 x2 y2)))
+                                       -> (values x1 y1 x2 y2))
+  ;; cairo_clip_extents is in version 1.4 and later
+  #:fail (lambda ()
+           (let ([warned? #f])
+             (lambda (cr) 
+               (unless warned?
+                 (log-warning "cairo_clip_extents is unavailable; returning the empty rectangle")
+                 (set! warned? #t))
+               (values 0 0 0 0)))))
 
 ;; Transforms
 (define-cairo cairo_translate (_fun _cairo_t _double* _double* -> _void))
