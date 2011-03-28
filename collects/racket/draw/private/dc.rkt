@@ -154,6 +154,8 @@
     ;; Return #t if text at given font size (already scaled)
     ;;  looks good when drawn all at once (which allows kerning,
     ;;  but may be spaced weirdly)
+    ;; This method is not currently used, because consistent
+    ;;  kerning is needed for libraries like Slideshow
     can-combine-text?
 
     ;; can-mask-bitmap? : -> bool
@@ -255,7 +257,7 @@
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
              reset-clip
              collapse-bitmap-b&w?
-             ok? can-combine-text? can-mask-bitmap? get-clear-operator)
+             ok? can-mask-bitmap? get-clear-operator)
 
     ;; Using the global lock here is troublesome, becase
     ;; operations involving paths, regions, and text can
@@ -1234,13 +1236,11 @@
               [y (if rotate? 0.0 (exact->inexact y))])
           ;; We have two ways to draw text:
           ;;  - If `combine?' (to enable kerning etc.), then we create a Pango layout
-          ;;    and draw it. This is the slow but pretty way (bt not used for editors,
+          ;;    and draw it. This is the slow but pretty way (but not used for editors,
           ;;    where the text needs to draw the same if it's drawn all together or
           ;;    in pieces).
-          ;;  - If not `combine' or if combining isn't supported (e.g., because the scale
-          ;;    is too small, so that it would look bad), then we draw character by character.
-          (if (and combine?
-                   (can-combine-text? (* effective-scale-y (send font get-point-size))))
+          ;;  - If not `combine?', then we draw character by character.
+          (if combine?
               ;; This is combine mode. It has to be a little complicated, after all,
               ;; because we may need to implement font substitution ourselves, which
               ;; breaks the string into multiple layouts.
