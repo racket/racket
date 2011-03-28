@@ -51,6 +51,7 @@ Both parts of the toolbox rely extensively on the
 @include-section["prefs.scrbl"]
 @include-section["dynamic.scrbl"]
 @include-section["startup.scrbl"]
+@include-section["libs.scrbl"]
 
 @;------------------------------------------------------------------------
 
