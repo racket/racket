@@ -424,8 +424,8 @@ in the sequence.
 @defproc[(sequence-generate* [seq sequence?])
          (values (or/c list? #f) 
                  (-> (values (or/c list? #f) procedure?)))]{
-  Like @racket[sequence-generate*], but avoids state (aside from any
-  inherent in the sequence) by returning a list of values the sequence's
+  Like @racket[sequence-generate], but avoids state (aside from any
+  inherent in the sequence) by returning a list of values for the sequence's
   first element---or @racket[#f] if the sequence is empty---and a thunk 
   to continue with the sequence; the result of the thunk is the same
   as the result of @racket[sequence-generate*], but for the second
