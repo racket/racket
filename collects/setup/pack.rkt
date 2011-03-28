@@ -280,6 +280,11 @@
                              r))
                           (list r v))
                         (list r null)))))
+                requires
+                ;; Packer used to automatically include "mzscheme"
+                ;; dependency, but we've conlcuded that dependencies
+                ;; aren't typically useful.
+                #;
                 (cons '("mzscheme") requires))
            #:conflicts conflicts
            #:at-plt-home? at-plt-home?
