@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "guts.rkt"
+         "blame.rkt"
          "opt.rkt"
          "base.rkt")
 (require (for-syntax racket/base
