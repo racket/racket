@@ -4,7 +4,7 @@
           (for-label mzlib/contract))
 
 @(define-syntax-rule (twocolumns id ...)
-   (*twocolumns (list (scheme id) ...)))
+   (*twocolumns (list (racket id) ...)))
 @(define (*twocolumns uneven-l)
    (let* ([l (if (zero? (modulo (length uneven-l) 2)) uneven-l (append uneven-l (list #f)))]
           [len (length l)]
@@ -27,14 +27,14 @@
 
 This library is designed as a backwards compatible library
 for old uses of contracts. It should not be used for new
-libraries; use @schememodname[scheme/contract] instead.
+libraries; use @racketmodname[racket/contract] instead.
 
 The main differences: the function contract syntax is more
 regular and function contracts now support keywords, and
-@tt{union} is now @scheme[or/c].
+@tt{union} is now @racket[or/c].
 
-The @schememodname[mzlib/contract] library re-exports many bindings
-from @schememodname[scheme/contract]:
+The @racketmodname[mzlib/contract] library re-exports many bindings
+from @racketmodname[racket/contract]:
 
 @twocolumns[
  </c
@@ -90,18 +90,18 @@ It also provides the old version of the following forms:
 
 @defform[(define/contract id contract-expr init-value-expr)]{
 
-Attaches the contract @scheme[contract-expr] to
-@scheme[init-value-expr] and binds that to @scheme[id].
+Attaches the contract @racket[contract-expr] to
+@racket[init-value-expr] and binds that to @racket[id].
 
-The @scheme[define/contract] form treats individual definitions as
+The @racket[define/contract] form treats individual definitions as
 units of blame. The definition itself is responsible for positive
 (co-variant) positions of the contract and each reference to
-@scheme[id] (including those in the initial value expression) must
+@racket[id] (including those in the initial value expression) must
 meet the negative positions of the contract.
 
-Error messages with @scheme[define/contract] are not as clear as those
-provided by @scheme[provide/contract], because
-@scheme[define/contract] cannot detect the name of the definition
+Error messages with @racket[define/contract] are not as clear as those
+provided by @racket[provide/contract], because
+@racket[define/contract] cannot detect the name of the definition
 where the reference to the defined variable occurs. Instead, it uses
 the source location of the reference to the variable as the name of
 that definition.}
