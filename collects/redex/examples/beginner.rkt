@@ -292,17 +292,17 @@ reflects the (broken) spec).
     ,(format "reference to undefined identifier: ~a" (term a)))
    
    ;; reference to procedure-bound var in hole:
-   (--> (d/e-v ...
+   (--> (d/e-v_1 ...
          (define (x_f x_var ...) (name body e))
-         d/e-v ...
+         d/e-v_2 ...
          (in-hole d/e-ctxt x_f)
          d/e ...)
         ,(format "~a is a procedure, so it must be applied to arguments" (term x_f)))
    
    ;; reference to non-procedure-bound-var in application
-   (--> (d/e-v ...
+   (--> (d/e-v_1 ...
          (define x_a v_val)
-         d/e-v ...
+         d/e-v_2 ...
          (in-hole d/e-ctxt (x_a v ...))
          d/e ...)
         ,(format "procedure application: expected procedure, given: ~a" (term v_val)))
@@ -623,6 +623,20 @@ reflects the (broken) spec).
       (f 1))
     '((define (f x) x)
       1))
+   
+   (test
+    '((define (f x) x)
+      (define (g x) x)
+      (define (h x) x)
+      (g g))
+    "g is a procedure, so it must be applied to arguments")
+   
+   (test
+    '((define (f x) x)
+      (define x 1)
+      (define (h x) x)
+      (x 2))
+    "procedure application: expected procedure, given: 1")
    
    (test
     '((define (double l) (+ l l))
