@@ -1243,6 +1243,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/matcher-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/pict-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/rg-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/run-tests.rkt" drdr:command-line (gracket-text * "--examples" "--no-bitmaps") drdr:timeout 360
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)

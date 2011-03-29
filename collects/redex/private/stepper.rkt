@@ -25,7 +25,10 @@ todo:
          "size-snip.ss"
          "reduction-semantics.ss")
   
-  (provide stepper stepper/seed)
+  (provide stepper stepper/seed
+           
+           ; for testing
+           show-diff node%)
   
   (define dot-spacing 20)
   (define dot-size 10)
@@ -356,15 +359,8 @@ todo:
          (for-each (λ (node) (send (send node get-big-snip) clear-diffs))
                    col))
        path)
-      (let-values ([(to-color1 to-color2) 
-                    (find-differences 
-                     (send parent get-term)
-                     (send child get-term)
-                     (send (send parent get-big-snip) get-char-width)
-                     (send (send child get-big-snip) get-char-width))])
-        (send (send parent get-big-snip) highlight-diffs to-color1)
-        (send (send child get-big-snip) highlight-diffs to-color2)
-        (void))
+      
+      (show-diff parent child)
       
       (when red-name-message
         (let ([label (map (λ (x) (if x (format "[~a]" x) "≪unknown≫"))
@@ -442,6 +438,17 @@ todo:
     (send f show #t)
     (pb-change-columns)
     (update-buttons))
+  
+  (define (show-diff parent child)
+    (let-values ([(to-color1 to-color2) 
+                  (find-differences 
+                   (send parent get-term)
+                   (send child get-term)
+                   (send (send parent get-big-snip) get-char-width)
+                   (send (send child get-big-snip) get-char-width))])
+      (send (send parent get-big-snip) highlight-diffs to-color1)
+      (send (send child get-big-snip) highlight-diffs to-color2)
+      (void)))
   
   (define (find-i term terms fail)
     (let loop ([i 0]

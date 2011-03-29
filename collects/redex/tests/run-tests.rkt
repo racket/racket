@@ -24,7 +24,8 @@
      "keyword-macros-test.ss"
      "core-layout-test.ss" 
      "pict-test.ss"
-     "hole-test.ss")
+     "hole-test.ss"
+     "stepper-test.ss")
    (if test-bitmaps? '("bitmap-test.ss") '())
    (if test-examples? 
        '("../examples/pi-calculus.ss"

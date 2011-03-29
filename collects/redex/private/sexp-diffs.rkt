@@ -135,11 +135,13 @@
                       [pretty-print-size-hook
                        (λ (val dsp? port)
                          (if (wrap? val)
-                             (string-length (format "~s" (wrap-content val)))
-                             #f))]
+                             (or (default-pretty-printer-size-hook (wrap-content val) dsp? port)
+                                 (string-length (format "~s" (wrap-content val))))
+                             (default-pretty-printer-size-hook val dsp? port)))]
                       [pretty-print-print-hook
                        (λ (val dsp? port)
-                         (write (wrap-content val) port))]
+                         (let ([unwrapped (if (wrap? val) (wrap-content val) val)])
+                           (default-pretty-printer-print-hook unwrapped dsp? port)))]
                       [pretty-print-pre-print-hook
                        (λ (obj port)
                          (when (hash-ref diff-ht obj #f)

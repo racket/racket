@@ -9,6 +9,8 @@
          size-editor-snip%
          size-text%
          default-pretty-printer
+         default-pretty-printer-size-hook
+         default-pretty-printer-print-hook
          pretty-print-parameters
          initial-char-width
          resizing-pasteboard-mixin
@@ -26,22 +28,25 @@
   
 (define (default-pretty-printer v port w spec)
   (parameterize ([pretty-print-columns w]
-                 [pretty-print-size-hook
-                  (λ (val display? op)
-                    (cond
-                      [(hole? val) 4]
-                      [(eq? val 'hole) 6]
-                      [else #f]))]
-                 [pretty-print-print-hook
-                  (λ (val display? op)
-                    (cond
-                      [(hole? val)
-                       (display "hole" op)]
-                      [(eq? val 'hole) 
-                       (display ",'hole" op)]))])
+                 [pretty-print-size-hook default-pretty-printer-size-hook]
+                 [pretty-print-print-hook default-pretty-printer-print-hook])
     ((pretty-print-parameters)
      (λ ()
        (pretty-print v port)))))
+
+(define (default-pretty-printer-size-hook val display? op)
+  (cond
+    [(hole? val) 4]
+    [(eq? val 'hole) 6]
+    [else #f]))
+
+(define (default-pretty-printer-print-hook val display? op)
+  (cond
+    [(hole? val)
+     (display "hole" op)]
+    [(eq? val 'hole) 
+     (display ",'hole" op)]
+    [else (display val op)]))
 
 (define reflowing-snip<%>
   (interface ()
