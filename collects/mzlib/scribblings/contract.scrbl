@@ -1,7 +1,9 @@
 #lang scribble/doc
 @(require "common.rkt"
           scribble/struct
-          (for-label mzlib/contract))
+          "contract-label.rkt"
+          (for-label mzlib/contract)
+          (for-label (prefix-in r: racket/contract)))
 
 @(define-syntax-rule (twocolumns id ...)
    (*twocolumns (list (racket id) ...)))
@@ -129,3 +131,135 @@ corresponding flat contract.}
 Produces a flat contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 flat contracts produced by the @racket[flat-contract-expr]s.}
+
+@defform*[((-> contract-dom-expr ... any)
+           (-> contract-dom-expr ... contract-rng-expr))]{
+This is a restricted form of @racketmodname[racket/contract]'s
+                             @r:-> contract that does not
+                             handle keyword arguments or multiple
+                             value results.
+                                                          
+}
+
+@defform*/subs[((->* (contract-dom-expr ...) ->*rng)
+                (->* (contract-dom-expr ...) contract-rest-expr ->*rng)) 
+               ([->*rng (contract-rng-expr ...)
+                        any])]{
+  The @racket[->*] form matches up to 
+  @racketmodname[racket/contract]'s @r:-> and @r:->*, according
+  to the following rules; each equation on the the
+  left refers to a @racketmodname[mzlib/contract] combinator;
+  on the right are the @racketmodname[racket/contract] equivalents.
+  @racketblock[(->* (contract-dom-expr ...) any) =
+               (#,r:-> contract-dom-expr ... any)]
+  @racketblock[(->* (contract-dom-expr ...) (contract-rng-expr ...)) =
+               (#,r:-> contract-dom-expr ... (values contract-rng-expr))]
+  @racketblock[(->* (contract-expr ...) contract-rest-expr any) =
+               (#,r:->* (contract-expr ...) #:rest contract-rest-expr any)]
+  @racketblock[(->* (contract-expr ...) contract-rest-expr (contract-rng-expr ...)) =
+               (#,r:->* (contract-expr ...)
+                        #:rest contract-rest-expr 
+                        (values contract-rng-expr ...))]
+                                
+}
+                              
+@defform*[((opt-> (contract-req-expr ...) (contact-opt-expr ...) any)
+           (opt-> (contract-req-expr ...) (contact-opt-expr ...) contract-rng-expr))]{
+                                                                                  
+
+  The @racket[opt->] form is a simplified verison of @racketmodname[racket/contract]'s
+      @|r:->*| and appearances of @racket[opt->] can be simply replaced with @|r:->*|.
+                                                                                  
+}
+
+@defform*[((opt->* (contract-req-expr ...) (contact-opt-expr ...) any)
+           (opt->* (contract-req-expr ...) (contact-opt-expr ...) (contract-rng-expr ...)))]{
+                                                                                  
+
+  The @racket[opt->*] form   matches up to
+      @racketmodname[racket/contract]'s @r:->*, according
+  to the following rules; each equation on the the
+  left refers to a @racketmodname[mzlib/contract] combinator;
+  on the right are the @racketmodname[racket/contract] equivalents.
+                                       
+  @racketblock[(opt->* (contract-req-expr ...) (contract-opt-expr ...) any) =
+               (#,r:->* (contract-req-expr ...) (contract-opt-expr ...) any)]
+  
+  @racketblock[(opt->* (contract-req-expr ...)
+                       (contract-opt-expr ...)
+                       (contract-rng-expr ...)) =
+               (#,r:->* (contract-req-expr ...)
+                        (contract-opt-expr ...)
+                        (values contract-rng-expr ...))]
+}
+
+@defform[(->d contract-dom-expr ... contract-rng-fun-expr)]{
+  The @racket[->d] contract constructor is just like @racket[->],
+  except that the range position is expected to be a function
+  that accepts the actual arguments passed to the function,
+  and returns a contract for the range. For example, this
+  is one contract for @racket[sqrt]:
+  @racketblock[(->d real?
+                    (λ (in)
+                      (and/c real?
+                             (λ (out)
+                               (< (abs (- (sqr out) in))
+                                  0.01)))))]
+  It says that the input must be a real number, and so must the
+  result, and that the square of the result is within
+  @racket[0.01] of input.
+
+}
+
+@defform*[((->d* (contract-dom-expr ...) contract-rng-fun-expr)
+           (->d* (contract-dom-expr ...) contract-rest-expr contract-rng-fun-expr))]{
+  The @racket[->d*] contract constructor is a generalization of 
+      @racket[->d] to support multiple values and rest arguments.
+      
+      In the two sub-expression case, the first sequence of contracts
+      are contracts on the domain of the function and the second
+      subexpression is expected to evaluate to a function that accepts
+      as many arguments as there are expressions in the first position.
+      It should return multiple values: one contract for each result
+      of the function.
+      
+      In the three sub-expression case, the first and last subexpressions
+      are just like the sub-expressions in the two sub-expression case;
+      the middle sub-expression si expected to evaluate to a contract on
+      the rest argument.
+      
+}
+
+@defform*[((->r ([dom-x contract-dom-expr] ...) any)
+           (->r ([dom-x contract-dom-expr] ...)
+                (values [rng-x contract-rng-expr] ...)
+                post-cond-expr)
+           (->r ([dom-x contract-dom-expr] ...)
+                contract-rng-expr
+                rng-x))]{
+
+  The @racket[->r] form is a simplified version of @racketmodname[racket/contract]'s @|r:->i|, where
+  each @racket[contract-dom-expr] is parameterized over all of the @racket[dom-x] variables
+  (and does lax checking; see @r:->d for details).
+
+}
+                                                                                    
+@defform*[((->pp ([dom-x contract-dom-expr] ...) pre-cond-expr any)
+           (->pp ([dom-x contract-dom-expr] ...)
+                 pre-cond-expr
+                 (values [rng-x contract-rng-expr] ...)
+                 post-cond-expr)
+           (->pp ([dom-x contract-dom-expr] ...)
+                 pre-cond-expr
+                 contract-rng-expr
+                 rng-x
+                 post-cond-expr))]{
+
+  The @racket[->pp] form, like @racket[->r] is a simplified version of @racketmodname[racket/contract]'s @|r:->i|, where
+  each @racket[contract-dom-expr] is parameterized over all of the @racket[dom-x] variables
+  (and does lax checking; see @racketmodname[racket/contract]'s @r:->d for details). Unlike @racket[->r], it also has pre- and post-condition
+  expressions; these expressions are also implicitly parameterized over all of the @racket[dom-x]
+  variables and the post-condition is also paramterized over @racket[rng-x], which is bound to the result
+  of the function.
+
+}
