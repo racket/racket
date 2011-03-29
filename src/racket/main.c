@@ -153,6 +153,25 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #define BANNER scheme_banner()
 
 /*========================================================================*/
+/*                            OS process name                             */
+/*========================================================================*/
+
+#if defined(linux)
+# include <sys/prctl.h>
+# ifdef PR_SET_NAME
+#  define CAN_SET_OS_PROCESS_NAME 1
+void set_os_process_name(char *sprog)
+{
+  int i = strlen(sprog) - 1;
+  while (i && (sprog[i - 1] != '/')) {
+    --i;
+  }
+  prctl(PR_SET_NAME, sprog + i);
+}
+# endif
+#endif
+
+/*========================================================================*/
 /*                        command-line parsing                            */
 /*========================================================================*/
 
