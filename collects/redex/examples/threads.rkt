@@ -26,14 +26,14 @@
         sum)
    
    (--> ((store
-             (name befores (x v)) ...
-           (x_i v_i)
-           (name afters (x v)) ...)
+          (name befores (x_0 v_0)) ...
+          (x_i v_i)
+          (name afters (x_i+1 v_i+1)) ...)
          (in-hole tc_1 x_i))
         ((store 
-             befores ... 
-           (x_i v_i)
-           afters ...)
+          befores ... 
+          (x_i v_i)
+          afters ...)
          (in-hole tc_1 v_i))
         deref)
    
