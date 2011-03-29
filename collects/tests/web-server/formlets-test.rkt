@@ -418,6 +418,13 @@
                       (option ((value "0")) "1")
                       (option ((value "1")) "2")
                       (option ((value "2")) "3"))))
+      (test-equal? "multiselect-input"
+                   (test-display (multiselect-input (list "xee" "john" "joe") #:display (curry format "something ~a") ))
+                   '((select
+                      ((multiple "true") (name "input_0"))
+                      (option ((value "0")) "something xee")
+                      (option ((value "1")) "something john")
+                      (option ((value "2")) "something joe"))))
       
       ; select
       (test-equal? "select-input"
@@ -638,3 +645,6 @@
                                       (values "Jay" 10 6 10 8)))))
    
    ))
+
+(require rackunit/text-ui)
+(run-tests all-formlets-tests)

@@ -201,7 +201,8 @@
       `(select (,@(if multiple? '([multiple "true"]) empty)
                 [name ,name]
                 ,@attrs)
-               ,@(for/list ([(vn e) (in-hash value->element)])
+               ,@(for/list ([vn (in-range i)])
+                   (define e (hash-ref value->element vn))
                    (define v (number->string vn))
                    `(option ([value ,v]
                              ,@(if (selected? e)
