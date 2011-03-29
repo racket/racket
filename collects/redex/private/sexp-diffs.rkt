@@ -52,7 +52,9 @@
   (let loop ([s s])
     (cond
       [(pair? s) (cons (loop (car s))
-                       (loop (cdr s)))]
+                       (if (null? (cdr s))
+                           '()
+                           (loop (cdr s))))]
       [(vector? s)
        (list->vector (map loop (vector->list s)))]
       [(box? s)
@@ -60,6 +62,8 @@
       [(syntax? s) (datum->syntax s (unkink (loop (syntax-e s))) s)]
       [(number? s) (make-wrap s)]
       [(symbol? s) (make-wrap s)]
+      [(null? s) (make-wrap s)]
+      [(boolean? s) (make-wrap s)]
       [else s])))
 
 (define-struct wrap (content) #:inspector (make-inspector))
