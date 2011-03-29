@@ -259,8 +259,9 @@
                                        (let* ([bstr (list-ref (list-ref bstr+info+suffix 0) 0)]
                                               [suffix (list-ref bstr+info+suffix 1)]
                                               [height (list-ref (list-ref bstr+info+suffix 0) 2)]
-                                              [descent (+ (list-ref (list-ref bstr+info+suffix 0) 3)
-                                                          (- (ceiling height) height))]
+                                              [descent (and height
+                                                            (+ (list-ref (list-ref bstr+info+suffix 0) 3)
+                                                               (- (ceiling height) height)))]
                                               [fn (install-file (format "pict~a" suffix) bstr)])
                                          (if descent
                                              (printf "\\raisebox{-~apx}{\\includegraphics{~a}}" descent fn)
