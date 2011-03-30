@@ -1,8 +1,8 @@
-#lang scheme/unit
+#lang racket/unit
 
   (require "sig.ss"
            mred/mred-sig
-           mzlib/class
+           racket/class
            "../preferences.ss"
            string-constants)
   
@@ -13,13 +13,13 @@
   
   ;; make-repeating-decimal-snip : number boolean -> snip
   (define (make-repeating-decimal-snip number e-prefix?)
-    (instantiate number-snip% ()
+    (new number-snip%
       [number number]
       [decimal-prefix (if e-prefix? "#e" "")]))
   
   ;; make-fraction-snip : number boolean -> snip
   (define (make-fraction-snip number e-prefix?)
-    (let ([n (instantiate number-snip% ()
+    (let ([n (new number-snip%
                [number number]
                [decimal-prefix (if e-prefix? "#e" "")])])
       (send n set-fraction-view (preferences:get 'framework:fraction-snip-style))
@@ -44,7 +44,7 @@
                   [(equal? #"decimal" fraction-bytes) 'decimal]
                   [(equal? #"improper" fraction-bytes) 'improper])]
                [snip
-                (instantiate number-snip% ()
+                (new number-snip%
                   [number number]
                   [decimal-prefix decimal-prefix])])
           (send snip iterate (max 0 (- expansions 1))) ;; one iteration is automatic
@@ -213,7 +213,7 @@
           (let loop ([num state]
                      [counter cut-off])
             (cond
-              [(hash-table-bound? ht num)
+              [(hash-has-key? ht num)
                (set! state #f)
                (set! repeat num)]
               [(zero? counter) 
@@ -281,7 +281,7 @@
                     [dig (car iter)]
                     [next-num (cdr iter)])
                (cons dig
-                     (if (hash-table-bound? ht next-num)
+                     (if (hash-has-key? ht next-num)
                          (loop next-num)
                          null)))])))
       
@@ -326,7 +326,7 @@
         (send f put (string->bytes/utf-8 (number->string expansions))))
       
       (define/override (copy)
-        (let ([snip (instantiate number-snip% ()
+        (let ([snip (new number-snip%
                       [number number]
                       [decimal-prefix decimal-prefix])])
           (send snip iterate (max 0 (- expansions 1))) ;; one iteration is automatic
@@ -344,6 +344,21 @@
           [(improper)
            (get-improper-fraction-extent dc x y wb hb descent space lspace rspace)]))
       
+      (define/override (draw dc x y left top right bottom dx dy draw-caret)
+        (define clr (send dc get-text-foreground))
+        (define pen (send dc get-pen))
+        (when (pair? draw-caret)
+          (let ([fg-color (get-highlight-text-color)])
+            (when fg-color
+              (send dc set-pen fg-color 1 'solid)
+              (send dc set-text-foreground fg-color)))) 
+        (case fraction-view
+          [(mixed) (draw-mixed-fraction dc x y)]
+          [(improper) (draw-improper-fraction dc x y)]
+          [(decimal) (draw-decimals dc x y)])
+        (send dc set-text-foreground clr)
+        (send dc set-pen pen))
+      
       (define/private (get-improper-fraction-extent dc x y w h descent space lspace rspace)
         (let* ([style (get-style)]
                [th (send style get-text-height dc)]
@@ -359,20 +374,46 @@
             (set-box/f! lspace 0)
             (set-box/f! rspace 0))))
       
+      (define/private (draw-improper-fraction dc x y)
+        (let-values ([(nw nh nd na) (send dc get-text-extent improper-nums)]
+                     [(dw dh dd da) (send dc get-text-extent dens)]
+                     [(ww wh wd wa) (send dc get-text-extent improper-prefix)])
+          (let ([frac-w (max nw dw)])
+            (send dc draw-text improper-nums (+ x ww (- frac-w nw)) y)
+            (send dc draw-text dens (+ x ww (- (/ dw 2)) (/ frac-w 2)) (+ y nh 1))
+            (send dc draw-text improper-prefix x (+ y (/ nh 2)))
+            (send dc draw-line
+                  (+ x ww) (+ y dh)
+                  (+ x ww (max nw dw) -1) (+ y dh)))))
+      
       (define/private (get-mixed-fraction-extent dc x y w h descent space lspace rspace)
         (let* ([style (get-style)]
                [th (send style get-text-height dc)]
                [old-font (send dc get-font)])
           (send dc set-font (send style get-font))
-          (let-values ([(nw nh na nd) (send dc get-text-extent nums)]
-                       [(dw dh da dd) (send dc get-text-extent dens)]
-                       [(ww wh wa wd) (send dc get-text-extent wholes/frac)])
-            (set-box/f! h (+ nh dh 1))
+          (let-values ([(nw nh nd na) (send dc get-text-extent nums)]
+                       [(dw dh dd da) (send dc get-text-extent dens)]
+                       [(ww wh wd wa) (send dc get-text-extent wholes/frac)])
+            (define frac-h (+ nh dh 1))
+            (set-box/f! h frac-h)
             (set-box/f! w (+ ww (max nw dw)))
-            (set-box/f! descent (+ wd (/ dh 2)))
-            (set-box/f! space  (+ wa (/ nh 2)))
+            (set-box/f! descent (+ wd (/ (- frac-h wh) 2)))
+            (set-box/f! space  (+ wa (/ (- frac-h wh) 2)))
             (set-box/f! lspace 0)
             (set-box/f! rspace 0))))
+      
+      (define/private (draw-mixed-fraction dc x y)
+        (let-values ([(nw nh na nd) (send dc get-text-extent nums)]
+                     [(dw dh da dd) (send dc get-text-extent dens)]
+                     [(ww wh wa wd) (send dc get-text-extent wholes/frac)])
+          (let ([frac-w (max nw dw)])
+            (define frac-h (+ nh dh 1))
+            (send dc draw-text nums (+ x ww (- frac-w nw)) y)
+            (send dc draw-text dens (+ x ww (- (/ dw 2)) (/ frac-w 2)) (+ y nh 1))
+            (send dc draw-text wholes/frac x (+ y (/ (- frac-h wh) 2)))
+            (send dc draw-line
+                  (+ x ww) (+ y dh)
+                  (+ x ww (max nw dw) -1) (+ y dh)))))
       
       (define/private (get-decimal-extent dc x y wb hb descent space lspace rspace)
         (let ([font (send (get-style) get-font)])
@@ -390,42 +431,6 @@
             (set-box/f! lspace 0)
             (set-box/f! rspace 0))))
       
-      (define/private (get-text-extent/f dc str font)
-        (if str
-            (let-values ([(w h d a) (send dc get-text-extent str font)])
-              (values w h d a))
-            (values 0 0 0 0)))
-      
-      (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-        (case fraction-view
-          [(mixed) (draw-mixed-fraction dc x y)]
-          [(improper) (draw-improper-fraction dc x y)]
-          [(decimal) (draw-decimals dc x y)]))
-      
-      (define/private (draw-improper-fraction dc x y)
-        (let-values ([(nw nh na nd) (send dc get-text-extent improper-nums)]
-                     [(dw dh da dd) (send dc get-text-extent dens)]
-                     [(ww wh wa wd) (send dc get-text-extent improper-prefix)])
-          (let ([frac-w (max nw dw)])
-            (send dc draw-text improper-nums (+ x ww (- frac-w nw)) y)
-            (send dc draw-text dens (+ x ww (- (/ dw 2)) (/ frac-w 2)) (+ y nh 1))
-            (send dc draw-text improper-prefix x (+ y (/ nh 2)))
-            (send dc draw-line
-                  (+ x ww) (+ y dh)
-                  (+ x ww (max nw dw) -1) (+ y dh)))))
-      
-      (define/private (draw-mixed-fraction dc x y)
-        (let-values ([(nw nh na nd) (send dc get-text-extent nums)]
-                     [(dw dh da dd) (send dc get-text-extent dens)]
-                     [(ww wh wa wd) (send dc get-text-extent wholes/frac)])
-          (let ([frac-w (max nw dw)])
-            (send dc draw-text nums (+ x ww (- frac-w nw)) y)
-            (send dc draw-text dens (+ x ww (- (/ dw 2)) (/ frac-w 2)) (+ y nh 1))
-            (send dc draw-text wholes/frac x (+ y (/ nh 2)))
-            (send dc draw-line
-                  (+ x ww) (+ y dh)
-                  (+ x ww (max nw dw) -1) (+ y dh)))))
-      
       (define/private (draw-decimals dc x y)
         (define (draw-digits digits x)
           (if digits
@@ -438,6 +443,12 @@
                [clickable-end (draw-digits clickable-portion barred-end)])
           (when barred-portion
             (send dc draw-line unbarred-end y (- barred-end 1) y))))
+      
+      (define/private (get-text-extent/f dc str font)
+        (if str
+            (let-values ([(w h d a) (send dc get-text-extent str font)])
+              (values w h d a))
+            (values 0 0 0 0)))
       
       (define/override (adjust-cursor dc x y editorx editory evt)
         (let ([sx (- (send evt get-x) x)]
@@ -507,14 +518,9 @@
                  (and (<= (+ w1 w2) sx (+ w1 w2 w3))
                       (<= 0 sy h3))))))
       
-      (super-instantiate ())
+      (super-new)
       (inherit set-snipclass set-flags get-flags)
       (set-flags (cons 'handles-events (get-flags)))
       (set-snipclass number-snipclass)
       (iterate 1))) ;; calc first digits
   
-  ;; hash-table-bound? : hash-table TST -> boolean
-  (define (hash-table-bound? ht key)
-    (let/ec k
-      (hash-ref ht key (λ () (k #f)))
-      #t))
