@@ -1466,7 +1466,14 @@ before the pattern compiler is invoked.
              [else (let ([r-exp (car r-exps)])
                      (cond
                        [(repeat? r-exp)
-                        (append (repeat-empty-bindings r-exp)
+                        (append (if (repeat-suffix r-exp)
+                                    (list ((if (repeat-mismatch? r-exp)
+                                               make-mismatch-bind
+                                               make-bind)
+                                           (repeat-suffix r-exp)
+                                           '()))
+                                    null)
+                                (repeat-empty-bindings r-exp)
                                 (i-loop (cdr r-exps) ribs))]
                        [else
                         (loop (car r-exps) (i-loop (cdr r-exps) ribs))]))])))]

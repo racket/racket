@@ -203,6 +203,16 @@
     (test-empty '(a ..._1 a ..._1)
                 '(a a) 
                 (list (make-test-mtch (make-bindings (list (make-bind '..._1 1))) '(a a) none)))
+    
+    (test-empty '((a ..._1 a ..._1) ...)
+                '((a a a a)) 
+                (list (make-test-mtch (make-bindings (list (make-bind '..._1 '(2)))) '((a a a a)) none)))
+    (test-empty '((a ..._!_1 a ..._!_1) ...)
+                '((a a a a)) 
+                (list (make-test-mtch (make-bindings '()) '((a a a a)) none)
+                      (make-test-mtch (make-bindings '()) '((a a a a)) none)
+                      (make-test-mtch (make-bindings '()) '((a a a a)) none)
+                      (make-test-mtch (make-bindings '()) '((a a a a)) none)))
 
     (test-empty '((name x a) ..._!_1 (name y a) ..._!_1) 
                 '(a a) 
