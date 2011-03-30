@@ -170,7 +170,7 @@ Called when the snip's editor's method is called,
                  [bottom real?]
                  [dx real?]
                  [dy real?]
-                 [draw-caret (or/c (one-of/c 'no-caret 'show-inactive-caret 'show-caret)
+                 [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret
                                    (cons/c exact-nonnegative-integer?
                                            exact-nonnegative-integer?))])
            void?]{
@@ -191,14 +191,14 @@ The @racket[dx] and @racket[dy] argument provide numbers that can be
 
 See @|drawcaretdiscuss| for information about
 @racket[draw-caret]. When @racket[draw-caret] is a pair, refrain from
-drawing a background for the selected region, and use
-@racket[get-highlight-text-color] when it is not @racket[#f] for
-drawing text and other ``foreground'' elements.
+drawing a background for the selected region, and if
+@racket[(get-highlight-text-color)] returns a color (instead of @racket[#f]),
+use that color for drawing selected text and other selected foreground elements.
 
-Before this method is called, the correct font, text color, and pen
- color for the snip's style will have been set in the drawing context
- already.  (This is @italic{not} true for @method[snip% get-extent] or
- @method[snip% partial-offset].)  The @method[snip% draw] method must
+Before this method is called, the font, text color, and pen color for
+ the snip's style will have been set in the drawing context.  (The
+ drawing context is @italic{not} so configured for @method[snip%
+ get-extent] or @method[snip% partial-offset].)  The @method[snip% draw] method must
  not make any other assumptions about the state of the drawing
  context, except that the clipping region is already set to something
  appropriate. Before @method[snip% draw] returns, it must restore any
@@ -229,7 +229,7 @@ more specific equivalence comparison.}}
 @defmethod[(other-equal-to? [that (is-a?/c snip%)]
                             [equal? (-> any/c any/ boolean?)])
            boolean?]{
-@methimpl{Returns @racket[(eq? this that)].}
+@methimpl{Returns @racket[(eq? @#,(this-obj) that)].}
 }
 
 @defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
@@ -237,7 +237,7 @@ more specific equivalence comparison.}}
 
 @methspec{See @racket[equal<%>].}
  
-@methimpl{Returns @racket[(eq-hash-code this)].}}
+@methimpl{Returns @racket[(eq-hash-code @#,(this-obj))].}}
 
 @defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{

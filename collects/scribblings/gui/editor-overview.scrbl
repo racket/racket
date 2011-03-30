@@ -626,7 +626,7 @@ When an editor or snip is drawn, an argument to the drawing method
 The @scheme['show-inactive-caret] display mode is useful for showing
  selection ranges in text editors that do not have the focus. This
  @scheme['show-inactive-caret] mode is distinct from @scheme['no-caret]
- mode; when editors are embedded, only the locally-active editor shows
+ mode; when editors are embedded, only the locally active editor shows
  its selection.
 
 
