@@ -204,6 +204,7 @@ READ_ONLY static Scheme_Object *expression_stx;
 READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
 
+THREAD_LOCAL_DECL(static Scheme_Object *empty_self_shift_cache);
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *place_local_modpath_table);
@@ -3241,8 +3242,8 @@ Scheme_Object *module_resolve_in_namespace(Scheme_Object *modidx, Scheme_Env *en
 }
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
-				   Scheme_Object *shift_from_modidx,
-				   Scheme_Object *shift_to_modidx)
+                                   Scheme_Object *shift_from_modidx,
+                                   Scheme_Object *shift_to_modidx)
 {
   Scheme_Object *base;
 
@@ -3273,59 +3274,73 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
          a small global cache in that case. */
 
       if (SCHEME_MODNAMEP(sbase)) {
-	sbm = NULL;
-	cvec = global_shift_cache;
+        sbm = NULL;
+        cvec = global_shift_cache;
+      } else if (SAME_OBJ(sbase, empty_self_modidx)) {
+        sbm = (Scheme_Modidx *)sbase;
+        cvec = empty_self_shift_cache;
       } else {
-	sbm = (Scheme_Modidx *)sbase;
-	cvec = sbm->shift_cache;
+        sbm = (Scheme_Modidx *)sbase;
+        cvec = sbm->shift_cache;
       }
 
+      /* attempt lookup in cache */
+      /* ASSERT(SCHEME_VECTORP(cvec)); */
       c = (cvec ? SCHEME_VEC_SIZE(cvec) : 0);
-      
       for (i = 0; i < c; i += 2) {
-	if (SHIFT_CACHE_NULLP(SCHEME_VEC_ELS(cvec)[i]))
-	  break;
-	if (SAME_OBJ(modidx, SCHEME_VEC_ELS(cvec)[i]))
-	  return SCHEME_VEC_ELS(cvec)[i + 1];
+        if (SHIFT_CACHE_NULLP(SCHEME_VEC_ELS(cvec)[i]))
+          break;
+        if (SAME_OBJ(modidx, SCHEME_VEC_ELS(cvec)[i]))
+          return SCHEME_VEC_ELS(cvec)[i + 1];
       }
-      
+     
+      /* lookup failed, add entry to cache */
       smodidx = scheme_make_modidx(((Scheme_Modidx *)modidx)->path,
-				   sbase,
-				   scheme_false);
+          sbase,
+          scheme_false);
 
+      /* make room in cache */
       if (!sbm) {
-	if (!global_shift_cache)
-	  global_shift_cache = scheme_make_vector(GLOBAL_SHIFT_CACHE_SIZE, SHIFT_CACHE_NULL);
-	for (i = 0; i < (GLOBAL_SHIFT_CACHE_SIZE - 2); i++) {
-	  SCHEME_VEC_ELS(global_shift_cache)[i+2] = SCHEME_VEC_ELS(global_shift_cache)[i];
-	}
-	SCHEME_VEC_ELS(global_shift_cache)[0] = modidx;
-	SCHEME_VEC_ELS(global_shift_cache)[1] = smodidx;
+        if (!global_shift_cache)
+          global_shift_cache = scheme_make_vector(GLOBAL_SHIFT_CACHE_SIZE, SHIFT_CACHE_NULL);
+        else {
+          for (i = 0; i < (GLOBAL_SHIFT_CACHE_SIZE - 2); i++) {
+            SCHEME_VEC_ELS(global_shift_cache)[i+2] = SCHEME_VEC_ELS(global_shift_cache)[i];
+          }
+        }
+        cvec = global_shift_cache;
+        i = 0;
       } else {
-	/* May have GCed: */
-	if (cvec && !sbm->shift_cache)
-	  sbm->shift_cache = cvec;
+        /* May have GCed: */
+        if (cvec && !sbm->shift_cache)
+          sbm->shift_cache = cvec;
 
-	if (i >= c) {
-	  /* Grow cache vector */
-	  Scheme_Object *naya;
-	  int j;
-	    
-	  naya = scheme_make_vector(c + 10, SHIFT_CACHE_NULL);
-	  for (j = 0; j < c; j++) {
-	    SCHEME_VEC_ELS(naya)[j] = SCHEME_VEC_ELS(cvec)[j];
-	  }
-	  if (0 && !sbm->shift_cache) {
-	    sbm->cache_next = modidx_caching_chain;
-	    modidx_caching_chain = sbm;
-	  }
+        if (i >= c) {
+          /* Grow cache vector */
+          Scheme_Object *naya;
+          int j;
 
-	  sbm->shift_cache = naya;
-	}
-	  
-	SCHEME_VEC_ELS(sbm->shift_cache)[i] = modidx;
-	SCHEME_VEC_ELS(sbm->shift_cache)[i+1] = smodidx;
+          naya = scheme_make_vector(c + 10, SHIFT_CACHE_NULL);
+          for (j = 0; j < c; j++) {
+            SCHEME_VEC_ELS(naya)[j] = SCHEME_VEC_ELS(cvec)[j];
+          }
+          if (0 && !SAME_OBJ((Scheme_Object *)sbm, empty_self_modidx) && !sbm->shift_cache) {
+            sbm->cache_next = modidx_caching_chain;
+            modidx_caching_chain = sbm;
+          }
+          cvec = naya;
+          if (SAME_OBJ((Scheme_Object *)sbm, empty_self_modidx)) {
+            sbm->shift_cache = cvec;
+          } else {
+            empty_self_shift_cache = cvec;
+          }
+        }
+
       }
+
+      /* set entry in cache */
+      SCHEME_VEC_ELS(cvec)[i]   = modidx;
+      SCHEME_VEC_ELS(cvec)[i+1] = smodidx;
 
       return smodidx;
     }
@@ -3339,6 +3354,7 @@ void scheme_clear_modidx_cache(void)
   Scheme_Modidx *sbm, *next;
 
   global_shift_cache = NULL;
+  empty_self_shift_cache = NULL;
   
   for (sbm = modidx_caching_chain; sbm; sbm = next) {
     sbm->shift_cache = NULL;
