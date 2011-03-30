@@ -457,17 +457,17 @@
           [else
            (let ([type (classify-position (max 0 (- current-pos 1)))])
              (cond
-               [(eq? 'symbol type) 
-                (get-text (look-for-non-symbol (max 0 (- current-pos 1)))
+               [(memq type '(symbol keyword)) 
+                (get-text (look-for-non-symbol/non-kwd (max 0 (- current-pos 1)))
                           current-pos)]
                [else no-word]))])))
     
-    (define/private (look-for-non-symbol start)
+    (define/private (look-for-non-symbol/non-kwd start)
       (let loop ([i start])
         (cond
           [(< i 0) 
            0]
-          [(eq? (classify-position i) 'symbol)
+          [(memq (classify-position i) '(symbol keyword))
            (loop (- i 1))]
           [else
            (+ i 1)])))
