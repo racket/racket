@@ -18,3 +18,11 @@
 \renewcommand{\SCategoryPlus}[4]{\category{#1}{#2}{#3}[#4]}
 \renewcommand{\STerms}[1]{\terms{#1}}
 \renewcommand{\SKeywords}[1]{\keywords{#1}}
+
+% Add space around code insets:
+% Indent a 'code-inset nested flow:
+\newcommand{\SCodePreSkip}{\vskip\medskipamount}
+\newcommand{\SCodePostSkip}{\vskip\medskipamount}
+\renewenvironment{SCodeFlow}{\SCodePreSkip\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=0pt%
+\itemsep=0pt\parsep=0pt}\item}{\end{list}\SCodePostSkip}

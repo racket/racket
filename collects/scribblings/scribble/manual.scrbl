@@ -42,13 +42,16 @@ includes a @racket[latex-defaults] @tech{style property}.
 
 Parses the code formed by the strings produced by the
 @racket[str-expr]s as a Racket module (roughly) and produces a
-@tech{block} that typesets the code. The @racket[str-expr]s should
-normally start with @hash-lang[] to determine the reader syntax for
-the module, but the resulting ``module'' need not expand or
-compile---except as needed by @racket[expand-expr]. If
-@racket[expand-expr] is omitted or produces false, then the input
-formed by @racket[str-expr] is read until an end-of-file is
-encountered, otherwise a single form is read from the input.
+@tech{block} that typesets the code inset via @racket[nested] with the
+style @racket['code-inset].
+
+The @racket[str-expr]s should normally start with @hash-lang[] to
+determine the reader syntax for the module, but the resulting
+``module'' need not expand or compile---except as needed by
+@racket[expand-expr]. If @racket[expand-expr] is omitted or produces
+false, then the input formed by @racket[str-expr] is read until an
+end-of-file is encountered, otherwise a single form is read from the
+input.
 
 When @racket[keep-expr] produces a true value (the default), the first
 line in the input (which is typically @hash-lang[]) is preserved in
@@ -94,8 +97,9 @@ produces the typeset result
 @defform[(racketblock datum ...)]{
 
 Typesets the @racket[datum] sequence as a table of Racket code inset
-by two spaces. The source locations of the @racket[datum]s determine
-the generated layout. For example,
+inset via @racket[nested] with the style @racket['code-inset]. The
+source locations of the @racket[datum]s determine the generated
+layout. For example,
 
 @racketblock[
 (racketblock
@@ -196,10 +200,10 @@ See also @racketmodname[scribble/comment-reader].
 the expression escape @racket[UNSYNTAX] instead of @racket[unsyntax].}
 
 @defform[(racketblock0 datum ...)]{Like @racket[racketblock], but
-without insetting the code.}
+without insetting the code via @racket[nested].}
 
 @defform[(RACKETBLOCK0 datum ...)]{Like @racket[RACKETBLOCK], but
-without insetting the code.}
+without insetting the code via @racket[nested].}
 
 @deftogether[(
 @defform[(racketresultblock datum ...)]
@@ -217,6 +221,13 @@ result  (i.e., a single color with no hyperlinks) instead of code.}
 )]{Like @racket[racketblock] and @racket[RACKETBLOCK], but the
 @racket[datum]s are typeset after a prompt representing a REPL.}
 
+@deftogether[(
+@defform[(racketinput0 datum ...)]
+@defform[(RACKETINPUT0 datum ...)]
+)]{
+Like @racket[racketinput] and @racket[RACKETINPUT], but
+without insetting the code via @racket[nested].}
+
 @defform/subs[(racketmod maybe-file lang datum ...)
               ([maybe-file code:blank
                            (code:line #:file filename-expr)])]{
@@ -232,6 +243,10 @@ The source location of @racket[lang] (relative to the body
 If @racket[#:file] is provided, then the code block is typeset using
 @racket[filebox] with @racket[filename-expr] as the filename
 argument.}
+
+@defform[(racketmod0 maybe-file lang datum ...)]{
+Like @racket[racketmod], but
+without insetting the code via @racket[nested].}
 
 @defform[(racket datum ...)]{Like @racket[racketblock], but typeset on
 a single line and wrapped with its enclosing paragraph, independent of

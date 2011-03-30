@@ -540,6 +540,9 @@ names are recognized:
  @item{@racket['inset] --- Insets the nested flow relative to
        surrounding text.}
 
+ @item{@racket['code-inset] --- Insets the nested flow relative to
+       surrounding text in a way suitable for code.}
+
 ]
 
 The following @tech{style properties} are currently recognized:

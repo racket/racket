@@ -5,19 +5,21 @@
          "../core.rkt"
          "../base.rkt"
          "manual-scheme.rkt"
+         scribble/core
          (for-syntax racket/base
                      syntax/parse))
 
 (provide codeblock
+         codeblock0
          typeset-code)
 
-(define-syntax (codeblock stx)
+(define-for-syntax (do-codeblock stx)
   (syntax-parse stx
     [(_ (~seq (~or (~optional (~seq #:expand expand-expr:expr)
                               #:defaults ([expand-expr #'#f])
                               #:name "#:expand keyword")
                    (~optional (~seq #:indent indent-expr:expr)
-                              #:defaults ([indent-expr #'2])
+                              #:defaults ([indent-expr #'0])
                               #:name "#:expand keyword")
                    (~optional (~seq #:keep-lang-line? keep-lang-line?-expr:expr)
                               #:defaults ([keep-lang-line?-expr #'#t])
@@ -37,6 +39,12 @@
                                         (and (pair? (syntax-e v))
                                              #`#'#,(car (syntax-e v))))
                                       #'#f)))]))
+
+(define (code-inset p)
+  (make-nested-flow (make-style 'code-inset '()) (list p)))
+
+(define-syntax (codeblock stx) #`(code-inset #,(do-codeblock stx)))
+(define-syntax (codeblock0 stx) (do-codeblock stx))
 
 (define (typeset-code #:context [context #f]
                       #:expand [expand #f]
@@ -199,7 +207,9 @@
   (define (make-line accum-line) (list (paragraph omitable 
                                                   (cons indent-elem
                                                         (reverse accum-line)))))
-  (define indent-elem (hspace indent-amt))
+  (define indent-elem (if (zero? indent-amt)
+                          ""
+                          (hspace indent-amt)))
   (let loop ([l l] [accum-line null])
     (cond
      [(null? l) (if (null? accum-line)

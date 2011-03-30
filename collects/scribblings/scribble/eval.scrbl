@@ -47,6 +47,10 @@ If a @racket[datum] has the form
 expect-datum))], then both @svar[eval-datum] and @svar[check-datum]
 are evaluated, and an error is raised if they are not @racket[equal?].}
 
+@defform*[[(interaction0 datum ...)
+           (interaction0 #:eval eval-expr datum ...)]]{
+Like @racket[interaction], but without insetting the code via
+@racket[nested].}
 
 @defform*[[(interaction-eval datum)
            (interaction-eval #:eval eval-expr datum)]]{
@@ -66,6 +70,12 @@ the printed form of the evaluation result.}
            (racketblock+eval #:eval eval-expr datum ...)]]{
 
 Combines @racket[racketblock] and @racket[interaction-eval].}
+
+
+@defform*[[(racketblock0+eval datum ...)
+           (racketblock0+eval #:eval eval-expr datum ...)]]{
+
+Combines @racket[racketblock0] and @racket[interaction-eval].}
 
 
 @defform*[[(racketmod+eval name datum ...)

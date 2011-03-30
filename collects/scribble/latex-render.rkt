@@ -550,7 +550,8 @@
     (define/private (do-render-nested-flow t part ri single-column?)
       (let* ([kind (or (let ([s (style-name (nested-flow-style t))])
                          (or (and (string? s) s)
-                             (and (eq? s 'inset) "quote")))
+                             (and (eq? s 'inset) "quote")
+                             (and (eq? s 'code-inset) "SCodeFlow")))
                        "Subflow")]
              [props (style-properties (nested-flow-style t))]
              [command? (memq 'command props)]

@@ -74,6 +74,7 @@
 \newcommand{\atItemizeStart}[0]{\addtolength{\stabLeft}{\labelsep}
                                 \addtolength{\stabLeft}{\labelwidth}}
 
+
 % For a single-column table in simple environments, it's better to
 %  use the `list' environment instead of `stabular'.
 \newenvironment{SingleColumn}{\begin{list}{}{\topsep=0pt\partopsep=0pt%
@@ -92,7 +93,12 @@
 \listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=0pt\rightmargin=0pt%
 \itemsep=0pt}\item}{\end{list}}
 
-% The 'inset neested-flow style uses the `quote' environment
+% The 'inset nested-flow style uses the `quote' environment
+
+% Indent a 'code-inset nested flow:
+\newenvironment{SCodeFlow}{\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=0pt%
+\itemsep=0pt\parsep=0pt}\item}{\end{list}}
 
 % The 'compact itemization style:
 \newenvironment{compact}{\begin{itemize}}{\end{itemize}}

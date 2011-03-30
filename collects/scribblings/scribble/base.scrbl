@@ -159,8 +159,9 @@ address-harvesting robots.}
  @racket[pre-flow] (i.e., parsed with @racket[decode-flow]).
  
  The @racket[style] argument is handled the same as @racket[para].
- The @racket['inset] style causes the nested flow to be inset compared
- to surrounding text.}
+ The @racket['inset] and @racket['code-inset] styles cause the nested
+ flow to be inset compared to surrounding text, with the latter
+ particularly intended for insetting code.}
 
 
 @defproc[(centered [pre-flow pre-flow?] ...) nested-flow?]{

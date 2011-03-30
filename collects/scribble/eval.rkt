@@ -13,9 +13,11 @@
            (for-syntax racket/base))
 
   (provide interaction
+           interaction0
            interaction-eval
            interaction-eval-show
            racketblock+eval (rename-out [racketblock+eval schemeblock+eval])
+           racketblock0+eval
            racketmod+eval (rename-out [racketmod+eval schememod+eval])
            def+int
            defs+int
@@ -68,14 +70,12 @@
               (if (= 1 (length s))
                   (make-paragraph
                    (list
-                    (hspace 2)
                     (literal-string style (car s))))
                   (make-table
                    #f
                    (map (lambda (s)
                           (list (make-flow (list (make-paragraph
                                                   (list
-                                                   (hspace 2)
                                                    (literal-string style s)))))))
                         s))))))))))
 
@@ -88,13 +88,11 @@
       (define (add-line line-accum flow-accum)
         (if line-accum
             (cons (make-paragraph
-                   (cons
-                    (hspace 2)
-                    (map (lambda (s)
-                           (if (string? s)
-                               (literal-string style s)
-                               s))
-                         (reverse line-accum))))
+                   (map (lambda (s)
+                          (if (string? s)
+                              (literal-string style s)
+                              s))
+                        (reverse line-accum)))
                   flow-accum)
             flow-accum))
       (let loop ([string-accum #f] [line-accum #f] [flow-accum null])
@@ -123,65 +121,76 @@
             (loop #f (cons v (or (add-string string-accum line-accum) null))
                   flow-accum)]))))
 
-  (define (interleave title expr-paras val-list+outputs)
-    (make-table
-     #f
-     (append
-      (if title (list (list (make-flow (list title)))) null)
-      (let loop ([expr-paras expr-paras]
-                 [val-list+outputs val-list+outputs]
-                 [first? #t])
-        (if (null? expr-paras)
-            null
-            (append
-             (list (list (let ([p (car expr-paras)])
-                           (if (flow? p)
-                               p
-                               (make-flow (list p))))))
-             (format-output (cadar val-list+outputs) output-color)
-             (format-output (caddar val-list+outputs) error-color)
-             (cond
-              [(string? (caar val-list+outputs))
-               ;; Error result case:
-               (map
-                (lambda (s)
-                  (car (format-output s error-color)))
-                (filter
-                 (lambda (s) (not (equal? s "")))
-                 (let sloop ([s (caar val-list+outputs)])
-                   (apply
-                    append
-                    (map (lambda (s)
-                           (if ((string-length s) . > . maxlen)
-                               ;; break the error message into multiple lines:
-                               (let loop ([pos (sub1 maxlen)])
-                                 (cond
-                                  [(zero? pos) (cons (substring s 0 maxlen)
-                                                     (sloop (substring s maxlen)))]
-                                  [(char-whitespace? (string-ref s pos))
-                                   (cons (substring s 0 pos)
-                                         (sloop (substring s (add1 pos))))]
-                                  [else (loop (sub1 pos))]))
-                               (list s)))
-                         (regexp-split #rx"\n" s))))))]
-              [(box? (caar val-list+outputs))
-               ;; Output witten to a port
-               (format-output-stream (unbox (caar val-list+outputs)) result-color)]
-              [else
-               ;; Normal result case:
-               (let ([val-list (caar val-list+outputs)])
-                 (if (equal? val-list (list (void)))
-                     null
-                     (map (lambda (v)
-                            (list (make-flow (list (make-paragraph 
-                                                    (list
-                                                     (hspace 2)
-                                                     (elem #:style result-color
-                                                           (to-element/no-color v #:expr? (print-as-expression)))))))))
-                          val-list)))])
-             (loop (cdr expr-paras)
-                   (cdr val-list+outputs)
-                    #f)))))))
+  (define (interleave inset? title expr-paras val-list+outputs)
+    (let ([lines 
+           (let loop ([expr-paras expr-paras]
+                      [val-list+outputs val-list+outputs]
+                      [first? #t])
+             (if (null? expr-paras)
+                 null
+                 (append
+                  (list (list (let ([p (car expr-paras)])
+                                (if (flow? p)
+                                    p
+                                    (make-flow (list p))))))
+                  (format-output (cadar val-list+outputs) output-color)
+                  (format-output (caddar val-list+outputs) error-color)
+                  (cond
+                   [(string? (caar val-list+outputs))
+                    ;; Error result case:
+                    (map
+                     (lambda (s)
+                       (car (format-output s error-color)))
+                     (filter
+                      (lambda (s) (not (equal? s "")))
+                      (let sloop ([s (caar val-list+outputs)])
+                        (apply
+                         append
+                         (map (lambda (s)
+                                (if ((string-length s) . > . maxlen)
+                                    ;; break the error message into multiple lines:
+                                    (let loop ([pos (sub1 maxlen)])
+                                      (cond
+                                       [(zero? pos) (cons (substring s 0 maxlen)
+                                                          (sloop (substring s maxlen)))]
+                                       [(char-whitespace? (string-ref s pos))
+                                        (cons (substring s 0 pos)
+                                              (sloop (substring s (add1 pos))))]
+                                       [else (loop (sub1 pos))]))
+                                    (list s)))
+                              (regexp-split #rx"\n" s))))))]
+                   [(box? (caar val-list+outputs))
+                    ;; Output witten to a port
+                    (format-output-stream (unbox (caar val-list+outputs)) result-color)]
+                   [else
+                    ;; Normal result case:
+                    (let ([val-list (caar val-list+outputs)])
+                      (if (equal? val-list (list (void)))
+                          null
+                          (map (lambda (v)
+                                 (list (make-flow (list (make-paragraph 
+                                                         (list
+                                                          (elem #:style result-color
+                                                                (to-element/no-color v #:expr? (print-as-expression)))))))))
+                               val-list)))])
+                  (loop (cdr expr-paras)
+                        (cdr val-list+outputs)
+                        #f))))])
+      (if inset?
+          (let ([p (code-inset (make-table #f lines))])
+            (if title
+                (make-table
+                 #f
+                 (list
+                  (list (make-flow (list title)))
+                  (list (make-flow (list p)))))
+                p))
+          (make-table #f
+                      (append
+                       (if title
+                           (list (list (make-flow (list title))))
+                           null)
+                       lines)))))
 
   ;; extracts from a datum or syntax object --- while keeping the
   ;; syntax-objectness of the original intact, instead of always
@@ -428,46 +437,52 @@
 
   (define-syntax racketinput*
     (syntax-rules (eval:alts code:comment)
-      [(_ (code:comment . rest)) (racketblock (code:comment . rest))]
+      [(_ (code:comment . rest)) (racketblock0 (code:comment . rest))]
       [(_ (eval:alts a b)) (racketinput* a)]
-      [(_ e) (racketinput e)]))
+      [(_ e) (racketinput0 e)]))
 
-  (define-code racketblock+line (to-paragraph/prefix (hspace 2) 
-                                                     (hspace 2)
-                                                     (list " ")))
+  (define-code racketblock0+line (to-paragraph/prefix "" "" (list " ")))
 
   (define-syntax (racketdefinput* stx)
     (syntax-case stx (define define-values define-struct)
       [(_ (define . rest))
        (syntax-case stx ()
-         [(_ e) #'(racketblock+line e)])]
+         [(_ e) #'(racketblock0+line e)])]
       [(_ (define-values . rest))
        (syntax-case stx ()
-         [(_ e) #'(racketblock+line e)])]
+         [(_ e) #'(racketblock0+line e)])]
       [(_ (define-struct . rest))
        (syntax-case stx ()
-         [(_ e) #'(racketblock+line e)])]
+         [(_ e) #'(racketblock0+line e)])]
       [(_ (code:line (define . rest) . rest2))
        (syntax-case stx ()
-         [(_ e) #'(racketblock+line e)])]
+         [(_ e) #'(racketblock0+line e)])]
       [(_ e) #'(racketinput* e)]))
 
-  (define (do-titled-interaction ev t shows evals)
-    (interleave t
+  (define (do-titled-interaction inset? ev t shows evals)
+    (interleave inset?
+                t
                 shows
                 (map (do-eval ev) evals)))
 
   (define-syntax titled-interaction
     (syntax-rules ()
-      [(_ #:eval ev t racketinput* e ...)
-       (do-titled-interaction ev t (list (racketinput* e) ...) (list (quote-expr e) ...))]
-      [(_ t racketinput* e ...)
-       (titled-interaction #:eval (make-base-eval) t racketinput* e ...)]))
+      [(_ inset? #:eval ev t racketinput* e ...)
+       (do-titled-interaction inset? ev t (list (racketinput* e) ...) (list (quote-expr e) ...))]
+      [(_ inset? t racketinput* e ...)
+       (titled-interaction inset? #:eval (make-base-eval) t racketinput* e ...)]))
+
+  (define (code-inset p)
+    (make-blockquote 'code-inset (list p)))
 
   (define-syntax interaction
     (syntax-rules ()
-      [(_ #:eval ev e ...) (titled-interaction #:eval ev #f racketinput* e ...)]
-      [(_ e ...) (titled-interaction #f racketinput* e ...)]))
+      [(_ e ...) (code-inset (interaction0 e ...))]))
+
+  (define-syntax interaction0
+    (syntax-rules ()
+      [(_ #:eval ev e ...) (titled-interaction #f #:eval ev #f racketinput* e ...)]
+      [(_ e ...) (titled-interaction #f #f racketinput* e ...)]))
 
   (define-syntax racketblock+eval
     (syntax-rules ()
@@ -478,6 +493,16 @@
                  (racketblock e ...))))]
       [(_ e ...)
        (racketblock+eval #:eval (make-base-eval) e ...)]))
+
+  (define-syntax racketblock0+eval
+    (syntax-rules ()
+      [(_ #:eval ev e ...)
+       (let ([eva ev])
+         (#%expression
+          (begin (interaction-eval #:eval eva e) ...
+                 (racketblock0 e ...))))]
+      [(_ e ...)
+       (racketblock0+eval #:eval (make-base-eval) e ...)]))
 
   (define-syntax racketmod+eval
     (syntax-rules ()
@@ -493,9 +518,9 @@
     (syntax-rules ()
       [(_ #:eval ev def e ...)
        (let ([eva ev])
-         (column (list (racketblock+eval #:eval eva def)
+         (column (list (racketblock0+eval #:eval eva def)
                        blank-line
-                       (interaction #:eval eva e ...))))]
+                       (interaction0 #:eval eva e ...))))]
       [(_ def e ...) 
        (def+int #:eval (make-base-eval) def e ...)]))
 
@@ -503,9 +528,9 @@
     (syntax-rules ()
       [(_ #:eval ev [def ...] e ...)
        (let ([eva ev])
-         (column (list (racketblock+eval #:eval eva def ...)
+         (column (list (racketblock0+eval #:eval eva def ...)
                        blank-line
-                       (interaction #:eval eva e ...))))]
+                       (interaction0 #:eval eva e ...))))]
       [(_ [def ...] e ...)
        (defs+int #:eval (make-base-eval) [def ...] e ...)]))
 
@@ -522,35 +547,36 @@
   (define-syntax examples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev (pick-example-title e ...) racketinput* e ...)]
+       (titled-interaction #t #:eval ev (pick-example-title e ...) racketinput* e ...)]
       [(_ e ...)
-       (titled-interaction (pick-example-title e ...)  racketinput* e ...)]))
+       (titled-interaction #t (pick-example-title e ...)  racketinput* e ...)]))
   (define-syntax examples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
-       (titled-interaction #:eval ev example-title racketinput* e ...)]
+       (titled-interaction #t #:eval ev example-title racketinput* e ...)]
       [(_ example-title e ...)
-       (titled-interaction example-title racketinput* e ...)]))
+       (titled-interaction #t example-title racketinput* e ...)]))
   (define-syntax defexamples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev (pick-example-title e ...)  racketdefinput* e ...)]
+       (titled-interaction #t #:eval ev (pick-example-title e ...)  racketdefinput* e ...)]
       [(_ e ...)
-       (titled-interaction (pick-example-title e ...)  racketdefinput* e ...)]))
+       (titled-interaction #t (pick-example-title e ...)  racketdefinput* e ...)]))
   (define-syntax defexamples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
-       (titled-interaction #:eval ev example-title racketdefinput* e ...)]
+       (titled-interaction #t #:eval ev example-title racketdefinput* e ...)]
       [(_ example-title e ...)
-       (titled-interaction example-title racketdefinput* e ...)]))
+       (titled-interaction #t example-title racketdefinput* e ...)]))
 
   (define blank-line (make-paragraph (list 'nbsp)))
 
   (define (column l)
-    (make-table #f (map
-                    (lambda (t)
-                      (list (make-flow (list t))))
-                    l)))
+    (code-inset
+     (make-table #f (map
+                     (lambda (t)
+                       (list (make-flow (list t))))
+                     l))))
 
   (define (do-splice l)
     (cond

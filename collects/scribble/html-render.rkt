@@ -1254,10 +1254,12 @@
 
     (define/override (render-nested-flow t part ri)
       `((blockquote [,@(style->attribs (nested-flow-style t))
-                     ,@(if (and (not (string? (style-name (nested-flow-style t))))
-                                (not (eq? 'inset (style-name (nested-flow-style t)))))
-                           `([class "SubFlow"])
-                           null)]
+                     ,@(if (eq? 'code-inset (style-name (nested-flow-style t)))
+                           `([class "SCodeFlow"])
+                           (if (and (not (string? (style-name (nested-flow-style t))))
+                                    (not (eq? 'inset (style-name (nested-flow-style t)))))
+                               `([class "SubFlow"])
+                               null))]
                     ,@(append-map (lambda (i) (render-block i part ri #f))
                                   (nested-flow-blocks t)))))
 
