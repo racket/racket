@@ -600,8 +600,8 @@ A @racket[non-terminal-def] comprises one or more non-terminal names
 (considered aliases) followed by one or more productions. A non-terminal's
 names and productions may be separated by the keyword @racket[::=].
 
-As a simple example of a grammar, this is the lambda
-calculus:
+For example, the following defines @deftech{@racket[lc-lang]} as the
+grammar of the lambda calculus:
 
 @racketblock[
   (define-language lc-lang
@@ -676,35 +676,59 @@ All of the exports in this section are provided both by
 all non-GUI portions of Redex) and also exported by
 @racketmodname[redex] (which includes all of Redex).
 
-@defform/subs[#:literals (--> fresh side-condition where) 
-              (reduction-relation language domain main-arrow reduction-case ...)
+@defform/subs[#:literals (--> fresh side-condition where with) 
+              (reduction-relation language domain base-arrow
+                                  reduction-case ...
+                                  shortcuts)
               ([domain (code:line) (code:line #:domain @#,ttpattern)]
-               [main-arrow (code:line) (code:line #:arrow arrow)]
-               [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
+               [base-arrow (code:line) (code:line #:arrow base-arrow-name)]
+               [reduction-case (arrow-name @#,ttpattern @#,tttterm extras ...)]
                [extras rule-name
                        (fresh fresh-clause ...)
                        (side-condition racket-expression)
-                       (where pat @#,tttterm)
+                       (where @#,ttpattern @#,tttterm)
                        (side-condition/hidden racket-expression)
-                       (where/hidden pat @#,tttterm)]
+                       (where/hidden @#,ttpattern @#,tttterm)]
+               [shortcuts (code:line)
+                          (code:line with shortcut ...)]
+               [shortcut [(old-arrow-name @#,ttpattern @#,tttterm)
+                          (new-arrow-name identifier identifier)]]
                [rule-name identifier
                           string 
                           (computed-name racket-expression)]
                [fresh-clause var ((var1 ...) (var2 ...))])]{
 
 Defines a reduction relation casewise, one case for each of the
-clauses beginning with @racket[-->] (or with @racket[arrow], if
-specified). Each of the @racket[pattern]s
-refers to the @racket[language], and binds variables in the
-@|tttterm|. If present, the pattern following the @racket[#:domain]
-keyword specifies what terms the reduction relation operates on and
-is checked when the relation is used.
+@racket[reduction-case] clauses. 
 
-Following the @|pattern| and @|tterm| can be the name of the
-reduction rule, declarations of some fresh variables, and/or
-some side-conditions.
+The optional @racket[domain] clause provides a contract for the
+relation, in the form of a pattern that defines the relation's 
+domain and codomain.
 
-The rule's name (used in @seclink["Typesetting" "typesetting"],
+The @racket[arrow-name] in each @racket[reduction-case] clause is either 
+@racket[base-arrow-name] (default @racket[-->]) or an arrow name
+defined by @racket[shortcuts] (described below). In either case, 
+the @|pattern| refers to @racket[language] and binds variables in
+the corresponding @|tterm|. Following the @|pattern| and @|tterm|
+can be the name of the reduction rule and declarations of fresh
+variables and side-conditions.
+
+For example, the expression
+
+@racketblock[
+  (reduction-relation
+   lc-lang
+   (--> (in-hole c_1 ((lambda (variable_i ...) e_body) v_i ...))
+        (in-hole c_1 ,(foldl lc-subst 
+                             (term e_body) 
+                             (term (v_i ...)) 
+                             (term (variable_i ...))))
+        beta-v))
+]
+
+defines a reduction relation for the @tech{@racket[lc-lang]} grammar.
+
+A rule's name (used in @seclink["Typesetting" "typesetting"],
 the @racket[stepper], @racket[traces], and 
 @racket[apply-reduction-relation/tag-with-names]) can be given
 as a literal (an identifier or a string) or as an expression
@@ -722,18 +746,18 @@ only when the rule has no literal name or when it would not typeset in
 pink due to @racket[with-unquote-rewriter]s in the context; otherwise,
 the literal name (or nothing) is shown.
 
-The fresh variables clause generates variables that do not
-occur in the term being matched. If the @racket[fresh-clause] is a
+Fresh variable clauses generate variables that do not
+occur in the term being reduced. If the @racket[fresh-clause] is a
 variable, that variable is used both as a binding in the
-rhs-exp and as the prefix for the freshly generated
+@|tterm| and as the prefix for the freshly generated
 variable. (The variable does not have to be
 a non-terminal in the language of the reduction relation.)
 
-The second case of a @racket[fresh-clause] is used when you want to
-generate a sequence of variables. In that case, the ellipses
+The second form of @racket[fresh-clause]s generates 
+a sequence of variables. In that case, the ellipses
 are literal ellipses; that is, you must actually write
 ellipses in your rule. The variable @racket[var1] is like the
-variable in first case of a @racket[fresh-clause], namely it is
+variable in first case of a @racket[fresh-clause]; namely it is
 used to determine the prefix of the generated variables and
 it is bound in the right-hand side of the reduction rule,
 but unlike the single-variable fresh clause, it is bound to
@@ -758,45 +782,13 @@ metafunction result. The bindings are the same as bindings in a
 same as a @racket[where] clause, but the clause is not
 rendered when typesetting via @racketmodname[redex/pict].
 
-As an example, this
+Each @racket[shortcut] clause defines arrow names in terms of 
+@racket[base-arrow-name] and earlier @racket[shortcut] definitions.
+The left- and right-hand sides of a @racket[shortcut] definition 
+are identifiers, not @|pattern|s and @|tterm|s. These identifiers
+need not correspond to non-terminals in @racket[language].
 
-@racketblock[
-  (reduction-relation
-   lc-lang
-   (--> (in-hole c_1 ((lambda (variable_i ...) e_body) v_i ...))
-        (in-hole c_1 ,(foldl lc-subst 
-                             (term e_body) 
-                             (term (v_i ...)) 
-                             (term (variable_i ...))))
-        beta-v))
-]
-
-defines a reduction relation for the lambda-calculus above.
-}
-
-@defform/none[#:literals (with reduction-relation)
-         (reduction-relation 
-          language
-          (arrow-var @#,ttpattern @#,tttterm) ...
-          with
-          [(arrow @#,ttpattern @#,tttterm)
-           (arrow-var var var)] ...)]{
-
-Defines a reduction relation with shortcuts. As above, the
-first section defines clauses of the reduction relation, but
-instead of using @racket[-->], those clauses can use any identifier
-for an arrow, as long as the identifier is bound after the
-@racket[with] clause. 
-
-Each of the clauses after the @racket[with] define new relations
-in terms of other definitions after the @racket[with] clause or in
-terms of the main @racket[-->] relation.
-
-A @racket[fresh] variable is always fresh with respect to the entire
-term, not just with respect to the part that matches the
-right-hand-side of the newly defined arrow.
-
-As an example, this
+For example, this expression
 
 @racketblock[
   (reduction-relation
@@ -815,8 +807,12 @@ As an example, this
 ]
   
 defines reductions for the lambda calculus with numbers,
-where the @tt{==>} relation is defined by reducing in the context
+where the @tt{==>} shortcut is defined by reducing in the context
 @tt{c}.
+
+A @racket[fresh] clause in @racket[reduction-case] defined by shortcut
+refers to the entire term, not just the portion matched by the left-hand
+side of shortcut's use.
 }
 
 @defform[(extend-reduction-relation reduction-relation language more ...)]{
