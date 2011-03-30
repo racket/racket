@@ -1,12 +1,14 @@
 (module common racket/base
   (require scribble/manual
            scribble/basic
+           scribble/eval
            racket/class
            racket/contract
            "blurbs.ss"
            (only-in "../reference/mz.ss" AllUnix exnraise))
   (provide (all-from-out scribble/manual)
            (all-from-out scribble/basic)
+           (all-from-out scribble/eval)
            (all-from-out racket/class)
            (all-from-out racket/contract)
            (all-from-out "blurbs.ss")
