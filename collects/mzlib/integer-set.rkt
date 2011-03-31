@@ -1,6 +1,6 @@
 (module integer-set mzscheme
   (require (all-except mzlib/list merge)
-           mzlib/contract)
+           racket/contract)
   
   #;(define-syntax test-block
     (syntax-rules ()
@@ -22,9 +22,6 @@
   ;; one number between them.
   (define-struct integer-set (contents))
   
-  (define (int? x)
-    (and (integer? x) (exact? x)))
-  
   ;; well-formed-set? : X -> bool
   (define (well-formed-set? x)
     (let loop ((set x)
@@ -33,8 +30,8 @@
        (null? set)
        (and (pair? set)
             (pair? (car set))
-            (int? (caar set))
-            (int? (cdar set))
+            (exact-integer? (caar set))
+            (exact-integer? (cdar set))
             (< (add1 current-num) (caar set))
             (<= (caar set) (cdar set))
             (loop (cdr set) (cdar set))))))
@@ -429,22 +426,20 @@
   (define (subset? s1 s2)
     (subset?-helper (integer-set-contents s1) (integer-set-contents s2)))
     
-  (define int (flat-named-contract "exact-integer" int?))
-
   (provide well-formed-set?)
 
   (provide/contract (struct integer-set ((contents (flat-named-contract "integer-set-list" well-formed-set?))))
-                    (make-range (case-> (-> integer-set?)
-                                        (int . ->  . integer-set?)
-                                        (((i int) (j (and/c int (>=/c i)))) . ->r . integer-set?)))
+                    (make-range 
+                     (->i () ((i exact-integer?) (j (i) (and/c exact-integer? (>=/c i)))) [res integer-set?]))
                     (rename merge union (integer-set? integer-set? . -> . integer-set?))
                     (split (integer-set? integer-set? . -> . (values integer-set? integer-set? integer-set?)))
                     (intersect (integer-set? integer-set? . -> . integer-set?))
                     (difference (integer-set? integer-set? . -> . integer-set?))
                     (xor (integer-set? integer-set? . -> . integer-set?))
-                    (complement (((s integer-set?) (min int) (max (and/c int (>=/c min)))) . ->r . integer-set?))
-                    (member? (int integer-set? . -> . any))
-                    (get-integer (integer-set? . -> . (union false/c int)))
+                    (complement (->i ((s integer-set?) (min exact-integer?) (max (min) (and/c exact-integer? (>=/c min))))
+                                     [res integer-set?]))
+                    (member? (exact-integer? integer-set? . -> . any))
+                    (get-integer (integer-set? . -> . (or/c #f exact-integer?)))
                     (rename is-foldr foldr (any/c any/c integer-set? . -> . any))
                     (partition ((listof integer-set?) . -> . (listof integer-set?)))
                     (card (integer-set? . -> . natural-number/c))

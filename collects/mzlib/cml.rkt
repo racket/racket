@@ -1,6 +1,5 @@
-
-(module cml mzscheme
-  (require mzlib/contract)
+#lang racket/base
+(require racket/contract)
 
   (define (spawn thunk)
     (thread/suspend-to-kill thunk))
@@ -32,5 +31,5 @@
    
    (thread-done-evt (thread? . -> . evt?))
    (current-time (-> number?))
-   (time-evt (real? . -> . evt?))))
+   (time-evt (real? . -> . evt?)))
 

@@ -1,10 +1,11 @@
-(module cache-image-snip mzscheme
+#lang racket/base
   (require racket/draw
            racket/snip
-           mzlib/class
-           mzlib/string
-	   mzlib/contract
-           mzlib/list)
+           racket/class
+           racket/contract
+           racket/promise
+           (for-syntax racket/base)
+           mzlib/string)
   
   (provide cache-image-snip%
            cache-image-snip-class%
@@ -274,12 +275,12 @@
                           (= (vector-ref v1 (- i 1)) (vector-ref v2 (- i 1)))))
                  (loop (- i 4)))))))
   
-  (define image-snip-cache (make-hash-table 'weak))
+  (define image-snip-cache (make-weak-hasheq))
   ;; coerce-to-cache-image-snip : image -> (is-a?/c cache-image-snip%)
   (define (coerce-to-cache-image-snip snp)
     (cond
       [(is-a? snp cache-image-snip%) snp]
-      [(hash-table-get image-snip-cache snp (λ () #f)) => values]
+      [(hash-ref image-snip-cache snp (λ () #f)) => values]
       [(is-a? snp image-snip%)
        (let* ([bmp (send snp get-bitmap)]
               [cis
@@ -303,7 +304,7 @@
                                                   (bitmap->mask bmp)
                                                   (floor (/ w 2))
                                                   (floor (/ h 2))))))])
-         (hash-table-put! image-snip-cache snp cis)
+         (hash-set! image-snip-cache snp cis)
          cis)]
       [else snp]))
     
@@ -829,8 +830,8 @@ for b3, we have:
   (define bitmap-size/c (and/c integer? exact? (between/c 1 10000)))
   
   (provide/contract
-   [overlay-bitmap (argb? (and/c integer? exact?)
-                          (and/c integer? exact?)
+   [overlay-bitmap (argb? exact-integer?
+                          exact-integer?
                           (is-a?/c bitmap%)
                           (is-a?/c bitmap%)
                           . -> .
@@ -839,10 +840,10 @@ for b3, we have:
    [flatten-bitmap ((is-a?/c bitmap%) . -> . (is-a?/c bitmap%))]
 
    [argb->cache-image-snip (argb? number? number? . -> . (is-a?/c cache-image-snip%))]
-   [argb->bitmap (argb? . -> . (or/c false/c (is-a?/c bitmap%)))]
+   [argb->bitmap (argb? . -> . (or/c #f (is-a?/c bitmap%)))]
            
    [argb? (any/c . -> . boolean?)]
    [make-argb ((vectorof (integer-in 0 255)) exact-nonnegative-integer? exact-nonnegative-integer? . -> . argb?)]
    [argb-vector (argb? . -> . (vectorof (integer-in 0 255)))]
    [argb-width (argb? . -> . exact-nonnegative-integer?)]
-   [argb-height (argb? . -> . exact-nonnegative-integer?)]))
+   [argb-height (argb? . -> . exact-nonnegative-integer?)])

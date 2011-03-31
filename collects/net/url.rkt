@@ -1,7 +1,6 @@
-#lang scheme/base
-(require scheme/unit
-         scheme/contract
-         (only-in mzlib/contract opt->)
+#lang racket/base
+(require racket/unit
+         racket/contract
          "url-structs.ss"
          "url-sig.ss"
          "url-unit.ss"
@@ -20,18 +19,18 @@
  (string->url ((or/c bytes? string?) . -> . url?))
  (path->url ((or/c path-string? path-for-some-system?) . -> . url?))
  (url->string (url? . -> . string?))
- (url->path ((url?) ((one-of/c 'unix 'windows)) . opt-> . path-for-some-system?))
+ (url->path (->* (url?) ((one-of/c 'unix 'windows)) path-for-some-system?))
 
- (get-pure-port (opt-> (url?) ((listof string?)) input-port?))
- (get-impure-port (opt-> (url?) ((listof string?)) input-port?))
- (post-pure-port (opt-> (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
- (post-impure-port (opt-> (url? bytes?) ((listof string?)) input-port?))
- (head-pure-port (opt-> (url?) ((listof string?)) input-port?))
- (head-impure-port (opt-> (url?) ((listof string?)) input-port?))
- (delete-pure-port (opt-> (url?) ((listof string?)) input-port?))
- (delete-impure-port (opt-> (url?) ((listof string?)) input-port?))
- (put-pure-port (opt-> (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
- (put-impure-port (opt-> (url? bytes?) ((listof string?)) input-port?))
+ (get-pure-port (->* (url?) ((listof string?)) input-port?))
+ (get-impure-port (->* (url?) ((listof string?)) input-port?))
+ (post-pure-port (->* (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
+ (post-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
+ (head-pure-port (->* (url?) ((listof string?)) input-port?))
+ (head-impure-port (->* (url?) ((listof string?)) input-port?))
+ (delete-pure-port (->* (url?) ((listof string?)) input-port?))
+ (delete-impure-port (->* (url?) ((listof string?)) input-port?))
+ (put-pure-port (->* (url? (or/c false/c bytes?)) ((listof string?)) input-port?))
+ (put-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
  (netscape/string->url (string? . -> . url?))
