@@ -96,9 +96,11 @@
 % The 'inset nested-flow style uses the `quote' environment
 
 % Indent a 'code-inset nested flow:
-\newenvironment{SCodeFlow}{\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\newcommand{\SCodePreSkip}{\vskip\abovedisplayskip}
+\newcommand{\SCodePostSkip}{\vskip\belowdisplayskip}
+\newenvironment{SCodeFlow}{\SCodePreSkip\begin{list}{}{\topsep=0pt\partopsep=0pt%
 \listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=0pt%
-\itemsep=0pt\parsep=0pt}\item}{\end{list}}
+\itemsep=0pt\parsep=0pt}\item}{\end{list}\SCodePostSkip}
 
 % The 'compact itemization style:
 \newenvironment{compact}{\begin{itemize}}{\end{itemize}}
