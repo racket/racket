@@ -34,10 +34,14 @@ end
 
 define psonn
   set $O = ((Scheme_Object*) ($arg0))
-  if (((int)$arg0) & 0x1)
-    set $OT = <<scheme_integer_type>>
-  else
-    set $OT = $O->type
+  if (((int)$arg0) == 0x0)
+      set $OT = 0
+  else 
+    if (((int)$arg0) & 0x1)
+      set $OT = <<scheme_integer_type>>
+     else
+      set $OT = $O->type
+    end
   end
   printf "Scheme_Object %p type=%d", $O, $OT
 end
@@ -286,12 +290,23 @@ define psoq
       indent $arg1
       printf "path="
       psox $modidx->path $arg1+1
+      printf "\n"
       indent $arg1
       printf "base="
       psox $modidx->base $arg1+1
+      printf "\n"
       indent $arg1
       printf "resolved="
       psox $modidx->resolved $arg1+1
+      printf "\n"
+      indent $arg1
+      printf "shift_cache="
+      psox $modidx->shift_cache $arg1+1
+      printf "\n"
+      indent $arg1
+      printf "cache_next="
+      psox $modidx->cache_next $arg1+1
+      printf "\n"
     end
     if ( $OT == <<scheme_namespace_type>>)
       printf "scheme_namespace_type\n"
