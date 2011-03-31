@@ -184,6 +184,14 @@ generate events (see @racket[prop:evt]).
    or blocked on events with timeouts that have not yet expired. The
    event's result is @|void-const|.}
 
+ @item{@racket[place-channel] --- a place-channel is ready when
+ @racket[place-channel-receive] would not block. The channel's result as an
+ event is the same as the @racket[place-channel-receive] result.}
+
+ @item{@racket[place] --- a place is ready when @racket[place-channel-receive]
+ would not block. The result as an event is the same as the
+ @racket[place-channel-receive] result.}
+
  ]
 
 @;------------------------------------------------------------------------

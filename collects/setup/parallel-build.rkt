@@ -216,7 +216,7 @@
               [pl null])
              
   (define/public (send/msg msg) (place-channel-send pl msg))
-  (define/public (recv/msg) (place-channel-recv pl))
+  (define/public (recv/msg) (place-channel-receive pl))
   (define/public (get-id) id) 
   (define/public (get-out) pl)
   (define/public (kill) #f)
@@ -239,7 +239,7 @@
      (place/anon (ch)
       (let ([cmc ((dynamic-require 'compiler/cm 'make-caching-managed-compile-zo))])
        (let loop ()
-         (match (place-channel-recv ch)
+         (match (place-channel-receive ch)
            [(list 'DIE) void]
            [(list name dir file)
              (let ([dir (bytes->path dir)]
@@ -254,7 +254,7 @@
                   (match cmd
                     ['lock 
                       (send/msg (list (list 'LOCK (path->bytes fn)) "" ""))
-                      (match (place-channel-recv ch)
+                      (match (place-channel-receive ch)
                         [(list 'locked) #t]
                         [(list 'compiled) #f])]
                     ['unlock (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]))

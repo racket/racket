@@ -20,10 +20,10 @@
 (arity-test place-wait 1 1)
 (arity-test place-channel 0 0)
 (arity-test place-channel-send 2 2)
-(arity-test place-channel-recv 1 1)
+(arity-test place-channel-receive 1 1)
 (arity-test place-channel? 1 1)
 (arity-test place? 1 1)
-(arity-test place-channel-send/recv 2 2)
+(arity-test place-channel-send/receive 2 2)
 (arity-test processor-count 0 0)
 
 (err/rt-test (place "foo.rkt"))

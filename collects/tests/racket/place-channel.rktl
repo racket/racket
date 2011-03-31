@@ -22,7 +22,7 @@
        (with-syntax
           [(x (syntax-local-introduce #'x))]
         #'(place-channel-send ch 
-          (let ([x (place-channel-recv ch)])
+          (let ([x (place-channel-receive ch)])
             body)))]))
 
   (define-syntax-rule (pcrss ch body ...) (begin (pcrs ch body) ...))
@@ -37,10 +37,10 @@
       #s((abuilding 1 building 2) 6 'utah 'no)
       `(,x))
 
-    (define pc1 (place-channel-recv ch))
+    (define pc1 (place-channel-receive ch))
     (pcrss pc1 (string-append x "-ok"))
 
-    (define pc3 (first (place-channel-recv ch)))
+    (define pc3 (first (place-channel-receive ch)))
     (pcrss pc3 (string-append x "-ok3"))
 
     (pcrss ch (begin (flvector-set! x 2 5.0) "Ready1"))
@@ -48,15 +48,15 @@
     (pcrss ch (begin (bytes-set! x 2 67) "Ready3"))
     (pcrss ch (begin (bytes-set! x 2 67) "Ready4"))
 
-    (define pc5 (place-channel-recv ch))
+    (define pc5 (place-channel-receive ch))
     (place-channel-send pc5 "Ready5")
   )
 )
 END
 "pct1.ss")
 
-(define-syntax-rule (pc-send-recv-test ch (send expect) ...) 
-  (begin (test expect place-channel-send/recv ch send) ...))
+(define-syntax-rule (pc-send-receive-test ch (send expect) ...) 
+  (begin (test expect place-channel-send/receive ch send) ...))
 
 
 (define-struct building (rooms location) #:prefab)
@@ -70,7 +70,7 @@ END
 (define b2 (make-shared-bytes 4 65))
 
 (let ([pl (place "pct1.ss" 'place-main)])
-  (pc-send-recv-test pl
+  (pc-send-receive-test pl
     (1 2 )
     ("Hello" "Hello-ok")
     ((cons 'a 'a) (cons 'a 'b))
@@ -81,22 +81,22 @@ END
 
   (define-values (pc1 pc2) (place-channel))
   (place-channel-send pl pc2)
-  (test "Testing-ok" place-channel-send/recv pc1 "Testing")
+  (test "Testing-ok" place-channel-send/receive pc1 "Testing")
 
   (define-values (pc3 pc4) (place-channel))
   (place-channel-send pl (list pc4))
-  (test "Testing-ok3" place-channel-send/recv pc3 "Testing")
+  (test "Testing-ok3" place-channel-send/receive pc3 "Testing")
 
-  (test "Ready1" place-channel-send/recv pl flv1)
+  (test "Ready1" place-channel-send/receive pl flv1)
   (test 5.0 flvector-ref flv1 2)
 
-  (test "Ready2" place-channel-send/recv pl flv2)
+  (test "Ready2" place-channel-send/receive pl flv2)
   (test 6.0 flvector-ref flv2 2)
 
-  (test "Ready3" place-channel-send/recv pl b1)
+  (test "Ready3" place-channel-send/receive pl b1)
   (test 67 bytes-ref b1 2)
 
-  (test "Ready4" place-channel-send/recv pl b2)
+  (test "Ready4" place-channel-send/receive pl b2)
   (test 67 bytes-ref b2 2)
 
   (define-values (pc5 pc6) (place-channel))

@@ -14,7 +14,7 @@
     (provide place-main)
 
     (define (place-main ch)
-      (match (place-channel-recv ch)
+      (match (place-channel-receive ch)
         [(list id reps cnt)
           (define ids (number->string id))
           (for ([j (in-range reps)])

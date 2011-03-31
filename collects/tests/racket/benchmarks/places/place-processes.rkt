@@ -15,9 +15,9 @@
   place
   place-wait
   place-kill
-  place-channel-recv
+  place-channel-receive
   place-channel-send
-  place-channel-send/recv
+  place-channel-send/receive
   place-child-channel
   place/base
   map-reduce/lambda
@@ -41,7 +41,7 @@
   (flush-output out))
 
 ;; receives msg on channel ch
-(define (place-channel-recv ch)
+(define (place-channel-receive ch)
   (deserialize (fasl->s-exp (read (place-channel-s-in (resolve->channel ch))))))
 
 ;; create a place given a module file path and a func-name to invoke
@@ -78,9 +78,9 @@
     (subprocess-wait spo)
     (subprocess-status spo)))
 
-(define (place-channel-send/recv ch x)
+(define (place-channel-send/receive ch x)
   (place-channel-send ch x)
-  (place-channel-recv ch))
+  (place-channel-receive ch))
 
 ;; splits lst into n equal pieces
 (define (split-n n lst)
@@ -166,12 +166,12 @@
       #'(begin
         (define places (for/list ([i (in-range (processor-count))])
           (place/lambda (name ch)
-            (place-channel-send ch ((lambda (listvar) body ...) (place-channel-recv ch))))))
+            (place-channel-send ch ((lambda (listvar) body ...) (place-channel-receive ch))))))
 
         (for ([p places]
               [item (split-n (processor-count) lst)])
           (place-channel-send p item))
-        (define result ((lambda (listvar) body ...) (map place-channel-recv places)))
+        (define result ((lambda (listvar) body ...) (map place-channel-receive places)))
         (map place-wait places)
         (map place-kill places)
         result)]))

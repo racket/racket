@@ -20,7 +20,7 @@
       (define count 10)
       (define fourk-b-message (make-bytes message-size 66))
       (for ([i (in-range count)])
-       (place-channel-recv ch)
+       (place-channel-receive ch)
        (place-channel-send ch fourk-b-message)))])
 
     (define message-size (* 4024 1024))
@@ -30,7 +30,7 @@
       (time-apply (lambda ()
       (for ([i (in-range count)])
         (pp:place-channel-send pl four-k-message)
-        (pp:place-channel-recv pl))) null))
+        (pp:place-channel-receive pl))) null))
 
 
     (print-out "processes" (/ (* 2 count message-size) (/ t2 1000)))
@@ -49,7 +49,7 @@
       (define count 50)
       (define fourk-b-message (make-bytes message-size 66))
       (for ([i (in-range count)])
-       (place-channel-recv ch)
+       (place-channel-receive ch)
        (place-channel-send ch fourk-b-message)))
   )
 END
@@ -63,7 +63,7 @@ END
       (time-apply (lambda ()
       (for ([i (in-range count)])
         (place-channel-send pl four-k-message)
-        (place-channel-recv pl))) null))
+        (place-channel-receive pl))) null))
 
 
     (print-out "places" (/ (* 2 count message-size) (/ t2 1000)))
@@ -79,7 +79,7 @@ END
     (define (place-main ch)
       (define count 500)
       (for ([i (in-range count)])
-       (place-channel-send ch (place-channel-recv ch))))
+       (place-channel-send ch (place-channel-receive ch))))
   )
 END
   "pct1.ss")
@@ -94,7 +94,7 @@ END
       (time-apply (lambda ()
       (for ([i (in-range count)])
         (place-channel-send pl tree)
-        (place-channel-recv pl))) null))
+        (place-channel-receive pl))) null))
 
 
     (printf "~a ~a ~a ~a\n" r t1 t2 t3)

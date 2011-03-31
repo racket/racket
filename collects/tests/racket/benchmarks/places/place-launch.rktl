@@ -13,7 +13,7 @@
 
     (define (barrier ch)
       (place-channel-send ch 0)
-      (place-channel-recv ch))
+      (place-channel-receive ch))
 
     (define (place-main ch)
       (place-channel-send ch 2)
@@ -29,7 +29,7 @@ END
 
     (define (barrier ch)
       (place-channel-send ch 0)
-      (place-channel-recv ch))
+      (place-channel-receive ch))
 
     (define (place-main ch)
       (place-channel-send ch 2)
@@ -49,7 +49,7 @@ END
     (let ([pls (time-n msg 0
                      (for/list ([i (in-range plcnt)]) 
                         (let ([p (place module-path 'place-main)]) 
-                          (place-channel-recv p)
+                          (place-channel-receive p)
                           p)))])
       (barrier-m pls)
       (places-wait pls))
@@ -58,7 +58,7 @@ END
     (let ([pls (time-n msg 1 
                      (let ([pls (for/list ([i (in-range plcnt)])
                                   (place module-path 'place-main))])
-                        (map place-channel-recv pls) pls))])
+                        (map place-channel-receive pls) pls))])
       (barrier-m pls)
       (places-wait pls)))
 

@@ -16,18 +16,18 @@
          place-kill
          place-channel
          place-channel-send
-         place-channel-recv
+         place-channel-receive
          place-channel?
          place?
-         place-channel-send/recv
+         place-channel-send/receive
          processor-count
          (rename-out [pl-place-enabled? place-enabled?]))
 
 (define-struct TH-place (th ch) #:property prop:evt (lambda (x) (TH-place-channel-out (TH-place-ch x))))
 
-(define (place-channel-send/recv ch msg)
+(define (place-channel-send/receive ch msg)
   (place-channel-send ch msg)
-  (place-channel-recv ch))
+  (place-channel-receive ch))
 
 (define (make-th-async-channel)
   (define ch (make-channel))
@@ -98,12 +98,12 @@
   (thread-send th
     (deep-copy msg)))
 
-(define (th-place-channel-recv pl)
+(define (th-place-channel-receive pl)
   (channel-get
     (cond
       [(TH-place? pl) (TH-place-channel-in (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-in pl)]
-      [else (raise-type-error 'place-channel-recv "expect a place? or place-channel?" pl)])))
+      [else (raise-type-error 'place-channel-receive "expect a place? or place-channel?" pl)])))
 
 (define (th-place-channel? pl)
   (or (TH-place? pl)
@@ -117,6 +117,6 @@
 (define-pl place-kill         pl-place-kill         th-place-kill)
 (define-pl place-channel      pl-place-channel      th-place-channel)
 (define-pl place-channel-send pl-place-channel-send th-place-channel-send)
-(define-pl place-channel-recv pl-place-channel-recv th-place-channel-recv)
+(define-pl place-channel-receive pl-place-channel-receive th-place-channel-receive)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
