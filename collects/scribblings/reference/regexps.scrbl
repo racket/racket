@@ -190,9 +190,9 @@ syntax (see @secref["regexp-syntax"]). The result can be used with
 Produces a string or byte string suitable for use with @racket[regexp]
 to match the literal sequence of characters in @racket[str] or
 sequence of bytes in @racket[bstr]. If @racket[case-sensitive?] is
-true, the resulting regexp matches letters in @racket[str] or
-@racket[bytes] case-insensitively, otherwise it matches
-case-sensitively.
+true (the default), the resulting regexp matches letters in
+@racket[str] or @racket[bytes] case-sensitively, otherwise it matches
+case-insensitively.
 
 @examples[
 (regexp-match "." "apple.scm")
