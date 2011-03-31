@@ -1552,13 +1552,13 @@ exploring reduction sequences.
          void?]{
 
 This function opens a new window and inserts each expression
-in expr (if @racket[multiple?] is @racket[#t] -- if
-@racket[multiple?] is @racket[#f], then expr is treated as a single
+in @racket[expr] (if @racket[multiple?] is @racket[#t] -- if
+@racket[multiple?] is @racket[#f], then @racket[expr] is treated as a single
 expression). Then, it reduces the terms until at least
 @racket[reduction-steps-cutoff] (see below) different terms are
 found, or no more reductions can occur. It inserts each new
 term into the gui. Clicking the @onscreen{reduce} button reduces
-until reduction-steps-cutoff more terms are found.
+until @racket[reduction-steps-cutoff] more terms are found.
 
 The @racket[pred] function indicates if a term has a particular
 property. If it returns @racket[#f], the term is displayed with a
@@ -1566,11 +1566,11 @@ pink background. If it returns a string or a @racket[color%] object,
 the term is displayed with a background of that color (using
 @racket[the-color-database] to map the string to a color). If it
 returns any other value, the term is displayed normally. If
-the pred function accepts two arguments, a term-node
+the @racket[pred] function accepts two arguments, a term-node
 corresponding to the term is passed to the predicate. This
 lets the predicate function explore the (names of the)
-reductions that led to this term, using term-node-children,
-term-node-parents, and term-node-labels.
+reductions that led to this term, using @racket[term-node-children],
+@racket[term-node-parents], and @racket[term-node-labels].
 
 The @racket[pred] function may be called more than once per node. In
 particular, it is called each time an edge is added to a
@@ -1599,12 +1599,12 @@ mouse is over a graph node that is connected to that arrow, and the
 second for when the mouse is not over that arrow. Similarly, the next
 colors are for the text drawn on the arrow and the last two are for
 the color that fills the arrow head.  If fewer than six colors are
-specified, the colors specified colors are used and then defaults are
+specified, the specified colors are used and then defaults are
 filled in for the remaining colors.
 
 The @racket[racket-colors?] argument (along with @racket[scheme-colors?],
-retained for backward compatibility), controls the coloring of the
-coloring of each window. When @racket[racket-colors?] is @racket[#t] (and
+retained for backward compatibility), controls the coloring of 
+each window. When @racket[racket-colors?] is @racket[#t] (and
 @racket[scheme-colors?] is @racket[#t] too), @racket[traces] colors the 
 contents according to DrRacket's Racket-mode color scheme; otherwise,
 @racket[traces] uses a black color scheme.
@@ -1617,7 +1617,7 @@ The @racket[x-spacing] and @racket[y-spacing] control the amount of
 space put between the snips in the default layout.
 
 The @racket[layout] argument is called (with all of the terms) when
-new terms is inserted into the window. In general, it is called when
+new terms are inserted into the window. In general, it is called
 after new terms are inserted in response to the user clicking on the
 reduce button, and after the initial set of terms is inserted.
 See also @racket[term-node-set-position!].
@@ -1629,7 +1629,7 @@ The @racket[edge-label-font] argument is used as the font on the edge
 labels. If @racket[#f] is suppled, the @racket[dc<%>] object's default
 font is used.
 
-The traces library an instance of the @racketmodname[mrlib/graph]
+The traces library uses an instance of the @racketmodname[mrlib/graph]
 library's @racket[graph-pasteboard<%>] interface to layout
 the graphs.  Sometimes, overriding one of its methods can
 help give finer-grained control over the layout, so the
@@ -1686,11 +1686,11 @@ just before the PostScript is created with the graph pasteboard.
           void?]{
 
 This function opens a stepper window for exploring the
-behavior of its third argument in the reduction system
-described by its first two arguments. 
+behavior of the term @racket[t] in the reduction system given by
+@racket[reductions].
 
 The @racket[pp] argument is the same as to the
-@racket[traces] functions (above) but is here for
+@racket[traces] function but is here for
 backwards compatibility only and
 should not be changed for most uses, but instead adjusted with
 @racket[pretty-print-parameters]. Specifically, the 
