@@ -230,13 +230,11 @@ This is a restricted form of @racketmodname[racket/contract]'s
       
 }
 
-@defform*[((->r ([dom-x contract-dom-expr] ...) any)
-           (->r ([dom-x contract-dom-expr] ...)
-                (values [rng-x contract-rng-expr] ...)
-                post-cond-expr)
-           (->r ([dom-x contract-dom-expr] ...)
-                contract-rng-expr
-                rng-x))]{
+@defform*/subs[((->r ([dom-x contract-dom-expr] ...) rng)
+                (->r ([dom-x contract-dom-expr] ...) rest-x contract-rest-expr rng))
+               ((rng any
+                     (values contract-expr ...)
+                     contract-expr))]{
 
   The @racket[->r] form is a simplified version of @racketmodname[racket/contract]'s @|r:->i|, where
   each @racket[contract-dom-expr] is parameterized over all of the @racket[dom-x] variables
