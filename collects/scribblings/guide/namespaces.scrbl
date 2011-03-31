@@ -27,7 +27,7 @@ and evaluates it:
 (eval '(+ 1 2))
 ]
 
-The power of @racket[eval] that is that an expression can be
+The power of @racket[eval] is that an expression can be
 constructed dynamically:
 
 @interaction[
@@ -52,7 +52,7 @@ direct approach is to use first-class functions:
 
 However, if expressions like @racket[(+ x y)] and @racket[(+ (* x y)
 y)] are read from a file supplied by a user, for example, then
-@racket[eval] might be appropriate. Simialrly, the @tech{REPL} reads
+@racket[eval] might be appropriate. Similarly, the @tech{REPL} reads
 expressions that are typed by a user and uses @racket[eval] to
 evaluate them.
 
