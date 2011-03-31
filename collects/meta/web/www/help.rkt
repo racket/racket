@@ -16,13 +16,11 @@
                   may include documentation for optional packages you've
                   installed.  As a second line of defense, the documentation
                   for the core of the most recent version of Racket is
-                  available
-                  @a[href: "http://docs.plt-scheme.org/"]{from this web site}.}
+                  available @-docs{from this web site}.}
             @text{Not sure what to search for?  The documentation includes a
-                  @a[href: "http://docs.plt-scheme.org/guide/"]{guide} (also
-                  located in your local copy of the documentation) that
-                  provides a narrative introduction to many of Racket's
-                  features.}]
+                  @guide{guide} (also located in your local copy of the
+                  documentation) that provides a narrative introduction to many
+                  of Racket's features.}]
    @parlist[@strong{Learning how to Program}
             @text{Try going through @|-htdp|.}]
    @parlist[@strong{Searching the Web}

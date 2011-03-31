@@ -32,7 +32,7 @@
   @make-link["http://htdp.org/"]{@i{How to Design Programs}})
 
 (define* -redex
-  @make-link["http://redex.plt-scheme.org/"]{Redex})
+  @make-link["http://redex.racket-lang.org/"]{Redex})
 
 (define* -pbd
   @make-link["http://programbydesign.org/"]{Program by Design})
