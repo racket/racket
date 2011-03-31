@@ -14,18 +14,18 @@ text to be generated programmatically.
 
 Here’s some Racket code:
 
-  (define half (lambda (x)
-                 (x x)))  
-  (x x)                   
+  (define half (lambda (x)
+                 (x x)))  
+  (x x)                   
 
 1.2. Another Subsection
 
  (require racket/base)
 
-(cons car cdr) -> stuff?  
-   car   :   (or/c #f     
-                   other?)
-  cdr : any?              
+(cons car cdr) -> stuff?
+  car : (or/c #f        
+              other?)   
+  cdr : any?            
 
 Ok?
 

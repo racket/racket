@@ -71,7 +71,6 @@
                     (render-block p part ht #f))
                   (cdr f)))))
 
-
       (define/override (render-intrapara-block p part ri first? last? starting-item?)
         (unless first? (indented-newline))
         (super render-intrapara-block p part ri first? last? starting-item?))
@@ -110,7 +109,7 @@
                         (when indent? (indent))
                         (for/fold ([space? #f]) ([col (in-list sub-row)]
                                                  [w (in-list widths)])
-                          (when space? (display " "))
+                          ; (when space? (display " "))
                           (let ([col (if (eq? col 'cont)
                                          ""
                                          col)])
@@ -173,6 +172,17 @@
             (parameterize ([current-preserve-spaces #t])
               (super render-content i part ri))
             (super render-content i part ri)))
+
+      (define/override (render-nested-flow i part ri)
+        (let ([s (nested-flow-style i)])
+          (if (and s
+                   (or (eq? (style-name s) 'inset)
+                       (eq? (style-name s) 'code-inset)))
+              (begin
+                (printf "  ")
+                (parameterize ([current-indent (make-indent 2)])
+                  (super render-nested-flow i part ri)))
+              (super render-nested-flow i part ri))))
       
       (define/override (render-other i part ht)
         (cond

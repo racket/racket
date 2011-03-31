@@ -1,4 +1,4 @@
 quote
 
-  @itemlist[#:style 'ordered   
-            @item{Eat cookie.}]
+  @itemlist[#:style 'ordered   
+            @item{Eat cookie.}]
