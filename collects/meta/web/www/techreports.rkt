@@ -73,7 +73,8 @@
           (make-bib #:title    "|@title"
                     #:author   |@(format "~s" (cons 'authors author-strings))
                     #:date     "2010"
-                    #:location (techrpt-location "|@tr-name")
+                    #:location (techrpt-location #:institution "PLT Inc."
+                                                 #:number "|@tr-name")
                     #:url      "|@(get-resource-path cite-page #t)"))}|
       @h2{Specific Versions}
       @blockquote{
