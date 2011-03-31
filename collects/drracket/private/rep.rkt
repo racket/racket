@@ -20,6 +20,7 @@ TODO
          racket/pretty
          racket/unit
          racket/list
+         racket/port
          
          string-constants
          setup/xref
@@ -1654,8 +1655,8 @@ TODO
               [drr-evtspace (current-eventspace)]
               [s (make-semaphore 0)])
           
-          (define-values (sp-err-other-end sp-err) (make-pipe))
-          (define-values (sp-out-other-end sp-out) (make-pipe))
+          (define-values (sp-err-other-end sp-err) (make-pipe-with-specials))
+          (define-values (sp-out-other-end sp-out) (make-pipe-with-specials))
           (define io-chan (make-channel))
           
           ;; collect the IO to replay later
@@ -1670,10 +1671,10 @@ TODO
                          (map (λ (port) (handle-evt 
                                          port 
                                          (λ (_) 
-                                           (define byte (read-byte port))
-                                           (if (eof-object? byte)
+                                           (define byte/special (read-byte-or-special port))
+                                           (if (eof-object? byte/special)
                                                (loop (remq port ports) io)
-                                               (loop ports (cons (cons port byte) 
+                                               (loop ports (cons (cons port byte/special) 
                                                                  io))))))
                               ports))]))))
              
@@ -1707,10 +1708,13 @@ TODO
           ;; duplicate it over to the user's ports, now that there is
           ;; no danger of deadlock
           (for ([i (in-list (reverse (channel-get io-chan)))])
-            (write-byte (cdr i)
-                        (if (eq? (car i) sp-err-other-end)
-                            (get-err-port)
-                            (get-out-port)))))
+            (define obj (cdr i))
+            
+            ((if (byte? obj) write-byte write-special)
+             obj
+             (if (eq? (car i) sp-err-other-end)
+                 (get-err-port)
+                 (get-out-port)))))
         
         (send context enable-evaluation)
         (end-edit-sequence)
