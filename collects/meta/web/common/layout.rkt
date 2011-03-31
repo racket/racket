@@ -109,19 +109,19 @@
                  [(page part-of) (hash-set! t page part-of)])))
 
 (provide set-navbar!)
-(define-syntax-rule (set-navbar! pages help)
+(define-syntax-rule (set-navbar! pages top help)
   (if (unbox navbar-info)
     ;; since generation is delayed, it won't make sense to change the navbar
     (error 'set-navbar! "called twice")
-    (set-box! navbar-info (list (lazy pages) (lazy help)))))
+    (set-box! navbar-info (list (lazy pages) (lazy top) (lazy help)))))
 
 (define navbar-info (box #f))
 (define (navbar-maker logo)
   (define pages-promise
     (lazy (car (or (unbox navbar-info)
                    (error 'navbar "no navbar info set")))))
-  (define help-promise
-    (lazy (cadr (unbox navbar-info))))
+  (define top-promise  (lazy (cadr (unbox navbar-info))))
+  (define help-promise (lazy (caddr (unbox navbar-info))))
   (define pages-parts-of-promise
     (lazy (map pages->part-of (force pages-promise))))
   (define (middle-text size x)
@@ -140,11 +140,12 @@
           (middle-text 80 ")")
           (middle-text 100 ")")))
   (define (header-cell logo)
-    (td OPEN
-        (img src: logo alt: "[logo]"
-             style: '("vertical-align: middle; "
-                      "margin: 13px 0.25em 0 0; border: 0;"))
-        CLOSE))
+    (td (a href: (get-resource-path (force top-promise))
+           OPEN
+           (img src: logo alt: "[logo]"
+                style: '("vertical-align: middle; "
+                         "margin: 13px 0.25em 0 0; border: 0;"))
+           CLOSE)))
   (define (links-table this)
     (table width: "100%"
       (tr (map (lambda (nav navpart)
