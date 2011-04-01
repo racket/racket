@@ -266,9 +266,10 @@
                   (eq? namex namey)
                   (equal? phasex phasey)))]
           [else
-           ;; One must be lexical (can't be #f, since one must be bound)
-           ;; lexically-bound names bound in only one phase; just compare
-           (free-identifier=? x y)])))
+           (and (eq? bx 'lexical) (eq? by 'lexical)
+                ;; One must be lexical (can't be #f, since one must be bound)
+                ;; lexically-bound names bound in only one phase; just compare
+                (free-identifier=? x y))])))
 
 ;; ----
 

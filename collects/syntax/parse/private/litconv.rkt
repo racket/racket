@@ -3,6 +3,7 @@
                      "sc.rkt"
                      "lib.rkt"
                      unstable/syntax
+                     syntax/keyword
                      "rep-data.rkt"
                      "rep.rkt"
                      "kws.rkt")
@@ -57,25 +58,52 @@
                def ...
                (list parser ...)))))]))
 
+(define-for-syntax (check-phase-level stx ctx)
+  (unless (or (exact-integer? (syntax-e stx))
+              (eq? #f (syntax-e stx)))
+    (raise-syntax-error #f "expected phase-level (exact integer or #f)" ctx stx))
+  stx)
+
 (define-syntax (define-literal-set stx)
   (syntax-case stx ()
-    [(define-literal-set name (lit ...))
-     (let ([phase-of-definition (syntax-local-phase-level)])
+    [(define-literal-set name . rest)
+     (let-values ([(chunks rest)
+                   (parse-keyword-options
+                    #'rest
+                    `((#:phase ,check-phase-level)
+                      (#:for-template)
+                      (#:for-syntax)
+                      (#:for-label))
+                    #:incompatible '((#:phase #:for-template #:for-syntax #:for-label))
+                    #:context stx
+                    #:no-duplicates? #t)])
        (unless (identifier? #'name)
          (raise-syntax-error #f "expected identifier" stx #'name))
-       (let ([lits (check-literals-list/litset #'(lit ...) stx)])
-         (with-syntax ([((internal external) ...) lits])
+       (let ([relphase
+              (cond [(assq '#:for-template chunks) -1]
+                    [(assq '#:for-syntax chunks) 1]
+                    [(assq '#:for-label chunks) #f]
+                    [else (options-select-value chunks '#:phase #:default 0)])]
+             [lits (syntax-case rest ()
+                     [( (lit ...) )
+                      (check-literals-list/litset #'(lit ...) stx)]
+                     [_ (raise-syntax-error #f "bad syntax" stx)])])
+         (with-syntax ([((internal external) ...) lits]
+                       [relphase relphase])
            #`(begin
                (define phase-of-literals
-                 (phase-of-enclosing-module))
+                 (if 'relphase
+                     (+ (phase-of-enclosing-module) 'relphase)
+                     'relphase))
                (define-syntax name
                  (make-literalset
                   (list (list 'internal (quote-syntax external)) ...)
                   (quote-syntax phase-of-literals)))
                (begin-for-syntax/once
                 (for ([x (in-list (syntax->list #'(external ...)))])
-                  (unless (identifier-binding x 0)
-                    (raise-syntax-error #f "literal is unbound in phase 0"
+                  (unless (identifier-binding x 'relphase)
+                    (raise-syntax-error #f
+                                        (format "literal is unbound in phase ~a" 'relphase)
                                         (quote-syntax #,stx) x))))))))]))
 
 (define-syntax (phase-of-enclosing-module stx)

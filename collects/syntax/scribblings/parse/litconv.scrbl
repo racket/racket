@@ -15,9 +15,14 @@ As a remedy, @schememodname[syntax/parse] offers @deftech{literal
 sets}. A literal set is defined via @scheme[define-literal-set] and
 used via the @scheme[#:literal-set] option of @scheme[syntax-parse].
 
-@defform/subs[(define-literal-set name-id (literal ...))
+@defform/subs[(define-literal-set name-id maybe-phase (literal ...))
               ([literal literal-id
-                        (pattern-id literal-id)])]{
+                        (pattern-id literal-id)]
+               [maybe-phase (code:line)
+                            (code:line #:for-template)
+                            (code:line #:for-syntax)
+                            (code:line #:for-label)
+                            (code:line #:phase phase-level)])]{
 
 Defines @scheme[name] as a @tech{literal set}. Each @scheme[literal]
 can have a separate @scheme[pattern-id] and @scheme[literal-id]. The
@@ -34,8 +39,14 @@ identifiers the literal matches.
   [(define-syntaxes (x:id ...) e:expr) 's])
 ]
 
-The literals in a literal set always refer to the phase-0 bindings of
-the enclosing module. For example:
+The literals in a literal set always refer to the bindings at phase
+@scheme[phase-level] @emph{relative to the enclosing module}. If the
+@scheme[#:for-template] option is given, @scheme[phase-level] is
+@scheme[-1]; @scheme[#:for-syntax] means @racket[1], and
+@racket[#:for-label] means @racket[#f]. If no phase keyword option is
+given, then @racket[phase-level] is @racket[0].
+
+For example:
 
 @myexamples[
 (module common racket/base
@@ -52,7 +63,17 @@ In the literal set @scheme[common-lits], the literal @scheme[x] always
 recognizes identifiers bound to the variable @scheme[x] defined in
 module @schememodname['common].
 
-When a literal set is used with the @scheme[#:phase phase-expr]
+The following module defines an equivalent literal set, but imports
+the @racket['common] module for-template instead:
+
+@myexamples[
+(module lits racket/base
+  (require syntax/parse (for-template 'common))
+  (define-literal-set common-lits #:for-template (x))
+  (provide common-lits))
+]
+
+When a literal set is @emph{used} with the @scheme[#:phase phase-expr]
 option, the literals' fixed bindings are compared against the binding of
 the input literal at the specified phase. Continuing the example:
 
