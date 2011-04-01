@@ -99,7 +99,13 @@
                                             (define-language x (e ....))
                                             12)))
         '("...."))
-  
+
+  (test-syn-err
+   (let ()
+     (define-language L
+       (n ,3))
+     (void))
+   #rx"define-language:.*unquote disallowed" 1)
 
   (let ()
     ; error message shows correct form name

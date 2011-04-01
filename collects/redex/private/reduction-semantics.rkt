@@ -1783,7 +1783,7 @@
 
 (define-syntax (define-language stx)
   (syntax-case stx ()
-    [(_ lang-name . nt-defs)
+    [(form-name lang-name . nt-defs)
      (begin
        (unless (identifier? #'lang-name)
          (raise-syntax-error #f "expected an identifier" stx #'lang-name))
@@ -1798,19 +1798,19 @@
                    (case-lambda
                      [(stx)
                       (syntax-case stx (set!)
-                        [(set! x e) (raise-syntax-error 'define-language "cannot set! identifier" stx #'e)]
+                        [(set! x e) (raise-syntax-error (syntax-e #'form-name) "cannot set! identifier" stx #'e)]
                         [(x e (... ...)) #'(define-language-name e (... ...))]
                         [x 
                          (identifier? #'x)
                          #'define-language-name])])
                    '(all-names ...))))
-               (define define-language-name (language lang-name (all-names ...) (names prods ...) ...)))))))]))
+               (define define-language-name (language form-name lang-name (all-names ...) (names prods ...) ...)))))))]))
 
 (define-struct binds (source binds))
 
 (define-syntax (language stx)
   (syntax-case stx ()
-    [(_ lang-id (all-names ...) (name rhs ...) ...)
+    [(_ form-name lang-id (all-names ...) (name rhs ...) ...)
      (prune-syntax
       (let ()
         (let ([all-names (syntax->list #'(all-names ...))])
@@ -1819,7 +1819,7 @@
                                 (map (lambda (rhs)
                                        (rewrite-side-conditions/check-errs
                                         (map syntax-e all-names)
-                                        'language
+                                        (syntax-e #'form-name)
                                         #f
                                         rhs)) 
                                      (syntax->list rhss)))
