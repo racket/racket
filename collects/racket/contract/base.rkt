@@ -13,17 +13,10 @@
          "private/misc.rkt"
          "private/provide.rkt"
          "private/guts.rkt"
-         "private/legacy.rkt"
-         "private/ds.rkt"
-         "private/opt.rkt"
          "private/blame.rkt"
          "private/prop.rkt")
 
 (provide
- opt/c define-opt/c ;(all-from-out "private/opt.rkt")
- (except-out (all-from-out "private/ds.rkt")
-             lazy-depth-to-look)
-
  (except-out (all-from-out "private/arrow.rkt")
              making-a-method
              procedure-accepts-and-more?
@@ -40,7 +33,6 @@
              check-unary-between/c)
  (all-from-out "private/provide.rkt")
  (all-from-out "private/base.rkt")
- (all-from-out "private/legacy.rkt")
  (except-out (all-from-out "private/guts.rkt")
              check-flat-contract
              check-flat-named-contract)
