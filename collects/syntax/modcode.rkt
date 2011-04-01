@@ -1,4 +1,4 @@
-(module modcode scheme/base
+#lang racket/base
   (require mzlib/port
            racket/contract
            "modread.ss")
@@ -21,7 +21,7 @@
                           #:choose 
                           (path? path? path? . -> . (or/c (symbols 'src 'zo 'so) false/c))
                           #:notify  (any/c . -> . any)
-                          #:source-reader (any/c input-port? . -> . syntax?)
+                          #:source-reader (any/c input-port? . -> . (or/c syntax? eof-object?))
                           #:rkt-try-ss? boolean?)
                          any)])
 
@@ -180,4 +180,5 @@
           [else (raise (make-exn:get-module-code
                         (format "get-module-code: no such file: ~e" orig-path)
                         (current-continuation-marks)
-                        #f))])))))
+                        #f))]))))
+  

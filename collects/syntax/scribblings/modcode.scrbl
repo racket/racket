@@ -20,7 +20,7 @@
                            (lambda (src zo so) #f)]
                           [#:notify notify-proc (any/c . -> . any) void]
                           [#:source-reader read-syntax-proc 
-                                        (any/c input-port? . -> . syntax?) 
+                                        (any/c input-port? . -> . (or/c syntax? eof-object?)) 
                                         read-syntax])
          any]{
 
