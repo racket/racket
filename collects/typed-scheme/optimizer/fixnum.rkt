@@ -45,7 +45,7 @@
 ;; obviously, we can't include fx-specific ops here, since their return type is
 ;; always Fixnum, and we rely on the error behavior if that would be violated
 (define potentially-bounded-fixnum-ops
-  (mk-fixnum-tbl (list #'+ #'- #'* #'abs) #f))
+  (mk-fixnum-tbl (list #'+ #'- #'*) #f))
 (define potentially-bounded-nonzero-fixnum-ops
   (mk-fixnum-tbl (list #'quotient #'remainder) #f))
 
@@ -106,15 +106,13 @@
   ;; won't exceed fixnum range in some cases.
   ;; (if they typecheck with return type Fixnum)
   (pattern (#%plain-app (~var op (fixnum-op potentially-bounded-fixnum-ops))
-                        ns:fixnum-expr ...)
+                        n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
            #:when (subtypeof? this-syntax -Fixnum)
            #:with opt
            (begin (log-optimization "fixnum bounded expr" #'op)
-                  (if (> (length (syntax->list #'(ns ...))) 2)
-                      (let ([post-opt (syntax->list #'(ns.opt ...))])
-                        (n-ary->binary #'op.unsafe
-                                       (car post-opt) (cadr post-opt) (cddr post-opt)))
-                      #'(op.unsafe ns.opt ...))))
+                  (let ([post-opt (syntax->list #'(n1.opt n2.opt ns.opt ...))])
+                    (n-ary->binary #'op.unsafe
+                                   (car post-opt) (cadr post-opt) (cddr post-opt)))))
   (pattern (#%plain-app (~var op (fixnum-op potentially-bounded-nonzero-fixnum-ops))
                         n1:fixnum-expr n2:nonzero-fixnum-expr)
            #:when (subtypeof? this-syntax -Fixnum)
@@ -146,7 +144,7 @@
            #:with opt
            (begin (log-optimization "fixnum fxquotient" #'op)
                   #'(unsafe-fxquotient n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~literal fxabs)) n:fixnum-expr)
+  (pattern (#%plain-app (~and op (~or (~literal fxabs) (~literal abs))) n:fixnum-expr)
            #:when (subtypeof? #'n -NonNegFixnum) ; (abs min-fixnum) is not a fixnum
            #:with opt
            (begin (log-optimization "fixnum fxabs" #'op)

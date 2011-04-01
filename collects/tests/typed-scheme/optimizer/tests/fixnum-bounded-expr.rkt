@@ -5,7 +5,7 @@ fixnum-bounded-expr.rkt line 66 col 8 - * - fixnum bounded expr
 fixnum-bounded-expr.rkt line 66 col 3 - - - fixnum bounded expr
 fixnum-bounded-expr.rkt line 73 col 3 - + - fixnum bounded expr
 fixnum-bounded-expr.rkt line 76 col 3 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 81 col 1 - abs - fixnum bounded expr
+fixnum-bounded-expr.rkt line 81 col 1 - abs - fixnum fxabs
 fixnum-bounded-expr.rkt line 84 col 1 - fx+ - fixnum fx+
 fixnum-bounded-expr.rkt line 85 col 6 - + - fixnum bounded expr
 fixnum-bounded-expr.rkt line 85 col 17 - * - fixnum bounded expr
