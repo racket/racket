@@ -200,7 +200,8 @@
 
   (define-syntax (hidden-! stx)
     (syntax-case stx (!)
-      [(_ arg) (stepper-syntax-property #'(! arg) 'stepper-skipto
+      [(_ arg) (syntax/loc stx (! arg))
+       #;(stepper-syntax-property #'(! arg) 'stepper-skipto
                                         (append skipto/cdr skipto/second))]))
 
   (define-syntax (!*app stx)
@@ -223,7 +224,10 @@
            (with-syntax ([lazy   (syntax/loc stx (p y     ...))]
                          [strict (syntax/loc stx (p (hidden-! y) ...))])
              (quasisyntax/loc stx
-               (let ([p f] [y x] ...)
+               ((lambda (p y ...)
+                  (if (lazy? p) lazy strict))
+                f x ...)
+               #;(let ([p f] [y x] ...)
                  ;; #,($$ #`(if (lazy? p) lazy strict))
                  (if (lazy? p) lazy strict))))))]))
 
