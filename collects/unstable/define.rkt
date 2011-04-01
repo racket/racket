@@ -22,6 +22,7 @@
   define-syntax-block
 
   declare-names
+  define-renaming
   define-renamings
   define-single-definition
   define-with-parameter
@@ -126,6 +127,9 @@
 
 (define-syntax-rule (define-renamings [new old] ...)
   (define-syntaxes [new ...] (values (make-rename-transformer #'old) ...)))
+
+(define-syntax-rule (define-renaming new old)
+  (define-renamings [new old]))
 
 (define-syntax (in-phase1 stx)
   (syntax-case stx []
