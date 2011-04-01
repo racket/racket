@@ -1,10 +1,10 @@
-
-(module graph mzscheme
-  (require mzlib/class
-           mzlib/list
-           mzlib/math
-           mred
-	   mzlib/contract)
+#lang racket/base
+  (require racket/class
+           racket/list
+           racket/math
+           racket/gui/base
+	   (for-syntax racket/base)
+           racket/contract)
   
   (provide graph-snip<%>
            graph-snip-mixin
@@ -29,61 +29,61 @@
   (define-local-member-name get-parent-links)
   
   (provide/contract (add-links
-		     (case->
+                     (case->
 		      ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
 		       . -> .
 		       void?)
 		      ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c brush%))
-		       (or/c false/c (is-a?/c brush%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c brush%))
+		       (or/c #f (is-a?/c brush%))
 		       . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c brush%))
-		       (or/c false/c (is-a?/c brush%))
-                       (or/c false/c string?)
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c brush%))
+		       (or/c #f (is-a?/c brush%))
+                       (or/c #f string?)
 		       . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c brush%))
-		       (or/c false/c (is-a?/c brush%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c brush%))
+		       (or/c #f (is-a?/c brush%))
 		       number?
                        number?
                        . -> .
 		       void?)
                       ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c brush%))
-		       (or/c false/c (is-a?/c brush%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c brush%))
+		       (or/c #f (is-a?/c brush%))
 		       number?
                        number?
-                       (or/c false/c string?)
+                       (or/c #f string?)
                        . -> .
 		       void?)))
                     (add-links/text-colors
                      ((is-a?/c graph-snip<%>)
 		       (is-a?/c graph-snip<%>)
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c pen%))
-		       (or/c false/c (is-a?/c brush%))
-		       (or/c false/c (is-a?/c brush%))
-                       (or/c false/c (is-a?/c color%))
-                       (or/c false/c (is-a?/c color%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c pen%))
+		       (or/c #f (is-a?/c brush%))
+		       (or/c #f (is-a?/c brush%))
+                       (or/c #f (is-a?/c color%))
+                       (or/c #f (is-a?/c color%))
 		       number?
                        number?
-                       (or/c false/c string?)
+                       (or/c #f string?)
                        . -> .
 		       void?))
                     (remove-links
@@ -94,7 +94,7 @@
                     (set-link-label
                      ((is-a?/c graph-snip<%>)
                       (is-a?/c graph-snip<%>)
-                      (or/c false/c string?)
+                      (or/c #f string?)
                       . -> .
                       void?)))
 
@@ -126,7 +126,7 @@
   
   
   ;; label is boolean or string
-  (define-struct link (snip dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
+  (define-struct link (snip dark-pen light-pen dark-brush light-brush dark-text light-text dx dy [label #:mutable]))
   
   ;; add-links : (is-a?/c graph-snip<%>) (is-a?/c graph-snip<%>) -> void
   ;;           : (is-a?/c graph-snip<%>) (is-a?/c graph-snip<%>) pen pen brush brush -> void
@@ -217,11 +217,11 @@
         (memq this (get-children)))
       
       (define/public (find-shortest-path other)
-        (define visited-ht (make-hash-table))
+        (define visited-ht (make-hasheq))
         (define (first-view? n) 
-          (hash-table-get visited-ht n (lambda () 
-                                         (hash-table-put! visited-ht n #f)
-                                         #t)))
+          (hash-ref visited-ht n (lambda () 
+                                   (hash-set! visited-ht n #f)
+                                   #t)))
         (let loop ((horizon (list (list this))))
           (cond
             [(null? horizon) #f]
@@ -524,7 +524,6 @@
         (super on-paint before? dc left top right bottom dx dy draw-caret))
       
       (define/public (draw-edges dc left top right bottom dx dy)
-        (let ()
           ;; draw-connection : link snip boolean boolean -> void
           ;; sets the drawing context (pen and brush)
           ;; determines if the connection is between a snip and itself or two different snips
@@ -695,7 +694,7 @@
             (send dc set-smoothing os)
             (send dc set-pen old-pen)
             (send dc set-text-foreground old-fg)
-            (send dc set-brush old-brush))))
+            (send dc set-brush old-brush)))
       
       (define/public (draw-single-edge dc dx dy from to from-x from-y to-x to-y arrow-point-ok?)
         (send dc draw-line
@@ -713,7 +712,6 @@
       
       ;; for-each-to-redraw : number number number number (link snip -> void)
       (define/private (for-each-to-redraw left top right bottom f)
-        (let ()
           ;;  : link snip boolean boolean -> void
           ;; sets the drawing context (pen and brush)
           ;; determines if the connection is between a snip and itself or two different snips
@@ -750,7 +748,7 @@
                          (is-a? snip graph-snip<%>))
                 (for-each (lambda (parent-link) (maybe-call-f parent-link snip))
                           (send snip get-parent-links)))
-              (loop (send snip next))))))
+              (loop (send snip next)))))
       
       
       (field 
@@ -921,5 +919,5 @@
   
   ;; get-all-parents : snip -> (listof snip)
   (define (get-all-parents snip)
-    (get-all-relatives (lambda (snip) (send snip get-parents)) snip)))
+    (get-all-relatives (lambda (snip) (send snip get-parents)) snip))
   
