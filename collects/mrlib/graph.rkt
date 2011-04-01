@@ -181,8 +181,6 @@
           [(parent dark-pen light-pen dark-brush light-brush)
            (add-parent parent dark-pen light-pen dark-brush light-brush 0 0)]
           [(parent dark-pen light-pen dark-brush light-brush dx dy)
-           (add-parent parent dark-pen light-pen dark-brush light-brush dx dy #f)]
-          [(parent dark-pen light-pen dark-brush light-brush dx dy)
            (add-parent parent dark-pen light-pen dark-brush light-brush #f #f dx dy #f)]
           [(parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label)
            (unless (memf (lambda (parent-link) (eq? (link-snip parent-link) parent)) parent-links)
