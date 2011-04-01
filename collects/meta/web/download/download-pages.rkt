@@ -65,7 +65,9 @@
           @(map (lambda (v)
                   (tr (map (lambda (p) (td align: 'center (make-page v p)))
                            all-packages)))
-                all-versions)}}}))
+                all-versions)
+          @tr{@td[align: 'center colspan: 2 style: "border-top: solid 1px;"]{
+                @pre:installers}}}}}))
 
 (define license
   @page[#:title "Software License" #:part-of 'download]{

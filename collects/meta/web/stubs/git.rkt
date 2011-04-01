@@ -81,9 +81,6 @@
 ;; ----------------------------------------------------------------------------
 ;; git "guide"
 
-;; TODO: link man pages
-;; @man and other occurrences of "man page"
-;; @v for meta-vars
 (define intro (let ()
 
 (define (cmd  . text) (span class: "code" text))
@@ -99,9 +96,6 @@
 (define (npre . text) (apply pre style: "margin-left: 0;" text))
 (define style
   @style/inline[type: 'text/css]{
-    a:link, a:visited {
-      text-decoration: underline;
-    }
     .p {
       display: block;
       margin: 1em 0;
@@ -115,6 +109,9 @@
     }
     .code, .path, .man {
       white-space: nowrap;
+    }
+    .the_text a:link, .the_text a:visited {
+      text-decoration: underline;
     }
     .the_text pre {
       margin-left: 2em;
