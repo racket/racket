@@ -1070,6 +1070,18 @@
    'contract-arrow-any3
    '((contract (integer? . -> . any) (lambda (x) #f) 'pos 'neg) #t))
 
+  (test/spec-passed
+   'contract-arrow-all-kwds
+   '(contract (-> #:a string? string?) 
+              (make-keyword-procedure void)
+              'pos 'neg))
+  
+  (test/spec-passed
+   'contract-arrow-all-kwds2
+   '((contract (-> #:a string? void?) 
+               (make-keyword-procedure void)
+               'pos 'neg)
+     #:a "abcdef"))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
