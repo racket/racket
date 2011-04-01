@@ -283,10 +283,10 @@
                   (eq? namex namey)
                   (equal? phasex phasey)))]
           [else
-           (and (eq? bx 'lexical) (eq? by 'lexical)
-                ;; One must be lexical (can't be #f, since one must be bound)
-                ;; lexically-bound names bound in only one phase; just compare
-                (free-identifier=? x y))])))
+           ;; Module is only way to get phase-shift; if not module-bound names,
+           ;; then only identifiers at same phase can refer to same binding.
+           (and (equal? phase-x phase-y)
+                (free-identifier=? x y phase-x))])))
 
 ;; ----
 

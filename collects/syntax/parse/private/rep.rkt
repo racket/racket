@@ -844,7 +844,8 @@ A syntax class is integrable if
      (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
                                                #:no-duplicates? #t
                                                #:context stx)]
-            [phase (options-select-value chunks '#:phase #:default 0)])
+            [phase (options-select-value chunks '#:phase
+                                         #:default #'(syntax-local-phase-level))])
        ;; FIXME: Duplicates phase expr!
        (create-pat:literal #'lit phase phase))]
     [_
