@@ -120,9 +120,33 @@
                              'inferred-name n)])
            (syntax/loc stx (lazy-proc lam))))]))
   (provide (rename ~lambda λ))
-  (defsubst
-    (~define (f . xs) body0 body ...) (define f (~lambda xs body0 body ...))
-    (~define v x) (define v x))
+  
+;  (defsubst
+;    (~define (f . xs) body0 body ...) (define f (~lambda xs body0 body ...))
+;    (~define v x) (define v x))
+  ;; STC: define ~define to add stepper-properties
+  ;; had to duplicate some stuff from ~lambda
+  (define-syntax (~define stx)
+    (define (attach-inferred-name stx fn-name-stx)
+      (syntax-property
+       (stepper-syntax-property
+        (stepper-syntax-property
+         stx
+         'stepper-define-type 'shortened-proc-define)
+        'stepper-proc-define-name fn-name-stx)
+       'inferred-name fn-name-stx))
+    ; duplicated some stuff from ~lambda so I could add stepper-properties
+    (syntax-case stx ()
+      [(_ (f . args) body0 body ...)
+       (quasisyntax/loc stx
+         (define f 
+           (lazy-proc
+            #,(attach-inferred-name
+               #'(lambda args (~begin body0 body ...))
+               #'f)
+            )))]
+      [(_ name expr) #'(define name expr)]))
+  
   (defsubst
     (~let [(x v) ...] body0 body ...)
       (let ([x v] ...) (~begin body0 body ...))
@@ -221,11 +245,11 @@
                             skipto/first)))])
          (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
            ;; use syntax/loc for better errors etc
-           (with-syntax ([lazy   (syntax/loc stx (p y     ...))]
+           (with-syntax ([lazy   (syntax/loc stx ((procedure-extract-target p) y ...))]
                          [strict (syntax/loc stx (p (hidden-! y) ...))])
              (quasisyntax/loc stx
                ((lambda (p y ...)
-                  (if (lazy? p) lazy strict))
+                  #,($$ #'(if (lazy? p) lazy strict)))
                 f x ...)
                #;(let ([p f] [y x] ...)
                  ;; #,($$ #`(if (lazy? p) lazy strict))
