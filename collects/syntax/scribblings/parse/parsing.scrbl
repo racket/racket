@@ -137,3 +137,21 @@ Suppresses the ``colon notation'' for annotated pattern variables.
 Like @scheme[syntax-parse], but produces a matching procedure. The
 procedure accepts a single argument, which should be a syntax object.
 }
+
+@defform[(define/syntax-parse syntax-pattern pattern-directive ... stx-expr)
+         #:contracts ([stx-expr syntax?])]{
+
+Definition form of @racket[syntax-parse]. That is, it matches the
+syntax object result of @racket[stx-expr] against
+@racket[syntax-pattern] and creates pattern variable definitions for
+the attributes of @racket[syntax-pattern].
+
+@myexamples[
+(define/syntax-parse ((~seq kw:keyword arg:expr) ...)
+  #'(#:a 1 #:b 2 #:c 3))
+#'(kw ...)
+]
+
+Compare with @racket[define/with-syntax], a similar definition form
+that uses the simpler @racket[syntax-case] patterns.
+}

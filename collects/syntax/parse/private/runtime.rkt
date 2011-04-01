@@ -23,6 +23,7 @@
          let-attributes
          let-attributes*
          let/unpack
+         defattrs/unpack
          attribute
          attribute-binding
          check-list^depth)
@@ -146,10 +147,11 @@
            (for/and ([part (in-list value)])
              (check-syntax (sub1 depth) part)))))
 
+(define-for-syntax (parse-attr x)
+  (syntax-case x ()
+    [#s(attr name depth syntax?) #'(name depth syntax?)]))
+
 (define-syntax (let-attributes stx)
-  (define (parse-attr x)
-    (syntax-case x ()
-      [#s(attr name depth syntax?) #'(name depth syntax?)]))
   (syntax-case stx ()
     [(let-attributes ([a value] ...) . body)
      (with-syntax ([((name depth syntax?) ...)
@@ -184,6 +186,21 @@
      (with-syntax ([(tmp ...) (generate-temporaries #'(a ...))])
        #'(let-values ([(tmp ...) (apply values packed)])
            (let-attributes ([a tmp] ...) body)))]))
+
+(define-syntax (defattrs/unpack stx)
+  (syntax-case stx ()
+    [(defattrs (a ...) packed)
+     (with-syntax ([((name depth syntax?) ...)
+                    (map parse-attr (syntax->list #'(a ...)))])
+       (with-syntax ([(vtmp ...) (generate-temporaries #'(name ...))]
+                     [(stmp ...) (generate-temporaries #'(name ...))])
+         #'(begin (define-values (vtmp ...) (apply values packed))
+                  (define-syntax stmp
+                    (make-attribute-mapping (quote-syntax vtmp)
+                                            'name 'depth 'syntax?))
+                  ...
+                  (define-syntax name (make-syntax-mapping 'depth (quote-syntax stmp)))
+                  ...)))]))
 
 (define-syntax (attribute stx)
   (parameterize ((current-syntax-context stx))

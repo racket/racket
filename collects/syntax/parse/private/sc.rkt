@@ -6,14 +6,14 @@
                      "rep.rkt")
          "parse.rkt"
          "keywords.rkt"
-         "runtime.rkt")
+         "runtime.rkt"
+         "runtime-report.rkt")
 
 (provide define-syntax-class
          define-splicing-syntax-class
 
          syntax-parse
          syntax-parser
-         syntax-parser/template
 
          (except-out (all-from-out "keywords.rkt")
                      ~reflect
@@ -23,7 +23,10 @@
          attribute
          this-syntax
 
+         define/syntax-parse
+
          ;;----
+         syntax-parser/template
          parser/rhs)
 
 (begin-for-syntax
@@ -144,3 +147,37 @@
        (lambda (x)
          (let ([x (datum->syntax #f x)])
            (parse:clauses x clauses one-template ctx))))]))
+
+;; ====
+
+(define-syntax (define/syntax-parse stx)
+  (syntax-case stx ()
+    [(define/syntax-parse pattern . rest)
+     (let-values ([(rest pattern defs)
+                   (parse-pattern+sides #'pattern
+                                        #'rest
+                                        #:splicing? #f
+                                        #:decls (new-declenv null)
+                                        #:context stx)])
+       (let ([expr
+              (syntax-case rest ()
+                [( expr ) #'expr]
+                [_ (raise-syntax-error #f "bad syntax" stx)])]
+             [attrs (pattern-attrs pattern)])
+         (with-syntax ([(a ...) attrs]
+                       [(#s(attr name _ _) ...) attrs]
+                       [pattern pattern]
+                       [(def ...) defs]
+                       [expr expr])
+           #'(defattrs/unpack (a ...)
+               (let* ([x expr]
+                      [cx x]
+                      [pr (ps-empty x x)]
+                      [es null]
+                      [fh0 (syntax-patterns-fail x)])
+                 def ...
+                 (#%expression
+                  (with ([fail-handler fh0]
+                         [cut-prompt fh0])
+                    (parse:S x cx pattern pr es
+                             (list (attribute name) ...)))))))))]))
