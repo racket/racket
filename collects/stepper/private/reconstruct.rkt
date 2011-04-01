@@ -13,7 +13,8 @@
            "model-settings.ss"
            "shared.ss"
            "my-macros.ss"
-           (for-syntax scheme/base))
+           (for-syntax scheme/base)
+           racket/private/promise)
 
   (provide/contract 
    [reconstruct-completed (syntax? 
@@ -40,7 +41,6 @@
                               . -> . 
                               (list/c syntax? syntax?))]
    
-   [final-mark-list? (-> mark-list? boolean?)]
    [skip-step? (-> break-kind? (or/c mark-list? false/c) render-settings? boolean?)]
    [step-was-app? (-> mark-list? boolean?)]
    
@@ -110,29 +110,54 @@
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-ref finished-xml-box-table val (lambda () #f))
           (stepper-syntax-property #`(quote #,val) 'stepper-xml-value-hint 'from-xml-box)
-          (let ([closure-record (and (annotated-proc? val)
-                                     (annotated-proc-info val))])
-            (if closure-record
-                (let* ([mark (closure-record-mark closure-record)]
-                       [base-name (closure-record-name closure-record)])
-                  (if base-name
-                      (let* ([lifted-index (closure-record-lifted-index closure-record)]
-                             [name (if lifted-index
-                                       (construct-lifted-name base-name lifted-index)
-                                       base-name)])
-                        (if (and assigned-name (free-identifier=? base-name assigned-name))
-                            (recon-source-expr (mark-source mark) (list mark) null null render-settings)
-                            #`#,name))
-                      (recon-source-expr (mark-source mark) (list mark) null null render-settings)))
-                (let* ([rendered ((render-settings-render-to-sexp render-settings) val)])
-                  (if (symbol? rendered)
-                      #`#,rendered
-                      #`(quote #,rendered))))))))
-    
-  (define (final-mark-list? mark-list)
-    (and (not (null? mark-list)) (eq? (mark-label (car mark-list)) 'final)))
+          (let* ([extracted-proc (unwrap-proc val)]
+                 [closure-record (and (annotated-proc? extracted-proc)
+                                      (annotated-proc-info extracted-proc))])
+            (cond
+              [closure-record
+               (let* ([mark (closure-record-mark closure-record)]
+                      [base-name (closure-record-name closure-record)])
+                 (if base-name
+                     (let* ([lifted-index 
+                             (closure-record-lifted-index closure-record)]
+                            [name 
+                             (if lifted-index
+                                 (construct-lifted-name base-name lifted-index)
+                                 base-name)])
+                       (if (and assigned-name 
+                                (free-identifier=? base-name assigned-name))
+                           (recon-source-expr 
+                            (mark-source mark) (list mark) null null render-settings)
+                           #`#,name))
+                     (recon-source-expr 
+                      (mark-source mark) (list mark) null null render-settings)))]
+              [else
+               (let* ([rendered 
+                       ((render-settings-render-to-sexp render-settings) val)])
+                 (if (symbol? rendered)
+                     #`#,rendered
+                     #`(quote #,rendered)))])))))
 
+; STC: helper fns to recon thunks in recon-value
+  ; extract-proc-if-struct : any -> procedure? or any
+  ; Purpose: extracts closure from struct procedure, ie lazy-proc in lazy racket
+  (define (extract-proc-if-struct f)
+    (if (and (procedure? f) (not (annotated-proc? f)))
+        #;(let ([extracted (procedure-extract-target f)])
+            (if extracted extracted f))
+        (or (procedure-extract-target f)
+            f)
+        f))
+  ; extract-proc-if-promise : any -> thunk or any
+  (define (extract-proc-if-promise p)
+    (if (promise? p) 
+        (extract-proc-if-promise (pref p))
+        p))
+  ; unwraps struct or promise around procedure
+  (define (unwrap-proc f)
+    (extract-proc-if-promise (extract-proc-if-struct f)))
 
+  
        ;      ;                                                                     ;;;
        ;                                                          ;                    ;
   ;;;  ;   ;  ;  ; ;;;         ;    ; ;    ; ;    ;          ;;; ;;;;  ;;;   ; ;;;     ;
@@ -174,47 +199,52 @@
       (with-handlers ([exn:fail:contract:variable? (lambda (dc-exn) #f)])
         (let ([val (lookup-binding mark-list varref)])
           (equal? (syntax->interned-datum (recon-value val render-settings))
-                  (syntax->interned-datum (case (stepper-syntax-property varref 'stepper-binding-type)
-                                                   ([let-bound]
-                                                    (binding-lifted-name mark-list varref))
-                                                   ([non-lexical]
-                                                    varref)
-                                                   (else
-                                                    (error 'varref-skip-step? "unexpected value for stepper-binding-type: ~e for variable: ~.s\n"
-                                                           (stepper-syntax-property varref 'stepper-binding-type)
-                                                           varref))))))))
+                  (syntax->interned-datum 
+                   (case (stepper-syntax-property varref 'stepper-binding-type)
+                     ([let-bound]
+                      (binding-lifted-name mark-list varref))
+                     ([non-lexical]
+                      varref)
+                     (else
+                      (error 'varref-skip-step? 
+                             "unexpected value for stepper-binding-type: ~e for variable: ~.s\n"
+                             (stepper-syntax-property varref 'stepper-binding-type)
+                             varref))))))))
     
     (and (pair? mark-list)
          (let ([expr (mark-source (car mark-list))])
            (or (stepper-syntax-property expr 'stepper-hide-reduction)
-               (kernel:kernel-syntax-case expr #f
-                                          [id
-                                           (identifier? expr)
-                                           (case (stepper-syntax-property expr 'stepper-binding-type)
-                                             [(lambda-bound) #t]  ; don't halt for lambda-bound vars
-                                             [(let-bound)
-                                              (varref-skip-step? expr)]
-                                             [(non-lexical)
-                                              (varref-skip-step? expr)])]
-                                          [(#%top . id-stx)
-                                           (varref-skip-step? #`id-stx)]
-                                          [(#%plain-app . terms)
-                                           ; don't halt for proper applications of constructors
-                                           (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
-                                             (and (procedure? fun-val)
-                                                  (procedure-arity-includes? 
-                                                   fun-val
-                                                   (length (cdr (syntax->list (syntax terms)))))
-                                                  (or (and (render-settings-constructor-style-printing? render-settings)
-                                                           (if (render-settings-abbreviate-cons-as-list? render-settings)
-                                                               (eq? fun-val special-list-value)
-                                                               (and (eq? fun-val special-cons-value)
-                                                                    (second-arg-is-list? mark-list))))
-                                                      ;(model-settings:special-function? 'vector fun-val)
-                                                      (and (eq? fun-val void)
-                                                           (eq? (cdr (syntax->list (syntax terms))) null))
-                                                      (struct-constructor-procedure? fun-val))))]
-                                          [else #f])))))
+               (kernel:kernel-syntax-case 
+                expr #f
+                [id
+                 (identifier? expr)
+                 (case (stepper-syntax-property expr 'stepper-binding-type)
+                   [(lambda-bound) #t]  ; don't halt for lambda-bound vars
+                   [(let-bound)
+                    (varref-skip-step? expr)]
+                   [(non-lexical)
+                    (varref-skip-step? expr)])]
+                [(#%top . id-stx)
+                 (varref-skip-step? #`id-stx)]
+                ; STC: this case can be removed if stepper automatically skips
+                ;      duplicate steps
+                #;[(#%plain-app . terms)
+                 ; don't halt for proper applications of constructors
+                 (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
+                   (and (procedure? fun-val)
+                        (procedure-arity-includes? 
+                         fun-val
+                         (length (cdr (syntax->list (syntax terms)))))
+                        (or (and (render-settings-constructor-style-printing? render-settings)
+                                 (if (render-settings-abbreviate-cons-as-list? render-settings)
+                                     (eq? fun-val special-list-value)
+                                     (and (eq? fun-val special-cons-value)
+                                          (second-arg-is-list? mark-list))))
+                            ;(model-settings:special-function? 'vector fun-val)
+                            (and (eq? fun-val void)
+                                 (eq? (cdr (syntax->list (syntax terms))) null))
+                            (struct-constructor-procedure? fun-val))))]
+                [else #f])))))
   
   ;; find-special-value finds the value associated with the given name.  Applications of functions
   ;; like 'list' should not be shown as steps, because the before and after steps will be the same.
@@ -222,10 +252,19 @@
   (define (find-special-value name valid-args)
     (let* ([expanded-application (expand (cons name valid-args))]
            [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
-           [just-the-fn (kernel:kernel-syntax-case stepper-safe-expanded #f
-                          [(#%plain-app fn . rest)
-                           #`fn]
-                          [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
+           [just-the-fn 
+            (kernel:kernel-syntax-case 
+             stepper-safe-expanded #f
+             ; STC: lazy racket case
+             ;      Must change this case if lazy language changes!
+             [(#%plain-app 
+               (#%plain-app toplevelforcer)
+               (#%plain-app extra-lazy-lambda (#%plain-app force fn) . args))
+              (and (eq? (syntax->datum #'toplevelforcer) 'toplevel-forcer)
+                   (eq? (syntax->datum #'force) '!))
+              #'fn]
+             [(#%plain-app fn . rest) #`fn]
+             [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
       (eval (syntax-recertify just-the-fn expanded-application (current-code-inspector) #f))))
 
   ;; these are delayed so that they use the userspace expander.  I'm sure
