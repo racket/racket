@@ -17,6 +17,7 @@
        #rx"^define-literal-set: "
        #rx"expected identifier")
 
+#|
 (tcerr "parse-rhs: no variants"
        (let () (define-syntax-class x) 0)
        #rx"^define-syntax-class: "
@@ -26,6 +27,7 @@
        (let () (define-splicing-syntax-class x) 0)
        #rx"^define-splicing-syntax-class: "
        #rx"expected at least one variant")
+|#
 
 (tcerr "parse-rhs: commit and not delimit-cut"
        (let ()
