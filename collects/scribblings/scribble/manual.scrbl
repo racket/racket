@@ -34,11 +34,13 @@ includes a @racket[latex-defaults] @tech{style property}.
               ([option (code:line #:keep-lang-line? keep-expr)
                        (code:line #:indent indent-expr)
                        (code:line #:expand expand-expr)
-                       (code:line #:context context-expr)])
+                       (code:line #:context context-expr)
+                       (code:line #:w/line-numbers line-number-expr)])
               #:contracts ([keep-expr any/c]
                            [indent-expr exact-nonnegative-integer?]
                            [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
-                           [context-expr syntax-object?])]{
+                           [context-expr syntax-object?]
+                           [line-number-expr (or/c #f exact-nonnegative-integer?)])]{
 
 Parses the code formed by the strings produced by the
 @racket[str-expr]s as a Racket module (roughly) and produces a
@@ -64,6 +66,8 @@ identifiers in the typeset code are colored and linked based on
 for-label bindings in the lexical environment of the syntax object
 provided by @racket[context-expr]. The default @racket[context-expr]
 has the same lexical context as the first @racket[str-expr].
+When @racket[line-number-expr] is true, line number is enabled starting 
+from @racket[line-number-expr].
 
 When @racket[expand-expr] produces a procedure, it is used to
 macro-expand the parsed program, and syntax coloring is based on the
