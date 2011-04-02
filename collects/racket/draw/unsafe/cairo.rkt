@@ -212,22 +212,36 @@
 ;; Gradients
 (define-cairo cairo_pattern_add_color_stop_rgb (_fun _cairo_pattern_t _double* _double* _double* _double* -> _void))
 (define-cairo cairo_pattern_add_color_stop_rgba (_fun _cairo_pattern_t _double* _double* _double* _double* _double* -> _void))
-(define-cairo cairo_pattern_get_color_stop_count (_fun _cairo_pattern_t (_ptr o _int)  -> _int))
-(define-cairo cairo_pattern_get_color_stop_rgba (_fun _cairo_pattern_t _int (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_color_stop_count (_fun _cairo_pattern_t (_ptr o _int)  -> _int)
+  #:make-fail make-not-available)
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_color_stop_rgba (_fun _cairo_pattern_t _int (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+  #:make-fail make-not-available)
 
+#; ; 1.4 and later:
 (define-cairo cairo_pattern_create_rgb (_fun _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
+#; ; 1.4 and later:
 (define-cairo cairo_pattern_create_rgba (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
-(define-cairo cairo_pattern_get_rgba (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)) ;; not an allocator
-(define-cairo cairo_pattern_get_surface (_fun _cairo_pattern_t (_ptr o _cairo_surface_t) -> _int)) ;; not an allocator
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_rgba (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+  #:make-fail make-not-available) ;; not an allocator
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_surface (_fun _cairo_pattern_t (_ptr o _cairo_surface_t) -> _int)
+  #:make-fail make-not-available) ;; not an allocator
 
 (define-cairo cairo_pattern_create_linear (_fun _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
-(define-cairo cairo_pattern_get_linear_points (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_linear_points (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+  #:make-fail make-not-available)
 (define-cairo cairo_pattern_create_radial (_fun _double* _double* _double* _double* _double* _double* -> _cairo_pattern_t)
   #:wrap (allocator cairo_pattern_destroy))
-(define-cairo cairo_pattern_get_radial_circles (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int))
+#; ; 1.4 and later:
+(define-cairo cairo_pattern_get_radial_circles (_fun _cairo_pattern_t (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) (_ptr o _double*) -> _int)
+  #:make-fail make-not-available)
 (define-cairo cairo_pattern_status (_fun _cairo_pattern_t -> _int))
 
 (define-cairo cairo_pattern_get_extend (_fun _cairo_pattern_t -> _int))

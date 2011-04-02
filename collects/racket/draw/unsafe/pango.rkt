@@ -156,7 +156,9 @@
   #:wrap (allocator pango_layout_iter_free))
 (define-pango pango_layout_iter_get_baseline (_fun PangoLayoutIter -> _int))
 (define-pango pango_layout_iter_next_run (_fun PangoLayoutIter -> _bool))
-(define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
+(define-pango pango_layout_iter_get_run (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
+(define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer))
+  #:fail (lambda () pango_layout_iter_get_run))
 
 (define-pango pango_layout_get_line (_fun PangoLayout _int -> PangoLayoutLine))
 (define-pango pango_layout_get_line_readonly (_fun PangoLayout _int -> PangoLayoutLine)
@@ -186,7 +188,9 @@
 (define-pango pango_font_family_get_name (_fun PangoFontFamily -> _string)) ;; not an allocator
 (define-pango pango_font_family_is_monospace (_fun PangoFontFamily -> _bool))
 
-(define-pango pango_language_get_default (_fun -> PangoLanguage))
+(define-pango pango_language_get_default (_fun -> PangoLanguage)
+  ;; not available before 1.16
+  #:fail (lambda () (lambda () #f)))
 (define-pango pango_font_map_load_font (_fun PangoFontMap PangoContext PangoFontDescription -> (_or-null PangoFont)))
 (define-pango pango_coverage_unref (_fun PangoCoverage -> _void)
   #:wrap (deallocator))
@@ -196,13 +200,15 @@
 
 (define-pango pango_font_metrics_unref (_fun PangoFontMetrics -> _void)
   #:wrap (deallocator))
-(define-pango pango_font_get_metrics (_fun PangoFont PangoLanguage -> PangoFontMetrics)
+(define-pango pango_font_get_metrics (_fun PangoFont (_or-null PangoLanguage) -> PangoFontMetrics)
   #:wrap (allocator pango_font_metrics_unref))
 (define-pango pango_font_metrics_get_approximate_char_width (_fun PangoFontMetrics -> _int))
 (define-pango pango_font_metrics_get_ascent (_fun PangoFontMetrics -> _int))
 (define-pango pango_font_metrics_get_descent (_fun PangoFontMetrics -> _int))
 
-(define-pango pango_layout_get_unknown_glyphs_count (_fun PangoLayout -> _int))
+(define-pango pango_layout_get_unknown_glyphs_count (_fun PangoLayout -> _int)
+  ;; not available in old versions:
+  #:fail (lambda () (lambda (lo) 0)))
 
 (define-pango pango_attr_list_unref (_fun PangoAttrList -> _void)
   #:wrap (deallocator))
