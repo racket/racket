@@ -29,7 +29,7 @@
   (make-ll-model `(lib "htdp-advanced.ss" "lang") fake-advanced-render-settings #t))
 
 (define lazy
-  (make-ll-model `(lib "lazy.ss" "lazy") fake-lazy-render-settings #f))
+  (make-ll-model `(lib "lazy.rkt" "lazy") fake-lazy-render-settings #f))
 
 
 ;; unsure about the render-settings, here: 

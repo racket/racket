@@ -180,6 +180,9 @@
 (namespace-attach-module (namespace-anchor->empty-namespace n-anchor)
                          'mzlib/pconvert-prop
                          test-namespace)
+(namespace-attach-module (namespace-anchor->empty-namespace n-anchor)
+                         'racket/private/promise
+                         test-namespace)
 (parameterize ([current-namespace test-namespace])
     (namespace-require 'test-engine/racket-tests)
     ;; make the test engine happy by adding a binding for test~object:

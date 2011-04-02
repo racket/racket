@@ -227,7 +227,8 @@
         
         ; sends a step to the stepper, except if
         ;  - lhs = rhs
-        ;  - lhs = ellipses, rhs = last-rhs
+        ;  - lhs = ellipses, last-rhs-exps = null (ie, this is first step)
+        ;  - lhs = ellipses, rhs = last-rhs-exps
         (define (send-step lhs-exps lhs-finished-exps 
                            rhs-exps rhs-finished-exps
                            step-kind lhs-posn-info rhs-posn-info)
@@ -238,7 +239,8 @@
           (unless (or (and (step=? lhs-exps rhs-exps)
                            (when DEBUG (printf "LHS = RHS, so skipping\n")))
                       (and (step=? lhs-exps (list #'(... ...)))
-                           (step=? rhs-exps last-rhs-exps)
+                           (or (step=? rhs-exps last-rhs-exps)
+                               (null? last-rhs-exps))
                            (when DEBUG 
                              (printf "LHS = ..., RHS = last RHS, so skipping\n"))))
             (receive-result

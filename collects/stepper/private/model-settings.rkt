@@ -97,14 +97,15 @@
                           #t))
   
   (define fake-lazy-render-settings
-    (make-render-settings (booleans-as-true/false) 
-                          (constructor-style-printing) 
-                          (abbreviate-cons-as-list) 
-                          print-convert
-                          #f
-                          #t
-			  #f
-                          #f))
+    (make-render-settings (booleans-as-true/false)     ; true-false-printed?
+                          (constructor-style-printing) ; constructor-style-printing?
+                          (abbreviate-cons-as-list)    ; abbreviate-cons-as-list?
+                          (make-fake-render-to-sexp #t #t #t) ; render-to-sexp
+                          #f   ; lifting?
+                          #t   ; show-and/or-clauses-consumed?
+                          #f   ; all-bindings-mutable?
+                          #f)) ; show-lambdas-as-lambdas?
+
   
   (define-struct test-struct () (make-inspector))
   
