@@ -711,8 +711,9 @@ file cannot be included in another debugging session.
 @section[#:tag "module-browser"]{The Module Browser}
 
 The module browser shows you the structure of all of the files in your program.
-It can be opened via the @onscreen{Show} menu, or via the @onscreen{Module Browser ...} 
-menu item in the @onscreen{Racket} menu.
+It can be opened via the @onscreen{Show} menu, or via the 
+@onscreen{Module Browser} 
+menu items in the @onscreen{Racket} menu.
 
 A module browser window contains a square for each
   module. The squares are colored based on the number of
@@ -726,13 +727,18 @@ A module browser window contains a square for each
   right, but since modules can be moved around
   interactively, that property might not be preserved.
 
-  To open the file corresponding to the module, right-click or
-  control-click (Mac OS X) on the box for that module.
+  To open the file corresponding to the module, double click
+  on the box for that module.
   
   The module browser will also show you the phases that each
   module is loaded in; choose the ``Long, with phases'' menu item
   in the ``Names'' pop-up menu. The integers indicate the phases and
   if @racket[#f] is present, it means the module is loaded @racket[for-label].
+  
+  The bar along the bottom helps you find your way in a module graph. Specifically,
+  if you type something there, then all of the modules whose filenames match
+  what you type will turn green in the module window. This bar is only visible
+  in the stand alone module browser window (via the @onscreen{Racket} menu)
 
 @section[#:tag "create-exe"]{Creating Executables}
 

@@ -303,9 +303,18 @@ portions of the program.}
    info.}
 
 @item{@defmenuitem{Module Browser...} Prompts for a file and
-  then opens a window showing the module import structure
-  for the module import DAG starting at the selected module.
+  then opens a window showing the module 
+  DAG starting at the module in the selected file.
   
+  See also @secref["module-browser"].
+  }
+
+@item{@defmenuitem{Module Browser on @italic{file}} 
+       Opens a separate window showing the module graph rooted at the
+       file currently being edited in DrRacket, but
+       using the saved file on the disk, instead of the 
+       version in DrRacket.
+       
   See also @secref["module-browser"].
   }
 

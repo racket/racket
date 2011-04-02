@@ -11,6 +11,8 @@
            graph-pasteboard<%>
            graph-pasteboard-mixin)
   
+  (define-local-member-name invalidate-edge-cache)
+  
   (define graph-snip<%>
     (interface ()
       get-children 
@@ -163,7 +165,9 @@
 
   (define graph-snip-mixin
     (mixin ((class->interface snip%)) (graph-snip<%>)
-      (field (children null))
+      (inherit get-admin)
+      
+      (define children null)
       (define/public (get-children) children)
       (define/public (add-child child)
         (unless (memq child children)
@@ -172,7 +176,7 @@
         (when (memq child children)
           (set! children (remq child children))))
       
-      (field (parent-links null))
+      (define parent-links null)
       (define/public (get-parent-links) parent-links)
       (define/public (get-parents) (map link-snip parent-links))
       (define/public add-parent
@@ -184,6 +188,11 @@
            (add-parent parent dark-pen light-pen dark-brush light-brush #f #f dx dy #f)]
           [(parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label)
            (unless (memf (lambda (parent-link) (eq? (link-snip parent-link) parent)) parent-links)
+             (define admin (get-admin))
+             (when admin
+               (define ed (send admin get-editor))
+               (when (is-a? ed graph-pasteboard<%>)
+                 (send ed invalidate-edge-cache)))
              (set! parent-links 
                    (cons (make-link parent
                                     (or dark-pen default-dark-pen)
@@ -260,7 +269,8 @@
       (inherit find-first-snip find-next-selected-snip)
       
       (init-field [edge-label-font #f]
-                  [edge-labels? #t])
+                  [edge-labels? #t]
+                  [cache-arrow-drawing? #f])
       
       (define draw-arrow-heads? #t)
       (define flip-labels?      #t)
@@ -524,6 +534,40 @@
         (super on-paint before? dc left top right bottom dx dy draw-caret))
       
       (define/public (draw-edges dc left top right bottom dx dy)
+        (cond
+          [cache-arrow-drawing?
+           (define admin (get-admin))
+           (when admin
+             (define-values (x y w h)
+               (let ([xb (box 0)]
+                     [yb (box 0)]
+                     [wb (box 0)]
+                     [hb (box 0)])
+                 (send admin get-max-view xb yb wb hb)
+                 (values (unbox xb) (unbox yb) (unbox wb) (unbox hb))))
+             (define this-time (list x y w h))
+             (unless (and edges-cache (equal? this-time edges-cache-last-time))
+               (set! edges-cache-last-time this-time)
+               (set! edges-cache (make-bitmap (inexact->exact (ceiling w))
+                                              (inexact->exact (ceiling h))))
+               (define bdc (make-object bitmap-dc% edges-cache))
+               (draw-edges/compute bdc x y (+ x w) (+ y h) dx dy #f)
+               (send bdc set-bitmap #f))
+             (send dc draw-bitmap edges-cache 0 0)
+             (draw-edges/compute dc left top right bottom dx dy #t))]
+          [else 
+           (draw-edges/compute dc left top right bottom dx dy #f)
+           (draw-edges/compute dc left top right bottom dx dy #t)]))
+      
+      (define/augment (on-change)
+        (set! edges-cache #f)
+        (inner (void) on-change))
+      
+      (define/public (invalidate-edge-cache) (set! edges-cache #f))
+      (define edges-cache #f)
+      (define edges-cache-last-time #f)
+        
+      (define/private (draw-edges/compute dc left top right bottom dx dy draw-dark-lines?)
           ;; draw-connection : link snip boolean boolean -> void
           ;; sets the drawing context (pen and brush)
           ;; determines if the connection is between a snip and itself or two different snips
@@ -681,12 +725,12 @@
                left top right bottom 
                (lambda (from-link to)
                  (let ([from (link-snip from-link)])
-                   (cond
-                     [(or (memq from currently-overs)
-                          (memq to currently-overs))
-                      (set! pairs (cons (cons from-link to) pairs))]
-                     [else
-                      (draw-connection from-link to #f)]))))
+                   (when (and (or (memq from currently-overs)
+                                  (memq to currently-overs))
+                              draw-dark-lines?)
+                     (set! pairs (cons (cons from-link to) pairs)))
+                   (unless draw-dark-lines?
+                     (draw-connection from-link to #f)))))
               (for-each (lambda (pr)
                           (draw-connection (car pr) (cdr pr) #t))
                         pairs))

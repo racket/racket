@@ -1229,6 +1229,8 @@ please adhere to these guidelines:
  (module-browser-open-file-format "Open ~a")
  (module-browser "Module Browser") ;; frame title
  (module-browser... "&Module Browser...") ;; menu item title
+ (module-browser-in-file "M&odule Browser on ~a") ;; menu item title; ~a is filled with a filename
+ (module-browser-no-file "Module Browser on This Saved File") ;; menu item title for above menu item; used when there is no saved file
  (module-browser-error-expanding "Error expanding the program:\n\n~a")
  (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
  (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
@@ -1236,7 +1238,8 @@ please adhere to these guidelines:
  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-show-planet-paths/short "Follow PLaneT requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
- (module-browser-only-in-plt-and-module-langs
+ (module-browser-highlight "Highlight") ;; used to search in the graph; the label on a text-field% object
+  (module-browser-only-in-plt-and-module-langs
   "The module browser is only available for module-based programs.")
  (module-browser-name-length "Name length")
  (module-browser-name-short "Short")

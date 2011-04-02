@@ -322,6 +322,7 @@
   ())
 (define-signature drracket:module-overview^ extends drracket:module-overview-cm^
   (module-overview
+   module-overview/file
    make-module-overview-pasteboard
    fill-pasteboard))
 

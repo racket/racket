@@ -3722,6 +3722,21 @@ module browser threading seems wrong.
               (string-constant module-browser...)
               language-specific-menu
               (λ (x y) (drracket:module-overview:module-overview this)))
+            (new menu:can-restore-menu-item%
+                 [label (format (string-constant module-browser-in-file) 
+                                (send definitions-text get-filename))]
+                 [parent language-specific-menu]
+                 [demand-callback (λ (i) 
+                                    (define fn (send definitions-text get-filename))
+                                    (send i set-label 
+                                          (if fn
+                                              (format (string-constant module-browser-in-file) fn)
+                                              (string-constant module-browser-no-file)))
+                                    (send i enable fn))]
+                 [callback (λ (x y) 
+                             (define fn (send definitions-text get-filename))
+                             (when fn
+                               (drracket:module-overview:module-overview/file fn this)))])
             (make-object separator-menu-item% language-specific-menu)
             
             (let ([cap-val
