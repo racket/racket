@@ -3,8 +3,8 @@ Information on building 3rd-party libraries needed for Mac OS X GRacket.
 Get these packages (or newer, if compatible):
  pkg-config-0.23.tar.gz
  libpng-1.4.0.tar.gz 
- pixman-0.17.14.tar.gz
- cairo-1.9.14.tar.gz
+ pixman-0.21.6.tar.gz
+ cairo-1.10.2.tar.gz
  gettext-0.17.tar.gz
  glib-2.22.4.tar.gz
  pango-1.28.0.tar.gz
@@ -14,9 +14,13 @@ Get these packages (or newer, if compatible):
                    and handled differently
 
 Patches:
- cairo/src/cairo-quartz-font.c:656:
-    if (width < 1) width = 1;
-    if (height < 1) height = 1;
+ cairo/src/cairo-path-fixed.c:1295: [from Cairo repo, 3/18/11]
+   /* This check is valid because the current implementation of
+     * _cairo_path_fixed_is_box () only accepts rectangles like:
+     * move,line,line,line[,line|close[,close|move]]. */
+    buf = cairo_path_head (path);
+    if (buf->num_ops > 4)
+	return TRUE;
  glib/glib/gconvert.c:54: change to
    #if !(defined(__APPLE__) && defined(__LP64__)) && !defined(USE_LIBICONV_GNU) && defined (_LIBICONV_H) 
  pango/pango/modules.c:573: change to
@@ -73,8 +77,8 @@ ARCHDIR=
 cd "$WORKDIR"
 tar zxf "$ARCHDIR"pkg-config-0.23.tar.gz
 tar zxf "$ARCHDIR"libpng-1.4.0.tar.gz
-tar zxf "$ARCHDIR"pixman-0.17.14.tar.gz
-tar zxf "$ARCHDIR"cairo-1.9.14.tar.gz
+tar zxf "$ARCHDIR"pixman-0.21.6.tar.gz
+tar zxf "$ARCHDIR"cairo-1.10.2.tar.gz
 tar zxf "$ARCHDIR"gettext-0.17.tar.gz
 tar zxf "$ARCHDIR"glib-2.22.4.tar.gz
 tar zxf "$ARCHDIR"pango-1.28.0.tar.gz
@@ -87,11 +91,11 @@ cd ../libpng-1.4.0/
 make
 make install
 cd ..
-cd pixman-0.17.14/
+cd pixman-0.21.6/
 ./configure --prefix="$DESTDIR"
 make
 make install
-cd ../cairo-1.9.14/
+cd ../cairo-1.10.2/
 env PATH="$DESTDIR"/bin:"$PATH" ./configure --disable-xlib --disable-ft --disable-fc --prefix="$DESTDIR"
 make
 make install
