@@ -50,39 +50,56 @@
           stx (syntax-pair-map (syntax-e stx) (lambda (stx) (unwind stx settings))) stx stx)
          stx))
    
-   (define (fall-through stx settings)
-     (kernel-syntax-case stx #f
-        [id
-         (identifier? stx)
-         (or (stepper-syntax-property stx 'stepper-lifted-name)
-             stx)]
-        [(define-values dc ...)
-         (unwind-define stx settings)]
-        [(#%plain-app exp ...)
-         (recur-on-pieces #'(exp ...) settings)]
-        [(quote datum)
-         (if (symbol? #'datum)
-             stx
-             #'datum)]
-        [(let-values . rest)
-         (unwind-mz-let stx settings)]
-        [(letrec-values . rest)
-         (unwind-mz-let stx settings)]
-        [(#%plain-lambda . rest)
-         (recur-on-pieces #'(lambda . rest) settings)]
-        [(set! var rhs)
-         (with-syntax ([unwound-var (or (stepper-syntax-property
-                                         #`var 'stepper-lifted-name)
-                                        #`var)]
-                       [unwound-body (unwind #`rhs settings)])
-           #`(set! unwound-var unwound-body))]
-        [else (recur-on-pieces stx settings)]))
-   
+  (define (fall-through stx settings)
+    (kernel-syntax-case stx #f
+      [id
+       (identifier? stx)
+       (or (stepper-syntax-property stx 'stepper-lifted-name)
+           stx)]
+      [(define-values dc ...)
+       (unwind-define stx settings)]
+      ; STC: app special cases from lazy racket
+      ; procedure-extract-target - can't hide this in lazy.rkt bc it's needed
+      ; to distinguish the general lazy application
+      [(#%plain-app proc-extract p)
+       (eq? (syntax->datum #'proc-extract) 'procedure-extract-target)
+       (unwind #'p settings)]
+      ; general lazy application
+      [(#%plain-app 
+        (#%plain-lambda args1 (#%plain-app (#%plain-app proc p) . args2)) 
+        . args3)
+       (and (eq? (syntax->datum #'proc) 'procedure-extract-target)
+            (equal? (syntax->datum (cdr (syntax-e #'args1)))
+                    (syntax->datum #'args2)))
+       (recur-on-pieces #'args3 settings)]
+      [(#%plain-app exp ...)
+       (recur-on-pieces #'(exp ...) settings)]
+      [(quote datum)
+       (if (symbol? #'datum)
+           stx
+           #'datum)]
+      [(let-values . rest)
+       (unwind-mz-let stx settings)]
+      [(letrec-values . rest)
+       (unwind-mz-let stx settings)]
+      [(#%plain-lambda . rest)
+       (recur-on-pieces #'(lambda . rest) settings)]
+      [(set! var rhs)
+       (with-syntax ([unwound-var (or (stepper-syntax-property
+                                       #`var 'stepper-lifted-name)
+                                      #`var)]
+                     [unwound-body (unwind #`rhs settings)])
+         #`(set! unwound-var unwound-body))]
+      [else (recur-on-pieces stx settings)]))
+
    (define (unwind stx settings)
      (transfer-info
       (let ([hint (stepper-syntax-property stx 'stepper-hint)])
         (if (procedure? hint)
-            (hint stx (lambda (stx) (recur-on-pieces stx settings)))
+            ; STC: For fn hints, I changed the recur procedure to unwind
+            ; (was recur-on-pieces). This should not affect the non-lazy 
+            ; stepper since it doesnt seem to use any fn hints.
+            (hint stx (lambda (stx) (unwind stx settings)))
             (let ([process (case hint
                              [(comes-from-cond)  unwind-cond]
                              [(comes-from-and)   (unwind-and/or 'and)]

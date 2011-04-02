@@ -1281,6 +1281,30 @@
                                        call-with-values (#%plain-lambda () vals)
                                        print-values))))
                  exp))]
+             ; STC: for lazy racket
+             ; This is similar to app case above, but with toplevel-forcer
+             [(#%plain-app (#%plain-app toplevel-forcer) operand)
+              (stepper-recertify
+               #`(#%plain-app
+                  call-with-values
+                  (#%plain-lambda 
+                   () 
+                   (#%plain-app 
+                    (#%plain-app toplevel-forcer)
+                    #,(top-level-annotate/inner (top-level-rewrite #'operand) exp #f)))
+                  (#%plain-lambda 
+                   vals
+                   (begin
+                     (#,exp-finished-break
+                      (#%plain-app 
+                       list 
+                       (#%plain-app 
+                        list 
+                        #,(lambda () exp) #f (#%plain-lambda () vals))))
+                     (#%plain-app 
+                      call-with-values 
+                      (#%plain-lambda () vals) values))))
+               exp)]
              [any
               (stepper-syntax-property exp 'stepper-test-suite-hint)
               (top-level-annotate/inner (top-level-rewrite exp) exp #f)]

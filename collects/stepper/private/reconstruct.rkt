@@ -131,6 +131,16 @@
                            #`#,name))
                      (recon-source-expr 
                       (mark-source mark) (list mark) null null render-settings)))]
+              ; promise does not have annotation info,
+              ; must be from library code, or it's a running promise
+              [(promise? val)
+               (let ([partial-eval-promise
+                      (hash-ref partially-evaluated-promises-table
+                                val (λ () #f))])
+                 (or partial-eval-promise
+                     (if (promise-forced? val)
+                         (recon-value (force val) render-settings assigned-name)
+                         'promise)))]
               [else
                (let* ([rendered 
                        ((render-settings-render-to-sexp render-settings) val)])
@@ -156,6 +166,24 @@
   ; unwraps struct or promise around procedure
   (define (unwrap-proc f)
     (extract-proc-if-promise (extract-proc-if-struct f)))
+  
+  ; nested-promise-running? : Indicates whether a promise is in the "running" 
+  ; state. promise-running? in racket/private/promise.rkt only looks down
+  ; one level for a running promise
+  (define (nested-promise-running? p)
+    (if (promise? p)
+        (let ([v (pref p)])
+          (or (running? v)
+              (and (promise? v)
+                   (nested-promise-running? v))))
+        (raise-type-error 'nested-promise-running? "promise" p)))
+  
+  ; weak hash table to keep track of partially evaluated promises
+  ; where keys = promises, values = syntax
+  ; - initialized on each call to reconstruct-current 
+  ;   (ie - each half-step reconstruction)
+  ; - populated on each call to recon-inner
+  (define partially-evaluated-promises-table null)
 
   
        ;      ;                                                                     ;;;
@@ -226,9 +254,7 @@
                     (varref-skip-step? expr)])]
                 [(#%top . id-stx)
                  (varref-skip-step? #`id-stx)]
-                ; STC: this case can be removed if stepper automatically skips
-                ;      duplicate steps
-                #;[(#%plain-app . terms)
+                [(#%plain-app . terms)
                  ; don't halt for proper applications of constructors
                  (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
                    (and (procedure? fun-val)
@@ -264,7 +290,7 @@
                    (eq? (syntax->datum #'force) '!))
               #'fn]
              [(#%plain-app fn . rest) #`fn]
-             [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
+             [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])
       (eval (syntax-recertify just-the-fn expanded-application (current-code-inspector) #f))))
 
   ;; these are delayed so that they use the userspace expander.  I'm sure
@@ -681,7 +707,7 @@
                   [top-mark (car mark-list)]
                   [exp (mark-source top-mark)]
                   [iota (lambda (x) (build-list x (lambda (x) x)))]
-                  
+
                   [recon-let
                    (lambda ()
                      (with-syntax ([(label ((vars rhs) ...) . bodies) exp])
@@ -749,6 +775,19 @@
                                bodies
                                (iota (length bodies)))])
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
+             
+             ; STC: cache any running promises in the top mark 
+             ; means that promise is being evaluated
+             (let ([maybe-running-promise
+                    (findf (λ (f) (and (promise? f) (nested-promise-running? f)))
+                           (map mark-binding-value (mark-bindings top-mark)))])
+               (when (and maybe-running-promise
+                          (not (hash-has-key? partially-evaluated-promises-table
+                                              maybe-running-promise))
+                          (not (eq? so-far nothing-so-far)))
+                 (hash-set! partially-evaluated-promises-table
+                            maybe-running-promise so-far)))
+             
              (if (stepper-syntax-property exp 'stepper-fake-exp)
                  
                  (kernel:kernel-syntax-case exp #f
@@ -802,7 +841,11 @@
                                                    (stepper-syntax-property
                                                     (if (eq? so-far nothing-so-far)
                                                         (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code ... can this occur?
-                                                        (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...)))
+                                                        ; dont show ellipses for force
+                                                        ; object-name is good enough here, so dont need to add another "special val"
+                                                        (if (eq? (object-name (car arg-vals)) 'force)
+                                                            so-far
+                                                            (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))))
                                                     'stepper-args-of-call 
                                                     rectified-evaluated))
                                                   (else
@@ -948,34 +991,58 @@
                            returned-value-list))
              
          (define answer
-           (case break-kind
-             ((left-side)
-              (let* ([innermost (if returned-value-list ; is it a normal-break/values?
-                                    (begin (unless (and (pair? returned-value-list) (null? (cdr returned-value-list)))
-                                             (error 'reconstruct "context expected one value, given ~v" returned-value-list))
-                                           (recon-value (car returned-value-list) render-settings))
-                                    nothing-so-far)])
-                (recon innermost mark-list #t)))
-             ((right-side)
-              (let* ([innermost (if returned-value-list ; is it an expr -> value reduction?
-                                    (begin (unless (and (pair? returned-value-list) (null? (cdr returned-value-list)))
-                                             (error 'reconstruct "context expected one value, given ~v" returned-value-list))
-                                           (recon-value (car returned-value-list) render-settings))
-                                    (recon-source-expr (mark-source (car mark-list)) mark-list null null render-settings))])
-                (recon (mark-as-highlight innermost) (cdr mark-list) #f)))
-             ((double-break)
-              (let* ([source-expr (mark-source (car mark-list))]
-                     [innermost-before (mark-as-highlight (recon-source-expr source-expr mark-list null null render-settings))]
-                     [newly-lifted-bindings (syntax-case source-expr (letrec-values)
-                                              [(letrec-values ([vars . rest] ...) . bodies)
-                                               (apply append (map syntax->list (syntax->list #`(vars ...))))]
-                                              [(let-values ([vars . rest] ...) . bodies)
-                                               (apply append (map syntax->list (syntax->list #`(vars ...))))]
-                                              [else (error 'reconstruct "expected a let-values as source for a double-break, got: ~.s"
-                                                           (syntax->datum source-expr))])]
-                     [innermost-after (mark-as-highlight (recon-source-expr (mark-source (car mark-list)) mark-list null newly-lifted-bindings render-settings))])
-                (list (recon innermost-before (cdr mark-list) #f)
-                      (recon innermost-after (cdr mark-list) #f))))))
+           (begin
+             ; STC: reset partial-eval-promise table on each call to recon
+             (set! partially-evaluated-promises-table (make-weak-hash))
+             
+             (case break-kind
+               ((left-side)
+                (let* ([innermost 
+                        (if returned-value-list ; is it a normal-break/values?
+                            (begin 
+                              (unless (and (pair? returned-value-list) 
+                                           (null? (cdr returned-value-list)))
+                                (error 'reconstruct 
+                                       "context expected one value, given ~v" 
+                                       returned-value-list))
+                              (recon-value (car returned-value-list) render-settings))
+                            nothing-so-far)])
+                  (recon innermost mark-list #t)))
+               ((right-side)
+                (let* ([innermost 
+                        (if returned-value-list ; is it an expr -> value reduction?
+                            (begin 
+                              (unless (and (pair? returned-value-list)
+                                           (null? (cdr returned-value-list)))
+                                (error 'reconstruct 
+                                       "context expected one value, given ~v"
+                                       returned-value-list))
+                              (recon-value (car returned-value-list) render-settings))
+                            (recon-source-expr (mark-source (car mark-list))
+                                               mark-list null null render-settings))])
+                  (recon (mark-as-highlight innermost) (cdr mark-list) #f)))
+               ((double-break)
+                (let* ([source-expr (mark-source (car mark-list))]
+                       [innermost-before 
+                        (mark-as-highlight 
+                         (recon-source-expr source-expr mark-list null null render-settings))]
+                       [newly-lifted-bindings 
+                        (syntax-case source-expr (letrec-values)
+                          [(letrec-values ([vars . rest] ...) . bodies)
+                           (apply append (map syntax->list (syntax->list #`(vars ...))))]
+                          [(let-values ([vars . rest] ...) . bodies)
+                           (apply append (map syntax->list (syntax->list #`(vars ...))))]
+                          [else (error 
+                                 'reconstruct 
+                                 "expected a let-values as source for a double-break, got: ~.s"
+                                 (syntax->datum source-expr))])]
+                       [innermost-after 
+                        (mark-as-highlight 
+                         (recon-source-expr 
+                          (mark-source (car mark-list)) 
+                          mark-list null newly-lifted-bindings render-settings))])
+                  (list (recon innermost-before (cdr mark-list) #f)
+                        (recon innermost-after (cdr mark-list) #f)))))))
          
          )
       

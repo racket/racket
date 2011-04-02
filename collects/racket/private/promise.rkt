@@ -171,6 +171,26 @@
 (define-struct (composable-promise promise) ()
   #:property prop:force force/composable)
 
+  ;; stepper-syntax-property : like syntax property, but adds properties to an
+  ;; association list associated with the syntax property 'stepper-properties
+  ;; Had to re-define this because of circular dependencies
+  ;; (also defined in stepper/private/shared.rkt)
+  (define-for-syntax stepper-syntax-property
+    (case-lambda 
+      [(stx tag) 
+       (letrec-values ([(stepper-props) (syntax-property stx 'stepper-properties)])
+         (if stepper-props
+             (letrec-values ([(table-lookup) (assq tag stepper-props)])
+               (if table-lookup
+                   (cadr table-lookup)
+                   #f))
+             #f))]
+      [(stx tag new-val) 
+       (letrec-values ([(stepper-props) (syntax-property stx 'stepper-properties)])
+         (syntax-property stx 'stepper-properties
+                          (cons (list tag new-val)
+                                (if stepper-props stepper-props '()))))]))
+  
 ;; template for all delay-like constructs
 ;; (with simple keyword matching: keywords is an alist with default exprs)
 (define-for-syntax (make-delayer stx maker keywords)
@@ -203,14 +223,21 @@
        ;; work well with identifiers, so turn the name into a symbol to work
        ;; around this for now
        [(name0) (syntax-local-infer-name stx)]
-       [(name) (if (syntax? name0) (syntax-e name0) name0)])
+       [(name) (if (syntax? name0) (syntax-e name0) name0)]
+       [(unwind-promise) 
+        (lambda (stx unwind-recur)
+          (syntax-case stx ()
+            [(#%plain-lambda () body) (unwind-recur #'body)]))])
     (syntax-case stx ()
       [_ (pair? exprs) ; throw a syntax error if anything is wrong
          (with-syntax ([(expr ...) exprs]
                        [(kwd-arg ...) kwd-args])
-           (with-syntax ([proc (syntax-property
-                                (syntax/loc stx (lambda () expr ...))
-                                'inferred-name name)]
+           (with-syntax ([proc 
+                          (stepper-syntax-property
+                           (syntax-property
+                            (syntax/loc stx (lambda () expr ...))
+                            'inferred-name name)
+                           'stepper-hint unwind-promise)]
                          [make maker])
              (syntax/loc stx (make proc kwd-arg ...))))])))
 
