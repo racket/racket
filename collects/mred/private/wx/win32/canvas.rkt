@@ -219,10 +219,12 @@
                1)
              (default w msg wParam lParam))]
         [(= msg WM_HSCROLL)
-         (on-scroll-change SB_HORZ (LOWORD wParam))
+         (when hscroll?
+           (on-scroll-change SB_HORZ (LOWORD wParam)))
          0]
         [(= msg WM_VSCROLL)
-         (on-scroll-change SB_VERT (LOWORD wParam))
+         (when vscroll?
+           (on-scroll-change SB_VERT (LOWORD wParam)))
          0]
         [else (super wndproc w msg wParam lParam default)]))
      
