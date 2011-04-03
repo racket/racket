@@ -1,3 +1,6 @@
+Version 5.1.0.5
+racket/gui: added 'wheel-left and 'wheel-right events
+
 Version 5.1.0.4
 Change file-or-directory-permission to add 'bits mode
  and permission-setting mode

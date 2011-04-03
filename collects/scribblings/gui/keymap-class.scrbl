@@ -210,6 +210,8 @@ A key identifier can be either a character on the keyboard (e.g.,
 @item{@litchar{middlebuttonseq}}
 @item{@litchar{wheelup}}
 @item{@litchar{wheeldown}}
+@item{@litchar{wheelleft}}
+@item{@litchar{wheelright}}
 @item{@litchar{esc}}
 @item{@litchar{delete}}
 @item{@litchar{del}  (same as @litchar{delete})}

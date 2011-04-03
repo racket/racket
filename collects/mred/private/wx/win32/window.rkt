@@ -191,14 +191,18 @@
          [(= msg WM_CHAR)
           (do-key w msg wParam lParam #t #f default)]
 	 [(= msg WM_MOUSEWHEEL)
-	  (let ([orig-delta (quotient (HIWORD wParam) WHEEL_DELTA)])
-	    (let loop ([delta (abs orig-delta)])
-	      (unless (zero? delta)
-		(do-key w msg (if (negative? orig-delta)
-				  'wheel-down
-				  'wheel-up)
-			lParam #f #f void)
-                (loop (sub1 delta)))))
+          (let ([gen-wheels 
+                 (lambda (val down up)
+                   (let ([orig-delta (quotient val WHEEL_DELTA)])
+                     (let loop ([delta (abs orig-delta)])
+                       (unless (zero? delta)
+                         (do-key w msg (if (negative? orig-delta)
+                                           down
+                                           up)
+                                 lParam #f #f void)
+                         (loop (sub1 delta))))))])
+            (gen-wheels (HIWORD wParam) 'wheel-down 'wheel-up)
+            (gen-wheels (LOWORD wParam) 'wheel-left 'wheel-right))
 	  0]
          [(= msg WM_COMMAND)
           (let* ([control-hwnd (cast lParam _LPARAM _HWND)]

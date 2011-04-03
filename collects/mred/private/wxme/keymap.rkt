@@ -38,6 +38,8 @@
         ("middlebuttonseq" . mouse-middle)
         ("wheelup" . wheel-up)
         ("wheeldown" . wheel-down)
+        ("wheelleft" . wheel-left)
+        ("wheelright" . wheel-right)
         ("esc" . escape) 
         ("delete" . #\rubout)
         ("del" . #\rubout)

@@ -458,6 +458,20 @@
                                      1)))
                            0)])
                (do-scroll x y #t x old-y))))]
+        [(wheel-left wheel-right)
+         (when (and allow-x-scroll?
+                    (not fake-x-scroll?))
+           (let-boxes ([x 0]
+                       [y 0])
+               (get-scroll x y)
+             (let ([old-x x]
+                   [x (max (+ x
+                              (* wheel-amt
+                                 (if (eq? code 'wheel-left)
+                                     -1
+                                     1)))
+                           0)])
+               (do-scroll x y #t old-x y))))]
         [else
          (when (and media (not (send media get-printing)))
            (using-admin

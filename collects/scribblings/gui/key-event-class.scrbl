@@ -136,6 +136,8 @@ Gets the virtual key code for the key event. The virtual key code is
 @item{@indexed-scheme['scroll]}
 @item{@indexed-scheme['wheel-up] --- @index["wheel on mouse"]{mouse} wheel up one notch}
 @item{@indexed-scheme['wheel-down] --- mouse wheel down one notch}
+@item{@indexed-scheme['wheel-left] --- mouse wheel left one notch}
+@item{@indexed-scheme['wheel-right] --- mouse wheel right one notch}
 @item{@indexed-scheme['release] --- indicates a key-release event}
 @item{@indexed-scheme['press] --- indicates a key-press event; usually only from @scheme[get-key-release-code]}
 ]
@@ -164,10 +166,11 @@ The special key symbols attempt to capture useful keys that have no
 If a suitable special key symbol or ASCII representation is not
  available, @scheme[#\nul] (the NUL character) is reported.
 
-A @scheme['wheel-up] or @scheme['wheel-down] event may be sent to a
- window other than the one with the keyboard focus, because some
- platforms generate wheel events based on the location of the mouse
- pointer instead of the keyboard focus.
+A @scheme['wheel-up], @scheme['wheel-down], @scheme['wheel-left], or
+ @scheme['wheel-right] event may be sent to a window other than the
+ one with the keyboard focus, because some platforms generate wheel
+ events based on the location of the mouse pointer instead of the
+ keyboard focus.
 
 Under Windows, when the Control key is pressed without Alt, the key
  code for ASCII characters is downcased, roughly cancelling the effect

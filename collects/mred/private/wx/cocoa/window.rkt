@@ -158,9 +158,19 @@
         (super-tell #:type _void otherMouseDragged: event))]
 
   [-a _void (scrollWheel: [_id event])
-      (unless (and (not (zero? (tell #:type _CGFloat event deltaY)))
-                   (do-key-event wxb event self #f #t))
-        (super-tell #:type _void scrollWheel: event))]
+      (let ([delta-y (tell #:type _CGFloat event deltaY)]
+            [delta-x (tell #:type _CGFloat event deltaX)])
+        (let ([evts (append (cond
+                             [(zero? delta-y) '()]
+                             [(positive? delta-y) '(wheel-up)]
+                             [else '(wheel-down)])
+                            (cond
+                             [(zero? delta-x) '()]
+                             [(positive? delta-x) '(wheel-left)]
+                             [else '(wheel-right)]))])
+          (unless (and (pair? evts)
+                       (do-key-event wxb event self #f evts))
+            (super-tell #:type _void scrollWheel: event))))]
   
   [-a _void (keyDown: [_id event])
       (unless (do-key-event wxb event self #t #f)
@@ -281,7 +291,7 @@
         (when wx
           (send wx reset-cursor-rects)))])
 
-(define (do-key-event wxb event self down? wheel?)
+(define (do-key-event wxb event self down? wheel)
   (let ([wx (->wx wxb)])
     (and
      wx
@@ -307,7 +317,7 @@
               [bit? (lambda (m b) (positive? (bitwise-and m b)))]
               [pos (tell #:type _NSPoint event locationInWindow)]
               [str (cond
-                    [wheel? #f]
+                    [wheel #f]
                     [(unbox set-mark) ""] ; => dead key for composing characters
                     [(unbox inserted-text)]
                     [else
@@ -315,12 +325,8 @@
               [dead-key? (unbox set-mark)]
               [control? (bit? modifiers NSControlKeyMask)]
               [option? (bit? modifiers NSAlternateKeyMask)]
-              [delta-y (and wheel?
-                            (tell #:type _CGFloat event deltaY))]
               [codes (cond
-                      [wheel? (if (positive? delta-y)
-                                  '(wheel-up)
-                                  '(wheel-down))]
+                      [wheel wheel]
                       [had-saved-text? str]
                       [(map-key-code (tell #:type _ushort event keyCode))
                        => list]
@@ -349,7 +355,7 @@
                             [y (->long y)]
                             [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
                             [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
-                (unless wheel?
+                (unless wheel
                   (let ([alt-str (tell #:type _NSString event charactersIgnoringModifiers)])
                     (when (and (string? alt-str)
                                (= 1 (string-length alt-str)))

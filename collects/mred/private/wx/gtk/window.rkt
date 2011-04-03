@@ -178,10 +178,7 @@
 (define-signal-handler connect-scroll "scroll-event"
   (_fun _GtkWidget _GdkEventScroll-pointer -> _gboolean)
   (lambda (gtk event)
-    (and (member (GdkEventScroll-direction event)
-                 (list GDK_SCROLL_UP
-                       GDK_SCROLL_DOWN))
-         (do-key-event gtk event #f #t))))
+    (do-key-event gtk event #f #t)))
 
 (define (do-key-event gtk event down? scroll?)
   (let ([wx (gtk->wx gtk)])
@@ -204,10 +201,12 @@
 				 (map-key-code kv)
 				 (integer->char (gdk_keyval_to_unicode kv))))]
 		[key-code (if scroll?
-			      (if (= (GdkEventScroll-direction event)
-				     GDK_SCROLL_UP)
-				  'wheel-up
-				  'wheel-down)
+			      (let ([dir (GdkEventScroll-direction event)])
+                                (cond
+                                 [(= dir GDK_SCROLL_UP) 'wheel-up]
+                                 [(= dir GDK_SCROLL_DOWN) 'wheel-down]
+                                 [(= dir GDK_SCROLL_LEFT) 'wheel-left]
+                                 [(= dir GDK_SCROLL_RIGHT) 'wheel-right]))
 			      (keyval->code (GdkEventKey-keyval event)))]
 		[k (new key-event%
 			[key-code (if (and (string? im-str)
