@@ -192,7 +192,7 @@
 (define WM_XBUTTONDOWN                  #x020B)
 (define WM_XBUTTONUP                    #x020C)
 (define WM_XBUTTONDBLCLK                #x020D)
-(define WM_MOUSELAST                    #x020D)
+(define WM_MOUSEHWHEEL                  #x020E)
 
 ;; Value for rolling one detent
 (define WHEEL_DELTA                     120)
