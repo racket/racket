@@ -6,9 +6,7 @@
          '#%place-struct
          racket/fixnum
          racket/flonum
-         racket/vector
-         (only-in unstable/struct struct->list)
-         (for-syntax racket/base))
+         racket/vector)
 
 (provide place
          place-sleep
@@ -82,7 +80,9 @@
         (define key (prefab-struct-key o))
         (when (not key)
           (error "Must be a prefab struct"))
-        (apply make-prefab-struct key (map dcw (struct->list o)))]
+        (apply make-prefab-struct 
+               key 
+               (map dcw (cdr (vector->list (struct->vector o)))))]
       [else (error "Error not place serializable ~a" o)]))
 
   (dcw x))
