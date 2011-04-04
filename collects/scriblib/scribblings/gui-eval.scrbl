@@ -1,15 +1,16 @@
 #lang scribble/manual
 @(require (for-label scribble/eval scriblib/gui-eval))
 
-@title[#:tag "gui-eval"]{Writing Examples with Pict Results}
+@title[#:tag "gui-eval"]{Examples Using the GUI Toolbox}
 
 @defmodule[scriblib/gui-eval]{The
 @schememodname[scriblib/gui-eval] library support example
-evaluations with results that are @schememodname[slideshow] picts.}
+evaluations that use @schememodname[racket/gui] facilities (as opposed
+to just @racketmodname[racket/draw]) to generate text and image results.}
 
 The trick is that @schememodname[racket/gui] is not generally
 available when rendering documentation, because it requires a GUI
-context. The picture output is rendered to an image file when the
+context. Text and image output is rendered to an image file when the
 @envvar{MREVAL} environment variable is set, so run the enclosing
 document once with the environment varibale to generate the
 images. Future runs (with the environment variable unset) use the
