@@ -146,7 +146,12 @@
       (if (string? name)
           (cons `[class ,name]
                 a)
-          a))))       
+          a))))
+
+(define (style->tag style)
+  (for/or ([s (in-list (style-properties style))])
+    (and (alt-tag? s)
+         (string->symbol (alt-tag-name s)))))
 
 (define (make-search-box top-path) ; appears on every page
   (let ([sa         string-append]
@@ -917,7 +922,10 @@
                      (not (style-name style))
                      (null? attrs))
                 contents
-                `((,(if (memq 'div (style-properties style)) 'div 'p)
+                `((,(or (style->tag style)
+                        (if (memq 'div (style-properties style)) 
+                            'div 
+                            'p))
                    [,@attrs
                     ,@(case (style-name style)
                         [(author) '([class "author"])]
@@ -1115,6 +1123,10 @@
                      (if (style? s)
                          (style-name s)
                          s))]
+             [alt-tag
+              (let ([s (content-style e)])
+                (and (style? s)
+                     (style->tag s)))]
              [link? (and (ormap target-url? properties)
                          (not (current-no-links)))]
              [anchor? (ormap url-anchor? properties)]
@@ -1148,7 +1160,8 @@
           (if (and (null? attribs) 
                    (not link?)
                    (not anchor?)
-                   (not newline?))
+                   (not newline?)
+                   (not alt-tag))
               content
               `(,@(if anchor?
                       (append-map (lambda (v)
@@ -1158,6 +1171,7 @@
                                   properties)
                       null)
                 (,(cond
+                   [alt-tag alt-tag]
                    [link? 'a]
                    [newline? 'br]
                    [else 'span]) 
@@ -1267,8 +1281,10 @@
                                   (nested-flow-blocks t)))))
 
     (define/override (render-compound-paragraph t part ri starting-item?)
-      `((p ,(style->attribs (compound-paragraph-style t))
-           ,@(super render-compound-paragraph t part ri starting-item?))))
+      (let ([style (compound-paragraph-style t)])
+        `((,(or (style->tag style) 'p)
+           ,(style->attribs style)
+           ,@(super render-compound-paragraph t part ri starting-item?)))))
 
     (define/override (render-itemization t part ri)
       (let ([style-str (or (and (string? (style-name (itemization-style t)))

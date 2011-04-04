@@ -420,13 +420,17 @@ The currently recognized @tech{style properties} are as follows:
        content.}
 
  @item{@racket['div] --- Generates @tt{<div>} HTML output instead of
-       @tt{<p>}.}
+       @tt{<p>} (unless a @racket[alt-tag] property is provided).}
+
+ @item{@racket[alt-tag] structure --- Generates the indicated HTML tag
+       instead of @tt{<p>} or @tt{<div>}.}
 
  @item{@racket[attributes] structure --- Provides additional HTML
-       attributes for the @tt{<p>} or @tt{<div>} tag.}
+       attributes for the @tt{<p>}, @tt{<div>}, or alternate tag.}
 
  @item{@racket[body-id] structure --- For HTML, uses the given string
-       as an @tt{id} attribute of the @tt{<p>} or @tt{<div>} tag.}
+       as an @tt{id} attribute of the @tt{<p>}, @tt{<div>}, or
+       alternate tag.}
 
  @item{@racket['never-indents] --- For Latex and @tech{compound
        paragraphs}; see @racket[compound-paragraph].}
@@ -597,11 +601,14 @@ for Latex output (see @secref["extra-style"]). The following
        name} is used as a command name instead of an environment
        name.}
 
+ @item{@racket[alt-tag] structure --- Generates the given HTML tag
+       instead of @tt{<p>}.}
+
  @item{@racket[attributes] structure --- Provides additional HTML
-       attributes for the @tt{<p>} tag.}
+       attributes for the @tt{<p>} or alternate tag.}
 
  @item{@racket[body-id] structure --- For HTML, uses the given string
-       as an @tt{id} attribute of the @tt{<p>} tag.}
+       as an @tt{id} attribute of the @tt{<p>} or alternate tag.}
 
  @item{@racket['never-indents] --- For Latex within another
        @tech{compound paragraph}; see above.}
@@ -696,8 +703,11 @@ The following @tech{style properties} are currently recognized:
  @item{@racket[background-color-property] structure --- Applies a color to the
        background of @racket[content].}
 
+ @item{@racket[alt-tag] structure --- Generates the given HTML tag
+       instead of the default one (@tt{<span>}, @tt{b}, @|etc|).}
+
  @item{@racket[attributes] structure --- Provides additional HTML
-       attributes for a @tt{<span>} tag.}
+       attributes for a tag.}
 
  @item{@racket[hover-property] structure --- For HTML, adds a text
        label to the content to be shown when the mouse hovers over
@@ -1212,6 +1222,13 @@ Defined as
 
 Used as a @tech{style property} to add arbitrary attributes to an HTML
 tag.}
+
+@defstruct[alt-tag ([name (and/c string? #rx"^[a-zA-Z0-9]+$")])]{
+
+Use as a @tech{style property} for an @racket[element],
+@racket[paragraph], or @racket[compound-paragraph] to substitute an
+alternate HTML tag (instead of @tt{<span>}, @tt{<p>}, @tt{div},
+@|etc|).}
 
 
 @defstruct[url-anchor ([name string?])]{
