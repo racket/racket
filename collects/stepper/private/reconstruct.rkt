@@ -135,12 +135,30 @@
               ; must be from library code, or it's a running promise
               [(promise? val)
                (let ([partial-eval-promise
-                      (hash-ref partially-evaluated-promises-table
-                                val (λ () #f))])
+                      (or (hash-ref partially-evaluated-promises-table
+                                    val (λ () #f))
+                          ; can be an extra promise layer when dealing with lists
+                          (hash-ref partially-evaluated-promises-table
+                                    (pref val) (λ () #f)))])
                  (or partial-eval-promise
                      (if (promise-forced? val)
                          (recon-value (force val) render-settings assigned-name)
                          'promise)))]
+              ; STC: handle lists here, instead of deferring to render-to-sexp fn
+              ; because there may be nested promises
+              [(null? val) #'empty]
+              [(list? val)
+               (with-syntax 
+                   ([(reconed-vals ...)
+                     (map (lx (recon-value _ render-settings assigned-name)) val)])
+                 #'(#%plain-app list reconed-vals ...))]
+              [(pair? val)
+               (with-syntax 
+                   ([reconed-car
+                     (recon-value (car val) render-settings assigned-name)]
+                    [reconed-cdr
+                     (recon-value (cdr val) render-settings assigned-name)])
+                 #'(#%plain-app cons reconed-car reconed-cdr))]
               [else
                (let* ([rendered 
                        ((render-settings-render-to-sexp render-settings) val)])
@@ -843,9 +861,17 @@
                                                         (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code ... can this occur?
                                                         ; dont show ellipses for force
                                                         ; object-name is good enough here, so dont need to add another "special val"
-                                                        (if (eq? (object-name (car arg-vals)) 'force)
-                                                            so-far
-                                                            (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))))
+                                                        (let ([obj-name (object-name (car arg-vals))])
+                                                          (cond [(eq? obj-name 'force) so-far]
+                                                                [(ormap 
+                                                                  (lx (eq? obj-name _)) 
+                                                                  '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr 
+                                                                    caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr 
+                                                                    cdadar cdaddr cddaar cddadr cdddar cddddr 
+                                                                    second third fourth fifth sixth seventh eighth))
+                                                                 #`(#%plain-app #,(datum->syntax #'here obj-name) #,so-far)]
+                                                                [else
+                                                                 (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))])))
                                                     'stepper-args-of-call 
                                                     rectified-evaluated))
                                                   (else

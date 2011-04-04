@@ -1,0 +1,45 @@
+#lang scheme/base
+
+(provide (rename-out [table highlight-table]))
+
+; number of steps to skip, where the step to skip has ellipses on lhs
+; # of skips depends on # of hidden !'s in fn def in lazy/lazy.rkt
+(define 
+  table 
+  (make-immutable-hasheq
+   '((caar   . 1)
+     (cadr   . 0)
+     (cdar   . 1)
+     (cddr   . 0)
+     (caaar  . 2)
+     (caadr  . 1)
+     (cadar  . 1)
+     (caddr  . 0)
+     (cdaar  . 2)
+     (cdadr  . 1)
+     (cddar  . 1)
+     (cdddr  . 0)
+     (caaaar . 3)
+     (caaadr . 2)
+     (caadar . 2)
+     (caaddr . 1)
+     (cadaar . 2)
+     (cadadr . 1)
+     (caddar . 1)
+     (cadddr . 0)
+     (cdaaar . 3)
+     (cdaadr . 2)
+     (cdadar . 2)
+     (cdaddr . 1)
+     (cddaar . 2)
+     (cddadr . 1)
+     (cdddar . 1)
+     (cddddr . 0)
+     (second . 0)
+     (third  . 0)
+     (fourth . 0)
+     (fifth  . 0)
+     (sixth  . 0)
+     (seventh . 0)
+     (eighth  . 0)
+    )))

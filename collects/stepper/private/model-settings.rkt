@@ -101,10 +101,10 @@
                           (constructor-style-printing) ; constructor-style-printing?
                           (abbreviate-cons-as-list)    ; abbreviate-cons-as-list?
                           (make-fake-render-to-sexp #t #t #t) ; render-to-sexp
-                          #f   ; lifting?
+                          #t   ; lifting?
                           #t   ; show-and/or-clauses-consumed?
                           #f   ; all-bindings-mutable?
-                          #f)) ; show-lambdas-as-lambdas?
+                          #t)) ; show-lambdas-as-lambdas?
 
   
   (define-struct test-struct () (make-inspector))

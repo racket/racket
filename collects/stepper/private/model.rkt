@@ -53,7 +53,9 @@
          #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
          ;; for breakpoint display
          ;; (commented out to allow nightly testing)
-         #;"display-break-stuff.ss")
+         #;"display-break-stuff.ss"
+         (for-syntax scheme/base)
+         "lazy-highlighting.rkt")
 
 (define program-expander-contract
   ((-> void?) ; init
@@ -84,7 +86,7 @@
             #:disable-error-handling? [disable-error-handling? #f]
             #:raw-step-receiver [raw-step-receiver #f])
   
-  (define DEBUG #f)
+  (define DEBUG #t)
   
   ;; finished-exps:
   ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -108,10 +110,44 @@
   
   (define (reset-held-exp-list)
     (set! held-exp-list the-no-sexp)
-    (set! held-finished-list null))
+    (set! held-finished-list null)
+    (set! lhs-recon-thunk null))
   
   ; used when determining whether to skip step with ellipses on LHS
   (define last-rhs-exps null)
+  
+  ; thunk that can re-reconstruct the last lhs
+  (define lhs-recon-thunk null)
+  
+  ; used to resolve lhs ellipses, to make sure highlighting is correct
+  ; steps are pushed onto the stack:
+  ;   when step=? but not step-and-highlight=?
+  ; steps are popped off the stack:
+  ;  lhs = ellipses and rhs != last-rhs-exps and skips = 0
+  ; skips are defined for each fn in lazy-highlighting.rkt;
+  ; # of skips depends on # of hidden !'s in fn def
+  (define highlight-stack null)
+  (define (highlight-stack-push mark-list)
+    (let* ([mark (find-first-called mark-list)]
+           [fn (object-name (lookup-binding (list mark) (get-arg-var 0)))]
+           [skips (hash-ref highlight-table fn)])
+      (printf "skips for ~a = ~a\n" fn skips)
+      (set! highlight-stack 
+            (cons (cons lhs-recon-thunk skips) highlight-stack))))
+  (define (find-first-called mark-list)
+    (if (null? mark-list)
+        #f
+        (let ([top-mark (car mark-list)])
+          (if (eq? 'called (mark-label top-mark))
+              top-mark
+              (find-first-called (cdr mark-list))))))
+  (define (highlight-stack-pop)
+    (set! highlight-stack (cdr highlight-stack)))
+  (define (highlight-stack-decrement)
+    (set! highlight-stack
+          (cons (cons (caar highlight-stack)
+                      (sub1 (cdar highlight-stack)))
+                (cdr highlight-stack))))
   
   
   ;; highlight-mutated-expressions :
@@ -225,10 +261,16 @@
         (define (create-held exps)
           (make-held exps (compute-step-was-app?) (compute-posn-info)))
         
+        (define-syntax (with-DEBUG stx)
+          (syntax-case stx ()
+            [(_ exp msg) #'(and exp (when DEBUG (printf msg)))]))
+        
         ; sends a step to the stepper, except if
         ;  - lhs = rhs
-        ;  - lhs = ellipses, last-rhs-exps = null (ie, this is first step)
+        ;  - lhs = ellipses, highlight-stack = null (ie, this is first step)
         ;  - lhs = ellipses, rhs = last-rhs-exps
+        ; when lhs = ellipses, and highlight-stack != null,
+        ; pop step from stack and use lhs
         (define (send-step lhs-exps lhs-finished-exps 
                            rhs-exps rhs-finished-exps
                            step-kind lhs-posn-info rhs-posn-info)
@@ -236,13 +278,35 @@
             (printf "maybe sending step ... \n")
             (printf "LHS = ~a\n" (map syntax->hilite-datum lhs-exps))
             (printf "RHS = ~a\n" (map syntax->hilite-datum rhs-exps)))
-          (unless (or (and (step=? lhs-exps rhs-exps)
-                           (when DEBUG (printf "LHS = RHS, so skipping\n")))
-                      (and (step=? lhs-exps (list #'(... ...)))
-                           (or (step=? rhs-exps last-rhs-exps)
-                               (null? last-rhs-exps))
-                           (when DEBUG 
-                             (printf "LHS = ..., RHS = last RHS, so skipping\n"))))
+          (unless 
+              (or (with-DEBUG 
+                   (and (step=? lhs-exps rhs-exps)
+                        (when (not (step-and-highlight=? lhs-exps rhs-exps))
+                          (when DEBUG
+                            (printf "Pushing onto highlight-stack:\n  ~a thunk\n" 
+                                    (syntax->hilite-datum (car lhs-exps))))
+                          (highlight-stack-push mark-list)))
+                   "SKIPPING STEP (LHS = RHS)\n")
+                  (and (step=? lhs-exps (list #'(... ...)))
+                       (or (with-DEBUG
+                            (step=? rhs-exps last-rhs-exps)
+                            "SKIPPING STEP (LHS = ellipses and RHS = last RHS)\n")
+                           (with-DEBUG
+                            (null? highlight-stack)
+                            "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")
+                           (let ([skips (cdar highlight-stack)]
+                                 [lhs-thunk (caar highlight-stack)])
+                             (if (zero? skips)
+                                 (begin
+                                   (set! lhs-exps (lhs-thunk))
+                                   (set! lhs-finished-exps rhs-finished-exps)
+                                   (with-DEBUG
+                                    (highlight-stack-pop)
+                                    "Popping highlight-stack\n")
+                                   #f)
+                                 (with-DEBUG
+                                  (highlight-stack-decrement)
+                                  "SKIPPING SKIP (decrementing top of highlight-stack)\n"))))))
             (receive-result
              (make-before-after-result
               (append lhs-finished-exps lhs-exps)
@@ -257,6 +321,9 @@
         (define (step=? lhs rhs)
           (equal? (map syntax->datum lhs)
                   (map syntax->datum rhs)))
+        (define (step-and-highlight=? lhs rhs)
+          (equal? (map syntax->hilite-datum lhs)
+                  (map syntax->hilite-datum rhs)))
         
         #;(>>> break-kind)
         #;(fprintf (current-error-port) "break called with break-kind: ~a ..." break-kind)
@@ -296,7 +363,16 @@
                             lhs-unwound))]
                         [lhs-finished-exps (reconstruct-all-completed)])
                      (set! held-finished-list lhs-finished-exps)
-                     (set! held-exp-list (create-held lhs-unwound))))]
+                     (set! held-exp-list (create-held lhs-unwound))
+                     (set! lhs-recon-thunk 
+                           (λ ()
+                             (map (λ (exp) (unwind exp render-settings)) 
+                                  (maybe-lift 
+                                   (r:reconstruct-left-side 
+                                    mark-list 
+                                    returned-value-list 
+                                    render-settings) 
+                                   #f))))))]
                 
                 ; CASE: result-exp-break or result-value-break ----------------
                 [(result-exp-break result-value-break)
