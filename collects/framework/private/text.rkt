@@ -3845,7 +3845,7 @@ designates the character that triggers autocompletion
         
     ;; set the dc stuff to values we want
     (define/private (setup-dc dc)
-      (send dc set-pen "black" 1 'solid)
+      (send dc set-pen (get-foreground) 1 'solid)
       (send dc set-font (get-style-font))
       (send dc set-text-foreground (get-foreground)))
 
