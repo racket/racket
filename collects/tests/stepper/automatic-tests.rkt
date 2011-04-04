@@ -12,7 +12,8 @@
     lazy-caaadr lazy-caadar lazy-caaddr lazy-cadaar lazy-cadadr lazy-caddar
     lazy-cadddr lazy-cdaaar lazy-cdaadr lazy-cdadar lazy-cdaddr lazy-cddaar
     lazy-cddadr lazy-cdddar lazy-cddddr lazy-second lazy-third lazy-fourth
-    lazy-fifth lazy-sixth lazy-seventh lazy-eighth))
+    lazy-fifth lazy-sixth lazy-seventh lazy-eighth
+    lazy-if1 lazy-if2 lazy-take-0 lazy-take))
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]

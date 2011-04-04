@@ -1176,7 +1176,7 @@
   (define/contract annotate/top-level
     (syntax? . -> . syntax?)
     (lambda (exp)
-      (syntax-case exp (module #%plain-module-begin let-values dynamic-wind #%plain-lambda #%plain-app)
+      (syntax-case exp (module #%plain-module-begin let-values dynamic-wind #%plain-lambda #%plain-app define-values)
         [(module name lang
            (#%plain-module-begin . bodies))
          #`(module name lang (#%plain-module-begin #,@(map annotate/module-top-level (syntax->list #`bodies))))]
@@ -1189,10 +1189,10 @@
                         (#%plain-lambda () . rest2)
                         (#%plain-lambda () . rest3)))
          exp]
-        ; STC: for lazy
-        [(#%plain-app . terms) (annotate/module-top-level exp)]
         ; STC: for lazy, handle defines
         [(define-values (ids ...) bodies) (annotate/module-top-level exp)]
+        ; STC: for lazy
+        [(#%plain-app . terms) (annotate/module-top-level exp)]
         [else
          (error `annotate/top-level "unexpected top-level expression: ~a\n"
                 (syntax->datum exp))

@@ -850,12 +850,12 @@
                                                 (case (mark-label (car mark-list))
                                                   ((not-yet-called)
                                                    (if (null? unevaluated)
-                                                       #`(#%plain-app . #,rectified-evaluated)
-                                                       #`(#%plain-app 
-                                                          #,@rectified-evaluated
-                                                          #,so-far 
-                                                          #,@(map recon-source-current-marks (cdr (map car unevaluated))))))
-                                                  ((called)
+                                                        #`(#%plain-app . #,rectified-evaluated)
+                                                        #`(#%plain-app 
+                                                           #,@rectified-evaluated
+                                                           #,so-far 
+                                                           #,@(map recon-source-current-marks (cdr (map car unevaluated))))))
+                                                  ((called) ; unevaluated = null
                                                    (stepper-syntax-property
                                                     (if (eq? so-far nothing-so-far)
                                                         (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code ... can this occur?
@@ -870,6 +870,7 @@
                                                                     cdadar cdaddr cddaar cddadr cdddar cddddr 
                                                                     second third fourth fifth sixth seventh eighth))
                                                                  #`(#%plain-app #,(datum->syntax #'here obj-name) #,so-far)]
+                                                                [(eq? obj-name 'take) #`(#%plain-app . #,rectified-evaluated)]
                                                                 [else
                                                                  (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))])))
                                                     'stepper-args-of-call 

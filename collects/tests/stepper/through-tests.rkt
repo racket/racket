@@ -1709,7 +1709,55 @@
         -> ,def (+ 3 {,subarg3}) -> ,def (+ 3 {7})
         :: ,def {(+ 3 7)} -> ,def {10}))
    
+   ; lazy-if1
+   ; (define (f x) (if x (/ 1 0) (not x)))
+   ; (f (< 1 0))
+   (let* ([make-body (λ (x) `(if ,x ,err (not ,x)))]
+          [body (make-body 'x)]
+          [def `(define (f x) ,body)]
+          [lam `(lambda (x) ,body)]
+          [arg '(< 1 0)]
+          [body-subst (make-body arg)])
+     (t 'lazy-if1 m:lazy
+        ,def (f ,arg)
+        :: ,def ({f} ,arg) -> ,def ({,lam} ,arg)
+        :: ,def {(,lam ,arg)} -> ,def {,body-subst}
+        :: ,def (if {,arg} ,err (not {,arg})) -> ,def (if {false} ,err (not {false}))
+        :: ,def {(if false ,err (not false))} -> ,def {(not false)} -> ,def {true}))
+   
+   ; lazy-if2
+   ; (define (f x) (if x (not x) (/ 1 0)))
+   ; (f (> 1 0))
+   (let* ([make-body (λ (x) `(if ,x (not ,x) ,err))]
+          [body (make-body 'x)]
+          [def `(define (f x) ,body)]
+          [lam `(lambda (x) ,body)]
+          [arg '(> 1 0)]
+          [body-subst (make-body arg)])
+     (t 'lazy-if2 m:lazy
+        ,def (f ,arg)
+        :: ,def ({f} ,arg) -> ,def ({,lam} ,arg)
+        :: ,def {(,lam ,arg)} -> ,def {,body-subst}
+        :: ,def (if {,arg} (not {,arg}) ,err) -> ,def (if {true} (not {true}) ,err)
+        :: ,def {(if true (not true) ,err)} -> ,def {(not true)} -> ,def {false}))
 
+   ; lazy-take-0
+   (let ([e '(take 0 (list 1 2))])
+     (t 'lazy-take-0 m:lazy
+        ,e :: {,e} -> {empty}))
+   
+   ; lazy-take
+   ; FIXME: when unknown promises implemented
+   (t 'lazy-take m:lazy
+      (take (+ 0 2) (list (+ 1 2) (+ 3 4) (/ 1 0)))
+      :: (take {(+ 0 2)} (list (+ 1 2) (+ 3 4) (/ 1 0)))
+      -> (take {2} (list (+ 1 2) (+ 3 4) (/ 1 0)))
+      :: {(take 2 (list (+ 1 2) (+ 3 4) (/ 1 0)))}
+      -> {(cons (+ 1 2) promise)})
+
+      
+      
+      
   #;
   (t1 'teachpack-callbacks
      (test-teachpack-sequence

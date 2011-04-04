@@ -7,7 +7,8 @@
 (define 
   table 
   (make-immutable-hasheq
-   '((caar   . 1)
+   '((take   . 0)
+     (caar   . 1)
      (cadr   . 0)
      (cdar   . 1)
      (cddr   . 0)
