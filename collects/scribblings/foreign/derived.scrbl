@@ -13,3 +13,4 @@
 @include-section["atomic.scrbl"]
 @include-section["try-atomic.scrbl"]
 @include-section["objc.scrbl"]
+@include-section["security.scrbl"]
