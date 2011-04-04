@@ -57,7 +57,7 @@ a @racket['multicommand] @tech{style property} for a @racket[nested-flow],
 then the style name is used as a command with multiple arguments.
 In addition, for an itemization, the style
 string is suffixed with @racket["Item"] and used as a CSS class or Latex
-macro name to use for the itemization's items (in place of @tt{item}
+macro name to use for the itemization's items (in place of @ltx{item}
 in the case of Latex).
 
 To add a mapping from your own style name to a CSS configuration, add
@@ -148,7 +148,7 @@ Two kinds of files implement the two kinds of configuration:
 @itemize[
 
  @item{A @deftech{prefix file} determines the @tt{DOCTYPE} line for
-       HTML output or the @tt{documentclass} configuration (and
+       HTML output or the @ltx{documentclass} configuration (and
        perhaps some addition package uses or other configurations) for
        Latex output.
 
@@ -215,3 +215,55 @@ languages like @racketmodname[scribble/manual] and
 @racket[latex-defaults] @tech{style property} to a main-document part only if
 it does not already have such a property added through the
 @racket[#:style] argument of @racket[title].
+
+@; ------------------------------------------------------------
+
+@section[#:tag "builtin-latex"]{Predefined Latex Macros}
+
+The @filepath{scribble.tex} Latex configuration includes several
+macros and environments that you can redefine to adjust the output
+style:
+
+@itemlist[
+
+ @item{@ltxd[0]{preDoc} --- called before the document content; the 
+       default does nothing, while the @racketmodname[scribble/manual]
+       configuration enabled @ltx{sloppy}.}
+
+ @item{@ltxd[0]{postDoc} --- called after the document content; the 
+       default does nothing.}
+
+ @item{@ltxd[0]{sectionNewpage} --- called before each top-level
+       section starts; the default does nothing, while the
+       @racketmodname[scribble/manual] configuration uses
+       @ltx{newpage} to start each chapter on a new page.}
+
+ @item{@ltxd[2]{SecRef} --- the first argument is a section number,
+       and the second argument is a section title. This macro is used
+       by @racket[secref] to reference a section (other than a
+       document or top-level section within a document), and the
+       default shows ``section'' followed by the section number
+       (ignoring the title). The @racketmodname[scribble/manual]
+       redefinition of this macro shows ``§'', the section number, and
+       the title in quotes.}
+
+ @item{@ltxd[2]{ChapRef} --- like @ltx{SecRef}, but for a top-level
+       section with a document. The default implementation defers to
+       @ltx{SecRef}.}
+
+ @item{@ltxd[2]{BookRef} --- like @ltx{SecRef}, but for a document (as
+       opposed to a section within the document). The default
+       implementation shows the title in italic.}
+
+ @item{@ltxd[2]{SecRefUC} --- like @ltx{SecRef}, but for @racket[Secref].
+       The default shows ``Section'' followed by the section number.}
+
+ @item{@ltxd[2]{ChapRefUC} --- like @ltx{SecRefUC}, but for a top-level
+       section with a document. The default implementation defers to
+       @ltx{SecRefUC}.}
+
+ @item{@ltxd[2]{SecRefUC} --- like @ltx{BookRef}, but for @racket[Secref].
+       The default shows defers to @ltx{BookRef}.}
+
+]
+

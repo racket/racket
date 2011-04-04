@@ -433,9 +433,7 @@ Generates a literal hyperlinked URL.}
                  [#:underline? underline? any/c #t])
          element?]{
 
-Inserts the hyperlinked title of the section tagged @racket[tag], but
-elements in the title content with the @racket['aux] @tech{style property}
-are omitted in the hyperlink label.
+Inserts a reference to the section tagged @racket[tag].
 
 If @racket[#:doc module-path] is provided, the @racket[tag] refers to
 a tag with a prefix determined by @racket[module-path]. When
@@ -453,8 +451,18 @@ reach the @racket[tag] section. When @racket[#:doc] is not provided,
 the @racket[prefixes] path is relative to any enclosing section (i.e.,
 the youngest ancestor that produces a match).
 
-If @racket[underline?] is @racket[#f], then the hyperlink is rendered
-in HTML without an underline.}
+For HTML output, the generated reference is the hyperlinked title of
+the elements in the section's title content, except that elements with
+the @racket['aux] @tech{style property} are omitted in the hyperlink
+label. If @racket[underline?] is @racket[#f], then the hyperlink is
+rendered in HTML without an underline.
+
+For Latex output, the generated reference's format depends on the
+document style. By default, only the section number is shown in the
+reference, but the @racketmodname[scribble/manual] style shows the
+title after the section number. Customize the output (see
+@secref["config"]) by redefining the @ltx{BookRef}, @|etc|, macros (see
+@secref["builtin-latex"]).}
 
 
 @defproc[(Secref [tag string?]

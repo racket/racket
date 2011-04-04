@@ -485,11 +485,11 @@ line-wrapped, unless a vertical alignment is specified for the cell
 through a @racket[table-cells] or @racket[table-columns]
 @tech{style property}. To get a line-wrapped paragraph, use a
 @racket[compound-paragraph] or use an element with a string style and
-define a corresponding Latex macro in terms of @tt{parbox}. For Latex
+define a corresponding Latex macro in terms of @ltx{parbox}. For Latex
 output of blocks in the flow that are @racket[nested-flow]s,
 @racket[itemization]s, @racket[compound-paragraph]s, or
-@racket[delayed-block]s, the block is wrapped with @tt{minipage} using
-@tt{linewidth} divided by the column count as the width.}
+@racket[delayed-block]s, the block is wrapped with @ltxe{minipage} using
+@ltx{linewidth} divided by the column count as the width.}
 
 
 @defstruct[itemization ([style style?]
@@ -580,7 +580,7 @@ A @techlink{compound paragraph} has a @tech{style} and a list of
 For HTML, a @racket[paragraph] block in @racket[blocks] is rendered
 without a @tt{<p>} tag, unless the paragraph has a style with a
 non-@racket[#f] @tech{style name}. For Latex, each @tech{block} in
-@racket[blocks] is rendered with a preceding @tt{\noindent}, unless
+@racket[blocks] is rendered with a preceding @ltx{noindent}, unless
 the block has the @racket['never-indents] property (checking
 recursively in a @racket[nested-flow] or @racket[compound-paragraph]
 if the @racket[nested-flow] or @racket[compound-paragraph] itself has
