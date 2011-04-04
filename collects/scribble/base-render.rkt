@@ -24,6 +24,9 @@
                 [style-extra-files null]
                 [extra-files null])
 
+    (define/public (current-render-mode)
+      '())
+
     (define/public (get-dest-directory [create? #f])
       (when (and dest-dir create? (not (directory-exists? dest-dir)))
         (make-directory* dest-dir))
@@ -306,14 +309,21 @@
           (traverse-content c fp))]
        [else fp]))
 
-    (define (traverse-force fp p proc again)
+    (define/private (traverse-force fp p proc again)
       (let ([v (hash-ref fp p (lambda () proc))])
         (if (procedure? v)
             (let ([fp fp])
               (let ([v2 (v (lambda (key default)
-                             (hash-ref fp key default))
+                             (if (eq? key 'scribble:current-render-mode)
+                                 (current-render-mode)
+                                 (hash-ref fp key default)))
                            (lambda (key val)
-                             (set! fp (hash-set fp key val))))])
+                             (if (eq? key 'scribble:current-render-mode)
+                                 (raise-mismatch-error 
+                                  'traverse-info-set! 
+                                  "cannot set value for built-in key: "
+                                  key)
+                                 (set! fp (hash-set fp key val)))))])
                 (let ([fp (hash-set fp p v2)])
                   (if (procedure? v2)
                       fp

@@ -38,6 +38,9 @@
   (class %
     (inherit-field prefix-file style-file style-extra-files)
 
+    (define/override (current-render-mode)
+      '(latex))
+
     (define/override (get-suffix) #".tex")
 
     (inherit render-block

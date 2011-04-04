@@ -199,6 +199,9 @@
                 [script-file #f]
                 [search-box? #f])
 
+    (define/override (current-render-mode)
+      '(html))
+
     (define/override (get-suffix) #".html")
 
     (define/override (index-manual-newlines?)

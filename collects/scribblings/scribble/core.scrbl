@@ -2,7 +2,9 @@
 @(require scribble/manual
           "utils.ss"
           (for-label scribble/manual-struct
-                     setup/main-collects))
+                     file/convertible
+                     setup/main-collects
+                     scriblib/render-cond))
 
 @title[#:tag "core"]{Structures And Processing}
 
@@ -610,15 +612,34 @@ for Latex output (see @secref["extra-style"]). The following
 @defstruct[traverse-block ([traverse block-traverse-procedure/c])]{
 
 Produces another block during the @tech{traverse pass}, eventually.
-The @scheme[traverse] procedure is called with procedures to get and
-set symbol-keyed information, and it should return either a
-@tech{block} (which effectively takes the @racket[traverse-block]'s
-place) or a procedure like @racket[traverse] to be called in the next
-iteration of the @tech{traverse pass}.
+
+The @scheme[traverse] procedure is called with @racket[_get] and
+@racket[_set] procedures to get and set symbol-keyed information; the
+@racket[traverse] procedure should return either a @tech{block} (which
+effectively takes the @racket[traverse-block]'s place) or a procedure
+like @racket[traverse] to be called in the next iteration of the
+@tech{traverse pass}.
 
 All @racket[traverse-element] and @racket[traverse-block]s that have
 not been replaced are forced in document order relative to each other
-during an iteration of the @tech{traverse pass}.}
+during an iteration of the @tech{traverse pass}.
+
+The @racket[_get] procedure passed to @scheme[traverse] takes a symbol
+and any value to act as a default; it returns information registered
+for the symbol or the given default if no value has been
+registered. The @racket[_set] procedure passed to @scheme[traverse]
+takes a symbol and a value to registered for the symbol.
+
+@margin-note*{See also @racket[cond-block] in @racketmodname[scriblib/render-cond].}
+@;
+The symbol @indexed-racket['scribble:current-render-mode] is
+automatically registered to a list of symbols that describe the
+target of document rendering. The list contains @racket['html]
+when rendering to HTML, @racket['latex] when rendering via Latex, and
+@racket['text] when rendering to text. The registration of
+@racket['scribble:current-render-mode] cannot be changed via
+@racket[_set].}
+
 
 @defstruct[delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]{
 
@@ -810,6 +831,8 @@ in curly braces) as elements of @racket[content].}
 
 @defstruct[traverse-element ([traverse element-traverse-procedure/c])]{
 
+@margin-note*{See also @racket[cond-element] in @racketmodname[scriblib/render-cond].}
+@;
 Like @racket[traverse-block], but the @racket[traverse] procedure must
 eventually produce @tech{content}, rather than a @tech{block}.}
 

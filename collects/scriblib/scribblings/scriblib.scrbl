@@ -8,3 +8,4 @@
 @include-section["figure.scrbl"]
 @include-section["autobib.scrbl"]
 @include-section["footnote.scrbl"]
+@include-section["render-cond.scrbl"]

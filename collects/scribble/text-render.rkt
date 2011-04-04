@@ -28,6 +28,9 @@
   (define (render-mixin %)
     (class %
       
+      (define/override (current-render-mode)
+        '(text))
+
       (define/override (get-substitutions)
         '((#rx"---" "\U2014")
 	  (#rx"--" "\U2013")
