@@ -6728,6 +6728,17 @@
       (send (new d%) f)))
   
   (test/spec-passed
+   'class/c-first-order-absent-1
+   '(contract (class/c (absent m)) object% 'pos 'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-absent-2
+   '(contract (class/c (absent m))
+              (class object% (super-new) (define/public (m) 3))
+              'pos
+              'neg))
+  
+  (test/spec-passed
    'class/c-higher-order-init-1
    '(let ([c% (contract (class/c (init [a number?]))
                         (class object% (super-new) (init a))

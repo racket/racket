@@ -1477,7 +1477,7 @@ resulting trait are the same as for @scheme[trait-sum], otherwise the
 @section{Object and Class Contracts}
 
 @defform/subs[
-#:literals (field init init-field inherit inherit-field super inner override augment augride)
+#:literals (field init init-field inherit inherit-field super inner override augment augride absent)
 
 (class/c member-spec ...)
 
@@ -1492,7 +1492,8 @@ resulting trait are the same as for @scheme[trait-sum], otherwise the
   (inner method-spec ...)
   (override method-spec ...)
   (augment method-spec ...)
-  (augride method-spec ...)]
+  (augride method-spec ...)
+  (absent method-id ...)]
  
  [method-spec
   method-id
@@ -1516,6 +1517,8 @@ contracts which discuss the state of the object when the method is called
 (or, for dependent contracts, in other parts of the contract).  Alternative
 contract forms, such as @scheme[->m], are provided as a shorthand
 for writing method contracts.
+
+Methods listed in an @scheme[absent] clause must @emph{not} be present in the class.
 
 The external contracts are as follows:
 
@@ -1571,6 +1574,10 @@ The internal contracts are as follows:
    dynamic dispatch chain.  @scheme[augment] is used when subclasses can augment the method, and
    @scheme[augride] is used when subclasses can override the current augmentation.}
 ]}
+
+@defform[(absent method-id ...)]{
+See @scheme[class/c]; use outside of a @scheme[class/c] form is a syntax error.
+}
 
 @defform[(->m dom ... range)]{
 Similar to @scheme[->], except that the domain of the resulting contract contains one more element
