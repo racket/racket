@@ -296,7 +296,7 @@ v4 todo:
                                                               "received ~a argument~a, expected ~a"
                                                               args-len (if (= args-len 1) "" "s") arity-string))
                                          (apply basic-lambda-name args))
-                                     #'(λ args
+                                     #`(λ args
                                          (raise-blame-error (blame-swap blame) val
                                                             "expected required keyword ~a"
                                                             (quote #,(car req-keywords)))))]
