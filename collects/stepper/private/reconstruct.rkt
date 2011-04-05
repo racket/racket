@@ -682,7 +682,7 @@
                             vars)])
       (if (= (length recon-vals) 1)
           (attach-info #`(define-values #,vars #,(car recon-vals)) exp)
-          (attach-info #'(define-values #,vars (values #,@recon-vals)) exp))))
+          (attach-info #`(define-values #,vars (values #,@recon-vals)) exp))))
   
   
   

@@ -220,7 +220,7 @@
         (label ([(var ...) rhs] ...) . bodies)
         (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
                       [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
-          #`(,label ([(var ...) rhs2] ...) . new-bodies))]))
+          #`(label ([(var ...) rhs2] ...) . new-bodies))]))
    
    (define (unwind-local stx settings)
      (kernel-syntax-case stx #f
