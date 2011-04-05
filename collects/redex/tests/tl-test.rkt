@@ -280,6 +280,12 @@
                          #:key (compose symbol->string bind-name)))
               '())
           '(1 4 3 2 5 "s" t s)))
+
+  (let ()
+    (define-language L
+      (e (e e) number))
+    ;; not a syntax error since first e is not a binder
+    (test (pair? (redex-match L ((cross e) e ...) (term ((hole 2) 1)))) #t))
   
   ;; test caching
   (let ()
@@ -1489,7 +1495,6 @@
                  (e ((name x any) (name x any_2) ...)))
                 #rx"different depths"
                 2)
-
   
   (test-syn-err (reduction-relation 
                  grammar

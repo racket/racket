@@ -127,7 +127,7 @@
             (let loop ([stx orig-stx]
                        [names null]
                        [depth 0])
-              (syntax-case stx (name in-hole side-condition)
+              (syntax-case stx (name in-hole side-condition cross)
                 [(name sym pat)
                  (identifier? (syntax sym))
                  (loop (syntax pat) 
@@ -139,6 +139,7 @@
                        depth)]
                 [(side-condition pat . rest)
                  (loop (syntax pat) names depth)]
+                [(cross _) names]
                 [(pat ...)
                  (let i-loop ([pats (syntax->list (syntax (pat ...)))]
                               [names names])
