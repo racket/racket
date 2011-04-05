@@ -1243,7 +1243,8 @@
              proc))
           (let* ([kw-chaperone
                   (let ([p (keyword-procedure-proc wrap-proc)])
-                    (lambda (kws args . rest)
+                    (case-lambda 
+                     [(kws args . rest)
                       (call-with-values (lambda () (apply p kws args rest))
                         (lambda results
                           (let ([len (length results)]
@@ -1284,7 +1285,11 @@
                                  args))
                               (if extra?
                                   (apply values (car results) kws (cdr results))
-                                  (apply values kws results))))))))]
+                                  (apply values kws results))))))]
+                     ;; The following case exists only to make sure that the arity of
+                     ;; any procedure passed to `make-keyword-args' is covered
+                     ;; bu this procedure's arity.
+                     [other (error "shouldn't get here")]))]
                  [new-proc
                   (cond
                    [(okp? proc)

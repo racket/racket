@@ -1198,4 +1198,27 @@
 
 ;; ----------------------------------------
 
+;; Check that supplying a procedure `to make-keyword-procedure' that 
+;; (unnecessarily) accepts accepts 0 or 1 arguments doesn't break
+;; the chaperone implementation:
+(test (void)
+      'chaperoned-void
+      ((chaperone-procedure
+        (make-keyword-procedure void)
+        (make-keyword-procedure
+         (lambda (kwds kwd-args . args) (apply values kwd-args args))))
+       #:a "x"))
+
+(test (box (list (list (list "x"))))
+      'impersonated-void
+      ((impersonate-procedure
+        (make-keyword-procedure (lambda args (cdr args)))
+        (make-keyword-procedure
+         (lambda (kwds kwd-args . args) 
+           (printf "~s\n" kwd-args)
+           (apply values (lambda (v) (box v)) (map list kwd-args) args))))
+       #:a "x"))
+
+;; ----------------------------------------
+
 (report-errs)
