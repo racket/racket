@@ -1493,14 +1493,17 @@ resulting trait are the same as for @scheme[trait-sum], otherwise the
   (override method-spec ...)
   (augment method-spec ...)
   (augride method-spec ...)
-  (absent method-id ...)]
+  (absent absent-spec ...)]
  
  [method-spec
   method-id
   (method-id method-contract)]
  [field-spec
   field-id
-  (field-id contract-expr)])]{
+  (field-id contract-expr)]
+ [absent-spec
+  method-id
+  (field field-id ...)])]{
 Produces a contract for a class.
 
 There are two major categories of contracts listed in a @scheme[class/c]
@@ -1518,7 +1521,7 @@ contracts which discuss the state of the object when the method is called
 contract forms, such as @scheme[->m], are provided as a shorthand
 for writing method contracts.
 
-Methods listed in an @scheme[absent] clause must @emph{not} be present in the class.
+Methods and fields listed in an @scheme[absent] clause must @emph{not} be present in the class.
 
 The external contracts are as follows:
 

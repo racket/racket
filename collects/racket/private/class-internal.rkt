@@ -2575,6 +2575,9 @@
       (for ([f (class/c-fields ctc)])
         (unless (hash-ref field-ht f #f)
           (fail "no public field ~a" f)))
+      (for ([f (class/c-absent-fields ctc)])
+        (when (hash-ref field-ht f #f)
+          (fail "class already contains public field ~a" f)))
       (for ([f (class/c-inherit-fields ctc)])
         (unless (hash-ref field-ht f #f)
           (fail "no public field ~a" f)))))
@@ -2899,7 +2902,7 @@
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
-   augrides augride-contracts absents)
+   augrides augride-contracts absents absent-fields)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -2918,6 +2921,15 @@
                (if (null? is)
                    null
                    (list (cons name (pair-ids-ctcs is ctcs)))))]
+            [handle-absents
+             (λ (meths fields)
+               (cond
+                 [(and (null? meths) (null? fields))
+                  null]
+                 [(null? fields)
+                  (list (cons 'absent meths))]
+                 [else
+                  (list (list* 'absent (cons 'field fields) meths))]))]
             [handled-methods
              (for/list ([i (in-list (class/c-methods ctc))]
                         [ctc (in-list (class/c-method-contracts ctc))])
@@ -2937,8 +2949,7 @@
                (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
                (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))
                (handle-optional 'augride (class/c-augrides ctc) (class/c-augride-contracts ctc))
-               (let ([absents (class/c-absents ctc)])
-                 (if (null? absents) null (list (cons 'absent absents))))))))
+               (handle-absents (class/c-absents ctc) (class/c-absent-fields ctc))))))
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -2958,13 +2969,29 @@
        (values #'(quote x) 
                #`(coerce-contract '#,form-name (let ([x ctc]) x)))]
       [_
-       (raise-syntax-error 'class/c "expected identifier or (id contract)" stx)]))
+       (raise-syntax-error form-name "expected identifier or (id contract)" stx)]))
   (define (parse-names-ctcs stx)
     (for/fold ([names null]
                [ctcs null])
       ([stx (in-list (syntax->list stx))])
       (let-values ([(name ctc) (parse-name-ctc stx)])
         (values (cons name names) (cons ctc ctcs)))))
+  (define (parse-absents stx)
+    (for/fold ([meths null]
+               [fields null])
+      ([stx (in-list (syntax->list stx))])
+      (syntax-case stx (field)
+        [(field f-id ...)
+         (let ([symbols (for/list ([id (in-list (syntax->list #'(f-id ...)))])
+                          (unless (identifier? id)
+                            (raise-syntax-error 'class/c "expected identifier" stx))
+                          #`(quote #,id))])
+           (values meths (append (reverse symbols) fields)))]
+        [id
+         (identifier? #'id)
+         (values (cons #'(quote id) meths) fields)]
+        [_
+         (raise-syntax-error 'class/c "expected identifier or (field id ...)" stx)])))
   (define (parse-spec stx)
     (syntax-case stx (field inherit inherit-field init init-field super inner override augment augride absent)
       [(field f-spec ...)
@@ -3052,16 +3079,15 @@
                       (append names (hash-ref parsed-forms 'augrides null)))
            (hash-set! parsed-forms 'augride-contracts
                       (append ctcs (hash-ref parsed-forms 'augride-contracts null)))))]
-      [(absent m-id ...)
+      [(absent a-spec ...)
        (begin
          (when object/c?
            (raise-syntax-error 'object/c "absent specification not allowed in object/c" stx))
-         (let ([ids (syntax->list #'(m-id ...))])
-           (for ([id (in-list ids)])
-             (unless (identifier? id)
-               (raise-syntax-error form-name "non-identifier in absent specification" id)))
-         (hash-set! parsed-forms 'absents 
-                    (append (map (λ (x) #`(quote #,x)) ids) (hash-ref parsed-forms 'absents null)))))]
+         (let-values ([(meths fields) (parse-absents #'(a-spec ...))])
+           (hash-set! parsed-forms 'absents
+                      (append meths (hash-ref parsed-forms 'absents null)))
+           (hash-set! parsed-forms 'absent-fields
+                      (append fields (hash-ref parsed-forms 'absent-fields null)))))]
       [m-spec
        (let-values ([(name ctc1) (parse-name-ctc #'m-spec)])
          (hash-set! parsed-forms 'methods
@@ -3098,7 +3124,8 @@
                      [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))]
                      [augrides #`(list #,@(reverse (hash-ref parsed-forms 'augrides null)))]
                      [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))]
-                     [absents #`(list #,@(reverse (hash-ref parsed-forms 'absents null)))])
+                     [absents #`(list #,@(reverse (hash-ref parsed-forms 'absents null)))]
+                     [absent-fields #`(list #,@(reverse (hash-ref parsed-forms 'absent-fields null)))])
          (syntax/loc stx
            (let* ([inits+contracts (sort (list (cons i i-c) ...)
                                          (lambda (s1 s2) 
@@ -3114,7 +3141,7 @@
                            overrides override-ctcs
                            augments augment-ctcs
                            augrides augride-ctcs
-                           absents)))))]))
+                           absents absent-fields)))))]))
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)

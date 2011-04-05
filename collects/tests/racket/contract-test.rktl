@@ -6739,6 +6739,17 @@
               'neg))
   
   (test/spec-passed
+   'class/c-first-order-absent-3
+   '(contract (class/c (absent (field f))) object% 'pos 'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-absent-4
+   '(contract (class/c (absent (field f)))
+              (class object% (super-new) (field [f 3]))
+              'pos
+              'neg))
+  
+  (test/spec-passed
    'class/c-higher-order-init-1
    '(let ([c% (contract (class/c (init [a number?]))
                         (class object% (super-new) (init a))
