@@ -36,6 +36,7 @@
      (cddadr . 1)
      (cdddar . 1)
      (cddddr . 0)
+     (first  . 0)
      (second . 0)
      (third  . 0)
      (fourth . 0)

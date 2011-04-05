@@ -1747,17 +1747,125 @@
         ,e :: {,e} -> {empty}))
    
    ; lazy-take
-   ; FIXME: when unknown promises implemented
    (t 'lazy-take m:lazy
       (take (+ 0 2) (list (+ 1 2) (+ 3 4) (/ 1 0)))
       :: (take {(+ 0 2)} (list (+ 1 2) (+ 3 4) (/ 1 0)))
       -> (take {2} (list (+ 1 2) (+ 3 4) (/ 1 0)))
       :: {(take 2 (list (+ 1 2) (+ 3 4) (/ 1 0)))}
-      -> {(cons (+ 1 2) promise)})
+      -> {(cons (+ 1 2) <DelayedEvaluation#0>)})
+   
+   ; lazy-take-impl
+;   (define (take-n n lst)
+;     (if (= n 0)
+;         null
+;         (cons (first lst)
+;               (take-n (- n 1) (rest lst)))))
+;   (define (f lst) (+ (first lst) (second lst)))
+;   (f (take-n 3 (list 1 2 (/ 1 0) 4)))
+   (let* ([make-take-body 
+           (λ (n lst) 
+             `(if (= ,n 0) null
+                  (cons (first ,lst)
+                        (take-n (- ,n 1) (rest ,lst)))))]
+          [take-body (make-take-body 'n 'lst)]
+          [take-def `(define (take-n n lst) ,take-body)]
+          [take-lam `(lambda (n lst) ,take-body)]
+          [make-f-body (λ (lst) `(+ (first ,lst) (second ,lst)))]
+          [f-body (make-f-body 'lst)]
+          [f-def `(define (f lst) ,f-body)]
+          [f-lam `(lambda (lst) ,f-body)]
+          [lst-arg `(list (+ 1 2) (+ 3 4) ,err (+ 5 6))]
+          [lst-arg-red1 `(list 3 (+ 3 4) ,err (+ 5 6))]
+          [make-take-app (λ (n lst) `(take-n ,n ,lst))]
+          [take-arg (make-take-app 3 lst-arg)])
+     (t 'lazy-take-impl m:lazy
+        ,take-def ,f-def (f ,take-arg)
+        :: ,take-def ,f-def ({f} ,take-arg) -> ,take-def ,f-def ({,f-lam} ,take-arg)
+        :: ,take-def ,f-def {(,f-lam ,take-arg)} -> ,take-def ,f-def {,(make-f-body take-arg)}
+        :: ,take-def ,f-def ,(make-f-body `({take-n} 3 ,lst-arg))
+        -> ,take-def ,f-def ,(make-f-body `({,take-lam} 3 ,lst-arg))
+        :: ,take-def ,f-def ,(make-f-body `{(,take-lam 3 ,lst-arg)})
+        -> ,take-def ,f-def ,(make-f-body `{,(make-take-body 3 lst-arg)})
+        :: ,take-def ,f-def ,(make-f-body `(if {(= 3 0)} null
+                                               (cons (first ,lst-arg)
+                                                     (take-n (- 3 1) (rest ,lst-arg)))))
+        -> ,take-def ,f-def ,(make-f-body `(if {false} null
+                                               (cons (first ,lst-arg)
+                                                     (take-n (- 3 1) (rest ,lst-arg)))))
+        :: ,take-def ,f-def ,(make-f-body `{(if false null
+                                                (cons (first ,lst-arg)
+                                                      (take-n (- 3 1) (rest ,lst-arg))))})
+        -> ,take-def ,f-def ,(make-f-body `{(cons (first ,lst-arg) ,(make-take-app '(- 3 1) `(rest ,lst-arg)))})
+        :: ,take-def ,f-def (+ {(first (cons (first ,lst-arg) ,(make-take-app '(- 3 1) `(rest ,lst-arg))))}
+                               (second (cons (first ,lst-arg) ,(make-take-app '(- 3 1) `(rest ,lst-arg)))))
+        -> ,take-def ,f-def (+ {(first ,lst-arg)}
+                               (second (cons (first ,lst-arg) ,(make-take-app '(- 3 1) `(rest ,lst-arg)))))
+        :: ,take-def ,f-def (+ {(first ,lst-arg)}
+                               (second (cons {(first ,lst-arg)} ,(make-take-app '(- 3 1) `(rest ,lst-arg)))))
+        -> ,take-def ,f-def (+ {(+ 1 2)}
+                               (second (cons {(+ 1 2)} ,(make-take-app '(- 3 1) `(rest ,lst-arg)))))
+        :: ,take-def ,f-def (+ {(+ 1 2)}
+                               (second (cons {(+ 1 2)} ,(make-take-app '(- 3 1) `(rest (list {(+ 1 2)} (+ 3 4) ,err (+ 5 6)))))))
+        -> ,take-def ,f-def (+ {3}
+                               (second (cons {3} ,(make-take-app '(- 3 1) `(rest (list {3} (+ 3 4) ,err (+ 5 6)))))))
+        :: ,take-def ,f-def (+ 3 (second (cons 3 ({take-n} (- 3 1) (rest ,lst-arg-red1)))))
+        -> ,take-def ,f-def (+ 3 (second (cons 3 ({,take-lam} (- 3 1) (rest ,lst-arg-red1)))))
+        :: ,take-def ,f-def (+ 3 (second (cons 3 {(,take-lam (- 3 1) (rest ,lst-arg-red1))})))
+        -> ,take-def ,f-def (+ 3 (second (cons 3 {,(make-take-body '(- 3 1) `(rest ,lst-arg-red1))})))
+        :: ,take-def ,f-def (+ 3 (second (cons 3 ,(make-take-body '{(- 3 1)} `(rest ,lst-arg-red1)))))
+        -> ,take-def ,f-def (+ 3 (second (cons 3 ,(make-take-body '{2} `(rest ,lst-arg-red1)))))
+        :: ,take-def ,f-def (+ 3 (second (cons 3 (if {(= 2 0)} null (cons (first (rest ,lst-arg-red1))
+                                                                          (take-n (- 2 1) (rest (rest ,lst-arg-red1))))))))
+        -> ,take-def ,f-def (+ 3 (second (cons 3 (if {false} null (cons (first (rest ,lst-arg-red1))
+                                                                        (take-n (- 2 1) (rest (rest ,lst-arg-red1))))))))
+        :: ,take-def ,f-def (+ 3 (second (cons 3 {(if false null (cons (first (rest ,lst-arg-red1))
+                                                                       (take-n (- 2 1) (rest (rest ,lst-arg-red1)))))})))
+        -> ,take-def ,f-def (+ 3 (second (cons 3 {(cons (first (rest ,lst-arg-red1))
+                                                        (take-n (- 2 1) (rest (rest ,lst-arg-red1))))})))
+        :: ,take-def ,f-def (+ 3 {(second (cons 3 (cons (first (rest ,lst-arg-red1))
+                                                        (take-n (- 2 1) (rest (rest ,lst-arg-red1))))))})
+        -> ,take-def ,f-def (+ 3 {(first (rest ,lst-arg-red1))})
+        :: ,take-def ,f-def (+ 3 (first {(rest ,lst-arg-red1)}))
+        -> ,take-def ,f-def (+ 3 (first {(list (+ 3 4) (/ 1 0) (+ 5 6))}))
+        :: ,take-def ,f-def (+ 3 {(first (list (+ 3 4) (/ 1 0) (+ 5 6)))})
+        -> ,take-def ,f-def (+ 3 {(+ 3 4)}) -> ,take-def ,f-def (+ 3 {7})
+        :: ,take-def ,f-def {(+ 3 7)} -> ,take-def ,f-def {10}
+        ))
 
+   ; lazy-unknown1
+   (t 'lazy-unknown1 m:lazy
+      (second (take 3 (list (+ 1 2) (+ 3 4) (/ 1 0))))
+      :: (second {(take 3 (list (+ 1 2) (+ 3 4) (/ 1 0)))})
+      -> (second {(cons (+ 1 2) <DelayedEvaluation#0>)})
+      :: {(second (cons (+ 1 2) (cons (+ 3 4) <DelayedEvaluation#1>)))}
+      -> {(+ 3 4)} -> {7})
       
-      
-      
+   ; lazy-unknown2
+   (let* ([make-body (λ (x) `(+ (second ,x) (third ,x)))]
+          [body (make-body 'x)]
+          [def `(define (f x) ,body)]
+          [lam `(lambda (x) ,body)]
+          [subarg `(take 4 (list (+ 1 2) (+ 3 4) (+ 5 6) (+ 7 8) (/ 1 0)))]
+          [arg `(cdr ,subarg)]
+          [arg-red '(cons (+ 3 4) (cons (+ 5 6) <DelayedEvaluation#1>))])
+     (t 'lazy-unknown2 m:lazy
+        ,def (f ,arg)
+        :: ,def ({f} ,arg) -> ,def ({,lam} ,arg)
+        :: ,def {(,lam ,arg)} -> ,def {,(make-body arg)}
+        :: ,def ,(make-body `(cdr {,subarg}))
+        -> ,def ,(make-body `(cdr {(cons (+ 1 2) <DelayedEvaluation#0>)}))
+        :: ,def ,(make-body `{(cdr (cons (+ 1 2) <DelayedEvaluation#0>))})
+        -> ,def ,(make-body `{<DelayedEvaluation#0>})
+        :: ,def (+ {(second ,arg-red)} (third ,arg-red))
+        -> ,def (+ {(+ 5 6)} (third ,arg-red))
+        :: ,def (+ {(+ 5 6)} (third (cons (+ 3 4) (cons {(+ 5 6)} <DelayedEvaluation#1>))))
+        -> ,def (+ {11} (third (cons (+ 3 4) (cons {11} <DelayedEvaluation#1>))))
+        :: ,def (+ 11 {(third (cons (+ 3 4) (cons 11 <DelayedEvaluation#1>)))})
+        -> ,def (+ 11 {(+ 7 8)}) -> ,def (+ 11 {15})
+        :: ,def {(+ 11 15)} -> ,def {26}
+        ))
+   
+   
   #;
   (t1 'teachpack-callbacks
      (test-teachpack-sequence

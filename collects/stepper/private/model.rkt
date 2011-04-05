@@ -86,7 +86,7 @@
             #:disable-error-handling? [disable-error-handling? #f]
             #:raw-step-receiver [raw-step-receiver #f])
   
-  (define DEBUG #t)
+  (define DEBUG #f)
   
   ;; finished-exps:
   ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -131,7 +131,8 @@
     (let* ([mark (find-first-called mark-list)]
            [fn (object-name (lookup-binding (list mark) (get-arg-var 0)))]
            [skips (hash-ref highlight-table fn)])
-      (printf "skips for ~a = ~a\n" fn skips)
+      (when DEBUG
+        (printf "skips for ~a = ~a\n" fn skips))
       (set! highlight-stack 
             (cons (cons lhs-recon-thunk skips) highlight-stack))))
   (define (find-first-called mark-list)
@@ -144,10 +145,14 @@
   (define (highlight-stack-pop)
     (set! highlight-stack (cdr highlight-stack)))
   (define (highlight-stack-decrement)
+    (let ([new-skips (sub1 (cdar highlight-stack))]
+          [thunk (caar highlight-stack)])
+      (printf 
+       "SKIPPING SKIP (decrementing top of highlight-stack, skips = ~a)\n"
+       new-skips)
     (set! highlight-stack
-          (cons (cons (caar highlight-stack)
-                      (sub1 (cdar highlight-stack)))
-                (cdr highlight-stack))))
+          (cons (cons thunk new-skips)
+                (cdr highlight-stack)))))
   
   
   ;; highlight-mutated-expressions :
@@ -296,7 +301,7 @@
                             "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")
                            (let ([skips (cdar highlight-stack)]
                                  [lhs-thunk (caar highlight-stack)])
-                             (if (zero? skips)
+                             (if (or (zero? skips) (not (null? last-rhs-exps)))
                                  (begin
                                    (set! lhs-exps (lhs-thunk))
                                    (set! lhs-finished-exps rhs-finished-exps)
@@ -304,9 +309,7 @@
                                     (highlight-stack-pop)
                                     "Popping highlight-stack\n")
                                    #f)
-                                 (with-DEBUG
-                                  (highlight-stack-decrement)
-                                  "SKIPPING SKIP (decrementing top of highlight-stack)\n"))))))
+                                  (highlight-stack-decrement))))))
             (receive-result
              (make-before-after-result
               (append lhs-finished-exps lhs-exps)

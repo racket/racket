@@ -13,7 +13,8 @@
     lazy-cadddr lazy-cdaaar lazy-cdaadr lazy-cdadar lazy-cdaddr lazy-cddaar
     lazy-cddadr lazy-cdddar lazy-cddddr lazy-second lazy-third lazy-fourth
     lazy-fifth lazy-sixth lazy-seventh lazy-eighth
-    lazy-if1 lazy-if2 lazy-take-0 lazy-take))
+    lazy-if1 lazy-if2 lazy-take-0 lazy-take lazy-take-impl
+    lazy-unknown1 lazy-unknown2))
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]

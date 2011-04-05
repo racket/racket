@@ -107,7 +107,7 @@
   ; of a let, or unless there _is_ no name.
   
   (define recon-value
-    (opt-lambda (val render-settings [assigned-name #f])
+    (opt-lambda (val render-settings [assigned-name #f] [current-so-far nothing-so-far])
       (if (hash-ref finished-xml-box-table val (lambda () #f))
           (stepper-syntax-property #`(quote #,val) 'stepper-xml-value-hint 'from-xml-box)
           (let* ([extracted-proc (unwrap-proc val)]
@@ -140,24 +140,45 @@
                           ; can be an extra promise layer when dealing with lists
                           (hash-ref partially-evaluated-promises-table
                                     (pref val) (λ () #f)))])
-                 (or partial-eval-promise
-                     (if (promise-forced? val)
-                         (recon-value (force val) render-settings assigned-name)
-                         'promise)))]
+                 (cond [partial-eval-promise partial-eval-promise]
+                       ; running promise not found by search in recon-inner
+                       ; must be a nested running promise
+                       [(and (nested-promise-running? val)
+                             (not (eq? current-so-far nothing-so-far)))
+                        (hash-set! partially-evaluated-promises-table
+                                   val current-so-far)
+                        current-so-far]
+                       ; promise is not running if we get here
+                       [(promise-forced? val)
+                        (recon-value (force val) render-settings assigned-name current-so-far)]
+                       ; unknown promise: promise not in src code, created in library fn
+                       [else 
+                        (let ([unknown-promise
+                               (hash-ref unknown-promises-table
+                                         val (λ () #f))])
+                          (if unknown-promise
+                              (render-unknown-promise unknown-promise)
+                              ; else generate a fresh unknown promise
+                              (begin0
+                                (render-unknown-promise next-unknown-promise)
+                                (hash-set! unknown-promises-table
+                                           val next-unknown-promise)
+                                (set! next-unknown-promise 
+                                      (add1 next-unknown-promise)))))]))]
               ; STC: handle lists here, instead of deferring to render-to-sexp fn
               ; because there may be nested promises
               [(null? val) #'empty]
               [(list? val)
                (with-syntax 
                    ([(reconed-vals ...)
-                     (map (lx (recon-value _ render-settings assigned-name)) val)])
+                     (map (lx (recon-value _ render-settings assigned-name current-so-far)) val)])
                  #'(#%plain-app list reconed-vals ...))]
               [(pair? val)
                (with-syntax 
                    ([reconed-car
-                     (recon-value (car val) render-settings assigned-name)]
+                     (recon-value (car val) render-settings assigned-name current-so-far)]
                     [reconed-cdr
-                     (recon-value (cdr val) render-settings assigned-name)])
+                     (recon-value (cdr val) render-settings assigned-name current-so-far)])
                  #'(#%plain-app cons reconed-car reconed-cdr))]
               [else
                (let* ([rendered 
@@ -166,7 +187,7 @@
                      #`#,rendered
                      #`(quote #,rendered)))])))))
 
-; STC: helper fns to recon thunks in recon-value
+; STC: helper fns for recon-value, to reconstruct promises
   ; extract-proc-if-struct : any -> procedure? or any
   ; Purpose: extracts closure from struct procedure, ie lazy-proc in lazy racket
   (define (extract-proc-if-struct f)
@@ -203,6 +224,15 @@
   ; - populated on each call to recon-inner
   (define partially-evaluated-promises-table null)
 
+  ; unknown-promises-table : keep track of unknown promises
+  ; ie, promises created from lib fns
+  (define unknown-promises-table null)
+  (define next-unknown-promise 0)
+  
+  ;; NaturalNumber -> syntax    
+  (define (render-unknown-promise x)
+    #`(quote #,(string->symbol 
+                (string-append "<DelayedEvaluation#" (number->string x) ">"))))
   
        ;      ;                                                                     ;;;
        ;                                                          ;                    ;
@@ -318,7 +348,9 @@
   
   (define (reset-special-values)
     (set! special-list-value (find-special-value 'list '(3)))
-    (set! special-cons-value (find-special-value 'cons '(3 empty))))
+    (set! special-cons-value (find-special-value 'cons '(3 empty)))
+    (set! unknown-promises-table (make-weak-hash))
+    (set! next-unknown-promise 0))
   
   (define (second-arg-is-list? mark-list)
     (let ([arg-val (lookup-binding mark-list (get-arg-var 2))])
@@ -795,7 +827,10 @@
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
              
              ; STC: cache any running promises in the top mark 
-             ; means that promise is being evaluated
+             ; Means that promise is being evaluated.
+             ; NOTE: This wont wind running promises nested in another promise.
+             ;       Those wont be detected until the outer promise is being
+             ;       reconed, so we cant handle it until then.
              (let ([maybe-running-promise
                     (findf (λ (f) (and (promise? f) (nested-promise-running? f)))
                            (map mark-binding-value (mark-bindings top-mark)))])
@@ -846,7 +881,8 @@
                                                                   arg-temps)]
                                                    [(vector evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
                                                                                                (zip sub-exprs arg-vals))]
-                                                   [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
+                                                   [rectified-evaluated (map (lx (recon-value _ render-settings #f so-far)) 
+                                                                             (map cadr evaluated))])
                                                 (case (mark-label (car mark-list))
                                                   ((not-yet-called)
                                                    (if (null? unevaluated)
@@ -859,7 +895,7 @@
                                                    (stepper-syntax-property
                                                     (if (eq? so-far nothing-so-far)
                                                         (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code ... can this occur?
-                                                        ; dont show ellipses for force
+                                                        ; dont show ellipses for force (and other lazy fns)
                                                         ; object-name is good enough here, so dont need to add another "special val"
                                                         (let ([obj-name (object-name (car arg-vals))])
                                                           (cond [(eq? obj-name 'force) so-far]
@@ -868,9 +904,8 @@
                                                                   '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr 
                                                                     caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr 
                                                                     cdadar cdaddr cddaar cddadr cdddar cddddr 
-                                                                    second third fourth fifth sixth seventh eighth))
-                                                                 #`(#%plain-app #,(datum->syntax #'here obj-name) #,so-far)]
-                                                                [(eq? obj-name 'take) #`(#%plain-app . #,rectified-evaluated)]
+                                                                    first second third fourth fifth sixth seventh eighth take))
+                                                                 #`(#%plain-app . #,rectified-evaluated)]
                                                                 [else
                                                                  (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))])))
                                                     'stepper-args-of-call 
