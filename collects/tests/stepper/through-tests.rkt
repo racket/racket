@@ -1746,13 +1746,17 @@
      (t 'lazy-take-0 m:lazy
         ,e :: {,e} -> {empty}))
    
+   (define (<delay#> n)
+     (string->symbol 
+      (string-append "<DelayedEvaluation#" (number->string n) ">")))
+     
    ; lazy-take
    (t 'lazy-take m:lazy
       (take (+ 0 2) (list (+ 1 2) (+ 3 4) (/ 1 0)))
       :: (take {(+ 0 2)} (list (+ 1 2) (+ 3 4) (/ 1 0)))
       -> (take {2} (list (+ 1 2) (+ 3 4) (/ 1 0)))
       :: {(take 2 (list (+ 1 2) (+ 3 4) (/ 1 0)))}
-      -> {(cons (+ 1 2) <DelayedEvaluation#0>)})
+      -> {(cons (+ 1 2) ,(<delay#> 0))})
    
    ; lazy-take-impl
 ;   (define (take-n n lst)
@@ -1836,8 +1840,8 @@
    (t 'lazy-unknown1 m:lazy
       (second (take 3 (list (+ 1 2) (+ 3 4) (/ 1 0))))
       :: (second {(take 3 (list (+ 1 2) (+ 3 4) (/ 1 0)))})
-      -> (second {(cons (+ 1 2) <DelayedEvaluation#0>)})
-      :: {(second (cons (+ 1 2) (cons (+ 3 4) <DelayedEvaluation#1>)))}
+      -> (second {(cons (+ 1 2) ,(<delay#> 0))})
+      :: {(second (cons (+ 1 2) (cons (+ 3 4) ,(<delay#> 1))))}
       -> {(+ 3 4)} -> {7})
       
    ; lazy-unknown2
@@ -1847,24 +1851,76 @@
           [lam `(lambda (x) ,body)]
           [subarg `(take 4 (list (+ 1 2) (+ 3 4) (+ 5 6) (+ 7 8) (/ 1 0)))]
           [arg `(cdr ,subarg)]
-          [arg-red '(cons (+ 3 4) (cons (+ 5 6) <DelayedEvaluation#1>))])
+          [arg-red `(cons (+ 3 4) (cons (+ 5 6) ,(<delay#> 1)))])
      (t 'lazy-unknown2 m:lazy
         ,def (f ,arg)
         :: ,def ({f} ,arg) -> ,def ({,lam} ,arg)
         :: ,def {(,lam ,arg)} -> ,def {,(make-body arg)}
         :: ,def ,(make-body `(cdr {,subarg}))
-        -> ,def ,(make-body `(cdr {(cons (+ 1 2) <DelayedEvaluation#0>)}))
-        :: ,def ,(make-body `{(cdr (cons (+ 1 2) <DelayedEvaluation#0>))})
-        -> ,def ,(make-body `{<DelayedEvaluation#0>})
+        -> ,def ,(make-body `(cdr {(cons (+ 1 2) ,(<delay#> 0))}))
+        :: ,def ,(make-body `{(cdr (cons (+ 1 2) ,(<delay#> 0)))})
+        -> ,def ,(make-body `{,(<delay#> 0)})
         :: ,def (+ {(second ,arg-red)} (third ,arg-red))
         -> ,def (+ {(+ 5 6)} (third ,arg-red))
-        :: ,def (+ {(+ 5 6)} (third (cons (+ 3 4) (cons {(+ 5 6)} <DelayedEvaluation#1>))))
-        -> ,def (+ {11} (third (cons (+ 3 4) (cons {11} <DelayedEvaluation#1>))))
-        :: ,def (+ 11 {(third (cons (+ 3 4) (cons 11 <DelayedEvaluation#1>)))})
+        :: ,def (+ {(+ 5 6)} (third (cons (+ 3 4) (cons {(+ 5 6)} ,(<delay#> 1)))))
+        -> ,def (+ {11} (third (cons (+ 3 4) (cons {11} ,(<delay#> 1)))))
+        :: ,def (+ 11 {(third (cons (+ 3 4) (cons 11 ,(<delay#> 1))))})
         -> ,def (+ 11 {(+ 7 8)}) -> ,def (+ 11 {15})
         :: ,def {(+ 11 15)} -> ,def {26}
         ))
    
+   ; lazy-inf-list1
+;   (define (add-one x) (+ x 1))
+;   (define nats (cons 1 (map add-one nats)))
+;   (+ (second nats) (third nats))
+   (let* ([add1-body '(+ x 1)]
+          [add1-def `(define (add-one x) ,add1-body)]
+          [add1-lam `(lambda (x) ,add1-body)]
+          [nats-def '(define nats (cons 1 (map add-one nats)))]
+          [nats-def-expanded `(define nats (cons 1 (cons 2 (cons 3 ,(<delay#> 4)))))])
+     (t 'lazy-inf-list1 m:lazy
+        ,add1-def ,nats-def (+ (second nats) (third nats))
+        :: ,add1-def ,nats-def (+ (second {nats}) (third nats))
+        -> ,add1-def ,nats-def (+ (second {(cons 1 (map add-one nats))}) (third nats))
+        :: ,add1-def (define nats (cons 1 (map {add-one} nats)))
+        (+ (second (cons 1 (map {add-one} nats))) (third nats))
+        -> ,add1-def (define nats (cons 1 (map {,add1-lam} nats)))
+        (+ (second (cons 1 (map {,add1-lam} nats))) (third nats))
+        :: ,add1-def (define nats (cons 1 (map ,add1-lam {nats})))
+        (+ (second (cons 1 (map ,add1-lam {nats}))) (third nats))
+        -> ,add1-def (define nats (cons 1 (map ,add1-lam {(cons 1 ,(<delay#> 0))})))
+        (+ (second (cons 1 (map ,add1-lam {(cons 1 ,(<delay#> 0))}))) (third nats))
+        :: ,add1-def (define nats (cons 1 {(map ,add1-lam (cons 1 ,(<delay#> 0)))}))
+        (+ (second (cons 1 {(map ,add1-lam (cons 1 ,(<delay#> 0)))})) (third nats))
+        -> ,add1-def (define nats (cons 1 {(cons ,(<delay#> 1) ,(<delay#> 2))}))
+        (+ (second (cons 1 {(cons ,(<delay#> 1) ,(<delay#> 2))})) (third nats))
+        :: ,add1-def (define nats (cons 1 (cons ,(<delay#> 1) ,(<delay#> 2))))
+        (+ {(second (cons 1 (cons ,(<delay#> 1) ,(<delay#> 2))))} (third nats))
+        -> ,add1-def (define nats (cons 1 (cons ,(<delay#> 1) ,(<delay#> 2))))
+        (+ {,(<delay#> 1)} (third nats))
+        :: ,add1-def (define nats (cons 1 (cons {(+ 1 1)} ,(<delay#> 2))))
+        (+ {,(<delay#> 1)} (third nats))
+        -> ,add1-def (define nats (cons 1 (cons {(+ 1 1)} ,(<delay#> 2))))
+        (+ {(+ 1 1)} (third nats))
+        -> ,add1-def (define nats (cons 1 (cons {2} ,(<delay#> 2))))
+        (+ {2} (third nats))
+        :: ,add1-def (define nats (cons 1 (cons 2 ,(<delay#> 2))))
+        (+ 2 (third {nats}))
+        -> ,add1-def (define nats (cons 1 (cons 2 ,(<delay#> 2))))
+        (+ 2 (third {(cons 1 (cons 2 ,(<delay#> 2)))}))
+        :: ,add1-def (define nats (cons 1 (cons 2 ,(<delay#> 2))))
+        (+ 2 {(third (cons 1 (cons 2 ,(<delay#> 2))))})
+        -> ,add1-def (define nats (cons 1 (cons 2 (cons ,(<delay#> 3) ,(<delay#> 4)))))
+        (+ 2 {,(<delay#> 3)})
+        :: ,add1-def (define nats (cons 1 (cons 2 (cons {(+ 2 1)} ,(<delay#> 4)))))
+        (+ 2 {,(<delay#> 3)})
+        -> ,add1-def (define nats (cons 1 (cons 2 (cons {(+ 2 1)} ,(<delay#> 4)))))
+        (+ 2 {(+ 2 1)})
+        -> ,add1-def (define nats (cons 1 (cons 2 (cons {3} ,(<delay#> 4)))))
+        (+ 2 {3})
+        :: ,add1-def ,nats-def-expanded {(+ 2 3)}
+        -> ,add1-def ,nats-def-expanded {5}
+        ))
    
   #;
   (t1 'teachpack-callbacks

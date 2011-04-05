@@ -90,7 +90,8 @@
   (full-mark-struct-label (mark)))
 
 (define (mark-binding-value mark-binding)
-  ((cadr mark-binding)))
+  (with-handlers ([(λ (e) #t) (λ (e) "--- undefined ---")])
+    ((cadr mark-binding))))
 
 (define (mark-binding-binding mark-binding)
   (car mark-binding))

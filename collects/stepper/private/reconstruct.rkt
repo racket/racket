@@ -149,7 +149,8 @@
                                    val current-so-far)
                         current-so-far]
                        ; promise is not running if we get here
-                       [(promise-forced? val)
+                       [(and (promise-forced? val)
+                             (not (nested-promise-running? val)))
                         (recon-value (force val) render-settings assigned-name current-so-far)]
                        ; unknown promise: promise not in src code, created in library fn
                        [else 
@@ -1105,10 +1106,10 @@
                           mark-list null newly-lifted-bindings render-settings))])
                   (list (recon innermost-before (cdr mark-list) #f)
                         (recon innermost-after (cdr mark-list) #f)))))))
-         
          )
       
-      answer))
+        answer
+        ))
   
   
   

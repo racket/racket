@@ -279,45 +279,68 @@
         (define (send-step lhs-exps lhs-finished-exps 
                            rhs-exps rhs-finished-exps
                            step-kind lhs-posn-info rhs-posn-info)
-          (when DEBUG
-            (printf "maybe sending step ... \n")
-            (printf "LHS = ~a\n" (map syntax->hilite-datum lhs-exps))
-            (printf "RHS = ~a\n" (map syntax->hilite-datum rhs-exps)))
-          (unless 
-              (or (with-DEBUG 
-                   (and (step=? lhs-exps rhs-exps)
-                        (when (not (step-and-highlight=? lhs-exps rhs-exps))
-                          (when DEBUG
-                            (printf "Pushing onto highlight-stack:\n  ~a thunk\n" 
-                                    (syntax->hilite-datum (car lhs-exps))))
-                          (highlight-stack-push mark-list)))
-                   "SKIPPING STEP (LHS = RHS)\n")
-                  (and (step=? lhs-exps (list #'(... ...)))
-                       (or (with-DEBUG
-                            (step=? rhs-exps last-rhs-exps)
-                            "SKIPPING STEP (LHS = ellipses and RHS = last RHS)\n")
-                           (with-DEBUG
-                            (null? highlight-stack)
-                            "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")
-                           (let ([skips (cdar highlight-stack)]
-                                 [lhs-thunk (caar highlight-stack)])
-                             (if (or (zero? skips) (not (null? last-rhs-exps)))
-                                 (begin
-                                   (set! lhs-exps (lhs-thunk))
-                                   (set! lhs-finished-exps rhs-finished-exps)
-                                   (with-DEBUG
-                                    (highlight-stack-pop)
-                                    "Popping highlight-stack\n")
-                                   #f)
-                                  (highlight-stack-decrement))))))
+          
+          (define (send-it)
             (receive-result
              (make-before-after-result
               (append lhs-finished-exps lhs-exps)
               (append rhs-finished-exps rhs-exps)
               step-kind
               lhs-posn-info rhs-posn-info))
-            (when DEBUG (printf "step sent\n"))
-            (set! last-rhs-exps rhs-exps)))
+            (when DEBUG 
+              (printf "step sent:\n")
+              (printf "LHS = ~a\n" (map syntax->hilite-datum lhs-exps))
+              (printf "RHS = ~a\n" (map syntax->hilite-datum rhs-exps)))
+            (set! last-rhs-exps rhs-exps))
+          
+          (when DEBUG
+            (printf "maybe sending step ... \n")
+            (printf "LHS = ~a\n" (map syntax->hilite-datum lhs-exps))
+            (printf "RHS = ~a\n" (map syntax->hilite-datum rhs-exps)))
+          
+          (cond
+            ; SKIPPING step, lhs = rhs
+            ; if highlights differ, push highlight-stack and set last-rhs-exp
+            [(step=? lhs-exps rhs-exps)
+             (when DEBUG (printf "SKIPPING STEP (LHS = RHS)\n"))
+             (when (not (step-and-highlight=? lhs-exps rhs-exps))
+               (when DEBUG
+                 (printf "Pushing onto highlight-stack:\n  ~a thunk\n" 
+                         (syntax->hilite-datum (car lhs-exps))))
+               (highlight-stack-push mark-list)
+               (set! last-rhs-exps rhs-exps))]
+            [(step=? lhs-exps (list #'(... ...)))
+             (cond
+               ; SKIPPING step, lhs = ellipses and rhs = last-rhs-exps
+               [(step=? rhs-exps last-rhs-exps)
+                (when DEBUG 
+                  (printf "SKIPPING STEP (LHS = ellipses and RHS = last RHS)\n"))]
+               ; SKIPPING step, lhs = ellipses and highlight-stack = null and last-rhs = null
+               ; if last-rhs != null, send step
+               [(null? highlight-stack)
+                (if (not (null? last-rhs-exps))
+                  (begin
+                    (set! lhs-exps last-rhs-exps)
+                    (set! lhs-finished-exps rhs-finished-exps)
+                    (send-it))
+                  (when DEBUG
+                    (printf "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")))]
+               ; if last-rhs != null, send step
+               ; else if skips = 0, send step
+               ; else skip
+               [else
+                (let ([skips (cdar highlight-stack)]
+                      [lhs-thunk (caar highlight-stack)])
+                  (if (or (zero? skips) (not (null? last-rhs-exps)))
+                      (begin
+                        (set! lhs-exps (lhs-thunk))
+                        (set! lhs-finished-exps rhs-finished-exps)
+                        (when DEBUG (printf "Popping highlight-stack\n"))
+                        (highlight-stack-pop)
+                        (send-it))
+                      (highlight-stack-decrement)))])]
+            ; sending step
+            [else (send-it)]))
         
         ; compares the lhs and rhs of a step (lists of syntaxes)
         ; and returns true if the underlying datums are equal
@@ -369,6 +392,10 @@
                      (set! held-exp-list (create-held lhs-unwound))
                      (set! lhs-recon-thunk 
                            (λ ()
+                             (when DEBUG
+                               (printf "\nforcing saved MARKLIST\n")
+                               (for-each (λ (x) (printf "~a\n" (display-mark x))) mark-list)
+                               (printf "saved RETURNED VALUE LIST: ~a\n" returned-value-list))
                              (map (λ (exp) (unwind exp render-settings)) 
                                   (maybe-lift 
                                    (r:reconstruct-left-side 
