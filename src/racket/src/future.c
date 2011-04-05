@@ -309,7 +309,7 @@ static void future_raise_wrong_type_exn(const char *who,
 
 #define THREAD_POOL_SIZE 16
 #define INITIAL_C_STACK_SIZE 500000
-#define FUTURE_RUNSTACK_SIZE 1000
+#define FUTURE_RUNSTACK_SIZE 10000
 
 typedef struct Scheme_Future_State {
   struct Scheme_Future_Thread_State *pool_threads[THREAD_POOL_SIZE];
