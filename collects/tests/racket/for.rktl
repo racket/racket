@@ -228,4 +228,12 @@
   (test 13 next)
   (test #f more?))
 
+;; check ranges on `in-vetcor', especially as a value
+(test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#() 0 0)]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 1 1)]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 0 0)]) (for/list ([e v]) e)))
+(test '(1) 'in-empty-vector (let ([v (in-vector '#(1) 0 1)]) (for/list ([e v]) e)))
+
 (report-errs)

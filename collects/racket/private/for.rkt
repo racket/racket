@@ -640,8 +640,8 @@
   ;; the largest fixnum, after running these checks start,
   ;; stop, and step are guaranteed to be fixnums.
   (define (check-ranges who start stop step len)
-    (unless (and (exact-nonnegative-integer? start) (< start len))
-      (raise-type-error who (format "exact non-negative integer in [0,~a)" len) start))
+    (unless (and (exact-nonnegative-integer? start) (<= start len))
+      (raise-type-error who (format "exact integer in [0,~a]" len) start))
     (unless (and (integer? stop) (<= -1 stop) (<= stop len))
       (raise-type-error who (format "exact integer in [-1,~a] or #f" len) stop))
     (unless (and (exact-integer? step) (not (zero? step)))
