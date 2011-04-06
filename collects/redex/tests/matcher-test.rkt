@@ -557,22 +557,22 @@
      (list
       (make-nt 'ctxt-ctxt
                (list (make-rhs 'hole)
-                     (make-rhs `(+ (cross ctxt-ctxt) exp))
-                     (make-rhs `(+ ctxt (cross ctxt-exp)))
-                     (make-rhs `(+ (cross ctxt-exp) ctxt))
-                     (make-rhs `(+ exp (cross ctxt-ctxt)))))
+                     (make-rhs `((hide-hole +) (cross ctxt-ctxt) (hide-hole exp)))
+                     (make-rhs `((hide-hole +) (hide-hole ctxt) (cross ctxt-exp)))
+                     (make-rhs `((hide-hole +) (cross ctxt-exp) (hide-hole ctxt)))
+                     (make-rhs `((hide-hole +) (hide-hole exp) (cross ctxt-ctxt)))))
       (make-nt 'ctxt-exp
-               (list (make-rhs `(+ (cross ctxt-exp) exp))
-                     (make-rhs `(+ exp (cross ctxt-exp)))))
+               (list (make-rhs `((hide-hole +) (cross ctxt-exp) (hide-hole exp)))
+                     (make-rhs `((hide-hole +) (hide-hole exp) (cross ctxt-exp)))))
       (make-nt 'exp-ctxt
-               (list (make-rhs `(+ (cross exp-ctxt) exp))
-                     (make-rhs `(+ ctxt (cross exp-exp)))
-                     (make-rhs `(+ (cross exp-exp) ctxt))
-                     (make-rhs `(+ exp (cross exp-ctxt)))))
+               (list (make-rhs `((hide-hole +) (cross exp-ctxt) (hide-hole exp)))
+                     (make-rhs `((hide-hole +) (hide-hole ctxt) (cross exp-exp)))
+                     (make-rhs `((hide-hole +) (cross exp-exp) (hide-hole ctxt)))
+                     (make-rhs `((hide-hole +) (hide-hole exp) (cross exp-ctxt)))))
       (make-nt 'exp-exp 
                (list (make-rhs 'hole) 
-                     (make-rhs `(+ (cross exp-exp) exp)) 
-                     (make-rhs `(+ exp (cross exp-exp)))))))
+                     (make-rhs `((hide-hole +) (cross exp-exp) (hide-hole exp))) 
+                     (make-rhs `((hide-hole +) (hide-hole exp) (cross exp-exp)))))))
     
     (run-test
      'compatible-context-language2
@@ -581,23 +581,23 @@
       (list (make-nt 'm (list (make-rhs '(m m)) (make-rhs '(+ m m)) (make-rhs 'v)))
             (make-nt 'v (list (make-rhs 'number) (make-rhs '(lambda (x) m))))))
      (list
-      (make-nt 'v-v (list (make-rhs 'hole) (make-rhs (list 'lambda (list 'x) (list 'cross 'v-m)))))
+      (make-nt 'v-v (list (make-rhs 'hole) (make-rhs '((hide-hole lambda) (hide-hole (x)) (cross v-m)))))
       (make-nt 'v-m
                (list
-                (make-rhs (list (list 'cross 'v-m) 'm))
-                (make-rhs (list 'm (list 'cross 'v-m)))
-                (make-rhs (list '+ (list 'cross 'v-m) 'm))
-                (make-rhs (list '+ 'm (list 'cross 'v-m)))
-                (make-rhs (list 'cross 'v-v))))
-      (make-nt 'm-v (list (make-rhs (list 'lambda (list 'x) (list 'cross 'm-m)))))
+                (make-rhs '((cross v-m) (hide-hole m)))
+                (make-rhs '((hide-hole m) (cross v-m)))
+                (make-rhs '((hide-hole +) (cross v-m) (hide-hole m)))
+                (make-rhs '((hide-hole +) (hide-hole m) (cross v-m)))
+                (make-rhs '(cross v-v))))
+      (make-nt 'm-v (list (make-rhs '((hide-hole lambda) (hide-hole (x)) (cross m-m)))))
       (make-nt 'm-m
                (list
                 (make-rhs 'hole)
-                (make-rhs (list (list 'cross 'm-m) 'm))
-                (make-rhs (list 'm (list 'cross 'm-m)))
-                (make-rhs (list '+ (list 'cross 'm-m) 'm))
-                (make-rhs (list '+ 'm (list 'cross 'm-m)))
-                (make-rhs (list 'cross 'm-v))))))
+                (make-rhs '((cross m-m) (hide-hole m)))
+                (make-rhs '((hide-hole m) (cross m-m)))
+                (make-rhs '((hide-hole +) (cross m-m) (hide-hole m)))
+                (make-rhs '((hide-hole +) (hide-hole m) (cross m-m)))
+                (make-rhs '(cross m-v))))))
     
     (run-test
      'compatible-context-language3
@@ -607,10 +607,14 @@
             (make-nt 'seven (list (make-rhs 7)))))
      `(,(make-nt
          'm-m
-         `(,(make-rhs 'hole) ,(make-rhs `((cross m-m) seven m)) ,(make-rhs `(m seven (cross m-m)))))
+         `(,(make-rhs 'hole) 
+           ,(make-rhs `((cross m-m) (hide-hole seven) (hide-hole m)))
+           ,(make-rhs `((hide-hole m) (hide-hole seven) (cross m-m)))))
        ,(make-nt
          'seven-m
-         `(,(make-rhs `((cross seven-m) seven m)) ,(make-rhs `(m (cross seven-seven) m)) ,(make-rhs `(m seven (cross seven-m)))))
+         `(,(make-rhs `((cross seven-m) (hide-hole seven) (hide-hole m)))
+           ,(make-rhs `((hide-hole m) (cross seven-seven) (hide-hole m)))
+           ,(make-rhs `((hide-hole m) (hide-hole seven) (cross seven-m)))))
        ,(make-nt 'seven-seven `(,(make-rhs 'hole)))))
     
     (run-test

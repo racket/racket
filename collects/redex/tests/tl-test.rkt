@@ -287,6 +287,63 @@
     ;; not a syntax error since first e is not a binder
     (test (pair? (redex-match L ((cross e) e ...) (term ((hole 2) 1)))) #t))
   
+  (define-syntax (test-match stx)
+    (syntax-case stx ()
+      [(_ actual (((var val) ...) ...))
+       #`(test (equal?
+                (apply
+                 set
+                 (for/list ([match actual])
+                  (for/list ([bind (match-bindings match)])
+                    (list (bind-name bind) (bind-exp bind)))))
+                (apply set (list (list (list 'var (term val)) ...) ...)))
+               #,(syntax/loc stx #t))]))
+  
+  ;; cross
+  (let ()
+    (define-language L
+      (e (e e)
+         (cont (hide-hole E))
+         number
+         x)
+      (E hole
+         (e ... E e ...))
+      (x variable-not-otherwise-mentioned))
+    (test-match 
+     (redex-match 
+      L 
+      (in-hole (cross e) e)
+      (term (cont (1 hole))))
+     (((e (cont (1 hole))))
+      ((e 1)))))
+  (let ()
+    (define-language L
+      (e (e e ...)
+         x
+         v)
+      (v (λ (x ...) e)
+         cont-val
+         number)
+      (cont-val (cont (hide-hole E)))
+      (E hole
+         (in-hole L E))
+      (L (v ... hole e ...))
+      (x variable-not-otherwise-mentioned))
+    
+    ;; no "found two holes" error
+    (test (redex-match L (cross e) (term (cont ((λ (x) x) hole)))) #f)
+    
+    (test-match 
+     (redex-match 
+      L 
+      (in-hole (cross e) e)
+      (term ((cont ((λ (x) x) hole)) (λ (y) y))))
+     (((e x))
+      ((e ((cont ((λ (x) x) hole)) (λ (y) y))))
+      ((e y))
+      ((e (λ (y) y)))
+      ((e (cont ((λ (x) x) hole)))))))
+  
   ;; test caching
   (let ()
     (define match? #t)

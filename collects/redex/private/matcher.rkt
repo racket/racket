@@ -370,21 +370,23 @@ before the pattern compiler is invoked.
 ;; The number result is the number of times that the nt appeared in the pattern.
 (define (build-compatible-context-maker clang-ht pattern prefix)
   (let ([count 0])
-    (values
+    (define maker
      (let loop ([pattern pattern])
+       (define (untouched-pattern _) 
+         (values pattern #f))
        (match pattern
-         [`any (lambda (l) 'any)]
-         [`number (lambda (l) 'number)]
-         [`string (lambda (l) 'string)]
-         [`natural (lambda (l) 'natural)]
-         [`integer (lambda (l) 'integer)]
-         [`real (lambda (l) 'real)]
-         [`variable (lambda (l) 'variable)] 
-         [`(variable-except ,vars ...) (lambda (l) pattern)]
-         [`(variable-prefix ,var) (lambda (l) pattern)]
-         [`variable-not-otherwise-mentioned (λ (l) pattern)]
-         [`hole  (lambda (l) 'hole)]
-         [(? string?) (lambda (l) pattern)]
+         [`any untouched-pattern]
+         [`number untouched-pattern]
+         [`string untouched-pattern]
+         [`natural untouched-pattern]
+         [`integer untouched-pattern]
+         [`real untouched-pattern]
+         [`variable untouched-pattern] 
+         [`(variable-except ,vars ...) untouched-pattern]
+         [`(variable-prefix ,var) untouched-pattern]
+         [`variable-not-otherwise-mentioned untouched-pattern]
+         [`hole untouched-pattern]
+         [(? string?) untouched-pattern]
          [(? symbol?) 
           (cond
             [(hash-ref clang-ht pattern #f)
@@ -393,73 +395,70 @@ before the pattern compiler is invoked.
                (let ([fst (car (unbox l))])
                  (set-box! l (cdr (unbox l)))
                  (if fst
-                     `(cross ,(symbol-append prefix '- pattern))
-                     pattern)))]
-            [else
-             (lambda (l) pattern)])]
+                     (values `(cross ,(symbol-append prefix '- pattern)) #t)
+                     (values pattern #f))))]
+            [else untouched-pattern])]
          [`(name ,name ,pat)
           (let ([patf (loop pat)])
             (lambda (l)
-              `(name ,name ,(patf l))))]
+              (let-values ([(p h?) (patf l)])
+                (values `(name ,name ,p) h?))))]
          [`(in-hole ,context ,contractum)
           (let ([match-context (loop context)]
                 [match-contractum (loop contractum)])
             (lambda (l)
-              `(in-hole ,(match-context l)
-                        ,(match-contractum l))))]
+              (let-values ([(ctxt _) (match-context l)]
+                           [(ctct h?) (match-contractum l)])
+                (values `(in-hole ,ctxt ,ctct) h?))))]
          [`(hide-hole ,p)
           (let ([m (loop p)])
             (lambda (l)
-              `(hide-hole ,(m l))))]
+              (let-values ([(p h?) (m l)])
+                (if h?
+                    (values p #t)
+                    (values `(hide-hole ,p) #f)))))]
          [`(side-condition ,pat ,condition ,expr)
           (let ([patf (loop pat)])
             (lambda (l)
-              `(side-condition ,(patf l) ,condition ,expr)))]
+              (let-values ([(p h?) (patf l)])
+                (values `(side-condition ,p ,condition ,expr) h?))))]
          [(? list?)
-          (let ([f/pats
-                 (let l-loop ([pattern pattern])
-                   (cond
-                     [(null? pattern) null]
-                     [(null? (cdr pattern))
-                      (list (vector (loop (car pattern))
-                                    #f
-                                    #f))]
-                     [(eq? (cadr pattern) '...)
-                      (cons (vector (loop (car pattern))
-                                    #t
-                                    (car pattern))
-                            (l-loop (cddr pattern)))]
-                     [else
-                      (cons (vector (loop (car pattern))
-                                    #f
-                                    #f)
-                            (l-loop (cdr pattern)))]))])
-            (lambda (l)
-              (let loop ([f/pats f/pats])
-                (cond
-                  [(null? f/pats) null]
-                  [else
-                   (let ([f/pat (car f/pats)])
-                     (cond
-                       [(vector-ref f/pat 1)
-                        (let ([new ((vector-ref f/pat 0) l)]
-                              [pat (vector-ref f/pat 2)])
-                          (if (equal? new pat)
-                              (list* pat
-                                     '...
-                                     (loop (cdr f/pats)))
-                              (list* (vector-ref f/pat 2)
-                                     '...
-                                     new
-                                     (vector-ref f/pat 2)
-                                     '...
-                                     (loop (cdr f/pats)))))]
-                       [else
-                        (cons ((vector-ref f/pat 0) l)
-                              (loop (cdr f/pats)))]))]))))]
-         [else 
-          (lambda (l) pattern)]))
-     count)))
+          (define pre-cross
+            (let l-loop ([ps pattern])
+              (match ps
+                ['() '()]
+                [(list-rest p '... ps*)
+                 (cons (list (loop p) p) (l-loop ps*))]
+                [(cons p ps*)
+                 (cons (list (loop p) #f) (l-loop ps*))])))
+          (λ (l)
+            (define any-cross? #f)
+            (define post-cross
+              (map (match-lambda 
+                     [(list f r?)
+                      (let-values ([(p h?) (f l)])
+                        (set! any-cross? (or any-cross? h?))
+                        (list p h? r?))])
+                   pre-cross))
+            (define (hide p)
+              (if any-cross? `(hide-hole ,p) p))
+            (values
+             (foldr (λ (post tail)
+                      (match post
+                        [(list p* #t (and (not #f) p))
+                         `(,(hide p) ... ,p* ,(hide p) ... . ,tail)]
+                        [(list p #f (not #f))
+                         `(,(hide p) ... . ,tail)]
+                        [(list p* #t #f)
+                         `(,p* . ,tail)]
+                        [(list p #f #f)
+                         `(,(hide p) . ,tail)]))
+                    '()
+                    post-cross)
+             any-cross?))]
+         [else untouched-pattern])))
+    (values (λ (l) (let-values ([(p _) (maker l)]) p))
+            count)))
 
 ;; build-list-nt-label : lang -> hash[symbol -o> boolean]
 (define (build-list-nt-label lang)
