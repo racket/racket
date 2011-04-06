@@ -1215,7 +1215,6 @@
         (make-keyword-procedure (lambda args (cdr args)))
         (make-keyword-procedure
          (lambda (kwds kwd-args . args) 
-           (printf "~s\n" kwd-args)
            (apply values (lambda (v) (box v)) (map list kwd-args) args))))
        #:a "x"))
 
