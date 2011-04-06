@@ -44,4 +44,7 @@
      (sixth  . 0)
      (seventh . 0)
      (eighth  . 0)
+     (eq?    . 0)
+     (eqv?   . 0)
+     (equal? . 0)
     )))

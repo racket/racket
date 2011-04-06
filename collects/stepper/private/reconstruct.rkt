@@ -902,10 +902,11 @@
                                                           (cond [(eq? obj-name 'force) so-far]
                                                                 [(ormap 
                                                                   (lx (eq? obj-name _)) 
-                                                                  '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr 
-                                                                    caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr 
-                                                                    cdadar cdaddr cddaar cddadr cdddar cddddr 
-                                                                    first second third fourth fifth sixth seventh eighth take))
+                                                                  '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar 
+                                                                    cdddr caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr 
+                                                                    cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr 
+                                                                    first second third fourth fifth sixth seventh eighth take 
+                                                                    eq? eqv? equal?))
                                                                  #`(#%plain-app . #,rectified-evaluated)]
                                                                 [else
                                                                  (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))])))

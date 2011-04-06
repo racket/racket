@@ -192,10 +192,14 @@
   ;; used (spceifically, students never use them).  So `values' is redefined to
   ;; produce a first-class tuple-holding struct, and `split-values' turns that
   ;; into multiple values.
-  (define-struct multiple-values (values))
+  ;; STC: add inspector for lazy stepper
+  (define-struct multiple-values (values) (make-inspector))
   (define (split-values x)
     (let ([x (! x)])
       (if (multiple-values? x) (apply values (multiple-values-values x)) x)))
+  (define-syntax (hidden-split-values stx)
+    (syntax-case stx ()
+      [(_ arg) (stepper-hide-operator (syntax/loc stx (split-values arg)))]))
   ;; Force and split resulting values.
   (define (!values x)
     (split-values (! x)))
@@ -211,7 +215,7 @@
 
   ;; Redefine multiple-value constructs so they split the results
   (defsubst (~define-values (v ...) body)
-    (define-values (v ...) (split-values body)))
+    (define-values (v ...) (hidden-split-values body)))
   (defsubst (~let-values ([(x ...) v] ...) body ...)
     (let-values ([(x ...) (split-values v)] ...) (~begin body ...)))
   (defsubst (~let*-values ([(x ...) v] ...) body ...)
@@ -382,16 +386,29 @@
   (define* (~set-box! box val) (~ (set-box! (! box) val)))
 
   ;; not much to do with these besides inserting strictness points and ~begin
+  ; for stepper: change else to #t test, add new error else branch
   (define-syntax (~cond stx)
     (syntax-case stx ()
-      [(_ [test body ...] ...)
-       (with-syntax ([(test ...)
-                      ;; avoid forcing an `else' keyword
-                      (map (lambda (stx)
-                             (syntax-case stx (else)
-                               [else stx] [x #'(hidden-! x)]))
-                           (syntax->list #'(test ...)))])
-         #'(hidden-~ (cond [test (~begin body ...)] ...)))]))
+      [(_ clause ...) ; stepper needs the loc of the full clause
+       (with-syntax
+           ([(new-clause ...)
+             (map 
+              (λ (c)
+                (with-syntax ([(test body ...) c])
+                  (with-syntax
+                      ([new-test
+                        (syntax-case #'test (else)
+                          [else ; for stepper
+                           (stepper-syntax-property #'#t 'stepper-else #t)]
+                          [x (syntax/loc #'x (hidden-! x))])])
+                    (syntax/loc c (new-test (~begin body ...))))))
+              (syntax->list #'(clause ...)))]
+            [new-else-body (syntax/loc stx (error 'cond "should not get here"))])
+         #`(hidden-~ 
+            #,(syntax/loc stx
+                (cond
+                  new-clause ...
+                  [else new-else-body]))))]))
   (defsubst (~case v [keys body ...] ...)
     (hidden-~ (case (hidden-! v) [keys (~begin body ...)] ...)))
 

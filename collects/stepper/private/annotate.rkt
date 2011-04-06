@@ -1191,9 +1191,8 @@
          exp]
         ; STC: for lazy, handle defines
         [(define-values (ids ...) bodies) (annotate/module-top-level exp)]
-        ; STC: for lazy
-        [(#%plain-app . terms) (annotate/module-top-level exp)]
-        [else
+        [else (annotate/module-top-level exp)]
+        #;[else
          (error `annotate/top-level "unexpected top-level expression: ~a\n"
                 (syntax->datum exp))
          #;(annotate/module-top-level exp)])))

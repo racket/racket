@@ -1922,6 +1922,78 @@
         -> ,add1-def ,nats-def-expanded {5}
         ))
    
+   ; lazy-cond1, lazy-cond2
+;   (define (f x)
+;     (cond ((> 0 x) (/ 1 0))
+;           ((< 0 x) (* x 10))
+;           (else (+ x 10))))
+;   (f 0)
+;   (f 1)
+   (let* ([make-test1 (λ (x) `(> 0 ,x))]
+          [make-test2 (λ (x) `(< 0 ,x))]
+          [test1 (make-test1 0)]
+          [test2 (make-test2 0)]
+          [test12 (make-test1 2)]
+          [test22 (make-test2 2)]
+          [make-clause1 (λ (x) `(* ,x 10))]
+          [make-clause2 (λ (x) `(+ ,x 10))]
+          [clause1 (make-clause1 0)]
+          [clause2 (make-clause2 0)]
+          [clause12 (make-clause1 2)]
+          [clause22 (make-clause2 2)]
+          [cnd (λ (x) `(cond (,(make-test1 x) ,err)
+                             (,(make-test2 x) ,(make-clause1 x))
+                             (else ,(make-clause2 x))))]
+          [make-def (λ (x) `(define (f x) ,(cnd x)))]
+          [def (make-def 'x)]
+          [lam (λ (x) `(lambda (x) ,(cnd x)))])
+     (t 'lazy-cond1 m:lazy
+        ,def (f 0)
+        :: ,def ({f} 0) -> ,def ({,(lam 'x)} 0)
+        :: ,def {(,(lam 'x ) 0)} -> ,def {,(cnd 0)}
+        :: ,def (cond ({,test1} ,err)
+                      (,test2 ,clause1)
+                      (else ,clause2))
+        -> ,def (cond ({false} ,err)
+                      (,test2 ,clause1)
+                      (else ,clause2))
+        :: ,def {(cond (false ,err)
+                       (,test2 ,clause1)
+                       (else ,clause2))}
+        -> ,def {(cond (,test2 ,clause1)
+                       (else ,clause2))}
+        :: ,def (cond ({,test2} ,clause1)
+                      (else ,clause2))
+        -> ,def (cond ({false} ,clause1)
+                      (else ,clause2))
+        :: ,def {(cond (false ,clause1)
+                       (else ,clause2))}
+        -> ,def {(cond (else ,clause2))} 
+        -> ,def {,clause2} -> ,def {10})
+     (t 'lazy-cond2 m:lazy
+        ,def (f 2)
+        :: ,def ({f} 2) -> ,def ({,(lam 'x)} 2)
+        :: ,def {(,(lam 'x ) 2)} -> ,def {,(cnd 2)}
+        :: ,def (cond ({,test12} ,err)
+                      (,test22 ,clause12)
+                      (else ,clause22))
+        -> ,def (cond ({false} ,err)
+                      (,test22 ,clause12)
+                      (else ,clause22))
+        :: ,def {(cond (false ,err)
+                       (,test22 ,clause12)
+                       (else ,clause22))}
+        -> ,def {(cond (,test22 ,clause12)
+                       (else ,clause22))}
+        :: ,def (cond ({,test22} ,clause12)
+                      (else ,clause22))
+        -> ,def (cond ({true} ,clause12)
+                      (else ,clause22))
+        :: ,def {(cond (true ,clause12)
+                       (else ,clause22))}
+        -> ,def {,clause12} -> ,def {20})
+     )
+   
   #;
   (t1 'teachpack-callbacks
      (test-teachpack-sequence
