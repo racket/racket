@@ -16,9 +16,9 @@
 (define-teach intermediate ormap
   (lambda (f l)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (hocheck 'andmap "first argument must be a <procedure> that accepts one argument, given ~e" f))
+      (hocheck 'ormap "first argument must be a <procedure> that accepts one argument, given ~e" f))
     (unless (beginner-list? l) 
-      (hocheck 'andmap "second argument must be of type <list>, given ~e" l))
+      (hocheck 'ormap "second argument must be of type <list>, given ~e" l))
     (let loop ([l l])
       (if (null? l) #f (beginner-or (f (car l)) (loop (cdr l)))))))
 
