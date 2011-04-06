@@ -203,6 +203,8 @@
                               [else (string->number (read-until #\; in pos))])])
                      (unless (number? n)
                        (lex-error in pos "malformed numeric entity"))
+                     (unless (valid-char? n)
+                       (lex-error in pos "not a well-formed numeric entity (does not match the production for Char, see XML 4.1)"))
                      n)]
                   [else
                    (begin0

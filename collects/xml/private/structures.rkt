@@ -44,6 +44,17 @@
 ; Misc = Comment
 ;      |  Processing-instruction
 
+; Section 2.2 of XML 1.1
+; (XML 1.0 is slightly different and looks less restrictive)
+(define (valid-char? i)
+  (and (exact-nonnegative-integer? i)
+       (or (= i #x9)
+           (= i #xA)
+           (= i #xD)
+           (<= #x20 i #xD7FF)
+           (<= #xE000 i #xFFFD)
+           (<= #x10000 i #x10FFFF))))
+
 ; Entity = (make-entity Location Location (U Nat Symbol))
 (define-struct (entity source) (text) #:transparent)
 
@@ -124,6 +135,7 @@
  (struct (cdata source) ([start location/c]
                          [stop location/c]
                          [string string?])) 
+ [valid-char? (any/c . -> . boolean?)]
  (struct (entity source) ([start location/c]
                           [stop location/c]
-                          [text (or/c symbol? exact-nonnegative-integer?)])))
+                          [text (or/c symbol? valid-char?)])))

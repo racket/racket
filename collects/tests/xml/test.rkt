@@ -121,6 +121,7 @@ END
      (test-xexpr? (list 'p "one" "two" "three"))
      (test-xexpr? 'nbsp)
      (test-xexpr? 10)
+     (test-not-xexpr? 0)
      (test-xexpr? (make-cdata #f #f "unquoted <b>"))
      (test-xexpr? (make-comment "Comment!"))
      (test-xexpr? (make-pcdata #f #f "quoted <b>"))
@@ -248,6 +249,10 @@ END
          (list)
          (list (make-entity (make-source (make-location 1 6 7) (make-location 1 11 12)) '40)))
         (list)))
+     
+     (test-read-xml/exn
+      "<root>&#0;</root>"
+      "read-xml: lex-error: at position 1.10/11: not a well-formed numeric entity (does not match the production for Char, see XML 4.1)")
      
      (test-read-xml
       "<!-- comment --><br />"
@@ -616,7 +621,7 @@ END
                        (validate-xexpr xe))))]
         (test-suite
          "validate-xexpr"
-         (test-validate-xexpr 4)
+         (test-validate-xexpr 64)
          (test-validate-xexpr 'nbsp)
          (test-validate-xexpr "string")
          (test-validate-xexpr (make-pcdata #f #f "pcdata"))
@@ -628,6 +633,7 @@ END
          (test-validate-xexpr '(a ([href "#"]) "string"))
          
          (test-validate-xexpr/exn #f #f)
+         (test-validate-xexpr/exn 4 4)
          (test-validate-xexpr/exn + +)
          (test-validate-xexpr/exn '(a ([href foo]) bar) 'foo)
          (test-validate-xexpr/exn '("foo" bar) '("foo" bar))))

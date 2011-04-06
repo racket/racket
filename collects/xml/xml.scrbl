@@ -108,7 +108,11 @@ Represents an attribute within an element.}
 @defthing[permissive/c contract?]{
  If @racket[(permissive-xexprs)] is @racket[#t], then equivalent to @racket[any/c], otherwise equivalent to @racket[(make-none/c 'permissive)]}
 
-@defstruct[(entity source) ([text (or/c symbol? exact-nonnegative-integer?)])]{
+@defproc[(valid-char? [x any/c]) boolean?]{
+ Returns true if @racket[x] is an exact-nonnegative-integer whose character interpretation under UTF-8 is from the set (#x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]), in accordance with section 2.2 of the XML 1.1 spec.
+}
+
+@defstruct[(entity source) ([text (or/c symbol? valid-char?)])]{
 
 Represents a symbolic or numerical entity.}
 
@@ -142,12 +146,12 @@ Returns @racket[#t] if @racket[v] is a @tech{X-expression}, @racket[#f] otherwis
 The following grammar describes expressions that create @tech{X-expressions}:
 
 @racketgrammar[
-#:literals (cons list)
+#:literals (cons list valid-char?)
 xexpr string
       (list symbol (list (list symbol string) ...) xexpr ...)
       (cons symbol (list xexpr ...))
       symbol
-      exact-nonnegative-integer
+      valid-char?
       cdata
       misc
 ]
@@ -162,7 +166,7 @@ represented by a string.
 A @racket[_symbol] represents a symbolic entity. For example,
 @racket['nbsp] represents @litchar{&nbsp;}.
 
-An @racket[_exact-nonnegative-integer] represents a numeric entity. For example,
+An @racket[valid-char?] represents a numeric entity. For example,
 @racketvalfont{#x20} represents @litchar{&#20;}.
 
 A @racket[_cdata] is an instance of the @racket[cdata] structure type,

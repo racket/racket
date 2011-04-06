@@ -10,7 +10,7 @@
 ;;        |  (list* Symbol (listof Attribute-srep) (listof Xexpr))
 ;;        |  (cons Symbol (listof Xexpr))
 ;;        |  Symbol
-;;        |  Nat
+;;        |  Nat (WFC: Valid Char)
 ;;        |  Comment
 ;;        |  Processing-instruction
 ;;        |  Cdata
@@ -25,7 +25,7 @@
 (define xexpr-drop-empty-attributes (make-parameter #f))
 
 (define xexpr-datum/c
-  (or/c string? symbol? exact-nonnegative-integer?
+  (or/c string? symbol? valid-char?
         comment? p-i? cdata? pcdata?))
 
 #;(define xexpr/c
@@ -69,7 +69,7 @@
   (cond
     ((string? x) (true))
     ((symbol? x) (true))
-    ((exact-nonnegative-integer? x) (true))
+    ((valid-char? x) (true))
     ((comment? x) (true))
     ((p-i? x) (true))
     ((cdata? x) (true))
@@ -296,7 +296,7 @@
     ; Entities
     [(symbol? x)
      (fprintf out "&~a;" x)]
-    [(exact-nonnegative-integer? x)
+    [(valid-char? x)
      (fprintf out "&#~a;" x)]
     ; Embedded XML
     [(source? x)
