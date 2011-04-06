@@ -28,7 +28,8 @@
      "stepper-test.ss")
    (if test-bitmaps? '("bitmap-test.ss") '())
    (if test-examples? 
-       '("../examples/pi-calculus.ss"
+       '("../examples/stlc.rkt"
+         "../examples/pi-calculus.ss"
          ("../examples/beginner.ss" main)
          "../examples/racket-machine/reduction-test.ss"
          "../examples/racket-machine/verification-test.ss"
