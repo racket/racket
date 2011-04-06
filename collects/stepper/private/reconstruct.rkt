@@ -899,14 +899,18 @@
                                                         ; dont show ellipses for force (and other lazy fns)
                                                         ; object-name is good enough here, so dont need to add another "special val"
                                                         (let ([obj-name (object-name (car arg-vals))])
-                                                          (cond [(eq? obj-name 'force) so-far]
+                                                          (cond [(ormap
+                                                                  (lx (eq? obj-name _))
+                                                                  '(force ! !! !list !!list))
+                                                                 so-far]
                                                                 [(ormap 
                                                                   (lx (eq? obj-name _)) 
                                                                   '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar 
                                                                     cdddr caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr 
                                                                     cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr 
                                                                     first second third fourth fifth sixth seventh eighth take 
-                                                                    eq? eqv? equal?))
+                                                                    eq? eqv? equal? list? length list-ref list-tail append reverse
+                                                                    empty? assoc assq assv cons? remove remq remv member memq memv))
                                                                  #`(#%plain-app . #,rectified-evaluated)]
                                                                 [else
                                                                  (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))])))

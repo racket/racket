@@ -257,7 +257,10 @@
        (with-syntax
            ([clauses
              (let loop ([stx stx])
-               (if (and (eq? user-source
+               ; STC: I'm disabling this check because the user-position on some
+               ; lazy conds are not correct, but I can't figure out where.
+               ; Disabling this check does not break any existing stepper tests.
+               (if #t #;(and (eq? user-source
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))

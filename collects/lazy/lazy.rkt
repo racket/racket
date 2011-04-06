@@ -404,11 +404,12 @@
                     (syntax/loc c (new-test (~begin body ...))))))
               (syntax->list #'(clause ...)))]
             [new-else-body (syntax/loc stx (error 'cond "should not get here"))])
-         #`(hidden-~ 
+         (quasisyntax/loc stx
+           (hidden-~ 
             #,(syntax/loc stx
                 (cond
                   new-clause ...
-                  [else new-else-body]))))]))
+                  [else new-else-body])))))]))
   (defsubst (~case v [keys body ...] ...)
     (hidden-~ (case (hidden-! v) [keys (~begin body ...)] ...)))
 

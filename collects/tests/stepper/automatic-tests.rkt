@@ -14,7 +14,11 @@
     lazy-cddadr lazy-cdddar lazy-cddddr lazy-second lazy-third lazy-fourth
     lazy-fifth lazy-sixth lazy-seventh lazy-eighth
     lazy-if1 lazy-if2 lazy-take-0 lazy-take lazy-take-impl
-    lazy-unknown1 lazy-unknown2 lazy-inf-list1 lazy-cond1 lazy-cond2))
+    lazy-unknown1 lazy-unknown2 lazy-inf-list1 lazy-cond1 lazy-cond2
+    lazy-eq? lazy-eqv? lazy-equal? lazy-list?1 lazy-list?2 lazy-list?3
+    lazy-length lazy-list-ref lazy-list-tail lazy-append lazy-reverse lazy-empty? 
+    lazy-assoc lazy-assq lazy-assv lazy-cons? lazy-remove lazy-remq lazy-remv
+    lazy-member lazy-memq lazy-memv))
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]
@@ -25,7 +29,7 @@
     ;; make sure the tests' print-convert sees the teaching languages' properties
     #;(namespace-attach-module outer-namespace 'mzlib/pconvert-prop (current-namespace))
     (namespace-require 'test-engine/racket-tests)
-    (if (and #;(run-all-tests-except 
+    (if (and (run-all-tests-except 
               (append '(bad-and bad-cons check-error begin-let-bug prims qq-splice time 
                                 set! local-set! local-struct/i local-struct/ilam)
                       steve-broke

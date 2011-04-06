@@ -1994,6 +1994,84 @@
         -> ,def {,clause12} -> ,def {20})
      )
    
+   
+   (t 'lazy-eq? m:lazy
+      (eq? 'a 'a)
+      :: {(eq? 'a'a)} -> {true})
+   (t 'lazy-eqv? m:lazy
+      (eqv? (integer->char 955) (integer->char 955))
+      :: (eqv? {(integer->char 955)} (integer->char 955))
+      -> (eqv? {#\λ} (integer->char 955))
+      :: (eqv? #\λ {(integer->char 955)})
+      -> (eqv? #\λ {#\λ})
+      :: {(eqv? #\λ #\λ)} -> {true})
+   (t 'lazy-equal? m:lazy
+      (equal? (list 1 2) (list 1 2))
+      :: {(equal? (list 1 2) (list 1 2))} -> {true})
+   (t 'lazy-list?1 m:lazy
+      (list? (list 1 2))
+      :: {(list? (list 1 2))} -> {true})
+   (t 'lazy-list?2 m:lazy
+      (list? empty)
+      :: {(list? empty)} -> {true})
+   (t 'lazy-list?3 m:lazy
+      (list? (+ 1 2))
+      :: (list? {(+ 1 2)}) -> (list? {3})
+      :: {(list? 3)} -> {false})
+   (t 'lazy-length m:lazy
+      (length (list 1 2))
+      :: {(length (list 1 2))} -> {2})
+   (t 'lazy-list-ref m:lazy
+      (list-ref (list 1 2) (+ 1 0))
+      :: (list-ref (list 1 2) {(+ 1 0)}) -> (list-ref (list 1 2) {1})
+      :: {(list-ref (list 1 2) 1)} -> {2})
+   (t 'lazy-list-tail m:lazy
+      (list-tail (list 1 2) 1)
+      :: {(list-tail (list 1 2) 1)} -> {(list 2)})
+   (t 'lazy-append m:lazy
+      (append (list 1 2) (list 3 4))
+      :: {(append (list 1 2) (list 3 4))}
+      -> {(cons 1 ,(<delay#> 0))})
+   (t 'lazy-reverse m:lazy
+      (reverse (list 1 2 3))
+      :: {(reverse (list 1 2 3))} -> {(list 3 2 1)})
+   (t 'lazy-empty? m:lazy
+      (empty? (list 1 2))
+      :: {(empty? (list 1 2))} -> {false})
+   (t 'lazy-assoc m:lazy
+      (assoc 1 (list (list 1 2)))
+      :: {(assoc 1 (list (list 1 2)))} -> {(list 1 2)})
+   (t 'lazy-assq m:lazy
+      (assq 1 (list (list 1 2)))
+      :: {(assq 1 (list (list 1 2)))} -> {(list 1 2)})
+   (t 'lazy-assv m:lazy
+      (assv 1 (list (list 1 2)))
+      :: {(assv 1 (list (list 1 2)))} -> {(list 1 2)})
+   (t 'lazy-cons? m:lazy
+      (cons? (list 1 2))
+      :: {(cons? (list 1 2))} -> {true})
+   (t 'lazy-remove m:lazy
+      (remove 2 (list 1 2 3))
+      :: {(remove 2 (list 1 2 3))} -> {(cons 1 ,(<delay#> 0))})
+   (t 'lazy-remq m:lazy
+      (remq 2 (list 1 2 3))
+      :: {(remq 2 (list 1 2 3))} -> {(cons 1 ,(<delay#> 0))})
+   (t 'lazy-remv m:lazy
+      (remv 2 (list 1 2 3))
+      :: {(remv 2 (list 1 2 3))} -> {(cons 1 ,(<delay#> 0))})
+   (t 'lazy-member m:lazy
+      (member 1 (list 1 2))
+      :: {(member 1 (list 1 2))} -> {(list 1 2)})
+   (t 'lazy-memq m:lazy
+      (memq 1 (list 1 2))
+      :: {(memq 1 (list 1 2))} -> {(list 1 2)})
+   (t 'lazy-memv m:lazy
+      (memv 1 (list 1 2))
+      :: {(memv 1 (list 1 2))} -> {(list 1 2)})
+  
+   
+   
+   
   #;
   (t1 'teachpack-callbacks
      (test-teachpack-sequence
