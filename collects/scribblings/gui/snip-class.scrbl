@@ -16,6 +16,8 @@ create a useful snip:
 
  @item{@method[snip% draw]} 
 
+ @item{@method[snip% copy]} 
+
  @item{@method[snip% resize] if the snip can be resized by the user}
 
  @item{@method[snip% partial-offset] if the snip can contain more than
