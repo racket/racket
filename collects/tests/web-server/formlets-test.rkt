@@ -364,53 +364,53 @@
       
       ; multiselect      
       (test-equal? "multiselect-input"
-                   (test-process (multiselect-input (list 1 2 3))
+                   (test-process (multiselect-input (list "1" "2" "3"))
                                  (list (make-binding:form #"input_0" #"0")))
-                   (list 1))
+                   (list "1"))
       (test-equal? "multiselect-input"
-                   (test-process (multiselect-input (list 1 2 3))
+                   (test-process (multiselect-input (list "1" "2" "3"))
                                  (list (make-binding:form #"input_0" #"0")
                                        (make-binding:form #"input_0" #"2")))
-                   (list 1 3))
+                   (list "1" "3"))
       (test-equal? "multiselect-input"
-                   (test-process (multiselect-input (list 1 2 3))
+                   (test-process (multiselect-input (list "1" "2" "3"))
                                  empty)
                    empty)
       (test-equal? "multiselect-input"
-                   (test-display (multiselect-input (list 1 2 3)))
+                   (test-display (multiselect-input (list "1" "2" "3")))
                    '((select
                       ((multiple "true") (name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "multiselect-input"
-                   (test-display (multiselect-input (list 1 2 3) #:attributes '([test "val"])))
+                   (test-display (multiselect-input (list "1" "2" "3") #:attributes '([test "val"])))
                    '((select
                       ((multiple "true") (name "input_0") (test "val"))
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "multiselect-input"
-                   (test-display (multiselect-input (list 1 2 3) #:multiple? #t))
+                   (test-display (multiselect-input (list "1" "2" "3") #:multiple? #t))
                    '((select
                       ((multiple "true") (name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "multiselect-input"
-                   (test-display (multiselect-input (list 1 2 3) #:multiple? #f))
+                   (test-display (multiselect-input (list "1" "2" "3") #:multiple? #f))
                    '((select
                       ((name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "multiselect-input"
-                   (test-display (multiselect-input (list 1 2 3) #:selected? even?))
+                   (test-display (multiselect-input (list "1" "2" "3") #:selected? (compose even? string->number)))
                    '((select
                       ((multiple "true") (name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1") (selected "true")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1") (selected "true")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "multiselect-input"
                    (test-display (multiselect-input (list 1 2 3) #:display number->string))
                    '((select
@@ -428,40 +428,40 @@
       
       ; select
       (test-equal? "select-input"
-                   (test-process (select-input (list 1 2 3))
+                   (test-process (select-input (list "1" "2" "3"))
                                  (list (make-binding:form #"input_0" #"0")))
-                   1)
+                   "1")
       (test-equal? "select-input"
-                   (test-process (select-input (list 1 2 3))
+                   (test-process (select-input (list "1" "2" "3"))
                                  (list (make-binding:form #"input_0" #"0")
                                        (make-binding:form #"input_0" #"2")))
-                   1)
+                   "1")
       (test-exn "select-input"
                 exn?
                 (lambda ()
-                  (test-process (select-input (list 1 2 3))
+                  (test-process (select-input (list "1" "2" "3"))
                                 empty)))
       (test-equal? "select-input"
-                   (test-display (select-input (list 1 2 3)))
+                   (test-display (select-input (list "1" "2" "3")))
                    '((select
                       ((name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "select-input"
-                   (test-display (select-input (list 1 2 3) #:attributes '([test "val"])))
+                   (test-display (select-input (list "1" "2" "3") #:attributes '([test "val"])))
                    '((select
                       ((name "input_0") [test "val"])
-                      (option ((value "0")) 1)
-                      (option ((value "1")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "select-input"
-                   (test-display (select-input (list 1 2 3) #:selected? even?))
+                   (test-display (select-input (list "1" "2" "3") #:selected? (compose even? string->number)))
                    '((select
                       ((name "input_0"))
-                      (option ((value "0")) 1)
-                      (option ((value "1") (selected "true")) 2)
-                      (option ((value "2")) 3))))
+                      (option ((value "0")) "1")
+                      (option ((value "1") (selected "true")) "2")
+                      (option ((value "2")) "3"))))
       (test-equal? "select-input"
                    (test-display (select-input (list 1 2 3) #:display number->string))
                    '((select
