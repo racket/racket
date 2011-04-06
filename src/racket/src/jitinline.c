@@ -1130,7 +1130,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "fsemaphore?")) { 
       generate_inlined_type_test(jitter, app, scheme_fsemaphore_type, scheme_fsemaphore_type, 1, for_branch, branch_short, need_sync);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "fsemaphore-count")
+    } else if (IS_NAMED_PRIM(rator, "future")
+               | IS_NAMED_PRIM(rator, "fsemaphore-count")
                || IS_NAMED_PRIM(rator, "make-fsemaphore")
                || IS_NAMED_PRIM(rator, "fsemaphore-post")
                || IS_NAMED_PRIM(rator, "fsemaphore-wait")
@@ -1144,9 +1145,6 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       CHECK_LIMIT();
       mz_runstack_unskipped(jitter, 1);
         
-      mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
       /* Push the arg onto the runstack */ 
       mz_pushr_p(JIT_R0);
       mz_rs_sync();

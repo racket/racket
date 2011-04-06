@@ -166,10 +166,12 @@ the following output in the @racket['debug] log level:
 @exec{racket} with @Flag{W} @tt{debug}.}
 
 @verbatim[#:indent 2]|{
-  future: 0 waiting for runtime at 1267392979341.989: *
+  future 1, process 1: BLOCKING on process 0; time: ....
+  ....
+  future 1, process 0: HANDLING: *; time: ....
 }|
 
-The message indicates which internal future-running task became
+The messages indicate which internal future-running task became
 blocked on an unsafe operation, the time it blocked (in terms of
 @racket[current-inexact-miliseconds]), and the operation that caused
 the computation it to block.
@@ -178,5 +180,8 @@ The first revision to @racket[mandelbrot] avoids suspending at
 @racket[*], but produces many log entries of the form
 
 @verbatim[#:indent 2]|{
-  future: 0 waiting for runtime at 1267392980465.066: [acquire_gc_page]
+  future 1, process 0: synchronizing: [allocate memory]; time: ....
 }|
+
+The @tt{[allocate memory]} part of the message indicates that
+synchronization was needed for memory allocation.

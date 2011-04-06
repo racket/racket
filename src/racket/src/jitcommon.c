@@ -140,12 +140,12 @@ static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 #include "jit_ts.c"
 
 #ifdef MZ_USE_FUTURES
-static void ts_scheme_on_demand(void) XFORM_SKIP_PROC
+static Scheme_Object **ts_scheme_on_demand(Scheme_Object **rs) XFORM_SKIP_PROC
 {
   if (scheme_use_rtcall) {
-    scheme_rtcall_void_void_3args("[jit_on_demand]", FSRC_OTHER, scheme_on_demand_with_args);
+    return scheme_rtcall_on_demand("[jit_on_demand]", FSRC_OTHER, scheme_on_demand_with_args, rs);
   } else
-    scheme_on_demand();
+    return scheme_on_demand(rs);
 }
 #endif
 
@@ -635,25 +635,25 @@ static int common2(mz_jit_state *jitter, void *_data)
   mz_push_threadlocal();
   mz_tl_ldi_p(JIT_RUNSTACK, tl_MZ_RUNSTACK);
   sjc.on_demand_jit_arity_code = jit_get_ip().ptr; /* <<<- arity variant starts here */
-  jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
+  jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
   CHECK_RUNSTACK_OVERFLOW();
   jit_str_p(JIT_RUNSTACK, JIT_R0);
   jit_lshi_ul(JIT_R1, JIT_R1, 0x1);
   jit_ori_ul(JIT_R1, JIT_R1, 0x1);
   CHECK_LIMIT();
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
-  jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
-  mz_prepare(0);
+  mz_prepare(1);
+  jit_pusharg_p(JIT_R2); /* argv is threaded through as an argument (for lwc handling) */
   (void)mz_finish_lwe(ts_scheme_on_demand, ref);
   CHECK_LIMIT();
   /* Restore registers and runstack, and jump to arity checking
      of newly-created code when argv == runstack (i.e., a tail call): */
+  jit_retval(JIT_R2);
   jit_ldr_p(JIT_R0, JIT_RUNSTACK);
   jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1));
   jit_rshi_ul(JIT_R1, JIT_R1, 0x1);
-  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(2));
-  jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
+  jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
   CHECK_LIMIT();
   ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
   /* Also, check that the runstack is big enough with the revised

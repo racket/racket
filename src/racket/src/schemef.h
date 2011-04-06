@@ -201,7 +201,10 @@ MZ_EXTERN void scheme_raise(Scheme_Object *exn);
 
 MZ_EXTERN int scheme_log_level_p(Scheme_Logger *logger, int level);
 MZ_EXTERN void scheme_log(Scheme_Logger *logger, int level, int flags,
-                          char *msg, ...);
+                          const char *msg, ...);
+MZ_EXTERN void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
+                                 Scheme_Object *data,
+                                 const char *msg, ...);
 MZ_EXTERN void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, intptr_t len, Scheme_Object *data);
 MZ_EXTERN void scheme_log_abort(char *buffer);
 MZ_EXTERN void scheme_log_warning(char *buffer);

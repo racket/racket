@@ -3300,22 +3300,23 @@ void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   on_demand_generate_lambda(nc, argc, argv);
 }
 
-void scheme_on_demand_with_args(Scheme_Object **in_argv)
+Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv)
 {
   /* On runstack: closure (nearest), argc, argv (deepest) */
-  Scheme_Object *c, *argc, **argv;
+  Scheme_Object *c, *argc;
 
   c = in_argv[0];
   argc = in_argv[1];
-  argv = (Scheme_Object **)in_argv[2];
 
   if (((Scheme_Native_Closure *)c)->code->code == scheme_on_demand_jit_code)
     scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+
+  return argv;
 }
 
-void scheme_on_demand()
+Scheme_Object **scheme_on_demand(Scheme_Object **rs)
 {
-  scheme_on_demand_with_args(MZ_RUNSTACK);
+  return scheme_on_demand_with_args(MZ_RUNSTACK, rs);
 }
 
 static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
@@ -3622,12 +3623,14 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
 /*                          native arity queries                          */
 /*========================================================================*/
 
-static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata)
+XFORM_NONGCING static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata)
+/* called by scheme_native_arity_check(), which is not XFORMed */
 {
   return (ndata->code != scheme_on_demand_jit_code);
 }
 
 int scheme_native_arity_check(Scheme_Object *closure, int argc)
+  XFORM_SKIP_PROC /* called in a future thread for `future' argument arity check */
 {
   int cnt;
 
@@ -3652,10 +3655,19 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
   }
 
   if (!lambda_has_been_jitted(((Scheme_Native_Closure *)closure)->code)) {
-    Scheme_Closure c;
-    c.so.type = scheme_closure_type;
-    c.code = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
-    return SCHEME_TRUEP(scheme_get_or_check_arity((Scheme_Object *)&c, argc));
+    Scheme_Closure_Data *data = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
+    int mina, maxa;
+    mina = maxa = data->num_params;
+    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+      if (mina)
+	--mina;
+      maxa = -1;
+    }
+    if (argc < mina)
+      return 0;
+    if ((maxa > -1) && (argc > maxa))
+      return 0;
+    return 1;
   }
 
   return sjc.check_arity_code(closure, argc + 1, 0);

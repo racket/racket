@@ -24,7 +24,7 @@ int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 
 #include <stdio.h>
 
-typedef void (*prim_void_void_3args_t)(Scheme_Object **);
+typedef Scheme_Object **(*prim_on_demand_t)(Scheme_Object **, Scheme_Object **);
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -36,7 +36,7 @@ typedef void (*prim_allocate_values_t)(int, Scheme_Thread *);
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
 #define PENDING_OVERSIZE 4
-#define WAITING_FOR_REQUEUE 5
+#define HANDLING_PRIM 5
 #define WAITING_FOR_FSEMA 6
 #define SUSPENDED 7
 
@@ -61,7 +61,6 @@ typedef struct future_t {
                              thread if this custodian is shut down */
 
   /* Runtime call stuff */
-  int rt_prim; /* flag to indicate waiting for a prim call */
   int want_lw; /* flag to indicate waiting for lw capture */
   int rt_prim_is_atomic;
   double time_of_request;
@@ -69,11 +68,8 @@ typedef struct future_t {
   int source_type;
 
   uintptr_t alloc_retval;
+  uintptr_t alloc_sz_retval;
   int alloc_retval_counter;
-
-  /* For logging the future's execution time */
-  double time_of_start;
-  double time_of_completion;
 
   void *prim_func;
   int prim_protocol;
@@ -109,7 +105,7 @@ typedef struct future_t {
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
-  int no_retval;
+  int no_retval, retval_is_rs_argv;
 
   Scheme_Object **multiple_array;
   int multiple_count;
@@ -142,12 +138,13 @@ typedef struct fsemaphore_t {
 /* Primitive instrumentation stuff */
 
 /* Signature flags for primitive invocations */
-#define SIG_VOID_VOID_3ARGS    1
+#define SIG_ON_DEMAND          1
 #define SIG_ALLOC              2
 #define SIG_ALLOC_MARK_SEGMENT 3
 #define SIG_ALLOC_VALUES       4
 #define SIG_MAKE_FSEMAPHORE    5
-#define SIG_WRONG_TYPE_EXN     200
+#define SIG_FUTURE             6
+#define SIG_WRONG_TYPE_EXN     7
 
 # include "jit_ts_protos.h"
 
@@ -163,13 +160,14 @@ extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 																/*GDB_BREAK;*/ \
 															}
 
-extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
+extern Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_demand_t f, Scheme_Object **argv);
 extern uintptr_t scheme_rtcall_alloc(const char *who, int src_type);
 extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 extern void scheme_rtcall_allocate_values(const char *who, int src_type, int count, Scheme_Thread *t, 
                                           prim_allocate_values_t f);
 extern Scheme_Object *scheme_rtcall_make_fsemaphore(const char *who, int src_type, Scheme_Object *ready);
-#else 
+extern Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, Scheme_Object *proc);
+#else
 
 #define IS_WORKER_THREAD 0
 #define ASSERT_CORRECT_THREAD 

@@ -2309,7 +2309,8 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
                                                                          Scheme_Current_LWC *p_lwc,
                                                                          void **storage);
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured,
-                                                     Scheme_Object *result);
+                                                     Scheme_Object *result,
+                                                     int result_is_rs_argv);
 Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *captured,
                                                 Scheme_Object **arg);
 

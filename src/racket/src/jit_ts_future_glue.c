@@ -9,7 +9,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_siS_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -35,7 +35,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_iSs_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -61,7 +61,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_s_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -85,7 +85,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_n_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -109,7 +109,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG__s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -133,7 +133,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -158,7 +158,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_tt_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -183,7 +183,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_m;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -208,7 +208,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_Sl_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -233,7 +233,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_l_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -257,7 +257,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_bsi_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -283,7 +283,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_iiS_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -309,7 +309,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_ss_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -334,7 +334,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_b_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -358,7 +358,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_sl_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -383,7 +383,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_iS_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -408,7 +408,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_S_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -432,7 +432,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_s_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -456,7 +456,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_iSi_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -482,7 +482,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_siS_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -508,7 +508,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_z_p;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -532,7 +532,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_si_s;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;
@@ -557,7 +557,7 @@
   future = fts->thread->current_ft;
   future->prim_protocol = SIG_sis_v;
   future->prim_func = f;
-  tm = scheme_get_inexact_milliseconds();
+  tm = get_future_timestamp();
   future->time_of_request = tm;
   future->source_of_request = who;
   future->source_type = src_type;

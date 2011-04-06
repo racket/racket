@@ -494,3 +494,22 @@ We should also test deep continuations.
   (sleep 0.1)
   (custodian-shutdown-all c)
   (sleep 0.1))
+
+;; Stress test:
+(for-each
+ (lambda (v) (check-equal? 10 (touch (touch v))))
+ (for/list ([i (in-range 10000)])
+   (future (lambda () (future (lambda () 10))))))
+
+;; Stress test:
+(check-equal?
+ 0
+ (touch
+  (for/fold ([t (future (lambda () 0))]) ([i (in-range 10000)])
+    (future (lambda () (touch t))))))
+
+
+
+
+
+ 

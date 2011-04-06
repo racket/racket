@@ -5,6 +5,8 @@
 @(define future-eval (make-base-eval))
 @(interaction-eval #:eval future-eval (require racket/future))
 
+@(define time-id @racketidfont{time})
+
 @title[#:tag "futures"]{Futures}
 
 @guideintro["effective-futures"]{futures}
@@ -146,6 +148,92 @@ execute through a call to @racket[touch], however.
   Returns @racket[fsema]'s current internal counter value.
 
 }
+
+@; ------------------------------------------------------------
+
+@section[#:tag "future-logging"]{Future Performance Logging}
+
+Racket futures use logging (see @secref["logging"]) extensively to
+report information about how futures are evaluated. Logging output is
+useful for debugging the performance of programs that use futures.
+
+In addition to its string message, each event logged for a future has
+a data value that is an instance of a @racket[future-event]
+@tech{prefab} structure:
+
+@racketblock[
+(define-struct future-event (future-id proc-id action time)
+  #:prefab)
+]
+
+The @racket[future-id] field is an exact integer that identifies a
+future, or it is @racket[#f] when @racket[action] is
+@racket['missing]. The @racket[future-id] field is particularly useful
+for correlating logged events.
+
+The @racket[proc-id] fields is an exact, non-negative integer that
+identifies a parallel process. Process 0 is the main Racket process,
+where all expressions other than future thunks evaluate.
+
+The @|time-id| field is an inexact number that represents time in
+the same way as @racket[current-inexact-milliseconds].
+
+The @racket[action] field is a symbol:
+
+@itemlist[
+
+ @item{@racket['create]: a future was created.}
+
+ @item{@racket['complete]: a future's thunk evaluated successfully, so
+       that @racket[touch] will produce a value for the future
+       immediately.}
+
+ @item{@racket['start-work] and @racket['end-work]: a particular
+       process started and ended working on a particular future.}
+
+ @item{@racket['start-0-work]: like @racket['start-work], but for a
+       future thunk that for some structural reason could not be
+       started in a process other than 0 (e.g., the thunk requires too
+       much local storage to start).}
+
+ @item{@racket['sync]: blocking (processes other than 0) or initiation
+       of handing (process 0) for an ``unsafe'' operation in a future
+       thunk's evaluation; the operation must run in process 0.}
+
+ @item{@racket['block]: like @racket['sync], but for a part of
+       evaluation that must be delayed until the future is
+       @racket[touch]ed, because the evaluation may depend on the
+       current continuation.}
+
+ @item{@racket['result] or @racket['abort]: waiting or handling for
+       @racket['sync] or @racket['block] ended with a value or an
+       error, respectively.}
+
+ @item{@racket['suspend] (never in process 0): a process blocked by
+       @racket['sync] or @racket['block] abandoned evaluation of a
+       future; some other process may pick up the future later.}
+
+ @item{@racket['touch-pause] and @racket['touch-resume] (in process 0,
+       only): waiting in @racket[touch] for a future whose thunk is
+       being evaluated in another process.}
+
+ @item{@racket['missing]: one or more events for the process were lost
+       due to internal buffer limits before they could be reported,
+       and the @|time-id| field reports an upper limit on the time
+       of the missing events; this kind of event is rare.}
+
+]
+
+Assuming no @racket['missing] events, then @racket['start-work] or
+@racket['start-0-work] is always paired with @racket['end-work],
+@racket['sync] and @racket['block] are always paired with
+@racket['result], @racket['abort], or @racket['suspend], and
+@racket['touch-pause] is always paired with @racket['touch-resume].
+
+In process 0, some event pairs can be nested within other event pairs:
+@racket['sync] or @racket['block] with @racket['result] or
+@racket['abort], and @racket['touch-pause] with
+@racket['touch-resume].}
 
 @; ----------------------------------------------------------------------
 

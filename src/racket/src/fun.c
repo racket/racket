@@ -8527,6 +8527,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
   if (!runstack_slice) return NULL;
 
   lw = (Scheme_Lightweight_Continuation *)storage[0];
+  lwc = lw->saved_lwc;
   lw->runstack_slice = runstack_slice;
   memcpy(runstack_slice, lw->saved_lwc->runstack_end, len * sizeof(Scheme_Object *));
 
@@ -8540,7 +8541,6 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
       runstack_slice[i] = 0;
   }
 
-  lwc = lw->saved_lwc;
   len = lwc->cont_mark_stack_end - lwc->cont_mark_stack_start;
 
   if (len) {
@@ -8586,7 +8586,7 @@ static void *apply_lwc_k()
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
-  return scheme_apply_lightweight_continuation(lw, result);
+  return scheme_apply_lightweight_continuation(lw, result, p->ku.k.i1);
 }
 
 int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw)
@@ -8611,12 +8611,14 @@ int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *l
 }
 
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw,
-                                                     Scheme_Object *result) XFORM_SKIP_PROC
+                                                     Scheme_Object *result,
+                                                     int result_is_rs_argv) 
+  XFORM_SKIP_PROC
 {
   intptr_t len, cm_len, cm_pos_delta, cm_delta, i, cm;
   Scheme_Cont_Mark *seg;
   Scheme_Object **rs;
- 
+
   len = lw->saved_lwc->runstack_start - lw->saved_lwc->runstack_end;
  
   if (!scheme_check_runstack(len)) {
@@ -8624,6 +8626,7 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
        continuation in a future thread. */
     scheme_current_thread->ku.k.p1 = lw;
     scheme_current_thread->ku.k.p2 = result;
+    scheme_current_thread->ku.k.i1 = result_is_rs_argv;
     return (Scheme_Object *)scheme_enlarge_runstack(len, apply_lwc_k);
   }
 
@@ -8661,6 +8664,9 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
       rs[i+1] = scheme_make_integer(cm);
     }
   }
+
+  if (result_is_rs_argv)
+    result = (Scheme_Object *)(rs + 2);
 
   return scheme_apply_lightweight_continuation_stack(lw->saved_lwc, lw->stack_slice, result);
 }

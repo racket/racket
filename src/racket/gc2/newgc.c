@@ -1022,7 +1022,7 @@ inline static void gen0_free_nursery_mpage(NewGC *gc, mpage *page, const size_t 
 /* Needs to be consistent with GC_alloc_alignment(): */
 #define THREAD_LOCAL_PAGE_SIZE APAGE_SIZE
 
-uintptr_t GC_make_jit_nursery_page(int count) {
+uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
   NewGC *gc = GC_get_GC();
   mpage *new_mpage;
   intptr_t size = count * THREAD_LOCAL_PAGE_SIZE;
@@ -1055,6 +1055,8 @@ uintptr_t GC_make_jit_nursery_page(int count) {
     new_mpage->size = WORD_SIZE;
 #endif
   }
+  if (sz) 
+    *sz = size - new_mpage->size;
   return (NUM(new_mpage->addr) + new_mpage->size);
 }
 

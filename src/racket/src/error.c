@@ -198,7 +198,8 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %Q = truncated-to-256 Scheme string
   %V = scheme_value
   %D = scheme value to display
-  %_ = skip
+  %_ = skip pointer
+  %- = skip int
 
   %L = line number as intptr_t, -1 means no line
   %e = error number for strerror()
@@ -238,6 +239,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	break;
       case 'd':
       case 'o':
+      case '-':
 	ints[ip++] = mzVA_ARG(args, int);
 	break;
       case 'g':
@@ -329,6 +331,13 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    sprintf(buf, "%d", d);
 	    t = buf;
 	    tlen = strlen(t);
+	  }
+	  break;
+	case '-':
+	  {
+	    ip++;
+	    t = "";
+	    tlen = 0;
 	  }
 	  break;
 	case 'o':
@@ -838,7 +847,7 @@ void scheme_warning(char *msg, ...)
 }
 
 void scheme_log(Scheme_Logger *logger, int level, int flags,
-                char *msg, ...)
+                const char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
   char *buffer;
@@ -857,6 +866,29 @@ void scheme_log(Scheme_Logger *logger, int level, int flags,
   buffer[len] = 0;
 
   scheme_log_message(logger, level, buffer, len, NULL);
+}
+
+void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
+                       Scheme_Object *data,
+                       const char *msg, ...)
+{
+  GC_CAN_IGNORE va_list args;
+  char *buffer;
+  intptr_t len;
+
+  if (logger) {
+    if (logger->local_timestamp == *logger->timestamp)
+      if (logger->want_level < level)
+        return;
+  }
+
+  HIDE_FROM_XFORM(va_start(args, msg));
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer);
+  HIDE_FROM_XFORM(va_end(args));
+
+  buffer[len] = 0;
+
+  scheme_log_message(logger, level, buffer, len, data);
 }
 
 int scheme_log_level_p(Scheme_Logger *logger, int level)

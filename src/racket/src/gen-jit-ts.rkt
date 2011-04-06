@@ -87,7 +87,7 @@
      future = fts->thread->current_ft;
      future->prim_protocol = SIG_@|ts|;
      future->prim_func = f;
-     tm = scheme_get_inexact_milliseconds();
+     tm = get_future_timestamp();
      future->time_of_request = tm;
      future->source_of_request = who;
      future->source_type = src_type;
@@ -133,6 +133,12 @@
                       #:when (is-pointer-type? t))
              @string-append{future->arg_@|(string t)|@|(number->string i)| = NULL;})
            " ")
+         @(string-join
+           (for/list ([t (in-string (type->arg-string t))]
+                      [i (in-naturals)]
+                      #:when (eq? t #\S))
+             @string-append{ADJUST_RS_ARG(future, arg_@|(string t)|@|(number->string i)|);})
+           " ")
          @(if (string=? result-type "void") "" "retval = ")
          f(@(string-join
               (for/list ([t (in-string (type->arg-string t))]
@@ -146,7 +152,7 @@
    })
    (newline))
 
-(define proto-counter 5)
+(define proto-counter 10)
 
 (define (gen-protos t)
   (define-values (arg-types result-type) (parse-type t))

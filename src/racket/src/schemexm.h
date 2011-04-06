@@ -103,6 +103,7 @@
 #define scheme_raise (scheme_extension_table->scheme_raise)
 #define scheme_log_level_p (scheme_extension_table->scheme_log_level_p)
 #define scheme_log (scheme_extension_table->scheme_log)
+#define scheme_log_w_data (scheme_extension_table->scheme_log_w_data)
 #define scheme_log_message (scheme_extension_table->scheme_log_message)
 #define scheme_log_abort (scheme_extension_table->scheme_log_abort)
 #define scheme_log_warning (scheme_extension_table->scheme_log_warning)

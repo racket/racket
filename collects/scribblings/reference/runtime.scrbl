@@ -139,12 +139,12 @@ statistics. If @racket[thd] is not @racket[#f], a particular set of
 thread-specific statistics are reported, otherwise a different set of
 global statics are reported.
 
-For global statistics, up to @math{10} elements are set in the vector,
-starting from the beginning. (In future versions of Racket, additional
-elements will be set.) If @racket[results] has @math{n} elements where
-@math{n < 8}, then the @math{n} elements are set to the first @math{n}
-performance-statistics values. The reported statistics values are as
-follows, in the order that they are set within @racket[results]:
+For global statistics, up to @math{11} elements are set in the vector,
+starting from the beginning. If @racket[results] has @math{n} elements
+where @math{n < 11}, then the @math{n} elements are set to the first
+@math{n} performance-statistics values. The reported statistics values
+are as follows, in the order that they are set within
+@racket[results]:
 
  @itemize[
 

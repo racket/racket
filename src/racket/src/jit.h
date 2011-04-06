@@ -1180,8 +1180,8 @@ int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inline
 int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 void scheme_generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 
-void scheme_on_demand();
-void scheme_on_demand_with_args(Scheme_Object **in_argv);
+Scheme_Object **scheme_on_demand(Scheme_Object **argv);
+Scheme_Object **scheme_on_demand_with_args(Scheme_Object **in_argv, Scheme_Object **argv);
 
 void scheme_prepare_branch_jump(mz_jit_state *jitter, Branch_Info *for_branch);
 void scheme_branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch);

@@ -737,7 +737,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     if (need_set_rs) {
       JIT_UPDATE_THREAD_RSPTR();
     }
-	mz_prepare_direct_prim(3);
+    mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
     CHECK_LIMIT();
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
