@@ -229,7 +229,7 @@ each resume of @racket[thd] created a fresh event to be returned by
 @section[#:tag "threadmbox"]{Thread Mailboxes}
 
 Each thread has a @defterm{mailbox} through which it can receive
-arbitrary message. In other words, each thread has a built-in
+arbitrary messages.  In other words, each thread has a built-in
 asynchronous channel.
 
 @margin-note/ref{See also @secref["async-channel"].}
