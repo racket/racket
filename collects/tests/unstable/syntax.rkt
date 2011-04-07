@@ -3,6 +3,7 @@
 (require mzlib/etc
          rackunit
          rackunit/text-ui
+         racket/syntax
          unstable/syntax
          "helpers.rkt")
 

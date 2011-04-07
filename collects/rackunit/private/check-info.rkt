@@ -2,7 +2,7 @@
 (require racket/contract
          "location.rkt"
          (for-syntax racket/base
-                     unstable/syntax))
+                     racket/syntax))
 
 ;; Structures --------------------------------------------------
 

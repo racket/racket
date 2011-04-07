@@ -8,6 +8,7 @@
     racket/block
     syntax/parse
     syntax/kerncase
+    racket/syntax
     unstable/syntax
     (for-syntax ;; phase 2!
       racket/base)))

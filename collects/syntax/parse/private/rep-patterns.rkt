@@ -4,7 +4,7 @@
          unstable/struct
          (for-syntax racket/base
                      syntax/stx
-                     unstable/syntax))
+                     racket/syntax))
 (provide (all-defined-out))
 
 #|

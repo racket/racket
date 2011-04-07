@@ -11,6 +11,7 @@
 (require racket/match
          planet/util
          syntax/parse
+         racket/syntax
          unstable/syntax
          (for-template racket/base)
          (for-label racket/base))

@@ -6,7 +6,7 @@
          "tc-subst.rkt" "check-below.rkt"
          mzlib/trace
          scheme/list
-         syntax/private/util syntax/stx
+         racket/syntax unstable/struct syntax/stx
          (rename-in scheme/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
          (except-in (rep type-rep) make-arr)
          (rename-in (types convenience utils union)

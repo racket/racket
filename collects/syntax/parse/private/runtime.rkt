@@ -7,7 +7,7 @@
                      racket/list
                      syntax/kerncase
                      racket/private/sc
-                     unstable/syntax
+                     racket/syntax
                      "rep-data.rkt"
                      "rep-attrs.rkt"))
 

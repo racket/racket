@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base
-                     unstable/syntax
+                     racket/syntax
                      unstable/sequence
                      syntax/parse
                      "parse.rkt"

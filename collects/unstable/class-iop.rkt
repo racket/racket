@@ -3,7 +3,7 @@
 (require racket/class
          (for-syntax racket/base
                      syntax/parse
-                     unstable/syntax
+                     racket/syntax
                      "private/class-iop-ct.rkt"))
 (provide define-interface
          define-interface/dynamic

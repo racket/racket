@@ -8,7 +8,7 @@
          syntax/id-table
          syntax/stx
          syntax/keyword
-         unstable/syntax
+         racket/syntax
          unstable/struct
          "txlift.rkt"
          "rep-data.rkt"

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require unstable/match racket/match
-         racket/dict syntax/id-table unstable/syntax
+         racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template scheme/base)
          (types type-table utils subtype)

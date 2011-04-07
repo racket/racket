@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base 
                      "term-fn.ss"
-                     unstable/syntax)
+                     racket/syntax)
          "matcher.ss")
 
 (provide term term-let term-let/error-name term-let-fn term-define-fn hole in-hole)

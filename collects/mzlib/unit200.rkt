@@ -6,7 +6,7 @@
 		      syntax/stx
 		      syntax/name
 		      syntax/context
-                      unstable/syntax
+                      racket/syntax
 		      "list.rkt"
 		      "private/unitidmap.rkt")
 

@@ -5,7 +5,7 @@
          (for-template racket/base)
          (private with-types type-contract)
          (except-in syntax/parse id)
-         racket/match unstable/syntax unstable/match
+         racket/match racket/syntax unstable/match
          (optimizer optimizer)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)

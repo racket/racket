@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base
                      syntax/kerncase
-                     unstable/syntax)
+                     racket/syntax)
          "stxparam.rkt"
          "private/stxparam.rkt"
          "private/local.rkt")

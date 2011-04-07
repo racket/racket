@@ -2,7 +2,7 @@
 (require (for-syntax racket/base
                      "sc.rkt"
                      "lib.rkt"
-                     unstable/syntax
+                     racket/syntax
                      syntax/keyword
                      "rep-data.rkt"
                      "rep.rkt"

@@ -4,7 +4,7 @@
                        racket/contract/base
                        unstable/location)
          unstable/srcloc
-         unstable/syntax)
+         racket/syntax)
 
 (provide/contract
  [wrap-expr/c

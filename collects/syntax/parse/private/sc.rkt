@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/stx
-                     unstable/syntax
+                     racket/syntax
                      "rep-data.rkt"
                      "rep.rkt")
          "parse.rkt"

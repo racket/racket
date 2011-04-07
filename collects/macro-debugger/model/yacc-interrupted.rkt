@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     unstable/syntax)
+                     racket/syntax)
          "yacc-ext.rkt")
 (provide ! ? !!
          define-production-splitter

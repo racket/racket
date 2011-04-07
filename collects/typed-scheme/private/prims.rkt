@@ -37,7 +37,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          mzlib/etc
          (for-syntax 
           syntax/parse
-	  syntax/private/util
+	  racket/syntax
           racket/base
           racket/struct-info
           syntax/struct

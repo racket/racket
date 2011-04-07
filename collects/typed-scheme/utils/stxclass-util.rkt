@@ -3,7 +3,7 @@
 (require (except-in syntax/parse id keyword)
          (for-syntax syntax/parse
                      scheme/base
-                     (only-in unstable/syntax generate-temporary)))
+                     (only-in racket/syntax generate-temporary)))
 
 (provide (except-out (all-defined-out) id keyword)
          (rename-out [id id*] [keyword keyword*]))

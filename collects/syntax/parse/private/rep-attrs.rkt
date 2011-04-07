@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          syntax/id-table
-         unstable/syntax
+         racket/syntax
          unstable/struct)
 (provide (struct-out attr))
 

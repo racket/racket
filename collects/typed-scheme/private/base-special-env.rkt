@@ -5,7 +5,7 @@
  "../utils/utils.rkt"
  racket/promise
  string-constants/string-constant 
- (for-syntax racket/base syntax/parse (only-in unstable/syntax syntax-local-eval)
+ (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)
              (utils tc-utils)
              (env init-envs)          
              (except-in (rep filter-rep object-rep type-rep) make-arr)

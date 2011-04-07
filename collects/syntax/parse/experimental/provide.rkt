@@ -2,7 +2,7 @@
 (require racket/contract/base
          unstable/location
          (for-syntax racket/base
-                     unstable/syntax
+                     racket/syntax
                      "../private/minimatch.rkt"
                      "../private/sc.rkt"
                      "../private/lib.rkt"

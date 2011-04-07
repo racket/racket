@@ -25,6 +25,7 @@
          setup/getinfo
          setup/unpack
 
+         racket/syntax
          unstable/syntax
          (for-syntax racket/base syntax/parse)
          (prefix-in srfi1: srfi/1)

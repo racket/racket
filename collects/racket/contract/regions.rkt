@@ -10,7 +10,7 @@
                      syntax/define
                      syntax/kerncase
                      syntax/parse
-                     unstable/syntax
+                     racket/syntax
                      (prefix-in a: "private/helpers.rkt"))
          racket/splicing
          racket/stxparam

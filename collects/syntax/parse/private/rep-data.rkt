@@ -3,7 +3,7 @@
          racket/dict
          racket/list
          syntax/id-table
-         unstable/syntax
+         racket/syntax
          "minimatch.rkt"
          "kws.rkt"
          "rep-attrs.rkt"

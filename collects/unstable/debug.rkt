@@ -24,8 +24,8 @@
          unstable/pretty
          unstable/srcloc
          unstable/location
-         unstable/syntax
-         (for-syntax racket/base racket/match syntax/parse unstable/syntax))
+         racket/syntax
+         (for-syntax racket/base racket/match syntax/parse racket/syntax))
 
 (define-syntax (let/debug stx)
   (syntax-parse stx

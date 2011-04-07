@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base scheme/provide-transform scheme/list
-                     (only-in unstable/syntax syntax-local-eval)))
+                     (only-in racket/syntax syntax-local-eval)))
 
 (provide matching-identifiers-out)
 (define-syntax matching-identifiers-out

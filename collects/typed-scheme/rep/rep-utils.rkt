@@ -6,19 +6,19 @@
          syntax/boundmap
          "free-variance.rkt"
          "interning.rkt"
-	 unstable/syntax unstable/match unstable/struct
+	 racket/syntax unstable/match unstable/struct
          mzlib/etc
          scheme/contract         
          (for-syntax 
           scheme/list
-          (only-in unstable/syntax generate-temporary)
+          (only-in racket/syntax generate-temporary)
           racket/match
           (except-in syntax/parse id identifier keyword)
           scheme/base
           syntax/struct
           syntax/stx
           scheme/contract
-	  unstable/syntax
+	  racket/syntax
           (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp #;pregexp)
                      [id* id]
                      [keyword* keyword])))

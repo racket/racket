@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/stx
-                     unstable/syntax
+                     racket/syntax
                      "private/rep-data.rkt"
                      "private/rep.rkt"
                      "private/kws.rkt")

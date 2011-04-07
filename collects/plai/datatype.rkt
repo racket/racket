@@ -52,7 +52,7 @@
       (plai-syntax-error 'type-case stx-loc type-case:not-a-type)))
 
 (require (for-syntax syntax/parse
-                     unstable/syntax
+                     racket/syntax unstable/syntax
                      (only-in scheme/function curry)))
 
 (define-for-syntax (syntax-string s)

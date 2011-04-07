@@ -3,7 +3,7 @@
                      syntax/stx
                      syntax/id-table
                      syntax/keyword
-                     unstable/syntax
+                     racket/syntax
                      "rep-data.rkt"
                      "rep.rkt"
                      "kws.rkt"
@@ -68,7 +68,11 @@ Optimizations
  (define (wash-iattrs stx)
    (wash-list wash-iattr stx))
  (define (wash-sattrs stx)
-   (wash-list wash-sattr stx)))
+   (wash-list wash-sattr stx))
+ (define (generate-n-temporaries n)
+   (generate-temporaries
+    (for/list ([i (in-range n)])
+      (string->symbol (format "g~sx" i))))))
 
 ;; ----
 

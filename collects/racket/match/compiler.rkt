@@ -9,7 +9,7 @@
          scheme/struct-info
          scheme/stxparam
          scheme/nest
-         unstable/syntax)
+         racket/syntax)
 
 (provide compile*)
 

@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      syntax/parse
-                     unstable/syntax
+                     racket/syntax
                      "../private/minimatch.rkt"
                      "../private/rep.rkt"
                      "../private/rep-data.rkt"

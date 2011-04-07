@@ -21,3 +21,4 @@ called.
 @include-section["stx-certs.scrbl"]
 @include-section["stx-expand.scrbl"]
 @include-section["include.scrbl"]
+@include-section["syntax-util.scrbl"]
