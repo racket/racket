@@ -62,7 +62,11 @@
       ; procedure-extract-target - can't hide this in lazy.rkt bc it's needed
       ; to distinguish the general lazy application
       [(#%plain-app proc-extract p)
-       (eq? (syntax->datum #'proc-extract) 'procedure-extract-target)
+       (or (eq? (syntax->datum #'proc-extract) 'procedure-extract-target)
+           (eq? (with-handlers ; for print output-style
+                    ([(λ (e) #t) (λ (e) #f)]) 
+                  (syntax-e (second (syntax-e #'proc-extract))))
+                procedure-extract-target))
        (unwind #'p settings)]
       ; lazy #%app special case: force
       [(#%plain-app force arg)

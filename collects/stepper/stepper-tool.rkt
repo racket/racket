@@ -330,7 +330,8 @@
 ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
 (define (simple-module-based-language-convert-value value settings)
   (case (drscheme:language:simple-settings-printing-style settings)
-    [(write) value]
+    [(print) value]
+    [(write trad-write) value]
     [(constructor)
      (parameterize
          ([constructor-style-printing #t]

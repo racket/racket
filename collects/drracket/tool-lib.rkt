@@ -1603,7 +1603,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:simple-settings-printing-style
   (drracket:language:simple-settings?
    . -> .
-   (symbols 'constructor 'quasiquote 'write 'print))
+   (symbols 'constructor 'quasiquote 'write 'trad-write 'print))
   (simple-settings)
   
   @{Extracts the printing-style setting from a simple-settings.})
