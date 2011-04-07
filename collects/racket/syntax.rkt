@@ -1,8 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/private/sc))
-(provide define-pattern-variable
-         define/with-syntax
+(provide define/with-syntax
 
          current-recorded-disappeared-uses
          with-disappeared-uses
@@ -21,10 +20,6 @@
          with-syntax*)
 
 ;; == Defining pattern variables ==
-
-(define-syntax-rule (define-pattern-variable name expr)
-  (begin (define var expr)
-         (define-syntax name (make-syntax-mapping '0 (quote-syntax var)))))
 
 (define-syntax (define/with-syntax stx)
   (syntax-case stx ()

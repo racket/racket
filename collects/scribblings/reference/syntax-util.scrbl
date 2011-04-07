@@ -54,9 +54,9 @@ the second error but not of the first.)
                         [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
          symbol?]{
 
-Like @racket[format-id], but produces a symbol. The format
-string must use only @litchar{~a} placeholders. Identifiers in the
-argument list are automatically converted to symbols.
+Like @racket[format], but produces a symbol. The format string must
+use only @litchar{~a} placeholders. Identifiers in the argument list
+are automatically converted to symbols.
 
 @examples[#:eval the-eval
   (format-symbol "make-~a" 'triple)
@@ -68,7 +68,8 @@ argument list are automatically converted to symbols.
 
 @section{Pattern variables}
 
-@defform[(define/with-syntax pattern expr)]{
+@defform[(define/with-syntax pattern stx-expr)
+         #:contracts ([stx-expr syntax?])]{
 
 Definition form of @racket[with-syntax]. That is, it matches the
 syntax object result of @racket[expr] against @racket[pattern] and
@@ -79,18 +80,8 @@ creates pattern variable definitions for the pattern variables of
 (define/with-syntax (px ...) #'(a b c))
 (define/with-syntax (tmp ...) (generate-temporaries #'(px ...)))
 #'([tmp px] ...)
-]
-}
-
-@defform[(define-pattern-variable id expr)]{
-
-Evaluates @racket[expr] and binds it to @racket[id] as a pattern
-variable, so @racket[id] can be used in subsequent @racket[syntax]
-patterns.
-
-@examples[#:eval the-eval
-  (define-pattern-variable name #'Alice)
-  #'(hello name)
+(define-pattern-variable name #'Alice)
+#'(hello name)
 ]
 }
 
@@ -222,10 +213,14 @@ environment (that is, at phase level 1), optionally extended with
 }
 
 @defform[(with-syntax* ([pattern stx-expr] ...)
-           body ...+)]{
-Similar to @racket[with-syntax], but the pattern variables are bound in the remaining
-@racket[stx-expr]s as well as the @racket[body]s, and the @racket[pattern]s need not 
-bind distinct pattern variables; later bindings shadow earlier bindings.
+           body ...+)
+         #:contracts ([stx-expr syntax?])]{
+
+Similar to @racket[with-syntax], but the pattern variables of each
+@racket[pattern] are bound in the @racket[stx-expr]s of subsequent
+clauses as well as the @racket[body]s, and the @racket[pattern]s need
+not bind distinct pattern variables; later bindings shadow earlier
+bindings.
 
 @examples[#:eval the-eval
 (with-syntax* ([(x y) (list #'val1 #'val2)]
