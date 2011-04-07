@@ -37,6 +37,13 @@ Takes the car of a @techlink[#:doc refman]{syntax pair}.}
 
 Takes the cdr of a @techlink[#:doc refman]{syntax pair}.}
 
+@defproc[(stx-map [proc procedure?]
+                  [stxl stx-list?] ...)
+         list?]{
+
+Equivalent to @racket[(map proc (stx->list stxl) ...)].
+}
+
 @defproc[(module-or-top-identifier=? [a-id identifier?]
 				     [b-id identifier?])
 	 boolean?]{

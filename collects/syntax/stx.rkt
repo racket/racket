@@ -7,6 +7,7 @@
 
 (provide stx-null? stx-pair? stx-list?
          stx-car stx-cdr stx->list
+         stx-map
          module-or-top-identifier=?)
 
 ;; a syntax null?
@@ -69,6 +70,13 @@
                           flat-end
                           #f))))
             e))))
+
+(define (stx-map f . stxls)
+  (for ([stxl (in-list stxls)]
+        [i (in-naturals)])
+    (unless (stx-list? stxl)
+      (apply raise-type-error 'stx-map "stx-list" i stxls)))
+  (apply map f (map stx->list stxls)))
 
 (define (module-or-top-identifier=? a b)
   (or (free-identifier=? a b)
