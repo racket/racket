@@ -5,7 +5,7 @@
                      racket/require-transform
                      racket/provide-transform
                      syntax/parse
-                     unstable/planet-syntax)
+                     planet/syntax)
          planet/version
          unstable/define)
 
@@ -48,7 +48,7 @@
         (expand-export
          (datum->syntax
           stx
-          (list #'all-from-out (make-planet-path stx #'file)))
+          (list #'all-from-out (make-planet-require-spec stx #'file)))
          modes)]))))
 
 (define-for-syntax (import->export i)
