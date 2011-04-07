@@ -30,28 +30,6 @@
        (test-case "identifiers to symbols"
          (check-equal? (syntax-map syntax-e #'(a b c)) '(a b c)))))
 
-   (test-suite "Syntax Conversions"
-
-     (test-suite "to-syntax"
-       (test-case "symbol + context = identifier"
-         (check bound-identifier=?
-                (to-syntax #:stx #'context 'id)
-                #'id)))
-
-     (test-suite "to-datum"
-       (test-case "syntax"
-         (check-equal? (to-datum #'((a b) () (c)))
-                       '((a b) () (c))))
-       (test-case "non-syntax"
-         (check-equal? (to-datum '((a b) () (c)))
-                       '((a b) () (c))))
-       (test-case "nested syntax"
-         (let* ([stx-ab #'(a b)]
-                [stx-null #'()]
-                [stx-c #'(c)])
-           (check-equal? (to-datum (list stx-ab stx-null stx-c))
-                         (list stx-ab stx-null stx-c))))))
-
    (test-suite "Syntax Source Locations"
 
      (test-suite "syntax-source-file-name"
@@ -69,22 +47,6 @@
        (test-case "fail"
          (check-equal? (syntax-source-directory (datum->syntax #f 'fail))
                        #f))))
-
-   (test-suite "Transformers"
-
-     (test-suite "redirect-transformer"
-       (test (check-equal?
-              (syntax->datum ((redirect-transformer #'x) #'y))
-              'x))
-       (test (check-equal?
-              (syntax->datum ((redirect-transformer #'x) #'(y z)))
-              '(x z))))
-
-     (test-suite "head-expand")
-
-     (test-suite "trampoline-transformer")
-
-     (test-suite "quote-transformer"))
 
    (test-suite "Pattern Bindings"
 
