@@ -852,16 +852,27 @@ in Scribble documentation.
 @defform[(racketmodlink/this-package suffix-id pre-content-expr ...)]
 @defform[(defmodule/this-package maybe-req suffix-id maybe-sources pre-flow ...)]
 @defform*[((defmodulelang/this-package suffix-id maybe-sources pre-flow ...)
-           (defmodulelang/this-package suffix-id #:module-paths (mod-suffix-id ...) maybe-sources pre-flow ...))]
+           (defmodulelang/this-package suffix-id
+             #:module-paths (mod-suffix-id ...) maybe-sources 
+             pre-flow ...))]
 @defform[(defmodulereader/this-package suffix-id maybe-sources pre-flow ...)]
-@defform[(defmodule*/this-package maybe-req (suffix-id ...+) maybe-sources pre-flow ...)]
-@defform*[((defmodulelang*/this-package (suffix-id ...+) maybe-sources pre-flow ...)
-           (defmodulelang*/this-package (suffix-id ...+) #:module-paths (mod-suffix-id ...) maybe-sources pre-flow ...))]
-@defform[(defmodulereader*/this-package (suffix-id ...+) maybe-sources pre-flow ...)]
-@defform[(defmodule*/no-declare/this-package maybe-req (suffix-id ...+) maybe-sources pre-flow ...)]
-@defform*[((defmodulelang*/no-declare/this-package (suffix-id ...+) maybe-sources pre-flow ...)
-           (defmodulelang*/no-declare/this-package (suffix-id ...+) #:module-paths (mod-suffix-id ...) maybe-sources pre-flow ...))]
-@defform[(defmodulereader*/no-declare/this-package (suffix-id ...+) maybe-sources pre-flow ...)]
+@defform[(defmodule*/this-package maybe-req (suffix-id ...+) 
+           maybe-sources pre-flow ...)]
+@defform*[((defmodulelang*/this-package (suffix-id ...+) 
+             maybe-sources pre-flow ...)
+           (defmodulelang*/this-package (suffix-id ...+) 
+             #:module-paths (mod-suffix-id ...) maybe-sources 
+             pre-flow ...))]
+@defform[(defmodulereader*/this-package (suffix-id ...+) 
+           maybe-sources pre-flow ...)]
+@defform[(defmodule*/no-declare/this-package maybe-req (suffix-id ...+)
+           maybe-sources pre-flow ...)]
+@defform*[((defmodulelang*/no-declare/this-package (suffix-id ...+)
+             maybe-sources pre-flow ...)
+           (defmodulelang*/no-declare/this-package (suffix-id ...+) 
+             #:module-paths (mod-suffix-id ...) maybe-sources pre-flow ...))]
+@defform[(defmodulereader*/no-declare/this-package (suffix-id ...+)
+           maybe-sources pre-flow ...)]
 )]{
 
 Variants of @racket[defmodule], etc., from @racketmodname[scribble/manual] in
