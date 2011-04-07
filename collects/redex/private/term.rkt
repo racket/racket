@@ -174,7 +174,7 @@
                        [x 
                         (and (identifier? #'x)
                              (not (free-identifier=? (quote-syntax ...) #'x)))
-                        (let ([new-name (car (generate-temporaries (list #'x)))])
+                        (let ([new-name (datum->syntax #'here (syntax-e #'x))])
                           (values (list #'x)
                                   (list new-name)
                                   (list depth)
