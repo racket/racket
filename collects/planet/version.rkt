@@ -18,9 +18,15 @@
 
 (define-syntax this-package-in
   (make-require-transformer
-    (syntax-parser
-      [(~and src (_ (~or (~datum main) suffix:id) ...))
-       (expand-import
+   (lambda (stx)
+     (define-syntax-class suffix
+       #:description "module suffix identifier"
+       (pattern (~datum main) #:attr suf #f)
+       (pattern suf:id))
+     (syntax-parse stx
+       [(_ s:suffix ...)
+        (expand-import
          #`(combine-in
-             #,@(for/list ([suf (in-list (attribute suffix))])
-                  (make-planet-require-spec #'src suf))))])))
+            #,@(for/list ([src (in-list (attribute s))]
+                          [suf (in-list (attribute s.suf))])
+                 (make-planet-require-spec src suf))))]))))
