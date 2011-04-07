@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/gui
   (require "../reduction-semantics.ss"
            "test-util.ss"
            (only-in "../private/matcher.ss" make-bindings make-bind)
@@ -7,6 +7,7 @@
   
   (reset-count)
 
+  (define-namespace-anchor this-namespace)
   (parameterize ([current-namespace syn-err-test-namespace])
     (eval (quote-syntax
            (define-language grammar
@@ -994,6 +995,27 @@
                  x)
           '(2 1)))
   
+  ;; errors for not-yet-defined metafunctions
+  (test (parameterize ([current-namespace (make-empty-namespace)])
+          (namespace-attach-module (namespace-anchor->namespace this-namespace) 'racket/gui)
+          (namespace-attach-module (namespace-anchor->namespace this-namespace) 'redex/reduction-semantics)
+          (namespace-require 'racket)
+          (eval '(module m racket
+                   (require redex)
+                   (term (q))
+                   (define-language L)
+                   (define-metafunction L [(q) ()])))
+          (with-handlers ([exn:fail:redex? exn-message])
+            (eval '(require 'm))
+            #f))
+        "metafunction q applied before its definition")
+  (test (with-handlers ([exn:fail:redex? exn-message])
+          (let ()
+            (term (q))
+            (define-language L)
+            (define-metafunction L [(q) ()])
+            #f))
+        "metafunction q applied before its definition")
   
   (let ()
     (test-syn-err

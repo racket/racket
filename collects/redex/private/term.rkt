@@ -2,7 +2,9 @@
 
 (require (for-syntax scheme/base 
                      "term-fn.ss"
+                     syntax/boundmap
                      racket/syntax)
+         "error.rkt"
          "matcher.ss")
 
 (provide term term-let term-let/error-name term-let-fn term-define-fn hole in-hole)
@@ -15,13 +17,13 @@
     [(_ () e) (syntax e)]
     [(_ (a b ...) e) (syntax (with-syntax (a) (with-syntax* (b ...) e)))]))
 
-(define-syntax (term stx)
-  (syntax-case stx ()
-    [(_ arg)
-    #`(term/private arg)]))
+(define-syntax-rule (term t)
+  (#%expression (term/private t)))
 
 (define-syntax (term/private orig-stx)
   (define outer-bindings '())
+  (define applied-metafunctions
+    (make-free-identifier-mapping))
   
   (define (rewrite stx)
     (let-values ([(rewritten _) (rewrite/max-depth stx 0)])
@@ -54,9 +56,9 @@
       [(metafunc-name arg ...)
        (and (identifier? (syntax metafunc-name))
             (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
-       (rewrite-application (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))
-                            (syntax/loc stx (arg ...))
-                            depth)]
+       (let ([f (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))])
+         (free-identifier-mapping-put! applied-metafunctions f #t)
+         (rewrite-application f (syntax/loc stx (arg ...)) depth))]
       [f
        (and (identifier? (syntax f))
             (term-fn? (syntax-local-value (syntax f) (λ () #f))))
@@ -110,13 +112,32 @@
     [(_ arg)
      (with-disappeared-uses
       (with-syntax ([rewritten (rewrite (syntax arg))])
-        (let loop ([bs (reverse outer-bindings)])
-          (cond
-            [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
-            [else (with-syntax ([rec (loop (cdr bs))]
-                                [fst (car bs)])
-                    (syntax (with-syntax (fst)
-                              rec)))]))))]))
+        #`(begin
+            #,@(free-identifier-mapping-map
+                applied-metafunctions
+                (λ (f _)
+                  (if (eq? (identifier-binding f) 'lexical)
+                      #`(check-defined-lexical #,f '#,f)
+                      #`(check-defined-module (λ () #,f) '#,f))))
+            #,(let loop ([bs (reverse outer-bindings)])
+                (cond
+                  [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
+                  [else (with-syntax ([rec (loop (cdr bs))]
+                                      [fst (car bs)])
+                          (syntax (with-syntax (fst)
+                                    rec)))])))))]))
+
+(define (check-defined-lexical value name)
+  (when (eq? (letrec ([x x]) x) value)
+    (report-undefined-metafunction name)))
+
+(define (check-defined-module thunk name)
+  (with-handlers ([exn:fail:contract:variable?
+                   (λ (_) (report-undefined-metafunction name))])
+    (thunk)))
+
+(define (report-undefined-metafunction name)
+  (redex-error #f "metafunction ~s applied before its definition" name))
 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
@@ -131,7 +152,7 @@
 (define-syntax (term-define-fn stx)
   (syntax-case stx ()
     [(_ id exp)
-     (with-syntax ([(id2) (generate-temporaries (syntax (id)))])
+     (with-syntax ([id2 (datum->syntax #'here (syntax-e #'id))])
        (syntax
         (begin
           (define id2 exp)
