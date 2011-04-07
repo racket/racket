@@ -105,7 +105,7 @@
 
  (t 'mz1 m:mz
    (for-each (lambda (x) x) '(1 2 3))
-   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
+   :: {(for-each (lambda (x) x) (list 1 2 3))} -> (... {1} ...)
    :: ... -> (... {2} ...)
    :: ... -> (... {3} ...)
    :: ... -> {(void)})
@@ -486,15 +486,13 @@
 
 (t1 'map
     m:mz "(map (lambda (x) x) (list 3 4 5))"
-    `((before-after ((map (lambda (x) x) (hilite (list 3 4 5))))
-                    ((map (lambda (x) x) (hilite `( 3 4 5)))))
-      (before-after ((hilite (map (lambda (x) x) `(3 4 5))))
+    `((before-after ((hilite (map (lambda (x) x) (list 3 4 5))))
                     ((... (hilite 3) ...)))
       (before-after (...)
                     ((... (hilite 4) ...)))
       (before-after (...)
                     ((... (hilite 5) ...)))
-      (before-after (...) ((hilite `(3 4 5))))))
+      (before-after (...) ((hilite (list 3 4 5))))))
 
 (t1 'quoted-list
     m:beginner-wla "'(3 4 5)"
@@ -1898,8 +1896,9 @@
         (+ {(second (cons 1 (cons ,(<delay#> 1) ,(<delay#> 2))))} (third nats))
         -> ,add1-def (define nats (cons 1 (cons ,(<delay#> 1) ,(<delay#> 2))))
         (+ {,(<delay#> 1)} (third nats))
-        :: ,add1-def (define nats (cons 1 (cons {(+ 1 1)} ,(<delay#> 2))))
-        (+ {,(<delay#> 1)} (third nats))
+;        :: ,add1-def (define nats (cons 1 (cons {(+ 1 1)} ,(<delay#> 2))))
+;        (+ {,(<delay#> 1)} (third nats))
+        :: ...
         -> ,add1-def (define nats (cons 1 (cons {(+ 1 1)} ,(<delay#> 2))))
         (+ {(+ 1 1)} (third nats))
         -> ,add1-def (define nats (cons 1 (cons {2} ,(<delay#> 2))))
@@ -1912,8 +1911,9 @@
         (+ 2 {(third (cons 1 (cons 2 ,(<delay#> 2))))})
         -> ,add1-def (define nats (cons 1 (cons 2 (cons ,(<delay#> 3) ,(<delay#> 4)))))
         (+ 2 {,(<delay#> 3)})
-        :: ,add1-def (define nats (cons 1 (cons 2 (cons {(+ 2 1)} ,(<delay#> 4)))))
-        (+ 2 {,(<delay#> 3)})
+;        :: ,add1-def (define nats (cons 1 (cons 2 (cons {(+ 2 1)} ,(<delay#> 4)))))
+;        (+ 2 {,(<delay#> 3)})
+        :: ...
         -> ,add1-def (define nats (cons 1 (cons 2 (cons {(+ 2 1)} ,(<delay#> 4)))))
         (+ 2 {(+ 2 1)})
         -> ,add1-def (define nats (cons 1 (cons 2 (cons {3} ,(<delay#> 4)))))

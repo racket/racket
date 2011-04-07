@@ -316,15 +316,12 @@
                 (when DEBUG 
                   (printf "SKIPPING STEP (LHS = ellipses and RHS = last RHS)\n"))]
                ; SKIPPING step, lhs = ellipses and highlight-stack = null and last-rhs = null
-               ; if last-rhs != null, send step
+               ; if last-rhs != null, send step (lhs = ...)
                [(null? highlight-stack)
                 (if (not (null? last-rhs-exps))
-                  (begin
-                    (set! lhs-exps last-rhs-exps)
-                    (set! lhs-finished-exps rhs-finished-exps)
-                    (send-it))
-                  (when DEBUG
-                    (printf "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")))]
+                    (send-it)
+                    (when DEBUG
+                      (printf "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")))]
                ; if last-rhs != null, send step
                ; else if skips = 0, send step
                ; else skip

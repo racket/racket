@@ -3,7 +3,6 @@
 (require "through-tests.ss" 
          "test-engine.ss")
 
-(define steve-broke '(mz1 map))
 (define lazy-tests 
   '(lazy1 lazy2 lazy3 lazy-multi lazy-app1 lazy-app2 lazy-app3 
     lazy-cons1 lazy-cons2 lazy-list1 lazy-list2 lazy-list3 lazy-list4 lazy-list5
@@ -32,7 +31,6 @@
     (if (and (run-all-tests-except 
               (append '(bad-and bad-cons check-error begin-let-bug prims qq-splice time 
                                 set! local-set! local-struct/i local-struct/ilam)
-                      steve-broke
                       lazy-tests))
              (run-tests lazy-tests))
 	(exit 0)
