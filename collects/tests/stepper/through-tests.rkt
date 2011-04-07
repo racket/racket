@@ -1453,7 +1453,7 @@
 
   (t 'lazy1 m:lazy
      (! (+ 3 4))
-     :: {(force (+ 3 4))} -> {(+ 3 4)} -> {7})
+     :: {(+ 3 4)} -> {7})
 
   (t 'lazy2 m:lazy
      (+ (+ 3 4) 5)
@@ -1993,6 +1993,11 @@
                        (else ,clause22))}
         -> ,def {,clause12} -> ,def {20})
      )
+   
+   ; lazy-cond3
+   (t 'lazy-cond3 m:lazy
+      (! (cond [false 1] [else 2]))
+      :: {(cond [false 1] [else 2])} -> {(cond [else 2])} -> {2})
    
    
    (t 'lazy-eq? m:lazy

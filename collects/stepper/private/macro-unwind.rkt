@@ -64,6 +64,14 @@
       [(#%plain-app proc-extract p)
        (eq? (syntax->datum #'proc-extract) 'procedure-extract-target)
        (unwind #'p settings)]
+      ; lazy #%app special case: force
+      [(#%plain-app force arg)
+       (let ([force-fn (syntax->datum #'force)])
+         (or (eq? force-fn 'force)
+             (eq? force-fn '!) (eq? force-fn '!!)
+             (eq? force-fn '!list) (eq? force-fn '!!list)
+             (equal? force-fn '(#%plain-app parameter-procedure))))
+       (unwind #'arg settings)]
       ; general lazy application
       [(#%plain-app 
         (#%plain-lambda args1 (#%plain-app (#%plain-app proc p) . args2)) 
@@ -257,10 +265,7 @@
        (with-syntax
            ([clauses
              (let loop ([stx stx])
-               ; STC: I'm disabling this check because the user-position on some
-               ; lazy conds are not correct, but I can't figure out where.
-               ; Disabling this check does not break any existing stepper tests.
-               (if #t #;(and (eq? user-source
+               (if (and (eq? user-source
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))

@@ -899,13 +899,10 @@
                                                         ; dont show ellipses for force (and other lazy fns)
                                                         ; object-name is good enough here, so dont need to add another "special val"
                                                         (let ([obj-name (object-name (car arg-vals))])
-                                                          (cond [(ormap
-                                                                  (lx (eq? obj-name _))
-                                                                  '(force ! !! !list !!list))
-                                                                 so-far]
-                                                                [(ormap 
+                                                          (cond [(ormap 
                                                                   (lx (eq? obj-name _)) 
-                                                                  '(caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar 
+                                                                  '(force ! !! !list !!list
+                                                                    caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar 
                                                                     cdddr caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr 
                                                                     cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr 
                                                                     first second third fourth fifth sixth seventh eighth take 
