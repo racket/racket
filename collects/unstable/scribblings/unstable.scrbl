@@ -97,7 +97,6 @@ Keep documentation and tests up to date.
 @include-section["text.scrbl"]
 @include-section["values.scrbl"]
 @include-section["web.scrbl"]
-@include-section["poly-c.scrbl"]
 @include-section["mutated-vars.scrbl"]
 @include-section["find.scrbl"]
 @include-section["class-iop.scrbl"]

@@ -1,14 +1,7 @@
 #lang racket/base
-
-(require racket/bool racket/contract)
-
-(provide poly/c parametric/c opaque/c memory/c)
-
-(define-syntax-rule (poly/c [x ...] c)
-  (make-polymorphic-contract 'poly/c
-                             memory/c
-                             '(x ...)
-                             (lambda (x ...) c)))
+(require racket/bool
+         racket/contract)
+(provide parametric/c)
 
 (define-syntax-rule (parametric/c [x ...] c)
   (make-polymorphic-contract 'parametric/c
@@ -56,13 +49,6 @@
             [(a b c d e f g) ((wrap p) a b c d e f g)]
             [(a b c d e f g h) ((wrap p) a b c d e f g h)]
             [args (apply (wrap p) args)])))))))
-
-(define (memory/c positive? name)
-  (define memory (make-weak-hasheq))
-  (define (make x) (hash-set! memory x #t) x)
-  (define (pred x) (hash-has-key? memory x))
-  (define (get x) x)
-  (make-barrier-contract name positive? make pred get))
 
 (define (opaque/c positive? name)
   (define-values [ type make pred getter setter ]
