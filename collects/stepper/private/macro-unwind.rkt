@@ -68,13 +68,13 @@
                   (syntax-e (second (syntax-e #'proc-extract))))
                 procedure-extract-target))
        (unwind #'p settings)]
-      ; lazy #%app special case: force
-      [(#%plain-app force arg)
-       (let ([force-fn (syntax->datum #'force)])
-         (or (eq? force-fn 'force)
-             (eq? force-fn '!) (eq? force-fn '!!)
-             (eq? force-fn '!list) (eq? force-fn '!!list)
-             (equal? force-fn '(#%plain-app parameter-procedure))))
+      ; lazy #%app special case: force and delay
+      [(#%plain-app f arg)
+       (let ([fn (syntax->datum #'f)])
+         (or (eq? fn 'lazy-proc)
+             (eq? fn 'force) (eq? fn '!) (eq? fn '!!)
+             (eq? fn '!list) (eq? fn '!!list)
+             (equal? fn '(#%plain-app parameter-procedure))))
        (unwind #'arg settings)]
       ; general lazy application
       [(#%plain-app 

@@ -193,8 +193,6 @@
   ; Purpose: extracts closure from struct procedure, ie lazy-proc in lazy racket
   (define (extract-proc-if-struct f)
     (if (and (procedure? f) (not (annotated-proc? f)))
-        #;(let ([extracted (procedure-extract-target f)])
-            (if extracted extracted f))
         (or (procedure-extract-target f)
             f)
         f))

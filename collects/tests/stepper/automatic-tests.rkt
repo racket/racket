@@ -17,7 +17,7 @@
     lazy-eq? lazy-eqv? lazy-equal? lazy-list?1 lazy-list?2 lazy-list?3
     lazy-length lazy-list-ref lazy-list-tail lazy-append lazy-reverse lazy-empty? 
     lazy-assoc lazy-assq lazy-assv lazy-cons? lazy-remove lazy-remq lazy-remv
-    lazy-member lazy-memq lazy-memv))
+    lazy-member lazy-memq lazy-memv lazy-filter1 lazy-filter2 lazy-fold))
 
 (let ((outer-namespace (current-namespace)))
   (parameterize ([display-only-errors #t]

@@ -2075,7 +2075,52 @@
       :: {(memv 1 (list 1 2))} -> {(list 1 2)})
   
    
+   (t 'lazy-filter1 m:lazy
+      (third (filter (lambda (x) (>= x 3)) '(1 2 3 4 5)))
+      :: (third {(filter (lambda (x) (>= x 3)) (list 1 2 3 4 5))})
+      -> (third (... {(>= 1 3)} ...))
+      -> (third (... {false} ...))
+      :: ... -> (third {,(<delay#> 0)})
+      :: ... -> (third {(>= 2 3)}) -> (third {false})
+      :: ... -> (third {(>= 3 3)}) -> (third {true})
+      :: ... -> (third (cons 3 {(>= 4 3)})) -> (third (cons 3 {true}))
+      :: ... -> (third (cons 3 (cons 4 {(>= 5 3)})))
+      -> (third (cons 3 (cons 4 {true})))
+      :: {(third (cons 3 (cons 4 (cons 5 ,(<delay#> 1)))))} -> {5})
    
+   ; same as lazy-filter1 except forcing of the list itself shows up as a step
+   ; only difference is in lazy-filter1 a quote (') is used while in lazy-filter2
+   ; a list constructor is used
+   (t 'lazy-filter2 m:lazy
+      (third (filter (lambda (x) (>= x 3)) (list 1 2 3 4 5)))
+      :: (third {(filter (lambda (x) (>= x 3)) (list 1 2 3 4 5))})
+      -> (third (... {(list 1 2 3 4 5)} ...))
+      :: ... -> (third (... {(>= 1 3)} ...)) -> (third (... {false} ...))
+      :: ... -> (third {,(<delay#> 0)})
+      :: ... -> (third {(>= 2 3)}) -> (third {false})
+      :: ... -> (third {(>= 3 3)}) -> (third {true})
+      :: ... -> (third (cons 3 {(>= 4 3)})) -> (third (cons 3 {true}))
+      :: ... -> (third (cons 3 (cons 4 {(>= 5 3)})))
+      -> (third (cons 3 (cons 4 {true})))
+      :: {(third (cons 3 (cons 4 (cons 5 ,(<delay#> 1)))))} -> {5})
+   
+   (t 'lazy-fold m:lazy
+      (+ (foldr (lambda (x y) (+ x y)) 0 '(1 2 3)) 1000)
+      :: (+ {(foldr (lambda (x y) (+ x y)) 0 (list 1 2 3))} 1000)
+      -> (+ {,(<delay#> 0)} 1000)
+      :: ... -> (+ {(+ 1 ,(<delay#> 1))} 1000)
+      :: ... -> (+ (+ 1 {(+ 2 ,(<delay#> 2))}) 1000)
+      :: ... -> (+ (+ 1 (+ 2 {(+ 3 ,(<delay#> 3))})) 1000)
+      :: (+ (+ 1 (+ 2 {(+ 3 0)})) 1000)
+      -> (+ (+ 1 (+ 2 {3})) 1000)
+      :: (+ (+ 1 {(+ 2 3)}) 1000)
+      -> (+ (+ 1 {5}) 1000)
+      :: (+ {(+ 1 5)} 1000)
+      -> (+ {6} 1000)
+      :: {(+ 6 1000)} -> {1006})
+    
+    
+    
    
   #;
   (t1 'teachpack-callbacks

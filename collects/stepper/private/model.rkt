@@ -54,8 +54,8 @@
          ;; for breakpoint display
          ;; (commented out to allow nightly testing)
          #;"display-break-stuff.ss"
-         (for-syntax scheme/base)
-         "lazy-highlighting.rkt")
+         (for-syntax scheme/base))
+
 
 (define program-expander-contract
   ((-> void?) ; init
@@ -128,31 +128,21 @@
   ; # of skips depends on # of hidden !'s in fn def
   (define highlight-stack null)
   (define (highlight-stack-push mark-list)
-    (let* ([mark (find-first-called mark-list)]
-           [fn (object-name (lookup-binding (list mark) (get-arg-var 0)))]
-           [skips (hash-ref highlight-table fn)])
+    (let ([top-called-fn (find-top-called-fn mark-list)])
       (when DEBUG
-        (printf "skips for ~a = ~a\n" fn skips))
-      (set! highlight-stack 
-            (cons (cons lhs-recon-thunk skips) highlight-stack))))
-  (define (find-first-called mark-list)
+        (printf "top called fn = ~a\n" top-called-fn))
+      (set! highlight-stack
+            (cons (cons top-called-fn lhs-recon-thunk) highlight-stack))))
+  (define (find-top-called-fn mark-list)
     (if (null? mark-list)
         #f
         (let ([top-mark (car mark-list)])
           (if (eq? 'called (mark-label top-mark))
-              top-mark
-              (find-first-called (cdr mark-list))))))
+              (object-name (lookup-binding (list top-mark) (get-arg-var 0)))
+              (find-top-called-fn (cdr mark-list))))))
   (define (highlight-stack-pop)
     (set! highlight-stack (cdr highlight-stack)))
-  (define (highlight-stack-decrement)
-    (let ([new-skips (sub1 (cdar highlight-stack))]
-          [thunk (caar highlight-stack)])
-      (printf 
-       "SKIPPING SKIP (decrementing top of highlight-stack, skips = ~a)\n"
-       new-skips)
-    (set! highlight-stack
-          (cons (cons thunk new-skips)
-                (cdr highlight-stack)))))
+
   
   
   ;; highlight-mutated-expressions :
@@ -322,20 +312,22 @@
                     (send-it)
                     (when DEBUG
                       (printf "SKIPPING STEP (LHS = ellipses and highlight-stack = null)\n")))]
-               ; if last-rhs != null, send step
-               ; else if skips = 0, send step
-               ; else skip
+               ; if top-called-fn = top of highlight stack, 
+               ;    then send step with lhs = lhs-thunk on highlight stack
+               ; else if last-rhs != null, send it, else skip
                [else
-                (let ([skips (cdar highlight-stack)]
-                      [lhs-thunk (caar highlight-stack)])
-                  (if (or (zero? skips) (not (null? last-rhs-exps)))
+                (let ([top-called-fn (caar highlight-stack)]
+                      [lhs-thunk (cdar highlight-stack)])
+                  (if (and (eq? (find-top-called-fn mark-list) top-called-fn)
+                           (eq? break-kind 'result-value-break))
                       (begin
                         (set! lhs-exps (lhs-thunk))
                         (set! lhs-finished-exps rhs-finished-exps)
                         (when DEBUG (printf "Popping highlight-stack\n"))
                         (highlight-stack-pop)
                         (send-it))
-                      (highlight-stack-decrement)))])]
+                      (when (not (null? last-rhs-exps))
+                        (send-it))))])]
             ; sending step
             [else (send-it)]))
         
