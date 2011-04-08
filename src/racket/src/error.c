@@ -1229,6 +1229,10 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
   int namelen = -1;
   int mina, maxa;
 
+  if (SCHEME_CHAPERONEP(proc)) {
+    proc = SCHEME_CHAPERONE_VAL(proc);
+  }
+
   if (SCHEME_PRIMP(proc)) {
     name = ((Scheme_Primitive_Proc *)proc)->name;
     mina = ((Scheme_Primitive_Proc *)proc)->mina;

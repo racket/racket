@@ -70,6 +70,20 @@
     (for-each (lambda (p)
                 (let ([a (cadr p)])
                   (test a procedure-arity (car p))
+                  (when (number? a)
+                    (let ([rx (regexp (format "expects(| at least) ~a argument" 
+                                              (if (zero? a) "(0|no)" a)))]
+                          [bad-args (cons 'extra (for/list ([i (in-range a)]) 'a))])
+                      (test #t regexp-match? rx
+                            (with-handlers ([exn:fail? (lambda (exn)
+                                                         (exn-message exn))])
+                              (apply (car p) bad-args)))
+                      (unless (= a 1)
+                        (test #t regexp-match? rx
+                              (with-handlers ([exn:fail? (lambda (exn)
+                                                           (exn-message exn))])
+                                (for-each (car p) (list bad-args))
+                                "done!")))))
                   (test-values (list (caddr p) (cadddr p))
                                (lambda ()
                                  (procedure-keywords (car p))))
