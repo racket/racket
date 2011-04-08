@@ -521,28 +521,32 @@
           (letrec	
               ([find-offset
                 (λ (start-pos)
-                  (let ([end-pos
-                         (let loop ([p start-pos])
-                           (let ([c (get-character p)])
-                             (cond
-                               [(char=? c #\tab)
-                                (loop (add1 p))]
-                               [(char=? c #\newline)
-                                p]
-                               [(char-whitespace? c)
-                                (loop (add1 p))]
-                               [else
-                                p])))]
-                        [start-x (box 0)]
-                        [end-x (box 0)])
-                    (position-location start-pos start-x #f #t #t)
-                    (position-location end-pos end-x #f #t #t)
-                    (let-values ([(w _1 _2 _3) (send (get-dc) get-text-extent "x" 
-                                                     (send (send (get-style-list)
-                                                                 find-named-style "Standard")
-                                                           get-font))])
-                      (cons (inexact->exact (floor (/ (- (unbox end-x) (unbox start-x)) w)))
-                            end-pos))))]
+                  (define tab-char? #f)
+                  (define end-pos
+                    (let loop ([p start-pos])
+                      (let ([c (get-character p)])
+                        (cond
+                          [(char=? c #\tab)
+                           (set! tab-char? #t)
+                           (loop (add1 p))]
+                          [(char=? c #\newline)
+                           p]
+                          [(char-whitespace? c)
+                           (loop (add1 p))]
+                          [else
+                           p]))))
+                  (define start-x (box 0))
+                  (define end-x (box 0))
+                  (position-location start-pos start-x #f #t #t)
+                  (position-location end-pos end-x #f #t #t)
+                  (define-values (w _1 _2 _3)
+                    (send (get-dc) get-text-extent "x" 
+                          (send (send (get-style-list)
+                                      find-named-style "Standard")
+                                get-font)))
+                  (values (inexact->exact (floor (/ (- (unbox end-x) (unbox start-x)) w)))
+                          end-pos
+                          tab-char?))]
                
                [visual-offset
                 (λ (pos)
@@ -559,12 +563,11 @@
                             [else (add1 (loop (sub1 p)))])))))]
                [do-indent
                 (λ (amt)
-                  (let* ([pos-start end]
-                         [curr-offset (find-offset pos-start)])
-                    (unless (= amt (- (cdr curr-offset) pos-start))
-                      (delete pos-start (cdr curr-offset))
-                      (insert (make-string amt #\space)
-                              pos-start))))]
+                  (define pos-start end)
+                  (define-values (gwidth curr-offset tab-char?) (find-offset pos-start))
+                  (unless (and (not tab-char?) (= amt (- curr-offset pos-start)))
+                    (delete pos-start curr-offset)
+                    (insert (make-string amt #\space) pos-start)))]
                [get-proc
                 (λ ()
                   (let ([id-end (get-forward-sexp contains)])
@@ -589,7 +592,9 @@
                   (and up-p
                        (equal? #\{ (get-character up-p))))]
                
-               [indent-first-arg (λ (start) (car (find-offset start)))])
+               [indent-first-arg (λ (start)
+                                   (define-values (gwidth curr-offset tab-char?) (find-offset start))
+                                   gwidth)])
             (when (and is-tabbable?
                        (not (char=? (get-character (sub1 end))
                                     #\newline)))
@@ -598,7 +603,7 @@
               [(not is-tabbable?) 
                (when (= para 0)
                  (do-indent 0))]
-              [(let ([real-start (cdr (find-offset end))]) 
+              [(let-values ([(gwidth real-start tab-char?) (find-offset end)]) 
                  (and (<= (+ 3 real-start) (last-position))
                       (string=? ";;;"
                                 (get-text real-start
