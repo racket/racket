@@ -558,7 +558,7 @@ void scheme_done_with_process_id(int pid, int is_group)
       
   if (st && (keep_unused || st->done)) {
     /* remove it from normal list: */
-    raw_get_child_status(pid, NULL, 0, 1, !st->done);
+    raw_get_child_status(pid, NULL, 0, 1, st->done);
   }
 
   mzrt_mutex_unlock(child_status_lock);
