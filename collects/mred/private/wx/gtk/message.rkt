@@ -6,7 +6,8 @@
          "item.rkt"
          "utils.rkt"
          "types.rkt"
-         "pixbuf.rkt")
+         "pixbuf.rkt"
+         "window.rkt")
 
 (provide 
  (protect-out message%
@@ -82,5 +83,10 @@
         (atomically
          (gtk_image_set_from_pixbuf (get-gtk) pixbuf)
          (release-pixbuf pixbuf)))]))
+
+  (define/public (set-preferred-size)
+    (gtk_widget_set_size_request (get-gtk) -1 -1)
+    (set-auto-size)
+    #t)
 
   (def/public-unimplemented get-font))

@@ -142,9 +142,15 @@
                             (cond
                              [(symbol? s) (void)]
                              [(string? s)
-                              (let-values ([(mw mh) (get-window-text-extent s orig-font #t)])
-                                (super-min-width (+ dx mw))
-                                (super-min-height (+ dy mh)))]
+                              (let ([m (mred->wx this)])
+                                (if (send m set-preferred-size)
+                                    (let ([w (box 0)] [h (box 0)])
+                                      (send m get-size w h)
+                                      (super-min-width (unbox w))
+                                      (super-min-height (unbox h)))
+                                    (let-values ([(mw mh) (get-window-text-extent s orig-font #t)])
+                                      (super-min-width (+ dx mw))
+                                      (super-min-height (+ dy mh)))))]
                              [(s . is-a? . wx:bitmap%)
                               (super-min-width (+ dx (send s get-width)))
                               (super-min-height (+ dy (send s get-height)))])))])

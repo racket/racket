@@ -119,5 +119,9 @@
 
   (define/override (gets-focus?) #f)
 
+  (define/public (set-preferred-size)
+    (tellv (get-cocoa) sizeToFit)
+    #t)
+
   (def/public-unimplemented get-font))
 
