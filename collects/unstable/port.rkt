@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/match
          racket/contract
-         unstable/srcloc)
+         syntax/srcloc)
 
 #|
 Ryan:

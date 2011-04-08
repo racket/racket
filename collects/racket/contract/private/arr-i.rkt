@@ -5,7 +5,7 @@
          "guts.rkt"
          "opt.rkt"
          "blame.rkt"
-         unstable/location
+         syntax/location
          (for-syntax racket/base
                      racket/stxparam-exptime
                      "arr-i-parse.rkt"

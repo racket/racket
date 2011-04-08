@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require unstable/srcloc racket/pretty)
+(require syntax/srcloc racket/pretty)
 
 (provide blame?
          make-blame

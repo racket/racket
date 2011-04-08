@@ -22,4 +22,6 @@
 
 @include-section["parse.scrbl"]
 
+@include-section["srcloc.scrbl"]
+
 @index-section[]

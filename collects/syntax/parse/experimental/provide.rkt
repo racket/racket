@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract/base
-         unstable/location
+         syntax/location
          (for-syntax racket/base
                      racket/syntax
                      "../private/minimatch.rkt"

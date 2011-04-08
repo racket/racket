@@ -22,7 +22,7 @@
          racket/dict         
          (for-template
           "internal-forms.rkt"
-          unstable/location
+          syntax/location
           mzlib/contract
           scheme/base))
 

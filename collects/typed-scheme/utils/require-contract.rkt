@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scheme/contract
-         unstable/location
+         syntax/location
          (for-syntax scheme/base
                      syntax/parse                     
                      (prefix-in tr: "../private/typed-renaming.rkt")))

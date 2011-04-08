@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "guts.rkt" "blame.rkt" "prop.rkt" unstable/srcloc)
+(require "guts.rkt" "blame.rkt" "prop.rkt" syntax/srcloc)
 
 (provide make-proj-contract
          raise-contract-error

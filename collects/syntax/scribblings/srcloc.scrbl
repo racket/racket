@@ -1,13 +1,16 @@
 #lang scribble/manual
-@(require scribble/eval "utils.rkt" (for-label racket/base unstable/srcloc unstable/location))
+@(require scribble/eval
+          (for-label racket/base 
+                     syntax/srcloc
+                     syntax/location))
 
 @(define unsyntax #f)
 
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
      (e '(require (for-syntax racket/base)
-                  unstable/srcloc
-                  unstable/location))
+                  syntax/srcloc
+                  syntax/location))
      e))
 
 @(define evaluator (new-evaluator))
@@ -17,15 +20,15 @@
 
 @title{Source Locations}
 
+@author[@author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
+
 There are two libraries in this collection for dealing with source locations;
 one for manipulating representations of them, and the other for quoting the
 location of a particular piece of source code.
 
 @section[#:tag "srcloc"]{Representations}
 
-@defmodule[unstable/srcloc]
-
-@unstable[@author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
+@defmodule[syntax/srcloc]
 
 This module defines utilities for manipulating representations of source
 locations, including both @racket[srcloc] structures and all the values accepted
@@ -216,9 +219,7 @@ The first produces a string describing the source location; the second appends
 
 @section[#:tag "location"]{Quoting}
 
-@defmodule[unstable/location]
-
-@unstable[@author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
+@defmodule[syntax/location]
 
 This module defines macros that evaluate to various aspects of their own source
 location.
@@ -304,7 +305,7 @@ programmatically, such as via @racket[dynamic-require].
 
 @defexamples[#:eval (new-evaluator)
 (module A racket
-  (require unstable/location)
+  (require syntax/location)
   (define-syntax-rule (name) (quote-module-name))
   (define-syntax-rule (path) (quote-module-path))
   (define a-name (name))
@@ -314,7 +315,7 @@ programmatically, such as via @racket[dynamic-require].
 a-name
 a-path
 (module B racket
-  (require unstable/location)
+  (require syntax/location)
   (require 'A)
   (define b-name (name))
   (define b-path (path))

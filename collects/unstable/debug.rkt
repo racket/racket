@@ -22,8 +22,8 @@
 (require racket/block
          racket/match
          unstable/pretty
-         unstable/srcloc
-         unstable/location
+         syntax/srcloc
+         syntax/location
          racket/syntax
          (for-syntax racket/base racket/match syntax/parse racket/syntax))
 

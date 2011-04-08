@@ -14,7 +14,7 @@
                      (prefix-in a: "private/helpers.rkt"))
          racket/splicing
          racket/stxparam
-         unstable/location
+         syntax/location
          "private/arrow.rkt"
          "private/base.rkt"
          "private/guts.rkt")

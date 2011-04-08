@@ -1,10 +1,8 @@
 #lang racket/base
-
-(require unstable/srcloc
+(require syntax/srcloc
          (for-syntax racket/base
-                     unstable/srcloc
+                     syntax/srcloc
                      unstable/dirs))
-
 (provide quote-srcloc
          quote-source-file
          quote-line-number

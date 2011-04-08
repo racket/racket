@@ -3,7 +3,7 @@
 (provide define/contract)
 
 (require (for-syntax racket/base
-                     unstable/srcloc
+                     syntax/srcloc
                      (prefix-in a: racket/contract/private/helpers))
          (only-in racket/contract/private/base contract))
 

@@ -6,7 +6,7 @@
           (for-label racket/base
                      racket/contract
                      unstable/wrapc
-                     unstable/syntax))
+                     racket/syntax))
 
 @(begin
   (define the-eval (make-base-eval))
@@ -66,7 +66,7 @@ is an identifier) or the @scheme[context] argument, and the module
 where it is @emph{defined} is used as the negative blame location. If
 neither an identifier @scheme[macro-name] nor a @scheme[context]
 argument is given, the location is @scheme["unknown"].}
-@item{If the argument is @scheme['same-as-use-site], the module being
+@item{If the argument is @scheme['use-site], the module being
 expanded is used.}
 @item{If the argument is @scheme['unknown], the blame label is
 @scheme["unknown"].}

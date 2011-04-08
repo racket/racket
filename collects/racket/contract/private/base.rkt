@@ -15,8 +15,8 @@ improve method arity mismatch contract violation error messages?
 
 (require (for-syntax racket/base syntax/name)
          racket/stxparam
-         unstable/srcloc
-         unstable/location
+         syntax/srcloc
+         syntax/location
          "guts.rkt"
          "blame.rkt"
          "prop.rkt"

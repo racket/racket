@@ -10,7 +10,7 @@
                      syntax/struct
                      scheme/struct-info
                      syntax/stx
-                     unstable/location
+                     syntax/location
                      "private/unit-contract-syntax.rkt"
                      "private/unit-compiletime.rkt"
                      "private/unit-syntax.rkt"))
@@ -18,7 +18,7 @@
 (require mzlib/etc
          racket/contract/base
          scheme/stxparam
-         unstable/location
+         syntax/location
          "private/unit-contract.rkt"
          "private/unit-keywords.rkt"
          "private/unit-runtime.rkt"

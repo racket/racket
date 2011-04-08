@@ -12,8 +12,8 @@
          racket/contract/exists
          "guts.rkt"
          (for-syntax unstable/dirs)
-         unstable/location
-         unstable/srcloc)
+         syntax/location
+         syntax/srcloc)
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()

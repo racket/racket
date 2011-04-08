@@ -2,8 +2,8 @@
 (require racket/contract/base
          (for-template racket/base
                        racket/contract/base
-                       unstable/location)
-         unstable/srcloc
+                       syntax/location)
+         syntax/srcloc
          racket/syntax)
 
 (provide/contract
@@ -12,7 +12,7 @@
        (#:positive (or/c syntax? string? module-path-index?
                          'from-macro 'use-site 'unknown)
         #:negative (or/c syntax? string? module-path-index?
-                         'from-macro 'same-as-use-site 'unknown)
+                         'from-macro 'use-site 'unknown)
         #:name (or/c identifier? symbol? string? #f)
         #:macro (or/c identifier? symbol? string? #f)
         #:context (or/c syntax? #f))
@@ -76,7 +76,7 @@
                 (cond [(string? source) source]
                       [(syntax? source) (source-location->string source)]
                       [(module-path-index? source)
-                       ;; FIXME: share with unstable/location ??
+                       ;; FIXME: share with syntax/location ??
                        (let ([name (resolved-module-path-name
                                     (module-path-index-resolve source))])
                          (cond [(path? name) (format "(file ~s)" (path->string name))]
