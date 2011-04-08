@@ -4,7 +4,7 @@
          planet/util
          rackunit
          rackunit/text-ui
-         unstable/planet-syntax
+         planet/syntax
          "helpers.rkt")
 
 (define here

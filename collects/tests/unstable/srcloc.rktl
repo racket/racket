@@ -2,7 +2,7 @@
 (load-relative "../racket/loadtest.rktl")
 
 (Section 'srcloc)
-(require unstable/srcloc)
+(require syntax/srcloc)
 (require racket/shared)
 
 (test #t source-location? #f)
