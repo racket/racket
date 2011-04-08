@@ -167,5 +167,17 @@
   
   (test-syn-err (term-let ([(x ...) '(a b c)]) (term x))
                 #rx"missing ellipses")
+
+  (test (parameterize ([current-namespace syn-err-test-namespace])
+          (with-handlers ([exn:fail:syntax?
+                           (λ (exn)
+                             (match (exn:fail:syntax-exprs exn)
+                               [(list e) (syntax->datum e)]
+                               [_ (gensym 'wrong)]))])
+            (expand
+             '(term-let ([((label ...) ...) '()])
+                        (term (label ...))))
+            (gensym 'wrong)))
+        'label)
   
   (print-tests-passed 'term-test.ss))

@@ -2327,35 +2327,6 @@
         (term (f 1))
         (test (sorted-counts c) '(1 0))
         (test (sorted-counts c*) '(1 0)))))
-
-
-;                                                          
-;                                                          
-;                                                          
-;                                        ;                 
-;    ;                                   ;            ;    
-;    ;                                   ;            ;    
-;   ;;;     ;;;   ; ;;   ;;;;;           ;     ;;;   ;;;   
-;    ;     ;   ;  ;;  ;  ; ; ;  ;;;;;    ;    ;   ;   ;    
-;    ;     ;;;;;  ;   ;  ; ; ;           ;    ;;;;;   ;    
-;    ;     ;      ;      ; ; ;           ;    ;       ;    
-;    ;     ;   ;  ;      ; ; ;           ;    ;   ;   ;    
-;     ;;    ;;;   ;      ; ; ;           ;;    ;;;     ;;  
-;                                                          
-;                                                          
-;                                                          
-
-(test (parameterize ([current-namespace syn-err-test-namespace])
-        (with-handlers ([exn:fail:syntax?
-                         (λ (exn)
-                           (match (exn:fail:syntax-exprs exn)
-                             [(list e) (syntax->datum e)]
-                             [_ (gensym 'wrong)]))])
-          (expand
-           '(term-let ([((label ...) ...) '()])
-                      (term (label ...))))
-          (gensym 'wrong)))
-      'label)
   
 ;                                                                       
 ;                                                                       
