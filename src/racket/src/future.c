@@ -2079,10 +2079,12 @@ void scheme_check_future_work()
     if (ft) {
       fs->future_waiting_lwc = ft->next_waiting_lwc;
       ft->next_waiting_lwc = NULL;
+      if (!ft->want_lw)
+        ft = NULL;
     }
     mzrt_mutex_unlock(fs->future_mutex);
 
-    if (ft && ft->want_lw) {
+    if (ft) {
       void *storage[3];
 
       if (capture_future_continuation(ft, storage)) {
