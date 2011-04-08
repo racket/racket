@@ -173,7 +173,9 @@
                (with-syntax 
                    ([(reconed-vals ...)
                      (map (lx (recon-value _ render-settings assigned-name current-so-far)) val)])
-                 #'(#%plain-app list reconed-vals ...))]
+                 (if (render-settings-constructor-style-printing? render-settings)
+                     #'(#%plain-app list reconed-vals ...)
+                     #'`(reconed-vals ...)))]
               [(pair? val)
                (with-syntax 
                    ([reconed-car

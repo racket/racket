@@ -98,7 +98,7 @@
   
   (define fake-lazy-render-settings
     (make-render-settings (booleans-as-true/false)     ; true-false-printed?
-                          (constructor-style-printing) ; constructor-style-printing?
+                          #t ; constructor-style-printing?
                           (abbreviate-cons-as-list)    ; abbreviate-cons-as-list?
                           (make-fake-render-to-sexp #t #t #t) ; render-to-sexp
                           #t   ; lifting?

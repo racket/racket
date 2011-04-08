@@ -105,7 +105,7 @@
 
  (t 'mz1 m:mz
    (for-each (lambda (x) x) '(1 2 3))
-   :: {(for-each (lambda (x) x) (list 1 2 3))} -> (... {1} ...)
+   :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
    :: ... -> (... {2} ...)
    :: ... -> (... {3} ...)
    :: ... -> {(void)})
@@ -486,13 +486,15 @@
 
 (t1 'map
     m:mz "(map (lambda (x) x) (list 3 4 5))"
-    `((before-after ((hilite (map (lambda (x) x) (list 3 4 5))))
+    `((before-after ((map (lambda (x) x) (hilite (list 3 4 5))))
+                    ((map (lambda (x) x) (hilite `(3 4 5)))))
+      (before-after ((hilite (map (lambda (x) x) `(3 4 5))))
                     ((... (hilite 3) ...)))
       (before-after (...)
                     ((... (hilite 4) ...)))
       (before-after (...)
                     ((... (hilite 5) ...)))
-      (before-after (...) ((hilite (list 3 4 5))))))
+      (before-after (...) ((hilite `(3 4 5))))))
 
 (t1 'quoted-list
     m:beginner-wla "'(3 4 5)"
