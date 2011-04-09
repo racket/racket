@@ -308,7 +308,6 @@ static void future_raise_wrong_type_exn(const char *who,
                                         int argc, 
                                         Scheme_Object **argv);
 
-#define THREAD_POOL_SIZE 16
 #define INITIAL_C_STACK_SIZE 500000
 #define FUTURE_RUNSTACK_SIZE 10000
 
@@ -363,7 +362,8 @@ typedef struct Fevent_Buffer {
 } Fevent_Buffer;
 
 typedef struct Scheme_Future_State {
-  struct Scheme_Future_Thread_State *pool_threads[THREAD_POOL_SIZE];
+  int thread_pool_size;
+  struct Scheme_Future_Thread_State **pool_threads;
 
   void *signal_handle;
 
@@ -580,13 +580,21 @@ void scheme_init_futures_per_place()
 void futures_init(void)
 {
   Scheme_Future_State *fs;
+  Scheme_Future_Thread_State **ftss;
   void *hand;
   Scheme_Object **syms, *sym;
   Scheme_Struct_Type *stype;
+  int pool_size;
 
   fs = (Scheme_Future_State *)malloc(sizeof(Scheme_Future_State));
   memset(fs, 0, sizeof(Scheme_Future_State));
   scheme_future_state = fs;
+
+  pool_size = cpucount * 2;
+  ftss = (Scheme_Future_Thread_State **)malloc(pool_size * sizeof(Scheme_Future_Thread_State*));
+  memset(ftss, 0, pool_size * sizeof(Scheme_Future_Thread_State*));
+  fs->pool_threads = ftss;
+  fs->thread_pool_size = pool_size;
 
   REGISTER_SO(fs->future_queue);
   REGISTER_SO(fs->future_queue_end);
@@ -683,7 +691,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
 
 static void check_future_thread_creation(Scheme_Future_State *fs)
 {
-  if (fs->future_threads_created < (cpucount * 2)) {
+  if (fs->future_threads_created < fs->thread_pool_size) {
     int count;
 
     mzrt_mutex_lock(fs->future_mutex);
@@ -764,7 +772,7 @@ void scheme_future_block_until_gc()
   fs->wait_for_gc = 1;
   mzrt_mutex_unlock(fs->future_mutex);
 
-  for (i = 0; i < THREAD_POOL_SIZE; i++) { 
+  for (i = 0; i < fs->thread_pool_size; i++) { 
     if (fs->pool_threads[i]) {
       *(fs->pool_threads[i]->need_gc_pointer) = 1;
       *(fs->pool_threads[i]->fuel_pointer) = 0;
@@ -825,7 +833,7 @@ void scheme_future_continue_after_gc()
 
   if (!fs) return;
 
-  for (i = 0; i < THREAD_POOL_SIZE; i++) {
+  for (i = 0; i < fs->thread_pool_size; i++) {
     if (fs->pool_threads[i]) {
       *(fs->pool_threads[i]->need_gc_pointer) = 0;
 
@@ -987,7 +995,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
   if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
     /* Hold lock while swapping buffers: */
     mzrt_mutex_lock(fs->future_mutex);
-    for (i = 0; i < THREAD_POOL_SIZE; i++) {
+    for (i = 0; i < fs->thread_pool_size; i++) {
       fts = fs->pool_threads[i];
       if (fts) {
         fts->use_fevents1 = !fts->use_fevents1;
@@ -1003,7 +1011,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
 
     if (fs->runtime_fevents.overflow)
       log_overflow_event(fs, -1, fs->runtime_fevents.a[fs->runtime_fevents.i].timestamp);
-    for (i = 0; i < THREAD_POOL_SIZE; i++) {
+    for (i = 0; i < fs->thread_pool_size; i++) {
         fts = fs->pool_threads[i];
         if (fts) {
           if (fts->use_fevents1)
@@ -1028,7 +1036,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
           min_set = 1;
         }
       }
-      for (i = 0; i < THREAD_POOL_SIZE; i++) {
+      for (i = 0; i < fs->thread_pool_size; i++) {
         fts = fs->pool_threads[i];
         if (fts) {
           if (fts->use_fevents1)
@@ -1065,7 +1073,7 @@ static void flush_future_logs(Scheme_Future_State *fs)
         min_b->i = 0;
     }
 
-    for (i = 0; i < THREAD_POOL_SIZE; i++) {
+    for (i = 0; i < fs->thread_pool_size; i++) {
       fts = fs->pool_threads[i];
       if (fts) {
         if (fts->use_fevents1)
@@ -1753,7 +1761,8 @@ static void init_cpucount(void)
   GetSystemInfo(&sysinfo);
   cpucount = sysinfo.dwNumberOfProcessors;
 #else
-  cpucount = THREAD_POOL_SIZE;
+  /* Conservative guess! */
+  cpucount = 1;
 #endif
 }
 
