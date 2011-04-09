@@ -51,7 +51,7 @@ more useful way.}
                               'default]
                     [#:style style (one-of/c 'normal 'italic 'slant) 'normal]
                     [#:weight weight (one-of/c 'normal 'bold 'light) 'normal]
-                    [#:underline? underline? any/c #f]
+                    [#:underlined? underlined? any/c #f]
                     [#:smoothing smoothing (one-of/c 'default 'partly-smoothed 
                                                       'smoothed 'unsmoothed) 
                                  'default]
