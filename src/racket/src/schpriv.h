@@ -2310,7 +2310,8 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
                                                                          void **storage);
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *captured,
                                                      Scheme_Object *result,
-                                                     int result_is_rs_argv);
+                                                     int result_is_rs_argv,
+                                                     intptr_t min_stacksize);
 Scheme_Object **scheme_adjust_runstack_argument(Scheme_Lightweight_Continuation *captured,
                                                 Scheme_Object **arg);
 
@@ -3517,6 +3518,7 @@ Scheme_Object *scheme_checked_caar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cadr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cddr(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_mcar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_mcdr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_set_mcar (int argc, Scheme_Object *argv[]);

@@ -630,7 +630,7 @@ int GC_is_allocated(void *p)
 # else
 #  define PREFIX_WSIZE 1
 # endif
-#else /* GC_ALIGHT_FOUR or byte aligned */
+#else /* GC_ALIGN_FOUR or byte aligned */
 # define PREFIX_WSIZE 0
 #endif
 #define PREFIX_SIZE (PREFIX_WSIZE * WORD_SIZE)
@@ -1046,14 +1046,20 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
   if (!new_mpage->size) {
     /* To avoid roundoff problems, the JIT needs the
        result to be not a multiple of THREAD_LOCAL_PAGE_SIZE,
-       so add a prefix if alignment didn't force one. */
+       it it needs any pointer position produced by
+       allocation not to land at the end of the allocated
+       region. */
+    int bad;
 #if defined(GC_ALIGN_SIXTEEN)
-    new_mpage->size = 16;
+    bad = !(new_mpage->size & (16 - 1));
 #elif defined(GC_ALIGN_EIGHT)
-    new_mpage->size = 8;
+    bad = !(new_mpage->size & (8 - 1));
 #else
-    new_mpage->size = WORD_SIZE;
+    bad = 1;
 #endif
+    if (bad) {
+      fprintf(stderr, "invalid alignment configuration: %ld\n", new_mpage->size);
+    }
   }
   if (sz) 
     *sz = size - new_mpage->size;
@@ -1241,6 +1247,9 @@ void *GC_malloc_pair(void *car, void *cdr)
     cdr = gc->park[1];
     gc->park[0] = NULL;
     gc->park[1] = NULL;
+
+    /* Future-local allocation can fail: */
+    if (!pair) return NULL;
   }
   else {
     objhead *info = (objhead *) PTR(GC_gen0_alloc_page_ptr);

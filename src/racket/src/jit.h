@@ -237,6 +237,7 @@ struct scheme_jit_common_record {
   void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
   void *values_code;
   void *list_p_code, *list_p_branch_code;
+  void *list_length_code;
   void *finish_tail_call_code, *finish_tail_call_fixup_code;
   void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
   void *box_flonum_from_stack_code;

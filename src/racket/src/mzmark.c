@@ -5712,9 +5712,11 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
   gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->next_waiting_touch, gc);
   gcMARK2(f->suspended_lw, gc);
   gcMARK2(f->prev_in_fsema_queue, gc);
   gcMARK2(f->next_in_fsema_queue, gc);
+  gcMARK2(f->touching, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5744,9 +5746,11 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->next, gc);
   gcFIXUP2(f->next_waiting_atomic, gc);
   gcFIXUP2(f->next_waiting_lwc, gc);
+  gcFIXUP2(f->next_waiting_touch, gc);
   gcFIXUP2(f->suspended_lw, gc);
   gcFIXUP2(f->prev_in_fsema_queue, gc);
   gcFIXUP2(f->next_in_fsema_queue, gc);
+  gcFIXUP2(f->touching, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

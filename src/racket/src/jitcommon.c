@@ -1943,6 +1943,79 @@ static int common7(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common8(mz_jit_state *jitter, void *_data)
+{
+  /* list_length_code */
+  /* argument is in R0 */
+  {
+    void *code;
+    GC_CAN_IGNORE jit_insn *refloop, *ref1, *ref2, *ref3, *ref4, *ref5;
+
+    code = jit_get_ip().ptr;
+    sjc.list_length_code = code;
+
+    mz_prolog(JIT_R2);
+    
+    __START_SHORT_JUMPS__(1);
+    
+    /* Save original argument: */
+    jit_movr_p(JIT_V1, JIT_R0);
+
+    /* Note: there's no fuel check in this loop, just like there isn't in
+       scheme_list_length(). Maybe there should be. */
+
+    /* R0 has argument, R1 has counter */
+    jit_movi_l(JIT_R1, 0);
+
+    refloop = _jit.x.pc;
+
+    ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
+    ref3 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref4 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    CHECK_LIMIT();
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    ref5 = jit_bmsi_ul(jit_forward(), JIT_R2, PAIR_IS_NON_LIST);
+
+    jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
+    jit_addi_l(JIT_R1, JIT_R1, 1);
+
+    (void)jit_jmpi(refloop);
+    CHECK_LIMIT();
+
+    /* Return result: */
+    mz_patch_branch(ref2);
+    __END_SHORT_JUMPS__(1);
+    jit_lshi_l(JIT_R0, JIT_R1, 1);
+    jit_ori_l(JIT_R0, JIT_R0, 1);
+    ref1 = _jit.x.pc;
+    mz_epilog(JIT_R2);
+
+    __START_SHORT_JUMPS__(1);
+    mz_patch_branch(ref3);
+    mz_patch_branch(ref4);
+    mz_patch_branch(ref5);
+    __END_SHORT_JUMPS__(1);
+
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(1);
+    jit_pusharg_p(JIT_V1);
+    (void)mz_finish_lwe(ts_scheme_checked_length, ref2);
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+
+    __START_SHORT_JUMPS__(1);
+    (void)jit_jmpi(ref1);
+    __END_SHORT_JUMPS__(1);
+
+    scheme_jit_register_sub_func(jitter, code, scheme_false);
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -1954,6 +2027,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common5(jitter, _data)) return 0;
   if (!common6(jitter, _data)) return 0;
   if (!common7(jitter, _data)) return 0;
+  if (!common8(jitter, _data)) return 0;
   return 1;
 }
 

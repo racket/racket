@@ -700,6 +700,18 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       CHECK_LIMIT();
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "length")) {
+      mz_runstack_skipped(jitter, 1);
+
+      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+      (void)jit_calli(sjc.list_length_code);
+
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-length")
                || IS_NAMED_PRIM(rator, "fxvector-length")
                || IS_NAMED_PRIM(rator, "unsafe-vector-length")
@@ -1131,7 +1143,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       generate_inlined_type_test(jitter, app, scheme_fsemaphore_type, scheme_fsemaphore_type, 1, for_branch, branch_short, need_sync);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "future")
-               | IS_NAMED_PRIM(rator, "fsemaphore-count")
+               || IS_NAMED_PRIM(rator, "touch")
+               || IS_NAMED_PRIM(rator, "fsemaphore-count")
                || IS_NAMED_PRIM(rator, "make-fsemaphore")
                || IS_NAMED_PRIM(rator, "fsemaphore-post")
                || IS_NAMED_PRIM(rator, "fsemaphore-wait")

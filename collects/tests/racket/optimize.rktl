@@ -152,6 +152,7 @@
     (un #f 'list? 0)
     (un #f 'list? '(1 2 . 3))
     (un-exact #t 'list? '(1 2 3))
+    (un-exact 3 'length '(1 2 3))
     (un #f 'boolean? 0)
     (un #t 'boolean? #t)
     (un #t 'boolean? #f)

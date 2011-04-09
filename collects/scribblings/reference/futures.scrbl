@@ -205,13 +205,18 @@ The @racket[action] field is a symbol:
        @racket[touch]ed, because the evaluation may depend on the
        current continuation.}
 
+ @item{@racket['touch] (never in process 0): like @racket['sync] or
+       @racket['block], but for a @racket[touch] operation within a
+       future thunk.}
+
  @item{@racket['result] or @racket['abort]: waiting or handling for
-       @racket['sync] or @racket['block] ended with a value or an
-       error, respectively.}
+       @racket['sync], @racket['block], or @racket['touch] ended with
+       a value or an error, respectively.}
 
  @item{@racket['suspend] (never in process 0): a process blocked by
-       @racket['sync] or @racket['block] abandoned evaluation of a
-       future; some other process may pick up the future later.}
+       @racket['sync], @racket['block], or @racket['touch] abandoned
+       evaluation of a future; some other process may pick up the
+       future later.}
 
  @item{@racket['touch-pause] and @racket['touch-resume] (in process 0,
        only): waiting in @racket[touch] for a future whose thunk is
@@ -226,13 +231,13 @@ The @racket[action] field is a symbol:
 
 Assuming no @racket['missing] events, then @racket['start-work] or
 @racket['start-0-work] is always paired with @racket['end-work],
-@racket['sync] and @racket['block] are always paired with
-@racket['result], @racket['abort], or @racket['suspend], and
+@racket['sync], @racket['block], and @racket['touch] are always paired
+with @racket['result], @racket['abort], or @racket['suspend], and
 @racket['touch-pause] is always paired with @racket['touch-resume].
 
 In process 0, some event pairs can be nested within other event pairs:
-@racket['sync] or @racket['block] with @racket['result] or
-@racket['abort], and @racket['touch-pause] with
+@racket['sync], @racket['block], or @racket['touch] with
+@racket['result] or @racket['abort], and @racket['touch-pause] with
 @racket['touch-resume].}
 
 @; ----------------------------------------------------------------------

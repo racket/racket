@@ -248,11 +248,11 @@ scheme_init_list (Scheme_Env *env)
 						      "immutable?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant ("length",
-			      scheme_make_immed_prim(length_prim,
-						     "length",
-						     1, 1),
-			      env);
+
+  p = scheme_make_immed_prim(length_prim, "length", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("length", p, env);
+
   scheme_add_global_constant ("append",
 			      scheme_make_immed_prim(append_prim,
 						     "append",
@@ -1185,6 +1185,11 @@ length_prim (int argc, Scheme_Object *argv[])
   l = scheme_list_length(argv[0]);
 
   return scheme_make_integer(l);
+}
+
+Scheme_Object *scheme_checked_length(Scheme_Object *v)
+{
+  return length_prim(1, &v);
 }
 
 Scheme_Object *

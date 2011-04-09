@@ -2354,9 +2354,11 @@ future {
   gcMARK2(f->next, gc);
   gcMARK2(f->next_waiting_atomic, gc);
   gcMARK2(f->next_waiting_lwc, gc);
+  gcMARK2(f->next_waiting_touch, gc);
   gcMARK2(f->suspended_lw, gc);
   gcMARK2(f->prev_in_fsema_queue, gc);
   gcMARK2(f->next_in_fsema_queue, gc);
+  gcMARK2(f->touching, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

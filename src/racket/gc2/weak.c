@@ -173,6 +173,9 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
 
   w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
 
+  /* Future-local allocation may fail: */
+  if (!w) return NULL;
+
   p = gc->park[0];
   secondary = (void **)gc->park[1];
   gc->park[0] = NULL;

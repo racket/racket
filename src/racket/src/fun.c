@@ -8449,6 +8449,7 @@ struct Scheme_Lightweight_Continuation {
   void *stack_slice;
   Scheme_Object **runstack_slice;
   Scheme_Cont_Mark *cont_mark_stack_slice;
+  void *stored1, *stored2;
 };
 
 void scheme_init_thread_lwc(void) XFORM_SKIP_PROC
@@ -8538,7 +8539,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
   for (i = 0; i < len; i++) {
     if (((uintptr_t)runstack_slice[i] >= (uintptr_t)lwc->runstack_end)
         && ((uintptr_t)runstack_slice[i] <= (uintptr_t)lwc->runstack_start))
-      runstack_slice[i] = 0;
+      runstack_slice[i] = NULL;
   }
 
   len = lwc->cont_mark_stack_end - lwc->cont_mark_stack_start;
@@ -8586,7 +8587,7 @@ static void *apply_lwc_k()
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
-  return scheme_apply_lightweight_continuation(lw, result, p->ku.k.i1);
+  return scheme_apply_lightweight_continuation(lw, result, p->ku.k.i1, p->ku.k.i2);
 }
 
 int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw)
@@ -8612,7 +8613,8 @@ int scheme_can_apply_lightweight_continuation(Scheme_Lightweight_Continuation *l
 
 Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continuation *lw,
                                                      Scheme_Object *result,
-                                                     int result_is_rs_argv) 
+                                                     int result_is_rs_argv,
+                                                     intptr_t min_stacksize) 
   XFORM_SKIP_PROC
 {
   intptr_t len, cm_len, cm_pos_delta, cm_delta, i, cm;
@@ -8621,12 +8623,19 @@ Scheme_Object *scheme_apply_lightweight_continuation(Scheme_Lightweight_Continua
 
   len = lw->saved_lwc->runstack_start - lw->saved_lwc->runstack_end;
  
-  if (!scheme_check_runstack(len)) {
+  if (!scheme_check_runstack(len)
+      /* besides making sure that the save slice fits, we need to
+         make sure that any advance check on available from the old thread
+         still applies in the new thread */
+      || ((MZ_RUNSTACK - MZ_RUNSTACK_START) < min_stacksize)) {
     /* This will not happen when restoring a future-thread-captured
        continuation in a future thread. */
     scheme_current_thread->ku.k.p1 = lw;
     scheme_current_thread->ku.k.p2 = result;
     scheme_current_thread->ku.k.i1 = result_is_rs_argv;
+    scheme_current_thread->ku.k.i2 = min_stacksize;
+    if (len < min_stacksize)
+      len = min_stacksize;
     return (Scheme_Object *)scheme_enlarge_runstack(len, apply_lwc_k);
   }
 

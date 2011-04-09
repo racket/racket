@@ -50,8 +50,13 @@ typedef struct future_t {
 
   int id;
   int thread_short_id;
+
+  /* The status field is the main locking mechanism. It
+     should only be read and written when holding a lock
+     (and all associated fields for a status should be 
+     set at the same time). */
   int status;
-  int work_completed;
+
   mzrt_sema *can_continue_sema;
 
   Scheme_Object *orig_lambda;
@@ -62,6 +67,7 @@ typedef struct future_t {
 
   /* Runtime call stuff */
   int want_lw; /* flag to indicate waiting for lw capture */
+  int in_touch_queue; /* flag to indicate waiting for lw capture */
   int rt_prim_is_atomic;
   double time_of_request;
   const char *source_of_request;
@@ -120,9 +126,12 @@ typedef struct future_t {
 
   struct future_t *next_waiting_atomic;
   struct future_t *next_waiting_lwc;
+  struct future_t *next_waiting_touch;
 
   struct future_t *prev_in_fsema_queue;
   struct future_t *next_in_fsema_queue;
+
+  Scheme_Object *touching; /* a list of weak pointers to futures touching this one */
 } future_t;
 
 typedef struct fsemaphore_t {
