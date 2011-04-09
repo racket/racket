@@ -60,6 +60,8 @@
 
   (define-for-syntax (stepper-hide-operator stx)
     (stepper-syntax-property stx 'stepper-skipto (append skipto/cdr skipto/second)))
+  (define-for-syntax (stepper-add-lazy-op-prop stx)
+    (stepper-syntax-property stx 'lazy-op #t))
   
   (define-syntax (hidden-car stx)
     (syntax-case stx ()
@@ -72,6 +74,10 @@
   (define-syntax (hidden-! stx)
     (syntax-case stx ()
       [(_ arg) (stepper-hide-operator (syntax/loc stx (! arg)))]))
+  
+  (define-syntax (mark-as-lazy-op stx)
+    (syntax-case stx ()
+      [(_ arg) (stepper-add-lazy-op-prop (syntax/loc stx arg))]))
     
   (define-syntax (hidden-~ stx)
     (syntax-case stx ()
@@ -275,7 +281,7 @@
                  ;; #,($$ #`(if (lazy? p) lazy strict))
                  (if (lazy? p) lazy strict))))))]))
 
-  (defsubst (!app   f x ...) (!*app (hidden-! f) x ...))
+  (defsubst (!app   f x ...) (!*app (hidden-! (mark-as-lazy-op f)) x ...))
   (defsubst (~!*app f x ...) (hidden-~ (!*app f x ...)))
   (defsubst (~!app  f x ...) (hidden-~ (!app f x ...)))
 

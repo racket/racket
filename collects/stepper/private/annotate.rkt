@@ -811,9 +811,12 @@
              [varref-no-break-wrap
               (lambda ()
                 (outer-wcm-wrap (make-debug-info-normal free-varrefs) var))]
+             [base-namespace-symbols (namespace-mapped-symbols (make-base-namespace))]
              [top-level-varref-break-wrap
               (lambda ()
-                (if (memq (syntax-e var) beginner-defined:must-reduce)
+                (if (or (memq (syntax-e var) beginner-defined:must-reduce)
+                        (and (stepper-syntax-property var 'lazy-op)
+                             (not (memq (syntax->datum var) base-namespace-symbols))))
                     (varref-break-wrap)
                     (varref-no-break-wrap)))])
           (vector 
