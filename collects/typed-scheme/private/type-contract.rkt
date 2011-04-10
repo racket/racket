@@ -14,7 +14,7 @@
  (private parse-type)
  racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base scheme/contract racket/contract/parametric (utils any-wrap)
+ (for-template scheme/base racket/contract (utils any-wrap)
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
@@ -207,7 +207,7 @@
                (with-syntax ([(v ...) (generate-temporaries vs-nm)])
                  (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
                                               (vars))])
-                   #`(parametric/c (v ...) #,(t->c b))))))]
+                   #`(parametric->/c (v ...) #,(t->c b))))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])

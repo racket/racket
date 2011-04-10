@@ -7,9 +7,11 @@
          "contract/private/legacy.rkt"
          "contract/private/ds.rkt"
          "contract/private/opt.rkt"
+         "contract/private/parametric.rkt"
          "private/define-struct.rkt")
 
 (provide (all-from-out "contract/base.rkt")
+         (all-from-out "contract/private/parametric.rkt")
          (except-out (all-from-out racket/contract/exists) ∀∃?)
          (all-from-out racket/contract/regions)
 

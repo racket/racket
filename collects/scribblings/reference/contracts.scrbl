@@ -1,12 +1,11 @@
 #lang scribble/doc
 @(require "mz.rkt")
-@(require (for-label syntax/modcollapse
-                     racket/contract/parametric))
+@(require (for-label syntax/modcollapse))
 
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/contract/parametric))
+       (the-eval '(require racket/contract))
        the-eval)))
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
@@ -789,25 +788,24 @@ be blamed using the above contract:
 
 @subsection[#:tag "parametric-contracts"]{Parametric Contracts}
 
-@defmodule[racket/contract/parametric]
-
-@defform[(parametric/c (x ...) c)]{
+@defform[(parametric->/c (x ...) c)]{
 
 Creates a contract for parametric polymorphic functions.  Each function is
 protected by @racket[c], where each @racket[x] is bound in @racket[c] and refers
 to a polymorphic type that is instantiated each time the function is applied.
 
-At each application of a function, the @racket[parametric/c] contract constructs
+At each application of a function, the @racket[parametric->/c] contract constructs
 a new opaque wrapper for each @racket[x]; values flowing into the polymorphic
 function (i.e. values protected by some @racket[x] in negative position with
-respect to @racket[parametric/c]) are wrapped in the corresponding opaque
+respect to @racket[parametric->/c]) are wrapped in the corresponding opaque
 wrapper.  Values flowing out of the polymorphic function (i.e. values protected
-by some @racket[x] in positive position with respect to @racket[parametric/c])
+by some @racket[x] in positive position with respect to @racket[parametric->/c])
 are checked for the appropriate wrapper.  If they have it, they are unwrapped;
-if they do not, a contract violation is signalled.
+if they do not, a contract violation is signaled.
 
 @examples[#:eval (contract-eval)
-(define/contract (check x y) (parametric/c [X] (boolean? X . -> . X))
+(define/contract (check x y) 
+  (parametric->/c [X] (boolean? X . -> . X))
   (if (or (not x) (equal? y 'surprise))
       'invalid
       y))

@@ -1,13 +1,24 @@
 #lang racket/base
-(require racket/bool
-         racket/contract)
-(provide parametric/c)
+(require "guts.rkt"
+         "prop.rkt"
+         "blame.rkt"
+         (for-syntax racket/base))
+(provide parametric->/c)
 
-(define-syntax-rule (parametric/c [x ...] c)
-  (make-polymorphic-contract 'parametric/c
-                             opaque/c
-                             '(x ...)
-                             (lambda (x ...) c)))
+(define-syntax (parametric->/c stx)
+  (syntax-case stx ()
+    [(_ [x ...] c)
+     (begin
+       (for ([x (in-list (syntax->list #'(x ...)))])
+         (unless (identifier? x)
+           (raise-syntax-error 'parametric->/c 
+                               "expected an identifier"
+                               stx
+                               x)))
+       #'(make-polymorphic-contract 'parametric->/c
+                                    opaque/c
+                                    '(x ...)
+                                    (lambda (x ...) c)))]))
 
 (define-struct polymorphic-contract [title barrier vars body]
   #:property prop:contract
@@ -63,7 +74,7 @@
    #:projection
    (lambda (c)
      (lambda (b)
-       (if (boolean=? (blame-original? b) (barrier-contract-positive? c))
+       (if (equal? (blame-original? b) (barrier-contract-positive? c))
          (lambda (x)
            ((barrier-contract-make c) x))
          (lambda (x)
