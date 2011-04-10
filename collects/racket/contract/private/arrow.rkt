@@ -19,12 +19,10 @@ v4 todo:
 |#
 
 (require "guts.rkt"
-         "opt.rkt"
          "blame.rkt"
          "prop.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
-         (for-syntax "opt-guts.rkt")
          (for-syntax "helpers.rkt")
          (for-syntax syntax/stx)
          (for-syntax syntax/name)
@@ -632,147 +630,6 @@ v4 todo:
   
 (define-syntax (-> stx) 
   #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx)))
-
-;;
-;; arrow opter
-;;
-(define/opter (-> opt/i opt/info stx)
-  (define (opt/arrow-ctc doms rngs)
-    (let*-values ([(dom-vars rng-vars) (values (generate-temporaries doms)
-                                               (generate-temporaries rngs))]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom)
-                   (let loop ([vars dom-vars]
-                              [doms doms]
-                              [next-doms null]
-                              [lifts-doms null]
-                              [superlifts-doms null]
-                              [partials-doms null]
-                              [stronger-ribs null])
-                     (cond
-                       [(null? doms) (values (reverse next-doms)
-                                             lifts-doms
-                                             superlifts-doms
-                                             partials-doms
-                                             stronger-ribs)]
-                       [else
-                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs)
-                                      (opt/i (opt/info-swap-blame opt/info) (car doms))])
-                          (loop (cdr vars)
-                                (cdr doms)
-                                (cons (with-syntax ((next next)
-                                                    (car-vars (car vars)))
-                                        (syntax (let ((val car-vars)) next)))
-                                      next-doms)
-                                (append lifts-doms lift)
-                                (append superlifts-doms superlift)
-                                (append partials-doms partial)
-                                (append this-stronger-ribs stronger-ribs)))]))]
-                  [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng)
-                   (let loop ([vars rng-vars]
-                              [rngs rngs]
-                              [next-rngs null]
-                              [lifts-rngs null]
-                              [superlifts-rngs null]
-                              [partials-rngs null]
-                              [stronger-ribs null])
-                     (cond
-                       [(null? rngs) (values (reverse next-rngs)
-                                             lifts-rngs
-                                             superlifts-rngs
-                                             partials-rngs
-                                             stronger-ribs)]
-                       [else
-                        (let-values ([(next lift superlift partial _ __ this-stronger-ribs)
-                                      (opt/i opt/info (car rngs))])
-                          (loop (cdr vars)
-                                (cdr rngs)
-                                (cons (with-syntax ((next next)
-                                                    (car-vars (car vars)))
-                                        (syntax (let ((val car-vars)) next)))
-                                      next-rngs)
-                                (append lifts-rngs lift)
-                                (append superlifts-rngs superlift)
-                                (append partials-rngs partial)
-                                (append this-stronger-ribs stronger-ribs)))]))])
-      (values
-       (with-syntax ((blame (opt/info-blame opt/info))
-                     ((dom-arg ...) dom-vars)
-                     ((rng-arg ...) rng-vars)
-                     ((next-dom ...) next-doms)
-                     (dom-len (length dom-vars))
-                     ((next-rng ...) next-rngs))
-         (syntax (begin
-                   (check-procedure val #f dom-len 0 '() '() #| keywords |# blame)
-                   (λ (dom-arg ...)
-                     (let-values ([(rng-arg ...) (val next-dom ...)])
-                       (values next-rng ...))))))
-       (append lifts-doms lifts-rngs)
-       (append superlifts-doms superlifts-rngs)
-       (append partials-doms partials-rngs)
-       #f
-       #f
-       (append stronger-ribs-dom stronger-ribs-rng))))
-  
-  (define (opt/arrow-any-ctc doms)
-    (let*-values ([(dom-vars) (generate-temporaries doms)]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom)
-                   (let loop ([vars dom-vars]
-                              [doms doms]
-                              [next-doms null]
-                              [lifts-doms null]
-                              [superlifts-doms null]
-                              [partials-doms null]
-                              [stronger-ribs null])
-                     (cond
-                       [(null? doms) (values (reverse next-doms)
-                                             lifts-doms
-                                             superlifts-doms
-                                             partials-doms
-                                             stronger-ribs)]
-                       [else
-                        (let-values ([(next lift superlift partial flat _ this-stronger-ribs)
-                                      (opt/i (opt/info-swap-blame opt/info) (car doms))])
-                          (loop (cdr vars)
-                                (cdr doms)
-                                (cons (with-syntax ((next next)
-                                                    (car-vars (car vars)))
-                                        (syntax (let ((val car-vars)) next)))
-                                      next-doms)
-                                (append lifts-doms lift)
-                                (append superlifts-doms superlift)
-                                (append partials-doms partial)
-                                (append this-stronger-ribs stronger-ribs)))]))])
-      (values
-       (with-syntax ((blame (opt/info-blame opt/info))
-                     ((dom-arg ...) dom-vars)
-                     ((next-dom ...) next-doms)
-                     (dom-len (length dom-vars)))
-         (syntax (begin
-                   (check-procedure val #f dom-len 0 '() '() #|keywords|# blame)
-                   (λ (dom-arg ...)
-                     (val next-dom ...)))))
-       lifts-doms
-       superlifts-doms
-       partials-doms
-       #f
-       #f
-       stronger-ribs-dom)))
-  
-  (syntax-case* stx (-> values any) module-or-top-identifier=?
-    [(-> dom ... (values rng ...))
-     (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
-         (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (opt/arrow-ctc (syntax->list (syntax (dom ...)))
-                        (syntax->list (syntax (rng ...)))))]
-    [(-> dom ... any)
-     (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
-         (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (opt/arrow-any-ctc (syntax->list (syntax (dom ...)))))]
-    [(-> dom ... rng)
-     (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
-         (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (opt/arrow-ctc (syntax->list (syntax (dom ...)))
-                        (list #'rng)))]))
 
 
 

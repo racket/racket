@@ -14,7 +14,9 @@
          "private/provide.rkt"
          "private/guts.rkt"
          "private/blame.rkt"
-         "private/prop.rkt")
+         "private/prop.rkt"
+         "private/opters.rkt" ;; required for effect to install the opters
+         "private/opt.rkt")
 
 (provide
  (except-out (all-from-out "private/arrow.rkt")
@@ -38,4 +40,7 @@
              check-flat-named-contract)
  
  (except-out (all-from-out "private/blame.rkt") make-blame)
- (all-from-out "private/prop.rkt"))
+ (all-from-out "private/prop.rkt")
+ 
+ opt/c define-opt/c ;(all-from-out "private/opt.rkt")
+ )

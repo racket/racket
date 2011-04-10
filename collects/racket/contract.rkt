@@ -6,7 +6,6 @@
          "contract/base.rkt"
          "contract/private/legacy.rkt"
          "contract/private/ds.rkt"
-         "contract/private/opt.rkt"
          "contract/private/parametric.rkt"
          "private/define-struct.rkt")
 
@@ -16,7 +15,6 @@
          (all-from-out racket/contract/regions)
 
          (all-from-out "contract/private/legacy.rkt")
-         opt/c define-opt/c ;(all-from-out "private/opt.rkt")
          (except-out (all-from-out "contract/private/ds.rkt")
                      lazy-depth-to-look))
 
