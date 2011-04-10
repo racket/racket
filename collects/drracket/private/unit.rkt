@@ -3722,21 +3722,34 @@ module browser threading seems wrong.
               (string-constant module-browser...)
               language-specific-menu
               (λ (x y) (drracket:module-overview:module-overview this)))
-            (new menu:can-restore-menu-item%
-                 [label (format (string-constant module-browser-in-file) 
-                                (send definitions-text get-filename))]
-                 [parent language-specific-menu]
-                 [demand-callback (λ (i) 
-                                    (define fn (send definitions-text get-filename))
-                                    (send i set-label 
-                                          (if fn
-                                              (format (string-constant module-browser-in-file) fn)
-                                              (string-constant module-browser-no-file)))
-                                    (send i enable fn))]
-                 [callback (λ (x y) 
-                             (define fn (send definitions-text get-filename))
-                             (when fn
-                               (drracket:module-overview:module-overview/file fn this)))])
+            (let ()
+              (define base-title (format (string-constant module-browser-in-file) ""))
+              (define (update-menu-item i)
+                (define fn (send definitions-text get-filename))
+                (send i set-label 
+                      (if fn
+                          (let* ([str (path->string fn)]
+                                 [overage (- 200 
+                                             (+ (string-length str)
+                                                (string-length base-title)))])
+                            (format (string-constant module-browser-in-file)
+                                    (if (overage . >= . 0)
+                                        str
+                                        (string-append "..."
+                                                       (substring str
+                                                                  (+ (- (string-length str) (abs overage)) 3)
+                                                                  (string-length str))))))
+                          (string-constant module-browser-no-file)))
+                (send i enable fn))
+              (define i (new menu:can-restore-menu-item%
+                             [label base-title]
+                             [parent language-specific-menu]
+                             [demand-callback update-menu-item]
+                             [callback (λ (x y) 
+                                         (define fn (send definitions-text get-filename))
+                                         (when fn
+                                           (drracket:module-overview:module-overview/file fn this)))]))
+              (update-menu-item i))
             (make-object separator-menu-item% language-specific-menu)
             
             (let ([cap-val
