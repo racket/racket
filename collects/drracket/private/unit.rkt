@@ -1422,7 +1422,19 @@ module browser threading seems wrong.
                         (λ (l) (remq execute-warning-panel l)))
                  (send execute-warning-canvas set-message #f))])))
 
-        (define/public (show-line-numbers! show)
+        
+        ;; bind the proc to a field
+        ;; so it stays alive as long 
+        ;; as the frame stays alive
+        (define show-line-numbers-pref-fn
+          (let ([fn (lambda (pref value) (show-line-numbers! value))])
+            (preferences:add-callback
+             'drracket:show-line-numbers?
+             fn
+             #t)
+            fn))
+        
+        (define/private (show-line-numbers! show)
           (for ([tab tabs])
             (define text (send tab get-defs))
             (send text show-line-numbers! show))

@@ -338,15 +338,7 @@
    (λ (editor-panel)
      (make-check-box 'drracket:show-line-numbers?
                      (string-constant show-line-numbers)
-                     editor-panel
-                     (lambda (value)
-                       (define (drracket:frame? frame)
-                         (and (is-a? frame top-level-window<%>)
-                              (is-a? frame drracket:unit:frame%)))
-                       ;; is it a hack to use `get-top-level-windows' ?
-                       (define frames (filter drracket:frame? (get-top-level-windows)))
-                       (when (not (null? frames))
-                         (send (car frames) show-line-numbers! value))))
+                     editor-panel)
      
      ;; come back to this one.
      #;
