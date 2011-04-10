@@ -1044,22 +1044,16 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
   }
 
   if (!new_mpage->size) {
-    /* To avoid roundoff problems, the JIT needs the
-       result to be not a multiple of THREAD_LOCAL_PAGE_SIZE,
-       it it needs any pointer position produced by
-       allocation not to land at the end of the allocated
-       region. */
-    int bad;
+     /* To avoid roundoff problems, the JIT needs the
+        result to be not a multiple of THREAD_LOCAL_PAGE_SIZE,
+        so add a prefix if alignment didn't force one. */
 #if defined(GC_ALIGN_SIXTEEN)
-    bad = !(new_mpage->size & (16 - 1));
+    new_mpage->size = 16;
 #elif defined(GC_ALIGN_EIGHT)
-    bad = !(new_mpage->size & (8 - 1));
+    new_mpage->size = 8;
 #else
-    bad = 1;
+    new_mpage->size = WORD_SIZE;
 #endif
-    if (bad) {
-      fprintf(stderr, "invalid alignment configuration: %ld\n", new_mpage->size);
-    }
   }
   if (sz) 
     *sz = size - new_mpage->size;
