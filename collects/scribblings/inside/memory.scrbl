@@ -663,6 +663,22 @@ Like @cpp{scheme_malloc}, but in 3m, the object never moves, and pointers are al
 Like @cpp{scheme_malloc_atomic}, but in 3m, the object never moves, and pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
+@function[(void* scheme_malloc_stubborn
+           [size_t n])]{
+
+An obsolete variant of @cpp{scheme_malloc}, where
+ @cpp{scheme_end_stubborn_change} can be called on the allocated
+ pointer when no further changes will be made to the allocated
+ memory. Stubborn allocation is potentially useful as a hint for
+ generational collection, but the hint is normally ignored and unlikely
+ to be used more in future version.}
+
+@function[(void* scheme_end_stubborn_change
+           [void* p])]{
+
+Declares the end of changes to the memory at @var{p} as allocated via
+@cpp{scheme_malloc_stubborn}.}
+
 @function[(char* scheme_strdup
            [char* str])]{
 
