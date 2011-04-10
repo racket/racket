@@ -153,6 +153,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_checked_cadr scheme_checked_cadr
 # define ts_scheme_checked_cdar scheme_checked_cdar
 # define ts_scheme_checked_cddr scheme_checked_cddr
+# define ts_scheme_checked_length scheme_checked_length
 # define ts_scheme_checked_mcar scheme_checked_mcar
 # define ts_scheme_checked_mcdr scheme_checked_mcdr
 # define ts_scheme_checked_set_mcar scheme_checked_set_mcar

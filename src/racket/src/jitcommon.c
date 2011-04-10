@@ -1900,7 +1900,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
 
     if (!i)
-      jit_movi_p(JIT_R0, scheme_true);
+      (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);
 
     __START_SHORT_JUMPS__(1);
@@ -1933,7 +1933,7 @@ static int common7(mz_jit_state *jitter, void *_data)
       mz_epilog_without_jmp();
       jit_jmpr(JIT_V1);
     } else {
-      jit_movi_p(JIT_R0, scheme_false);
+      (void)jit_movi_p(JIT_R0, scheme_false);
       mz_epilog(JIT_R2);
     }
 
