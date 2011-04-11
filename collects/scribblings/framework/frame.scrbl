@@ -56,7 +56,7 @@
 
     Calls @scheme[make-object] with @scheme[class] and @scheme[parent].
   }
-  @defmethod*[(((close) void))]{
+  @defmethod*[(((close) void?))]{
     This method closes the frame by calling the
     @method[top-level-window<%> can-close?],
     @method[top-level-window<%> on-close], and
@@ -91,7 +91,7 @@
     If @scheme[temp] is a box, it is filled with @scheme[#t] or @scheme[#f],
     depending if the filename is a temporary filename.
   }
-  @defmethod*[(((make-visible (filename string)) void))]{
+  @defmethod*[(((make-visible (filename string)) void?))]{
     Makes the file named by @scheme[filename] visible (intended for
     use with tabbed editing).
 
@@ -122,7 +122,7 @@
   
   See also
   @scheme[frame:reorder-menus].
-  @defmethod*[#:mode override (((show (on? boolean?)) void))]{
+  @defmethod*[#:mode override (((show (on? boolean?)) void?))]{
 
     Calls the super method.
 
@@ -148,7 +148,7 @@
     @scheme[exit:set-exiting]
     with @scheme[#f].
   }
-  @defmethod*[#:mode override (((on-exit) void))]{
+  @defmethod*[#:mode override (((on-exit) void?))]{
 
     Together with
     @method[frame:basic-mixin can-exit?]
@@ -165,7 +165,7 @@
     to reset that flag to
     @scheme[#f].
   }
-  @defmethod*[#:mode override (((on-superwindow-show (shown? any/c)) void))]{
+  @defmethod*[#:mode override (((on-superwindow-show (shown? any/c)) void?))]{
 
     Notifies the result of (@scheme[group:get-the-frame-group]) that a frame has been shown, by calling
     the
@@ -173,13 +173,13 @@
     method.
 
   }
-  @defmethod*[#:mode override (((on-drop-file (pathname string)) void))]{
+  @defmethod*[#:mode override (((on-drop-file (pathname string)) void?))]{
 
     Calls 
     @scheme[handler:edit-file]
     with @scheme[pathname] as an argument.
   }
-  @defmethod*[#:mode override (((after-new-child) void))]{
+  @defmethod*[#:mode override (((after-new-child) void?))]{
 
     Raises an exception if attempting to add a child to this frame (except if using the
     @method[frame:basic<%> make-root-area-container]
@@ -206,7 +206,7 @@
     @scheme[frame:setup-size-pref].
 
   }
-  @defmethod*[#:mode override (((on-size (width number) (height number)) void))]{
+  @defmethod*[#:mode override (((on-size (width number) (height number)) void?))]{
 
     Updates the preferences, according to the width and
     height. The preferences key is the one passed
@@ -242,7 +242,7 @@
     If any of those conditions hold, the 
     method returns @scheme[#t].
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     First calls the inner method.
     Next, calls the
@@ -257,7 +257,7 @@
     frames open, it calls
     @scheme[exit:exit].
   }
-  @defmethod*[#:mode override (((on-activate (on? boolean?)) void))]{
+  @defmethod*[#:mode override (((on-activate (on? boolean?)) void?))]{
 
     Calls
     @method[group:% set-active-frame]
@@ -290,7 +290,7 @@
   opening too many status lines and avoids
   flashing the status lines open and closed too
   often.
-  @defmethod*[(((open-status-line (id symbol?)) void))]{
+  @defmethod*[(((open-status-line (id symbol?)) void?))]{
     Creates a new status line identified by the symbol
     argument. The line will not appear in the frame until a
     message is put into it, via
@@ -298,11 +298,11 @@
 
 
   }
-  @defmethod*[(((close-status-line (id symbol?)) void))]{
+  @defmethod*[(((close-status-line (id symbol?)) void?))]{
     Closes the status line @scheme[id].
 
   }
-  @defmethod*[(((update-status-line (id symbol?) (status (or/c #f string))) void))]{
+  @defmethod*[(((update-status-line (id symbol?) (status (or/c #f string))) void?))]{
     Updates the status line named by @scheme[id] with
     @scheme[status]. If @scheme[status] is @scheme[#f], the status
     line is becomes blank (and may be used by other ids).
@@ -333,7 +333,7 @@
     It is used to calculate the sizes of the edits in the status line.
 
   }
-  @defmethod*[(((lock-status-changed) void))]{
+  @defmethod*[(((lock-status-changed) void?))]{
     This method is called when the lock status of the
     @scheme[editor<%>]
     changes.
@@ -341,11 +341,11 @@
 
     Updates the lock icon in the status line panel.
   }
-  @defmethod*[(((update-info) void))]{
+  @defmethod*[(((update-info) void?))]{
     This method updates all of the information in the panel.
 
   }
-  @defmethod*[(((set-info-canvas (canvas (instance canvas:basic%))) void))]{
+  @defmethod*[(((set-info-canvas (canvas (instance canvas:basic%))) void?))]{
     Sets this canvas to be the canvas that the info frame shows info about. The
     @method[canvas:info-mixin% on-focus]
     and
@@ -373,14 +373,14 @@
     is displayed.
 
   }
-  @defmethod*[(((show-info) void))]{
+  @defmethod*[(((show-info) void?))]{
     Shows the info panel. 
 
     See also
     @method[frame:info<%> is-info-hidden?].
 
   }
-  @defmethod*[(((hide-info) void))]{
+  @defmethod*[(((hide-info) void?))]{
     Hides the info panel.
 
     See also
@@ -407,7 +407,7 @@
 
     Builds an extra panel for displaying various information.
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     Removes the GC icon with
     @scheme[unregister-collecting-blit]
@@ -419,44 +419,43 @@
   constructed with
   @scheme[editor:info-mixin]
   and display it.
-  @defmethod*[(((set-macro-recording (on? boolean?)) void))]{
+  @defmethod*[(((set-macro-recording (on? boolean?)) void?))]{
     Shows/hides the icon in the info bar that indicates if a
     macro recording is in progress.
 
   }
-  @defmethod*[(((overwrite-status-changed) void))]{
+  @defmethod*[(((overwrite-status-changed) void?))]{
     This method is called when the overwrite mode is turned either on or off in the 
     @scheme[editor<%>]
     in this frame.
-
-
-
   }
-  @defmethod*[(((anchor-status-changed) void))]{
+  @defmethod*[(((anchor-status-changed) void?))]{
     This method is called when the anchor is turned either on or off in the 
     @scheme[editor<%>]
     in this frame.
-
-
   }
-  @defmethod*[(((editor-position-changed) void))]{
+  @defmethod*[(((editor-position-changed) void?))]{
     This method is called when the position in the 
     @scheme[editor<%>]
     changes.
-
-
+  }
+  @defmethod[(add-line-number-menu-items [menu (is-a?/c menu-item-container<%>)]) void?]{
+    This method is called when the line/column display in the info bar is clicked.
+    It is passed a @racket[menu-item-container<%>] that can be filled in with
+    menu items; those menu items will appear in the menu that appears when line/colun
+    display is clicked.
   }
 }
 @defmixin[frame:text-info-mixin (frame:info<%>) (frame:text-info<%>)]{
   This mixin adds status information to the info panel relating to an
   edit.
 
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     removes a preferences callback for @scheme['framework:line-offsets].
     See @scheme[preferences:add-callback] for more information.
   }
-  @defmethod*[#:mode override (((update-info) void))]{
+  @defmethod*[#:mode override (((update-info) void?))]{
 
     Calls
     @method[frame:text-info<%> overwrite-status-changed],
@@ -476,7 +475,7 @@
 @defmixin[frame:standard-menus-mixin (frame:basic<%>) (frame:standard-menus<%>)]{
   The result of this mixin implements
   @scheme[frame:standard-menus<%>].
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
     Removes the preferences callbacks for the menu items
   }
 }
@@ -494,7 +493,7 @@
     This returns the prefix for the frame's label.
 
   }
-  @defmethod*[(((set-label-prefix (prefix string)) void))]{
+  @defmethod*[(((set-label-prefix (prefix string)) void?))]{
     Sets the prefix for the label of the frame.
 
   }
@@ -547,7 +546,7 @@
     Calls @scheme[(make-object @#,method[frame:editor<%> get-editor%])].
 
   }
-  @defmethod*[(((revert) void))]{
+  @defmethod*[(((revert) void?))]{
 
     Loads the most recently saved version of the file to the disk. If the 
     @scheme[editor<%>]
@@ -608,13 +607,13 @@
     Returns @scheme[#t] if the filename is the file that this
     frame is editing.
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     Calls the 
     @scheme[editor:basic<%>]'s method
     @method[editor:basic<%> on-close].
   }
-  @defmethod*[#:mode augment (((can-close?) void))]{
+  @defmethod*[#:mode augment (((can-close?) void?))]{
 
     Calls the 
     @scheme[editor:basic<%>]'s method
@@ -625,23 +624,23 @@
     Returns the portion of the label after the hyphen. See also
     @method[frame:editor<%> get-entire-label].
   }
-  @defmethod*[#:mode override (((set-label (label string?)) void))]{
+  @defmethod*[#:mode override (((set-label (label string?)) void?))]{
 
     Sets the label, but preserves the label's prefix. See also
     @method[frame:editor<%> set-label-prefix].
   }
-  @defmethod*[#:mode override (((file-menu:open-callback (item any) (evt mouse-event)) void))]{
+  @defmethod*[#:mode override (((file-menu:open-callback (item any) (evt mouse-event)) void?))]{
 
     Calls
     @scheme[handler:open-file]
     with the directory of the saved file associated with this editor
     (if any).
   }
-  @defmethod*[#:mode override (((file-menu:revert-on-demand) void))]{
+  @defmethod*[#:mode override (((file-menu:revert-on-demand) void?))]{
 
     Disables the menu item when the editor is locked.
   }
-  @defmethod*[#:mode override (((file-menu:revert-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((file-menu:revert-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Informs the user that this action is not undoable and, 
     if they still want to continue, calls
@@ -651,7 +650,7 @@
 
     returns #t
   }
-  @defmethod*[#:mode override (((file-menu:save-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((file-menu:save-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Saves the file in the editor.
   }
@@ -659,7 +658,7 @@
 
     returns #t
   }
-  @defmethod*[#:mode override (((file-menu:save-as-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((file-menu:save-as-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Prompts the user for a file name and uses that filename to save the buffer. 
     Calls
@@ -670,7 +669,7 @@
 
     returns #t
   }
-  @defmethod*[#:mode override (((file-menu:print-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((file-menu:print-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Calls the
     @method[editor<%> print]
@@ -686,18 +685,18 @@
 
     returns #t
   }
-  @defmethod*[#:mode override (((file-menu:between-save-as-and-print (file-menu (is-a?/c menu%))) void))]{
+  @defmethod*[#:mode override (((file-menu:between-save-as-and-print (file-menu (is-a?/c menu%))) void?))]{
 
     Creates a Print Setup menu item.
   }
-  @defmethod*[#:mode override (((edit-menu:between-select-all-and-find (edit-menu (instance menu%))) void))]{
+  @defmethod*[#:mode override (((edit-menu:between-select-all-and-find (edit-menu (instance menu%))) void?))]{
 
     Adds a menu item for toggling
     @method[editor<%> auto-wrap]
     in the focused text.
 
   }
-  @defmethod*[#:mode override (((help-menu:about-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((help-menu:about-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Calls
     @scheme[message-box]
@@ -737,7 +736,7 @@
     Defaultly returns the result of
     @method[frame:editor<%> get-editor].
   }
-  @defmethod*[(((open-here (filename string)) void))]{
+  @defmethod*[(((open-here (filename string)) void?))]{
 
     Opens @scheme[filename] in the current frame, possibly
     prompting the user about saving a file (in which case the
@@ -747,12 +746,12 @@
 @defmixin[frame:open-here-mixin (frame:editor<%>) (frame:open-here<%>)]{
   Provides an implementation of
   @scheme[frame:open-here<%>]
-  @defmethod*[#:mode override (((file-menu:new-on-demand (item (is-a?/c menu-item%))) void))]{
+  @defmethod*[#:mode override (((file-menu:new-on-demand (item (is-a?/c menu-item%))) void?))]{
 
     Sets the label of @scheme[item] to 
     @scheme["New..."] if the preference @scheme['framework:open-here?] is set. 
   }
-  @defmethod*[#:mode override (((file-menu:new-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
+  @defmethod*[#:mode override (((file-menu:new-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void?))]{
 
     When the preference @scheme['framework:open-here?]
     preference is set, this method prompts the user, asking if
@@ -760,12 +759,12 @@
     this one. If they clear it out and the file hasn't been
     saved, they are asked about saving.
   }
-  @defmethod*[#:mode override (((file-menu:open-on-demand (item (is-a?/c menu-item%))) void))]{
+  @defmethod*[#:mode override (((file-menu:open-on-demand (item (is-a?/c menu-item%))) void?))]{
 
     Sets the label of @scheme[item] to 
     "Open Here..." if the preference @scheme['framework:open-here?] is set. 
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     Calls 
     @method[group:% set-open-here-frame]
@@ -774,7 +773,7 @@
     @method[group:% get-open-here-frame]
     is @scheme[eq?] to @scheme[this].
   }
-  @defmethod*[#:mode override (((on-activate (on? boolean?)) void))]{
+  @defmethod*[#:mode override (((on-activate (on? boolean?)) void?))]{
 
     When @scheme[on?] is @scheme[#t], calls
     @method[group:% set-open-here-frame]
@@ -833,7 +832,7 @@
     @scheme[#f] if it isn't.
 
   }
-  @defmethod*[(((hide-delegated-text) void))]{
+  @defmethod*[(((hide-delegated-text) void?))]{
     Hides the delegated text.
 
     When the delegated text is hidden, it is not being
@@ -846,7 +845,7 @@
     @method[frame:delegate<%> show-delegated-text]
 
   }
-  @defmethod*[(((show-delegated-text) void))]{
+  @defmethod*[(((show-delegated-text) void?))]{
     Makes the delegated text visible.
 
     When the delegated text is shown, the
@@ -859,7 +858,7 @@
     @method[frame:delegate<%> hide-delegated-text].
 
   }
-  @defmethod*[(((delegate-moved) void))]{
+  @defmethod*[(((delegate-moved) void?))]{
     This method is called when the visible region of the
     delegate editor changes, so that the blue region in the
     delegatee is updated.
@@ -980,7 +979,7 @@
   @defmethod*[#:mode override (((edit-menu:replace-all-callback) boolean?))]{
     Calls @method[frame:searchable<%> replace-all].
   }
-  @defmethod*[#:mode override (((edit-menu:replace-all-on-demand (item menu-item%)) void))]{
+  @defmethod*[#:mode override (((edit-menu:replace-all-on-demand (item menu-item%)) void?))]{
 
     Disables @scheme[item] when
     @method[frame:searchable<%> search-hidden?]
@@ -996,7 +995,7 @@
      and sets the @scheme['framework:case-sensitive-search?] preference
      for later frames.
   }
-  @defmethod*[#:mode override (((edit-menu:find-case-sensitive-on-demand (item menu-item%)) void))]{
+  @defmethod*[#:mode override (((edit-menu:find-case-sensitive-on-demand (item menu-item%)) void?))]{
 
     Checks @scheme[item] when searching is case-sensitive and unchecks
     it otherwise.
@@ -1010,7 +1009,7 @@
 
     Builds a panel for the searching information.
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     Cleans up after the searching frame.
   }

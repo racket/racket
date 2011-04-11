@@ -470,6 +470,7 @@ please adhere to these guidelines:
  (show-line-numbers "Show line numbers")
  (show-line-numbers/menu "Show Line &Numbers")  ;; just like the above, but capitalized for appearance in a menu item
  (hide-line-numbers/menu "Hide Line &Numbers")
+ (show-line-numbers-in-definitions "Show All Line Numbers in Definitions") ;; shows up in the popup menu item in the bottom of the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"

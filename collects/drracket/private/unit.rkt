@@ -1434,6 +1434,17 @@ module browser threading seems wrong.
              #t)
             fn))
         
+        (define/override (add-line-number-menu-items menu)
+          (define on? (preferences:get 'drracket:show-line-numbers?))
+          (new checkable-menu-item% 
+               [label (string-constant show-line-numbers-in-definitions)]
+               [parent menu]
+               [checked on?]
+               [callback
+                (λ (c dc)
+                  (preferences:set 'drracket:show-line-numbers? (not on?)))])
+          (super add-line-number-menu-items menu))
+        
         (define/private (show-line-numbers! show)
           (for ([tab tabs])
             (define text (send tab get-defs))

@@ -786,7 +786,8 @@
                        set-macro-recording
                        overwrite-status-changed
                        anchor-status-changed
-                       editor-position-changed))
+                       editor-position-changed
+                       add-line-number-menu-items))
 (define text-info-mixin
   (mixin (info<%>) (text-info<%>)
     (inherit get-info-editor)
@@ -917,27 +918,31 @@
       (editor-position-changed-offset/numbers
        (preferences:get 'framework:col-offsets)
        (preferences:get 'framework:display-line-numbers)))
-    [define/public overwrite-status-changed
-      (λ ()
-        (let ([info-edit (get-info-editor)]
-              [failed
-               (λ ()
-                 (set! overwrite-last-state? #f)
-                 (send overwrite-message show #f))])
-          (cond
-            [info-edit
-             (let ([overwrite-now? (send info-edit get-overwrite-mode)])
-               (unless (eq? overwrite-now? overwrite-last-state?)
-                 (cond
-                   [(object? overwrite-message)
-                    (send overwrite-message
-                          show
-                          overwrite-now?)
-                    (set! overwrite-last-state? overwrite-now?)]
-                   [else
-                    (failed)])))]
-            [else
-             (failed)])))]
+    (define/public (overwrite-status-changed)
+      (let ([info-edit (get-info-editor)]
+            [failed
+             (λ ()
+               (set! overwrite-last-state? #f)
+               (send overwrite-message show #f))])
+        (cond
+          [info-edit
+           (let ([overwrite-now? (send info-edit get-overwrite-mode)])
+             (unless (eq? overwrite-now? overwrite-last-state?)
+               (cond
+                 [(object? overwrite-message)
+                  (send overwrite-message
+                        show
+                        overwrite-now?)
+                  (set! overwrite-last-state? overwrite-now?)]
+                 [else
+                  (failed)])))]
+          [else
+           (failed)])))
+    
+
+    (define/public (add-line-number-menu-items menu)
+      (void))
+    
     (define/override (update-info)
       (super update-info)
       (update-macro-recording-icon)
@@ -952,7 +957,8 @@
                                  [border 2]
                                  [parent (get-info-panel)]
                                  [stretchable-width #f]
-                                 [stretchable-height #f]))
+                                 [stretchable-height #f]
+                                 [extra-menu-items (λ (menu) (add-line-number-menu-items menu))]))
     (define position-canvas (new position-canvas% [parent position-parent] [init-width "000:00-000:00"]))
     (define/private (change-position-edit-contents str)
       (send position-canvas set-str str))
@@ -997,10 +1003,11 @@
 
 (define click-pref-panel%
   (class horizontal-panel%
+    (init-field extra-menu-items)
     (inherit popup-menu)
     (define/override (on-subwindow-event receiver evt)
       (cond
-        [(send evt button-down? 'right)
+        [(send evt button-down?)
          (let ([menu (new popup-menu%)]
                [line-numbers? (preferences:get 'framework:display-line-numbers)])
            (new checkable-menu-item%
@@ -1013,6 +1020,7 @@
                 [label (string-constant show-character-offsets)]
                 [callback (λ (x y) (preferences:set 'framework:display-line-numbers #f))]
                 [checked (not line-numbers?)])
+           (extra-menu-items menu)
            (popup-menu menu 
                        (+ 1 (send evt get-x))
                        (+ 1 (send evt get-y))))
