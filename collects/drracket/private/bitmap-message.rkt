@@ -17,4 +17,5 @@
       (min-height (send bm get-height))
       (refresh))
     (super-new (stretchable-width #f)
-               (stretchable-height #f))))
+               (stretchable-height #f)
+               (style '(no-focus)))))

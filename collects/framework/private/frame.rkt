@@ -309,7 +309,7 @@
               (min-width 0)
               (min-height 0)))))
     
-    (super-new [style '(transparent)])
+    (super-new [style '(transparent no-focus)])
     
     (send (get-dc) set-font small-control-font)
     (setup-sizes)
@@ -669,7 +669,7 @@
                 (set! memory-canvases (remq ec memory-canvases))))
         (send panel stretchable-width #f)))
     
-    [define gc-canvas (make-object bday-click-canvas% (get-info-panel) '(border))]
+    (define gc-canvas (new bday-click-canvas% [parent (get-info-panel)] [style '(border no-focus)]))
     (define/private (register-gc-blit)
       (let ([onb (icon:get-gc-on-bitmap)]
             [offb (icon:get-gc-off-bitmap)])
@@ -776,7 +776,7 @@
             (when (and (<= (send evt get-x) cw)
                        (<= (send evt get-y) ch))
               (button-up))))))
-    (super-new (style '(transparent)))
+    (super-new (style '(transparent no-focus)))
     (let ([dc (get-dc)])
       (let-values ([(_1 th _2 _3) (send dc get-text-extent str)])
         (min-client-height (inexact->exact (floor th)))))
@@ -2583,7 +2583,7 @@
     (inherit get-dc flush get-client-size min-width min-height)
     (super-new [stretchable-width #f]
                [stretchable-height #f]
-               [style '(transparent)])
+               [style '(transparent no-focus)])
     
     (send (get-dc) set-smoothing 'smoothed)
     (define-values (indicator-width indicator-height)

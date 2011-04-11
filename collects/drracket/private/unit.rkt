@@ -1436,6 +1436,7 @@ module browser threading seems wrong.
         
         (define/override (add-line-number-menu-items menu)
           (define on? (preferences:get 'drracket:show-line-numbers?))
+          (new separator-menu-item% [parent menu])
           (new checkable-menu-item% 
                [label (string-constant show-line-numbers-in-definitions)]
                [parent menu]
@@ -4262,7 +4263,7 @@ module browser threading seems wrong.
                   (send dc draw-text message 
                         (floor (- (/ w 2) (/ tw 2)))
                         (floor (- (/ h 2) (/ th 2)))))))))
-        (super-new)
+        (super-new [style '(no-focus)])
         (let-values ([(w h d a) (send (get-dc) get-text-extent "Xy")])
           (min-height (+ 4 (floor (inexact->exact h)))))))
     
@@ -4341,7 +4342,7 @@ module browser threading seems wrong.
         
         (super-new [stretchable-width #f]
                    [stretchable-height #f]
-                   [style '(transparent)])
+                   [style '(transparent no-focus)])
         (inherit min-width min-height)
         (min-width (apply max (map (λ (x) (send x get-width)) running/waiting-bitmaps)))
         (min-height (apply max (map (λ (x) (send x get-height)) running/waiting-bitmaps)))))

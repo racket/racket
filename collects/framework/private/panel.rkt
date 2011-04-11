@@ -488,7 +488,7 @@
               (send dc draw-line sx 5 (+ sx three-bar-pen-bar-width) 5)
               (send dc draw-line sx 8 (+ sx three-bar-pen-bar-width) 8)))))
       
-      (super-instantiate ())
+      (super-new [style '(no-focus)])
       (inherit stretchable-height min-height)
       (stretchable-height #f)
       (min-height 10)))
