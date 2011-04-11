@@ -455,12 +455,6 @@ if test "$REZ" = '' ; then
 fi
 
 if test "${enable_gracket}" = "yes" ; then
-  if test "${enable_quartz}" = "yes" ; then
-   :
-  else
-   AC_PATH_XTRA
-  fi
-
   MAKE_GRACKET=gracket
 else
   MAKE_GRACKET=no
