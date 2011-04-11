@@ -51,3 +51,20 @@
             "> (a 1)"
             "< 1"
             "<2"))
+
+(test (trace-output
+       (define (f x #:q w) (list x 1))
+       (trace f)
+       (f #:q (box 18) '(1 2 3)))
+      'trace-quotes
+      (list ">(f '(1 2 3) #:q '#&18)"
+            "<'((1 2 3) 1)"))
+
+(parameterize ([print-as-expression #f])
+  (test (trace-output
+         (define (f x #:q w) (list x 1))
+         (trace f)
+         (f #:q (box 18) '(1 2 3)))
+        'trace-quotes
+        (list ">(f (1 2 3) #:q #&18)"
+              "<((1 2 3) 1)")))

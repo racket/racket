@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/pretty
-         (for-syntax scheme/base))
+(require racket/pretty
+         (for-syntax racket/base))
 
 (provide trace untrace
          current-trace-print-results
@@ -86,6 +86,10 @@
      (lambda ()
        ((current-trace-print-args) name args kws kw-vals level)))))
 
+(struct plain (val)
+  #:property prop:custom-write (lambda (p port mode)
+                                 (write (plain-val p) port)))
+
 (define current-trace-print-args
   (make-parameter
    (lambda (name args kws kw-vals level)
@@ -103,8 +107,29 @@
                                  (string-length first)
                                  (string-length rest))
                              0))))
-         (pretty-print (append (cons name args)
-                               (apply append (map list kws kw-vals)))))))))
+         ;; Printing the function call in a way that adapts to
+         ;; different value printing --- currently a hack
+         (cond
+          [(print-as-expression)
+           ;; In expression mode, represent a function call as a
+           ;; transparent structure, so that it prints as a constructor
+           ;; application. Also, protect keywords for keyword arguments
+           ;; so that they print without quoting.
+           (let ([args (append args
+                               (apply append (map (lambda (kw val)
+                                                    (list (plain kw) val))
+                                                  kws 
+                                                  kw-vals)))])
+             (let-values ([(struct: make- ? -ref -set!) 
+                           (make-struct-type name #f
+                                             (length args) 0 #f
+                                             null #f #f null #f
+                                             name)])
+               (pretty-print (apply make- args))))]
+          [else
+           ;; In non-expression mode, just use `write':
+           (pretty-write (append (cons name args)
+                                 (apply append (map list kws kw-vals))))]))))))
 
 (define -:trace-print-results
   (lambda (name results level)
