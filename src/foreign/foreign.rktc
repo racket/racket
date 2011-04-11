@@ -2549,8 +2549,15 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
+static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_stubborn_will_executor();
+}
+
 @(define (lookup name)
-  (if (member (cadr name) '("compiler_sizeof" "make_ctype"))
+  (if (member (cadr name) '("compiler_sizeof"
+                            "make_ctype" 
+                            "make_stubborn_will_executor"))
       name
       'unimplemented))
 

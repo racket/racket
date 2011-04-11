@@ -3484,6 +3484,11 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
+static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+{
+  return scheme_make_stubborn_will_executor();
+}
+
 void scheme_init_foreign(Scheme_Env *env)
 {
   /* Create a dummy module. */
@@ -3576,7 +3581,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("lookup-errno",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
   scheme_add_global("make-stubborn-will-executor",
-   scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-stubborn-will-executor", 0, 0), menv);
+   scheme_make_prim_w_arity((Scheme_Prim *)foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
   scheme_add_global("make-late-weak-box",
    scheme_make_prim_w_arity((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), menv);
   scheme_add_global("make-late-weak-hasheq",
