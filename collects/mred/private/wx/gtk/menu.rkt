@@ -237,7 +237,9 @@
        (gtk_menu_shell_append gtk item-gtk)
        (gtk_widget_show item-gtk))))
 
-  (def/public-unimplemented select)
+  (define/public (select bm)
+    (send parent activate-item this))
+
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)
   (def/public-unimplemented set-title)

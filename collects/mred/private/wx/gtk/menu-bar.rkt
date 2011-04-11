@@ -145,4 +145,16 @@
          (g_object_ref gtk)
          (gtk_menu_item_set_submenu item gtk))
        (gtk_menu_shell_append gtk item)
-       (gtk_widget_show item)))))
+       (gtk_widget_show item))))
+
+  (define/public (activate-item menu)
+    ;; Gtk takes care of menu activation as appropriate;
+    ;; return #f to indcate that the key wasn't handled
+    #f
+    #;
+    (let loop ([menus menus])
+      (cond
+       [(null? menus) (void)]
+       [(eq? menu (cadar menus))
+	(gtk_menu_shell_select_item gtk (caar menus))]
+       [else (loop (cdr menus))]))))

@@ -53,7 +53,8 @@
     (when parent
       (let ([m (regexp-match #rx"&[^&]" label)])
         (when m
-          (send parent popup-menu-with-char (string-ref (car m) 1))))))
+          (send parent popup-menu-with-char (string-ref (car m) 1)))))
+    #t)
 
   (def/public-unimplemented get-font)
   (def/public-unimplemented set-width)

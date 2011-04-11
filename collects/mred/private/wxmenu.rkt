@@ -68,9 +68,7 @@
 						     [label (mcar data)]
 						     [menu (mcdr data)])
 						(if (regexp-match re label)
-						    (begin
-						      (send menu select this)
-						      #t)
+						    (send menu select this)
 						    #f)))
 					    items)))))))))]
 	[on-demand (lambda () (as-exit (lambda () (send mred on-demand))))]
