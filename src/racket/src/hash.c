@@ -1036,7 +1036,11 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   
   switch(t) {
   case scheme_integer_type:
-    return k + SCHEME_INT_VAL(o);
+    {
+      uintptr_t iv = to_unsigned_hash(SCHEME_INT_VAL(o));
+      MZ_MIX(iv);
+      return k + iv;
+    }
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
 #endif
