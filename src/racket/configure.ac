@@ -855,7 +855,7 @@ AC_MSG_RESULT($mbsrtowcs)
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then
   AC_MSG_CHECKING([for libffi])
-  OLD_LD_FLAGS="${LDFLAGS}"
+  OLD_LDFLAGS="${LDFLAGS}"
   LDFLAGS="${LDFLAGS} -lffi"
   AC_TRY_LINK([#include <ffi.h>],
               [ffi_cif cif; ]

@@ -5120,7 +5120,7 @@ if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then
   { echo "$as_me:$LINENO: checking for libffi" >&5
 echo $ECHO_N "checking for libffi... $ECHO_C" >&6; }
-  OLD_LD_FLAGS="${LDFLAGS}"
+  OLD_LDFLAGS="${LDFLAGS}"
   LDFLAGS="${LDFLAGS} -lffi"
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
