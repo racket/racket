@@ -3,16 +3,26 @@
 srcdir = @srcdir@
 builddir = @builddir@
 CC = @CC@
+
+LIBFFI_LOCAL_INCLUDE_ON = -Ilibffi/include
+LIBFFI_LOCAL_INCLUDE_OFF =
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ \
          -I$(builddir)/../racket \
          -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
-         -Ilibffi/include
+         $(LIBFFI_LOCAL_INCLUDE_@OWN_LIBFFI@)
 ARFLAGS = @ARFLAGS@
+NOOP = :
 
 # compile sub-libraries & foreign.c
 all:
 	$(MAKE) foreign.@LTO@
+	$(MAKE) libffi_@OWN_LIBFFI@
+
+libffi_ON:
 	$(MAKE) libffi/libffi@FOREIGN_CONVENIENCE@.la
+
+libffi_OFF:
+	$(NOOP)
 
 # just foreign.c, which will generate a stub module:
 stub:

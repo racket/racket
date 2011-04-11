@@ -36,6 +36,7 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 AC_ARG_ENABLE(jit,     [  --enable-jit            compile JIT support (enabled by default)], , enable_jit=yes)
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
+AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
 
 AC_ARG_ENABLE(places,  [  --enable-places         compile places support])
 AC_ARG_ENABLE(futures, [  --enable-futures        compile futures support (usually enabled by default)])
@@ -279,6 +280,7 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+show_explicitly_disabled "${enable_libffi}" "Installed libffi"
 
 show_explicitly_enabled "${enable_places}" Places
 show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
@@ -335,6 +337,8 @@ WX_MMD_FLAG=
 PREFLAGS="$CPPFLAGS"
 MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
+
+OWN_LIBFFI="ON"
 
 ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
@@ -854,6 +858,27 @@ if test "$mbsrtowcs" = "no" ; then
 fi
 AC_MSG_RESULT($mbsrtowcs)
 
+if test "${enable_libffi}" = "yes" ; then
+ if test "${enable_foreign}" = "yes" ; then
+  AC_MSG_CHECKING([for libffi])
+  OLD_LD_FLAGS="${LDFLAGS}"
+  LDFLAGS="${LDFLAGS} -lffi"
+  AC_TRY_LINK([#include <ffi.h>],
+              [ffi_cif cif; ]
+              [ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);],
+             have_libffi=yes,
+             have_libffi=no)
+  AC_MSG_RESULT($have_libffi)
+  if test "${have_libffi}" = "no" ; then
+    LDFLAGS="${OLD_LDFLAGS}"
+    echo "Building own libffi"
+  else
+    echo "Using installed libffi"
+    OWN_LIBFFI="OFF"
+  fi
+ fi
+fi
+
 if test "${enable_backtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi
@@ -1181,6 +1206,7 @@ AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
 AC_SUBST(MZRT_CGC_FLAGS)
 AC_SUBST(LIBATOM)
+AC_SUBST(OWN_LIBFFI)
 
 AC_SUBST(LIBSFX)
 AC_SUBST(WXLIBS)
@@ -1255,7 +1281,9 @@ fi
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  AC_CONFIG_SUBDIRS( foreign/libffi )
+  if test "${have_libffi}" != "yes" ; then
+    AC_CONFIG_SUBDIRS( foreign/libffi )
+  fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
 else

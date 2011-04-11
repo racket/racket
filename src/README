@@ -53,9 +53,9 @@ the Unix instructions below, but note the following:
 
  * To build an X11- and Gtk-based GRacket, run `configure' with the
    `--enable-xonx' flag.  Frameworks are not used for such builds, so
-   --enable-shared is allowed.  The `--enable-xonx' flag also affects
+   `--enable-shared' is allowed.  The `--enable-xonx' flag also affects
    the Racket build, so that `system-type' reports 'unix. Pre-built
-   libraries are not downloaded in this more; you must have Cairo,
+   libraries are not downloaded in this mode; you must have Cairo,
    Pango, and GTk installed.
 
  * To use `--prefix' without `--enable-xonx', you must also supply
@@ -170,6 +170,11 @@ Detailed instructions:
     instead of gcc, run configure as
 
          env CC=cc CXX=CC [here]configure
+
+    To add an include path, be sure to use CPPFLAGS="-I..." instead
+    of CFLAGS="-I...". The CPPFLAGS variable controls C pre-processing,
+    which includes C compilation, and the Racket build normally uses
+    the C pre-processor directly for some parts of the build.
 
     For cross compilation, set the compiler variables to a compiler for
     the target platform compiler, but also set CC_FOR_BUILD to a

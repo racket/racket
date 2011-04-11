@@ -705,6 +705,7 @@ EXE_SUFFIX
 SO_SUFFIX
 MZRT_CGC_FLAGS
 LIBATOM
+OWN_LIBFFI
 LIBSFX
 WXLIBS
 WXVARIANT
@@ -1331,6 +1332,7 @@ Optional Features:
   --enable-origtree       install with original directory structure
   --enable-jit            compile JIT support (enabled by default)
   --enable-foreign        compile foreign support (enabled by default)
+  --enable-libffi         use installed libffi (enabled by default)
   --enable-places         compile places support
   --enable-futures        compile futures support (usually enabled by default)
   --enable-cgcdefault     use CGC (Boehm or Senora) as default build
@@ -1865,6 +1867,13 @@ else
   enable_foreign=yes
 fi
 
+# Check whether --enable-libffi was given.
+if test "${enable_libffi+set}" = set; then
+  enableval=$enable_libffi;
+else
+  enable_libffi=yes
+fi
+
 
 # Check whether --enable-places was given.
 if test "${enable_places+set}" = set; then
@@ -2216,6 +2225,7 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+show_explicitly_disabled "${enable_libffi}" "Installed libffi"
 
 show_explicitly_enabled "${enable_places}" Places
 show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
@@ -2272,6 +2282,8 @@ WX_MMD_FLAG=
 PREFLAGS="$CPPFLAGS"
 MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
+
+OWN_LIBFFI="ON"
 
 ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
@@ -6435,6 +6447,68 @@ fi
 { echo "$as_me:$LINENO: result: $mbsrtowcs" >&5
 echo "${ECHO_T}$mbsrtowcs" >&6; }
 
+if test "${enable_libffi}" = "yes" ; then
+ if test "${enable_foreign}" = "yes" ; then
+  { echo "$as_me:$LINENO: checking for libffi" >&5
+echo $ECHO_N "checking for libffi... $ECHO_C" >&6; }
+  OLD_LD_FLAGS="${LDFLAGS}"
+  LDFLAGS="${LDFLAGS} -lffi"
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <ffi.h>
+int
+main ()
+{
+ffi_cif cif;
+              ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  have_libffi=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	have_libffi=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+  { echo "$as_me:$LINENO: result: $have_libffi" >&5
+echo "${ECHO_T}$have_libffi" >&6; }
+  if test "${have_libffi}" = "no" ; then
+    LDFLAGS="${OLD_LDFLAGS}"
+    echo "Building own libffi"
+  else
+    echo "Using installed libffi"
+    OWN_LIBFFI="OFF"
+  fi
+ fi
+fi
+
 if test "${enable_backtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi
@@ -9858,6 +9932,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9915,8 +9990,10 @@ fi
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  subdirs="$subdirs foreign/libffi"
+  if test "${have_libffi}" != "yes" ; then
+    subdirs="$subdirs foreign/libffi"
 
+  fi
   FOREIGNTARGET="foreign-stuff"
   FOREIGN_IF_USED="FOREIGN_USED"
 else
@@ -10648,12 +10725,12 @@ EXE_SUFFIX!$EXE_SUFFIX$ac_delim
 SO_SUFFIX!$SO_SUFFIX$ac_delim
 MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
 LIBATOM!$LIBATOM$ac_delim
+OWN_LIBFFI!$OWN_LIBFFI$ac_delim
 LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
-LIBFINISH!$LIBFINISH$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -10695,6 +10772,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBFINISH!$LIBFINISH$ac_delim
 MAKE_GRACKET!$MAKE_GRACKET$ac_delim
 MAKE_PLOT!$MAKE_PLOT$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
@@ -10730,7 +10808,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 34; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
