@@ -106,7 +106,7 @@
          (let loop ([src (car id/binding)])
            (cond
             [(module-path-index? src)
-             (search src)]
+             (search (list src (cadr id/binding)))]
             [(module-path? src)
              (loop (module-path-index-join src #f))]
             [else
