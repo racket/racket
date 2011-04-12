@@ -1,20 +1,6 @@
 #lang racket/base
 (require racket/contract)
 
-;; Eli: See comments for `dict-ref/check' and relatives.
-
-(define (hash-ref/check table key)
-  (hash-ref table key))
-
-(define (hash-ref/identity table key)
-  (hash-ref table key (lambda () key)))
-
-(define (hash-ref/default table key default)
-  (hash-ref table key (lambda () default)))
-
-(define (hash-ref/failure table key failure)
-  (hash-ref table key (lambda () (failure))))
-
 ;; Eli: See comment for `dict-union' and `dict-union!' -- these two do
 ;; make sense, but if they're in, then generalizing them to dictionaries
 ;; seems to make little sense.  If they are useful, I'd much rather see
@@ -51,13 +37,6 @@
                          v))))
 
 (provide/contract
- [hash-ref/identity (-> hash? any/c any/c)]
- [hash-ref/default (-> hash? any/c any/c any/c)]
- [hash-ref/failure (-> hash? any/c (-> any/c) any/c)]
- [hash-ref/check
-  (->i ([table hash?] [key any/c]) ()
-       #:pre (table key) (hash-has-key? table key)
-       [res any/c])]
  [hash-union (->* [(and/c hash? immutable?)]
                   [#:combine
                    (-> any/c any/c any/c)

@@ -9,66 +9,6 @@
 
 This module provides tools for manipulating hash tables.
 
-@section{Hash Table Lookup}
-
-@defproc[(hash-ref/check [h hash?] [k (lambda (k) (hash-has-key? h k))])
-         any/c]{
-
-Looks up key @scheme[k] in hash table @scheme[h].  Raises a contract error if
-@scheme[h] has no entry for @scheme[k].  Equivalent to @scheme[(hash-ref h k)],
-except for the specific exception value raised.
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-ref/check (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 2)
-]
-
-}
-
-@defproc[(hash-ref/identity [h hash?] [k any/c]) any/c]{
-
-Looks up key @scheme[k] in hash table @scheme[h].  Returns @scheme[k] if
-@scheme[h] has no entry for @scheme[k].  Equivalent to
-@scheme[(hash-ref h k (lambda () k))].
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-ref/identity (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 2)
-(hash-ref/identity (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 4)
-]
-
-}
-
-@defproc[(hash-ref/default [h hash?] [k any/c] [v any/c]) any/c]{
-
-Looks up key @scheme[k] in hash table @scheme[h].  Returns @scheme[v] if
-@scheme[h] has no entry for @scheme[k].  Equivalent to
-@scheme[(hash-ref h k (lambda () v))].
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-ref/default (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 2 'other)
-(hash-ref/default (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 4 'other)
-]
-
-}
-
-@defproc[(hash-ref/failure [h hash?] [k any/c] [f (-> any/c)]) any/c]{
-
-Looks up key @scheme[k] in hash table @scheme[h].  Returns the result of
-applying @scheme[f] (in tail position) if @scheme[h] has no entry for
-@scheme[k].  Equivalent to @scheme[(hash-ref h k f)].
-
-@defexamples[
-#:eval (eval/require 'unstable/hash)
-(hash-ref/failure (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 2 gensym)
-(hash-ref/failure (make-immutable-hash '([1 . one] [2 . two] [3 . three])) 4 gensym)
-]
-
-}
-
-@section{Hash Table Combinations}
-
 @defproc[(hash-union [h0 (and/c hash? hash-can-functional-set?)]
                      [h hash?] ...
                      [#:combine combine
