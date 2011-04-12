@@ -8203,12 +8203,20 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	END_XFORM_SKIP;
 
 	err = MSC_IZE(execv)(command, argv);
+        if (err)
+          err = errno;
 
 	/* If we get here it failed; give up */
 
         /* using scheme_signal_error will leave us in the forked process,
 	   so use scheme_console_printf instead */
-        scheme_console_printf("racket: exec failed (%d)\n", err);
+        scheme_console_printf("racket: exec failed (%s%serrno=%d)\n", 
+#ifdef NO_STRERROR_AVAILABLE
+                              "", "",
+#else
+                              strerror(err), "; ",
+#endif
+                              err);
 
 	/* back to Racket signal dispositions: */
 	START_XFORM_SKIP;
