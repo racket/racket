@@ -1,12 +1,9 @@
 ;; The main client of this module is browser/external.ss
 ;;   (others just use the (send-url url [new?]) interface.)
 
-#lang scheme/base
+#lang racket/base
 
-(require scheme/system
-         scheme/file
-         scheme/promise
-         scheme/port)
+(require racket/system racket/file racket/promise racket/port)
 
 (provide send-url send-url/file send-url/contents
          unix-browser-list browser-preference? external-browser)
@@ -21,7 +18,8 @@
 ;; order matters: the default will be the first of these that is found
 (define all-unix-browsers
   '(;; common browsers
-    firefox galeon opera mozilla konqueror seamonkey epiphany google-chrome
+    xdg-open
+    firefox google-chrome galeon opera mozilla konqueror seamonkey epiphany
     ;; known browsers
     camino skipstone
     ;; broken browsers (broken in that they won't work with plt-help)
@@ -51,14 +49,14 @@
 
 ;; by-need filtering of found unix executables
 (define existing-unix-browsers->exes
-  (delay
+  (delay/sync
     (filter values
             (map (lambda (b)
                    (let ([exe (find-executable-path (symbol->string b) #f)])
                      (and exe (cons b exe))))
                  all-unix-browsers))))
 (define existing-unix-browsers
-  (delay (map car (force existing-unix-browsers->exes))))
+  (delay/sync (map car (force existing-unix-browsers->exes))))
 (define-syntax unix-browser-list
   (syntax-id-rules (set!)
     [(_ . xs) ((force existing-unix-browsers) . xs)]
@@ -72,12 +70,12 @@
 ;; like (system-type), but return the real OS for OSX with XonX
 ;;  (could do the same for Cygwin, but it doesn't have shell-execute)
 (define systype
-  (delay (let ([t (system-type)])
-           (cond [(not (eq? t 'unix)) t]
-                 [(regexp-match? #rx"-darwin($|/)"
-                                 (path->string (system-library-subpath)))
-                  'macosx]
-                 [else t]))))
+  (delay/sync (let ([t (system-type)])
+                (cond [(not (eq? t 'unix)) t]
+                      [(regexp-match? #rx"-darwin($|/)"
+                                      (path->string (system-library-subpath)))
+                       'macosx]
+                      [else t]))))
 
 (define (%escape str)
   (apply string-append
@@ -157,7 +155,7 @@
     (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
     (send-url/file temp)))
 
-(define osascript (delay (find-executable-path "osascript" #f)))
+(define osascript (delay/sync (find-executable-path "osascript" #f)))
 (define (send-url/mac url)
   (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))
 
@@ -196,7 +194,8 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(gnome-open firefox konqueror dillo htmlview google-chrome) (simple)]
+       [(xdg-open gnome-open firefox konqueror dillo htmlview google-chrome)
+        (simple)]
        ;; don't really know how to run these
        [(camino skipstone mosaic) (simple)]
        [(galeon) (if (eq? 'browser-default separate-window?)
