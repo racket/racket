@@ -2,7 +2,6 @@
 @(require "../utils.rkt"
           (for-label racket/gui
                      drracket/tool-lib
-                     unstable/class
                      unstable/gui/language-level))
 
 @title{DrRacket Language Levels}
@@ -30,7 +29,7 @@ This unit imports @scheme[drracket:tool^] and exports @scheme[language-level^].
           [#:reader reader
                     (->* [] [any/c input-port?] (or/c syntax? eof-object?))
                     read-syntax])
-         (object-provides/c drracket:language:language<%>)]{
+         (is-a?/c drracket:language:language<%>)]{
 
 Constructs a language level as an instance of
 @scheme[drracket:language:language<%>] with the given @scheme[name] based on the
@@ -43,9 +42,9 @@ reader.
 }
 
 @defthing[simple-language-level%
-          (class-provides/c drracket:language:language<%>
-                            drracket:language:module-based-language<%>
-                            drracket:language:simple-module-based-language<%>)]{
+          (and/c (implementation?/c drracket:language:language<%>)
+                 (implementation?/c drracket:language:module-based-language<%>)
+                 (implementation?/c drracket:language:simple-module-based-language<%>))]{
 
 Equal to
 @scheme[
@@ -57,7 +56,7 @@ Equal to
 
 @defproc[(language-level-render-mixin [to-sexp (-> any/c any/c)]
                                       [show-void? boolean?])
-         (mixin-provides/c [drracket:language:language<%>] [])]{
+         (make-mixin-contract drracket:language:language<%>)]{
 
 Produces a mixin that overrides @method[drracket:language:language<%>
 render-value/format] to apply @scheme[to-sexp] to each value before printing it,
@@ -67,7 +66,7 @@ and to skip @scheme[void?] values (pre-transformation) if @scheme[show-void?] is
 }
 
 @defproc[(language-level-capability-mixin [dict dict?])
-         (mixin-provides/c [drracket:language:language<%>] [])]{
+         (make-mixin-contract drracket:language:language<%>)]{
 
 Produces a mixin that augments @method[drracket:language:language<%>
 capability-value] to look up each key in @scheme[dict], producing the
@@ -77,7 +76,7 @@ otherwise.
 }
 
 @defthing[language-level-no-executable-mixin
-          (mixin-provides/c [drracket:language:language<%>] [])]{
+          (make-mixin-contract drracket:language:language<%>)]{
 
 Overrides @method[drracket:language:language<%> create-executable] to print an
 error message in a dialog box.
@@ -85,9 +84,8 @@ error message in a dialog box.
 }
 
 @defthing[language-level-eval-as-module-mixin
-          (mixin-provides/c [drracket:language:language<%>
-                             drracket:language:module-based-language<%>]
-                            [])]{
+          (make-mixin-contract drracket:language:language<%>
+                               drracket:language:module-based-language<%>)]{
 
 Overrides @method[drracket:language:language<%> front-end/complete-program] to
 wrap terms from the definition in a module based on the language level's
@@ -97,15 +95,14 @@ for instance.
 }
 
 @defthing[language-level-macro-stepper-mixin
-          (mixin-provides/c [drracket:language:language<%>]
-                            [])]{
+          (make-mixin-contract drracket:language:language<%>)]{
 
 This mixin enables the macro stepper for its language level.
 
 }
 
 @defthing[language-level-check-expect-mixin
-          (mixin-provides/c [drracket:language:language<%>] [])]{
+          (make-mixin-contract drracket:language:language<%>)]{
 
 This mixin overrides @method[drracket:language:language<%> on-execute] to set up
 the @scheme[check-expect] test engine to a language level similarly to the HtDP
@@ -118,7 +115,7 @@ teaching languages.
           [meta-lines exact-nonnegative-integer?]
           [meta->settings (-> string? any/c any/c)]
           [settings->meta (-> symbol? any/c string?)])
-         (mixin-provides/c [drracket:language:language<%>] [])]{
+         (make-mixin-contract drracket:language:language<%>)]{
 
 This mixin constructs a language level that stores metadata in saved files
 allowing Drracket to automatically switch back to this language level upon

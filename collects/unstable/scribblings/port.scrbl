@@ -68,25 +68,3 @@ counting must be enabled for @scheme[port] to get meaningful results.
 ]
 
 }
-
-@defproc[(read-available-bytes [port input-port? (current-input-port)])
-         (or/c bytes? eof-object?)]{
-
-This function reads all immediately available bytes from a port and produces a
-byte string containing them.  If there are no bytes available and the port is
-known to have no more input, it produces @scheme[eof]; if there are none
-available but the port may have more input, it produces an empty byte string.
-This procedure never blocks to wait for input from the port.
-
-@defexamples[
-#:eval (eval/require 'unstable/port)
-(define-values [in out] (make-pipe))
-(parameterize ([current-input-port in]) (read-available-bytes))
-(write-byte (char->integer #\c) out)
-(read-available-bytes in)
-(read-available-bytes in)
-(close-output-port out)
-(read-available-bytes in)
-]
-
-}

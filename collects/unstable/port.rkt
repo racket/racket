@@ -3,24 +3,6 @@
          racket/contract
          syntax/srcloc)
 
-#|
-Ryan:
-  Shouldn't this be called read-bytes/avail instead? (parallel existing names)
-  Changed to eliminate thread-unsafe buffer.
-|#
-(define (read-available-bytes [port (current-input-port)])
-  (read-available-bytes/offset port (make-bytes 1024) 0))
-
-(define (read-available-bytes/offset port buffer offset)
-  (let* ([result (read-bytes-avail!* buffer port offset)])
-    (if (eof-object? result)
-        (if (zero? offset) result (subbytes buffer 0 offset))
-        (let ([new-offset (+ offset result)])
-          (if (= new-offset (bytes-length buffer))
-              (let ([new-buffer (bytes-append buffer buffer)])
-                (read-available-bytes/offset port new-buffer new-offset))
-              (subbytes buffer 0 new-offset))))))
-
 (define (port->srcloc port [source (object-name port)] [span 0])
   (let*-values ([(line col pos) (port-next-location port)])
     (make-srcloc source line col pos span)))
@@ -52,5 +34,4 @@ Ryan:
  [read-all-syntax
   (->* [] [(-> (or/c syntax? eof-object?)) input-port?]
        (syntax/c list?))]
- [read-available-bytes (->* [] [input-port?] (or/c bytes? eof-object?))]
  [port->srcloc (->* [port?] [any/c exact-nonnegative-integer?] srcloc?)])

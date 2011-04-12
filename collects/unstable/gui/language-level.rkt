@@ -1,8 +1,6 @@
 #lang racket/gui
-
 (require drracket/tool
          string-constants
-         unstable/dict
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests
                   scheme-test-data test-format test-execute)
@@ -87,11 +85,10 @@
       (super-new)
 
       (define/augment (capability-value key)
-        (dict-ref/failure
-         dict key
-         (lambda ()
-           (inner (drracket:language:get-capability-default key)
-                  capability-value key))))))
+        (dict-ref dict key
+                  (lambda ()
+                    (inner (drracket:language:get-capability-default key)
+                           capability-value key))))))
 
   (define language-level-no-executable-mixin
     (mixin (drracket:language:language<%>) ()

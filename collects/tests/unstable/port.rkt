@@ -31,13 +31,4 @@
                             (make-srcloc 'string 1 0 1 0))
               (read port)
               (check-equal? (port->srcloc port 'here 1)
-                            (make-srcloc 'here 2 2 4 1))))
-
-   (test-suite "read-available-bytes"
-     (test-ok (define-values [in out] (make-pipe))
-              (check-equal? (read-available-bytes in) #"")
-              (write-byte (char->integer #\c) out)
-              (check-equal? (read-available-bytes in) #"c")
-              (close-output-port out)
-              (check-equal? (read-available-bytes in) eof)))))
-
+                            (make-srcloc 'here 2 2 4 1))))))

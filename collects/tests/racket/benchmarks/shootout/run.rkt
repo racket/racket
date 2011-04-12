@@ -1,8 +1,8 @@
 (module run mzscheme
   (require (only scheme/runtime-path define-runtime-path)
            racket/port
-           mzlib/kw
-           unstable/port)
+           unstable/port
+           mzlib/kw)
   (define input-map
     `(
       ("ackermann" "12")
