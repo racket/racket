@@ -96,7 +96,6 @@ Keep documentation and tests up to date.
 @include-section["pretty.scrbl"]
 @include-section["require.scrbl"]
 @include-section["sequence.scrbl"]
-@include-section["sexp-diff.scrbl"]
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]
 @include-section["syntax.scrbl"]
