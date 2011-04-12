@@ -684,9 +684,12 @@
     (match (parallel-workers)
       [(? (lambda (x) (x . > . 1)))
         (compile-cc (collection->cc (list (string->path "racket"))) 0)
-        (managed-compile-zo (build-path main-collects-dir  "setup/parallel-build-worker.rkt"))
+        (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
-          (let ([cct (move-to-begining (list "compiler" "raco" "racket") (move-to-end "drscheme" (sort-collections-tree (collection-tree-map top-level-plt-collects))))])
+          (let ([cct (move-to-begining (list "compiler" "raco" "racket") 
+                                       (move-to-end "drscheme" 
+                                                    (sort-collections-tree 
+                                                     (collection-tree-map top-level-plt-collects))))])
             (iterate-cct (lambda (cc)
               (let ([dir (cc-path cc)]
                     [info (cc-info cc)])
