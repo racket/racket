@@ -32,21 +32,37 @@
 ;; Write the headers portion of a response to an output port.
 ;; NOTE: According to RFC 2145 the server should write HTTP/1.1
 ;;       header for *all* clients.
+(define-syntax-rule (maybe-hash-set! h k v)
+  (unless (hash-has-key? h k)
+    (hash-set! h k (header k v))))
+(define-syntax-rule (maybe-hash-set!* h [k v] ...)
+  (begin (maybe-hash-set! h k v)
+         ...))
+
 (define (output-response-head conn bresp)
   (fprintf (connection-o-port conn)
            "HTTP/1.1 ~a ~a\r\n"
            (response-code bresp)
            (response-message bresp))
+  (define hs (make-hash))
+  (for ([h (in-list (response-headers bresp))])
+    (hash-set! hs (header-field h) h))
+  (maybe-hash-set!*
+   hs
+   [#"Date" 
+    (string->bytes/utf-8 (seconds->gmt-string (current-seconds)))]
+   [#"Last-Modified"
+    (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp)))]
+   [#"Server"
+    #"Racket"]
+   [#"Content-Type"
+    (response-mime bresp)])
+  (when (connection-close? conn)
+    (hash-set! hs #"Connection"
+               (make-header #"Connection" #"close")))
   (output-headers
    conn 
-   (list* (make-header #"Date" (string->bytes/utf-8 (seconds->gmt-string (current-seconds))))
-          (make-header #"Last-Modified" (string->bytes/utf-8 (seconds->gmt-string (response-seconds bresp))))
-          (make-header #"Server" #"Racket")
-          (make-header #"Content-Type" (response-mime bresp))
-          (append (if (connection-close? conn)
-                      (list (make-header #"Connection" #"close"))
-                      empty)
-                  (response-headers bresp)))))
+   (hash-values hs)))
 
 ;; output-headers : connection (list-of header) -> void
 (define (output-headers conn headers)

@@ -168,8 +168,7 @@ Here is an example typical of what you will find in many applications:
             [output (output-port? . -> . void)])]{
  An HTTP response where @racket[output] produces the body. @racket[code] is the response code,
  @racket[message] the message, @racket[seconds] the generation time, @racket[mime]
- the MIME type of the file, and @racket[extras] are the extra headers, in addition
- to those produced by the server.
+ the MIME type of the file, and @racket[headers] are the headers. If @racket[headers] does not include @litchar{Date}, @litchar{Last-Modified}, @litchar{Server}, or @litchar{Content-Type} headers, then the server will automatically add them. The server will always replace your @litchar{Connection} header if it needs to ensure the connection will be closed. (Typically with an HTTP/1.0 client.)
  
  Example:
  @racketblock[

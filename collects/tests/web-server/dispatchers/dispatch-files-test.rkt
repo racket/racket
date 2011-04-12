@@ -40,6 +40,15 @@
 (define (req d? meth heads)
   (make-request meth (if d? dir-url file-url) heads (delay empty) #"" "host" 80 "client"))
 
+(define (bytes-sort bs)
+  (sort
+   (with-input-from-bytes bs
+     (λ () (port->bytes-lines #:line-mode 'return-linefeed)))
+   bytes<?))
+  
+(define-syntax-rule (test-equal?* n lhs rhs)
+  (test-equal? n (bytes-sort lhs) (bytes-sort rhs)))
+
 (define dispatch-files-tests
   (test-suite
    "Files"
@@ -75,22 +84,22 @@
     (files:read-range-header (list (make-header #"Range" #"bytes=1-10,20-,-30")))
     (list (cons 1 10) (cons 20 #f) (cons #f 30)))
    
-   (test-equal? "file, exists, whole, no Range, get"
+   (test-equal?* "file, exists, whole, no Range, get"
                 (collect (dispatch #t tmp-file) (req #f #"GET" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
-   (test-equal? "file, exists, whole, no Range, head"
+   (test-equal?* "file, exists, whole, no Range, head"
                 (collect (dispatch #t tmp-file) (req #f #"HEAD" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n")
-   (test-equal? "file, exists, whole, Range, get"
+   (test-equal?* "file, exists, whole, Range, get"
                 (collect (dispatch #t tmp-file) (req #f #"GET" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
-   (test-equal? "file, exists, whole, Range, head"
+   (test-equal?* "file, exists, whole, Range, head"
                 (collect (dispatch #t tmp-file) (req #f #"HEAD" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
-   (test-equal? "file, exists, part, get"
+   (test-equal?* "file, exists, part, get"
                 (collect (dispatch #t tmp-file) (req #f #"GET" (list (make-header #"Range" #"bytes=5-9"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 5\r\nContent-Range: bytes 5-9/81\r\n\r\n><hea")
-   (test-equal? "file, exists, part, head"
+   (test-equal?* "file, exists, part, head"
                 (collect (dispatch #t tmp-file) (req #f #"HEAD" (list (make-header #"Range" #"bytes=5-9"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 5\r\nContent-Range: bytes 5-9/81\r\n\r\n")
    
@@ -98,19 +107,19 @@
              exn:dispatcher?
              (lambda () (collect (dispatch #t not-there) (req #f #"GET" empty))))
    
-   (test-equal? "dir, exists, no Range, get"
+   (test-equal?* "dir, exists, no Range, get"
                 (collect (dispatch #t a-dir) (req #t #"GET" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
-   (test-equal? "dir, exists, no Range, head"
+   (test-equal?* "dir, exists, no Range, head"
                 (collect (dispatch #t a-dir) (req #t #"HEAD" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n")
-   (test-equal? "dir, exists, Range, get"
+   (test-equal?* "dir, exists, Range, get"
                 (collect (dispatch #t a-dir) (req #t #"GET" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
-   (test-equal? "dir, exists, Range, head"
+   (test-equal?* "dir, exists, Range, head"
                 (collect (dispatch #t a-dir) (req #t #"HEAD" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
-   (test-equal? "dir, not dir-url, get"
+   (test-equal?* "dir, not dir-url, get"
                 (collect (dispatch #t a-dir) (req #f #"GET" empty))
                 #"HTTP/1.1 302 Moved Temporarily\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html\r\nConnection: close\r\nLocation: /foo/\r\n\r\n")
    (test-exn "dir, not exists, get"
