@@ -8,13 +8,16 @@
          set? set-eq? set-eqv? set-equal?
          set-empty? set-count
          set-member? set-add set-remove
-         set-union set-intersect set-subtract
-         subset?
+         set-union set-intersect set-subtract set-symmetric-difference
+         subset? proper-subset?
          set-map set-for-each 
          (rename-out [*in-set in-set])
          for/set for/seteq for/seteqv
          for*/set for*/seteq for*/seteqv
-         set/c)
+         set/c
+         set=?
+         set->list
+         list->set list->seteq list->seteqv)
 
 (define-serializable-struct set (ht)
   #:omit-define-syntaxes
@@ -222,17 +225,27 @@
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-subtract set set2))]))
 
-(define (subset? set2 set1)
-  (unless (set? set2) (raise-type-error 'subset? "set" 0 set2 set1))
-  (unless (set? set1) (raise-type-error 'subset? "set" 0 set2 set1))
+(define (subset* who set2 set1 proper?)
+  (unless (set? set2) (raise-type-error who "set" 0 set2 set1))
+  (unless (set? set1) (raise-type-error who "set" 0 set2 set1))
   (let ([ht1 (set-ht set1)]
         [ht2 (set-ht set2)])
     (unless (and (eq? (hash-eq? ht1) (hash-eq? ht2))
                  (eq? (hash-eqv? ht1) (hash-eqv? ht2)))
-      (raise-mismatch-error 'set-subset? "second set's equivalence predicate is not the same as the first set: "
+      (raise-mismatch-error who
+                            "second set's equivalence predicate is not the same as the first set: "
                             set2))
-    (for/and ([v (in-hash-keys ht2)])
-      (hash-ref ht1 v #f))))
+    (and (for/and ([v (in-hash-keys ht2)])
+           (hash-ref ht1 v #f))
+         (if proper?
+             (< (hash-count ht2) (hash-count ht1))
+             #t))))
+
+(define (subset? one two)
+  (subset* 'subset? one two #f))
+
+(define (proper-subset? one two)
+  (subset* 'proper-subset? one two #t))
 
 (define (set-map set proc)
   (unless (set? set) (raise-type-error 'set-map "set" 0 set proc))
@@ -356,3 +369,55 @@
                   blame
                   s
                   "expected a <~a>, got ~v" (get-name c))))))))))
+
+;; ----
+
+(define (set=? one two)
+  (unless (set? one) (raise-type-error 'set=? "set" 0 one two))
+  (unless (set? two) (raise-type-error 'set=? "set" 1 one two))
+  ;; Sets implement prop:equal+hash
+  (equal? one two))
+
+(define set-symmetric-difference
+  (case-lambda
+    [(set)
+     (unless (set? set) (raise-type-error 'set-symmetric-difference "set" 0 set))
+     set]
+    [(set set2)
+     (unless (set? set) (raise-type-error 'set-symmetric-difference "set" 0 set set2))
+     (unless (set? set2) (raise-type-error 'set-symmetric-difference "set" 1 set set2))
+     (let ([ht1 (set-ht set)]
+           [ht2 (set-ht set2)])
+      (unless (and (eq? (hash-eq? ht1) (hash-eq? ht2))
+                   (eq? (hash-eqv? ht1) (hash-eqv? ht2)))
+        (raise-mismatch-error 'set-symmetric-difference
+                              "set's equivalence predicate is not the same as the first set: "
+                              set2))
+      (let-values ([(big small)
+                    (if (>= (hash-count ht1) (hash-count ht2))
+                        (values ht1 ht2)
+                        (values ht2 ht1))])
+        (make-set
+         (for/fold ([ht big]) ([e (in-hash-keys small)])
+           (if (hash-ref ht e #f)
+               (hash-remove ht e)
+               (hash-set ht e #t))))))]
+    [(set . sets)
+     (for ([s (in-list (cons set sets))]
+           [i (in-naturals)])
+       (unless (set? s) (apply raise-type-error 'set-symmetric-difference "set" i (cons s sets))))
+     (for/fold ([set set]) ([set2 (in-list sets)])
+       (set-symmetric-difference set set2))]))
+
+(define (set->list set)
+  (unless (set? set) (raise-type-error 'set->list "set" 0 set))
+  (for/list ([elem (in-hash-keys (set-ht set))]) elem))
+(define (list->set elems)
+  (unless (list? elems) (raise-type-error 'list->set "list" 0 elems))
+  (apply set elems))
+(define (list->seteq elems)
+  (unless (list? elems) (raise-type-error 'list->seteq "list" 0 elems))
+  (apply seteq elems))
+(define (list->seteqv elems)
+  (unless (list? elems) (raise-type-error 'list->seteqv "list" 0 elems))
+  (apply seteqv elems))

@@ -62,9 +62,6 @@
 (define (clause-predicate c)
   (literal-predicate (clause-head c)))
 
-(define (set->list s)
-  (for/list ([e (in-set s)]) e))
-
 (define literal-variables
   (match-lambda
     [(literal _ _ ts)

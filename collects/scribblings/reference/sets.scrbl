@@ -110,13 +110,64 @@ runs in time proportional to the total size of all given
 @racket[st]s except the first one.}
 
 
+@defproc[(set-symmetric-difference [st set?] ...+) set?]{
+
+Produces a set containing only those elements found in each
+@racket[st] an odd number of times. All of the given @racket[st]s must
+use the same equivalence predicate (@racket[equal?], @racket[eq?], or
+@racket[eqv?]). This operation runs in time proportional to the total
+size of all given @racket[st]s except the first one.
+
+@examples[#:eval set-eval
+(set-symmetric-difference (set 1) (set 1 2) (set 1 2 3))
+]}
+
+
+@defproc[(set=? [st set?] [st2 set?]) boolean?]{
+
+Returns @racket[#t] if @racket[st] and @racket[st2] contain the same
+members, @racket[#f] otherwise. The @racket[st] and @racket[st2] must
+use the same equivalence predicate (@racket[equal?], @racket[eq?], or
+@racket[eqv?]).  This operation runs in time proportional to the size
+of @racket[st].
+
+Equivalent to @racket[(equal? st st2)].
+
+@examples[#:eval set-eval
+(set=? (set 1) (set 1 2 3))
+(set=? (set 1 2 3) (set 1))
+(set=? (set 1 2 3) (set 1 2 3))
+]}
+
 @defproc[(subset? [st set?] [st2 set?]) boolean?]{
 
 Returns @racket[#t] if every member of @racket[st] is in
 @racket[st2], @racket[#f] otherwise. The @racket[st] and
 @racket[st2] must use the same equivalence predicate
 (@racket[equal?], @racket[eq?], or @racket[eqv?]).  This operation
-runs in time proportional to the size of @racket[st].}
+runs in time proportional to the size of @racket[st].
+
+@examples[#:eval set-eval
+(subset? (set 1) (set 1 2 3))
+(subset? (set 1 2 3) (set 1))
+(subset? (set 1 2 3) (set 1 2 3))
+]}
+
+
+@defproc[(proper-subset? [st set?] [st2 set?]) boolean?]{
+
+Returns @racket[#t] if every member of @racket[st] is in @racket[st2]
+and there is some member of @racket[st2] that is not a member of
+@racket[st], @racket[#f] otherwise. The @racket[st] and @racket[st2]
+must use the same equivalence predicate (@racket[equal?],
+@racket[eq?], or @racket[eqv?]).  This operation runs in time
+proportional to the size of @racket[st].
+
+@examples[#:eval set-eval
+(proper-subset? (set 1) (set 1 2 3))
+(proper-subset? (set 1 2 3) (set 1))
+(proper-subset? (set 1 2 3) (set 1 2 3))
+]}
 
 
 @defproc[(set-map [st set?]
@@ -182,7 +233,27 @@ other forms.}
 Analogous to @racket[for/list] and @racket[for*/list], but to
 construct a set instead of a list.}
 
+
+@deftogether[(
+@defproc[(list->set [lst list?]) set?]
+@defproc[(list->seteq [lst list?]) set?]
+@defproc[(list->seteqv [lst list?]) set?]
+)]{
+
+Produces the appropriate type of set containing the elements of the
+given list. Equivalent to @racket[(apply set lst)], @racket[(apply
+seteq lst)], and @racket[(apply seteqv lst)], respectively.
+}
+
+@defproc[(set->list [st set?]) list?]{
+
+Produces a list containing the elements of @scheme[st].}
+
+
 @close-eval[set-eval]
 
 @(define i #'set)
 @(define i2 #'set-union)
+
+
+
