@@ -16,7 +16,7 @@ enum {
   MMU_WRITABLE        = 1,
 };
 
-#ifdef MZ_USE_PLACES
+#if defined(MZ_USE_PLACES) &&  !defined(_WIN32)
 #define USE_BLOCK_CACHE
 #endif
 

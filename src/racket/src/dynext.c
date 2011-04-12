@@ -138,18 +138,8 @@ void scheme_init_dynamic_extension(Scheme_Env *env)
 #endif
   }
 
-  scheme_add_global_constant("load-extension", 
-			     scheme_make_prim_w_arity2(load_extension, 
-						       "load-extension",
-						       1, 1,
-						       0, -1), 
-			     env);
-
-  scheme_add_global_constant("current-load-extension", 
-			     scheme_register_parameter(current_load_extension, 
-						       "current-load-extension",
-						       MZCONFIG_LOAD_EXTENSION_HANDLER), 
-			     env);
+  GLOBAL_PRIM_W_ARITY2("load-extension", load_extension, 1, 1, 0, -1, env);
+  GLOBAL_PARAMETER("current-load-extension", current_load_extension, MZCONFIG_LOAD_EXTENSION_HANDLER, env);
 }
 
 static Scheme_Object *
@@ -226,7 +216,19 @@ static Scheme_Object *do_load_extension(const char *filename,
     if (filename[0] != '/') {
       int l = strlen(filename);
       char *s;
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+      void *original_gc;
+      original_gc = GC_switch_to_master_gc();
+      scheme_start_atomic();
+# endif
+
       s = (char *)scheme_malloc_atomic(l + 3);
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+      scheme_end_atomic_no_swap();
+      GC_switch_back_from_master(original_gc);
+# endif
+
       s[0] = '.';
       s[1] = '/';
       memcpy(s + 2, filename, l + 1);
@@ -406,8 +408,20 @@ static Scheme_Object *do_load_extension(const char *filename,
     return NULL;
 #else
 
-    if (comppath)
+    if (comppath) {
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    void *original_gc;
+    original_gc = GC_switch_to_master_gc();
+    scheme_start_atomic();
+# endif
+
       scheme_hash_set(fullpath_loaded_extensions, (Scheme_Object *)filename, mzPROC_TO_HASH_OBJ(init_f));
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    scheme_end_atomic_no_swap();
+    GC_switch_back_from_master(original_gc);
+# endif
+    }
   }
 #endif
 
@@ -418,12 +432,24 @@ static Scheme_Object *do_load_extension(const char *filename,
     init_f = ed->reload_f;
     modname_f = ed->modname_f;
   } else {
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    void *original_gc;
+    original_gc = GC_switch_to_master_gc();
+    scheme_start_atomic();
+# endif
+
     ed = MALLOC_ONE_ATOMIC(ExtensionData);
     ed->handle = handle;
     ed->init_f = init_f;
     ed->reload_f = reload_f;
     ed->modname_f = modname_f;
     scheme_hash_set(loaded_extensions, mzPROC_TO_HASH_OBJ(init_f), (Scheme_Object *)ed);
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    scheme_end_atomic_no_swap();
+    GC_switch_back_from_master(original_gc);
+# endif
+
   }
 
   if (SCHEME_SYMBOLP(expected_module)) {
@@ -441,6 +467,7 @@ static Scheme_Object *do_load_extension(const char *filename,
 	slen = SCHEME_SYM_LEN(n);
 	
 	s = (char *)scheme_malloc_atomic(len + slen + 2);
+
 	memcpy(s, t, len);
 	memcpy(s + len, SCHEME_SYM_VAL(n), slen);
 	s[len + slen] = '\'';
