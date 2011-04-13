@@ -4,15 +4,7 @@
 
 (provide make-proj-contract
          raise-contract-error
-         contract-proc
-
-         proj-prop proj-get proj-pred?
-         name-prop name-get name-pred?
-         stronger-prop stronger-get stronger-pred?
-         first-order-prop first-order-get first-order-pred?
-         flat-prop flat-get flat-pred?
-
-         )
+         contract-proc)
 
 (define (raise-contract-error x src pos name fmt . args)
   (apply raise-blame-error
@@ -59,36 +51,6 @@
                         (unpack-blame (if original? pos neg))
                         (unpack-blame (if original? neg pos))
                         original?)))))
-
-(define (legacy-property name)
-  (define-values [ prop pred get ]
-    (make-struct-type-property
-     name
-     (lambda (impl info)
-       (error
-        name
-        (string-append
-         "this property is a legacy implementation; "
-         "use prop:contract or prop:flat-contract instead.")))))
-  prop)
-
-(define proj-prop (legacy-property 'proj-prop))
-(define name-prop (legacy-property 'name-prop))
-(define stronger-prop (legacy-property 'stronger-prop))
-(define first-order-prop (legacy-property 'first-order-prop))
-(define flat-prop (legacy-property 'flat-prop))
-
-(define proj-pred? contract-struct?)
-(define name-pred? contract-struct?)
-(define stronger-pred? contract-struct?)
-(define first-order-pred? contract-struct?)
-(define flat-pred? contract-struct?)
-
-(define (proj-get c) contract-proc)
-(define (name-get c) contract-name)
-(define (stronger-get c) contract-stronger?)
-(define (first-order-get c) contract-first-order)
-(define (flat-get c) flat-contract-predicate)
 
 ;; unpack-blame : any/c -> any/c
 ;; Constructs an S-expression for use in the blame error messages.

@@ -15,6 +15,5 @@
          (all-from-out racket/contract/regions)
 
          (all-from-out "contract/private/legacy.rkt")
-         (except-out (all-from-out "contract/private/ds.rkt")
-                     lazy-depth-to-look))
+         (all-from-out "contract/private/ds.rkt"))
 
