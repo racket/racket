@@ -54,7 +54,6 @@ If the namespace does not, they are colored the unbound color.
 (define status-coloring-program (string-constant cs-status-coloring-program))
 (define status-eval-compile-time (string-constant cs-status-eval-compile-time))
 (define status-expanding-expression (string-constant cs-status-expanding-expression))
-(define status-loading-docs-index (string-constant cs-status-loading-docs-index))
 
 (define jump-to-next-bound-occurrence (string-constant cs-jump-to-next-bound-occurrence))
 (define jump-to-binding (string-constant cs-jump-to-binding))
