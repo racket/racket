@@ -39,12 +39,6 @@
 (define dir-url (string->url "http://test.com/foo/"))
 (define (req d? meth heads)
   (make-request meth (if d? dir-url file-url) heads (delay empty) #"" "host" 80 "client"))
-
-(define (bytes-sort bs)
-  (sort
-   (with-input-from-bytes bs
-     (λ () (port->bytes-lines #:line-mode 'return-linefeed)))
-   bytes<?))
   
 (define-syntax-rule (test-equal?* n lhs rhs)
   (test-equal? n (bytes-sort lhs) (bytes-sort rhs)))

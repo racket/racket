@@ -15,7 +15,14 @@
          redact
          collect
          htxml
-         call)
+         call
+         bytes-sort)
+
+(define (bytes-sort bs)
+  (sort
+   (with-input-from-bytes bs
+     (λ () (port->bytes-lines #:line-mode 'return-linefeed)))
+   bytes<?))
 
 (define keyword->symbol (compose string->symbol keyword->string))
 (define (simple-xpath/xexpr p x)
