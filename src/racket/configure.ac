@@ -855,8 +855,34 @@ AC_MSG_RESULT($mbsrtowcs)
 if test "${enable_libffi}" = "yes" ; then
  if test "${enable_foreign}" = "yes" ; then
   AC_MSG_CHECKING([for libffi])
+
+  # Try to get flags form pkg-config:
+  libffi_config_prog="pkg-config libffi"
+  libffi_config_preflags=`$libffi_config_prog --cflags-only-I  2> /dev/null`
+  if test "$?" = 0 ; then
+    libffi_config_cflags=`$libffi_config_prog --cflags-only-other  2> /dev/null`
+    if test "$?" = 0 ; then
+      libffi_config_ldflags=`$libffi_config_prog --libs  2> /dev/null`
+      if test "$?" != 0 ; then
+        libffi_config_preflags=""
+        libffi_config_cflags=""
+        libffi_config_ldflags="-lffi"
+      fi
+    else
+      libffi_config_preflags=""
+      libffi_config_cflags=""
+      libffi_config_ldflags="-lffi"
+    fi
+  else
+    libffi_config_preflags=""
+    libffi_config_cflags=""
+    libffi_config_ldflags="-lffi"
+  fi
+
+  OLD_CFLAGS="${CFLAGS}"
   OLD_LDFLAGS="${LDFLAGS}"
-  LDFLAGS="${LDFLAGS} -lffi"
+  CFLAGS="${CFLAGS} ${libffi_config_preflags} ${libffi_config_cflags}"
+  LDFLAGS="${LDFLAGS} ${libffi_config_ldflags}"
   AC_TRY_LINK([#include <ffi.h>],
               [ffi_cif cif; ]
               [ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);],
@@ -864,9 +890,13 @@ if test "${enable_libffi}" = "yes" ; then
              have_libffi=no)
   AC_MSG_RESULT($have_libffi)
   if test "${have_libffi}" = "no" ; then
+    CFLAGS="${OLD_CFLAGS}"
     LDFLAGS="${OLD_LDFLAGS}"
     echo "Building own libffi"
   else
+    CFLAGS="${OLD_CFLAGS}"
+    PREFLAGS="${PREFLAGS} ${libffi_config_preflags}"
+    CFLAGS="${COMPFLAGS} ${libffi_config_cflags}"
     echo "Using installed libffi"
     OWN_LIBFFI="OFF"
   fi
