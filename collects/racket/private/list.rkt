@@ -158,7 +158,7 @@
       (apply raise-type-error name "list" 2 proc init l more))
     (if (null? more)
         (unless (procedure-arity-includes? proc 2)
-          (raise-mismatch-error name "arity mismatch, does not accept 1 argument: " proc))
+          (raise-mismatch-error name "given procedure does not accept 2 arguments: " proc))
         (let ([len (length l)])
           (let loop ([more more][n 3])
             (unless (null? more)
@@ -171,8 +171,8 @@
               (loop (cdr more) (add1 n))))
           (unless (procedure-arity-includes? proc (+ 2 (length more)))
             (raise-mismatch-error name 
-                                  (format "arity mismatch, does not accept ~a arguments: " 
-                                          (add1 (length more)))
+                                  (format "given procedure does not accept ~a arguments: " 
+                                          (+ 2 (length more)))
                                   proc)))))
 
   (define foldl
@@ -184,11 +184,9 @@
       [(f init l . ls)
        (check-fold 'foldl f init l ls)
        (let loop ([init init] [ls (cons l ls)])
-         (cond [(andmap pair? ls)
-                (loop (apply f (mapadd car ls init)) (map cdr ls))]
-               [(ormap pair? ls)
-                (error 'foldl "received non-equal length input lists")]
-               [else init]))]))
+         (if (pair? (car ls)) ; `check-fold' ensures all lists have equal length
+             (loop (apply f (mapadd car ls init)) (map cdr ls))
+             init))]))
 
   (define foldr
     (case-lambda
@@ -201,11 +199,9 @@
       [(f init l . ls)
        (check-fold 'foldr f init l ls)
        (let loop ([ls (cons l ls)])
-         (cond [(andmap pair? ls)
-                (apply f (mapadd car ls (loop (map cdr ls))))]
-               [(ormap pair? ls)
-                (error 'foldr "received non-equal length input lists")]
-               [else init]))]))
+         (if (pair? (car ls)) ; `check-fold' ensures all lists have equal length
+             (apply f (mapadd car ls (loop (map cdr ls))))
+             init))]))
 
   (define (filter f list)
     (unless (and (procedure? f)
