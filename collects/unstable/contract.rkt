@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/contract racket/dict racket/match)
 
+(define (proj-get c) contract-proc)
+
 (define path-element?
   (or/c path-string? (symbols 'up 'same)))
 ;; Eli: We already have a notion of "path element" which is different

@@ -229,7 +229,7 @@
     udp-connected?
     udp?
     unit?
-    unknown?
+    ; ??? unknown?
     variable-reference?
     vector?
     void?
