@@ -544,6 +544,14 @@ resulting syntax object (assuming that the lexical information of
 @scheme[stx] includes the binding environment into which the
 @scheme[#%require] is lifted).
 
+If @racket[raw-require-spec] and @racket[stx] are part of the input to
+a transformer, then typically @racket[syntax-local-introduce] should be
+applied to each before passing them to
+@racket[syntax-local-lift-require], and then
+@racket[syntax-local-introduce] should be applied to the result of
+@racket[syntax-local-lift-require]. Otherwise, marks added
+by the macro expander can prevent access to the new imports.
+
 @transform-time[]}
 
 @defproc[(syntax-local-lift-provide [raw-provide-spec-stx syntax?])
