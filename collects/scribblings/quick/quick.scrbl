@@ -542,6 +542,8 @@ exposes a picture's drawing function. We can use
 @racket[make-pict-drawer] in a canvas-painting callback to draw a
 picture into a canvas:
 
+@(mr-interaction-eval (require slideshow/flash))
+
 @mr-def+int[
 (define (add-drawing p)
   (let ([drawer (make-pict-drawer p)])

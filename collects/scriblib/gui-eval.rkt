@@ -9,6 +9,7 @@
          racket/serialize
          "private/gui-eval-exn.ss"
          racket/system
+         racket/sandbox
          (for-syntax racket/base))
 
 (define-syntax define-mr
@@ -37,8 +38,13 @@
 (define gui-eval (make-base-eval))
 
 (define mred? (getenv "MREVAL"))
+(define-namespace-anchor anchor)
 
 (when mred?
+  (call-in-sandbox-context gui-eval
+                           (lambda ()
+                             (namespace-attach-module (namespace-anchor->namespace anchor)
+                                                      'racket/class)))
   (gui-eval '(require racket/gui/base))
   (gui-eval '(require slideshow)))
 
@@ -132,15 +138,20 @@
          (set! image-counter (add1 image-counter))
          (let ([dc (let ([pss (make-object (gui-eval 'ps-setup%))])
                      (send pss set-mode 'file)
-                     (send pss set-file (path-replace-suffix fn #".ps"))
+                     (send pss set-file (path-replace-suffix fn #".pdf"))
                      (parameterize ([(gui-eval 'current-ps-setup) pss])
-                       (make-object (gui-eval 'post-script-dc%) #f)))])
+                       (let ([xb (box 0)]
+                             [yb (box 0)])
+                         (send pss get-scaling xb yb)
+                         (new (gui-eval 'pdf-dc%) 
+                              [interactive #f]
+                              [width (* (unbox xb) (get-width v))]
+                              [height (* (unbox yb) (get-height v))]))))])
            (send dc start-doc "Image")
            (send dc start-page)
            (render v dc 0 0)
            (send dc end-page)
-           (send dc end-doc)
-           (system (format "epstopdf ~a" (path-replace-suffix fn #".ps"))))
+           (send dc end-doc))
          (let* ([bm (make-object (gui-eval 'bitmap%)
                       (inexact->exact (ceiling (get-width v)))
                       (inexact->exact (ceiling (get-height v))))]
