@@ -862,27 +862,27 @@ if test "${enable_libffi}" = "yes" ; then
   if test "$?" = 0 ; then
     libffi_config_cflags=`$libffi_config_prog --cflags-only-other  2> /dev/null`
     if test "$?" = 0 ; then
-      libffi_config_ldflags=`$libffi_config_prog --libs  2> /dev/null`
+      libffi_config_libs=`$libffi_config_prog --libs  2> /dev/null`
       if test "$?" != 0 ; then
         libffi_config_preflags=""
         libffi_config_cflags=""
-        libffi_config_ldflags="-lffi"
+        libffi_config_libs="-lffi"
       fi
     else
       libffi_config_preflags=""
       libffi_config_cflags=""
-      libffi_config_ldflags="-lffi"
+      libffi_config_libs="-lffi"
     fi
   else
     libffi_config_preflags=""
     libffi_config_cflags=""
-    libffi_config_ldflags="-lffi"
+    libffi_config_libs="-lffi"
   fi
 
   OLD_CFLAGS="${CFLAGS}"
-  OLD_LDFLAGS="${LDFLAGS}"
+  OLD_LIBS="${LIBS}"
   CFLAGS="${CFLAGS} ${libffi_config_preflags} ${libffi_config_cflags}"
-  LDFLAGS="${LDFLAGS} ${libffi_config_ldflags}"
+  LIBS="${LIBS} ${libffi_config_libs}"
   AC_TRY_LINK([#include <ffi.h>],
               [ffi_cif cif; ]
               [ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);],
@@ -891,7 +891,7 @@ if test "${enable_libffi}" = "yes" ; then
   AC_MSG_RESULT($have_libffi)
   if test "${have_libffi}" = "no" ; then
     CFLAGS="${OLD_CFLAGS}"
-    LDFLAGS="${OLD_LDFLAGS}"
+    LIBS="${OLD_LIBS}"
     echo "Building own libffi"
   else
     CFLAGS="${OLD_CFLAGS}"

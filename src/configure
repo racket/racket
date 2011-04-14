@@ -5127,27 +5127,27 @@ echo $ECHO_N "checking for libffi... $ECHO_C" >&6; }
   if test "$?" = 0 ; then
     libffi_config_cflags=`$libffi_config_prog --cflags-only-other  2> /dev/null`
     if test "$?" = 0 ; then
-      libffi_config_ldflags=`$libffi_config_prog --libs  2> /dev/null`
+      libffi_config_libs=`$libffi_config_prog --libs  2> /dev/null`
       if test "$?" != 0 ; then
         libffi_config_preflags=""
         libffi_config_cflags=""
-        libffi_config_ldflags="-lffi"
+        libffi_config_libs="-lffi"
       fi
     else
       libffi_config_preflags=""
       libffi_config_cflags=""
-      libffi_config_ldflags="-lffi"
+      libffi_config_libs="-lffi"
     fi
   else
     libffi_config_preflags=""
     libffi_config_cflags=""
-    libffi_config_ldflags="-lffi"
+    libffi_config_libs="-lffi"
   fi
 
   OLD_CFLAGS="${CFLAGS}"
-  OLD_LDFLAGS="${LDFLAGS}"
+  OLD_LIBS="${LIBS}"
   CFLAGS="${CFLAGS} ${libffi_config_preflags} ${libffi_config_cflags}"
-  LDFLAGS="${LDFLAGS} ${libffi_config_ldflags}"
+  LIBS="${LIBS} ${libffi_config_libs}"
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -5196,7 +5196,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 echo "${ECHO_T}$have_libffi" >&6; }
   if test "${have_libffi}" = "no" ; then
     CFLAGS="${OLD_CFLAGS}"
-    LDFLAGS="${OLD_LDFLAGS}"
+    LIBS="${OLD_LIBS}"
     echo "Building own libffi"
   else
     CFLAGS="${OLD_CFLAGS}"
