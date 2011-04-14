@@ -327,4 +327,42 @@
 
 ;; ----------------------------------------
 
+;; Check B&W drawing to B&W, 'solid vs. 'opaque
+(let ([mk
+       (lambda (expect style bg-col col mask?)
+         (let* ((bm1 (make-object bitmap% 2 2 #t))
+                (bm2 (make-object bitmap% 2 2 #t))
+                (bm3 (make-object bitmap% 2 2 #t))
+                (dc1 (new bitmap-dc% (bitmap bm1)))
+                (dc2 (new bitmap-dc% (bitmap bm2)))
+                (dc3 (new bitmap-dc% (bitmap bm3)))
+                (s (make-bytes 16)))
+           (send dc1 clear)
+           (send dc1 set-argb-pixels 0 0 2 1 #"\xFF\0\0\0\xFF\0\0\0")
+           (send dc2 clear)
+           (send dc2 set-argb-pixels 0 1 2 1 #"\xFF\0\0\0\xFF\0\0\0")
+           (send dc3 set-argb-pixels 0 0 2 2 (bytes-append #"\xFF\0\0\0\xFF\xFF\xFF\xFF"
+                                                           #"\xFF\0\0\0\xFF\xFF\xFF\xFF"))
+           (send dc2 set-background bg-col)
+           (send dc2 draw-bitmap bm1 0 0 style col (and mask? bm3))
+           (send dc2 set-bitmap #f)
+           (send bm2 get-argb-pixels 0 0 2 2 s)
+           (let ([col->str (lambda (c)
+                             (if (zero? (send c red)) "black" "white"))])
+             (test expect `(mk ,style ,(col->str bg-col) ,(col->str col), mask?) s))))]
+      [black (make-object color%)]
+      [white (make-object color% 255 255 255)])
+  (mk #"\377\0\0\0\377\0\0\0\377\0\0\0\377\0\0\0" 'solid white black #f)
+  (mk #"\377\0\0\0\377\0\0\0\377\0\0\0\377\0\0\0" 'solid black black #f)
+  (mk #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0" 'solid black white #f)
+  (mk #"\377\0\0\0\377\377\377\377\377\0\0\0\377\0\0\0" 'solid white black #t)
+  (mk #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0" 'solid white white #t)
+  (mk #"\377\0\0\0\377\0\0\0\377\377\377\377\377\377\377\377" 'opaque white black #f)
+  (mk #"\377\0\0\0\377\0\0\0\377\0\0\0\377\0\0\0" 'opaque black black #f)
+  (mk #"\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377" 'opaque white white #f)
+  (mk #"\377\0\0\0\377\377\377\377\377\377\377\377\377\0\0\0" 'opaque white black #t)
+  (mk #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0" 'opaque black white #t))
+
+;; ----------------------------------------
+
 (report-errs)

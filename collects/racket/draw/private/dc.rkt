@@ -1644,7 +1644,8 @@
           [(or (send src is-color?)
                (and (not (eq? style 'opaque))
                     (= alpha 1.0)
-                    black?))
+                    black?
+                    (not (collapse-bitmap-b&w?))))
            (let ([s (cairo_get_source cr)])
              (cairo_pattern_reference s)
              (cairo_set_source_surface cr 
