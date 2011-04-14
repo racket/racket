@@ -10,6 +10,8 @@
          ;; (which do not do compilation)
          (prefix-in el: errortrace/errortrace-lib) 
          
+         (prefix-in image-core: mrlib/image-core)
+         
          mzlib/pconvert
          racket/pretty
          mzlib/struct
@@ -402,6 +404,14 @@
                      [pretty-print-print-hook
                       (λ (value display? port)
                         (cond
+                          [(image-core:image? value)
+                           
+                           ;; do this computation here so that any failures
+                           ;; during drawing happen under the user's custodian
+                           (image-core:compute-image-cache value) 
+                           
+                           (write-special value port)
+                           1]
                           [(is-a? value snip%)
                            (write-special value port)
                            1]

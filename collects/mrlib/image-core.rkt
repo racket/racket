@@ -84,6 +84,13 @@ has been moved out).
   (define res (send img copy))
   (send res set-use-bitmap-cache?! (and bitmap-cache? #t))
   res)
+
+(define (compute-image-cache img)
+  (unless (image? img)
+    (error 'compute-cached-bitmap "expected an image as the first argument, got ~e" img))
+  (when (is-a? img image<%>)
+    (send img compute-cached-bitmap))
+  (void))
   
 ;; a shape is either:
 ;;
@@ -233,7 +240,10 @@ has been moved out).
         (send bdc get-bitmap)
       (send bdc set-bitmap #f))))
 
-(define-local-member-name set-use-bitmap-cache?!)
+(define-local-member-name 
+  set-use-bitmap-cache?!
+  set-cached-bitmap
+  compute-cached-bitmap)
 
 (define image%
   (class* snip% (png-convertible<%> image<%>)
@@ -320,17 +330,19 @@ has been moved out).
       (calc-scroll-step)
       (inexact->exact (ceiling (/ y scroll-step))))
 
-    (define/override (copy) (make-image shape bb normalized? pinhole))
+    (define/override (copy) 
+      (define res (make-image shape bb normalized? pinhole))
+      (when cached-bitmap
+        (send res set-cached-bitmap cached-bitmap))
+      res)
     
     (define cached-bitmap #f)
     (define use-cached-bitmap? #t)
     
-    (define/public (set-use-bitmap-cache?! u-b-c?) 
-      (set! use-cached-bitmap? u-b-c?)
-      (unless use-cached-bitmap?
-        (set! cached-bitmap #f)))
+    ;; this method is only used by the 'copy' method
+    (define/public (set-cached-bitmap bm) (set! cached-bitmap bm))
     
-    (define/override (draw dc x y left top right bottom dx dy draw-caret)
+    (define/public (compute-cached-bitmap)
       (when use-cached-bitmap?
         (unless cached-bitmap
           (set! cached-bitmap (make-bitmap (+ (inexact->exact (round (bb-right bb))) 1) 
@@ -338,7 +350,15 @@ has been moved out).
           (define bdc (make-object bitmap-dc% cached-bitmap))
           (send bdc erase)
           (render-image this bdc 0 0)
-          (send bdc set-bitmap #f)))
+          (send bdc set-bitmap #f))))
+    
+    (define/public (set-use-bitmap-cache?! u-b-c?) 
+      (set! use-cached-bitmap? u-b-c?)
+      (unless use-cached-bitmap?
+        (set! cached-bitmap #f)))
+    
+    (define/override (draw dc x y left top right bottom dx dy draw-caret)
+      (compute-cached-bitmap)
       
       (let ([alpha (send dc get-alpha)])
         (when (pair? draw-caret)
@@ -1182,7 +1202,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (provide make-image image-shape image-bb image-normalized? image%
         
-         un/cache-image
+         un/cache-image compute-image-cache
          
          (struct-out bb)
          (struct-out point)

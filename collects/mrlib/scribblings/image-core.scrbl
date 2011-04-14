@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label mrlib/image-core))
 
 @title{Image Core}
 
@@ -26,4 +27,13 @@ up an image.
 @defproc[(un/cache-image [image image?] [b any/c]) image?]{
   Returns an image that either caches its drawing in the 
   snip @method[snip% draw] method or doesn't, depending on @racket[b].
+}
+
+@defproc[(compute-image-cache [image image?]) void?]{
+  When the image has a bitmap-cache (which it does by default,
+  although @racket[un/cache-image] can disable it), this function
+  fills in the bitmap, doing the work to draw image into the bitmap.
+  
+  Ordinarily, the image's bitmap cache is computed the first time
+  the image is actually rendered.
 }
