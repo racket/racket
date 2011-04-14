@@ -711,10 +711,8 @@ follows.
  ]
 
  If @racket[id] has a transformer binding to a @tech{rename
- transformer}, then the exported binding is the target identifier of
- the @tech{rename transformer}, instead of @racket[id], unless the
- target identifier has a true value for the
- @racket['not-free-identifier=?] @tech{syntax property}.}
+ transformer}, then the transformer affects the exported binding. See
+ @racket[make-rename-transformer] for more information.}
 
  @defsubform[(all-defined-out)]{ Exports all identifiers that are
  defined at @tech{phase level} 0 or @tech{phase level} 1 within the

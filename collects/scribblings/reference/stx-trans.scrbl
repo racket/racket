@@ -115,19 +115,39 @@ transformer, including in non-application positions, in @scheme[set!]
 expressions.
 
 Such a transformer could be written manually, but the one created by
-@scheme[make-rename-transformer] also causes the parser to install a
-@scheme[free-identifier=?] and @scheme[identifier-binding]
-equivalence, as long as @scheme[id-stx] does not have a true value for
-the @indexed-scheme['not-free-identifier=?] @tech{syntax property}.
-Also, if @scheme[id-stx] has a true value for the
-@indexed-scheme['not-provide-all-defined] @tech{syntax property} and
-it is bound as a module-level transformer, the bound identifier is not
-exported by @scheme[all-defined-out]; the @scheme[provide] form
-otherwise uses a symbol-valued @indexed-scheme['nominal-id] property
-of @scheme[id-stx] to specify the ``nominal source identifier'' of the
-binding. Finally, the rename transformer cooperates specially with
-@scheme[syntax-local-value] and
-@scheme[syntax-local-make-delta-introducer].}
+@scheme[make-rename-transformer] triggers special cooperation with the
+parser and other syntactic forms when @racket[_id] is bound to the
+rename transformer:
+
+@itemlist[
+
+ @item{The parser to installs a @scheme[free-identifier=?] and
+       @scheme[identifier-binding] equivalence between @racket[_id]
+       and @racket[_id-stx], as long as @scheme[id-stx] does not have
+       a true value for the @indexed-scheme['not-free-identifier=?]
+       @tech{syntax property}.}
+
+ @item{A @racket[provide] of @racket[_id] provides the binding
+       indicated by @racket[id-stx] instead of @racket[_id], as long
+       as @scheme[id-stx] does not have a true value for the
+       @indexed-scheme['not-free-identifier=?] @tech{syntax property}
+       and as long as @racket[id-stx] has a binding.}
+
+ @item{If @scheme[provide] exports @racket[_id], it uses a
+       symbol-valued @indexed-scheme['nominal-id] property of
+       @scheme[id-stx] to specify the ``nominal source identifier'' of
+       the binding as reported by @racket[identifier-binding].}
+
+ @item{If @scheme[id-stx] has a true value for the
+       @indexed-scheme['not-provide-all-defined] @tech{syntax
+       property}, then @racket[_id] (or its target) is not exported by
+       @scheme[all-defined-out].}
+
+ @item{The @scheme[syntax-local-value] and
+       @scheme[syntax-local-make-delta-introducer] functions recognize
+       rename-transformer bindings and consult their targets.}
+
+]}
 
 
 @defproc[(rename-transformer-target [transformer rename-transformer?])
@@ -431,7 +451,11 @@ being expanded for the body of a module, then resolving
 Like @scheme[syntax-local-value], but the result is normally two
 values. If @scheme[id-stx] is bound to a @tech{rename transformer},
 the results are the rename transformer and the identifier in the
-transformer augmented with certificates from @scheme[id-stx]. If
+transformer augmented with certificates from
+@scheme[id-stx]. @margin-note*{Beware that @racket[provide] on an
+@racket[_id] bound to a @tech{rename transformer} may export the
+target of the rename instead of @racket[_id]. See
+@racket[make-rename-transformer] for more information.} If
 @scheme[id-stx] is not bound to a @tech{rename transformer}, then the
 results are the value that @scheme[syntax-local-value] would produce
 and @scheme[#f].
