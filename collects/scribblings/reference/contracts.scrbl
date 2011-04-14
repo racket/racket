@@ -1436,6 +1436,12 @@ the other; both are provided for convenience and clarity.
 
 }
 
+@defproc[(blame-replace-negative [b blame?] [neg any/c]) blame?]{
+  Produces a @racket[blame?] object just like @racket[b] except
+             that it uses @racket[neg] instead of the negative 
+             position @racket[b] has.
+}
+  
 @defproc[(raise-blame-error [b blame?] [x any/c] [fmt string?] [v any/c] ...)
          none/c]{
 
@@ -1449,18 +1455,12 @@ specific to the precise violation.
 
 }
 
-@defproc[(exn:fail:contract:blame? [x any/c]) boolean?]{
-This predicate recognizes exceptions raised by @racket[raise-blame-error].
-}
-
-@defproc[(exn:fail:contract:blame-object [e exn:fail:contract:blame?]) blame?]{
-This accessor extracts the blame object associated with a contract violation.
+@defstruct[(exn:fail:contract:blame exn:fail:contract) ([object blame?])]{
+  This exception is raised to signal a contract error. The @racket[blame]
+  field extracts the @racket[blame?] object associated with a contract violation.
 }
 
 @subsection{Contracts as structs}
-
-@emph{@bold{Note:}
- The interface in this section is unstable and subject to change.}
 
 @para{
 The property @racket[prop:contract] allows arbitrary structures to act as
@@ -1630,7 +1630,8 @@ where contracts appear in the source and where the positive and negative
 positions of the contracts appear.
 
 To make Check Syntax show obligation information for your new contract
-combinators, use the following properties:
+combinators, use the following properties (some helper macros and functions
+are below):
 
 @itemize[@item{@racketblock0['racket/contract:contract :
                              (vector/c symbol? (listof syntax?) (listof syntax?))]
@@ -1691,6 +1692,28 @@ combinators, use the following properties:
                  acceess to values under contract via the dependency. 
                  }
          ]
+
+@defform/subs[(define/final-prop header body ...)
+              ([header main-id
+                       (main-id id ...)
+                       (main-id id ... . id)])]{
+  The same as @racket[(define header body ...)], except that uses of
+              @racket[main-id] in the header are annotated 
+              with the @racket['racket/contract:contract] property
+              (as above).
+}
+ 
+@defform/subs[(define/subexpression-pos-prop header body ...)
+              ([header main-id
+                       (main-id id ...)
+                       (main-id id ... . id)])]{
+  The same as @racket[(define header body ...)], except that uses of
+              @racket[main-id] in the header are annotated 
+              with the @racket['racket/contract:contract] property
+              (as above) and arguments are annotated with the
+              @racket['racket/contract:positive-position] property.
+}
+
 
 @; ------------------------------------------------------------------------
 
@@ -1871,3 +1894,63 @@ defines the @racket[bst/c] contract that checks the binary
 search tree invariant. Removing the @racket[-opt/c] also
 makes a binary search tree contract, but one that is
 (approximately) 20 times slower.}
+
+@section{Legacy Contracts}
+
+@defproc[(make-proj-contract [name any/c] 
+                             [proj
+                              (or/c (-> any/c 
+                                        any/c
+                                        (list/c any/c any/c)
+                                        contact?
+                                        (-> any/c any/c))
+                                    (-> any/c 
+                                        any/c
+                                        (list/c any/c any/c)
+                                        contact?
+                                        boolean?
+                                        (-> any/c any/c)))]
+                             [first-order (-> any/c boolean?)])
+         contract?]{
+  Builds a contract using an old interface. 
+  
+  Modulo errors, it is equivalent to:
+  @racketblock[(make-contract
+                #:name name
+                #:first-order first-order
+                #:projection
+                (cond
+                  [(procedure-arity-includes? proj 5)
+                   (lambda (blame)
+                     (proj (blame-positive blame)
+                           (blame-negative blame)
+                           (list (blame-source blame) (blame-value blame))
+                           (blame-contract blame)
+                           (not (blame-swapped? blame))))]
+                  [(procedure-arity-includes? proj 4)
+                   (lambda (blame)
+                     (proj (blame-positive blame)
+                           (blame-negative blame)
+                           (list (blame-source blame) (blame-value blame))
+                           (blame-contract blame)))]))]
+}
+                   
+@defproc[(raise-contract-error [val any/c] [src any/c] [pos any/c] [name any/c] [fmt string?] [arg any/c] ...)
+         any/c]{
+  Calls @racket[raise-blame-error] after building a @racket[blame] struct from 
+  the @racket[val], @racket[src], @racket[pos], and @racket[name] arguments.
+  The @racket[fmt] string and following arguments are passed to
+  @racket[format] and used as the string in the error message.
+}
+               
+@defproc[(contract-proc [c contract?])
+         (->* (symbol? symbol? (or/c syntax? (list/c any/c any/c)))
+              (boolean?)
+              (-> any/c any))]{
+  Constructs an old-style projection from a contract.
+  
+  The resulting function accepts the information that is in a @racket[blame]
+  struct and returns a projection function that checks the contract.
+  
+}
+                              

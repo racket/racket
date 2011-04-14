@@ -8,8 +8,7 @@
 (require (for-syntax racket/base
                      "helpers.rkt"))
 
-(provide 
-         coerce-contract
+(provide coerce-contract
          coerce-contracts
          coerce-flat-contract
          coerce-flat-contracts
@@ -23,7 +22,6 @@
          flat-contract
          flat-contract-predicate
          flat-named-contract
-         build-flat-contract
          
          build-compound-type-name
          
@@ -182,9 +180,19 @@
 (define-syntax (define/final-prop stx)
   (syntax-case stx ()
     [(_ header bodies ...)
-     (with-syntax ([ctc (if (identifier? #'header)
-                            #'header
-                            (car (syntax-e #'header)))])
+     (with-syntax ([ctc 
+                    (syntax-case #'header ()
+                      [id
+                       (identifier? #'id)
+                       #'id]
+                      [(id1 . rest)
+                       (identifier? #'id1)
+                       #'id1]
+                      [_ 
+                       (raise-syntax-error #f 
+                                           "malformed header position"
+                                           stx 
+                                           #'header)])])
        (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
          #'(begin
              (define ctc/proc
@@ -501,6 +509,3 @@
                                            (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))))
-
-(define (build-flat-contract name pred) (make-predicate-contract name pred))
-

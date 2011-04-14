@@ -1,8 +1,6 @@
 #lang racket/base
 (require racket/contract racket/dict racket/match)
 
-(define (proj-get c) contract-proc)
-
 (define path-element?
   (or/c path-string? (symbols 'up 'same)))
 ;; Eli: We already have a notion of "path element" which is different
@@ -174,7 +172,7 @@
                         values
                         (for/list ([elem (in-list elems)]
                                    [elem/c (in-list elem/cs)])
-                          ((((proj-get elem/c) elem/c) pos neg src name blame) elem))))))
+                          (((contract-proc elem/c) pos neg src name blame) elem))))))
                  (lambda (idx) idx)
                  #f
                  (lambda (idx) (more?))
@@ -301,12 +299,12 @@
 (define (project-in p x)
   (match p
     [(proj c o i s n b)
-     ((((proj-get c) c) i o s n (not b)) x)]))
+     (((contract-proc c) i o s n (not b)) x)]))
 
 (define (project-out p x)
   (match p
     [(proj c o i s n b)
-     ((((proj-get c) c) o i s n b) x)]))
+     (((contract-proc c) o i s n b) x)]))
 
 (define (dict->bindings dict)
   (match dict

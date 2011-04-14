@@ -39,7 +39,10 @@ v4 todo:
          procedure-accepts-and-more?
          check-procedure
          check-procedure/more
-         (struct-out contracted-function))
+         contracted-function?
+         contracted-function-proc
+         contracted-function-ctc
+         make-contracted-function)
 
 (define-syntax-parameter making-a-method #f)
 (define-for-syntax (make-this-parameters id)

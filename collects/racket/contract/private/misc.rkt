@@ -477,7 +477,7 @@
 (define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]
          [pred (flat-contract-predicate ctc)])
-    (build-flat-contract
+    (flat-named-contract
      (build-compound-type-name 'not/c ctc)
      (λ (x) (not (pred x))))))
 
@@ -636,7 +636,7 @@
 
 (define/subexpression-pos-prop (syntax/c ctc-in)
   (let ([ctc (coerce-contract 'syntax/c ctc-in)])
-    (build-flat-contract
+    (flat-named-contract
      (build-compound-type-name 'syntax/c ctc)
      (let ([pred (flat-contract-predicate ctc)])
        (λ (val)

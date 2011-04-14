@@ -4,27 +4,29 @@
 
 ;; this code builds the list of predicates (in case it changes, this may need to be re-run)
 #;
-(define predicates
+(define runtime-predicates
   (let ([fn (build-path (collection-path "scheme")
                         "compiled" 
-                        "main_ss.zo")])
+                        "main_rkt.zo")])
     (let-values ([(vars stx)
                   (module-compiled-exports
                    (parameterize ([read-accept-compiled #t])
                      (call-with-input-file fn read)))])
-      
-      (filter (λ (sym) 
-                (let ([str (symbol->string sym)])
-                  (and (not (equal? str ""))
-                       (regexp-match #rx"[?]$" str)
-                       (not (regexp-match #rx"[=<>][?]$" str)))))
-              (map car (cdr (assoc 0 vars)))))))
-
+      (sort
+       (filter (λ (sym) 
+                 (let ([str (symbol->string sym)])
+                   (and (regexp-match #rx"[?]$" str)
+                        (not (regexp-match #rx"[=<>][?]$" str)))))
+               (map car (cdr (assoc 0 vars))))
+       string<=?
+       #:key symbol->string))))
 
 (define-for-syntax predicates
   '(absolute-path?
     arity-at-least?
     bitwise-bit-set?
+    blame-original?
+    blame-swapped?
     blame?
     boolean?
     box?
@@ -35,6 +37,10 @@
     bytes-converter?
     bytes?
     channel?
+    chaperone-contract-property?
+    chaperone-contract?
+    chaperone-of?
+    chaperone?
     char-alphabetic?
     char-blank?
     char-graphic?
@@ -59,21 +65,18 @@
     continuation-prompt-tag?
     continuation?
     contract-first-order-passes?
+    contract-property?
     contract-stronger?
     contract?
-    contract-property?
-    contract-struct?
     custodian-box?
     custodian-memory-accounting-available?
     custodian?
+    custom-print-quotable?
     custom-write?
     date-dst?
     date?
-    dict-can-functional-set?
-    dict-can-remove-keys?
-    dict-mutable?
-    dict?
     directory-exists?
+    double-flonum?
     empty?
     eof-object?
     ephemeron?
@@ -91,6 +94,7 @@
     exn:fail:contract:blame?
     exn:fail:contract:continuation?
     exn:fail:contract:divide-by-zero?
+    exn:fail:contract:non-fixnum-result?
     exn:fail:contract:variable?
     exn:fail:contract?
     exn:fail:filesystem:exists?
@@ -113,12 +117,14 @@
     file-exists?
     file-stream-port?
     fixnum?
-    flat-contract?
     flat-contract-property?
-    flat-contract-struct?
+    flat-contract?
+    flonum?
     generic?
     handle-evt?
+    has-contract?
     hash-eq?
+    hash-equal?
     hash-eqv?
     hash-has-key?
     hash-placeholder?
@@ -126,6 +132,10 @@
     hash?
     identifier?
     immutable?
+    impersonator-of?
+    impersonator-property-accessor-procedure?
+    impersonator-property?
+    impersonator?
     implementation?
     inexact-real?
     inexact?
@@ -166,6 +176,7 @@
     placeholder?
     port-closed?
     port-provides-progress-evts?
+    port-try-file-lock?
     port-writes-atomic?
     port-writes-special?
     port?
@@ -197,6 +208,7 @@
     semaphore?
     sequence?
     set!-transformer?
+    single-flonum?
     special-comment?
     srcloc?
     string?
@@ -204,12 +216,14 @@
     struct-constructor-procedure?
     struct-mutator-procedure?
     struct-predicate-procedure?
+    struct-type-property-accessor-procedure?
     struct-type-property?
     struct-type?
     struct?
     subclass?
     subprocess?
     symbol-interned?
+    symbol-unreadable?
     symbol?
     syntax-local-transforming-module-provides?
     syntax-original?
@@ -229,7 +243,7 @@
     udp-connected?
     udp?
     unit?
-    ; ??? unknown?
+    unsupplied-arg?
     variable-reference?
     vector?
     void?
