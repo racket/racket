@@ -138,6 +138,9 @@
   (init style
         [extra-hwnds null])
 
+  (define enabled? #t)
+  (define parent-enabled? #t)
+
   (super-new)
   
   (define eventspace (if parent
@@ -271,8 +274,6 @@
   (define/public (get-handle) hwnd)
   (define/public (get-client-handle) (get-content-hwnd))
 
-  (define enabled? #t)
-  (define parent-enabled? #t)
   (define/public (enable on?)
     (unless (eq? enabled? (and on? #t))
       (atomically
