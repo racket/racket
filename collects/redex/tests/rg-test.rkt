@@ -518,7 +518,13 @@
          empty any 5 0 (decisions #:nt (patterns first)
                                   #:any (λ (langc sexpc) (values sexpc 'sexp))
                                   #:var (list (λ _ 'x))))
-        'x))
+        'x)
+  (test 
+   (generate-term/decisions 
+    empty (in-hole (any hole) 7) 5 0
+    (decisions #:any (list (λ (_ sexp) (values sexp 'sexp)))
+               #:nt (patterns fourth)))
+   (term (hole 7))))
 
 ;; `hide-hole' pattern
 (let ()

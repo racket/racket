@@ -343,7 +343,7 @@
                         [`any
                          (λ (r s a e f)
                            (let*-values ([(lang nt) ((next-any-decision) langc sexpc)]
-                                         [(term) (gen-nt lang nt #f r s a (list the-hole))])
+                                         [(term) (gen-nt lang nt #f r s a the-not-hole)])
                              (values term e)))]
                         [(or (? symbol? (? nt? p)) `(cross ,(? symbol? p)))
                          (let ([cross? (not (symbol? pat))])
