@@ -44,6 +44,11 @@
            base-free-identifier=? base-free-template-identifier=?
            base-free-transformer-identifier=? base-free-label-identifier=?)
 
+@(define-syntax-rule (additionals racket/base id ...)
+   (begin
+     (require (for-label (only-in racket/base id ...)))
+     (schemeblock id ...)))
+
 @(define old-vers @elem{version 372})
 
 @title{@bold{MzScheme}: Legacy Module Language}
@@ -210,7 +215,7 @@ The same as @|base-top-interaction| in @schememodname[scheme/base].}
 
 @; ----------------------------------------
 
-@section{Old Functions}
+@section[#:tag "Old_Functions"]{Old Functions}
 
 @defproc[(apply [proc procedure?] [v any/c] ... [lst list?]) any]{
 
@@ -390,3 +395,26 @@ redundant or @scheme['equal] is provided with @scheme['eqv], the
 Like @scheme[make-immutable-hash], @scheme[make-immutable-hasheq], or
 @scheme[make-immutable-hasheqv], depending on whether an
 @scheme['equal] or @scheme['eqv] @scheme[flag] is provided.}
+
+@; ----------------------------------------
+
+@section{Extra Libraries}
+
+The @racketmodname[mzscheme] library re-exports
+@racketmodname[racket/promise], @racketmodname[racket/tcp], and
+@racketmodname[racket/udp].
+
+@; ----------------------------------------
+
+@section{Omitted Functions}
+
+In addition to functions that have replacements listed in
+@secref["Old_Functions"], the following functions are exported by
+@racketmodname[racket/base] but not @racketmodname[mzscheme]:
+
+@additionals[ racket/base
+compose filter sort foldl foldr
+remv remq remove remv* remq* remove* memf assf findf 
+build-vector build-string build-list
+hash-keys hash-values hash->list hash-set* hash-set*!
+]
