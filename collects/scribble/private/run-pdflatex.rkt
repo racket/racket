@@ -27,8 +27,9 @@
       (err "didn't get a stable result after ~a runs" n))
     (if (zero? n)
       (notify "running pdflatex on ~a" file)
-      (notify " re-running ~a~a time"
-                    (add1 n) (case (add1 n) [(2) 'nd] [(3) 'rd] [else 'th])))
+      (notify " running ~a~a time"
+              (add1 n) 
+              (case (add1 n) [(2) 'nd] [(3) 'rd] [else 'th])))
     (run)
     ;; see if we get a "Rerun" note, these seem to come in two flavors
     ;; * Label(s) may have changed. Rerun to get cross-references right.

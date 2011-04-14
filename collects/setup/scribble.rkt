@@ -25,8 +25,7 @@
 
 (provide setup-scribblings
          verbose
-         run-pdflatex
-)
+         run-pdflatex)
 
 (define verbose (make-parameter #t))
 
