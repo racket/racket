@@ -37,9 +37,9 @@
                                   searches 
                                   deps 
                                   known-deps
-                     build? time out-time need-run?
-                     need-in-write? need-out-write?
-                     vers rendered? failed?)
+                                  build? time out-time need-run?
+                                  need-in-write? need-out-write?
+                                  vers rendered? failed?)
   #:transparent
   #:mutable)
 
@@ -362,7 +362,12 @@
          [dest-dir latex-dest]
          ;; Use PLT manual style:
          [prefix-file (collection-file-path "manual-prefix.tex" "scribble")]
-         [style-file (collection-file-path "manual-style.tex" "scribble")])
+         [style-file (collection-file-path "manual-style.tex" "scribble")]
+         ;; All .tex files go to the same directory, so prefix
+         ;; generated/copied file names to keep them separate:
+         [helper-file-prefix (let-values ([(base name dir?) (split-path
+                                                             (doc-dest-dir doc))])
+                               (path-element->string name))])
     (let* ([flags (doc-flags doc)]
            [multi? (memq 'multi-page flags)]
            [main?  (doc-under-main? doc)]

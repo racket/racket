@@ -22,7 +22,8 @@
                 [prefix-file #f]
                 [style-file #f]
                 [style-extra-files null]
-                [extra-files null])
+                [extra-files null]
+                [helper-file-prefix #f])
 
     (define/public (current-render-mode)
       '())
@@ -567,14 +568,15 @@
     (define/public (auto-extra-files-paths v) null)
 
     (define/public (install-extra-files ds)
-      (for ([fn extra-files]) (install-file fn))
+      (for ([fn extra-files]) (install-file fn #:private-name? #f))
       (unless prefix-file
         (for ([d (in-list ds)])
           (let ([extras (ormap (lambda (v) (and (auto-extra-files? v) v))
                                (style-properties (part-style d)))])
             (when extras
               (for ([fn (in-list (auto-extra-files-paths extras))])
-                (install-file (main-collects-relative->path fn))))))))
+                (install-file (main-collects-relative->path fn)
+                              #:private-name? #f)))))))
 
     (define/public (render ds fns ri)
       ;; maybe this should happen even if fns is empty or all #f?
@@ -699,7 +701,7 @@
     (define copied-srcs (make-hash))
     (define copied-dests (make-hash))
 
-    (define/public (install-file fn [content #f])
+    (define/public (install-file fn [content #f] #:private-name? [private-name? #t])
       (if (and refer-to-existing-files
                (not content))
           (if (string? fn)
@@ -712,7 +714,12 @@
                       [dest-dir (get-dest-directory #t)]
                       [fn (file-name-from-path fn)])
                   (let ([src-file (build-path (or src-dir (current-directory)) fn)]
-                        [dest-file (build-path (or dest-dir (current-directory)) fn)]
+                        [dest-file (build-path (or dest-dir (current-directory))
+                                               (if (and private-name?
+                                                        helper-file-prefix)
+                                                   (string-append helper-file-prefix
+                                                                  (path-element->string fn))
+                                                   fn))]
                         [next-file-name (lambda (dest)
                                           (let-values ([(base name dir?) (split-path dest)])
                                             (build-path
