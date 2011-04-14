@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define scribblings '(("lazy.scrbl" () (experimental))))
+
 ;; STC 2010-06-01
 ;; Changing lazy to be a tools-based language so I can use 
 ;; stepper-lanugage-interface to add a stepper button. This change is temporary
@@ -7,7 +9,6 @@
 
 ;(require string-constants)
 ;(define name "Lazy Scheme")
-;(define scribblings '(("lazy.scrbl" () (experimental))))
 ;(define drscheme-language-modules '(("lazy.ss" "lazy")))
 ;(define drscheme-language-positions
 ;  `((,(string-constant experimental-languages) "Lazy Racket")))
