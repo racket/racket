@@ -195,7 +195,6 @@
   (err/rt-test (vector-argmax (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmax" #rx"procedure that returns real numbers"))
   (err/rt-test (vector-argmax (lambda (x) x) (vector)) (check-regs #rx"vector-argmax" #rx"non-empty vector")))
 
-
 ;; vector-mem{ber,v,q}
 
   (test 0 vector-member 7 #(7 1 2))
@@ -208,6 +207,25 @@
   (test #f vector-memq (cons 1 2) (vector 7 (cons 1 2) 2))
   (test #f vector-memv (cons 1 2) (vector 7 (cons 1 2) 2))
   (test 1 vector-member (cons 1 2) (vector 7 (cons 1 2) 2))
+
+;; ---------------------------------------- vector-map
+
+(let ()
+
+  (define ((check-regs . regexps) exn)
+    (and (exn:fail? exn)
+         (andmap (λ (reg) (regexp-match reg (exn-message exn)))
+                 regexps)))
+  (test #(2) vector-map add1 #(1))
+  (test #(1 2 3) vector-map (lambda (x y) (max x y)) #(1 -2 -3) #(0 2 3))
+  (let ([vec (vector 1 -2 -3)])
+    (test #(1 2 3) vector-map! (lambda (x y) (max x y)) vec #(0 2 3))
+    (test #(1 2 3) values vec))
+  (err/rt-test (vector-map 1 #()) (check-regs #rx"vector-map" #rx"<procedure>"))
+  (err/rt-test (vector-map (lambda (x) x) 1) (check-regs #rx"vector-map" #rx"<vector>"))
+  (err/rt-test (vector-map (lambda (x) x) #() 1) (check-regs #rx"vector-map" #rx"<vector>"))
+  (err/rt-test (vector-map (lambda (x) x) #() #(1)) (check-regs #rx"vector-map" #rx"same size"))
+  (err/rt-test (vector-map (lambda (x) x) #() #() #()) (check-regs #rx"vector-map" #rx"arity mismatch")))
 
 
 ;; ---------- check no collisions with srfi/43 ----------

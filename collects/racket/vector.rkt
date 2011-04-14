@@ -69,19 +69,14 @@
 ;; uses name for error reporting
 (define (varargs-check f v vs name)
   (unless (procedure? f)
-    (raise-type-error name "procedure" 0 f))
-  (unless (procedure-arity-includes? f (add1 (length vs)))
-    (raise-type-error
-     name
-     (format "procedure (arity ~a)" (add1 (length vs)))
-     0 f))
+    (apply raise-type-error name "procedure" 0 f v vs))
   (unless (vector? v)
-    (raise-type-error name "vector" 1 v))
+    (apply raise-type-error name "vector" 1 f v vs))
   (let ([len (unsafe-vector-length v)])
     (for ([e (in-list vs)]
           [i (in-naturals 2)])
       (unless (vector? e)
-        (raise-type-error name "vector" e i))
+        (apply raise-type-error name "vector" e i f v vs))
       (unless (= len (unsafe-vector-length e))
         (raise
          (make-exn:fail:contract
@@ -96,6 +91,13 @@
                       (format "given ~a arguments total"
                               (sub1 (length args))))))
           (current-continuation-marks)))))
+    (unless (procedure-arity-includes? f (add1 (length vs)))
+      (raise-mismatch-error
+       name
+       (format 
+        "arity mismatch (expected arity ~a to match number of supplied vectors): "
+        (add1 (length vs)))
+       f))
     len))
 
 (define (vector-map f v . vs)
