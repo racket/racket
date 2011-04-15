@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "utils.ss"
-          (for-label ffi/unsafe/security))
+          (for-label ffi/file))
 
-@title[#:tag "security-guard-checks"]{Security-Guard Checks}
+@title[#:tag "file-security-guard-checks"]{File Security-Guard Checks}
 
-@defmodule[ffi/unsafe/security]
+@defmodule[ffi/file]
 
 @defproc[(security-guard-check-file
            [who symbol?]
