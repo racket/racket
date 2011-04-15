@@ -1166,11 +1166,11 @@ step, using @racket[pred-expr] to determine equivalence.
        
        (test-results)]
 
-@defform/subs[(test-->>∃ option ... rel-expr start-expr spec-expr)
+@defform/subs[(test-->>∃ option ... rel-expr start-expr goal-expr)
               ([option (code:line #:steps steps-expr)])
               #:contracts ([rel-expr reduction-relation?]
                            [start-expr any/c]
-                           [spec-expr (or/c (-> any/c any/c)
+                           [goal-expr (or/c (-> any/c any/c)
                                             (not/c procedure?))]
                            [steps-expr (or/c natural-number/c +inf.0)])]{
 Tests to see if the term @racket[start-expr] reduces according to the reduction 
