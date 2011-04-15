@@ -173,7 +173,7 @@ might be a device that is connected through the filesystem, such as
 port is block-buffered by default, unless the file corresponds to a
 terminal, in which case it is line-buffered by default.
 
-The port produced by @racket[open-output-port] should be explicitly
+The port produced by @racket[open-output-file] should be explicitly
 closed, either though @racket[close-output-port] or indirectly via
 @racket[custodian-shutdown-all], to release the OS-level file
 handle. The output port will not be closed automatically if it is
