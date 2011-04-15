@@ -1606,7 +1606,7 @@ A syntax class is integrable if
 
 ;; litset-directive-table
 (define litset-directive-table
-  (cons (list '#:at check-identifier)
+  (cons (list '#:at (lambda (stx ctx) stx))
         phase-directive-table))
 
 ;; var-pattern-directive-table

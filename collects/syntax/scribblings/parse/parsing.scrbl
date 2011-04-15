@@ -92,13 +92,18 @@ input's binding at phase @scheme[phase-expr].
 @specsubform/subs[(code:line #:literal-sets (literal-set ...))
                   ([literal-set literal-set-id
                                 (literal-set-id literal-set-option ...)]
-                   [literal-set-option (code:line #:at context-id)
+                   [literal-set-option (code:line #:at lctx)
                                        (code:line #:phase phase-expr)])
                   #:contracts ([phase-expr (or/c exact-integer? #f)])]{
 
 Many literals can be declared at once via one or more @tech{literal
 sets}, imported with the @scheme[#:literal-sets] option. See
 @tech{literal sets} for more information.
+
+If the @racket[#:at] keyword is given, the lexical context of the
+@racket[lctx] term is used to determine which identifiers in the
+patterns are treated as literals; this option is useful primarily for
+macros that generate @racket[syntax-parse] expressions.
 }
 
 @specsubform[(code:line #:conventions (conventions-id ...))]{
