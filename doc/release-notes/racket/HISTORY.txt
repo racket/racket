@@ -1,3 +1,7 @@
+Version 5.1.0.6
+Removed the "MrEd" compatability executable under Windows
+ and Mac OS X, but the "mred" compatibility script remains
+
 Version 5.1.0.5
 racket/gui: added 'wheel-left and 'wheel-right events
 
