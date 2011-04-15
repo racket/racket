@@ -4,6 +4,8 @@
          racket/list
          racket/match
          racket/path
+         racket/fasl
+         racket/serialize
          setup/collects
          setup/parallel-do
          racket/class
@@ -12,9 +14,14 @@
          racket/place
          (for-syntax racket/base))
 
+
 (provide parallel-compile
          parallel-compile-files)
 
+(define-syntax-rule (DEBUG_COMM a ...)
+  (void)
+;  (begin a ...)
+)
 
 (define Lock-Manager% (class object%
   (field (locks (make-hash)))
@@ -181,125 +188,71 @@
     (define/public (get-results) (void))
     (super-new)))
 
+(define (parallel-build work-queue worker-count)
+  (parallel-do
+    worker-count 
+    (lambda (workerid) (list workerid))
+    work-queue
+    (define-worker (parallel-compile-worker worker-id)
+      (DEBUG_COMM (eprintf "WORKER ~a\n" worker-id))
+      (define prev-uncaught-exception-handler (uncaught-exception-handler))
+      (uncaught-exception-handler (lambda (x)
+        (when (exn:break? x) (exit 1))
+        (prev-uncaught-exception-handler x)))
 
-(define (build-parallel-build-worker-args)
-  (list (find-exe #f)
-        "-X"
-        (path->string (current-collects-path))
-        "-l"
-        "setup/parallel-build-worker.rkt"))
+      (define cmc (make-caching-managed-compile-zo))
+      (match-message-loop
+        [(list name _dir _file)
+          (DEBUG_COMM (eprintf "COMPILING ~a ~a ~a ~a\n" worker-id name _file _dir))
+          (define dir (bytes->path _dir))
+          (define file (bytes->path _file))
+          (define out-str-port (open-output-string))
+          (define err-str-port (open-output-string))
+          (define cip (current-input-port))
+          (define cop (current-output-port))
+          (define cep (current-error-port))
+          (define (send/recv msg) (send/msg msg) (recv/req))
+          (define (send/resp type)
+            (send/msg (list type (get-output-string out-str-port) (get-output-string err-str-port))))
+          (define (pp x) (fprintf cep "COMPILING ~a ~a ~a ~a\n" worker-id name file x))
+          (define (lock-client cmd fn)
+           (match cmd
+             ['lock
+               (DEBUG_COMM (eprintf "REQUESTING LOCK ~a ~a ~a ~a\n" worker-id name _file _dir))
+               (match (send/recv (list (list 'LOCK (path->bytes fn)) "" ""))
+                 [(list 'locked) #t]
+                 [(list 'compiled) #f]
+                 [(list 'DIE) (worker/die 1)]
+                 [x (send/error (format "DIDNT MATCH B ~v\n" x))]
+                 [else (send/error (format "DIDNT MATCH B\n"))])]
+             ['unlock 
+               (DEBUG_COMM (eprintf "UNLOCKING ~a ~a ~a ~a\n" worker-id name _file _dir))
+              (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]
+             [x (send/error (format "DIDNT MATCH C ~v\n" x))]
+             [else (send/error (format "DIDNT MATCH C\n"))]))
+         (with-handlers ([exn:fail? (lambda (x)
+                          (send/resp (list 'ERROR (exn-message x))))])
+           (parameterize ([parallel-lock-client lock-client]
+                          [current-namespace (make-base-empty-namespace)]
+                          [current-directory dir]
+                          [current-load-relative-directory dir]
+                          [current-input-port (open-input-string "")]
+                          [current-output-port out-str-port]
+                          [current-error-port err-str-port]
+                          ;[manager-compile-notify-handler pp]
+                         )
+
+             (cmc (build-path dir file)))
+           (send/resp 'DONE))]
+        [x (send/error (format "DIDNT MATCH A ~v\n" x))]
+        [else (send/error (format "DIDNT MATCH A\n"))]))))
   
 (define (parallel-compile-files list-of-files
   #:worker-count [worker-count (processor-count)]
   #:handler [handler void])
-
-  (parallel-do-event-loop #f
-                          values ; identity function
-                          (build-parallel-build-worker-args)
-                          (make-object FileListQueue% list-of-files handler)
-                          worker-count 999999999))
+  (parallel-build (make-object FileListQueue% list-of-files handler) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
   (define collects-queue (make-object CollectsQueue% collects-tree setup-fprintf append-error))
-  (if (place-enabled?)
-    (places-parallel-build collects-queue worker-count 999999999)
-    (parallel-do-event-loop #f values (build-parallel-build-worker-args) collects-queue worker-count 999999999)))
-
-(define-syntax-rule (define-syntax-case (N a ...) b ...)
-  (define-syntax (N stx)
-    (syntax-case stx ()
-      [(_ a ...) b ...])))
-
-(define PlaceWorker% (class* object% (Worker<%>)
-  (init-field [id 0]              
-              [pl null])
-             
-  (define/public (send/msg msg) (place-channel-send pl msg))
-  (define/public (recv/msg) (place-channel-receive pl))
-  (define/public (get-id) id) 
-  (define/public (get-out) pl)
-  (define/public (kill) #f)
-  (define/public (wait) (place-wait pl))
-  (super-new))) 
-
-(define-syntax-case (place/anon (ch) body ...)
- (with-syntax ([interal-def-name
-                (syntax-local-lift-expression #'(lambda (ch) body ...))]
-               [funcname #'OBSCURE_FUNC_NAME_%#%])
-  (syntax-local-lift-provide #'(rename interal-def-name funcname))
-  #'(let ([module-path (resolved-module-path-name
-          (variable-reference->resolved-module-path
-           (#%variable-reference)))])
-   (place module-path (quote funcname)))))
-
-(define (places-parallel-build jobqueue nprocs stopat)
-  (define ps 
-   (for/list ([i (in-range nprocs)])
-     (place/anon (ch)
-      (let ([cmc ((dynamic-require 'compiler/cm 'make-caching-managed-compile-zo))])
-       (let loop ()
-         (match (place-channel-receive ch)
-           [(list 'DIE) void]
-           [(list name dir file)
-             (let ([dir (bytes->path dir)]
-                   [file (bytes->path file)])
-              (let ([out-str-port (open-output-string)]
-                    [err-str-port (open-output-string)])
-                (define (send/msg msg)
-                  (place-channel-send ch msg))
-                (define (send/resp type)
-                  (send/msg (list type (get-output-string out-str-port) (get-output-string err-str-port))))
-                (define (lock-client cmd fn)
-                  (match cmd
-                    ['lock 
-                      (send/msg (list (list 'LOCK (path->bytes fn)) "" ""))
-                      (match (place-channel-receive ch)
-                        [(list 'locked) #t]
-                        [(list 'compiled) #f])]
-                    ['unlock (send/msg (list (list 'UNLOCK (path->bytes fn)) "" ""))]))
-                (with-handlers ([exn:fail? (lambda (x)
-                                 (send/resp (list 'ERROR (exn-message x))))])
-                  (parameterize ([parallel-lock-client lock-client]
-                                 [current-namespace (make-base-empty-namespace)]
-                                 [current-directory dir]
-                                 [current-load-relative-directory dir]
-                                 [current-input-port (open-input-string "")]
-                                 [current-output-port out-str-port]
-                                 [current-error-port err-str-port])
-
-                    (cmc (build-path dir file)))
-                  (send/resp 'DONE))))
-              (loop)]))))))
-
-
-  (define workers (for/list ([i (in-range nprocs)]
-                             [p ps]) 
-                    (make-object PlaceWorker% i p)))
-  (define (jobs?) (queue/has jobqueue))
-  (define (empty?) (not (queue/has jobqueue)))
-
-  (let loop ([idle workers]
-             [inflight null]
-             [count 0])
-    (cond
-      [(= count stopat) (printf "DONE AT LIMIT\n")]   
-      [(and (empty?) (null? inflight)) (set! workers idle)] ; ALL DONE
-      [(and (jobs?) (pair? idle))
-        (match-define (cons wrkr idle-rest) idle)
-        (define-values (job cmd-list) (queue/get jobqueue (wrkr/id wrkr)))
-        (wrkr/send wrkr cmd-list)
-        (loop idle-rest (cons (list job wrkr) inflight) count)]
-
-      [else
-        (define (gen-node-handler node-worker)
-          (match-define (list node wrkr) node-worker)
-          (handle-evt (wrkr/out wrkr) (λ (msg)
-            (if (queue/work-done jobqueue node wrkr msg)
-                (loop (cons wrkr idle) (remove node-worker inflight) (add1 count))
-                (loop idle inflight count)))))
-      
-        (apply sync (map gen-node-handler inflight))]))
-
-  (for ([p workers]) (wrkr/send p (list 'DIE)))
-  (for ([p ps]) (place-wait p)))
+  (parallel-build collects-queue worker-count))
