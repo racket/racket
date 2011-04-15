@@ -1053,19 +1053,19 @@
 
 (define-syntax (test-match stx)
   (syntax-case stx ()
-    [(_ lang-exp pattern)
+    [(form-name lang-exp pattern)
      (identifier? #'lang-exp)
-     (with-syntax ([side-condition-rewritten (rewrite-side-conditions/check-errs 
-                                              (language-id-nts #'lang-exp 'redex-match) 
-                                              'redex-match 
-                                              #t
-                                              (syntax pattern))])
-       (syntax 
-        (do-test-match lang-exp `side-condition-rewritten)))]
-    [(_ lang-exp pattern expression)
+     (let*-values ([(what) (syntax-e #'form-name)]
+                   [(nts) (language-id-nts #'lang-exp what)]
+                   [(ids/depths _) (extract-names nts what #t #'pattern)])
+       (with-syntax ([side-condition-rewritten (rewrite-side-conditions/check-errs nts what #t #'pattern)]
+                     [binders (map syntax-e ids/depths)])
+         (syntax 
+          (do-test-match lang-exp `side-condition-rewritten 'binders))))]
+    [(form-name lang-exp pattern expression)
      (identifier? #'lang-exp)
      (syntax 
-      ((test-match lang-exp pattern) expression))]
+      ((form-name lang-exp pattern) expression))]
     [(_ a b c)
      (raise-syntax-error 'redex-match "expected an identifier (bound to a language) as first argument" stx #'a)]
     [(_ a b)
@@ -1073,14 +1073,16 @@
 
 (define-struct match (bindings) #:inspector #f)
 
-(define (do-test-match lang pat)
+(define (do-test-match lang pat binders)
   (unless (compiled-lang? lang)
     (error 'redex-match "expected first argument to be a language, got ~e" lang))
   (let ([cpat (compile-pattern lang pat #t)])
     (λ (exp)
       (let ([ans (match-pattern cpat exp)])
         (and ans
-             (map (λ (m) (make-match (sort-bindings (bindings-table (mtch-bindings m)))))
+             (map (λ (m) (make-match (sort-bindings 
+                                      (filter (λ (x) (memq (bind-name x) binders))
+                                              (bindings-table (mtch-bindings m))))))
                   ans))))))
 
 (define (sort-bindings bnds)

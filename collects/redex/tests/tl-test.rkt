@@ -288,6 +288,10 @@
     ;; not a syntax error since first e is not a binder
     (test (pair? (redex-match L ((cross e) e ...) (term ((hole 2) 1)))) #t))
   
+  ;; match structures do not report ..._x bindings
+  (test (map match-bindings (redex-match grammar (a ..._1) (term (a a a))))
+        '(()))
+  
   (define-syntax (test-match stx)
     (syntax-case stx ()
       [(_ actual (((var val) ...) ...))
