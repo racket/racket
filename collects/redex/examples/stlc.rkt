@@ -90,7 +90,8 @@
    (where (-> t_2 ... t_3) (tc e_1 (x t) ...))
    (where (t_2 ...) ((tc e_2 (x t) ...) ...))]
   [(tc (λ ((x_1 t_1) ...) e) (x_2 t_2) ...)
-   (-> t_1 ... (tc e (x_1 t_1) ... (x_2 t_2) ...))]
+   (-> t_1 ... t)
+   (where t (tc e (x_1 t_1) ... (x_2 t_2) ...))]
   [(tc e (x t) ...) #f])
 
 ;; remove the #; to run an example
@@ -157,5 +158,6 @@
 (test-equal (term (tc (+ (+ 1 2) 3))) (term num))
 (test-equal (term (tc (if0 1 (λ ((x num)) x) 3))) (term #f))
 (test-equal (term (tc (if0 1 2 3))) (term num))
+(test-equal (term (tc (λ ((x num)) (x)))) (term #f))
 
 (test-results)
