@@ -1486,6 +1486,16 @@ constructed by @racket[build-chaperone-contract-property] and the value
 for @racket[prop:flat-contract] must be a @tech{flat contract property}
 constructed by @racket[build-flat-contract-property].
 }
+  
+@deftogether[(
+@defthing[prop:contracted struct-type-property?]
+@defthing[impersonator-prop:contracted impersonator-property?]
+)]{
+These properties attach a contract value to the protected structure,
+chaperone, or impersonator value.  The function @racket[has-contract?]
+returns @racket[#t] for values that have one of these properties, and
+@racket[value-contract] extracts the contract value.
+}
 
 @deftogether[(
 @defproc[(build-flat-contract-property
