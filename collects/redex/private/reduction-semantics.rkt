@@ -2255,7 +2255,7 @@
                  (if (procedure? goal) "satisfying" "equal to")
                  goal)
         (when (search-failure-cutoff? result)
-          (fprintf (current-error-port) " (but some terms were not unexplored)"))
+          (fprintf (current-error-port) " (but some terms were not explored)"))
         (newline (current-error-port))))))
 
 (define-syntax (test-predicate stx)

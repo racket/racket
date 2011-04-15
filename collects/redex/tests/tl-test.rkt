@@ -2455,7 +2455,7 @@
     
     (define (equal-to-7 x) (= x 7))
     (test (capture-output (test-->>∃ #:steps 5 1+ 0 equal-to-7))
-          #rx"^FAILED .*\nno reachable term satisfying #<procedure:equal-to-7> \\(but some terms were not unexplored\\)\n$")
+          #rx"^FAILED .*\nno reachable term satisfying #<procedure:equal-to-7> \\(but some terms were not explored\\)\n$")
     
     (test (capture-output (test-->>∃ 1+ 0 7)) "")
     (test (capture-output (test-->>E 1+ 0 7)) "")
