@@ -72,9 +72,3 @@
  (all-from-out racket/contract/private/prop
                racket/contract/private/blame))
 
-
-;; copied here because not provided by racket/contract anymore
-(define (flat-contract/predicate? pred)
-  (or (flat-contract? pred)
-      (and (procedure? pred)
-           (procedure-arity-includes? pred 1))))

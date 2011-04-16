@@ -3,6 +3,7 @@
          "opt.rkt"
          "guts.rkt"
          "arrow.rkt"
+         "blame.rkt"
          (for-syntax racket/base
                      syntax/stx
                      "opt-guts.rkt"))

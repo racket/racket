@@ -66,7 +66,7 @@
                   ...
                   [ctc-name-x (contract-name ctc-x)]
                   ...)
-              (build-flat-contract
+              (flat-named-contract
                (build-compound-type-name 'struct/c 'struct-name ctc-x ...)
                (λ (val)
                  (and (predicate-id val)
