@@ -345,6 +345,10 @@
           (let ([client-gtk (as-gtk-allocation (gtk_drawing_area_new))])
             (values client-gtk client-gtk client-gtk #f #f #f #f #f #f 0))])))
 
+     (define for-gl? (memq 'gl style))
+     (when for-gl?
+       (prepare-widget-gl-context client-gtk gl-config))
+
      (super-new [parent parent]
                 [gtk gtk]
                 [client-gtk client-gtk]
@@ -368,10 +372,6 @@
        (on-size))
      
      (define dc (new dc% [canvas this] [transparent? (memq 'transparent style)]))
-
-     (define for-gl? (memq 'gl style))
-     (when for-gl?
-       (prepare-widget-gl-context client-gtk gl-config))
 
      (gtk_widget_realize gtk)
      (gtk_widget_realize client-gtk)
