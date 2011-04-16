@@ -946,8 +946,10 @@ void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht, Scheme
 
 Scheme_Object *scheme_rename_to_stx(Scheme_Object *rn);
 Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx);
-Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, Scheme_Object *old_midx, Scheme_Object *new_midx);
-Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *mrns, Scheme_Object *old_midx, Scheme_Object *new_midx);
+Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                       Scheme_Object *new_insp);
+Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *mrns, Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                           Scheme_Object *new_insp);
 Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn);
 
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
@@ -1075,7 +1077,7 @@ typedef struct {
   Scheme_Object so;
   mzshort max_let_depth;
   Scheme_Object *code;
-  struct Resolve_Prefix *prefix;
+  struct Resolve_Prefix *prefix; /* NULL => a wrapper for a JITted module in `code' */
 } Scheme_Compilation_Top;
 
 /* A `let', `let*', or `letrec' form is compiled to the intermediate
@@ -2970,6 +2972,8 @@ typedef struct Scheme_Module
 {
   Scheme_Object so; /* scheme_module_type */
 
+  Scheme_Object *code_key;
+
   Scheme_Object *modname;
   Scheme_Object *modsrc;
 
@@ -3111,6 +3115,8 @@ int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
 Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
+
+Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv);
 
 Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree);
 int scheme_is_module_env(Scheme_Comp_Env *env);

@@ -342,7 +342,7 @@ places.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
 port.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
-portfun.@LTO@: $(COMMON_HEADERS) \
+portfun.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
           $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark.c

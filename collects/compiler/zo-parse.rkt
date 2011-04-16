@@ -1011,6 +1011,9 @@
       (error 'zo-parse "not a bytecode stream"))
     
     (define version (read-bytes (min 63 (read-byte port)) port))
+
+    ;; Skip module hash code
+    (read-bytes 20 port)
     
     (define symtabsize (read-simple-number port))
     

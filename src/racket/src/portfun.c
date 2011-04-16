@@ -27,6 +27,7 @@
    port types. */
 
 #include "schpriv.h"
+#include "schvers.h"
 
 static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
@@ -4100,6 +4101,61 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Object *last_val = scheme_void, *obj, **save_array = NULL;
   Scheme_Env *genv;
   int save_count = 0, got_one = 0, as_module, check_module_name = 0;
+
+  if (scheme_module_code_cache) {
+    intptr_t got;
+    int vers_size, hash_header_size;
+#   define HASH_HEADER_SIZE (3 + 20 + 16)
+    char buffer[HASH_HEADER_SIZE];
+
+    vers_size = strlen(MZSCHEME_VERSION);
+    hash_header_size = 3 + vers_size + 20;
+    if (hash_header_size >= HASH_HEADER_SIZE) 
+      scheme_signal_error("internal error: buffer size mismatch");
+    got = scheme_get_byte_string("default-load-handler",
+                                 port,
+                                 buffer, 0, hash_header_size,
+                                 0, 1, scheme_make_integer(0));
+
+    obj = NULL;
+    if ((got == hash_header_size)
+        && (buffer[0] == '#')
+        && (buffer[1] == '~')
+        && (buffer[2] == vers_size)
+        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))) {
+      int i;
+      for (i = 0; i < 20; i++) {
+        if (buffer[3 + vers_size + i])
+          break;
+      }
+      if (i < 20) {
+        obj = scheme_make_sized_byte_string(buffer + 3 + vers_size, 20, 1);
+      }
+    }
+
+
+    if (obj) {
+      /* CERT-INSP-CACHE <- grep for that in read.c */
+      obj = scheme_make_pair(obj, scheme_get_param(config, MZCONFIG_CODE_INSPECTOR));
+      obj = scheme_lookup_in_table(scheme_module_code_cache, (const char *)obj);
+      if (obj) {
+        /* Synthesize a wrapper to pass through `eval': */
+        Scheme_Compilation_Top *top;
+
+        obj = scheme_ephemeron_value(obj);
+
+        top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
+        top->so.type = scheme_compilation_top_type;
+        top->code = obj;
+        top->prefix = NULL; /* indicates a wrapper */
+
+        obj = (Scheme_Object *)top;
+        
+        return _scheme_apply_multi(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),
+                                   1, &obj);
+      }
+    }
+  }
 
   while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, 0, -1, NULL, 
                                      NULL, NULL, lhd->delay_load_info))

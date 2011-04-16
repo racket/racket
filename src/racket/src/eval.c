@@ -10377,7 +10377,11 @@ static void *eval_k(void)
     Resolve_Prefix *rp;
     int depth;
 
-    depth = top->max_let_depth + scheme_prefix_depth(top->prefix);
+    if (!top->prefix)
+      depth = 0;
+    else
+      depth = top->max_let_depth + scheme_prefix_depth(top->prefix);
+
     if (!scheme_check_runstack(depth)) {
       p->ku.k.p1 = top;
       p->ku.k.p2 = env;
@@ -10388,43 +10392,49 @@ static void *eval_k(void)
 
     v = top->code;
 
-    if (use_jit)
-      v = scheme_jit_expr(v);
-    else
-      v = scheme_eval_clone(v);
-    rp = scheme_prefix_eval_clone(top->prefix);
+    if (!top->prefix) {
+      /* top->code is shared module code */
+      scheme_module_execute(top->code, env);
+      v = scheme_void;
+    } else {
+      if (use_jit)
+        v = scheme_jit_expr(v);
+      else
+        v = scheme_eval_clone(v);
+      rp = scheme_prefix_eval_clone(top->prefix);
 
-    save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase, NULL);
+      save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase, NULL);
 
-    if (as_tail) {
-      /* Cons up a closure to capture the prefix */
-      Scheme_Closure_Data *data;
-      mzshort *map;
-      int i, sz;
+      if (as_tail) {
+        /* Cons up a closure to capture the prefix */
+        Scheme_Closure_Data *data;
+        mzshort *map;
+        int i, sz;
 
-      sz = (save_runstack XFORM_OK_MINUS MZ_RUNSTACK);
-      map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * sz);
-      for (i = 0; i < sz; i++) {
-        map[i] = i;
-      }
+        sz = (save_runstack XFORM_OK_MINUS MZ_RUNSTACK);
+        map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * sz);
+        for (i = 0; i < sz; i++) {
+          map[i] = i;
+        }
 
-      data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-      data->iso.so.type = scheme_compiled_unclosed_procedure_type;
-      data->num_params = 0;
-      data->max_let_depth = top->max_let_depth + sz;
-      data->closure_size = sz;
-      data->closure_map = map;
-      data->code = v;
+        data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+        data->iso.so.type = scheme_compiled_unclosed_procedure_type;
+        data->num_params = 0;
+        data->max_let_depth = top->max_let_depth + sz;
+        data->closure_size = sz;
+        data->closure_map = map;
+        data->code = v;
 
-      v = scheme_make_closure(p, (Scheme_Object *)data, 1);
+        v = scheme_make_closure(p, (Scheme_Object *)data, 1);
 
-      v = _scheme_tail_apply(v, 0, NULL);
-    } else if (multi)
-      v = _scheme_eval_linked_expr_multi_wp(v, p);
-    else
-      v = _scheme_eval_linked_expr_wp(v, p);
+        v = _scheme_tail_apply(v, 0, NULL);
+      } else if (multi)
+        v = _scheme_eval_linked_expr_multi_wp(v, p);
+      else
+        v = _scheme_eval_linked_expr_wp(v, p);
 
-    scheme_pop_prefix(save_runstack);
+      scheme_pop_prefix(save_runstack);
+    }
   } else {
     v = scheme_void;
   }

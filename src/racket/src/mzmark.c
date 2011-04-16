@@ -2415,6 +2415,9 @@ static int module_val_SIZE(void *p, struct NewGC *gc) {
 
 static int module_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Module *m = (Scheme_Module *)p;
+
+  gcMARK2(m->code_key, gc);
+
   gcMARK2(m->modname, gc);
   gcMARK2(m->modsrc, gc);
 
@@ -2462,6 +2465,9 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
 
 static int module_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Module *m = (Scheme_Module *)p;
+
+  gcFIXUP2(m->code_key, gc);
+
   gcFIXUP2(m->modname, gc);
   gcFIXUP2(m->modsrc, gc);
 

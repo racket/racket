@@ -956,6 +956,9 @@ stx_off_val {
 module_val {
  mark:
   Scheme_Module *m = (Scheme_Module *)p;
+
+  gcMARK2(m->code_key, gc);
+
   gcMARK2(m->modname, gc);
   gcMARK2(m->modsrc, gc);
 

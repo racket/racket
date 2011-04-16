@@ -3098,6 +3098,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         print_one_byte(pp, strlen(MZSCHEME_VERSION));
 	print_this_string(pp, MZSCHEME_VERSION, 0, -1);
 
+        /* Leave space for a module hash code */
+        print_this_string(pp, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 0, 20);
+
         if (mt->st_refs->count != mt->sorted_keys_count)
           scheme_signal_error("shared key count somehow changed");
 

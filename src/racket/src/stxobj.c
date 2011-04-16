@@ -140,7 +140,8 @@ typedef struct Module_Renames {
                                           (cons modidx nominal_modidx) OR
                                           (list* modidx exportname nominal_modidx_plus_phase nominal_exportname) OR
                                           (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname) OR
-                                          (cons insp localname)
+                                          (cons insp localname) OR
+                                          (cons (cons insp insp) localname)
                             nominal_modix_plus_phase -> nominal_modix | (cons nominal_modix import_phase_plus_nominal_phase)
                             import_phase_plus_nominal_phase -> import-phase-index | (cons import-phase-index nom-phase) */
   Scheme_Hash_Table *nomarshal_ht; /* like ht, but dropped on marshal */
@@ -1482,7 +1483,8 @@ void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info)
 
 static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 				    Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                    int do_pes, int do_unm)
+                                    int do_pes, int do_unm,
+                                    Scheme_Object *new_insp)
 {
   Scheme_Hash_Table *ht, *hts, *drop_ht;
   Scheme_Object *v;
@@ -1551,6 +1553,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 
           if (SCHEME_PAIRP(v) && is_rename_inspector_info(SCHEME_CAR(v))) {
             insp = SCHEME_CAR(v);
+            if (new_insp) insp = new_insp;
             v = SCHEME_CDR(v);
           } else
             insp = NULL;
@@ -1613,7 +1616,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 
 void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int do_unm)
 {
-  do_append_module_rename(src, dest, NULL, NULL, 1, do_unm);
+  do_append_module_rename(src, dest, NULL, NULL, 1, do_unm, NULL);
 }
 
 void scheme_append_rename_set_to_env(Scheme_Object *_mrns, Scheme_Env *env)
@@ -1742,7 +1745,8 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
 }
 
 Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, 
-				       Scheme_Object *old_midx, Scheme_Object *new_midx)
+				       Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                       Scheme_Object *new_insp)
 {
   Scheme_Object *nmrn, *a, *l, *nl, *first, *last;
 
@@ -1751,7 +1755,7 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
                                    NULL);
 
   /* use "append" to copy most info: */
-  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0);
+  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0, new_insp);
 
   /* Manually copy unmarshal_infos, where we have to shift anyway: */
 
@@ -1797,7 +1801,8 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
 }
 
 Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *_mrns, 
-                                           Scheme_Object *old_midx, Scheme_Object *new_midx)
+                                           Scheme_Object *old_midx, Scheme_Object *new_midx,
+                                           Scheme_Object *new_insp)
 {
   Module_Renames_Set *mrns = (Module_Renames_Set *)_mrns;
   Scheme_Object *mrn, *mrns2;
@@ -1805,17 +1810,17 @@ Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *_mrns,
 
   mrns2 = scheme_make_module_rename_set(mrns->kind, NULL);
   if (mrns->rt) {
-    mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->rt, old_midx, new_midx);
+    mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->rt, old_midx, new_midx, new_insp);
     scheme_add_module_rename_to_set(mrns2, mrn);
   }
   if (mrns->et) {
-    mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->et, old_midx, new_midx);
+    mrn = scheme_stx_shift_rename((Scheme_Object *)mrns->et, old_midx, new_midx, new_insp);
     scheme_add_module_rename_to_set(mrns2, mrn);
   }
   if (mrns->other_phases) {
     for (i = 0; i < mrns->other_phases->size; i++) {
       if (mrns->other_phases->vals[i]) {
-        mrn = scheme_stx_shift_rename(mrns->other_phases->vals[i], old_midx, new_midx);
+        mrn = scheme_stx_shift_rename(mrns->other_phases->vals[i], old_midx, new_midx, new_insp);
         scheme_add_module_rename_to_set(mrns2, mrn);
       }
     }

@@ -2593,7 +2593,12 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	rn_stx = SCHEME_CAR(m->rn_stx);
 	midx = SCHEME_CDR(m->rn_stx);
 	rns = scheme_stx_to_rename(rn_stx);
-	rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx);
+	rns = scheme_stx_shift_rename_set(rns, midx, m->self_modidx, 
+                                          /* CERT-INSP-CACHE <- grep for that in read.c;
+                                             if certificates are changed to no have inspectors,
+                                             then the NULL below should be something like m->insp,
+                                             but maybe not for inspector pairs */
+                                          NULL);
 	rn_stx = scheme_rename_to_stx(rns);
 	m->rn_stx = rn_stx;
       }
@@ -3241,9 +3246,10 @@ Scheme_Object *module_resolve_in_namespace(Scheme_Object *modidx, Scheme_Env *en
   return _module_resolve(modidx, NULL, env, load_it);
 }
 
-Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
-                                   Scheme_Object *shift_from_modidx,
-                                   Scheme_Object *shift_to_modidx)
+static Scheme_Object *do_modidx_shift(Scheme_Object *modidx, 
+                                      Scheme_Object *shift_from_modidx,
+                                      Scheme_Object *shift_to_modidx,
+                                      int must_clone)
 {
   Scheme_Object *base;
 
@@ -3261,7 +3267,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
   if (!SCHEME_FALSEP(base)) {
     /* FIXME: depth */
     Scheme_Object *sbase;
-    sbase = scheme_modidx_shift(base, shift_from_modidx, shift_to_modidx);
+    sbase = do_modidx_shift(base, shift_from_modidx, shift_to_modidx, must_clone);
 
     if (!SAME_OBJ(base, sbase)) {
       /* There was a shift in the relative part. */
@@ -3343,9 +3349,23 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 
       return smodidx;
     }
+  } else if (must_clone) {
+    /* cloning here ensures that module resolution doesn't mutate
+       module-declaration code that might be cached */
+    modidx = scheme_make_modidx(((Scheme_Modidx *)modidx)->path,
+                                scheme_false,
+                                scheme_false);
+    
   }
 
   return modidx;
+}
+
+Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
+                                   Scheme_Object *shift_from_modidx,
+                                   Scheme_Object *shift_to_modidx)
+{
+  return do_modidx_shift(modidx, shift_from_modidx, shift_to_modidx, 0);
 }
 
 void scheme_clear_modidx_cache(void)
@@ -3987,9 +4007,10 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
   np = scheme_null;
 
   for (l = reqs; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    midx = scheme_modidx_shift(SCHEME_CAR(l), 
-                               menv->module->me->src_modidx, 
-                               (syntax_idx ? syntax_idx : menv->link_midx));
+    midx = do_modidx_shift(SCHEME_CAR(l), 
+                           menv->module->me->src_modidx, 
+                           (syntax_idx ? syntax_idx : menv->link_midx),
+                           1);
 
     if (load_env)
       module_load(scheme_module_resolve(midx, 1), load_env, NULL);
@@ -4928,6 +4949,9 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o)
 {
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_compilation_top_type)) {
     Scheme_Compilation_Top *c = (Scheme_Compilation_Top *)o;
+
+    if (!c->prefix) /* => compiled module is in `code' field */
+      return (Scheme_Module *)c->code;
     
     if (SAME_TYPE(SCHEME_TYPE(c->code), scheme_syntax_type)
 	&& (SCHEME_PINT_VAL(c->code) == MODULE_EXPD)) {
@@ -5179,8 +5203,7 @@ static Scheme_Object **declare_insps(int n, Scheme_Object **insps, Scheme_Object
   return naya;
 }
 
-static Scheme_Object *
-module_execute(Scheme_Object *data)
+static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, int set_cache)
 {
   Scheme_Module *m;
   Scheme_Env *env;
@@ -5191,10 +5214,22 @@ module_execute(Scheme_Object *data)
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
 
+  if (set_cache && m->code_key) {
+    if (!scheme_module_code_cache) {
+      REGISTER_SO(scheme_module_code_cache);
+      scheme_module_code_cache = scheme_make_weak_equal_table();
+    }
+    scheme_add_to_table(scheme_module_code_cache,
+                        (const char *)m->code_key,
+                        scheme_make_ephemeron(m->code_key, data),
+                        0);
+  }
+
   config = scheme_current_config();
 
   prefix = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_NAME);
   if (SCHEME_MODNAMEP(prefix)) {
+
     m->modname = prefix;
     
     if (m->self_modidx) {
@@ -5222,13 +5257,16 @@ module_execute(Scheme_Object *data)
   } else
     m->modsrc = m->modname;
 
-  env = scheme_environment_from_dummy(m->dummy);
+  if (genv)
+    env = genv;
+  else
+    env = scheme_environment_from_dummy(m->dummy);
 
   old_menv = get_special_modenv(m->modname);
   if (!old_menv)
     old_menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
   
   if (old_menv) {
     if (scheme_module_protected_wrt(old_menv->insp, insp) || old_menv->attached) {
@@ -5285,6 +5323,16 @@ module_execute(Scheme_Object *data)
   }
 
   return scheme_void;
+}
+
+static Scheme_Object *module_execute(Scheme_Object *data)
+{
+  return do_module_execute(data, NULL, 1);
+}
+
+Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
+{
+  return do_module_execute(data, genv, 0);
 }
 
 static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)

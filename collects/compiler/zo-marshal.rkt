@@ -127,6 +127,8 @@
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
 
+  ; Write empty hash code
+  (write-bytes (make-bytes 20 0) outp)
   
   ; Write the symbol table information (size, offsets)
   (define symtabsize (add1 (vector-length symbol-table)))

@@ -5394,6 +5394,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   int perma_cache = use_perma_cache;
   Scheme_Object *dir;
   Scheme_Config *config;
+  char hash_code[20];
 	  
   /* Allow delays? */
   if (params->delay_load_info) {
@@ -5421,6 +5422,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                         (buf[0] ? buf : "???"), MZSCHEME_VERSION);
   }
   offset += size + 1;
+
+  /* Module hash code */
+  got = scheme_get_bytes(port, 20, hash_code, 0);
+  offset += 20;
 
   symtabsize = read_simple_number_from_port(port);
   offset += 4;
@@ -5570,6 +5575,35 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 			 top->prefix->num_lifts,
                          0);
     /* If no exception, the resulting code is ok. */
+
+    /* Install module hash code, if any. This code is used to register
+       the module in scheme_module_execute(), and it's used to
+       find a registered module in the default load handler. */
+    {
+      int i;
+      for (i = 0; i < 20; i++) {
+        if (hash_code[i]) break;
+      }
+
+      if (i < 20) {
+        Scheme_Module *m;
+        m = scheme_extract_compiled_module(result);
+        if (m) {
+          Scheme_Object *hc;
+          hc = scheme_make_sized_byte_string(hash_code, 20, 1);
+
+          /* CERT-INSP-CACHE: Certificates hold an inspector, which
+             means that the current inspector affects the way that bytecode
+             is read. For now, only share compiled modules when the
+             inspector is the same, but maybe certificates can be
+             fixed and this hack son't be necessary one day. Grep for
+             CERT-INSP-CACHE elsewhere for other places to change. */
+          hc = scheme_make_pair(hc, insp);
+
+          m->code_key = hc;
+        }
+      }
+    }
   } else
     scheme_ill_formed_code(rp);
 

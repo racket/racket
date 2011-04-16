@@ -360,7 +360,17 @@
                             (if (eq? base 'relative)
                               (current-directory)
                               (path->complete-path base (current-directory))))])
-            (write code out)))
+            (let ([b (open-output-bytes)])
+              ;; Write bytecode into string
+              (write code b)
+              ;; Compute SHA1 over bytecode so far
+              (let* ([s (get-output-bytes b)]
+                     [h (sha1-bytes (open-input-bytes s))]
+                     [delta (+ 3 (bytes-ref s 2))])
+                ;; Use sha1 for module hash in string form of bytecode
+                (bytes-copy! s delta h)
+                ;; Write out the bytecode with module hash
+                (write-bytes s out)))))
         ;; redundant, but close as early as possible:
         (close-output-port out)
         ;; Note that we check time and write .deps before returning from
