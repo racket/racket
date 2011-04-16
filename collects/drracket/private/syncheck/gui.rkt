@@ -1288,13 +1288,16 @@ If the namespace does not, they are colored the unbound color.
                                     (queue-callback
                                      (λ () ;; =drs=
                                        
+                                       ;; this has to come first or else the positioning
+                                       ;; computations in the highlight-errors/exn method
+                                       ;; will be wrong by the size of the error report box
+                                       (show-error-report/tab)
+                                       
                                        ;; a call like this one also happens in 
                                        ;; drracket:debug:error-display-handler/stacktrace
                                        ;; but that call won't happen here, because
                                        ;; the rep is not in the current-rep parameter
-                                       (send interactions-text highlight-errors/exn exn)
-                                       
-                                       (show-error-report/tab))))
+                                       (send interactions-text highlight-errors/exn exn))))
                                   
                                   (drracket:debug:error-display-handler/stacktrace 
                                    msg 
