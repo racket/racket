@@ -16,6 +16,8 @@
 (define assume-primitives (make-parameter #t))
 (define worker-count (make-parameter 1))
 
+(define mzc-symbol (string->symbol (short-program+command-name)))
+
 (define source-files
   (command-line
    #:program (short-program+command-name)
@@ -67,9 +69,9 @@
                           (printf "  making ~s\n" (path->string p))))])
         (for ([file source-files])
           (unless (file-exists? file)
-            (error 'mzc "file does not exist: ~a" file))
+            (error mzc-symbol "file does not exist: ~a" file))
           (set! did-one? #f)
-          (let ([name (extract-base-filename/ss file 'mzc)])
+          (let ([name (extract-base-filename/ss file mzc-symbol)])
             (when (verbose)
               (printf "\"~a\":\n" file))
             (parameterize ([compile-context-preservation-enabled
