@@ -350,7 +350,7 @@
  (show-status-line "Status-Zeile anzeigen")
  (count-columns-from-one "Spaltennummern fangen mit 1 an")
  (display-line-numbers "Zeilennummern in Puffern anzeigen, keine Puffer-Indizes")
- (show-line-and-column-numbers "Zeilen- und Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
+ (show-line-and-column-numbers "Zeilen- && Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
  (automatically-to-ps "Automatisch in PostScript-Datei drucken")
@@ -368,6 +368,7 @@
  (show-line-numbers/menu "Zeilen&nummern einblenden")
  (hide-line-numbers/menu "Zeilen&nummern ausblenden")
 
+ (show-line-numbers-in-definitions "Alle Zeilennummern in Definitionen einblenden") ;; shows up in the popup menu item in the bottom of the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
  (limit-interactions-size "Umfang der Interaktionen einschränken")
  (background-color "Hintergrundfarbe")
  (default-text-color "Standard für Text") ;; used for configuring colors, but doesn't need the word "color"
