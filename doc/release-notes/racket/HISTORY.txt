@@ -1,6 +1,41 @@
 Version 5.1.0.6
 Removed the "MrEd" compatability executable under Windows
  and Mac OS X, but the "mred" compatibility script remains
+Removed the following (undocumented) exports from racket/contract:
+  build-flat-contract
+  chaperone-contract-struct?
+  contract-struct-first-order
+  contract-struct-name
+  contract-struct-projection
+  contract-struct-stronger?
+  contract-struct?
+  contracted-function
+  contracted-function-ctc
+  contracted-function-proc
+  contracted-function?
+  first-order-get
+  first-order-pred?
+  first-order-prop
+  flat-contract-struct?
+  flat-get
+  flat-pred?
+  flat-prop
+  make-opt-contract/info
+  name-get
+  name-pred?
+  name-prop
+  opt-contract/info-contract
+  opt-contract/info-enforcer
+  opt-contract/info-id
+  proj-get
+  proj-pred?
+  proj-prop
+  stronger-get
+  stronger-pred?
+  stronger-prop
+  struct:contracted-function
+  synthesized-value
+  unknown?
 
 Version 5.1.0.5
 racket/gui: added 'wheel-left and 'wheel-right events
