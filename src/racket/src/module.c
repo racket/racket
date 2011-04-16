@@ -52,6 +52,7 @@ static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_constant(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_etonly(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[]);
+static Scheme_Object *namespace_attach_module_decl(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[]);
@@ -391,6 +392,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("namespace-require",                namespace_require,          1, 1, env);
   GLOBAL_PRIM_W_ARITY("namespace-attach-module",          namespace_attach_module,    2, 3, env);
+  GLOBAL_PRIM_W_ARITY("namespace-attach-module-declaration", namespace_attach_module_decl, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("namespace-unprotect-module",       namespace_unprotect_module, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("namespace-require/copy",           namespace_require_copy,     1, 1, env);
   GLOBAL_PRIM_W_ARITY("namespace-require/constant",       namespace_require_constant, 1, 1, env);
@@ -1222,7 +1224,7 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
                  NULL /* ck */, NULL /* data */,
                  NULL, 
                  1, copy, 0, 
-                 etonly ? 1 : -1, !etonly,
+                 (etonly ? 1 : -1), !etonly,
                  NULL);
 
   scheme_append_rename_set_to_env(rns, env);
@@ -1350,12 +1352,13 @@ static void check_modchain_consistency(Scheme_Hash_Table *ht, int phase) { }
 # define LOG_ATTACH(x) /* nothing */
 #endif
 
-static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Scheme_Object *argv[], 
+                                                 int only_declare)
 {
   Scheme_Env *from_env, *to_env, *menv, *menv2;
   Scheme_Object *todo, *next_phase_todo, *prev_phase_todo;
   Scheme_Object *name, *notifies = scheme_null, *a[1], *resolver;
-  Scheme_Object *to_modchain, *from_modchain, *l;
+  Scheme_Object *to_modchain, *from_modchain, *l, *main_modidx;
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
   Scheme_Module *m2;
@@ -1365,12 +1368,12 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *nophase_checked;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
-    scheme_wrong_type("namespace-attach-module", "namespace", 0, argc, argv);
+    scheme_wrong_type(who, "namespace", 0, argc, argv);
   from_env = (Scheme_Env *)argv[0];
 
   if (argc > 2) {
     if (!SCHEME_NAMESPACEP(argv[2]))
-      scheme_wrong_type("namespace-attach-module", "namespace", 2, argc, argv);
+      scheme_wrong_type(who, "namespace", 2, argc, argv);
     to_env = (Scheme_Env *)argv[2];
     set_env_for_notify = 1;
   } else
@@ -1385,12 +1388,19 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
                      (intptr_t)from_env->phase, (intptr_t)to_env->phase);
   }
 
-  name = scheme_module_resolve(scheme_make_modidx(argv[1], scheme_false, scheme_false), 0);
+  main_modidx = scheme_make_modidx(argv[1], scheme_false, scheme_false);
+  name = scheme_module_resolve(main_modidx, 0);
 
-  todo = scheme_make_pair(name, scheme_null);
+  if (!only_declare) {
+    todo = scheme_make_pair(name, scheme_null);
+    nophase_todo = scheme_null;
+  } else {
+    todo = scheme_null;
+    nophase_todo = scheme_make_pair(name, scheme_null);
+  }
+
   next_phase_todo = scheme_null;
   prev_phase_todo = scheme_null;
-  nophase_todo = scheme_null;
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
   phase = from_env->phase;
@@ -1407,13 +1417,17 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   past_to_modchains = scheme_null;
 
   nophase_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+  if (only_declare) {
+    scheme_hash_set(nophase_checked, name, scheme_false);
+  }
 
   first_iteration = 1;
   max_phase = phase;
-  just_declare = 0;
 
   checked = scheme_make_hash_table(SCHEME_hash_ptr);
   scheme_hash_set(checked, name, scheme_true);
+  
+  just_declare = 0;
 
   /* Check whether todo, or anything it needs, is already declared
      incompatibly. Successive iterations of the outer loop explore
@@ -1452,14 +1466,14 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	if (!menv) {
 	  /* Assert: name == argv[1] */
 	  /* Module at least declared? */
-	  if (scheme_hash_get(from_env->module_registry->loaded, name))
-	    scheme_arg_mismatch("namespace-attach-module",
-				"module not instantiated (in the source namespace): ",
-				name);
-	  else
-	    scheme_arg_mismatch("namespace-attach-module",
-				"unknown module (in the source namespace): ",
-				name);
+          if (scheme_hash_get(from_env->module_registry->loaded, name))
+            scheme_arg_mismatch(who,
+                                "module not instantiated (in the source namespace): ",
+                                name);
+          else
+            scheme_arg_mismatch(who,
+                                "unknown module (in the source namespace): ",
+                                name);
 	}
 
         /* If to_modchain goes to #f, then our source check has gone
@@ -1698,9 +1712,43 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
       LOG_ATTACH(printf("Check #f %s\n", scheme_write_to_string(name, 0)));
     
       if (!menv) {
-        scheme_arg_mismatch("namespace-attach-module",
-                            "internal error; unknown module (for label): ",
-                            name);
+        if (only_declare && main_modidx) {
+          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry->loaded, name);
+	  if (!m2)
+            scheme_arg_mismatch(who,
+                                "module not declared (in the source namespace): ",
+                                name);
+          else {
+            /* instantiate for-label: */
+            start_module(m2, 
+                         from_env->label_env, 0, 
+                         main_modidx, 
+                         0, 0, from_env->phase,
+                         scheme_null);
+            
+            /* try again: */
+            menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
+          }
+	}
+
+        if (!menv)
+          scheme_arg_mismatch(who,
+                              "internal error; unknown module (for label): ",
+                              name);
+      }
+
+      main_modidx = NULL;
+
+      menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
+      m2 = (Scheme_Module *)scheme_hash_get(to_env->module_registry->loaded, name);
+      if (m2 && !SAME_OBJ(m2, menv->module)) {
+        const char * kind = "module with the same name";
+        const char * phase = "";
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "namespace-attach-module: "
+                         "a different %s is already "
+                         "in the destination namespace%s, for name: %D",
+                         kind, phase, name);
       }
     
       for (i = -4; 
@@ -1743,9 +1791,11 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   if (prev_checked) {
     past_checkeds = cons((Scheme_Object *)prev_checked, past_checkeds);
   }
-  if (!checked)
-    checked = scheme_make_hash_table(SCHEME_hash_ptr);
-  past_checkeds = cons((Scheme_Object *)checked, past_checkeds);
+  if (!only_declare){
+    if (!checked)
+      checked = scheme_make_hash_table(SCHEME_hash_ptr);
+    past_checkeds = cons((Scheme_Object *)checked, past_checkeds);
+  }
 
   if (phase < max_phase) {
     past_checkeds = cons((Scheme_Object *)next_checked, past_checkeds);
@@ -1894,6 +1944,16 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   }
 
   return scheme_void;
+}
+
+static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
+{
+  return do_namespace_attach_module("namespace-attach-module", argc, argv, 0);
+}
+
+static Scheme_Object *namespace_attach_module_decl(int argc, Scheme_Object *argv[])
+{
+  return do_namespace_attach_module("namespace-attach-module-declaration", argc, argv, 1);
 }
 
 static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[])

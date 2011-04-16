@@ -242,7 +242,7 @@ undefined.}
 @defproc[(namespace-attach-module [src-namespace namespace?]
                                   [modname module-path?]
                                   [dest-namespace namespace? (current-namespace)])
-         any]{
+         void?]{
 
 Attaches the instantiated module named by @scheme[modname] in
 @scheme[src-namespace] (at its @tech{base phase}) to the @tech{module
@@ -266,6 +266,17 @@ already has a different declaration or same-@tech{phase} instance in
 
 If @scheme[src-namespace] and @scheme[dest-namespace] do not have the
 same @tech{base phase}, then the @exnraise[exn:fail:contract].}
+
+
+@defproc[(namespace-attach-module-declaration [src-namespace namespace?]
+                                              [modname module-path?]
+                                              [dest-namespace namespace? (current-namespace)])
+         void?]{
+
+Like @racket[namespace-attach-module-declaration], but the module
+specified by @racket[modname] need only be declared (and not
+necessarily @tech{instantiate}d) in @racket[src-namespace], and the
+module is merely declared in @racket[dest-namespace].}
 
 
 @defproc[(namespace-unprotect-module [inspector inspector?]
