@@ -15,6 +15,7 @@
            "private/winsubsys.ss"
 	   "private/macfw.ss"
 	   "private/mach-o.ss"
+	   "private/elf.ss"
 	   "private/windlldir.ss"
 	   "private/collects-path.ss"
            "find-exe.rkt")
@@ -1168,8 +1169,44 @@
                                              compiler
                                              expand-namespace
                                              src-filter
-                                             get-extra-imports))])
-              (let-values ([(start end)
+                                             get-extra-imports))]
+		  [make-full-cmdline
+		   (lambda (start end)
+		     (let ([start-s (number->string start)]
+			   [end-s (number->string end)])
+		       (append (if launcher?
+				   (if (and (eq? 'windows (system-type))
+					    keep-exe?)
+				       ;; argv[0] replacement:
+				       (list (path->string 
+					      (if relative?
+						  (relativize exe dest-exe values)
+						  exe)))
+				       ;; No argv[0]:
+				       null)
+				   (list "-k" start-s end-s))
+			       cmdline)))]
+		  [make-starter-cmdline
+		   (lambda (full-cmdline)
+		     (apply bytes-append
+			    (map (lambda (s)
+				   (bytes-append 
+				    (cond
+				     [(path? s) (path->bytes s)]
+				     [else (string->bytes/locale s)])
+				    #"\0"))
+				 (append
+				  (list (if relative?
+					    (relativize exe dest-exe values)
+					    exe)
+					(let ([dir (find-dll-dir)])
+					  (if dir
+					      (if relative?
+						  (relativize dir dest-exe values)
+						  dir)
+					      "")))
+				  full-cmdline))))])
+              (let-values ([(start end cmdline-end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))
                                 ;; For Mach-O, we know how to add a proper segment
@@ -1178,29 +1215,37 @@
                                   (let ([s (get-output-bytes s)])
                                     (let ([start (add-plt-segment dest-exe s)])
                                       (values start
-                                              (+ start (bytes-length s))))))
-                                ;; Other platforms: just add to the end of the file:
-                                (let ([start (file-size dest-exe)])
-                                  (call-with-output-file* dest-exe write-module 
-                                                          #:exists 'append)
-                                  (values start (file-size dest-exe))))])
+                                              (+ start (bytes-length s))
+					      #f))))
+                                ;; Unix starter: Maybe ELF, in which case we 
+                                ;; can add a proper section
+                                (let-values ([(s e p)
+					      (if unix-starter?
+						  (add-racket-section 
+						   orig-exe 
+						   dest-exe
+						   (if launcher? #".rackcmdl" #".rackprog")
+						   (lambda (start)
+						     (let ([s (open-output-bytes)])
+						       (write-module s)
+						       (let ([p (file-position s)])
+							 (display (make-starter-cmdline
+								   (make-full-cmdline start (+ start p)))
+								  s)
+							 (values (get-output-bytes s) p)))))
+						  (values #f #f #f))])
+                                  (if (and s e)
+				      ;; ELF succeeded:
+                                      (values s (+ s p) e)
+                                      ;; Otherwise, just add to the end of the file:
+                                      (let ([start (file-size dest-exe)])
+                                        (call-with-output-file* dest-exe write-module 
+                                                                #:exists 'append)
+                                        (values start (file-size dest-exe) #f)))))])
                 (when verbose?
                   (fprintf (current-error-port) "Setting command line\n"))
-                (let ([start-s (number->string start)]
-                      [end-s (number->string end)])
-                  (let ([full-cmdline (append
-                                       (if launcher?
-                                           (if (and (eq? 'windows (system-type))
-                                                    keep-exe?)
-                                               ;; argv[0] replacement:
-                                               (list (path->string 
-                                                      (if relative?
-                                                          (relativize exe dest-exe values)
-                                                          exe)))
-                                               ;; No argv[0]:
-                                               null)
-                                           (list "-k" start-s end-s))
-                                       cmdline)])
+		(let ()
+                  (let ([full-cmdline (make-full-cmdline start end)])
                     (when collects-path-bytes
                       (when verbose?
                         (fprintf (current-error-port) "Setting collection path\n"))
@@ -1218,27 +1263,12 @@
                                              (lambda () (find-cmdline 
                                                          "exeuctable type"
                                                          #"bINARy tYPe:"))))]
-                             [cmdline
-                              (apply bytes-append
-                                     (map (lambda (s)
-                                            (bytes-append 
-                                             (cond
-                                               [(path? s) (path->bytes s)]
-                                               [else (string->bytes/locale s)])
-                                             #"\0"))
-                                          (append
-                                           (list (if relative?
-                                                     (relativize exe dest-exe values)
-                                                     exe)
-                                                 (let ([dir (find-dll-dir)])
-                                                   (if dir
-                                                       (if relative?
-                                                           (relativize dir dest-exe values)
-                                                           dir)
-                                                       "")))
-                                           full-cmdline)))]
+                             [cmdline (if cmdline-end
+					  #f
+					  (make-starter-cmdline full-cmdline))]
                              [out (open-output-file dest-exe #:exists 'update)])
-                         (let ([cmdline-end (+ end (bytes-length cmdline))]
+                         (let ([old-cmdline-end cmdline-end]
+			       [cmdline-end (or cmdline-end (+ end (bytes-length cmdline)))]
                                [write-num (lambda (n)
                                             (write-bytes (integer->integer-bytes n 4 #t #f) out))])
                            (dynamic-wind
@@ -1260,9 +1290,10 @@
                               (write-num (length full-cmdline))
                               (write-num (if mred? 1 0))
                               (flush-output out)
-                              (file-position out end)
-                              (write-bytes cmdline out)
-                              (flush-output out))
+			      (unless old-cmdline-end
+				(file-position out end)
+				(write-bytes cmdline out)
+				(flush-output out)))
                             (lambda ()
                               (close-output-port out)))))]
                       [else

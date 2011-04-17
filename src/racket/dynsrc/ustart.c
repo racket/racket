@@ -24,6 +24,13 @@
      exe_path - program to start (relative is w.r.t. executable)
      dll_path - DLL directory if non-empty (relative is w.r.t. executable)
      cmdline_arg ...
+
+   For ELF binaries, the absolute values of `start', `prog_end', and
+   `end' are ignored if a ".rackcmdl" (starter) or ".rackprog"
+   (embedding) section is found. The `start' value is set to match the
+   section offset, and `prog_end' and `end' are correspondingly
+   adjusted. Using a seciton offset allows linking tools (such as
+   `strip') to move the data in the executable.
 */
 char *config = "cOnFiG:[***************************";
 
@@ -101,8 +108,6 @@ static int write_str(int fd, char *s)
   return write(fd, s, strlen(s));
 }
 
-#if 0
-/* Useful for debugging: */
 static char *num_to_string(int n)
 {
   if (!n)
@@ -118,7 +123,6 @@ static char *num_to_string(int n)
     return d;
   }
 }
-#endif
 
 static char *string_append(char *s1, char *s2)
 {
@@ -225,12 +229,100 @@ static char *next_string(char *s)
   return s + strlen(s) + 1;
 }
 
+typedef unsigned short ELF__Half;
+typedef unsigned int ELF__Word;
+typedef unsigned long ELF__Xword;
+typedef unsigned long ELF__Addr;
+typedef unsigned long ELF__Off;
+
+typedef struct { 
+  unsigned char e_ident[16]; 
+  ELF__Half e_type; 
+  ELF__Half e_machine; 
+  ELF__Word e_version; 
+  ELF__Addr e_entry; 
+  ELF__Off e_phoff; 
+  ELF__Off e_shoff; 
+  ELF__Word e_flags; 
+  ELF__Half e_ehsize; 
+  ELF__Half e_phentsize; 
+  ELF__Half e_phnum; 
+  ELF__Half e_shentsize; 
+  ELF__Half e_shnum;
+  ELF__Half e_shstrndx;
+} ELF__Header;
+
+typedef struct
+{
+  ELF__Word sh_name;
+  ELF__Word sh_type;
+  ELF__Xword sh_flags;
+  ELF__Addr sh_addr;
+  ELF__Off sh_offset;
+  ELF__Xword sh_size;
+  ELF__Word sh_link;
+  ELF__Word sh_info;
+  ELF__Xword sh_addralign;
+  ELF__Xword sh_entsize;
+} Elf__Shdr;
+
+static int try_elf_section(const char *me, int *_start, int *_prog_end, int *_end)
+{
+  int fd, i;
+  ELF__Header e;
+  Elf__Shdr s;
+  char *strs;
+
+  fd = open(me, O_RDONLY, 0);
+  if (fd == -1) return 0;
+
+  if (read(fd, &e, sizeof(e)) == sizeof(e)) {
+    if ((e.e_ident[0] == 0x7F)
+	&& (e.e_ident[1] == 'E')
+	&& (e.e_ident[2] == 'L')
+	&& (e.e_ident[3] == 'F')) {
+
+      lseek(fd, e.e_shoff + (e.e_shstrndx * e.e_shentsize), SEEK_SET);
+      if (read(fd, &s, sizeof(s)) != sizeof(s)) {
+	close(fd);
+	return 0;
+      }
+
+      strs = (char *)malloc(s.sh_size);
+      lseek(fd, s.sh_offset, SEEK_SET);
+      if (read(fd, strs, s.sh_size) != s.sh_size) {
+	close(fd);
+	return 0;
+      }
+
+      for (i = 0; i < e.e_shnum; i++) {
+	lseek(fd, e.e_shoff + (i * e.e_shentsize), SEEK_SET);
+	if (read(fd, &s, sizeof(s)) != sizeof(s)) {
+	  close(fd);
+	  return 0;
+	}
+	if (!strcmp(strs + s.sh_name, ".rackcmdl")
+	    || !strcmp(strs + s.sh_name, ".rackprog")) {
+	  *_prog_end = (*_prog_end - *_start) + s.sh_offset;
+	  *_start = s.sh_offset;
+	  *_end = s.sh_offset + s.sh_size;
+	  close(fd);
+	  return !strcmp(strs + s.sh_name, ".rackprog");
+	}
+      }
+    }
+  }
+
+  close(fd);
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   char *me = argv[0], *data, **new_argv;
   char *exe_path, *lib_path, *dll_path;
   int start, prog_end, end, count, fd, v, en, x11;
-  int argpos, inpos, collcount = 1;
+  int argpos, inpos, collcount = 1, fix_argv;
 
   if (config[7] == '[') {
     write_str(2, argv[0]);
@@ -313,6 +405,8 @@ int main(int argc, char **argv)
   end = as_int(config + 16);
   count = as_int(config + 20);
   x11 = as_int(config + 24);
+
+  fix_argv = try_elf_section(me, &start, &prog_end, &end);
 
   {
     int offset, len;
@@ -407,6 +501,12 @@ int main(int argc, char **argv)
     }
   }
 
+  if (fix_argv) {
+    /* next three args are "-k" and numbers; fix 
+       the numbers to match start and prog_end */
+    fix_argv = argpos + 1;
+  }
+
   /* Add built-in flags: */
   while (count--) {
     new_argv[argpos++] = data;
@@ -419,6 +519,11 @@ int main(int argc, char **argv)
   }
 
   new_argv[argpos] = NULL;
+
+  if (fix_argv) {
+    new_argv[fix_argv] = num_to_string(start);
+    new_argv[fix_argv+1] = num_to_string(prog_end);
+  }
 
   /* Execute the original binary: */
 
