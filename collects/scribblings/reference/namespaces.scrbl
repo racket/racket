@@ -273,7 +273,7 @@ same @tech{base phase}, then the @exnraise[exn:fail:contract].}
                                               [dest-namespace namespace? (current-namespace)])
          void?]{
 
-Like @racket[namespace-attach-module-declaration], but the module
+Like @racket[namespace-attach-module], but the module
 specified by @racket[modname] need only be declared (and not
 necessarily @tech{instantiate}d) in @racket[src-namespace], and the
 module is merely declared in @racket[dest-namespace].}
