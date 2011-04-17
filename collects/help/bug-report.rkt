@@ -59,6 +59,8 @@
         (cond
           [close-box-clicked?
            (cond
+             [(eq? (send single active-child) finished-panel)
+              #t]
              [(empty-bug-report?)
               (no-more-saving)
               (unsave-bug-report bug-id)
