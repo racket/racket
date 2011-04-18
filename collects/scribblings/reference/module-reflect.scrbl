@@ -355,7 +355,7 @@ above the @tech{base phase}.
 When @racket[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
 @tech{visit}ed or made @tech{available} in higher phases. If the
-module exports @racket[provide] as syntax, then a use of the binding
+module exports @racket[provided] as syntax, then a use of the binding
 is expanded and evaluated in a fresh namespace to which the module is
 attached, which means that the module is @tech{visit}ed in the fresh
 namespace. If the module has no such exported variable or syntax, then
