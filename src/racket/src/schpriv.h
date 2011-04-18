@@ -3116,6 +3116,7 @@ int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
 Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
 
+THREAD_LOCAL_DECL(extern Scheme_Bucket_Table *scheme_module_code_cache);
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv);
 
 Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree);

@@ -33,6 +33,7 @@
 
 /* globals */
 SHARED_OK Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
+THREAD_LOCAL_DECL(Scheme_Bucket_Table *scheme_module_code_cache);
 
 SHARED_OK static Scheme_Bucket_Table *modpath_table;
 #ifdef MZ_USE_PLACES
