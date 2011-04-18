@@ -59,6 +59,7 @@
   (cond
    [(zero? i) seq]
    [(stream? seq) (stream-tail seq i)]
+   [(exact-nonnegative-integer? seq) (stream-tail (in-range seq) i)]
    [else
     (make-do-sequence
      (lambda ()

@@ -424,7 +424,8 @@
                           v)))
 
   (define (sequence? v)
-    (or (do-sequence? v)
+    (or (exact-nonnegative-integer? v)
+        (do-sequence? v)
         (sequence-via-prop? v)
         (stream? v)
         (mpair? v)
@@ -437,6 +438,7 @@
 
   (define (make-sequence who v)
     (cond
+      [(exact-nonnegative-integer? v) (:integer-gen v)]
       [(do-sequence? v) ((do-sequence-ref v 0))]
       [(mpair? v) (:mlist-gen v)]
       [(list? v) (:list-gen v)]
@@ -497,6 +499,9 @@
                          (lambda (x) (> x b)))]
               [inc (lambda (x) (+ x step))])
          (make-range a inc cont?))]))
+
+  (define (:integer-gen v)
+    (values values add1 0 (lambda (i) (i . < . v)) #f #f))
 
   (define in-naturals
     (case-lambda

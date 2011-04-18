@@ -1,3 +1,6 @@
+Version 5.1.1.2
+Changed "sequence" to include exact nonnegative integers
+
 Version 5.1.1, May 2011
 Enabled single-precision floats by default
 Added single-flonum?

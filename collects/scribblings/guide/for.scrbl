@@ -29,6 +29,8 @@ the @racket[_body]s for side effects.
   (display i))
 (for ([i "abc"])
   (printf "~a..." i))
+(for ([i 4])
+  (display i))
 ]
 
 The @racket[for/list] variant of @racket[for] is more Racket-like. It
@@ -41,6 +43,8 @@ comprehension}.
 (for/list ([i '(1 2 3)])
   (* i i))
 (for/list ([i "abc"])
+  i)
+(for/list ([i 4])
   i)
 ]
 
@@ -59,9 +63,12 @@ see the kinds of sequence generators that make interesting examples.
 The @racket[in-range] function generates a sequence of numbers, given
 an optional starting number (which defaults to @racket[0]), a number
 before which the sequences ends, and an optional step (which defaults
-to @racket[1]).
+to @racket[1]). Using a non-negative integer @racket[_k] directly as 
+a sequence is a shorthand for @racket[(in-range _k)].
 
 @examples[
+(for ([i 3])
+  (display i))
 (for ([i (in-range 3)])
   (display i))
 (for ([i (in-range 1 4)])
@@ -102,7 +109,8 @@ true.
 
 Sequence constructors like @racket[in-list], @racket[in-vector] and
 @racket[in-string] simply make explicit the use of a list, vector, or
-string as a sequence. Since they raise an exception when given the
+string as a sequence. Along with @racket[in-range],
+these constructors raise an exception when given the
 wrong kind of value, and since they otherwise avoid a run-time
 dispatch to determine the sequence type, they enable more efficient
 code generation; see @secref["for-performance"] for more information.
@@ -425,7 +433,8 @@ fast-clause [id fast-seq]
 
 @racketgrammar[
 #:literals [in-range in-naturals in-list in-vector in-string in-bytes in-value stop-before stop-after]
-fast-seq (in-range expr expr)
+fast-seq (in-range expr)
+         (in-range expr expr)
          (in-range expr expr expr)
          (in-naturals)
          (in-naturals expr)

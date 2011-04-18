@@ -6,9 +6,13 @@
 (require racket/mpair
          "for-util.rkt")
 
+(test-sequence [(0 1 2)] 3)
 (test-sequence [(0 1 2)] (in-range 3))
 (test-sequence [(3 4 5)] (in-range 3 6))
 (test-sequence [(7 6 5)] (in-range 7 4 -1))
+(test-sequence [(3.0 4.0 5.0)] (in-range 3.0 6.0))
+(test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5)] (in-range 3.0 6.0 0.5))
+(test-sequence [(3.0 3.1 3.2)] (in-range 3.0 3.3 0.1))
 
 (test-sequence [(a b c)] '(a b c))
 (test-sequence [(a b c)] (in-list '(a b c)))
@@ -228,7 +232,7 @@
   (test 13 next)
   (test #f more?))
 
-;; check ranges on `in-vetcor', especially as a value
+;; check ranges on `in-vector', especially as a value
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0 0)]) (for/list ([e v]) e)))

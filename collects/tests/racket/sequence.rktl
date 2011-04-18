@@ -29,21 +29,23 @@
   
   (test '(0 1 2) 'sequence->list (sequence->list (in-range 3)))
   (arity-test sequence->list 1 1)
-  (err/rt-test (sequence->list 1))
+  (err/rt-test (sequence->list 'a))
 
   (test '() 'empty-sequence (sequence->list empty-sequence))
 
   (arity-test sequence-length 1 1)
-  (err/rt-test (sequence-length 1))
+  (err/rt-test (sequence-length 'a))
   (test 3 'sequence-length (sequence-length (in-range 3)))
 
   (arity-test sequence-ref 2 2)
-  (err/rt-test (sequence-ref 2 0))
+  (err/rt-test (sequence-ref 'a 0))
   (err/rt-test (sequence-ref (in-naturals) -1) exn:fail?)
   (err/rt-test (sequence-ref (in-naturals) 1.0) exn:fail?)
   (test 0 'sequence-ref (sequence-ref (in-naturals) 0))
   (test 1 'sequence-ref (sequence-ref (in-naturals) 1))
   (test 25 'sequence-ref (sequence-ref (in-naturals) 25))
+  (when (sequence? 10)
+    (test 3 sequence-ref 10 3))
 
   (arity-test sequence-tail 2 2)
   (err/rt-test (sequence-tail (in-naturals) -1) exn:fail?)
@@ -51,14 +53,18 @@
   (test 4 'sequence-ref (sequence-ref (sequence-tail (in-naturals) 4) 0))
   (test 5 'sequence-ref (sequence-ref (sequence-tail (in-naturals) 4) 1))
   (test 29 'sequence-ref (sequence-ref (sequence-tail (in-naturals) 4) 25))
+  (when (sequence? 10)
+    (test 29 'sequence-ref (sequence-ref (sequence-tail 100 4) 25)))
 
   ;; XXX Check for rest
-  (err/rt-test (sequence-append 1) exn:fail?)
-  (err/rt-test (sequence-append (in-naturals) 1) exn:fail?)
+  (err/rt-test (sequence-append 'a) exn:fail?)
+  (err/rt-test (sequence-append (in-naturals) 'a) exn:fail?)
   (test '() 'sequence-append (sequence->list (sequence-append)))
   (test 5 'sequence-append (sequence-ref (sequence-append (in-naturals)) 5))
   (test 5 'sequence-append
         (sequence-ref (sequence-append (in-range 3) (in-range 3 10)) 5))
+  (when (sequence? 10)
+    (test 5 sequence-ref (sequence-append 4 10) 9))
 
   (arity-test sequence-map 2 2)
   (err/rt-test (sequence-map 2 (in-naturals)) exn:fail?)

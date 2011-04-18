@@ -35,6 +35,8 @@ built-in datatypes, the sequence datatype includes the following:
 
 @itemize[
 
+ @item{exact nonnegative integers (see below)}
+
  @item{strings (see @secref["strings"])}
 
  @item{byte strings (see @secref["bytestrings"])}
@@ -56,6 +58,10 @@ built-in datatypes, the sequence datatype includes the following:
  @item{streams (see @secref["streams"])}
 
 ]
+
+An @tech{exact number} @racket[_k] that is a non-negative
+@tech{integer} acts as a sequence similar to @racket[(in-range _k)],
+except that @racket[_k] by itself is not a @tech{stream}.
 
 The @scheme[make-do-sequence] function creates a sequence given a
 thunk that returns procedures to implement a sequence, and the
