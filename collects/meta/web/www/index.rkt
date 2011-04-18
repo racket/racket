@@ -56,7 +56,7 @@
      @code{#lang web-server/insta
            ;; A "hello world" web server
            (define (start request)
-            (response/xexpr)
+             (response/xexpr)
              '(html
                (body "Hello World")))}
      @desc{This example implements a web server using the
