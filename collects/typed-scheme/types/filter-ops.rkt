@@ -13,8 +13,9 @@
 
 (provide (all-defined-out))
 
-(define (atomic-filter? e)
-  (or (TypeFilter? e) (NotTypeFilter? e)))
+(define (atomic-filter? p)
+  (or (TypeFilter? p) (NotTypeFilter? p)
+      (Top? p) (Bot? p)))
 
 (define (opposite? f1 f2)
   (match* (f1 f2)
@@ -40,6 +41,8 @@
   (if (filter-equal? f1 f2)
       #t
       (match* (f1 f2)
+              [((OrFilter: fs) f2)
+               (memf (lambda (f) (filter-equal? f f2)) fs)]
               [((TypeFilter: t1 p1 i1)
                 (TypeFilter: t2 p1 i2))
                (and (name-ref=? i1 i2)
@@ -60,6 +63,8 @@
      ((listof Filter/c) boolean? . --> . (listof Filter/c))
   (define tf-map (make-hash))
   (define ntf-map (make-hash))
+  ;; props: the propositions we're processing
+  ;; others: props that are neither TF or NTF
   (let loop ([props props] [others null])
     (if (null? props)
         (append others
@@ -152,7 +157,18 @@
                             (if (filter-equal? f1 f2)
                                 f1
                                 (apply mk (compact (list f1 f2) #f))))]
-          [_ (apply mk (compact result #f))])
+          [_ 
+           ;; first, remove anything implied by the atomic propositions
+           ;; We commonly see: (And (Or P Q) (Or P R) (Or P S) ... P), which this fixes
+           (let-values ([(atomic not-atomic) (partition atomic-filter? result)])
+             (define not-atomic* 
+               (for/list ([p (in-list not-atomic)]
+                          #:when 
+                          (not (for/or ([a (in-list atomic)])
+                                       (implied-atomic? p a))))
+                         p))
+             ;; `compact' takes care of implications between atomic props
+             (apply mk (compact (append not-atomic* atomic) #f)))])
         (match (car fs)
           [(and t (Bot:)) t]
           [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
@@ -162,7 +178,8 @@
                     -bot]
                    [(let ([t-seq (Rep-seq t)])
                       (for/or ([f (in-list result)])
-                        (or (= (Rep-seq f) t-seq) (implied-atomic? t f))))
+                        (or (= (Rep-seq f) t-seq)
+                            (implied-atomic? t f))))
                     (loop (cdr fs) result)]
                    [else
                     (loop (cdr fs) (cons t result))])]))))
