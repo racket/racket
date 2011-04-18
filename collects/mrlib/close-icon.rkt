@@ -113,7 +113,7 @@
                   [else
                    mask1])))))
     
-    (super-new [style '(transparent)])
+    (super-new [style '(transparent no-focus)])
     (min-width (+ horizontal-pad horizontal-pad (send icon get-width)))
     (min-height (+ vertical-pad vertical-pad (send icon get-height)))
     (stretchable-width #f)
