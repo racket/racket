@@ -659,8 +659,17 @@ with a function call.
 Binds @scheme[id] as a @tech{custom function type}. The type is
 expanded by applying the procedure produced by
 @scheme[transformer-expr] to a use of the @tech{custom function
-type}.}
+type}.
 
+For instance, the following defines a new type that automatically coerces
+the input number to an inexact form which is compatible with the _float type.
+
+@racketblock[
+(define-fun-syntax _float*
+  (syntax-id-rules (_float*)
+    [(_float*) (type: _float pre: (x => (+ 0.0 x)))]))
+
+(_fun _float* -> _bool)]}
 
 @defidform[_?]{
 
