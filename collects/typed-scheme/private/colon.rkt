@@ -9,18 +9,6 @@
 (provide :)
 
 (define-syntax (: stx)
-  (define-syntax-class arr
-    (pattern x:id
-             #:fail-unless (eq? (syntax-e #'x) '->) #f
-             #:fail-unless (printf "id: ~a ~a\n"
-                                   (identifier-binding #'All-kw) 
-                                   (identifier-transformer-binding #'All-kw)) 
-             #f
-             #:fail-unless (printf "kw: ~a ~a\n"
-                                   (identifier-binding #'t:All) 
-                                   (identifier-transformer-binding #'t:All)) 
-             #f
-             #:fail-when #t #f))
   (define stx*
     ;; make it possible to add another colon after the id for clarity
     ;; and in that case, a `->' on the RHS does not need to be
