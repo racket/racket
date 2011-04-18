@@ -344,7 +344,7 @@
      (let loop ([t orig])
        (define (next rest . args) (apply setkey! args) (loop rest))
        (syntax-case* t
-           (type: expr: bind: 1st-arg: prev-arg: pre: post: keywords:)
+           (type: expr: bind: 1st-arg: prev-arg: pre: post: keywords: =>)
            id=?
          [(type: t x ...)      (next #'(x ...) 'type #'t)]
          [(expr:     e  x ...) (next #'(x ...) 'expr #'e)]
@@ -352,7 +352,11 @@
          [(1st-arg:  id x ...) (next #'(x ...) '1st  (cert-id #'id) #t)]
          [(prev-arg: id x ...) (next #'(x ...) 'prev (cert-id #'id) #t)]
          ;; in the following two cases pass along orig for recertifying
+         ;; first explicitly check if the `(id => expr)' form left off
+         ;; the parentheses
+         [(pre:      p => expr x ...) (err "bad form for `pre:'. Expected either `pre: (id => expression)' or `pre: expression'" #'(pre: p => expr))]
          [(pre:      p  x ...) (next #'(x ...) 'pre  (with-arg #'p))]
+         [(post:     p => expr x ...) (err "bad form for `post:' Expected either `post: (id => expression)' or `post: expression'" #'(post: p => expr))]
          [(post:     p  x ...) (next #'(x ...) 'post (with-arg #'p))]
          [(keywords: x ...)
           (let kloop ([ks '()] [xs #'(x ...)])
