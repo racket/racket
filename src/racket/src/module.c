@@ -1436,7 +1436,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
   while (!SCHEME_NULLP(todo)) {
     if (phase > max_phase)
       max_phase = phase;
-    if (phase < 0) {
+    if (phase < orig_phase) {
       /* As soon as we start traversing negative phases, stop transferring
          instances (i.e., transfer declarations only). This transfer-only
          mode should stick even even if we go back into positive phases. */
@@ -1481,7 +1481,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	   deeper in phases (for-syntax levels) than the target
 	   namespace has ever gone, so there's definitely no conflict
 	   at this level in that case. */
-	if ((phase >= 0) && SCHEME_TRUEP(to_modchain)) {
+	if ((phase >= orig_phase) && SCHEME_TRUEP(to_modchain)) {
 	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 	  if (menv2) {
 	    if (!SAME_OBJ(menv->toplevel, menv2->toplevel))
@@ -1657,7 +1657,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
         }
 	
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
-        if (phase > 0) {
+        if (phase > orig_phase) {
           to_modchain = SCHEME_CAR(past_to_modchains);
           past_to_modchains = SCHEME_CDR(past_to_modchains);
         }
@@ -1684,7 +1684,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	}
 	
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[1];
-        if (phase >= 0) {
+        if (phase >= orig_phase) {
           past_to_modchains = cons(to_modchain, past_to_modchains);
           if (SCHEME_TRUEP(to_modchain))
             to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
@@ -1872,7 +1872,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 
     LOG_ATTACH(printf("Copying %d (%p)\n", phase, checked));
 
-    if (phase >= 0)
+    if (phase >= orig_phase)
       check_modchain_consistency(MODCHAIN_TABLE(to_modchain), phase);
 
     for (i = checked->size; i--; ) {
@@ -1888,7 +1888,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
 	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 	  if (!menv2) {
 	    /* Clone/copy menv for the new namespace: */
-            if ((phase >= 0) && !just_declare) {
+            if ((phase >= orig_phase) && !just_declare) {
               menv2 = scheme_copy_module_env(menv, to_env, to_modchain, orig_phase);
               if (menv->attached)
                 menv2->attached = 1;
@@ -1909,7 +1909,7 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
     
     past_checkeds = SCHEME_CDR(past_checkeds);
     from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
-    if (phase > 0)
+    if (phase > orig_phase)
       to_modchain = SCHEME_VEC_ELS(to_modchain)[2];   
     --phase;
   }
