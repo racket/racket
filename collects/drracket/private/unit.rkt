@@ -684,9 +684,10 @@ module browser threading seems wrong.
           ;; returns the current warning message if "Run" should be clicked (ie, if the
           ;; state of the REPL is out of sync with drscheme).
           (define/public (get-needs-execution-message)
-            (or (and (not (this-and-next-language-the-same?))
-                     (string-constant needs-execute-language-changed))
-                needs-execution-state))
+            (and (not already-warned-state)
+                 (or (and (not (this-and-next-language-the-same?))
+                          (string-constant needs-execute-language-changed))
+                     needs-execution-state)))
           
           (define/pubment (get-next-settings) next-settings)
           (define/pubment (set-next-settings _next-settings [update-prefs? #t])
@@ -1208,7 +1209,8 @@ module browser threading seems wrong.
         (define/public (get-current-execute-warning) current-execute-warning)
         (define/public (clear-execution-state) 
           (set! current-execute-warning #f)
-          (update-execute-warning-gui))
+          (update-execute-warning-gui)
+          (send defs already-warned))
         (define/public (update-execute-warning-gui)
           (when (is-current-tab?)
             (send frame show/hide-warning-message 
