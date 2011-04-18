@@ -21,7 +21,8 @@
          processor-count
          (rename-out [pl-place-enabled? place-enabled?]))
 
-(define-struct TH-place (th ch) #:property prop:evt (lambda (x) (TH-place-channel-out (TH-place-ch x))))
+(define-struct TH-place (th ch cust) 
+  #:property prop:evt (lambda (x) (TH-place-channel-in (TH-place-ch x))))
 
 (define (place-channel-send/receive ch msg)
   (place-channel-send ch msg)
@@ -33,8 +34,9 @@
     (thread 
       (lambda ()
         (let loop ()
-           (channel-put ch (thread-receive))
-           (loop))))
+          (let ([v (thread-receive)])
+            (channel-put ch v)
+            (loop)))))
     ch))
   
 (define (th-place mod funcname)
@@ -43,18 +45,20 @@
   (unless (symbol? funcname)
     (raise-type-error 'place "symbol?" 1 mod funcname))
   (define-values (pch cch) (th-place-channel))
-  (define th (thread (lambda ()
-    (with-continuation-mark
-      parameterization-key
-      orig-paramz
-      (parameterize ([current-namespace (make-base-namespace)]
-                     [current-custodian (make-custodian-from-main)])
-        ((dynamic-require mod funcname) cch))))))
-  (TH-place th pch))
+  (define cust (make-custodian-from-main))
+  (define th (thread 
+              (lambda ()
+                (with-continuation-mark
+                    parameterization-key
+                    orig-paramz
+                  (parameterize ([current-namespace (make-base-namespace)]
+                                 [current-custodian cust])
+                    ((dynamic-require mod funcname) cch))))))
+  (TH-place th pch cust))
 
 (define (th-place-sleep n) (sleep n))
 (define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
-(define (th-place-kill pl) (kill-thread (TH-place-th pl)))
+(define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
@@ -94,9 +98,7 @@
       [(TH-place? pl) (TH-place-channel-out (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-out pl)]
       [else (raise-type-error 'place-channel-send "expect a place? or place-channel?" pl)]))
-  (sync (thread-resume-evt th))
-  (thread-send th
-    (deep-copy msg)))
+  (void (thread-send th (deep-copy msg) #f)))
 
 (define (th-place-channel-receive pl)
   (channel-get

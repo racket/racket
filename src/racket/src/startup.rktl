@@ -495,9 +495,9 @@
 
 
 ;; ----------------------------------------
-;; A module that collects all the built-in modules,
-;;  so that it's easier to keep them attached in new
-;;  namespaces.
+;; When places are implemented by plain old threads,
+;; place channels need to be shared across namespaces,
+;; so `#%place-struct' is included in builtins
 
 (module #%place-struct '#%kernel
   
