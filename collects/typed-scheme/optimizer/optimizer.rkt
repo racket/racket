@@ -37,7 +37,9 @@
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
             formals e:expr ...)
-           #:with opt #`(op formals #,@(syntax-map (optimize) #'(e ...))))
+           #:with opt (syntax-track-origin (quasisyntax/loc this-syntax (op formals #,@(syntax-map (optimize) #'(e ...))))
+                                           this-syntax
+                                           #'op))
   (pattern (case-lambda [formals e:expr ...] ...)
            ;; optimize all the bodies
            #:with (opt-parts ...)
