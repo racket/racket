@@ -1,7 +1,19 @@
-Version 5.1.0.6
+Version 5.1.1, May 2011
+Enabled single-precision floats by default
+Added single-flonum?
+Changed eqv? so that inexacts are equivalent only when they
+ have the same precision
+Changed file-or-directory-permission to add 'bits mode
+ and permission-setting mode
+Added special treatment of void as an 'inferred-name property
 Removed the "MrEd" compatability executable under Windows
  and Mac OS X, but the "mred" compatibility script remains
-Removed the following (undocumented) exports from racket/contract:
+racket/gui: added multi-column support to list-box%
+racket/gui: added scrollbar support to panel%, vertical-panel%,
+ and horizontal-panel%
+racket/gui: added 'wheel-left and 'wheel-right events
+racket/file: add user-read-bit, etc.
+racket/contract: removed the following (undocumented) exports:
   build-flat-contract
   chaperone-contract-struct?
   contract-struct-first-order
@@ -36,24 +48,6 @@ Removed the following (undocumented) exports from racket/contract:
   struct:contracted-function
   synthesized-value
   unknown?
-
-Version 5.1.0.5
-racket/gui: added 'wheel-left and 'wheel-right events
-
-Version 5.1.0.4
-Change file-or-directory-permission to add 'bits mode
- and permission-setting mode
-racket/file: add user-read-bit, etc.
-Added special treatment of void as an 'inferred-name property
-
-Version 5.1.0.2
-Enabled single-precision floats by default
-Added single-flonum?
-Changed eqv? so that inexacts are equivalent only when they
- have the same precision
-racket/gui: added multi-column support to list-box%
-racket/gui: added scrollbar support to panel%, vertical-panel%,
- and horizontal-panel%
 
 Version 5.1, February 2011
 Renamed "proxy" to "impersonator"
