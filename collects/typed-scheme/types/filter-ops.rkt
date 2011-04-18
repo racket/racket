@@ -129,7 +129,9 @@
            (cond [(for/or ([f (in-list (append (cdr fs) result))])
                     (opposite? f t))
                   -top]
-                 [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? f t)))
+                 [(let ([t-seq (Rep-seq t)])
+                    (for/or ([f (in-list result)])
+                      (or (= (Rep-seq f) t-seq) (implied-atomic? f t))))
                   (loop (cdr fs) result)]
                  [else
                   (loop (cdr fs) (cons t result))])]))))
@@ -139,7 +141,7 @@
     (case-lambda [() -top]
                  [(f) f]
                  [fs (make-AndFilter fs)]))
-  (let loop ([fs (remove-duplicates args filter-equal?)] [result null])
+  (let loop ([fs (remove-duplicates args equal? #:key Rep-seq)] [result null])
     (if (null? fs)
         (match result
           [(list) -top]
@@ -158,7 +160,9 @@
           [t (cond [(for/or ([f (in-list (append (cdr fs) result))])
                       (opposite? f t))
                     -bot]
-                   [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? t f)))
+                   [(let ([t-seq (Rep-seq t)])
+                      (for/or ([f (in-list result)])
+                        (or (= (Rep-seq f) t-seq) (implied-atomic? t f))))
                     (loop (cdr fs) result)]
                    [else
                     (loop (cdr fs) (cons t result))])]))))
