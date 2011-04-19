@@ -1297,6 +1297,7 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
       break;
   }
 
+  /* small messages are deamed to be < 1k, this could be tuned in either direction */
   if (GC_message_allocator_size(msg_memory) < 1024) {
     new_so = scheme_places_deep_copy(so);
     GC_dispose_message_allocator(msg_memory);

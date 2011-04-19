@@ -161,9 +161,9 @@ intptr_t GC_is_place() {
 static void master_collect_initiate(NewGC *gc);
 #endif
 
-#if defined(MZ_USE_PLACES) && defined(GC_DEBUG_PAGES)
 inline static size_t real_page_size(mpage* page);
 
+#if defined(MZ_USE_PLACES) && defined(GC_DEBUG_PAGES)
 static FILE* gcdebugOUT(NewGC *gc) {
   
   if (gc->GCVERBOSEFH) { fflush(gc->GCVERBOSEFH); }
@@ -225,6 +225,8 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define GEN0_SIZE_ADDITION (512 * 1024)
 #define GEN0_MAX_SIZE (32 * 1024 * 1024)
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
+
+#define GEN0_ALLOC_SIZE(page) ((page)->previous_size)
 
 /* This is the log base 2 of the size of one word, given in bytes */
 #ifdef SIXTY_FOUR_BIT_INTEGERS
@@ -311,6 +313,13 @@ static void *ofm_malloc_zero(size_t size) {
 inline static size_t size_to_apage_count(size_t len) {
   return (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 }
+
+inline static size_t round_to_apage_size(size_t sizeb) {  
+  sizeb += APAGE_SIZE - 1;
+  sizeb -= sizeb & (APAGE_SIZE - 1);
+  return sizeb;
+}
+
   
 inline static void check_used_against_max(NewGC *gc, size_t len) 
 {
@@ -331,6 +340,7 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory) {
+          if (page_count > gc->used_pages) { asm("int3");}
             gc->used_pages -= page_count;
             GC_out_of_memory();
           }
@@ -354,8 +364,27 @@ static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, in
 
 static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mprotect, void **src_block)
 {
+  uintptr_t x = size_to_apage_count(len);
+  if (x > gc->used_pages) { asm("int3");}
+
   gc->used_pages -= size_to_apage_count(len);
   mmu_free_page(gc->mmu, p, len, type, expect_mprotect, src_block);
+}
+
+static void orphan_page_accounting(NewGC *gc, size_t allocate_size) {
+  uintptr_t x = size_to_apage_count(round_to_apage_size(allocate_size));
+  if (x > gc->used_pages) { asm("int3");}
+  mmu_memory_allocated_dec(gc->mmu, allocate_size);
+  gc->used_pages -= size_to_apage_count(round_to_apage_size(allocate_size));
+}
+
+inline static void pagemap_add_with_size(PageMap pagemap, mpage *page, intptr_t size);
+static void adopt_page_accounting(NewGC *gc, mpage* tmp) {
+  size_t realpagesize = real_page_size(tmp);
+  pagemap_add_with_size(gc->page_maps, tmp, realpagesize);
+  mmu_memory_allocated_inc(gc->mmu, realpagesize);
+  gc->used_pages += size_to_apage_count(realpagesize);
+  gc->gen0.current_size += realpagesize;
 }
 
 
@@ -664,15 +693,20 @@ THREAD_LOCAL_DECL(int GC_gen0_alloc_only = 0);
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
 
-static size_t round_to_apage_size(size_t sizeb)
-{  
-  sizeb += APAGE_SIZE - 1;
-  sizeb -= sizeb & (APAGE_SIZE - 1);
-  return sizeb;
-}
-
-static inline size_t real_page_size(mpage *page) {
-  return (page->size_class > 1) ? round_to_apage_size(page->size) : APAGE_SIZE;
+inline static size_t real_page_size(mpage *page) {
+  switch (page->size_class) { 
+    case 0: /* SMALL_PAGE , GEN0_PAGE */
+      if (page->generation) { return APAGE_SIZE; }
+      else { return GEN0_ALLOC_SIZE(page); } 
+    case 1: /* MED PAGE */
+      return APAGE_SIZE;
+    case 2: /* BIG PAGE */
+    case 3: /* BIG PAGE MARKED */
+      return round_to_apage_size(page->size);
+    default: /* BIG PAGE size_class 2 or 3 */
+      printf("Error Page class %i doesn't exist\n", page->size_class);
+      return 0;
+  }
 }
 
 #if 0
@@ -849,8 +883,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   /* this page is going to be sent to a different place, don't account for it here */
   /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
   if (gc->saved_allocator) {
-    mmu_memory_allocated_dec(gc->mmu, allocate_size);
-    gc->used_pages -= size_to_apage_count(realpagesize);
+    orphan_page_accounting(gc, allocate_size);
   }
   else {
     pagemap_add(gc->page_maps, bpage);
@@ -987,7 +1020,6 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
   }
 }
 
-#define GEN0_ALLOC_SIZE(page) ((page)->previous_size)
 inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *page;
 
@@ -1001,8 +1033,7 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   /* this page is going to be sent to a different place, don't account for it here */
   /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
   if (gc->saved_allocator) {
-    mmu_memory_allocated_dec(gc->mmu, page_size);
-    gc->used_pages -= size_to_apage_count(page_size);
+    orphan_page_accounting(gc, page_size);
   }
   else {
     pagemap_add_with_size(gc->page_maps, page, page_size);
@@ -1390,29 +1421,17 @@ void *GC_finish_message_allocator() {
 
 void GC_adopt_message_allocator(void *param) {
   NewGC *gc = GC_get_GC();
-  mpage *tmp;
   MsgMemory *msgm = (MsgMemory *) param;
   
   if (msgm->big_pages)
   { 
-    size_t realpagesize;
-    tmp = msgm->big_pages;
-    realpagesize = real_page_size(tmp);
-    pagemap_add(gc->page_maps, tmp);
-    mmu_memory_allocated_inc(gc->mmu, realpagesize);
-    gc->gen0.current_size += realpagesize;
-    gc->used_pages += size_to_apage_count(realpagesize);
+    mpage *tmp = msgm->big_pages;
+    adopt_page_accounting(gc, tmp);
 
     while (tmp->next) { 
       tmp = tmp->next; 
-      realpagesize = real_page_size(tmp);
-
-      pagemap_add(gc->page_maps, tmp);
-      mmu_memory_allocated_inc(gc->mmu, realpagesize);
-      gc->gen0.current_size += realpagesize;
-      gc->used_pages += size_to_apage_count(realpagesize);
+      adopt_page_accounting(gc, tmp);
     }
-
 
     /* push msgm->big_pages onto the head of the list */
     tmp->next = gc->gen0.big_pages;
@@ -1424,39 +1443,26 @@ void GC_adopt_message_allocator(void *param) {
 
   if (msgm->pages)
   { 
-    mpage *gen0end;
-    size_t realpagesize;
+    mpage *tmp = msgm->pages;
+    adopt_page_accounting(gc, tmp);
 
-    tmp = msgm->pages;
-    realpagesize = GEN0_ALLOC_SIZE(tmp);
-    mmu_memory_allocated_inc(gc->mmu, realpagesize);
-    pagemap_add_with_size(gc->page_maps, tmp, realpagesize);
-    gc->gen0.current_size += realpagesize;
-    gc->used_pages += size_to_apage_count(realpagesize);
-    
     while (tmp->next) { 
       tmp = tmp->next;
-      realpagesize = GEN0_ALLOC_SIZE(tmp);
-
-      mmu_memory_allocated_inc(gc->mmu, realpagesize);
-      pagemap_add_with_size(gc->page_maps, tmp, realpagesize);
-      gc->gen0.current_size += realpagesize;
-      gc->used_pages += size_to_apage_count(realpagesize);
+      adopt_page_accounting(gc, tmp);
     }
 
-    /* preserve locality of gen0, when it resizes by adding message pages to end of gen0.pages list */
-    /* append msgm->big_pages onto the tail of the list */
-    gen0end = gc->gen0.curr_alloc_page;
-    while (gen0end->next) { 
-      gen0end = gen0end->next;
-    }
+    {
+      /* preserve locality of gen0, when it resizes by adding message pages to end of gen0.pages list */
+      /* append msgm->big_pages onto the tail of the list */
+      mpage *gen0end = gc->gen0.curr_alloc_page;
+      while (gen0end->next) { 
+        gen0end = gen0end->next;
+      }
 
-    gen0end->next = msgm->pages;
-    msgm->pages->prev = gen0end;
+      gen0end->next = msgm->pages;
+      msgm->pages->prev = gen0end;
+    }
   }
-
-  gc->gen0.current_size += msgm->size;
-
   free(msgm);
 }
 
@@ -1464,7 +1470,7 @@ uintptr_t GC_message_allocator_size(void *param) {
   MsgMemory *msgm = (MsgMemory *) param;
   if (!msgm) { return sizeof(param); }
   if (msgm->big_pages && msgm->size < 1024) {
-    printf("error message allocators with big pages should be bigger than %u!\n", msgm->size);
+    printf("Error: message allocators with big pages should be bigger than %lu!\n", msgm->size);
     exit(1);
   }
   return msgm->size;
@@ -1477,7 +1483,7 @@ void GC_dispose_message_allocator(void *param) {
   
   if (msgm->big_pages)
   { 
-    printf("error disposable message allocators should not have big objects!\n");
+    printf("Error: disposable message allocators should not have big objects!\n");
     exit(1);
   }
 
@@ -1487,7 +1493,7 @@ void GC_dispose_message_allocator(void *param) {
 
     if (tmp->next)
     { 
-      printf("error disposable message allocators should not have more than one page!\n");
+      printf("Error: disposable message allocators should not have more than one page!\n");
       exit(1);
     }
     /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page
