@@ -177,7 +177,7 @@ implements and exports the @racket[identity] function, since
 The @racketmodname[syntax/module-reader] language accepts many optional
 specifications to adjust other features of the language. For example,
 an alternate @racketidfont{read} and @racketidfont{read-syntax} for
-parsing the language can be spcified with @racket[#:read] and
+parsing the language can be specified with @racket[#:read] and
 @racket[#:read-syntax], respectively. The following
 @filepath{dollar-racket.rkt} language uses @filepath{dollar.rkt} (see
 @secref["readtable"]) to build a language that is like
