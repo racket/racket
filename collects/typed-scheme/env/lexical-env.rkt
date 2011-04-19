@@ -16,7 +16,7 @@
          (typecheck tc-metafunctions)
 	 (except-in (types utils convenience) -> ->*))
 
-(provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical
+(provide lexical-env with-lexical-env with-lexical-env/extend
          with-lexical-env/extend/props)
 (p/c
  [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
@@ -44,26 +44,17 @@
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment
-(define (update-type/lexical f i [env (lexical-env)])
-  ;; do the updating on the given env
-  ;; (identifier type -> type) identifier environment -> environment
-  (define (update f k env)
-    (parameterize
-        ([current-orig-stx k])
-      (let* ([v (lookup-type/lexical k env #:fail (lambda _ Univ))]
-             [new-v (f k v)]
-             [new-env (extend env k new-v)])
-        new-env)))
+;; a macro for inlining :(
+(define-syntax-rule (update-type/lexical f i env)
   ;; check if i is ever the target of a set!
   (if (is-var-mutated? i)
       ;; if it is, we do nothing
       env
       ;; otherwise, refine the type
-      (update f i env)))
-
-;; convenience macro for typechecking in the context of an updated env
-(define-syntax with-update-type/lexical
-  (syntax-rules ()
-    [(_ f i . b)
-     (with-lexical-env (update-type/lexical f i) . b)]))
+      (parameterize
+          ([current-orig-stx i])
+        (let* ([v (lookup-type/lexical i env #:fail (lambda _ Univ))]
+               [new-v (f i v)]
+               [new-env (extend env i new-v)])
+          new-env))))
 
