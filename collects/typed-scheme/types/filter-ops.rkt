@@ -146,7 +146,7 @@
     (case-lambda [() -top]
                  [(f) f]
                  [fs (make-AndFilter fs)]))
-  (let loop ([fs (remove-duplicates args equal? #:key Rep-seq)] [result null])
+  (let loop ([fs (remove-duplicates args eq? #:key Rep-seq)] [result null])
     (if (null? fs)
         (match result
           [(list) -top]
