@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../utils/utils.rkt")
 
-(require (rep type-rep)  
+(require (rep type-rep rep-utils)  
 	 (env type-name-env)
 	 (utils tc-utils)
          (types utils)
@@ -46,12 +46,20 @@
 (define (needs-resolving? t)
   (or (Mu? t) (App? t) (Name? t)))
 
+(define resolver-cache (make-hasheq))
+
 (define (resolve-once t)
-  (match t
-    [(Mu: _ _) (unfold t)]
-    [(App: r r* s)   
-     (resolve-app r r* s)]
-    [(Name: _) (resolve-name t)]))
+  (define seq (Rep-seq t))
+  (define r (hash-ref resolver-cache seq #f)) 
+  (or r
+      (let ([r* (match t
+                  [(Mu: _ _) (unfold t)]
+                  [(App: r r* s)   
+                   (resolve-app r r* s)]
+                  [(Name: _) (resolve-name t)])])
+        (when r*
+          (hash-set! resolver-cache seq r*))
+        r*)))
 
 (define (resolve t)
   (if (needs-resolving? t) (resolve-once t) t))
