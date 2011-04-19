@@ -248,11 +248,11 @@
         [else (send/error (format "DIDNT MATCH A\n"))]))))
   
 (define (parallel-compile-files list-of-files
-  #:worker-count [worker-count (processor-count)]
-  #:handler [handler void])
+                                #:worker-count [worker-count (processor-count)]
+                                #:handler [handler void])
   (parallel-build (make-object FileListQueue% list-of-files handler) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
-  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
+  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processors ---" worker-count)
   (define collects-queue (make-object CollectsQueue% collects-tree setup-fprintf append-error))
   (parallel-build collects-queue worker-count))
