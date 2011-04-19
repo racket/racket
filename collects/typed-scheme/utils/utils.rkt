@@ -7,11 +7,11 @@ at least theoretically.
 
 (require (for-syntax racket/base syntax/parse racket/string)
          racket/contract racket/require-syntax 
-	 racket/provide-syntax racket/unit
+	 racket/provide-syntax racket/unit (prefix-in d: unstable/debug)
 	 racket/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide reverse-begin list-update list-set)
+(provide reverse-begin list-update list-set debugf debugging? dprintf)
 
 (provide
  ;; optimization
@@ -226,3 +226,7 @@ at least theoretically.
   (if (zero? k)
       (cons v (cdr l))
       (cons (car l) (list-set (cdr l) (sub1 k) v))))
+
+(define debugging? (make-parameter #f))
+(define-syntax-rule (debugf f . args) (if (debugging?) (d:debugf f . args) (f . args)))
+(define (dprintf . args) (when (debugging?) (apply d:dprintf args)))

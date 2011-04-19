@@ -57,7 +57,8 @@
           (do-time "Local Expand Done")
           (parameterize ([mutated-vars (find-mutated-vars fully-expanded-stx)]
                          [orig-module-stx (or (orig-module-stx) orig-stx)]
-                         [expanded-module-stx fully-expanded-stx])
+                         [expanded-module-stx fully-expanded-stx]
+                         [debugging? #f])
             (let ([result (checker fully-expanded-stx)])
               (do-time "Typechecking Done")
               . body)))))))
