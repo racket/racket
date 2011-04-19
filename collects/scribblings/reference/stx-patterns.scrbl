@@ -271,8 +271,8 @@ the individual @scheme[stx-expr].
                               const]
                [ellipsis #,lit-ellipsis])]{
 
-Constructs a syntax object based on a @scheme[template],which can
-inlude @tech{pattern variables} bound by @scheme[syntax-case] or
+Constructs a syntax object based on a @scheme[template], which can
+include @tech{pattern variables} bound by @scheme[syntax-case] or
 @scheme[with-syntax].
 
 Template forms produce a syntax object as follows:
