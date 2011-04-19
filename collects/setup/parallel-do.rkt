@@ -240,7 +240,7 @@
             (apply sync (map gen-node-handler inflight))])))
     (lambda () 
       ;(printf "Asking all workers to die\n")
-      (for ([p workers]) (with-handlers ([exn? void]) (wrkr/send p (list 'DIE))))
+      (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/send p (list 'DIE))))
       ;(printf "Waiting for all workers to die")(flush-output)
       (for ([p workers]
             [i (in-naturals)]) 
