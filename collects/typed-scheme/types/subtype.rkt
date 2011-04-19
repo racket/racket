@@ -195,6 +195,13 @@
        [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
+(define-match-expander NameStruct:
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ i)
+       #'(or (and (Name: _) (app resolve-once (? Struct? i)))
+             (App: (and (Name: _) (app resolve-once (Poly: _ (? Struct? i)))) _ _))])))
+
 (define (subtype/flds* A flds flds*)
   (for/fold ([A A]) ([f (in-list flds)] [f* (in-list flds*)])
     (match* (f f*)
@@ -202,6 +209,26 @@
        (subtype* (subtype* A t* t) t t*)]
       [((fld: t _ #f) (fld: t* _ #f))
        (subtype* A t t*)])))
+
+(define (unrelated-structs s1 s2)
+  (define (in-hierarchy? s par)
+    (define s-name
+      (match s
+        [(Poly: _ (Struct: s-name _ _ _ _ _ _ _)) s-name]
+        [(Struct: s-name _ _ _ _ _ _ _) s-name]))
+    (define p-name
+      (match par
+        [(Poly: _ (Struct: p-name _ _ _ _ _ _ _)) p-name]
+        [(Struct: p-name _ _ _ _ _ _ _) p-name]))
+    (or (equal? s-name p-name)
+        (match s
+          [(Poly: _ (? Struct? s*)) (in-hierarchy? s* par)]
+          [(Struct: _ (and (Name: _) p) _ _ _ _ _ _) (in-hierarchy? (resolve-once p) par)]
+          [(Struct: _ (? Struct? p) _ _ _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ (Poly: _ p) _ _ _ _ _ _) (in-hierarchy? p par)]
+          [(Struct: _ #f _ _ _ _ _ _) #f]
+          [_ (int-err "wtf is this? ~a" s)])))
+  (not (or (in-hierarchy? s1 s2) (in-hierarchy? s2 s1))))
 
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
@@ -236,6 +263,18 @@
 	      [((Value: v) (Base: _ _ pred _)) (if (pred v) A0 (fail! s t))]
 	      ;; tvars are equal if they are the same variable
 	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]              
+              ;; Avoid needing to resolve things that refer to different structs.
+              ;; Saves us from non-termination
+              ;; Must happen *before* the sequence cases, which sometimes call `resolve' in match expanders
+              [((or (? Struct? s1) (NameStruct: s1)) (or (? Struct? s2) (NameStruct: s2)))
+               (=> unmatch)
+               (cond [(unrelated-structs s1 s2)
+                      (dprintf "found unrelated structs: ~a ~a\n" s1 s2)
+                      (fail! s t)]
+                     [else (unmatch)])]
+              ;; just checking if s/t is a struct misses recursive/union/etc cases
+              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _)) (fail! s t)]
+              [((Base: _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) (fail! s t)]
               ;; sequences are covariant
               [((Sequence: ts) (Sequence: ts*))
                (subtypes* A0 ts ts*)]
@@ -328,7 +367,7 @@
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
 	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
-               ;(printf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
+               ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
 	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
@@ -354,7 +393,7 @@
                          (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
                                [else (fail! s t)]))]
 	      ;; otherwise, not a subtype
-	      [(_ _) (fail! s t) #;(printf "failed")])))]))))
+	      [(_ _) (fail! s t) #;(dprintf "failed")])))]))))
 
   (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
