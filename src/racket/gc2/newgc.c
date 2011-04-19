@@ -1460,6 +1460,46 @@ void GC_adopt_message_allocator(void *param) {
   free(msgm);
 }
 
+uintptr_t GC_message_allocator_size(void *param) {
+  MsgMemory *msgm = (MsgMemory *) param;
+  if (!msgm) { return sizeof(param); }
+  if (msgm->big_pages && msgm->size < 1024) {
+    printf("error message allocators with big pages should be bigger than %u!\n", msgm->size);
+    exit(1);
+  }
+  return msgm->size;
+}
+
+void GC_dispose_message_allocator(void *param) {
+  NewGC *gc = GC_get_GC();
+  mpage *tmp;
+  MsgMemory *msgm = (MsgMemory *) param;
+  
+  if (msgm->big_pages)
+  { 
+    printf("error disposable message allocators should not have big objects!\n");
+    exit(1);
+  }
+
+  if (msgm->pages)
+  {
+    tmp = msgm->pages;
+
+    if (tmp->next)
+    { 
+      printf("error disposable message allocators should not have more than one page!\n");
+      exit(1);
+    }
+    /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page
+     * so we use mmu_free_page directly */
+    mmu_free_page(gc->mmu, tmp->addr, round_to_apage_size(tmp->size), MMU_SMALL_GEN0, MMU_NON_PROTECTABLE, &tmp->mmu_src_block);
+    free_mpage(tmp);
+  }
+  free(msgm);
+}
+
+
+
 /* this function resizes generation 0 to the closest it can get (erring high)
    to the size we've computed as ideal */
 inline static void resize_gen0(NewGC *gc, uintptr_t new_size)

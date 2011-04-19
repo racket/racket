@@ -481,7 +481,7 @@ GC2_EXTERN void *GC_finish_message_allocator();
 
 GC2_EXTERN void GC_adopt_message_allocator(void *msg_memory);
 /*
-   Adopts the message memory captures by the sending place into
+   Adopts the message memory captured by the sending place into
    the current receiving place's gc
 */
 
@@ -491,6 +491,15 @@ GC2_EXTERN intptr_t GC_is_place();
    Otherwise returns 0;
 */
 
+GC2_EXTERN uintptr_t GC_message_allocator_size(void *msg_memory);
+/*
+ Returns the total size of all memory allocated by the message allocator
+ */
+
+GC2_EXTERN void GC_dispose_message_allocator(void *msg_memory);
+/*
+ Disposes of small message allocators that were copied by the receiving place
+ */
 
 
 # ifdef __cplusplus

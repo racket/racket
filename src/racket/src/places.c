@@ -1256,6 +1256,20 @@ Scheme_Object *scheme_places_serialize(Scheme_Object *so, void **msg_memory) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *new_so;
   Scheme_Object *tmp;
+
+  if (SCHEME_INTP(so)) { return so; }
+  switch (so->type) {
+    case scheme_true_type:
+    case scheme_false_type:
+    case scheme_null_type:
+    case scheme_void_type:
+      /* place_bi_channels are allocated in the master and can be passed along as is */
+    case scheme_place_bi_channel_type:
+      return so;
+    default:
+      break;
+  }
+
   GC_create_message_allocator();
   new_so = scheme_places_deep_copy(so);
   tmp = GC_finish_message_allocator();
@@ -1269,8 +1283,30 @@ Scheme_Object *scheme_places_serialize(Scheme_Object *so, void **msg_memory) {
 Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *new_so;
-  new_so = scheme_places_deserialize_worker(so);
-  GC_adopt_message_allocator(msg_memory);
+
+  if (SCHEME_INTP(so)) { return so; }
+  switch (so->type) {
+    case scheme_true_type:
+    case scheme_false_type:
+    case scheme_null_type:
+    case scheme_void_type:
+      /* place_bi_channels are allocated in the master and can be passed along as is */
+    case scheme_place_bi_channel_type:
+      return so;
+    default:
+      break;
+  }
+
+  if (GC_message_allocator_size(msg_memory) < 1024) {
+    new_so = scheme_places_deep_copy(so);
+    GC_dispose_message_allocator(msg_memory);
+  }
+  else {
+#if !defined(SHARED_TABLES)
+    new_so = scheme_places_deserialize_worker(so);
+#endif
+    GC_adopt_message_allocator(msg_memory);
+  }
   return new_so;
 #else
   return so;
