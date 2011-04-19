@@ -142,7 +142,7 @@
 ;; subst-all : substitution Type -> Type
 (d/c (subst-all s t)
   (substitution/c Type? . -> . Type?)
-  (for/fold ([t t]) ([(v r) s])
+  (for/fold ([t t]) ([(v r) (in-hash s)])
     (match r
       [(t-subst img)
        (substitute img v t)]
