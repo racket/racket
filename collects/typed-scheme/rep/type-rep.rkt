@@ -292,7 +292,7 @@
                          pred-id
                          cert
                          maker-id)]
-    [#:key #f])
+    [#:key 'struct])
 
 ;; A structure type descriptor
 ;; s : struct
@@ -304,7 +304,7 @@
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
-(dt StructTop ([name Struct?]) [#:key #f])
+(dt StructTop ([name Struct?]) [#:key 'struct])
 
 ;; v : Scheme Value
 (dt Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
