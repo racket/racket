@@ -1426,6 +1426,12 @@ static void* GC_master_malloc_tagged(size_t size) {
   return ptr;
 }
 
+static void async_channel_finialize(void *p, void* data) {
+  Scheme_Place_Async_Channel *ch;
+  ch = (Scheme_Place_Async_Channel*)p;
+  mzrt_mutex_destroy(ch->lock);
+}
+
 Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   Scheme_Object **msgs;
   Scheme_Place_Async_Channel *ch;
@@ -1444,6 +1450,7 @@ Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   ch->msgs = msgs;
   ch->msg_memory = msg_memory;
   ch->wakeup_signal = NULL;
+  scheme_register_finalizer(ch, async_channel_finialize, NULL, NULL, NULL);
   return ch;
 }
 
