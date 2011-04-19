@@ -1277,11 +1277,13 @@ If the namespace does not, they are colored the unbound color.
                                     (cleanup)
                                     (custodian-shutdown-all user-custodian)))))]
                             [error-port (send (send the-tab get-error-report-text) get-err-port)]
+                            [output-port (send (send the-tab get-error-report-text) get-out-port)]
                             [init-proc
                              (λ () ; =user=
                                (send the-tab set-breakables (current-thread) (current-custodian))
                                (set-directory definitions-text)
                                (current-error-port error-port)
+                               (current-output-port output-port)
                                (error-display-handler 
                                 (λ (msg exn) ;; =user=
                                   (parameterize ([current-eventspace drs-eventspace])
