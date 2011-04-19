@@ -62,6 +62,7 @@
   (foldr -pair b l))
 
 (define (untuple t)
+  ;; FIXME - do we really need resolution here?
   (match (resolve t)
     [(Value: '()) null]
     [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]

@@ -39,7 +39,8 @@
      (let ([types (remove-dups (sort (apply append (map flat args)) type<?))])
        (cond
          [(null? types) (make-union* null)]
-         [(null? (cdr types)) (car types)]           
+         [(null? (cdr types)) (car types)]   
+         ;; FIXME: this sort is unneccessary
          [else (make-union* (sort (foldr union2 '() (remove-subtypes types)) type<?))]))]))
 
 (define (u-maker args) (apply Un args))
