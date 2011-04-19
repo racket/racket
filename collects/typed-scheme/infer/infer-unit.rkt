@@ -14,7 +14,7 @@
          racket/match
          mzlib/etc
          racket/trace racket/contract
-	 unstable/sequence unstable/list unstable/debug unstable/hash
+	 unstable/sequence unstable/list unstable/hash
          racket/list)
 
 (import dmap^ constraints^ promote-demote^)

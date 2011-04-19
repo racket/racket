@@ -5,9 +5,9 @@
          (utils tc-utils) (only-in (infer infer) restrict)
          "abbrev.rkt" (only-in scheme/contract current-blame-format [-> -->] listof)
 	 (types comparison printer union subtype utils remove-intersect)
-         scheme/list racket/match scheme/promise
+         scheme/list racket/match
          (for-syntax syntax/parse scheme/base)
-         unstable/debug syntax/id-table scheme/dict
+         syntax/id-table scheme/dict
          racket/trace
          (for-template scheme/base))
 

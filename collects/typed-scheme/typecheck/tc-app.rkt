@@ -5,7 +5,7 @@
          "tc-app-helper.rkt" "find-annotation.rkt" "tc-funapp.rkt"
          "tc-subst.rkt" (prefix-in c: racket/contract)
          syntax/parse racket/match racket/trace scheme/list 
-	 unstable/sequence unstable/debug unstable/list
+	 unstable/sequence  unstable/list
          ;; fixme - don't need to be bound in this phase - only to make tests work
          scheme/bool
          racket/unsafe/ops

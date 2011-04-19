@@ -10,7 +10,7 @@
          syntax/kerncase
          syntax/struct
          mzlib/trace      
-         unstable/debug
+         
          racket/function
          racket/match
          (only-in racket/contract

@@ -6,7 +6,6 @@
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash
          "signatures.rkt" "constraint-structs.rkt"
-         unstable/debug
          racket/match
          racket/list)
 

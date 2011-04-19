@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt" 
 	 (rep type-rep rep-utils)
 	 (types union subtype resolve convenience utils)
-         racket/match mzlib/trace unstable/debug)
+         racket/match mzlib/trace)
 
 (provide (rename-out [*remove remove]) overlap)
 

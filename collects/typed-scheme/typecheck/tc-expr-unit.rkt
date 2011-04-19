@@ -11,7 +11,7 @@
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env type-env-structs tvar-env index-env)
-         racket/private/class-internal unstable/debug
+         racket/private/class-internal 
          (except-in syntax/parse id)
          unstable/function
          (only-in srfi/1 split-at))
