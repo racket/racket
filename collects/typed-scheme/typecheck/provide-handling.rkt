@@ -11,7 +11,7 @@
 	 (utils tc-utils)
          (for-syntax syntax/parse racket/base)
          racket/contract/private/provide unstable/list
-         unstable/debug syntax/id-table racket/dict
+          syntax/id-table racket/dict
          racket/syntax scheme/struct-info racket/match
          "def-binding.rkt" syntax/parse
          (for-template scheme/base "def-export.rkt" scheme/contract))

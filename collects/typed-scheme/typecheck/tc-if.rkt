@@ -10,7 +10,7 @@
          (typecheck tc-envops tc-metafunctions)
          (types type-table)
          syntax/kerncase
-         racket/trace unstable/debug
+         racket/trace 
          racket/match)
 
 ;; if typechecking   

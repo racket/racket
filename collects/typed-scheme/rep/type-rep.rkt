@@ -4,7 +4,7 @@
 (require (utils tc-utils) 
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          mzlib/trace racket/match mzlib/etc
-         scheme/contract unstable/debug
+         scheme/contract
          (for-syntax scheme/base syntax/parse))
 
 (define name-table (make-weak-hasheq))

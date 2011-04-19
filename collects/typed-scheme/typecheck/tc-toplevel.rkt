@@ -2,7 +2,7 @@
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          syntax/kerncase
-         unstable/list racket/syntax syntax/parse unstable/debug
+         unstable/list racket/syntax syntax/parse 
          mzlib/etc
          racket/match
          "signatures.rkt"

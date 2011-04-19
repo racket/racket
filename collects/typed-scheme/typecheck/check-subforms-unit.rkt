@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
 	 syntax/kerncase
 	 syntax/parse
-         racket/match unstable/debug
+         racket/match 
          "signatures.rkt" "tc-metafunctions.rkt"
          (types utils convenience union subtype)
 	 (utils tc-utils)

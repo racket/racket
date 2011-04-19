@@ -6,7 +6,7 @@
                     [->* -->*]
                     [one-of/c -one-of/c])
          (rep type-rep filter-rep rep-utils) scheme/list
-         scheme/contract racket/match unstable/match unstable/debug
+         scheme/contract racket/match unstable/match 
          (for-syntax scheme/base)
          "tc-metafunctions.rkt")
 
