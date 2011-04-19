@@ -59,14 +59,15 @@
       [(define-values dc ...)
        (unwind-define stx settings)]
       ; STC: app special cases from lazy racket
-      ; procedure-extract-target - can't hide this in lazy.rkt bc it's needed
+      ; extract-if-lazy-proc - can't hide this in lazy.rkt bc it's needed
       ; to distinguish the general lazy application
       [(#%plain-app proc-extract p)
-       (or (eq? (syntax->datum #'proc-extract) 'procedure-extract-target)
-           (eq? (with-handlers ; for print output-style
-                    ([(λ (e) #t) (λ (e) #f)]) 
-                  (syntax-e (second (syntax-e #'proc-extract))))
-                procedure-extract-target))
+       (or (eq? (syntax->datum #'proc-extract) 'extract-if-lazy-proc)
+           (eq? (object-name 
+                 (with-handlers ; for print output-style
+                     ([(λ (e) #t) (λ (e) #f)]) 
+                   (syntax-e (second (syntax-e #'proc-extract)))))
+                'extract-if-lazy-proc))
        (unwind #'p settings)]
       ; lazy #%app special case: force and delay
       [(#%plain-app f arg)
@@ -80,7 +81,7 @@
       [(#%plain-app 
         (#%plain-lambda args1 (#%plain-app (#%plain-app proc p) . args2)) 
         . args3)
-       (and (eq? (syntax->datum #'proc) 'procedure-extract-target)
+       (and (eq? (syntax->datum #'proc) 'extract-if-lazy-proc)
             (equal? (syntax->datum (cdr (syntax-e #'args1)))
                     (syntax->datum #'args2)))
        (recur-on-pieces #'args3 settings)]

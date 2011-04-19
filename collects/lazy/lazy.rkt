@@ -254,6 +254,8 @@
   ;; `!apply': provided as `apply' (no need to provide `~!apply', since all
   ;;           function calls are delayed by `#%app')
 
+  (define (extract-if-lazy-proc f)
+    (or (procedure-extract-target f) f))
   (define-syntax (!*app stx)
     (syntax-case stx ()
       [(_ f x ...)
@@ -271,7 +273,7 @@
                             skipto/first)))])
          (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
            ;; use syntax/loc for better errors etc
-           (with-syntax ([lazy   (syntax/loc stx ((procedure-extract-target p) y ...))]
+           (with-syntax ([lazy   (syntax/loc stx ((extract-if-lazy-proc p) y ...))]
                          [strict (syntax/loc stx (p (hidden-! y) ...))])
              (quasisyntax/loc stx
                ((lambda (p y ...)
