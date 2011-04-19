@@ -10,7 +10,8 @@
          "drsig.rkt"
          racket/unit
          racket/async-channel
-         setup/private/lib-roots)
+         setup/private/lib-roots
+         racket/port)
 
 (define-struct req (filename key))
 ;; type req = (make-req string[filename] (union symbol #f))
@@ -21,6 +22,11 @@
 
 (define adding-file (string-constant module-browser-adding-file))
 (define unknown-module-name "? unknown module name")
+
+;; probably, at some point, the module browser should get its
+;; own output ports or something instead of wrapping these ones
+(define original-output-port (current-output-port))
+(define original-error-port (current-error-port))
 
 (define-unit module-overview@
   (import [prefix drracket:frame: drracket:frame^]
@@ -870,6 +876,8 @@
                    (port-count-lines! prt)
                    prt))
                p))))
+      (current-output-port (swallow-specials original-output-port))
+      (current-error-port (swallow-specials original-error-port))
       (current-load-relative-directory init-dir)
       (current-directory init-dir)
       (error-display-handler (λ (str exn) (set! error-str str)))
@@ -884,6 +892,24 @@
          (error-escape-handler
           (λ () (custodian-shutdown-all user-custodian)))
          (semaphore-post init-complete))))
+    
+    (define (swallow-specials port)
+      (define-values (in out) (make-pipe-with-specials))
+      (thread
+       (λ ()
+         (let loop ()
+           (define c (read-char-or-special in))
+           (cond
+             [(char? c)
+              (display c out)
+              (loop)]
+             [(eof-object? c)
+              (close-output-port out)
+              (close-input-port in)]
+             [else
+              (loop)]))))
+      out)
+    
     (define (kill-termination) (void))
     (define complete-program? #t)
 
