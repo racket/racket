@@ -671,8 +671,8 @@ paint by numbers.
                               (get-col-numbers))))))]
       [define/public update-min-spacing
         (lambda ()
-          (min-width (inexact->exact (+ row-label-width (* grid-x-size col-label-width))))
-          (min-height (inexact->exact (+ col-label-height (* grid-y-size row-label-height)))))]
+          (min-width (inexact->exact (round (+ row-label-width (* grid-x-size col-label-width)))))
+          (min-height (inexact->exact (round (+ col-label-height (* grid-y-size row-label-height))))))]
       
       (inherit min-width min-height)
       (super-instantiate ())
