@@ -36,8 +36,7 @@ evaluation context protected by the barrier:
 ]
 
 In addition, extensions of Racket may install barriers in
-additional contexts. In particular, GRacket installs a continuation
-barrier around most every callback. Finally,
+additional contexts. Finally,
 @racket[call-with-continuation-barrier] applies a thunk barrier
 between the application and the current continuation.
 
