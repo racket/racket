@@ -253,6 +253,6 @@
   (parallel-build (make-object FileListQueue% list-of-files handler) worker-count))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
-  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processors ---" worker-count)
+  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processes ---" worker-count)
   (define collects-queue (make-object CollectsQueue% collects-tree setup-fprintf append-error))
   (parallel-build collects-queue worker-count))
