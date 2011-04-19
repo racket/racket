@@ -68,8 +68,21 @@
    (!! (take 1 (cons 0 (error "poof")))) => '(0)
    ))
 
+(define (misc-tests)
+  (define-struct a (b c))
+  (define-struct d (e f))
+  (test
+   (! (a-b (make-a 1 2))) => 1
+   (! (a-c (make-a 1 2))) => 2
+   (! (a-b (a 1 2))) => 1
+   (! (a-c (a 1 2))) => 2
+   (! (a? (a 1 2))) => true
+   (! (a? (d 1 2))) => false
+   ))
+
 (provide lang-tests)
 (define (lang-tests)
   (! (begin (basic-tests)
             (list-tests)
-            (take-tests))))
+            (take-tests)
+            (misc-tests))))
