@@ -432,7 +432,7 @@
                                                                (+ 2 (length plain-ids) (length opts))
                                                                #f)])
                               (let ([with-core 
-                                     (lambda (result)
+                                     (lambda (kw-core? result)
                                        ;; body of procedure, where all keyword and optional
                                        ;; argments come in as a pair of arguments (value and
                                        ;; whether the value is valid):
@@ -444,11 +444,13 @@
                                                 #,(annotate-method
                                                    (quasisyntax/loc stx
                                                      (lambda #,(syntax-property
-                                                                #`(given-kws given-args
-                                                                             new-plain-id ... 
-                                                                             opt-arg ...
-                                                                             opt-arg? ...
-                                                                             . new-rest)
+                                                                #`(#,@(if kw-core?
+                                                                          #'(given-kws given-args)
+                                                                          #'())
+                                                                   new-plain-id ... 
+                                                                   opt-arg ...
+                                                                   opt-arg? ...
+                                                                   . new-rest)
                                                                 'certify-mode
                                                                 'transparent)
                                                        ;; sort out the arguments into the user-supplied bindings,
@@ -463,11 +465,14 @@
                                            ;; entry points use `core':
                                            #,result)))]
                                     [mk-no-kws
-                                     (lambda ()
+                                     (lambda (kw-core?)
                                        ;; entry point without keywords:
                                        (annotate-method
-                                        (syntax/loc stx
-                                          (opt-cases (core null null) ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
+                                        (quasisyntax/loc stx
+                                          (opt-cases #,(if kw-core?
+                                                           #'(core null null)
+                                                           #'(core))
+                                                     ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
                                                      () (rest-empty rest-id . rest)
                                                      ()))))]
                                     [mk-with-kws
@@ -492,12 +497,13 @@
                                 (cond
                                  [(null? kws)
                                   ;; just the no-kw part
-                                  (with-core (mk-no-kws))]
+                                  (with-core #f (mk-no-kws #f))]
                                  [(null? needed-kws)
                                   ;; both parts dispatch to core
                                   (with-core
+                                   #t
                                    (with-syntax ([kws (map car sorted-kws)]
-                                                 [no-kws (let ([p (mk-no-kws)]
+                                                 [no-kws (let ([p (mk-no-kws #t)]
                                                                [n (syntax-local-infer-name stx)])
                                                            (if n
                                                                #`(let ([#,n #,p]) #,n)
@@ -516,9 +522,10 @@
                                   ;; just the keywords part dispatches to core,
                                   ;; and the other part dispatches to failure
                                   (with-core
+                                   #t
                                    (with-syntax ([kws (map car sorted-kws)]
                                                  [needed-kws needed-kws]
-                                                 [no-kws (mk-no-kws)]
+                                                 [no-kws (mk-no-kws #t)]
                                                  [with-kws (mk-with-kws)]
                                                  [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
                                                                       [call-fail (mk-kw-arity-stub)])
