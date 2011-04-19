@@ -294,7 +294,7 @@
 	      [(s (Poly: vs b))
 	       (=> unmatch)
 	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
-	      ;; rec types, applications and names (that aren't the same
+	      ;; rec types, applications and names (that aren't the same)
 	      [((? needs-resolving? s) other)
                (let ([s* (resolve-once s)])
                  (if (Type? s*) ;; needed in case this was a name that hasn't been resolved yet
