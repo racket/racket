@@ -340,7 +340,6 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory) {
-          if (page_count > gc->used_pages) { asm("int3");}
             gc->used_pages -= page_count;
             GC_out_of_memory();
           }
@@ -365,7 +364,6 @@ static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, in
 static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mprotect, void **src_block)
 {
   uintptr_t x = size_to_apage_count(len);
-  if (x > gc->used_pages) { asm("int3");}
 
   gc->used_pages -= size_to_apage_count(len);
   mmu_free_page(gc->mmu, p, len, type, expect_mprotect, src_block);
@@ -373,7 +371,6 @@ static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mpro
 
 static void orphan_page_accounting(NewGC *gc, size_t allocate_size) {
   uintptr_t x = size_to_apage_count(round_to_apage_size(allocate_size));
-  if (x > gc->used_pages) { asm("int3");}
   mmu_memory_allocated_dec(gc->mmu, allocate_size);
   gc->used_pages -= size_to_apage_count(round_to_apage_size(allocate_size));
 }
