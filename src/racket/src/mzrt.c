@@ -23,6 +23,7 @@ START_XFORM_SUSPEND;
 /* platform headers */
 #ifdef WIN32
 # include <windows.h>
+# include <process.h>
 #else
 # include <pthread.h>
 # include <signal.h>
@@ -235,7 +236,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
   stub_data->data       = data;
   stub_data->thread     = thread;
 #   ifdef WIN32
-  thread->threadid = CreateThread(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
+  thread->threadid = (HANDLE)_beginthreadex(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
 #   else
 #    ifdef MZ_PRECISE_GC
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
@@ -301,7 +302,7 @@ int mz_proc_thread_detach(mz_proc_thread *thread) {
 
 void mz_proc_thread_exit(void *rc) {
 #ifdef WIN32
-  ExitThread((DWORD)rc);
+  _endthreadex((unsigned)rc);
 #else
 #   ifndef MZ_PRECISE_GC
   pthread_exit(rc);
