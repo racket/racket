@@ -1153,7 +1153,7 @@ int scheme_os_setcwd(char *expanded, int noexn)
 
 #ifdef DOS_FILE_SYSTEM
 #define WC_BUFFER_SIZE 1024
-static wchar_t wc_buffer[WC_BUFFER_SIZE];
+THREAD_LOCAL_DECL(static void *file_path_wc_buffer);
 
 static int wc_strlen(const wchar_t *ws)
 {
@@ -1174,9 +1174,13 @@ wchar_t *scheme_convert_to_wchar(const char *s, int do_copy)
 			   NULL, 0, -1,
 			   NULL, 1/*UTF-16*/, '\t');
 
-  if (!do_copy && (len < (WC_BUFFER_SIZE-1)))
-    ws = wc_buffer;
-  else
+  if (!do_copy && (len < (WC_BUFFER_SIZE-1))) {
+    if (!file_path_wc_buffer) {
+      REGISTER_SO(file_path_wc_buffer);
+      file_path_wc_buffer = scheme_malloc_atomic(sizeof(wchar_t) * WC_BUFFER_SIZE);
+    }
+    ws = (wchar_t *)file_path_wc_buffer;
+  } else
     ws = (wchar_t *)scheme_malloc_atomic(sizeof(wchar_t) * (len + 1));
   scheme_utf8_decode(s, 0, l,
 		     (unsigned int *)ws, 0, -1,

@@ -262,6 +262,7 @@ typedef struct Thread_Local_Variables {
   int env_uid_counter_;
   int scheme_overflow_count_;
   struct Scheme_Object *original_pwd_;
+  void *file_path_wc_buffer_;
   intptr_t scheme_hash_request_count_;
   intptr_t scheme_hash_iteration_count_;
   struct Scheme_Env *initial_modules_env_;
@@ -579,6 +580,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define env_uid_counter XOA (scheme_get_thread_local_variables()->env_uid_counter_)
 #define scheme_overflow_count XOA (scheme_get_thread_local_variables()->scheme_overflow_count_)
 #define original_pwd XOA (scheme_get_thread_local_variables()->original_pwd_)
+#define file_path_wc_buffer XOA (scheme_get_thread_local_variables()->file_path_wc_buffer_)
 #define scheme_hash_request_count XOA (scheme_get_thread_local_variables()->scheme_hash_request_count_)
 #define scheme_hash_iteration_count XOA (scheme_get_thread_local_variables()->scheme_hash_iteration_count_)
 #define initial_modules_env XOA (scheme_get_thread_local_variables()->initial_modules_env_)
