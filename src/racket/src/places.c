@@ -38,7 +38,7 @@ static Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so);
 /* Scheme_Object *scheme_places_deep_copy(Scheme_Object *so); */
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht);
+static Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy);
 #endif
 
 # ifdef MZ_PRECISE_GC
@@ -764,7 +764,7 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Hash_Table *ht = NULL;
-  return scheme_places_deep_copy_worker(so, &ht);
+  return scheme_places_deep_copy_worker(so, &ht, 1);
 #else
   return so;
 #endif
@@ -799,7 +799,7 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
   return NULL;
 }
 
-Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht)
+Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy)
 {
   Scheme_Object *new_so = so;
   int skip_hash;
@@ -825,7 +825,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
   switch (SCHEME_TYPE(so)) {
     case scheme_char_type:
-      new_so = scheme_make_char(SCHEME_CHAR_VAL(so));
+      if (copy)
+        new_so = scheme_make_char(SCHEME_CHAR_VAL(so));
       break;
     case scheme_rational_type:
       {
@@ -833,16 +834,19 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Object *d;
         n = scheme_rational_numerator(so);
         d = scheme_rational_denominator(so);
-        n = scheme_places_deep_copy_worker(n, ht);
-        d = scheme_places_deep_copy_worker(d, ht);
-        new_so = scheme_make_rational(n, d);
+        n = scheme_places_deep_copy_worker(n, ht, copy);
+        d = scheme_places_deep_copy_worker(d, ht, copy);
+        if (copy)
+          new_so = scheme_make_rational(n, d);
       }
       break;
     case scheme_float_type:
-      new_so = scheme_make_float(SCHEME_FLT_VAL(so));
+      if (copy)
+        new_so = scheme_make_float(SCHEME_FLT_VAL(so));
       break;
     case scheme_double_type:
-      new_so = scheme_make_double(SCHEME_DBL_VAL(so));
+      if (copy)
+        new_so = scheme_make_double(SCHEME_DBL_VAL(so));
       break;
     case scheme_complex_type:
       {
@@ -850,32 +854,39 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Object *i;
         r = scheme_complex_real_part(so);
         i = scheme_complex_imaginary_part(so);
-        r = scheme_places_deep_copy_worker(r, ht);
-        i = scheme_places_deep_copy_worker(i, ht);
-        new_so = scheme_make_complex(r, i);
+        r = scheme_places_deep_copy_worker(r, ht, copy);
+        i = scheme_places_deep_copy_worker(i, ht, copy);
+        if (copy)
+          new_so = scheme_make_complex(r, i);
       }
       break;
     case scheme_char_string_type:
-      new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
+      if (copy)
+        new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
       break;
     case scheme_byte_string_type:
       /* not allocated as shared, since that's covered above */
-      new_so = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
+      if (copy)
+        new_so = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
       break;
     case scheme_unix_path_type:
     case scheme_windows_path_type:
-      new_so = scheme_make_sized_offset_kind_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1,
-                                                  SCHEME_TYPE(so));
+      if (copy)
+        new_so = scheme_make_sized_offset_kind_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1,
+                                                    SCHEME_TYPE(so));
       break;
     case scheme_symbol_type:
       if (SCHEME_SYM_UNINTERNEDP(so)) {
         bad_place_message(so);
       } else {
-        new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
-        new_so->type = scheme_serialized_symbol_type;
+        if (copy) {
+          new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
+          new_so->type = scheme_serialized_symbol_type;
+        }
       }
       break;
     case scheme_serialized_symbol_type:
+      if (copy)
         new_so = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
       break;
     case scheme_pair_type:
@@ -885,16 +896,20 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Object *pair;
 
         /* handle cycles: */
-        pair = scheme_make_pair(scheme_false, scheme_false);
+        if (copy)
+          pair = scheme_make_pair(scheme_false, scheme_false);
+        else
+          pair = so;
         scheme_hash_set(*ht, so, pair);
         skip_hash = 1;
 
-        car = scheme_places_deep_copy_worker(SCHEME_CAR(so), ht);
-        cdr = scheme_places_deep_copy_worker(SCHEME_CDR(so), ht);
-        SCHEME_CAR(pair) = car;
-        SCHEME_CDR(pair) = cdr;
-
-        new_so = pair;
+        car = scheme_places_deep_copy_worker(SCHEME_CAR(so), ht, copy);
+        cdr = scheme_places_deep_copy_worker(SCHEME_CDR(so), ht, copy);
+        if (copy) {
+          SCHEME_CAR(pair) = car;
+          SCHEME_CDR(pair) = cdr;          
+          new_so = pair;
+        }
       }
       break;
     case scheme_vector_type:
@@ -902,7 +917,11 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Object *vec;
         intptr_t i;
         intptr_t size = SCHEME_VEC_SIZE(so);
-        vec = scheme_make_vector(size, 0);
+
+        if (copy)
+          vec = scheme_make_vector(size, 0);
+        else
+          vec = so;
 
         /* handle cycles: */
         scheme_hash_set(*ht, so, vec);
@@ -910,16 +929,19 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
-          tmp = scheme_places_deep_copy_worker(SCHEME_VEC_ELS(so)[i], ht);
-          SCHEME_VEC_ELS(vec)[i] = tmp;
+          tmp = scheme_places_deep_copy_worker(SCHEME_VEC_ELS(so)[i], ht, copy);
+          if (copy)
+            SCHEME_VEC_ELS(vec)[i] = tmp;
         }
-        SCHEME_SET_IMMUTABLE(vec);
-        new_so = vec;
+        if (copy) {
+          SCHEME_SET_IMMUTABLE(vec);
+          new_so = vec;
+        }
       }
       break;
     case scheme_fxvector_type:
       /* not allocated as shared, since that's covered above */
-      {
+      if (copy) {
         Scheme_Vector *vec;
         intptr_t i;
         intptr_t size = SCHEME_FXVEC_SIZE(so);
@@ -933,7 +955,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       break;
     case scheme_flvector_type:
       /* not allocated as shared, since that's covered above */
-      {
+      if (copy) {
         Scheme_Double_Vector *vec;
         intptr_t i;
         intptr_t size = SCHEME_FLVEC_SIZE(so);
@@ -964,19 +986,24 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
           }
         }
 
-        nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht);
-        nst = (Scheme_Serialized_Structure*) scheme_make_serialized_struct_instance(nprefab_key, size);
+        nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht, copy);
+
+        if (copy) {
+          new_so = scheme_make_serialized_struct_instance(nprefab_key, size);
+          nst = (Scheme_Serialized_Structure*)new_so;
+        } else
+          nst = NULL;
 
         /* handle cycles: */
-        scheme_hash_set(*ht, so, (Scheme_Object *)nst);
+        scheme_hash_set(*ht, so, new_so);
         skip_hash = 1;
 
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
-          tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht);
-          nst->slots[i] = tmp;
+          tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht, copy);
+          if (copy)
+            nst->slots[i] = tmp;
         }
-        new_so = (Scheme_Object*) nst;
       }
       break;
 
@@ -990,18 +1017,23 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       
         size = st->num_slots;
         stype = scheme_lookup_prefab_type(SCHEME_CDR(st->prefab_key), size);
-        nst = (Scheme_Structure*) scheme_make_blank_prefab_struct_instance(stype);
+
+        if (copy) {
+          new_so = scheme_make_blank_prefab_struct_instance(stype);
+          nst = (Scheme_Structure*)new_so;
+        } else
+          nst = NULL;
 
         /* handle cycles: */
-        scheme_hash_set(*ht, so, (Scheme_Object *)nst);
+        scheme_hash_set(*ht, so, new_so);
         skip_hash = 1;
 
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
-          tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht);
-          nst->slots[i] = tmp;
+          tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht, copy);
+          if (copy)
+            nst->slots[i] = tmp;
         }
-        new_so = (Scheme_Object*)nst;
       }
       break;
 
@@ -1166,16 +1198,20 @@ Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so) {
   Scheme_Object *o;
   void *original_gc;
 
+  /* forces hash codes: */
+  (void)scheme_places_deep_copy_worker(so, &ht, 0);
+  ht = NULL;
+
   original_gc = GC_switch_to_master_gc();
   scheme_start_atomic();
 
-  o = scheme_places_deep_copy_worker(so, &ht);
+  o = scheme_places_deep_copy_worker(so, &ht, 1);
 
   scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
   return o;
 #else
-  return scheme_places_deep_copy_worker(so, &ht);
+  return scheme_places_deep_copy_worker(so, &ht, 1);
 #endif
 }
 
