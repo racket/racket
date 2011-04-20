@@ -1,6 +1,7 @@
 (load-relative "loadtest.rktl")
 (Section 'place-channel)
-(require racket/flonum)
+(require racket/flonum
+         rackunit)
 
 (define (splat txt fn)
   (call-with-output-file fn #:exists 'replace
@@ -103,5 +104,10 @@ END
   (place-channel-send pl pc5)
   (test "Ready5" sync pc6)
 
+  (check-exn exn:fail? (λ () (place-channel-send pl (open-output-string))))
+  (check-not-exn (λ () (place-channel-send pl "Test String")))
+  (check-not-exn (λ () (place-channel-send pl (string->path "C:\\Windows"))))
+
   (place-wait pl)
 )
+
