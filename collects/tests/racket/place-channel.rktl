@@ -1,6 +1,7 @@
 (load-relative "loadtest.rktl")
 (Section 'place-channel)
 (require racket/flonum
+         racket/fixnum
          rackunit)
 
 (define (splat txt fn)
@@ -13,11 +14,12 @@
 (module pct1 racket/base
   (provide place-main)
   (require racket/flonum
+           racket/fixnum
            racket/place
            racket/list
            (for-syntax racket/base))
 
-  (define-syntax (pcrs stx)
+  (define-syntax (test-place-channel-receive/send stx)
     (syntax-case stx ()
       [(_ ch body) 
        (with-syntax
@@ -26,10 +28,19 @@
           (let ([x (place-channel-receive ch)])
             body)))]))
 
-  (define-syntax-rule (pcrss ch body ...) (begin (pcrs ch body) ...))
+  (define-syntax-rule (test-place-channel-receive/send-* ch body ...) 
+    (begin (test-place-channel-receive/send ch body) ...))
 
   (define (place-main ch)
-    (pcrss ch
+    (test-place-channel-receive/send-* ch
+      (not x)
+      (not x)
+      (void)
+      null
+      1/3
+      (/ 1 5)
+      (* x 2)
+      4+9i
       (+ 1 x)
       (string-append x "-ok")
       (cons (car x) 'b)
@@ -39,15 +50,18 @@
       `(,x))
 
     (define pc1 (place-channel-receive ch))
-    (pcrss pc1 (string-append x "-ok"))
+    (test-place-channel-receive/send pc1 (string-append x "-ok"))
 
     (define pc3 (first (place-channel-receive ch)))
-    (pcrss pc3 (string-append x "-ok3"))
+    (test-place-channel-receive/send pc3 (string-append x "-ok3"))
 
-    (pcrss ch (begin (flvector-set! x 2 5.0) "Ready1"))
-    (pcrss ch (begin (flvector-set! x 2 6.0) "Ready2"))
-    (pcrss ch (begin (bytes-set! x 2 67) "Ready3"))
-    (pcrss ch (begin (bytes-set! x 2 67) "Ready4"))
+    (test-place-channel-receive/send-* ch 
+      (begin (flvector-set! x 2 5.0) "Ready1")
+      (begin (flvector-set! x 2 6.0) "Ready2")
+      (begin (fxvector-set! x 2 5)   "Ready2.1")
+      (begin (fxvector-set! x 2 6)   "Ready2.2")
+      (begin (bytes-set! x 2 67)     "Ready3")
+      (begin (bytes-set! x 2 67)     "Ready4"))
 
     (define pc5 (place-channel-receive ch))
     (place-channel-send pc5 "Ready5")
@@ -66,13 +80,22 @@ END
 
 (define flv1 (shared-flvector 0.0 1.0 2.0 3.0))
 (define flv2 (make-shared-flvector 4 3.0))
-
+(define fxv1 (shared-fxvector 0 1 2 3))
+(define fxv2 (make-shared-fxvector 4 3))
 (define b1 (shared-bytes 66 66 66 66))
 (define b2 (make-shared-bytes 4 65))
 
 (let ([pl (place "pct1.ss" 'place-main)])
   (pc-send-receive-test pl
-    (1 2 )
+    (#t #f)
+    (#f #t)
+    (null (void))
+    ((void) null)
+    ((/ 1 2) 1/3)
+    (1/4 (/ 1 5))
+    ((exact->inexact (/ 1 3)) 0.6666666666666666)
+    (3+8i 4+9i)
+    (1 2)
     ("Hello" "Hello-ok")
     ((cons 'a 'a) (cons 'a 'b))
     ((list 'a 'a) (list 'a 'b 'a))
@@ -93,6 +116,12 @@ END
 
   (test "Ready2" place-channel-send/receive pl flv2)
   (test 6.0 flvector-ref flv2 2)
+
+  (test "Ready2.1" place-channel-send/receive pl fxv1)
+  (test 5.0 fxector-ref fxv1 2)
+
+  (test "Ready2.2" place-channel-send/receive pl fxv2)
+  (test 6.0 fxector-ref fxv2 2)
 
   (test "Ready3" place-channel-send/receive pl b1)
   (test 67 bytes-ref b1 2)

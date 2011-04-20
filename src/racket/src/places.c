@@ -1236,6 +1236,7 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object *so)
     case scheme_char_string_type:
     case scheme_byte_string_type:
     case scheme_unix_path_type:
+    case scheme_windows_path_type:
     case scheme_flvector_type:
     case scheme_fxvector_type:
         new_so = so;
