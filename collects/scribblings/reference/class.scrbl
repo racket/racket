@@ -1,8 +1,9 @@
 #lang scribble/doc
 @(require "mz.ss"
           racket/class
-          (for-syntax racket/base)
-          (for-label racket/trait))
+          (for-syntax racket/base
+                      racket/serialize
+                      racket/trait))
 
 @(begin
 
@@ -369,7 +370,7 @@ calling subclass augmentations of methods (see
 
 @defform[(class superclass-expr class-clause ...)]{
 
-Like @scheme[class*], but omits the @scheme[interface-expr]s, for the case that none are needed.
+Like @scheme[class*], but omits the @scheme[_interface-expr]s, for the case that none are needed.
 
 @defexamples[
 #:eval class-eval
@@ -639,20 +640,20 @@ Each @scheme[public], @scheme[override], @scheme[augment],
 @scheme[public-final], @scheme[override-final],
 @scheme[augment-final], and @scheme[private] clause in a class
 declares one or more method names. Each method name must have a
-corresponding @scheme[method-definition]. The order of
+corresponding @scheme[_method-definition]. The order of
 @scheme[public], @|etc|, clauses and their corresponding definitions
 (among themselves, and with respect to other clauses in the class)
 does not matter.
 
 As shown in the grammar for @scheme[class*], a method definition is
 syntactically restricted to certain procedure forms, as defined by the
-grammar for @scheme[method-procedure]; in the last two forms of
-@scheme[method-procedure], the body @scheme[id] must be one of the
+grammar for @scheme[_method-procedure]; in the last two forms of
+@scheme[_method-procedure], the body @scheme[id] must be one of the
 @scheme[id]s bound by @scheme[let-values] or @scheme[letrec-values]. A
-@scheme[method-procedure] expression is not evaluated
+@scheme[_method-procedure] expression is not evaluated
 directly. Instead, for each method, a class-specific method procedure
 is created; it takes an initial object argument, in addition to the
-arguments the procedure would accept if the @scheme[method-procedure]
+arguments the procedure would accept if the @scheme[_method-procedure]
 expression were evaluated directly. The body of the procedure is
 transformed to access methods and fields through the object argument.
 
