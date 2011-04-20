@@ -10,6 +10,7 @@
 (provide flat-rec-contract
          flat-murec-contract
          or/c 
+         and/c
          not/c
          =/c >=/c <=/c </c >/c between/c
          integer-in
@@ -25,7 +26,23 @@
          
          check-between/c
          check-unary-between/c
-         parameter/c)
+         parameter/c
+         
+         any/c
+         any
+         none/c
+         make-none/c 
+
+         chaperone-contract?
+         flat-contract?
+         contract?
+         
+         flat-contract
+         flat-contract-predicate
+         flat-named-contract
+         
+         contract-projection
+         contract-name)
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()
@@ -280,6 +297,85 @@
    #:first-order
    (λ (ctc) (flat-or/c-pred ctc))))
 
+
+(define (and-name ctc)
+  (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
+
+(define (and-first-order ctc)
+  (let ([tests (map contract-first-order (base-and/c-ctcs ctc))])
+    (λ (x) (for/and ([test (in-list tests)]) (test x)))))
+
+(define (and-proj ctc)
+  (let ([mk-pos-projs (map contract-projection (base-and/c-ctcs ctc))])
+    (lambda (blame)
+      (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
+        (for/fold ([proj (car projs)])
+          ([p (in-list (cdr projs))])
+          (λ (v) (p (proj v))))))))
+
+(define (first-order-and-proj ctc)
+  (λ (blame)
+    (λ (val)
+      (let loop ([predicates (first-order-and/c-predicates ctc)]
+                 [ctcs (base-and/c-ctcs ctc)])
+          (cond
+            [(null? predicates) val]
+            [else
+             (if ((car predicates) val)
+                 (loop (cdr predicates) (cdr ctcs))
+                 (raise-blame-error
+                  blame
+                  val
+                  "expected <~s>, given ~a, which isn't ~s"
+                  (contract-name ctc)
+                  val
+                  (contract-name (car ctcs))))])))))
+
+(define (and-stronger? this that)
+  (and (base-and/c? that)
+       (let ([this-ctcs (base-and/c-ctcs this)]
+             [that-ctcs (base-and/c-ctcs that)])
+         (and (= (length this-ctcs) (length that-ctcs))
+              (andmap contract-stronger?
+                      this-ctcs
+                      that-ctcs)))))
+
+(define-struct base-and/c (ctcs))
+(define-struct (first-order-and/c base-and/c) (predicates)
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:projection first-order-and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
+(define-struct (chaperone-and/c base-and/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
+(define-struct (impersonator-and/c base-and/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:projection and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?))
+
+
+(define/subexpression-pos-prop (and/c . raw-fs)
+  (let ([contracts (coerce-contracts 'and/c raw-fs)])
+    (cond
+      [(null? contracts) any/c]
+      [(andmap flat-contract? contracts)
+       (let ([preds (map flat-contract-predicate contracts)])
+         (make-first-order-and/c contracts preds))]
+      [(andmap chaperone-contract? contracts)
+       (make-chaperone-and/c contracts)]
+      [else (make-impersonator-and/c contracts)])))
+
+
 (define false/c #f)
 
 (define/final-prop (string-len/c n)
@@ -358,28 +454,6 @@
       (let ([elems (one-of/c-elems ctc)])
         (λ (x) (memv x elems))))))
 
-(define printable/c
-  (flat-named-contract
-   'printable/c
-   (λ (x)
-     (let printable? ([x x])
-       (or (symbol? x)
-           (string? x)
-           (bytes? x)
-           (boolean? x)
-           (char? x)
-           (null? x)
-           (number? x)
-           (regexp? x)
-           (prefab-struct-key x) ;; this cannot be last, since it doesn't return just #t
-           (and (pair? x)
-                (printable? (car x))
-                (printable? (cdr x)))
-           (and (vector? x)
-                (andmap printable? (vector->list x)))
-           (and (box? x)
-                (printable? (unbox x))))))))
-
 (define-struct between/c (low high)
   #:omit-define-syntaxes
   #:property prop:flat-contract
@@ -445,15 +519,6 @@
   (flat-named-contract
    `(>/c ,x)
    (λ (y) (and (real? y) (> y x)))))
-
-(define natural-number/c
-  (flat-named-contract
-   'natural-number/c
-   (λ (x)
-     (and (number? x)
-          (integer? x)
-          (exact? x)
-          (x . >= . 0)))))
 
 (define/final-prop (integer-in start end)
   (unless (and (integer? start)
@@ -703,3 +768,118 @@
                                (parameter/c-ctc that))
            (contract-stronger? (parameter/c-ctc that) 
                                (parameter/c-ctc this))))))
+
+
+
+(define (get-any-projection c) any-projection)
+(define (any-projection b) any-function)
+(define (any-function x) x)
+
+(define (get-any? c) any?)
+(define (any? x) #t)
+
+(define-struct any/c ()
+  #:omit-define-syntaxes
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:projection get-any-projection
+   #:stronger (λ (this that) (any/c? that))
+   #:name (λ (ctc) 'any/c)
+   #:first-order get-any?))
+
+(define/final-prop any/c (make-any/c))
+
+(define-syntax (any stx)
+  (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
+
+(define (none-curried-proj ctc)
+  (λ (blame)
+    (λ (val) 
+      (raise-blame-error
+       blame
+       val
+       "~s accepts no values, given: ~e"
+       (none/c-name ctc)
+       val))))
+
+(define-struct none/c (name)
+  #:omit-define-syntaxes
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:projection none-curried-proj
+   #:stronger (λ (this that) #t)
+   #:name (λ (ctc) (none/c-name ctc))
+   #:first-order (λ (ctc) (λ (val) #f))))
+
+(define/final-prop none/c (make-none/c 'none/c))
+
+
+(define (flat-contract-predicate x)
+  (contract-struct-first-order
+   (coerce-flat-contract 'flat-contract-predicate x)))
+
+(define (flat-contract? x) 
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (flat-contract-struct? c))))
+
+(define (chaperone-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (chaperone-contract-struct? c))))
+
+(define (contract-name ctc)
+  (contract-struct-name
+   (coerce-contract 'contract-name ctc)))
+
+(define (contract? x) (and (coerce-contract/f x) #t))
+(define (contract-projection ctc)
+  (contract-struct-projection
+   (coerce-contract 'contract-projection ctc)))
+
+(define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
+(define (flat-named-contract name predicate)
+  (cond
+    [(and (procedure? predicate)
+          (procedure-arity-includes? predicate 1))
+     (make-predicate-contract name predicate)]
+    [(flat-contract? predicate)
+     (make-predicate-contract name (flat-contract-predicate predicate))]
+    [else
+     (error 'flat-named-contract 
+            "expected a flat contract or procedure of arity 1 as second argument, got ~e" 
+            predicate)]))
+
+
+
+(define printable/c
+  (flat-named-contract
+   'printable/c
+   (λ (x)
+     (let printable? ([x x])
+       (or (symbol? x)
+           (string? x)
+           (bytes? x)
+           (boolean? x)
+           (char? x)
+           (null? x)
+           (number? x)
+           (regexp? x)
+           (prefab-struct-key x) ;; this cannot be last, since it doesn't return just #t
+           (and (pair? x)
+                (printable? (car x))
+                (printable? (cdr x)))
+           (and (vector? x)
+                (andmap printable? (vector->list x)))
+           (and (box? x)
+                (printable? (unbox x))))))))
+
+
+(define natural-number/c
+  (flat-named-contract
+   'natural-number/c
+   (λ (x)
+     (and (number? x)
+          (integer? x)
+          (exact? x)
+          (x . >= . 0)))))

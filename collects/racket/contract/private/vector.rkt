@@ -3,7 +3,8 @@
 (require (for-syntax racket/base)
          "guts.ss"
          "prop.rkt"
-         "blame.rkt")
+         "blame.rkt"
+         "misc.rkt")
 
 (provide (rename-out [wrap-vectorof vectorof]
                      [wrap-vector/c vector/c])

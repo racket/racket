@@ -16,23 +16,7 @@
          coerce-chaperone-contracts
          coerce-contract/f
          
-         chaperone-contract?
-         
-         flat-contract?
-         flat-contract
-         flat-contract-predicate
-         flat-named-contract
-         
          build-compound-type-name
-         
-         and/c
-         any/c
-         none/c
-         make-none/c 
-         
-         contract?
-         contract-name
-         contract-projection
          
          contract-stronger?
 
@@ -47,11 +31,12 @@
          ;; for opters
          check-flat-contract
          check-flat-named-contract
-         any
          
          ;; helpers for adding properties that check syntax uses
          define/final-prop
-         define/subexpression-pos-prop)
+         define/subexpression-pos-prop
+         
+         make-predicate-contract)
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
@@ -78,9 +63,6 @@
 
 (define-values (impersonator-prop:contracted has-impersonator-prop:contracted? get-impersonator-prop:contracted)
   (make-impersonator-property 'impersonator-prop:contracted))
-
-(define-syntax (any stx)
-  (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
 
 (define (contract-first-order c)
   (contract-struct-first-order
@@ -176,7 +158,7 @@
     [(number? x) (make-=-contract x)]
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
     [else #f]))
-       
+
 (define-syntax (define/final-prop stx)
   (syntax-case stx ()
     [(_ header bodies ...)
@@ -253,181 +235,12 @@
                                (list (car (syntax-e stx)))
                                '()))))])))))]))
 
-;                                                      
-;                                                      
-;                                                      
-;                                                      
-;                                                      
-;                          ;                       ;   
-;    ;;;    ;;;    ; ;;   ;;;;  ; ;  ;;;     ;;;  ;;;; 
-;   ;   ;  ;   ;   ;;  ;   ;    ;;  ;   ;   ;   ;  ;   
-;  ;      ;     ;  ;   ;   ;    ;       ;  ;       ;   
-;  ;      ;     ;  ;   ;   ;    ;    ;;;;  ;       ;   
-;  ;      ;     ;  ;   ;   ;    ;   ;   ;  ;       ;   
-;   ;   ;  ;   ;   ;   ;   ;    ;   ;   ;   ;   ;  ;   
-;    ;;;    ;;;    ;   ;    ;;  ;    ;;;;;   ;;;    ;; 
-;                                                      
-;                                                      
-;                                                      
-
-(define (flat-contract-predicate x)
-  (contract-struct-first-order
-   (coerce-flat-contract 'flat-contract-predicate x)))
-
-(define (flat-contract? x) 
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (flat-contract-struct? c))))
-
-(define (chaperone-contract? x)
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (chaperone-contract-struct? c))))
-
-(define (contract-name ctc)
-  (contract-struct-name
-   (coerce-contract 'contract-name ctc)))
-
-(define (contract? x) (and (coerce-contract/f x) #t))
-(define (contract-projection ctc)
-  (contract-struct-projection
-   (coerce-contract 'contract-projection ctc)))
-
-(define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
-(define (flat-named-contract name predicate)
-  (cond
-    [(and (procedure? predicate)
-          (procedure-arity-includes? predicate 1))
-     (make-predicate-contract name predicate)]
-    [(flat-contract? predicate)
-     (make-predicate-contract name (flat-contract-predicate predicate))]
-    [else
-     (error 'flat-named-contract 
-            "expected a flat contract or procedure of arity 1 as second argument, got ~e" 
-            predicate)]))
-
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
   (for/list ([sub (in-list fs)])
-    (if (contract-struct? sub) (contract-name sub) sub)))
-
-(define (and-name ctc)
-  (apply build-compound-type-name 'and/c (base-and/c-ctcs ctc)))
-
-(define (and-first-order ctc)
-  (let ([tests (map contract-first-order (base-and/c-ctcs ctc))])
-    (λ (x) (for/and ([test (in-list tests)]) (test x)))))
-
-(define (and-proj ctc)
-  (let ([mk-pos-projs (map contract-projection (base-and/c-ctcs ctc))])
-    (lambda (blame)
-      (let ([projs (map (λ (c) (c blame)) mk-pos-projs)])
-        (for/fold ([proj (car projs)])
-          ([p (in-list (cdr projs))])
-          (λ (v) (p (proj v))))))))
-
-(define (first-order-and-proj ctc)
-  (λ (blame)
-    (λ (val)
-      (let loop ([predicates (first-order-and/c-predicates ctc)]
-                 [ctcs (base-and/c-ctcs ctc)])
-          (cond
-            [(null? predicates) val]
-            [else
-             (if ((car predicates) val)
-                 (loop (cdr predicates) (cdr ctcs))
-                 (raise-blame-error
-                  blame
-                  val
-                  "expected <~s>, given ~a, which isn't ~s"
-                  (contract-name ctc)
-                  val
-                  (contract-name (car ctcs))))])))))
-
-(define (and-stronger? this that)
-  (and (base-and/c? that)
-       (let ([this-ctcs (base-and/c-ctcs this)]
-             [that-ctcs (base-and/c-ctcs that)])
-         (and (= (length this-ctcs) (length that-ctcs))
-              (andmap contract-stronger?
-                      this-ctcs
-                      that-ctcs)))))
-
-(define-struct base-and/c (ctcs))
-(define-struct (first-order-and/c base-and/c) (predicates)
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:projection first-order-and-proj
-   #:name and-name
-   #:first-order and-first-order
-   #:stronger and-stronger?))
-(define-struct (chaperone-and/c base-and/c) ()
-  #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection and-proj
-   #:name and-name
-   #:first-order and-first-order
-   #:stronger and-stronger?))
-(define-struct (impersonator-and/c base-and/c) ()
-  #:property prop:contract
-  (build-contract-property
-   #:projection and-proj
-   #:name and-name
-   #:first-order and-first-order
-   #:stronger and-stronger?))
+    (if (contract-struct? sub) (contract-struct-name sub) sub)))
 
 
-(define/subexpression-pos-prop (and/c . raw-fs)
-  (let ([contracts (coerce-contracts 'and/c raw-fs)])
-    (cond
-      [(null? contracts) any/c]
-      [(andmap flat-contract? contracts)
-       (let ([preds (map flat-contract-predicate contracts)])
-         (make-first-order-and/c contracts preds))]
-      [(andmap chaperone-contract? contracts)
-       (make-chaperone-and/c contracts)]
-      [else (make-impersonator-and/c contracts)])))
-
-(define (get-any-projection c) any-projection)
-(define (any-projection b) any-function)
-(define (any-function x) x)
-
-(define (get-any? c) any?)
-(define (any? x) #t)
-
-(define-struct any/c ()
-  #:omit-define-syntaxes
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:projection get-any-projection
-   #:stronger (λ (this that) (any/c? that))
-   #:name (λ (ctc) 'any/c)
-   #:first-order get-any?))
-
-(define/final-prop any/c (make-any/c))
-
-(define (none-curried-proj ctc)
-  (λ (blame)
-    (λ (val) 
-      (raise-blame-error
-       blame
-       val
-       "~s accepts no values, given: ~e"
-       (none/c-name ctc)
-       val))))
-
-(define-struct none/c (name)
-  #:omit-define-syntaxes
-  #:property prop:flat-contract
-  (build-flat-contract-property
-   #:projection none-curried-proj
-   #:stronger (λ (this that) #t)
-   #:name (λ (ctc) (none/c-name ctc))
-   #:first-order (λ (ctc) (λ (val) #f))))
-
-(define/final-prop none/c (make-none/c 'none/c))
 
 
 
@@ -509,3 +322,6 @@
                                            (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))))
+
+(define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
+(define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))

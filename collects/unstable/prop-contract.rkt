@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/contract/base)
+(require racket/contract/base
+         racket/contract/combinator)
 
 (define (get-stpc-proj stpc)
   (let ([get-val-proj

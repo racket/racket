@@ -1,6 +1,6 @@
 #lang scheme
 
-(require racket/contract/exists)
+(require racket/contract/private/exists)
 
 ;; this code builds the list of predicates (in case it changes, this may need to be re-run)
 #;

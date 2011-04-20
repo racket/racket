@@ -3,7 +3,8 @@
 (require (for-syntax racket/base)
          "guts.rkt"
          "blame.rkt"
-         "prop.rkt")
+         "prop.rkt"
+         "misc.rkt")
 
 (provide (rename-out [wrap-hash/c hash/c]))
 

@@ -2,7 +2,8 @@
 
 (provide (all-defined-out))
 (require racket/contract/private/guts
-         racket/contract/private/blame)
+         racket/contract/private/blame
+         racket/contract/private/misc)
 
 (define empty-case-lambda/c
   (flat-named-contract '(case->)

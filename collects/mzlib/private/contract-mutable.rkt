@@ -5,7 +5,8 @@
                   vector-immutableof vector-immutable/c)
          racket/contract/private/blame
          racket/contract/private/guts
-         racket/contract/private/prop)
+         racket/contract/private/prop
+         racket/contract/private/misc)
 
 (provide box/c box-immutable/c
          vector/c vectorof vector-immutableof vector-immutable/c)

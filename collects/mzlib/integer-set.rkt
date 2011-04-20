@@ -428,7 +428,7 @@
     
   (provide well-formed-set?)
 
-  (provide/contract (struct integer-set ((contents (flat-named-contract "integer-set-list" well-formed-set?))))
+  (provide/contract (struct integer-set ((contents well-formed-set?)))
                     (make-range 
                      (->i () ((i exact-integer?) (j (i) (and/c exact-integer? (>=/c i)))) [res integer-set?]))
                     (rename merge union (integer-set? integer-set? . -> . integer-set?))

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "contract-arrow.rkt"
          racket/contract/private/guts
+         racket/contract/private/misc
          racket/contract/private/prop
          racket/private/class-internal
          "contract-arr-checks.rkt")

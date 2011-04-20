@@ -51,7 +51,8 @@
          racket/contract/private/blame
          racket/contract/private/ds
          racket/contract/private/opt
-         racket/contract/private/basic-opters)
+         racket/contract/private/basic-opters
+         racket/contract/combinator)
 
 (provide 
  opt/c define-opt/c ;(all-from "private/contract-opt.rkt")
@@ -70,5 +71,6 @@
              check-flat-contract
              check-flat-named-contract)
  (all-from-out racket/contract/private/prop
-               racket/contract/private/blame))
+               racket/contract/private/blame
+               racket/contract/combinator))
 

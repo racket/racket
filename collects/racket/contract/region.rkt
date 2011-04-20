@@ -2,7 +2,8 @@
 
 (provide define-struct/contract
          define/contract
-         with-contract)
+         with-contract
+         current-contract-region)
 
 (require (for-syntax racket/base
                      racket/list
@@ -17,7 +18,8 @@
          syntax/location
          "private/arrow.rkt"
          "private/base.rkt"
-         "private/guts.rkt")
+         "private/guts.rkt"
+         "private/misc.rkt")
 
 ;; These are useful for all below.
 

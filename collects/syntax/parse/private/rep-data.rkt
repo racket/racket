@@ -195,12 +195,10 @@ Arguments is defined in rep-patterns.rkt
 
 ;; Contracts
 
-(define DeclEnv/c
-  (flat-named-contract 'DeclEnv declenv?))
+(define DeclEnv/c declenv?)
 
-(define DeclEntry/c
-  (flat-named-contract 'DeclEntry
-                       (or/c den:lit? den:class? den:parser? den:delayed?)))
+(define DeclEntry/c 
+  (or/c den:lit? den:class? den:parser? den:delayed?))
 
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr? clause:do?))

@@ -9,6 +9,7 @@
                      "unit-syntax.rkt")
          (for-meta 2 racket/base)
          racket/contract/base
+         racket/contract/combinator
          "unit-utils.rkt"
          "unit-runtime.rkt")
 

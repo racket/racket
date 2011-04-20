@@ -2,7 +2,8 @@
 (require syntax/private/boundmap ;; needs to be the private one, since the public one has contracts
          (for-template racket/base)
          (for-template "guts.rkt"
-                       "blame.rkt")
+                       "blame.rkt"
+                       "misc.rkt")
          (for-syntax racket/base))
 
 (provide get-opter reg-opter! opter

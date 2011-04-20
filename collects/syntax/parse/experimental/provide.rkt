@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         racket/contract/combinator
          syntax/location
          (for-syntax racket/base
                      racket/syntax

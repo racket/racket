@@ -1,5 +1,4 @@
 #lang racket
-
 (define-struct stuffer (in out))
 (define (stuffer/c dom rng)
   (define in (dom . -> . rng))

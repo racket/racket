@@ -21,6 +21,7 @@ v4 todo:
 (require "guts.rkt"
          "blame.rkt"
          "prop.rkt"
+         "misc.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
          (for-syntax "helpers.rkt")

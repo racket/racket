@@ -6,7 +6,8 @@
          racket/list
          "guts.rkt"
          "blame.rkt"
-         "prop.rkt")
+         "prop.rkt"
+         "misc.rkt")
 
 (provide struct/c)
 

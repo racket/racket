@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+(require racket/contract)
 
 ; Location = (make-location Nat Nat Nat) | Symbol
 (define-struct location (line char offset) #:transparent)

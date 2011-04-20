@@ -5,6 +5,7 @@
 (require (for-syntax scheme/base))
 (require (for-template scheme/base)
          (for-template racket/contract/private/guts
+                       racket/contract/private/misc
                        racket/contract/private/prop
                        racket/contract/private/blame)
          (for-template "contract-arr-checks.rkt"))

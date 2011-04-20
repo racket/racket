@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         racket/contract/combinator
          "../private/minimatch.rkt"
          "../private/keywords.rkt"
          "../private/runtime-reflect.rkt"

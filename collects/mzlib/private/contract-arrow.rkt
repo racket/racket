@@ -4,6 +4,7 @@
          racket/contract/private/blame
          racket/contract/private/prop
          racket/contract/private/opt
+         racket/contract/private/misc
          "contract-arr-checks.rkt")
 (require (for-syntax racket/base)
          (for-syntax racket/contract/private/opt-guts)

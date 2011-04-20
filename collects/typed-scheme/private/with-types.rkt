@@ -4,7 +4,7 @@
          (for-template 
           (except-in racket/base for for*)
           "prims.rkt"
-          (prefix-in c: (combine-in racket/contract/regions racket/contract/base)))
+          (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
          "extra-procs.rkt" "prims.rkt"
          syntax/parse racket/block racket/match
          unstable/sequence  "base-types-extra.rkt"

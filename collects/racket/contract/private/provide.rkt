@@ -9,8 +9,9 @@
                      (prefix-in a: "helpers.rkt"))
          "arrow.rkt"
          "base.rkt"
-         racket/contract/exists
          "guts.rkt"
+         "misc.rkt"
+         "exists.rkt"
          (for-syntax unstable/dirs)
          syntax/location
          syntax/srcloc)

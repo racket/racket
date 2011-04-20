@@ -4,6 +4,7 @@
          "prop.rkt"
          "guts.rkt"
          "opt.rkt"
+         "misc.rkt"
          "blame.rkt"
          syntax/location
          (for-syntax racket/base

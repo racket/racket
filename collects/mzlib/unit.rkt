@@ -17,6 +17,8 @@
   
 (require mzlib/etc
          racket/contract/base
+         racket/contract/region
+         racket/contract/combinator
          scheme/stxparam
          syntax/location
          "private/unit-contract.rkt"

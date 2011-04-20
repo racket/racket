@@ -3,7 +3,8 @@
 (require (for-syntax racket/base
                      racket/contract/private/helpers
                      racket/struct-info)
-         racket/contract/private/guts)
+         racket/contract/private/guts
+         racket/contract/private/misc)
 
 (provide struct/c)
 

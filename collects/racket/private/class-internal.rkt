@@ -3,6 +3,7 @@
 (require (for-syntax racket/base)
          mzlib/etc
          racket/contract/base
+         racket/contract/combinator
          (only-in racket/contract/private/arrow making-a-method)
          racket/list
          racket/stxparam
