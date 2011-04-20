@@ -110,7 +110,7 @@ elements:
        @tech{unreadable symbol}. These two are used with either
        @scheme[namespace-variable-binding] or @scheme[dynamic-require]
        to obtain deserialization information. See
-       @scheme[make-deserialization-info] for more information on the
+       @scheme[make-deserialize-info] for more information on the
        binding's value. See also @scheme[deserialize-module-guard].}
 
  @item{A non-negative exact integer, @scheme[_g-count] that represents the
