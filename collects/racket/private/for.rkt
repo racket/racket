@@ -647,7 +647,7 @@
   (define (check-ranges who start stop step len)
     (unless (and (exact-nonnegative-integer? start) (<= start len))
       (raise-type-error who (format "exact integer in [0,~a]" len) start))
-    (unless (and (integer? stop) (<= -1 stop) (<= stop len))
+    (unless (and (exact-integer? stop) (<= -1 stop) (<= stop len))
       (raise-type-error who (format "exact integer in [-1,~a] or #f" len) stop))
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-type-error who "exact non-zero integer" step))
@@ -758,7 +758,11 @@
                   ;; start*, stop*, and step* are guaranteed to be exact integers
                   ([(v* start* stop* step*)
                     (normalise-inputs (quote in-vector-name) type-name
-                                      vector? unsafe-vector-length vec-expr start stop step)])
+                                      ;; reverse-eta triggers JIT inlining of primitives,
+                                      ;; which is good for futures:
+                                      (lambda (x) (vector? x)) 
+                                      (lambda (x) (unsafe-vector-length x))
+                                      vec-expr start stop step)])
                   ;; Outer check is done by normalise-inputs
                   #t
                   ;; Loop bindings
