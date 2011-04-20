@@ -279,9 +279,11 @@
      (lambda (proc w h)
        (let* ([new-proc (lambda (null bytes len)
                           (proc bytes len))]
+              [free-cell-box (box #f)]
               [s (p new-proc #f w h)]
-              [b (malloc-immobile-cell new-proc)])
-         (cairo_surface_set_user_data s cell-key b free-immobile-cell)
+              [b (malloc-immobile-cell (cons new-proc free-cell-box))])
+         (parameterize ([current-sud-box free-cell-box])
+           (cairo_surface_set_user_data s cell-key b free-immobile-cell))
          s)))))
 (define-cairo cairo_ps_surface_create_for_stream
   _stream-surface-proc
@@ -293,8 +295,11 @@
   _stream-surface-proc
   #:wrap stream-surface-allocator)
 
+(define current-sud-box (make-parameter #f))
 (define-cairo cairo_surface_set_user_data 
-  (_fun _cairo_surface_t _pointer _pointer (_fun #:atomic? #t _pointer -> _void)
+  (_fun _cairo_surface_t _pointer _pointer 
+        (_fun #:atomic? #t #:keep (lambda (v) (set-box! (current-sud-box) v))
+              _pointer -> _void)
         -> _int))
 
 (define-cairo cairo_ps_surface_set_eps (_fun _cairo_surface_t _bool -> _void)
