@@ -858,6 +858,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       }
       break;
     case scheme_unix_path_type:
+    case scheme_windows_path_type:
       new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
       break;
     case scheme_symbol_type:
@@ -986,9 +987,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
     case scheme_resolved_module_path_type:
     default:
-      printf("places deep copy cannot copy object of type %hi at %p\n", so->type, so);
-      scheme_log_abort("places deep copy cannot copy object");
-      abort();
+      scheme_arg_mismatch("place-channel-send", "cannot transmit a message containing", so);
       break;
   }
   if (ht) {
