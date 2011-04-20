@@ -34,3 +34,5 @@
           (printf "Hello form place 2\n")
           (sync never-evt))])
   (place-kill p))
+
+(report-errs)

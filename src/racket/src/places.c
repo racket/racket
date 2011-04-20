@@ -802,6 +802,7 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
 Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht)
 {
   Scheme_Object *new_so = so;
+  int skip_hash;
 
   /* First, check for simple values that don't need to be hashed: */
   new_so = trivial_copy(so);
@@ -813,6 +814,14 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       return r;
     }
   }
+
+  if (!*ht) {
+    Scheme_Hash_Table *_ht;
+    _ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    *ht = _ht;
+  }
+
+  skip_hash = 0;
 
   switch (SCHEME_TYPE(so)) {
     case scheme_char_type:
@@ -874,9 +883,17 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Object *car;
         Scheme_Object *cdr;
         Scheme_Object *pair;
+
+        /* handle cycles: */
+        pair = scheme_make_pair(scheme_false, scheme_false);
+        scheme_hash_set(*ht, so, pair);
+        skip_hash = 1;
+
         car = scheme_places_deep_copy_worker(SCHEME_CAR(so), ht);
         cdr = scheme_places_deep_copy_worker(SCHEME_CDR(so), ht);
-        pair = scheme_make_pair(car, cdr);
+        SCHEME_CAR(pair) = car;
+        SCHEME_CDR(pair) = cdr;
+
         new_so = pair;
       }
       break;
@@ -886,6 +903,11 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         intptr_t i;
         intptr_t size = SCHEME_VEC_SIZE(so);
         vec = scheme_make_vector(size, 0);
+
+        /* handle cycles: */
+        scheme_hash_set(*ht, so, vec);
+        skip_hash = 1;
+
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
           tmp = scheme_places_deep_copy_worker(SCHEME_VEC_ELS(so)[i], ht);
@@ -944,6 +966,11 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 
         nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht);
         nst = (Scheme_Serialized_Structure*) scheme_make_serialized_struct_instance(nprefab_key, size);
+
+        /* handle cycles: */
+        scheme_hash_set(*ht, so, (Scheme_Object *)nst);
+        skip_hash = 1;
+
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
           tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht);
@@ -964,6 +991,11 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         size = st->num_slots;
         stype = scheme_lookup_prefab_type(SCHEME_CDR(st->prefab_key), size);
         nst = (Scheme_Structure*) scheme_make_blank_prefab_struct_instance(stype);
+
+        /* handle cycles: */
+        scheme_hash_set(*ht, so, (Scheme_Object *)nst);
+        skip_hash = 1;
+
         for (i = 0; i <size ; i++) {
           Scheme_Object *tmp;
           tmp = scheme_places_deep_copy_worker((Scheme_Object*) st->slots[i], ht);
@@ -979,12 +1011,8 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
       break;
   }
 
-  if (!*ht) {
-    Scheme_Hash_Table *_ht;
-    _ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    *ht = _ht;
-  }
-  scheme_hash_set(*ht, so, new_so);
+  if (!skip_hash)
+    scheme_hash_set(*ht, so, new_so);
 
   return new_so;
 }
@@ -1296,7 +1324,7 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
   else {
     scheme_wrong_count_m("place-channel-send", 2, 2, argc, args, 0);
   }
-  return scheme_true;
+  return scheme_void;
 }
 
 Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]) {
@@ -1317,7 +1345,7 @@ Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]) {
   else {
     scheme_wrong_count_m("place-channel-receive", 1, 1, argc, args, 0);
   }
-  return scheme_true;
+  ESCAPED_BEFORE_HERE;
 }
 
 # ifdef MZ_PRECISE_GC

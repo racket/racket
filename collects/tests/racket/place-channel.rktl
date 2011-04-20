@@ -104,10 +104,21 @@ END
   (place-channel-send pl pc5)
   (test "Ready5" sync pc6)
 
+  (let ([try-graph
+         (lambda (s)
+           (let ([v (read (open-input-string s))])
+             (place-channel-send pc5 v)
+             (test v place-channel-receive pc6)))])
+    (try-graph "#0=(#0# . #0#)")
+    (try-graph "#0=#(#0# 7 #0#)")
+    (try-graph "#0=#s(thing 7 #0#)"))
+
   (check-exn exn:fail? (λ () (place-channel-send pl (open-output-string))))
   (check-not-exn (λ () (place-channel-send pl "Test String")))
-  (check-not-exn (λ () (place-channel-send pl (string->path "C:\\Windows"))))
+  (check-not-exn (λ () (place-channel-send pl (bytes->path #"/tmp/unix" 'unix))))
+  (check-not-exn (λ () (place-channel-send pl (bytes->path #"C:\\Windows" 'windows))))
 
   (place-wait pl)
 )
 
+(report-errs)
