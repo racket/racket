@@ -777,6 +777,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
           && (SCHEME_LOCAL_POS(o) > deeper_than))
       || (vtype == scheme_unclosed_procedure_type)
       || (vtype == scheme_compiled_unclosed_procedure_type)
+      || ((vtype == scheme_compiled_syntax_type) && (SCHEME_PINT_VAL(o) == CASE_LAMBDA_EXPD))
       || (vtype == scheme_case_lambda_sequence_type)
       || (vtype == scheme_quote_syntax_type)
       || (vtype == scheme_compiled_quote_syntax_type)) {
@@ -2374,7 +2375,18 @@ static int estimate_expr_size(Scheme_Object *expr, int sz, int fuel)
     }
   case scheme_compiled_syntax_type:
     {
-      sz += 1; /* FIXME */
+      if (SCHEME_PINT_VAL(expr) == CASE_LAMBDA_EXPD) {
+        int max_sz = sz + 1, a_sz;
+        Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(expr);
+        int i;
+        for (i = cl->count; i--; ) {
+          a_sz = estimate_expr_size(cl->array[i], sz, fuel);
+          if (a_sz > max_sz) max_sz = a_sz;
+        }
+        sz = max_sz;
+      } else {
+        sz += 1; /* FIXME */
+      }
       break;
     }
   case scheme_application2_type:
@@ -2650,6 +2662,35 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       } else
         break;
     }
+  }
+
+  if (le
+      && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_syntax_type)
+      && (SCHEME_PINT_VAL(le) == CASE_LAMBDA_EXPD)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(le);
+    Scheme_Object *cp;
+    int i, count;
+
+    if (!app && !app2 && !app3)
+      return le;
+
+    count = cl->count;
+    for (i = 0; i < count; i++) {
+      cp = cl->array[i];
+      if (SAME_TYPE(SCHEME_TYPE(cp), scheme_compiled_unclosed_procedure_type)) {
+        Scheme_Closure_Data *data = (Scheme_Closure_Data *)cp;
+        if ((data->num_params == argc) 
+            || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
+                && (argc + 1 >= data->num_params))) {
+          le = cp;
+          break;
+        }
+      } else {
+        scheme_signal_error("internal error: strange case-lambda");
+      }
+    }
+    if (i >= count)
+      bad_app = le;
   }
 
   if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {

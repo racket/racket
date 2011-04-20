@@ -5619,7 +5619,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
           n = scheme_list_length(vars);
           if (n == 1) {
-            if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+            if (IS_COMPILED_PROC(e)) {
               Scheme_Toplevel *tl;
             
               tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
@@ -5656,7 +5656,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
         Scheme_Object *e2;
         e2 = (Scheme_Object *)SCHEME_IPTR_VAL(e);
         e2 = SCHEME_CDR(e2);
-        if (SAME_TYPE(SCHEME_TYPE(e2), scheme_compiled_unclosed_procedure_type))
+        if (IS_COMPILED_PROC(e2))
           is_proc_def = 1;
       }
     }
@@ -5710,7 +5710,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
             if (sproc) {
               e2 = scheme_make_noninline_proc(e);
-            } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+            } else if (IS_COMPILED_PROC(e)) {
 	      e2 = scheme_optimize_clone(1, e, info, 0, 0);
               if (e2) {
                 Scheme_Object *pr;
@@ -5812,8 +5812,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               Scheme_Object *sub_e;
               sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
               sub_e = SCHEME_CDR(sub_e);
-              if (SAME_TYPE(SCHEME_TYPE(sub_e), scheme_compiled_unclosed_procedure_type))
-                old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL, NULL);
+              if (IS_COMPILED_PROC(sub_e))
+                old_sz = scheme_compiled_proc_body_size(sub_e);
               else
                 old_sz = 0;
             } else
@@ -5838,7 +5838,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                    don't replace that with a worse approximation. */
                 Scheme_Object *old_e;
                 old_e = scheme_hash_get(info->top_level_consts, rpos);
-                if (SAME_TYPE(SCHEME_TYPE(old_e), scheme_compiled_unclosed_procedure_type))
+                if (IS_COMPILED_PROC(old_e))
                   e = NULL;
                 else
                   e = scheme_make_noninline_proc(e);
@@ -5846,8 +5846,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
               if (e) {
                 if (OPT_LIMIT_FUNCTION_RESIZE) {
-                  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
-                    new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL, NULL);
+                  if (IS_COMPILED_PROC(e))
+                    new_sz = scheme_compiled_proc_body_size(e);
                   else
                     new_sz = 0;
                 } else

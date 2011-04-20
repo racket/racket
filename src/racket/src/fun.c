@@ -3576,6 +3576,12 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       name = ((Scheme_Closure_Data *)p)->name;
     } else if (type == scheme_closure_type) {
       name = SCHEME_COMPILED_CLOS_CODE(p)->name;
+    } else if (type == scheme_compiled_syntax_type) {
+      Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(p);
+      if (!cl->count)
+        name = NULL;
+      else
+        name = ((Scheme_Closure_Data *)cl->array[0])->name;
     } else {
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;

@@ -132,6 +132,7 @@ static Scheme_Object *begin0_clone(int dup_ok, Scheme_Object *data, Optimize_Inf
 static Scheme_Object *set_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 static Scheme_Object *apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 static Scheme_Object *splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+static Scheme_Object *case_lambda_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 
 static Scheme_Object *begin0_shift(Scheme_Object *data, int delta, int after_depth);
 static Scheme_Object *set_shift(Scheme_Object *data, int delta, int after_depth);
@@ -323,7 +324,7 @@ scheme_init_syntax (Scheme_Env *env)
 			 case_lambda_optimize,
 			 case_lambda_resolve, case_lambda_sfs, case_lambda_validate,
 			 case_lambda_execute, case_lambda_jit, 
-			 NULL, case_lambda_shift, -1);
+			 case_lambda_clone, case_lambda_shift, -1);
   scheme_register_syntax(BEGIN0_EXPD, 
 			 begin0_optimize,
 			 begin0_resolve, begin0_sfs, begin0_validate,
@@ -797,7 +798,9 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_CONST) {
         int flags = GLOB_IS_IMMUTATED;
         if (SCHEME_PROCP(vals_expr) 
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type))
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type)
+            || (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_syntax_type)
+                && (SCHEME_PINT_VAL(vals_expr) == CASE_LAMBDA_EXPD)))
           flags |= GLOB_IS_CONSISTENT;
         ((Scheme_Bucket_With_Flags *)b)->flags |= flags;
       }
@@ -2436,18 +2439,76 @@ case_lambda_optimize(Scheme_Object *expr, Optimize_Info *info, int context)
   Scheme_Object *le;
   int i;
   Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)expr;
+  mzshort **tus, *tu;
+  int *tu_lens, tup, tu_count = 0;
+
+  if (info->transitive_use_pos) {
+    /* We'll need to merge transitive_use arrays */
+    tup = info->transitive_use_pos - 1;
+    tus = (mzshort **)MALLOC_N(mzshort*, seq->count);
+    tu_lens = (int*)MALLOC_N_ATOMIC(int, seq->count);
+  } else {
+    tup = 0;
+    tus = NULL;
+    tu_lens = NULL;
+  }
 
   for (i = 0; i < seq->count; i++) {
     le = seq->array[i];
     le = scheme_optimize_expr(le, info, 0);
     seq->array[i] = le;
+
+    if (tus) {
+      tus[i] = info->transitive_use[tup];
+      tu_lens[i] = info->transitive_use_len[tup];
+      if (tus[i]) {
+        tu_count += tu_lens[i];
+      }
+      info->transitive_use[tup] = NULL;
+      info->transitive_use_len[tup] = 0;
+    }
   }
 
   info->preserves_marks = 1;
   info->single_result = 1;
   info->size += 1;
 
+  if (tu_count) {
+    tu = MALLOC_N_ATOMIC(mzshort, tu_count);
+    tu_count = 0;
+    for (i = 0; i < seq->count; i++) {
+      if (tus[i]) {
+        memcpy(tu + tu_count, tus[i], tu_lens[i] * sizeof(mzshort));
+        tu_count += tu_lens[i];
+      }
+    }
+    info->transitive_use[tup] = tu;
+    info->transitive_use_len[tup] = tu_count;
+  }
+
   return scheme_make_syntax_compiled(CASE_LAMBDA_EXPD, expr);
+}
+
+static Scheme_Object *
+case_lambda_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth)
+{
+  Scheme_Object *le;
+  int i, sz;
+  Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)data;
+  Scheme_Case_Lambda *seq2;
+
+  sz = sizeof(Scheme_Case_Lambda) + ((seq->count - 1) * sizeof(Scheme_Object*));
+  seq2 = (Scheme_Case_Lambda *)scheme_malloc_tagged(sz);
+  memcpy(seq2, seq, sz);
+
+  for (i = 0; i < seq->count; i++) {
+    le = seq->array[i];
+    le = scheme_optimize_clone(dup_ok, le, info, delta, closure_depth);
+    if (!le) return NULL;
+    seq2->array[i] = le;
+  }
+  
+  return scheme_make_syntax_compiled(CASE_LAMBDA_EXPD, (Scheme_Object *)seq2);  
 }
 
 static Scheme_Object *
@@ -2795,6 +2856,8 @@ static int is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator)
   switch (t) {
   case scheme_compiled_unclosed_procedure_type:
     return !as_rator;
+  case scheme_compiled_syntax_type:
+    return (!as_rator && (SCHEME_PINT_VAL(o) == CASE_LAMBDA_EXPD));
   case scheme_compiled_toplevel_type:
     return 1;
   case scheme_local_type:
@@ -2890,6 +2953,18 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
   }
+
+  if (SAME_TYPE(scheme_compiled_syntax_type, SCHEME_TYPE(value))
+      && (SCHEME_PINT_VAL(value) == CASE_LAMBDA_EXPD)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(value);
+    int i;
+    for (i = cl->count; i--; ) {
+      if (!scheme_compiled_propagate_ok(cl->array[i], info))
+        return 0;
+    }
+    return 1;
+  }
+
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
     if (info->top_level_consts) {
@@ -2996,16 +3071,17 @@ static Scheme_Object *make_clones(Scheme_Compiled_Let_Value *retry_start,
   clv = retry_start;
   while (1) {
     value = clv->value;
-    if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
+    if (IS_COMPILED_PROC(value)) {
       clone = scheme_optimize_clone(1, value, body_info, 0, 0);
       if (clone) {
         pr = scheme_make_raw_pair(scheme_make_raw_pair(value, clone), NULL);
-        if (last)
-          SCHEME_CDR(last) = pr;
-        else
-          first = pr;
-        last = pr;
-      }
+      } else
+        pr = scheme_make_raw_pair(NULL, NULL);
+      if (last)
+        SCHEME_CDR(last) = pr;
+      else
+        first = pr;
+      last = pr;
     }
     if (clv == pre_body)
       break;
@@ -3021,10 +3097,12 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
                           int set_flags, int mask_flags, int just_tentative,
                           int merge_flonum)
 {
+  Scheme_Case_Lambda *cl, *cl2, *cl3;
   Scheme_Compiled_Let_Value *clv;
   Scheme_Object *value, *first;
   int flags = CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS;
-  Scheme_Closure_Data *data;
+  Scheme_Closure_Data *data, *data2, *data3;
+  int i, count;
 
   /* The first in a clone pair is the one that is consulted for
      references. The second one is the clone, and it's the one whose
@@ -3034,24 +3112,45 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   clv = retry_start;
   while (clones) {
     value = clv->value;
-    if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(value))) {
-      data = (Scheme_Closure_Data *)value;
-
+    if (IS_COMPILED_PROC(value)) {
       first = SCHEME_CAR(clones);
 
-      if (merge_flonum) {
-        scheme_merge_closure_flonum_map(data, (Scheme_Closure_Data *)SCHEME_CAR(first));
-        scheme_merge_closure_flonum_map(data, (Scheme_Closure_Data *)SCHEME_CDR(first));
-        scheme_merge_closure_flonum_map(data, (Scheme_Closure_Data *)SCHEME_CAR(first));
-      }        
+      if (first) {
+        if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(value))) {
+          count = 1;
+          cl = NULL;
+          cl2 = NULL;
+          cl3 = NULL;
+        } else {
+          cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(value);
+          cl2 = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(SCHEME_CAR(first));
+          cl3 = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(SCHEME_CDR(first));
+          count = cl->count;
+        }
+
+        for (i = 0; i < count; i++) {
+          if (cl) {
+            data = (Scheme_Closure_Data *)cl->array[i];
+            data2 = (Scheme_Closure_Data *)cl2->array[i];
+            data3 = (Scheme_Closure_Data *)cl3->array[i];          
+          } else {
+            data = (Scheme_Closure_Data *)value;
+            data2 = (Scheme_Closure_Data *)SCHEME_CAR(first);
+            data3 = (Scheme_Closure_Data *)SCHEME_CDR(first);
+          }
+
+          if (merge_flonum) {
+            scheme_merge_closure_flonum_map(data, data2);
+            scheme_merge_closure_flonum_map(data, data3);
+            scheme_merge_closure_flonum_map(data, data2);
+          }        
       
-      if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
-        flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
-        
-        data = (Scheme_Closure_Data *)SCHEME_CDR(first);
-        SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
-        data = (Scheme_Closure_Data *)SCHEME_CAR(first);
-        SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+          if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
+            flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
+            SCHEME_CLOSURE_DATA_FLAGS(data2) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data2) & mask_flags);
+            SCHEME_CLOSURE_DATA_FLAGS(data3) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data3) & mask_flags);
+          }
+        }
       }
 
       clones = SCHEME_CDR(clones);
@@ -3065,12 +3164,25 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   return flags;
 }
 
-static int expr_size(Scheme_Object *o, Optimize_Info *info)
+int scheme_compiled_proc_body_size(Scheme_Object *o)
 {
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
-    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL) + 1;
-  else
-    return 1;
+    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL);
+  else if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_syntax_type)
+           && (SCHEME_PINT_VAL(o) == CASE_LAMBDA_EXPD)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(o);
+    int i, sz = 0;
+    for (i = cl->count; i--; ) {
+      sz += scheme_closure_body_size((Scheme_Closure_Data *)cl->array[i], 0, NULL, NULL);
+    }
+    return sz;
+  } else
+    return 0;
+}
+
+static int expr_size(Scheme_Object *o, Optimize_Info *info)
+{
+  return scheme_compiled_proc_body_size(o) + 1;
 }
 
 static int might_invoke_call_cc(Scheme_Object *value)
@@ -3083,6 +3195,7 @@ static int worth_lifting(Scheme_Object *v)
   Scheme_Type lhs;
   lhs = SCHEME_TYPE(v);
   if ((lhs == scheme_compiled_unclosed_procedure_type)
+      || ((lhs == scheme_compiled_syntax_type) && (SCHEME_PINT_VAL(v) == CASE_LAMBDA_EXPD))
       || (lhs == scheme_local_type)
       || (lhs == scheme_compiled_toplevel_type)
       || (lhs == scheme_compiled_quote_syntax_type)
@@ -3315,7 +3428,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         pos = pre_body->position;
 
         if ((pre_body->count == 1)
-            && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))
+            && IS_COMPILED_PROC(pre_body->value)
             && !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
           scheme_optimize_propagate(body_info, pos, scheme_estimate_closure_size(pre_body->value), 0);
         }
@@ -3360,7 +3473,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     size_before_opt = body_info->size;
 
     if ((pre_body->count == 1)
-        && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))
+        && IS_COMPILED_PROC(pre_body->value)
         && !scheme_optimize_is_used(body_info, pos)) {
       if (!body_info->transitive_use) {
         mzshort **tu;
@@ -3375,7 +3488,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     if (is_rec && OPT_DISCOURAGE_EARLY_INLINE && !rhs_info->letrec_not_twice
-        && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))) {
+        && IS_COMPILED_PROC(pre_body->value)) {
       inline_fuel = rhs_info->inline_fuel;
       if (inline_fuel > 2)
         rhs_info->inline_fuel = 2;
@@ -3630,9 +3743,11 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         cl = clones;
 	while (1) {
 	  value = clv->value;
-          if (cl)
+          if (cl) {
             cl_first = SCHEME_CAR(cl);
-          else
+            if (!cl_first)
+              cl = SCHEME_CDR(cl);
+          } else
             cl_first = NULL;
 	  if (cl_first && SAME_OBJ(value, SCHEME_CAR(cl_first))) {
             /* Try optimization. */
@@ -3651,7 +3766,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	    self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
-            sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL, NULL);
+            sz = scheme_compiled_proc_body_size(value);
             rhs_info->size -= (sz + 1);
             
             /* Setting letrec_not_twice prevents inlinining
@@ -3676,9 +3791,9 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
                 /* Register re-optimized as the value for the binding, but
                    maybe only if it didn't grow too much: */
                 int new_sz;
-                if (OPT_LIMIT_FUNCTION_RESIZE) {
-                  new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL, NULL);
-                } else
+                if (OPT_LIMIT_FUNCTION_RESIZE)
+                  new_sz = scheme_compiled_proc_body_size(value);
+                else
                   new_sz = 0;
                 if (new_sz < 4 * sz)
                   scheme_optimize_propagate(body_info, clv->position, value, 0);

@@ -1063,6 +1063,12 @@
            '(let ([f (lambda (x) x)])
               (list f)))
 
+(test-comp '(letrec ([f (case-lambda 
+                         [(x) x]
+                         [(x y) (f (+ x y))])])
+	      (f 10))
+	   '10)
+
 (test-comp '(procedure-arity-includes? integer? 1)
            #t)
 

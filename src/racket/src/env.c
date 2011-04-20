@@ -3346,7 +3346,7 @@ static void register_stat_dist(Optimize_Info *info, int i, int j)
     /* We're using a procedure that we weren't sure would be used.
        Transitively mark everything that the procedure uses --- unless
        a transitive accumulation is in effect, in which case we
-       don't for this one now, leaving it to be triggered when
+       don't follow this one now, leaving it to be triggered when
        the one we're accumulating is triggered. */
     if (!info->transitive_use_pos) {
       mzshort *map = info->transitive_use[i];
@@ -3701,6 +3701,12 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
         *single_use = SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
 	if (!closure_offset)
+	  break;
+	else
+          *closure_offset = delta;
+      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_syntax_type)
+                 && (SCHEME_PINT_VAL(n) == CASE_LAMBDA_EXPD)) {
+        if (!closure_offset)
 	  break;
 	else
           *closure_offset = delta;

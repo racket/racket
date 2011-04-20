@@ -2499,6 +2499,11 @@ Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 Scheme_Object *scheme_make_syntax_resolved(int idx, Scheme_Object *data);
 Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data);
 
+#define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
+                                     || (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_syntax_type) \
+                                         && (SCHEME_PINT_VAL(vals_expr) == CASE_LAMBDA_EXPD)))
+int scheme_compiled_proc_body_size(Scheme_Object *o);
+
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
 
