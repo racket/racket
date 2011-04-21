@@ -2580,6 +2580,7 @@ void GC_destruct_child_gc() {
       waiting = 1;
     }
   } while (waiting == 1);
+  GC_free_child_gc();
 }
 
 
@@ -4459,6 +4460,35 @@ void GC_dump_variable_stack(void **var_stack,
 /******************************************************************************/
 /*                              GC free all                                   */
 /******************************************************************************/
+void GC_free_child_gc(void)
+{
+  NewGC *gc = GC_get_GC();
+  int i;
+  mpage *work;
+  mpage *next;
+  PageMap pagemap = gc->page_maps;
+
+  gen0_free_big_pages(gc);
+
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for (work = gc->gen1_pages[i]; work; work = next) {
+      next = work->next;
+
+      if (work->mprotected)
+      {
+        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+      }
+      GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
+      gen1_free_mpage(pagemap, work);
+    }
+  }
+
+  free_page_maps(gc->page_maps);
+
+  mmu_flush_freed_pages(gc->mmu);
+  mmu_free(gc->mmu);
+  free(gc);
+}
 
 void GC_free_all(void)
 {
