@@ -84,6 +84,7 @@ default in Racket.
 @defidform[PRegexp]
 @defidform[Bytes]
 @defidform[Namespace]
+@defidform[Null]
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
 @defidform[Char]
