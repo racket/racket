@@ -127,7 +127,14 @@ static void allocate_values(int count, Scheme_Thread *p)
 static void ts_allocate_values(int count, Scheme_Thread *p) XFORM_SKIP_PROC
 {
   if (scheme_use_rtcall) {
-    scheme_rtcall_allocate_values("[allocate_values]", FSRC_OTHER, count, p, allocate_values);
+    /* try thread-local allocation: */
+    Scheme_Object **a;    
+    a = MALLOC_N(Scheme_Object *, count);
+    if (a) {
+      p->values_buffer = a;
+      p->values_buffer_size = count;
+    } else
+      scheme_rtcall_allocate_values("[allocate_values]", FSRC_OTHER, count, p, allocate_values);
   } else
     allocate_values(count, p);
 }

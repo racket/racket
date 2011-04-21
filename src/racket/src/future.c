@@ -2354,6 +2354,11 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   future->rt_prim_is_atomic = is_atomic;
   future->status = WAITING_FOR_PRIM;
 
+  if (is_atomic) {
+    future->next_waiting_atomic = fs->future_waiting_atomic;
+    fs->future_waiting_atomic = future;
+  }
+
   if (fts->thread->current_ft) {
     if (insist_to_suspend) {
       /* couldn't capture the continuation locally, so ask
@@ -2361,9 +2366,6 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
       future->next_waiting_lwc = fs->future_waiting_lwc;
       fs->future_waiting_lwc = future;
       future->want_lw = 1;
-    } else if (is_atomic) {
-      future->next_waiting_atomic = fs->future_waiting_atomic;
-      fs->future_waiting_atomic = future;
     }
   }
 
