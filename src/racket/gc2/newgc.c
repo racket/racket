@@ -1513,7 +1513,6 @@ void GC_dispose_short_message_allocator(void *param) {
 
 void GC_destroy_orphan_msg_memory(void *param) {
   NewGC *gc = GC_get_GC();
-  mpage *tmp;
   MsgMemory *msgm = (MsgMemory *) param;
 
   if (msgm->big_pages)
