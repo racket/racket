@@ -1329,7 +1329,7 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
   /* small messages are deamed to be < 1k, this could be tuned in either direction */
   if (GC_message_allocator_size(msg_memory) < 1024) {
     new_so = scheme_places_deep_copy(so);
-    GC_dispose_message_allocator(msg_memory);
+    GC_dispose_short_message_allocator(msg_memory);
   }
   else {
 #if !defined(SHARED_TABLES)
@@ -1428,8 +1428,21 @@ static void* GC_master_malloc_tagged(size_t size) {
 
 static void async_channel_finialize(void *p, void* data) {
   Scheme_Place_Async_Channel *ch;
+  int i;
   ch = (Scheme_Place_Async_Channel*)p;
   mzrt_mutex_destroy(ch->lock);
+  for (i = 0; i < ch->size ; i++) {
+    ch->msgs[i] = NULL;
+#ifdef MZ_PRECISE_GC
+    if (ch->msg_memory[i]) {
+      GC_destroy_orphan_msg_memory(ch->msg_memory[i]);
+    }
+#endif
+    ch->msg_memory[i] = NULL;
+  }
+  ch->in = 0;
+  ch->out = 0;
+  ch->count = 0;
 }
 
 Scheme_Place_Async_Channel *scheme_place_async_channel_create() {

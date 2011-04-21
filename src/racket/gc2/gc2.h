@@ -496,9 +496,15 @@ GC2_EXTERN uintptr_t GC_message_allocator_size(void *msg_memory);
  Returns the total size of all memory allocated by the message allocator
  */
 
-GC2_EXTERN void GC_dispose_message_allocator(void *msg_memory);
+GC2_EXTERN void GC_dispose_short_message_allocator(void *msg_memory);
 /*
  Disposes of small message allocators that were copied by the receiving place
+ */
+
+GC2_EXTERN void GC_destroy_orphan_msg_memory(void *msg_memory);
+/*
+ Used to destroys a message allocators that is still in the place channel queue when
+ the place channels finalizer is called.
  */
 
 

@@ -162,6 +162,9 @@ static void master_collect_initiate(NewGC *gc);
 #endif
 
 inline static size_t real_page_size(mpage* page);
+inline static int page_mmu_type(mpage *page);
+inline static int page_mmu_protectable(mpage *page);
+static void free_mpage(mpage *page);
 
 #if defined(MZ_USE_PLACES) && defined(GC_DEBUG_PAGES)
 static FILE* gcdebugOUT(NewGC *gc) {
@@ -363,14 +366,23 @@ static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, in
 
 static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mprotect, void **src_block)
 {
-  uintptr_t x = size_to_apage_count(len);
-
   gc->used_pages -= size_to_apage_count(len);
   mmu_free_page(gc->mmu, p, len, type, expect_mprotect, src_block);
 }
 
+
+static void free_orphaned_page(NewGC *gc, mpage *tmp) {
+  /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page
+   * so we use mmu_free_page directly */
+  mmu_free_page(gc->mmu, tmp->addr, round_to_apage_size(tmp->size),
+    page_mmu_type(tmp),
+    page_mmu_protectable(tmp),
+    &tmp->mmu_src_block); 
+  free_mpage(tmp);
+}
+
+
 static void orphan_page_accounting(NewGC *gc, size_t allocate_size) {
-  uintptr_t x = size_to_apage_count(round_to_apage_size(allocate_size));
   mmu_memory_allocated_dec(gc->mmu, allocate_size);
   gc->used_pages -= size_to_apage_count(round_to_apage_size(allocate_size));
 }
@@ -1473,14 +1485,14 @@ uintptr_t GC_message_allocator_size(void *param) {
   return msgm->size;
 }
 
-void GC_dispose_message_allocator(void *param) {
+void GC_dispose_short_message_allocator(void *param) {
   NewGC *gc = GC_get_GC();
   mpage *tmp;
   MsgMemory *msgm = (MsgMemory *) param;
   
   if (msgm->big_pages)
   { 
-    printf("Error: disposable message allocators should not have big objects!\n");
+    printf("Error: short disposable message allocators should not have big objects!\n");
     exit(1);
   }
 
@@ -1490,17 +1502,44 @@ void GC_dispose_message_allocator(void *param) {
 
     if (tmp->next)
     { 
-      printf("Error: disposable message allocators should not have more than one page!\n");
+      printf("Error: short disposable message allocators should not have more than one page!\n");
       exit(1);
     }
-    /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page
-     * so we use mmu_free_page directly */
-    mmu_free_page(gc->mmu, tmp->addr, round_to_apage_size(tmp->size), MMU_SMALL_GEN0, MMU_NON_PROTECTABLE, &tmp->mmu_src_block);
+    free_orphaned_page(gc, tmp);
     free_mpage(tmp);
   }
   free(msgm);
 }
 
+void GC_destroy_orphan_msg_memory(void *param) {
+  NewGC *gc = GC_get_GC();
+  mpage *tmp;
+  MsgMemory *msgm = (MsgMemory *) param;
+
+  if (msgm->big_pages)
+  { 
+    mpage *tmp = msgm->big_pages;
+    free_orphaned_page(gc, tmp);
+
+    while (tmp->next) { 
+      tmp = tmp->next; 
+      free_orphaned_page(gc, tmp);
+    }
+  }
+
+  if (msgm->pages)
+  { 
+    mpage *tmp = msgm->pages;
+    free_orphaned_page(gc, tmp);
+
+    while (tmp->next) { 
+      tmp = tmp->next;
+      free_orphaned_page(gc, tmp);
+    }
+
+  }
+  free(msgm);
+}
 
 
 /* this function resizes generation 0 to the closest it can get (erring high)
@@ -2150,10 +2189,22 @@ int GC_merely_accounting()
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static inline int page_mmu_type(mpage *page) {
-  return (page->size_class >= 1) ? MMU_BIG_MED : MMU_SMALL_GEN1;
+inline static int page_mmu_type(mpage *page) {
+  switch (page->size_class) { 
+    case 0: /* SMALL_PAGE , GEN0_PAGE */
+      if (page->generation) { return MMU_SMALL_GEN1; }
+      else return MMU_SMALL_GEN0;
+    case 1: /* MED PAGE */
+    case 2: /* BIG PAGE */
+    case 3: /* BIG PAGE MARKED */
+      return MMU_BIG_MED;
+    default: /* BIG PAGE size_class 2 or 3 */
+      printf("Error Page class %i doesn't exist\n", page->size_class);
+      exit(1);
+  }
 }
-static inline int page_mmu_protectable(mpage *page) {
+
+inline static int page_mmu_protectable(mpage *page) {
   return (page->page_type == PAGE_ATOMIC) ? MMU_NON_PROTECTABLE : MMU_PROTECTABLE;
 }
 
