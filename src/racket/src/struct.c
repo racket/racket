@@ -4346,24 +4346,13 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
   Scheme_Object *a = NULL;
 
-# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *original_gc;
-  original_gc = GC_switch_to_master_gc();
-  scheme_start_atomic();
-# endif
-
   if (prefab_table) {
     a = scheme_lookup_in_table(prefab_table, (const char *)key);
   }
 
-# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  scheme_end_atomic_no_swap();
-  GC_switch_back_from_master(original_gc);
-# endif
+  if (a)
+    return (Scheme_Struct_Type *)SCHEME_WEAK_BOX_VAL(a);
 
-  if (a) {
-      return (Scheme_Struct_Type *) SCHEME_WEAK_BOX_VAL(a);
-  }
   return NULL;
 }
 
