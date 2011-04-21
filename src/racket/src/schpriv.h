@@ -104,6 +104,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
+THREAD_LOCAL_DECL(extern int scheme_current_place_id);
 THREAD_LOCAL_DECL(extern intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(extern int scheme_continuation_application_count);
@@ -3537,8 +3538,10 @@ Scheme_Object *scheme_checked_set_mcar (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_set_mcdr (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_vector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_string_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_string_set(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_byte_string_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);

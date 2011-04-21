@@ -275,7 +275,7 @@ GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback
   gc->GC_collect_end_callback = func;
   return old;
 }
-void GC_set_collect_inform_callback(void (*func)(int major_gc, intptr_t pre_used, intptr_t post_used)) {
+void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc func) {
   NewGC *gc = GC_get_GC();
   gc->GC_collect_inform_callback = func;
 }
@@ -4134,6 +4134,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 {
   uintptr_t old_mem_use;
   uintptr_t old_gen0;
+  uintptr_t old_mem_allocated;
 
   int next_gc_full;
 #ifdef MZ_USE_PLACES
@@ -4142,6 +4143,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
+  old_mem_allocated = mmu_memory_allocated(gc->mmu);
 
   TIME_DECLS();
 
@@ -4348,8 +4350,15 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   /* inform the system (if it wants us to) that we're done with collection */
   if (gc->GC_collect_end_callback)
     gc->GC_collect_end_callback();
-  if (gc->GC_collect_inform_callback)
-    gc->GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
+  if (gc->GC_collect_inform_callback) {
+    int is_master = 0;
+#ifdef MZ_USE_PLACES
+    is_master = (gc == MASTERGC);
+#endif
+    gc->GC_collect_inform_callback(is_master, gc->gc_full, 
+                                   old_mem_use + old_gen0, gc->memory_in_use, 
+                                   old_mem_allocated, mmu_memory_allocated(gc->mmu));
+  }
 
   TIME_STEP("ended");
 

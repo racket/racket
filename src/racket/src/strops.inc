@@ -236,6 +236,12 @@ X__(string_length) (int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *
+X_(scheme, string_length) (Scheme_Object *v)
+{
+  return X__(string_length)(1, &v);
+}
+
+Scheme_Object *
 X_(scheme_checked, string_ref) (int argc, Scheme_Object *argv[])
 {
   intptr_t i, len;

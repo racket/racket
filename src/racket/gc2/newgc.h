@@ -211,7 +211,7 @@ typedef struct NewGC {
   /* Callbacks */
   void (*GC_collect_start_callback)(void);
   void (*GC_collect_end_callback)(void);
-  void (*GC_collect_inform_callback)(int major_gc, intptr_t pre_used, intptr_t post_used);
+  GC_collect_inform_callback_Proc GC_collect_inform_callback;
   uintptr_t (*GC_get_thread_stack_base)(void);
 
   GC_Immobile_Box *immobile_boxes;

@@ -3,6 +3,8 @@
 static Scheme_Object* scheme_place_enabled(int argc, Scheme_Object *args[]);
 static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
+THREAD_LOCAL_DECL(int scheme_current_place_id);
+
 #ifdef MZ_USE_PLACES
 
 #include "mzrt.h"
@@ -12,6 +14,9 @@ static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]);
 
 READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
 SHARED_OK static int scheme_places_enabled = 1;
+
+static int id_counter;
+static mzrt_mutex *id_counter_mutex;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
@@ -115,6 +120,7 @@ void scheme_init_places_once() {
 #ifdef MZ_USE_PLACES
   scheme_add_evt(scheme_place_type,            (Scheme_Ready_Fun)scheme_place_channel_ready, NULL, NULL, 1); 
   scheme_add_evt(scheme_place_bi_channel_type, (Scheme_Ready_Fun)scheme_place_channel_ready, NULL, NULL, 1);
+  mzrt_mutex_create(&id_counter_mutex);
 #endif
 }
 
@@ -1123,6 +1129,10 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   /* create pristine THREAD_LOCAL variables*/
   null_out_runtime_globals();
 
+  mzrt_mutex_lock(id_counter_mutex);
+  scheme_current_place_id = ++id_counter;
+  mzrt_mutex_unlock(id_counter_mutex);
+
   /* scheme_make_thread behaves differently if the above global vars are not null */
   scheme_place_instance_init(stack_base);
 
@@ -1161,6 +1171,9 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_place_exit_proc);
 
+  
+  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: started", scheme_current_place_id);
+
   {
     Scheme_Thread * volatile p;
     mz_jmp_buf * volatile saved_error_buf;
@@ -1183,6 +1196,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     }
     p->error_buf = saved_error_buf;
   }
+
+  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting", scheme_current_place_id);
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy();

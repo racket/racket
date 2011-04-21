@@ -31,7 +31,9 @@ typedef int (*Fixup_Proc)(void *obj);
 typedef int (*Fixup2_Proc)(void *obj, struct NewGC *);
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
-typedef void (*GC_collect_inform_callback_Proc)(int major_gc, intptr_t pre_used, intptr_t post_used);
+typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, 
+                                                intptr_t pre_used, intptr_t post_used,
+                                                intptr_t pre_admin, intptr_t post_admin);
 typedef uintptr_t (*GC_get_thread_stack_base_Proc)(void);
 /* 
    Types of the traversal procs (supplied by Racket); see overview in README

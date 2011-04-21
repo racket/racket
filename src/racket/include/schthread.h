@@ -114,6 +114,7 @@ typedef intptr_t objhead;
 /* **************************************** */
 
 typedef struct Thread_Local_Variables {
+  int scheme_current_place_id_;
   void **GC_variable_stack_;
   struct NewGC *GC_instance_;
   uintptr_t GC_gen0_alloc_page_ptr_;
@@ -430,6 +431,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 # define XOA /* empty */
 #endif
 
+#define scheme_current_place_id XOA (scheme_get_thread_local_variables()->scheme_current_place_id_)
 #define GC_objhead_template XOA (scheme_get_thread_local_variables()->GC_objhead_template_)
 #define GC_instance XOA (scheme_get_thread_local_variables()->GC_instance_)
 #define GC_gen0_alloc_page_ptr XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_ptr_)

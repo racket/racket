@@ -196,7 +196,8 @@ THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
-static void inform_GC(int major_gc, intptr_t pre_used, intptr_t post_used);
+static void inform_GC(int master_gc, int major_gc, intptr_t pre_used, intptr_t post_used,
+                      intptr_t pre_admin, intptr_t post_admin);
 #endif
 
 THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
@@ -7615,21 +7616,65 @@ static void done_with_GC()
 }
 
 #ifdef MZ_PRECISE_GC
-static void inform_GC(int major_gc, intptr_t pre_used, intptr_t post_used)
+static char *gc_num(char *nums, int v)
+/* format a number with commas */
+{
+  int i, j, len, clen, c, d;
+  for (i = 0; nums[i] || nums[i+1]; i++) {
+  }
+  i++;
+
+  sprintf(nums+i, "%d", v);
+  for (len = 0; nums[i+len]; len++) { }
+  clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
+  
+  c = 0;
+  d = (clen - len);
+  for (j = i + clen - 1; j > i; j--) {
+    if (c == 3) {
+      nums[j] = ',';
+      d--;
+      c = 0;
+    } else {
+      nums[j] = nums[j - d];
+      c++;
+    }
+  }
+
+  return nums + i;
+}
+
+static void inform_GC(int master_gc, int major_gc, 
+                      intptr_t pre_used, intptr_t post_used,
+                      intptr_t pre_admin, intptr_t post_admin)
 {
   Scheme_Logger *logger = scheme_get_main_logger();
   if (logger) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
        based on the max value-print width, and we may not be at a
        point where parameters are available. */
-    char buf[128];
-    intptr_t buflen;
+    char buf[128], nums[128];
+    intptr_t buflen, delta, admin_delta;
 
+#ifdef MZ_USE_PLACES
+# define PLACE_ID_FORMAT "%s%d:"
+#else
+# define PLACE_ID_FORMAT ""
+#endif
+
+    memset(nums, 0, sizeof(nums));
+
+    delta = pre_used - post_used;
+    admin_delta = (pre_admin - post_admin) - delta;
     sprintf(buf,
-            "GC [%s] at %" PRIdPTR " bytes; %" PRIdPTR 
-	    " collected in %" PRIdPTR " msec",
-            (major_gc ? "major" : "minor"),
-            pre_used, pre_used - post_used,
+            "GC [" PLACE_ID_FORMAT "%s] at %s(+%s) bytes;"
+            " %s(%s%s) collected in %" PRIdPTR " msec",
+#ifdef MZ_USE_PLACES
+            (master_gc ? "M" : ""), scheme_current_place_id,
+#endif
+            (major_gc ? "MAJOR" : "minor"),
+            gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
+            gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),
             end_this_gc_time - start_this_gc_time);
     buflen = strlen(buf);
 
