@@ -168,7 +168,8 @@
                                  (find-system-path 'orig-dir))))))
 
 (define (parallel-do-event-loop module-path funcname initialmsg jobqueue nprocs [stopat #f])
-  (define use-places (place-enabled?))
+;  (define use-places (place-enabled?))
+  (define use-places #f)
   (define (spawn id)
     (define wrkr (if use-places (new PlaceWorker%) (new Worker%)))
     (wrkr/spawn wrkr id module-path funcname initialmsg)
