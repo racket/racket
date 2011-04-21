@@ -679,7 +679,10 @@ terms instead.
 @specsubform/subs[(@#,def[~optional h] H-pattern maybe-optional-option)
                   ([maybe-optional-option
                     (code:line)
-                    (code:line #:defaults ([attr-id expr] ...))])]{
+                    (code:line #:defaults ([attr-arity-decl expr] ...))]
+                   [attr-arity-decl
+                    attr-id
+                    (attr-id depth)])]{
 
 Matches either the given head subpattern or an empty sequence of
 terms. If the @scheme[#:defaults] option is given, the subsequent
@@ -696,8 +699,11 @@ default attributes must be a subset of the subpattern's attributes.
 (syntax-parse #'(m a b c)
   [(_ (~optional (~seq #:foo x)) y:id ...)
    (attribute x)])
+(syntax-parse #'(m #:syms a b c)
+  [(_ (~optional (~seq #:nums n:nat ...) #:defaults ([(n 1) null]))
+      (~optional (~seq #:syms s:id ...) #:defaults ([(s 1) null])))
+   #'((n ...) (s ...))])
 ]
-
 }
 
 @specsubform[(@#,def[~describe h] expr H-pattern)]{

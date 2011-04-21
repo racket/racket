@@ -33,28 +33,19 @@ Here is the specification of @scheme[mylet]'s syntax:
 For simplicity, we handle only the first case for now. We return to
 the second case later in the introduction.
 
-First, we import @scheme[syntax-parse] into the @tech[#:doc '(lib
-"scribblings/reference/reference.scrbl")]{transformer environment},
-since we will use it to implement a macro transformer.
-
-@myinteraction[(require (for-syntax syntax/parse))]
-
-We get the first version of @scheme[mylet] by essentially
-transliterating the syntax specification above. The result is similar
-to what one would write using @scheme[syntax-rules] or perhaps
-@scheme[syntax-case].
+The macro can be implemented very simply using
+@racket[define-syntax-rule]:
 
 @myinteraction[
-(define-syntax (mylet stx)
-  (syntax-parse stx
-    [(_ ([var-id rhs-expr] ...) body ...+)
-     #'((lambda (var-id ...) body ...) rhs-expr ...)]))
+(define-syntax-rule (mylet ([var rhs] ...) body ...)
+  ((lambda (var ...) body ...) rhs ...))
 ]
 
-Note the use of @scheme[...] and @scheme[...+] in the pattern;
-@scheme[...] means match zero or more repetitions of the preceding
-pattern; @scheme[...+] means match one or more. Only @scheme[...] may
-be used in the template, however.
+When used correctly, the macro works, but it behaves very badly in the
+presence of errors. In some cases, the macro merely fails with an
+uninformative error message; in others, it blithely accepts illegal
+syntax and passes it along to @scheme[lambda], with strange
+consequences:
 
 @myinteraction[
 (mylet ([a 1] [b 2]) (+ a b))
@@ -63,20 +54,39 @@ be used in the template, however.
 (mylet ([#:x 1] [y 2]) (* x y))
 ]
 
-When used correctly, the macro works, but it behaves very badly in the
-presence of errors. In some cases, @scheme[mylet] blithely accepts
-illegal syntax and passes it along to @scheme[lambda], with strange
-consequences.
-
 These examples of illegal syntax are not to suggest that a typical
 programmer would make such mistakes attempting to use
-@scheme[mylet]. At least, not often. After an initial learning
+@scheme[mylet]. At least, not often, not after an initial learning
 curve. But macros are also used by inexpert programmers and as targets
 of other macros (or code generators), and many macros are far more
 complex than @scheme[mylet]. Macros must validate their syntax and
 report appropriate errors. Furthermore, the macro writer benefits from
 the @emph{machine-checked} specification of syntax in the form of more
 readable, maintainable code.
+
+We can improve the error behavior of the macro by using
+@racket[syntax-parse]. First, we import @scheme[syntax-parse] into the
+@tech[#:doc '(lib
+"scribblings/reference/reference.scrbl")]{transformer environment},
+since we will use it to implement a macro transformer.
+
+@myinteraction[(require (for-syntax syntax/parse))]
+
+The following is the syntax specification above transliterated into a
+@racket[syntax-parse] macro definition. It behaves no better than the
+version using @racket[define-syntax-rule] above.
+
+@myinteraction[
+(define-syntax (mylet stx)
+  (syntax-parse stx
+    [(_ ([var-id rhs-expr] ...) body ...+)
+     #'((lambda (var-id ...) body ...) rhs-expr ...)]))
+]
+
+One minor difference is the use of @scheme[...+] in the pattern;
+@scheme[...] means match zero or more repetitions of the preceding
+pattern; @scheme[...+] means match one or more. Only @scheme[...] may
+be used in the template, however.
 
 The first step toward validation and high-quality error reporting is
 annotating each of the macro's pattern variables with the @tech{syntax
