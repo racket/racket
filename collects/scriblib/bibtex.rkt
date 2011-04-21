@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/function
+         racket/match
          racket/list)
 
 (define-syntax-rule
@@ -11,85 +12,97 @@
     (define this-cite
       (curry cite bibtex-db))))
 
-(require parser-tools/lex
-         parser-tools/yacc
-         (prefix-in : parser-tools/lex-sre))
-
-(define-empty-tokens toks (AT LBRACE RBRACE COMMA EQUALS HASH EOF))
-(define-tokens rtoks (NUM TAG STR))
-(define bibtex-lex
-  (lexer-src-pos
-   ["@" (token-AT)]
-   ["{" (token-LBRACE)]
-   ["}" (token-RBRACE)]
-   ["," (token-COMMA)]
-   ["=" (token-EQUALS)]
-   ["#" (token-HASH)]
-   [(:: "%" (complement (:: any-string #\newline any-string)))
-    (return-without-pos (bibtex-lex input-port))]
-   [(:+ (char-range "0" "9"))
-    (token-NUM (string->number lexeme))]
-   [(:: alphabetic (complement (:: any-string (:or whitespace (char-set "{},")) any-string)))
-    (token-TAG (string-downcase lexeme))]
-   #;[(:: #\" (complement (:: any-string #\" any-string)) #\")
-    (token-STR (substring lexeme 1 (sub1 (string-length lexeme))))]
-   [(eof) (token-EOF)]
-   [any-char (return-without-pos (bibtex-lex input-port))]))
-
-(define bibtex-parse
-  (parser
-   (src-pos)
-   (tokens toks rtoks)
-   (end EOF)
-   (start db)
-   (error
-    (lambda (tok-ok? tok-name tok-value start-pos end-pos)
-      (error 'bibtex-parse
-             "Received ~a token ~a(~s) at ~a:~a-~a:~a"
-             (if tok-ok? "valid" "invalid")
-             tok-name tok-value
-             (position-line start-pos) (position-col start-pos)
-             (position-line end-pos) (position-col end-pos))))
-   (grammar
-    (db [() empty]
-        [(entry db) (cons $1 $2)])
-    (entry
-     [(AT TAG LBRACE elems RBRACE)
-      (vector $2 $4)])
-    (elems
-     [() empty]
-     [(elem) (list $1)]
-     [(elem COMMA elems) (cons $1 $3)])
-    (elem
-     [(TAG EQUALS val)
-      (vector $1 $3)]
-     [(TAG)
-      $1]
-     [(NUM)
-      (number->string $1)])
-    (val
-     [(NUM) $1]
-     [(STR) $1]
-     [(TAG) $1]
-     [(LBRACE bvals RBRACE)
-      $2]
-     [(val HASH val)
-      (cons $1 $3)])
-    (bval
-     [(val) $1]
-     [(COMMA) ","])
-    (bvals
-     [() empty]
-     [(bval bvals) (cons $1 $2)]))))
+(define (bibtex-parse ip)
+  (define (read-while pred ip)
+    (match (peek-char ip)
+      [(? pred)
+       (read-char ip)
+       (read-until pred ip)]
+      [_
+       (void)]))
+  (define (read-until pred ip)
+    (list->string
+     (let loop ()
+      (match (peek-char ip)
+        [(? pred)
+         (cons (read-char ip) (loop))]
+        [_
+         empty]))))
+  
+  (define (slurp-whitespace ip)
+    (read-while char-whitespace? ip))
+    
+  (define (read-entries ip)
+    (slurp-whitespace ip)
+    (match (read-char ip)
+      [#\%
+       (read-line ip)
+       (read-entries ip)]
+      [#\@
+       (cons (read-entry ip)
+             (read-entries ip))]
+      [c
+       (error 'read-entries "Expected % or @, got ~a" c)]))
+  
+  (define (read-entry ip)
+    (match (peek-string 6 0 ip)
+      [(app string-downcase "string")
+       (read-string 6 ip)
+       (slurp-whitespace ip)
+       (match (read-char ip)
+         [#\{
+          (slurp-whitespace ip)
+          (define tag (read-tag ip))
+          (printf "tag ~a\n" tag)
+          (slurp-whitespace ip)
+          (match (read-char ip)
+            [#\=
+             (slurp-whitespace ip)
+             (define string (read-value ip))
+             (printf "string (~a,~a)\n" tag string)
+             (slurp-whitespace ip)
+             (match (read-char ip)
+               [#\}
+                (cons tag string)]
+               [c
+                (error 'read-entry "Parsing string, expected }, got ~a" c)])]
+            [c
+             (error 'read-entry "Parsing string, expected =, got ~a" c)])]
+         [c
+          (error 'read-entry "Parsing string, expected {, got ~a" c)])]))
+  
+  (define (read-tag ip)
+    (slurp-whitespace ip)
+    (read-until char-whitespace? ip))
+  
+  (define (read-value ip)
+    (slurp-whitespace ip)
+    (match (peek-char ip)
+      [#\{
+       (read-char ip)
+       (define first-part (read-until (λ (c) (or (char=? c #\{) (char=? c #\}))) ip))
+       (match (peek-char ip)
+         [#\{
+          (printf "Inner read: ~a\n" first-part)
+          (string-append first-part (read-value ip))]
+         [#\}
+          (read-char ip)
+          first-part])]
+      [c
+       (error 'read-value "Parsing value, expected {, got ~a" c)]))
+  
+  (with-handlers
+      ([exn? (λ (x)
+               (printf "~a\n" (read-string 100 ip))
+               (raise x))])
+    (read-entries ip)))
 
 (define (path->bibdb pth)
   (printf "~a\n"
           (with-input-from-file
               pth
             (λ ()
-              (port-count-lines! (current-input-port))
-              (bibtex-parse
-               (λ () (bibtex-lex (current-input-port)))))))
+              (bibtex-parse (current-input-port)))))
   (error 'path->bibdb pth)
   #f)
 
