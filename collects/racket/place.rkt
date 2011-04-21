@@ -87,7 +87,7 @@
         (apply make-prefab-struct 
                key 
                (map dcw (cdr (vector->list (struct->vector o)))))]
-      [else (raise-mismatch-error 'place-channel-send "cannot transmit a message containing " o)]))
+      [else (raise-mismatch-error 'place-channel-send "cannot transmit a message containing value: " o)]))
 
   (dcw x))
 
