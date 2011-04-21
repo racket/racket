@@ -38,7 +38,7 @@ AC_ARG_ENABLE(jit,     [  --enable-jit            compile JIT support (enabled b
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
 
-AC_ARG_ENABLE(places,  [  --enable-places         compile places support])
+AC_ARG_ENABLE(places,  [  --enable-places         compile places support (usually enabled by default)])
 AC_ARG_ENABLE(futures, [  --enable-futures        compile futures support (usually enabled by default)])
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
@@ -1006,11 +1006,11 @@ fi
 
 ############### places ###################
 
-#if test "${enable_parallel_by_default}" = "yes" ; then
-#  if test "${enable_places}" = "" ; then
-#    enable_places=yes
-#  fi
-#fi
+if test "${enable_parallel_by_default}" = "yes" ; then
+  if test "${enable_places}" = "" ; then
+    enable_places=yes
+  fi
+fi
 
 if test "${enable_places}" = "yes" ; then
   AC_DEFINE(MZ_USE_PLACES,1,[Places enabled])
