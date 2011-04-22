@@ -4,6 +4,12 @@
 
    . Removed the "DrScheme" compatability program.
 
+   . Improved the speed of the module browser drawing
+
+   . Added search to the standalone module browser window
+
+   . Minor bug fixes
+
 ------------------------------
         Version 5.1
 ------------------------------
