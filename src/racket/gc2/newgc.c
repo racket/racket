@@ -2133,6 +2133,20 @@ inline static void clear_stack_pages(NewGC *gc)
   }
 }
 
+inline static void free_all_stack_pages(NewGC *gc)
+{
+  if(gc->mark_stack) {
+    MarkSegment *temp;
+
+    /* go to the head of the list */
+    for(; gc->mark_stack->prev; gc->mark_stack = gc->mark_stack->prev) {}
+    /* then go through and clear them out */
+    for(; gc->mark_stack; gc->mark_stack = temp) {
+      temp = gc->mark_stack->next;
+      free(gc->mark_stack);
+    }
+  }
+}
 inline static void reset_pointer_stack(NewGC *gc)
 {
   /* go to the head of the list */
@@ -4520,6 +4534,7 @@ static void free_child_gc(void)
   }
 
   free_page_maps(gc->page_maps);
+  free_all_stack_pages(gc);
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
@@ -4555,7 +4570,7 @@ void GC_free_all(void)
   free(gc->mark_table);
   free(gc->fixup_table);
   free_page_maps(gc->page_maps);
-
+  free_all_stack_pages(gc);
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
