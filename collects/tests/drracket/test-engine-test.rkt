@@ -375,8 +375,8 @@
       (when (regexp-match re:out-of-sync got)
         (error 'test-expression "got out of sync message"))
       (unless (check-expectation defs-expected got)
-        (printf (make-err-msg defs-expected) 
-                'definitions (language) expression defs-expected got)))
+        (eprintf (make-err-msg defs-expected) 
+                 'definitions (language) expression defs-expected got)))
 
     (let ((text
 	   (cond
@@ -392,20 +392,20 @@
        ((and (null? signature-violations-expected)
 	     (null? check-failures-expected))
 	(when text
-	  (printf "FAILED: ~s ~s expected ~s to produce no check failures or signature violations:\ngot:\n~a\ninstead\n"
-		  'definitions (language) expression text)))
+	  (eprintf "FAILED: ~s ~s expected ~s to produce no check failures or signature violations:\ngot:\n~a\ninstead\n"
+                   'definitions (language) expression text)))
        (text
 	(let-values (((test-count test-passed-count signature-violation-count check-failures signature-violations)
 		      (parse-test-failures text)))
 	  (when (not (equal? check-failures check-failures-expected))
-	    (printf "FAILED: ~s ~s expected ~s to produce check failures:\n~s\ngot:\n~s\ninstead\n"
-		    'definitions (language) expression check-failures-expected check-failures))
+	    (eprintf "FAILED: ~s ~s expected ~s to produce check failures:\n~s\ngot:\n~s\ninstead\n"
+                     'definitions (language) expression check-failures-expected check-failures))
 	  (when (not (equal? signature-violations signature-violations-expected))
-	    (printf "FAILED: ~s ~s expected ~s to produce signature violations:\n~s\ngot:\n~s\ninstead\n"
-		    'definitions (language) expression signature-violations-expected signature-violations))))
+	    (eprintf "FAILED: ~s ~s expected ~s to produce signature violations:\n~s\ngot:\n~s\ninstead\n"
+                     'definitions (language) expression signature-violations-expected signature-violations))))
        (else
-	(printf "expected ~a check failures and ~a signature violations but got none"
-		(length check-failures-expected) (length signature-violations-expected)))))
+        (eprintf "expected ~a check failures and ~a signature violations but got none"
+                 (length check-failures-expected) (length signature-violations-expected)))))
     ; #### do same for REPL
     
     (queue-callback/res
@@ -433,7 +433,7 @@
         (when (regexp-match re:out-of-sync got)
           (error 'test-expression "got out of sync message"))
         (unless (check-expectation repl-expected got)
-          (printf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))))
+          (eprintf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))))
 
 
 
@@ -441,9 +441,9 @@
   (syntax-case stx ()
     [(_ arg)
      (identifier? (syntax arg))
-     (syntax (begin (printf ">> starting ~a\n" (syntax->datum #'arg))
+     (syntax (begin (printf ">> starting ~a\n" 'arg)
                     (arg)
-                    (printf ">> finished ~a\n" (syntax->datum #'arg))))]))
+                    (printf ">> finished ~a\n" 'arg)))]))
 
 (define (run-test)
   (preferences:set 'test-engine:test-window:docked? #t)
