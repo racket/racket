@@ -692,8 +692,9 @@
 (define-language sexp (sexp variable string number hole (sexp ...)))
 
 (define-for-syntax (metafunc name)
-  (let ([tf (syntax-local-value name (λ () #f))])
-    (and (term-fn? tf) (term-fn-get-id tf))))
+  (and (identifier? name)
+       (let ([tf (syntax-local-value name (λ () #f))])
+         (and (term-fn? tf) (term-fn-get-id tf)))))
 
 (define-for-syntax (metafunc/err name stx)
   (let ([m (metafunc name)])
@@ -707,21 +708,50 @@
     #`((compile #,lang '#,what) `pattern)))
 
 (define-syntax (generate-term stx)
-  (syntax-case stx ()
-    [(_ lang pat size . kw-args)
-     (with-syntax ([generator (syntax/loc stx (generate-term lang pat))])
-       (syntax/loc stx
-         (generator size . kw-args)))]
-    [(name lang pat)
-     #`(let ([generate #,(term-generator #'lang #'pat (syntax-e #'name))])
-         (with-contract
-          name #:result 
-          (->* (natural-number/c)
-               (#:attempt-num natural-number/c #:retries natural-number/c)
-               any)
-          (λ (size #:attempt-num [attempt-num 1] #:retries [retries default-retries])
-            (let-values ([(term _) (generate size attempt-num retries)])
-              term))))]))
+  (define form-name
+    (syntax-case stx ()
+      [(name . _) (syntax-e #'name)]))
+  (define-values (raw-generators args)
+    (syntax-case stx ()
+      [(_ #:source src . rest)
+       (values 
+        (cond [(metafunc #'src) 
+               => (λ (f)
+                    #`(let* ([f #,f]
+                             [L (metafunc-proc-lang f)]
+                             [compile-pat (compile L '#,form-name)])
+                            (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
+                                 (metafunc-proc-cases f))))]
+              [else
+               #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" form-name)]
+                        [L (reduction-relation-lang r)]
+                        [compile-pat (compile L '#,form-name)])
+                       (map (λ (p) (compile-pat ((rewrite-proc-lhs p) L)))
+                            (reduction-relation-make-procs r)))])
+        #'rest)]
+      [(_ lang pat . rest)
+       (values #`(list #,(term-generator #'lang #'pat form-name))
+               #'rest)]))
+  (define generator-syntax
+    #`(make-generator #,raw-generators '#,form-name #,(client-name stx form-name) #,(src-loc-stx stx)))
+  (syntax-case args ()
+    [()
+     generator-syntax]
+    [(size . kw-args)
+     (quasisyntax/loc stx
+       (#,generator-syntax size . kw-args))]))
+
+(define (make-generator raw-generators form-name client-name src-loc)
+  (contract (->* (natural-number/c)
+                 (#:attempt-num natural-number/c #:retries natural-number/c)
+                 any)
+            (λ (size #:attempt-num [attempt-num 1] #:retries [retries default-retries])
+              (let-values ([(term _) ((match raw-generators
+                                        [(list g) g]
+                                        [_ (pick-from-list raw-generators)])
+                                      size attempt-num retries)])
+                term))
+            form-name client-name #f src-loc))
 
 (define-for-syntax (show-message stx)
   (syntax-case stx ()
@@ -793,7 +823,7 @@
                (parameterize ([attempt->size #,size-stx])
                #,(if source-stx
                      #`(let-values ([(metafunc/red-rel num-cases) 
-                                     #,(cond [(and (identifier? source-stx) (metafunc source-stx))
+                                     #,(cond [(metafunc source-stx)
                                               => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
                                              [else
                                               #`(let ([r #,(apply-contract #'reduction-relation? source-stx 

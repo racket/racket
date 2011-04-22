@@ -34,19 +34,24 @@
              (syntax rest))]
       [else (raise-syntax-error #f "bad keyword argument syntax" source rest)])))
 
+(define (client-name stx form)
+  (let ([m (syntax-source-module stx)])
+    (cond [(module-path-index? m)
+           (format "~a" (module-path-index-resolve m))]
+          [(or (symbol? m) (path? m))
+           (format "~a" m)]
+          [else (format "~s client" form)])))
+
+(define (src-loc-stx stx)
+  #`#(#,(syntax-source stx)
+      #,(syntax-line stx) 
+      #,(syntax-column stx) 
+      #,(syntax-position stx)
+      #,(syntax-span stx)))
+
 (define (apply-contract ctc expr desc form)
   #`(contract #,ctc #,expr
-              #,(let ([m (syntax-source-module expr)])
-                  (cond [(module-path-index? m)
-                         (format "~a" (module-path-index-resolve m))]
-                        [(or (symbol? m) (path? m))
-                         (format "~a" m)]
-                        [else (format "~s client" form)]))
-              '#,form #,desc
-              #(#,(syntax-source expr)
-                #,(syntax-line expr) 
-                #,(syntax-column expr) 
-                #,(syntax-position expr)
-                #,(syntax-span expr))))
+              #,(client-name expr form) '#,form
+              #,desc #,(src-loc-stx expr)))
 
-(provide parse-kw-args apply-contract)
+(provide (all-defined-out))

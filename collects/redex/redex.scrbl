@@ -1257,24 +1257,62 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
            (values (covered-cases equals-coverage)
                    (covered-cases plus-coverage))))]
 
-@defform*/subs[[(generate-term language @#,ttpattern size-expr kw-args ...)
-                (generate-term language @#,ttpattern)]
-              ([kw-args (code:line #:attempt-num attempts-expr)
+@defform*/subs[[(generate-term term-spec size-expr kw-args ...)
+                (generate-term term-spec)]
+              ([term-spec (code:line language @#,ttpattern)
+                          (code:line #:source metafunction)
+                          (code:line #:source relation-expr)]
+               [kw-args (code:line #:attempt-num attempts-expr)
                         (code:line #:retries retries-expr)])
               #:contracts ([size-expr natural-number/c]
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
                                                              
-In its first form, @racket[generate-term] produces a random term matching
-the given pattern (according to the given language). In its second, 
-@racket[generate-term] produces a procedure for constructing the same.
+In its first form, @racket[generate-term] produces a random term according
+to @racket[term-spec], which is either a language and a pattern, the name
+of a metafunction, or an expression producing a reduction relation. In the
+first of these cases, the produced term matches the given pattern (interpreted 
+according to the definition of the given language). In the second and third cases, 
+the produced term matches one of the clauses of the specified metafunction or
+reduction relation.
+
+In its second form, @racket[generate-term] produces a procedure for constructing 
+terms according to @racket[term-spec].
 This procedure expects @racket[size-expr] (below) as its sole positional
 argument and allows the same optional keyword arguments as the first form.
 The second form may be more efficient when generating many terms.
 
 The argument @racket[size-expr] bounds the height of the generated term
 (measured as the height of its parse tree). 
-         
+
+@examples[
+#:eval redex-eval
+       (define-language L
+         (n number))
+       
+       (generate-term L (+ n_1 n_2) 5)
+       
+       (define R
+         (reduction-relation 
+          L
+          (--> (one-clause n) ())
+          (--> (another-clause n) ())))
+       
+       (random-seed 0)
+       
+       (generate-term #:source R 5)
+       
+       (define R-left-hand-sides
+         (generate-term #:source R))
+       (R-left-hand-sides 0)
+       (R-left-hand-sides 1)
+       
+       (define-metafunction L
+         [(F one-clause n) ()]
+         [(F another-clause n) ()])
+                                   
+       (generate-term #:source F 5)]
+
 The optional keyword argument @racket[attempt-num-expr] 
 (default @racket[1]) provides coarse grained control over the random
 decisions made during generation; increasing @racket[attempt-num-expr]

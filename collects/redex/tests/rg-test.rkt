@@ -38,7 +38,7 @@
        (test-contract-violation 
         (output (λ () expr))
         #:blaming "rg-test"
-        #:message ""
+        #:message name
         #:extract (match-lambda
                     [(exn:fail:redex:test _ _ (? exn:fail:contract:blame? e) _) e]
                     [x x])))]))
@@ -220,14 +220,57 @@
 (let ()
   (define-language L
     (n 1))
+  
   (test ((generate-term L n) 0) 1)
   (test ((generate-term L n) 0 #:retries 0) 1)
   (test ((generate-term L n) 0 #:attempt-num 0) 1)
+
   (test (with-handlers ([exn:fail:syntax? exn-message])
           (parameterize ([current-namespace ns])
             (expand #'(generate-term M n))))
         #rx"generate-term: expected a identifier defined by define-language( in: M)?$")
-  (test-contract-violation/client (generate-term L n 1.5)))
+  (test-contract-violation/client (generate-term L n 1.5))
+  (test-contract-violation/client (generate-term L n 1 #:retries .5))
+  (test-contract-violation/client (generate-term L n 1 #:attempt-num .5))
+  (test-contract-violation/client "#:source" (generate-term #:source 'not-a-reduction-relation)))
+
+(let ([set-rand-2 
+       (λ (to-be prg)
+         (parameterize ([current-pseudo-random-generator prg])
+           (random-seed 
+            (case to-be
+              [(0) 5]
+              [(1) 0]))))])
+  
+  (set-rand-2 0 (current-pseudo-random-generator))
+  (test (random 2) 0)
+  (set-rand-2 1 (current-pseudo-random-generator))
+  (test (random 2) 1)
+  
+  (define-language L)
+  (define R
+    (reduction-relation 
+     L
+     (--> a 1)
+     (--> b 2)))
+  (define-metafunction L
+    [(F a) 1]
+    [(F b) 2])
+  
+  (set-rand-2 0 (redex-pseudo-random-generator))
+  (test (generate-term #:source R 0) 'a)
+  (set-rand-2 1 (redex-pseudo-random-generator))
+  (test ((generate-term #:source R) 0) 'b)
+  
+  (set-rand-2 0 (redex-pseudo-random-generator))
+  (test ((generate-term #:source F) 0) '(a))
+  (set-rand-2 1 (redex-pseudo-random-generator))
+  (test (generate-term #:source F 0) '(b))
+  
+  (let ([before (pseudo-random-generator->vector (redex-pseudo-random-generator))])
+    (generate-term L () 0)
+    (test (pseudo-random-generator->vector (redex-pseudo-random-generator))
+          before)))
 
 ;; variable-except pattern
 (let ()
