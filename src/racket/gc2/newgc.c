@@ -1506,7 +1506,6 @@ void GC_dispose_short_message_allocator(void *param) {
       exit(1);
     }
     free_orphaned_page(gc, tmp);
-    free_mpage(tmp);
   }
   free(msgm);
 }
