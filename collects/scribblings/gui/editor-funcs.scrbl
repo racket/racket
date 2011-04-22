@@ -99,7 +99,7 @@ Appends menu items to a given menu (not a popup menu) to implement a
  font face or style. The callback for each menu item uses
 @xmethod[top-level-window<%> get-edit-target-object] (finding the frame by following a chain of parents until a frame is
  reached); if the result is an @racket[editor<%>] object,
-@xmethod[editor<%> change-style] is called on the editor.
+@xmethod[text% change-style] or @xmethod[pasteboard% change-style] is called on the editor.
 
 }
 
