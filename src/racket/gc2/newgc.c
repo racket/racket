@@ -3895,6 +3895,15 @@ static inline void cleanup_vacated_pages(NewGC *gc) {
   gc->release_pages = NULL;
 }
 
+inline static void gen0_free_entire_nursery(NewGC *gc) {
+  mpage *work = gc->gen0.pages;
+  while(work) {
+    mpage *next = work->next;
+    gen0_free_mpage(gc, work);
+    work = next;
+  }
+}
+
 inline static void gen0_free_big_pages(NewGC *gc) {
   mpage *work;
   mpage *next;
@@ -4495,6 +4504,7 @@ static void free_child_gc(void)
   PageMap pagemap = gc->page_maps;
 
   gen0_free_big_pages(gc);
+  gen0_free_entire_nursery(gc);
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
@@ -4527,6 +4537,7 @@ void GC_free_all(void)
   remove_signal_handler(gc);
 
   gen0_free_big_pages(gc);
+  gen0_free_entire_nursery(gc);
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
