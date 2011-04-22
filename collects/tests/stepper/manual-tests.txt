@@ -10,8 +10,6 @@ warning when the program window disappears.
 Try stepping backward and forward through programs with correct and erroneous
 (syntax errors, runtime errors) executions.
 
-Test programs with syntax errors
-
 Try programs which print snips (print-convert-test.ss)
 
 try programs that contain test cases; make sure that the popups behave sensibly.
