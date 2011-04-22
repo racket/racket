@@ -143,6 +143,7 @@
     (define display-event-space #f)
     (define silent-mode #t)
     (define test-run-since-last-display? #f)
+    (define first-test-since-run? #t)
 
     (super-instantiate ())
 
@@ -153,6 +154,7 @@
     (define/public (add-analysis a) (send test-info add-analysis a))
 
     (define/public (setup-info style)
+      (set! first-test-since-run? #t)
       (set! test-info (make-object (info-class) style)))
     (define/pubment (setup-display cur-rep event-space)
       (set! test-display (make-object display-class cur-rep))
@@ -173,7 +175,8 @@
 
     (define/public (summarize-results port)
       (cond
-       ((not test-run-since-last-display?))
+       ((and (not test-run-since-last-display?)
+             (not first-test-since-run?)))
        ((test-execute)
         (unless test-display (setup-display #f #f))
 	(send test-display install-info test-info)
@@ -191,6 +194,7 @@
 		 (display-results display-rep display-event-space)]))))
        (else
 	(display-disabled port)))
+      (set! first-test-since-run? #f)
       (set! test-run-since-last-display? #f))
 
     (define/private (display-success port event-space count)
