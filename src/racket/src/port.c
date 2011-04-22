@@ -278,11 +278,11 @@ typedef struct Scheme_FD {
 # endif
 } Scheme_FD;
 
-# define MZ_FLUSH_NEVER 0
-# define MZ_FLUSH_BY_LINE 1
-# define MZ_FLUSH_ALWAYS 2
-
 #endif
+
+#define MZ_FLUSH_NEVER 0
+#define MZ_FLUSH_BY_LINE 1
+#define MZ_FLUSH_ALWAYS 2
 
 #ifdef SOME_FDS_ARE_NOT_SELECTABLE
 # include <fcntl.h>
