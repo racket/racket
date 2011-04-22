@@ -586,6 +586,7 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
 }
 
 void scheme_place_instance_destroy() {
+  scheme_end_futures_per_place();
 #if defined(MZ_USE_PLACES)
   scheme_kill_green_thread_timer();
 #endif
