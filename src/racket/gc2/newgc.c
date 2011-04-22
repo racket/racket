@@ -2193,6 +2193,8 @@ int GC_merely_accounting()
 /* administration / initialization                                           */
 /*****************************************************************************/
 
+static void free_child_gc(void);
+
 inline static int page_mmu_type(mpage *page) {
   switch (page->size_class) { 
     case 0: /* SMALL_PAGE , GEN0_PAGE */
@@ -2585,7 +2587,8 @@ void GC_destruct_child_gc() {
       waiting = 1;
     }
   } while (waiting == 1);
-  GC_free_child_gc();
+
+  free_child_gc();
 }
 
 
@@ -4482,7 +4485,8 @@ void GC_dump_variable_stack(void **var_stack,
 /******************************************************************************/
 /*                              GC free all                                   */
 /******************************************************************************/
-void GC_free_child_gc(void)
+
+static void free_child_gc(void)
 {
   NewGC *gc = GC_get_GC();
   int i;
