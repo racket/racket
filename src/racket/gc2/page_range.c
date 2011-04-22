@@ -35,6 +35,14 @@ static Page_Range *page_range_create()
   return pr;
 }
 
+static void page_range_free(Page_Range *pr)
+{
+  if (pr) {
+    free(pr->range_alloc_block);
+    free(pr);
+  }
+}
+
 static void page_range_add(Page_Range *pr, void *_start, uintptr_t len, int writeable)
 {
   GC_MP_CNT_INC(mp_pr_add_cnt);

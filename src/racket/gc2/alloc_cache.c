@@ -22,6 +22,16 @@ static AllocCacheBlock *alloc_cache_create() {
   return ofm_malloc_zero(sizeof(AllocCacheBlock) * BLOCKFREE_CACHE_SIZE); 
 }
 
+static ssize_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree);
+static ssize_t alloc_cache_free(AllocCacheBlock *ac) {
+  if (ac) {
+    ssize_t s = alloc_cache_free_all_pages(ac);
+    free(ac);
+    return s;
+  }
+  return 0;
+}
+
 static int alloc_cache_block_compare(const void *a, const void *b)
 {
   if ((uintptr_t)((AllocCacheBlock *)a)->start < (uintptr_t)((AllocCacheBlock *)b)->start)
@@ -157,6 +167,23 @@ static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
         blockfree[i].len = 0;
       } else
         blockfree[i].age++;
+    }
+  }
+  return freed;
+}
+
+static ssize_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
+{
+  int i;
+  ssize_t freed = 0;
+  alloc_cache_collapse_pages(blockfree);
+
+  for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
+    if (blockfree[i].start) {
+        os_free_pages(blockfree[i].start, blockfree[i].len);
+        freed -= blockfree[i].len;
+        blockfree[i].start = NULL;
+        blockfree[i].len = 0;
     }
   }
   return freed;

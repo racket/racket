@@ -112,12 +112,15 @@ static MMU *mmu_create(NewGC *gc) {
 }
 
 static void mmu_free(MMU *mmu) {
+  /* printf("MMU ALLOCATED PRE  %li\n", mmu->memory_allocated); */
 #ifdef USE_BLOCK_CACHE
-  block_cache_free(mmu->block_cache);
+  mmu->memory_allocated += block_cache_free(mmu->block_cache);
 #elif !( defined(_WIN32) || defined(OSKIT) )
-  free(mmu->alloc_caches[0]);
-  free(mmu->alloc_caches[1]);
+  page_range_free(mmu->page_range);
+  mmu->memory_allocated += alloc_cache_free(mmu->alloc_caches[0]);
+  mmu->memory_allocated += alloc_cache_free(mmu->alloc_caches[1]);
 #endif
+  /* printf("MMU ALLOCATED POST %li\n", mmu->memory_allocated); */
   free(mmu);
 }
 

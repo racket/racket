@@ -11,11 +11,13 @@ static void   os_protect_pages(void *p, size_t len, int writable);
 
 struct block_desc;
 static AllocCacheBlock *alloc_cache_create();
+static ssize_t alloc_cache_free(AllocCacheBlock *);
 static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty);
 static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree);
 static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff);
 
 static Page_Range *page_range_create();
+static void page_range_free(Page_Range *pr);
 static void page_range_flush(Page_Range *pr, int writeable);
 static void page_range_add(Page_Range *pr, void *_start, uintptr_t len, int writeable);
 
@@ -62,15 +64,18 @@ static BlockCache* block_cache_create(MMU *mmu) {
   bc->atomic.atomic = 1;
   gclist_init(&bc->non_atomic.full);
   gclist_init(&bc->non_atomic.free);
-  bc->atomic.atomic = 0;
+  bc->non_atomic.atomic = 0;
   bc->bigBlockCache = alloc_cache_create();
   bc->page_range = page_range_create();
   bc->mmu = mmu;
   return bc;
 }
 
-static void block_cache_free(BlockCache* bc) {
+static ssize_t block_cache_free(BlockCache* bc) {
+  ssize_t acf = alloc_cache_free(bc->bigBlockCache);
+  page_range_free(bc->page_range);
   free(bc);
+  return acf;
 }
 
 static block_desc *bc_alloc_std_block(block_group *bg) {
