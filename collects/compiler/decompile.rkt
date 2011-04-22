@@ -307,6 +307,7 @@
          ,@(if (and name (not (null? name)))
                `(',name)
                null)
+         ,@(if (null? flags) null `('(flags: ,@flags)))
          ,@(if (null? captures)
                null
                `('(captures: ,@(map (lambda (c t)
