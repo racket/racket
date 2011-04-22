@@ -118,10 +118,10 @@ END
   (test 6.0 flvector-ref flv2 2)
 
   (test "Ready2.1" place-channel-send/receive pl fxv1)
-  (test 5.0 fxector-ref fxv1 2)
+  (test 5 fxvector-ref fxv1 2)
 
   (test "Ready2.2" place-channel-send/receive pl fxv2)
-  (test 6.0 fxector-ref fxv2 2)
+  (test 6 fxvector-ref fxv2 2)
 
   (test "Ready3" place-channel-send/receive pl b1)
   (test 67 bytes-ref b1 2)
