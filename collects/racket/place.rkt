@@ -6,7 +6,8 @@
          '#%place-struct
          racket/fixnum
          racket/flonum
-         racket/vector)
+         racket/vector
+         (for-syntax racket/base))
 
 (provide place
          place-sleep
@@ -19,6 +20,9 @@
          place?
          place-channel-send/receive
          processor-count
+         place/anon
+         place/thunk
+         define-place
          (rename-out [pl-place-enabled? place-enabled?]))
 
 (define-struct TH-place (th ch cust) 
@@ -124,3 +128,33 @@
 (define-pl place-channel-receive pl-place-channel-receive th-place-channel-receive)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
+
+(define-syntax-rule (define-syntax-case (N a ...) b ...)
+  (define-syntax (N stx)
+    (syntax-case stx ()
+      [(_ a ...) b ...])))
+
+(define-for-syntax (gen-create-place stx)
+ (syntax-case stx ()
+   [(_ ch body ...)
+     (with-syntax ([interal-def-name
+                    (syntax-local-lift-expression #'(lambda (ch) body ...))]
+                   [funcname #'OBSCURE_FUNC_NAME_%#%])
+      (syntax-local-lift-provide #'(rename interal-def-name funcname))
+      #'(let ([module-path (resolved-module-path-name
+              (variable-reference->resolved-module-path
+               (#%variable-reference)))])
+       (place module-path (quote funcname))))]))
+
+(define-syntax (place/thunk stx)
+  (with-syntax ([create-place (gen-create-place stx)])
+    #'(lambda () create-place)))
+
+(define-syntax (place/anon stx)
+  (gen-create-place stx))
+
+
+(define-syntax (define-place stx)
+ (syntax-case stx ()
+   [(_ (name ch) body ...)
+    #'(define name (place/thunk ch body ...))]))

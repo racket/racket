@@ -127,6 +127,25 @@ racket
   Terminates the place indicated by @racket[p],
 }
 
+
+@defform[(place/thunk place-channel? body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[place/thunk] closes over only module scope variables.
+  Returns a thunk for creating the described place.
+}
+
+@defform[(place/anon place-channel? body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[place/anon] closes over only module scope variables.
+  Returns the place descriptor for the newly constructed place.
+}
+
+@defform[(define-place (place-name-id place-channel-id) body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[define-place] closes over only module scope variables.
+  Defines a procedure for creating the described place.
+}
+
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
   Returns two @tech{place channels}. Data sent through the first

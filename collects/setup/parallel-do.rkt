@@ -371,28 +371,3 @@
         (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
         (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
         (queue/results wq))]))
-
-(define-syntax-rule (define-syntax-case (N a ...) b ...)
-  (define-syntax (N stx)
-    (syntax-case stx ()
-      [(_ a ...) b ...])))
-
-(define-for-syntax (gen-create-place stx)
- (syntax-case stx ()
-   [(_ ch body ...)
-     (with-syntax ([interal-def-name
-                    (syntax-local-lift-expression #'(lambda (ch) body ...))]
-                   [funcname #'OBSCURE_FUNC_NAME_%#%])
-      (syntax-local-lift-provide #'(rename interal-def-name funcname))
-      #'(let ([module-path (resolved-module-path-name
-              (variable-reference->resolved-module-path
-               (#%variable-reference)))])
-       (place module-path (quote funcname))))]))
-
-(define-syntax (place/thunk stx)
-  (with-syntax ([create-place (gen-create-place stx)])
-    #'(lambda () create-place)))
-
-(define-syntax (place/anon stx)
-  (gen-create-place stx))
-
