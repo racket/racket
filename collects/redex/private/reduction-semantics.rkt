@@ -2253,11 +2253,13 @@
       (print-failed srcinfo)
       (inc-failures)
       (begin
-        (fprintf (current-error-port) "no reachable term ~a ~a" 
-                 (if (procedure? goal) "satisfying" "equal to")
-                 goal)
+        (if (procedure? goal)
+            (fprintf (current-error-port) 
+                     "no term satisfying ~a reachable from ~a" goal start)
+            (fprintf (current-error-port) 
+                     "term ~a not reachable from ~a" goal start))
         (when (search-failure-cutoff? result)
-          (fprintf (current-error-port) " (but some terms were not explored)"))
+          (fprintf (current-error-port) " (within ~a steps)" steps))
         (newline (current-error-port))))))
 
 (define-syntax (test-predicate stx)
