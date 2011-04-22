@@ -36,7 +36,7 @@ Removes all user-selectable items from the control.
 
 }
 
-@defmethod[(find-string [s string])
+@defmethod[(find-string [s string?])
            (or/c exact-nonnegative-integer? false/c)]{
 Finds a user-selectable item matching the given string. If no matching
  choice is found, @scheme[#f] is returned, otherwise the index of the
@@ -96,7 +96,7 @@ is called.
 
 }
 
-@defmethod[(set-string-selection [s string])
+@defmethod[(set-string-selection [s string?])
            void?]{
 Selects the item that matches the given string.  If no match
  is found in the list control, @|MismatchExn|.

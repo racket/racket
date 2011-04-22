@@ -765,8 +765,7 @@ The vector content is as follows:
 ]}
 
 
-@defmethod[(glyph-exists? [c char]
-                          [font (or/c (is-a?/c font%) false/c) #f])
+@defmethod[(glyph-exists? [c char?])
            boolean?]{
 
 Returns @scheme[#t] if the given character has a corresponding glyph
@@ -836,8 +835,10 @@ A color (e.g. for a brush) also has an alpha value; it is combined
 with the drawing context's alpha by multiplying.}
 
 
-@defmethod[(set-background [color (is-a?/c color%)])
-           void?]{
+@defmethod*[([(set-background [color (is-a?/c color%)])
+              void?]
+             [(set-background [color-name string?])
+              void?])]{
 
 Sets the background color for drawing in this object (e.g., using
 @method[dc<%> clear] or using a stippled @scheme[brush%] with the mode
@@ -1032,8 +1033,10 @@ The @scheme['aligned] smoothing mode is like @scheme['smoothed], but
 
 }
 
-@defmethod[(set-text-background [color (is-a?/c color%)])
-           void?]{
+@defmethod*[([(set-text-background [color (is-a?/c color%)])
+              void?]
+             [(set-text-background [color-name string?])
+              void?])]{
 
 Sets the current text background color for this object. The text
  background color is painted behind text that is drawn with
@@ -1044,8 +1047,10 @@ For monochrome drawing, all non-white colors are treated as black.
 
 }
 
-@defmethod[(set-text-foreground [color (is-a?/c color%)])
-           void?]{
+@defmethod*[([(set-text-foreground [color (is-a?/c color%)])
+              void?]
+             [(set-text-foreground [color-name string?])
+              void?])]{
 
 Sets the current text foreground color for this object, used for
  drawing text with

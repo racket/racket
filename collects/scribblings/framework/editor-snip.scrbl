@@ -73,10 +73,10 @@
 }
 
 @defclass[editor-snip:decorated-snipclass% snip-class% ()]{
-  @defmethod[(make-snip [stream-in (is-a?/c editor-stream-in%)]) -editor-snip:decorated<%>]{
+  @defmethod[(make-snip [stream-in (is-a?/c editor-stream-in%)]) (is-a?/c editor-snip:decorated<%>)]{
    Returns an instance of @scheme[editor-snip:decorated%].
   }
-  @defmethod[(read [stream-in (is-a?/c editor-stream-in%)]) editor-snip:decorated<%>]{
+  @defmethod[(read [stream-in (is-a?/c editor-stream-in%)]) (is-a?/c editor-snip:decorated<%>)]{
    Calls @method[editor-snip:decorated-snipclass% make-snip] to get an object and
    then invokes its @scheme[editor<%>]'s @method[editor<%> read-from-file] method
    in order to read a snip from @scheme[stream-in], eg:

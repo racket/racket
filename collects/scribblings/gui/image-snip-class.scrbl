@@ -25,7 +25,7 @@ Creates an image snip, loading the image @racket[file] if
 }
 
 
-@defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
+@defmethod[(equal-hash-code-of [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
 Returns an integer that can be used as a @racket[equal?]-based hash
@@ -34,7 +34,7 @@ code for @this-obj[] (using the same notion of @racket[equal?] as
 
 See also @racket[equal<%>].}
 
-@defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
+@defmethod[(equal-secondary-hash-code-of [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
 Returns an integer that can be used as a @racket[equal?]-based

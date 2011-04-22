@@ -10,13 +10,13 @@
   Classes matching this interface support the basic 
   @scheme[frame%]
   functionality required by the framework.
-  @defmethod*[(((get-area-container%) (is-a?/c area-container<%>)))]{
+  @defmethod*[(((get-area-container%) (implementation?/c area-container<%>)))]{
     The class that this method returns is used to create the
     @scheme[area-container<%>]
     in this frame.
 
   }
-  @defmethod*[(((get-area-container) (instance (is-a?/c area-container<%>))))]{
+  @defmethod*[(((get-area-container) (is-a?/c area-container<%>)))]{
     This returns the main 
     @scheme[area-container<%>]
     in the frame
@@ -30,7 +30,7 @@
     Return
     @scheme[menu-bar%].
   }
-  @defmethod*[(((make-root-area-container (class (is-a?/c area-container<%>)) (parent (instance (is-a?/c area-container<%>)))) (instance (is-a?/c area-container<%>))))]{
+  @defmethod*[(((make-root-area-container (class (implementation?/c area-container<%>)) (parent (is-a?/c area-container<%>))) (is-a?/c area-container<%>)))]{
     Override this method to insert a panel in between the panel used by
     the clients of this frame and the frame itself. For example, to insert
     a status line panel override this method with something like this:
@@ -74,14 +74,14 @@
               (show #f)))])]
 
   }
-  @defmethod*[(((editing-this-file? (filename path)) boolean?))]{
+  @defmethod*[(((editing-this-file? (filename path?)) boolean?))]{
     Indicates if this frame contains this buffer (and can edit
     that file).
 
 
     Returns @scheme[#f].
   }
-  @defmethod*[(((get-filename (temp (or/c #f (box boolean?)) #f)) (or/c #f path)))]{
+  @defmethod*[(((get-filename (temp (or/c #f (box boolean?)) #f)) (or/c #f path?)))]{
     This returns the filename that the frame is currently being saved as,
     or @scheme[#f] if there is no appropriate filename.
 
@@ -91,7 +91,7 @@
     If @scheme[temp] is a box, it is filled with @scheme[#t] or @scheme[#f],
     depending if the filename is a temporary filename.
   }
-  @defmethod*[(((make-visible (filename string)) void?))]{
+  @defmethod*[(((make-visible (filename string?)) void?))]{
     Makes the file named by @scheme[filename] visible (intended for
     use with tabbed editing).
 
@@ -173,7 +173,7 @@
     method.
 
   }
-  @defmethod*[#:mode override (((on-drop-file (pathname string)) void?))]{
+  @defmethod*[#:mode override (((on-drop-file (pathname string?)) void?))]{
 
     Calls 
     @scheme[handler:edit-file]
@@ -206,7 +206,7 @@
     @scheme[frame:setup-size-pref].
 
   }
-  @defmethod*[#:mode override (((on-size (width number) (height number)) void?))]{
+  @defmethod*[#:mode override (((on-size (width number?) (height number?)) void?))]{
 
     Updates the preferences, according to the width and
     height. The preferences key is the one passed
@@ -222,7 +222,7 @@
 @defmixin[frame:register-group-mixin (frame:basic<%>) (frame:register-group<%>)]{
   During initialization, calls
   @method[group:% insert-frame]with @scheme[this].
-  @defmethod*[#:mode augment (((can-close?) bool))]{
+  @defmethod*[#:mode augment (((can-close?) boolean?))]{
 
     Calls the inner method, with a default of @scheme[#t].
     If that returns @scheme[#t], 
@@ -311,7 +311,7 @@
 }
 @defmixin[frame:status-line-mixin (frame:basic<%>) (frame:status-line<%>)]{
 
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (instanceof (subclass?/c panel%)))) (is-a?/c panel%)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (is-a?/c panel%))) (is-a?/c panel%)))]{
 
     Adds a panel at the bottom of the frame to hold the status
     lines.
@@ -326,7 +326,7 @@
   status line is visible and if it is @scheme[#f], the
   status line is not visible (see 
   @scheme[preferences:get] for more info about preferences)
-  @defmethod*[(((determine-width (str string) (canvas (instance editor-canvas%)) (text (instance text%))) integer))]{
+  @defmethod*[(((determine-width (str string) (canvas (is-a?/c editor-canvas%)) (text (is-a?/c text%))) integer))]{
     This method is used to calculate the size of an
     @scheme[editor-canvas%]
     with a particular set of characters in it. 
@@ -345,7 +345,7 @@
     This method updates all of the information in the panel.
 
   }
-  @defmethod*[(((set-info-canvas (canvas (instance canvas:basic%))) void?))]{
+  @defmethod*[(((set-info-canvas (canvas (or/c (is-a?/c canvas:basic%) #f))) void?))]{
     Sets this canvas to be the canvas that the info frame shows info about. The
     @method[canvas:info-mixin% on-focus]
     and
@@ -353,7 +353,7 @@
     methods call this method to ensure that the info canvas is set correctly.
 
   }
-  @defmethod*[(((get-info-canvas) (instance canvas:basic%)))]{
+  @defmethod*[(((get-info-canvas) (or/c (is-a?/c canvas:basic%) #f)))]{
     Returns the canvas that the
     @scheme[frame:info<%>]
     currently shows info about. See also
@@ -368,7 +368,7 @@
     Returns the result of
     @method[frame:editor<%> get-editor].
   }
-  @defmethod*[(((get-info-panel) (instance horizontal-panel%)))]{
+  @defmethod*[(((get-info-panel) (is-a?/c horizontal-panel%)))]{
     This method returns the panel where the information about this editor
     is displayed.
 
@@ -403,7 +403,7 @@
 
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c area-container<%>)) (parent (is-a?/c area-container<%>))) (instance area-container<%>)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c area-container<%>)) (parent (is-a?/c area-container<%>))) (is-a?/c area-container<%>)))]{
 
     Builds an extra panel for displaying various information.
   }
@@ -489,11 +489,11 @@
     @method[frame:editor<%> set-label-prefix].
 
   }
-  @defmethod*[(((get-label-prefix) string))]{
+  @defmethod*[(((get-label-prefix) string?))]{
     This returns the prefix for the frame's label.
 
   }
-  @defmethod*[(((set-label-prefix (prefix string)) void?))]{
+  @defmethod*[(((set-label-prefix (prefix string?)) void?))]{
     Sets the prefix for the label of the frame.
 
   }
@@ -506,13 +506,13 @@
     Returns 
     @scheme[editor-canvas%].
   }
-  @defmethod*[(((get-canvas<%>) (instance canvas:basic%)))]{
+  @defmethod*[(((get-canvas<%>) (is-a?/c canvas:basic%)))]{
     The result of this method is used to guard the result of the
     @method[frame:editor<%> get-canvas%]
     method. 
 
   }
-  @defmethod*[(((get-editor%) (is-a?/c editor<%>)))]{
+  @defmethod*[(((get-editor%) (implementation?/c editor<%>)))]{
     The result of this class is used to create the 
     @scheme[editor<%>]
     in this frame.
@@ -522,7 +522,7 @@
 
     Returns the value of the init-field @scheme[editor%].
   }
-  @defmethod*[(((get-editor<%>) interface))]{
+  @defmethod*[(((get-editor<%>) interface?))]{
     The result of this method is used by 
     @method[frame:editor<%> make-editor]
     to check that 
@@ -533,7 +533,7 @@
     Returns
     @scheme[editor<%>].
   }
-  @defmethod*[(((make-editor) (instance (is-a?/c editor<%>))))]{
+  @defmethod*[(((make-editor) (is-a?/c editor<%>)))]{
     This method is called to create the editor in this frame.
     It calls
     @method[frame:editor<%> get-editor<%>]
@@ -571,14 +571,14 @@
     Returns @scheme[#f] if the user cancells the file-choosing
     dialog and returns @scheme[#t] otherwise.
   }
-  @defmethod*[(((get-canvas) (instance (subclass?/c canvas%))))]{
+  @defmethod*[(((get-canvas) (is-a?/c canvas%)))]{
     Returns the canvas used to display the 
     @scheme[editor<%>]
     in this frame.
 
 
   }
-  @defmethod*[(((get-editor) (instance (is-a?/c editor<%>))))]{
+  @defmethod*[(((get-editor) (is-a?/c editor<%>)))]{
     Returns the editor in this frame.
   }
 }
@@ -597,12 +597,12 @@
   @defconstructor[((filename string?) (editor% (is-a?/c editor<%>)) (parent (or/c (is-a?/c frame%) false/c) #f) (width (or/c (integer-in 0 10000) false/c) #f) (height (or/c (integer-in 0 10000) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (or/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (or/c (quote left) (quote center) (quote right)) (or/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
 
   }
-  @defmethod*[#:mode override (((get-filename) (or/c #f path)))]{
+  @defmethod*[#:mode override (((get-filename) (or/c #f path?)))]{
 
     Returns the filename in the editor returned by
     @method[frame:editor<%> get-editor].
   }
-  @defmethod*[#:mode override (((editing-this-file? (filename path)) boolean?))]{
+  @defmethod*[#:mode override (((editing-this-file? (filename path?)) boolean?))]{
 
     Returns @scheme[#t] if the filename is the file that this
     frame is editing.
@@ -619,7 +619,7 @@
     @scheme[editor:basic<%>]'s method
     @method[editor:basic<%> can-close?].
   }
-  @defmethod*[#:mode override (((get-label) string))]{
+  @defmethod*[#:mode override (((get-label) string?))]{
 
     Returns the portion of the label after the hyphen. See also
     @method[frame:editor<%> get-entire-label].
@@ -629,7 +629,7 @@
     Sets the label, but preserves the label's prefix. See also
     @method[frame:editor<%> set-label-prefix].
   }
-  @defmethod*[#:mode override (((file-menu:open-callback (item any) (evt mouse-event)) void?))]{
+  @defmethod*[#:mode override (((file-menu:open-callback (item (is-a?/c menu-item<%>)) (evt (is-a?/c mouse-event%))) void?))]{
 
     Calls
     @scheme[handler:open-file]
@@ -689,7 +689,7 @@
 
     Creates a Print Setup menu item.
   }
-  @defmethod*[#:mode override (((edit-menu:between-select-all-and-find (edit-menu (instance menu%))) void?))]{
+  @defmethod*[#:mode override (((edit-menu:between-select-all-and-find (edit-menu (is-a?/c menu%))) void?))]{
 
     Adds a menu item for toggling
     @method[editor<%> auto-wrap]
@@ -751,7 +751,7 @@
     Sets the label of @scheme[item] to 
     @scheme["New..."] if the preference @scheme['framework:open-here?] is set. 
   }
-  @defmethod*[#:mode override (((file-menu:new-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void?))]{
+  @defmethod*[#:mode override (((file-menu:new-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     When the preference @scheme['framework:open-here?]
     preference is set, this method prompts the user, asking if
@@ -823,7 +823,7 @@
   in these method descriptions refers to the
   original editor and the term @bold{delegatee} refers to the
   editor showing the 20,000 feet overview.
-  @defmethod*[(((get-delegated-text) (instanceof (is-a?/c text:delegate<%>))))]{
+  @defmethod*[(((get-delegated-text) (is-a?/c text:delegate<%>)))]{
     Returns the delegate text.
 
   }
@@ -868,7 +868,7 @@
 @defmixin[frame:delegate-mixin (frame:status-line<%> frame:text<%>) (frame:delegate<%>)]{
   Adds support for a 20,000-feet view via
   @scheme[text:delegate<%>] and @scheme[text:delegate-mixin]
-  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (instanceof (subclass?/c panel%)))) (is-a?/c panel%)))]{
+  @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (is-a?/c panel%))) (is-a?/c panel%)))]{
 
     adds a panel outside to hold the delegate
     @scheme[editor-canvas%] and @scheme[text%].
@@ -1019,7 +1019,7 @@
 }
 @defmixin[frame:searchable-text-mixin (frame:text<%> frame:searchable<%>) (frame:searchable-text<%>)]{
 
-  @defmethod*[#:mode override-final (((get-text-to-search) (instanceof text%)))]{
+  @defmethod*[#:mode override-final (((get-text-to-search) (is-a?/c text%)))]{
 
     Returns the result of
     @method[frame:editor<%> get-editor].

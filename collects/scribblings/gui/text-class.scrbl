@@ -323,8 +323,7 @@ See also @method[text% hide-caret].
 }
 
 
-@defmethod*[#:mode extend
-            ([(change-style [delta (or/c (is-a?/c style-delta%) #f)]
+@defmethod*[([(change-style [delta (or/c (is-a?/c style-delta%) #f)]
                             [start (or/c exact-nonnegative-integer? 'start) 'start]
                             [end (or/c exact-nonnegative-integer? 'end) 'end]
                             [counts-as-mod? any/c #t])
@@ -343,6 +342,13 @@ Changes the style for a region in the editor by applying a style delta
  the end of the selection.  If @scheme[counts-as-mod?] is @scheme[#f],
  then @method[editor<%> set-modified] is not called after applying the
  style change.
+
+To change a large collection of snips from one style to another style,
+ consider providing a @scheme[style<%>] instance rather than a
+ @scheme[style-delta%] instance. Otherwise, @method[text%
+ change-style] must convert the @scheme[style-delta%] instance to the
+ @scheme[style<%>] instance for every snip; this conversion consumes
+ both time and (temporary) memory.
 
 When @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 

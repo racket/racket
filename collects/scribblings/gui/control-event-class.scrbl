@@ -10,7 +10,7 @@ A @scheme[control-event%] object contains information about a
 @defconstructor[([event-type (one-of/c 'button 'check-box 'choice
                                        'list-box 'list-box-dclick 'list-box-column
                                        'text-field 'text-field-enter 
-                                       'slider 'radio-box 'tab-panel
+                                       'menu 'slider 'radio-box 'tab-panel
                                        'menu-popdown 'menu-popdown-none)]
                 [time-stamp exact-integer? 0])]{
 
@@ -45,7 +45,7 @@ See @method[event% get-time-stamp] for information about
 @defmethod[(get-event-type)
            (one-of/c 'button 'check-box 'choice
                      'list-box 'list-box-dclick 'text-field 
-                     'text-field-enter 'slider 'radio-box 
+                     'text-field-enter 'menu 'slider 'radio-box 
                      'menu-popdown 'menu-popdown-none 'tab-panel)]{
 Returns the type of the control event. See
 @scheme[control-event%] for information about each event type symbol.
@@ -55,7 +55,7 @@ Returns the type of the control event. See
 @defmethod[(set-event-type
             [type (one-of/c 'button 'check-box 'choice
                             'list-box 'list-box-dclick 'text-field 
-                            'text-field-enter 'slider 'radio-box 
+                            'text-field-enter 'menu 'slider 'radio-box 
                             'menu-popdown 'menu-popdown-none 'tab-panel)])
            void?]{
 

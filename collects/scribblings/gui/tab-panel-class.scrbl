@@ -108,7 +108,7 @@ Removes all tabs from the panel and installs tabs with the given
 
 @defmethod[(set-item-label [n exact-nonnegative-integer?]
                            [label label-string?])
-           string?]{
+           void?]{
 
 Set the label for tab @scheme[n] to @scheme[label]. If @scheme[n] is equal to
  or larger than the number of tabs in the panel, @|MismatchExn|.

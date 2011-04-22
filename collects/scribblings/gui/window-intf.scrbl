@@ -192,7 +192,7 @@ If the window does not have a label, @scheme[#f] is returned.
 
 
 @defmethod[(get-plain-label)
-           (or/c string #f)]{
+           (or/c string? #f)]{
 
 Like
 @method[window<%> get-label], except that ampersands in the label are removed. If the window has
@@ -283,7 +283,7 @@ The result is @scheme[#t] if this window is shown when its ancestors are
 }
 
 
-@defmethod[(on-drop-file [pathname path])
+@defmethod[(on-drop-file [pathname path?])
            void?]{
 
 @index["drag-and-drop"]{Called} when the user drags a file onto the

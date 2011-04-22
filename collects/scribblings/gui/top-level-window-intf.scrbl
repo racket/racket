@@ -75,7 +75,7 @@ See also @method[top-level-window<%> get-focus-window] and
 }
 
 @defmethod[(get-eventspace)
-           eventspace]{
+           eventspace?]{
 Returns the window's eventspace.
 
 }

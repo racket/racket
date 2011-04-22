@@ -10,7 +10,7 @@ A @scheme[checkable-menu-item%] is a string-labelled menu item that
 
 
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a?/c menu% popup-menu%))]
+                 [parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%))]
                  [callback ((is-a?/c checkable-menu-item%) (is-a?/c control-event%) . -> . any) 
                            (lambda (i e) (void))]
                  [shortcut (or/c char? symbol? false/c) #f]

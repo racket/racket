@@ -25,7 +25,7 @@
                                                             exact-nonnegative-integer?
                                                             exact-nonnegative-integer?
                                                             any/c))))
-                               (pairs (listof (list/p symbol? symbol?)))) void))]{
+                               (pairs (listof (list/c symbol? symbol?)))) void?))]{
     Starts tokenizing the buffer for coloring and parenthesis matching.
 
     The @scheme[token-sym->style] argument will be passed the first return symbol from @scheme[get-token],
@@ -107,14 +107,14 @@
     closing parenthesis, each closing symbol in pairs will be converted to
     a string and tried as a closing parenthesis.
   }
-  @defmethod*[(((stop-colorer (clear-colors boolean #t)) void))]{
+  @defmethod*[(((stop-colorer (clear-colors boolean? #t)) void?))]{
     Stops coloring and paren matching the buffer.
 
 
     If @scheme[clear-colors] is true all the text in the buffer will have its
     style set to Standard.
   }
-  @defmethod*[(((force-stop-colorer (stop? boolean?)) void))]{
+  @defmethod*[(((force-stop-colorer (stop? boolean?)) void?))]{
     Causes the entire tokenizing/coloring system to become inactive.
     Intended for debugging purposes only.
 
@@ -133,14 +133,14 @@
     @method[color:text<%> thaw-colorer].
 
   }
-  @defmethod*[(((freeze-colorer) void))]{
+  @defmethod*[(((freeze-colorer) void?))]{
     Keep the text tokenized and paren matched, but stop altering the colors.
 
     @scheme[freeze-colorer] will not return until the coloring/tokenization of the
     entire text is brought up-to-date.  It must not be called on a locked
     text.
   }
-  @defmethod*[(((thaw-colorer (recolor boolean #t) (retokenize boolean #f)) void))]{
+  @defmethod*[(((thaw-colorer (recolor boolean? #t) (retokenize boolean? #f)) void?))]{
     Start coloring a frozen buffer again.
 
 
@@ -153,19 +153,19 @@
     background after the call to @scheme[thaw-colorer] returns.
 
   }
-  @defmethod*[(((reset-region (start natural-number?) (end (union (quote end) natural-number?))) void))]{
+  @defmethod*[(((reset-region (start natural-number/c) (end (or/c (quote end) natural-number/c))) void?))]{
     Set the region of the text that is tokenized.
 
   }
-  @defmethod*[(((reset-regions (regions (listof (list number (union (quote end) number))))) void))]{
+  @defmethod*[(((reset-regions (regions (listof (list/c number? (or/c (quote end) number?))))) void?))]{
 
     Sets the currently active regions to be @scheme[regions].
   }
-  @defmethod*[(((get-regions) (listof (list number (union (quote end) number)))))]{
+  @defmethod*[(((get-regions) (listof (list/c number? (or/c (quote end) number?)))))]{
     This returns the list of regions that are currently being colored in the editor.
 
   }
-  @defmethod*[(((skip-whitespace (position natural-number?) (direction (symbols (quote forward) (quote backward))) (comments? boolean?)) natural-number?))]{
+  @defmethod*[(((skip-whitespace (position natural-number/c) (direction (symbols (quote forward) (quote backward))) (comments? boolean?)) natural-number/c))]{
     Returns the next non-whitespace character.
 
     Starts from position and skips whitespace in the direction indicated
@@ -175,7 +175,7 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((backward-match (position natural-number?) (cutoff natural-number?)) (union natural-number? false?)))]{
+  @defmethod*[(((backward-match (position natural-number/c) (cutoff natural-number/c)) (or/c natural-number/c false?)))]{
 
     Skip all consecutive whitespaces and comments (using @scheme[skip-whitespace])
     immediately preceding the position.  If the token at this position is
@@ -185,14 +185,14 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((backward-containing-sexp (position natural-number?) (cutoff natural-number?)) (union natural-number? false?)))]{
+  @defmethod*[(((backward-containing-sexp (position natural-number/c) (cutoff natural-number/c)) (or/c natural-number/c false?)))]{
 
     Return the starting position of the interior of the (non-atomic)
     s-expression containing position, or @scheme[#f] is there is none.
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((forward-match (position natural-number?) (cutoff natural-number?)) (union natural-number? false?)))]{
+  @defmethod*[(((forward-match (position natural-number/c) (cutoff natural-number/c)) (or/c natural-number/c false?)))]{
 
     Skip all consecutive whitespaces and comments (using @scheme[skip-whitespace])
     immediately following position.  If the token at this position is an
@@ -201,7 +201,7 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((insert-close-paren (position natural-number?) (char char?) (flash? boolean?) (fixup? boolean?)) void))]{
+  @defmethod*[(((insert-close-paren (position natural-number/c) (char char?) (flash? boolean?) (fixup? boolean?)) void?))]{
 
     The @scheme[position] is the place to put the parenthesis, and @scheme[char] is the
     parenthesis to be added (e.g., that the user typed).  If @scheme[fixup?] is true, the right kind of closing
@@ -236,7 +236,7 @@
     It is called when the lexer's state changes from valid to invalid (and back). 
     The @racket[valid?] argument indicates if the lexer has finished running over the editor (or not).
     
-    The default method just returns @racket[(void)].
+    The default method just returns @racket[(void?)].
   }
   
   @defmethod[#:mode public-final (is-lexer-valid?) boolean?]{
@@ -247,22 +247,22 @@
 @defmixin[color:text-mixin (text:basic<%>) (color:text<%>)]{
   Adds the functionality needed for on-the-fly coloring and parenthesis
   matching based on incremental tokenization of the text.
-  @defmethod*[#:mode override (((lock) void))]{
+  @defmethod*[#:mode override (((lock) void?))]{
   }
-  @defmethod*[#:mode override (((on-focus) void))]{
+  @defmethod*[#:mode override (((on-focus) void?))]{
   }
-  @defmethod*[#:mode augment (((after-edit-sequence) void))]{
+  @defmethod*[#:mode augment (((after-edit-sequence) void?))]{
   }
-  @defmethod*[#:mode augment (((after-set-position) void))]{
+  @defmethod*[#:mode augment (((after-set-position) void?))]{
   }
-  @defmethod*[#:mode augment (((after-change-style) void))]{
+  @defmethod*[#:mode augment (((after-change-style) void?))]{
   }
-  @defmethod*[#:mode augment (((on-set-size-constraint) void))]{
+  @defmethod*[#:mode augment (((on-set-size-constraint) void?))]{
 
   }
-  @defmethod*[#:mode augment (((after-insert) void))]{
+  @defmethod*[#:mode augment (((after-insert) void?))]{
   }
-  @defmethod*[#:mode augment (((after-delete) void))]{
+  @defmethod*[#:mode augment (((after-delete) void?))]{
   }
 }
 @defclass[color:text% (color:text-mixin text:keymap%) ()]{}
@@ -278,9 +278,9 @@
     The arguments are passed to 
     @method[color:text<%> start-colorer].
   }
-  @defmethod*[#:mode override (((on-disable-surrogate) void))]{
+  @defmethod*[#:mode override (((on-disable-surrogate) void?))]{
   }
-  @defmethod*[#:mode override (((on-enable-surrogate) void))]{
+  @defmethod*[#:mode override (((on-enable-surrogate) void?))]{
   }
 }
 @defclass[color:text-mode% (color:text-mode-mixin mode:surrogate-text%) ()]{}

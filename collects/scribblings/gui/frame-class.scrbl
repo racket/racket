@@ -297,7 +297,7 @@ If a mask bitmap is provided, the mask must be monochrome. In the mask
 
 }
 
-@defmethod[(set-status-text [text string])
+@defmethod[(set-status-text [text string?])
            void?]{
 
 Sets the frame's status line text and redraws the status line. See

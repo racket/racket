@@ -456,8 +456,7 @@ Returns @scheme[#t].
 }}
 
 
-@defmethod*[#:mode override
-            ([(change-style [style (or/c (is-a?/c style-delta%) (is-a?/c style<%>) #f) #f]
+@defmethod*[([(change-style [style (or/c (is-a?/c style-delta%) (is-a?/c style<%>) #f) #f]
                             [snip (or/c (is-a?/c snip%) #f) #f])
               void?])]{
 
@@ -466,7 +465,12 @@ Changes the style of @scheme[snip] to a specific style or by applying
  selected snips are changed. If @scheme[style] is @scheme[#f], then 
  the default style is used, according to @method[editor<%> default-style-name].
  
- See also @xmethod[editor<%> change-style].
+To change a large collection of snips from one style to another style,
+ consider providing a @scheme[style<%>] instance rather than a
+ @scheme[style-delta%] instance. Otherwise, @method[pasteboard%
+ change-style] must convert the @scheme[style-delta%] instance to the
+ @scheme[style<%>] instance for every snip; this conversion consumes
+ both time and (temporary) memory.
 
 When a @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 

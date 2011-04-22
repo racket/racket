@@ -7,7 +7,7 @@
 @definterface[panel:single<%> (area-container<%>)]{
   See 
   @scheme[panel:single-mixin%].
-  @defmethod*[(((active-child (child (is-a?/c area<%>))) void) ((active-child) (is-a?/c area<%>)))]{
+  @defmethod*[(((active-child (child (is-a?/c area<%>))) void?) ((active-child) (is-a?/c area<%>)))]{
 
     Sets the active child to be @scheme[child]
 
@@ -27,17 +27,17 @@
   The 
   @method[window<%> show]
   method is used to hide and show the children of a single panel.
-  @defmethod*[#:mode override (((after-new-child (child subarea<%>)) void))]{
+  @defmethod*[#:mode override (((after-new-child (child (is-a?/c subarea<%>))) void?))]{
 
     Hides this child by calling @scheme[(send child show #f)], unless
     this is the first child in which case it does nothing.
   }
-  @defmethod*[#:mode override (((container-size) (values exact-integer exact-integer)))]{
+  @defmethod*[#:mode override (((container-size) (values exact-integer? exact-integer?)))]{
 
     Returns the maximum width of all the children and the maximum height
     of all of the children.
   }
-  @defmethod*[#:mode override (((place-children) (listof (list exact-integer exact-integer exact-integer exact-integer))))]{
+  @defmethod*[#:mode override (((place-children) (listof (list/c exact-integer? exact-integer? exact-integer? exact-integer?))))]{
 
     Returns the positions for single panels and panes.
   }
@@ -47,7 +47,7 @@
 }
 @defmixin[panel:single-window-mixin (panel:single<%> window<%>) (panel:single-window<%>)]{
 
-  @defmethod*[#:mode override (((container-size (info (list-of (list exact-integer exact-integer boolean boolean?)))) (values exact-integer exact-integer)))]{
+  @defmethod*[#:mode override (((container-size (info (listof (list/c exact-integer? exact-integer? boolean? boolean?)))) (values exact-integer? exact-integer?)))]{
 
     Factors the border width into the size calculation.
   }
@@ -59,7 +59,7 @@
   user can adjust the percentage of the space that each takes
   up. The user adjusts the size by clicking and dragging the
   empty space between the children.
-  @defmethod*[(((after-percentage-change) void))]{
+  @defmethod*[(((after-percentage-change) void?))]{
     This method is called when the user changes the percentage
     by dragging the bar between the children, or when a new
     child is added to the frame, but not when
@@ -72,7 +72,7 @@
 
 
   }
-  @defmethod*[(((set-percentages (new-percentages (listof number))) void))]{
+  @defmethod*[(((set-percentages (new-percentages (listof number?))) void?))]{
     Call this method to set the percentages that each window
     takes up of the panel.
 
@@ -85,7 +85,7 @@
     minimum with of the child, as reported by
     @method[area<%> min-width].
   }
-  @defmethod*[(((get-percentages) (listof numbers)))]{
+  @defmethod*[(((get-percentages) (listof number?)))]{
     Return the current percentages of the children.
 
   }
@@ -124,24 +124,25 @@
   method is overridden.
 
 
-  @defmethod*[#:mode override (((after-new-child (child (instance-of (is-a?/c area<%>)))) void))]{
+  @defmethod*[#:mode override (((after-new-child (child (is-a?/c subarea<%>))) void?))]{
 
     Updates the number of percentages to make sure that it
     matches the number of children and calls
     @method[panel:dragable<%> after-percentage-change].
   }
-  @defmethod*[#:mode override (((on-subwindow-event (receiver (instanceof window<%>)) (event (instanceof mouse-event%))) boolean?))]{
+  @defmethod*[#:mode override (((on-subwindow-event (receiver (is-a?/c window<%>)) (event (is-a?/c mouse-event%))) boolean?))]{
 
     When the cursor is dragging the middle bar around, this
     method handles the resizing of the two panes.
   }
-  @defmethod*[#:mode override (((place-children (info (list-of (list exact-int exact-int))) (w exact-int) (h exact-int)) (list-of (list exact-int exact-int exact-int exact-int))))]{
+  @defmethod*[#:mode override (((place-children (info (listof (list/c exact-integer? exact-integer?))) (w exact-integer?) (h exact-integer?)) (listof (list/c exact-integer? exact-integer? exact-integer? exact-integer?))))]{
 
     Places the children vertically in the panel, based on the percentages
     returned from
     @method[panel:dragable<%> get-percentages]. Also leaves a little gap between each pair of children.
   }
-  @defmethod*[#:mode override (((container-size (info list)) two))]{
+  @defmethod*[#:mode override (((container-size (info (listof (list/c exact-integer? exact-integer? any/c any/c))))
+                                 (values exact-integer? exact-integer?)))]{
 
     Computes the minimum size the panel would have to be in
     order to have the current percentages (see 
@@ -171,37 +172,37 @@
     Returns @scheme[#f].
   }
 }
-@defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin vertical-panel%)) ()]{}
-@defclass[panel:horizontal-dragable% (panel:horizontal-dragable-mixin (panel:dragable-mixin horizontal-panel%)) ()]{}
+@defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin panel%)) ()]{}
+@defclass[panel:horizontal-dragable% (panel:horizontal-dragable-mixin (panel:dragable-mixin panel%)) ()]{}
 
 @definterface[panel:splitter<%> ()]{
   A panel that implements @scheme[panel:splitter<%>]. Children can be split
   horizonally or vertically.
 }
 
-@defmixin[panel:splitter-mixin (area-container<%> panel:dragable<%>) (splitter<%>)]{
+@defmixin[panel:splitter-mixin (area-container<%> panel:dragable<%>) (panel:splitter<%>)]{
   This mixin allows panels to split their children either horizontally or
   vertically. Children that are split can be further split independant of any
   other splitting.
 
-  @defmethod[(split-vertical (canvas (instance-of (is-a?/c canvas<%>)))
-                             (maker (-> (instance-of (is-a?/c splitter<%>))
-                                        (instance-of (is-a?/c canvas<%>)))))
-                             (instance-of (is-a?/c canvas<%>))]{
+  @defmethod[(split-vertical (canvas (is-a?/c canvas<%>))
+                             (maker (-> (is-a?/c panel:splitter<%>)
+                                        (is-a?/c canvas<%>))))
+                             (is-a?/c canvas<%>)]{
     Splits the @scheme[canvas] vertically by creating a new instance using
     @scheme[maker]. This splitter object is passed as the argument to
     @scheme[maker] and should be used as the @scheme[parent] field of the newly
     created canvas.
   }
 
-  @defmethod[(split-horizontal (canvas (instance-of (is-a?/c canvas<%>)))
-                             (maker (-> (instance-of (is-a?/c splitter<%>))
-                                        (instance-of (is-a?/c canvas<%>)))))
-                             (instance-of (is-a?/c canvas<%>))]{
+  @defmethod[(split-horizontal (canvas (is-a?/c canvas<%>))
+                             (maker (-> (is-a?/c panel:splitter<%>)
+                                        (is-a?/c canvas<%>))))
+                             (is-a?/c canvas<%>)]{
     Similar to @scheme[split-vertical] but splits horizontally.
   }
 
-  @defmethod[(collapse (canvas (instance-of (is-a?/c canvas<%>)))) void]{
+  @defmethod[(collapse (canvas (is-a?/c canvas<%>))) void]{
     Removes the given @scheme[canvas] from the splitter hierarchy and collapses
     any split panes as necessary.
   }

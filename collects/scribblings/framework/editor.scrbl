@@ -25,7 +25,7 @@
     for more info about edit sequences.
 
   }
-  @defmethod*[(((run-after-edit-sequence (thunk (-> void)) (tag (union symbol? #f) #f)) void))]{
+  @defmethod*[(((run-after-edit-sequence (thunk (-> void?)) (tag (or/c symbol? #f) #f)) void?))]{
     This method is used to install callbacks that will be run after any
     edit-sequence completes.
 
@@ -40,7 +40,7 @@
     @method[editor:basic<%> run-after-edit-sequence]'s argument will be called.
 
   }
-  @defmethod*[(((get-top-level-window) (union #f (is-a?/c top-level-window<%>))))]{
+  @defmethod*[(((get-top-level-window) (or/c #f (is-a?/c top-level-window<%>))))]{
     Returns the 
     @scheme[top-level-window<%>]
     currently associated with this buffer.
@@ -53,7 +53,7 @@
     Returns @scheme[#t] if the file on disk has been modified, by some other program.
 
   }
-  @defmethod*[(((save-file/gui-error (filename (union path #f) #f) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean?))]{
+  @defmethod*[(((save-file/gui-error (filename (or/c path? #f) #f) (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same)) (show-errors? boolean? #t)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> save-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -63,7 +63,7 @@
     no error occurred and @scheme[#f] if an error occurred.
 
   }
-  @defmethod*[(((load-file/gui-error (filename (union string #f) #f) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean?))]{
+  @defmethod*[(((load-file/gui-error (filename (or/c string? #f) #f) (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean? #t)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> load-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -73,7 +73,7 @@
     no error occurred and @scheme[#f] if an error occurred.
 
   }
-  @defmethod*[(((on-close) void))]{
+  @defmethod*[(((on-close) void?))]{
 
     This method is called when an editor is closed.
     Typically, this method is called when the frame
@@ -119,7 +119,7 @@
     @method[editor:basic<%> on-close].
 
   }
-  @defmethod*[(((get-filename/untitled-name) string))]{
+  @defmethod*[(((get-filename/untitled-name) string?))]{
     Returns the printed version of the filename for this
     editor. If the editor doesn't yet have a filename, it
     returns a symbolic name (something like "Untitled").
@@ -155,7 +155,7 @@
   This installs the global keymap @scheme[keymap:get-global] to
   handle keyboard and mouse mappings not handled by @scheme[keymap]. The
   global keymap is created when the framework is invoked.
-  @defmethod*[#:mode augment (((can-save-file? (filename string) (format symbol?)) boolean?))]{
+  @defmethod*[#:mode augment (((can-save-file? (filename string?) (format symbol?)) boolean?))]{
 
     Checks to see if the file on the disk has been modified out
     side of this editor, using
@@ -163,7 +163,7 @@
     If it has, this method prompts the user to be sure they want to save.
 
   }
-  @defmethod*[#:mode augment (((after-save-file (success? boolean?)) void))]{
+  @defmethod*[#:mode augment (((after-save-file (success? boolean?)) void?))]{
 
     If the current filename is not a temporary filename, this method calls
     @scheme[handler:add-to-recent]with the current filename.
@@ -175,14 +175,14 @@
     @method[editor:basic<%> save-file-out-of-date?].
 
   }
-  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void))]{
+  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void?))]{
 
     Updates a private instance variable with the modification
     time of the file, for using in implementing
     @method[editor:basic<%> save-file-out-of-date?]
 
   }
-  @defmethod*[#:mode override (((on-focus (on? boolean?)) void))]{
+  @defmethod*[#:mode override (((on-focus (on? boolean?)) void?))]{
     Manages the state to implement
     @method[editor:basic<%> has-focus?]
 
@@ -192,12 +192,12 @@
     Always returns @scheme[#t]. Updates a flag for
     @method[editor:basic<%> local-edit-sequence?]
   }
-  @defmethod*[#:mode augment (((after-edit-sequence) void))]{
+  @defmethod*[#:mode augment (((after-edit-sequence) void?))]{
 
     Helps to implement
     @method[editor:basic<%> run-after-edit-sequence].
   }
-  @defmethod*[#:mode override (((on-new-box (type (union (quote pasteboard) (quote text)))) (instance editor-snip%)))]{
+  @defmethod*[#:mode override (((on-new-box (type (or/c (quote pasteboard) (quote text)))) (is-a?/c editor-snip%)))]{
 
     Creates instances of 
     @scheme[pasteboard:basic%]
@@ -209,7 +209,7 @@
     @scheme[text%]
     classes. 
   }
-  @defmethod[#:mode override (on-new-image-snip [filname (or/c path? false/c)]
+  @defmethod[#:mode override (on-new-image-snip [filename (or/c path? false/c)]
   		    	                         [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
                                                  [relative-path? any/c]
                                                  [inline? any/c])
@@ -270,7 +270,7 @@
   @scheme[add-editor-keymap-functions],
   @scheme[add-text-keymap-functions], and
   @scheme[add-pasteboard-keymap-functions].
-  @defmethod*[(((get-keymaps) (list-of (instance keymap%))))]{
+  @defmethod*[(((get-keymaps) (list-of (is-a?/c keymap%))))]{
     The keymaps returned from this method are chained to this
     @scheme[editor<%>]'s keymap.
 
@@ -310,14 +310,14 @@
 }
 @definterface[editor:file<%> (editor:keymap<%>)]{
   Objects supporting this interface are expected to support files.
-  @defmethod*[(((get-can-close-parent) (union false (is-a/c? frame%) (is-a/c? dialog%))))]{
+  @defmethod*[(((get-can-close-parent) (or/c false (is-a?/c frame%) (is-a?/c dialog%))))]{
     The result of this method is used as the parent for the
     dialog that asks about closing.
 
 
     Defaultly returns @scheme[#f].
   }
-  @defmethod*[(((update-frame-filename) void))]{
+  @defmethod*[(((update-frame-filename) void?))]{
     Attempts to find a frame that displays this editor. If it
     does, it updates the frame's title based on a new filename
     in the editor.
@@ -347,7 +347,7 @@
 
   The class that this mixin produces uses the same initialization
   arguments as its input.
-  @defmethod*[#:mode override (((set-filename (name string) (temp? boolean #f)) void))]{
+  @defmethod*[#:mode override (((set-filename (name string?) (temp? boolean? #f)) void?))]{
 
     Updates the filename on each frame displaying this editor, for each
     frame that matches
@@ -369,7 +369,7 @@
 
     Also calls inner.
   }
-  @defmethod*[#:mode override (((get-keymaps) (list-of (instance keymap%))))]{
+  @defmethod*[#:mode override (((get-keymaps) (list-of (is-a?/c keymap%))))]{
 
     This returns a list containing the super-class's keymaps, plus the
     result of
@@ -399,7 +399,7 @@
 
     Returns @scheme[#t].
   }
-  @defmethod*[(((do-autosave) (union #f string)))]{
+  @defmethod*[(((do-autosave) (or/c #f path?)))]{
     This method is called to perform the autosaving.
     See also
     @scheme[autosave:register]
@@ -414,7 +414,7 @@
     Returns the filename where the autosave took place, or
     @scheme[#f] if none did.
   }
-  @defmethod*[(((remove-autosave) void))]{
+  @defmethod*[(((remove-autosave) void?))]{
     This method removes the autosave file associated with this
     @scheme[editor<%>].
 
@@ -438,15 +438,15 @@
     backup file. For the backup file's name, see
     @scheme[path-utils:generate-backup-name]
   }
-  @defmethod*[#:mode augment (((on-close) void))]{
+  @defmethod*[#:mode augment (((on-close) void?))]{
 
     Deletes the autosave file and turns off autosaving.
   }
-  @defmethod*[#:mode augment (((on-change) void))]{
+  @defmethod*[#:mode augment (((on-change) void?))]{
 
     Sets a flag indicating that this @scheme[editor<%>] needs to be autosaved.
   }
-  @defmethod*[#:mode override (((set-modified (modified? any/c)) void))]{
+  @defmethod*[#:mode override (((set-modified (modified? any/c)) void?))]{
 
     If the file is no longer modified, this method deletes the autosave
     file. If it is, it updates a flag to indicate that the autosave file
@@ -464,7 +464,7 @@
   See also
   @scheme[frame:text-info<%>].
 
-  @defmethod*[#:mode override (((lock (lock? boolean?)) void))]{
+  @defmethod*[#:mode override (((lock (lock? boolean?)) void?))]{
 
     Uses 
     @method[editor:basic<%> run-after-edit-sequence]

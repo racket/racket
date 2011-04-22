@@ -7,7 +7,7 @@
 @definterface[menu:can-restore<%> (selectable-menu-item<%>)]{
   Classes created with this mixin remember their keybindings so the
   keybindings can be removed and then restored.
-  @defmethod*[(((restore-keybinding) void))]{
+  @defmethod*[(((restore-keybinding) void?))]{
     Sets the keyboard shortcut to the setting it had when the class was
     created.
 
@@ -25,13 +25,13 @@
   is @scheme[#f], calls 
   @method[menu:can-restore-underscore<%> erase-underscores]
   during initialization.
-  @defmethod*[(((erase-underscores) void))]{
+  @defmethod*[(((erase-underscores) void?))]{
     Erases the underscores in the label of this menu, but
     remembers them so they can be restores with 
     @method[menu:can-restore-underscore<%> restore-underscores].
 
   }
-  @defmethod*[(((restore-underscores) void))]{
+  @defmethod*[(((restore-underscores) void?))]{
     Restores underscores in the menu's label to their original
     state.
 

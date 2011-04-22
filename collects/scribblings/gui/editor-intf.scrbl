@@ -332,26 +332,6 @@ Returns @scheme[#t].
 
 }}
 
-@defmethod*[([(change-style [delta (or/c (is-a?/c style-delta%) #f)])
-              void?]
-             [(change-style [style (or/c (is-a?/c style<%>) #f)])
-              void?])]{
-
-Changes the style for @techlink{items} in the editor, either by
- applying a style delta or using a specific style.
-
-To change a large collection of snips from one style to another style,
- consider providing a @scheme[style<%>] instance rather than a
- @scheme[style-delta%] instance. Otherwise, @method[editor<%>
- change-style] must convert the @scheme[style-delta%] instance to the
- @scheme[style<%>] instance for every snip; this conversion consumes
- both time and (temporary) memory.
-
-@MonitorMethod[@elem{The style within an editor} @elem{the
- system (in response to other method calls)} @elem{@xmethod[text% on-change-style]} @elem{style}]
-
-}
-
 @defmethod[(clear)
            void?]{
 

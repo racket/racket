@@ -229,19 +229,19 @@ Draws nothing.
 more specific equivalence comparison.}}
 
 @defmethod[(other-equal-to? [that (is-a?/c snip%)]
-                            [equal? (-> any/c any/ boolean?)])
+                            [equal? (-> any/c any/c boolean?)])
            boolean?]{
 @methimpl{Returns @racket[(eq? @#,(this-obj) that)].}
 }
 
-@defmethod[(equal-hash-code [hash-code (any/c . -> . exact-integer?)])
+@defmethod[(equal-hash-code-of [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
 @methspec{See @racket[equal<%>].}
  
 @methimpl{Returns @racket[(eq-hash-code @#,(this-obj))].}}
 
-@defmethod[(equal-secondary-hash-code [hash-code (any/c . -> . exact-integer?)])
+@defmethod[(equal-secondary-hash-code-of [hash-code (any/c . -> . exact-integer?)])
            exact-integer?]{
 
 @methspec{See @racket[equal<%>].}

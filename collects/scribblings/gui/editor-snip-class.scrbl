@@ -19,10 +19,10 @@ An @scheme[editor-snip%] object is a @scheme[snip%] object that
                  [top-inset exact-nonnegative-integer? 1]
                  [right-inset exact-nonnegative-integer? 1]
                  [bottom-inset exact-nonnegative-integer? 1]
-                 [min-width (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
-                 [max-width (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
-                 [min-height (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
-                 [max-height (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none])]{
+                 [min-width (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
+                 [max-width (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
+                 [min-height (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none]
+                 [max-height (or/c (and/c real? (not/c negative?)) (one-of/c 'none)) 'none])]{
 
 If @scheme[editor] is non-@scheme[#f], then it will be used as the
  editor contained by the snip. See also @method[editor-snip%
@@ -156,7 +156,7 @@ snip.
 
 
 @defmethod[(get-max-height)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
 
 Gets the maximum display height of the snip; zero or @scheme['none]
  indicates that there is no maximum.
@@ -165,7 +165,7 @@ Gets the maximum display height of the snip; zero or @scheme['none]
 
 
 @defmethod[(get-max-width)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
 
 Gets the maximum display width of the snip; zero or @scheme['none]
  indicates that there is no maximum.
@@ -173,7 +173,7 @@ Gets the maximum display width of the snip; zero or @scheme['none]
 }
 
 @defmethod[(get-min-height)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
 
 Gets the minimum display height of the snip; zero or @scheme['none]
  indicates that there is no minimum.
@@ -181,7 +181,7 @@ Gets the minimum display height of the snip; zero or @scheme['none]
 }
 
 @defmethod[(get-min-width)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) (one-of/c 'none))]{
 
 Gets the minimum display width of the snip; zero or @scheme['none]
  indicates that there is no minimum.
@@ -268,7 +268,7 @@ Sets the current margins for the snip. The margin sets how much space
 
 }
 
-@defmethod[(set-max-height [h (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-max-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
 @edsnipmax[(scheme height)]
@@ -277,7 +277,7 @@ Zero or @scheme['none] disables the limit.
 
 }
 
-@defmethod[(set-max-width [w (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-max-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
 @edsnipmax[(scheme width)] The contained editor's width limits are not
@@ -287,7 +287,7 @@ Zero or @scheme['none] disables the limit.
 
 }
 
-@defmethod[(set-min-height [h (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-min-height [h (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
 @edsnipmin[(scheme height) @elem{top}]
@@ -296,7 +296,7 @@ Zero or @scheme['none] disables the limit.
 
 }
 
-@defmethod[(set-min-width [w (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-min-width [w (or/c (and/c real? (not/c negative?)) (one-of/c 'none))])
            void?]{
 
 @edsnipmin[(scheme width) @elem{left}] The contained editor's width

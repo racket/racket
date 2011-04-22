@@ -9,7 +9,7 @@ A message control is a static line of text or a static bitmap. The
 
 
 @defconstructor[([label (or/c label-string? (is-a?/c bitmap%) 
-                              (or-of/c 'app 'caution 'stop))]
+                              (one-of/c 'app 'caution 'stop))]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'deleted)) null]

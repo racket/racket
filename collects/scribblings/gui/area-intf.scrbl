@@ -48,7 +48,7 @@ Returns the area's parent. A top-level window may have no parent (in
 }
 
 @defmethod[(get-top-level-window)
-           (or/c (is-a?/c frame%) (is-a?/c dialog))]{
+           (or/c (is-a?/c frame%) (is-a?/c dialog%))]{
 
 Returns the area's closest frame or dialog ancestor. For a frame or
  dialog area, the frame or dialog itself is returned.

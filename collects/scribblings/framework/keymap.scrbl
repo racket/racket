@@ -7,16 +7,16 @@
 @definterface[keymap:aug-keymap<%> (keymap%)]{
   This keymap overrides some of the built in @scheme[keymap%] methods
   to be able to extract the keybindings from the keymap.
-  @defmethod*[(((get-chained-keymaps) (listof (instance keymap%))))]{
+  @defmethod*[(((get-chained-keymaps) (listof (is-a?/c keymap%))))]{
 
     Returns the list of keymaps that are chained to this one.
   }
-  @defmethod*[(((get-map-function-table) hash-table))]{
+  @defmethod*[(((get-map-function-table) hash?))]{
 
     Returns a hash-table that maps symbols naming key sequences to the
     names of the keymap functions the are bound to.
   }
-  @defmethod*[(((get-map-function-table/ht (ht hash-table)) hash-table))]{
+  @defmethod*[(((get-map-function-table/ht (ht hash?)) hash?))]{
 
     This is a helper function for 
     @method[keymap:aug-keymap<%> get-map-function-table]
@@ -26,7 +26,7 @@
   }
 }
 @defmixin[keymap:aug-keymap-mixin (keymap%) (keymap:aug-keymap<%>)]{
-  @defmethod*[#:mode override (((chain-to-keymap (next (instance keymap%)) (prefix? boolean?)) void))]{
+  @defmethod*[#:mode override (((chain-to-keymap (next (is-a?/c keymap%)) (prefix? boolean?)) void))]{
 
     Keeps a list of the keymaps chained to this one.
   }

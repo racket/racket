@@ -131,8 +131,8 @@ See
 }
 
 @defmethod[(get-alignment)
-           (values (symbols/c right center left)
-                   (symbols/c bottom center top))]{
+           (values (symbols 'right 'center 'left)
+                   (symbols 'bottom 'center 'top))]{
 
 Returns the container's current alignment specification. See
 @method[area-container<%> set-alignment] for more information.
@@ -193,8 +193,8 @@ See also @method[area-container<%> container-flow-modified].
 
 }
 
-@defmethod[(set-alignment [horiz-align (symbols/c right center left)]
-                          [vert-align (symbols/c bottom center top)])
+@defmethod[(set-alignment [horiz-align (symbols 'right 'center 'left)]
+                          [vert-align (symbols 'bottom 'center 'top)])
            void?]{
 Sets the alignment specification for a container, which determines how
  it positions its children when the container has leftover space (when

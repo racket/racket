@@ -13,7 +13,7 @@
                                  (caret-space boolean? #f)
                                  (priority (symbols 'high 'low) 'low)
                                  (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
-                (-> void)))]{
+                (-> void?)))]{
     This function highlights a region of text in the buffer.
 
     The range between @scheme[start] and @scheme[end] will
@@ -87,7 +87,7 @@
     @method[text:basic<%> set-styles-fixed]when setting the styles.
 
   }
-  @defmethod*[(((set-styles-fixed (fixed? boolean?)) void))]{
+  @defmethod*[(((set-styles-fixed (fixed? boolean?)) void?))]{
     Sets the styles fixed parameter of this
     @scheme[text%]. See also 
     @method[text:basic<%> get-styles-fixed]
@@ -95,7 +95,7 @@
     @method[text:basic<%> get-fixed-style].
 
   }
-  @defmethod*[(((move/copy-to-edit (dest-text (instance text%)) (start exact-integer) (end exact-integer) (dest-pos exact-integer)) void))]{
+  @defmethod*[(((move/copy-to-edit (dest-text (is-a?/c text%)) (start exact-integer?) (end exact-integer?) (dest-pos exact-integer?)) void?))]{
     This moves or copies text and snips to another edit.
 
 
@@ -107,7 +107,7 @@
     moved. A snip may refuse to be moved by returning @scheme[#f] from
     @method[snip% release-from-owner].
   }
-  @defmethod*[(((initial-autowrap-bitmap) (union #f (instance bitmap%))))]{
+  @defmethod*[(((initial-autowrap-bitmap) (or/c #f (is-a?/c bitmap%))))]{
     The result of this method is used as the initial autowrap
     bitmap. Override this method to change the initial 
     @scheme[bitmap%]. See also
@@ -117,7 +117,7 @@
     Defaultly returns the result of 
     @scheme[icon:get-autowrap-bitmap]
   }
-  @defmethod*[(((get-port-name) symbol?))]{
+  @defmethod*[(((get-port-name) (or/c path-string? symbol? #f)))]{
 
     The result of this method is a symbol that identifies this
     editor and that is used as the port-name of a port that is
@@ -125,7 +125,7 @@
     See also
     @method[text:basic<%> port-name-matches?].
   }
-  @defmethod*[(((port-name-matches? (id (or/c path? symbol?))) boolean?))]{
+  @defmethod*[(((port-name-matches? (id any/c)) boolean?))]{
 
     Indicates if @scheme[id] matches the port name of this file. If
     the file is saved, the port name matches when the save file
@@ -157,22 +157,22 @@
 
   The class that this mixin produces uses the same initialization
   arguments as its input.
-  @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
+  @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
 
     Draws the rectangles installed by
     @method[text:basic<%> highlight-range].
   }
-  @defmethod*[#:mode augment (((on-insert (start exact-int) (end exact-int)) void))]{
+  @defmethod*[#:mode augment (((on-insert (start exact-nonnegative-integer?) (end exact-nonnegative-integer?)) void?))]{
 
     See
     @method[text:basic<%> set-styles-fixed].
   }
-  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     See
     @method[text:basic<%> set-styles-fixed].
   }
-  @defmethod*[#:mode override (((put-file (directory path) (default-name path)) void))]{
+  @defmethod*[#:mode override (((put-file (directory (or/c path? #f)) (default-name string?)) (or/c path? #f)))]{
 
     Like
     @method[editor<%> put-file]
@@ -268,7 +268,7 @@
   This mixin changes the default text style to have
   the foreground color controlled by
   @scheme[editor:set-default-font-color].
-  @defmethod*[#:mode override (((default-style-name) string))]{
+  @defmethod*[#:mode override (((default-style-name) string?))]{
 
     Returns the result of 
     @scheme[editor:get-default-color-style-name].
@@ -287,7 +287,7 @@
 }
 @defmixin[text:hide-caret/selection-mixin (text:basic<%>) (text:hide-caret/selection<%>)]{
 
-  @defmethod*[#:mode augment (((after-set-position) void))]{
+  @defmethod*[#:mode augment (((after-set-position) void?))]{
 
     Calls
     @method[text% hide-caret]
@@ -301,12 +301,12 @@
 
 }
 @defmixin[text:nbsp->space-mixin (text%) (text:nbsp->space<%>)]{
-  @defmethod*[#:mode augment (((on-insert (start exact-int) (end exact-int)) void))]{
+  @defmethod*[#:mode augment (((on-insert (start exact-nonnegative-integer?) (end exact-nonnegative-integer?)) void?))]{
 
     Starts an edit-sequence by calling
     @method[editor<%> begin-edit-sequence].
   }
-  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     Replaces all non-breaking space characters
     @scheme[(integer->char 160)]
@@ -332,7 +332,7 @@
 }
 
 @defmixin[text:normalize-paste-mixin (text:basic<%>) (text:normalize-paste<%>)]{
-  @defmethod[#:mode override (do-paste [start exact-nonnegative-integer?] [time (and/c exact? integer?)]) void?]{
+  @defmethod[#:mode override (do-paste [start exact-nonnegative-integer?] [time exact-integer?]) void?]{
     Overridden to detect when insertions are due to pasting. Sets some internal state and calls the super.
   }
   @defmethod[#:mode augment (on-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
@@ -391,8 +391,8 @@
 }
 
 @defmethod[(get-search-bubbles) 
-           (listof (list/c (cons/c number number) 
-                           (list/c number number number)))]{
+           (listof (list/c (cons/c number? number?) 
+                           (list/c number? number? number?)))]{
   Returns information about the search bubbles in the editor. Each
   item in the outermost list corresponds to a single bubble. The pair
   of numbers is the range of the bubble and the triple of numbers is
@@ -417,7 +417,7 @@
 
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
-  @defmethod*[#:mode override (((get-keymaps) (list-of (instance keymap%))))]{
+  @defmethod*[#:mode override (((get-keymaps) (listof (is-a?/c keymap%))))]{
 
     This returns a list containing the super-class's keymaps, plus the
     result of
@@ -446,7 +446,7 @@
   @defconstructor[((return (-> boolean?)))]{
 
   }
-  @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void))]{
+  @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void?))]{
 
     If @scheme[key] is either return or newline, only invoke the @scheme[return]
     thunk (initialization argument) and do nothing else.
@@ -454,7 +454,7 @@
 }
 @definterface[text:wide-snip<%> (text:basic<%>)]{
 
-  @defmethod*[(((add-wide-snip (snip (instance snip%))) void))]{
+  @defmethod*[(((add-wide-snip (snip (is-a?/c snip%))) void?))]{
     Registers a snip in this editor to be resized when its viewing area
     changes. Ensures the snip is as wide as the viewing area.
 
@@ -462,7 +462,7 @@
     @xmethod[canvas:wide-snip<%> add-wide-snip].
 
   }
-  @defmethod*[(((add-tall-snip (snip (is-a?/c snip%))) void))]{
+  @defmethod*[(((add-tall-snip (snip (is-a?/c snip%))) void?))]{
     Registers a snip in this editor. It is resized when the
     viewing area of the editor changes.
 
@@ -488,13 +488,13 @@
   The contents of the two
   editor are kept in sync, as modifications
   to this object happen.
-  @defmethod*[(((get-delegate) (union #f (instanceof text%))))]{
+  @defmethod*[(((get-delegate) (or/c #f (is-a?/c text%))))]{
     The result of this method is the @scheme[text%] object
     that the contents of this editor are being delegated to, or
     @scheme[#f], if there is none.
 
   }
-  @defmethod*[(((set-delegate (delegate (union #f (instanceof text%)))) void))]{
+  @defmethod*[(((set-delegate (delegate (or/c #f (is-a?/c text%)))) void?))]{
     This method sets the current delegate. 
 
 
@@ -521,36 +521,36 @@
   and
   @scheme[text:delegate<%>]
   interfaces.
-  @defmethod*[#:mode override (((split (position exact) (first (box (instanceof snip%))) (second (box (instanceof snip%)))) void))]{
+  @defmethod*[#:mode override (((split (position exact) (first (box/c (is-a?/c snip%))) (second (box/c (is-a?/c snip%)))) void?))]{
 
     Fills the boxes with instance of
     @scheme[text:1-pixel-string-snip%]s.
   }
-  @defmethod*[#:mode override (((copy) (instanceof snip%)))]{
+  @defmethod*[#:mode override (((copy) (is-a?/c snip%)))]{
 
     Creates and returns an instance of 
     @scheme[text:1-pixel-string-snip%].
   }
   @defmethod*[#:mode override
               (((get-extent
-                 (dc (instanceof dc<%>))
-                 (x real) (y real)
-                 (w (box (union non-negative-real-number #f)) #f)
-                 (h (box (union non-negative-real-number #f)) #f)
-                 (descent (box (union non-negative-real-number #f)) #f)
-                 (space (box (union non-negative-real-number #f)) #f)
-                 (lspace (box (union non-negative-real-number #f)) #f)
-                 (rspace (box (union non-negative-real-number #f)) #f))
-                void))]{
+                 (dc (is-a?/c dc<%>))
+                 (x real?) (y real?)
+                 (w (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
+                 (h (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
+                 (descent (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
+                 (space (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
+                 (lspace (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f)
+                 (rspace (or/c (box/c (or/c (and/c real? (not/c negative?)))) #f) #f))
+                void?))]{
 
     Sets the descent, space, lspace, and rspace to zero. Sets
     the height to 1. Sets the width to the number of characters
     in the string.
 
   }
-  @defmethod*[#:mode override (((insert (s string) (len exact) (pos exact 0)) void))]{
+  @defmethod*[#:mode override (((insert (s string?) (len exact-nonnegative-integer?) (pos exact-nonnegative-integer? 0)) void?))]{
   }
-  @defmethod*[#:mode override (((draw (dc (instanceof dc<%>)) (x real) (y real) (left real) (top real) (right real) (bottom real) (dx real) (dy real) (draw-caret (union (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
+  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>)) (x real?) (y real?) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (or/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
 
     Draws black pixels for non-whitespace characters and draws
     nothing for whitespace characters.
@@ -573,17 +573,17 @@
   and
   @scheme[text:delegate<%>]
   interfaces.
-  @defmethod*[#:mode override (((split (position exact) (first (box (instanceof snip%))) (second (box (instanceof snip%)))) void))]{
+  @defmethod*[#:mode override (((split (position exact) (first (box/c (is-a?/c snip%))) (second (box/c (is-a?/c snip%)))) void?))]{
 
     Fills the boxes with instance of
     @scheme[text:1-pixel-tab-snip%]s.
   }
-  @defmethod*[#:mode override (((copy) (instanceof snip%)))]{
+  @defmethod*[#:mode override (((copy) (is-a?/c snip%)))]{
 
     Creates and returns an instance of 
     @scheme[text:1-pixel-tab-snip%].
   }
-  @defmethod*[#:mode override (((get-extent (dc (instanceof dc<%>)) (x real) (y real) (w (box (union non-negative-real-number #f)) #f) (h (box (union non-negative-real-number #f)) #f) (descent (box (union non-negative-real-number #f)) #f) (space (box (union non-negative-real-number #f)) #f) (lspace (box (union non-negative-real-number #f)) #f) (rspace (box (union non-negative-real-number #f)) #f)) void))]{
+  @defmethod*[#:mode override (((get-extent (dc (is-a?/c dc<%>)) (x real?) (y real?) (w (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (h (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (descent (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (space (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (lspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f) (rspace (or/c (box/c (and/c real? (not/c negative?)) #f)) #f)) void?))]{
 
     Sets the descent, space, lspace, and rspace to zero. Sets
     the height to 1. Sets the width to the width of tabs as
@@ -592,7 +592,7 @@
     method.
 
   }
-  @defmethod*[#:mode override (((draw (dc (instanceof dc<%>)) (x real) (y real) (left real) (top real) (right real) (bottom real) (dx real) (dy real) (draw-caret (union (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
+  @defmethod*[#:mode override (((draw (dc (is-a?/c dc<%>)) (x real?) (y real?) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (or/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
 
     Draws nothing.
 
@@ -602,13 +602,13 @@
   This mixin provides an implementation of the
   @scheme[text:delegate<%>]
   interface.
-  @defmethod*[#:mode override (((highlight-range (start exact-integer)
+  @defmethod*[#:mode override (((highlight-range (start exact-integer?)
                                  (end exact-nonnegative-integer?)
                                  (color (or/c string? (is-a?/c color%)))
                                  (caret-space boolean? #f)
                                  (priority (symbols 'high 'low) 'low)
                                  (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
-                                 (-> void)))]{
+                                 (-> void?)))]{
 
     In addition to calling the super method,
     @method[text:basic<%> highlight-range], this method forwards the highlighting to
@@ -624,42 +624,42 @@
                void?]{
     This method propagates the call to the delegate and calls the super method.
   }
-  @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
+  @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void?))]{
 
     Draws a blue region in the delegatee editor that shows where
     the visible region of the delegate editor is.
   }
-  @defmethod*[#:mode augment (((on-edit-sequence) void))]{
+  @defmethod*[#:mode augment (((on-edit-sequence) void?))]{
 
     starts an edit sequence in the delegate.
   }
-  @defmethod*[#:mode augment (((after-edit-sequence) void))]{
+  @defmethod*[#:mode augment (((after-edit-sequence) void?))]{
 
     ends an edit sequence in the delegate.
   }
-  @defmethod*[#:mode override (((resized (snip (is-a?/c snip%)) (redraw-now? boolean?)) void))]{
+  @defmethod*[#:mode override (((resized (snip (is-a?/c snip%)) (redraw-now? boolean?)) void?))]{
 
     Sends a message to the delegate to update the size of the
     copied snip, if there is one.
   }
-  @defmethod*[#:mode augment (((after-insert (start number) (len number)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     forwards the change to the delegate
   }
-  @defmethod*[#:mode augment (((after-delete (start number) (len number)) void))]{
+  @defmethod*[#:mode augment (((after-delete (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     forwards the change to the delegate.
   }
-  @defmethod*[#:mode augment (((after-change-style (start number) (len number)) void))]{
+  @defmethod*[#:mode augment (((after-change-style (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     forwards the changed style to the delegate.
   }
-  @defmethod*[#:mode augment (((on-load-file (filename string) (format symbol?)) void))]{
+  @defmethod*[#:mode augment (((on-load-file (filename string?) (format symbol?)) void?))]{
 
     remembers the filename, for use in 
     @method[text:delegate-mixin after-load-file].
   }
-  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void))]{
+  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void?))]{
 
     updates the delegate with the new contents of the text.
   }
@@ -674,7 +674,7 @@
   @scheme[editor:basic<%>]
   is displayed in a frame, that frame must have been created with
   @scheme[frame:info-mixin].
-  @defmethod*[#:mode override (((set-anchor (on? any/c)) void))]{
+  @defmethod*[#:mode override (((set-anchor (on? any/c)) void?))]{
 
     Calls the
     @method[frame:text-info<%> anchor-status-changed]
@@ -684,7 +684,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode override (((set-overwrite-mode (on? any/c)) void))]{
+  @defmethod*[#:mode override (((set-overwrite-mode (on? any/c)) void?))]{
 
     Calls the
     @method[frame:text-info<%> overwrite-status-changed]method of the frame that is viewing this object. It uses
@@ -693,7 +693,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode augment (((after-set-position) void))]{
+  @defmethod*[#:mode augment (((after-set-position) void?))]{
 
     Calls the
     @method[frame:text-info<%> editor-position-changed]
@@ -703,7 +703,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     Calls the
     @method[frame:text-info<%> editor-position-changed]
@@ -713,7 +713,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode augment (((after-delete (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-delete (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void?))]{
 
     Calls the
     @method[frame:text-info<%> editor-position-changed]
@@ -741,7 +741,7 @@
   for more information. If not, the file format passed to
   @method[editor<%> save-file]
   is used.
-  @defmethod*[#:mode augment (((on-save-file (filename path?) (format (one-of/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)))) void))]{
+  @defmethod*[#:mode augment (((on-save-file (filename path?) (format (one-of/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)))) void?))]{
 
     If the method
     @method[text% get-file-format]
@@ -773,21 +773,21 @@
   }
 }
 @defmixin[text:file-mixin (editor:file<%> text:basic<%>) (text:file<%>)]{
-  @defmethod*[#:mode augment (((can-insert? (start number) (len number)) boolean?))]{
+  @defmethod*[#:mode augment (((can-insert? (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) boolean?))]{
 
     Returns false if the result of
     @method[text:file<%> get-read-write?]
     is true, otherwise returns the
     result of calling @scheme[inner].
   }
-  @defmethod*[#:mode augment (((can-delete? (start number) (len number)) boolean?))]{
+  @defmethod*[#:mode augment (((can-delete? (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) boolean?))]{
 
     Returns false if the result of
     @method[text:file<%> get-read-write?]
     is true, otherwise returns the
     result of calling @scheme[inner].
   }
-  @defmethod*[#:mode augment (((after-save-file) void))]{
+  @defmethod*[#:mode augment (((after-save-file) void?))]{
 
     Checks if the newly saved file is write-only in the filesystem. If
     so, locks the editor with the
@@ -806,7 +806,7 @@
     with the last part of the filename (ie, the name of the file, not the
     directory the file is in).
   }
-  @defmethod*[#:mode augment (((after-load-file) void))]{
+  @defmethod*[#:mode augment (((after-load-file) void?))]{
 
     Checks if the newly loaded file is write-only in the filesystem. If
     so, locks the editor with the
@@ -844,7 +844,7 @@
   They create three threads to mediate access to the input and
   output ports (one for each input port and one for all of the
   output ports).
-  @defmethod*[(((delete/io (start exact-integer) (end exact-integer)) void))]{
+  @defmethod*[(((delete/io (start exact-integer?) (end exact-integer?)) void?))]{
     Deletes the text between @scheme[start] and @scheme[end] without
     changing the behavior of the ports (otherwise, deleting the
     text would break internal invariants of the port). 
@@ -856,23 +856,23 @@
 
 
   }
-  @defmethod*[(((get-insertion-point) exact-integer))]{
+  @defmethod*[(((get-insertion-point) exact-integer?))]{
     Returns the position where characters put into the output
     port will appear.
 
   }
-  @defmethod*[(((set-insertion-point (ip exact-integer)) void))]{
+  @defmethod*[(((set-insertion-point (ip exact-integer?)) void?))]{
     Sets the position where the output port will insert characters.
     See also
     @method[text:ports<%> get-insertion-point].
 
   }
-  @defmethod*[(((get-unread-start-point) exact-integer))]{
+  @defmethod*[(((get-unread-start-point) exact-integer?))]{
     Returns the position where input will be taken into the
     input port (after the next time return is typed).
 
   }
-  @defmethod*[(((set-unread-start-point (usp exact-integer)) void))]{
+  @defmethod*[(((set-unread-start-point (usp exact-integer?)) void?))]{
     Sets the position where input will be taken into the
     input port (after the next time return is typed).
 
@@ -880,7 +880,7 @@
     @method[text:ports<%> get-unread-start-point].
 
   }
-  @defmethod*[(((set-allow-edits (allow-edits? boolean?)) void))]{
+  @defmethod*[(((set-allow-edits (allow-edits? boolean?)) void?))]{
     Enables or disables editing in the buffer. Be sure to update 
     the unread start point (via
     @method[text:ports<%> set-unread-start-point]) and the insertion point (via
@@ -891,7 +891,7 @@
     Indicates if editing is allowed in the buffer at this point.
 
   }
-  @defmethod*[(((insert-between (str (union snip% string))) void))]{
+  @defmethod*[(((insert-between (str (or/c (is-a?/c snip%) string?))) void?))]{
     Inserts some text between the unread start point and the
     insertion point (and updates them properly). To insert
     before the two points, see
@@ -903,7 +903,7 @@
     @method[text:ports<%> set-insertion-point].
 
   }
-  @defmethod*[(((insert-before (str (union snip% string))) void))]{
+  @defmethod*[(((insert-before (str (or/c (is-a?/c snip%) string?))) void?))]{
     Inserts some text before the unread start point and updates
     it and the insertion point properly. To insert between
     the two points, see
@@ -915,43 +915,43 @@
     @method[text:ports<%> set-insertion-point].
 
   }
-  @defmethod*[(((submit-to-port? (key char)) boolean?))]{
+  @defmethod*[(((submit-to-port? (key (is-a?/c key-event%))) boolean?))]{
     Augment this method to help control when characters should
     be submitted to the input port.
 
 
     Return @scheme[#t] or the result of calling @scheme[inner].
   }
-  @defmethod*[(((on-submit) void))]{
+  @defmethod*[(((on-submit) void?))]{
     This method is called when text is sent into the input port.
 
 
     Does nothing.
   }
-  @defmethod*[(((send-eof-to-in-port) void))]{
+  @defmethod*[(((send-eof-to-in-port) void?))]{
     This method puts an eof into the input port.
 
   }
-  @defmethod*[(((send-eof-to-box-in-port) void))]{
+  @defmethod*[(((send-eof-to-box-in-port) void?))]{
     This method puts an eof into the box input port.
 
   }
-  @defmethod*[(((reset-input-box) void))]{
+  @defmethod*[(((reset-input-box) void?))]{
     This method removes the current input box from the editor
     (and all input in it is lost).
 
   }
-  @defmethod*[(((clear-output-ports) void))]{
+  @defmethod*[(((clear-output-ports) void?))]{
     Flushes all of the data in all of the output ports that
     hasn't appeared in the editor yet.
 
   }
-  @defmethod*[(((clear-input-port) void))]{
+  @defmethod*[(((clear-input-port) void?))]{
     Flushes all of the data in the input port that hasn't yet
     been read. Reading will now block.
 
   }
-  @defmethod*[(((clear-box-input-port) void))]{
+  @defmethod*[(((clear-box-input-port) void?))]{
     Flushes all of the data in the box input port that hasn't
     yet been read. Reading will now block.
 
@@ -1006,15 +1006,15 @@
     @scheme[editor:get-standard-style-list].
 
   }
-  @defmethod*[(((get-in-port) input-port))]{
+  @defmethod*[(((get-in-port) input-port?))]{
     Returns the input port that data in this editor is sent to.
 
   }
-  @defmethod*[(((get-in-box-port) input-port))]{
+  @defmethod*[(((get-in-box-port) input-port?))]{
     Returns the box input port that data in this editor is sent to.
 
   }
-  @defmethod*[(((get-out-port) output-port))]{
+  @defmethod*[(((get-out-port) output-port?))]{
     Returns an output port that writes into this editor.  The
     only difference between this port and the ports returned by
     @method[text:ports<%> get-err-port]
@@ -1023,7 +1023,7 @@
     is the font style and color.
 
   }
-  @defmethod*[(((get-err-port) output-port))]{
+  @defmethod*[(((get-err-port) output-port?))]{
     Returns an output port that writes into this editor.  The
     only difference between this port and the ports returned by
     @method[text:ports<%> get-err-port]
@@ -1032,7 +1032,7 @@
     is the font style and color.
 
   }
-  @defmethod*[(((get-value-port) output-port))]{
+  @defmethod*[(((get-value-port) output-port?))]{
     Returns an output port that writes into this editor.  The
     only difference between this port and the ports returned by
     @method[text:ports<%> get-err-port]
@@ -1041,16 +1041,16 @@
     is the font style and color.
 
   }
-  @defmethod*[(((after-io-insertion) void))]{
+  @defmethod*[(((after-io-insertion) void?))]{
     This method is called after an insertion due to IO occurs.
 
   }
-  @defmethod*[(((get-box-input-editor-snip%) (subclass editor-snip%)))]{
+  @defmethod*[(((get-box-input-editor-snip%) (subclass?/c editor-snip%)))]{
     The result of this method is used as the class of editor
     snips that is inserted by the box port in this editor.
 
   }
-  @defmethod*[(((get-box-input-text%) (is-a?/c text:input-box)))]{
+  @defmethod*[(((get-box-input-text%) (is-a?/c text:input-box<%>)))]{
     The result of this method is instantiated and placed inside the result of
     @method[text:ports<%> get-box-input-editor-snip%].
 
@@ -1058,19 +1058,19 @@
 }
 @defmixin[text:ports-mixin (text:wide-snip<%>) (text:ports<%>)]{
 
-  @defmethod*[#:mode augment (((can-insert? (start exact-integer) (len exact-integer)) boolean?))]{
+  @defmethod*[#:mode augment (((can-insert? (start exact-integer?) (len exact-integer?)) boolean?))]{
 
     Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
     returns @scheme[#f].
   }
-  @defmethod*[#:mode augment (((can-delete? (start exact-integer) (len exact-integer)) boolean?))]{
+  @defmethod*[#:mode augment (((can-delete? (start exact-integer?) (len exact-integer?)) boolean?))]{
 
     Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
     returns @scheme[#f].
   }
-  @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void))]{
+  @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void?))]{
 
     Sends the data between the last position and  the result of
     @method[text:ports<%> get-unread-start-point]
@@ -1081,7 +1081,7 @@
     Also calls
     @method[text:ports<%> on-submit].
   }
-  @defmethod*[#:mode augment (((on-display-size) void))]{
+  @defmethod*[#:mode augment (((on-display-size) void?))]{
 
     Adjusts the embedded editor-snip (used for reading input to the
     @method[text:ports<%> get-in-box-port]) to match the width of the editor.
@@ -1098,7 +1098,7 @@
   @scheme[text:input-box<%>]
   for use with 
   @scheme[text:ports<%>].
-  @defmethod*[#:mode override (((on-default-char (event key-event%)) void))]{
+  @defmethod*[#:mode override (((on-default-char (event (is-a?/c key-event%))) void?))]{
 
     Notifies the
     @scheme[text:ports<%>]
@@ -1110,7 +1110,7 @@
   unintrusive autocompletion menu when a particular
   (configurable) keystroke is pressed.
 
-  @defmethod*[(((auto-complete) void))]{
+  @defmethod*[(((auto-complete) void?))]{
     Starts a completion.
 
   }
@@ -1129,17 +1129,17 @@
     @scheme[(make-object color% 204 153 255)].
 
   }
-  @defmethod*[(((completion-mode-key-event? (key-event key-event%)) boolean?))]{
+  @defmethod*[(((completion-mode-key-event? (key-event (is-a?/c key-event%))) boolean?))]{
     Returns true when the key event passed to it should initiate
     the completions menu.
 
   }
-  @defmethod*[(((get-all-words) (listof string)))]{
+  @defmethod*[(((get-all-words) (listof string?)))]{
 
     Returns the list of the words that autocompletion should
     choose from. 
   }
-  @defmethod*[(((get-word-at (pos positive-exact-integer)) string))]{
+  @defmethod*[(((get-word-at (pos exact-positive-integer?)) string?))]{
 
     Given an editor location, returns the prefix ending at that location
     that autocompletion should try to complete. 
@@ -1147,11 +1147,11 @@
 }
 @defmixin[text:autocomplete-mixin (text%) (text:autocomplete<%>)]{
 
-  @defmethod*[#:mode override (((on-paint) void))]{
+  @defmethod*[#:mode override (((on-paint) void?))]{
 
     Draws the completion menu (when it is popped up).
   }
-  @defmethod*[#:mode override (((on-char) void))]{
+  @defmethod*[#:mode override (((on-char) void?))]{
 
     Takes over the handling of key events when the completions
     menu is visible. Also, when the completions menu is not
@@ -1159,7 +1159,7 @@
     @method[text:completion<%> completion-mode-key-event?]
     method to see if it should start completing.
   }
-  @defmethod*[#:mode override (((on-event) void))]{
+  @defmethod*[#:mode override (((on-event) void?))]{
 
     This method is overridden to allow mouse access of the
     completions menu. It only handles events when there is a
@@ -1188,7 +1188,7 @@
 
 @definterface[text:line-numbers<%> ()]{
 
-  @defmethod*[(((show-line-numbers! (show boolean?)) void))]{
+  @defmethod*[(((show-line-numbers! (show boolean?)) void?))]{
 
     Enables or disables line number drawing.
   }
@@ -1206,12 +1206,12 @@
 
 @defmixin[text:line-numbers-mixin (text%) (text:line-numbers<%>)]{
 
-  @defmethod*[#:mode override (((on-paint) void))]{
+  @defmethod*[#:mode override (((on-paint) void?))]{
 
     Draws the line numbers.
   }
 
-  @defmethod*[(((show-line-numbers! (show boolean?)) void))]{
+  @defmethod*[(((show-line-numbers! (show boolean?)) void?))]{
 
     Enables or disables line number drawing.
   }
