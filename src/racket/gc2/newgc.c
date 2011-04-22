@@ -137,6 +137,8 @@ THREAD_LOCAL_DECL(static NewGC *GC_instance);
 #define GC_get_GC() (GC_instance)
 #define GC_set_GC(gc) (GC_instance = gc)
 
+typedef struct Log_Master_Info Log_Master_Info;
+
 #ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
 static NewGCMasterInfo *MASTERGCINFO;
@@ -159,6 +161,10 @@ intptr_t GC_is_place() {
 }
 
 static void master_collect_initiate(NewGC *gc);
+struct Log_Master_Info {
+  int ran, full;
+  intptr_t pre_used, post_used, pre_admin, post_admin;
+};
 #endif
 
 inline static size_t real_page_size(mpage* page);
@@ -286,7 +292,7 @@ void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc func) {
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static void garbage_collect(NewGC*, int, int);
+static void garbage_collect(NewGC*, int, int, Log_Master_Info*);
 
 static void out_of_memory()
 {
@@ -336,9 +342,9 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
       gc->unsafe_allocation_abort(gc);
   } else {
     if(gc->used_pages > gc->max_pages_for_use) {
-      garbage_collect(gc, 0, 0); /* hopefully this will free enough space */
+      garbage_collect(gc, 0, 0, NULL); /* hopefully this will free enough space */
       if(gc->used_pages > gc->max_pages_for_use) {
-        garbage_collect(gc, 1, 0); /* hopefully *this* will free enough space */
+        garbage_collect(gc, 1, 0, NULL); /* hopefully *this* will free enough space */
         if(gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
@@ -815,7 +821,7 @@ static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_si
     else {
 #endif
     if (!gc->dumping_avoid_collection)
-      garbage_collect(gc, 0, 0);
+      garbage_collect(gc, 0, 0, NULL);
 #ifdef MZ_USE_PLACES 
     }
 #endif
@@ -1069,7 +1075,7 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
 
   if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
     if (!gc->dumping_avoid_collection)
-      garbage_collect(gc, 0, 0);
+      garbage_collect(gc, 0, 0, NULL);
   }
   gc->gen0.current_size += size;
 
@@ -1166,7 +1172,7 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
       LOG_PRIM_START(((void*)garbage_collect));
 #endif
       
-      garbage_collect(gc, 0, 0);
+      garbage_collect(gc, 0, 0, NULL);
 
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_END(((void*)garbage_collect));
@@ -2328,7 +2334,7 @@ static void master_collect_initiate(NewGC *gc) {
   }
 }
 
-static void collect_master() {
+static void collect_master(Log_Master_Info *lmi) {
   NewGC *saved_gc;
   saved_gc = GC_switch_to_master_gc();
   {
@@ -2338,7 +2344,7 @@ static void collect_master() {
     GCVERBOSEprintf(gc, "START MASTER COLLECTION\n");
 #endif
     MASTERGC->major_places_gc = 0;
-    garbage_collect(MASTERGC, 1, 0);
+    garbage_collect(MASTERGC, 1, 0, lmi);
 #if defined(GC_DEBUG_PAGES)
     printf("END MASTER COLLECTION\n");
     GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
@@ -2356,7 +2362,7 @@ static void collect_master() {
   GC_switch_back_from_master(saved_gc);
 }
 
-static void wait_if_master_in_progress(NewGC *gc) {
+static void wait_if_master_in_progress(NewGC *gc, Log_Master_Info *lmi) {
   int last_one_here = -1;
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
   GC_LOCK_DEBUG("MGCLOCK wait_if_master_in_progress\n");
@@ -2394,8 +2400,8 @@ static void wait_if_master_in_progress(NewGC *gc) {
       GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
     break;
     case 1:
-      /* Your the last one here. */
-      collect_master();
+      /* You're the last one here. */
+      collect_master(lmi);
       GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
     break;
     default:
@@ -2575,7 +2581,7 @@ void GC_destruct_child_gc() {
 
 
     if (waiting) {
-      garbage_collect(gc, 1, 0);
+      garbage_collect(gc, 1, 0, NULL);
       waiting = 1;
     }
   } while (waiting == 1);
@@ -2602,7 +2608,7 @@ void GC_switch_out_master_gc() {
     NewGC *gc = GC_get_GC();
 
     initialized = 1;
-    garbage_collect(gc, 1, 1);
+    garbage_collect(gc, 1, 1, NULL);
 
 #ifdef MZ_USE_PLACES
     GC_gen0_alloc_page_ptr = 2;
@@ -2658,7 +2664,7 @@ void GC_switch_back_from_master(void *gc) {
 void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
-  garbage_collect(gc, 1, 0);
+  garbage_collect(gc, 1, 0, NULL);
 }
 
 static inline int atomic_mark(void *p) { return 0; }
@@ -4129,7 +4135,7 @@ extern double scheme_get_inexact_milliseconds(void);
    really clean up. The full_needed_for_finalization flag triggers 
    the second full GC. */
 
-static void garbage_collect(NewGC *gc, int force_full, int switching_master)
+static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log_Master_Info *lmi)
 {
   uintptr_t old_mem_use;
   uintptr_t old_gen0;
@@ -4358,6 +4364,14 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
                                    old_mem_use + old_gen0, gc->memory_in_use, 
                                    old_mem_allocated, mmu_memory_allocated(gc->mmu));
   }
+  if (lmi) {
+    lmi->ran = 1;
+    lmi->full = gc->gc_full,
+    lmi->pre_used = old_mem_use + old_gen0;
+    lmi->post_used = gc->memory_in_use;
+    lmi->pre_admin = old_mem_allocated;
+    lmi->post_admin = mmu_memory_allocated(gc->mmu);
+  }
 
   TIME_STEP("ended");
 
@@ -4414,7 +4428,16 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
     if (gc->gc_full && master_wants_to_collect && !(gc->dont_master_gc_until_child_registers)) { 
-       wait_if_master_in_progress(gc);
+      Log_Master_Info sub_lmi;
+      sub_lmi.ran = 0;
+      wait_if_master_in_progress(gc, &sub_lmi);
+      if (sub_lmi.ran) {
+        if (gc->GC_collect_inform_callback) {
+          gc->GC_collect_inform_callback(1, sub_lmi.full,
+                                         sub_lmi.pre_used, sub_lmi.post_used,
+                                         sub_lmi.pre_admin, sub_lmi.post_admin);
+        }
+      }
     }
   }
 #endif

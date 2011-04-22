@@ -7657,7 +7657,7 @@ static void inform_GC(int master_gc, int major_gc,
     intptr_t buflen, delta, admin_delta;
 
 #ifdef MZ_USE_PLACES
-# define PLACE_ID_FORMAT "%s%d:"
+# define PLACE_ID_FORMAT "%d:"
 #else
 # define PLACE_ID_FORMAT ""
 #endif
@@ -7670,12 +7670,12 @@ static void inform_GC(int master_gc, int major_gc,
             "GC [" PLACE_ID_FORMAT "%s] at %s(+%s) bytes;"
             " %s(%s%s) collected in %" PRIdPTR " msec",
 #ifdef MZ_USE_PLACES
-            (master_gc ? "M" : ""), scheme_current_place_id,
+            scheme_current_place_id,
 #endif
-            (major_gc ? "MAJOR" : "minor"),
+            (master_gc ? "MASTER" : (major_gc ? "MAJOR" : "minor")),
             gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
             gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),
-            end_this_gc_time - start_this_gc_time);
+            (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)));
     buflen = strlen(buf);
 
     scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, NULL);
