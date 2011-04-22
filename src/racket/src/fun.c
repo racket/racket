@@ -1325,6 +1325,9 @@ Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_
       
       if (SCHEME_PAIRP(clears))
         code = scheme_sfs_add_clears(code, clears, 1);
+
+      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
+        SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_NEED_REST_CLEAR;
     }
 
     data->code = code;

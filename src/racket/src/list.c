@@ -848,12 +848,22 @@ Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
 }
 
 Scheme_Object *scheme_build_list_offset(int size, Scheme_Object **argv, int delta)
+/* clears originals in argv for space safety! */
 {
   Scheme_Object *pair = scheme_null;
   int i;
 
-  for (i = size; i-- > delta; ) {
-    pair = cons(argv[i], pair);
+  if (size < 0) {
+    /* clearing mode: */
+    size = -size;
+    for (i = size; i-- > delta; ) {
+      pair = cons(argv[i], pair);
+      argv[i] = NULL;
+    }
+  } else {
+    for (i = size; i-- > delta; ) {
+      pair = cons(argv[i], pair);
+    }
   }
 
   return pair;

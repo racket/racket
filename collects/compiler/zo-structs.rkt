@@ -131,7 +131,8 @@
                                 [internal-context (or/c #f #t stx?)]))
 
 (define-form-struct (lam expr) ([name (or/c symbol? vector? empty?)]
-                                [flags (listof (or/c 'preserves-marks 'is-method 'single-result 'only-rest-arg-not-used))]
+                                [flags (listof (or/c 'preserves-marks 'is-method 'single-result
+                                                     'only-rest-arg-not-used 'sfs-clear-rest-args))]
                                 [num-params exact-nonnegative-integer?]
                                 [param-types (listof (or/c 'val 'ref 'flonum))]
                                 [rest? boolean?]

@@ -2088,10 +2088,11 @@ typedef struct Scheme_Comp_Env
 #define CLOS_HAS_REST 1
 #define CLOS_HAS_TYPED_ARGS 2
 #define CLOS_PRESERVES_MARKS 4
-#define CLOS_SFS 8
+#define CLOS_NEED_REST_CLEAR 8
 #define CLOS_IS_METHOD 16
 #define CLOS_SINGLE_RESULT 32
 #define CLOS_RESULT_TENTATIVE 64
+#define CLOS_SFS 128
 #define CLOS_VALIDATED 128
 /* BITS 8-15 used by write_compiled_closure() */
 

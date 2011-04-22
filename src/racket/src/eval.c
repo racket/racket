@@ -8626,6 +8626,27 @@ static Scheme_Object *do_eval_k(void)
 			p->ku.k.i2);
 }
 
+#ifdef MZ_USE_JIT
+static Scheme_Object *do_eval_native_k(void)
+{
+  /* If argv corresponds to old runstack, copy to new runstack
+     and clear old argv for space safety. */
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object **argv = (Scheme_Object **)p->ku.k.p2;
+
+  if (argv == (p->runstack_saved->runstack_start
+               + p->runstack_saved->runstack_offset)) {
+    int argc = p->ku.k.i1;
+    MZ_RUNSTACK -= argc;
+    memcpy(MZ_RUNSTACK, argv, argc * sizeof(Scheme_Object*));
+    memset(argv, 0, argc * sizeof(Scheme_Object*));
+    p->ku.k.p2 = MZ_RUNSTACK;
+  }
+
+  return do_eval_k();
+}
+#endif
+
 static void unbound_global(Scheme_Object *obj)
 {
   Scheme_Object *tmp;
@@ -9519,7 +9540,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	MZ_CONT_MARK_POS -= 2;
 	v = (Scheme_Object *)scheme_enlarge_runstack(data->max_let_depth / sizeof(void *), 
-						     (void *(*)(void))do_eval_k);
+						     (void *(*)(void))do_eval_native_k);
 	MZ_CONT_MARK_POS += 2;
 	goto returnv;
       }

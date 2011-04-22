@@ -257,6 +257,7 @@
 (define CLOS_HAS_REST 1)
 (define CLOS_HAS_REF_ARGS 2)
 (define CLOS_PRESERVES_MARKS 4)
+(define CLOS_NEED_REST_CLEAR 8)
 (define CLOS_IS_METHOD 16)
 (define CLOS_SINGLE_RESULT 32)
 
@@ -1006,6 +1007,7 @@
                        (+ (if rest? CLOS_HAS_REST 0)
                           (if any-refs? CLOS_HAS_REF_ARGS 0)
                           (if (memq 'preserves-marks flags) CLOS_PRESERVES_MARKS 0)
+                          (if (memq 'sfs-clear-rest-args flags) CLOS_NEED_REST_CLEAR 0)
                           (if (memq 'is-method flags) CLOS_IS_METHOD 0)
                           (if (memq 'single-result flags) CLOS_SINGLE_RESULT 0))
                        num-all-params

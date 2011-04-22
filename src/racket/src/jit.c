@@ -99,6 +99,16 @@ static void wrong_argument_count(Scheme_Object *proc, int argc, Scheme_Object **
   scheme_wrong_count((char *)proc, -1, -1, argc, argv);
 }
 
+static Scheme_Object *clear_rs_arguments(Scheme_Object *v, int size, int delta) XFORM_SKIP_PROC
+{
+  int i;
+  Scheme_Object **argv = MZ_RUNSTACK;
+  for (i = size; i-- > delta; ) {
+    argv[i] = NULL;
+  }
+  return v;
+}
+
 #ifdef JIT_THREAD_LOCAL
 void *scheme_jit_get_threadlocal_table() XFORM_SKIP_PROC { return &BOTTOM_VARIABLE; }
 #endif
@@ -2856,28 +2866,20 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 {
   int i, cnt;
   GC_CAN_IGNORE jit_insn *ref;
-  int set_ref;
 
-  /* If rands == runstack and there are no rest args, set runstack
-     base to runstack + rands (and don't copy rands), otherwise set
-     base to runstack and proceed normally. Implement this by
-     optimistically assuming rands == runstack, so that there's just
-     one jump. Skip this optimization when the procedure has
-     rest args, because we'll have to copy anyway. */
-  if (!has_rest && num_params) {
-    jit_lshi_l(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1, JIT_LOG_WORD_SIZE);
-    jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_V1));
+  /* If rands == runstack, set runstack base to runstack + rands (and
+     don't copy rands), otherwise set base to runstack and copy
+     arguments at runstack. Implement the test by optimistically
+     assuming rands == runstack, so that there's just one jump. */
+  jit_lshi_l(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1, JIT_LOG_WORD_SIZE);
+  jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_V1));
 #ifndef JIT_RUNSTACK_BASE
-    mz_set_local_p(JIT_V1, JIT_RUNSTACK_BASE_LOCAL);
+  mz_set_local_p(JIT_V1, JIT_RUNSTACK_BASE_LOCAL);
 #endif
-    __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
-    ref = jit_beqr_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
-    __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
-    set_ref = 1;
-  } else {
-    ref = 0;
-    set_ref = 0;
-  }
+  __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
+  ref = jit_beqr_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+  __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
+
 #ifdef JIT_RUNSTACK_BASE
   jit_movr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK);
 #else
@@ -2893,7 +2895,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
     if (has_rest)
       --cnt;
   }
-
+  
   /* Extract arguments to runstack: */
   for (i = cnt; i--; ) {
     jit_ldxi_p(JIT_V1, JIT_R2, WORDS_TO_BYTES(i));
@@ -2901,11 +2903,9 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
     CHECK_LIMIT();
   }
 
-  if (set_ref) {
-    __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
-    mz_patch_branch(ref);
-    __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
-  }
+  __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
+  mz_patch_branch(ref);
+  __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
 
   return cnt;
 }
@@ -2943,6 +2943,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   cnt = generate_function_getarg(jitter, 
 				 (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST),
 				 data->num_params);
+  /* At this point, all non-rest arguments are now at the runstack */
   CHECK_LIMIT();
 
   /* A tail call with arity checking can start here.
@@ -2980,7 +2981,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   tail_code = jit_get_ip().ptr;
 
   /* 0 params and has_rest => (lambda args E) where args is not in E,
-     so accept any number of arguments and ignore them. */
+     so accept any number of arguments and just clear them (for space 
+     safety). */
 
   if (has_rest && data->num_params) {
     /* If runstack == argv and argc == cnt, then we didn't
@@ -2998,6 +3000,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     for (i = cnt; i--; ) {
       jit_ldxi_p(JIT_V1, JIT_R2, WORDS_TO_BYTES(i));
       jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_V1);
+      /* space safety: */
+      jit_stxi_p(WORDS_TO_BYTES(i), JIT_R2, JIT_RUNSTACK);
       CHECK_LIMIT();
     }
     (void)jit_movi_p(JIT_V1, scheme_null);
@@ -3008,6 +3012,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     /* Build a list for extra arguments: */
     mz_patch_branch(ref);
     mz_patch_branch(ref3);
+    CHECK_LIMIT();
 #ifndef JIT_PRECISE_GC
     if (data->closure_size)
 #endif
@@ -3017,8 +3022,17 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       }
     JIT_UPDATE_THREAD_RSPTR();
     CHECK_LIMIT();
-    mz_prepare(3);
     jit_movi_i(JIT_V1, cnt);
+    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR)) {
+      /* negative count => clear argv */
+      GC_CAN_IGNORE jit_insn *ref;
+      __START_INNER_TINY__(cnt < 100);
+      ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+      jit_negr_i(JIT_R1, JIT_R1);
+      mz_patch_branch(ref);
+      __END_INNER_TINY__(cnt < 100);
+    }
+    mz_prepare(3);
     jit_pusharg_i(JIT_V1);
     jit_pusharg_p(JIT_R2);
     jit_pusharg_i(JIT_R1);
@@ -3034,7 +3048,6 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       }
     jit_stxi_p(WORDS_TO_BYTES(cnt), JIT_RUNSTACK, JIT_V1);
     mz_patch_ucbranch(ref2); /* jump here if we copied and produced null */
-    CHECK_LIMIT();
 
     __END_SHORT_JUMPS__(cnt < 100);
 
@@ -3044,6 +3057,27 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       argc = 0;
     }
   } else {
+    if (has_rest && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR)) {
+      /* if we get here, the rest argument isn't used */
+      GC_CAN_IGNORE jit_insn *ref;
+      __START_TINY_JUMPS__(1);
+      ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+      __END_TINY_JUMPS__(1);
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR();
+      CHECK_LIMIT();
+      mz_prepare(3);
+      jit_movi_i(JIT_V1, cnt);
+      jit_pusharg_i(JIT_V1);
+      jit_pusharg_i(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+      CHECK_LIMIT();
+      (void)mz_finish(clear_rs_arguments);
+      jit_retval(JIT_R0);
+      __START_TINY_JUMPS__(1);
+      mz_patch_branch(ref);
+      __END_TINY_JUMPS__(1);
+    }
     has_rest = 0;
     if (argc != data->num_params) {
       argv = NULL;

@@ -2976,9 +2976,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 }
 
 int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry)
+/* Args must be in R0 (car) and R1 (cdr); uses R2 and V1 as temporaries */
 {
-  /* Args should be in R0 (car) and R1 (cdr) */
-
 #ifdef CAN_INLINE_ALLOC
   /* Inlined alloc */
   scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 0, 1, 0, inline_retry);
