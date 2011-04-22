@@ -1358,7 +1358,7 @@ using the @racket[match-bindings] produced by @racket[match]ing
 random terms in its search. The size and complexity of these terms tend to increase 
 with each failed attempt. The @racket[#:attempt-size] keyword determines the rate at which
 terms grow by supplying a function that bounds term size based on the number of failed
-attempts (see @racket[generate-term]'s @racket[#:size] keyword). By default, the bound
+attempts (see @racket[generate-term]'s @racket[size-expr] argument). By default, the bound
 grows according to the @racket[default-attempt-size] function.
 
 When @racket[print?-expr] produces any non-@racket[#f] value (the default), 
