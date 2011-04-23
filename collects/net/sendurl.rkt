@@ -18,7 +18,7 @@
 ;; order matters: the default will be the first of these that is found
 (define all-unix-browsers
   '(;; common browsers
-    xdg-open
+    ;; xdg-open
     firefox google-chrome galeon opera mozilla konqueror seamonkey epiphany
     ;; known browsers
     camino skipstone
