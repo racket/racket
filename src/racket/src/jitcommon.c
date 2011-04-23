@@ -2023,6 +2023,63 @@ static int common8(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common9(mz_jit_state *jitter, void *_data)
+{
+  int i;
+
+  /* eqv[_branch]_code */
+  /* arguments in R0 and R1; for branch, false return address in V1 */
+  for (i = 0; i < 2; i++) {
+    void *code;
+    GC_CAN_IGNORE jit_insn *ref;
+
+    code = jit_get_ip().ptr;
+    if (i == 0)
+      sjc.eqv_code = code;
+    else
+      sjc.eqv_branch_code = code;
+
+    mz_prolog(JIT_R2);
+    CHECK_LIMIT();
+    
+    jit_prepare(2);
+    jit_pusharg_p(JIT_R0);
+    jit_pusharg_p(JIT_R1);
+    (void)jit_finish(scheme_eqv); /* NONGCING, so ok from a future thread */
+    jit_retval(JIT_R0);
+    CHECK_LIMIT();
+
+    __START_TINY_JUMPS__(1);
+    ref = jit_beqi_i(jit_forward(), JIT_R0, 0);
+    __END_TINY_JUMPS__(1);
+
+    if (i) {
+      mz_epilog(JIT_R2);
+    } else {
+      (void)jit_movi_p(JIT_R0, scheme_true);
+      mz_epilog(JIT_R2);
+    }
+
+    __START_TINY_JUMPS__(1);
+    mz_patch_branch(ref);
+    __END_TINY_JUMPS__(1);
+    
+    if (i) {
+      mz_epilog_without_jmp();
+      jit_jmpr(JIT_V1);
+    } else {
+      (void)jit_movi_p(JIT_R0, scheme_false);
+      mz_epilog(JIT_R2);
+    }
+
+    scheme_jit_register_sub_func(jitter, code, scheme_false);    
+
+    CHECK_LIMIT();
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -2035,6 +2092,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common6(jitter, _data)) return 0;
   if (!common7(jitter, _data)) return 0;
   if (!common8(jitter, _data)) return 0;
+  if (!common9(jitter, _data)) return 0;
   return 1;
 }
 

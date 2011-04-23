@@ -95,7 +95,9 @@ void scheme_init_bool (Scheme_Env *env)
   scheme_eq_prim = p;
   scheme_add_global_constant("eq?", p, env);
 
-  scheme_eqv_prim = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
+  p = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_eqv_prim = p;
   scheme_add_global_constant("eqv?", scheme_eqv_prim, env);
   
   scheme_equal_prim = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);

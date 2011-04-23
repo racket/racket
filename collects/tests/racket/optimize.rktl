@@ -15,7 +15,7 @@
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/fixnum)
   (let* ([check-error-message (lambda (name proc [fixnum? #f])
-				(unless (memq name '(eq? not null? pair? list?
+				(unless (memq name '(eq? eqv? not null? pair? list?
 							 real? number? boolean? 
 							 procedure? symbol?
 							 string? bytes?
@@ -173,6 +173,22 @@
     (un #t 'bytes? #"apple")
 
     (bin #f 'eq? 0 10)
+    (bin-exact #t 'eq? 10 10)
+
+    (bin-exact #f 'eqv? 0 10)
+    (bin-exact #f 'eqv? "apple" "banana")
+    (bin-exact #t 'eqv? 10 10)
+    (bin-exact #t 'eqv? #\a #\a)
+    (bin-exact #f 'eqv? #\a #\b)
+    (bin-exact #t 'eqv? #\u3bb #\u3bb)
+    (bin-exact #f 'eqv? #\u3bb #\u3bc)
+    (bin-exact #t 'eqv? 1.0 1.0)
+    (bin-exact #f 'eqv? 1.0 2.0)
+    (bin-exact #t 'eqv? +nan.0 +nan.0)
+    (bin-exact #t 'eqv? 1/2 1/2)
+    (bin-exact #f 'eqv? 1/2 1/3)
+    (bin-exact #t 'eqv? 1+2i 1+2i)
+    (bin-exact #f 'eqv? 1+2i 1+3i)
 
     (un #t 'zero? 0)
     (un #f 'zero? 1)

@@ -244,6 +244,7 @@ struct scheme_jit_common_record {
   void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
   void *wcm_code, *wcm_nontail_code;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
+  void *eqv_code, *eqv_branch_code;
 
 #ifdef CAN_INLINE_ALLOC
   void *make_list_code, *make_list_star_code;

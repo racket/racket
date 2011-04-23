@@ -1698,6 +1698,77 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     }
     
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "eqv?")) {
+    GC_CAN_IGNORE jit_insn *ref_f1, *ref_f2, *ref_f3, *ref_f4, *ref_f5;
+    GC_CAN_IGNORE jit_insn *ref_d1, *ref_d2, *ref_t1;
+
+    generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+    CHECK_LIMIT();
+
+    if (need_sync) mz_rs_sync();
+
+    __START_SHORT_JUMPS__(branch_short);
+    
+    if (for_branch) {
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+    }
+
+    /* eq? */
+    ref_t1 = jit_beqr_p(jit_forward(), JIT_R0, JIT_R1);
+
+    /* if either is fixnum, result is false */
+    ref_f1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+    ref_f2 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+    CHECK_LIMIT();
+
+    /* Both have a tag */
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    jit_ldxi_s(JIT_V1, JIT_R1, &((Scheme_Object *)0x0)->type);
+    ref_f3 = jit_bner_i(jit_forward(), JIT_R2, JIT_V1);
+
+    /* check in range of type treated by eqv: */
+    ref_f4 = jit_blti_i(jit_forward(), JIT_R2, scheme_char_type);
+    ref_f5 = jit_bgti_i(jit_forward(), JIT_R2, scheme_complex_type);
+    CHECK_LIMIT();
+    
+    /* in range of interesting types, so break out the generic comparison */
+    if (for_branch) {
+      scheme_add_branch_false_movi(for_branch, jit_patchable_movi_p(JIT_V1, jit_forward()));    
+      (void)jit_calli(sjc.eqv_branch_code);
+
+      scheme_add_branch_false(for_branch, ref_f1);
+      scheme_add_branch_false(for_branch, ref_f2);
+      scheme_add_branch_false(for_branch, ref_f3);
+      scheme_add_branch_false(for_branch, ref_f4);
+      scheme_add_branch_false(for_branch, ref_f5);
+
+      mz_patch_branch(ref_t1);
+      scheme_branch_for_true(jitter, for_branch);
+    } else {
+      (void)jit_calli(sjc.eqv_code);
+      jit_retval(JIT_R0);
+      ref_d1 = jit_jmpi(jit_forward());
+
+      mz_patch_branch(ref_t1);
+      jit_movi_p(JIT_R0, scheme_true);
+      ref_d2 = jit_jmpi(jit_forward());
+      
+      mz_patch_branch(ref_f1);
+      mz_patch_branch(ref_f2);
+      mz_patch_branch(ref_f3);
+      mz_patch_branch(ref_f4);
+      mz_patch_branch(ref_f5);
+
+      jit_movi_p(JIT_R0, scheme_false);
+
+      mz_patch_ucbranch(ref_d1);
+      mz_patch_ucbranch(ref_d2);
+    }
+
+    __END_SHORT_JUMPS__(branch_short);
+
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "=")) {
     scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 0, 0, for_branch, branch_short, 0, 0, NULL);
     return 1;
