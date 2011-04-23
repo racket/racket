@@ -278,7 +278,7 @@
   (test #f assq 'd e)
   (test '(a 1) assq 'a '((x 0) (a 1) b 2))
   (test '(a 1) assq 'a '((x 0) (a 1) . 0))
-  (arity-test assq 2 2)
+  (arity-test assq 2 (if (eq? assq-name 'assoc) 3 2))
 
   (err/rt-test (assq 1 1) exn:application:mismatch?)
   (err/rt-test (assq 1 '(1 2))  exn:application:mismatch?)

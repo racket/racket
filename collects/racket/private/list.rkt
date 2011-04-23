@@ -15,6 +15,10 @@
            assf
            findf
 
+           assq
+           assv
+           assoc
+
            filter
 
            sort
@@ -26,7 +30,8 @@
            compose)
 
   (#%require (rename "sort.rkt" raw-sort sort)
-             (for-syntax "stxcase-scheme.rkt"))
+             (for-syntax "stxcase-scheme.rkt")
+             (only '#%unsafe unsafe-car unsafe-cdr))
 
   (provide sort)
   (define (sort lst less? #:key [getkey #f] #:cache-keys? [cache-keys? #f])
@@ -119,24 +124,61 @@
                    a
                    (loop (cdr l))))])))
 
-  (define (assf f list)
-    (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (raise-type-error 'assf "procedure (arity 1)" f))
-    (let loop ([l list])
-      (cond
-       [(null? l) #f]
-       [(not (pair? l))
-        (raise-mismatch-error 'assf
-                              "not a proper list: "
-                              list)]
-       [else (let ([a (car l)])
-               (if (pair? a)
-                   (if (f (car a)) 
-                       a
-                       (loop (cdr l)))
-                   (raise-mismatch-error 'assf
-                                         "found a non-pair in the list: "
-                                         a)))])))
+  (define (bad-list who orig-l)
+    (raise-mismatch-error who
+                          "not a propert list: "
+                          orig-l))
+  (define (bad-item who a orig-l)
+    (raise-mismatch-error who
+                          "non-pair found in list: "
+                          a
+                          " in "
+                          orig-l))
+
+  (define-values (assq assv assoc assf)
+    (let ()
+      (define-syntax-rule (assoc-loop who x orig-l is-equal?)
+        (let loop ([l orig-l][t orig-l])
+          (cond
+           [(pair? l)
+            (let ([a (unsafe-car l)])
+              (if (pair? a)
+                  (if (is-equal? x (unsafe-car a))
+                      a
+                      (let ([l (unsafe-cdr l)])
+                        (cond
+                         [(eq? l t) (bad-list who orig-l)]
+                         [(pair? l)
+                          (let ([a (unsafe-car l)])
+                            (if (pair? a)
+                                (if (is-equal? x (unsafe-car a))
+                                    a
+                                    (let ([t (unsafe-cdr t)]
+                                          [l (unsafe-cdr l)])
+                                      (if (eq? l t) 
+                                          (bad-list who orig-l)
+                                          (loop l t))))
+                                (bad-item who a orig-l)))]
+                         [(null? l) #f]
+                         [else (bad-list who orig-l)])))
+                  (bad-item who a orig-l)))]
+           [(null? l) #f]
+           [else (bad-list who orig-l)])))
+      (values
+       (lambda (x l)
+         (assoc-loop 'assq x l eq?))
+       (lambda (x l)
+         (assoc-loop 'assv x l eqv?))
+       (case-lambda
+        [(x l) (assoc-loop 'assoc x l equal?)]
+        [(x l is-equal?)
+         (unless (and (procedure? is-equal?) (procedure-arity-includes? is-equal? 2))
+           (raise-type-error 'assoc "procedure (arity 2)" is-equal?))
+         (assoc-loop 'assoc x l is-equal?)])
+       (lambda (f l)
+         (unless (and (procedure? f) (procedure-arity-includes? f 1))
+           (raise-type-error 'assf "procedure (arity 1)" f))
+         (assoc-loop 'assf #f l (lambda (_ a) (f a)))))))
 
   ;; fold : ((A B -> B) B (listof A) -> B)
   ;; fold : ((A1 ... An B -> B) B (listof A1) ... (listof An) -> B)

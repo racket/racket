@@ -585,16 +585,21 @@ Like @scheme[memf], but returns the element or @scheme[#f]
 ]}
 
 
-@defproc[(assoc [v any/c] [lst (listof pair?)])
+@defproc[(assoc [v any/c]
+                [lst (listof pair?)] 
+                [is-equal? (any/c any/c -> any/c) equal?])
          (or/c pair? #f)]{
 
 Locates the first element of @scheme[lst] whose @scheme[car] is
- @scheme[equal?] to @scheme[v]. If such an element exists, the pair
+ equal to @scheme[v] according to @scheme[is-equal?]. If such an element exists, the pair
  (i.e., an element of @scheme[lst]) is returned. Otherwise, the result
  is @scheme[#f].
 @mz-examples[
 (assoc 3 (list (list 1 2) (list 3 4) (list 5 6)))
 (assoc 9 (list (list 1 2) (list 3 4) (list 5 6)))
+(assoc 3.5
+       (list (list 1 2) (list 3 4) (list 5 6))
+       (lambda (a b) (< (abs (- a b)) 1)))
 ]}
 
 

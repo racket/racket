@@ -133,7 +133,8 @@
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
-                              chaperone-procedure impersonate-procedure)
+                              chaperone-procedure impersonate-procedure
+                              assq assv assoc)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like

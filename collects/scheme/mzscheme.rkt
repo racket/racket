@@ -18,6 +18,7 @@
              racket/private/kernstruct
              racket/private/promise
              (only racket/private/cond old-cond)
+             (only racket/private/list assq assv assoc) ; shadows #%kernel bindings
              racket/tcp
              racket/udp
              '#%builtin) ; so it's attached
@@ -90,6 +91,7 @@
              make-namespace
              #%top-interaction
              map for-each andmap ormap
+             assq assv assoc
              (rename datum #%datum)
              (rename mzscheme-in-stx-module-begin #%module-begin)
              (rename #%module-begin #%plain-module-begin)
