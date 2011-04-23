@@ -104,6 +104,7 @@ define_ts_ss_s(scheme_jit_make_two_element_vector, FSRC_OTHER)
 define_ts_l_s(scheme_jit_make_ivector, FSRC_OTHER)
 define_ts_l_s(scheme_jit_make_vector, FSRC_OTHER)
 # endif
+define_ts_ss_i(scheme_equal, FSRC_OTHER)
 #endif
 
 #ifdef JIT_APPLY_TS_PROCS
@@ -172,6 +173,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_fxvector_length scheme_fxvector_length
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
+# define ts_scheme_equal scheme_equal
 # define ts_tail_call_with_values_from_multiple_result tail_call_with_values_from_multiple_result
 # define ts_raise_bad_call_with_values raise_bad_call_with_values
 # define ts_call_with_values_from_multiple_result_multi call_with_values_from_multiple_result_multi

@@ -1711,6 +1711,47 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     }
     
     return 1;
+  }  else if (IS_NAMED_PRIM(rator, "equal?")) {
+    GC_CAN_IGNORE jit_insn *ref_f, *ref_d, *refr;
+
+    generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
+    CHECK_LIMIT();
+
+    mz_rs_sync();
+    JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+    jit_prepare(2);
+    jit_pusharg_p(JIT_R0);
+    jit_pusharg_p(JIT_R1);
+    (void)mz_finish_lwe(ts_scheme_equal, refr);
+    jit_retval(JIT_R0);
+    CHECK_LIMIT();
+
+    __START_SHORT_JUMPS__(branch_short);
+    
+    if (for_branch) {
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+    }
+    
+    ref_f = jit_beqi_p(jit_forward(), JIT_R0, 0);
+
+    if (for_branch) {
+      scheme_add_branch_false(for_branch, ref_f);
+      scheme_branch_for_true(jitter, for_branch);
+    } else {
+      jit_movi_p(JIT_R0, scheme_true);
+      ref_d = jit_jmpi(jit_forward());
+      
+      mz_patch_branch(ref_f);
+      jit_movi_p(JIT_R0, scheme_false);
+
+      mz_patch_ucbranch(ref_d);
+    }
+
+    __END_SHORT_JUMPS__(branch_short);
+
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "eqv?")) {
     GC_CAN_IGNORE jit_insn *ref_f1, *ref_f2, *ref_f3, *ref_f4, *ref_f5;
     GC_CAN_IGNORE jit_insn *ref_d1, *ref_d2, *ref_t1;

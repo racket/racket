@@ -320,3 +320,17 @@ case SIG_sis_v:
      
      break;
   }
+case SIG_ss_i:
+  {
+     prim_ss_i f = (prim_ss_i)future->prim_func;
+     GC_CAN_IGNORE int retval;
+     JIT_TS_LOCALIZE(Scheme_Object*, arg_s0); JIT_TS_LOCALIZE(Scheme_Object*, arg_s1);
+     
+     future->arg_s0 = NULL; future->arg_s1 = NULL;
+     
+     retval = 
+     f(arg_s0, arg_s1);
+     future->retval_i = retval;
+     
+     break;
+  }

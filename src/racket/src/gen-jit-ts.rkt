@@ -191,7 +191,8 @@
     siS_v
     z_p
     si_s
-    sis_v))
+    sis_v
+    ss_i))
 
 (with-output-to-file "jit_ts_def.c"
   #:exists 'replace
