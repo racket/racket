@@ -1121,7 +1121,7 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
   export PLTHOME="$workdir/$installdir" PATH="$PLTHOME/bin:$PATH"
-  export SETUP_ARGS="-N raco -l- raco setup -U"
+  export SETUP_ARGS="-N raco -l- raco setup -j 1 -U"
 
   # make sure we don't use any planet caches (PLTPLANETDIR is set globally)
   _rm "$PLTPLANETDIR"
@@ -1156,7 +1156,9 @@ DO_BUILD() { # inputs -- releasing
   else
     _mcd "$PLTHOME/src/build"
     machineget LDFLAGS; export LDFLAGS
-    build_step "configure" ../configure ${configure_args}
+    # use --disable-libffi so we get the internal copy to build and link
+    # since not all distros have libffi
+    build_step "configure" ../configure --disable-libffi ${configure_args}
     build_step "make both" make both
     build_step "make install" make plain-install-both
     build_step "raco setup" "$PLTHOME/bin/racket" $SETUP_ARGS
