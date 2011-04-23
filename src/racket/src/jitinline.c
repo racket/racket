@@ -167,7 +167,7 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 				      Branch_Info *for_branch, int branch_short, int need_sync)
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *ref5;
-  int int_ok;
+  int int_ok, r0_set, r0;
 
   int_ok = ((lo_ty <= scheme_integer_type) && (scheme_integer_type <= hi_ty));
 
@@ -184,7 +184,13 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
   __START_SHORT_JUMPS__(branch_short);
 
+  r0_set = 0;
+  r0 = 0;
   if (for_branch) {
+    if (mz_CURRENT_R0_STATUS_VALID()) {
+      r0_set = 1;
+      r0 = mz_CURRENT_R0_STATUS();
+    }
     scheme_prepare_branch_jump(jitter, for_branch);
     CHECK_LIMIT();
   }
@@ -230,6 +236,13 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
     scheme_add_branch_false(for_branch, ref3);
     scheme_add_branch_false(for_branch, ref4);
     scheme_add_branch_false(for_branch, ref5);
+
+    /* In case true is a fall-through, note that the test 
+       didn't disturb R0: */
+    if (r0_set) {
+      mz_RECORD_R0_STATUS(r0);
+    }
+
     scheme_branch_for_true(jitter, for_branch);
     CHECK_LIMIT();
   } else {

@@ -777,6 +777,36 @@ int scheme_is_constant_and_avoids_r1(Scheme_Object *obj)
     return (t >= _scheme_compiled_values_types_);
 }
 
+static int expression_avoids_clearing_local(Scheme_Object *wrt, int pos, int fuel)
+{
+  Scheme_Type t;
+  t = SCHEME_TYPE(wrt);
+
+  if (t > _scheme_values_types_)
+    return 1;
+  else if (SAME_TYPE(t, scheme_local_type))
+    return ((SCHEME_LOCAL_POS(wrt) != pos)
+            || !(SCHEME_GET_LOCAL_FLAGS(wrt) & SCHEME_LOCAL_CLEAR_ON_READ));
+  else if (SAME_TYPE(t, scheme_toplevel_type))
+    return 1;
+  else if (t == scheme_application2_type) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)wrt;
+    if (fuel < 0) return 0;
+    if (expression_avoids_clearing_local(app->rator, pos + 1, fuel - 1)
+        && expression_avoids_clearing_local(app->rand, pos + 1, fuel - 1))
+      return 1;
+  } else if (t == scheme_application3_type) {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)wrt;
+    if (fuel < 0) return 0;
+    if (expression_avoids_clearing_local(app->rator, pos + 2, fuel - 1)
+        && expression_avoids_clearing_local(app->rand1, pos + 2, fuel - 1)
+        && expression_avoids_clearing_local(app->rand2, pos + 2, fuel - 1))
+      return 1;
+  }
+
+  return 0;
+}
+
 int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Scheme_Object *wrt,
                                                          int fp_ok)
 {
@@ -791,14 +821,9 @@ int scheme_is_relatively_constant_and_avoids_r1_maybe_fp(Scheme_Object *obj, Sch
        otherwise is_constant_and_avoids_r1() would have returned 1. */
     if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
       return fp_ok;
-    else {
-      Scheme_Type t2 = SCHEME_TYPE(wrt);
-      if (t2 == scheme_local_type) {
-        /* If different local vars, then order doesn't matter */
-        if (SCHEME_LOCAL_POS(wrt) != SCHEME_LOCAL_POS(obj))
-          return 1;
-      }
-    }
+    else if (expression_avoids_clearing_local(wrt, SCHEME_LOCAL_POS(obj), 3))
+      /* different local vars, sp order doesn't matter */
+      return 1;
   }
 
   return 0;
@@ -1328,7 +1353,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     CHECK_LIMIT();
     scheme_mz_flostack_restore(jitter, flostack, flostack_pos, !for_branch, 1);
     FOR_LOG(--jitter->log_depth);
-    mz_CLEAR_STATUS();
+    /* mz_CLEAR_R0_STATUS(); --- not needed, since stack doesn't change */
     return v;
   }
 
@@ -1417,7 +1442,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     }
 
     jitter->pushed_marks = save_pushed_marks;
-    mz_CLEAR_STATUS();
+    mz_CLEAR_R0_STATUS();
 
     END_JIT_DATA(21);
   }
@@ -1637,6 +1662,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   if (need_sync) mz_rs_sync_0();
 
   /* False branch */
+  mz_CLEAR_R0_STATUS();
   scheme_mz_runstack_saved(jitter);
   flostack = scheme_mz_flostack_save(jitter, &flostack_pos);
   __START_SHORT_JUMPS__(then_short_ok);
@@ -1699,6 +1725,8 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
 
   if (nsrs1)
     jitter->need_set_rs = 1;
+
+  mz_CLEAR_R0_STATUS();
 
   return 1;
 }
@@ -1800,9 +1828,17 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       LOG_IT(("local %d [%d]\n", pos, SCHEME_LOCAL_FLAGS(obj)));
       if (!result_ignored && (!flonum || !jitter->unbox)) {
-        if (pos || (mz_CURRENT_STATUS() != mz_RS_R0_HAS_RUNSTACK0)) {
+        int old_r0 = -1;
+        if (mz_CURRENT_R0_STATUS_VALID()) old_r0 = mz_CURRENT_R0_STATUS();
+        if (pos != old_r0) {
           mz_rs_ldxi(target, pos);
           VALIDATE_RESULT(target);
+          if (target == JIT_R0)
+            mz_RECORD_R0_STATUS(pos);
+          else {
+            /* R0 is unchanged */
+            mz_RECORD_R0_STATUS(old_r0);
+          }
         } else if (target != JIT_R0) {
           jit_movr_p(target, JIT_R0);
         }
@@ -2684,7 +2720,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (!unused) {
         mz_rs_str(JIT_R0);
-        mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
+        mz_RECORD_R0_STATUS(0);
       }
       
       END_JIT_DATA(17);

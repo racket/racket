@@ -333,11 +333,10 @@ typedef struct {
   Branch_Info_Addr *addrs;
 } Branch_Info;
 
-#define mz_RECORD_STATUS(s) (jitter->status_at_ptr = _jit.x.pc, jitter->reg_status = (s))
-#define mz_CURRENT_STATUS() ((jitter->status_at_ptr == _jit.x.pc) ? jitter->reg_status : 0)
-#define mz_CLEAR_STATUS() (jitter->reg_status = 0)
-
-#define mz_RS_R0_HAS_RUNSTACK0 0x1
+#define mz_RECORD_R0_STATUS(s) (jitter->status_at_ptr = _jit.x.pc, jitter->reg_status = (s))
+#define mz_CURRENT_R0_STATUS_VALID() (jitter->status_at_ptr == _jit.x.pc)
+#define mz_CURRENT_R0_STATUS() (jitter->reg_status)
+#define mz_CLEAR_R0_STATUS() (jitter->status_at_ptr = 0)
 
 /* If JIT_THREAD_LOCAL is defined, then access to global variables
    goes through a thread_local_pointers table. Call
@@ -505,15 +504,19 @@ static void *top4;
    register. */
 
 #if 1
-# define mz_rs_dec(n) (jitter->rs_virtual_offset -= (n))
-# define mz_rs_inc(n) (jitter->rs_virtual_offset += (n))
+# define mz_rs_dec(n) (((jitter->reg_status >= 0) ? jitter->reg_status += (n) : 0), jitter->rs_virtual_offset -= (n))
+# define mz_rs_inc(n) (jitter->reg_status -= (n), jitter->rs_virtual_offset += (n))
 # define mz_rs_ldxi(reg, n) jit_ldxi_p(reg, JIT_RUNSTACK, WORDS_TO_BYTES(((n) + jitter->rs_virtual_offset)))
 # define mz_rs_ldr(reg) mz_rs_ldxi(reg, 0)
 # define mz_rs_stxi(n, reg) jit_stxi_p(WORDS_TO_BYTES(((n) + jitter->rs_virtual_offset)), JIT_RUNSTACK, reg)
 # define mz_rs_str(reg) mz_rs_stxi(0, reg)
 # define mz_rs_sync() (jitter->rs_virtual_offset \
-                       ? (jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(jitter->rs_virtual_offset)), \
-                          jitter->rs_virtual_offset = 0) \
+                       ? ((jitter->status_at_ptr == _jit.x.pc) \
+                          ? (jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(jitter->rs_virtual_offset)), \
+                             jitter->status_at_ptr = _jit.x.pc, \
+                             jitter->rs_virtual_offset = 0) \
+                          : (jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(jitter->rs_virtual_offset)), \
+                             jitter->rs_virtual_offset = 0)) \
                        : 0)
 # define mz_rs_sync_0() (jitter->rs_virtual_offset = 0)
 #else
