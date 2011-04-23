@@ -1723,7 +1723,27 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     jit_prepare(2);
     jit_pusharg_p(JIT_R0);
     jit_pusharg_p(JIT_R1);
+#ifdef MZ_USE_FUTURES
+    {
+      /* inline in-future check, just like other direct prim calls */
+      GC_CAN_IGNORE jit_insn *refdirect, *refdone;
+      int argstate;
+
+      __START_TINY_JUMPS__(1);
+      jit_save_argstate(argstate);
+      mz_tl_ldi_i(JIT_R0, tl_scheme_use_rtcall);
+      refdirect = jit_beqi_i(jit_forward(), JIT_R0, 0);
+      (void)mz_finish_lwe(ts_scheme_equal, refr);
+      refdone = jit_jmpi(jit_forward());
+      jit_restore_argstate(argstate);
+      mz_patch_branch(refdirect);
+      (void)mz_finish(scheme_equal);
+      mz_patch_ucbranch(refdone);
+      __END_TINY_JUMPS__(1);
+    }
+#else
     (void)mz_finish_lwe(ts_scheme_equal, refr);
+#endif
     jit_retval(JIT_R0);
     CHECK_LIMIT();
 
