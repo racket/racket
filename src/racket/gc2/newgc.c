@@ -4390,6 +4390,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
                                    old_mem_use + old_gen0, gc->memory_in_use, 
                                    old_mem_allocated, mmu_memory_allocated(gc->mmu));
   }
+#ifdef MZ_USE_PLACES
   if (lmi) {
     lmi->ran = 1;
     lmi->full = gc->gc_full,
@@ -4398,6 +4399,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
     lmi->pre_admin = old_mem_allocated;
     lmi->post_admin = mmu_memory_allocated(gc->mmu);
   }
+#endif
 
   TIME_STEP("ended");
 
