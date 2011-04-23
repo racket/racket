@@ -142,7 +142,8 @@ message names the bad argument and also lists the other arguments. If
 (feed-animals 'cow 'sheep 'dog 'cat)
 ]}
 
-@defproc[(raise-mismatch-error [name symbol?] [message string?] [v any/c]) any]{
+@defproc[(raise-mismatch-error [name symbol?] [message string?] [v any/c] 
+                               ...+ ...+) any]{
 
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] is used as the source procedure's
@@ -150,7 +151,12 @@ name in the error message. The @racket[message] is the error
 message. The @racket[v] argument is the improper argument received by
 the procedure. The printed form of @racket[v] is appended to
 @racket[message] (using the error value conversion handler; see
-@racket[error-value->string-handler]).}
+@racket[error-value->string-handler]).
+
+Additional arguments are concatenated to the error message like
+@racket[message] and @racket[v]. Every other additional argument
+(starting with the argument after @racket[v]) must be a string, but a
+string need not have a following value argument.}
 
 @defproc[(raise-arity-error [name (or/c symbol? procedure?)]
                             [arity-v (or/c exact-nonnegative-integer?

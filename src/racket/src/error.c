@@ -579,7 +579,7 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("raise-user-error",           raise_user_error,      1, -1, env);
   GLOBAL_NONCM_PRIM("raise-syntax-error",         raise_syntax_error,    2,  5, env);
   GLOBAL_NONCM_PRIM("raise-type-error",           raise_type_error,      3, -1, env);
-  GLOBAL_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3,  3, env);
+  GLOBAL_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3, -1, env);
 
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_add_global_constant("raise-arity-error",  scheme_raise_arity_error_proc, env);
@@ -2174,17 +2174,61 @@ static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[])
 static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *s;
+  int i; 
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("raise-mismatch-error", "symbol", 0, argc, argv);
   if (!SCHEME_CHAR_STRINGP(argv[1]))
     scheme_wrong_type("raise-mismatch-error", "string", 1, argc, argv);
 
-  s = scheme_char_string_to_byte_string(argv[1]);
+  /* additional arguments: odd ones must be strings */
+  for (i = 3; i < argc; i += 2) {
+    if (!SCHEME_CHAR_STRINGP(argv[i]))
+      scheme_wrong_type("raise-mismatch-error", "string", i, argc, argv);
+  }
 
-  scheme_arg_mismatch(scheme_symbol_val(argv[0]),
-		      SCHEME_BYTE_STR_VAL(s),
-		      argv[2]);
+  if (argc == 3) {
+    /* Simple case: one string & value: */
+    s = scheme_char_string_to_byte_string(argv[1]);
+    
+    scheme_arg_mismatch(scheme_symbol_val(argv[0]),
+                        SCHEME_BYTE_STR_VAL(s),
+                        argv[2]);
+  } else {
+    /* Multiple strings & values: */
+    char *st, **ss;
+    intptr_t slen, *slens, total = 0;
+    int scount = argc - 1;
+
+    ss = (char **)MALLOC_N(char*, scount);
+    slens = (intptr_t *)MALLOC_N_ATOMIC(intptr_t, scount);
+
+    for (i = 1; i < argc; i++) {
+      if (i & 1) {
+        s = scheme_char_string_to_byte_string(argv[i]);
+        st = SCHEME_BYTE_STR_VAL(s);
+        slen = SCHEME_BYTE_STRLEN_VAL(s);
+      } else {
+        st = scheme_make_provided_string(argv[i], scount / 2, &slen);
+      }
+      total += slen;
+      ss[i-1] = st;
+      slens[i-1] = slen;
+    }
+    st = (char *)scheme_malloc_atomic(total + 1);
+
+    total = 0;
+    for (i = 0; i < scount; i++) {
+      slen = slens[i];
+      memcpy(st + total, ss[i], slen);
+      total += slen;
+    }
+    st[total] = 0;
+    
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "%s: %t",
+                     scheme_symbol_val(argv[0]), st, total);
+  }
 
   return NULL;
 }
