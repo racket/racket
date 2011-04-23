@@ -28,7 +28,7 @@
     }})
 
 (define (subp . body) (apply div class: 'subp body))
-(define (graytd . body) (apply td bgcolor: "#ddd" body))
+(define (graytd . body) (apply td bgcolor: "#dddddd" body))
 
 (define listinfo
   @page[#:title @list{Mailing lists: @MM{List-Name}}
