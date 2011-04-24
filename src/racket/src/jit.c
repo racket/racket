@@ -2949,7 +2949,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 typedef struct {
   Scheme_Closure_Data *data;
   void *arity_code, *code, *tail_code, *code_end, **patch_depth;
-  int max_extra, max_depth;
+  int max_extra, max_depth, max_tail_depth;
   Scheme_Native_Closure *nc;
   int argc;
   Scheme_Object **argv;
@@ -3281,6 +3281,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     gdata->tail_code = tail_code;
     gdata->max_extra = jitter->max_extra_pushed;
     gdata->max_depth = jitter->max_depth;
+    gdata->max_tail_depth = jitter->max_tail_depth;
     gdata->code_end = code_end;
     gdata->patch_depth = jitter->patch_depth;
   }
@@ -3307,8 +3308,10 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   scheme_delay_load_closure(data);
 
   /* So, check again whether we still need to generate: */
-  if (nc->code->code != scheme_on_demand_jit_code)
+  if (ndata->code != scheme_on_demand_jit_code)
     return;
+
+  ndata->arity_code = NULL; /* => in progress */
 
   scheme_generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
 
@@ -3337,6 +3340,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   /* Add a couple of extra slots to computed let-depth, in case
      we haven't quite computed right for inlined uses, etc. */
   max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 2);
+  if (gdata.max_tail_depth > max_depth)
+    max_depth = gdata.max_tail_depth;
 
   /* max_let_depth is used for flags by generate_lambda: */
   if (ndata->max_let_depth & 0x1) {

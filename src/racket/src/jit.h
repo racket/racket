@@ -274,7 +274,7 @@ typedef struct {
   char *limit;
   int extra_pushed, max_extra_pushed;
   int depth; /* the position of the closure's first value on the stack */
-  int max_depth;
+  int max_depth, max_tail_depth;
   int *mappings; /* For each element,
 		    case 0x1 bit:
 		    . 0 -> case 0x2 bit:
@@ -1028,7 +1028,7 @@ static int past_limit(mz_jit_state *jitter)
 {
   if (((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
-    printf("way past\n");
+    printf("way past\n"); abort();
   }
   return 0;
 }
@@ -1136,7 +1136,8 @@ void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int m
 void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
-int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, int is_inline);
+int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
+                              int is_inline, void *direct_to_code);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);
