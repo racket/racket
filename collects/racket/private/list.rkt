@@ -126,7 +126,7 @@
 
   (define (bad-list who orig-l)
     (raise-mismatch-error who
-                          "not a propert list: "
+                          "not a proper list: "
                           orig-l))
   (define (bad-item who a orig-l)
     (raise-mismatch-error who
