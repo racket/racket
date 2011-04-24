@@ -130,7 +130,9 @@ the settings above should match r5rs
     (test-expression "(current-command-line-arguments)" "'#()")
     (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")
     
-    (test-expression "#lang racket" #rx"module: illegal use \\(not at top-level\\)" #rx"read: #lang not enabled in the current context")))
+    (test-expression "#lang racket" #rx"module: illegal use \\(not at top-level\\)" #rx"read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "a: b")))
 
 
 ;                                                                               
@@ -232,7 +234,9 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      ""
-                     #rx"read: #lang not enabled in the current context")))
+                     #rx"read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "a: b")))
 
 ;                                      
 ;                                      
@@ -340,7 +344,9 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
-                     #rx"read: #lang not enabled in the current context")))
+                     #rx"read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     #rx"reference to undefined identifier:")))
 
 
 ;                                                             
@@ -505,7 +511,10 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      "module: name is not defined, not a parameter, and not a primitive name"
-                     "read: #lang not enabled in the current context")))
+                     "read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "define: expected at least one argument name after the function name, but found none"
+                     #rx"define: function definitions are not allowed in the interactions window")))
 
 
 ;                                                                            
@@ -673,7 +682,10 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      "module: name is not defined, not a parameter, and not a primitive name"
-                     "read: #lang not enabled in the current context")))
+                     "read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "define: expected at least one argument name after the function name, but found none"
+                     #rx"define: function definitions are not allowed in the interactions window")))
 
 
 ;                                                                                          
@@ -833,7 +845,10 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      "module: name is not defined, not a parameter, and not a primitive name"
-                     "read: #lang not enabled in the current context")))
+                     "read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "define: expected at least one argument name after the function name, but found none"
+                     #rx"define: expected at least one argument name after the function name, but found none")))
 
 
 
@@ -991,7 +1006,10 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      "module: name is not defined, not a parameter, and not a primitive name"
-                     "read: #lang not enabled in the current context")))
+                     "read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     "define: expected at least one argument name after the function name, but found none"
+                     #rx"define: expected at least one argument name after the function name, but found none")))
 
 
 
@@ -1149,7 +1167,10 @@ the settings above should match r5rs
     
     (test-expression "#lang racket"
                      "module: name is not defined, not a parameter, and not a primitive name"
-                     "read: #lang not enabled in the current context")))
+                     "read: #lang not enabled in the current context")
+    (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
+                     #rx"raise-user-error"
+                     #rx"raise-user-error")))
 
 
 
@@ -1499,11 +1520,11 @@ the settings above should match r5rs
     [(_ arg)
      (identifier? (syntax arg))
      (syntax (begin (flush-output)
-                    (printf ">> starting ~a\n" (syntax->datum #'arg))
+                    (printf ">> starting ~a\n" 'arg)
                     (flush-output)
                     (arg)
                     (flush-output)
-                    (printf ">> finished ~a\n" (syntax->datum #'arg))
+                    (printf ">> finished ~a\n" 'arg)
                     (flush-output)))]))
 
 (define (run-test)
