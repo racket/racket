@@ -320,7 +320,7 @@
 
   /************** x86/FreeBSD with gcc ****************/
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
  
 # if defined(__i386__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
@@ -914,11 +914,14 @@
 
 #ifndef FLAGS_ALREADY_SET
 
+/* assume generic Unix: */
+#include "uconfig.h"
+# define SIGSET_IS_SIGNAL
+# define SIGSET_NEEDS_REINSTALL
+
   /*********************/
  /* Operating System  */
 /*********************/
-
-#define SYSTEM_TYPE_NAME "unix"
 
   /* SYSTEM_TYPE_NAME must be a string; this will be converted into
      a symbol for the result of (system-type) */
@@ -931,11 +934,6 @@
   /*********************/
  /* Language Features */
 /*********************/
-
-#define TIME_SYNTAX
-#define PROCESS_FUNCTION
-#define DIR_FUNCTION
-#define GETENV_FUNCTION
 
  /* TIME_SYNTAX adds the (time ...) syntax; this may need to be
      turned off for compilation on some systems.
@@ -975,9 +973,6 @@
   /*******************/
  /*   Filesystem    */
 /*******************/
-
-#define UNIX_FILE_SYSTEM
-#define EXPAND_FILENAME_TILDE
 
  /* UNIX_FILE_SYSTEM indicates that filenames are as in Unix, with
     forward slash separators, ".." as the parent directory, "/" 
@@ -1029,15 +1024,12 @@
    None of these flags are required, but char-ready? may return
    spurious #ts if they are set up incorrectly. */
 
-#define HAS_STANDARD_IOB
-#define FILES_HAVE_FDS
-#define USE_UNIX_SOCKETS_TCP
-#define CLOSE_ALL_FDS_AFTER_FORK
-
  /* HAS_STANDARD_IOB, HAS_GNU_IOB, HAS_CYGWIN_IOB, HAS_LINUX_IOB,
     HAS_BSD_IOB, and HAS_SCO_IOB are mutually exclusive; they describe
     how to read the FILE* structure to determine if there are
     available cached characters. */
+
+ /* USE_FD_PORTS uses Unix-style open(), etc., for file ports. */
 
  /* FILES_HAVE_FDS means that a FILE* is always associated with a
     file desciptor, which can be select-ed to see if there are
@@ -1115,10 +1107,6 @@
 /***********************/
 
 /* These are flags about the implementation of system, process, etc. */
-
-# define UNIX_PROCESSES
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
 
  /* UNIX_PROCESSES implements the process functions for Unix; uses
     sigset() to install the signal handler. */
@@ -1288,10 +1276,6 @@
  /* Stack Maniuplations */
 /***********************/
 
-# define DO_STACK_CHECK
-# define UNIX_FIND_STACK_BOUNDS
-# define STACK_SAFETY_MARGIN 50000
-
  /* DO_STACK_CHECK checks for stack overflow during execution.
      Requires either UNIX_FIND_STACK_BOUNDS, USE_STACKAVAIL,
      MACOS_FIND_STACK_BOUNDS, or ASSUME_FIXED_STACK_SIZE. */
@@ -1326,8 +1310,6 @@
   /***********************/
  /*   Dynamic Loading   */
 /***********************/
-
-#define UNIX_DYNAMIC_LOAD
 
  /* UNIX_DYNAMIC_LOAD implements dynamic extensions under Unix
      using dlopen(); you may have to add the -ldl flag in the LIBS 
@@ -1405,8 +1387,6 @@
   /***********************/
  /*    Miscellaneous    */
 /***********************/
-
-#define UNISTD_INCLUDE
 
  /* USE_MAP_ANON indicates that mmap should use BSD's MAP_ANON flag
     rather than trying to open /dev/zero */

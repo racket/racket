@@ -513,7 +513,7 @@ case $OS in
     enable_cgcdefault="yes"
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../racket/include/racket.exp"
     ;;
-  FreeBSD)
+  *FreeBSD)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
     GC_THREADS_FLAG="-DGC_FREEBSD_THREADS"
