@@ -147,7 +147,7 @@
                       a
                       (let ([l (unsafe-cdr l)])
                         (cond
-                         [(eq? l t) (bad-list who orig-l)]
+                         ;; [(eq? l t) (bad-list who orig-l)]
                          [(pair? l)
                           (let ([a (unsafe-car l)])
                             (if (pair? a)
