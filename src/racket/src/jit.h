@@ -561,6 +561,18 @@ int check_location;
 #define mz_retain(x) scheme_mz_retain_it(jitter, x)
 #define mz_remap(x) scheme_mz_remap_it(jitter, x)
 
+#ifdef jit_bxnei_s
+# define mz_bnei_t(label, reg, stype, scratch_reg) jit_bxnei_s(label, reg, stype)
+# define mz_beqi_t(label, reg, stype, scratch_reg) jit_bxeqi_s(label, reg, stype)
+#else
+# define mz_bnei_t(label, reg, stype, scratch_reg) \
+  (jit_ldxi_s(scratch_reg, reg, &((Scheme_Object *)0x0)->type), \
+   jit_bnei_i(label, scratch_reg, stype))
+# define mz_beqi_t(label, reg, stype, scratch_reg) \
+  (jit_ldxi_s(scratch_reg, reg, &((Scheme_Object *)0x0)->type), \
+   jit_beqi_i(label, scratch_reg, stype))
+#endif
+
 /* Stack alignment, fixed up by mz_push_locals():
     - On PPC, jit_prolog() generates an aligned stack.
       It also leaves room for 3 locals.
@@ -1131,13 +1143,15 @@ int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 /*                              jitcall                               */
 /**********************************************************************/
 
+typedef struct jit_direct_arg jit_direct_arg;
+
 void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
 				  int direct_prim, int direct_native, int nontail_self);
 void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok);
 int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-                              int is_inline, void *direct_to_code);
+                              int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined);
 int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native);

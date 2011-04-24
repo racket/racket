@@ -594,6 +594,10 @@ static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
 
+/* Checks whether *(short*)rs == is: */
+#define jit_bxeqi_s(label, rs, is) (CMPWim(is, 0, rs, 0, 0), JEm(label,0,0,0), _jit.x.pc)
+#define jit_bxnei_s(label, rs, is) (CMPWim(is, 0, rs, 0, 0), JNEm(label,0,0,0), _jit.x.pc)
+
 #ifdef SUPPORT_TINY_JUMPS
 # if 0
 static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) || (diff > 127)) *(intptr_t *)0x0 = 1; return diff; }

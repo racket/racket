@@ -483,8 +483,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
 
   /* Check for chaperone: */
   ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-  jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-  ref = jit_bnei_i(jit_forward(), JIT_R1, scheme_chaperone_type);
+  ref = mz_bnei_t(jit_forward(), JIT_R0, scheme_chaperone_type, JIT_R1);
   jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&((Scheme_Chaperone *)0x0)->val);
   mz_epilog(JIT_R1); /* return after unwrapping */
   CHECK_LIMIT();
@@ -1044,8 +1043,7 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
 	  (void)jit_blei_l(reffail, JIT_R1, 0x0);
 	}
-	jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-	(void)jit_bnei_i(reffail, JIT_R2, ty);
+	(void)mz_bnei_t(reffail, JIT_R0, ty, JIT_R2);
         if (iii) {
           jit_ldxi_s(JIT_R2, JIT_R0, &(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0)));
           (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
@@ -1251,8 +1249,7 @@ static int common4(mz_jit_state *jitter, void *_data)
     
     /* It's not a fixnum... */
     mz_patch_branch(ref);
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    (void)jit_bnei_i(reffail, JIT_R2, scheme_stx_type);
+    (void)mz_bnei_t(reffail, JIT_R0, scheme_stx_type, JIT_R2);
     
     /* It's a syntax object... needs to propagate? */
     jit_ldxi_l(JIT_R2, JIT_R0, &((Scheme_Stx *)0x0)->u.lazy_prefix);
@@ -1363,8 +1360,7 @@ static int common4(mz_jit_state *jitter, void *_data)
 
       /* Continue trying fast path: check proc */
       mz_patch_branch(ref);
-      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-      (void)jit_bnei_i(refslow, JIT_R2, scheme_prim_type);
+      (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
       if (kind == 3) {
         jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
@@ -1858,8 +1854,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
     ref8 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
 
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    ref3 = mz_bnei_t(jit_forward(), JIT_R0, scheme_pair_type, JIT_R2);
     CHECK_LIMIT();
 
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
@@ -1870,8 +1865,7 @@ static int common7(mz_jit_state *jitter, void *_data)
     ref5 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
     ref7 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
 
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    (void)jit_beqi_i(refloop, JIT_R2, scheme_pair_type);
+    (void)mz_beqi_t(refloop, JIT_R0, scheme_pair_type, JIT_R2);
 
     ref6 = jit_jmpi(jit_forward());
     CHECK_LIMIT();
@@ -1979,8 +1973,7 @@ static int common8(mz_jit_state *jitter, void *_data)
     ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
     ref3 = jit_bmsi_l(jit_forward(), JIT_R0, 0x1);
 
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref4 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    ref4 = mz_bnei_t(jit_forward(), JIT_R0, scheme_pair_type, JIT_R2);
     CHECK_LIMIT();
 
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
@@ -2126,8 +2119,7 @@ static int more_common0(mz_jit_state *jitter, void *_data)
 
     /* Continue trying fast path: check proc */
     mz_patch_branch(ref);
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    (void)jit_bnei_i(refslow, JIT_R2, scheme_struct_type_type);
+    (void)mz_bnei_t(refslow, JIT_R0, scheme_struct_type_type, JIT_R2);
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Struct_Type *)0x0)->iso));
     (void)jit_bmci_ul(refslow, JIT_R2, STRUCT_TYPE_CHECKED_PROC);
     CHECK_LIMIT();
@@ -2323,8 +2315,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
     ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
     __END_INNER_TINY__(1);
     ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    ref3 = mz_bnei_t(jit_forward(), JIT_R0, scheme_pair_type, JIT_R2);
     jit_addi_l(JIT_R1, JIT_R1, 1);
     jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
     __START_INNER_TINY__(1);
@@ -2464,7 +2455,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
 
     __END_SHORT_JUMPS__(1);
     
-    scheme_generate_tail_call(jitter, -1, 0, 1, 0, NULL);
+    scheme_generate_tail_call(jitter, -1, 0, 1, 0, NULL, NULL);
     CHECK_LIMIT();
   }
 
@@ -2500,8 +2491,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
       ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
       __END_INNER_TINY__(1);
       ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-      ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+      ref3 = mz_bnei_t(jit_forward(), JIT_R0, scheme_pair_type, JIT_R2);
       jit_addi_l(JIT_R1, JIT_R1, 1);
       jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CDR(0x0));
       __START_INNER_TINY__(1);
