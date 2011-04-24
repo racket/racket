@@ -4138,11 +4138,11 @@ static Scheme_Object *do_load_handler(void *data)
       /* CERT-INSP-CACHE <- grep for that in read.c */
       obj = scheme_make_pair(obj, scheme_get_param(config, MZCONFIG_CODE_INSPECTOR));
       obj = scheme_lookup_in_table(scheme_module_code_cache, (const char *)obj);
+      if (obj)
+        obj = scheme_ephemeron_value(obj);
       if (obj) {
         /* Synthesize a wrapper to pass through `eval': */
         Scheme_Compilation_Top *top;
-
-        obj = scheme_ephemeron_value(obj);
 
         top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
         top->so.type = scheme_compilation_top_type;
