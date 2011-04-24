@@ -8,7 +8,7 @@
 	 "error.ss"
          racket/trace
          racket/contract
-         (lib "list.ss")
+         racket/list
          (lib "etc.ss")
          (for-syntax syntax/parse
                      syntax/parse/experimental/contract))
@@ -41,69 +41,62 @@
        [_ (datum->syntax (identifier-prune-lexical-context #'whatever '(#%datum))
                          (syntax->datum stx) stx)]))))
 
-(define-syntax (term-match/single stx)
-  (syntax-case stx ()
-    [(_ lang [pattern rhs] ...)
+(define-for-syntax (term-matcher orig-stx make-matcher)
+  (syntax-case orig-stx ()
+    [(form-name lang [pattern rhs] ...)
      (begin
        (unless (identifier? #'lang)
-         (raise-syntax-error 'term-match/single "expected an identifier in the language position" stx #'lang))
-       (let ([lang-nts (language-id-nts #'lang 'term-match/single)])
+         (raise-syntax-error (syntax-e #'form-name) "expected an identifier in the language position" orig-stx #'lang))
+       (let ([lang-nts (language-id-nts #'lang (syntax-e #'form-name))])
          (with-syntax ([(((names ...) (names/ellipses ...)) ...)
-                        (map (λ (x) (let-values ([(names names/ellipses) (extract-names lang-nts 'term-match/single #t x)])
-                                      (list names names/ellipses)))
+                        (map (λ (x) (call-with-values 
+                                     (λ () (extract-names lang-nts (syntax-e #'form-name) #t x))
+                                     list))
                              (syntax->list (syntax (pattern ...))))]
                        [(side-conditions-rewritten ...)
-                        (map (λ (x) (rewrite-side-conditions/check-errs lang-nts 'term-match #t x))
+                        (map (λ (x) (rewrite-side-conditions/check-errs lang-nts (syntax-e #'form-name) #t x))
                              (syntax->list (syntax (pattern ...))))]
-                       [(cp-x ...) (generate-temporaries #'(pattern ...))])
-           #'(let ([lang-x lang])
-               (let ([cp-x (compile-pattern lang-x `side-conditions-rewritten #t)] ...)
-                 (λ (exp)
-                   ((let/ec k
-                      (let ([match (match-pattern cp-x exp)])
-                        (when match
-                          (unless (null? (cdr match))
-                            (redex-error
-                             'term-match/single
-                             "pattern ~s matched term ~e multiple ways"
-                             'pattern
-                             exp))
-                          (k (λ ()
-                               (term-let/error-name 
-                                term-match/single
-                                ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
-                                rhs)))))
-                      ...
-                      (redex-error 'term-match/single "no patterns matched ~e" exp)))))))))]))
+                       [(cp-x ...) (generate-temporaries #'(pattern ...))]
+                       [make-matcher make-matcher])
+           #'(make-matcher
+              'form-name lang 
+              (list 'pattern ...)
+              (list (compile-pattern lang `side-conditions-rewritten #t) ...)
+              (list (λ (match)
+                      (term-let/error-name 
+                       form-name
+                       ([names/ellipses (lookup-binding (mtch-bindings match) 'names)] ...)
+                       rhs)) ...)))))]))
 
+(define-syntax (term-match/single stx)
+  (term-matcher stx #'term-match/single/proc))
 (define-syntax (term-match stx)
-  (syntax-case stx ()
-    [(_ lang [pattern rhs] ...)
-     (begin
-       (unless (identifier? #'lang)
-         (raise-syntax-error 'term-match "expected an identifier" stx #'lang))
-       (let ([lang-nts (language-id-nts #'lang 'term-match)])
-         (with-syntax ([(((names ...) (names/ellipses ...)) ...)
-                        (map (λ (x) (let-values ([(names names/ellipses) (extract-names lang-nts 'term-match #t x)])
-                                      (list names names/ellipses)))
-                             (syntax->list (syntax (pattern ...))))]
-                       [(side-conditions-rewritten ...)
-                        (map (λ (x) (rewrite-side-conditions/check-errs lang-nts 'term-match #t x))
-                             (syntax->list (syntax (pattern ...))))]
-                       [(cp-x ...) (generate-temporaries #'(pattern ...))])
-           #'(let ([lang-x lang])
-               (let ([cp-x (compile-pattern lang-x `side-conditions-rewritten #t)] ...)
-                 (λ (exp)
-                   (append
-                    (let ([matches (match-pattern cp-x exp)])
-                      (if matches
-                          (map (λ (match)
-                                 (term-let/error-name
-                                  term-match
-                                  ([names/ellipses (lookup-binding (mtch-bindings match) 'names)] ...)
-                                   rhs))
-                               matches)
-                          '())) ...)))))))]))
+  (term-matcher stx #'term-match/proc))
+
+(define ((term-match/proc form-name lang ps cps rhss) term)
+  (append-map
+   (λ (cp rhs)
+     (let ([matches (match-pattern cp term)])
+       (if matches
+           (map rhs matches)
+           '())))
+   cps rhss))
+
+(define ((term-match/single/proc form-name lang ps cps rhss) term)
+  (let loop ([ps ps] [cps cps] [rhss rhss])
+    (if (null? ps)
+        (redex-error form-name "no patterns matched ~e" term)
+        (let ([match (match-pattern (car cps) term)])
+          (if match
+              (begin
+                (unless (null? (cdr match))
+                  (redex-error
+                   form-name
+                   "pattern ~s matched term ~e multiple ways"
+                   (car ps)
+                   term))
+                ((car rhss) (car match)))
+              (loop (cdr ps) (cdr cps) (cdr rhss)))))))
 
 (define-syntax (compatible-closure stx)
   (syntax-case stx ()

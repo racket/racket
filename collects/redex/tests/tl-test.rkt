@@ -2036,6 +2036,9 @@
          '(x y))
         '(x . y))
   
+  (test ((term-match/single empty-language [() 'a] [() 'b])
+         '())
+        'a)
 
   (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
                         ((λ (x) #t) (λ (x) 'wrong-exn)))
