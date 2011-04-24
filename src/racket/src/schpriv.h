@@ -2681,6 +2681,10 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *);
 Scheme_Object *scheme_jit_closure(Scheme_Object *, Scheme_Object *context);
 void scheme_jit_fill_threadlocal_table();
 
+#ifdef MZ_USE_JIT
+void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
+#endif
+
 struct Start_Module_Args;
 
 #ifdef MZ_USE_JIT

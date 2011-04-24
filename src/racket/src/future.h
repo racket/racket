@@ -184,8 +184,6 @@ extern Scheme_Object *scheme_rtcall_make_future(const char *who, int src_type, S
 
 #endif 
 
-extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
-
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
 void scheme_check_future_work();
