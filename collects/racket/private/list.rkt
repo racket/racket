@@ -164,21 +164,26 @@
                   (bad-item who a orig-l)))]
            [(null? l) #f]
            [else (bad-list who orig-l)])))
-      (values
-       (lambda (x l)
-         (assoc-loop 'assq x l eq?))
-       (lambda (x l)
-         (assoc-loop 'assv x l eqv?))
-       (case-lambda
-        [(x l) (assoc-loop 'assoc x l equal?)]
-        [(x l is-equal?)
-         (unless (and (procedure? is-equal?) (procedure-arity-includes? is-equal? 2))
-           (raise-type-error 'assoc "procedure (arity 2)" is-equal?))
-         (assoc-loop 'assoc x l is-equal?)])
-       (lambda (f l)
-         (unless (and (procedure? f) (procedure-arity-includes? f 1))
-           (raise-type-error 'assf "procedure (arity 1)" f))
-         (assoc-loop 'assf #f l (lambda (_ a) (f a)))))))
+      (let ([assq
+             (lambda (x l)
+               (assoc-loop 'assq x l eq?))]
+            [assv
+             (lambda (x l)
+               (assoc-loop 'assv x l eqv?))]
+            [assoc
+             (case-lambda
+               [(x l) (assoc-loop 'assoc x l equal?)]
+               [(x l is-equal?)
+                (unless (and (procedure? is-equal?)
+                             (procedure-arity-includes? is-equal? 2))
+                  (raise-type-error 'assoc "procedure (arity 2)" is-equal?))
+                (assoc-loop 'assoc x l is-equal?)])]
+            [assf
+             (lambda (f l)
+               (unless (and (procedure? f) (procedure-arity-includes? f 1))
+                 (raise-type-error 'assf "procedure (arity 1)" f))
+               (assoc-loop 'assf #f l (lambda (_ a) (f a))))])
+        (values assq assv assoc assf))))
 
   ;; fold : ((A B -> B) B (listof A) -> B)
   ;; fold : ((A1 ... An B -> B) B (listof A1) ... (listof An) -> B)
