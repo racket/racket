@@ -6,7 +6,7 @@
 
 @defclass[number-snip:snip-class% snip-class% ()]{
 
-  @defmethod*[#:mode override (((read (f stream-in)) snip))]{
+  @defmethod*[#:mode override (((read (f (is-a?/c editor-stream-in%))) (or/c (is-a?/c snip%) #f)))]{
 
     Constructs a number snip from its input.
   }

@@ -65,7 +65,7 @@
     from an earlier call to 
     @method[text:basic<%> highlight-range].
   }
-  @defmethod*[(((get-highlighted-ranges) (listof range)))]{
+  @defmethod*[(((get-highlighted-ranges) (listof text:range?)))]{
 
     Returns a list of (opaque) values representing the active
     ranges in the editor.
