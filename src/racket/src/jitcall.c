@@ -662,15 +662,26 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
   {
     GC_CAN_IGNORE jit_insn *refr;
+#ifdef MZ_USE_JIT_I386
+    GC_CAN_IGNORE jit_insn *refxr;
+#endif
     if (num_rands < 0) {
       /* We need to save argc to manually pop the
          runstack. So move V1 to R2 and move R0 to V1: */
       jit_movr_p(JIT_R2, JIT_V1);
       jit_movr_p(JIT_V1, JIT_R0);
     }
-    refr = jit_patchable_movi_p(JIT_R1, jit_forward());
     jit_shuffle_saved_regs(); /* maybe copies V registers to be restored */
+#ifdef MZ_USE_JIT_I386
+    /* keep call & ret paired by jumping to where we really 
+       want to return,then back here: */
+    refr = jit_jmpi(jit_forward());
+    refxr = _jit.x.pc;
+    jit_base_prolog();
+#else
+    refr = jit_patchable_movi_p(JIT_R1, jit_forward());
     _jit_prolog_again(jitter, 3, JIT_R1); /* saves V registers (or copied V registers) */
+#endif
     if (num_rands >= 0) {
       if (nontail_self) { jit_movr_p(JIT_R1, JIT_R0); }
       jit_movr_p(JIT_R0, JIT_V1); /* closure */
@@ -709,7 +720,12 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       /* self-call function pointer is in R1 */
       jit_jmpr(JIT_R1);
     }
+#ifdef MZ_USE_JIT_I386
+    mz_patch_ucbranch(refr);
+    (void)jit_calli(refxr);
+#else
     jit_patch_movi(refr, (_jit.x.pc));
+#endif
     jit_unshuffle_saved_regs(); /* maybe uncopies V registers */
     /* If num_rands < 0, then V1 has argc */
   }
