@@ -45,6 +45,7 @@ language.
                                racket/private/define
                                racket/private/stx
                                racket/private/map
+                               racket/private/list
                                racket/private/base)]{
 
 Unless otherwise noted, the bindings defined in this manual are
