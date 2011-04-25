@@ -54,9 +54,9 @@ static void register_traversers(void);
 
 #ifdef MZ_PRECISE_GC
 /* keygen race conditions below are ok, because keygen is randomness used
-   to create a hashkey.  Setting a hashkey on a Scheme_Object however, may 
-   lead to race conditions */
-FIXME_LATER static uintptr_t keygen;
+   to create a hashkey. (Make sure that only one thread at a time sets
+   a hash code in a specific object, though.) */
+SHARED_OK static uintptr_t keygen;
 
 XFORM_NONGCING static MZ_INLINE
 uintptr_t PTR_TO_LONG(Scheme_Object *o)
