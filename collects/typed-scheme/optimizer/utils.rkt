@@ -7,27 +7,42 @@
          (types type-table utils subtype)
          (rep type-rep))
 
-(provide log-optimization *log-optimizations?* *log-optimizatons-to-log-file?*
-         *optimization-log-file* *show-optimized-code*
+(provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
+         log-close-call *log-close-calls?*
+         *show-optimized-code*
          subtypeof? isoftype?
          mk-unsafe-tbl
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
          optimize)
 
-(define *log-optimizations?*
-  (member "--log-optimizations"
-          (vector->list (current-command-line-arguments))))
-(define *log-optimizatons-to-log-file?* #f)
-(define *optimization-log-file* "opt-log")
+(define (in-command-line? opt)
+  (member opt (vector->list (current-command-line-arguments))))
+
+(define *log-file* "opt-log")
+(define *log-to-log-file?* #f) ; otherwise, goes to stdout
+
+(define (do-logging msg stx)
+  (printf "~a line ~a col ~a - ~a - ~a\n"
+          (syntax-source-file-name stx)
+          (syntax-line stx) (syntax-column stx)
+          (syntax->datum stx)
+          msg))
+
+(define *log-optimizations?* (in-command-line? "--log-optimizations"))
 (define (log-optimization kind stx)
-  (if *log-optimizations?*
-      (printf "~a line ~a col ~a - ~a - ~a\n"
-              (syntax-source-file-name stx)
-              (syntax-line stx) (syntax-column stx)
-              (syntax->datum stx)
-              kind)
-      #t))
+  (when *log-optimizations?*
+    (do-logging kind stx)))
+
+;; Keep track of optimizations that "almost" happened, with the intention
+;; of reporting them to the user.
+;; This is meant to help users understand what hurts the performance of
+;; their programs.
+(define *log-close-calls?* (in-command-line? "--log-close-calls"))
+(define (log-close-call kind stx)
+  (when *log-close-calls?*
+    (do-logging kind stx)))
+
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
 
