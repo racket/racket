@@ -25,13 +25,11 @@
 #define READ_ONLY      __attribute__((__READ_ONLY__))
 #define SHARED_OK      __attribute__((__SHARED_OK__))
 #define HOOK_SHARED_OK __attribute__((__HOOK_SHARED_OK__))
-#define FIXME_LATER    __attribute__((__FIXME_LATER__))
 #else
 #define ROSYM          /* EMPTY */
 #define READ_ONLY      /* EMPTY */
 #define SHARED_OK      /* EMPTY */
 #define HOOK_SHARED_OK /* EMPTY */
-#define FIXME_LATER    /* EMPTY */
 #endif
 
 /*========================================================================*/
