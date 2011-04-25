@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt")
-@(require (for-label syntax/modcollapse))
+@(require (for-label syntax/modcollapse
+                     racket/stxparam))
 
 @(define contract-eval
    (lambda ()
@@ -1080,6 +1081,13 @@ The @racket[define-struct/contract] form only allows a subset of the
 (make-salmon 5 #f)
 (make-salmon #f 'pacific)
 ]}
+
+@defidform[current-contract-region]{
+  Bound by @racket[define-syntax-parameter], this contains
+  information about the current contract region, used by
+  the above forms to determine the candidates for blame
+  assignment.
+}
 
 @subsection{Low-level Contract Boundaries}
 @declare-exporting-ctc[racket/contract/base]
