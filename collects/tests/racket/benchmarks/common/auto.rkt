@@ -130,7 +130,7 @@ exec racket -qu "$0" ${1+"$@"}
     (delete-file (append-extension-suffix (symbol->string bm))))
 
   (define (run-exe bm)
-    (system (symbol->string bm)))
+    (system (format "./~a" (symbol->string bm))))
 
   (define (run-exe/time bm)
     (system (format "time ~a" bm)))

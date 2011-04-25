@@ -11,12 +11,7 @@
     (newline))
   #:exists 'truncate/replace)
 
-(when (system (format "bigloo -w -o ~a -copt -m32 -call/cc -copt -O3 -copt -fomit-frame-pointer -O6 ~a~a.scm"
-                      name 
-                      (if (memq (string->symbol name)
-                                '(ctak))
-                          "-call/cc "
-                          "")
-                      name))
+(when (system (format "bigloo -static-bigloo -w -o ~a -copt -m32 -call/cc -copt -O3 -copt -fomit-frame-pointer -O6 ~a.scm"
+                      name name))
   (delete-file (format "~a.scm" name))
   (delete-file (format "~a.o" name)))
