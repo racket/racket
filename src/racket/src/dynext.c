@@ -420,8 +420,7 @@ static Scheme_Object *do_load_extension(const char *filename,
     filename = scheme_strdup(filename);
 # endif
 
-
-      scheme_hash_set(fullpath_loaded_extensions, (Scheme_Object *)filename, mzPROC_TO_HASH_OBJ(init_f));
+    scheme_hash_set(fullpath_loaded_extensions, (Scheme_Object *)filename, mzPROC_TO_HASH_OBJ(init_f));
 
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
     scheme_end_atomic_no_swap();
