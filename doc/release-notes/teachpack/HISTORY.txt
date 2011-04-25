@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Version 5.2				  [Mon Apr 25 11:07:14 EDT 2011]
+
+* tiny bug fix in registration process for universe 
+
+------------------------------------------------------------------------
 Version 5.1				  [Tue Feb  8 13:05:17 EST 2011]
 
 * to-draw (old name: on-draw) is now required for big-bang expressions 
