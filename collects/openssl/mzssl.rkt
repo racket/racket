@@ -14,9 +14,11 @@
 ;;  read/write (the opposite direction) didn't finish, and so that
 ;;  opposite must be completed, first.
 
-(module mzssl scheme
-  (require mzlib/foreign
-	   mzlib/port
+(module mzssl racket/base
+  (require ffi/unsafe
+           ffi/unsafe/define
+           racket/port
+           racket/tcp
            "libcrypto.rkt"
            "libssl.rkt")
 
@@ -61,8 +63,6 @@
 
            ssl-port?)
 
-  (unsafe!)
-
   (define ssl-load-fail-reason
     (or libssl-load-fail-reason
         libcrypto-load-fail-reason))
@@ -74,21 +74,11 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL bindings and constants
 
-  (define-syntax define-define-X
-    (syntax-rules ()
-      [(_ id chk lib)
-       (define-syntax (id stx)
-	 (syntax-case stx ()
-	   [(_ id type)
-	    (with-syntax ([str (symbol->string (syntax-e #'id))])
-	      #'(define id
-		  (if chk
-		      (get-ffi-obj str lib (_fun . type))
-		      (lambda args (raise-not-available)))))]))]))
-
-  (define-define-X define-crypto libcrypto libcrypto)
-  (define-define-X define-ssl libssl libssl)
-  (define-define-X define-mzscheme #t libmz)
+  (define-ffi-definer define-crypto libcrypto
+    #:default-make-fail make-not-available)
+  (define-ffi-definer define-ssl libssl
+    #:default-make-fail make-not-available)
+  (define-ffi-definer define-mzscheme libmz)
 
   (define-syntax typedef
     (syntax-rules ()
@@ -103,62 +93,62 @@
   (typedef _X509_NAME* _pointer)
   (typedef _X509* _pointer)
 
-  (define-ssl SSLv2_client_method (-> _SSL_METHOD*))
-  (define-ssl SSLv2_server_method (-> _SSL_METHOD*))
-  (define-ssl SSLv3_client_method (-> _SSL_METHOD*))
-  (define-ssl SSLv3_server_method (-> _SSL_METHOD*))
-  (define-ssl SSLv23_client_method (-> _SSL_METHOD*))
-  (define-ssl SSLv23_server_method (-> _SSL_METHOD*))
-  (define-ssl TLSv1_client_method (-> _SSL_METHOD*))
-  (define-ssl TLSv1_server_method (-> _SSL_METHOD*))
+  (define-ssl SSLv2_client_method (_fun -> _SSL_METHOD*))
+  (define-ssl SSLv2_server_method (_fun -> _SSL_METHOD*))
+  (define-ssl SSLv3_client_method (_fun -> _SSL_METHOD*))
+  (define-ssl SSLv3_server_method (_fun -> _SSL_METHOD*))
+  (define-ssl SSLv23_client_method (_fun -> _SSL_METHOD*))
+  (define-ssl SSLv23_server_method (_fun -> _SSL_METHOD*))
+  (define-ssl TLSv1_client_method (_fun -> _SSL_METHOD*))
+  (define-ssl TLSv1_server_method (_fun -> _SSL_METHOD*))
 
-  (define-crypto BIO_s_mem (-> _BIO_METHOD*))
-  (define-crypto BIO_new (_BIO_METHOD* -> _BIO*))
-  (define-crypto BIO_free (_BIO* -> _void))
+  (define-crypto BIO_s_mem (_fun -> _BIO_METHOD*))
+  (define-crypto BIO_new (_fun _BIO_METHOD* -> _BIO*))
+  (define-crypto BIO_free (_fun _BIO* -> _void))
 
-  (define-crypto BIO_read (_BIO* _bytes _int -> _int))
-  (define-crypto BIO_write (_BIO* _bytes _int -> _int))
-  (define-crypto BIO_ctrl (_BIO* _int _long _long -> _long))
+  (define-crypto BIO_read (_fun _BIO* _bytes _int -> _int))
+  (define-crypto BIO_write (_fun _BIO* _bytes _int -> _int))
+  (define-crypto BIO_ctrl (_fun _BIO* _int _long _long -> _long))
   (define (BIO_set_mem_eof_return b v)
     (BIO_ctrl b BIO_C_SET_BUF_MEM_EOF_RETURN v 0))
 
-  (define-ssl SSL_CTX_new (_SSL_METHOD* -> _SSL_CTX*))
-  (define-ssl SSL_CTX_free (_SSL_CTX* -> _void))
-  (define-ssl SSL_CTX_ctrl (_SSL_CTX* _int _long _pointer -> _long))
+  (define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*))
+  (define-ssl SSL_CTX_free (_fun _SSL_CTX* -> _void))
+  (define-ssl SSL_CTX_ctrl (_fun _SSL_CTX* _int _long _pointer -> _long))
   (define (SSL_CTX_set_mode ctx m)
     (SSL_CTX_ctrl ctx SSL_CTRL_MODE m #f))
 
-  (define-ssl SSL_CTX_set_verify (_SSL_CTX* _int _pointer -> _void))
-  (define-ssl SSL_CTX_use_certificate_chain_file (_SSL_CTX* _bytes -> _int))
-  (define-ssl SSL_CTX_load_verify_locations (_SSL_CTX* _bytes _pointer -> _int))
-  (define-ssl SSL_CTX_set_client_CA_list (_SSL_CTX* _X509_NAME* -> _int))
-  (define-ssl SSL_CTX_set_session_id_context (_SSL_CTX* _bytes _int -> _int))
-  (define-ssl SSL_CTX_use_RSAPrivateKey_file (_SSL_CTX* _bytes _int -> _int))
-  (define-ssl SSL_CTX_use_PrivateKey_file (_SSL_CTX* _bytes _int -> _int))
-  (define-ssl SSL_load_client_CA_file (_bytes -> _X509_NAME*))
+  (define-ssl SSL_CTX_set_verify (_fun _SSL_CTX* _int _pointer -> _void))
+  (define-ssl SSL_CTX_use_certificate_chain_file (_fun _SSL_CTX* _bytes -> _int))
+  (define-ssl SSL_CTX_load_verify_locations (_fun _SSL_CTX* _bytes _pointer -> _int))
+  (define-ssl SSL_CTX_set_client_CA_list (_fun _SSL_CTX* _X509_NAME* -> _int))
+  (define-ssl SSL_CTX_set_session_id_context (_fun _SSL_CTX* _bytes _int -> _int))
+  (define-ssl SSL_CTX_use_RSAPrivateKey_file (_fun _SSL_CTX* _bytes _int -> _int))
+  (define-ssl SSL_CTX_use_PrivateKey_file (_fun _SSL_CTX* _bytes _int -> _int))
+  (define-ssl SSL_load_client_CA_file (_fun _bytes -> _X509_NAME*))
 
-  (define-ssl SSL_new (_SSL_CTX* -> _SSL*))
-  (define-ssl SSL_set_bio (_SSL* _BIO* _BIO* -> _void))
-  (define-ssl SSL_connect (_SSL* -> _int))
-  (define-ssl SSL_accept (_SSL* -> _int))
-  (define-ssl SSL_free (_SSL* -> _void))
-  (define-ssl SSL_read (_SSL* _bytes _int -> _int))
-  (define-ssl SSL_write (_SSL* _bytes _int -> _int))
-  (define-ssl SSL_shutdown (_SSL* -> _int))
-  (define-ssl SSL_get_verify_result (_SSL* -> _long))
-  (define-ssl SSL_get_peer_certificate (_SSL* -> _X509*))
+  (define-ssl SSL_new (_fun _SSL_CTX* -> _SSL*))
+  (define-ssl SSL_set_bio (_fun _SSL* _BIO* _BIO* -> _void))
+  (define-ssl SSL_connect (_fun _SSL* -> _int))
+  (define-ssl SSL_accept (_fun _SSL* -> _int))
+  (define-ssl SSL_free (_fun _SSL* -> _void))
+  (define-ssl SSL_read (_fun _SSL* _bytes _int -> _int))
+  (define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
+  (define-ssl SSL_shutdown (_fun _SSL* -> _int))
+  (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
+  (define-ssl SSL_get_peer_certificate (_fun _SSL* -> _X509*))
   
-  (define-crypto X509_get_subject_name ( _X509* -> _X509_NAME*))
-  (define-crypto X509_get_issuer_name ( _X509* -> _X509_NAME*))
-  (define-crypto X509_NAME_oneline (_X509_NAME* _bytes _int -> _bytes))
+  (define-crypto X509_get_subject_name (_fun _X509* -> _X509_NAME*))
+  (define-crypto X509_get_issuer_name (_fun _X509* -> _X509_NAME*))
+  (define-crypto X509_NAME_oneline (_fun _X509_NAME* _bytes _int -> _bytes))
 
-  (define-ssl SSL_get_error (_SSL* _int -> _int))
+  (define-ssl SSL_get_error (_fun _SSL* _int -> _int))
 
-  (define-crypto ERR_get_error (-> _long))
-  (define-crypto ERR_error_string_n (_long _bytes _long -> _void))
+  (define-crypto ERR_get_error (_fun -> _long))
+  (define-crypto ERR_error_string_n (_fun _long _bytes _long -> _void))
 
-  (define-ssl SSL_library_init (-> _void))
-  (define-ssl SSL_load_error_strings (-> _void))
+  (define-ssl SSL_library_init (_fun -> _void))
+  (define-ssl SSL_load_error_strings (_fun -> _void))
   
   (define X509_V_OK 0)
 
@@ -180,9 +170,9 @@
   (define SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER #x02)
   (define SSL_CTRL_MODE 33)
 
-  (define-mzscheme scheme_start_atomic (-> _void))
-  (define-mzscheme scheme_end_atomic (-> _void))
-  (define-mzscheme scheme_make_custodian (_pointer -> _scheme))
+  (define-mzscheme scheme_start_atomic (_fun -> _void))
+  (define-mzscheme scheme_end_atomic (_fun -> _void))
+  (define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
   ;; Make this bigger than 4096 to accommodate at least
   ;; 4096 of unencrypted data
@@ -199,9 +189,6 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Error handling
-
-  (define (raise-not-available)
-    (error 'openssl "OpenSSL shared library not found"))
 
   (define-syntax with-failure
     (syntax-rules ()

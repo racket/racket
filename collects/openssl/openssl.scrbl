@@ -115,6 +115,10 @@ The @scheme[protocol] must be one of the following:
   @item{@scheme['tls] : the TLS protocol version 1}
 ]
 
+Note that SSL protocol version 2 is deprecated on some platforms and may not be
+present in your system libraries. The use of SSLv2 may also compromise security; 
+thus, using SSLv3 is recommended.
+
 By default, the context returned by @scheme[ssl-make-client-context] does not
 request verification of a server's certificate. Use @scheme[ssl-set-verify!]
 to enable such verification.}
