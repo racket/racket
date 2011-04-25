@@ -238,13 +238,9 @@ SHARED_OK static Scheme_Object *addon_dir;
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
 #if defined(UNIX_FILE_SYSTEM) && !defined(NO_UNIX_USERS)
-typedef struct {
-  gid_t gid;
-  char set, in;
-} Group_Mem_Cache;
 
 # define GROUP_CACHE_SIZE 10
-FIXME_LATER static Group_Mem_Cache group_mem_cache[GROUP_CACHE_SIZE];
+THREAD_LOCAL_DECL(static Scheme_Object *group_member_cache);
 
 SHARED_OK static int have_user_ids = 0;
 SHARED_OK static uid_t uid;
@@ -5341,9 +5337,16 @@ static int user_in_group(uid_t uid, gid_t gid)
   struct passwd *pw;
   int i, in;
 
+  if (!group_member_cache) {
+    group_member_cache = scheme_make_vector(2 * GROUP_CACHE_SIZE, scheme_false);
+    REGISTER_SO(group_member_cache);
+  }
+
   for (i = 0; i < GROUP_CACHE_SIZE; i++) {
-    if (group_mem_cache[i].set && (group_mem_cache[i].gid == gid))
-      return group_mem_cache[i].in;
+    Scheme_Object *gid_e;
+    gid_e = SCHEME_VEC_ELS(group_member_cache)[2*i];
+    if (!SCHEME_FALSEP(gid_e) && (SCHEME_INT_VAL(gid_e) == gid))
+      return SCHEME_FALSEP(SCHEME_VEC_ELS(group_member_cache)[2*i+1]) ? 0 : 1;
   }
 
   pw = getpwuid(uid);
@@ -5362,10 +5365,10 @@ static int user_in_group(uid_t uid, gid_t gid)
   in = !!(g->gr_mem[i]);
 
   for (i = 0; i < GROUP_CACHE_SIZE; i++) {
-    if (!group_mem_cache[i].set) {
-      group_mem_cache[i].set = 1;
-      group_mem_cache[i].gid = gid;
-      group_mem_cache[i].in = in;
+    if (SCHEME_FALSEP(SCHEME_VEC_ELS(group_member_cache)[2*i])) {
+      SCHEME_VEC_ELS(group_member_cache)[2*i]   = scheme_make_integer(gid);
+      SCHEME_VEC_ELS(group_member_cache)[2*i+1] = in ? scheme_true : scheme_false;
+      return in;
     }
   }
 
