@@ -10,12 +10,7 @@
                      racket/contract/private/helpers
                      "contract-arr-obj-helpers.rkt"))
 
-(provide mixin-contract
-         make-mixin-contract
-         is-a?/c 
-         subclass?/c 
-         implementation?/c
-         object-contract)
+(provide object-contract)
 
 (define-syntax object-contract
   (let ()
@@ -303,46 +298,4 @@
                   ctc))))]))))
 
 
-(define (make-mixin-contract . %/<%>s)
-  ((and/c (flat-contract class?)
-          (apply and/c (map sub/impl?/c %/<%>s)))
-   . ->d .
-   subclass?/c))
 
-(define (subclass?/c %)
-  (unless (class? %)
-    (error 'subclass?/c "expected <class>, given: ~e" %))
-  (let ([name (object-name %)])
-    (flat-named-contract
-     `(subclass?/c ,(or name 'unknown%))
-     (lambda (x) (subclass? x %)))))
-
-(define (implementation?/c <%>)
-  (unless (interface? <%>)
-    (error 'implementation?/c "expected <interface>, given: ~e" <%>))
-  (let ([name (object-name <%>)])
-    (flat-named-contract
-     `(implementation?/c ,(or name 'unknown<%>))
-     (lambda (x) (implementation? x <%>)))))
-
-(define (sub/impl?/c %/<%>)
-  (cond
-    [(interface? %/<%>) (implementation?/c %/<%>)]
-    [(class? %/<%>) (subclass?/c %/<%>)]
-    [else (error 'make-mixin-contract "unknown input ~e" %/<%>)]))
-
-(define (is-a?/c <%>)
-  (unless (or (interface? <%>)
-              (class? <%>))
-    (error 'is-a?/c "expected <interface> or <class>, given: ~e" <%>))
-  (let ([name (object-name <%>)])
-    (flat-named-contract
-     (cond
-       [name
-        `(is-a?/c ,name)]
-       [(class? <%>)
-        `(is-a?/c unknown%)]
-       [else `(is-a?/c unknown<%>)])
-     (lambda (x) (is-a? x <%>)))))
-
-(define mixin-contract (class? . ->d . subclass?/c))

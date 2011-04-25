@@ -88,7 +88,7 @@ from @racketmodname[racket/contract]:
  vector-immutable/c
  vector-immutableof]
 
-It also provides the old version of the following forms:
+It also provides the old version of the following contracts:
 
 @defform[(define/contract id contract-expr init-value-expr)]{
 
@@ -131,6 +131,11 @@ corresponding flat contract.}
 Produces a flat contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
 flat contracts produced by the @racket[flat-contract-expr]s.}
+
+@defproc[(build-flat-contract [name symbol?] [predicate (-> any/c any)]) flat-contract?]{
+  Builds a flat contract out of @racket[predicate], giving it the name
+  @racket[name]. Nowadays, just using @racket[predicate] directly is preferred.
+}
 
 @defform*[((-> contract-dom-expr ... any)
            (-> contract-dom-expr ... contract-rng-expr))]{
@@ -260,4 +265,30 @@ This is a restricted form of @racketmodname[racket/contract]'s
   variables and the post-condition is also paramterized over @racket[rng-x], which is bound to the result
   of the function.
 
+}
+
+@defform*[((->pp-rest ([dom-x contract-dom-expr] ...) rest-x rest-contract-expr pre-cond-expr any)
+           (->pp-rest ([dom-x contract-dom-expr] ...)
+                      rest-x rest-contract-expr
+                      pre-cond-expr
+                      (values [rng-x contract-rng-expr] ...)
+                      post-cond-expr)
+           (->pp-rest ([dom-x contract-dom-expr] ...)
+                      rest-x rest-contract-expr
+                      pre-cond-expr
+                      contract-rng-expr
+                      rng-x
+                      post-cond-expr))]{
+  Like @racket[->pp], but with an additional contract for the rest arguments of the function.
+}
+                                  
+@defform[(case-> mzlib/contract-arrow-contract-expr ...)]{
+   Builds a contract analogous to @racket[case-lambda],
+   where each case comes from one of the contract expression arguments
+   (tried in order).
+}
+
+@defform[(object-contract [id mzlib/contract-arrow-contract-expr] ...)]{
+   Builds a contract for objects where each @racket[id] is expected to be 
+   a method on the object living up to the corresponding contract
 }

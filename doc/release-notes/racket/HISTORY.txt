@@ -1,6 +1,20 @@
 Version 5.1.1.2
 Changed "sequence" to include exact nonnegative integers
-
+mzlib/contract: removed following (undocumented) exports:
+  chaperone-contract-struct?
+  contract-struct-first-order
+  contract-struct-name
+  contract-struct-projection
+  contract-struct-stronger?
+  contract-struct?
+  flat-contract-struct?
+  make-opt-contract/info
+  opt-contract/info-contract
+  opt-contract/info-enforcer
+  opt-contract/info-id
+  synthesized-value
+  unknown?
+  
 Version 5.1.1, May 2011
 Enabled single-precision floats by default
 Added single-flonum?

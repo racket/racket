@@ -2008,4 +2008,8 @@ makes a binary search tree contract, but one that is
   struct and returns a projection function that checks the contract.
   
 }
+<<<<<<< HEAD
                               
+=======
+
+>>>>>>> 0b337dc... rejiggered things to make sure all mzlib/contract exports are documented

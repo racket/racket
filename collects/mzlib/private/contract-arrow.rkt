@@ -22,50 +22,11 @@
          ->pp-rest
          case->
          opt->
-         opt->*
-         unconstrained-domain->)
+         opt->*)
 
 (define-struct contracted-function (proc ctc)
   #:property prop:procedure 0
   #:property prop:contracted 1)
-
-(define-syntax (unconstrained-domain-> stx)
-  (syntax-case stx ()
-    [(_ rngs ...)
-     (with-syntax ([(rngs-x ...) (generate-temporaries #'(rngs ...))]
-                   [(proj-x ...) (generate-temporaries #'(rngs ...))]
-                   [(p-app-x ...) (generate-temporaries #'(rngs ...))]
-                   [(res-x ...) (generate-temporaries #'(rngs ...))])
-       #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
-           (let ([proj-x (contract-projection rngs-x)] ...)
-             (define name
-               (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...))
-             (define (proj wrapper)
-               (λ (blame)
-                 (let* ([p-app-x (proj-x blame)] ...
-                        [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
-                   (λ (val)
-                     (if (procedure? val)
-                         (wrapper
-                          val
-                          (make-keyword-procedure
-                           (λ (kwds kwd-vals . args)
-                             (apply values res-checker kwd-vals args))
-                           (λ args
-                             (apply values res-checker args)))
-                          impersonator-prop:contracted ctc)
-                         (raise-blame-error blame val "expected a procedure"))))))
-             (define ctc
-               (if (and (chaperone-contract? rngs-x) ...)
-                   (make-chaperone-contract
-                    #:name name
-                    #:projection (proj chaperone-procedure)
-                    #:first-order procedure?)
-                   (make-contract
-                    #:name name
-                    #:projection (proj impersonate-procedure)
-                    #:first-order procedure?)))
-             ctc)))]))
 
 (define (build--> name doms doms-rest rngs kwds quoted-kwds rng-any? func)
   (let ([doms/c (map (λ (dom) (coerce-contract name dom)) doms)]
