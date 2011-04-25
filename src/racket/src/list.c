@@ -3269,7 +3269,7 @@ Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val)
   Scheme_Ephemeron *e;
   int can_gc = 1;
 
-  if (SCHEME_INTP(val) || !GC_base(val)) 
+  if (SCHEME_INTP(key) || !GC_base(key))
     can_gc = 0;
 
   if (can_gc) {
@@ -3278,12 +3278,12 @@ Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object *val)
     e = (Scheme_Ephemeron *)scheme_malloc(sizeof(Scheme_Ephemeron));
   }
   e->so.type = scheme_ephemeron_type;
+  e->key = key;
+  e->val = val;
   if (can_gc) {
     e->next = ephemerons;
     ephemerons = e;
   }
-  e->key = key;
-  e->val = val;
 
   return (Scheme_Object *)e;
 #endif
