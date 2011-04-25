@@ -105,9 +105,8 @@ Scheme_Extension_Table *scheme_extension_table;
 #endif
 
 #ifndef NO_DYNAMIC_LOAD
-/* FIXME disallow extensions under places */
-FIXME_LATER static Scheme_Hash_Table *loaded_extensions; /* hash on scheme_initialize pointer */
-FIXME_LATER static Scheme_Hash_Table *fullpath_loaded_extensions; /* hash on full path name */
+SHARED_OK static Scheme_Hash_Table *loaded_extensions; /* hash on scheme_initialize pointer */
+SHARED_OK static Scheme_Hash_Table *fullpath_loaded_extensions; /* hash on full path name */
 #endif
 
 #ifdef MZ_PRECISE_GC 
@@ -190,6 +189,9 @@ static Scheme_Object *do_load_extension(const char *filename,
   ExtensionData *ed;
   void *handle;
   int comppath;
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *original_gc;
+# endif
 
   comppath = scheme_is_complete_path(filename, strlen(filename), SCHEME_PLATFORM_PATH_KIND);
 
@@ -197,10 +199,20 @@ static Scheme_Object *do_load_extension(const char *filename,
   modname_f = NULL;
   handle = NULL;
 
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
+# endif
+
   if (comppath)
     init_f = (Init_Procedure)scheme_hash_get(fullpath_loaded_extensions, (Scheme_Object *)filename);
   else
     init_f = NULL;
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  scheme_end_atomic_no_swap();
+  GC_switch_back_from_master(original_gc);
+# endif
 
   if (!init_f) {
 #endif
@@ -216,18 +228,8 @@ static Scheme_Object *do_load_extension(const char *filename,
     if (filename[0] != '/') {
       int l = strlen(filename);
       char *s;
-# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-      void *original_gc;
-      original_gc = GC_switch_to_master_gc();
-      scheme_start_atomic();
-# endif
 
       s = (char *)scheme_malloc_atomic(l + 3);
-
-# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-      scheme_end_atomic_no_swap();
-      GC_switch_back_from_master(original_gc);
-# endif
 
       s[0] = '.';
       s[1] = '/';
@@ -352,6 +354,9 @@ static Scheme_Object *do_load_extension(const char *filename,
     Setup_Procedure f;
     char *vers;
     CFragConnectionID connID;
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    void *original_gc;
+# endif
 
     if (get_ext_file_spec( &spec, filename ) && load_ext_file_spec( &spec, &connID ) )
       {
@@ -410,10 +415,11 @@ static Scheme_Object *do_load_extension(const char *filename,
 
     if (comppath) {
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-    void *original_gc;
     original_gc = GC_switch_to_master_gc();
     scheme_start_atomic();
+    filename = scheme_strdup(filename);
 # endif
+
 
       scheme_hash_set(fullpath_loaded_extensions, (Scheme_Object *)filename, mzPROC_TO_HASH_OBJ(init_f));
 
@@ -433,7 +439,6 @@ static Scheme_Object *do_load_extension(const char *filename,
     modname_f = ed->modname_f;
   } else {
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-    void *original_gc;
     original_gc = GC_switch_to_master_gc();
     scheme_start_atomic();
 # endif
