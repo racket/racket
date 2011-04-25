@@ -1753,11 +1753,11 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_add_branch_false(for_branch, ref_f);
       scheme_branch_for_true(jitter, for_branch);
     } else {
-      jit_movi_p(JIT_R0, scheme_true);
+      (void)jit_movi_p(JIT_R0, scheme_true);
       ref_d = jit_jmpi(jit_forward());
       
       mz_patch_branch(ref_f);
-      jit_movi_p(JIT_R0, scheme_false);
+      (void)jit_movi_p(JIT_R0, scheme_false);
 
       mz_patch_ucbranch(ref_d);
     }
@@ -1814,11 +1814,10 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_branch_for_true(jitter, for_branch);
     } else {
       (void)jit_calli(sjc.eqv_code);
-      jit_retval(JIT_R0);
       ref_d1 = jit_jmpi(jit_forward());
 
       mz_patch_branch(ref_t1);
-      jit_movi_p(JIT_R0, scheme_true);
+      (void)jit_movi_p(JIT_R0, scheme_true);
       ref_d2 = jit_jmpi(jit_forward());
       
       mz_patch_branch(ref_f1);
@@ -1827,7 +1826,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_patch_branch(ref_f4);
       mz_patch_branch(ref_f5);
 
-      jit_movi_p(JIT_R0, scheme_false);
+      (void)jit_movi_p(JIT_R0, scheme_false);
 
       mz_patch_ucbranch(ref_d1);
       mz_patch_ucbranch(ref_d2);
