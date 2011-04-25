@@ -1,0 +1,13 @@
+#lang racket/base
+(require tests/utils/docs-complete)
+(check-docs (quote swindle/turbo))
+(check-docs (quote swindle/tool))
+(check-docs (quote swindle/tiny-clos))
+(check-docs (quote swindle/setf))
+(check-docs (quote swindle/patterns))
+(check-docs (quote swindle/misc))
+(check-docs (quote swindle))
+(check-docs (quote swindle/extra))
+(check-docs (quote swindle/custom))
+(check-docs (quote swindle/clos))
+(check-docs (quote swindle/base))

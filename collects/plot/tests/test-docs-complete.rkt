@@ -1,0 +1,13 @@
+#lang racket/base
+(require tests/utils/docs-complete)
+(check-docs (quote plot/view))
+(check-docs (quote plot/renderers))
+(check-docs (quote plot/renderer-helpers))
+(check-docs (quote plot/plplot))
+(check-docs (quote plot/plot))
+(check-docs (quote plot/plot-extend))
+(check-docs (quote plot/math))
+(check-docs (quote plot))
+(check-docs (quote plot/fit))
+(check-docs (quote plot/fit-low-level))
+(check-docs (quote plot/extend))

@@ -1,0 +1,11 @@
+#lang racket/base
+(require tests/utils/docs-complete)
+(check-docs (quote file/zip))
+(check-docs (quote file/tar))
+(check-docs (quote file/sha1))
+(check-docs (quote file/resource))
+(check-docs (quote file/md5))
+(check-docs (quote file/gzip))
+(check-docs (quote file/gunzip))
+(check-docs (quote file/gif))
+(check-docs (quote file/convertible))

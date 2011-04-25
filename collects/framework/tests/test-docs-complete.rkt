@@ -1,0 +1,13 @@
+#lang racket/base
+(require tests/utils/docs-complete)
+(check-docs (quote framework/test))
+(check-docs (quote framework/splash))
+(check-docs (quote framework/preferences))
+(check-docs (quote framework))
+(check-docs (quote framework/gui-utils))
+(check-docs (quote framework/framework))
+(check-docs (quote framework/framework-unit))
+(check-docs (quote framework/framework-sig))
+(check-docs (quote framework/decorated-editor-snip))
+(check-docs (quote framework/comment-snip))
+(check-docs (quote framework/collapsed-snipclass))
