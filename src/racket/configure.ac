@@ -896,7 +896,7 @@ if test "${enable_libffi}" = "yes" ; then
   else
     CFLAGS="${OLD_CFLAGS}"
     PREFLAGS="${PREFLAGS} ${libffi_config_preflags}"
-    CFLAGS="${COMPFLAGS} ${libffi_config_cflags}"
+    COMPFLAGS="${COMPFLAGS} ${libffi_config_cflags}"
     echo "Using installed libffi"
     OWN_LIBFFI="OFF"
   fi
