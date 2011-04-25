@@ -136,7 +136,8 @@
 ;; InPort OutPort (U #f String) -> Void 
 ;; register with the server 
 (define (tcp-register in out name)
-  (tcp-send out `(REGISTER ((name ,(if name name (symbol->string (gensym 'world)))))))
+  (define msg `(REGISTER ((name ,(if name name (symbol->string (gensym 'world)))))))
+  (tcp-send out msg)
   (define ackn (tcp-receive in))
   (unless (equal? ackn '(OKAY))
     (raise tcp-eof)))
