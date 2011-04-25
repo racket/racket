@@ -46,14 +46,10 @@ static struct disappearing_link {
 
     word dl_hidden_obj;		/* Pointer to object base	*/
 
-    /* PLTSCHEME: for restoring: */
-    union {
-      short kind;
-#           define NORMAL_DL  0
-#           define RESTORE_DL 1
-#           define LATE_DL    2
-      word value; /* old value when zeroed */
-    } dl_special;
+    /* PLTSCHEME: normal versus late: */
+  short dl_kind;
+# define NORMAL_DL  0
+# define LATE_DL    1
     struct disappearing_link *restore_next;
 } **dl_head = 0;
 
@@ -171,14 +167,6 @@ int GC_general_register_disappearing_link(void * * link,
     struct disappearing_link * new_dl;
     DCL_LOCK_STATE;
     
-#if 1
-    /* PLTSCHEME: If wxObjects are sometimes stack-allocated, 
-       GRacket needs this. Keeping it for now just-in-case, though
-       it should be eliminated in the future. */
-    if (!GC_base(link))
-      return 1;
-#endif
-
     if ((word)link & (ALIGNMENT-1))
     	ABORT("Bad arg to GC_general_register_disappearing_link");
 #   ifdef THREADS
@@ -223,7 +211,7 @@ int GC_general_register_disappearing_link(void * * link,
     }
     new_dl -> dl_hidden_obj = HIDE_POINTER(obj);
     new_dl -> dl_hidden_link = HIDE_POINTER(link);
-    new_dl -> dl_special.kind = late_dl ? LATE_DL : (obj ? NORMAL_DL : RESTORE_DL); /* PLTSCHEME: Set flag */
+    new_dl -> dl_kind = late_dl ? LATE_DL : NORMAL_DL; /* PLTSCHEME: Set flag */
     dl_set_next(new_dl, dl_head[index]);
     dl_head[index] = new_dl;
     GC_dl_entries++;
@@ -606,7 +594,6 @@ void GC_finalize()
     size_t dl_size = (log_dl_table_size == -1 ) ? 0 : (1 << log_dl_table_size);
     size_t fo_size = (log_fo_table_size == -1 ) ? 0 : (1 << log_fo_table_size);
     /* PLTSCHEME: for resetting the disapearing link */
-    struct disappearing_link *done_dl = NULL, *last_done_dl = NULL;
 
     /* PLTSCHEME: it's important to "push roots again" before
        making disappearing links disappear, because this
@@ -615,58 +602,36 @@ void GC_finalize()
        are disappeared. */
     if (GC_push_last_roots_again) GC_push_last_roots_again();
 
-    /* Make disappearing links disappear */
-    /* PLTSCHEME: handle NULL real_link and remember old values */
+  /* Make disappearing links disappear */
     for (i = 0; i < dl_size; i++) {
       curr_dl = dl_head[i];
       prev_dl = 0;
       while (curr_dl != 0) {
 	/* PLTSCHEME: skip late dls: */
-	if (curr_dl->dl_special.kind == LATE_DL) {
+	if (curr_dl->dl_kind == LATE_DL) {
 	  prev_dl = curr_dl;
 	  curr_dl = dl_next(curr_dl);
 	  continue;
 	}
-	/* PLTSCHEME: reorder and set real_ptr based on real_link: */
-        real_link = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_link);
         real_ptr = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_obj);
-	if (!real_ptr)
-	  real_ptr = (ptr_t)GC_base(*(void * *)real_link);
-	/* PLTSCHEME: keep the dl entry if dl_special.kind = 1: */
-        if (real_ptr && !GC_is_marked(real_ptr)) {
-	  int needs_restore = (curr_dl->dl_special.kind == RESTORE_DL);
-	  if (needs_restore)
-  	    curr_dl->dl_special.value = *(word *)real_link;
-	  *(word *)real_link = 0;
-
-	  next_dl = dl_next(curr_dl);
-
-          if (needs_restore && curr_dl->dl_special.value) {
-	    if (!last_done_dl)
-	      done_dl = curr_dl;
-	    else
-	      last_done_dl->restore_next = curr_dl;
-	    last_done_dl = curr_dl;
-	  } else {
-	    if (prev_dl == 0)
-	      dl_head[i] = next_dl;
-	    else
-	      dl_set_next(prev_dl, next_dl);
-
-	    GC_clear_mark_bit((ptr_t)curr_dl);
- 	    GC_dl_entries--;
-	  }
-	  curr_dl = next_dl;
-	} else {
+        real_link = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_link);
+        if (!GC_is_marked(real_ptr)) {
+            *(word *)real_link = 0;
+            next_dl = dl_next(curr_dl);
+            if (prev_dl == 0) {
+                dl_head[i] = next_dl;
+            } else {
+                dl_set_next(prev_dl, next_dl);
+            }
+            GC_clear_mark_bit((ptr_t)curr_dl);
+            GC_dl_entries--;
+            curr_dl = next_dl;
+        } else {
             prev_dl = curr_dl;
             curr_dl = dl_next(curr_dl);
         }
       }
     }
-
-    /* PLTSCHEME: set NULL terminator: */
-    if (last_done_dl)
-      last_done_dl->restore_next = NULL;
 
   /* PLTSCHEME: All eagers first */
   /* Enqueue for finalization all EAGER objects that are still		*/
@@ -748,17 +713,6 @@ void GC_finalize()
       }
     }
 
-    /* PLTSCHEME: Restore disappeared links. */
-    curr_dl = done_dl;
-    while (curr_dl != 0) {
-      real_link = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_link);
-      *(word *)real_link = curr_dl->dl_special.value;
-      curr_dl->dl_special.kind = RESTORE_DL;
-      prev_dl = curr_dl;
-      curr_dl = curr_dl->restore_next;
-      prev_dl->restore_next = NULL;
-    }
-
     /* Remove dangling disappearing links. */
     for (i = 0; i < dl_size; i++) {
       curr_dl = dl_head[i];
@@ -787,33 +741,28 @@ void GC_finalize()
       curr_dl = dl_head[i];
       prev_dl = 0;
       while (curr_dl != 0) {
-	if (curr_dl -> dl_special.kind == LATE_DL) {
-	  /* PLTSCHEME: reorder and set real_ptr based on real_link: */
-	  real_link = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_link);
-	  real_ptr = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_obj);
-	  if (!real_ptr)
-	    real_ptr = (ptr_t)GC_base(*(void * *)real_link);
-	  if (real_ptr && !GC_is_marked(real_ptr)) {
-	    *(word *)real_link = 0;
-
-	    next_dl = dl_next(curr_dl);
-
-	    if (prev_dl == 0)
-	      dl_head[i] = next_dl;
-	    else
-	      dl_set_next(prev_dl, next_dl);
-
-	    GC_clear_mark_bit((ptr_t)curr_dl);
- 	    GC_dl_entries--;
-
-	    curr_dl = next_dl;
-	  } else {
-	    prev_dl = curr_dl;
-	    curr_dl = dl_next(curr_dl);
-	  }
-	} else {
+	/* PLTSCHEME: only late dls: */
+	if (curr_dl->dl_kind != LATE_DL) {
 	  prev_dl = curr_dl;
 	  curr_dl = dl_next(curr_dl);
+	  continue;
+	}
+        real_ptr = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_obj);
+        real_link = (ptr_t)REVEAL_POINTER(curr_dl -> dl_hidden_link);
+        if (!GC_is_marked(real_ptr)) {
+            *(word *)real_link = 0;
+            next_dl = dl_next(curr_dl);
+            if (prev_dl == 0) {
+                dl_head[i] = next_dl;
+            } else {
+                dl_set_next(prev_dl, next_dl);
+            }
+            GC_clear_mark_bit((ptr_t)curr_dl);
+            GC_dl_entries--;
+            curr_dl = next_dl;
+        } else {
+            prev_dl = curr_dl;
+            curr_dl = dl_next(curr_dl);
         }
       }
     }
