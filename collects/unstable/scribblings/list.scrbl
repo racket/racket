@@ -27,6 +27,41 @@
 ]
 }
 
+@defproc[(take-common-prefix [l list?] [r list?]
+                             [#:same? same? equal?])
+         list?]{
+
+  Returns the longest common prefix of @racket[l] and @racket[r].
+
+@examples[#:eval the-eval
+(take-common-prefix '(a b c d) '(a b x y z))
+]
+}
+
+@defproc[(drop-common-prefix [l list?] [r list?]
+                             [#:same same? equal?])
+         (values list? list?)]{
+
+  Returns the tails of @racket[l] and @racket[r] with the common
+  prefix removed.
+
+@examples[#:eval the-eval
+(drop-common-prefix '(a b c d) '(a b x y z))
+]
+}
+
+@defproc[(split-common-prefix [l list?] [r list?]
+                              [#:same? same? equal?])
+         (values list? list? list?)]{
+
+  Returns the longest common prefix together with the tails of
+  @racket[l] and @racket[r] with the common prefix removed.
+
+@examples[#:eval the-eval
+(split-common-prefix '(a b c d) '(a b x y z))
+]
+}
+
 @addition{Sam Tobin-Hochstadt}
 
 @defproc[(filter-multiple [l list?] [f procedure?] ...) (values list? ...)]{

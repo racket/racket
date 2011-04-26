@@ -33,7 +33,7 @@
     prefix))
 
 (define (drop-common-prefix as bs #:same? [same? equal?])
-  (let-values ([(atail btail) (internal-split-common-prefix as bs same? #f)])
+  (let-values ([(prefix atail btail) (internal-split-common-prefix as bs same? #f)])
     (values atail btail)))
 
 (provide/contract

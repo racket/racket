@@ -9,7 +9,7 @@
 @title[#:tag "class-iop"]{Interface-Oriented Programming for Classes}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require racket/class unstable/class-iop))
+@(the-eval '(require racket/class unstable/class-iop (for-syntax racket/base)))
 
 @defmodule[unstable/class-iop]
 
@@ -125,6 +125,20 @@ that in the case of @racket[init-field/i] this check omission is
 unsound in the presence of mutation from outside the class. This
 should be fixed.
 
+}
+
+@defform[(define-interface-expander id transformer-expr)]{
+
+Defines @racket[id] as a macro that can be used within
+@racket[define-interface] forms.
+
+@examples[#:eval the-eval
+(define-interface-expander stack-methods
+  (lambda (stx) #'[empty? push pop]))
+(define-interface stack<%> ()
+  ((stack-methods)))
+(interface->method-names stack<%>)
+]
 }
 
 @close-eval[the-eval]
