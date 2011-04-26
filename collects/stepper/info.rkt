@@ -13,3 +13,5 @@
                          ))
 
 (define compile-omit-paths '("debugger-tool.ss"))
+
+(define scribblings '(("scribblings/stepper.scrbl")))
