@@ -55,7 +55,9 @@
                (not (xref-binding->definition-tag
                      xref
                      (list what ex)
-                     #f)))
+                     #f))
+               #:when
+               (not (regexp-match #rx"^deserialize-info:" (symbol->string ex))))
       ex))
   
   (unless (null? undocumented-exports)
