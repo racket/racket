@@ -51,13 +51,15 @@
   
   (define undocumented-exports
     (for/list ([ex (in-list exports)]
+               #:when  ;; skip #%module-begin, #%top, etc.
+               (not (regexp-match #rx"^#%" (symbol->string ex)))
+               #:when  ;; skip deserialization library stuff
+               (not (regexp-match #rx"^deserialize-info:" (symbol->string ex)))
                #:when
                (not (xref-binding->definition-tag
                      xref
                      (list what ex)
-                     #f))
-               #:when
-               (not (regexp-match #rx"^deserialize-info:" (symbol->string ex))))
+                     #f)))
       ex))
   
   (unless (null? undocumented-exports)
@@ -77,8 +79,7 @@
                          2]))])
       (pretty-write (sort undocumented-exports
                           string<?
-                          #:key symbol->string
-                          #:cache-keys? #t)
+                          #:key symbol->string)
                     (current-error-port)))))
 
 (define xref (load-collections-xref))
