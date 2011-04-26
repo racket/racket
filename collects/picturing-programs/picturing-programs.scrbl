@@ -37,9 +37,6 @@ and running interactive animations.
 It's intended to be used with the textbook
 @hyperlink["http://www.picturingprograms.com" "Picturing Programs"].
 
-@defproc[(show-it [img image?]) 
-         image?]{Returns the given image unaltered.  Useful as a draw handler for animations whose model is an image.}
-
 @section{Installation}
 This package should be bundled with DrRacket version 5.1 and later, so there should be
 no installation procedure.
@@ -60,8 +57,18 @@ This package also provides the following additional functions:
 
 @; @include-section{image.rkt}
 
+@section{Animation support}
+Since the 
+@hyperlink["http://www.picturingprograms.com" "Picturing Programs"]
+textbook introduces animations with image models before other model
+types, we provide a draw handler for the simple case in which the
+model is exactly what should be displayed in the animation window:
+
+@defproc[(show-it [img image?]) 
+         image?]{Returns the given image unaltered.  Useful as a draw handler for animations whose model is an image.}
+
 @section{New image functions}
-@defmodule*/no-declare[(picturing-programs/tiles)]
+@; @defmodule*/no-declare[(picturing-programs/tiles)]
 @declare-exporting[picturing-programs/tiles picturing-programs]
 
 @defproc[(rotate-cw [img image?])
@@ -85,15 +92,33 @@ This package also provides the following additional functions:
 @defproc[(crop-right [img image?] [pixels natural-number/c]) 
          image?]{Chops off the specified number of pixels from the right side of the image.}
 
+@defproc[(flip-main [img image?])
+ 	 image?]{Reflects an image across the line x=y, moving the pixel
+at coordinates (x,y) to (y,x).  The top-right corner becomes the
+bottom-left corner, and vice versa.  Width and height are swapped.}
+
+@defproc[(flip-other [img image?])
+	 image?]{Reflects an image by moving the pixel at coordinates
+(x,y) to (h-y, w-x).  The top-left corner becomes the bottom-right
+corner, and vice versa.  Width and height are swapped.}
+
 @defproc[(reflect-vert [img image?]) 
          image?]{The same as @racket[flip-vertical]; retained for compatibility.}
 
 @defproc[(reflect-horiz [img image?]) 
          image?]{The same as @racket[flip-horizontal]; retained for compatibility.} 
 
+@defproc[(reflect-main-diag [img image?])
+	 image?]{The same as @racket[flip-main]; retained for
+compatibility.}
+
+@defproc[(reflect-other-diag [img image?])
+	 image?]{The same as @racket[flip-other]; retained for
+compatibility.}
+
 @section{Variables}
 
-@defmodule*/no-declare[(picturing-programs/book-pictures)]
+@; @defmodule*/no-declare[(picturing-programs/book-pictures)]
 @declare-exporting[picturing-programs/book-pictures picturing-programs]
 
 This teachpack also defines variable names for some of the pictures used in the textbook.
@@ -117,7 +142,7 @@ particular, there's no requirement that your names start with "pic:".
 
 @section{Pixel functions}
 
-@defmodule*/no-declare[(picturing-programs/map-image)]
+@; @defmodule*/no-declare[(picturing-programs/map-image)]
 @declare-exporting[picturing-programs/map-image picturing-programs]
 
 
@@ -328,7 +353,7 @@ The version using @racket[good-gradient] works.}
 
 @section{Input and Output}
 
-@defmodule*/no-declare[(picturing-programs/io-stuff)]
+@; @defmodule*/no-declare[(picturing-programs/io-stuff)]
 @declare-exporting[picturing-programs/io-stuff picturing-programs]
 
 

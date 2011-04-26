@@ -45,7 +45,8 @@
    ; above above-align-right above-align-left above-align-center   ; included in 2htdp/image
    ; beside beside-align-top beside-align-bottom beside-align-center ; include in 2htdp/image
    reflect-vert reflect-horiz ; synonyms for flip-vertical and flip-horizontal, respectively
-   reflect-main-diag reflect-other-diag ; temporarily disabled
+   reflect-main-diag reflect-other-diag
+   flip-main flip-other ; synonyms for the above
    rotate-cw rotate-ccw rotate-180 ; will simply call rotate
    ; show-pinhole   ; what's a pinhole?
    crop-top crop-bottom crop-left crop-right)  ; will simply call crop
