@@ -8,8 +8,29 @@
 
 ;; checks to make sure that all of the exports of
 ;; the 'what' library are documented
-(provide/contract [check-docs (-> symbol? any)])
-(define (check-docs what)
+(provide/contract [check-docs (->* (symbol?) 
+                                   (#:skip (or/c regexp? 
+                                                 symbol? 
+                                                 #f
+                                                 (-> symbol? any)
+                                                 (listof (or/c regexp? symbol?)))) 
+                                   any)])
+(define (check-docs what #:skip [skip #f])
+  (define (skip-proc f)
+    (cond
+      [(regexp? skip)
+       (regexp-match skip (symbol->string f))]
+      [(procedure? skip)
+       (skip f)]
+      [(not skip) #f]
+      [(list? skip)
+       (for/or ([x (in-list skip)])
+         (cond
+           [(regexp? x)
+            (regexp-match skip (symbol->string f))]
+           [(symbol? x)
+            (eq? x f)]))]))
+        
   (define pieces (regexp-split #rx"/" (symbol->string what)))
   (cond
     [(null? pieces) (error 'get-docs "bad arg ~s" what)]
@@ -38,7 +59,9 @@
                                 "~a_scm.zo"))
          (if file
              (call-with-input-file file read)
-             (k '() '()))))))
+             (begin
+               (eprintf "did not find compiled file for ~s\n" what)
+               (k '() '())))))))
   
   (define (get n info)
     (define a (assoc n info))
@@ -51,15 +74,13 @@
   
   (define undocumented-exports
     (for/list ([ex (in-list exports)]
-               #:when  ;; skip #%module-begin, #%top, etc.
-               (not (regexp-match #rx"^#%" (symbol->string ex)))
-               #:when  ;; skip deserialization library stuff
-               (not (regexp-match #rx"^deserialize-info:" (symbol->string ex)))
                #:when
                (not (xref-binding->definition-tag
                      xref
                      (list what ex)
-                     #f)))
+                     #f))
+               #:when
+               (not (skip-proc ex)))
       ex))
   
   (unless (null? undocumented-exports)
