@@ -1,3 +1,3 @@
-#lang scheme/base
-(require "string-constant.ss")
-(provide (all-from-out "string-constant.ss"))
+#lang racket/base
+(require "string-constant.rkt")
+(provide (all-from-out "string-constant.rkt"))
