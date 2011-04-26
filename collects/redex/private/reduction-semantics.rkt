@@ -82,21 +82,73 @@
            '())))
    cps rhss))
 
-(define ((term-match/single/proc form-name lang ps cps rhss) term)
-  (let loop ([ps ps] [cps cps] [rhss rhss])
+(define ((term-match/single/proc form-name lang ps0 cps rhss) term)
+  (let loop ([ps ps0] [cps cps] [rhss rhss])
     (if (null? ps)
-        (redex-error form-name "no patterns matched ~e" term)
+        (redex-error form-name 
+                     (if (null? (cdr ps0))
+                         (format "term ~s does not match pattern ~s" term (car ps0))
+                         (format "no patterns matched ~s" term)))
         (let ([match (match-pattern (car cps) term)])
           (if match
               (begin
                 (unless (null? (cdr match))
                   (redex-error
                    form-name
-                   "pattern ~s matched term ~e multiple ways"
+                   "pattern ~s matched term ~s multiple ways"
                    (car ps)
                    term))
                 ((car rhss) (car match)))
               (loop (cdr ps) (cdr cps) (cdr rhss)))))))
+
+(define-syntaxes (redex-let redex-let*)
+  (let ()
+    (define-syntax-class binding
+      #:description "binding clause"
+      (pattern (lhs:expr rhs:expr)))
+    (define-syntax-class (bindings extract)
+      #:description (if extract
+                        "sequence of disjoint binding clauses"
+                        "sequence of binding clauses")
+      (pattern (b:binding ...)
+               #:fail-when (and extract
+                                (check-duplicate-identifier
+                                 (apply append (map extract (syntax->list #'(b.lhs ...))))))
+               "duplicate pattern variable"
+               #:with (lhs ...) #'(b.lhs ...)
+               #:with (rhs ...) #'(b.rhs ...)))
+    
+    (define (redex-let stx)
+      (define-values (form-name nts)
+        (syntax-case stx ()
+          [(name lang . _) 
+           (values (syntax-e #'name)
+                   (language-id-nts #'lang (syntax-e #'name)))]))
+      (define (pattern-variables pattern)
+        (let-values ([(names _) (extract-names nts form-name #t pattern)])
+          names))
+      (syntax-parse stx
+        [(name lang (~var bs (bindings pattern-variables)) body ...+)
+         (with-syntax ([(t ...) (generate-temporaries #'bs)])
+           #`(let ([t bs.rhs] ...)
+               #,(nested-lets #'lang #'([bs.lhs t] ...) #'(body ...) #'name)))]))
+    
+    (define (redex-let* stx)
+      (syntax-parse stx
+        [(name lang (~var bs (bindings #f)) body ...+)
+         (nested-lets #'lang #'bs #'(body ...) #'name)]))
+    
+    (define (nested-lets lang bindings bodies name)
+      (syntax-case bindings ()
+        [()
+         #`(let () #,@bodies)]
+        [([lhs rhs] . bindings)
+         (with-syntax ([rest-lets (nested-lets lang #'bindings bodies name)])
+           #`(#,(term-matcher #`(#,name #,lang [lhs rest-lets]) 
+                              #'term-match/single/proc) 
+              rhs))]))
+    
+    (values redex-let redex-let*)))
 
 (define-syntax (compatible-closure stx)
   (syntax-case stx ()
@@ -2340,6 +2392,8 @@
 (provide test-match
          term-match
          term-match/single
+         redex-let 
+         redex-let*
          make-bindings bindings-table bindings?
          match? match-bindings
          make-bind bind? bind-name bind-exp

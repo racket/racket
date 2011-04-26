@@ -508,10 +508,26 @@ present, the pattern before the ellipses may match multiple adjacent
 elements in the list value (possibly none).
 
 This form is a lower-level form in Redex, and not really designed to
-be used directly. If you want a @racket[let]-like form that uses
-Redex's full pattern matching facilities, see @racket[term-match] and
-@racket[term-match/single].
+be used directly. For @racket[let]-like forms that use
+Redex's full pattern matching facilities, see @racket[redex-let],
+@racket[redex-let*], @racket[term-match], @racket[term-match/single].
+}
 
+@defform[(redex-let language ([@#,ttpattern expression] ...) body ...+)]{
+Like @racket[term-let] but the left-hand sides are Redex patterns, 
+interpreted according to the specified language. It is a syntax
+error for two left-hand sides to bind the same pattern variable.
+
+This form raises an exception recognized by @racket[exn:fail:redex?] 
+if any right-hand side does not match its left-hand side in exactly one 
+way. 
+
+In some contexts, it may be more efficient to use @racket[term-match/single]
+(lifted out of the context).
+}
+
+@defform[(redex-let* language ([@#,ttpattern expression] ...) body ...+)]{
+The @racket[let*] analog of @racket[redex-let].
 }
 
 @defform[(term-match language [@#,ttpattern expression] ...)]{

@@ -37,6 +37,8 @@
 (provide (rename-out [test-match redex-match])
          term-match
          term-match/single
+         redex-let
+         redex-let*
          match? match-bindings
          make-bind bind? bind-name bind-exp
          

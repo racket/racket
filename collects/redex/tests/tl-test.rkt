@@ -1933,6 +1933,58 @@
              (--> r p x))))
         '(a b c z y x))
   
+  
+    ;                                                                 
+    ;                                                                 
+    ;                    ;;                        ;;                 
+    ;                     ;                         ;            ;    
+    ;   ;; ;;   ;;;    ;; ;   ;;;  ;;  ;;           ;     ;;;   ;;;;; 
+    ;    ;;    ;   ;  ;  ;;  ;   ;  ;  ;            ;    ;   ;   ;    
+    ;    ;     ;;;;;  ;   ;  ;;;;;   ;;    ;;;;;    ;    ;;;;;   ;    
+    ;    ;     ;      ;   ;  ;       ;;             ;    ;       ;    
+    ;    ;     ;      ;   ;  ;      ;  ;            ;    ;       ;   ;
+    ;   ;;;;;   ;;;;   ;;;;;  ;;;; ;;  ;;         ;;;;;   ;;;;    ;;; 
+    ;                                                                 
+    ;                                                                 
+    ;                                                                 
+    ;                                                                 
+  
+    (let ()
+      (define-language L
+        (n number)
+        (x variable))
+      
+      (test (redex-let L ([(n_1 n_2) '(1 2)])
+                       (term (n_2 n_1)))
+            (term (2 1)))
+      (test (redex-let L ([(x_i ([x_0 n_0] ... [x_i n_i] [x_i+1 n_i+1] ...))
+                           '(b ([a 1] [b 2] [c 3]))])
+                       (term n_i))
+            2)
+      (test (with-handlers ([exn:fail:redex? exn-message])
+              (redex-let L ([(n) 1]) 'no-exn))
+            "redex-let: term 1 does not match pattern (n)")
+      (test (with-handlers ([exn:fail:redex? exn-message])
+              (redex-let L ([(n_1 ... n_i n_i+1 ...) '(1 2 3)]) 'no-exn))
+            "redex-let: pattern (n_1 ... n_i n_i+1 ...) matched term (1 2 3) multiple ways")
+      (test (redex-let L ([n_1 1])
+                       (redex-let L ([n_1 2] [n_2 (term n_1)])
+                                  (term (n_1 n_2))))
+            (term (2 1)))
+      (test (redex-let L ([n_1 1])
+                       (redex-let* L ([n_1 2] [n_2 (term n_1)])
+                                   (term (n_1 n_2))))
+            (term (2 2)))
+      
+      (test (redex-let L ([(n_1 n_1) '(1 1)]) (term n_1))
+            1)
+      (test-syn-err
+       (redex-let grammar ([(number) 1] [number 1]) (term number))
+       #rx"redex-let: duplicate pattern variable" 1)
+      (test
+       (redex-let* L ([(n_1) '(1)] [n_1 1]) (term n_1))
+       1))
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; examples from doc.txt
