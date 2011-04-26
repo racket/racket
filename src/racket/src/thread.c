@@ -4164,7 +4164,7 @@ void scheme_thread_block(float sleep_time)
 #endif
 #if defined(MZ_USE_PLACES)
   if (!do_atomic)
-    scheme_place_check_for_killed();
+    scheme_place_check_for_interruption();
 #endif
   
   if (sleep_end > 0) {

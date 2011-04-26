@@ -24,6 +24,7 @@ THREAD_LOCAL_DECL(void *place_object);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_kill(int argc, Scheme_Object *args[]);
+static Scheme_Object *scheme_place_break(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]);
@@ -92,6 +93,7 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-sleep",           scheme_place_sleep,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",            scheme_place_wait,      1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-kill",            scheme_place_kill,      1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-break",           scheme_place_break,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",                scheme_place_p,         1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-channel",         scheme_place_channel,   0, 0, plenv);
   PLACE_PRIM_W_ARITY("place-channel-send",    scheme_place_send,      1, 2, plenv);
@@ -176,7 +178,9 @@ Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]) {
  * it is shared acrosss place boundaries and 
  * must be allocated with malloc and free*/
 typedef struct Scheme_Place_Object {
-  int die;
+  mzrt_mutex *lock;
+  char die;
+  char pbreak;
   mz_jmp_buf *exit_buf;
   void *signal_handle;
   /*Thread_Local_Variables *tlvs; */
@@ -194,8 +198,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place = MALLOC_ONE_TAGGED(Scheme_Place);
   place->so.type = scheme_place_type;
   place_obj = malloc(sizeof(Scheme_Place_Object));
+  mzrt_mutex_create(&place_obj->lock);
   place->place_obj = place_obj;
   place_obj->die = 0;
+  place_obj->pbreak = 0;
 
   mzrt_sema_create(&ready, 0);
 
@@ -266,9 +272,33 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 static int place_kill(Scheme_Place *place) {
   Scheme_Place_Object *place_obj;
   place_obj = (Scheme_Place_Object*) place->place_obj;
-  place_obj->die = 1;
+
+  {
+    mzrt_mutex_lock(place_obj->lock);
+
+    place_obj->die = 1;
+
+    mzrt_mutex_unlock(place_obj->lock);
+  }
+
   scheme_signal_received_at(place_obj->signal_handle);
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
+  return 0;
+}
+
+static int place_break(Scheme_Place *place) {
+  Scheme_Place_Object *place_obj;
+  place_obj = (Scheme_Place_Object*) place->place_obj;
+
+  {
+    mzrt_mutex_lock(place_obj->lock);
+
+    place_obj->pbreak = 1;
+
+    mzrt_mutex_unlock(place_obj->lock);
+  }
+
+  scheme_signal_received_at(place_obj->signal_handle);
   return 0;
 }
 
@@ -287,6 +317,19 @@ static Scheme_Object *scheme_place_kill(int argc, Scheme_Object *args[]) {
     scheme_wrong_type("place-kill", "place", 0, argc, args);
   }
   return scheme_make_integer(place_kill(place));
+}
+
+static Scheme_Object *scheme_place_break(int argc, Scheme_Object *args[]) {
+  Scheme_Place          *place;
+  place = (Scheme_Place *) args[0];
+
+  if (argc != 1) {
+    scheme_wrong_count_m("place-break", 1, 1, argc, args, 0);
+  }
+  if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+    scheme_wrong_type("place-break", "place", 0, argc, args);
+  }
+  return scheme_make_integer(place_break(place));
 }
 
 
@@ -1115,11 +1158,27 @@ static void *place_start_proc(void *data_arg) {
   return rc;
 }
 
-void scheme_place_check_for_killed() {
+void scheme_place_check_for_interruption() {
   Scheme_Place_Object *place_obj;
+  char local_die;
+  char local_break;
+
   place_obj = (Scheme_Place_Object *) place_object;
-  if (place_obj && place_obj->die) {
-    scheme_longjmp(*place_obj->exit_buf, 1);
+  if (place_obj) {
+    {
+      mzrt_mutex_lock(place_obj->lock);
+
+      local_die = place_obj->die;
+      local_break = place_obj->pbreak;
+      place_obj->pbreak = 0;
+
+      mzrt_mutex_unlock(place_obj->lock);
+    }
+
+    if (local_die)
+      scheme_longjmp(*place_obj->exit_buf, 1);
+    if (local_break)
+      scheme_break_thread(NULL);
   }
 }
   

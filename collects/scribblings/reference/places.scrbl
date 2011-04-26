@@ -119,6 +119,13 @@ racket
   blocking until the place completes if it has not already completed.
 }
 
+@defproc[(place-break [p place?]) void?]{
+  Sends place @racket[p] a break signal; see @secref["breakhandler"].
+}
+
+@defproc[(place-kill [p place?]) void?]{
+  Terminates the place indicated by @racket[p],
+}
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
