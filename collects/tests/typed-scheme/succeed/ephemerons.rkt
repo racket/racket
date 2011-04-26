@@ -11,4 +11,6 @@
 
 (: get-number ((Ephemeronof Number) -> Number))
 (define (get-number e)
- (ephemeron-value e))
+ (or (ephemeron-value e) 0))
+
+(get-number eph-one)
