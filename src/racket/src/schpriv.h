@@ -3631,6 +3631,7 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 # ifdef UNIX_PROCESSES
 # define MZ_PLACES_WAITPID
 void scheme_places_block_child_signal();
+void scheme_places_unblock_child_signal();
 void scheme_places_start_child_signal_handler();
 int scheme_get_child_status(int pid, int is_group, int *status);
 int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *status);

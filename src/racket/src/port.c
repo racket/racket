@@ -8106,6 +8106,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
 #if !defined(MZ_PLACES_WAITPID)
     scheme_block_child_signals(0);
+#else
+    if (!pid)
+      scheme_places_unblock_child_signal();
 #endif
   }
 

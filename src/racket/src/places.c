@@ -592,6 +592,17 @@ void scheme_places_block_child_signal() XFORM_SKIP_PROC
   MZ_SIGSET(SIGCHLD, got_sigchld);
 }
 
+void scheme_places_unblock_child_signal() XFORM_SKIP_PROC
+{
+  sigset_t set;
+
+  MZ_SIGSET(SIGCHLD, SIG_IGN);
+
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigprocmask(SIG_UNBLOCK, &set, NULL);
+}
+
 void scheme_places_start_child_signal_handler()
 {
   mz_proc_thread *signal_thread;
