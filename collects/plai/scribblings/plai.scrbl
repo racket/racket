@@ -1,5 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
+          "rkt-exports.rkt"
+          "plai-exports.rkt"
           (for-syntax scheme)
           (for-label (except-in scheme
                                 error printf)
@@ -408,17 +410,47 @@ collector.
 
 @subsection{Mutator API}
 
-The @MUTATE-LANG language supports the following syntactic forms:
+The @MUTATE-LANG language supports the following procedures and syntactic forms:
 
-@schemeblock[if and or cond case define define-values let let-values let* set! lambda λ quote error begin]
+@(define-syntax (document/lift stx)
+   (syntax-case stx ()
+     [(_ a ...)
+      (with-syntax ([(doc ...) 
+                     (map (λ (a)
+                            (with-syntax ([a a]
+                                          [rkt:a (string->symbol (format "rkt:~a" (syntax-e a)))]) 
+                              #'@defidform[a]{Just like Racket's @|rkt:a|.}))
+                          (syntax->list #'(a ...)))])
 
-The syntax of @racket[define] is restricted to: @racket[(define (id arg-id ...) body ...+)].
-The syntax of @racket[lambda] and @racket[λ] are restricted to: @racket[(lambda (arg-id ...) body ...+)].
+      #'(begin
+          doc ...))]))
 
-The language also defines the following procedures:
+@document/lift[if and or cond case define-values let let-values let* set! quote error begin]
 
-@schemeblock[add1 sub1 zero? + - * / even? odd? = < > <= >= cons first rest
-             set-first! set-rest! cons? symbol? symbol=? number? boolean? empty? eq?]
+@defform[(define (id arg-id ...) body-expression ...+)]{
+  Just like Racket's @racket[define], except restricted to the simpler form above.                                                        
+}
+@deftogether[(@defform[(lambda (arg-id ...) body-expression ...+)]{}
+              @defform[(λ (arg-id ...) body-expression ...+)]{})]{
+  Just like Racket's @racket[lambda] and @racket[λ], except restricted to the simpler form above.                                                        
+}
+
+@document/lift[add1 sub1 zero? + - * / even? odd? = < > <= >= 
+                    symbol? symbol=? number? boolean? empty? eq?]
+
+@defproc[(cons [hd any/c] [tl any/c]) cons?]{
+  Constructs a (mutable) pair.                                             
+}
+@defproc[(cons? [v any/c]) boolean?]{
+  Returns @racket[#t] when given a value created by @racket[cons],
+          @racket[#f] otherwise.
+}
+@defproc[(first [c cons?]) any/c]{
+  Extracts the first component of @racket[c].                                           
+}
+@defproc[(rest [c cons?]) any/c]{
+  Extracts the rest component of @racket[c].                                           
+}
 
 @defproc[(set-first! [c cons?] [v any/c])
          void]{
@@ -430,7 +462,17 @@ The language also defines the following procedures:
  Sets the @scheme[rest] of the cons cell @scheme[c].
 }
 
+@defidform[empty]{
 The identifier @scheme[empty] is defined to invoke @scheme[(gc:alloc-flat empty)] wherever it is used.
+}
+
+@defidform[print-only-errors]{
+  Behaves like PLAI's @|plai:print-only-errors|.
+}
+
+@defidform[halt-on-errors]{
+  Behaves like PLAI's @|plai:halt-on-errors|.
+}
 
 Other common procedures are left undefined as they can be defined in
 terms of the primitives and may be used to test collectors.
