@@ -12,8 +12,8 @@ this involves downloading the 'scmxlate' and 'slatex' packages and loading
 the scmxlate.scm file while (current-directory) points to the slatex 
 directory.
 
-2) place this file in plt/collects/slatex (this directory).
-3) also copy slatex.sty to plt/collects/slatex.
+2) place this file in $PLTHOME/collects/slatex/private.
+3) also copy slatex.sty to $PLTHOME/collects/slatex.
 
 4) (hopefully temporary?) Modify slatex.scm so that it doesn't refer to
    slatex::slatex-error at evaluation time.

@@ -5,7 +5,7 @@
 	   mzlib/process
 	   mzlib/sendevent
            scheme/runtime-path
-           "slatex.ss")
+           "private/slatex.ss")
   
   (define-runtime-path here ".")
 
