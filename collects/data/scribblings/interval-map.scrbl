@@ -142,6 +142,25 @@ Same as the following:
 ]
 }
 
+
+@deftogether[[
+@defproc[(interval-map-iterate-first [interval-map interval-map?])
+         (or/c interval-map-iter? #f)]
+@defproc[(interval-map-iterate-next [interval-map interval-map?]
+                                    [iter interval-map-iter?])
+         (or/c interval-map-iter? #f)]
+@defproc[(interval-map-iterate-key [interval-map interval-map?]
+                                   [iter interval-map-iter?])
+         pair?]
+@defproc[(interval-map-iterate-value [interval-map interval-map?]
+                                     [iter interval-map-iter?])
+         any]]]{
+
+Implementations of @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value], respectively.
+}
+
 @defproc[(interval-map-iter? [v any/c])
          boolean?]{
 

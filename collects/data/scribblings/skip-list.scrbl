@@ -148,12 +148,16 @@ keys greater than or equal to @racket[from].
 @defproc[(skip-list-iterate-greatest/<=? [skip-list skip-list?]
                                         [key any/c])
          (or/c skip-list-iter? #f)]
-]]{
+@defproc[(skip-list-iterate-least [skip-list skip-list?])
+         (or/c skip-list-iter? #f)]
+@defproc[(skip-list-iterate-greatest [skip-list skip-list?])
+         (or/c skip-list-iter? #f)]]]{
 
 Implementations of @racket[dict-iterate-least],
 @racket[dict-iterate-greatest], @racket[dict-iterate-least/>?],
 @racket[dict-iterate-least/>=?], @racket[dict-iterate-greatest/<?],
-and @racket[dict-iterate-greatest/<=?], respectively.
+@racket[dict-iterate-greatest/<=?], @racket[dict-iterate-least], and
+@racket[dict-iterate-greatest], respectively.
 }
 
 @defproc[(skip-list-iter? [v any/c]) boolean?]{
