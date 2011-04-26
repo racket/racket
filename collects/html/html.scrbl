@@ -1,8 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          (for-label html)
-          (for-label xml))
+          (for-label html
+                     xml
+                     racket/contract))
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 
@@ -64,7 +65,7 @@ Reads HTML from a port, producing an @xexpr compatible with the
        "<p>Hello world</p><p><b>Testing</b>!</p>"
        "</body></html>"))))
   
-  (code:comment @#,t{extract-pcdata: html-content -> (listof string)})
+  (code:comment @#,t{extract-pcdata: html-content/c -> (listof string)})
   (code:comment @#,t{Pulls out the pcdata strings from some-content.})
   (define (extract-pcdata some-content)
     (cond [(x:pcdata? some-content)
@@ -95,21 +96,24 @@ Reads HTML from a port, producing an @xexpr compatible with the
 @racket[pcdata], @racket[entity], and @racket[attribute] are defined
 in the @racketmodname[xml] documentation.
 
-A @racket[html-content] is either
+@defthing[html-content/c contract?]{
+A @racket[html-content/c] is either
 @itemize[
   @item[@racket[html-element]]
   @item[@racket[pcdata]]
   @item[@racket[entity]]]
-
+}
 
 @defstruct[html-element ([attributes (listof attribute)])]{
   Any of the structures below inherits from @racket[html-element].}
 
-@defstruct[(html-full struct:html-element) ([content (listof html-content)])]{
+@defstruct[(html-full struct:html-element) ([content (listof html-content/c)])]{
   Any html tag that may include content also inherits from
   @racket[html-full] without adding any additional fields.}
 
-
+@defstruct[(mzscheme html-full) ()]{
+  A @racket[mzscheme] is special legacy value for the old documentation system.
+}
 
 @defstruct[(html html-full) ()]{
   A @racket[html] is
@@ -671,9 +675,9 @@ A @racket[Contents-of-object-applet] is either
 ]
 
 
-@defstruct[(map html-full) ()]{
+@defstruct[(-map html-full) ()]{
 A Map is
-@racket[(make-map (listof attribute) (listof Contents-of-map))]
+@racket[(make--map (listof attribute) (listof Contents-of-map))]
 }
 
 
