@@ -360,7 +360,6 @@
               ;ephemerons are covariant
               [((Ephemeron: s) (Ephemeron: t))
                (subtype* A0 s t)]
-              [((Ephemeron: _) (EphemeronTop:)) A0]
               [((Box: _) (BoxTop:)) A0]
               [((Channel: _) (ChannelTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]

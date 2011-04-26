@@ -306,7 +306,6 @@
 ;; the supertype of all of these values
 (dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (dt ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
-(dt EphemeronTop () [#:fold-rhs #:base] [#:key 'ephemeron])
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])

@@ -125,7 +125,6 @@
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
-    [(EphemeronTop:) (fp "Ephemeron")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
     [(App: rator rands stx) 

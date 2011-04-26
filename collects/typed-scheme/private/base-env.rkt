@@ -25,7 +25,6 @@
  (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
  (only-in (rep type-rep) make-HashtableTop make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
-          make-EphemeronTop
           make-Ephemeron
           make-HeterogenousVector))
 
@@ -1034,6 +1033,6 @@
 
 ;ephemerons
 [make-ephemeron (-poly (k v) (-> k v (make-Ephemeron v)))]
-[ephemeron? (make-pred-ty (make-EphemeronTop))]
+[ephemeron? (make-pred-ty (make-Ephemeron Univ))]
 [ephemeron-value (-poly (v) (-> (make-Ephemeron v) (Un (-val #f) v)))]
 
