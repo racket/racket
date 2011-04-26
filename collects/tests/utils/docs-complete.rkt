@@ -75,6 +75,10 @@
                         [else
                          (fprintf port "\n  ")
                          2]))])
-      (pretty-write undocumented-exports (current-error-port)))))
+      (pretty-write (sort undocumented-exports
+                          string<?
+                          #:key symbol->string
+                          #:cache-keys? #t)
+                    (current-error-port)))))
 
 (define xref (load-collections-xref))
