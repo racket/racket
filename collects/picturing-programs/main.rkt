@@ -10,7 +10,7 @@
          (all-from-out picturing-programs/io-stuff) ; includes with-{input-from,output-to}-{string,file}, with-io-strings
 	 (all-from-out picturing-programs/map-image)
 	; includes (map,build)(3,4,)-image,  real->int, name->color, colorize, get-pixel-color
-         (prefix-out pic: (all-from-out picturing-programs/book-pictures)) ; pic:calendar, pp:hacker, etc.
+         (all-from-out picturing-programs/book-pictures) ; pic:calendar, pp:hacker, etc.
 	 (all-from-out 2htdp/universe)
 	 show-it)
 

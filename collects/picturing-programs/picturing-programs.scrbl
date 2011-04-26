@@ -37,11 +37,14 @@ and running interactive animations.
 It's intended to be used with the textbook
 @hyperlink["http://www.picturingprograms.com" "Picturing Programs"].
 
+@defproc[(show-it [img image?]) 
+         image?]{Returns the given image unaltered.  Useful as a draw handler for animations whose model is an image.}
+
 @section{Installation}
 This package should be bundled with DrRacket version 5.1 and later, so there should be
 no installation procedure.
 
-@section{Functions from image.rkt and universe.rkt}
+@section{Functions from @racketmodname[2htdp/image] and @racketmodname[2htdp/universe]}
 
 This package includes all of 
 @racketmodlink[2htdp/image]{the image teachpack} and
@@ -58,6 +61,8 @@ This package also provides the following additional functions:
 @; @include-section{image.rkt}
 
 @section{New image functions}
+@defmodule*/no-declare[(picturing-programs/tiles)]
+@declare-exporting[picturing-programs/tiles picturing-programs]
 
 @defproc[(rotate-cw [img image?])
          image?]{Rotates an image 90 degrees clockwise.}
@@ -80,9 +85,6 @@ This package also provides the following additional functions:
 @defproc[(crop-right [img image?] [pixels natural-number/c]) 
          image?]{Chops off the specified number of pixels from the right side of the image.}
 
-@defproc[(show-it [img image?]) 
-         image?]{Returns the given image unaltered.  Useful as a draw handler for animations whose model is an image.}
-
 @defproc[(reflect-vert [img image?]) 
          image?]{The same as @racket[flip-vertical]; retained for compatibility.}
 
@@ -90,6 +92,10 @@ This package also provides the following additional functions:
          image?]{The same as @racket[flip-horizontal]; retained for compatibility.} 
 
 @section{Variables}
+
+@defmodule*/no-declare[(picturing-programs/book-pictures)]
+@declare-exporting[picturing-programs/book-pictures picturing-programs]
+
 This teachpack also defines variable names for some of the pictures used in the textbook.
 
 @defthing[pic:bloch image?]{A picture of the author, c. 2005.}
@@ -110,6 +116,11 @@ distinguish them from anything you might define that happens to be named
 particular, there's no requirement that your names start with "pic:".
 
 @section{Pixel functions}
+
+@defmodule*/no-declare[(picturing-programs/map-image)]
+@declare-exporting[picturing-programs/map-image picturing-programs]
+
+
 The above functions allow you to operate on a picture as a whole, but sometimes
 you want to manipulate a picture pixel-by-pixel.
 
@@ -157,6 +168,7 @@ Gets the color of a specified pixel in the given image.  If x and/or y are outsi
 the bounds of the image, returns a transparent color.}
 
 @subsection{Specifying the color of each pixel of an image}
+
 @defproc[(build-image [width natural-number/c]
                       [height natural-number/c]
                       [f (-> natural-number/c natural-number/c color?)])
@@ -315,6 +327,11 @@ The version using @racket[good-gradient] works.}
 
 
 @section{Input and Output}
+
+@defmodule*/no-declare[(picturing-programs/io-stuff)]
+@declare-exporting[picturing-programs/io-stuff picturing-programs]
+
+
 This teachpack also provides several functions to help in testing
 I/O functions (in Advanced Student language; ignore this section if
 you're in a Beginner or Intermediate language):

@@ -5,7 +5,7 @@
 
 (require (only-in 2htdp/image bitmap))
 
-(provide (all-defined-out))
+(provide (prefix-out pic: (all-defined-out)))
 
 (define bloch (bitmap "pictures/bloch.jpg"))
 (define hieroglyphics (bitmap "pictures/small_hieroglyphics.png"))
