@@ -125,6 +125,7 @@
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
     [(ChannelTop:) (fp "Channel")]
+    [(EphemeronTop:) (fp "Ephemeron")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
     [(App: rator rands stx) 
@@ -171,6 +172,7 @@
     [(Box: e) (fp "(Boxof ~a)" e)]
     [(Future: e) (fp "(Futureof ~a)" e)]
     [(Channel: e) (fp "(Channelof ~a)" e)]
+    [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound) 
