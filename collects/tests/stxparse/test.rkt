@@ -369,3 +369,21 @@
       (m zero)))
    0)
   (void))
+
+
+;; -- test #:declare scoping
+
+(test-case "#:declare magical scoping"
+  (syntax-parse #'(1 2)
+    [(a b)
+     #:declare a nat
+     #:declare b (nat> (syntax-e #'a))
+     (void)]))
+
+(tcerr "#:declare magical scoping 2"
+  (syntax-parse #'(1 1)
+    [(a b)
+     #:declare a nat
+     #:declare b (nat> (syntax-e #'a))
+     (void)]))
+

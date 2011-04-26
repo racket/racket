@@ -109,15 +109,26 @@ DeclEnv =
 DeclEntry =
   (den:lit id id ct-phase ct-phase)
   (den:class id id Arguments)
+  (den:magic-class id id Arguments)
   (den:parser id (listof SAttr) bool bool bool)
   (den:delayed id id)
 
 Arguments is defined in rep-patterns.rkt
+
+== Scoping ==
+
+A #:declare directive results in a den:magic-class entry, which
+indicates that the pattern variable's syntax class arguments (if any)
+have "magical scoping": they are evaluated in the scope where the
+pattern variable occurs. If the variable occurs multiple times, the
+expressions are duplicated, and may be evaluated in different scopes.
 |#
+
 (define-struct declenv (table conventions))
 
 (define-struct den:lit (internal external input-phase lit-phase))
 (define-struct den:class (name class argu))
+(define-struct den:magic-class (name class argu))
 (define-struct den:parser (parser attrs splicing? commit? delimit-cut?))
 (define-struct den:delayed (parser class))
 
@@ -143,6 +154,13 @@ Arguments is defined in rep-patterns.rkt
     (match val
       [(struct den:lit (_i _e _ip _lp))
        (wrong-syntax id "identifier previously declared as literal")]
+      [(struct den:magic-class (name _c _a))
+       (if (and blame-declare? stxclass-name)
+           (wrong-syntax name
+                         "identifier previously declared with syntax class ~a"
+                         stxclass-name)
+           (wrong-syntax (if blame-declare? name id)
+                         "identifier previously declared"))]
       [(struct den:class (name _c _a))
        (if (and blame-declare? stxclass-name)
            (wrong-syntax name
@@ -158,7 +176,7 @@ Arguments is defined in rep-patterns.rkt
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (make den:class id stxclass-name argu))
+                       (make den:magic-class id stxclass-name argu))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
@@ -182,7 +200,7 @@ Arguments is defined in rep-patterns.rkt
   (define idbm (make-bound-id-table))
   (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
-             #:when (or (den:class? v) (den:parser? v))
+             #:when (or (den:class? v) (den:magic-class? v) (den:parser? v))
              #:when (not (bound-id-table-ref idbm k #f)))
     k))
 
@@ -198,7 +216,7 @@ Arguments is defined in rep-patterns.rkt
 (define DeclEnv/c declenv?)
 
 (define DeclEntry/c 
-  (or/c den:lit? den:class? den:parser? den:delayed?))
+  (or/c den:lit? den:class? den:magic-class? den:parser? den:delayed?))
 
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr? clause:do?))
@@ -209,6 +227,7 @@ Arguments is defined in rep-patterns.rkt
 
 (provide (struct-out den:lit)
          (struct-out den:class)
+         (struct-out den:magic-class)
          (struct-out den:parser)
          (struct-out den:delayed))
 

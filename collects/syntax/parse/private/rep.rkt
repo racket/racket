@@ -51,27 +51,17 @@
   (-> syntax?
       #:context syntax?
       arity?)]
- #|
- [check-literals-list
-  ;; NEEDS txlift context
-  (-> syntax? syntax?
-      (listof (list/c identifier? identifier? ct-phase/c ct-phase/c)))]
- |#
  [check-literals-list/litset
   (-> syntax? syntax?
       (listof (list/c identifier? identifier?)))]
- #|
- [check-literal-sets-list
-  ;; NEEDS txlift context
-  (-> syntax? syntax?
-      (listof (listof (list/c identifier? identifier? ct-phase/c))))]
- |#
  [check-conventions-rules
   (-> syntax? syntax?
       (listof (list/c regexp? any/c)))]
  [check-attr-arity-list
   (-> syntax? syntax?
       (listof sattr?))])
+
+;; ----
 
 (define (atomic-datum? stx)
   (let ([datum (syntax-e stx)])
@@ -319,6 +309,8 @@ A syntax class is integrable if
 (define (create-aux-def entry)
   (match entry
     [(struct den:lit (_i _e _ip _lp))
+     (values entry null)]
+    [(struct den:magic-class (name class argu))
      (values entry null)]
     [(struct den:class (name class argu))
      ;; FIXME: integrable syntax classes?
@@ -667,6 +659,22 @@ A syntax class is integrable if
   (match entry
     [(struct den:lit (internal literal input-phase lit-phase))
      (create-pat:literal literal input-phase lit-phase)]
+    [(struct den:magic-class (name class argu))
+     (let* ([pos-count (length (arguments-pargs argu))]
+            [kws (arguments-kws argu)]
+            [sc (get-stxclass/check-arity class class pos-count kws)]
+            [splicing? (stxclass-splicing? sc)]
+            [attrs (stxclass-attrs sc)]
+            [parser (stxclass-parser sc)]
+            [commit? (stxclass-commit? sc)]
+            [delimit-cut? (stxclass-delimit-cut? sc)])
+       (check-no-delimit-cut-in-not id delimit-cut?)
+       (if splicing?
+           (begin
+             (unless allow-head?
+               (wrong-syntax id "splicing syntax class not allowed here"))
+             (parse-pat:id/h id parser argu attrs commit?))
+           (parse-pat:id/s id parser argu attrs commit?)))]
     [(struct den:class (_n _c _a))
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
