@@ -23,57 +23,48 @@ AC_INIT([Racket])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
-AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
-AC_ARG_ENABLE(plot,    [  --enable-plot           compile plot libraries (enabled by default)], , enable_plot=yes )
+AC_ARG_ENABLE(gracket, [  --enable-gracket        build GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
+AC_ARG_ENABLE(jit,     [  --enable-jit            support JIT compiler (enabled by default)], , enable_jit=yes)
+AC_ARG_ENABLE(foreign, [  --enable-foreign        support foreign calls (enabled by default)], , enable_foreign=yes)
+AC_ARG_ENABLE(places,  [  --enable-places         support places (3m only; usually enabled by default)])
+AC_ARG_ENABLE(futures, [  --enable-futures        support futures (usually enabled by default)])
+AC_ARG_ENABLE(plot,    [  --enable-plot           support plot libraries (enabled by default)], , enable_plot=yes )
+AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
+AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default])
+
+AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
+
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled libtool], LIBTOOLPROG="$enableval", enable_lt=no)
 
-AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
-
-AC_ARG_ENABLE(jit,     [  --enable-jit            compile JIT support (enabled by default)], , enable_jit=yes)
-
-AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
 
-AC_ARG_ENABLE(places,  [  --enable-places         compile places support (usually enabled by default)])
-AC_ARG_ENABLE(futures, [  --enable-futures        compile futures support (usually enabled by default)])
-
-AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
-AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
-AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
-AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)
-AC_ARG_ENABLE(compact, [  --enable-compact        3m: use compact GC (no accounting)])
-AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
-
-AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
-AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   compile to use single-precision by default])
-
-AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads])
-AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
-AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
-
-AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
-AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])
-
-AC_ARG_ENABLE(perl,    [  --enable-perl           use perl to regenerate certain sources])
-
-AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
-AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
-
-AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
-
 AC_ARG_ENABLE(enable_sdk,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
-
-AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile Unix style (e.g., use Gtk) for Mac OS X])
+AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          do not force 32-bit build])
 
-AC_ARG_ENABLE(gc2_places_testing,  [  --enable-gcplacestest   compile GC places testing support])
+AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
+AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
+AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
+AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
+
+AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads])
+AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
+AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
+
+# AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
+# AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])
+
+AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
+AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
+
+AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
 ###### Get OS Type #######
 
@@ -144,22 +135,6 @@ else
         exit 1
       fi
     fi
-  fi
-fi
-
-if test "${enable_gc2_places_testing}" = "yes" ; then
-  enable_shared=yes
-  enable_places=yes
-fi
-
-
-# Hack for the implementor:
-if test "${enable_perl}" = "" ; then
-  if test "$USER" = "mflatt" ; then
-    enable_perl=yes
-  fi
-  if test "$USER" = "matthewf" ; then
-    enable_perl=yes
   fi
 fi
 
@@ -287,11 +262,8 @@ show_explicitly_disabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
-show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
-
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
-show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
@@ -300,8 +272,6 @@ show_explicitly_enabled "${enable_floatinstead}" "Single-precision default float
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
-
-show_explicitly_enabled "${enable_perl}" "Perl"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
@@ -337,8 +307,6 @@ INCLUDEDEP="#"
 WX_MMD_FLAG=
 
 PREFLAGS="$CPPFLAGS"
-MZRT_CGC_FLAGS=""
-LIBATOM="LIBATOM_NONE"
 
 OWN_LIBFFI="ON"
 
@@ -446,12 +414,6 @@ if test "$CC" = "gcc" ; then
   DYN_CFLAGS="-fPIC"
 fi
 
-if test "${enable_perl}" = "yes" ; then
-  AC_PATH_PROG(PERL,perl)
-else
-  PERL=""
-fi
-
 if test "$REZ" = '' ; then 
  REZ=/Developer/Tools/Rez
 fi
@@ -516,7 +478,6 @@ case $OS in
   *FreeBSD)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
-    GC_THREADS_FLAG="-DGC_FREEBSD_THREADS"
     enable_pthread=yes
     ;;
   OpenBSD)
@@ -537,7 +498,6 @@ case $OS in
   Linux)
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
-    GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     STRIP_DEBUG="strip -S"
     case `$UNAME -m` in
       #Required for CentOS 4.6
@@ -625,8 +585,6 @@ case $OS in
     STRIP_DEBUG="/usr/bin/strip -S"
 
     SO_SUFFIX=.dylib
-
-    GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
 [   gcc_vers_three=`${CC} -v 2>&1 | grep "version [3-9][.]"` ]
     if test "$gcc_vers_three" = "" ; then
@@ -909,20 +867,6 @@ if test "${enable_backtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi
 
-if test "${enable_compact}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DUSE_COMPACT_3M_GC"
-  enable_account=no
-  enable_memtrace=no
-fi
-
-if test "${enable_account}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DNEWGC_BTC_ACCOUNT"
-fi
-
-if test "${enable_memtrace}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DNEWGC_MEMORY_TRACE"
-fi
-
 LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
 if test "${LFS_CFLAGS}" != "" ; then
   echo "Large-file support: ${LFS_CFLAGS}"
@@ -998,12 +942,6 @@ if test "${endianness}" = "big" ; then
   AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
 fi
 
-############### GC2_PLACES_TESTING ###################
-
-if test "${enable_gc2_places_testing}" = "yes" ; then
-  AC_DEFINE(GC2_PLACES_TESTING,1,[GC2 Places Testing])
-fi
-
 ############### places ###################
 
 if test "${enable_parallel_by_default}" = "yes" ; then
@@ -1033,8 +971,6 @@ fi
 ############### OS threads ###################
 
 if test "${enable_mzrt}" = "yes" ; then
-  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
-  LIBATOM="LIBATOM_USE"
   enable_pthread=yes
 fi
 
@@ -1197,7 +1133,6 @@ AC_SUBST(PROFFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(CPP)
 AC_SUBST(SED)
-AC_SUBST(PERL)
 AC_SUBST(AS)
 AC_SUBST(RANLIB)
 AC_SUBST(AR)
@@ -1236,8 +1171,6 @@ AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(SO_SUFFIX)
-AC_SUBST(MZRT_CGC_FLAGS)
-AC_SUBST(LIBATOM)
 AC_SUBST(OWN_LIBFFI)
 
 AC_SUBST(LIBSFX)
@@ -1305,15 +1238,11 @@ if test "${enable_shared}" = "yes" ; then
   ac_configure_args="$ac_configure_args --enable-shared"
 fi
 
-if test "${LIBATOM}" = "LIBATOM_USE" ; then
-  AC_CONFIG_AUX_DIR( racket/gc/libatomic_ops )
-  AC_CONFIG_SUBDIRS( racket/gc/libatomic_ops )
-fi
-
 FOREIGNTARGET=
 FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   if test "${have_libffi}" != "yes" ; then
+    AC_CONFIG_AUX_DIR( foreign/libffi )
     AC_CONFIG_SUBDIRS( foreign/libffi )
   fi
   FOREIGNTARGET="foreign-stuff"

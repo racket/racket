@@ -214,8 +214,7 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 /*****************************************************************************/
 
 /* This turns on automatic memory accounting */
-/* #define NEWGC_BTC_ACCOUNT */
-/* #undef NEWGC_BTC_ACCOUNT */
+#define NEWGC_BTC_ACCOUNT
 
 /* This turns on memory tracing */
 /* #define NEWGC_MEMORY_TRACE */
@@ -2171,6 +2170,15 @@ void GC_register_root_custodian(void *c)
 {
 #ifdef NEWGC_BTC_ACCOUNT
   BTC_register_root_custodian(c);
+#endif
+}
+
+int GC_accouting_enabled()
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  return 1;
+#else
+  return 0;
 #endif
 }
 

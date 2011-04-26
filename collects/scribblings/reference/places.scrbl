@@ -18,9 +18,11 @@
 
 @; ----------------------------------------------------------------------
 
-@margin-note{Parallel support for @racket[place] is currently disabled by
-default. Enable places by supplying @DFlag{enable-places} to
-@exec{configure} when building Racket.}
+@margin-note{Currently, parallel support for @racket[place] is enabled
+  only for Racket 3m (which is the main variant of Racket), and only
+  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
+  enable support for other platforms, use @DFlag{enable-places} with
+  @exec{configure} when building Racket.}
 
 @note-lib[racket/place]
 

@@ -95,7 +95,6 @@ racketlib:
 	$(MAKE) mzlibrary 
 
 dynlib:
-	cd src; $(MAKE) mzheaders
 	cd dynsrc; $(MAKE) dynlib 
 
 dynexample:
@@ -108,6 +107,9 @@ oe:
 
 g-c:
 	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@ 
+
+exports:
+	cd src; $(MAKE) mzheaders
 
 sproc-extra-lib:
 	cd @GCDIR@; $(MAKE) sproc.@LTO@
@@ -198,10 +200,13 @@ starter: mzstart.exe
 exn:
 	$(MAKE) $(srcdir)/src/schexn.h
 	$(MAKE) $(collectsdir)/scheme/private/kernstruct.rkt
-                                       
+
+STARTUPDEST = startup.inc
 CSTARTUPDEST = cstartup.inc
 
 startup:
+	$(MAKE) $(srcdir)/src/$(STARTUPDEST)
+cstartup:
 	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
 
 total_startup:
@@ -225,9 +230,10 @@ $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
 $(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
 	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
 
-
+$(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.rkt
+	racket -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(CSTARTUPDEST) 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
+	racket -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
 $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.rkt
 	racket -cu $(srcdir)/src/mkmark.rkt < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 

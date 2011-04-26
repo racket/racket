@@ -6,7 +6,6 @@ srcdir = @srcdir@
 builddir = @builddir@
 
 CC = @CC@
-PERL = @PERL@
 
 MZSRC = $(srcdir)
 
@@ -116,7 +115,6 @@ wrong:
 	echo Make from the directory above this one
 
 all:
-	$(MAKE) mzheaders
 	$(MAKE) mzobjects
 
 mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcdir)/schexn.h schsys.h \
@@ -125,32 +123,29 @@ mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcd
 
 mzobjects: $(OBJS)
 
-$(srcdir)/startup.inc : $(srcdir)/startup.rktl $(srcdir)/sstoinc
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/startup.inc ; else $(PERL) $(srcdir)/sstoinc < $(srcdir)/startup.rktl > $(srcdir)/startup.inc ; fi
+$(srcdir)/schemex.h : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt < $(srcdir)/schemef.h > $(srcdir)/schemex.h
 
-$(srcdir)/schemex.h : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.h ; else $(PERL) $(srcdir)/makex < $(srcdir)/schemef.h > $(srcdir)/schemex.h ; fi
+$(srcdir)/schemexm.h : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --list < $(srcdir)/schemef.h > $(srcdir)/schemexm.h
 
-$(srcdir)/schemexm.h : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemexm.h ; else $(PERL) -s -- $(srcdir)/makex -list < $(srcdir)/schemef.h > $(srcdir)/schemexm.h ; fi
+$(srcdir)/schemex.inc : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --assign < $(srcdir)/schemef.h > $(srcdir)/schemex.inc
 
-$(srcdir)/schemex.inc : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.inc ; else $(PERL) -s -- $(srcdir)/makex -assign < $(srcdir)/schemef.h > $(srcdir)/schemex.inc ; fi
+$(srcdir)/../include/racket.exp : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --exports < $(srcdir)/schemef.h > $(srcdir)/../include/racket.exp
 
-$(srcdir)/../include/racket.exp : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/racket.exp ; else $(PERL) -s -- $(srcdir)/makex -exports < $(srcdir)/schemef.h > $(srcdir)/../include/racket.exp ; fi
+$(srcdir)/../include/racket3m.exp : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --exports --precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/racket3m.exp
 
-$(srcdir)/../include/racket3m.exp : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/racket3m.exp ; else $(PERL) -s -- $(srcdir)/makex -exports -precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/racket3m.exp ; fi
+$(srcdir)/../include/mzwin.def : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --winex < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin.def
 
-$(srcdir)/../include/mzwin.def : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzwin.def ; else $(PERL) -s -- $(srcdir)/makex -winex < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin.def ; fi
+$(srcdir)/../include/mzwin3m.def : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --winex --gwinex --precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin3m.def
 
-$(srcdir)/../include/mzwin3m.def : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzwin3m.def ; else $(PERL) -s -- $(srcdir)/makex -winex -gwinex -precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin3m.def ; fi
-
-$(srcdir)/../include/gmzwin.def : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/gmzwin.def ; else $(PERL) -s -- $(srcdir)/makex -gwinex < $(srcdir)/schemef.h > $(srcdir)/../include/gmzwin.def ; fi
+$(srcdir)/../include/gmzwin.def : $(srcdir)/schemef.h $(srcdir)/makex.rkt
+	racket $(srcdir)/makex.rkt --gwinex < $(srcdir)/schemef.h > $(srcdir)/../include/gmzwin.def
 
 schsys.h : $(srcdir)/sysname
 	echo -n "#define SCHEME_PLATFORM_LIBRARY_SUBPATH " > schsys.h

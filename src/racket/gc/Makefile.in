@@ -37,9 +37,6 @@ VPATH= $(srcdir)
 AO_SRC_DIR=$(srcdir)/libatomic_ops
 AO_INSTALL_DIR=$(srcdir)/libatomic_ops
 
-LIBATOM_USE=libatomic_ops/libatomic_ops.a
-LIBATOM_NONE=
-
 # for version.mak:
 mainsrcdir = @srcdir@/../..
 @INCLUDEDEP@ @srcdir@/../version.mak
@@ -47,7 +44,7 @@ mainsrcdir = @srcdir@/../..
 # compiler options; mainly used to allow importing options
 OPTIONS=@OPTIONS@ @CGCOPTIONS@
 
-BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @MZRT_CGC_FLAGS@
+BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src @CFLAGS@ @COMPFLAGS@ @PREFLAGS@
 CFLAGS= $(BASEFLAGS) @PROFFLAGS@ $(OPTIONS) -DNO_EXECUTE_PERMISSION -DSILENT -DNO_GETENV -DLARGE_CONFIG -DATOMIC_UNCOLLECTABLE -DINITIAL_MARK_STACK_SIZE=8192
 
 # To build the parallel collector on Linux, add to the above:
@@ -498,7 +495,7 @@ tests:
 	mkdir tests
 
 # PLTSCHEME: make ../libmzgc.a, and use $(AR), $(RANLIB), and @LIBSFX@:
-base_lib ../libmzgc.@LIBSFX@: $(@LIBATOM@) $(OBJS) dyn_load.@LTO@ $(UTILS)
+base_lib ../libmzgc.@LIBSFX@: $(OBJS) dyn_load.@LTO@ $(UTILS)
 	$(NICEAR) $(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS) dyn_load.@LTO@
 	$(RANLIB) ../libmzgc.@LIBSFX@
 

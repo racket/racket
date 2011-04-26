@@ -660,7 +660,6 @@ EXEEXT
 OBJEXT
 CPP
 RANLIB
-PERL
 GREP
 EGREP
 PREFLAGS
@@ -702,8 +701,6 @@ FRAMEWORK_PREFIX
 INSTALL_ORIG_TREE
 EXE_SUFFIX
 SO_SUFFIX
-MZRT_CGC_FLAGS
-LIBATOM
 OWN_LIBFFI
 LIBSFX
 WXLIBS
@@ -754,8 +751,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-ac_subdirs_all='racket/gc/libatomic_ops
-foreign/libffi '
+ac_subdirs_all='foreign/libffi '
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -1296,13 +1292,8 @@ Fine tuning of the installation directories:
   --includedir=DIR       C header files [PREFIX/include]
   --datarootdir=DIR      read-only arch.-independent data root [PREFIX/share]
   --datadir=DIR          read-only architecture-independent data [DATAROOTDIR]
-  --localedir=DIR        locale-dependent data [DATAROOTDIR/locale]
   --mandir=DIR           man documentation [DATAROOTDIR/man]
   --docdir=DIR           documentation root [DATAROOTDIR/doc/PACKAGE]
-  --htmldir=DIR          html documentation [DOCDIR]
-  --dvidir=DIR           dvi documentation [DOCDIR]
-  --pdfdir=DIR           pdf documentation [DOCDIR]
-  --psdir=DIR            ps documentation [DOCDIR]
 _ACEOF
 
   cat <<\_ACEOF
@@ -1316,43 +1307,37 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-gracket        compile GRacket as well as Racket (enabled by default)
-  --enable-plot           compile plot libraries (enabled by default)
+  --enable-gracket        build GRacket as well as Racket (enabled by default)
+  --enable-jit            support JIT compiler (enabled by default)
+  --enable-foreign        support foreign calls (enabled by default)
+  --enable-places         support places (3m only; usually enabled by default)
+  --enable-futures        support futures (usually enabled by default)
+  --enable-plot           support plot libraries (enabled by default)
+  --enable-float          support single-precision floats (enabled by default)
+  --enable-floatinstead   use single-precision by default
+  --enable-origtree       install with original directory structure
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
   --enable-shared         create shared libraries
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of bundled libtool
-  --enable-origtree       install with original directory structure
-  --enable-jit            compile JIT support (enabled by default)
-  --enable-foreign        compile foreign support (enabled by default)
   --enable-libffi         use installed libffi (enabled by default)
-  --enable-places         compile places support (usually enabled by default)
-  --enable-futures        compile futures support (usually enabled by default)
-  --enable-cgcdefault     use CGC (Boehm or Senora) as default build
-  --enable-sgc            use Senora GC instead of the Boehm GC
-  --enable-sgcdebug       use Senora GC for debugging
-  --enable-account        3m: use memory-accounting GC (enabled by default)
-  --enable-compact        3m: use compact GC (no accounting)
-  --enable-backtrace      3m: support GC backtrace dumps
-  --enable-float          support single-precision floats (enabled by default)
-  --enable-floatinstead   compile to use single-precision by default
-  --enable-pthread        link with pthreads
-  --enable-stackup        assume "up" if stack direction cannot be determined
-  --enable-bigendian      assume "big" if endianness cannot be determined
-  --enable-oskit          compile OSKit-based Racket kernel
-  --enable-smalloskit     compile small OSKit-based Racket kernel
-  --enable-perl           use perl to regenerate certain sources
-  --enable-gprof          compile for profiling with gprof (gcc only)
-  --enable-gcov           compile to gather gcov statistics (gcc3 only)
-  --enable-noopt          drop -O C flags
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
-  --enable-xonx           compile Unix style (e.g., use Gtk) for Mac OS X
+  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          do not force 32-bit build
-  --enable-gcplacestest   compile GC places testing support
+  --enable-cgcdefault     use CGC (Boehm or Senora) as default build
+  --enable-sgc            use Senora GC instead of the Boehm GC
+  --enable-sgcdebug       use Senora GC for debugging
+  --enable-backtrace      3m: support GC backtrace dumps
+  --enable-pthread        link with pthreads
+  --enable-stackup        assume "up" if stack direction cannot be determined
+  --enable-bigendian      assume "big" if endianness cannot be determined
+  --enable-gprof          compile for profiling with gprof (gcc only)
+  --enable-gcov           compile to gather gcov statistics (gcc3 only)
+  --enable-noopt          drop -O C flags
 
 Some influential environment variables:
   CC          C compiler command
@@ -1797,12 +1782,55 @@ else
   enable_gracket=yes
 fi
 
+# Check whether --enable-jit was given.
+if test "${enable_jit+set}" = set; then
+  enableval=$enable_jit;
+else
+  enable_jit=yes
+fi
+
+# Check whether --enable-foreign was given.
+if test "${enable_foreign+set}" = set; then
+  enableval=$enable_foreign;
+else
+  enable_foreign=yes
+fi
+
+# Check whether --enable-places was given.
+if test "${enable_places+set}" = set; then
+  enableval=$enable_places;
+fi
+
+# Check whether --enable-futures was given.
+if test "${enable_futures+set}" = set; then
+  enableval=$enable_futures;
+fi
+
 # Check whether --enable-plot was given.
 if test "${enable_plot+set}" = set; then
   enableval=$enable_plot;
 else
   enable_plot=yes
 fi
+
+# Check whether --enable-float was given.
+if test "${enable_float+set}" = set; then
+  enableval=$enable_float;
+else
+  enable_float=yes
+fi
+
+# Check whether --enable-floatinstead was given.
+if test "${enable_floatinstead+set}" = set; then
+  enableval=$enable_floatinstead;
+fi
+
+
+# Check whether --enable-origtree was given.
+if test "${enable_origtree+set}" = set; then
+  enableval=$enable_origtree;
+fi
+
 
 # Check whether --enable-docs was given.
 if test "${enable_docs+set}" = set; then
@@ -1834,27 +1862,6 @@ else
 fi
 
 
-# Check whether --enable-origtree was given.
-if test "${enable_origtree+set}" = set; then
-  enableval=$enable_origtree;
-fi
-
-
-# Check whether --enable-jit was given.
-if test "${enable_jit+set}" = set; then
-  enableval=$enable_jit;
-else
-  enable_jit=yes
-fi
-
-
-# Check whether --enable-foreign was given.
-if test "${enable_foreign+set}" = set; then
-  enableval=$enable_foreign;
-else
-  enable_foreign=yes
-fi
-
 # Check whether --enable-libffi was given.
 if test "${enable_libffi+set}" = set; then
   enableval=$enable_libffi;
@@ -1863,118 +1870,10 @@ else
 fi
 
 
-# Check whether --enable-places was given.
-if test "${enable_places+set}" = set; then
-  enableval=$enable_places;
-fi
-
-# Check whether --enable-futures was given.
-if test "${enable_futures+set}" = set; then
-  enableval=$enable_futures;
-fi
-
-
-# Check whether --enable-cgcdefault was given.
-if test "${enable_cgcdefault+set}" = set; then
-  enableval=$enable_cgcdefault;
-fi
-
-# Check whether --enable-sgc was given.
-if test "${enable_sgc+set}" = set; then
-  enableval=$enable_sgc;
-fi
-
-# Check whether --enable-sgcdebug was given.
-if test "${enable_sgcdebug+set}" = set; then
-  enableval=$enable_sgcdebug;
-fi
-
-# Check whether --enable-account was given.
-if test "${enable_account+set}" = set; then
-  enableval=$enable_account;
-else
-  enable_account=yes
-fi
-
-# Check whether --enable-compact was given.
-if test "${enable_compact+set}" = set; then
-  enableval=$enable_compact;
-fi
-
-# Check whether --enable-backtrace was given.
-if test "${enable_backtrace+set}" = set; then
-  enableval=$enable_backtrace;
-fi
-
-
-# Check whether --enable-float was given.
-if test "${enable_float+set}" = set; then
-  enableval=$enable_float;
-else
-  enable_float=yes
-fi
-
-# Check whether --enable-floatinstead was given.
-if test "${enable_floatinstead+set}" = set; then
-  enableval=$enable_floatinstead;
-fi
-
-
-# Check whether --enable-pthread was given.
-if test "${enable_pthread+set}" = set; then
-  enableval=$enable_pthread;
-fi
-
-# Check whether --enable-stackup was given.
-if test "${enable_stackup+set}" = set; then
-  enableval=$enable_stackup;
-fi
-
-# Check whether --enable-bigendian was given.
-if test "${enable_bigendian+set}" = set; then
-  enableval=$enable_bigendian;
-fi
-
-
-# Check whether --enable-oskit was given.
-if test "${enable_oskit+set}" = set; then
-  enableval=$enable_oskit;
-fi
-
-# Check whether --enable-smalloskit was given.
-if test "${enable_smalloskit+set}" = set; then
-  enableval=$enable_smalloskit;
-fi
-
-
-# Check whether --enable-perl was given.
-if test "${enable_perl+set}" = set; then
-  enableval=$enable_perl;
-fi
-
-
-# Check whether --enable-gprof was given.
-if test "${enable_gprof+set}" = set; then
-  enableval=$enable_gprof;
-fi
-
-# Check whether --enable-gcov was given.
-if test "${enable_gcov+set}" = set; then
-  enableval=$enable_gcov;
-fi
-
-
-# Check whether --enable-noopt was given.
-if test "${enable_noopt+set}" = set; then
-  enableval=$enable_noopt;
-fi
-
-
 # Check whether --enable-enable_sdk was given.
 if test "${enable_enable_sdk+set}" = set; then
   enableval=$enable_enable_sdk;
 fi
-
 
 # Check whether --enable-xonx was given.
 if test "${enable_xonx+set}" = set; then
@@ -2002,9 +1901,60 @@ if test "${enable_mac64+set}" = set; then
 fi
 
 
-# Check whether --enable-gc2_places_testing was given.
-if test "${enable_gc2_places_testing+set}" = set; then
-  enableval=$enable_gc2_places_testing;
+# Check whether --enable-cgcdefault was given.
+if test "${enable_cgcdefault+set}" = set; then
+  enableval=$enable_cgcdefault;
+fi
+
+# Check whether --enable-sgc was given.
+if test "${enable_sgc+set}" = set; then
+  enableval=$enable_sgc;
+fi
+
+# Check whether --enable-sgcdebug was given.
+if test "${enable_sgcdebug+set}" = set; then
+  enableval=$enable_sgcdebug;
+fi
+
+# Check whether --enable-backtrace was given.
+if test "${enable_backtrace+set}" = set; then
+  enableval=$enable_backtrace;
+fi
+
+
+# Check whether --enable-pthread was given.
+if test "${enable_pthread+set}" = set; then
+  enableval=$enable_pthread;
+fi
+
+# Check whether --enable-stackup was given.
+if test "${enable_stackup+set}" = set; then
+  enableval=$enable_stackup;
+fi
+
+# Check whether --enable-bigendian was given.
+if test "${enable_bigendian+set}" = set; then
+  enableval=$enable_bigendian;
+fi
+
+
+# AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
+# AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])
+
+# Check whether --enable-gprof was given.
+if test "${enable_gprof+set}" = set; then
+  enableval=$enable_gprof;
+fi
+
+# Check whether --enable-gcov was given.
+if test "${enable_gcov+set}" = set; then
+  enableval=$enable_gcov;
+fi
+
+
+# Check whether --enable-noopt was given.
+if test "${enable_noopt+set}" = set; then
+  enableval=$enable_noopt;
 fi
 
 
@@ -2077,22 +2027,6 @@ else
         exit 1
       fi
     fi
-  fi
-fi
-
-if test "${enable_gc2_places_testing}" = "yes" ; then
-  enable_shared=yes
-  enable_places=yes
-fi
-
-
-# Hack for the implementor:
-if test "${enable_perl}" = "" ; then
-  if test "$USER" = "mflatt" ; then
-    enable_perl=yes
-  fi
-  if test "$USER" = "matthewf" ; then
-    enable_perl=yes
   fi
 fi
 
@@ -2220,11 +2154,8 @@ show_explicitly_disabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
-show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
-
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
-show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
@@ -2233,8 +2164,6 @@ show_explicitly_enabled "${enable_floatinstead}" "Single-precision default float
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
-
-show_explicitly_enabled "${enable_perl}" "Perl"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
@@ -2270,8 +2199,6 @@ INCLUDEDEP="#"
 WX_MMD_FLAG=
 
 PREFLAGS="$CPPFLAGS"
-MZRT_CGC_FLAGS=""
-LIBATOM="LIBATOM_NONE"
 
 OWN_LIBFFI="ON"
 
@@ -3633,51 +3560,6 @@ if test "$CC" = "gcc" ; then
   DYN_CFLAGS="-fPIC"
 fi
 
-if test "${enable_perl}" = "yes" ; then
-  # Extract the first word of "perl", so it can be a program name with args.
-set dummy perl; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_PERL+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $PERL in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PERL="$PERL" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_PERL="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PERL=$ac_cv_path_PERL
-if test -n "$PERL"; then
-  { echo "$as_me:$LINENO: result: $PERL" >&5
-echo "${ECHO_T}$PERL" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-else
-  PERL=""
-fi
-
 if test "$REZ" = '' ; then
  REZ=/Developer/Tools/Rez
 fi
@@ -3883,7 +3765,6 @@ case $OS in
   *FreeBSD)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
-    GC_THREADS_FLAG="-DGC_FREEBSD_THREADS"
     enable_pthread=yes
     ;;
   OpenBSD)
@@ -3904,7 +3785,6 @@ case $OS in
   Linux)
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
-    GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     STRIP_DEBUG="strip -S"
     case `$UNAME -m` in
       #Required for CentOS 4.6
@@ -3992,8 +3872,6 @@ case $OS in
     STRIP_DEBUG="/usr/bin/strip -S"
 
     SO_SUFFIX=.dylib
-
-    GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
    gcc_vers_three=`${CC} -v 2>&1 | grep "version [3-9][.]"`
     if test "$gcc_vers_three" = "" ; then
@@ -5212,20 +5090,6 @@ fi
 
 if test "${enable_backtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
-fi
-
-if test "${enable_compact}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DUSE_COMPACT_3M_GC"
-  enable_account=no
-  enable_memtrace=no
-fi
-
-if test "${enable_account}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DNEWGC_BTC_ACCOUNT"
-fi
-
-if test "${enable_memtrace}" = "yes" ; then
-  GC2OPTIONS="$GC2OPTIONS -DNEWGC_MEMORY_TRACE"
 fi
 
 LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
@@ -8243,16 +8107,6 @@ _ACEOF
 
 fi
 
-############### GC2_PLACES_TESTING ###################
-
-if test "${enable_gc2_places_testing}" = "yes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define GC2_PLACES_TESTING 1
-_ACEOF
-
-fi
-
 ############### places ###################
 
 if test "${enable_parallel_by_default}" = "yes" ; then
@@ -8290,8 +8144,6 @@ fi
 ############### OS threads ###################
 
 if test "${enable_mzrt}" = "yes" ; then
-  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
-  LIBATOM="LIBATOM_USE"
   enable_pthread=yes
 fi
 
@@ -8637,9 +8489,6 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-
-
-
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -8658,9 +8507,12 @@ if test "${enable_shared}" = "yes" ; then
   ac_configure_args="$ac_configure_args --enable-shared"
 fi
 
-if test "${LIBATOM}" = "LIBATOM_USE" ; then
-  ac_aux_dir=
-for ac_dir in racket/gc/libatomic_ops  "$srcdir"/racket/gc/libatomic_ops ; do
+FOREIGNTARGET=
+FOREIGN_IF_USED="FOREIGN_NOT_USED"
+if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
+  if test "${have_libffi}" != "yes" ; then
+    ac_aux_dir=
+for ac_dir in foreign/libffi  "$srcdir"/foreign/libffi ; do
   if test -f "$ac_dir/install-sh"; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -8676,8 +8528,8 @@ for ac_dir in racket/gc/libatomic_ops  "$srcdir"/racket/gc/libatomic_ops ; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in racket/gc/libatomic_ops  \"$srcdir\"/racket/gc/libatomic_ops " >&5
-echo "$as_me: error: cannot find install-sh or install.sh in racket/gc/libatomic_ops  \"$srcdir\"/racket/gc/libatomic_ops " >&2;}
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in foreign/libffi  \"$srcdir\"/foreign/libffi " >&5
+echo "$as_me: error: cannot find install-sh or install.sh in foreign/libffi  \"$srcdir\"/foreign/libffi " >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -8690,14 +8542,6 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
-  subdirs="$subdirs racket/gc/libatomic_ops"
-
-fi
-
-FOREIGNTARGET=
-FOREIGN_IF_USED="FOREIGN_NOT_USED"
-if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
-  if test "${have_libffi}" != "yes" ; then
     subdirs="$subdirs foreign/libffi"
 
   fi
@@ -9387,7 +9231,6 @@ EXEEXT!$EXEEXT$ac_delim
 OBJEXT!$OBJEXT$ac_delim
 CPP!$CPP$ac_delim
 RANLIB!$RANLIB$ac_delim
-PERL!$PERL$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 PREFLAGS!$PREFLAGS$ac_delim
@@ -9429,8 +9272,6 @@ FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
 SO_SUFFIX!$SO_SUFFIX$ac_delim
-MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
-LIBATOM!$LIBATOM$ac_delim
 OWN_LIBFFI!$OWN_LIBFFI$ac_delim
 LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
@@ -9438,6 +9279,9 @@ WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
+MAKE_GRACKET!$MAKE_GRACKET$ac_delim
+MAKE_PLOT!$MAKE_PLOT$ac_delim
+MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -9479,9 +9323,6 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
-MAKE_GRACKET!$MAKE_GRACKET$ac_delim
-MAKE_PLOT!$MAKE_PLOT$ac_delim
-MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
 WXPRECOMP!$WXPRECOMP$ac_delim
 USE_WXPRECOMP!$USE_WXPRECOMP$ac_delim
@@ -9514,7 +9355,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -9971,6 +9812,9 @@ if test "$no_recursion" != yes; then
     -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
       ac_prev=prefix ;;
     -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
+      ;;
+    # Strip away all feature choices
+    -enable* | --enable* | -disable* | --disable*)
       ;;
     *)
       case $ac_arg in

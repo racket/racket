@@ -1884,7 +1884,7 @@ static void dump_sector_map(char *prefix)
 	    if ((was_kind != kind) || (was_sec != pagetable[j].start))
 	      same_sec = diff_sec;
 
-	    FPRINTF(STDERR, same_sec);
+	    FPRINTF(STDERR, "%s", same_sec);
 	    
 	    was_kind = kind;
 	    was_sec = pagetable[j].start;

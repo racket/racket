@@ -12,21 +12,20 @@
 ;; of initial module definitions and parameter values.
 
 ;; When using makefiles, `make startup' in [the build directory for]
-;; plt/src/mzscheme creates plt/src/mzscheme/src/cstartup.inc. Note
-;; that `make startup' requires a working Racket executable; see
-;; schminc.h for information about avoiding cstartup.inc, and using
-;; startup.inc (requires perl), instead. In fact, the recommend
-;; build strategy for cstartup.inc is
-;;   * Run configure in <builddir> with --enable-perl
+;; "plt/src/racket" creates "plt/src/racket/src/cstartup.inc", and
+;; `make cstartup' creates plt/src/racket/src/cstartup.inc. Both
+;; require a working Racket executable.
+
+;; The recommend build strategy for cstartup.inc is
 ;;   * Set USE_COMPILED_STARTUP in schminc.h to 0
 ;;   * Modify startup.rkt to taste
-;;   * Run make in <builddir>/mzscheme
-;;   * Run make startup in <builddir>/mzscheme
+;;   * Run make startup in <builddir>/racket
+;;   * Run make in <builddir>/racket
 ;;   * Set USE_COMPILED_STARTUP in schminc.h to 1
-;;   * Run make in <builddir>/mzscheme
+;;   * Run make in <builddir>/racket
 
 ;; Do not use block comments (with #| and |#) in this file. The
-;; pre-processing script to build startup.inc can't handle them.
+;; script to build startup.inc can't handle them.
 
 ;; ------------------------------------------------------
 ;; Minimal syntax (no error checks!) needed for the rest
