@@ -2,7 +2,7 @@
 (require racket/class
          parser-tools/lex
          "deriv-tokens.rkt"
-         "../syntax-browser.rkt")
+         "../syntax-browser/frame.rkt")
 (provide (all-defined-out))
 
 (define current-expand-observe
