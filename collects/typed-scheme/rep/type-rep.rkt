@@ -130,6 +130,11 @@
     [#:frees (λ (f) (make-invariant (f elem)))]
     [#:key 'channel])
 
+;; elem is a Type
+(dt Ephemeron ([elem Type/c])
+    [#:key 'ephemeron])
+
+
 ;; name is a Symbol (not a Name)
 ;; contract is used when generating contracts from types
 ;; predicate is used to check (at compile-time) whether a value belongs
@@ -301,6 +306,7 @@
 ;; the supertype of all of these values
 (dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (dt ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
+(dt EphemeronTop () [#:fold-rhs #:base] [#:key 'ephemeron])
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])

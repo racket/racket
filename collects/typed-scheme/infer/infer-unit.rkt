@@ -495,6 +495,8 @@
            (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
           [((Channel: e) (Channel: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((Ephemeron: e) (Ephemeron: e*))
+           (cg e e*)]
           ;; we assume all HTs are mutable at the moment
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant
