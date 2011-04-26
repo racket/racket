@@ -1,6 +1,5 @@
 #lang racket/base
 (require tests/utils/docs-complete)
-(check-docs (quote srfi/provider))
 (check-docs (quote srfi/optional))
 (check-docs (quote srfi/features))
 (check-docs (quote srfi/98))

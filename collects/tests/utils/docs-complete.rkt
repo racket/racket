@@ -19,15 +19,26 @@
   (define lib0 (list-ref pieces 0))
   (define file (last pieces))
   (define lib1-n (reverse (cdr (reverse (cdr pieces)))))
+  (define (pick-one . args)
+    (for/or ([fmt (in-list args)])
+      (define pth
+        (apply build-path
+               (append (list (collection-path lib0))
+                       lib1-n
+                       (list "compiled"
+                             (format fmt file)))))
+      (and (file-exists? pth)
+           pth)))
   (define-values (val-info stx-info)
-    (module-compiled-exports
-     (parameterize ([read-accept-compiled #t])
-       (call-with-input-file (apply build-path
-                                    (append (list (collection-path lib0))
-                                            lib1-n
-                                            (list "compiled"
-                                                  (format "~a_rkt.zo" file))))
-         read))))
+    (let/ec k
+      (module-compiled-exports
+       (parameterize ([read-accept-compiled #t])
+         (define file (pick-one "~a_rkt.zo"
+                                "~a_ss.zo"
+                                "~a_scm.zo"))
+         (if file
+             (call-with-input-file file read)
+             (k '() '()))))))
   
   (define (get n info)
     (define a (assoc n info))
@@ -62,6 +73,6 @@
                         [else
                          (fprintf port "\n  ")
                          2]))])
-      (pretty-write undocumented-exports))))
+      (pretty-write undocumented-exports (current-error-port)))))
 
 (define xref (load-collections-xref))
