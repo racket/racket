@@ -1,12 +1,10 @@
 #lang racket/base
 (require tests/utils/docs-complete)
-(check-docs (quote algol60/tool))
 (check-docs (quote algol60/simplify))
 (check-docs (quote algol60/runtime))
 (check-docs (quote algol60/prims))
 (check-docs (quote algol60/parse))
 (check-docs (quote algol60/compile))
 (check-docs (quote algol60/cfg-parser))
-(check-docs (quote algol60/bd-tool))
 (check-docs (quote algol60/base))
 (check-docs (quote algol60/algol60))

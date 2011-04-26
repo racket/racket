@@ -2,7 +2,6 @@
 (require tests/utils/docs-complete)
 (check-docs (quote slideshow/viewer))
 (check-docs (quote slideshow/tutorial-show))
-(check-docs (quote slideshow/tool))
 (check-docs (quote slideshow/step))
 (check-docs (quote slideshow/start))
 (check-docs (quote slideshow/start-param))

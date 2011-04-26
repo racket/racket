@@ -3,7 +3,6 @@
 (check-docs (quote guibuilder/utils))
 (check-docs (quote guibuilder/top-level))
 (check-docs (quote guibuilder/toolbar))
-(check-docs (quote guibuilder/tool))
 (check-docs (quote guibuilder/text-field))
 (check-docs (quote guibuilder/slider-guage))
 (check-docs (quote guibuilder/simple-control))
