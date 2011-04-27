@@ -1,38 +1,68 @@
-(load-relative "loadtest.rktl")
-(Section 'place-channel)
+#lang racket/base
 (require racket/flonum
          racket/fixnum
-         rackunit)
+         racket/place
+         racket/list
+         rackunit
+         (for-syntax racket/base))
+
+(provide main)
 
 (define (splat txt fn)
   (call-with-output-file fn #:exists 'replace
       (lambda (out)
         (fprintf out "~a" txt))))
 
-(splat
-#<<END
-(module pct1 racket/base
-  (provide place-main)
-  (require racket/flonum
-           racket/fixnum
-           racket/place
-           racket/list
-           (for-syntax racket/base))
+(define big (make-string 1025 #\K))
 
-  (define-syntax (test-place-channel-receive/send stx)
-    (syntax-case stx ()
-      [(_ ch body) 
-       (with-syntax
-          [(x (syntax-local-introduce #'x))]
-        #'(place-channel-send ch 
-          (let ([x (place-channel-receive ch)])
-            body)))]))
+(define (big-sender ch msg) (car (place-channel-send/receive ch (cons msg big))))
 
-  (define-syntax-rule (test-place-channel-receive/send-* ch body ...) 
-    (begin (test-place-channel-receive/send ch body) ...))
+(define-syntax (normal-receiver stx)
+  (syntax-case stx ()
+    [(_ ch x body ...) 
+      #'(let ([x (place-channel-receive ch)])
+        (place-channel-send ch (begin body ...)))]))
 
-  (define (place-main ch)
-    (test-place-channel-receive/send-* ch
+(define-syntax (big-receiver stx)
+  (syntax-case stx ()
+    [(_ ch x body ...) 
+      #'(let ([x (car (place-channel-receive ch))])
+        (place-channel-send ch (cons (begin body ...) big)))]))
+
+(define (test expect fun . args)
+  (printf "~s ==> " (cons fun args))
+  (flush-output)
+  (let ([res (if (procedure? fun)
+               (apply fun args)
+               (car args))])
+    (printf "~s\n" res)
+    (let ([ok? (equal? expect res)])
+      (unless ok?
+        (printf "  BUT EXPECTED ~s\n" expect))
+      ok?)))
+
+(define (echo ch) (place-channel-send ch (place-channel-receive ch)))
+(define (recv/print ch) (displayln (place-channel-receive ch)))
+
+(define-struct building (rooms location) #:prefab)
+(define-struct (house building) (occupied ) #:prefab)
+(define h1 (make-house 5 'factory 'yes))
+
+(define-syntax (test-place-channel-receive/send stx)
+  (syntax-case stx ()
+    [(_ ch x body ...) #'(normal-receiver ch x body ...)]))
+
+(define-syntax (test-place-channel-receive/send-* stx)
+  (syntax-case stx ()
+    [(_ ch x body ...) #'(begin (normal-receiver ch x body) ...)]))
+
+
+(define-syntax-rule (channel-test-basic-types-worker receiver ch)
+  (begin
+    (define-syntax-rule (test-place-channel-receive/send-* x body (... ...))
+      (begin (receiver ch x body) (... ...)))
+
+    (test-place-channel-receive/send-* x
       (not x)
       (not x)
       (void)
@@ -47,46 +77,13 @@
       (list (car x) 'b (cadr x))
       (vector (vector-ref x 0) 'b (vector-ref x 1))
       #s((abuilding 1 building 2) 6 'utah 'no)
-      `(,x))
+      `(,x))))
 
-    (define pc1 (place-channel-receive ch))
-    (test-place-channel-receive/send pc1 (string-append x "-ok"))
+(define (channel-test-basic-types-master sender ch)
+  (define-syntax-rule (test-place-channel-send-receive sender ch (send expect) ...) 
+    (begin (test expect sender ch send) ...))
 
-    (define pc3 (first (place-channel-receive ch)))
-    (test-place-channel-receive/send pc3 (string-append x "-ok3"))
-
-    (test-place-channel-receive/send-* ch 
-      (begin (flvector-set! x 2 5.0) "Ready1")
-      (begin (flvector-set! x 2 6.0) "Ready2")
-      (begin (fxvector-set! x 2 5)   "Ready2.1")
-      (begin (fxvector-set! x 2 6)   "Ready2.2")
-      (begin (bytes-set! x 2 67)     "Ready3")
-      (begin (bytes-set! x 2 67)     "Ready4"))
-
-    (define pc5 (place-channel-receive ch))
-    (place-channel-send pc5 "Ready5")
-  )
-)
-END
-"pct1.ss")
-
-(define-syntax-rule (pc-send-receive-test ch (send expect) ...) 
-  (begin (test expect place-channel-send/receive ch send) ...))
-
-
-(define-struct building (rooms location) #:prefab)
-(define-struct (house building) (occupied ) #:prefab)
-(define h1 (make-house 5 'factory 'yes))
-
-(define flv1 (shared-flvector 0.0 1.0 2.0 3.0))
-(define flv2 (make-shared-flvector 4 3.0))
-(define fxv1 (shared-fxvector 0 1 2 3))
-(define fxv2 (make-shared-fxvector 4 3))
-(define b1 (shared-bytes 66 66 66 66))
-(define b2 (make-shared-bytes 4 65))
-
-(let ([pl (place "pct1.ss" 'place-main)])
-  (pc-send-receive-test pl
+  (test-place-channel-send-receive sender ch
     (#t #f)
     (#f #t)
     (null (void))
@@ -101,7 +98,47 @@ END
     ((list 'a 'a) (list 'a 'b 'a))
     (#(a a) #(a b a))
     (h1 #s((abuilding 1 building 2) 6 'utah 'no))
-    ('(printf "Hello") '((printf "Hello"))))
+    ('(printf "Hello") '((printf "Hello")))))
+
+(define-place (place-worker ch)
+  (channel-test-basic-types-worker normal-receiver ch)
+  (channel-test-basic-types-worker big-receiver ch)
+
+  (define pc1 (place-channel-receive ch))
+  (test-place-channel-receive/send pc1 x (string-append x "-ok"))
+
+  (define pc3 (first (place-channel-receive ch)))
+  (test-place-channel-receive/send pc3 x (string-append x "-ok3"))
+
+  (test-place-channel-receive/send-* ch x
+    (begin (flvector-set! x 2 5.0) "Ready1")
+    (begin (flvector-set! x 2 6.0) "Ready2")
+    (begin (fxvector-set! x 2 5)   "Ready2.1")
+    (begin (fxvector-set! x 2 6)   "Ready2.2")
+    (begin (bytes-set! x 2 67)     "Ready3")
+    (begin (bytes-set! x 2 67)     "Ready4"))
+
+  (define pc5 (place-channel-receive ch))
+  (place-channel-send pc5 "Ready5")
+
+  (channel-test-basic-types-worker normal-receiver pc5)
+  (channel-test-basic-types-worker big-receiver pc5)
+
+  (for ([i (in-range 3)]) (echo pc5))
+  (for ([i (in-range 3)]) (recv/print ch)))
+
+
+(define (main)
+(let ([pl (place-worker)])
+  (define flv1 (shared-flvector 0.0 1.0 2.0 3.0))
+  (define flv2 (make-shared-flvector 4 3.0))
+  (define fxv1 (shared-fxvector 0 1 2 3))
+  (define fxv2 (make-shared-fxvector 4 3))
+  (define b1 (shared-bytes 66 66 66 66))
+  (define b2 (make-shared-bytes 4 65))
+
+  (channel-test-basic-types-master place-channel-send/receive pl)
+  (channel-test-basic-types-master big-sender pl)
 
   (define-values (pc1 pc2) (place-channel))
   (place-channel-send pl pc2)
@@ -132,11 +169,15 @@ END
   (define-values (pc5 pc6) (place-channel))
   (place-channel-send pl pc5)
   (test "Ready5" sync pc6)
+  (channel-test-basic-types-master place-channel-send/receive pc6)
+  (channel-test-basic-types-master big-sender pc6)
 
+  #|
+  |#
   (let ([try-graph
          (lambda (s)
            (let ([v (read (open-input-string s))])
-             (place-channel-send pc5 v)
+             (place-channel-send pc6 v)
              (test v place-channel-receive pc6)))])
     (try-graph "#0=(#0# . #0#)")
     (try-graph "#0=#(#0# 7 #0#)")
@@ -149,5 +190,5 @@ END
 
   (place-wait pl)
 )
-
-(report-errs)
+)
+;(report-errs)
