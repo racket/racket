@@ -32,7 +32,8 @@ launching an external browser (such as Firefox).
 
 @section[#:tag "browser"]{Browser}
 
-@defmodule[browser]
+@defmodule*/no-declare[(browser)]
+@declare-exporting[browser/browser browser]
 
 The browser supports basic HTML commands, plus special Racket hyperlinks
 of the form @litchar{<A MZSCHEME=sexpr>...</A>}.  When the user clicks
@@ -99,12 +100,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @; ----------------------------------------------------------------------
 
-@defmixin[hyper-frame-mixin (frame%) ()]{
-
-  @defconstructor/auto-super[([url (or/c url? string? input-port?)])]{
-    Shows the frame and visits @racket[url].
-  }
-
+@definterface[hyper-frame<%> ()]{
   @defmethod[(get-hyper-panel%) (subclass?/c panel%)]{
     Returns the class that is instantiated when the frame is created.
     Must be a panel with hyper-panel-mixin mixed in.  Defaults to just
@@ -114,6 +110,16 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   @defmethod[(get-hyper-panel) (is-a?/c panel%)]{
     Returns the hyper panel in this frame.
   }
+}
+
+@; ----------------------------------------------------------------------
+
+@defmixin[hyper-frame-mixin (frame%) (hyper-frame<%>)]{
+
+  @defconstructor/auto-super[([url (or/c url? string? input-port?)])]{
+    Shows the frame and visits @racket[url].
+  }
+
 }
 
 @; ----------------------------------------------------------------------
@@ -137,7 +143,15 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @; ----------------------------------------------------------------------
 
-@defmixin[hyper-text-mixin (text%) ()]{
+@definterface[hyper-text<%> ()]{
+  @defmethod[(url-allows-evalling? [url (or/c port? url?)]) boolean?]{
+    Determines if @litchar{MZSCHEME} annotations are actually evaluated,
+    for a given url.
+  }
+}
+@; ----------------------------------------------------------------------
+
+@defmixin[hyper-text-mixin (text%) (hyper-text<%>)]{
 
   An instance of a @racket[hyper-text-mixin]-extended class should be
   displayed only in an instance of a class created with
@@ -257,6 +271,9 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 }
 
+@defclass[hyper-canvas% (hyper-canvas-mixin canvas:basic%) ()]{}
+
+
 @; ----------------------------------------------------------------------
 
 @defclass[hyper-text% (hyper-text-mixin text:keymap%) ()]{
@@ -328,7 +345,12 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @; ----------------------------------------------------------------------
 
-@defmixin[hyper-panel-mixin (area-container<%>) ()]{
+@definterface[hyper-panel<%> ()]{
+}
+
+@; ----------------------------------------------------------------------
+
+@defmixin[hyper-panel-mixin (area-container<%>) (hyper-panel<%>)]{
 
   @defconstructor/auto-super[([info-line? any/c])]{
     Creates controls and a hyper text canvas.  The controls permit a
@@ -440,6 +462,16 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     specified by @racket[region] to go to @racket[href] when that region
     of the image is clicked on.
   }
+}
+
+@defstruct[(exn:cancelled exn) ()]{
+  This exception may be raised by the
+  @method[hyper-text-mixin reload] method.
+}
+
+@defstruct[(exn:file-saved-instead exn) ([pathname path-string?])]{
+  This exception may be raised by the
+  @method[hyper-text-mixin reload] method.
 }
 
 @; ----------------------------------------------------------------------
