@@ -963,10 +963,10 @@ static void unchain_page(void *pg)
   if (!((void **)pg)[2])
     code_allocation_page_list = ((void **)pg)[3];
   else
-    ((void **)(((void **)pg)[2]))[3] = ((void **)pg)[2];
+    ((void **)(((void **)pg)[2]))[3] = ((void **)pg)[3];
 
   if (((void **)pg)[3])
-    ((void **)(((void **)pg)[3]))[2] = ((void **)pg)[3];
+    ((void **)(((void **)pg)[3]))[2] = ((void **)pg)[2];
 }
 
 static void init_free_list()
