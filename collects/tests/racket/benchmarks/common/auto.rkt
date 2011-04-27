@@ -282,12 +282,10 @@ exec racket -qu "$0" ${1+"$@"}
       (map bytes->number (cdr m))))
 
   (define (extract-bigloo-times bm str)
-    (let ([m (regexp-match #rx#"real: ([0-9]+) sys: ([0-9]+) user: ([0-9]+)" str)]
-          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
-          [msec/tick 10])
-      (list (* msec/tick (+ (bytes->number (caddr m))
-                            (bytes->number (cadddr m))))
-            (* msec/tick (bytes->number (cadr m)))
+    (let ([m (regexp-match #rx#"real: ([0-9]+) sys: ([0-9]+) user: ([0-9]+)" str)])
+      (list (+ (bytes->number (caddr m))
+               (bytes->number (cadddr m)))
+            (bytes->number (cadr m))
             0)))
 
   (define (extract-larceny-times bm str)
