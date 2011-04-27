@@ -124,7 +124,6 @@
         (when (not (zero? (string-length err))) (eprintf "STDERR:\n~a=====\n" err)))))
 
   (define (done)
-    (setup-printf #f "done")
     (unless (null? errors)
       (setup-printf #f "")
       (show-errors (current-error-port))
@@ -639,6 +638,11 @@
                               (thunk)))])
             (thunk))))))
 
+  ;; We keep timestamp information for all files that we try to compile.
+  ;; That's O(N) for an installation of size N, but the constant is small,
+  ;; and it makes a do-nothing setup complete much faster.
+  (define caching-managed-compile-zo (make-caching-managed-compile-zo))
+
   (define (compile-cc cc gcs)
     (parameterize ([current-namespace (make-base-empty-namespace)])
       (begin-record-error cc "making"
@@ -651,6 +655,7 @@
                 [info (cc-info cc)])
             (clean-cc dir info)
             (compile-directory-zos dir info 
+                                   #:managed-compile-zo caching-managed-compile-zo
                                    #:skip-path (and (avoid-main-installation) (find-collects-dir))
                                    #:skip-doc-sources? (not (make-docs)))))))
     (match gcs

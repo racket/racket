@@ -9,6 +9,7 @@
                      compiler/option
                      compiler/option-unit
                      compiler/comp-unit
+                     compiler/cm
                      dynext/compile-sig
                      dynext/link-sig
                      dynext/file-sig
@@ -70,15 +71,21 @@ file is reported through the current output port.}
 
 @defproc[(compile-collection-zos [collection string?] ...+
                                  [#:skip-path skip-path (or/c path-string? #f) #f]
-                                 [#:skip-doc-sources? skip-docs? any/c #f])
+                                 [#:skip-doc-sources? skip-docs? any/c #f]
+                                 [#:managed-compile-zo managed-compile-zo 
+                                                       (path-string? . -> . void?)
+                                                       (make-caching-managed-compile-zo)])
          void?]{
 
-Compiles the specified collection's files to @filepath{.zo} files.
+Compiles the specified collection's files to @filepath{.zo} files
+by using @racket[managed-compile-zo] on each source file.
 The @filepath{.zo} files are placed into the collection's
-@filepath{compiled} directory. By default, all files with the
+@filepath{compiled} directory.
+
+By default, all files with the
 extension @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm} in a collection are
 compiled, as are all such files within subdirectories, execept that
-any file or directory whose path starts with @scheme[racket-path] is
+any file or directory whose path starts with @scheme[skip-path] is
 skipped. (``Starts with'' means that the simplified path @scheme[_p]'s
 byte-string form after @scheme[(simplify-path _p #f)]starts with the
 byte-string form of @scheme[(simplify-path skip-path #f)].)
@@ -118,17 +125,17 @@ collection.  The following fields are used:
        unless the provided @scheme[skip-docs?] argument is a true
        value.}
 
-]
-
-The compilation process for an individual file is driven by
-@scheme[managed-compile-zo] from @schememodname[compiler/cm].}
+]}
 
 
 @defproc[(compile-directory-zos [path path-string?]
                                 [info ()]
                                 [#:verbose verbose? any/c #f]
                                 [#:skip-path skip-path (or/c path-string? #f) #f]
-                                [#:skip-doc-sources? skip-docs? any/c #f])
+                                [#:skip-doc-sources? skip-docs? any/c #f]
+                                [#:managed-compile-zo managed-compile-zo 
+                                                      (path-string? . -> . void?)
+                                                      (make-caching-managed-compile-zo)])
          void?]{
 
 Like @scheme[compile-collection-zos], but compiles the given directory
