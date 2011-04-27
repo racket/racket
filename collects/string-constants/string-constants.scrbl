@@ -48,7 +48,7 @@ and the other string constants files in the @filepath{private}
 directory.
   
 Each file has the same format. They are each modules in the
-@tt[string-constants/private/string-constant-lang] language. The
+@racket[string-constants/private/string-constant-lang] language. The
 body of each module is a finite mapping table that gives the mapping
 from the symbolic name of a string constant to its translation in the
 appropriate language.
