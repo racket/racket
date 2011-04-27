@@ -505,7 +505,7 @@ exec racket -qu "$0" ${1+"$@"}
                         racket-specific-progs))
 ))
 
-  (define obsolte-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
+  (define obsolete-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
 
   (define benchmarks
     '(conform
@@ -585,7 +585,7 @@ exec racket -qu "$0" ${1+"$@"}
                   num-iterations)
     (process-command-line benchmarks
                           extra-benchmarks
-                          (map impl-name impls) obsolte-impls
+                          (map impl-name impls) obsolete-impls
                           3))
 
   (define-runtime-path bm-directory ".")
