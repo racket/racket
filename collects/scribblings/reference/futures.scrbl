@@ -23,7 +23,7 @@ The @racket[future] and @racket[touch] functions from
 by the hardware and operating system.  In contrast to @racket[thread],
 which provides concurrency for arbitrary computations without
 parallelism, @racket[future] provides parallelism for limited
-computations. A future executes its work in parallel (assuming that
+computations. A @deftech{future} executes its work in parallel (assuming that
 support for parallelism is available) until it detects an attempt to
 perform an operation that is too complex for the system to run safely in
 parallel. Similarly, work in a future is suspended if it depends in some
