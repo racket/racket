@@ -165,6 +165,9 @@ void scheme_clear_ephemerons(void);
 #define PAIR_IS_NON_LIST 0x2
 #define PAIR_FLAG_MASK 0x3
 
+#define SCHEME_PAIR_COPY_FLAGS(dest, src) (SCHEME_PAIR_FLAGS((dest)) |= (SCHEME_PAIR_FLAGS((src)) & PAIR_FLAG_MASK))
+      
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/

@@ -968,6 +968,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         if (copy) {
           SCHEME_CAR(pair) = car;
           SCHEME_CDR(pair) = cdr;          
+          SCHEME_PAIR_COPY_FLAGS(pair, so);
           new_so = pair;
         }
       }
