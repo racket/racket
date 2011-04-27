@@ -127,6 +127,25 @@
   (for ([i (in-range 3)]) (echo pc5))
   (for ([i (in-range 3)]) (recv/print ch)))
 
+(define len 1000000)
+
+(define-syntax-rule (test-long msg desc)
+  (begin
+    (define l (build-list len msg))
+    (define ll (length l))
+    (printf "Master ~a length ~a\n" desc ll)
+
+    (define p (place/anon ch
+      (define wl (length (place-channel-receive ch)))
+      (printf "Worker length ~a\n" wl)
+      (place-channel-send ch wl)))
+
+
+    (place-channel-send p l)
+    (define wlen (place-channel-receive p))
+    (unless (= wlen ll)
+      (raise (format "~a master length ~a != worker length ~a\n" desc ll wlen))
+    (place-wait p))))
 
 (define (main)
 (let ([pl (place-worker)])
@@ -188,16 +207,20 @@
 
   (place-wait pl))
 
-(let ([p (place/anon ch
-           (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK"))])
-            (place-channel-send ch "ALIVE")
-            (sync never-evt)
-            (place-channel-send ch "NOK")))])
+  (let ([p (place/anon ch
+             (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK"))])
+              (place-channel-send ch "ALIVE")
+              (sync never-evt)
+              (place-channel-send ch "NOK")))])
 
   (test "ALIVE" place-channel-receive p)
   (place-break p)
   (test "OK" place-channel-receive p)
-  (place-wait p)))
+  (place-wait p))
+
+  (test-long (lambda (x) 3) "Listof ints")
+  (test-long (lambda (x) #(1 2)) "Listof vectors")
+  (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs"))
 
 
 ;(report-errs)
