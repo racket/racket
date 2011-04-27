@@ -297,10 +297,12 @@ exec racket -qu "$0" ${1+"$@"}
 	    (bytes->number (caddr m)))))
 
   (define (extract-chicken-times bm str)
-    (let ([m (regexp-match #rx#"([0-9.]+)s CPU time, ([0-9.]+)s GC time" str)])
+    (let ([m (regexp-match #rx#"([0-9.]+)s CPU time(, ([0-9.]+)s GC time)?" str)])
       (list (* 1000 (string->number (format "#e~a" (cadr m))))
             #f
-            (* 1000 (string->number (format "#e~a" (caddr m)))))))
+            (if (caddr m) ; if the GC doesn't kick in, chicken doesn't print anything for GC time
+                (* 1000 (string->number (format "#e~a" (cadddr m))))
+                #f))))
 
   (define (extract-time-times bm str)
     (let ([m (regexp-match #rx#"real[ \t]+([0-9m.]+)s.*user[ \t]+([0-9m.]+)s.sys[ \t]+([0-9m.]+)s." str)]
