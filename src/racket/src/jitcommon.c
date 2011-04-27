@@ -2073,6 +2073,119 @@ static int common9(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common10(mz_jit_state *jitter, void *_data)
+{
+  /* proc_arity_includes_code */
+  /* R0 has proc, R1 has arity */
+  {
+    GC_CAN_IGNORE jit_insn *ref, *refslow, *refr ,*ref_nc, *ref_prim, *refno;
+    
+    sjc.proc_arity_includes_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    __START_SHORT_JUMPS__(1);
+
+    ref = jit_bmsi_l(jit_forward(), JIT_R1, 0x1);
+
+    refslow = _jit.x.pc;
+    
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 2);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    __END_SHORT_JUMPS__(1);
+    mz_finish_prim_lwe(ts_scheme_procedure_arity_includes, refr);
+    __START_SHORT_JUMPS__(1);
+    jit_retval(JIT_R0);
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    JIT_UPDATE_THREAD_RSPTR();
+    CHECK_LIMIT();
+
+    mz_epilog(JIT_R2);
+
+    refno = _jit.x.pc;
+    jit_movi_p(JIT_R0, scheme_false);
+    mz_epilog(JIT_R2);
+
+    /* R1 has fixnum ... check non-negative and them proc type */
+    mz_patch_branch(ref);
+    (void)jit_blti_l(refslow, JIT_R1, 0);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref_nc = jit_beqi_i(jit_forward(), JIT_R2, scheme_native_closure_type);
+    ref_prim = jit_beqi_i(jit_forward(), JIT_R2, scheme_prim_type);
+
+    (void)jit_jmpi(refslow);
+    CHECK_LIMIT();
+
+    /* native: */
+    mz_patch_branch(ref_nc);
+    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
+    jit_ldxi_i(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->closure_size);
+    (void)jit_blti_i(refslow, JIT_R2, 0); /* case lambda */
+    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->code);
+    ref_nc = jit_beqi_p(jit_forward(), JIT_R2, scheme_on_demand_jit_code); /* not yet JITted */
+    jit_rshi_l(JIT_V1, JIT_R1, 1);
+    jit_addi_l(JIT_V1, JIT_V1, 1);
+    CHECK_LIMIT();
+    mz_prepare(3);
+    jit_pusharg_i(JIT_V1); /* anything */
+    jit_pusharg_i(JIT_V1);
+    jit_pusharg_p(JIT_R0);
+    (void)jit_finish(sjc.check_arity_code);
+    jit_retval(JIT_R0);
+    (void)jit_beqi_i(refno, JIT_R0, 0);
+    jit_movi_p(JIT_R0, scheme_true);
+    mz_epilog(JIT_R2);
+    CHECK_LIMIT();
+
+    /* not-yet-JITted native: */
+    mz_patch_branch(ref_nc);
+    jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u2.orig_code);
+    jit_rshi_l(JIT_V1, JIT_R1, 1);
+    jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Closure_Data *)0x0)->num_params);
+    jit_ldxi_s(JIT_R0, JIT_R0, &SCHEME_CLOSURE_DATA_FLAGS(((Scheme_Closure_Data *)0x0)));
+    ref_nc = jit_bmsi_i(jit_forward(), JIT_R0, CLOS_HAS_REST);
+    (void)jit_bner_i(refno, JIT_V1, JIT_R2);
+    jit_movi_p(JIT_R0, scheme_true);
+    mz_epilog(JIT_R2);
+    CHECK_LIMIT();
+    /* has rest arg: */
+    mz_patch_branch(ref_nc);
+    jit_subi_i(JIT_R2, JIT_R2, 1);
+    (void)jit_bltr_i(refno, JIT_V1, JIT_R2);
+    jit_movi_p(JIT_R0, scheme_true);
+    mz_epilog(JIT_R2);
+    CHECK_LIMIT();
+
+    /* primitive: */
+    mz_patch_branch(ref_prim);
+    jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->mina);
+    (void)jit_blti_i(refslow, JIT_R2, 0); /* case lambda */
+    jit_rshi_l(JIT_V1, JIT_R1, 1);
+    (void)jit_bltr_i(refno, JIT_V1, JIT_R2);
+    jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->mu.maxa);
+    (void)jit_bgtr_i(refno, JIT_V1, JIT_R2);
+    CHECK_LIMIT();
+
+    jit_movi_p(JIT_R0, scheme_true);
+    mz_epilog(JIT_R2);
+
+    __END_SHORT_JUMPS__(1);
+
+    scheme_jit_register_sub_func(jitter, sjc.proc_arity_includes_code, scheme_false);
+    CHECK_LIMIT();
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -2086,6 +2199,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common7(jitter, _data)) return 0;
   if (!common8(jitter, _data)) return 0;
   if (!common9(jitter, _data)) return 0;
+  if (!common10(jitter, _data)) return 0;
   return 1;
 }
 

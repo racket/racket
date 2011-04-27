@@ -245,6 +245,7 @@ struct scheme_jit_common_record {
   void *wcm_code, *wcm_nontail_code;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
   void *eqv_code, *eqv_branch_code;
+  void *proc_arity_includes_code;
 
 #ifdef CAN_INLINE_ALLOC
   void *make_list_code, *make_list_star_code;
@@ -1005,6 +1006,22 @@ static void emit_indentation(mz_jit_state *jitter)
      mz_patch_ucbranch(refcont); \
      __END_TINY_JUMPS__(1); \
   }
+# define mz_finish_prim_lwe(prim, refr) \
+    { \
+      GC_CAN_IGNORE jit_insn *refdirect, *refdone; \
+      int argstate; \
+      __START_TINY_JUMPS__(1); \
+      jit_save_argstate(argstate); \
+      mz_tl_ldi_i(JIT_R0, tl_scheme_use_rtcall); \
+      refdirect = jit_beqi_i(jit_forward(), JIT_R0, 0); \
+      (void)mz_finish_lwe(prim, refr); \
+      refdone = jit_jmpi(jit_forward()); \
+      jit_restore_argstate(argstate); \
+      mz_patch_branch(refdirect); \
+      (void)mz_finish(prim); \
+      mz_patch_ucbranch(refdone); \
+      __END_TINY_JUMPS__(1); \
+    }
 #else
 /* futures not enabled */
 # define mz_prepare_direct_prim(n) mz_prepare(n)
@@ -1015,6 +1032,7 @@ static void emit_indentation(mz_jit_state *jitter)
 # define ts_make_fsemaphore scheme_make_fsemaphore
 # define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
   (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
+# define mz_finish_prim_lwe(prim, refr) (void)mz_finish_lwe(ts_scheme_equal, refr)
 #endif
 
 /**********************************************************************/
