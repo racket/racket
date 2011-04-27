@@ -2,6 +2,8 @@
 Version 5.2				  [Mon Apr 25 11:07:14 EDT 2011]
 
 * tiny bug fix in registration process for universe 
+  implies incompatibility of protocols between 5.1 programs and 
+  predecessors
 
 ------------------------------------------------------------------------
 Version 5.1				  [Tue Feb  8 13:05:17 EST 2011]
