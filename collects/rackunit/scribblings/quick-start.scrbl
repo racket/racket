@@ -4,8 +4,8 @@
 @title[#:tag "quick-start"]{Quick Start Guide for RackUnit}
 
 Suppose we have code contained in @tt{file.rkt}, which
-implements buggy versions of @racket[+] and @racket[-]
-called @racket[my-+] and @racket[my--]:
+implements buggy versions of @racket[+] and @racket[*]
+called @racket[my-+] and @racket[my-*]:
 
 @racketmod[
 racket/base
