@@ -297,7 +297,7 @@ exec racket -qu "$0" ${1+"$@"}
 	    (bytes->number (caddr m)))))
 
   (define (extract-chicken-times bm str)
-    (let ([m (regexp-match #rx#"([0-9.]+) seconds.*[^0-9.]([0-9.]+) seconds" str)])
+    (let ([m (regexp-match #rx#"([0-9.]+)s CPU time, ([0-9.]+)s GC time" str)])
       (list (* 1000 (string->number (format "#e~a" (cadr m))))
             #f
             (* 1000 (string->number (format "#e~a" (caddr m)))))))
