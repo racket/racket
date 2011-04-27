@@ -12,17 +12,17 @@
                                (get-token (or/c (-> input-port? 
                                                     (values any/c 
                                                             symbol? 
-                                                            (or/c false? symbol?) 
-                                                            exact-nonnegative-integer?
-                                                            exact-nonnegative-integer?))
+                                                            (or/c symbol? #f)
+                                                            (or/c exact-nonnegative-integer? #f)
+                                                            (or/c exact-nonnegative-integer? #f)))
                                                 (-> input-port? 
                                                     exact-nonnegative-integer?
                                                     any/c
                                                     (values any/c 
                                                             symbol? 
-                                                            (or/c false? symbol?) 
-                                                            exact-nonnegative-integer?
-                                                            exact-nonnegative-integer?
+                                                            (or/c symbol? #f)
+                                                            (or/c exact-nonnegative-integer? #f)
+                                                            (or/c exact-nonnegative-integer? #f)
                                                             exact-nonnegative-integer?
                                                             any/c))))
                                (pairs (listof (list/c symbol? symbol?)))) void?))]{
@@ -50,9 +50,9 @@
     A symbol indicating how the token should be treated by the paren
     matcher or @scheme[#f].  This symbol should be in the pairs argument.}
     @item{
-    The starting position of the token.}
+    The starting position of the token (or @scheme[#f] if eof).}
     @item{
-    The ending position of the token.}]
+    The ending position of the token (or @scheme[#f] if eof).}]
 
     When @scheme[get-token] accepts an offset and mode value in addition to an
     input port, it must also return two extra results, which are a backup
