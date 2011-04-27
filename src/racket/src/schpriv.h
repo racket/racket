@@ -273,6 +273,7 @@ void scheme_init_logger_config(void);
 void register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
+void scheme_free_all_code(void);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);

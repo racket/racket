@@ -806,9 +806,18 @@ void *scheme_malloc_uncollectable_tagged(size_t s)
 START_XFORM_SKIP;
 #endif
 
-/* Max of desired alignment and 2 * sizeof(intptr_t): */
-#define CODE_HEADER_SIZE 16
+/* Max of desired alignment and 4 * sizeof(intptr_t): */
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define CODE_HEADER_SIZE 32
+#else
+# define CODE_HEADER_SIZE 16
+#endif
 
+/* First two `intptr_t's of a code page are the element
+   size and allocation count. The next two are "prev" and
+   "next" pointers in a doubly-linked list of all pages. */
+
+THREAD_LOCAL_DECL(static void *code_allocation_page_list);
 
 THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
 
@@ -940,6 +949,26 @@ static void free_page(void *p, intptr_t size)
 #endif
 }
 
+static void chain_page(void *pg)
+{
+  if (code_allocation_page_list)
+    ((void **)code_allocation_page_list)[2] = pg;
+  ((void **)pg)[2] = NULL;
+  ((void **)pg)[3] = code_allocation_page_list;
+  code_allocation_page_list = pg;
+}
+
+static void unchain_page(void *pg)
+{
+  if (!((void **)pg)[2])
+    code_allocation_page_list = ((void **)pg)[3];
+  else
+    ((void **)(((void **)pg)[2]))[3] = ((void **)pg)[2];
+
+  if (((void **)pg)[3])
+    ((void **)(((void **)pg)[3]))[2] = ((void **)pg)[3];
+}
+
 static void init_free_list()
 {
   intptr_t page_size = get_page_size();
@@ -1017,11 +1046,11 @@ void *scheme_malloc_code(intptr_t size)
     pg = malloc_page(sz);
     scheme_code_page_total += sz;
     *(intptr_t *)pg = sz;
+    chain_page(pg);
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
                               pg, size + CODE_HEADER_SIZE, scheme_code_page_total));
     p = ((char *)pg) + CODE_HEADER_SIZE;
-  }
-  else {
+  } else {
     bucket = free_list_find_bucket(size);
     size2 = free_list[bucket].size;
 
@@ -1031,7 +1060,7 @@ void *scheme_malloc_code(intptr_t size)
       pg = malloc_page(page_size);
       scheme_code_page_total += page_size;
       LOG_CODE_MALLOC(2, printf("new page for %ld / %ld at %p [now %ld]\n", 
-            size2, bucket, pg, scheme_code_page_total));
+                                size2, bucket, pg, scheme_code_page_total));
       sz = page_size - size2;
       for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
         p = ((char *)pg) + i;
@@ -1046,6 +1075,7 @@ void *scheme_malloc_code(intptr_t size)
       ((intptr_t *)pg)[0] = bucket; /* first intptr_t of page indicates bucket */
       ((intptr_t *)pg)[1] = 0; /* second intptr_t indicates number of allocated on page */
       free_list[bucket].count = count;
+      chain_page(pg);
     }
 
     p = free_list[bucket].elems;
@@ -1080,10 +1110,10 @@ void scheme_free_code(void *p)
     /* it was a large object on its own page(s) */
     scheme_code_page_total -= size;
     LOG_CODE_MALLOC(1, printf("freeing large %p (%ld) [%ld left]\n", 
-          p, size, scheme_code_page_total));
+                              p, size, scheme_code_page_total));
+    unchain_page((char *)p - CODE_HEADER_SIZE);
     free_page((char *)p - CODE_HEADER_SIZE, size);
-  }
-  else {
+  } else {
     bucket = size;
 
     if ((bucket < 0) || (bucket >= free_list_bucket_count)) {
@@ -1140,13 +1170,35 @@ void scheme_free_code(void *p)
 
       scheme_code_page_total -= page_size;
       LOG_CODE_MALLOC(2, printf("freeing page at %p [%ld left]\n", 
-            CODE_PAGE_OF(p), scheme_code_page_total));
+                                CODE_PAGE_OF(p), scheme_code_page_total));
+      unchain_page(CODE_PAGE_OF(p));
       free_page(CODE_PAGE_OF(p), page_size);
     }
   }
 
 #else
   free(p);
+#endif
+}
+
+void scheme_free_all_code(void)
+{
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  void *p, *next;
+  intptr_t page_size;
+
+  page_size = get_page_size();
+
+  for (p = code_allocation_page_list; p; p = next) {
+    next = ((void **)p)[3];
+    if (((intptr_t*)p)[0] > page_size)
+      free_page(p, ((intptr_t*)p)[0]);
+    else
+      free_page(p, page_size);
+  }
+  code_allocation_page_list = NULL;
+
+  free_page(free_list, page_size);
 #endif
 }
 
