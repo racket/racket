@@ -1566,7 +1566,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/r5rs-wrap.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/common/typed" responsible (stamourv)
-"collects/tests/racket/benchmarks/common/typed/cpstack.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/cpstak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/ctak.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/dderiv.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/deriv.rktl" drdr:command-line #f
