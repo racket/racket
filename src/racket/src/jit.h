@@ -1032,7 +1032,7 @@ static void emit_indentation(mz_jit_state *jitter)
 # define ts_make_fsemaphore scheme_make_fsemaphore
 # define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
   (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
-# define mz_finish_prim_lwe(prim, refr) (void)mz_finish_lwe(ts_scheme_equal, refr)
+# define mz_finish_prim_lwe(prim, refr) (void)mz_finish_lwe(prim, refr)
 #endif
 
 /**********************************************************************/
