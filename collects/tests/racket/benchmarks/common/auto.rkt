@@ -441,7 +441,7 @@ exec racket -qu "$0" ${1+"$@"}
                 run-exe
                 extract-chicken-times
                 clean-up-bin
-                (append '(scheme2 takr2)
+                (append '(takr2)
                         racket-specific-progs))
      (make-impl 'bigloo
                 void
