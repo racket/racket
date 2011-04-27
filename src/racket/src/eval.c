@@ -12491,7 +12491,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         }
       }
 
-      if (procs && !proc_with_refs_ok) {
+      if (procs && !proc_with_refs_ok && !result_ignored) {
         if (scheme_hash_tree_get(procs, scheme_make_integer(p)))
           scheme_ill_formed_code(port);
       }
