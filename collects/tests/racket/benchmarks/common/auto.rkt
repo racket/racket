@@ -449,7 +449,7 @@ exec racket -qu "$0" ${1+"$@"}
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
-                (append '(cpstack takr2)
+                (append '(cpstack nucleic2 takr2)
                         racket-specific-progs))
      (make-impl 'gambit
                 void
