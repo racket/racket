@@ -234,6 +234,12 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define GEN0_MAX_SIZE (32 * 1024 * 1024)
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
 
+/* Conservatively force a major GC after a certain number
+   of minor GCs. It should be ok to set this value
+   arbitraily high. An earlier value of 100, meanwhile,
+   seems to have been excessively conservative. */
+#define FORCE_MAJOR_AFTER_COUNT 1000
+
 #define GEN0_ALLOC_SIZE(page) ((page)->previous_size)
 
 /* This is the log base 2 of the size of one word, given in bytes */
@@ -4190,11 +4196,11 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 
   /* determine if this should be a full collection or not */
   gc->gc_full = force_full || !gc->generations_available 
-    || (gc->since_last_full > 100) || (gc->memory_in_use > (2 * gc->last_full_mem_use));
+    || (gc->since_last_full > FORCE_MAJOR_AFTER_COUNT) || (gc->memory_in_use > (2 * gc->last_full_mem_use));
 #if 0
   printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number_of_gc_runs, 
       gc->gc_full, force_full, !generations_available,
-      (gc->since_last_full > 100), (gc->memory_in_use > (2 * gc->last_full_mem_use)),
+      (gc->since_last_full > FORCE_MAJOR_AFTER_COUNT), (gc->memory_in_use > (2 * gc->last_full_mem_use)),
       gc->last_full_mem_use);
 #endif
 
