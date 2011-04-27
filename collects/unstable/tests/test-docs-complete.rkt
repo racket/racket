@@ -12,7 +12,7 @@
 (check-docs (quote unstable/path))
 (check-docs (quote unstable/mutated-vars))
 (check-docs (quote unstable/match))
-(check-docs (quote unstable/markparam))
+(check-docs (quote unstable/markparam) #:skip #rx"^deserialize-info:")
 (check-docs (quote unstable/list))
 (check-docs (quote unstable/hash))
 (check-docs (quote unstable/generics))
