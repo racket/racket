@@ -40,7 +40,7 @@
            check-error
            check-member-of
            check-range
-           define-wish
+           ;; define-wish
 	   #%datum
            #%top-interaction
 	   empty true false
