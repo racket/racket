@@ -207,7 +207,7 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
   r = alloc_cache_find_pages(blockfree, len, alignment, dirty_ok);
   if(!r) {
     /* attempt to allocate from OS */
-    size_t extra = alignment + CACHE_SEED_PAGES * APAGE_SIZE;
+    size_t extra = (alignment ? (alignment + CACHE_SEED_PAGES * APAGE_SIZE) : 0);
     r = os_alloc_pages(len + extra);
     if(r == (void *)-1) { return NULL; }
 
@@ -227,13 +227,14 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
              a good chance we can use it next time: */
           (*size_diff) += extra;
           (*size_diff) += alloc_cache_free_page(blockfree, real_r + len, extra, 1);
-        } 
-        else { os_free_pages(real_r + len, extra - pre_extra); }
+        } else { 
+          os_free_pages(real_r + len, extra - pre_extra);
+        }
       }
       r = real_r;
     }
 
-    (*size_diff) += extra;
+    (*size_diff) += len;
   }
 
   return r;
