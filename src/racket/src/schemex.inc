@@ -219,6 +219,7 @@
 # endif
 #endif
   scheme_extension_table->scheme_malloc_code = scheme_malloc_code;
+  scheme_extension_table->scheme_malloc_permanent_code = scheme_malloc_permanent_code;
   scheme_extension_table->scheme_free_code = scheme_free_code;
 #ifndef MZ_PRECISE_GC
   scheme_extension_table->scheme_malloc_gcable_code = scheme_malloc_gcable_code;

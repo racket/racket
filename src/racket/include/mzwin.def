@@ -185,6 +185,7 @@ EXPORTS
  scheme_eval_compiled_sized_string_with_magic
  scheme_detach_multple_array
  scheme_malloc_code
+ scheme_malloc_permanent_code
  scheme_free_code
  scheme_malloc_gcable_code
  scheme_malloc_eternal

@@ -308,6 +308,7 @@ void *(*GC_malloc_uncollectable)(size_t size_in_bytes);
 # endif
 #endif
 void *(*scheme_malloc_code)(intptr_t size);
+void *(*scheme_malloc_permanent_code)(intptr_t size);
 void (*scheme_free_code)(void *p);
 #ifndef MZ_PRECISE_GC
 void *(*scheme_malloc_gcable_code)(intptr_t size);

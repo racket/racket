@@ -839,6 +839,12 @@ struct free_list_entry {
 THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
 THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
+#ifdef MZ_USE_PLACES
+static mzrt_mutex *permanent_code_mutex = NULL; 
+static void *permanent_code_page = NULL;
+static intptr_t available_code_page_amount = 0;
+#endif
+
 static intptr_t get_page_size()
 {
 # ifdef PAGESIZE
@@ -1092,6 +1098,47 @@ void *scheme_malloc_code(intptr_t size)
   return p;
 #else
   return malloc(size); /* good luck! */
+#endif
+}
+
+void *scheme_malloc_permanent_code(intptr_t size)
+/* allocate code that will never be freed and that can be used
+   in multiple places */
+{
+#if defined(MZ_USE_PLACES) && (defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC))
+  void *p;
+  intptr_t page_size;
+
+  if (!permanent_code_mutex) {
+    /* This function will be called at least once before any other place
+       is created, so it's ok to create the mutex here. */
+    mzrt_mutex_create(&permanent_code_mutex);
+  }
+
+  /* 16-byte alignment: */
+  if (size & 0xF) size += 16 - (size & 0xF);
+
+  mzrt_mutex_lock(permanent_code_mutex);
+  
+  if (available_code_page_amount < size) {
+    page_size = get_page_size();
+    page_size *= 4;
+    while (page_size < size) page_size *= 2;
+
+    permanent_code_page = malloc_page(page_size);
+
+    available_code_page_amount = page_size;
+  }
+   
+  p = permanent_code_page;
+  permanent_code_page = ((char *)permanent_code_page) + size;
+  available_code_page_amount -= size;
+  
+  mzrt_mutex_unlock(permanent_code_mutex);
+
+  return p;
+#else
+  return scheme_malloc_code(size);
 #endif
 }
 

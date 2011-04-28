@@ -197,6 +197,7 @@ GC_malloc_atomic
 GC_malloc_stubborn
 GC_malloc_uncollectable
 scheme_malloc_code
+scheme_malloc_permanent_code
 scheme_free_code
 scheme_malloc_gcable_code
 scheme_malloc_eternal

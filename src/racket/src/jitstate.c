@@ -136,7 +136,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	buffer = scheme_malloc_gcable_code(size);
 #endif
       } else {
-        buffer = scheme_malloc_code(size);
+        buffer = scheme_malloc_permanent_code(size);
       }
       RECORD_CODE_SIZE(size);
     } else if (old_jitter) {
