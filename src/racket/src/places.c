@@ -1047,7 +1047,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
           }
         }
 
-        nprefab_key = scheme_places_deep_copy_worker(SCHEME_CDR(stype->prefab_key), ht, copy);
+        nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht, copy);
 
         if (copy) {
           new_so = scheme_make_serialized_struct_instance(nprefab_key, size);
@@ -1073,16 +1073,13 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         Scheme_Serialized_Structure *st = (Scheme_Serialized_Structure*)so;
         Scheme_Struct_Type *stype;
         Scheme_Structure *nst;
-        Scheme_Object *key;
         intptr_t size;
         int i = 0;
       
         size = st->num_slots;
+        stype = scheme_lookup_prefab_type(SCHEME_CDR(st->prefab_key), size);
 
-        key = scheme_places_deep_copy_worker(st->prefab_key, ht, copy);
-        
         if (copy) {
-          stype = scheme_lookup_prefab_type(key, size);
           new_so = scheme_make_blank_prefab_struct_instance(stype);
           nst = (Scheme_Structure*)new_so;
         } else
