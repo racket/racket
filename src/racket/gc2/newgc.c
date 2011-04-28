@@ -378,17 +378,18 @@ static void *malloc_pages(NewGC *gc, size_t len, size_t alignment, int dirty, in
 static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mprotect, void **src_block)
 {
   gc->used_pages -= size_to_apage_count(len);
-  mmu_free_page(gc->mmu, p, len, type, expect_mprotect, src_block);
+  mmu_free_page(gc->mmu, p, len, type, expect_mprotect, src_block, 1);
 }
 
 
 static void free_orphaned_page(NewGC *gc, mpage *tmp) {
-  /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page
+  /* free_pages decrements gc->used_pages which is incorrect, since this is an orphaned page,
    * so we use mmu_free_page directly */
   mmu_free_page(gc->mmu, tmp->addr, round_to_apage_size(tmp->size),
-    page_mmu_type(tmp),
-    page_mmu_protectable(tmp),
-    &tmp->mmu_src_block); 
+                page_mmu_type(tmp),
+                page_mmu_protectable(tmp),
+                &tmp->mmu_src_block,
+                0); /* don't adjust count, since we're failing to adopt it */
   free_mpage(tmp);
 }
 
@@ -899,16 +900,14 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   gc->gen0.big_pages = bpage;
 
 
-  /* orphan this page from the current GC */
-  /* this page is going to be sent to a different place, don't account for it here */
-  /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
   if (gc->saved_allocator) {
+    /* MESSAGE ALLOCATION: orphan this page from the current GC; this
+       page is going to be sent to a different place, so don't account
+       for it here, and don't put it in the page_map */
     orphan_page_accounting(gc, allocate_size);
-  }
-  else {
+  } else
     pagemap_add(gc->page_maps, bpage);
-  }
-
+  
   {
     void * objptr = BIG_PAGE_TO_OBJECT(bpage);
     ASSERT_VALID_OBJPTR(objptr);
@@ -942,7 +941,11 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   gc->med_pages[pos] = page;
   gc->med_freelist_pages[pos] = page;
 
-  pagemap_add(gc->page_maps, page);
+  if (gc->saved_allocator) /* see MESSAGE ALLOCATION above */
+    orphan_page_accounting(gc, APAGE_SIZE);
+  else
+    pagemap_add(gc->page_maps, page);
+
   return page;
 }
 
@@ -1049,15 +1052,10 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   page->size = PREFIX_SIZE;
   GEN0_ALLOC_SIZE(page) = page_size;
 
-  /* orphan this page from the current GC */
-  /* this page is going to be sent to a different place, don't account for it here */
-  /* message memory pages shouldn't go into the page_map, they are getting sent to another place */
-  if (gc->saved_allocator) {
+  if (gc->saved_allocator)  /* see MESSAGE ALLOCATION above */
     orphan_page_accounting(gc, page_size);
-  }
-  else {
+  else
     pagemap_add_with_size(gc->page_maps, page, page_size);
-  }
 
   GCVERBOSEPAGE(gc, "NEW gen0", page);
 

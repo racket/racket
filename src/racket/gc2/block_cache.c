@@ -12,7 +12,7 @@ static void   os_protect_pages(void *p, size_t len, int writable);
 struct block_desc;
 static AllocCacheBlock *alloc_cache_create();
 static ssize_t alloc_cache_free(AllocCacheBlock *);
-static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty);
+static ssize_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here);
 static ssize_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree);
 static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff);
 
@@ -222,7 +222,8 @@ static int find_addr_in_bd(GCList *head, void *p, char* msg) {
 }
 #endif
 
-static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int type, int expect_mprotect, void **src_block) {
+static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int type, int expect_mprotect, void **src_block,
+                                     int originated_here) {
   switch(type) {
     case MMU_SMALL_GEN1:
       {
@@ -252,7 +253,7 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
           printf("FREE  PAGE %i %p %p-%p %03i %03i %04i %04i : %03i %03i %03i %03i %09i\n", expect_mprotect, bg, p, p + APAGE_SIZE, afu, afr, nafu, nafr, afub, afrb, nafub, nafrb, mmu_memory_allocated(bc->mmu));
         }
 #endif
-        return 0;
+        return (originated_here ? 0 : len);
       }
       break;
     default:
@@ -263,7 +264,7 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
                find_addr_in_bd(&bc->non_atomic.free, p, "non_atomic freeblock")));
       assert(*src_block == (char*)~0x0);
 #endif
-      return alloc_cache_free_page(bc->bigBlockCache, p, len, MMU_DIRTY);
+      return alloc_cache_free_page(bc->bigBlockCache, p, len, MMU_DIRTY, originated_here);
       break;
   }
 }

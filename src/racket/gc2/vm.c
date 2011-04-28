@@ -135,22 +135,26 @@ static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, i
     return alloc_cache_alloc_page(alloc_cache, len, alignment, dirty, &mmu->memory_allocated);
   }
 #else
+  mmu->memory_allocated += len;
   return os_alloc_pages(mmu, len, alignment, dirty);
 #endif
 }
 
-static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mprotect, void **src_block) {
+static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mprotect, void **src_block,
+                          int originated_here) {
   mmu_assert_os_page_aligned(mmu, (size_t)p);
   mmu_assert_os_page_aligned(mmu, len);
 #ifdef USE_BLOCK_CACHE
-  mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block);
+  mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block,
+                                                 originated_here);
 #elif !( defined(_WIN32) || defined(OSKIT) )
   //len = mmu_round_up_to_os_page_size(mmu, len); 
   {
     AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
-    mmu->memory_allocated += alloc_cache_free_page(alloc_cache, p, len, MMU_DIRTY);
+    mmu->memory_allocated += alloc_cache_free_page(alloc_cache, p, len, MMU_DIRTY, originated_here);
   }
 #else
+  if (originated_here) mmu->memory_allocated -= len;
   os_free_pages(mmu, p, len);
 #endif
 }
