@@ -41,8 +41,10 @@
 /* Enable futures: */
 #define MZ_USE_FUTURES
 
-/* Enable places: */
-#define MZ_USE_PLACES
+/* Enable places --- 3m only: */
+#ifdef MZ_PRECISE_GC
+# define MZ_USE_PLACES
+#endif
 
 /* Enable single-precision floats: */
 #define USE_SINGLE_FLOATS

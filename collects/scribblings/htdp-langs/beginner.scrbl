@@ -111,7 +111,7 @@ extraction, and type-like queries:
 The created names must not be the same as a primitive or another defined name.}
 
 @; ----------------------------------------------------------------------
-
+@;{   ------- COMMENTED OUT FOR NOW ---------
 @section{@scheme[define-wish]}
 
 @defform[(define-wish id)]{                           
@@ -127,7 +127,7 @@ Wished-for functions are reported in the test report for the current program.}
 Similar to the above form, defines a wished-for function named @racket[id]. If the 
 wished-for function is called with one value, the result of @scheme[expr] is
 returned as the default value. }
-
+}
 @; ----------------------------------------------------------------------
 
 @section[#:tag "beginner-call"]{Function Calls}

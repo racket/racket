@@ -165,6 +165,9 @@ void scheme_clear_ephemerons(void);
 #define PAIR_IS_NON_LIST 0x2
 #define PAIR_FLAG_MASK 0x3
 
+#define SCHEME_PAIR_COPY_FLAGS(dest, src) (SCHEME_PAIR_FLAGS((dest)) |= (SCHEME_PAIR_FLAGS((src)) & PAIR_FLAG_MASK))
+      
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -273,6 +276,7 @@ void scheme_init_logger_config(void);
 void register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
+void scheme_free_all_code(void);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
@@ -3564,6 +3568,7 @@ Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_checked_flreal_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_flimag_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);
@@ -3672,7 +3677,7 @@ typedef struct Scheme_Place {
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
 void scheme_kill_green_thread_timer();
-void scheme_place_check_for_killed();
+void scheme_place_check_for_interruption();
 /*========================================================================*/
 /*                           engine                                       */
 /*========================================================================*/

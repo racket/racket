@@ -39,9 +39,9 @@ Returns @racket[#t] if @racket[v] is a weak box, @racket[#f] otherwise.}
 
 An @deftech{ephemeron} @cite{Hayes97} is a generalization of a
 @tech{weak box} (see @secref["weakbox"]). Instead of just containing
-one value, an emphemeron holds two values: one that is considered the
+one value, an ephemeron holds two values: one that is considered the
 value of the ephemeron and another that is the ephemeron's key. Like
-the value in a weak box, the value in and ephemeron may be replaced by
+the value in a weak box, the value in an ephemeron may be replaced by
 @racket[#f], but when the @emph{key} is no longer reachable (except
 possibly via weak references) instead of when the value is no longer
 reachable.

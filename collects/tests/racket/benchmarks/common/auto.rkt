@@ -282,12 +282,10 @@ exec racket -qu "$0" ${1+"$@"}
       (map bytes->number (cdr m))))
 
   (define (extract-bigloo-times bm str)
-    (let ([m (regexp-match #rx#"real: ([0-9]+) sys: ([0-9]+) user: ([0-9]+)" str)]
-          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
-          [msec/tick 10])
-      (list (* msec/tick (+ (bytes->number (caddr m))
-                            (bytes->number (cadddr m))))
-            (* msec/tick (bytes->number (cadr m)))
+    (let ([m (regexp-match #rx#"real: ([0-9]+) sys: ([0-9]+) user: ([0-9]+)" str)])
+      (list (+ (bytes->number (caddr m))
+               (bytes->number (cadddr m)))
+            (bytes->number (cadr m))
             0)))
 
   (define (extract-larceny-times bm str)
@@ -297,10 +295,12 @@ exec racket -qu "$0" ${1+"$@"}
 	    (bytes->number (caddr m)))))
 
   (define (extract-chicken-times bm str)
-    (let ([m (regexp-match #rx#"([0-9.]+) seconds.*[^0-9.]([0-9.]+) seconds" str)])
+    (let ([m (regexp-match #rx#"([0-9.]+)s CPU time(, ([0-9.]+)s GC time)?" str)])
       (list (* 1000 (string->number (format "#e~a" (cadr m))))
             #f
-            (* 1000 (string->number (format "#e~a" (caddr m)))))))
+            (if (caddr m) ; if the GC doesn't kick in, chicken doesn't print anything for GC time
+                (* 1000 (string->number (format "#e~a" (cadddr m))))
+                #f))))
 
   (define (extract-time-times bm str)
     (let ([m (regexp-match #rx#"real[ \t]+([0-9m.]+)s.*user[ \t]+([0-9m.]+)s.sys[ \t]+([0-9m.]+)s." str)]
@@ -449,7 +449,7 @@ exec racket -qu "$0" ${1+"$@"}
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
-                (append '(cpstack takr2)
+                (append '(cpstak nucleic2 takr2)
                         racket-specific-progs))
      (make-impl 'gambit
                 void
@@ -505,11 +505,11 @@ exec racket -qu "$0" ${1+"$@"}
                         racket-specific-progs))
 ))
 
-  (define obsolte-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
+  (define obsolete-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
 
   (define benchmarks
     '(conform
-      cpstack
+      cpstak
       ctak
       deriv
       dderiv
@@ -585,7 +585,7 @@ exec racket -qu "$0" ${1+"$@"}
                   num-iterations)
     (process-command-line benchmarks
                           extra-benchmarks
-                          (map impl-name impls) obsolte-impls
+                          (map impl-name impls) obsolete-impls
                           3))
 
   (define-runtime-path bm-directory ".")

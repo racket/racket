@@ -82,14 +82,14 @@
   (define/public (send/msg msg) 
     (with-handlers ([exn:fail?
       (lambda (x)
-          (eprintf "CONTROLLER SEND MESSAGE ERROR TO WORKER ~a ~a\n" id (exn-message x))
+          (eprintf "While sending message to parallel-do worker: ~a ~a\n" id (exn-message x))
           (exit 1))])
     (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" id msg))
     (write msg in) (flush-output in)))
   (define/public (recv/msg)
     (with-handlers ([exn:fail?
       (lambda (x)
-          (eprintf "CONTROLLER RECEIVE MESSAGE ERROR FROM WORKER ~a ~a\n" id (exn-message x))
+          (eprintf "While receiving message from parallel-do worker ~a ~a\n" id (exn-message x))
           (exit 1))])
     (define r (read out))
     (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" id r))
@@ -177,6 +177,7 @@
   (define (jobs?) (queue/has jobqueue))
   (define (empty?) (not (queue/has jobqueue)))
   (define workers #f)
+  (define no-breaks #f)
   (dynamic-wind
     (lambda ()
       (parameterize-break #f
@@ -206,7 +207,7 @@
                             [error-count error-count]) 
              (error-threshold error-count)
              (with-handlers* ([exn:fail? (lambda (e) 
-                     (printf "MASTER WRITE ERROR - writing to worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))    
+                     (printf "Error writing to worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))    
                      (wrkr/kill wrkr)
                      (retry-loop (spawn (wrkr/id wrkr)) (add1 error-count)))])
                 (wrkr/send wrkr cmd-list))
@@ -224,7 +225,7 @@
                 [(list node wrkr)
                   (handle-evt (wrkr/out wrkr) (λ (e)
                     (with-handlers* ([exn:fail? (lambda (e) 
-                                    (printf "MASTER READ ERROR - reading from worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))
+                                    (printf "Error reading from worker: ~v ~a\n" (wrkr/id wrkr) (exn-message e))
                                     (kill/remove-dead-worker node-worker wrkr))])
                       (let ([msg (if use-places e (wrkr/recv wrkr))])
                         (if (pair? msg)
@@ -238,7 +239,9 @@
                   (eprintf "parallel-do-event-loop match node-worker failed.\n")
                   (eprintf "trying to match:\n~a\n" node-worker)]))
             (DEBUG_COMM (printf "WAITING ON WORKERS TO RESPOND\n"))
-            (apply sync (map gen-node-handler inflight))])))
+            (begin0 
+              (apply sync (map gen-node-handler inflight))
+              (set! no-breaks #t))])))
     (lambda () 
       ;(printf "Asking all workers to die\n")
       (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/send p (list 'DIE))))
@@ -368,28 +371,3 @@
         (define module-path (path->string (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))))
         (parallel-do-event-loop module-path 'name initalmsg wq worker-count)
         (queue/results wq))]))
-
-(define-syntax-rule (define-syntax-case (N a ...) b ...)
-  (define-syntax (N stx)
-    (syntax-case stx ()
-      [(_ a ...) b ...])))
-
-(define-for-syntax (gen-create-place stx)
- (syntax-case stx ()
-   [(_ ch body ...)
-     (with-syntax ([interal-def-name
-                    (syntax-local-lift-expression #'(lambda (ch) body ...))]
-                   [funcname #'OBSCURE_FUNC_NAME_%#%])
-      (syntax-local-lift-provide #'(rename interal-def-name funcname))
-      #'(let ([module-path (resolved-module-path-name
-              (variable-reference->resolved-module-path
-               (#%variable-reference)))])
-       (place module-path (quote funcname))))]))
-
-(define-syntax (place/thunk stx)
-  (with-syntax ([create-place (gen-create-place stx)])
-    #'(lambda () create-place)))
-
-(define-syntax (place/anon stx)
-  (gen-create-place stx))
-

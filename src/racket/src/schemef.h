@@ -12,6 +12,13 @@
   All rights reserved.
 */
 
+/* SKIP */
+
+/* After modifying this file, `make exports' (you must have `racket'
+   in your path) to recreated derived files. */
+
+/* Do no remove the SKIP tag above or the START tag below. */
+
 /* Racket function prototypes */
 /* Macros generally shouldn't go in this file; it is used both to
    prototype functions, and as a parsing source for

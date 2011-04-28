@@ -150,18 +150,6 @@ corresponding to @racket[trest], where @racket[bound]
 
 @ex[(box "hello world")]
 
-@deftogether[(
- @defform[(Syntaxof t)] 
- @defidform[Syntax]
- @defidform[Identifier])]{A @rtech{syntax object} containing a
- @racket[t]. @racket[Syntax] is the type of any object constructable
- via @racket[datum->syntax].  @racket[Identifier] is @racket[(Syntaxof
- Symbol)].
-
-@ex[#'here]
-
-}
-
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
 @defform[(Vector t ...)]{is the type of the list with one element, in order, 
   for each type provided to the @racket[Vector] type constructor.}
@@ -191,9 +179,39 @@ corresponding to @racket[trest], where @racket[bound]
 @defform[(Promise t)]{A @rtech{promise} of @racket[t].
  @ex[(delay 3)]}
 
-@defidform[Sexp]{A recursive union containing types traversed by
-@racket[datum->syntax]. Note that this is @emph{not} the type produced
-by @racket[read].} 
+@subsection{Syntax Objects}
+
+The following types represent @rtech{syntax object}s and their content.
+
+@defform[(Syntaxof t)]{A syntax object with content of type @racket[t].
+Applying @racket[syntax-e] to a value of type @racket[(Syntaxof t)] produces a
+value of type @racket[t].}
+
+@defidform[Identifier]{A syntax object containing a @rtech{symbol}.  Equivalent
+to @racket[(Syntaxof Symbol)].}
+
+@defidform[Syntax]{A syntax object containing only @rtech{symbol}s,
+@rtech{keyword}s, @rtech{string}s, @rtech{character}s, @rtech{boolean}s,
+@rtech{number}s, @rtech{box}es containing @racket[Syntax], @rtech{vector}s of
+@racket[Syntax], or (possibly improper) @rtech{list}s of @racket[Syntax].
+Equivalent to @racket[(Syntaxof Syntax-E)].}
+
+@defidform[Syntax-E]{The content of syntax objects of type @racket[Syntax].
+Applying @racket[syntax-e] to a value of type @racket[Syntax] produces a value
+of type @racket[Syntax-E].}
+
+@defform[(Sexpof t)]{The recursive union of @racket[t] with @rtech{symbol}s,
+@rtech{keyword}s, @rtech{string}s, @rtech{character}s, @rtech{boolean}s,
+@rtech{number}s, @rtech{box}es, @rtech{vector}s, and (possibly improper)
+@rtech{list}s.}
+
+@defidform[Sexp]{Applying @racket[syntax->datum] to a value of type
+@racket[Syntax] produces a value of type @racket[Sexp].  Equivalent to
+@racket[(Sexpof Nothing)].}
+
+@defidform[Datum]{Applying @racket[datum->syntax] to a value of type
+@racket[Datum] produces a value of type @racket[Syntax].  Equivalent to
+@racket[(Sexpof Syntax)].}
 
 @subsection{Other Type Constructors}
 

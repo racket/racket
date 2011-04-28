@@ -6,7 +6,8 @@
          '#%place-struct
          racket/fixnum
          racket/flonum
-         racket/vector)
+         racket/vector
+         (for-syntax racket/base))
 
 (provide place
          place-sleep
@@ -19,6 +20,9 @@
          place?
          place-channel-send/receive
          processor-count
+         place/anon
+         place/thunk
+         define-place
          (rename-out [pl-place-enabled? place-enabled?]))
 
 (define-struct TH-place (th ch cust) 
@@ -59,6 +63,7 @@
 (define (th-place-sleep n) (sleep n))
 (define (th-place-wait pl) (thread-wait (TH-place-th pl)) 0)
 (define (th-place-kill pl) (custodian-shutdown-all (TH-place-cust pl)))
+(define (th-place-break pl) (break-thread (TH-place-th pl)))
 (define (th-place-channel)
   (define-values (as ar) (make-th-async-channel))
   (define-values (bs br) (make-th-async-channel))
@@ -117,8 +122,39 @@
 (define-pl place-sleep        pl-place-sleep        th-place-sleep)
 (define-pl place-wait         pl-place-wait         th-place-wait)
 (define-pl place-kill         pl-place-kill         th-place-kill)
+(define-pl place-break        pl-place-break        th-place-break)
 (define-pl place-channel      pl-place-channel      th-place-channel)
 (define-pl place-channel-send pl-place-channel-send th-place-channel-send)
 (define-pl place-channel-receive pl-place-channel-receive th-place-channel-receive)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
+
+(define-syntax-rule (define-syntax-case (N a ...) b ...)
+  (define-syntax (N stx)
+    (syntax-case stx ()
+      [(_ a ...) b ...])))
+
+(define-for-syntax (gen-create-place stx)
+ (syntax-case stx ()
+   [(_ ch body ...)
+     (with-syntax ([interal-def-name
+                    (syntax-local-lift-expression #'(lambda (ch) body ...))]
+                   [funcname #'OBSCURE_FUNC_NAME_%#%])
+      (syntax-local-lift-provide #'(rename interal-def-name funcname))
+      #'(let ([module-path (resolved-module-path-name
+              (variable-reference->resolved-module-path
+               (#%variable-reference)))])
+       (place module-path (quote funcname))))]))
+
+(define-syntax (place/thunk stx)
+  (with-syntax ([create-place (gen-create-place stx)])
+    #'(lambda () create-place)))
+
+(define-syntax (place/anon stx)
+  (gen-create-place stx))
+
+
+(define-syntax (define-place stx)
+ (syntax-case stx ()
+   [(_ (name ch) body ...)
+    #'(define name (place/thunk ch body ...))]))

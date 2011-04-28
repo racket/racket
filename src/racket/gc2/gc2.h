@@ -137,6 +137,10 @@ GC2_EXTERN intptr_t GC_get_memory_use(void *c);
    Returns the number of currently-allocated bytes (speficilly for
    custodian c, as much as the GC's accounting makes possible). */
 
+GC2_EXTERN int GC_accouting_enabled();
+/* 
+   Reports whether memory accounting is enabled. */
+
 #define MZACCT_REQUIRE		0
 #define MZACCT_LIMIT		1
 GC2_EXTERN int GC_set_account_hook(int type, void *c1, uintptr_t b, void *c2);

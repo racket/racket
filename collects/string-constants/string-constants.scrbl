@@ -11,7 +11,8 @@ DrRacket's GUI.
 @; ----------------------------------------------------------------------
 
 @section{Using String Constants}
-@defmodule[string-constants]
+@defmodule*/no-declare[(string-constants)]
+@declare-exporting[string-constants/string-constant string-constants]
 
 @defform[(string-constant name)]{
  
@@ -40,20 +41,14 @@ running DrRacket.}
 @; ----------------------------------------------------------------------
 
 @section{Adding String Constants}
-@defmodule[string-constants/string-constant-lang]
 
-To add string constants to DrRacket, see the files:
-
-@itemize[
-  @item{@filepath{english-string-constants.ss}}
-  @item{@filepath{french-string-constants.ss}}
-  @item{@filepath{spanish-string-constants.ss}}
-  @item{@filepath{german-string-constants.ss}}
-  @item{@filepath{danish-string-constants.ss}}
-  @item{@filepath{italian-string-constants.ss}}]
+To add string constants to DrRacket, see the file
+@filepath{private/english-string-constants.rkt}
+and the other string constants files in the @filepath{private}
+directory.
   
 Each file has the same format. They are each modules in the
-@racketmodname[string-constants/string-constant-lang] language. The
+@racket[string-constants/private/string-constant-lang] language. The
 body of each module is a finite mapping table that gives the mapping
 from the symbolic name of a string constant to its translation in the
 appropriate language.
@@ -61,7 +56,7 @@ appropriate language.
 The @filepath{english-string-constants} is considered the master file;
 string constants will be set there and translated into each of the
 other language files.  In addition, the
-@filepath{english-string-constants.ss} file should contain hints about
+@filepath{english-string-constants.rkt} file should contain hints about
 the context of the strings whose symbol name might not be clear.
 
 @; ----------------------------------------------------------------------

@@ -302,6 +302,7 @@ typedef struct Thread_Local_Variables {
   struct mzrt_mutex *jit_lock_;
   struct free_list_entry *free_list_;
   int free_list_bucket_count_;
+  void *code_allocation_page_list_;
   struct Scheme_Bucket_Table *prefab_table_;
   struct Scheme_Hash_Table *place_local_symbol_table_;
   struct Scheme_Hash_Table *place_local_keyword_table_;
@@ -622,6 +623,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define jit_lock XOA (scheme_get_thread_local_variables()->jit_lock_)
 #define free_list XOA (scheme_get_thread_local_variables()->free_list_)
 #define free_list_bucket_count XOA (scheme_get_thread_local_variables()->free_list_bucket_count_)
+#define code_allocation_page_list XOA (scheme_get_thread_local_variables()->code_allocation_page_list_)
 #define prefab_table XOA (scheme_get_thread_local_variables()->prefab_table_)
 #define place_local_symbol_table XOA (scheme_get_thread_local_variables()->place_local_symbol_table_)
 #define place_local_keyword_table XOA (scheme_get_thread_local_variables()->place_local_keyword_table_)

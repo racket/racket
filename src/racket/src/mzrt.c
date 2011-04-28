@@ -36,7 +36,13 @@ START_XFORM_SUSPEND;
 # endif
 #endif
 
-#if !defined(MZ_PRECISE_GC) && !defined(WIN32)
+/* Define this is we need CGC support for threads. This was needed
+   when we tried to make places work with the Boehm GC, but since that has
+   other problems (notably disappearing links), we have given up on
+   having threads cooperate with CGC. */
+/* #define NEED_GC_THREAD_OPS */
+
+#ifdef NEED_GC_THREAD_OPS
 int GC_pthread_join(pthread_t thread, void **retval);
 int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void * arg);
 int GC_pthread_detach(pthread_t thread);
@@ -238,10 +244,10 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 #   ifdef WIN32
   thread->threadid = (HANDLE)_beginthreadex(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
 #   else
-#    ifdef MZ_PRECISE_GC
-  pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
-#    else
+#    ifdef NEED_GC_THREAD_OPS
   GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
+#    else
+  pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #    endif
 #   endif
 
@@ -269,7 +275,7 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
   rc = (void *)rcw;
   CloseHandle(thread->threadid);
 #else
-#   ifndef MZ_PRECISE_GC
+#   ifdef NEED_GC_THREAD_OPS
   GC_pthread_join(thread->threadid, &rc);
 #   else
   pthread_join(thread->threadid, &rc);
@@ -287,7 +293,7 @@ int mz_proc_thread_detach(mz_proc_thread *thread) {
 #ifdef WIN32
   rc = CloseHandle(thread->threadid);
 #else
-#   ifndef MZ_PRECISE_GC
+#   ifdef NEED_GC_THREAD_OPS
   rc = GC_pthread_detach(thread->threadid);
 #   else
   rc = pthread_detach(thread->threadid);

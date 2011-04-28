@@ -9,7 +9,7 @@ where <impl-or-benchmark> names an implementation as one of
    ...
 or a benchmark as one of
    conform
-   cpstack
+   cpstak
    ctak
    ...
 or any of the above prefixed by "no-" to skip the corresponding

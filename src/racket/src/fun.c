@@ -168,7 +168,6 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
-static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
@@ -502,12 +501,12 @@ scheme_init_fun (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
-  scheme_procedure_arity_includes_proc = scheme_make_folding_prim(procedure_arity_includes,
-                                                                  "procedure-arity-includes?",
-                                                                  2, 2, 1);
-  scheme_add_global_constant("procedure-arity-includes?",
-			     scheme_procedure_arity_includes_proc,
-			     env);
+  o = scheme_make_folding_prim(scheme_procedure_arity_includes,
+                               "procedure-arity-includes?",
+                               2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_BINARY_INLINED;  
+  scheme_procedure_arity_includes_proc = o;
+  scheme_add_global_constant("procedure-arity-includes?", o, env);
 
   scheme_add_global_constant("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
@@ -3758,7 +3757,7 @@ static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[])
     return scheme_false;
 }
 
-static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[])
 {
   intptr_t n;
 

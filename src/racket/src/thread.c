@@ -740,7 +740,7 @@ static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
                      "custodian-require-memory: second custodian is not a sub-custodian of the first custodian");
   }
 
-#ifdef NEWGC_BTC_ACCOUNT
+#ifdef MZ_PRECISE_GC
   if (GC_set_account_hook(MZACCT_REQUIRE, c1, lim, c2))
     return scheme_void;
 #endif
@@ -782,7 +782,7 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
     adjust_limit_table((Scheme_Custodian *)args[2]);
   }
 
-#ifdef NEWGC_BTC_ACCOUNT
+#ifdef MZ_PRECISE_GC
   if (GC_set_account_hook(MZACCT_LIMIT, args[0], lim, (argc > 2) ? args[2] : args[0]))
     return scheme_void;
 #endif
@@ -794,8 +794,8 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
 
 static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[])
 {
-#ifdef NEWGC_BTC_ACCOUNT
-  return scheme_true;
+#ifdef MZ_PRECISE_GC
+  return (GC_accouting_enabled() ? scheme_true : scheme_false);
 #else
   return scheme_false;
 #endif
@@ -4164,7 +4164,7 @@ void scheme_thread_block(float sleep_time)
 #endif
 #if defined(MZ_USE_PLACES)
   if (!do_atomic)
-    scheme_place_check_for_killed();
+    scheme_place_check_for_interruption();
 #endif
   
   if (sleep_end > 0) {

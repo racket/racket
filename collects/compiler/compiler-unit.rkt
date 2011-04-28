@@ -201,9 +201,11 @@
   (define (compile-directory dir info 
                              #:verbose [verbose? #t] 
                              #:skip-path [orig-skip-path #f]
-                             #:skip-doc-sources? [skip-docs? #f])
+                             #:skip-doc-sources? [skip-docs? #f]
+                             #:managed-compile-zo [managed-compile-zo
+                                                   (make-caching-managed-compile-zo)])
     (define (worker prev sses)
-      (for-each (make-caching-managed-compile-zo) sses))
+      (for-each managed-compile-zo sses))
     (compile-directory-visitor dir info worker 
                              #:verbose verbose?
                              #:skip-path orig-skip-path
@@ -212,21 +214,27 @@
   (define (get-compile-directory-srcs dir info 
                              #:verbose [verbose? #t] 
                              #:skip-path [orig-skip-path #f]
-                             #:skip-doc-sources? [skip-docs? #f])
+                             #:skip-doc-sources? [skip-docs? #f]
+                             #:managed-compile-zo [managed-compile-zo
+                                                   (make-caching-managed-compile-zo)])
     (compile-directory-visitor dir info append
                              #:verbose verbose?
                              #:skip-path orig-skip-path
-                             #:skip-doc-sources? skip-docs?))
+                             #:skip-doc-sources? skip-docs?
+                             #:managed-compile-zo managed-compile-zo))
 
   (define (compile-collection-zos collection 
                                   #:skip-path [skip-path #f]
                                   #:skip-doc-sources? [skip-docs? #f]
+                                  #:managed-compile-zo [managed-compile-zo
+                                                        (make-caching-managed-compile-zo)]
                                   . cp)
     (compile-directory (apply collection-path collection cp)
                        (c-get-info (cons collection cp))
                        #:verbose #f
                        #:skip-path skip-path
-                       #:skip-doc-sources? skip-docs?))
+                       #:skip-doc-sources? skip-docs?
+                       #:managed-compile-zo managed-compile-zo))
 
   (define compile-directory-zos compile-directory)
   (define compile-directory-srcs get-compile-directory-srcs)

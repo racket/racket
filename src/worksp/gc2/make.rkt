@@ -9,7 +9,6 @@
   (fprintf (current-error-port) "~a\n" s)
   (system s))
 
-(define accounting-gc? #t)
 (define backtrace-gc? #f)
 (define opt-flags "/O2 /Oy-")
 (define re:only #f)
@@ -187,9 +186,6 @@
 	"xsrc/precomp.h"
 	""
 	(string-append "/D LIBMZ_EXPORTS "
-		       (if accounting-gc?
-			   "/D NEWGC_BTC_ACCOUNT "
-			   "")
 		       (if backtrace-gc?
 			   "/D MZ_GC_BACKTRACE "
 			   ""))
@@ -244,7 +240,6 @@
 		   "gc2_obj.h")))
 	   (string-append
 	    "/D GC2_AS_EXPORT "
-	    "/D NEWGC_BTC_ACCOUNT "
 	    (if backtrace-gc?
 		"/D MZ_GC_BACKTRACE "
 		"")

@@ -18,9 +18,11 @@
 
 @; ----------------------------------------------------------------------
 
-@margin-note{Parallel support for @racket[place] is currently disabled by
-default. Enable places by supplying @DFlag{enable-places} to
-@exec{configure} when building Racket.}
+@margin-note{Currently, parallel support for @racket[place] is enabled
+  only for Racket 3m (which is the main variant of Racket), and only
+  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
+  enable support for other platforms, use @DFlag{enable-places} with
+  @exec{configure} when building Racket.}
 
 @note-lib[racket/place]
 
@@ -117,6 +119,32 @@ racket
   blocking until the place completes if it has not already completed.
 }
 
+@defproc[(place-break [p place?]) void?]{
+  Sends place @racket[p] a break signal; see @secref["breakhandler"].
+}
+
+@defproc[(place-kill [p place?]) void?]{
+  Terminates the place indicated by @racket[p],
+}
+
+
+@defform[(place/thunk place-channel? body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[place/thunk] closes over only module scope variables.
+  Returns a thunk for creating the described place.
+}
+
+@defform[(place/anon place-channel? body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[place/anon] closes over only module scope variables.
+  Returns the place descriptor for the newly constructed place.
+}
+
+@defform[(define-place (place-name-id place-channel-id) body ...)]{
+  In-line definition of a place worker body, which is lifted up to module scope.
+  @racket[define-place] closes over only module scope variables.
+  Defines a procedure for creating the described place.
+}
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 

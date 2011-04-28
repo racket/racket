@@ -1716,27 +1716,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     jit_prepare(2);
     jit_pusharg_p(JIT_R0);
     jit_pusharg_p(JIT_R1);
-#ifdef MZ_USE_FUTURES
-    {
-      /* inline in-future check, just like other direct prim calls */
-      GC_CAN_IGNORE jit_insn *refdirect, *refdone;
-      int argstate;
-
-      __START_TINY_JUMPS__(1);
-      jit_save_argstate(argstate);
-      mz_tl_ldi_i(JIT_R0, tl_scheme_use_rtcall);
-      refdirect = jit_beqi_i(jit_forward(), JIT_R0, 0);
-      (void)mz_finish_lwe(ts_scheme_equal, refr);
-      refdone = jit_jmpi(jit_forward());
-      jit_restore_argstate(argstate);
-      mz_patch_branch(refdirect);
-      (void)mz_finish(scheme_equal);
-      mz_patch_ucbranch(refdone);
-      __END_TINY_JUMPS__(1);
-    }
-#else
-    (void)mz_finish_lwe(ts_scheme_equal, refr);
-#endif
+    mz_finish_prim_lwe(ts_scheme_equal, refr);
     jit_retval(JIT_R0);
     CHECK_LIMIT();
 
@@ -2560,6 +2540,16 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_LIMIT();
       
       allocate_rectangular(jitter);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "procedure-arity-includes?")) {
+      LOG_IT(("inlined procedure-arity-includes?\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
+
+      mz_rs_sync();
+      (void)jit_calli(sjc.proc_arity_includes_code);
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "values")) {

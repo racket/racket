@@ -12,16 +12,6 @@
   All rights reserved.
 */
 
-/* Racket function prototypes */
-/* Macros generally shouldn't go in this file; it is used both to
-   prototype functions, and as a parsing source for
-   declaring scheme_extension_table */
-
-/* The scheme_extension_table "parser" is picky; don't leave a space
-   between a function name and it's opening parameter parenthesis. */
-
-/* After this START tag, all comments should start & end on same line */
-
 typedef struct {
 /*========================================================================*/
 /*                       setjmpup (continuations)                         */
