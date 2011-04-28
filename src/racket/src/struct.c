@@ -120,9 +120,6 @@ static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[]);
-#ifdef MZ_USE_PLACES
-static Scheme_Object *convert_prefab_key_to_external_form(Scheme_Object *key);
-#endif
 
 static Scheme_Object *struct_setter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
@@ -2801,13 +2798,7 @@ Scheme_Object *scheme_prefab_struct_key(Scheme_Object *so)
     s = (Scheme_Structure *)SCHEME_CHAPERONE_VAL((Scheme_Object *)s);
   
   if (SCHEME_STRUCTP(((Scheme_Object *)s)) && s->stype->prefab_key) {
-    Scheme_Object *prefab_key;
-    prefab_key = SCHEME_CDR(s->stype->prefab_key);
-#ifdef MZ_USE_PLACES
-    return convert_prefab_key_to_external_form(prefab_key);
-#else
-    return prefab_key;
-#endif
+    return SCHEME_CDR(s->stype->prefab_key);
   }
   
   return scheme_false;
@@ -3966,8 +3957,6 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   struct_type->name_pos = depth;
   struct_type->inspector = scheme_false;
-  //Scheme_Object *accessor *mutator;
-  //Scheme_Object *prefab_key;
   struct_type->uninit_val = uninit_val;
   struct_type->props = NULL;
   struct_type->num_props = 0;
@@ -3988,19 +3977,12 @@ static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
                                                           Scheme_Object *uninit_val,
                                                           char *immutable_array)
 {
-#ifdef MZ_USE_PLACES
-/*
-  return scheme_make_prefab_struct_type_in_master
-*/
-#else
-#endif
-  return scheme_make_prefab_struct_type_raw
-         (base,
-          parent,
-          num_fields,
-          num_uninit_fields,
-          uninit_val,
-          immutable_array);
+  return scheme_make_prefab_struct_type_raw(base,
+                                            parent,
+                                            num_fields,
+                                            num_uninit_fields,
+                                            uninit_val,
+                                            immutable_array);
 }
 
 static Scheme_Object *_make_struct_type(Scheme_Object *base,
@@ -4638,19 +4620,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
     if (!SCHEME_NULLP(stack))
       key = scheme_make_pair(scheme_make_integer(icnt), key);
 
-/*symbols aren't equal?  across places now*/
-#if defined(MZ_USE_PLACES)
-    if (SCHEME_SYMBOLP(type->name)) {
-      Scheme_Object *newname;
-      newname = scheme_make_sized_offset_byte_string((char *)type->name, SCHEME_SYMSTR_OFFSET(type->name), SCHEME_SYM_LEN(type->name), 1);
-      key = scheme_make_pair(newname, key);
-    }
-    else {
-       scheme_arg_mismatch("make_prefab_key", "unknown type of struct name", type->name);
-    }
-#else
     key = scheme_make_pair(type->name, key);
-#endif
 
     if (SCHEME_PAIRP(stack)) {
       type = (Scheme_Struct_Type *)SCHEME_CAR(stack);
@@ -4703,29 +4673,6 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
   return immutable_array;
 }
 
-#ifdef MZ_USE_PLACES
-static Scheme_Object *convert_prefab_key_to_external_form(Scheme_Object *key)
-{
-  Scheme_Object *l;
-  Scheme_Object *nl;
-
-  if (SCHEME_SYMBOLP(key)) return key;
-  if (SCHEME_BYTE_STRINGP(key))
-    return scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(key), SCHEME_BYTE_STRLEN_VAL(key));
-
-  nl = scheme_null;
-  for (l = key; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    Scheme_Object *a;
-    a = SCHEME_CAR(l);
-    if (SCHEME_BYTE_STRINGP(a))
-     a = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(a), SCHEME_BYTE_STRLEN_VAL(a));
-    nl = scheme_make_pair(a, nl);
-  }
-
-  return scheme_reverse(nl);
-}
-#endif
-
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count)
 {
   Scheme_Struct_Type *parent = NULL;
@@ -4733,19 +4680,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   int ucnt, icnt;
   char *immutable_array = NULL;
 
-/*symbols aren't equal?  across places now*/
-#if defined(MZ_USE_PLACES)
-  if (SCHEME_SYMBOLP(key)) {
-    Scheme_Object *newname;
-    newname = scheme_make_sized_offset_byte_string((char*)key, SCHEME_SYMSTR_OFFSET(key), SCHEME_SYM_LEN(key), 1);
-    key = scheme_make_pair(newname, scheme_null);
-  }
-  if (SCHEME_BYTE_STRINGP(key))
-    key = scheme_make_pair(key, scheme_null);
-#else
   if (SCHEME_SYMBOLP(key))
     key = scheme_make_pair(key, scheme_null);
-#endif
 
   if (scheme_proper_list_length(key) < 0)
     return NULL;
@@ -4819,21 +4755,9 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     a = SCHEME_CAR(key);
     key = SCHEME_CDR(key);
 
-/*symbols aren't equal?  across places now*/
-#if defined(MZ_USE_PLACES)
-    if (SCHEME_SYMBOLP(a)) {
-      name = a;
-    }
-    else if (SCHEME_BYTE_STRINGP(a))
-      name = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(a), SCHEME_BYTE_STRLEN_VAL(a));
-    else
-      return NULL;
-#else
     if (!SCHEME_SYMBOLP(a))
       return NULL;
     name = a;
-#endif
-
 
     immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
 
@@ -4841,10 +4765,10 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
       return NULL;
 
     parent = scheme_make_prefab_struct_type(name,
-                                     (Scheme_Object *)parent,
-                                     icnt, ucnt,
-                                     uninit_val,
-                                     immutable_array);
+                                            (Scheme_Object *)parent,
+                                            icnt, ucnt,
+                                            uninit_val,
+                                            immutable_array);
     
   }
 
