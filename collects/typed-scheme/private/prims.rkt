@@ -19,7 +19,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (all-defined-out)
+(provide (except-out (all-defined-out) dtsi* let-internal: define-for-variants define-for*-variants)
          :
 	 (rename-out [define-typed-struct define-struct:]
                      [lambda: λ:]
