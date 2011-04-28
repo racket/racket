@@ -18,6 +18,7 @@
   racket/function
   racket/mpair
   racket/base
+  racket/set
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
@@ -598,6 +599,25 @@
                            ((-HT a b) -Integer . -> . a))]
 [hash-iterate-value (-poly (a b)
                            ((-HT a b) -Integer . -> . b))]
+
+;Set operations
+[set (-poly (e) (->* (list) e (-set e)))]
+[seteqv (-poly (e) (->* (list) e (-set e)))]
+[seteq (-poly (e) (->* (list) e (-set e)))]
+[set-empty? (-poly (e) (-> (-set e) B))]
+[set-count (-poly (e) (-> (-set e) -Index))]
+[set-member? (-poly (e) (-> (-set e) e B))]
+[set-add (-poly (e) (-> (-set e) e (-set e)))]
+
+[set-remove (-poly (e) (-> (-set e) e (-set e)))]
+
+[subset? (-poly (e) (-> (-set e) (-set e) B))]
+[set-map (-poly (e b) (-> (-set e) (-> e b) (-lst b)))]
+[set-for-each (-poly (e b) (-> (-set e) (-> e b) -Void))]
+[set? (make-pred-ty (-poly (e) (-set e)))]
+[set-equal? (-poly (e) (-> (-set e) B))]
+[set-eqv? (-poly (e) (-> (-set e) B))]
+[set-eq? (-poly (e) (-> (-set e) B))]
 
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]

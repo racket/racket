@@ -163,6 +163,10 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[#hash((a . 1) (b . 2))]
 }
 
+@defform[(Setof t)]{is the type of a @rtech{set} of @racket[t].
+@ex[(set 0 1 2 3)]
+}
+
 @defform[(Channelof t)]{A @rtech{channel} on which only @racket[t]s can be sent.
 @ex[
 (ann (make-channel) (Channelof Symbol))

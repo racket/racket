@@ -29,6 +29,7 @@
 (define -Param make-Param)
 (define -box make-Box)
 (define -channel make-Channel)
+(define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)
 (define (-seq . args) (make-Sequence args))

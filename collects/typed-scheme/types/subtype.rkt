@@ -361,6 +361,7 @@
               [((Ephemeron: s) (Ephemeron: t))
                (subtype* A0 s t)]
               [((Box: _) (BoxTop:)) A0]
+              [((Set: t) (Set: t*)) (subtype* A0 t t*)]
               [((Channel: _) (ChannelTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogenousVector: _) (VectorTop:)) A0]
