@@ -181,6 +181,7 @@ typedef struct Scheme_Place_Object {
   mzrt_mutex *lock;
   char die;
   char pbreak;
+  char ref;
   mz_jmp_buf *exit_buf;
   void *signal_handle;
   /*Thread_Local_Variables *tlvs; */
@@ -202,6 +203,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place->place_obj = place_obj;
   place_obj->die = 0;
   place_obj->pbreak = 0;
+  place_obj->ref= 1;
 
   mzrt_sema_create(&ready, 0);
 
@@ -271,18 +273,23 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
 static int place_kill(Scheme_Place *place) {
   Scheme_Place_Object *place_obj;
+  int ref = 0;
   place_obj = (Scheme_Place_Object*) place->place_obj;
 
   {
     mzrt_mutex_lock(place_obj->lock);
 
+    ref = --place_obj->ref;
     place_obj->die = 1;
 
     mzrt_mutex_unlock(place_obj->lock);
   }
 
-  scheme_signal_received_at(place_obj->signal_handle);
+  if (ref == 0) { free(place->place_obj); }
+  else { scheme_signal_received_at(place_obj->signal_handle); }
+
   scheme_remove_managed(place->mref, (Scheme_Object *)place);
+  place->place_obj = NULL;
   return 0;
 }
 
@@ -1176,8 +1183,9 @@ void scheme_place_check_for_interruption() {
       mzrt_mutex_unlock(place_obj->lock);
     }
 
-    if (local_die)
+    if (local_die) {
       scheme_longjmp(*place_obj->exit_buf, 1);
+    }
     if (local_break)
       scheme_break_thread(NULL);
   }
@@ -1221,6 +1229,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   }
   place_obj = (Scheme_Place_Object*) place_data->place_obj;
   place_object = place_obj;
+  place_obj->ref++;
   
   {
     void *signal_handle;
@@ -1272,8 +1281,20 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy();
-  free(place_object);
-  place_object = NULL;
+
+  {
+    int ref = 0;
+    place_obj = (Scheme_Place_Object *) place_object;
+    if (place_obj) {
+      mzrt_mutex_lock(place_obj->lock);
+        ref = --place_obj->ref;
+        place_obj->die = 1;
+      mzrt_mutex_unlock(place_obj->lock);
+
+      if (ref == 0) { free(place_object); }
+      place_object = NULL;
+    }
+  }
 
   return (void*) rc;
 }
