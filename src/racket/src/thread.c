@@ -7624,6 +7624,8 @@ static char *gc_num(char *nums, int v)
   }
   i++;
 
+  v /= 1024; /* bytes => kbytes */
+
   sprintf(nums+i, "%d", v);
   for (len = 0; nums[i+len]; len++) { }
   clen = len + ((len + ((nums[i] == '-') ? -2 : -1)) / 3);
@@ -7667,13 +7669,14 @@ static void inform_GC(int master_gc, int major_gc,
     delta = pre_used - post_used;
     admin_delta = (pre_admin - post_admin) - delta;
     sprintf(buf,
-            "GC [" PLACE_ID_FORMAT "%s] at %s(+%s) bytes;"
-            " %s(%s%s) collected in %" PRIdPTR " msec",
+            "GC [" PLACE_ID_FORMAT "%s] at %sK(+%sK)[+%sK];"
+            " freed %sK(%s%sK) in %" PRIdPTR " msec",
 #ifdef MZ_USE_PLACES
             scheme_current_place_id,
 #endif
             (master_gc ? "MASTER" : (major_gc ? "MAJOR" : "minor")),
             gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
+            gc_num(nums, scheme_code_page_total),
             gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),
             (master_gc ? 0 : (end_this_gc_time - start_this_gc_time)));
     buflen = strlen(buf);
