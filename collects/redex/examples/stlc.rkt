@@ -154,10 +154,16 @@
 (test-equal (term (tc x)) (term #f))
 (test-equal (term (tc x (x num) (x (-> num num)))) (term num))
 (test-equal (term (tc ((λ ((x num)) x) 1))) (term num))
+(test-equal (term (tc ((λ ((x num)) x) 1 2))) (term #f))
 (test-equal (term (tc ((λ ((f (-> num num)) (x num)) (f x)) (λ ((x num)) x) 1))) (term num))
 (test-equal (term (tc (+ (+ 1 2) 3))) (term num))
 (test-equal (term (tc (if0 1 (λ ((x num)) x) 3))) (term #f))
 (test-equal (term (tc (if0 1 2 3))) (term num))
 (test-equal (term (tc (λ ((x num)) (x)))) (term #f))
+
+(test-equal (term (tc (1 2)))
+            (term #f))
+(test-equal (term (tc (λ ((x num)) (1 2))))
+            (term #f))
 
 (test-results)
