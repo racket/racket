@@ -517,7 +517,10 @@ Various common pieces of code that both the client and server need to access
                   (close-input-port in) 
                   (when outport (close-output-port outport))]
                  [else
-                  (when outport (display l outport))
+                  (when outport 
+                    (display l outport)
+                    (newline outport)
+                    (flush-output outport))
                   (planet-log l)
                   (loop)]))))))
       (begin0
