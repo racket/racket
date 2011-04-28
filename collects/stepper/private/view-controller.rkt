@@ -6,21 +6,21 @@
 (require racket/class
          racket/match
          racket/list
-         drscheme/tool
+         drracket/tool
          mred
          string-constants
          racket/async-channel
-         (prefix-in model: "private/model.ss")
-         (prefix-in x: "private/mred-extensions.ss")
-         "private/shared.ss"
-         "private/model-settings.ss"
+         (prefix-in model: "model.ss")
+         (prefix-in x: "mred-extensions.ss")
+         "shared.ss"
+         "model-settings.ss"
          "xml-sig.ss")
 
 
-(import drscheme:tool^ xml^ stepper-frame^)
+(import drracket:tool^ xml^ stepper-frame^)
 (export view-controller^)
 
-(define drscheme-eventspace (current-eventspace))
+(define drracket-eventspace (current-eventspace))
 
 (define (definitions-text->settings definitions-text)
   (send definitions-text get-next-settings))
@@ -28,12 +28,12 @@
 ;; the stored representation of a step
 (define-struct step (text kind posns) #:transparent)
 
-(define (go drscheme-frame program-expander selection-start selection-end)
+(define (go drracket-frame program-expander selection-start selection-end)
   
   ;; get the language-level:
-  (define language-settings (definitions-text->settings (send drscheme-frame get-definitions-text)))
-  (define language-level (drscheme:language-configuration:language-settings-language language-settings))
-  (define simple-settings (drscheme:language-configuration:language-settings-settings language-settings))
+  (define language-settings (definitions-text->settings (send drracket-frame get-definitions-text)))
+  (define language-level (drracket:language-configuration:language-settings-language language-settings))
+  (define simple-settings (drracket:language-configuration:language-settings-settings language-settings))
   
   ;; VALUE CONVERSION CODE:
   
@@ -211,7 +211,7 @@
   
   ;; GUI ELEMENTS:
   (define s-frame
-    (make-object stepper-frame% drscheme-frame))
+    (make-object stepper-frame% drracket-frame))
   (define button-panel
     (make-object horizontal-panel% (send s-frame get-area-container)))
   (define (add-button name fun)

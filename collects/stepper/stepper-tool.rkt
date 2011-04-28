@@ -1,27 +1,26 @@
 #lang racket/unit
 
-(require scheme/class
-         drscheme/tool
+(require racket/class
+         drracket/tool
          mred
-         mzlib/pconvert
-         string-constants
          (prefix-in frame: framework) 
          mrlib/switchable-button
-         (file "private/my-macros.ss")
-         (prefix-in x: "private/mred-extensions.ss")
-         "private/shared.ss"
+         mzlib/pconvert
+         racket/pretty
+         string-constants
          lang/stepper-language-interface
-         scheme/pretty
-         "xml-sig.ss"
+         (prefix-in x: "private/mred-extensions.rkt")
+         "private/shared.rkt"
+         "private/xml-sig.rkt"
          "drracket-button.ss") ;; get the stepper-button-callback private-member-name
 
-(import drscheme:tool^ xml^ view-controller^)
-(export drscheme:tool-exports^ stepper-frame^)
+(import drracket:tool^ xml^ view-controller^)
+(export drracket:tool-exports^ stepper-frame^)
 
   ;; tool magic here:
 (define (phase1)
   ;; experiment with extending the language... parameter-like fields for stepper parameters
-  (drscheme:language:extend-language-interface
+  (drracket:language:extend-language-interface
    stepper-language<%>
    (lambda (superclass)
      (class* superclass (stepper-language<%>)
@@ -67,7 +66,7 @@
   (send definitions-text get-next-settings))
 
 (define (settings->language-level settings)
-  (drscheme:language-configuration:language-settings-language settings))
+  (drracket:language-configuration:language-settings-language settings))
 
 (define (stepper-works-for? language-level)
   (or (send language-level stepper:supported?)
@@ -76,10 +75,10 @@
   ;; the stepper's frame:
   
 (define stepper-frame%
-  (class (drscheme:frame:basics-mixin
+  (class (drracket:frame:basics-mixin
           (frame:frame:standard-menus-mixin frame:frame:basic%))
     
-    (init-field drscheme-frame)
+    (init-field drracket-frame)
     
     ;; PRINTING-PROC
     ;; I frankly don't think that printing (i.e., to a printer) works
@@ -114,7 +113,7 @@
     (define/augment (on-close)
       (when custodian
         (custodian-shutdown-all custodian))
-      (send drscheme-frame on-stepper-close)
+      (send drracket-frame on-stepper-close)
       (inner (void) on-close))
     
     ;; WARNING BOXES:
@@ -153,14 +152,14 @@
                [height stepper-initial-height])))
   
 
-  ;; stepper-unit-frame<%> : the interface that the extended drscheme frame
+  ;; stepper-unit-frame<%> : the interface that the extended drracket frame
   ;; fulfils
   (define stepper-unit-frame<%>
     (interface ()
       get-stepper-frame
       on-stepper-close))
   
-  ;; stepper-unit-frame-mixin : the mixin that is applied to the drscheme
+  ;; stepper-unit-frame-mixin : the mixin that is applied to the drracket
   ;; frame to interact with a possible stepper window
   (define (stepper-unit-frame-mixin super%)
     (class* super% (stepper-unit-frame<%>)
@@ -179,10 +178,10 @@
       (define (program-expander init iter)
         (let* ([lang-settings
                 (send (get-definitions-text) get-next-settings)]
-               [lang (drscheme:language-configuration:language-settings-language lang-settings)]
-               [settings (drscheme:language-configuration:language-settings-settings lang-settings)])
-          (drscheme:eval:expand-program
-           (drscheme:language:make-text/pos
+               [lang (drracket:language-configuration:language-settings-language lang-settings)]
+               [settings (drracket:language-configuration:language-settings-settings lang-settings)])
+          (drracket:eval:expand-program
+           (drracket:language:make-text/pos
             (get-definitions-text)
             0
             (send (get-definitions-text) last-position))
@@ -213,7 +212,7 @@
              [stretchable-width #f]
              [stretchable-height #f]))
       
-      ;; called from drracket-button.rkt, installed via the #lang htdp/bsl (& co) reader into drscheme
+      ;; called from drracket-button.rkt, installed via the #lang htdp/bsl (& co) reader into drracket
       (define/public (stepper-button-callback)
         (if stepper-frame
             (send stepper-frame show #t)
@@ -221,7 +220,7 @@
                     (extract-language-level (get-definitions-text))]
                    [language-level-name (language-level->name language-level)])
               (if (or (stepper-works-for? language-level)
-                      (is-a? language-level drscheme:module-language:module-language<%>))
+                      (is-a? language-level drracket:module-language:module-language<%>))
                   (set! stepper-frame
                         (go this 
                             program-expander 
@@ -271,8 +270,9 @@
       
       ;; add the stepper button to the button panel:
       (send (get-button-panel) change-children 
-            (lx (cons stepper-button-parent-panel
-                      (remq stepper-button-parent-panel _))))
+            (lambda (x) 
+              (cons stepper-button-parent-panel
+                    (remq stepper-button-parent-panel x))))
       
       ;; hide stepper button if it's not supported for the initial language:
       (check-current-language-for-stepper)))
@@ -321,28 +321,28 @@
       
       (super-new)))
   
-  ;; apply the mixins dynamically to the drscheme unit frame and
+  ;; apply the mixins dynamically to the drracket unit frame and
   ;; definitions text:
-  (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
-  (drscheme:get/extend:extend-definitions-text stepper-definitions-text-mixin)
+  (drracket:get/extend:extend-unit-frame stepper-unit-frame-mixin)
+  (drracket:get/extend:extend-definitions-text stepper-definitions-text-mixin)
   
-  ;; COPIED FROM drscheme/private/language.ss
+  ;; COPIED FROM drracket/private/language.ss
 ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
 (define (simple-module-based-language-convert-value value settings)
-  (case (drscheme:language:simple-settings-printing-style settings)
+  (case (drracket:language:simple-settings-printing-style settings)
     [(print) value]
     [(write trad-write) value]
     [(constructor)
      (parameterize
          ([constructor-style-printing #t]
-          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+          [show-sharing (drracket:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
     [(quasiquote)
      (parameterize
          ([constructor-style-printing #f]
-          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+          [show-sharing (drracket:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
@@ -381,19 +381,19 @@
     [(is-a? exp snip%)
      (send exp copy)]
     #;
-    [((drscheme:rep:use-number-snip) exp)
+    [((drracket:rep:use-number-snip) exp)
      (let ([number-snip-type
-            (drscheme:language:simple-settings-fraction-style
+            (drracket:language:simple-settings-fraction-style
              simple-settings)])
        (cond
          [(eq? number-snip-type 'repeating-decimal)
-          (drscheme:number-snip:make-repeating-decimal-snip exp #f)]
+          (drracket:number-snip:make-repeating-decimal-snip exp #f)]
          [(eq? number-snip-type 'repeating-decimal-e)
-          (drscheme:number-snip:make-repeating-decimal-snip exp #t)]
+          (drracket:number-snip:make-repeating-decimal-snip exp #t)]
          [(eq? number-snip-type 'mixed-fraction)
-          (drscheme:number-snip:make-fraction-snip exp #f)]
+          (drracket:number-snip:make-fraction-snip exp #f)]
          [(eq? number-snip-type 'mixed-fraction-e)
-          (drscheme:number-snip:make-fraction-snip exp #t)]
+          (drracket:number-snip:make-fraction-snip exp #t)]
          [else
           (error 'which-number-snip
                  "expected either 'repeating-decimal, 'repeating-decimal-e, 'mixed-fraction, or 'mixed-fraction-e got : ~e"
