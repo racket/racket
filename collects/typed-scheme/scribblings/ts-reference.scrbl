@@ -91,6 +91,7 @@ default in Racket.
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
 @defidform[Char]
+@defidform[Undefined]
 @defidform[Module-Path]
 @defidform[Module-Path-Index]
 @defidform[Compiled-Module-Expression]
@@ -117,11 +118,12 @@ These types represent primitive Racket data.
 @subsection{Singleton Types}
 
 Some kinds of data are given singleton types by default.  In
-particular, @rtech{symbols} and @rtech{keywords} have types which
-consist only of the particular symbol or keyword.  These types are
-subtypes of @racket[Symbol] and @racket[Keyword], respectively.
+particular, @rtech{booleans}, @rtech{symbols}, and @rtech{keywords} have types which
+consist only of the particular boolean, symbol, or keyword.  These types are
+subtypes of @racket[Boolean], @racket[Symbol] and @racket[Keyword], respectively.
 
 @ex[
+#t
 '#:foo
 'bar
 ]
@@ -147,6 +149,7 @@ The following base types are parameteric in their type arguments.
 one element for each of the @racket[t]s, plus a sequence of elements
 corresponding to @racket[trest], where @racket[bound]
   must be an identifier denoting a type variable bound with @racket[...].}
+@defform[(List* t t1 ... s)]{is equivalent to @racket[(Pairof t (List* t1 ... s))].}
 
 @ex[
 (list 'a 'b 'c)
@@ -232,6 +235,8 @@ of type @racket[Syntax-E].}
 @defidform[Datum]{Applying @racket[datum->syntax] to a value of type
 @racket[Datum] produces a value of type @racket[Syntax].  Equivalent to
 @racket[(Sexpof Syntax)].}
+
+@defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
 @subsection{Other Type Constructors} 
 
@@ -418,15 +423,25 @@ variants.
 
 @deftogether[[
 @defform[(for/list: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/hash: : u (for:-clause ...) expr ...+)] @; the ones that are commented out don't currently work
-@;@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/vector: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/flvector: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/and: : u (for:-clause ...) expr ...+)]
+@defform[(for/hash: : u (for:-clause ...) expr ...+)]
+@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
+@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
+@defform[(for/vector: : u (for:-clause ...) expr ...+)]
+@defform[(for/flvector: : u (for:-clause ...) expr ...+)]
+@defform[(for/and: : u (for:-clause ...) expr ...+)]
 @defform[(for/or:   : u (for:-clause ...) expr ...+)]
-@;@defform[(for/first: : u (for:-clause ...) expr ...+)]
-@;@defform[(for/last: : u (for:-clause ...) expr ...+)]
+@defform[(for/first: : u (for:-clause ...) expr ...+)]
+@defform[(for/last: : u (for:-clause ...) expr ...+)]
+@defform[(for*/list: : u (for:-clause ...) expr ...+)]
+@defform[(for*/hash: : u (for:-clause ...) expr ...+)]
+@defform[(for*/hasheq: : u (for:-clause ...) expr ...+)]
+@defform[(for*/hasheqv: : u (for:-clause ...) expr ...+)]
+@defform[(for*/vector: : u (for:-clause ...) expr ...+)]
+@defform[(for*/flvector: : u (for:-clause ...) expr ...+)]
+@defform[(for*/and: : u (for:-clause ...) expr ...+)]
+@defform[(for*/or:   : u (for:-clause ...) expr ...+)]
+@defform[(for*/first: : u (for:-clause ...) expr ...+)]
+@defform[(for*/last: : u (for:-clause ...) expr ...+)]
 ]]{
 These behave like their non-annotated counterparts, with the exception
 that @racket[#:when] clauses can only appear as the last
@@ -806,6 +821,8 @@ compatibility.
 keyword with @racket[require/typed].}
 @defidform[require-typed-struct]{Similar to using the @racket[struct]
 keyword with @racket[require/typed].}
+@defidform[pdefine:]{Defines a polymorphic function.}
+@defform[(pred t)]{Equivalent to @racket[(Any -> Boolean : t)].}
 
 @defalias[Un U]
 @defalias[mu Rec]
@@ -817,7 +834,7 @@ keyword with @racket[require/typed].}
 
 @(defmodulelang* (typed/scheme typed/scheme/base typed-scheme)
                  #:use-sources (typed-scheme/typed-scheme
-                 typed-scheme/private/prims))
+                 typed-scheme/private/prims typed-scheme/private/base-types))
 Typed versions of the @racketmod[scheme] and @racketmod[scheme/base]
 languages. The @racketmod[typed-scheme] language is equivalent to the
 @racketmod[typed/scheme/base] language.
@@ -837,4 +854,6 @@ refinement types.}
 
 @defform[(Refinement id)]{Includes values that have been tested with the
 predicate @racket[id], which must have been specified with
-@racket[declare-refinement].} 
+@racket[declare-refinement].}
+
+@defform[(define-typed-struct/exec forms ...)]{Defines an executable structure.}
