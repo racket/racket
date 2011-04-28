@@ -28,10 +28,10 @@
 ;; the stored representation of a step
 (define-struct step (text kind posns) #:transparent)
 
-(define (go drracket-frame program-expander selection-start selection-end)
+(define (go drracket-tab program-expander selection-start selection-end)
   
   ;; get the language-level:
-  (define language-settings (definitions-text->settings (send drracket-frame get-definitions-text)))
+  (define language-settings (definitions-text->settings (send drracket-tab get-defs)))
   (define language-level (drracket:language-configuration:language-settings-language language-settings))
   (define simple-settings (drracket:language-configuration:language-settings-settings language-settings))
   
@@ -211,7 +211,7 @@
   
   ;; GUI ELEMENTS:
   (define s-frame
-    (make-object stepper-frame% drracket-frame))
+    (make-object stepper-frame% drracket-tab))
   (define button-panel
     (make-object horizontal-panel% (send s-frame get-area-container)))
   (define (add-button name fun)
