@@ -300,7 +300,7 @@ exec racket -qu "$0" ${1+"$@"}
             #f
             (if (caddr m) ; if the GC doesn't kick in, chicken doesn't print anything for GC time
                 (* 1000 (string->number (format "#e~a" (cadddr m))))
-                #f))))
+                0))))
 
   (define (extract-time-times bm str)
     (let ([m (regexp-match #rx#"real[ \t]+([0-9m.]+)s.*user[ \t]+([0-9m.]+)s.sys[ \t]+([0-9m.]+)s." str)]
