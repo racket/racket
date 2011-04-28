@@ -1933,6 +1933,7 @@ and for use in DrRacket to easily adjust the typesetting:
 @racket[render-term],
 @racket[render-language],
 @racket[render-reduction-relation], 
+@racket[render-relation],
 @racket[render-metafunctions], and
 @racket[render-lw], 
 and one
@@ -2066,6 +2067,27 @@ This function sets @racket[dc-for-text-size]. See also
   @racket[render-metafunctions], it accepts multiple metafunctions
   and renders them together.
 }
+
+@deftogether[(@defform[(render-relation relation-name)]{}
+              @defform/none[#:literals (render-relation)
+                                       (render-relation relation-name filename)]{})]{
+
+If provided with one argument, @racket[render-relation]
+produces a pict that renders properly in the definitions
+window in DrRacket. If given two arguments, it writes
+postscript into the file named by @racket[filename] (which
+may be either a string or bytes).
+
+This function sets @racket[dc-for-text-size]. See also
+@racket[relation->pict].
+}
+
+@defform[(relation->pict relation-name)]{
+  This produces a pict, but without setting @racket[dc-for-text-size].
+  It is suitable for use in Slideshow or other libraries that combine
+  picts.
+}
+
 
 @subsection{Customization}
 
@@ -2322,6 +2344,17 @@ single reduction relation.
  11, @racket[inset-amt] will be 4, and for 12, 13, 14, and
  15, @racket[inset-amt] will be 6.
 
+}
+
+@defparam[horizontal-bar-spacing space (parameter/c exact-nonnegative-integer?) 4]{
+  Controls the amount of space around the horizontal bar when rendering
+  a relation (that was created by @racket[define-relation]).
+}
+@defparam[relation-clauses-combine combine 
+                                   (parameter/c (-> (listof pict?) pict?))
+                                   (λ (l) (apply vc-append 20 l))]{
+  @racket[combine] is called with the list of picts that are obtained by rendering
+  a relation; it should put them together into a single pict.
 }
 
 @section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}

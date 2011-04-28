@@ -1,18 +1,20 @@
-#lang scheme/base
-(require (lib "mrpict.ss" "texpict")
-         (lib "utils.ss" "texpict")
-         racket/contract
+#lang racket/base
+(require racket/contract
          racket/draw
-         scheme/class
-         scheme/match
-         (only-in scheme/list drop-right last partition)
+         racket/class
+         racket/match
+         (only-in racket/list drop-right last partition)
+         
+         texpict/mrpict
+         texpict/utils
+         
          "reduction-semantics.ss"
-         "struct.ss"
-         "loc-wrapper.ss"
-         "matcher.ss"
-         "arrow.ss"
-         "core-layout.ss")
-(require (for-syntax scheme/base))
+         "struct.rkt"
+         "loc-wrapper.rkt"
+         "matcher.rkt"
+         "arrow.rkt"
+         "core-layout.rkt")
+(require (for-syntax racket/base))
 
 (provide render-term 
          term->pict
@@ -25,8 +27,11 @@
          render-reduction-relation
          render-reduction-relation-rules
          
+         relation->pict
          metafunction->pict
          metafunctions->pict
+
+         render-relation
          render-metafunction
          render-metafunctions
          
@@ -56,7 +61,10 @@
          compact-vertical-min-width
          extend-language-show-union
          set-arrow-pict!
-         arrow->pict)
+         arrow->pict
+         horizontal-bar-spacing
+         relation-clauses-combine)
+
 (provide/contract
  [linebreaks (parameter/c (or/c #f (listof boolean?)))])
 
@@ -718,6 +726,12 @@
           (andmap identifier? (syntax->list #'(name2 ...))))
      #'(metafunctions->pict/proc (list (metafunction name1) (metafunction name2) ...) 'metafunctions->pict)]))
 
+(define-syntax (relation->pict stx)
+  (syntax-case stx ()
+    [(_ name1)
+     (identifier? #'name1)
+     #'(relation->pict/proc (metafunction name1) 'relation->pict)]))
+
 (define-syntax (render-metafunctions stx)
   (syntax-case stx ()
     [(_ name1 name2 ...)
@@ -737,6 +751,15 @@
     [(_ name file)
      (identifier? #'name)
      #'(render-metafunction/proc (list (metafunction name)) file 'render-metafunction)]))
+
+(define-syntax (render-relation stx)
+  (syntax-case stx ()
+    [(_ name)
+     (identifier? #'name)
+     #'(render-relation/proc (metafunction name) #f)]
+    [(_ name #:file filename)
+     (identifier? #'name)
+     #'(render-relation/proc (metafunction name) filename)]))
 
 (define linebreaks (make-parameter #f))
 
@@ -772,6 +795,9 @@
        (cons (car l) (loop (cdr l)))])))
 
 (define (metafunctions->pict/proc mfs name)
+  (for ([mf (in-list mfs)])
+    (when (metafunc-proc-relation? (metafunction-proc mf))
+      (error name "expected metafunction as argument, got a relation")))
   (unless (andmap (λ (mf) (eq? (metafunc-proc-lang (metafunction-proc (car mfs)))
                                (metafunc-proc-lang (metafunction-proc mf))))
                   mfs)
@@ -1018,7 +1044,47 @@
     [else
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (metafunctions->pict/proc mfs name))]))
-     
+
+(define (render-relation/proc mf filename)
+  (cond
+    [filename
+     (save-as-ps (λ () (relation->pict/proc mf 'render-reduction-relation))
+                 filename)]
+    [else
+     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+       (relation->pict/proc mf 'render-reduction-relation))]))
+
+
+(define (relation->pict/proc mf name)
+  (unless (metafunc-proc-relation? (metafunction-proc mf))
+    (error name "expected relation as argument, got a metafunction"))
+  (let* ([all-nts (language-nts (metafunc-proc-lang (metafunction-proc mf)))]
+         [wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
+         [all-eqns (metafunc-proc-pict-info (metafunction-proc mf))]
+         [all-conclusions 
+          (map (lambda (eqn) 
+                 (wrapper->pict
+                  (metafunction-call (metafunc-proc-name (metafunction-proc mf))
+                                     (list-ref eqn 0)
+                                     (metafunc-proc-multi-arg? (metafunction-proc mf)))))
+               (metafunc-proc-pict-info (metafunction-proc mf)))]
+         [eqns (select-cases all-eqns)]
+         [conclusions (select-cases all-conclusions)]
+         [premisess (map (lambda (eqn) (map wrapper->pict (list-ref eqn 2))) eqns)])
+    ((relation-clauses-combine)
+     (for/list ([conclusion (in-list conclusions)]
+                [premises (in-list premisess)])
+       (define top (apply hbl-append 20 premises))
+       (define line-w (max (pict-width top) (pict-width conclusion)))
+       (vc-append
+        (horizontal-bar-spacing)
+        top
+        (dc (λ (dc dx dy) (send dc draw-line dx dy (+ dx line-w) dy))
+            line-w 1)
+        conclusion)))))
+
+(define horizontal-bar-spacing (make-parameter 4))
+(define relation-clauses-combine (make-parameter (λ (l) (apply vc-append 20 l))))
 
 ;                              
 ;                              

@@ -1137,7 +1137,7 @@
                           (symbol->string (bind-name y))))))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 8 0 #f null (current-inspector) 0))
+  (make-struct-type 'metafunc-proc #f 9 0 #f null (current-inspector) 0))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
 (define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
@@ -1145,6 +1145,7 @@
 (define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 5))
 (define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 6))
 (define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 7))
+(define metafunc-proc-relation? (make-struct-field-accessor metafunc-proc-ref 8))
 
 (define-struct metafunction (proc))
 
@@ -1343,7 +1344,9 @@
                                        [(name2 name-predicate) (generate-temporaries (syntax (name name)))]
                                        
                                        ;; See "!!" below for information on the `seq-' bindings:
-                                       [seq-of-rhs #'(rhs ...)]
+                                       [seq-of-rhs (if relation?
+                                                       #'((raw-rhses ...) ...)
+                                                       #'(rhs ...))]
                                        [seq-of-lhs #'(lhs ...)]
                                        [seq-of-tl-side-cond/binds #'((stuff ...) ...)]
                                        [seq-of-lhs-for-lw #'(lhs-for-lw ...)])
@@ -1385,7 +1388,11 @@
                                                                   ([generate-lws
                                                                     (lambda (stx)
                                                                       (with-syntax
-                                                                          ([(rhs/lw ...) (map to-lw/proc (syntax->list #'(... seq-of-rhs)))]
+                                                                          ([(rhs/lw ...) 
+                                                                            #,(if relation?
+                                                                                  #'(... (map (λ (x) #`(list #,@(map to-lw/proc (syntax->list x))))
+                                                                                              (syntax->list #'(... seq-of-rhs))))
+                                                                                  #'(... (map to-lw/proc (syntax->list #'(... seq-of-rhs)))))]
                                                                            [(((bind-id/lw . bind-pat/lw) ...) ...)
                                                                             ;; Also for pict, extract pattern bindings
                                                                             (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
@@ -1445,7 +1452,8 @@
                                                              'name
                                                              (let ([name (lambda (x) (name-predicate x))]) name)
                                                              dsc
-                                                             (append cases parent-cases)))
+                                                             (append cases parent-cases)
+                                                             #,relation?))
                                                           dsc
                                                           `(codom-side-conditions-rewritten ...)
                                                           'name
@@ -2380,6 +2388,7 @@
          metafunc-proc-in-dom?
          metafunc-proc-dom-pat
          metafunc-proc-cases
+         metafunc-proc-relation?
          metafunc-proc?
          (struct-out metafunc-case)
          

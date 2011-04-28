@@ -45,8 +45,11 @@
                    pict?)])])
 
 ; syntax
-(provide metafunction->pict
+(provide relation->pict
+         metafunction->pict
          metafunctions->pict
+         
+         render-relation
          render-metafunction
          render-metafunctions)
 
@@ -68,7 +71,9 @@
  [linebreaks (parameter/c (or/c false/c (listof boolean?)))]
  [curly-quotes-for-strings (parameter/c boolean?)]
  [white-bracket-sizing (parameter/c
-                        (-> string? number? (values number? number? number? number?)))])
+                        (-> string? number? (values number? number? number? number?)))]
+ [horizontal-bar-spacing (parameter/c exact-nonnegative-integer?)]
+ [relation-clauses-combine (parameter/c (-> (listof pict?) pict?))])
 
 (provide/contract
  [rule-pict-style 

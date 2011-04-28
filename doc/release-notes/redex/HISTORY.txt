@@ -1,3 +1,5 @@
+  * added support for typsetting define-relation relations
+
 v5.1.1
 
   * changed pattern language to disallow unquote
