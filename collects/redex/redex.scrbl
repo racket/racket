@@ -9,7 +9,8 @@
                      racket/pretty
                      racket/contract
 		     mrlib/graph
-                     (only-in slideshow/pict pict? text dc-for-text-size text-style/c)
+                     (only-in slideshow/pict pict? text dc-for-text-size text-style/c
+                              vc-append)
                      redex))
 
 @(define-syntax (defpattech stx)
@@ -2346,15 +2347,16 @@ single reduction relation.
 
 }
 
-@defparam[horizontal-bar-spacing space (parameter/c exact-nonnegative-integer?) 4]{
+@defparam[horizontal-bar-spacing space (parameter/c exact-nonnegative-integer?)]{
   Controls the amount of space around the horizontal bar when rendering
-  a relation (that was created by @racket[define-relation]).
+  a relation (that was created by @racket[define-relation]). Defaults
+  to @racket[4].
 }
 @defparam[relation-clauses-combine combine 
-                                   (parameter/c (-> (listof pict?) pict?))
-                                   (λ (l) (apply vc-append 20 l))]{
+                                   (parameter/c (-> (listof pict?) pict?))]{
   @racket[combine] is called with the list of picts that are obtained by rendering
-  a relation; it should put them together into a single pict.
+  a relation; it should put them together into a single pict. It defaults to
+  @racket[(λ (l) (apply vc-append 20 l))]
 }
 
 @section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
