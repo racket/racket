@@ -326,11 +326,18 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_I386
-#  define FREEBSD_CONTROL_387
+#  if defined(__FreeBSD_kernel__)
+#   define ASM_DBLPREC_CONTROL_87
+#  else
+#   define FREEBSD_CONTROL_387
+#  endif
 # elif defined(__amd64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-freebsd"
 #  define REGISTER_POOR_MACHINE
 #  define MZ_USE_JIT_X86_64
+#  if defined(__FreeBSD_kernel__)
+#   define ASM_DBLPREC_CONTROL_87
+#  endif
 # elif defined(__sparc64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
 #  define FLUSH_SPARC_REGISTER_WINDOWS
@@ -342,7 +349,6 @@
    initial pthread's stack size doesn't use rlimit: */
 # define ASSUME_FIXED_STACK_SIZE
 # define FIXED_STACK_SIZE 1048576
-# define USE_PTHREAD_INSTEAD_OF_ITIMER
 
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
@@ -356,7 +362,9 @@
 # define USE_UNDERSCORE_SETJMP
 
 # define USE_IEEE_FP_PREDS
-# define POW_HANDLES_INF_CORRECTLY
+# ifndef ASM_DBLPREC_CONTROL_87
+#  define POW_HANDLES_INF_CORRECTLY
+# endif
 
 # define USE_DYNAMIC_FDSET_SIZE
 

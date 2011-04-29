@@ -134,7 +134,7 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
     abort();
 }
 #  define NEED_SIGACTION
-#  if defined(__FreeBSD__) && (__FreeBSD_version < 700000)
+#  if (defined(__FreeBSD__) && (__FreeBSD_version < 700000)) || defined(__FreeBSD_kernel__)
 #    define USE_SIGACTON_SIGNAL_KIND SIGBUS
 #  else
 #    define USE_SIGACTON_SIGNAL_KIND SIGSEGV
