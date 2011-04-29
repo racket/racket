@@ -425,6 +425,10 @@ Returns a list that is like @scheme[lst], omitting the first element
 
 @mz-examples[
 (remove 2 (list 1 2 3 2 4))
+(remove 2 (list 1 2 3 2 4) =)
+(remove '(2) (list '(1) '(2) '(3)))
+(remove "2" (list "1" "2" "3"))
+(remove #\c (list #\a #\b #\c))
 ]}
 
 
@@ -434,6 +438,9 @@ Returns a list that is like @scheme[lst], omitting the first element
 Returns @scheme[(remove v lst eq?)].
 @mz-examples[
 (remq 2 (list 1 2 3 4 5))
+(remq '(2) (list '(1) '(2) '(3)))
+(remq "2" (list "1" "2" "3"))
+(remq #\c (list #\a #\b #\c))
 ]}
 
 
@@ -443,6 +450,9 @@ Returns @scheme[(remove v lst eq?)].
 Returns @scheme[(remove v lst eqv?)].
 @mz-examples[
 (remv 2 (list 1 2 3 4 5))
+(remv '(2) (list '(1) '(2) '(3)))
+(remv "2" (list "1" "2" "3"))
+(remv #\c (list #\a #\b #\c))
 ]}
 
 
