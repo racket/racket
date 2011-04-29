@@ -69,7 +69,7 @@ model is exactly what should be displayed in the animation window:
 
 @section{New image functions}
 @; @defmodule*/no-declare[(picturing-programs/tiles)]
-@declare-exporting[picturing-programs/tiles picturing-programs]
+@declare-exporting[picturing-programs/private/tiles picturing-programs]
 
 @defproc[(rotate-cw [img image?])
          image?]{Rotates an image 90 degrees clockwise.}
@@ -119,7 +119,7 @@ compatibility.}
 @section{Variables}
 
 @; @defmodule*/no-declare[(picturing-programs/book-pictures)]
-@declare-exporting[picturing-programs/book-pictures picturing-programs]
+@declare-exporting[picturing-programs/private/book-pictures picturing-programs]
 
 This teachpack also defines variable names for some of the pictures used in the textbook.
 
@@ -143,7 +143,7 @@ particular, there's no requirement that your names start with "pic:".
 @section{Pixel functions}
 
 @; @defmodule*/no-declare[(picturing-programs/map-image)]
-@declare-exporting[picturing-programs/map-image picturing-programs]
+@declare-exporting[picturing-programs/private/map-image picturing-programs]
 
 
 The above functions allow you to operate on a picture as a whole, but sometimes
@@ -354,7 +354,7 @@ The version using @racket[good-gradient] works.}
 @section{Input and Output}
 
 @; @defmodule*/no-declare[(picturing-programs/io-stuff)]
-@declare-exporting[picturing-programs/io-stuff picturing-programs]
+@declare-exporting[picturing-programs/private/io-stuff picturing-programs]
 
 
 This teachpack also provides several functions to help in testing
