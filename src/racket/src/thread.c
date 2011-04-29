@@ -122,6 +122,7 @@ static void check_ready_break();
 THREAD_LOCAL_DECL(extern int scheme_num_read_syntax_objects);
 THREAD_LOCAL_DECL(extern intptr_t scheme_hash_request_count);
 THREAD_LOCAL_DECL(extern intptr_t scheme_hash_iteration_count);
+THREAD_LOCAL_DECL(extern intptr_t scheme_code_page_total);
 #ifdef MZ_USE_JIT
 extern int scheme_jit_malloced;
 #else
