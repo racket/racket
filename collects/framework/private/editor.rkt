@@ -73,7 +73,7 @@
                    (if (and snip
                             (is-a? snip editor-snip%))
                        (loop (send snip get-editor))
-                       (values editor #f)))]
+                       (values #f editor)))]
                 [else (values #f #f)])))))
       
       ;; get-filename/untitled-name : -> string

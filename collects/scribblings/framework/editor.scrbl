@@ -127,15 +127,15 @@
   }
 
   @defmethod[(get-pos/text [event (is-a?/c mouse-event%)])
-             (values (or/c false/c (is-a?/c editor<%>))
-	             (or/c false/c number?))]{
+             (values (or/c false/c number?)
+                     (or/c false/c (is-a?/c editor<%>)))]{
 
    This method's first result is @scheme[#f] when the mouse
    event does not correspond to a location in the editor. 
    
-   If the first result is an @scheme[text%] object, then the
-   second result will be a position in the editor and
-   otherwise the second result will be @scheme[#f]. 
+   If the second result is a @scheme[text%] object, then the
+   first result will be a position in the editor and
+   otherwise the first result will be @scheme[#f]. 
 
    The @scheme[editor<%>] object will always be the nearest
    enclosing editor containing the mouse click.
