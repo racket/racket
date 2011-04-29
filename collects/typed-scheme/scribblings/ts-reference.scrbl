@@ -20,7 +20,11 @@
 @author["Sam Tobin-Hochstadt"]
 
 @(defmodulelang* (typed/racket/base typed/racket)
-                 #:use-sources (typed-scheme/typed-scheme typed-scheme/private/prims))
+                 #:use-sources 
+                    (typed-scheme/typed-scheme
+                     typed-scheme/private/prims
+                     typed-scheme/private/base-types 
+                     typed-scheme/private/base-types-extra))
 
 @section[#:tag "type-ref"]{Type Reference}
 
@@ -31,24 +35,79 @@ any expression of this type will not evaluate to a value.}
 
 @subsection{Base Types}
 
+@(define-syntax-rule                    
+   (defnums (ids ...) . rest)
+   (deftogether ((defidform ids) ...) . rest))
+
 @subsubsection{Numeric Types}
-@deftogether[(
-@defidform[Number]
-@defidform[Complex]
-@defidform[Float-Complex]
-@defidform[Real]
-@defidform[Float]
-@defidform[Nonnegative-Float]
-@defidform[Inexact-Real]
-@defidform[Exact-Rational]
-@defidform[Integer]
-@defidform[Natural]
-@defidform[Exact-Nonnegative-Integer]
-@defidform[Exact-Positive-Integer]
-@defidform[Fixnum]
-@defidform[Nonnegative-Fixnum]
-@defidform[Positive-Fixnum]
-@defidform[Zero]
+
+@defnums[(
+Number
+Complex
+Float-Complex
+Real
+Float
+Nonnegative-Float
+Inexact-Real
+Exact-Rational
+Integer
+Natural
+Exact-Nonnegative-Integer
+Exact-Positive-Integer
+Fixnum
+Nonnegative-Fixnum
+Positive-Fixnum
+Zero
+Byte
+Exact-Number
+Float-Negative-Zero
+Float-Positive-Zero
+Float-Zero
+Flonum
+Flonum-Negative-Zero
+Flonum-Positive-Zero
+Flonum-Zero
+Index
+Inexact-Complex
+Inexact-Real-Negative-Zero
+Inexact-Real-Positive-Zero
+Inexact-Real-Zero
+Negative-Exact-Rational
+Negative-Float
+Negative-Flonum
+Negative-Inexact-Real
+Negative-Integer
+Negative-Real
+Negative-Single-Flonum
+Nonnegative-Exact-Rational
+Nonnegative-Flonum
+Nonnegative-Inexact-Real
+Nonnegative-Real
+Nonnegative-Single-Flonum
+Nonpositive-Exact-Rational
+Nonpositive-Fixnum
+Nonpositive-Float
+Nonpositive-Flonum
+Nonpositive-Inexact-Real
+Nonpositive-Integer
+Nonpositive-Real
+Nonpositive-Single-Flonum
+One
+Positive-Byte
+Positive-Exact-Rational
+Positive-Float
+Positive-Flonum
+Positive-Index
+Positive-Inexact-Real
+Positive-Integer
+Positive-Real
+Positive-Single-Flonum
+Real-Zero
+Single-Flonum
+Single-Flonum-Complex
+Single-Flonum-Negative-Zero
+Single-Flonum-Positive-Zero
+Single-Flonum-Zero
 )]{These types represent the hierarchy of @rtech{numbers} of Racket.
 @racket[Integer] includes only @rtech{integers} that are @rtech{exact
 numbers}, corresponding to the predicate @racket[exact-integer?].
@@ -832,12 +891,18 @@ keyword with @racket[require/typed].}
 
 @section{Compatibility Languages}
 
-@(defmodulelang* (typed/scheme typed/scheme/base typed-scheme)
-                 #:use-sources (typed-scheme/typed-scheme
-                 typed-scheme/private/prims typed-scheme/private/base-types))
+@(defmodulelang*/no-declare (typed/scheme typed/scheme/base typed-scheme))
 Typed versions of the @racketmod[scheme] and @racketmod[scheme/base]
 languages. The @racketmod[typed-scheme] language is equivalent to the
 @racketmod[typed/scheme/base] language.
+
+@(declare-exporting typed/scheme/base typed/scheme typed-scheme
+                    #:use-sources 
+                    (typed-scheme/typed-scheme
+                     typed-scheme/private/prims
+                     typed-scheme/private/base-types 
+                     typed-scheme/private/base-types-extra))
+
 
 
 @section{Experimental Features}
