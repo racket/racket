@@ -163,6 +163,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  testing get-pos/text method
+;;
+
+(test
+  'get-pos/text-1
+  (λ (x) x)
+  (λ ()
+    (queue-sexp-to-mred
+      '(let* ([f (new frame% [label "Test frame"])]
+              [t (new text:basic%)]
+              [c (new editor-canvas% [parent f] [editor t])]
+              [snip (make-object string-snip% "Test string")])
+          (send t insert snip)
+          (define-values (x-box y-box) (values (box 0) (box 0)))
+          (send t get-snip-location snip x-box y-box)
+          (send t local-to-global x-box y-box)
+          (define event (new mouse-event% [event-type 'motion]
+                                          [x (add1 (unbox x-box))]
+                                          [y (add1 (unbox y-box))]))
+          (let-values ([(pos edit) (send t get-pos/text event)])
+            (and (real? (car p)) (is-a? (cdr p) text%)))))))
+
+(test
+  'get-pos/text-2
+  (λ (x) x)
+  (λ ()
+    (queue-sexp-to-mred
+      '(let* ([f (new frame% [label "Test frame"])]
+              [t (new text:basic%)]
+              [c (new editor-canvas% [parent f] [editor t])]
+              [snip (make-object string-snip% "Test string")])
+          (send t insert snip)
+          (define-values (x-box y-box) (values (box 0) (box 0)))
+          (send t get-snip-location snip x-box y-box)
+          (send t local-to-global x-box y-box)
+          (define event (new mouse-event% [event-type 'motion]
+                                          [x (+ 9999 (unbox x-box))]
+                                          [y (+ 9999 (unbox y-box))]))
+          (let-values ([(pos edit) (send t get-pos/text event)])
+            (and (false? pos) (false? edit)))))))
+
+(test
+  'get-pos/text-3
+  (λ (x) x)
+  (λ ()
+    (queue-sexp-to-mred
+      '(let* ([f (new frame% [label "Test frame"])]
+              [t (new text:basic%)]
+              [c (new editor-canvas% [parent f] [editor t])]
+              [p (new pasteboard%)]
+              [s-snip (make-object string-snip% "Test string")]
+              [e-snip (new editor-snip% [editor p])])
+          (send p insert s-snip)
+          (send t insert e-snip)
+          (define-values (x-box y-box) (values (box 0) (box 0)))
+          (send t get-snip-location e-snip x-box y-box)
+          (send t local-to-global x-box y-box)
+          (define event (new mouse-event% [event-type 'motion]
+                                          [x (add1 (unbox x-box))]
+                                          [y (add1 (unbox y-box))]))
+          (let-values ([(pos edit) (send t get-pos/text event)])
+            (and (false? pos) (is-a? edit pasteboard%)))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  print-to-dc
 ;;
 
