@@ -135,6 +135,10 @@
     [#:key 'ephemeron])
 
 
+;; elem is a Type
+(dt Set      ([elem Type/c]) [#:key 'set])
+
+
 ;; name is a Symbol (not a Name)
 ;; contract is used when generating contracts from types
 ;; predicate is used to check (at compile-time) whether a value belongs

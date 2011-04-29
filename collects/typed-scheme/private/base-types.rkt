@@ -112,6 +112,7 @@
 [Boxof (-poly (a) (make-Box a))]
 [Channelof (-poly (a) (make-Channel a))]
 [Ephemeronof (-poly (a) (make-Ephemeron a))]
+[Setof (-poly (e) (make-Set e))]
 [Continuation-Mark-Set -Cont-Mark-Set]
 [False (-val #f)]
 [True (-val #t)]

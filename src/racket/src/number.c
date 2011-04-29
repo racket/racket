@@ -187,13 +187,13 @@ READ_ONLY Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_obje
 
 
 #ifdef FREEBSD_CONTROL_387
-#include <machine/floatingpoint.h>
+# include <ieeefp.h>
 #endif
 #ifdef LINUX_CONTROL_387
-#include <fpu_control.h>
+# include <fpu_control.h>
 #endif
 #ifdef ALPHA_CONTROL_FP
-#include <machine/fpu.h>
+# include <machine/fpu.h>
 #endif
 
 #ifdef ASM_DBLPREC_CONTROL_87
@@ -243,7 +243,7 @@ scheme_init_number (Scheme_Env *env)
   MZ_SIGSET(SIGFPE, SIG_IGN);
 #endif
 #ifdef FREEBSD_CONTROL_387
-  fpsetmask(0);
+  (void)fpsetmask(0);
 #endif
 #ifdef LINUX_CONTROL_387
   __setfpucw(_FPU_EXTENDED + _FPU_RC_NEAREST + 0x3F);

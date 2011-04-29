@@ -221,11 +221,13 @@
             '(struct
               local
                      
-              define-type
+              struct: define-struct: define-struct/exec:
+              define:
+              define-type define-predicate
               match-define))
   (for-each (λ (x) 
               (hash-set! hash-table x 'begin))
-            '(case-lambda
+            '(case-lambda case-lambda: pcase-lambda:
                match-lambda match-lambda*
                cond
                delay
@@ -250,10 +252,19 @@
                let/cc let/ec letcc catch
                let-syntax letrec-syntax fluid-let-syntax letrec-syntaxes+values
                
+               let: letrec: let*:
+               let-values: letrec-values: let*-values:
+               let/cc: let/ec:
+               lambda: λ:
+               plambda: opt-lambda: popt-lambda:
+
                for for/list for/hash for/hasheq for/and for/or 
                for/lists for/first for/last for/fold
                for* for*/list for*/hash for*/hasheq for*/and for*/or 
                for*/lists for*/first for*/last for*/fold                 
+
+               for: for/list: for/or: for/lists: for/fold:
+               for*: for*/lists: for*/fold: do:
                
                kernel-syntax-case
                syntax-case syntax-case* syntax-rules syntax-id-rules

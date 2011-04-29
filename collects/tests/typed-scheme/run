@@ -1,2 +1,0 @@
-#!/bin/sh
-gracket -e '(begin (require "main.ss") (go tests))'

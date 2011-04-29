@@ -99,7 +99,8 @@ exec racket -qu "$0" ${1+"$@"}
                                           #f)])
                                   (if a
                                       ;; compute cpu, real and gc average time for the nothing benchmark
-                                      (let ([nothing-runs (map car a)])
+                                      (let ([nothing-runs (map (lambda (x) (map (lambda (y) (or y 0)) x))
+                                                               (map car a))])
                                         (map (lambda (x) (exact->inexact (/ x (length nothing-runs))))
                                              (foldl (lambda (x y) (map + x y))
                                                     '(0 0 0)

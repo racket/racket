@@ -194,6 +194,7 @@ EXPORTS
  GC_malloc_atomic_allow_interior
  GC_malloc_tagged_allow_interior
  scheme_malloc_code
+ scheme_malloc_permanent_code
  scheme_free_code
  scheme_malloc_gcable_code
  scheme_malloc_eternal

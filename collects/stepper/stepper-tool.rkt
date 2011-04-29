@@ -1,27 +1,26 @@
 #lang racket/unit
 
-(require scheme/class
-         drscheme/tool
+(require racket/class
+         drracket/tool
          mred
-         mzlib/pconvert
-         string-constants
          (prefix-in frame: framework) 
          mrlib/switchable-button
-         (file "private/my-macros.ss")
-         (prefix-in x: "private/mred-extensions.ss")
-         "private/shared.ss"
+         mzlib/pconvert
+         racket/pretty
+         string-constants
          lang/stepper-language-interface
-         scheme/pretty
-         "xml-sig.ss"
+         (prefix-in x: "private/mred-extensions.rkt")
+         "private/shared.rkt"
+         "private/xml-sig.rkt"
          "drracket-button.ss") ;; get the stepper-button-callback private-member-name
 
-(import drscheme:tool^ xml^ view-controller^)
-(export drscheme:tool-exports^ stepper-frame^)
+(import drracket:tool^ xml^ view-controller^)
+(export drracket:tool-exports^ stepper-frame^)
 
   ;; tool magic here:
 (define (phase1)
   ;; experiment with extending the language... parameter-like fields for stepper parameters
-  (drscheme:language:extend-language-interface
+  (drracket:language:extend-language-interface
    stepper-language<%>
    (lambda (superclass)
      (class* superclass (stepper-language<%>)
@@ -67,7 +66,7 @@
   (send definitions-text get-next-settings))
 
 (define (settings->language-level settings)
-  (drscheme:language-configuration:language-settings-language settings))
+  (drracket:language-configuration:language-settings-language settings))
 
 (define (stepper-works-for? language-level)
   (or (send language-level stepper:supported?)
@@ -76,10 +75,10 @@
   ;; the stepper's frame:
   
 (define stepper-frame%
-  (class (drscheme:frame:basics-mixin
+  (class (drracket:frame:basics-mixin
           (frame:frame:standard-menus-mixin frame:frame:basic%))
     
-    (init-field drscheme-frame)
+    (init-field drracket-tab)
     
     ;; PRINTING-PROC
     ;; I frankly don't think that printing (i.e., to a printer) works
@@ -114,7 +113,7 @@
     (define/augment (on-close)
       (when custodian
         (custodian-shutdown-all custodian))
-      (send drscheme-frame on-stepper-close)
+      (send drracket-tab on-stepper-close)
       (inner (void) on-close))
     
     ;; WARNING BOXES:
@@ -153,20 +152,91 @@
                [height stepper-initial-height])))
   
 
-  ;; stepper-unit-frame<%> : the interface that the extended drscheme frame
+  ;; stepper-unit-frame<%> : the interface that the extended drracket frame
   ;; fulfils
-  (define stepper-unit-frame<%>
+  (define stepper-tab<%>
     (interface ()
       get-stepper-frame
       on-stepper-close))
   
-  ;; stepper-unit-frame-mixin : the mixin that is applied to the drscheme
-  ;; frame to interact with a possible stepper window
+  ;; stepper-unit-frame-mixin : the mixin that is applied to the drracket
+  ;; frame to interact with a possible stepper window. Specifically, this
+  ;; mixin needs to manage the creation and visibility of the stepper button.
   (define (stepper-unit-frame-mixin super%)
-    (class* super% (stepper-unit-frame<%>)
+    (class* super% ()
+      (inherit get-button-panel register-toolbar-button get-current-tab get-tabs)
       
-      (inherit get-button-panel register-toolbar-button get-interactions-text get-definitions-text)
+      (super-new)
       
+      ;; STEPPER BUTTON
+      
+      (define/public (get-stepper-button) stepper-button)
+      
+      (define stepper-button-parent-panel 
+        (new horizontal-panel%
+             [parent (get-button-panel)]
+             [stretchable-width #f]
+             [stretchable-height #f]))
+      
+      (define stepper-button
+        (new switchable-button% 
+             [parent stepper-button-parent-panel]
+             [label (string-constant stepper-button-label)]
+             [bitmap x:foot-img/horizontal]
+             [alternate-bitmap x:foot-img/vertical]
+             [callback (lambda (dont-care) (send (get-current-tab)
+                                                 stepper-button-callback))]))
+      
+      (register-toolbar-button stepper-button)
+      
+      (define (stepper-button-show)
+        (unless (send stepper-button is-shown?)
+          (send (send stepper-button get-parent)
+                add-child stepper-button)))
+      
+      (define (stepper-button-hide)
+        (when (send stepper-button is-shown?)
+          (send (send stepper-button get-parent)
+                delete-child stepper-button)))
+      
+      ;; when the window closes, notify all of the stepper frames.
+      (define/augment (on-close)
+        (for ([tab (in-list (get-tabs))])
+          (define possible-stepper-frame (send tab get-stepper-frame))
+          (when possible-stepper-frame
+            (send possible-stepper-frame original-program-gone)))        
+        (inner (void) on-close))
+      
+      ;; when we change tabs, show or hide the stepper button.
+      (define/augment (on-tab-change old new)
+        (show/hide-stepper-button)
+        (inner (void) on-tab-change old new))
+      
+      ;; add the stepper button to the button panel:
+      (send (get-button-panel) change-children 
+            (lambda (x) 
+              (cons stepper-button-parent-panel
+                    (remq stepper-button-parent-panel x))))
+      
+      ;; show or hide the stepper button depending
+      ;; on the language level
+      (define/public (show/hide-stepper-button)
+        (cond [(send (get-current-tab) current-lang-supports-stepper?)
+               (stepper-button-show)]
+              [else 
+               (stepper-button-hide)]))
+      
+      ;; hide stepper button if it's not supported for the initial language:
+      (show/hide-stepper-button)))
+  
+  ;; stepper-tab-mixin : the mixin that is applied to drracket tabs, to
+  ;; interact with a possible stepper window.
+  (define (stepper-tab-mixin super%)
+    (class* super% (stepper-tab<%>)
+      
+      (inherit get-ints get-defs get-frame)
+      
+      ;; a reference to a possible stepper frame.
       (define stepper-frame #f)
       (define/public (on-stepper-close)
         (set! stepper-frame #f))
@@ -178,14 +248,14 @@
       ;; definitions window one at a time and calls 'iter' on each one
       (define (program-expander init iter)
         (let* ([lang-settings
-                (send (get-definitions-text) get-next-settings)]
-               [lang (drscheme:language-configuration:language-settings-language lang-settings)]
-               [settings (drscheme:language-configuration:language-settings-settings lang-settings)])
-          (drscheme:eval:expand-program
-           (drscheme:language:make-text/pos
-            (get-definitions-text)
+                (send (get-defs) get-next-settings)]
+               [lang (drracket:language-configuration:language-settings-language lang-settings)]
+               [settings (drracket:language-configuration:language-settings-settings lang-settings)])
+          (drracket:eval:expand-program
+           (drracket:language:make-text/pos
+            (get-defs)
             0
-            (send (get-definitions-text) last-position))
+            (send (get-defs) last-position))
            lang-settings
            #f
            (lambda ()
@@ -203,108 +273,75 @@
            void ; kill
            iter)))
       
-      ;; STEPPER BUTTON
-      
-      (define/public (get-stepper-button) stepper-button)
-      
-      (define stepper-button-parent-panel 
-        (new horizontal-panel%
-             [parent (get-button-panel)]
-             [stretchable-width #f]
-             [stretchable-height #f]))
-      
-      ;; called from drracket-button.rkt, installed via the #lang htdp/bsl (& co) reader into drscheme
+
+      ;; called from drracket-button.rkt, installed via the #lang htdp/bsl (& co) reader into drracket
       (define/public (stepper-button-callback)
-        (if stepper-frame
-            (send stepper-frame show #t)
-            (let* ([language-level
-                    (extract-language-level (get-definitions-text))]
-                   [language-level-name (language-level->name language-level)])
-              (if (or (stepper-works-for? language-level)
-                      (is-a? language-level drscheme:module-language:module-language<%>))
-                  (set! stepper-frame
-                        (go this 
-                            program-expander 
-                            (+ 1 (send (get-definitions-text) get-start-position))
-                            (+ 1 (send (get-definitions-text) get-end-position))))
-                  (message-box
-                   (string-constant stepper-name)
-                   (format (string-constant stepper-language-level-message)
-                           language-level-name))))))
+        (cond 
+          [stepper-frame (send stepper-frame show #t)]
+          [else (create-new-stepper)]))
       
-      (define stepper-button
-        (new switchable-button% 
-             [parent stepper-button-parent-panel]
-             [label (string-constant stepper-button-label)]
-             [bitmap x:foot-img/horizontal]
-             [alternate-bitmap x:foot-img/vertical]
-             [callback (lambda (dont-care) (stepper-button-callback))]))
+      ;; open a new stepper window, start it running
+      (define (create-new-stepper)
+        (let* ([language-level
+                (extract-language-level (get-defs))]
+               [language-level-name (language-level->name language-level)])
+          (if (or (stepper-works-for? language-level)
+                  (is-a? language-level drracket:module-language:module-language<%>))
+              (set! stepper-frame
+                    (go this 
+                        program-expander 
+                        (+ 1 (send (get-defs) get-start-position))
+                        (+ 1 (send (get-defs) get-end-position))))
+              (message-box
+               (string-constant stepper-name)
+               (format (string-constant stepper-language-level-message)
+                       language-level-name)))))
       
-      (register-toolbar-button stepper-button)
+      (define/override (enable-evaluation)
+        (super enable-evaluation)
+        (send (send (get-frame) get-stepper-button) enable #t))
       
-      (define/augment (enable-evaluation)
-        (send stepper-button enable #t)
-        (inner (void) enable-evaluation))
+      (define/override (disable-evaluation)
+        (super enable-evaluation)
+        (send (send (get-frame) get-stepper-button) enable #f))
       
-      (define/augment (disable-evaluation)
-        (send stepper-button enable #f)
-        (inner (void) disable-evaluation))
+      (define/public (current-lang-supports-stepper?)
+        (stepper-works-for? (extract-language-level (get-defs))))
+      
+      (define/public (notify-stepper-frame-of-change)
+        (when stepper-frame
+          (send stepper-frame original-program-changed)))
       
       (define/augment (on-close)
         (when stepper-frame
-          (send stepper-frame original-program-gone))
+            (send stepper-frame original-program-gone))
         (inner (void) on-close))
-      
-      (define/augment (on-tab-change old new)
-        (check-current-language-for-stepper)
-        (inner (void) on-tab-change old new))
-      
-      (define/public (check-current-language-for-stepper)
-        (if (stepper-works-for?
-             (extract-language-level (get-definitions-text)))
-            (unless (send stepper-button is-shown?)
-              (send (send stepper-button get-parent)
-                    add-child stepper-button))
-            (when (send stepper-button is-shown?)
-              (send (send stepper-button get-parent)
-                    delete-child stepper-button))))
-      
-      ;; add the stepper button to the button panel:
-      (send (get-button-panel) change-children 
-            (lx (cons stepper-button-parent-panel
-                      (remq stepper-button-parent-panel _))))
-      
-      ;; hide stepper button if it's not supported for the initial language:
-      (check-current-language-for-stepper)))
+
+      ))
+  
+  
   
   ;; stepper-definitions-text-mixin : a mixin for the definitions text that
   ;; alerts thet stepper when the definitions text is altered or destroyed
   (define (stepper-definitions-text-mixin %)
     (class %
       
-      (inherit get-top-level-window)
-      (define/private (notify-stepper-frame-of-change)
-        (let ([win (get-top-level-window)])
-          ;; should only be #f when win is #f
-          (when (is-a? win stepper-unit-frame<%>)
-            (let ([stepper-window (send win get-stepper-frame)])
-              (when stepper-window
-                (send stepper-window original-program-changed))))))
+      (inherit get-tab get-top-level-window)
       
       (define/augment (on-insert x y)
         (unless metadata-changing-now?
-          (notify-stepper-frame-of-change))
+          (send (get-tab) notify-stepper-frame-of-change))
         (inner (void) on-insert x y))
       
       (define/augment (on-delete x y)
         (unless metadata-changing-now?
-          (notify-stepper-frame-of-change))
+          (send (get-tab) notify-stepper-frame-of-change))
         (inner (void) on-delete x y))
       
       (define/augment (after-set-next-settings s)
         (let ([tlw (get-top-level-window)])
           (when tlw
-            (send tlw check-current-language-for-stepper)))
+            (send tlw show/hide-stepper-button)))
         (inner (void) after-set-next-settings s))
       
       (define metadata-changing-now? #f)
@@ -321,28 +358,29 @@
       
       (super-new)))
   
-  ;; apply the mixins dynamically to the drscheme unit frame and
+  ;; apply the mixins dynamically to the drracket unit frame and
   ;; definitions text:
-  (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
-  (drscheme:get/extend:extend-definitions-text stepper-definitions-text-mixin)
+  (drracket:get/extend:extend-unit-frame stepper-unit-frame-mixin)
+  (drracket:get/extend:extend-definitions-text stepper-definitions-text-mixin)
+  (drracket:get/extend:extend-tab stepper-tab-mixin)
   
-  ;; COPIED FROM drscheme/private/language.ss
+  ;; COPIED FROM drracket/private/language.ss
 ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
 (define (simple-module-based-language-convert-value value settings)
-  (case (drscheme:language:simple-settings-printing-style settings)
+  (case (drracket:language:simple-settings-printing-style settings)
     [(print) value]
     [(write trad-write) value]
     [(constructor)
      (parameterize
          ([constructor-style-printing #t]
-          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+          [show-sharing (drracket:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
     [(quasiquote)
      (parameterize
          ([constructor-style-printing #f]
-          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+          [show-sharing (drracket:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
@@ -381,19 +419,19 @@
     [(is-a? exp snip%)
      (send exp copy)]
     #;
-    [((drscheme:rep:use-number-snip) exp)
+    [((drracket:rep:use-number-snip) exp)
      (let ([number-snip-type
-            (drscheme:language:simple-settings-fraction-style
+            (drracket:language:simple-settings-fraction-style
              simple-settings)])
        (cond
          [(eq? number-snip-type 'repeating-decimal)
-          (drscheme:number-snip:make-repeating-decimal-snip exp #f)]
+          (drracket:number-snip:make-repeating-decimal-snip exp #f)]
          [(eq? number-snip-type 'repeating-decimal-e)
-          (drscheme:number-snip:make-repeating-decimal-snip exp #t)]
+          (drracket:number-snip:make-repeating-decimal-snip exp #t)]
          [(eq? number-snip-type 'mixed-fraction)
-          (drscheme:number-snip:make-fraction-snip exp #f)]
+          (drracket:number-snip:make-fraction-snip exp #f)]
          [(eq? number-snip-type 'mixed-fraction-e)
-          (drscheme:number-snip:make-fraction-snip exp #t)]
+          (drracket:number-snip:make-fraction-snip exp #t)]
          [else
           (error 'which-number-snip
                  "expected either 'repeating-decimal, 'repeating-decimal-e, 'mixed-fraction, or 'mixed-fraction-e got : ~e"

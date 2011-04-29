@@ -1,15 +1,11 @@
 #lang setup/infotab
 
-(define tools '(("stepper+xml-tool.ss")
-                ;; ("debugger-tool.ss")
-                ))
+(define drracket-tools '(("stepper+xml-tool.ss")))
 
-(define tool-names (list "The Stepper"
-                         ;; "The Debugger"
-                         ))
+(define drracket-tool-names (list "The Stepper"))
 
-(define tool-icons (list '("foot-up.png" "icons")
-                         ;; #f
-                         ))
+(define drracket-tool-icons (list '("foot-up.png" "icons")))
 
 (define compile-omit-paths '("debugger-tool.ss"))
+
+(define scribblings '(("scribblings/stepper.scrbl")))
