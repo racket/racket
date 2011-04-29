@@ -221,8 +221,8 @@
             '(struct
               local
                      
-              struct: define-struct: define-struct/exec:
-              define:
+              struct: define-struct: define-typed-struct define-struct/exec:
+              define: pdefine:
               define-type define-predicate
               match-define))
   (for-each (λ (x) 
@@ -258,13 +258,16 @@
                lambda: λ:
                plambda: opt-lambda: popt-lambda:
 
-               for for/list for/hash for/hasheq for/and for/or 
-               for/lists for/first for/last for/fold
-               for* for*/list for*/hash for*/hasheq for*/and for*/or 
-               for*/lists for*/first for*/last for*/fold                 
+               for for/list for/hash for/hasheq for/hasheqv for/and for/or 
+               for/lists for/first for/last for/fold for/vector for/flvector
+               for* for*/list for*/hash for*/hasheq for*/hasheqv for*/and for*/or 
+               for*/lists for*/first for*/last for*/fold for*/vector for*/flvector
 
-               for: for/list: for/or: for/lists: for/fold:
-               for*: for*/lists: for*/fold: do:
+               for: for/list: for/hash: for/hasheq: for/hasheqv: for/and: for/or:
+               for/lists: for/first: for/last: for/fold: for/vector: for/flvector:
+               for*: for*/list: for*/hash: for*/hasheq: for*/hasheqv: for*/and: for*/or:
+               for*/lists: for*/first: for*/last: for*/fold: for*/vector: for*/flvector:
+               do:
                
                kernel-syntax-case
                syntax-case syntax-case* syntax-rules syntax-id-rules
