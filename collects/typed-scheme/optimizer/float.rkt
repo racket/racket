@@ -67,9 +67,10 @@
   #:commit
   ;; we can convert literals right away
   (pattern (quote n)
-           #:when (exact-integer? (syntax->datum #'n))
+           #:when (and (real?  (syntax->datum #'n))
+                       (exact? (syntax->datum #'n)))
            #:with opt
-           (datum->syntax #'here (->fl (syntax->datum #'n))))
+           (datum->syntax #'here (exact->inexact (syntax->datum #'n))))
   (pattern e:fixnum-expr
            #:with opt #'(unsafe-fx->fl e.opt))
   (pattern e:int-expr
