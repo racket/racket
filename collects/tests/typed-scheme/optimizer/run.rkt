@@ -42,9 +42,10 @@
     (let ((log-string
            (with-output-to-string
              (lambda ()
-               (dynamic-require (build-path (current-load-relative-directory)
-                                            name)
-                                #f)))))
+               (parameterize ([current-namespace (make-base-empty-namespace)])
+                 (dynamic-require (build-path (current-load-relative-directory)
+                                              name)
+                                  #f))))))
       ;; have the log as an sexp, since that's what the expected log is
       (with-input-from-string (string-append "(" log-string ")")
         read))))
