@@ -42,12 +42,10 @@ static void *os_alloc_pages(MMU *mmu, size_t len, size_t alignment, int dirty_ok
   }
 #endif
 
-  mmu_memory_allocated_inc(mmu, len);
-
   /* VirtualAlloc MEM_COMMIT always zeros memory */
   return (void *)VirtualAlloc(NULL, len, 
-      MEM_COMMIT | MEM_RESERVE, 
-      PAGE_READWRITE);
+			      MEM_COMMIT | MEM_RESERVE, 
+			      PAGE_READWRITE);
 }
 
 static void os_free_pages(MMU *mmu, void *p, size_t len)
@@ -69,7 +67,6 @@ static void os_free_pages(MMU *mmu, void *p, size_t len)
   }
 #endif
 
-  mmu_memory_allocated_dec(mmu, len);
   VirtualFree(p, 0, MEM_RELEASE);
 }
 

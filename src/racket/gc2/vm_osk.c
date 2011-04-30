@@ -18,14 +18,11 @@ inline static void *os_malloc_pages(MMU *mmu, size_t len, size_t alignment, int 
   if (!dirty_ok)
   memset(p, 0, len);
 
-  mmu_memory_allocated_inc(mmu, len);
-
   return p;
 }
 
 static void os_free_pages(MMU *mmu, void *p, size_t len)
 {
-  mmu_memory_allocated_dec(mmu, len);
   sfree(p, len);
 }
 
