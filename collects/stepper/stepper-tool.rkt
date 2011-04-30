@@ -302,7 +302,7 @@
         (send (send (get-frame) get-stepper-button) enable #t))
       
       (define/override (disable-evaluation)
-        (super enable-evaluation)
+        (super disable-evaluation)
         (send (send (get-frame) get-stepper-button) enable #f))
       
       (define/public (current-lang-supports-stepper?)
@@ -314,7 +314,7 @@
       
       (define/augment (on-close)
         (when stepper-frame
-            (send stepper-frame original-program-gone))
+          (send stepper-frame original-program-gone))
         (inner (void) on-close))
 
       ))
