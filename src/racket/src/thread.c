@@ -78,7 +78,7 @@
 
 #if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
 # include <windows.h>
-extern HANDLE scheme_break_semaphore;
+THREAD_LOCAL_DECL(extern void *scheme_break_semaphore;)
 #endif
 
 #if defined(FILES_HAVE_FDS) \
@@ -3784,7 +3784,7 @@ void scheme_break_thread(Scheme_Thread *p)
   scheme_weak_resume_thread(p);
 # if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
   if (SAME_OBJ(p, scheme_main_thread))
-    ReleaseSemaphore(scheme_break_semaphore, 1, NULL);
+    ReleaseSemaphore((HANDLE)scheme_break_semaphore, 1, NULL);
 # endif
 }
 

@@ -401,7 +401,7 @@ static void register_traversers(void);
 #endif
 
 #if defined(WIN32_FD_HANDLES)
-OS_SEMAPHORE_TYPE scheme_break_semaphore;
+THREAD_LOCAL_DECL(void *scheme_break_semaphore;)
 #endif
 
 #ifdef MZ_FDS
@@ -542,7 +542,7 @@ scheme_init_port (Scheme_Env *env)
   scheme_redirect_output_port_type = scheme_make_port_type("<redirect-output-port>");
 
 #ifdef WIN32_FD_HANDLES
-  scheme_break_semaphore = CreateSemaphore(NULL, 0, 1, NULL);
+  scheme_break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
 
   /* We'll need to know whether this is Win95 or WinNT: */
   {
@@ -8549,7 +8549,7 @@ static void clean_up_wait(intptr_t result, OS_SEMAPHORE_TYPE *array,
   }
 
   /* Clear out break semaphore */
-  WaitForSingleObject(scheme_break_semaphore, 0);
+  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
 }
 
 static int made_progress;
@@ -8709,7 +8709,7 @@ static void default_sleep(float v, void *fds)
       if (!count) {
 	array = just_two_array;
       }
-      break_sema = scheme_break_semaphore;
+      break_sema = (HANDLE)scheme_break_semaphore;
       array[count++] = break_sema;
 
       /* Extensions may handle events.

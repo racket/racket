@@ -169,8 +169,12 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheme_orig_stdin_port_;
   struct mz_fd_set *scheme_fd_set_;
   struct Scheme_Custodian *new_port_cust_;
+#if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))
+  void *scheme_break_semaphore_;
+#else
   int external_event_fd_;
   int put_external_event_fd_;
+#endif
   char *read_string_byte_buffer_;
   struct ITimer_Data *itimerdata_;
   char *quick_buffer_;
@@ -490,6 +494,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_orig_stdin_port XOA (scheme_get_thread_local_variables()->scheme_orig_stdin_port_)
 #define scheme_fd_set XOA (scheme_get_thread_local_variables()->scheme_fd_set_)
 #define new_port_cust XOA (scheme_get_thread_local_variables()->new_port_cust_)
+#define scheme_break_semaphore XOA (scheme_get_thread_local_variables()->scheme_break_semaphore_)
 #define external_event_fd XOA (scheme_get_thread_local_variables()->external_event_fd_)
 #define put_external_event_fd XOA (scheme_get_thread_local_variables()->put_external_event_fd_)
 #define read_string_byte_buffer XOA (scheme_get_thread_local_variables()->read_string_byte_buffer_)
