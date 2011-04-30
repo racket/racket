@@ -9,5 +9,5 @@
 (check-docs (quote framework/framework-unit))
 (check-docs (quote framework/framework-sig))
 (check-docs (quote framework/decorated-editor-snip))
-(check-docs (quote framework/comment-snip))
-(check-docs (quote framework/collapsed-snipclass))
+(check-docs (quote framework/comment-snip) #:skip '(snip-class))
+(check-docs (quote framework/collapsed-snipclass) #:skip '(snip-class))

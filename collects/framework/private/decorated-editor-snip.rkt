@@ -5,7 +5,7 @@
 
 
 (provide editor-snip:decorated%
-         editor-snip:decorated-snipclass
+         editor-snip:decorated-snipclass%
          editor-snip:decorated-mixin
          editor-snip:decorated<%>)
 
@@ -230,7 +230,7 @@
     (super-new
      (editor (make-editor)))))
 
-(define editor-snip:decorated-snipclass
+(define editor-snip:decorated-snipclass%
   (class snip-class%
     
     ;; make-snip : stream-in -> (is-a?/c snip%)

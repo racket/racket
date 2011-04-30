@@ -4,6 +4,7 @@
 @(require (for-label scheme/gui))
 @title{Preferences, Textual}
 
-@(defmodule framework/preferences)
+@defmodule*/no-declare[(framework/preferences)]
+@declare-exporting[framework/preferences framework]
 
 @(include-extracted (lib "preferences.ss" "framework"))

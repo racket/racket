@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label racket/gui
+          (for-label framework/splash
+                     racket/gui
                      racket/base))
 @title{Splash}
 @defmodule[framework/splash]

@@ -1,6 +1,10 @@
-#lang at-exp scheme/gui
+#lang at-exp racket/base
 
-(require mred/mred-unit
+(require racket/contract
+         racket/unit
+         racket/class
+         racket/gui/base
+         mred/mred-unit
          mred/mred-sig
          framework/framework-unit
          framework/private/sig
@@ -37,7 +41,7 @@
  (prefix editor: framework:editor-class^)
  (prefix pasteboard: framework:pasteboard-class^)
  (prefix text: framework:text-class^)
- (prefix color: framework:color^)
+ (prefix color: framework:color-class^)
  (prefix color-prefs: framework:color-prefs-class^)
  (prefix comment-box: framework:comment-box-class^)
  (prefix finder: framework:finder-class^)
@@ -55,6 +59,14 @@
 
 (provide/doc
 
+ (proc-doc
+  color:get-parenthesis-colors-table 
+  (-> (listof (list/c symbol? string? (vectorof (is-a?/c color%)))))
+  @{Returns a table of colors that get used for parenthesis highlighting.
+    Each entry in the table consists of a symbolic name, a name to show
+    in a GUI, and the color to use. The colors are used to show the nesting
+    structure in the parens.})
+ 
  (proc-doc/names
   text:range? (-> any/c boolean?) (arg)
   @{Determines if @scheme[arg] is an instance of the @tt{range} struct.})
@@ -145,6 +157,11 @@
     shown in the decimal state.
     
     See also @scheme[number-snip:make-repeating-decimal-snip].})
+ 
+ (thing-doc
+  comment-box:snipclass
+  (is-a?/c snip-class%)
+  @{The @racket[snip-class%] object used by @racket[comment-box:snip%].})
 
  (proc-doc/names
   version:add-spec

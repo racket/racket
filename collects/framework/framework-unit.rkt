@@ -32,7 +32,7 @@
          "private/mode.rkt"
          "private/early-init.rkt")
 
-(provide framework-separate@ framework@)
+(provide framework@)
 
 (define-compound-unit/infer framework-separate@
   (import mred^)

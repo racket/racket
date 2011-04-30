@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@(require (for-label framework racket/gui))
+@(require (for-label framework framework/framework-unit framework/framework-sig racket/gui))
 @(require scribble/manual)
 
 @title{@bold{Framework}: Racket GUI Application Framework}
@@ -12,91 +12,8 @@ The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
 program on top of the @racket[racket/gui] library.
 
-@itemize[
-@item{@bold{Entire Framework}
-
-@itemize[
-
-@item{@racket[(require @#,racketmodname[framework])]
-
-  This library provides all of the definitions and syntax
-  described in this manual.
-}
-@item{@racket[(require framework/framework-sig)]
-  
-  This library provides the signature definitions:
-  @racket[framework^], and
-  @racket[framework-class^].
-  The @racket[framework^] signature contains all of the 
-  names of the procedures described in this manual, except
-  those that begin with @racket[test:] and
-  @racket[gui-utils:]. The @racket[framework-class^]
-  signature contains all of the classes defined in this
-  manual.
-}
-@item{@racket[(require framework/framework-unit)]
-
-  This library provides one
-  @racket[unit/sig]: @racket[framework@]. It exports the signature
-  @racket[framework^]. It imports the @racket[mred^] signature.
-
-}
-]}
-@item{
- @bold{Test Suite Engine}
-
-@racket[(require @#,racketmodname[framework/test])]
-
-This library provides all of the definitions beginning with
-@racket[test:] described in this manual.
-}
-@item{ @bold{GUI Utilities}
-@racket[(require @#,racketmodname[framework/gui-utils])]
-    
-    This libraries provides all of the definitions beginning
-    with @racket[gui-utils:] described in this manual.
-}
-@item{ @bold{Preferences}
-@racket[(require @#,racketmodname[framework/preferences])]
-    
-  This library provides a subset of the names of the
-  @tt{framework.ss} library, namely those for
-  manipulating preference settings and is designed to be
-  used from @exec{racket}.
-
-The precise set of exported names is:
-@racket[preferences:snapshot?],
-@racket[preferences:restore-prefs-snapshot],
-@racket[preferences:get-prefs-snapshot],
-@racket[exn:make-unknown-preference],
-@racket[exn:unknown-preference?],
-@racket[preferences:low-level-put-preferences],
-@racket[preferences:get],
-@racket[preferences:set],
-@racket[preferences:add-callback],
-@racket[preferences:set-default],
-@racket[preferences:set-un/marshall], and
-@racket[preferences:restore-defaults].
-}
-
-@item{@bold{Splash Screen}
-       @racket[(require @#,racketmodname[framework/splash])]
-       
-       This library provides support for a splash screen. See
-       @racketmodname[framework/splash] for more.
-}
-
-@item{@bold{Decorated Editor Snip}
-@racket[(require framework/decorated-editor-snip)]
-
-This library is here for backwards compatibility. The
-functionality in it has moved into the framework proper, in
-the @secref["editor-snip"] section.
-}
-]
 
 @bold{Thanks}
-
 Thanks to Shriram Krishnamurthi, Cormac Flanagan, Matthias
 Felleisen, Ian Barland, Gann Bierner, Richard Cobbe, Dan
 Grossman, Stephanie Weirich, Paul Steckler, Sebastian Good,
@@ -104,6 +21,40 @@ Johnathan Franklin, Mark Krentel, Corky Cartwright, Michael
 Ernst, Kennis Koldewyn, Bruce Duba, and many others for
 their feedback and help.
 
+
+@section{Framework Libraries Overview}
+
+@itemize[
+@item{Entire Framework: @racketmodname[framework]
+
+  This library provides all of the definitions and syntax
+  described in this manual.
+}
+ 
+@item{Test Suite Engine: @racketmodname[framework/test]
+
+This library provides all of the definitions beginning with
+@racket[test:] described in this manual.
+}
+
+@item{GUI Utilities @racketmodname[framework/gui-utils]
+
+    This libraries provides all of the definitions beginning
+    with @racket[gui-utils:] described in this manual.
+}
+@item{Preferences @racketmodname[framework/preferences]
+    
+  This library provides a subset of the names of the
+  @racketmodname[framework] library, namely those for
+  manipulating preference settings and is designed to be
+  used from @exec{racket}.
+}
+
+@item{Splash Screen @racketmodname[framework/splash]  
+       This library provides support for a splash screen. See
+       @racketmodname[framework/splash] for more.
+}]
+        
 @include-section["application.scrbl"]
 @include-section["autosave.scrbl"]
 @include-section["canvas.scrbl"]
@@ -111,6 +62,29 @@ their feedback and help.
 @include-section["color-prefs.scrbl"]
 @include-section["color.scrbl"]
 @include-section["comment-box.scrbl"]
+
+@section{Decorated Editor Snip}
+
+@defmodule[framework/decorated-editor-snip]
+
+This library is here for backwards compatibility. The
+functionality in it has moved into the framework proper, in
+the @secref["editor-snip"] section.
+
+ @defidform[decorated-editor-snip%]{
+    Use @racket[editor-snip:decorated%] instead.
+  }
+ @defidform[decorated-editor-snipclass%]{
+    Use @racket[editor-snip:decorated-snipclass%] instead.
+  }
+ @defidform[decorated-editor-snip-mixin]{
+    Use @racket[editor-snip:decorated-mixin] instead.
+  }
+ @defidform[decorated-editor-snip<%>]{
+    Use @racket[editor-snip:decorated<%>] instead.
+  }
+
+
 @include-section["editor-snip.scrbl"]
 @include-section["editor.scrbl"]
 @include-section["exit.scrbl"]
@@ -134,5 +108,30 @@ their feedback and help.
 @include-section["splash.scrbl"]
 @include-section["test.scrbl"]
 @include-section["version.scrbl"]
+
+@section{Signatures}
+
+@defmodule[framework/framework-sig]
+
+@defsignature[framework^ ()]{
+  Contains of the names of the procedures in this
+  manual, except   those that begin with @racket[test:] and
+  @racket[gui-utils:]. 
+}
+
+
+@defsignature[framework-class^ ()]{
+  Contains all of the classes defined in this
+  manual.
+}
+
+@section{Unit}
+
+@defmodule[framework/framework-unit]
+
+@defthing[framework@ unit?]{
+  Exports the signature
+  @racket[framework^] and imports the @racket[mred^] signature.
+}
 
 @index-section[]

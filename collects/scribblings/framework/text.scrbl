@@ -1173,6 +1173,7 @@
 @defclass[text:basic% (text:basic-mixin (editor:basic-mixin text%)) ()]{}
 @defclass[text:hide-caret/selection% (text:hide-caret/selection-mixin text:basic%) ()]{}
 @defclass[text:nbsp->space% (text:nbsp->space-mixin text:basic%) ()]{}
+@defclass[text:normalize-paste% (text:normalize-paste-mixin text:basic%) ()]{}
 @defclass[text:delegate% (text:delegate-mixin text:basic%) ()]{}
 @defclass[text:wide-snip% (text:wide-snip-mixin text:basic%) ()]{}
 @defclass[text:standard-style-list% (editor:standard-style-list-mixin text:wide-snip%) ()]{}

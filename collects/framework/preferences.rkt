@@ -30,8 +30,6 @@ the state transitions / contracts are:
          racket/contract racket/file)
 (require/doc racket/base scribble/manual (for-label racket/serialize))
 
-(provide exn:struct:unknown-preference)
-
 (define-struct (exn:unknown-preference exn) ())
 
 ;; these two names are for consistency
@@ -495,6 +493,12 @@ the state transitions / contracts are:
   (any/c . -> . boolean?)
   (exn)
   @{Determines if a value is an unknown preference exn.})
+ 
+ (thing-doc
+  exn:struct:unknown-preference
+  struct-type?
+  @{The struct type for the unknown preference exn.})
+
  
  (parameter-doc
   preferences:low-level-put-preferences

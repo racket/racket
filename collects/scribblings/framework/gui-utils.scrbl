@@ -1,7 +1,9 @@
 #lang scribble/doc
-@(require scribble/manual scribble/extract)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
+@(require scribble/manual scribble/extract
+          (for-label framework racket/gui))
 @title{GUI Utilities}
-@(defmodule framework/gui-utils)
+
+@defmodule*/no-declare[(framework/gui-utils)]
+@declare-exporting[framework/gui-utils framework]
+
 @(include-extracted (lib "gui-utils.ss" "framework"))

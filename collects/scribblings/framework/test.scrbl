@@ -4,7 +4,8 @@
 @(require (for-label scheme/gui))
 @title{Test}
 
-@(defmodule framework/test)
+@defmodule*/no-declare[(framework/test)]
+@declare-exporting[framework/test framework]
 
 The framework provides several new primitive functions that simulate
 user actions, which may be used to test applications.  You use these

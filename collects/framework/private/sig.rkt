@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
   
   (require scheme/unit)
   
@@ -12,9 +12,9 @@
      make-fraction-snip))
   
   (define-signature comment-box-class^
-    (snipclass snip%))
+    (snip%))
   (define-signature comment-box^ extends comment-box-class^
-    ())
+    (snipclass))
   
   (define-signature menu-class^
     (can-restore<%>
