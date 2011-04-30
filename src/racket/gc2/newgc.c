@@ -1482,6 +1482,9 @@ void GC_adopt_message_allocator(void *param) {
     }
   }
   free(msgm);
+
+  /* Adopted enough to trigger a GC? */
+  gc_if_needed_account_alloc_size(gc, 0);
 }
 
 uintptr_t GC_message_allocator_size(void *param) {
@@ -4422,13 +4425,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
   if (!gc->run_queue)
     next_gc_full = 0;
 
-  /* run any queued finalizers, EXCEPT in the case where this collection was
-     triggered by the execution of a finalizer. The outside world needs this
-     invariant in some corner case I don't have a reference for. In any case,
-     if we run a finalizer after collection, and it triggers a collection,
-     we should not run the next finalizer in the queue until the "current"
-     finalizer completes its execution */
-  if(!gc->running_finalizers) {
+  /* Run any queued finalizers, EXCEPT in the case where this
+     collection was triggered during the execution of a finalizer.
+     Without the exception, finalization effectively becomes
+     concurrent (since allocation in a finalizer can trigger a GC 
+     that starts another finalizer). */
+  if (!gc->running_finalizers) {
     gc->running_finalizers = 1;
 
     /* Finalization might allocate, which might need park: */
@@ -4458,7 +4460,8 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
     gc->park[1] = gc->park_save[1];
     gc->park_save[0] = NULL;
     gc->park_save[1] = NULL;
-  }
+  } else
+    next_gc_full = 0;
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 
