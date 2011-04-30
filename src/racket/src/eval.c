@@ -543,7 +543,7 @@ void scheme_init_stack_check()
 
 # ifdef WINDOWS_FIND_STACK_BOUNDS
     scheme_stack_boundary = scheme_get_current_os_thread_stack_base();
-    scheme_stack_boundary += (STACK_SAFETY_MARGIN - 0x100000);
+    scheme_stack_boundary += (STACK_SAFETY_MARGIN - WINDOWS_DEFAULT_STACK_SIZE);
 # endif
 
 # ifdef MACOS_FIND_STACK_BOUNDS

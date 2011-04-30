@@ -75,6 +75,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -160,6 +161,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -249,6 +251,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -338,6 +341,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -427,6 +431,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -516,6 +521,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"

@@ -532,6 +532,12 @@
 
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
+/* This value needs to be consistent with the
+   stack size specified at link time: */
+# define WINDOWS_DEFAULT_STACK_SIZE 8388608
+# ifdef _WIN64
+#  define STACK_SAFETY_MARGIN 100000
+# endif
 
 # ifndef _WIN64
 #  define USE_MZ_SETJMP

@@ -77,6 +77,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -157,6 +158,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 			/>
@@ -243,6 +245,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"
@@ -325,6 +328,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
+				StackReserveSize="8388608"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="17"

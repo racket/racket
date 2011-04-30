@@ -228,6 +228,7 @@
 	    (map (lambda (f) (build-path "../../racket/" f))
 		 '("include/scheme.h"
 		   "include/schthread.h"
+		   "sconfig.h"
 		   "src/schpriv.h"
 		   "src/stypes.h"))
 	    (map (lambda (f) (build-path "../../racket/gc2/" f))
@@ -260,10 +261,9 @@
 	     (> (file-or-directory-modify-seconds f)
 		ms))
 	   objs)
-      (unless (system- (format "~a ~a ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a"
+      (unless (system- (format "~a ~a /MT /Zi /Fe~a ~a ~a /link ~a~a~a~a~a"
 			       cl.exe
 			       (if exe? "" "/LD /DLL")
-			       (if win64? "/MACHINE:x64" "")
 			       dll
 			       (let loop ([objs (append objs sys-libs)])
 				 (if (null? objs)
@@ -282,6 +282,8 @@
 				      " "
 				      (loop (cdr delayloads)))))
 			       link-options
+			       (if exe? " /STACK:8388608" "")
+			       (if win64? " /MACHINE:x64" "")
 			       (let ([s (regexp-match "^(.*)/([a-z0-9]*)[.]dll$" dll)])
 				 (if s
 				     (format " /IMPLIB:~a/msvc/~a.lib"
