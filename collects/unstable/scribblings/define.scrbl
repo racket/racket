@@ -70,16 +70,22 @@ y
 
 @section{Renaming Definitions}
 
-@defform[(define-renamings [new old] ...)]{
+@deftogether[(
+@defform[(define-renaming new old)]
+@defform[(define-renamings [new old] ...)]
+)]{
 
-Establishes a rename transformer for each @scheme[new] identifier,
-redirecting it to the corresponding @scheme[old] identifier.
+Establishes a
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{rename transformer}
+for each @scheme[new] identifier, redirecting it to the corresponding
+@scheme[old] identifier.
 
 @defexamples[
 #:eval (eval/require 'unstable/define)
+(define-renaming use #%app)
 (define-renamings [def define] [lam lambda])
-(def plus (lam (x y) (+ x y)))
-(plus 1 2)
+(def plus (lam (x y) (use + x y)))
+(use plus 1 2)
 ]
 
 }
