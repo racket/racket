@@ -106,7 +106,7 @@
               (if  
                ;; if s is optional, t must be as well
                (or rs (not rt))
-               (loop (subtype A tt ts) rest-t rest-s)
+               (loop (subtype* A tt ts) rest-t rest-s)
                (fail! t s))]
              ;; extra keywords in t are ok
              ;; we just ignore them

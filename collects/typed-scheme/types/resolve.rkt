@@ -39,8 +39,8 @@
          (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator rands))
        (let ([r (resolve-name rator)])
          (and r  (resolve-app r rands stx)))]
-      [(Mu: _ _) (resolve-app (unfold rator) rands)]
-      [(App: r r* s) (resolve-app (resolve-app r r* s) rands)]
+      [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
+      [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
       [_ (tc-error "cannot apply a non-polymorphic type: ~a" rator)])))
 
 (define (needs-resolving? t)
