@@ -1,6 +1,7 @@
-#lang scheme
+#lang racket/base
 
-(require (prefix-in mred: mred)
+(require racket/gui/base
+         (for-syntax racket/base)
          mzlib/class
          mzlib/class100
          mzlib/list
@@ -15,10 +16,8 @@
          
          save-turtle-bitmap
          
-         splitfn split*fn tpromptfn
          turtle-window-size
          
-         display-lines-in-drawing
          split split* tprompt)
 
 (define turtles:window #f)
@@ -27,11 +26,11 @@
 (define pi 3.141592653589793)
 (define pi/2 (/ pi 2))
 
-(define icon-pen (send mred:the-pen-list find-or-create-pen "SALMON" 1 'xor))
-(define icon-brush (send mred:the-brush-list find-or-create-brush "SALMON" 'xor))
-(define blank-pen (send mred:the-pen-list find-or-create-pen "BLACK" 1 'transparent))
-(define w-pen (send mred:the-pen-list find-or-create-pen "white" 1 'solid))
-(define b-pen (send mred:the-pen-list find-or-create-pen "black" 1 'solid))
+(define icon-pen (send the-pen-list find-or-create-pen "SALMON" 1 'solid))
+(define icon-brush (send the-brush-list find-or-create-brush "SALMON" 'solid))
+(define blank-pen (send the-pen-list find-or-create-pen "BLACK" 1 'transparent))
+(define w-pen (send the-pen-list find-or-create-pen "white" 1 'solid))
+(define b-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
 
 (define show-turtle-icons? #t)
 
@@ -39,17 +38,17 @@
 (define turtle-style 'triangle)
 
 (define plot-window%
-  (class100 mred:frame% (name width height)
+  (class100 frame% (name width height)
     
     (private-field
-     [bitmap (make-object mred:bitmap% width height #t)])      
+     [bitmap (make-bitmap width height)])      
     
     (inherit show)
     (private-field
-     [memory-dc (make-object mred:bitmap-dc%)]
-     [pl (make-object mred:point% 0 0)]
-     [pr (make-object mred:point% 0 0)]
-     [ph (make-object mred:point% 0 0)]
+     [memory-dc (make-object bitmap-dc%)]
+     [pl (make-object point% 0 0)]
+     [pr (make-object point% 0 0)]
+     [ph (make-object point% 0 0)]
      [points (list pl pr ph)])
     (public
       [get-canvas
@@ -103,20 +102,21 @@
     (sequence
       (send memory-dc set-bitmap bitmap)
       (send memory-dc clear)
+      (send memory-dc set-smoothing 'aligned)
       (super-init name #f width height))
     
     (public
       [on-menu-command (lambda (op) (turtles #f))])
     (private-field
-     [menu-bar (make-object mred:menu-bar% this)]
-     [file-menu (make-object mred:menu% "File" menu-bar)])
+     [menu-bar (make-object menu-bar% this)]
+     [file-menu (make-object menu% "File" menu-bar)])
     (sequence 
-      (make-object mred:menu-item%
+      (make-object menu-item%
                    "Print"
                    file-menu
                    (lambda (_1 _2)
                      (print)))
-      (make-object mred:menu-item%
+      (make-object menu-item%
                    "Close"
                    file-menu
                    (lambda (_1 _2)
@@ -128,8 +128,8 @@
          (send bitmap save-file fn type))])
     
     (private-field
-     [canvas% 
-      (class100 mred:canvas% args
+     [t-canvas% 
+      (class100 canvas% args
         (inherit get-dc)
         (override
           [on-paint
@@ -139,7 +139,7 @@
                (send dc draw-bitmap (send memory-dc get-bitmap) 0 0)
                (flip-icons)))])
         (sequence (apply super-init args)))]
-     [canvas (make-object canvas% this)]
+     [canvas (make-object t-canvas% this)]
      [dc (send canvas get-dc)])
     
     (public
@@ -159,7 +159,7 @@
       (send this clear))))
 
 (define turtle-window-size
-  (let-values ([(w h) (mred:get-display-size)]
+  (let-values ([(w h) (get-display-size)]
                [(user/client-offset) 65]
                [(default-size) 800])
     (min default-size
@@ -449,7 +449,7 @@
 ;; used to test printing
 (define (display-lines-in-drawing)
   (let* ([lines-in-drawing-canvas%
-          (class100 mred:canvas% (frame)
+          (class100 canvas% (frame)
             (inherit get-dc)
             (override
               [on-paint
@@ -457,30 +457,30 @@
                  (draw-lines-into-dc (get-dc)))])
             (sequence
               (super-init frame)))]
-         [frame (make-object mred:frame% "Lines in Drawing")]
+         [frame (make-object frame% "Lines in Drawing")]
          [canvas (make-object lines-in-drawing-canvas% frame)])
     (send frame show #t)))
 
 
 (define (print)
   (case (system-type)
-    [(macos macosx windows)
-     (let ([dc (make-object mred:printer-dc%)])
+    [(macosx windows)
+     (let ([dc (make-object printer-dc%)])
        (send dc start-doc "Turtles")
        (send dc start-page)
        (draw-lines-into-dc dc)
        (send dc end-page)
        (send dc end-doc))]
     [(unix)
-     (let ([dc (make-object mred:post-script-dc%)])
+     (let ([dc (make-object post-script-dc%)])
        (send dc start-doc "Turtles")
        (send dc start-page)
        (draw-lines-into-dc dc)
        (send dc end-page)
        (send dc end-doc))]
     [else
-     (mred:message-box "Turtles"
-                       "Printing is not supported on this platform")]))
+     (message-box "Turtles"
+                  "Printing is not supported on this platform")]))
 
 
 (define-syntaxes (split)

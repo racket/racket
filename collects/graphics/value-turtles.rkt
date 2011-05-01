@@ -5,7 +5,7 @@
            (all-except mzlib/list merge)
            mzlib/struct)
 
-  (provide turtles move draw turn turn/radians merge clean)
+  (provide turtles move draw turn turn/radians merge clean turtles?)
 
   ;; a turtle is:
   ;; - (make-turtle x y theta)
@@ -338,6 +338,8 @@
                 (quotient width 2)
                 (quotient height 2)
                 0)]))
+  
+  (define (turtles? x) (is-a? x turtle-snip%))
   
   (define (move d tv) (send tv move-op d))
   (define (draw d tv) (send tv draw-op d))

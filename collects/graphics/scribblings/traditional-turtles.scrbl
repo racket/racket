@@ -10,20 +10,20 @@
 @defproc*[([(turtles [on? any/c]) void?]
            [(turtles) void?])]{
 
-Shows and hides the turtles window based on @scheme[on?]. If
-@scheme[on?] is not supplied, the state is toggled.}
+Shows and hides the turtles window based on @racket[on?]. If
+@racket[on?] is not supplied, the state is toggled.}
 
 @defproc[(move [n real?]) void?]{
 
-Moves the turtle @scheme[n] pixels without drawing.}
+Moves the turtle @racket[n] pixels without drawing.}
 
 @defproc[(draw [n real?]) void?]{
 
-Moves the turtle @scheme[n] pixels and draws a line on the path.}
+Moves the turtle @racket[n] pixels and draws a line on the path.}
 
 @defproc[(erase [n real?]) void?]{
 
-Moves the turtle @scheme[n] pixels and erase along the path.}
+Moves the turtle @racket[n] pixels and erase along the path.}
 
 @deftogether[(
 @defproc[(move-offset [h real?][v real?]) void?]
@@ -31,17 +31,17 @@ Moves the turtle @scheme[n] pixels and erase along the path.}
 @defproc[(erase-offset [h real?][v real?]) void?]
 )]{
 
-Like @scheme[move], @scheme[draw], and @scheme[erase], but using a
+Like @racket[move], @racket[draw], and @racket[erase], but using a
 horizontal and vertical offset from the turtle's current position.}
 
 
 @defproc[(turn [theta real?]) void?]{
  
-Turns the turtle @scheme[theta] degrees counter-clockwise.}
+Turns the turtle @racket[theta] degrees counter-clockwise.}
 
 @defproc[(turn/radians [theta real?]) void?]{
 
-Turns the turtle @scheme[theta] radians counter-clockwise.}
+Turns the turtle @racket[theta] radians counter-clockwise.}
 
 @defproc[(clear) void?]{
 
@@ -55,17 +55,17 @@ Leaves only one turtle, in the start position.}
 
 Spawns a new turtle where the turtle is currently located. In order to
 distinguish the two turtles, only the new one evaluates
-@scheme[expr]. For example, if you start with a fresh turtle-window
-and type:
+@racket[expr]. For example, if you start with a fresh turtle-window
+and evaluate:
 
-@schemeblock[
+@racketblock[
 (split (turn/radians (/ pi 2)))
 ]
 
 you will have two turtles, pointing at right angles to each
 other. Continue with 
 
-@schemeblock[
+@racketblock[
 (draw 100)
 ]
 
@@ -74,34 +74,34 @@ again, you will have four turtles, etc.}
 
 @defform[(split* expr ...)]{
 
-Like @scheme[(split expr ...)], except that one turtle is created for
-each @scheme[expr].
+Like @racket[(split expr ...)], except that one turtle is created for
+each @racket[expr].
 
 For example, to create two turtles, one pointing at @math["\u3C0/2"]
 and one at @math["\u3C0/3"], evaluate
 
-@schemeblock[
+@racketblock[
  (split* (turn/radians (/ pi 3)) (turn/radians (/ pi 2)))
 ]}
 
 @defform[(tprompt expr ...)]{
 
-Limits the splitting of the turtles. Before@scheme[expr] is evaluated,
+Limits the splitting of the turtles. Before@racket[expr] is evaluated,
 the state of the turtles (how many, their positions and headings) is
-``checkpointed.'' Then @scheme[expr] is evaluated, and then the state
+``checkpointed.'' Then @racket[expr] is evaluated, and then the state
 of the turtles is restored, but all drawing that may have occurred
-during execution of @scheme[expr] remains.
+during execution of @racket[expr] remains.
 
 For example
 
-@schemeblock[
+@racketblock[
 (tprompt (draw 100))
 ]
 
 moves a turtle forward 100 pixel while drawing a line, and then moves
 the turtle be immediately back to its original position. Similarly,
 
-@schemeblock[
+@racketblock[
 (tprompt (split (turn/radians (/ pi 2))))
 ]
 
@@ -109,7 +109,17 @@ splits the turtle into two, rotates one 90 degrees, and then
 collapses back to a single turtle.
 
 The fern functions below demonstrate more advanced use of
-@scheme[tprompt].}
+@racket[tprompt].}
+
+@defproc[(save-turtle-bitmap [name (or/c path-string? output-port?)]
+                             [kind (or/c 'png 'jpeg 'xbm 'xpm 'bmp)])
+         void?]{
+  Saves the current state of the turtles window in an image file.                
+}
+               
+@defthing[turtle-window-size exact-positive-integer?]{
+  The size of the turtles window.                                                      
+} 
 
 @; ----------------------------------------
 
@@ -117,19 +127,19 @@ The fern functions below demonstrate more advanced use of
 
 @defmodule[graphics/turtle-examples]
 
-The @schememodname[graphics/turtle-examples] library's source is meant
+The @racketmodname[graphics/turtle-examples] library's source is meant
 to be read, but it also exports the following examples.
 
 @defproc[(regular-poly [sides exact-nonnegative-integer?] [radius real?])
          void?]{
 
-Draws a regular poly centered at the turtle with @scheme[sides] sides
-and with radius @scheme[radius].}
+Draws a regular poly centered at the turtle with @racket[sides] sides
+and with radius @racket[radius].}
 
 @defproc[(regular-polys [n exact-nonnegative-integer?] [s any/c])
          void?]{
 
-Draws @scheme[n] regular polys each with @scheme[n] sides centered at
+Draws @racket[n] regular polys each with @racket[n] sides centered at
 the turtle.}
 
 @defproc[(radial-turtles [n exact-nonnegative-integer?]) void?]{
@@ -143,8 +153,13 @@ same direction as the original turtle.}
 
 @defproc[(spokes) void?]{
  
-Draws some spokes, using @scheme[radial-turtles] and
-@scheme[spaced-turtles].}
+Draws some spokes, using @racket[radial-turtles] and
+@racket[spaced-turtles].}
+
+@defproc[(gapped-lines) void?]{
+   Draw a bunch of parallel line segments, using 
+   @racket[spaced-turtles].
+}
 
 @defproc[(spyro-gyra) void?]{
  
@@ -155,12 +170,12 @@ Draws a spyro-grya reminiscent shape.}
 As the name says...}
 
 @defproc[(graphics-bexam) void?]{
-  
-Draws a fractal that came up on an exam that the author took.}
+  Draws a fractal that came up on an exam given at Rice in 1997 or so.
+}
 
 @defthing[serp-size real?]{
  
-A constant that is a good size for the @scheme[serp] procedures.}
+A constant that is a good size for the @racket[serp] procedures.}
 
 @deftogether[(
 @defproc[(serp [serp-size real?]) void?]
@@ -168,17 +183,17 @@ A constant that is a good size for the @scheme[serp] procedures.}
 )]{
 
 Draws the @as-index{Serpinski triangle} in two different ways, the
-first using @scheme[split] heavily. After running the first one, try
-executing @scheme[(draw 10)].}
+first using @racket[split] heavily. After running the first one, try
+executing @racket[(draw 10)].}
 
 
 @defthing[koch-size real?]{
 
-A constant that is a good size for the @scheme[koch] procedures.}
+A constant that is a good size for the @racket[koch] procedures.}
 
 @deftogether[(
-@defproc[(koch [koch-size real?]) void?]
-@defproc[(koch-nosplit [koch-size real?]) void?]
+@defproc[(koch-split [koch-size real?]) void?]
+@defproc[(koch-draw [koch-size real?]) void?]
 )]{
 
 Draws the same @as-index{Koch snowflake} in two different ways.}
@@ -186,23 +201,28 @@ Draws the same @as-index{Koch snowflake} in two different ways.}
 @defproc[(lorenz [a real?] [b real?] [c real?]) void?]{
 
 Watch the @as-index{Lorenz attractor} (a.k.a. @as-index{butterfly attractor})
-initial values @scheme[a], @scheme[b], and @scheme[c].}
+initial values @racket[a], @racket[b], and @racket[c].}
 
 @defproc[(lorenz1) void?]{
 
-Calls @scheme[lorenze] with good initial values.}
+Calls @racket[lorenze] with good initial values.}
 
-@deftogether[(
-@defproc[(peano1 [peano-size real?]) void?]
-@defproc[(peano2 [peano-size real?]) void?]
-)]{
+@defproc[(peano [peano-size real?]) void?]{
+  Draws the @as-index{Peano space-filling curve}.
+}
 
-Draws the @as-index{Peano space-filling curve}, where @scheme[peano1] uses
-@scheme[split].}
+@defproc[(peano-position-turtle) void?]{
+  Moves the turtle to a good place to prepare for
+  a call to @racket[peano].
+}
+
+@defthing[peano-size exact-nonnegative-integer?]{
+  One size to use with @racket[peano].                                                 
+}
 
 @defthing[fern-size exact-nonnegative-integer?]{
 
-A good size for the @scheme[fern1] and @scheme[fern2] functions.}
+A good size for the @racket[fern1] and @racket[fern2] functions.}
 
 @deftogether[(
 @defproc[(fern1 [fern-size exact-nonnegative-integer?]) void?]
@@ -211,12 +231,12 @@ A good size for the @scheme[fern1] and @scheme[fern2] functions.}
 
 Draws a @as-index{fern fractal}.
 
-For @scheme[fern1], you will probably want to point the turtle up
+For @racket[fern1], you will probably want to point the turtle up
 before running this one, with something like:
 
-@schemeblock[
+@racketblock[
 (turn/radians (- (/ pi 2)))
 ]
 
-For @scheme[fern2], you may need to backup a little.}
+For @racket[fern2], you may need to backup a little.}
 
