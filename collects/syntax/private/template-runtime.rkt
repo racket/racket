@@ -81,7 +81,11 @@
      [(prefab? tmap)
       (d->s (car data)
             stx
-            (loop (prefab-fields tmap)
-                  (cdr data)
-                  (struct->list (syntax-e stx))))]
+            (apply
+             make-prefab-struct
+             (prefab-struct-key (syntax-e stx))
+             (loop (prefab-fields tmap)
+                   (cdr data)
+                   (struct->list (syntax-e stx))
+                   pcons)))]
      [else (error "template-map-apply fallthrough")])))

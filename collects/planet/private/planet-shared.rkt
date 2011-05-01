@@ -442,12 +442,12 @@ Various common pieces of code that both the client and server need to access
   (define (copy-n-chars n ip op)
     (let ((cport (make-cutoff-port ip 
                                    n
-                                   (lambda ()
+                                   (lambda (m)
                                      (raise 
                                       (make-exn:fail:read:eof
                                        (format "Not enough chars on input (expected ~a, got ~a)" 
                                                n 
-                                               (- n 0))
+                                               m)
                                        (current-continuation-marks)
                                        ip))))))
       (copy-port cport op)))

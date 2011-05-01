@@ -341,7 +341,7 @@
                         (send/resp (list 'DONE result)))
                     (define (send/errorp message)
                         (send/resp (list 'ERROR message)))
-                    (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop))])
+                    (with-handlers ([exn:fail? (lambda (x) (send/errorp (exn-message x)) (loop (add1 i)))])
                       (parameterize ([current-output-port out-str-port]
                                      [current-error-port err-str-port])
                       (syntax-parameterize ([send/msg (make-rename-transformer #'send/msgp)]

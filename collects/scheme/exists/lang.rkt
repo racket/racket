@@ -7,7 +7,11 @@
 (define runtime-predicates
   (let ([fn (build-path (collection-path "scheme")
                         "compiled" 
-                        "main_rkt.zo")])
+                        "main_rkt.zo")]
+        [ns (make-base-namespace)])
+    (namespace-attach-module (current-namespace) 'scheme ns)
+    (parameterize ([current-namespace ns])
+      (namespace-require 'scheme))
     (let-values ([(vars stx)
                   (module-compiled-exports
                    (parameterize ([read-accept-compiled #t])
@@ -16,7 +20,10 @@
        (filter (λ (sym) 
                  (let ([str (symbol->string sym)])
                    (and (regexp-match #rx"[?]$" str)
-                        (not (regexp-match #rx"[=<>][?]$" str)))))
+                        (not (regexp-match #rx"[=<>][?]$" str))
+                        (procedure-arity-includes? 
+                         (namespace-variable-value sym #t #f ns)
+                         1))))
                (map car (cdr (assoc 0 vars))))
        string<=?
        #:key symbol->string))))
@@ -24,7 +31,6 @@
 (define-for-syntax predicates
   '(absolute-path?
     arity-at-least?
-    bitwise-bit-set?
     blame-original?
     blame-swapped?
     blame?
@@ -39,7 +45,6 @@
     channel?
     chaperone-contract-property?
     chaperone-contract?
-    chaperone-of?
     chaperone?
     char-alphabetic?
     char-blank?
@@ -64,12 +69,9 @@
     continuation-prompt-available?
     continuation-prompt-tag?
     continuation?
-    contract-first-order-passes?
     contract-property?
-    contract-stronger?
     contract?
     custodian-box?
-    custodian-memory-accounting-available?
     custodian?
     custom-print-quotable?
     custom-write?
@@ -80,9 +82,6 @@
     empty?
     eof-object?
     ephemeron?
-    eq?
-    equal?
-    eqv?
     even?
     evt?
     exact-integer?
@@ -126,44 +125,35 @@
     hash-eq?
     hash-equal?
     hash-eqv?
-    hash-has-key?
     hash-placeholder?
     hash-weak?
     hash?
     identifier?
     immutable?
-    impersonator-of?
     impersonator-property-accessor-procedure?
     impersonator-property?
     impersonator?
-    implementation?
     inexact-real?
     inexact?
     input-port?
     inspector?
     integer?
-    interface-extension?
     interface?
     internal-definition-context?
-    is-a?
     keyword?
     link-exists?
     list?
-    log-level?
     log-receiver?
     logger?
     member-name-key?
-    method-in-interface?
     module-path-index?
     module-path?
-    module-provide-protected?
     mpair?
     namespace-anchor?
     namespace?
     negative?
     null?
     number?
-    object-method-arity-includes?
     object?
     odd?
     output-port?
@@ -176,7 +166,6 @@
     placeholder?
     port-closed?
     port-provides-progress-evts?
-    port-try-file-lock?
     port-writes-atomic?
     port-writes-special?
     port?
@@ -185,9 +174,7 @@
     pretty-print-style-table?
     primitive-closure?
     primitive?
-    procedure-arity-includes?
     procedure-arity?
-    procedure-closure-contents-eq?
     procedure-struct-type?
     procedure?
     promise-forced?
@@ -197,8 +184,6 @@
     rational?
     readtable?
     real?
-    regexp-match-exact?
-    regexp-match?
     regexp?
     relative-path?
     rename-transformer?
@@ -220,16 +205,12 @@
     struct-type-property?
     struct-type?
     struct?
-    subclass?
     subprocess?
     symbol-interned?
     symbol-unreadable?
     symbol?
-    syntax-local-transforming-module-provides?
     syntax-original?
-    syntax-transforming?
     syntax?
-    system-big-endian?
     tcp-accept-ready?
     tcp-listener?
     tcp-port?

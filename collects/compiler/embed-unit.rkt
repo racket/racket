@@ -468,8 +468,8 @@
                                   ;; Record module as copied
                                   (set-box! codes
                                             (cons (make-mod filename module-path #f
-                                                            #f #f #f #f 
-                                                            null null
+                                                            #f #f #f
+                                                            null null null
                                                             actual-filename)
                                                   (unbox codes))))
                                 ;; Build up relative module resolutions, relative to this one,
@@ -513,7 +513,7 @@
                     (set-box! codes
                               (cons (make-mod filename module-path code 
                                               name #f #f
-                                              null null
+                                              null null null
                                               actual-filename)
                                     (unbox codes)))])))))))
     

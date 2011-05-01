@@ -31,5 +31,6 @@
 (load-in-sandbox "kw.rktl")
 (load-in-sandbox "macrolib.rktl")
 (load-in-sandbox "resource.rktl")
+(load-in-sandbox "syntaxlibs.rktl")
 
 (report-errs)
