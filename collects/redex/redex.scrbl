@@ -2344,7 +2344,7 @@ single reduction relation.
   @racket[(λ (l) (apply vc-append 20 l))]
 }
 
-@section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
+@subsection[#:tag "pink"]{Removing the Pink Background}
 
 @declare-exporting[redex/pict redex]
 
@@ -2431,9 +2431,6 @@ explanation of logical-space):
     actual space in the typeset version.
 }]
 }
-
-
-@subsection{LW}
 
 @deftogether[[
 @defproc[(build-lw [e (or/c string?
