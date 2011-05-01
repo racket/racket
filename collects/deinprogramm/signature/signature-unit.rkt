@@ -195,8 +195,8 @@
 	   (if (andmap eq? orig els)
 	       obj
 	       (let ((new (list->vector els)))
-		 (hash-set! vectors-table obj new old-sigs)
-		 obj)))))
+		 (hash-set! vectors-table obj old-sigs)
+		 new)))))
 
      (cond
       ((not (vector? obj))

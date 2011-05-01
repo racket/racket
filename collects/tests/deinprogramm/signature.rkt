@@ -88,8 +88,11 @@
  
    (test-case
     "vector"
-    (define integer-vector (make-vector-signature 'integer-list integer #f))
+    (define integer-vector (make-vector-signature 'integer-vector integer #f))
+    (define a-vector (make-vector-signature 'a-vector %a #f))
     (check-equal? (say-no (apply-signature integer-vector '#(1 2 3)))
+		  '#(1 2 3))
+    (check-equal? (say-no (apply-signature a-vector '#(1 2 3)))
 		  '#(1 2 3))
     (check-equal? (say-no (apply-signature integer-vector '#f))
 		  'no)
