@@ -111,9 +111,9 @@ Single-Flonum-Zero
 )]{These types represent the hierarchy of @rtech{numbers} of Racket.
 @racket[Integer] includes only @rtech{integers} that are @rtech{exact
 numbers}, corresponding to the predicate @racket[exact-integer?].
-@racket{Real} includes both exact and inexact reals.
-An @racket{Inexact-Real} can be either 32- or 64-bit floating-point
-numbers. @racket{Float} is restricted to 64-bit floats, which are the
+@racket[Real] includes both exact and inexact reals.
+An @racket[Inexact-Real] can be either 32- or 64-bit floating-point
+numbers. @racket[Float] is restricted to 64-bit floats, which are the
 default in Racket.
 
 @ex[
@@ -785,6 +785,12 @@ Guard the body with assertions. If any of the assertions fail, the
 program errors. These assertions behave like @racket[assert].
 }
 
+
+@defproc[(defined? [v any/c]) boolean?]{A predicate for determining if
+@racket[v] is @emph{not} @|undefined-const|.}
+
+@defproc[(index? [v any/c]) boolean?]{A predicate for the @racket[Index]
+type.}
 
 @section{Typed Racket Syntax Without Type Checking}
 
