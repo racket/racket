@@ -72,24 +72,21 @@ This is a reference manual for Redex. See
 for a gentler overview. (See also the @tt{examples} subdirectory in
 the @tt{redex} collection.)
 
-To load Redex use: @defmodule[redex] which provides all of
+To load Redex use: @defmodule*/no-declare[(redex)] which provides all of
 the names documented in this library.
 
-The module @racketmodname[redex/reduction-semantics]
-provides only the non-GUI portions of what is described in
-this manual (everything except the last two sections),
-making it suitable for use with @tt{racket} scripts.
+Alternatively, use the @racketmodname[redex/reduction-semantics] and 
+@racketmodname[redex/pict] modules, which provide only non-GUI 
+functionality (i.e., everything except @racketmodname[redex/gui]), 
+making them suitable for programs which should not depend on 
+@racketmodname[racket/gui/base].
 
 @table-of-contents[]
 
 @section{Patterns}
 
-@defmodule[redex/reduction-semantics]
-
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@defmodule*/no-declare[(redex/reduction-semantics)]
+@declare-exporting[redex/reduction-semantics redex]
 
 This section covers Redex's @deftech{pattern} language, used in many
 of Redex's forms.
@@ -390,10 +387,7 @@ Changes the size of the per-pattern and per-metafunction caches. The default siz
 
 @section{Terms}
 
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@declare-exporting[redex/reduction-semantics redex]
 
 Object language expressions in Redex are written using
 @racket[term]. It is similar to Racket's @racket[quote] (in
@@ -595,10 +589,7 @@ produce variables that are always distinct.
 
 @section{Languages}
 
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@declare-exporting[redex/reduction-semantics redex]
 
 @defform/subs[(define-language lang-name 
                 non-terminal-def ...)
@@ -688,10 +679,7 @@ otherwise.
 
 @section{Reduction Relations}
 
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@declare-exporting[redex/reduction-semantics redex]
 
 @defform/subs[#:literals (--> fresh side-condition where with) 
               (reduction-relation language domain base-arrow
@@ -936,10 +924,7 @@ terminate (it does terminate if the only infinite reduction paths are cyclic).
 
 @section{Metafunctions and Relations}
 
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@declare-exporting[redex/reduction-semantics redex]
 
 @defform/subs[#:literals (: -> where side-condition side-condition/hidden where/hidden)
              (define-metafunction language
@@ -1114,10 +1099,7 @@ Defaults to @racket['()].
 
 @section{Testing}
 
-All of the exports in this section are provided both by
-@racketmodname[redex/reduction-semantics] (which includes
-all non-GUI portions of Redex) and also exported by
-@racketmodname[redex] (which includes all of Redex).
+@declare-exporting[redex/reduction-semantics redex]
 
 @defform[(test-equal e1 e2)]{
 
@@ -1573,7 +1555,9 @@ expression and each @racket[where] pattern-match to discover which
 clause is preventing the rule's application.
 
 @section{GUI}
-@defmodule[redex/gui]
+
+@defmodule*/no-declare[(redex/gui)]
+@declare-exporting[redex/gui redex]
 
 This section describes the GUI tools that Redex provides for
 exploring reduction sequences.
@@ -1914,7 +1898,8 @@ symbol @racket['hole] to match the way they are input in a
 
 @section{Typesetting}
 
-@defmodule[redex/pict]
+@defmodule*/no-declare[(redex/pict)]
+@declare-exporting[redex/pict redex]
 
 The @racketmodname[redex/pict] library provides functions
 designed to automatically typeset grammars, reduction
@@ -2360,6 +2345,8 @@ single reduction relation.
 }
 
 @section[#:tag "pink"]{Removing the pink background from PLT Redex rendered picts and ps files}
+
+@declare-exporting[redex/pict redex]
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Racket code or side-conditions, they are rendered
