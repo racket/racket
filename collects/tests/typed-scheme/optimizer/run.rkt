@@ -91,5 +91,6 @@
            (for/fold ((n-failures 0))
              ((gen (in-directory tests-dir)))
              (+ n-failures (if (test gen) 0 1))))))
-  (unless (= n-failures 0)
-    (error (format "~a tests failed." n-failures))))
+  (if (= n-failures 0)
+      (displayln "Typed Racket Optimizer tests passed.")
+      (printf "~a Typed Racket Optimizer tests failed." n-failures)))
