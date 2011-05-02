@@ -1,5 +1,6 @@
 #lang racket
-(require racket/runtime-path racket/sandbox)
+(require racket/runtime-path racket/sandbox
+         rackunit rackunit/text-ui)
 
 (define show-names? (make-parameter #f))
 
@@ -36,9 +37,10 @@
          (kill-evaluator evaluator)
          out)))))
 
-(define (generate-opt-log name)
-  (parameterize ([current-load-relative-directory tests-dir]
-                 [current-command-line-arguments  '#("--log-optimizations")])
+(define (generate-log name dir flags)
+  ;; some tests require other tests, so some fiddling is required
+  (parameterize ([current-load-relative-directory dir]
+                 [current-command-line-arguments  flags])
     (let ((log-string
            (with-output-to-string
              (lambda ()
@@ -50,31 +52,54 @@
       (with-input-from-string (string-append "(" log-string ")")
         read))))
 
-(define (test gen)
-  (let-values (((base name _) (split-path gen)))
-    (or (not (regexp-match ".*rkt$" name)) ; we ignore all but racket files
-        (begin
-          (when (show-names?) (displayln name))
-          ;; we log optimizations and compare to an expected log to make sure
-          ;; that all the optimizations we expected did indeed happen
-          (and (or (let ((log      (generate-opt-log name))
-                         ;; expected optimizer log, to see what was optimized
-                         (expected
-                          (with-input-from-file gen
-                            (lambda ()
-                              (read-line) ; skip the #;
-                              (read)))))  ; get the log itself
-                     (equal? log expected))
-                   (begin
-                     (printf "~a failed: optimization log mismatch\n\n" name)
-                     #f))
-               ;; optimized and non-optimized versions must evaluate to the
-               ;; same thing
-               (or (equal? (evaluator gen) (evaluator gen #:optimize #t))
-                   (begin (printf "~a failed: result mismatch\n\n" name)
-                          #f)))))))
+(define (compare-logs name dir flags)
+  (test-suite "Log Comparison"
+              (check-equal?
+               ;; ugly, but otherwise rackunit spews the entire logs to
+               ;; stderr, and they can be quite long
+               #t
+               (equal?
+                ;; actual log
+                (generate-log name dir flags)
+                ;; expected log
+                (with-input-from-file (build-path dir name)
+                  (lambda () ; from the test file
+                    (read-line) ; skip the #;
+                    (read)))))))
 
-(define to-run
+
+(define-runtime-path tests-dir       "./tests")
+
+;; these two return lists of tests to be run for that category of tests
+(define (test-opt name)
+  (let ([path (build-path tests-dir name)])
+    ;; we log optimizations and compare to an expected log to make sure that
+    ;; all the optimizations we expected did indeed happen
+    (list (compare-logs name tests-dir '#("--log-optimizations"))
+          (test-suite
+           ;; optimized and non-optimized versions must give the same result
+           "Result Comparison"
+           (check-equal? (evaluator path #:optimize #t)
+                         (evaluator path))))))
+
+;; proc returns the list of tests to be run on each file
+(define (mk-suite suite-name dir proc)
+  (make-test-suite
+   suite-name
+   (for/list ([name (directory-list dir)]
+              #:when (regexp-match ".*rkt$" name))
+     (make-test-suite
+      (path->string name)
+      (cons (test-suite
+             "Show Name"
+             (check-eq? (begin (when (show-names?) (displayln name)) #t) #t))
+            (proc name))))))
+
+(define optimization-tests
+  (mk-suite "Optimization Tests" tests-dir test-opt))
+
+
+(define single-test
   (command-line
    #:once-each
    ["--show-names" "show the names of tests as they are run" (show-names? #t)]
@@ -83,14 +108,11 @@
    (and (not (null? maybe-test-to-run))
         (car maybe-test-to-run))))
 
-(define-runtime-path tests-dir "./tests")
-
-(let ((n-failures
-       (if to-run
-           (if (test to-run) 0 1)
-           (for/fold ((n-failures 0))
-             ((gen (in-directory tests-dir)))
-             (+ n-failures (if (test gen) 0 1))))))
-  (if (= n-failures 0)
-      (displayln "Typed Racket Optimizer tests passed.")
-      (printf "~a Typed Racket Optimizer tests failed." n-failures)))
+(void ; to suppress output of the return value
+ (run-tests
+  (cond [single-test
+         (let-values ([(base name _) (split-path single-test)])
+           (make-test-suite "Single Test" (test-opt name)))]
+        [else ; default = run everything
+	 optimization-tests])
+  'normal))
