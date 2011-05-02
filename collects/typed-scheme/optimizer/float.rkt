@@ -86,7 +86,14 @@
                         f2:float-arg-expr
                         fs:float-arg-expr ...)
            ;; if the result is a float, we can coerce integers to floats and optimize
-           #:when (subtypeof? this-syntax -Flonum)
+           #:when (let ([safe-to-opt? (subtypeof? this-syntax -Flonum)])
+                    ;; if we don't have a return type of float, we missed an optimization
+                    ;; opportunity, report it
+                    (when (and (not safe-to-opt?)
+                               (isoftype? this-syntax -Real))
+                      (log-close-call "binary, args all float-arg-expr, return type not Float"
+                                      this-syntax))
+                    safe-to-opt?)
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
