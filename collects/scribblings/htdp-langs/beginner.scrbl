@@ -7,7 +7,7 @@
 
 @title[#:style 'toc #:tag "beginner"]{Beginning Student}
 
-@declare-exporting[lang/htdp-beginner]
+@declare-exporting[lang/htdp-beginner #:use-sources (lang/htdp-beginner lang/private/teachprims)]
 
 @schemegrammar*+library[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
