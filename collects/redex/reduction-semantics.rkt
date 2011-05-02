@@ -25,11 +25,9 @@
          compiled-lang?
          term
          term-let
-         none?
          define-metafunction
          define-metafunction/extension
          define-relation
-         metafunction
          in-domain?
          caching-enabled?
          make-coverage)
@@ -73,10 +71,6 @@
                                  ()
                                  #:rest (listof reduction-relation?)
                                  reduction-relation?)]
- 
- [lookup-binding (case-> 
-                  (-> bindings? symbol? any)
-                  (-> bindings? symbol? (-> any) any))]
  [relation-coverage (parameter/c (listof coverage?))]
  [covered-cases (-> coverage? (listof (cons/c string? natural-number/c)))]
  [redex-pseudo-random-generator (parameter/c pseudo-random-generator?)]

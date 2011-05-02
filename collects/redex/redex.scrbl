@@ -357,7 +357,7 @@ Determines if a value is a @tt{match} structure.
 
 @defproc[(match-bindings [m match?]) (listof bind?)]{
 
-This returns a bindings structure (see below) that
+This returns a list of @racket[bind] structs that
 binds the pattern variables in this match.
 }
 
@@ -605,8 +605,7 @@ side-conditions can restrict matches in a context-sensitive
 way.
 
 A @racket[non-terminal-def] comprises one or more non-terminal names
-(considered aliases) followed by one or more productions. A non-terminal's
-names and productions may be separated by the keyword @racket[::=].
+(considered aliases) followed by one or more productions.
 
 For example, the following defines @deftech{@racket[lc-lang]} as the
 grammar of the lambda calculus:
@@ -626,6 +625,11 @@ with non-terminals @racket[e] for the expression language, @racket[x] for
 variables, @racket[c] for the evaluation contexts and @racket[v] for values.
 }
 
+@defidform[::=]{
+A non-terminal's names and productions may be separated by the keyword @racket[::=].
+Use of the @racket[::=] keyword outside a language definition is a syntax error.
+}
+                                                                                
 @defform/subs[(define-extended-language extended-lang base-lang 
                 non-terminal-def ...)
               ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
@@ -2140,11 +2144,12 @@ This parameter controls the amount of extra horizontal space
 around the reduction relation arrow. Defaults to 0.
 }
 
-@defparam[horizontal-label-space space natural-number/c]{
+@defparam[label-space space natural-number/c]{
 
 This parameter controls the amount of extra space before the
-label on each rule, but only in horizontal mode. Defaults to
-0.
+label on each rule, except in the @racket['vertical] and 
+@racket['vertical-overlapping-side-conditions] modes, where
+it has no effect. Defaults to 0.
 }
 
 @defparam[metafunction-pict-style style 
@@ -2432,7 +2437,28 @@ explanation of logical-space):
 }]
 }
 
-@deftogether[[
+@defstruct[lw ([e (or/c string?
+                        symbol?
+                        pict? 
+                        (listof (or/c (symbols 'spring) lw?)))]
+               [line exact-positive-integer?]
+               [line-span exact-positive-integer?]
+               [column exact-positive-integer?]
+               [column-span exact-positive-integer?]
+               [unq? boolean?]
+               [metafunction? boolean?])
+              #:mutable]{
+The @racket[lw] data structure corresponds represents a pattern or a Racket
+expression that is to be typeset.  The functions listed above
+construct @racket[lw] structs, select fields out of them, and
+recognize them. The @racket[lw] binding can be used with
+@racket[copy-struct].
+
+The values of the @racket[unq?] and @racket[metafunction?] fields, respectively,
+indicate whether the @racket[lw] represents an unquoted expression or a 
+metafunction application. See @racket[to-lw] for the meanings of the other fields.
+}
+
 @defproc[(build-lw [e (or/c string?
                             symbol?
                             pict? 
@@ -2441,25 +2467,11 @@ explanation of logical-space):
                    [line-span exact-positive-integer?]
                    [column exact-positive-integer?]
                    [column-span exact-positive-integer?]) 
-         lw?]{}
-@defproc[(lw-e (lw lw?)) (or/c string? 
-                               symbol?
-                               pict?
-                               (listof (or/c (symbols 'spring) lw?)))]{}
-@defproc[(lw-line (lw lw?)) exact-positive-integer?]{}
-@defproc[(lw-line-span (lw lw?)) exact-positive-integer?]{}
-@defproc[(lw-column (lw lw?)) exact-positive-integer?]{}
-@defproc[(lw-column-span (lw lw?)) exact-positive-integer?]{}
-@defproc[(lw? (v any/c)) boolean?]{}
-@defidform[lw]{}]]{
-
-The lw data structure corresponds represents a pattern or a Racket
-expression that is to be typeset.  The functions listed above
-construct @racket[lw] structs, select fields out of them, and
-recognize them. The @racket[lw] binding can be used with
-@racket[copy-struct].
-}
-
+         lw?]{
+Like @racket[make-lw] but specialized for constructing @racket[lw]s that
+do not represent unquoted expressions or metafunction applications.
+}                        
+                        
 @defform[(to-lw arg)]{
 
 This form turns its argument into lw structs that
