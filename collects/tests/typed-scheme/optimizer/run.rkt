@@ -52,25 +52,27 @@
 
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
-    (when (show-names?) (displayln name))
     (or (not (regexp-match ".*rkt$" name)) ; we ignore all but racket files
-        ;; we log optimizations and compare to an expected log to make sure
-        ;; that all the optimizations we expected did indeed happen
-        (and (or (let ((log      (generate-opt-log name))
-                       ;; expected optimizer log, to see what was optimized
-                       (expected
-                        (with-input-from-file gen
-                          (lambda ()
-                            (read-line) ; skip the #;
-                            (read)))))  ; get the log itself
-                   (equal? log expected))
-                 (begin (printf "~a failed: optimization log mismatch\n\n" name)
-                        #f))
-             ;; optimized and non-optimized versions must evaluate to the
-             ;; same thing
-             (or (equal? (evaluator gen) (evaluator gen #:optimize #t))
-                 (begin (printf "~a failed: result mismatch\n\n" name)
-                        #f))))))
+        (begin
+          (when (show-names?) (displayln name))
+          ;; we log optimizations and compare to an expected log to make sure
+          ;; that all the optimizations we expected did indeed happen
+          (and (or (let ((log      (generate-opt-log name))
+                         ;; expected optimizer log, to see what was optimized
+                         (expected
+                          (with-input-from-file gen
+                            (lambda ()
+                              (read-line) ; skip the #;
+                              (read)))))  ; get the log itself
+                     (equal? log expected))
+                   (begin
+                     (printf "~a failed: optimization log mismatch\n\n" name)
+                     #f))
+               ;; optimized and non-optimized versions must evaluate to the
+               ;; same thing
+               (or (equal? (evaluator gen) (evaluator gen #:optimize #t))
+                   (begin (printf "~a failed: result mismatch\n\n" name)
+                          #f)))))))
 
 (define to-run
   (command-line
