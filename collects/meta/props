@@ -1134,7 +1134,7 @@ path/s is either such a string or a list of them.
 "collects/mzscheme/examples/fmod-ez.rkt" drdr:command-line #f
 "collects/mzscheme/examples/msgbox.rkt" drdr:command-line #f
 "collects/mzscheme/examples/tree-finish.rkt" drdr:command-line #f
-"collects/net" responsible (eli jay mflatt)
+"collects/net" responsible (eli jay mflatt robby)
 "collects/net/websocket" responsible (jay)
 "collects/net/websocket.rkt" responsible (jay)
 "collects/openssl" responsible (mflatt)
@@ -1531,7 +1531,7 @@ path/s is either such a string or a list of them.
 "collects/tests/mysterx/mystests.rktl" drdr:command-line #f
 "collects/tests/mzcom" responsible (mflatt)
 "collects/tests/mzcom/test.rktl" drdr:command-line #f
-"collects/tests/net" responsible (jay eli)
+"collects/tests/net" responsible (jay eli mflatt robby)
 "collects/tests/net/stress" responsible (jay)
 "collects/tests/net/url-port.rkt" responsible (jay)
 "collects/tests/net/websocket" responsible (jay)
