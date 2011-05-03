@@ -142,7 +142,9 @@
              (and (file-exists? name0) ; relative with original
                   (ffi-lib* (fullpath name0)))
              ;; give up: call ffi-lib so it will raise an error
-             (ffi-lib (car names))))])]))
+             (if (pair? names)
+                 (ffi-lib (car names))
+                 (ffi-lib name0))))])]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))

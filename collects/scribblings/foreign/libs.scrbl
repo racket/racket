@@ -19,49 +19,84 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @defproc[(ffi-lib [path (or/c path-string? #f)]
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]) any]{
 
-Returns a foreign-library value. If @scheme[path] is a path, the
-result represents the foreign library, which is opened in an
-OS-specific way (using @cpp{LoadLibrary} under Windows, and
-@cpp{dlopen} under Unix and Mac OS X).
+Returns a foreign-library value. Normally, 
 
-The path is not expected to contain the library suffix, which is added
-according to the current platform.  If adding the suffix fails,
-several other filename variations are tried: retrying without an
-automatically added suffix, and using a full path of a file if it
-exists relative to the current directory (since the OS-level library
-function usually searches, unless the library name is an absolute
-path). An optional @scheme[version] string can be supplied, which is
-appended to the name before or after the suffix, depending on platform
-conventions, unless it is @scheme[#f] or @scheme[""]. If
-@scheme[version] is a list, @scheme[ffi-lib] will try each of them in
-order.
+@itemlist[
+
+ @item{@racket[path] is a path without a version or suffix (i.e.,
+       without @filepath{.dll}, @filepath{.so}, or @filepath{.dylib});
+       and}
+
+ @item{@racket[version] is a list of versions to try in order with
+      @racket[#f] (i.e., no version) as the last element of the list;
+      for example, @racket['("2" #f)] indicates version 2 with a
+      fallback to a versionless library.}
+
+]
+
+A string or @racket[#f] @racket[version] is equivalent to a list
+containing just the string or @racket[#f], and an empty string (by
+itself or in a list) is equivalent to @racket[#f].
+
+Beware of relying on versionless library names. On some platforms,
+versionless library names are provided only by development
+packages. At the same time, other platforms may require a versionless
+fallback. A list of version strings followed by @racket[#f] is
+typically best for @racket[version].
+
+Assuming that @scheme[path] is not @racket[#f], the result from
+@racket[ffi-lib] represents the library found by the following search
+process:
+
+@itemlist[
+
+ @item{If @racket[path] is not an absolute path, look in each
+       directory reported by @scheme[get-lib-search-dirs]. In each
+       directory, try @racket[path] with the first version in
+       @racket[version], adding a suitable suffix if @racket[path]
+       does not already end in the suffix, then try the second version
+       in @racket[version], etc. (If @racket[version] is an empty list,
+       no paths are tried in this step.)}
+
+ @item{Try the same filenames again, but without converting the path
+       to an absolute path, which allows the operating system to use
+       its own search paths. (If @racket[version] is an empty list, no
+       paths are tried in this step.)}
+
+ @item{Try @racket[path] without adding any version or suffix, and
+       without converting to an absolute path.}
+
+ @item{Try the version-adjusted filenames again, but relative to the
+       current directory. (If @racket[version] is an empty list, no
+       paths are tried in this step.)}
+
+ @item{Try @racket[path] without adding any version or suffix, but
+      converted to an absolute path relative to the current
+      directory.}
+
+]
+
+If none of the paths succeed, the error is reported from trying the
+first path from the second bullet above or (if @racket[version] is an
+empty list) from the third bullet above. A library file may exist but
+fail to load for some reason; the eventual error message will
+unfortunately name the fallback from the second or third bullet, since
+some operating systems offer no way to determine why a given library
+path failed.
 
 If @scheme[path] is @scheme[#f], then the resulting foreign-library
 value represents all libraries loaded in the current process,
 including libraries previously opened with @scheme[ffi-lib].  In
 particular, use @scheme[#f] to access C-level functionality exported
-by the run-time system (as described in @|InsideRacket|).
+by the run-time system (as described in @|InsideRacket|). The
+@racket[version] argument is ignored when @racket[path] is
+@racket[#f].
 
-Note: @scheme[ffi-lib] tries to look for the library file in a few
-places, including the Racket libraries path (see @scheme[get-lib-search-dirs]),
-a relative path, or a system search. When @scheme[version] is a list,
-different versions are tried through each route before continuing the
-search with other routes. However, if @cpp{dlopen} cannot open a
-library, there is no reliable way to know why it failed, so if all
-path combinations fail, it will raise an error with the result of
-@cpp{dlopen} on the unmodified argument name.  For example, if you
-have a local @filepath{foo.so} library that cannot be loaded because
-of a missing symbol, using @scheme[(ffi-lib "foo.so")] will fail with
-all its search options, most because the library is not found, and
-once because of the missing symbol, and eventually produce an error
-message that comes from @cpp{dlopen("foo.so")} which will look like
-the file is not found.  In such cases try to specify a full or
-relative path (containing slashes, e.g., @filepath{./foo.so}).}
-
-Note! Because of the way the operating system performs dynamic binding,
-loaded libraries are associated with Racket or DrRacket for the
-duration of the process; re-evaluating ffi-lib and/or hitting the "Run" button
-will not force a re-load of the corresponding library.
+Due to the way the operating system performs dynamic binding, loaded
+libraries are associated with Racket (or DrRacket) for the duration of
+the process. Re-evaluating @racket[ffi-lib] (or hitting the
+@onscreen{Run} button in DrRacket) will not force a re-load of the
+corresponding library.}
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]
