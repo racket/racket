@@ -9955,7 +9955,7 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
         n[i+1] = v2;
       }
       if ((len == 2) && (!(n[1] & 0x80000000)))
-        data->tl_map = (void *)((n[1] << 1) | 0x1);
+        data->tl_map = (void *)(intptr_t)((n[1] << 1) | 0x1);
       else
         data->tl_map = n;
     } else

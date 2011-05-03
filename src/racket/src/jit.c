@@ -1197,7 +1197,6 @@ static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda 
   Scheme_Native_Closure_Data *ndata;
   Scheme_Object *name, *o;
   int max_let_depth = 0, i, count, is_method = 0;
-  void *tl_map;
 
   ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
 #ifdef MZTAG_REQUIRED
