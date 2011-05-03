@@ -4136,7 +4136,9 @@ static Scheme_Object *do_load_handler(void *data)
 
     if (obj) {
       /* CERT-INSP-CACHE <- grep for that in read.c */
-      obj = scheme_make_pair(obj, scheme_get_param(config, MZCONFIG_CODE_INSPECTOR));
+      obj = scheme_make_pair(obj, 
+                             scheme_make_pair(scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY),
+                                              scheme_get_param(config, MZCONFIG_CODE_INSPECTOR)));
       obj = scheme_lookup_in_table(scheme_module_code_cache, (const char *)obj);
       if (obj)
         obj = scheme_ephemeron_value(obj);

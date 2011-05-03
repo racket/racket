@@ -5599,7 +5599,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
              inspector is the same, but maybe certificates can be
              fixed and this hack son't be necessary one day. Grep for
              CERT-INSP-CACHE elsewhere for other places to change. */
-          hc = scheme_make_pair(hc, insp);
+          hc = scheme_make_pair(hc, scheme_make_pair(dir, insp));
 
           m->code_key = hc;
         }
