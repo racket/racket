@@ -51,6 +51,12 @@
   (-> syntax?
       #:context syntax?
       arity?)]
+ [check-stxclass-header
+  (-> syntax? syntax?
+      (list/c identifier? syntax? arity?))]
+ [check-stxclass-application
+  (-> syntax? syntax?
+      (cons/c identifier? arguments?))]
  [check-literals-list/litset
   (-> syntax? syntax?
       (listof (list/c identifier? identifier?)))]
@@ -728,15 +734,8 @@ A syntax class is integrable if
        (values #f null #f)]
       [(~var _name sc/sc+args . rest)
        (let-values ([(sc argu)
-                     (syntax-case #'sc/sc+args ()
-                       [sc
-                        (identifier? #'sc)
-                        (values #'sc no-arguments)]
-                       [(sc arg ...)
-                        (identifier? #'sc)
-                        (values #'sc (parse-argu (syntax->list #'(arg ...))))]
-                       [_
-                        (wrong-syntax stx "bad ~~var form")])])
+                     (let ([p (check-stxclass-application #'sc/sc+args stx)])
+                       (values (car p) (cdr p)))])
          (define chunks
            (parse-keyword-options/eol #'rest var-pattern-directive-table
                                       #:no-duplicates? #t
@@ -1427,19 +1426,33 @@ A syntax class is integrable if
            (raise-syntax-error #f "expected identifier convention pattern"
                                ctx blame)]))
   (define (check-sc-expr x rx)
-    (syntax-case x ()
-      [sc
-       (identifier? #'sc)
-       (make den:class rx #'sc no-arguments)]
-      [(sc arg ...)
-       (identifier? #'sc)
-       (make den:class rx #'sc (parse-argu (syntax->list #'(arg ...))))]
-      [_ (raise-syntax-error #f "expected syntax class use" ctx x)]))
+    (let ([x (check-stxclass-application x ctx)])
+      (make den:class rx (car x) (cdr x))))
   (syntax-case stx ()
     [(rx sc)
      (let ([name-pattern (check-conventions-pattern (syntax-e #'rx) #'rx)])
-       (list name-pattern
-             (check-sc-expr #'sc name-pattern)))]))
+       (list name-pattern (check-sc-expr #'sc name-pattern)))]))
+
+(define (check-stxclass-header stx ctx)
+  (syntax-case stx ()
+    [name
+     (identifier? #'name)
+     (list #'name #'() no-arity)]
+    [(name . formals)
+     (identifier? #'name)
+     (list #'name #'formals (parse-kw-formals #'formals #:context ctx))]
+    [_ (raise-syntax-error #f "expected syntax class header" stx ctx)]))
+
+(define (check-stxclass-application stx ctx)
+  ;; Doesn't check "operator" is actually a stxclass
+  (syntax-case stx ()
+    [op
+     (identifier? #'op)
+     (cons #'op no-arguments)]
+    [(op arg ...)
+     (identifier? #'op)
+     (cons #'op (parse-argu (syntax->list #'(arg ...))))]
+    [_ (raise-syntax-error #f "expected syntax class use" ctx stx)]))
 
 ;; bind clauses
 (define (check-bind-clause-list stx ctx)

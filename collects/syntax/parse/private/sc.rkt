@@ -30,19 +30,20 @@
          parser/rhs)
 
 (begin-for-syntax
- (define (defstxclass stx name formals rhss splicing?)
+ (define (defstxclass stx header rhss splicing?)
    (parameterize ((current-syntax-context stx))
-     (with-syntax ([name name]
-                   [formals formals]
-                   [rhss rhss])
-       (let* ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)]
-              [arity (parse-kw-formals #'formals #:context stx)]
+     (let-values ([(name formals arity)
+                   (let ([p (check-stxclass-header header stx)])
+                     (values (car p) (cadr p) (caddr p)))])
+       (let* ([the-rhs (parse-rhs rhss #f splicing? #:context stx)]
               [opt-rhs+def
-               (and (stx-list? #'formals) (andmap identifier? (syntax->list #'formals))
-                    (optimize-rhs the-rhs (syntax->list #'formals)))]
+               (and (andmap identifier? (syntax->list formals))
+                    (optimize-rhs the-rhs (syntax->list formals)))]
               [the-rhs (if opt-rhs+def (car opt-rhs+def) the-rhs)])
-         (with-syntax ([parser (generate-temporary
-                                (format-symbol "parse-~a" (syntax-e #'name)))]
+         (with-syntax ([name name]
+                       [formals formals]
+                       [rhss rhss]
+                       [parser (generate-temporary (format-symbol "parse-~a" name))]
                        [arity arity]
                        [attrs (rhs-attrs the-rhs)]
                        [(opt-def ...)
@@ -80,21 +81,13 @@
 
 (define-syntax (define-syntax-class stx)
   (syntax-case stx ()
-    [(define-syntax-class name . rhss)
-     (identifier? #'name)
-     (defstxclass stx #'name #'() #'rhss #f)]
-    [(define-syntax-class (name . formals) . rhss)
-     (identifier? #'name)
-     (defstxclass stx #'name #'formals #'rhss #f)]))
+    [(dsc header . rhss)
+     (defstxclass stx #'header #'rhss #f)]))
 
 (define-syntax (define-splicing-syntax-class stx)
   (syntax-case stx ()
-    [(define-splicing-syntax-class name . rhss)
-     (identifier? #'name)
-     (defstxclass stx #'name #'() #'rhss #t)]
-    [(define-splicing-syntax-class (name . formals) . rhss)
-     (identifier? #'name)
-     (defstxclass stx #'name #'formals #'rhss #t)]))
+    [(dssc header . rhss)
+     (defstxclass stx #'header #'rhss #t)]))
 
 ;; ----
 
