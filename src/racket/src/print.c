@@ -257,7 +257,7 @@ static void *print_to_port_k(void)
   p->ku.k.p3 = NULL;
 
   print_to_port((p->ku.k.i2 
-                 ? ((p->ku.k.i2 = 2)
+                 ? ((p->ku.k.i2 == 2)
                     ? "print"
                     : "write")
                  : "display"), 
