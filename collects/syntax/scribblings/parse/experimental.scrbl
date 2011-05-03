@@ -255,3 +255,27 @@ their attributes with @scheme[name].
   [(_ (~eh-var x ext-options) ...)
    #'(x.s.a (x.s.b ...) ((x.c1 x.c2) ...))])
 ]
+
+
+@section{Syntax class specialization}
+
+@defmodule[syntax/parse/experimental/specialize]
+
+@defform/subs[(define-syntax-class/specialize header syntax-class-use)
+              ([header id
+                       (id . kw-formals)]
+               [syntax-class-use target-stxclass-id
+                                 (target-stxclass-id arg ...)])]{
+
+Defines @racket[id] as a syntax class with the same attributes,
+options (eg, @racket[#:commit], @racket[#:no-delimit-cut]), and
+patterns as @racket[target-stxclass-id] but with the given
+@racket[arg]s supplied.
+
+@examples[#:eval the-eval
+(define-syntax-class/specialize nat>10 (nat> 10))
+
+(syntax-parse #'(11 12) [(n:nat>10 ...) 'ok])
+(syntax-parse #'(8 9) [(n:nat>10 ...) 'ok])
+]
+}

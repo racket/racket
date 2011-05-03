@@ -5,6 +5,7 @@
          syntax/parse/experimental/reflect
          syntax/parse/experimental/splicing
          syntax/parse/experimental/eh
+         syntax/parse/experimental/specialize
          "setup.rkt"
          (for-syntax syntax/parse))
 
@@ -77,3 +78,24 @@
 
 (terx (1) (f:foo)
       #rx"expected foo")
+
+;; Specialization
+
+(define-syntax-class/specialize nat>10 (nat> 10))
+
+(tok (11 23 45) (n:nat>10 ...))
+(terx (11 10 9) (n:nat>10 ...)
+      #rx"expected natural number greater than 10")
+
+(tcerr "specialize preserves #:no-delimit-cut"
+       (let ()
+         (define-syntax-class a #:no-delimit-cut (pattern _))
+         (define-syntax-class/specialize b a)
+         (syntax-parse #'12 [(~not x:b) (void)]))
+       #rx"syntax class with #:no-delimit-cut option not allowed within ~not pattern")
+
+(test-case "specialize preserves lack of #:no-delimit-cut"
+  (let ()
+    (define-syntax-class a (pattern _:id))
+    (define-syntax-class/specialize b a)
+    (syntax-parse #'12 [(~not x:b) (void)])))
