@@ -517,8 +517,8 @@
 
 
 
-[call-with-input-file (-poly (a) (-String (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
-[call-with-output-file (-poly (a) (-String (-Output-Port . -> . a)
+[call-with-input-file (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
+[call-with-output-file (-poly (a) (-Pathlike (-Output-Port . -> . a)
                                    #:exists (one-of/c error 'append 'update 'replace 'truncate 'truncate/replace) #f
                                    #:mode (Un (-val 'binary) (-val 'text)) #f 
                                    . ->key .  a))]
@@ -535,7 +535,7 @@
 [directory-exists? (-> -Pathlike B)]
 [file-exists? (-> -Pathlike B)]
 [directory-list (cl-> [() (-lst -Path)]
-                      [(-Path) (-lst -Path)])]
+                      [(-Pathlike) (-lst -Path)])]
 [file-or-directory-modify-seconds
  (cl->* (-Pathlike . -> . -Nat)
         (-Pathlike (-val #f) . -> . -Nat)
@@ -669,7 +669,7 @@
 ;; FIXME - this is too general
 [get-output-string (-> -Output-Port -String)]
 
-[make-directory (-> -Path -Void)]
+[make-directory (-> -Pathlike -Void)]
 
 [delete-file (-> -Pathlike -Void)]
 [make-namespace (->opt [(Un (-val 'empty) (-val 'initial))] -Namespace)]
@@ -846,7 +846,7 @@
 [normalize-path (cl->* (-Pathlike [-Pathlike] . ->opt . -Path))]
 [filename-extension (-Pathlike . -> . (-opt -Bytes))]
 [file-name-from-path (-Pathlike . -> . (-opt -Path))]
-[path-only (-Pathlike . -> . -Path)]
+[path-only (-Pathlike . -> . (-opt -Path))]
 [some-system-path->string (-Path . -> . -String)]
 [string->some-system-path 
  (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
@@ -926,10 +926,10 @@
         (-> -String (-lst -String) -String))]
 
 ;; scheme/system
-[system (-String . -> . -Boolean)]
-[system* ((list -Pathlike) -String . ->* . -Boolean)]
-[system/exit-code (-String . -> . -Integer)]
-[system*/exit-code ((list -Pathlike) -String . ->* . -Integer)]
+[system ((Un -String -Bytes) . -> . -Boolean)]
+[system* ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Boolean)]
+[system/exit-code ((Un -String -Bytes) . -> . -Integer)]
+[system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Integer)]
 
 ;; Byte and String Output (Section 12.3 of the Reference)
 ;; some are now in base-env-indexing-abs.rkt
