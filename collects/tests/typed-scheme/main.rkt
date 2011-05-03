@@ -1,13 +1,12 @@
 #lang scheme/base
 
-(provide go go/text)
-
 (require rackunit rackunit/text-ui racket/file
          mzlib/etc scheme/port
          compiler/compiler
          scheme/match mzlib/compile
          "unit-tests/all-tests.ss"
-         "unit-tests/test-utils.ss")
+         "unit-tests/test-utils.ss"
+         "optimizer/run.rkt")
 
 (define (scheme-file? s)
   (regexp-match ".*[.](rkt|ss|scm)$" (path->string s)))
@@ -85,38 +84,6 @@
               (succ-tests)
               (fail-tests)))
 
-(define tests
-  (test-suite "Typed Scheme Tests"
-              unit-tests int-tests))
-
-(provide tests int-tests unit-tests)
-
-(define (go tests) (test/gui tests))
-(define (go/text tests) (run-tests tests 'verbose))
-
-(define (just-one p*)
-  (define-values (path p b) (split-path p*))
-  (define f
-    (if (equal? "fail/" (path->string path))
-        (lambda (p thnk)
-          (define-values (pred info) (exn-pred p))
-          (parameterize ([error-display-handler void])
-            (with-check-info
-             (['predicates info])
-             (check-exn pred thnk))))
-        (lambda (p thnk) (check-not-exn thnk))))
-  (test-suite 
-   (path->string p)
-   (f
-    (build-path path p)
-    (lambda ()
-      (parameterize ([read-accept-reader #t]
-                     [current-load-relative-directory
-                      (path->complete-path path)]
-                     [current-directory path]
-                     [current-output-port (open-output-nowhere)])
-        (dr p))))))
-
 (define (compile-benchmarks)
   (define (find dir)
     (for/list ([d (directory-list dir)]
@@ -126,7 +93,7 @@
   (define common (collection-path "tests" "racket" "benchmarks" "common" "typed"))
   (define (mk path)
     (make-test-suite (path->string path)
-                     (for/list ([p (find path)])                       
+                     (for/list ([p (find path)])
                        (parameterize ([current-load-relative-directory
                                        (path->complete-path path)]
                                       [current-directory path])
@@ -138,7 +105,38 @@
               (mk common)
               (delete-directory/files (build-path common "compiled"))))
 
-(provide go go/text just-one compile-benchmarks)
+
+(define (just-one p*)
+  (define-values (path p b) (split-path p*))
+  (define f
+    (let ([dir (path->string path)])
+      (cond [(equal? dir "fail/")
+             (lambda (p thnk)
+               (define-values (pred info) (exn-pred p))
+               (parameterize ([error-display-handler void])
+                 (with-check-info
+                  (['predicates info])
+                  (check-exn pred thnk))))]
+            [(equal? dir "succeed/")
+             (lambda (p thnk) (check-not-exn thnk))]
+            [(equal? dir "optimizer/tests/")
+             (lambda (p* thnk) (test-opt p))])))
+  (test-suite
+   (path->string p)
+   (f
+    (build-path path p)
+    (lambda ()
+      (parameterize ([read-accept-reader #t]
+                     [current-load-relative-directory
+                      (path->complete-path path)]
+                     [current-directory path]
+                     [current-output-port (open-output-nowhere)])
+        (dr p))))))
 
 
+(define (go tests) (test/gui tests))
+(define (go/text tests) (run-tests tests 'verbose))
 
+(provide go go/text just-one
+         int-tests unit-tests compile-benchmarks
+         optimization-tests)

@@ -2,9 +2,7 @@
 (require racket/runtime-path
          rackunit rackunit/text-ui)
 
-(provide optimization-tests)
-
-(define show-names? (make-parameter #f))
+(provide optimization-tests test-opt)
 
 (define (generate-log name dir flags)
   ;; some tests require other tests, so some fiddling is required
@@ -53,29 +51,7 @@
               #:when (regexp-match ".*rkt$" name))
      (make-test-suite
       (path->string name)
-      (cons (test-suite
-             "Show Name"
-             (check-eq? (begin (when (show-names?) (displayln name)) #t) #t))
-            (proc name))))))
+      (proc name)))))
 
 (define optimization-tests
   (mk-suite "Optimization Tests" tests-dir test-opt))
-
-
-(define single-test
-  (command-line
-   #:once-each
-   ["--show-names" "show the names of tests as they are run" (show-names? #t)]
-   ;; we optionally take a test name. if none is given, run everything (#f)
-   #:args maybe-test-to-run
-   (and (not (null? maybe-test-to-run))
-        (car maybe-test-to-run))))
-
-(void ; to suppress output of the return value
- (run-tests
-  (cond [single-test
-         (let-values ([(base name _) (split-path single-test)])
-           (make-test-suite "Single Test" (test-opt name)))]
-        [else ; default = run everything
-	 optimization-tests])
-  'normal))
