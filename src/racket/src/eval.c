@@ -164,6 +164,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 THREAD_LOCAL_DECL(int scheme_continuation_application_count);
 THREAD_LOCAL_DECL(static int generate_lifts_count);
 THREAD_LOCAL_DECL(int scheme_overflow_count);
+THREAD_LOCAL_DECL(Scheme_Prefix *scheme_prefix_finalize);
 int scheme_get_overflow_count() { return scheme_overflow_count; }
 
 /* read-only globals */
