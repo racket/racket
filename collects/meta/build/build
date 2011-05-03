@@ -1458,9 +1458,9 @@ BUILD_DOCS_AND_PDFS() {
     html_file_row "pdf" "pdf versions of the manuals"
     _rmcd "pdf"
     # avoid any work except for the pdf generation
-    _run "$PLTHOME/bin/raco" setup \
+    _run "$PLTHOME/bin/racket" $SETUP_ARGS \
            --no-zo --no-launcher --no-install --no-post-install \
-           --no-info-domain --no-docs --no-user --no-planet \
+           --no-info-domain --no-docs --no-planet \
            --doc-pdf .
     _cd ..
   else
