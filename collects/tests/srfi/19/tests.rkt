@@ -197,6 +197,14 @@
       (check-not-exn (lambda () (check-equal? (string->date  "100-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3  100 cur-tz))))
       (check-not-exn (lambda () (check-equal? (string->date "1000-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 1000 cur-tz)))))
     
+    (test-case "type-like error on date->string"
+               (check-exn 
+                (lambda (exn) 
+                  (regexp-match #px"expects type <string>"
+                                (exn-message exn))) 
+                (lambda () (date->string (srfi:make-date 1000 2 3 4 2 5 2011 (* 60 -120)) #t))))
+    
+    
     (test-case "date<->julian-day conversion"
       (check = 365 (- (date->julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
                       (date->julian-day (srfi:make-date 0 0 0 0 1 1 2003 0))))

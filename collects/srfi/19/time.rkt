@@ -363,32 +363,30 @@
 (define (tm:current-time-gc)
   (tm:current-time-ms-time time-gc current-gc-milliseconds))
 
-(define (current-time . clock-type)
-  (let ( (clock-type (:optional clock-type time-utc)) )
-    (cond
-      ((eq? clock-type time-tai) (tm:current-time-tai))
-      ((eq? clock-type time-utc) (tm:current-time-utc))
-      ((eq? clock-type time-monotonic) (tm:current-time-monotonic))
-      ((eq? clock-type time-thread) (tm:current-time-thread))
-      ((eq? clock-type time-process) (tm:current-time-process))
-      ((eq? clock-type time-gc) (tm:current-time-gc))
-      (else (tm:time-error 'current-time 'invalid-clock-type clock-type)))))
+(define (current-time [clock-type time-utc])
+  (cond
+    ((eq? clock-type time-tai) (tm:current-time-tai))
+    ((eq? clock-type time-utc) (tm:current-time-utc))
+    ((eq? clock-type time-monotonic) (tm:current-time-monotonic))
+    ((eq? clock-type time-thread) (tm:current-time-thread))
+    ((eq? clock-type time-process) (tm:current-time-process))
+    ((eq? clock-type time-gc) (tm:current-time-gc))
+    (else (tm:time-error 'current-time 'invalid-clock-type clock-type))))
 
 
 ;; -- Time Resolution
 ;; This is the resolution of the clock in nanoseconds.
 ;; This will be implementation specific.
 
-(define (time-resolution . clock-type)
-  (let ((clock-type (:optional clock-type time-utc)))
-    (cond
-      ((eq? clock-type time-tai) 1000000)
-      ((eq? clock-type time-utc) 1000000)
-      ((eq? clock-type time-monotonic) 1000000)
-      ((eq? clock-type time-thread) 1000000)
-      ((eq? clock-type time-process) 1000000)
-      ((eq? clock-type time-gc) 1000000)
-      (else (tm:time-error 'time-resolution 'invalid-clock-type clock-type)))))
+(define (time-resolution [clock-type time-utc])
+  (cond
+    ((eq? clock-type time-tai) 1000000)
+    ((eq? clock-type time-utc) 1000000)
+    ((eq? clock-type time-monotonic) 1000000)
+    ((eq? clock-type time-thread) 1000000)
+    ((eq? clock-type time-process) 1000000)
+    ((eq? clock-type time-gc) 1000000)
+    (else (tm:time-error 'time-resolution 'invalid-clock-type clock-type))))
 
 (define (tm:time-compare-check time1 time2 caller)
   (if (or (not (and (time? time1) (time? time2)))
@@ -1272,10 +1270,11 @@
                                               format-string str-len port))))))))))))
 
 
-(define (date->string date .  format-string)
-  (let ( (str-port (open-output-string))
-         (fmt-str (:optional format-string "~c")) )
-    (tm:date-printer date 0 fmt-str (string-length fmt-str) str-port)
+(define (date->string date [format-string "~c"])
+  (unless (string? format-string)
+    (raise-type-error 'date->string "string" 1 date format-string))
+  (let ( (str-port (open-output-string)) )
+    (tm:date-printer date 0 format-string (string-length format-string) str-port)
     (get-output-string str-port)))
 
 (define (tm:char->int ch)
