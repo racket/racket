@@ -64,13 +64,50 @@
     (raise-syntax-error #f "expected phase-level (exact integer or #f)" ctx stx))
   stx)
 
+(define-for-syntax (check-litset-list stx ctx)
+  (syntax-case stx ()
+    [(litset-id ...)
+     (for/list ([litset-id (syntax->list #'(litset-id ...))])
+       (let* ([val (and (identifier? litset-id)
+                        (syntax-local-value/record litset-id literalset?))])
+         (if val
+             (cons litset-id val)
+             (raise-syntax-error #f "expected literal set name" ctx litset-id))))]
+    [_ (raise-syntax-error #f "expected list of literal set names" ctx stx)]))
+
+;; check-literal-entry/litset : stx stx -> (list id id)
+(define-for-syntax (check-literal-entry/litset stx ctx)
+  (syntax-case stx ()
+    [(internal external)
+     (and (identifier? #'internal) (identifier? #'external))
+     (list #'internal #'external)]
+    [id
+     (identifier? #'id)
+     (list #'id #'id)]
+    [_ (raise-syntax-error #f "expected literal entry" ctx stx)]))
+
+(define-for-syntax (check-duplicate-literals stx imports lits)
+  (let ([lit-t (make-hasheq)]) ;; sym => #t
+    (define (check+enter! key blame-stx)
+      (when (hash-ref lit-t key #f)
+        (raise-syntax-error #f (format "duplicate literal: ~a" key) stx blame-stx))
+      (hash-set! lit-t key #t))
+    (for ([id+litset (in-list imports)])
+      (let ([litset-id (car id+litset)]
+            [litset (cdr id+litset)])
+        (for ([entry (in-list (literalset-literals litset))])
+          (check+enter! (car entry) litset-id))))
+    (for ([lit (in-list lits)])
+      (check+enter! (syntax-e (car lit)) (car lit)))))
+
 (define-syntax (define-literal-set stx)
   (syntax-case stx ()
     [(define-literal-set name . rest)
      (let-values ([(chunks rest)
                    (parse-keyword-options
                     #'rest
-                    `((#:phase ,check-phase-level)
+                    `((#:literal-sets ,check-litset-list)
+                      (#:phase ,check-phase-level)
                       (#:for-template)
                       (#:for-syntax)
                       (#:for-label))
@@ -86,9 +123,13 @@
                     [else (options-select-value chunks '#:phase #:default 0)])]
              [lits (syntax-case rest ()
                      [( (lit ...) )
-                      (check-literals-list/litset #'(lit ...) stx)]
-                     [_ (raise-syntax-error #f "bad syntax" stx)])])
+                      (for/list ([lit (in-list (syntax->list #'(lit ...)))])
+                        (check-literal-entry/litset lit stx))]
+                     [_ (raise-syntax-error #f "bad syntax" stx)])]
+             [imports (options-select-value chunks '#:literal-sets #:default null)])
+         (check-duplicate-literals stx imports lits)
          (with-syntax ([((internal external) ...) lits]
+                       [(litset-id ...) (map car imports)]
                        [relphase relphase])
            #`(begin
                (define phase-of-literals
@@ -97,13 +138,23 @@
                      'relphase))
                (define-syntax name
                  (make-literalset
-                  (list (list 'internal (quote-syntax external)) ...)
-                  (quote-syntax phase-of-literals)))
+                  (append (literalset-literals (syntax-local-value (quote-syntax litset-id)))
+                          ...
+                          (list (list 'internal
+                                      (quote-syntax external)
+                                      (quote-syntax phase-of-literals))
+                                ...))))
                (begin-for-syntax/once
                 (for ([x (in-list (syntax->list #'(external ...)))])
                   (unless (identifier-binding x 'relphase)
                     (raise-syntax-error #f
-                                        (format "literal is unbound in phase ~a" 'relphase)
+                                        (format "literal is unbound in phase ~a~a"
+                                                'relphase
+                                                (case 'relphase
+                                                  ((1) " (for-syntax)")
+                                                  ((-1) " (for-template)")
+                                                  ((#f) " (for-label)")
+                                                  (else "")))
                                         (quote-syntax #,stx) x))))))))]))
 
 (define-syntax (phase-of-enclosing-module stx)

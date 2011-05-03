@@ -57,9 +57,6 @@
  [check-stxclass-application
   (-> syntax? syntax?
       (cons/c identifier? arguments?))]
- [check-literals-list/litset
-  (-> syntax? syntax?
-      (listof (list/c identifier? identifier?)))]
  [check-conventions-rules
   (-> syntax? syntax?
       (listof (list/c regexp? any/c)))]
@@ -1320,29 +1317,6 @@ A syntax class is integrable if
      (raise-syntax-error #f "expected literal entry"
                          ctx stx)]))
 
-;; Literal sets - Definition
-
-;; check-literals-list/litset : stx stx -> (listof (list id id))
-(define (check-literals-list/litset stx ctx)
-  (let ([lits (for/list ([x (in-list (stx->list stx))])
-                (check-literal-entry/litset x ctx))])
-    (let ([dup (check-duplicate-identifier (map car lits))])
-      (when dup (raise-syntax-error #f "duplicate literal identifier" ctx dup)))
-    lits))
-
-;; check-literal-entry/litset : stx stx -> (list id id)
-(define (check-literal-entry/litset stx ctx)
-  (syntax-case stx ()
-    [(internal external)
-     (and (identifier? #'internal) (identifier? #'external))
-     (list #'internal #'external)]
-    [id
-     (identifier? #'id)
-     (list #'id #'id)]
-    [_
-     (raise-syntax-error #f "expected literal entry"
-                         ctx stx)]))
-
 ;; Literal sets - Import
 
 ;; check-literal-sets-list : stx stx -> (listof (listof (list id id ct-phase^2)))
@@ -1365,7 +1339,7 @@ A syntax class is integrable if
       (list (datum->syntax lctx (car entry) stx)
             (cadr entry)
             phase
-            (literalset-phase litset))))
+            (caddr entry))))
   (syntax-case stx ()
     [(litset . more)
      (and (identifier? #'litset))

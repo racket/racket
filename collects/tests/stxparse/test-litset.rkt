@@ -1,29 +1,9 @@
-#lang scheme
+#lang racket/base
 (require syntax/parse
          syntax/parse/debug
          rackunit
          "setup.rkt")
 (require (for-syntax syntax/parse))
-
-#|
-(module a racket
-  (require syntax/parse)
-  (define-literal-set lits (begin))
-  (provide lits))
-(module b racket
-  (require (for-syntax 'a syntax/parse))
-  (require (for-syntax syntax/parse/private/runtime))
-  (define-syntax (snarf stx)
-    ;;(printf "slpl of snarf: ~s\n" (syntax-local-phase-level))
-    (syntax-parse stx
-      #:literal-sets (lits)
-      [(snarf (begin e)) #'e]))
-  (provide snarf))
-(module c racket
-  (require (for-syntax 'b racket/base))
-  (begin-for-syntax
-    (displayln (snarf (begin 5)))))
-|#
 
 (define-literal-set lits0 #:phase 0
   (define lambda))
@@ -87,3 +67,33 @@
                        '(b))
          ;; check that passed lambda is not a literal, but a pattern variable:
          (check-equal? (syntax->datum (getvar lambda #'(lambda b c))))))
+
+;; Litset extension
+
+(tcerr "litset ext, dup 1"
+       (let ()
+         (define-literal-set lits1 (define))
+         (define-literal-set lits2 #:literal-sets (lits1) (define))
+         (void)))
+
+(tcerr "litset ext, dup 2"
+       (let ()
+         (define-literal-set lits1 (define))
+         (define-literal-set lits2 (define))
+         (define-literal-set lits3 #:literal-sets (lits1 lits2) ())
+         (void)))
+
+(test-case "litset ext, works"
+  (let ()
+    (define-literal-set lits1 (define))
+    (define-literal-set lits2 #:literal-sets (lits1) (lambda))
+    (define (go x exp)
+      (check-equal? (syntax-parse x #:literal-sets (lits2)
+                      [lambda 'lambda]
+                      [define 'define]
+                      [_ #f])
+                    exp))
+    (go #'lambda 'lambda)
+    (go #'define 'define)
+    (go #'begin #f)
+    (void)))

@@ -81,9 +81,9 @@ A ConventionRule is (list regexp DeclEntry)
 
 #|
 A LiteralSet is
-  (make-literalset (listof (list symbol id)) stx)
+  (make-literalset (listof (list symbol id phase-var-id)))
 |#
-(define-struct literalset (literals phase) #:transparent)
+(define-struct literalset (literals) #:transparent)
 
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.

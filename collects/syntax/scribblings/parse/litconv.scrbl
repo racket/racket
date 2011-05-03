@@ -15,20 +15,24 @@ As a remedy, @schememodname[syntax/parse] offers @deftech{literal
 sets}. A literal set is defined via @scheme[define-literal-set] and
 used via the @scheme[#:literal-set] option of @scheme[syntax-parse].
 
-@defform/subs[(define-literal-set name-id maybe-phase (literal ...))
+@defform/subs[(define-literal-set id maybe-phase maybe-imports (literal ...))
               ([literal literal-id
                         (pattern-id literal-id)]
                [maybe-phase (code:line)
                             (code:line #:for-template)
                             (code:line #:for-syntax)
                             (code:line #:for-label)
-                            (code:line #:phase phase-level)])]{
+                            (code:line #:phase phase-level)]
+               [maybe-imports (code:line)
+                              (code:line #:literal-sets (imported-litset-id ...))])]{
 
-Defines @scheme[name] as a @tech{literal set}. Each @scheme[literal]
-can have a separate @scheme[pattern-id] and @scheme[literal-id]. The
+Defines @scheme[id] as a @tech{literal set}. Each @scheme[literal] can
+have a separate @scheme[pattern-id] and @scheme[literal-id]. The
 @scheme[pattern-id] determines what identifiers in the pattern are
 treated as literals. The @scheme[literal-id] determines what
-identifiers the literal matches.
+identifiers the literal matches. If the @racket[#:literal-sets] option
+is present, the contents of the given @racket[imported-litset-id]s are
+included.
 
 @myexamples[
 (define-literal-set def-litset
