@@ -7,12 +7,15 @@
          racket/fixnum
          racket/flonum
          racket/vector
-         (for-syntax racket/base))
+
+         (for-syntax racket/base
+                     racket/syntax))
 
 (provide place
          place-sleep
          place-wait 
          place-kill
+         place-break
          place-channel
          place-channel-send
          place-channel-receive
@@ -139,7 +142,7 @@
    [(_ ch body ...)
      (with-syntax ([interal-def-name
                     (syntax-local-lift-expression #'(lambda (ch) body ...))]
-                   [funcname #'OBSCURE_FUNC_NAME_%#%])
+                   [funcname (datum->syntax stx (generate-temporary #'place/anon))])
       (syntax-local-lift-provide #'(rename interal-def-name funcname))
       #'(let ([module-path (resolved-module-path-name
               (variable-reference->resolved-module-path

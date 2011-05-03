@@ -51,6 +51,7 @@
   spawn
   send/msg
   kill
+  break
   wait
   recv/msg
   read-all
@@ -102,6 +103,7 @@
     (close-output-port in)
     (close-input-port out)
     (subprocess-kill process-handle #t))
+  (define/public (break) (kill))
   (define/public (kill/respawn worker-cmdline-list [initialmsg #f])
     (kill)
     (spawn id module-path funcname [initialmsg #f]))
@@ -127,6 +129,7 @@
   (define/public (get-id) id) 
   (define/public (get-out) pl)
   (define/public (kill) #f)
+  (define/public (break) (place-break pl))
   (define/public (wait) (place-wait pl))
   (super-new))) 
 
@@ -142,6 +145,7 @@
   (wrkr/spawn spawn id worker-cmdline-list initialcode initialmsg)
   (wrkr/send  send/msg msg)
   (wrkr/kill  kill)
+  (wrkr/break break)
   (wrkr/recv  recv/msg)
   (wrkr/read-all  read-all)
   (wrkr/id    get-id)
@@ -168,8 +172,8 @@
                                  (find-system-path 'orig-dir))))))
 
 (define (parallel-do-event-loop module-path funcname initialmsg jobqueue nprocs [stopat #f])
-;  (define use-places (place-enabled?))
-  (define use-places #f)
+  (define use-places (place-enabled?))
+;  (define use-places #f)
   (define (spawn id)
     (define wrkr (if use-places (new PlaceWorker%) (new Worker%)))
     (wrkr/spawn wrkr id module-path funcname initialmsg)
@@ -177,7 +181,7 @@
   (define (jobs?) (queue/has jobqueue))
   (define (empty?) (not (queue/has jobqueue)))
   (define workers #f)
-  (define no-breaks #f)
+  (define breaks #t)
   (dynamic-wind
     (lambda ()
       (parameterize-break #f
@@ -241,17 +245,20 @@
             (DEBUG_COMM (printf "WAITING ON WORKERS TO RESPOND\n"))
             (begin0 
               (apply sync (map gen-node-handler inflight))
-              (set! no-breaks #t))])))
+              (set! breaks #f))])))
     (lambda () 
-      ;(printf "Asking all workers to die\n")
-      (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/send p (list 'DIE))))
-      ;(printf "Waiting for all workers to die")(flush-output)
-      (for ([p workers]
-            [i (in-naturals)]) 
-        (wrkr/wait p)
-        ;(printf " ~a" (add1 i))
-        (flush-output))
-      #;(printf "\n"))))
+      (cond 
+        [breaks
+          (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/break p)))]
+        [else
+          ;(printf "Asking all workers to die\n")
+          (for ([p workers]) (with-handlers ([exn:fail? void]) (wrkr/send p (list 'DIE))))
+          ;(printf "Waiting for all workers to die")(flush-output)
+          (for ([p workers]
+                [i (in-naturals)]) 
+            (wrkr/wait p)
+            ;(printf " ~a" (add1 i)) (flush-output))(printf "\n")
+            )]))))
 
 (define ListQueue% (class* object% (WorkQueue<%>)
   (init-field queue create-job-thunk success-thunk failure-thunk)

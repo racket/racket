@@ -172,8 +172,6 @@
   (channel-test-basic-types-master place-channel-send/receive pc6)
   (channel-test-basic-types-master big-sender pc6)
 
-  #|
-  |#
   (let ([try-graph
          (lambda (s)
            (let ([v (read (open-input-string s))])
@@ -188,7 +186,18 @@
   (check-not-exn (λ () (place-channel-send pl (bytes->path #"/tmp/unix" 'unix))))
   (check-not-exn (λ () (place-channel-send pl (bytes->path #"C:\\Windows" 'windows))))
 
-  (place-wait pl)
-)
-)
+  (place-wait pl))
+
+(let ([p (place/anon ch
+  (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK") (printf "Place caught break"))])
+    (place-channel-send ch "ALIVE")
+    (sync never-evt)
+    (place-channel-send ch "NOK")))])
+
+  (test "ALIVE" place-channel-receive p)
+  (place-break p)
+  (test "OK" place-channel-receive p)
+  (place-wait p)))
+
+
 ;(report-errs)
