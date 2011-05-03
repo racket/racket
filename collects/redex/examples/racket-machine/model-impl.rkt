@@ -189,7 +189,7 @@
                            (cons (lam (gensym) '()
                                       (length τs) τs #f
                                       (list->vector ns) (for/list ([_ ns]) 'val/ref)
-                                      (+ (length τs) (length ns) db) rb)
+                                      #f (+ (length τs) (length ns) db) rb)
                                  0))]
                         [`(proc-const (,τs ...) ,b)
                          (match-let ([(cons re 0) (recur `(lam ,τs () ,b))])
