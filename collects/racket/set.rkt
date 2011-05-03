@@ -368,7 +368,9 @@
                  (raise-blame-error
                   blame
                   s
-                  "expected a <~a>, got ~v" (get-name c))))))))))
+                  "expected a <~a>, got ~v" 
+                  (get-name c)
+                  s)))))))))
 
 ;; ----
 

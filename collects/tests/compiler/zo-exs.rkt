@@ -31,6 +31,15 @@
                      (prefix 0 empty empty)
                      (list 1 (list 2 3) (list 2 3) 4 5)))
  
+ (roundtrip
+    (compilation-top 0 
+                     (prefix 1 empty empty)
+                     (list (lam 'proc null 0 null #f #(0) '(val/ref) (set 0) 3 1))))
+ (roundtrip
+    (compilation-top 0 
+                     (prefix 1 empty empty)
+                     (list (lam 'proc null 0 null #f #(0) '(val/ref) #f 3 1))))
+ 
  #;(roundtrip
   (compilation-top 0 
                    (prefix 0 empty empty)

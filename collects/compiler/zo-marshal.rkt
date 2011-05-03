@@ -1002,8 +1002,9 @@
             [l (if any-refs?
                    (cons (vector-length closure-map) l)
                    l)]
-            [tl-map (for/fold ([v 0]) ([i (in-set toplevel-map)])
-                      (bitwise-ior v (arithmetic-shift 1 i)))])
+            [tl-map (and toplevel-map
+                         (for/fold ([v 0]) ([i (in-set toplevel-map)])
+                           (bitwise-ior v (arithmetic-shift 1 i))))])
        (out-marshaled unclosed-procedure-type-num
                       (list*
                        (+ (if rest? CLOS_HAS_REST 0)
@@ -1014,13 +1015,14 @@
                           (if (memq 'single-result flags) CLOS_SINGLE_RESULT 0))
                        num-all-params
                        max-let-depth
-                       (if (tl-map . < . #x7FFFFFFF)
-                           tl-map
-                           ;; Encode as an even-sized vector of 16-bit integers:
-                           (let ([len (* 2 (quotient (+ (integer-length tl-map) 31) 32))])
-                             (for/vector ([i (in-range len)])
-                               (let ([s (* i 16)])
-                                 (bitwise-bit-field tl-map s (+ s 16))))))
+                       (and tl-map
+                            (if (tl-map . < . #x7FFFFFFF)
+                                tl-map
+                                ;; Encode as an even-sized vector of 16-bit integers:
+                                (let ([len (* 2 (quotient (+ (integer-length tl-map) 31) 32))])
+                                  (for/vector ([i (in-range len)])
+                                              (let ([s (* i 16)])
+                                                (bitwise-bit-field tl-map s (+ s 16)))))))
                        name
                        l)
                       out))]))
