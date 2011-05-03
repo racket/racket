@@ -84,23 +84,27 @@
       ex))
   
   (unless (null? undocumented-exports)
-    ;; show the undocumented exports from the racket/contract library
-    (eprintf "~s has undocumented exports:\n" what)
-    (parameterize ([pretty-print-print-line
-                    (λ (line-num port old-len dest-cols)
-                      (cond
-                        [(not line-num)
-                         (newline port)
-                         0]
-                        [(equal? line-num 0)
-                         (fprintf port "  ")
-                         2]
-                        [else
-                         (fprintf port "\n  ")
-                         2]))])
-      (pretty-write (sort undocumented-exports
-                          string<?
-                          #:key symbol->string)
-                    (current-error-port)))))
+    (cond
+      [(= (length exports) (length undocumented-exports))
+       (eprintf "~s has no documented exports\n" what)]
+      [else
+       (eprintf "~s has undocumented exports:\n" what)
+       (parameterize ([pretty-print-print-line
+                       (λ (line-num port old-len dest-cols)
+                         (cond
+                           [(not line-num)
+                            (newline port)
+                            0]
+                           [(equal? line-num 0)
+                            (fprintf port "  ")
+                            2]
+                           [else
+                            (fprintf port "\n  ")
+                            2]))])
+         (pretty-write (sort undocumented-exports
+                             string<?
+                             #:key symbol->string)
+                       (current-error-port)))])))
 
 (define xref (load-collections-xref))
+
