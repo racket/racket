@@ -189,10 +189,10 @@
   (place-wait pl))
 
 (let ([p (place/anon ch
-  (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK") (printf "Place caught break"))])
-    (place-channel-send ch "ALIVE")
-    (sync never-evt)
-    (place-channel-send ch "NOK")))])
+           (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK"))])
+            (place-channel-send ch "ALIVE")
+            (sync never-evt)
+            (place-channel-send ch "NOK")))])
 
   (test "ALIVE" place-channel-receive p)
   (place-break p)
