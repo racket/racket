@@ -1,41 +1,10 @@
 #lang racket
-(require racket/runtime-path racket/sandbox
+(require racket/runtime-path
          rackunit rackunit/text-ui)
 
+(provide optimization-tests)
+
 (define show-names? (make-parameter #f))
-
-(define prog-rx
-  (pregexp (string-append "^\\s*"
-                          "(#lang typed/(?:scheme|racket)(?:/base)?)"
-                          "\\s+"
-                          "#:optimize"
-                          "\\s+")))
-
-(define (evaluator file #:optimize [optimize? #f])
-  (call-with-trusted-sandbox-configuration
-   (lambda ()
-     (parameterize ([current-load-relative-directory tests-dir]
-                    [sandbox-memory-limit #f] ; TR needs memory
-                    [sandbox-output 'string]
-                    [sandbox-namespace-specs
-                     (list (car (sandbox-namespace-specs))
-                           'typed/racket
-                           'typed/scheme)])
-       ;; drop the expected log
-       (let* ([prog (with-input-from-file file
-                      (lambda ()
-                        (read-line) ; drop #;
-                        (read)      ; drop expected log
-                        (port->string)))] ; get the actual program
-              [m    (or (regexp-match-positions prog-rx prog)
-                        (error 'evaluator "bad program contents in ~e" file))]
-              [prog (string-append (substring prog (caadr m) (cdadr m))
-                                   (if (not optimize?) "\n#:no-optimize\n" "\n")
-                                   (substring prog (cdar m)))]
-              [evaluator (make-module-evaluator prog)]
-              [out       (get-output evaluator)])
-         (kill-evaluator evaluator)
-         out)))))
 
 (define (generate-log name dir flags)
   ;; some tests require other tests, so some fiddling is required
@@ -52,6 +21,8 @@
       (with-input-from-string (string-append "(" log-string ")")
         read))))
 
+;; we log optimizations and compare to an expected log to make sure that all
+;; the optimizations we expected did indeed happen
 (define (compare-logs name dir flags)
   (test-suite "Log Comparison"
               (check-equal?
@@ -72,15 +43,7 @@
 
 ;; these two return lists of tests to be run for that category of tests
 (define (test-opt name)
-  (let ([path (build-path tests-dir name)])
-    ;; we log optimizations and compare to an expected log to make sure that
-    ;; all the optimizations we expected did indeed happen
-    (list (compare-logs name tests-dir '#("--log-optimizations"))
-          (test-suite
-           ;; optimized and non-optimized versions must give the same result
-           "Result Comparison"
-           (check-equal? (evaluator path #:optimize #t)
-                         (evaluator path))))))
+  (list (compare-logs name tests-dir '#("--log-optimizations"))))
 
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
