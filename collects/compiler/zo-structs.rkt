@@ -2,7 +2,8 @@
 (require mzlib/etc 
          scheme/match
          scheme/contract
-         scheme/list)
+         scheme/list
+         racket/set)
 
 #| Unresolved issues
 
@@ -138,6 +139,7 @@
                                 [rest? boolean?]
                                 [closure-map (vectorof exact-nonnegative-integer?)]
                                 [closure-types (listof (or/c 'val/ref 'flonum))]
+                                [toplevel-map (or/c #f (set/c exact-nonnegative-integer?))]
                                 [max-let-depth exact-nonnegative-integer?]
                                 [body (or/c expr? seq? any/c)])) ; `lambda'
 (define-form-struct (closure expr) ([code lam?] [gen-id symbol?])) ; a static closure (nothing to close over)

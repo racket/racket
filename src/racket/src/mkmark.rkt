@@ -1,5 +1,4 @@
-
-#lang scheme/base
+#lang racket/base
 
 (define re:start "^START ([a-z]+);")
 (define re:end "^END ([a-z]+);")
@@ -35,11 +34,19 @@
 		    [(regexp-match re:close l)
 		     (error 'mkmark.rkt "unexpected close")]
 		    [else (cons l (loop))])))))]
-	[print-lines (lambda (l)
-		       (for-each
-			(lambda (s)
-			  (printf "~a\n" s))
-			l))])
+	[print-lines (lambda (l [skip-rx #f])
+                       (let loop ([l l] [skip? #f])
+                         (cond
+                          [(null? l) (void)]
+                          [(and skip-rx (regexp-match? skip-rx (car l)))
+                           (loop (cdr l) (not skip?))]
+                          [skip?
+                           (loop (cdr l) #t)]
+                          [(regexp-match? #rx"(START|END)_[A-Z]+_ONLY;" (car l))
+                           (loop (cdr l) skip?)]
+                          [else
+                           (printf "~a\n" (car l))
+                           (loop (cdr l) #f)])))])
     (let ([prefix (read-lines re:mark)]
 	  [mark (read-lines re:size-or-more)]
 	  [fixup (if (regexp-match-peek re:fixup-start (current-input-port))
@@ -64,7 +71,8 @@
 			    s 
 			    "MARK2(")
 			   ""))
-			mark))
+			mark)
+                   #rx"FIXUP_ONLY")
       (printf "  return\n")
       (print-lines size)
       (printf "}\n\n")
@@ -75,13 +83,14 @@
 			  (regexp-replace* 
 			   "FIXUP_ONLY[(]([^;]*;)[)]" 
 			   (regexp-replace* 
-			    "MARK" 
+			    "MARK(?!_ONLY)" 
 			    s 
 			    "FIXUP")
 			   "\\1"))
 			(append
                          mark
-                         fixup)))
+                         fixup))
+                   #rx"MARK_ONLY")
       (printf "  return\n")
       (print-lines size)
       (printf "}\n\n")

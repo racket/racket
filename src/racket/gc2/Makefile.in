@@ -167,6 +167,9 @@ LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning
                $(srcdir)/../src/lightning/ppc/fp.h $(srcdir)/../src/lightning/ppc/fp-common.h \
                $(srcdir)/../src/lightning/ppc/funcs.h $(srcdir)/../src/lightning/ppc/funcs-common.h
 
+MZCLPFDEP = $(srcdir)/../src/mzclpf_decl.inc $(srcdir)/../src/mzclpf_pre.inc \
+            $(srcdir)/../src/mzclpf_post.inc
+
 $(XSRCDIR)/precomp.h : $(XFORMDEP)  $(srcdir)/../src/schvers.h
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
@@ -198,7 +201,7 @@ $(XSRCDIR)/future.c: ../src/future.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/future.c $(SRCDIR)/future.c
 $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
-$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(MZCLPFDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
 $(XSRCDIR)/jitalloc.c: ../src/jitalloc.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jitalloc.c $(SRCDIR)/jitalloc.c
@@ -258,7 +261,7 @@ $(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/syntax.c $(SRCDIR)/syntax.c
 $(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/thread.c $(SRCDIR)/thread.c
-$(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP) $(MZCLPFDEP)
 	$(XFORM) $(XSRCDIR)/type.c $(SRCDIR)/type.c
 $(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c

@@ -1951,8 +1951,11 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
 void scheme_unbound_global(Scheme_Bucket *b)
 {
   Scheme_Object *name = (Scheme_Object *)b->key;
+  Scheme_Env *home;
 
-  if (((Scheme_Bucket_With_Home *)b)->home->module) {
+  home = scheme_get_bucket_home(b);
+
+  if (home && home->module) {
     const char *errmsg;
     char *phase, phase_buf[20];
     
@@ -1961,8 +1964,8 @@ void scheme_unbound_global(Scheme_Bucket *b)
     else
       errmsg = "reference to an identifier before its definition: %S%_%s";
 
-    if (((Scheme_Bucket_With_Home *)b)->home->phase) {
-      sprintf(phase_buf, " phase: %" PRIdPTR "", ((Scheme_Bucket_With_Home *)b)->home->phase);
+    if (home->phase) {
+      sprintf(phase_buf, " phase: %" PRIdPTR "", home->phase);
       phase = phase_buf;
     } else
       phase = "";
@@ -1971,7 +1974,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
 		     name,
 		     errmsg,
 		     name,
-		     ((Scheme_Bucket_With_Home *)b)->home->module->modsrc,
+		     home->module->modsrc,
                      phase);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,

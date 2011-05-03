@@ -88,7 +88,7 @@ enum {
   scheme_hash_table_type,               /* 69 */
   scheme_hash_tree_type,                /* 70 */
   scheme_cpointer_type,                 /* 71 */
-  scheme_currently_unused_type,         /* 72 */
+  scheme_prefix_type,                   /* 72 */
   scheme_weak_box_type,                 /* 73 */
   scheme_ephemeron_type,                /* 74 */
   scheme_struct_type_type,              /* 75 */

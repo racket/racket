@@ -216,7 +216,7 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
           GC_MP_CNT_INC(mp_mark_cnt);
         }
 
-        p = (void **)GC_resolve(wb->secondary_erase);
+        p = (void **)GC_resolve2(wb->secondary_erase, gc);
         *(p + wb->soffset) = NULL;
         wb->secondary_erase = NULL;
       }

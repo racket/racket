@@ -1502,7 +1502,9 @@
   (unless killer-thread
     (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)])
       (set! killer-thread
-            (parameterize ([current-custodian priviledged-custodian])
+            (parameterize ([current-custodian priviledged-custodian]
+                           ;; don't hold onto the namespace in the finalizer thread:
+                           [current-namespace (make-base-empty-namespace)])
               (thread (lambda ()
                         (let loop () (will-execute killer-executor) (loop))))))))
   (will-register killer-executor obj finalizer))

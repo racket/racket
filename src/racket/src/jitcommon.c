@@ -219,7 +219,7 @@ static int common0(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
 
   /* *** quote_syntax_code *** */
-  /* R0 is WORDS_TO_BYTES(c), R1 is WORDS_TO_BYTES(i+p+1), R2 is WORDS_TO_BYTES(p) */
+  /* R0 is WORDS_TO_BYTES(c), R1 is &0->a[i+p+1], R2 is &0->a[p] */
   sjc.quote_syntax_code = jit_get_ip().ptr;
   mz_prolog(JIT_V1);
   __START_SHORT_JUMPS__(1);

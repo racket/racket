@@ -530,6 +530,7 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(_scheme_compiled_values_types_, bad_trav);
 
+  GC_REG_TRAV(scheme_prefix_type, prefix_val);
   GC_REG_TRAV(scheme_resolve_prefix_type, resolve_prefix_val);
   GC_REG_TRAV(scheme_rt_comp_prefix, comp_prefix_val);
 
@@ -640,7 +641,7 @@ void scheme_register_traversers(void)
   
   GC_REG_TRAV(scheme_thread_cell_values_type, small_object);
 
-  GC_REG_TRAV(scheme_global_ref_type, small_object);
+  GC_REG_TRAV(scheme_global_ref_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
 

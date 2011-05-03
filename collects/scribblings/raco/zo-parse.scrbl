@@ -2,7 +2,8 @@
 @(require scribble/manual
           (for-label racket/base
                      racket/contract
-                     compiler/zo-parse))
+                     compiler/zo-parse
+                     racket/set))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
    (defstruct id fields #:prefab . rest))
@@ -95,10 +96,11 @@
                                       module-variable?))]
              [stxs (listof stx?)])]{
   Represents a ``prefix'' that is pushed onto the stack to initiate
-  evaluation.  The prefix is an array, where buckets holding the values
-  for @racket[toplevels] are first, then a bucket for another array if
-  @racket[stxs] is non-empty, then @racket[num-lifts] extra buckets for
-  lifted local procedures.
+  evaluation.  The prefix is an array, where buckets holding the
+  values for @racket[toplevels] are first, then the buckets for the
+  @racket[stxs], then a bucket for another array if @racket[stxs] is
+  non-empty, then @racket[num-lifts] extra buckets for lifted local
+  procedures.
 
   In @racket[toplevels], each element is one of the following:
   @itemize[
@@ -278,6 +280,7 @@
              [rest? boolean?]
              [closure-map (vectorof exact-nonnegative-integer?)]
              [closure-types (listof (or/c 'val/ref 'flonum))]
+             [toplevel-map (or/c #f (set/c exact-nonnegative-integer?))]
              [max-let-depth exact-nonnegative-integer?]
              [body (or/c expr? seq? any/c)])]{
   Represents a @racket[lambda] form.  The @racket[name] field is a name
@@ -288,13 +291,31 @@
   @racket[param-types] list contains @racket[num-params] symbols
   indicating the type of each argumet, either @racket['val] for a normal
   argument, @racket['ref] for a boxed argument (representing a mutable
-  local variable), or @racket['flonum] for a flonum argument.  The
+  local variable), or @racket['flonum] for a flonum argument. 
+
+  The
   @racket[closure-map] field is a vector of stack positions that are
   captured when evaluating the @racket[lambda] form to create a closure.
   The @racket[closure-types] field provides a corresponding list of
   types, but no distinction is made between normal values and boxed
   values; also, this information is redundant, since it can be inferred
   by the bindings referenced though @racket[closure-map].
+
+  Which a closure captures top-level or module-level variables, they
+  are represented in the closure by capturing a prefix (in the sense
+  of @racket[prefix]).  The @racket[toplevel-map] field indicates
+  which top-level and lifted variables are actually used by the
+  closure (so that variables in a prefix can be pruned by the run-time
+  system if they become unused). A @racket[#f] value indicates either
+  that no prefix is captured or all variables in the prefix should be
+  considered used. Otherwise, numbers in the set indicate which
+  variables and lifted variables are used. Variables are numbered
+  consecutively by position in the prefix starting from
+  @racket[0]. Lifted variables are numbered immediately
+  afterward---which means that, if the prefix contains any syntax
+  objects, lifted-variable numbers are shifted down relative to a
+  @racket[toplevel] by the number of syntax object in the prefix plus
+  one (which makes the @racket[toplevel-map] set more compact).
 
   When the function is called, the rest-argument list (if any) is pushed
   onto the stack, then the normal arguments in reverse order, then the

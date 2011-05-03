@@ -104,13 +104,15 @@ static Scheme_Object *top_level_require_sfs(Scheme_Object *data, SFS_Info *info)
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
+			    int num_toplevels, int num_stxes, int num_lifts,  
+                            void *tl_use_map, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs);
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
                                        int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
+				       int num_toplevels, int num_stxes, int num_lifts, 
+                                       void *tl_use_map, int result_ignored,
                                        struct Validate_Clearing *vc, int tailpos,
                                        Scheme_Hash_Tree *procs);
 
@@ -1168,8 +1170,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     }
     
     b = scheme_bucket_from_table(menv->toplevel, (const char *)srcname);
-    if (!((Scheme_Bucket_With_Home *)b)->home)
-      ((Scheme_Bucket_With_Home *)b)->home = menv;
+    scheme_set_bucket_home(b, menv);
 
     if (get_bucket)
       return (Scheme_Object *)b;
@@ -5519,7 +5520,8 @@ Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
+			    int num_toplevels, int num_stxes, int num_lifts, 
+                            void *tl_use_map, int result_ignored,
                             struct Validate_Clearing *vc, int tailpos,
                             Scheme_Hash_Tree *procs)
 {
@@ -5538,6 +5540,7 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_code(port, m->body, m->max_let_depth,
                        m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts,
+                       NULL,
                        1);
   
   /* validate exp-time code */
@@ -5550,7 +5553,7 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
     e = SCHEME_VEC_ELS(e)[1];
       
     scheme_validate_code(port, e, let_depth,
-                         rp->num_toplevels, rp->num_stxes, rp->num_lifts,
+                         rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL,
                          0);
   }
 }
@@ -9942,7 +9945,8 @@ top_level_require_jit(Scheme_Object *data)
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
 				       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
+				       int num_toplevels, int num_stxes, int num_lifts, 
+                                       void *tl_use_map, int result_ignored,
                                        struct Validate_Clearing *vc, int tailpos,
                                        Scheme_Hash_Tree *procs)
 {

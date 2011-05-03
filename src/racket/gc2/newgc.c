@@ -291,6 +291,10 @@ void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc func) {
   gc->GC_collect_inform_callback = func;
 }
 
+void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc func) {
+  NewGC *gc = GC_get_GC();
+  gc->GC_post_propagate_hook = func;
+}
 
 #include "my_qsort.c"
 
@@ -482,7 +486,7 @@ inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
 #endif
 }
 
-inline static mpage *pagemap_find_page(PageMap page_maps1, void *p) {
+inline static mpage *pagemap_find_page(PageMap page_maps1, const void *p) {
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   mpage ***page_maps2;
   mpage **page_maps3;
@@ -1642,7 +1646,7 @@ inline static void reset_nursery(NewGC *gc)
    point, purely about the mark field of the object. It ignores things like
    the object not being one of our GC heap objects, being in a higher gen
    than we're collecting, not being a pointer at all, etc. */
-inline static int marked(NewGC *gc, void *p)
+inline static int marked(NewGC *gc, const void *p)
 {
   mpage *page;
 
@@ -1665,6 +1669,10 @@ inline static int marked(NewGC *gc, void *p)
       fprintf(stderr, "ABORTING! INVALID SIZE_CLASS %i\n", page->size_class);
       exit(EXIT_FAILURE);
   }
+}
+
+int GC_is_marked2(const void *p, struct NewGC *gc) {
+  return marked(gc, p);
 }
 
 /*****************************************************************************/
@@ -1973,7 +1981,7 @@ inline static void mark_finalizer_structs(NewGC *gc)
 {
   Fnl *fnl;
 
-  for(fnl = GC_resolve(gc->finalizers); fnl; fnl = GC_resolve(fnl->next)) { 
+  for(fnl = GC_resolve2(gc->finalizers, gc); fnl; fnl = GC_resolve2(fnl->next, gc)) { 
     set_backtrace_source(fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc); 
     set_backtrace_source(&gc->finalizers, BT_ROOT);
@@ -2009,13 +2017,13 @@ inline static void repair_finalizer_structs(NewGC *gc)
 
 inline static void check_finalizers(NewGC *gc, int level)
 {
-  Fnl *work = GC_resolve(gc->finalizers);
+  Fnl *work = GC_resolve2(gc->finalizers, gc);
   Fnl *prev = NULL;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
   while(work) {
     if((work->eager_level == level) && !marked(gc, work->p)) {
-      struct finalizer *next = GC_resolve(work->next);
+      struct finalizer *next = GC_resolve2(work->next, gc);
 
       GCDEBUG((DEBUGOUTF, 
                "CFNL: Level %i finalizer %p on %p queued for finalization.\n",
@@ -2035,7 +2043,7 @@ inline static void check_finalizers(NewGC *gc, int level)
                work, work->eager_level, work->p, pagemap_find_page(gc->page_maps, work->p),
                marked(work->p)));
       prev = work; 
-      work = GC_resolve(work->next); 
+      work = GC_resolve2(work->next, gc); 
     }
   }
 }
@@ -2076,7 +2084,7 @@ inline static void mark_stack_initialize(NewGC *gc) {
   }
 }
 
-inline static void push_ptr(NewGC *gc, void *ptr)
+static void push_ptr(NewGC *gc, void *ptr)
 {
   /* This happens during propagation if we go past the end of this MarkSegment*/
   if(gc->mark_stack->top == MARK_STACK_END(gc->mark_stack)) {
@@ -2112,6 +2120,21 @@ inline static int pop_ptr(NewGC *gc, void **ptr)
   /* if we get here, we're guaranteed to have data */
   *ptr = *(--gc->mark_stack->top);
   return 1;
+}
+
+void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc)
+{
+  void *p2;
+  if (!pop_ptr(gc, &p2))
+    p2 = NULL;
+  if (REMOVE_BIG_PAGE_PTR_TAG(p2) != pf) {
+    printf("internal error: cannot retract intended pointer: %p != %p\n", p2, pf);
+    abort();
+  }
+  if (pop_ptr(gc, &p2)) {
+    printf("internal error: mark stack contained pointer other than retracted\n");
+    abort();
+  }
 }
 
 inline static void clear_stack_pages(NewGC *gc)
@@ -3078,9 +3101,8 @@ static void promote_marked_gen0_big_pages(NewGC *gc) {
 }
 #endif
 
-void *GC_resolve(void *p)
+void *GC_resolve2(void *p, NewGC *gc)
 {
-  NewGC *gc = GC_get_GC();
   mpage *page = pagemap_find_page(gc->page_maps, p);
   objhead *info;
 
@@ -3092,6 +3114,11 @@ void *GC_resolve(void *p)
     return *(void**)p;
   else 
     return p;
+}
+
+void *GC_resolve(void *p)
+{
+  return GC_resolve2(p, GC_get_GC());
 }
 
 void *GC_fixup_self(void *p)
@@ -3129,6 +3156,11 @@ int GC_is_on_allocated_page(void *p)
   return !!pagemap_find_page(gc->page_maps, p);
 }
 
+
+int GC_is_partial(struct NewGC *gc)
+{
+  return !gc->gc_full || gc->doing_memory_accounting;
+}
 
 /*****************************************************************************/
 /* memory stats and traces                                                   */
@@ -4298,6 +4330,9 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 
   check_finalizers(gc, 3);
   propagate_marks(gc);
+
+  if (gc->GC_post_propagate_hook)
+    gc->GC_post_propagate_hook(gc);
 
   /* for any new ones that appeared: */
   zero_weak_boxes(gc, 0, 1); 

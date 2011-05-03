@@ -12,7 +12,7 @@ static int variable_obj_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(b->key, gc);
   gcMARK2(b->val, gc);
-  gcMARK2(((Scheme_Bucket_With_Home *)b)->home, gc);
+  gcMARK2(((Scheme_Bucket_With_Home *)b)->home_link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
@@ -23,7 +23,7 @@ static int variable_obj_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(b->key, gc);
   gcFIXUP2(b->val, gc);
-  gcFIXUP2(((Scheme_Bucket_With_Home *)b)->home, gc);
+  gcFIXUP2(((Scheme_Bucket_With_Home *)b)->home_link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
@@ -423,6 +423,7 @@ static int unclosed_proc_MARK(void *p, struct NewGC *gc) {
   gcMARK2(d->name, gc);
   gcMARK2(d->code, gc);
   gcMARK2(d->closure_map, gc);
+  gcMARK2(d->tl_map, gc);
 #ifdef MZ_USE_JIT
   gcMARK2(d->u.native_code, gc);
   gcMARK2(d->context, gc);
@@ -438,6 +439,7 @@ static int unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(d->name, gc);
   gcFIXUP2(d->code, gc);
   gcFIXUP2(d->closure_map, gc);
+  gcFIXUP2(d->tl_map, gc);
 #ifdef MZ_USE_JIT
   gcFIXUP2(d->u.native_code, gc);
   gcFIXUP2(d->context, gc);
@@ -770,7 +772,7 @@ static int closed_prim_proc_FIXUP(void *p, struct NewGC *gc) {
 static int scm_closure_SIZE(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
-                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      ? ((Scheme_Closure_Data *)GC_resolve2(c->code, gc))->closure_size
                       : 0);
 
   return
@@ -781,14 +783,23 @@ static int scm_closure_SIZE(void *p, struct NewGC *gc) {
 static int scm_closure_MARK(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
-                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      ? ((Scheme_Closure_Data *)GC_resolve2(c->code, gc))->closure_size
                       : 0);
 
 
   int i = closure_size;
+# define CLOSURE_DATA_TYPE Scheme_Closure_Data
+# include "mzclpf_decl.inc"
+
+  gcMARK2(c->code, gc);
+
+# include "mzclpf_pre.inc"
+
   while (i--)
     gcMARK2(c->vals[i], gc);
-  gcMARK2(c->code, gc);
+
+# include "mzclpf_post.inc"
+# undef CLOSURE_DATA_TYPE
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
@@ -798,14 +809,18 @@ static int scm_closure_MARK(void *p, struct NewGC *gc) {
 static int scm_closure_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
-                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      ? ((Scheme_Closure_Data *)GC_resolve2(c->code, gc))->closure_size
                       : 0);
 
 
   int i = closure_size;
+
+  gcFIXUP2(c->code, gc);
+
+
   while (i--)
     gcFIXUP2(c->vals[i], gc);
-  gcFIXUP2(c->code, gc);
+
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
@@ -2145,6 +2160,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->modvars, gc);
 
+  gcMARK2(e->weak_self_link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2183,6 +2199,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(e->modvars, gc);
 
+  gcFIXUP2(e->weak_self_link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2261,6 +2278,43 @@ static int compilation_top_val_FIXUP(void *p, struct NewGC *gc) {
 
 #define compilation_top_val_IS_ATOMIC 0
 #define compilation_top_val_IS_CONST_SIZE 1
+
+
+static int prefix_val_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Prefix *pf = (Scheme_Prefix *)p;
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
+		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                       * sizeof(int))));
+}
+
+static int prefix_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Prefix *pf = (Scheme_Prefix *)p;
+  int i;
+  for (i = pf->num_slots; i--; )
+    gcMARK2(pf->a[i], gc);
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
+		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                       * sizeof(int))));
+}
+
+static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Prefix *pf = (Scheme_Prefix *)p;
+  int i;
+  for (i = pf->num_slots; i--; )
+    gcFIXUP2(pf->a[i], gc);
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
+		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                       * sizeof(int))));
+}
+
+#define prefix_val_IS_ATOMIC 0
+#define prefix_val_IS_CONST_SIZE 0
 
 
 static int resolve_prefix_val_SIZE(void *p, struct NewGC *gc) {
@@ -2916,6 +2970,7 @@ static int mark_resolve_info_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(i->prefix, gc);
   gcMARK2(i->stx_map, gc);
+  gcMARK2(i->tl_map, gc);
   gcMARK2(i->old_pos, gc);
   gcMARK2(i->new_pos, gc);
   gcMARK2(i->old_stx_pos, gc);
@@ -2933,6 +2988,7 @@ static int mark_resolve_info_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(i->prefix, gc);
   gcFIXUP2(i->stx_map, gc);
+  gcFIXUP2(i->tl_map, gc);
   gcFIXUP2(i->old_pos, gc);
   gcFIXUP2(i->new_pos, gc);
   gcFIXUP2(i->old_stx_pos, gc);
@@ -4284,7 +4340,7 @@ static int mark_custodian_box_val_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_custodian_box_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
-  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+  int sd = ((Scheme_Custodian *)GC_resolve2(b->cust, gc))->shut_down;
 
   gcMARK2(b->cust, gc);
   if (!sd) {
@@ -4297,7 +4353,7 @@ static int mark_custodian_box_val_MARK(void *p, struct NewGC *gc) {
 
 static int mark_custodian_box_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
-  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+  int sd = ((Scheme_Custodian *)GC_resolve2(b->cust, gc))->shut_down;
 
   gcFIXUP2(b->cust, gc);
   if (!sd) {
@@ -4741,7 +4797,7 @@ static int mark_serialized_struct_val_FIXUP(void *p, struct NewGC *gc) {
 
 static int mark_struct_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
-  int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
+  int num_slots = ((Scheme_Struct_Type *)GC_resolve2(s->stype, gc))->num_slots;
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
@@ -4750,7 +4806,7 @@ static int mark_struct_val_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_struct_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
-  int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
+  int num_slots = ((Scheme_Struct_Type *)GC_resolve2(s->stype, gc))->num_slots;
 
   int i;
 
@@ -4766,7 +4822,7 @@ static int mark_struct_val_MARK(void *p, struct NewGC *gc) {
 
 static int mark_struct_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
-  int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
+  int num_slots = ((Scheme_Struct_Type *)GC_resolve2(s->stype, gc))->num_slots;
 
   int i;
 
@@ -5524,7 +5580,7 @@ static int mark_free_id_info_FIXUP(void *p, struct NewGC *gc) {
 
 static int native_closure_SIZE(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
@@ -5537,20 +5593,28 @@ static int native_closure_SIZE(void *p, struct NewGC *gc) {
 
 static int native_closure_MARK(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
   }
 
-
   {
-    int i = closure_size;
-    while (i--)
-      gcMARK2(c->vals[i], gc);
-  }
+  int i = closure_size;
+# define CLOSURE_DATA_TYPE Scheme_Native_Closure_Data
+# include "mzclpf_decl.inc"
+
   gcMARK2(c->code, gc);
-  
+
+# include "mzclpf_pre.inc"
+
+  while (i--)
+    gcMARK2(c->vals[i], gc);
+
+# include "mzclpf_post.inc"
+# undef CLOSURE_DATA_TYPE
+  }
+
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
@@ -5558,20 +5622,23 @@ static int native_closure_MARK(void *p, struct NewGC *gc) {
 
 static int native_closure_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
   }
 
-
   {
-    int i = closure_size;
-    while (i--)
-      gcFIXUP2(c->vals[i], gc);
-  }
+  int i = closure_size;
+
   gcFIXUP2(c->code, gc);
-  
+
+
+  while (i--)
+    gcFIXUP2(c->vals[i], gc);
+
+  }
+
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
@@ -5624,6 +5691,7 @@ static int native_unclosed_proc_MARK(void *p, struct NewGC *gc) {
   if (d->closure_size < 0) {
     gcMARK2(d->u.arities, gc);
   }
+  gcMARK2(d->tl_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
@@ -5642,6 +5710,7 @@ static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
   if (d->closure_size < 0) {
     gcFIXUP2(d->u.arities, gc);
   }
+  gcFIXUP2(d->tl_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));

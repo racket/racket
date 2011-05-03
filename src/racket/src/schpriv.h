@@ -604,6 +604,8 @@ Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference 
 #define GLOB_IS_CONST 1
 /* always defined as the same kind of value (e.g., proc with a particular arity): */
 #define GLOB_IS_CONSISTENT 2
+/* whether home_link is strong or weak: */
+#define GLOB_STRONG_HOME_LINK 4
 /* a kernel constant: */
 #define GLOB_HAS_REF_ID 16
 /* can cast to Scheme_Bucket_With_Home: */
@@ -622,8 +624,12 @@ typedef Scheme_Bucket_With_Flags Scheme_Bucket_With_Ref_Id;
 
 typedef struct {
   Scheme_Bucket_With_Ref_Id bucket;
-  Scheme_Env *home;
+  Scheme_Object *home_link; /* weak to Scheme_Env *, except when GLOB_STRONG_HOME_LINK */
 } Scheme_Bucket_With_Home;
+
+Scheme_Env *scheme_get_bucket_home(Scheme_Bucket *b);
+void scheme_set_bucket_home(Scheme_Bucket *b, Scheme_Env *e);
+Scheme_Object *scheme_get_home_weak_link(Scheme_Env *e);
 
 Scheme_Object *
 scheme_get_primitive_global(Scheme_Object *var, Scheme_Env *env,
@@ -1961,6 +1967,26 @@ double scheme_double_exp(double x);
 /*                     read, eval, print                                  */
 /*========================================================================*/
 
+/* A "prefix" is put on the stack and captured by closures to captures
+   a set of top-level or module variables and syntax
+   objects. Top-level and module variables are packed together in a
+   prefix on the theory that a lot of them may be captured in a single
+   closure, and so it's better to keep one layer of hierarchy.  For
+   3m, special GC cooperation allows a prefix's set of variables to be
+   pruned (i.e., dropped from the prefix) for slots that are not used
+   by any closure, when the prefix is accessed only by closures. */
+typedef struct Scheme_Prefix
+{
+  Scheme_Object so; /* scheme_prefix_type */
+  int num_slots, num_toplevels, num_stxes;
+  struct Scheme_Prefix *next_final; /* for special GC handling */
+  Scheme_Object *a[1]; /* array of objects */
+  /* followed by an array of `int's for tl_map uses */
+} Scheme_Prefix;
+
+#define PREFIX_TO_USE_BITS(pf) \
+  (int *)((char *)pf + sizeof(Scheme_Prefix) + ((pf->num_slots - 1) * sizeof(Scheme_Object *)))
+
 #define LOAD_ON_DEMAND
 void scheme_clear_delayed_load_cache();
 
@@ -2139,7 +2165,8 @@ typedef struct Resolve_Info
   int max_let_depth; /* filled in by sub-expressions */
   Resolve_Prefix *prefix;
   Scheme_Hash_Table *stx_map; /* compile offset => resolve offset; prunes prefix-recored stxes */
-  mzshort toplevel_pos; /* -1 mean consult next */
+  mzshort toplevel_pos; /* -1 means consult `next' */
+  void *tl_map; /* fixnum or bit array (as array of `int's) indicating which globals+lifts in prefix are used */
   mzshort *old_pos;
   mzshort *new_pos;
   int stx_count;
@@ -2201,7 +2228,8 @@ struct Validate_Clearing;
 typedef void (*Scheme_Syntax_Validater)(Scheme_Object *data, Mz_CPort *port, 
                                         char *stack, Validate_TLS tls,
 					int depth, int letlimit, int delta,
-					int num_toplevels, int num_stxes, int num_lifts, int result_ignored,
+					int num_toplevels, int num_stxes, int num_lifts, 
+                                        void *tl_use_map, int result_ignored,
                                         struct Validate_Clearing *vc, int tailpos,
                                         Scheme_Hash_Tree *procs);
 
@@ -2219,6 +2247,7 @@ typedef struct Scheme_Closure_Data
                            followed by bit array with 2 bits per args then per closed-over */
   Scheme_Object *code;
   Scheme_Object *name; /* name or (vector name src line col pos span generated?) */
+  void *tl_map; /* fixnum or bit array (as array of `int's) indicating which globals+lifts in prefix are used */
 #ifdef MZ_USE_JIT
   union {
     struct Scheme_Closure_Data *jit_clone;
@@ -2262,6 +2291,7 @@ typedef struct Scheme_Native_Closure_Data {
                                               non-case-lambda */
     Scheme_Object *name;
   } u2;
+  void *tl_map;
 #ifdef MZ_PRECISE_GC
   void **retained; /* inside code */
 #endif
@@ -2547,6 +2577,8 @@ int scheme_resolve_info_flags(Resolve_Info *info, int pos, Scheme_Object **lifte
 int scheme_resolve_info_lookup(Resolve_Info *resolve, int pos, int *flags, Scheme_Object **lifted, int convert_shift);
 int scheme_optimize_info_is_ready(Optimize_Info *info, int pos);
 void scheme_resolve_info_set_toplevel_pos(Resolve_Info *info, int pos);
+void scheme_merge_resolve_tl_map(Resolve_Info *info, Resolve_Info *new_info);
+void *scheme_merge_tl_map(void *tl_map, void *new_tl_map);
 
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);
 Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolve_Prefix *rp, Resolve_Info *ri);
@@ -2829,19 +2861,19 @@ Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy);
 
 void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                           int depth,
-			  int num_toplevels, int num_stxes, int num_lifts,
+			  int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                           int code_vec);
 void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, 
 			  char *stack, Validate_TLS tls,
                           int depth, int letlimit, int delta,
-			  int num_toplevels, int num_stxes, int num_lifts,
+			  int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                           Scheme_Object *app_rator, int proc_with_refs_ok, 
                           int result_ignored, struct Validate_Clearing *vc, 
                           int tailpos, int need_flonum, Scheme_Hash_Tree *procs);
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Validate_TLS tls,
                               int depth, int delta,
-			      int num_toplevels, int num_stxes, int num_lifts,
+			      int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                               int skip_refs_check);
 void scheme_validate_boxenv(int pos, Mz_CPort *port,
 			    char *stack, int depth, int delta, int letlimit);
@@ -2849,11 +2881,11 @@ void scheme_validate_boxenv(int pos, Mz_CPort *port,
 int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                                     int hope,
                                     Validate_TLS tls,
-                                    int num_toplevels, int num_stxes, int num_lifts);
+                                    int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map);
 
 void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr, 
                              char *new_stack, Validate_TLS tls,
-                             int num_toplevels, int num_stxes, int num_lifts,
+                             int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                              int self_pos_in_closure, Scheme_Hash_Tree *procs);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 1
@@ -2971,6 +3003,8 @@ struct Scheme_Env {
                                3. modchain for previous phase (or #f) */
 
   Scheme_Hash_Table *modvars; /* for scheme_module_variable_type hashing */
+
+  Scheme_Object *weak_self_link; /* for Scheme_Bucket_With_Home */
 
   int id_counter;
 };

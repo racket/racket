@@ -20,8 +20,9 @@
        (make-seq (map update forms))]
       [(struct splice (forms))
        (make-splice (map update forms))]
-      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types max-let-depth body)))
+      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types tl-map max-let-depth body)))
        (struct-copy lam l
+                    [toplevel-map #f] ; conservative
                     [body (update body)])]
       [(and c (struct closure (code gen-id)))
        (struct-copy closure c

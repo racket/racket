@@ -63,7 +63,7 @@ inline static void clean_up_thread_list(NewGC *gc)
 
   while(work) {
     if(!pagemap_find_page(gc->page_maps, work->thread) || marked(gc, work->thread)) {
-      work->thread = GC_resolve(work->thread);
+      work->thread = GC_resolve2(work->thread, gc);
       prev = work;
       work = work->next;
     } else {
@@ -202,7 +202,7 @@ inline static void clean_up_owner_table(NewGC *gc)
       if(!marked(gc, owner_table[i]->originator)) {
         owner_table[i]->originator = NULL;
       } else 
-        owner_table[i]->originator = GC_resolve(owner_table[i]->originator);
+        owner_table[i]->originator = GC_resolve2(owner_table[i]->originator, gc);
 
       /* potential delete */
       if(i != 1) 
@@ -477,8 +477,8 @@ inline static void clean_up_account_hooks(NewGC *gc)
 
   while(work) {
     if((!work->c1 || marked(gc, work->c1)) && marked(gc, work->c2)) {
-      work->c1 = GC_resolve(work->c1);
-      work->c2 = GC_resolve(work->c2);
+      work->c1 = GC_resolve2(work->c1, gc);
+      work->c2 = GC_resolve2(work->c2, gc);
       prev = work;
       work = work->next;
     } else {

@@ -1197,7 +1197,7 @@ Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *
       b->val = val;
       if (home) {
         ASSERT_IS_VARIABLE_BUCKET(b);
-	((Scheme_Bucket_With_Home *)b)->home = home;
+        scheme_set_bucket_home(b, home);
       }
     }
   }
@@ -1231,6 +1231,40 @@ void scheme_clean_dead_env(Scheme_Env *env)
   }
 }
 
+Scheme_Object *scheme_get_home_weak_link(Scheme_Env *e)
+{
+  if (!e->weak_self_link) {
+    Scheme_Object *wb;
+    wb = scheme_make_weak_box((Scheme_Object *)e);
+    e->weak_self_link = wb;
+  }
+
+  return e->weak_self_link;
+}
+
+Scheme_Env *scheme_get_bucket_home(Scheme_Bucket *b)
+{
+  Scheme_Object *l;
+
+  l = ((Scheme_Bucket_With_Home *)b)->home_link;
+  if (l) {
+    if (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_STRONG_HOME_LINK)
+      return (Scheme_Env *)l;
+    else
+      return (Scheme_Env *)SCHEME_WEAK_BOX_VAL(l);
+  } else
+    return NULL;
+}
+
+void scheme_set_bucket_home(Scheme_Bucket *b, Scheme_Env *e)
+{
+  if (!((Scheme_Bucket_With_Home *)b)->home_link) {
+    Scheme_Object *link;
+    link = scheme_get_home_weak_link(e);
+    ((Scheme_Bucket_With_Home *)b)->home_link = link;
+  }
+}
+
 /*========================================================================*/
 /*                           namespace bindings                           */
 /*========================================================================*/
@@ -1245,8 +1279,7 @@ scheme_lookup_global(Scheme_Object *symbol, Scheme_Env *env)
   b = scheme_bucket_or_null_from_table(env->toplevel, (char *)symbol, 0);
   if (b) {
     ASSERT_IS_VARIABLE_BUCKET(b);
-    if (!((Scheme_Bucket_With_Home *)b)->home)
-      ((Scheme_Bucket_With_Home *)b)->home = env;
+    scheme_set_bucket_home(b, env);
     return (Scheme_Object *)b->val;
   }
 
@@ -1260,8 +1293,7 @@ scheme_global_bucket(Scheme_Object *symbol, Scheme_Env *env)
     
   b = scheme_bucket_from_table(env->toplevel, (char *)symbol);
   ASSERT_IS_VARIABLE_BUCKET(b);
-  if (!((Scheme_Bucket_With_Home *)b)->home)
-    ((Scheme_Bucket_With_Home *)b)->home = env;
+  scheme_set_bucket_home(b, env);
     
   return b;
 }
@@ -1288,7 +1320,7 @@ scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
     b = scheme_bucket_from_table(env->toplevel, (const char *)sym);
     b->val = obj;
     ASSERT_IS_VARIABLE_BUCKET(b);
-    ((Scheme_Bucket_With_Home *)b)->home = env;
+    scheme_set_bucket_home(b, env);
     if (constant && scheme_defining_primitives) {
       ((Scheme_Bucket_With_Flags *)b)->id = builtin_ref_counter++;
       ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_HAS_REF_ID | GLOB_IS_CONST);
@@ -1340,6 +1372,8 @@ scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *obj,
 void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 {
   Scheme_Object *rn;
+
+  if (!env) return;
 
   if (env->rename_set) {
     rn = scheme_get_module_rename_from_set(env->rename_set,
@@ -3139,8 +3173,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return (Scheme_Object *)b->val;
 
   ASSERT_IS_VARIABLE_BUCKET(b);
-  if (!((Scheme_Bucket_With_Home *)b)->home)
-    ((Scheme_Bucket_With_Home *)b)->home = genv;
+  scheme_set_bucket_home(b, genv);
   
   return (Scheme_Object *)b;
 }
@@ -3155,7 +3188,9 @@ int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)
       return 1;
   } else {
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
-      if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
+      Scheme_Env *home;
+      home = scheme_get_bucket_home((Scheme_Bucket *)var);
+      if (!SAME_OBJ(home, env->genv))
         return 1;
     } else
       return 1;
@@ -3165,7 +3200,8 @@ int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
 {
-  Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
+  Scheme_Env *home;
+  home = scheme_get_bucket_home((Scheme_Bucket *)o);
   if (home && home->module && scheme_is_unsafe_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
@@ -3174,7 +3210,8 @@ Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
 
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o)
 {
-  Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
+  Scheme_Env *home;
+  home = scheme_get_bucket_home((Scheme_Bucket *)o);
   if (home && home->module && scheme_is_flfxnum_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
@@ -3183,7 +3220,8 @@ Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o)
 
 Scheme_Object *scheme_extract_futures(Scheme_Object *o)
 {
-  Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
+  Scheme_Env *home;
+  home = scheme_get_bucket_home((Scheme_Bucket *)o);
   if (home && home->module && scheme_is_futures_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
@@ -3912,7 +3950,7 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
 Resolve_Prefix *scheme_remap_prefix(Resolve_Prefix *rp, Resolve_Info *ri)
 {
   /* Rewrite stxes list based on actual uses at resolve pass.
-     If we have no lifts, we can just srop unused stxes.
+     If we have no lifts, we can just drop unused stxes.
      Otherwise, if any stxes go unused, we just have to replace them
      with NULL. */
   int i, cnt;
@@ -4012,6 +4050,103 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
   return naya;
 }
 
+static void *ensure_tl_map_len(void *old_tl_map, int new_len)
+{
+  int current_len;
+  void *tl_map;
+
+  if (!old_tl_map)
+    current_len = 0;
+  else if ((uintptr_t)old_tl_map & 0x1)
+    current_len = 31;
+  else
+    current_len = (*(int *)old_tl_map) * 32;
+
+  if (new_len > current_len) {
+    /* allocate/grow tl_map */
+    if (new_len <= 31)
+      tl_map = (void *)0x1;
+    else {
+      int len = ((new_len + 31) / 32);
+      tl_map = scheme_malloc_atomic((len + 1) * sizeof(int));
+      memset(tl_map, 0, (len + 1) * sizeof(int));
+      *(int *)tl_map = len;
+    }
+
+    if (old_tl_map) {
+      if ((uintptr_t)old_tl_map & 0x1) {
+        ((int *)tl_map)[1] = ((uintptr_t)old_tl_map >> 1) & 0x7FFFFFFF;
+      } else {
+        memcpy((int *)tl_map + 1,
+               (int *)old_tl_map + 1,
+               sizeof(int) * (current_len / 32));
+      }
+    }
+
+    return tl_map;
+  } else
+    return old_tl_map;
+}
+
+static void set_tl_pos_used(Resolve_Info *info, int pos)
+{
+  int tl_pos;
+  void *tl_map;
+
+  /* Fixnum-like bit packing avoids allocation in the common case of a
+     small prefix. We use 31 fixnum-like bits (even on a 64-bit
+     platform, and even though fixnums are only 30 bits). */
+
+  if (pos >= info->prefix->num_toplevels)
+    tl_pos = pos - (info->prefix->num_stxes
+                    ? (info->prefix->num_stxes + 1)
+                    : 0);
+  else
+    tl_pos = pos;
+
+  tl_map = ensure_tl_map_len(info->tl_map, tl_pos + 1);
+  info->tl_map = tl_map;
+
+  if ((uintptr_t)info->tl_map & 0x1)
+    info->tl_map = (void *)((uintptr_t)tl_map | ((uintptr_t)1 << (tl_pos + 1)));
+  else
+    ((int *)tl_map)[1 + (tl_pos / 32)] |= (1 << (tl_pos & 31));
+}
+
+void *scheme_merge_tl_map(void *tl_map, void *new_tl_map)
+{
+  if (!tl_map)
+    return new_tl_map;
+  else if (!new_tl_map) 
+    return tl_map;
+  else if (((uintptr_t)new_tl_map) & 0x1) {
+    if (((uintptr_t)tl_map) & 0x1) {
+      return (void *)((uintptr_t)tl_map | (uintptr_t)new_tl_map);
+    } else {
+      ((int *)tl_map)[1] |= ((uintptr_t)new_tl_map >> 1) & 0x7FFFFFFF;
+      return tl_map;
+    }
+  } else {
+    int i, len = *(int *)new_tl_map;
+    tl_map = ensure_tl_map_len(tl_map, len * 32);
+    for (i = 0; i < len; i++) {
+      ((int *)tl_map)[1+i] |= ((int *)new_tl_map)[1+i];
+    }
+    return tl_map;
+  }
+}
+
+void scheme_merge_resolve_tl_map(Resolve_Info *info, Resolve_Info *new_info)
+{
+  if (!new_info->tl_map) {
+    /* nothing to do */
+  } else {
+    void *tl_map;
+    tl_map = scheme_merge_tl_map(info->tl_map, new_info->tl_map);
+    info->tl_map = tl_map;
+  }
+}
+
 void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int flags, Scheme_Object *lifted)
 {
   if (info->pos == info->count) {
@@ -4100,6 +4235,14 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
                                SCHEME_TOPLEVEL_POS(tl),
                                1,
                                SCHEME_TOPLEVEL_CONST);
+
+            /* register if non-stub: */
+            if (SCHEME_TOPLEVEL_POS(tl) >= (info->prefix->num_toplevels
+                                            + info->prefix->num_stxes
+                                            + (info->prefix->num_stxes
+                                               ? 1
+                                               : 0)))
+              set_tl_pos_used(orig_info, SCHEME_TOPLEVEL_POS(tl));
           }
 
           if (SCHEME_RPAIRP(lifted)) {
@@ -4241,12 +4384,16 @@ int scheme_resolve_quote_syntax_pos(Resolve_Info *info)
 
 Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready)
 {
-  int skip;
+  int skip, pos;
 
   skip = scheme_resolve_toplevel_pos(info);
 
+  pos = SCHEME_TOPLEVEL_POS(expr);
+
+  set_tl_pos_used(info, pos);
+
   return make_toplevel(skip + SCHEME_TOPLEVEL_DEPTH(expr), /* depth is 0 (normal) or 1 (exp-time) */
-		       SCHEME_TOPLEVEL_POS(expr),
+		       pos,
 		       1,
 		       SCHEME_TOPLEVEL_FLAGS(expr) & (SCHEME_TOPLEVEL_CONST
                                                       | (keep_ready 
@@ -4271,11 +4418,13 @@ Scheme_Object *scheme_resolve_invent_toplevel(Resolve_Info *info)
 
   count = SCHEME_VEC_ELS(info->lifts)[1];
   pos = (int)(SCHEME_INT_VAL(count)
-         + info->prefix->num_toplevels 
-         + info->prefix->num_stxes
-         + (info->prefix->num_stxes ? 1 : 0));
+              + info->prefix->num_toplevels 
+              + info->prefix->num_stxes
+              + (info->prefix->num_stxes ? 1 : 0));
   count = scheme_make_integer(SCHEME_INT_VAL(count) + 1);
   SCHEME_VEC_ELS(info->lifts)[1] = count;
+
+  set_tl_pos_used(info, pos);
 
   return make_toplevel(skip,
 		       pos,
@@ -4300,8 +4449,6 @@ int scheme_resolving_in_procedure(Resolve_Info *info)
   }
   return 0;
 }
-
-
 
 /*========================================================================*/
 /*                             run-time "stack"                           */
@@ -4578,8 +4725,8 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
     env = NULL;
   else {
-    v = SCHEME_PTR_VAL(argv[0]);
-    env = ((Scheme_Bucket_With_Home *)v)->home;
+    v = SCHEME_PTR1_VAL(argv[0]);
+    env = scheme_get_bucket_home((Scheme_Bucket *)v);
   }
 
   if (!env)
@@ -4627,7 +4774,7 @@ static Scheme_Object *variable_p(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
     env = NULL;
   else
-    env = ((Scheme_Bucket_With_Home *)SCHEME_PTR_VAL(argv[0]))->home;
+    env = scheme_get_bucket_home((Scheme_Bucket *)SCHEME_PTR1_VAL(argv[0]));
 
   return env ? scheme_true : scheme_false;
 }
@@ -4639,7 +4786,7 @@ static Scheme_Object *variable_module_path(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
     env = NULL;
   else
-    env = ((Scheme_Bucket_With_Home *)SCHEME_PTR_VAL(argv[0]))->home;
+    env = scheme_get_bucket_home((Scheme_Bucket *)SCHEME_PTR1_VAL(argv[0]));
 
   if (!env)
     scheme_wrong_type("variable-reference->resolved-module-path", "variable-reference", 0, argc, argv);
@@ -4657,7 +4804,7 @@ static Scheme_Object *variable_module_source(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
     env = NULL;
   else
-    env = ((Scheme_Bucket_With_Home *)SCHEME_PTR_VAL(argv[0]))->home;
+    env = scheme_get_bucket_home((Scheme_Bucket *)SCHEME_PTR1_VAL(argv[0]));
 
   if (!env)
     scheme_wrong_type("variable-reference->module-source", "variable-reference", 0, argc, argv);
@@ -5781,7 +5928,7 @@ static Scheme_Object *write_variable(Scheme_Object *obj)
     
   sym = (Scheme_Object *)(SCHEME_VAR_BUCKET(obj))->key;
     
-  home = ((Scheme_Bucket_With_Home *)obj)->home;
+  home = scheme_get_bucket_home((Scheme_Bucket *)obj);
   m = home->module;
     
   /* If we get a writeable variable (instead of a module variable),

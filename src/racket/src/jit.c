@@ -47,13 +47,14 @@ typedef struct {
   Scheme_Native_Closure_Data *case_lam;
 } Scheme_Native_Closure_Data_Plus_Case;
 
-static Scheme_Object *make_global_ref(Scheme_Object *var)
+static Scheme_Object *make_global_ref(Scheme_Object *var, Scheme_Object *dummy)
 {
   GC_CAN_IGNORE Scheme_Object *o;
 
-  o = scheme_alloc_small_object();
+  o = scheme_alloc_object();
   o->type = scheme_global_ref_type;
-  SCHEME_PTR_VAL(o) = var;
+  SCHEME_PTR1_VAL(o) = var;
+  SCHEME_PTR2_VAL(o) = dummy;
 
   return o;
 }
@@ -456,10 +457,10 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
 {
   /* GLOBAL ASSUMPTION: we assume that globals are the last thing
      in the closure; grep for "GLOBAL ASSUMPTION" in fun.c. */
-  Scheme_Object **globs;
+  Scheme_Prefix *globs;
 
-  globs = (Scheme_Object **)nc->vals[nc->code->u2.orig_code->closure_size - 1];
-  return globs[SCHEME_TOPLEVEL_POS(o)];
+  globs = (Scheme_Prefix *)nc->vals[nc->code->u2.orig_code->closure_size - 1];
+  return globs->a[SCHEME_TOPLEVEL_POS(o)];
 }
 
 Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
@@ -1196,6 +1197,7 @@ static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda 
   Scheme_Native_Closure_Data *ndata;
   Scheme_Object *name, *o;
   int max_let_depth = 0, i, count, is_method = 0;
+  void *tl_map;
 
   ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
 #ifdef MZTAG_REQUIRED
@@ -1798,7 +1800,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         mz_rs_ldxi(JIT_R2, pos);
         /* Load bucket: */
         pos = SCHEME_TOPLEVEL_POS(obj);
-        jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
+        jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
         /* Extract bucket value */
         jit_ldxi_p(target, JIT_R2, &(SCHEME_VAR_BUCKET(0x0)->val));
         CHECK_LIMIT();
@@ -2011,7 +2013,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
 	  /* Try already-renamed stx: */
 	  pos = SCHEME_TOPLEVEL_POS(v);
-	  jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
+	  jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
 	  CHECK_LIMIT();
 	
 	  /* R0 has values, R2 has bucket */
@@ -2244,21 +2246,31 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           if (for_branch)
             finish_branch_with_true(jitter, for_branch);
           else {
+            Scheme_Object *dummy;
+
             mz_rs_sync();
 
             obj = SCHEME_IPTR_VAL(obj);
+            dummy = SCHEME_PTR2_VAL(obj);
+            obj = SCHEME_PTR1_VAL(obj);
       
             /* Load global array: */
             pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
             jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
             /* Load bucket: */
             pos = SCHEME_TOPLEVEL_POS(obj);
-            jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
+            jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+            CHECK_LIMIT();
+
+            /* Load dummy bucket: */
+            pos = SCHEME_TOPLEVEL_POS(dummy);
+            jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
             CHECK_LIMIT();
 
             JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-            mz_prepare(1);
+            mz_prepare(2);
             jit_pusharg_p(JIT_R2);
+            jit_pusharg_p(JIT_R1);
             {
               GC_CAN_IGNORE jit_insn *refr;
               (void)mz_finish_lwe(ts_make_global_ref, refr);
@@ -2787,8 +2799,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         mz_rs_sync();
 
         jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
-        jit_movi_i(JIT_R1, WORDS_TO_BYTES(i + p + 1));
-        jit_movi_i(JIT_R2, WORDS_TO_BYTES(p));
+        jit_movi_i(JIT_R1, &(((Scheme_Prefix *)0x0)->a[i + p + 1]));
+        jit_movi_i(JIT_R2, &(((Scheme_Prefix *)0x0)->a[p]));
         (void)jit_calli(sjc.quote_syntax_code);
 
         CHECK_LIMIT();
@@ -3426,6 +3438,7 @@ static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *dat
   ndata->u2.orig_code = data;
   ndata->closure_size = data->closure_size;
   ndata->max_let_depth = 0x4 | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
+  ndata->tl_map = data->tl_map;
 
 #if 0
   /* Compile immediately: */

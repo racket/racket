@@ -15,7 +15,7 @@
 # define MZC_INLINE MSC_IZE(inline)
 #endif
 
-#define MZC_GLOBAL_PREPARE(vec, pos) (SCHEME_VEC_ELS(vec)[pos] = SCHEME_PTR_VAL(SCHEME_VEC_ELS(vec)[pos]))
+#define MZC_GLOBAL_PREPARE(vec, pos) (SCHEME_VEC_ELS(vec)[pos] = SCHEME_PTR1_VAL(SCHEME_VEC_ELS(vec)[pos]))
 static MZC_INLINE Scheme_Object *MZC_GLOBAL_LOOKUP(Scheme_Object *vec, int pos) {
   Scheme_Bucket *bucket = (Scheme_Bucket *)SCHEME_VEC_ELS(vec)[pos];
   Scheme_Object *o = bucket->val;

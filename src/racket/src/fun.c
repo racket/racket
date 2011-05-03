@@ -1006,6 +1006,9 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data)
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[3]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[4]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[5]),
+                              (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[8])
+                               ? (void *)SCHEME_VEC_ELS(vinfo)[8]
+                               : NULL),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]),
                               (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[7])
                                ? (Scheme_Hash_Tree *)SCHEME_VEC_ELS(vinfo)[7]
@@ -1635,7 +1638,7 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   if (has_tl) {
     /* GLOBAL ASSUMPTION: jit.c assumes that the array
        of globals is the last item in the closure; grep
-       for "GLOBAL ASSUMPTION" in jit.c */
+       for "GLOBAL ASSUMPTION" in jit.c and mzmark.c */
     int li;
     li = scheme_resolve_toplevel_pos(info);
     closure_map[offset] = li;
@@ -1778,6 +1781,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
                            + convert_size
                            + SCHEME_TAIL_COPY_THRESHOLD);
 
+    data->tl_map = new_info->tl_map;
+
     /* Add code to box set!ed argument variables: */
     for (i = 0; i < num_params; i++) {
       if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED) {
@@ -1842,6 +1847,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         closure_map[0] = 0; /* globals for closure creation will be at 0 after lifting */
       result = tl;
     }
+  } else {
+    scheme_merge_resolve_tl_map(info, new_info);
   }
   
   if (convert) {
@@ -9748,7 +9755,7 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
-  Scheme_Object *name, *l, *code, *ds;
+  Scheme_Object *name, *l, *code, *ds, *tl_map;
   int svec_size, pos;
   Scheme_Marshal_Tables *mt;
 
@@ -9860,6 +9867,30 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
     }
   }
 
+  /* Encode data->tl_map as either a fixnum or a vector of 16-bit values */
+  if (!data->tl_map)
+    tl_map = scheme_false;
+  else if ((uintptr_t)data->tl_map & 0x1) {
+    if (((uintptr_t)data->tl_map & 0xFFFFFFF) == (uintptr_t)data->tl_map) {
+      /* comfortably a fixnum */
+      tl_map = (Scheme_Object *)data->tl_map;
+    } else {
+      uintptr_t v;
+      tl_map = scheme_make_vector(2, NULL);
+      v = ((uintptr_t)data->tl_map >> 1) & 0x7FFFFFFF;
+      SCHEME_VEC_ELS(tl_map)[0] = scheme_make_integer(v & 0xFFFF);
+      SCHEME_VEC_ELS(tl_map)[1] = scheme_make_integer((v >> 16) & 0xFFFF);
+    }
+  } else {
+    int len = ((int *)data->tl_map)[0], i, v;
+    tl_map = scheme_make_vector(2 * len, NULL);
+    for (i = 0; i < len; i++) {
+      v = ((int *)data->tl_map)[i+1];
+      SCHEME_VEC_ELS(tl_map)[2*i] = scheme_make_integer(v & 0xFFFF);
+      SCHEME_VEC_ELS(tl_map)[(2*i)+1] = scheme_make_integer((v >> 16) & 0xFFFF);
+    }
+  }
+
   l = CONS(scheme_make_svector(svec_size,
                                data->closure_map),
            ds);
@@ -9871,14 +9902,15 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
   return CONS(scheme_make_integer(SCHEME_CLOSURE_DATA_FLAGS(data) & 0x7F),
 	      CONS(scheme_make_integer(data->num_params),
 		   CONS(scheme_make_integer(data->max_let_depth),
-			CONS(name,
-			     l))));
+                        CONS(tl_map,
+                             CONS(name,
+                                  l)))));
 }
 
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
-  Scheme_Object *v;
+  Scheme_Object *v, *tl_map;
 
 #define BAD_CC "bad compiled closure"
 #define X_SCHEME_ASSERT(x, y)
@@ -9902,6 +9934,33 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   data->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
   if (data->max_let_depth < 0) return NULL;
   obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return NULL;
+  tl_map = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+  if (!SCHEME_FALSEP(tl_map)) {
+    if (SCHEME_INTP(tl_map))
+      data->tl_map = (void *)tl_map;
+    else if (SCHEME_VECTORP(tl_map)) {
+      int *n, i, len, v1, v2;
+      len = SCHEME_VEC_SIZE(tl_map);
+      if (len & 0x1)
+        return NULL;
+      n = (int *)scheme_malloc_atomic(((len/2) + 1) * sizeof(int));
+      n[0] = len/2;
+      for (i = 0; i < len/2; i++) {
+        v1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(tl_map)[2*i]);
+        v2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(tl_map)[(2*i) + 1]);
+        v2 = (v2 << 16) | v1;
+        n[i+1] = v2;
+      }
+      if ((len == 2) && (!(n[1] & 0x80000000)))
+        data->tl_map = (void *)((n[1] << 1) | 0x1);
+      else
+        data->tl_map = n;
+    } else
+      return NULL;
+  }
 
   if (!SCHEME_PAIRP(obj)) return NULL;
   data->name = SCHEME_CAR(obj);

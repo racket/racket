@@ -35,6 +35,7 @@ typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc,
                                                 intptr_t pre_used, intptr_t post_used,
                                                 intptr_t pre_admin, intptr_t post_admin);
 typedef uintptr_t (*GC_get_thread_stack_base_Proc)(void);
+typedef void (*GC_Post_Propagate_Hook_Proc)(struct NewGC *);
 /* 
    Types of the traversal procs (supplied by Racket); see overview in README
    for information about traversals. The return value is the size of
@@ -113,6 +114,7 @@ GC2_EXTERN void GC_register_thread(void *, void *);
 GC2_EXTERN GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc);
 GC2_EXTERN GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
 GC2_EXTERN void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc);
+GC2_EXTERN void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc);
 /*
    Sets callbacks called by GC before/after performing a collection.  Used by
    Racket to zero out some data and record collection times. The end
@@ -248,7 +250,7 @@ GC2_EXTERN void GC_free(void *);
    Lets the collector optionally reverse an allocation immediately.
    [Generally a no-op.] */
 
-  GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late);
+GC2_EXTERN void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late);
 /* 
    Allocate a weak box. See README for details. */
 
@@ -339,6 +341,7 @@ GC2_EXTERN void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc m
    which must be in words. */
 
 GC2_EXTERN void *GC_resolve(void *p);
+GC2_EXTERN void *GC_resolve2(void *p, struct NewGC *gc);
 /*
    Can be called by a traversal proc to get the current address of a
    object that might have been moved already. This is necessary, for
@@ -364,6 +367,19 @@ GC2_EXTERN void GC_fixup2(void *p, struct NewGC *gc);
  
    These procedures and variables are internal to the current
    implementation, and are *not* part of the "official" interface. */
+
+GC2_EXTERN int GC_is_marked2(const void *p, struct NewGC *gc);
+/*
+   Reports whether p has been marked. */
+
+GC2_EXTERN int GC_is_partial(struct NewGC *gc);
+/* 
+   Reports whether the current GC is a non-full collection. */
+
+GC2_EXTERN void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc);
+/*
+   Used for very special collaboration with GC. */
+
 
 GC2_EXTERN void GC_mark_variable_stack(void **var_stack,
 				       intptr_t delta,

@@ -7,7 +7,7 @@ variable_obj {
 
   gcMARK2(b->key, gc);
   gcMARK2(b->val, gc);
-  gcMARK2(((Scheme_Bucket_With_Home *)b)->home, gc);
+  gcMARK2(((Scheme_Bucket_With_Home *)b)->home_link, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
@@ -156,6 +156,7 @@ unclosed_proc {
   gcMARK2(d->name, gc);
   gcMARK2(d->code, gc);
   gcMARK2(d->closure_map, gc);
+  gcMARK2(d->tl_map, gc);
 #ifdef MZ_USE_JIT
   gcMARK2(d->u.native_code, gc);
   gcMARK2(d->context, gc);
@@ -288,15 +289,30 @@ closed_prim_proc {
 scm_closure {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
-                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      ? ((Scheme_Closure_Data *)GC_resolve2(c->code, gc))->closure_size
                       : 0);
 
  mark:
 
   int i = closure_size;
+  START_MARK_ONLY;
+# define CLOSURE_DATA_TYPE Scheme_Closure_Data
+# include "mzclpf_decl.inc"
+  END_MARK_ONLY;
+
+  gcMARK2(c->code, gc);
+
+  START_MARK_ONLY;
+# include "mzclpf_pre.inc"
+  END_MARK_ONLY;
+
   while (i--)
     gcMARK2(c->vals[i], gc);
-  gcMARK2(c->code, gc);
+
+  START_MARK_ONLY;
+# include "mzclpf_post.inc"
+# undef CLOSURE_DATA_TYPE
+  END_MARK_ONLY;
   
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
@@ -868,6 +884,7 @@ namespace_val {
 
   gcMARK2(e->modvars, gc);
 
+  gcMARK2(e->weak_self_link, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -896,6 +913,19 @@ compilation_top_val {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
+}
+
+prefix_val {
+  Scheme_Prefix *pf = (Scheme_Prefix *)p;
+ mark:
+  int i;
+  for (i = pf->num_slots; i--; )
+    gcMARK2(pf->a[i], gc);
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
+		    + ((pf->num_slots-1) * sizeof(Scheme_Object *))
+                    + ((((pf->num_slots - (pf->num_stxes ? (pf->num_stxes+1) : 0)) + 31) / 32) 
+                       * sizeof(int))));
 }
 
 resolve_prefix_val {
@@ -1171,6 +1201,7 @@ mark_resolve_info {
   
   gcMARK2(i->prefix, gc);
   gcMARK2(i->stx_map, gc);
+  gcMARK2(i->tl_map, gc);
   gcMARK2(i->old_pos, gc);
   gcMARK2(i->new_pos, gc);
   gcMARK2(i->old_stx_pos, gc);
@@ -1750,7 +1781,7 @@ mark_custodian_val {
 mark_custodian_box_val {
  mark:
   Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
-  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+  int sd = ((Scheme_Custodian *)GC_resolve2(b->cust, gc))->shut_down;
 
   gcMARK2(b->cust, gc);
   if (!sd) {
@@ -1939,7 +1970,7 @@ mark_serialized_struct_val {
 
 mark_struct_val {
   Scheme_Structure *s = (Scheme_Structure *)p;
-  int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
+  int num_slots = ((Scheme_Struct_Type *)GC_resolve2(s->stype, gc))->num_slots;
 
  mark:
   int i;
@@ -2264,21 +2295,35 @@ START jit;
 
 native_closure {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
   }
 
  mark:
-
   {
-    int i = closure_size;
-    while (i--)
-      gcMARK2(c->vals[i], gc);
-  }
+  int i = closure_size;
+  START_MARK_ONLY;
+# define CLOSURE_DATA_TYPE Scheme_Native_Closure_Data
+# include "mzclpf_decl.inc"
+  END_MARK_ONLY;
+
   gcMARK2(c->code, gc);
-  
+
+  START_MARK_ONLY;
+# include "mzclpf_pre.inc"
+  END_MARK_ONLY;
+
+  while (i--)
+    gcMARK2(c->vals[i], gc);
+
+  START_MARK_ONLY;
+# include "mzclpf_post.inc"
+# undef CLOSURE_DATA_TYPE
+  END_MARK_ONLY;
+  }
+
  size:
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
@@ -2307,6 +2352,7 @@ native_unclosed_proc {
   if (d->closure_size < 0) {
     gcMARK2(d->u.arities, gc);
   }
+  gcMARK2(d->tl_map, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));

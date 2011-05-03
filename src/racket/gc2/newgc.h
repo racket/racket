@@ -213,6 +213,7 @@ typedef struct NewGC {
   void (*GC_collect_end_callback)(void);
   GC_collect_inform_callback_Proc GC_collect_inform_callback;
   uintptr_t (*GC_get_thread_stack_base)(void);
+  GC_Post_Propagate_Hook_Proc GC_post_propagate_hook;
 
   GC_Immobile_Box *immobile_boxes;
 

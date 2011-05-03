@@ -5573,6 +5573,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 			 top->prefix->num_toplevels,
 			 top->prefix->num_stxes,
 			 top->prefix->num_lifts,
+                         NULL,
                          0);
     /* If no exception, the resulting code is ok. */
 
