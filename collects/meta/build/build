@@ -98,6 +98,9 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # defbuild "brownbuild"  "i386-linux-debian" # really an AMD64 machine
 # defbuild "inga"        "i386-freebsd"
 # defbuild "chicago-unstable" "i386-linux-debian-unstable"
+# These builds are courtesy of Mason Loring Bliss <mason at blisses dot org>
+defbuild "blisses1" "x86_64-linux-debian-lenny"
+defbuild "blisses2" "x86_64-linux-debian-squeeze"
 # Start the main build last
 defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
@@ -199,9 +202,9 @@ name_of_platform() {
     ( "i386-linux-f9"     ) echo "Linux/i386/Fedora 9" ;;
     ( "i386-linux-f12"    ) echo "Linux/i386/Fedora 12" ;;
     ( "x86_64-linux-f14"  ) echo "Linux/x86_64/Fedora 14" ;;
-    ( "i386-linux-debian"          ) echo "Linux/i386/Debian-stable" ;;
-    ( "i386-linux-debian-testing"  ) echo "Linux/i386/Debian-testing" ;;
-    ( "i386-linux-debian-unstable" ) echo "Linux/i386/Debian-unstable" ;;
+    ( "i386-linux-debian"          ) echo "Linux/i386/Debian Stable" ;;
+    ( "x86_64-linux-debian-"* ) echo "Linux/x86_64/Debian" \
+                                     "$(last_part_capital "$1")" ;;
     ( "i386-linux-ubuntu"          ) echo "Linux/i386/Ubuntu" ;;
     ( "i386-linux-ubuntu-"* ) echo "Linux/i386/Ubuntu" \
                                    "$(last_part_capital "$1")" ;;
@@ -235,8 +238,7 @@ extra_description_of_platform() {
     ( *"-linux-fc"[0-9]*        ) e="$e on Fedora Core ${1##*-fc}." ;;
     ( *"-linux-f"[0-9]*         ) e="$e on Fedora ${1##*-f}." ;;
     ( *"-linux-debian"          ) e="$e on Debian Stable." ;;
-    ( *"-linux-debian-testing"  ) e="$e on Debian Testing." ;;
-    ( *"-linux-debian-unstable" ) e="$e on Debian Unstable." ;;
+    ( *"-linux-debian-"* ) e="$e on Debian ($(last_part_capital "$1"))." ;;
     ( *"-linux-ubuntu"   ) e="$e on Ubuntu." ;;
     ( *"-linux-ubuntu-"* ) e="$e on Ubuntu ($(last_part_capital "$1"))." ;;
   esac
@@ -278,6 +280,8 @@ platforms_of_dist_type() {
                    "i386-linux-debian" \
                    "i386-linux-debian-testing" \
                    "i386-linux-debian-unstable" \
+                   "x86_64-linux-debian-lenny" \
+                   "x86_64-linux-debian-squeeze" \
                    "i386-linux-ubuntu" \
                    "i386-linux-ubuntu-dapper" \
                    "i386-linux-ubuntu-edgy" \

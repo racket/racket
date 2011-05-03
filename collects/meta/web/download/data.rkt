@@ -57,7 +57,7 @@
     ["(ppc|i386)-osx-mac"
      ,(lambda (_ cpu)
         (format "Macintosh OS X (~a)" (if (equal? cpu "ppc") "PPC" "Intel")))]
-    ["(ppc|68k)-mac-classic"   "Macintosh Classic (\\1)"]
+    ["(ppc|68k)-mac-classic" "Macintosh Classic (\\1)"]
     ["(ppc|i386)-darwin"
      ,(lambda (_ cpu)
         (format "Macintosh Darwin (~a)"
@@ -66,7 +66,7 @@
     ["i386-linux-fc([0-9]+)"               "Linux i386 (Fedora Core \\1)"]
     ["(i386|x86_64)-linux-f([0-9]+)"       "Linux \\1 (Fedora \\2)"]
     ["(i386|x86_64)-linux-debian"          "Linux \\1 (Debian Stable)"]
-    ["(i386|x86_64)-linux-debian-(testing|unstable)" "Linux \\1 (Debian \\2)"]
+    ["(i386|x86_64)-linux-debian-([a-zA-Z0-9]+)" "Linux \\1 (Debian \\2)"]
     ["(i386|x86_64)-linux-ubuntu[0-9]+"    "Linux \\1 (Ubuntu \\2)"]
     ["(i386|x86_64)-linux-ubuntu-([a-z]+)" "Linux \\1 (Ubuntu \\2)"]
     ["(i386|x86_64)-linux-ubuntu.*"        "Linux \\1 (Ubuntu)"]
