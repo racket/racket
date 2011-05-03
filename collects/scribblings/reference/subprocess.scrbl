@@ -344,7 +344,7 @@ Under Windows, the first argument after @racket[command] can be
 line. See @racket[subprocess] for details.}
 
 
-@defproc[(system/exit-code [command string?]) (integer-in 0 255)]{
+@defproc[(system/exit-code [command (or/c string? bytes?)]) (integer-in 0 255)]{
 
 Like @racket[system], except that the result is the exit code returned
 by the subprocess. A @racket[0] result normally indicates success.}
