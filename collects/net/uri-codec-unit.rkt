@@ -269,20 +269,19 @@ See more in PR8831.
 ;; string -> listof (cons string string)
 ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
 (define (form-urlencoded->alist str)
-  (define keyval-regexp #rx"^([^=]*)(?:=(.*))?$")
+  (define keyval-regexp #rx"=")
   (define value-regexp
     (case (current-alist-separator-mode)
       [(semi) #rx"[;]"]
       [(amp) #rx"[&]"]
       [else #rx"[&;]"]))
-  (if (equal? "" str)
-    '()
-    (map (lambda (keyval)
-           (let ([m (regexp-match keyval-regexp keyval)]) ; cannot fail
-             (cons (string->symbol (form-urlencoded-decode (cadr m)))
-                   ;; can be #f for no "=..." part
-                   (and (caddr m) (form-urlencoded-decode (caddr m))))))
-         (regexp-split value-regexp str))))
+  (define (parse-keyval keyval)
+    (let (;; m = #f => no "=..." part
+          [m (regexp-match-positions keyval-regexp keyval)])
+      (cons (string->symbol (form-urlencoded-decode
+                             (if m (substring keyval 0 (caar m)) keyval)))
+            (and m (form-urlencoded-decode (substring keyval (cdar m)))))))
+  (if (equal? "" str) '() (map parse-keyval (regexp-split value-regexp str))))
 
 (define current-alist-separator-mode
   (make-parameter 'amp-or-semi
