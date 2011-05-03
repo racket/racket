@@ -74,7 +74,7 @@
        (for-each (lambda (f) (build-graph! lhs f)) forms)]
       [(struct splice (forms))
        (for-each (lambda (f) (build-graph! lhs f)) forms)]
-      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types max-let-depth body)))
+      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types tl-map max-let-depth body)))
        (build-graph! lhs body)]
       [(and c (struct closure (code gen-id)))
        (build-graph! lhs code)]
@@ -206,8 +206,9 @@
        (make-seq (filter identity (map update forms)))]
       [(struct splice (forms))
        (make-splice (filter identity (map update forms)))]
-      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types max-let-depth body)))
+      [(and l (struct lam (name flags num-params param-types rest? closure-map closure-types tl-map max-let-depth body)))
        (struct-copy lam l
+                    [toplevel-map #f] ; consevrative
                     [body (update body)])]
       [(and c (struct closure (code gen-id)))
        (struct-copy closure c

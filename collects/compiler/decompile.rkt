@@ -2,7 +2,8 @@
 (require compiler/zo-parse
          syntax/modcollapse
          scheme/port
-         scheme/match)
+         scheme/match
+         racket/set)
 
 (provide decompile)
 
@@ -42,6 +43,8 @@
 
 ;; ----------------------------------------
 
+(define-struct glob-desc (vars num-tls num-stxs num-lifts))
+
 ;; Main entry:
 (define (decompile top)
   (match top
@@ -56,30 +59,34 @@
   (match a-prefix
     [(struct prefix (num-lifts toplevels stxs))
      (let ([lift-ids (for/list ([i (in-range num-lifts)])
-                    (gensym 'lift))]
+                       (gensym 'lift))]
            [stx-ids (map (lambda (i) (gensym 'stx)) 
                          stxs)])
-       (values (append 
-                (map (lambda (tl)
-                       (match tl
-                         [#f '#%linkage]
-                         [(? symbol?) (string->symbol (format "_~a" tl))]
-                         [(struct global-bucket (name)) 
-                          (string->symbol (format "_~a" name))]
-                         [(struct module-variable (modidx sym pos phase))
-                          (if (and (module-path-index? modidx)
-                                   (let-values ([(n b) (module-path-index-split modidx)])
-                                     (and (not n) (not b))))
-                              (string->symbol (format "_~a" sym))
-                              (string->symbol (format "_~s@~s~a" sym (mpi->string modidx) 
-                                                      (if (zero? phase)
-                                                          ""
-                                                          (format "/~a" phase)))))]
-                         [else (error 'decompile-prefix "bad toplevel: ~e" tl)]))
-                     toplevels)
-                stx-ids
-                (if (null? stx-ids) null '(#%stx-array))
-                lift-ids)
+       (values (glob-desc 
+                (append 
+                 (map (lambda (tl)
+                        (match tl
+                          [#f '#%linkage]
+                          [(? symbol?) (string->symbol (format "_~a" tl))]
+                          [(struct global-bucket (name)) 
+                           (string->symbol (format "_~a" name))]
+                          [(struct module-variable (modidx sym pos phase))
+                           (if (and (module-path-index? modidx)
+                                    (let-values ([(n b) (module-path-index-split modidx)])
+                                      (and (not n) (not b))))
+                               (string->symbol (format "_~a" sym))
+                               (string->symbol (format "_~s@~s~a" sym (mpi->string modidx) 
+                                                       (if (zero? phase)
+                                                           ""
+                                                           (format "/~a" phase)))))]
+                          [else (error 'decompile-prefix "bad toplevel: ~e" tl)]))
+                      toplevels)
+                 stx-ids
+                 (if (null? stx-ids) null '(#%stx-array))
+                 lift-ids)
+                (length toplevels)
+                (length stxs)
+                num-lifts)
                (map (lambda (stx id)
                       `(define ,id ,(if stx
                                         `(#%decode-syntax ,(stx-encoded stx))
@@ -117,7 +124,7 @@
      `(define-values ,(map (lambda (tl)
                              (match tl
                                [(struct toplevel (depth pos const? mutated?))
-                                (list-ref/protect globs pos 'def-vals)]))
+                                (list-ref/protect (glob-desc-vars globs) pos 'def-vals)]))
                            ids)
         ,(decompile-expr rhs globs stack closed))]
     [(struct def-syntaxes (ids rhs prefix max-let-depth))
@@ -154,7 +161,7 @@
 
 (define (extract-id expr)
   (match expr
-    [(struct lam (name flags num-params arg-types rest? closure-map closure-types max-let-depth body))
+    [(struct lam (name flags num-params arg-types rest? closure-map closure-types tl-map max-let-depth body))
      (extract-name name)]
     [(struct case-lam (name lams))
      (extract-name name)]
@@ -179,7 +186,7 @@
 (define (decompile-tl expr globs stack closed no-check?)
   (match expr
     [(struct toplevel (depth pos const? ready?))
-     (let ([id (list-ref/protect globs pos 'toplevel)])
+     (let ([id (list-ref/protect (glob-desc-vars globs) pos 'toplevel)])
        (if (or no-check? const? ready?)
            id
            `(#%checked ,id)))]))
@@ -191,7 +198,7 @@
     [(struct varref (tl))
      `(#%variable-reference ,(decompile-tl tl globs stack closed #t))]
     [(struct topsyntax (depth pos midpt))
-     (list-ref/protect globs (+ midpt pos) 'topsyntax)]
+     (list-ref/protect (glob-desc-vars globs) (+ midpt pos) 'topsyntax)]
     [(struct primval (id))
      (hash-ref primitive-table id)]
     [(struct assign (id rhs undef-ok?))
@@ -291,7 +298,7 @@
 (define (decompile-lam expr globs stack closed)
   (match expr
     [(struct closure (lam gen-id)) (decompile-lam lam globs stack closed)]
-    [(struct lam (name flags num-params arg-types rest? closure-map closure-types max-let-depth body))
+    [(struct lam (name flags num-params arg-types rest? closure-map closure-types tl-map max-let-depth body))
      (let ([vars (for/list ([i (in-range num-params)]
                             [type (in-list arg-types)])
                    (gensym (format "~a~a-" 
@@ -315,7 +322,16 @@
                                           `(flonum ,c)
                                           c))
                                     captures
-                                    closure-types))))
+                                    closure-types)
+                             ,@(if (not tl-map)
+                                   '()
+                                   (list
+                                    (for/list ([pos (in-set tl-map)])
+                                      (list-ref/protect (glob-desc-vars globs)
+                                                        (if (pos . < . (glob-desc-num-tls globs))
+                                                            pos
+                                                            (+ pos (glob-desc-num-stxs globs) 1))
+                                                        'lam)))))))
          ,(decompile-expr body globs
                           (append captures
                                   (append vars rest-vars))

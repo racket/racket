@@ -5,7 +5,8 @@
          scheme/list
          unstable/struct
          compiler/zo-structs
-         racket/dict)
+         racket/dict
+         racket/set)
 
 (provide zo-parse)
 (provide (all-from-out compiler/zo-structs))
@@ -86,7 +87,7 @@
   (define CLOS_SINGLE_RESULT 32)
   (define BITS_PER_MZSHORT 32)
   (match v
-    [`(,flags ,num-params ,max-let-depth ,name ,v . ,rest)
+    [`(,flags ,num-params ,max-let-depth ,tl-map ,name ,v . ,rest)
      (let ([rest? (positive? (bitwise-and flags CLOS_HAS_REST))])
        (let*-values ([(closure-size closed-over body)
                       (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
@@ -132,6 +133,20 @@
                          (vector-copy! v2 0 closed-over 0 closure-size)
                          v2))
                    closure-types
+                   (and tl-map
+                        (let* ([bits (if (exact-integer? tl-map)
+                                         tl-map
+                                         (for/fold ([i 0]) ([v (in-list tl-map)]
+                                                            [s (in-naturals)])
+                                           (bitwise-ior i (arithmetic-shift v 16))))]
+                               [len (integer-length bits)])
+                          (list->set
+                           (let loop ([bit 0])
+                             (cond
+                              [(bit . >= . len) null]
+                              [(bitwise-bit-set? bits bit)
+                               (cons bit (loop (add1 bit)))]
+                              [else (loop (add1 bit))])))))
                    max-let-depth
                    body)))]))
 
