@@ -1353,7 +1353,9 @@ win_build_step() { # inputs: type, name, [args...]
                   ;;
     ( "VSNET3M" ) _cd "$PLTHOME/src/worksp/$bname"
                   _run "$VSNET" "$bname.sln" /build "Release|$arch"
-                  _run "$PLTHOME/Racket.exe" "xform.rkt" "$@"
+                  # `-c' shouldn't be needed, but there's some problem that is
+                  # probably due to module caching, so work around it for now.
+                  _run "$PLTHOME/Racket.exe" -c "xform.rkt" "$@"
                   _run "$VSNET" "$bname.sln" /build "3m|$arch"
                   ;;
     ( * ) exit_error "Unknown type for win_build_step: \"$btype\"" ;;
