@@ -142,19 +142,23 @@
               [(PolyDots? ty)
                ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
                ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-               (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
-                 (match (syntax-e last-stx)
-                   [(cons last-ty-stx (? identifier? last-id-stx))
-                    (unless (bound-index? (syntax-e last-id-stx))
-                      (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-                    (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
-                        (let* ([last-id (syntax-e last-id-stx)]
-                               [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
-                          (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                        (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                       ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
-                   [_
-                    (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
+               ;; In the case that the list is empty we also do the normal thing
+               (let ((stx-list (syntax->list inst)))
+                 (if (null? stx-list)
+                     (instantiate-poly ty (map parse-type stx-list))
+                     (let-values ([(all-but-last last-stx) (split-last stx-list)])
+                       (match (syntax-e last-stx)
+                         [(cons last-ty-stx (? identifier? last-id-stx))
+                          (unless (bound-index? (syntax-e last-id-stx))
+                            (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
+                          (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
+                              (let* ([last-id (syntax-e last-id-stx)]
+                                     [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
+                                (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
+                              (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
+                                             ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
+                         [_
+                          (instantiate-poly ty (map parse-type stx-list))]))))]
               [else
                (instantiate-poly ty (map parse-type (syntax->list inst)))])))]
     [_ (if inst
