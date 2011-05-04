@@ -1,6 +1,9 @@
 #lang scribble/doc
 @(require "base.rkt")
 
+@(define rackunit-eval (make-base-eval))
+@(interaction-eval #:eval rackunit-eval (require rackunit))
+
 @title{Checks}
 
 Checks are the basic building block of RackUnit.  A check
@@ -33,7 +36,7 @@ fails.
 
 For example, the following checks all fail:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-eq? (list 1) (list 1) "allocated data not eq?")
   (check-not-eq? 1 1 "fixnums are eq?")
   (check-eqv? 1 1.0 "not eqv?")
@@ -52,11 +55,11 @@ the output if the check fails. The value returned by a successful
 check is the value returned by @racket[pred].
 
 For example, the following check passes:
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-pred string? "I work")
 ]
 The following check fails:
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-pred number? "I fail")
 ]
 }
@@ -71,11 +74,11 @@ fails.
 
 For example, the following check passes:
 
-@racketblock[
-  (check-= 1.0 1.01 0.01 "I work")
+@interaction[#:eval rackunit-eval
+  (check-= 1.0 1.01 0.02 "I work")
 ]
 The following check fails:
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-= 1.0 1.01 0.005 "I fail")
 ]
 }
@@ -90,7 +93,7 @@ in the output if the check fails.
 
 For example, the following checks all fail:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-true 1)
   (check-false 1)
   (check-not-false #f)
@@ -110,18 +113,23 @@ output if the check fails.  A common error is to use an expression
 instead of a function of no arguments for @racket[thunk].  Remember
 that checks are conceptually functions.
 
-For example, the following check succeeds:
+For example, the following checks succeed:
 
-@racketblock[
-  (check-exn exn:fail? 
-             (lambda ()
-               (raise (make-exn "Hi there"
-                                (current-continuation-marks)))))
+@interaction[#:eval rackunit-eval
+  (check-exn 
+   exn:fail? 
+   (lambda ()
+     (raise (make-exn:fail "Hi there"
+                           (current-continuation-marks)))))
+  (check-exn 
+   exn:fail? 
+   (lambda ()
+     (error 'hi "there")))
 ]
 
 The following check fails:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-exn exn:fail?
              (lambda ()
                (break-thread (current-thread))))
@@ -131,7 +139,7 @@ The following example is a common mistake. The call to @racket[error]
 is not within a @racket[lambda], so it bypasses @racket[check-exn]
 entirely.
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (code:comment "Forgot to wrap the expression in a thunk.  Don't do this!")
   (check-exn exn:fail?
              (error 'hi "there"))
@@ -143,6 +151,12 @@ entirely.
 Checks that @racket[thunk] does not raise any exceptions.
 The optional @racket[message] is included in the output if
 the check fails.
+
+@interaction[#:eval rackunit-eval
+                    (check-not-exn (λ () 1))
+                    (check-not-exn (λ () (car '())))
+                    (check-not-exn (λ () (/ 1 0)) "don't divide by 0")]
+
 }
 
 @defproc[(check-regexp-match (regexp regexp?)
@@ -154,13 +168,13 @@ Checks that @racket[regexp] matches the @racket[string].
 
 For example, the following check succeeds:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-regexp-match "a+bba" "aaaaaabba")
 ]
 
 The following check fails:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check-regexp-match "a+bba" "aaaabbba")
 ]
 }
@@ -179,13 +193,13 @@ exception of type @racket[exn:test:check].  The optional
 
 For example, the following check succeeds:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check < 2 3)
 ]
 
 The following check fails:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (check memq 'pine '(apple orange pear))
 ]
 }
@@ -232,9 +246,7 @@ Stores the given @racket[info] on the check-info stack for
 the duration (the dynamic extent) of the execution of
 @racket[thunk]}
 
-Example:
-
-@racketblock[  
+@interaction[#:eval rackunit-eval
   (with-check-info*
    (list (make-check-info 'time (current-seconds)))
    (lambda () (check = 1 2)))
@@ -253,9 +265,7 @@ information in the check information stack for the duration
 of the execution of the body expressions.  @racket[Name] is
 a quoted symbol and @racket[val] is any value.}
 
-Example:
-
-@racketblock[
+@interaction[#:eval rackunit-eval
  (for-each
   (lambda (elt)
     (with-check-info
@@ -311,16 +321,16 @@ simple checks cannot report extra information using
 
 For example, the following code defines a check @racket[check-odd?]
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (define-simple-check (check-odd? number)
     (odd? number))
 ]
 
 We can use these checks in the usual way:
 
-@racketblock[
-  (check-odd? 3)  (code:comment "Success")
-  (check-odd? 2)  (code:comment "Failure")
+@interaction[#:eval rackunit-eval
+  (check-odd? 3)
+  (check-odd? 2) 
 ]
 
 @defform*[[(define-binary-check (name pred actual expected))
@@ -334,26 +344,24 @@ predicate and tests if the predicate holds for the given
 values.  The second form tests if @racket[expr] non-false.
 }
 
-Examples:
-
 Here's the first form, where we use a predefined predicate
 to construct a binary check:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (define-binary-check (check-char=? char=? actual expected))
 ]
 
 In use:
 
-@racketblock[
-  (check-char=? (read-char a-port) #\a)
+@interaction[#:eval rackunit-eval
+  (check-char=? (read-char (open-input-string "a")) #\a)
 ]
 
 If the expression is more complicated the second form should
 be used.  For example, below we define a binary check that
 tests a number if within 0.01 of the expected value:
 
-@racketblock[
+@interaction[#:eval rackunit-eval
   (define-binary-check (check-in-tolerance actual expected)
     (< (abs (- actual expected)) 0.01))
 ]
@@ -372,3 +380,6 @@ The @racket[fail-check] macro raises an @racket[exn:test:check] with
 the contents of the check information stack.
 
 }
+
+
+@close-eval[rackunit-eval]
