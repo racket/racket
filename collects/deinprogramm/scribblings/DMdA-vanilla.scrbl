@@ -11,7 +11,7 @@ This is documentation for the language level @italic{Die Macht der
 Abstraktion} to go with the German textbook @italic{Die Macht der
 Abstraktion}.
 
-@declare-exporting[deinprogramm/DMdA-vanilla]
+@declare-exporting[deinprogramm/DMdA-vanilla #:use-sources (deinprogramm/DMdA)]
 
 @schemegrammar*-DMdA[
 #:literals ()

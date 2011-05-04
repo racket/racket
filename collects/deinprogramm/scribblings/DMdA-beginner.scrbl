@@ -440,4 +440,5 @@ Eigenschaft: @scheme[(==> c p)] legt fest, daß die Eigenschaft
 
 @section[#:tag "beginner-prim-ops"]{Primitive Operationen}
 
+@declare-exporting[deinprogramm/DMdA-beginner]
 @prim-op-defns['(lib "DMdA-beginner.ss" "deinprogramm") #'here '()]

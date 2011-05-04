@@ -32,6 +32,8 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 
 @section{@scheme[define-record-procedures-2]}
 
+@declare-exporting[deinprogramm/DMdA]
+
 @defform[(define-record-procedures-2 t c p (field-spec ...))]{
 Die @scheme[define-record-procedures-2]-Form ist eine Definition für
 einen neuen Record-Typ. Dabei ist @scheme[t] der Name der Record-Signatur,
@@ -43,6 +45,8 @@ Mutators sein.
 
 @section{@scheme[define-record-procedures-parametric-2]}
 
+@declare-exporting[deinprogramm/DMdA]
+
 @defform[(define-record-procedures-parametric-2 t cc c p (field-spec1 ...))]{
 Diese Form ist wie @scheme[define-record-procedures-2], nur parametrisch 
 wie @scheme[define-record-procedures-parametric].  Außerdem
@@ -53,6 +57,8 @@ Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
 
 @section{@scheme[begin]}
 
+@declare-exporting[deinprogramm/DMdA]
+
 @defform[(begin expr expr ...)]{
 Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
 die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
@@ -61,12 +67,16 @@ Wert des @scheme[begin]-Ausdrucks.
 
 @section{@scheme[set!]}
 
+@declare-exporting[deinprogramm/DMdA]
+
 @defform[(set! id expr)]{
 Ein @scheme[set!]-Ausdruck ist eine Zuweisung, und ändert den Inhalt
 der Zelle, die an @scheme[id] gebunden ist, auf den Wert von @scheme[expr].
 }
 
 @section[#:tag "assignments-signatures"]{Signaturen}
+
+@declare-exporting[deinprogramm/DMdA]
 
 @defidform[unspecific]{
 Signatur für unspezifische Werte, die unwichtig sind - typischerweise für die 
