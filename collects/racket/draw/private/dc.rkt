@@ -1745,18 +1745,22 @@
             (g_object_unref layout))))))
     
     (def/public (get-char-width)
-      (with-cr
-       10.0
-       cr
-       (get-font-metric cr pango_font_metrics_get_approximate_char_width)))
+      (or (with-cr
+           10.0
+           cr
+           (get-font-metric cr pango_font_metrics_get_approximate_char_width))
+          (let-values ([(w h d a) (get-text-extent "X")])
+            w)))
 
     (def/public (get-char-height)
-      (with-cr
-       12.0
-       cr
-       (get-font-metric cr (lambda (m)
-                             (+ (pango_font_metrics_get_ascent m)
-                                (pango_font_metrics_get_descent m))))))
+      (or (with-cr
+           12.0
+           cr
+           (get-font-metric cr (lambda (m)
+                                 (+ (pango_font_metrics_get_ascent m)
+                                    (pango_font_metrics_get_descent m)))))
+          (let-values ([(w h d a) (get-text-extent "X")])
+            h)))
 
     (define/private (get-font-metric cr sel)
       (let ([desc (get-pango font)]
@@ -1770,10 +1774,11 @@
         (let ([font (pango_font_map_load_font (cdr context+fontmap)
                                               (car context+fontmap)
                                               desc)])
-          (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])
-            (let ([v (sel metrics)])
-              (pango_font_metrics_unref metrics)
-              (/ v (exact->inexact PANGO_SCALE)))))))
+          (and font ;; else font match failed
+               (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])
+                 (let ([v (sel metrics)])
+                   (pango_font_metrics_unref metrics)
+                   (/ v (exact->inexact PANGO_SCALE))))))))
 
     (void))
 
