@@ -120,7 +120,9 @@
             [(equal? dir "succeed/")
              (lambda (p thnk) (check-not-exn thnk))]
             [(equal? dir "optimizer/tests/")
-             (lambda (p* thnk) (test-opt p))])))
+             (lambda (p* thnk) (test-opt p))]
+            [(equal? dir "optimizer/close-calls/")
+             (lambda (p* thnk) (test-close-call p))])))
   (test-suite
    (path->string p)
    (f
@@ -139,4 +141,4 @@
 
 (provide go go/text just-one
          int-tests unit-tests compile-benchmarks
-         optimization-tests)
+         optimization-tests close-call-tests)
