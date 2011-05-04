@@ -4018,8 +4018,8 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
   char *filename;
   int expanded;
 
-  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("resolve-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("resolve-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
 
   filename = do_expand_filename(argv[0],
 				NULL,
@@ -4669,10 +4669,15 @@ static Scheme_Object *current_drive(int argc, Scheme_Object *argv[])
 static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[])
 {
   char *filename;
-  int expanded;
+  int expanded, kind;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("cleanse-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("cleanse-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
+
+  if (SCHEME_GENERAL_PATHP(argv[0]))
+    kind = SCHEME_PATH_KIND(argv[0]);
+  else
+    kind = SCHEME_PLATFORM_PATH_KIND;
 
   filename = do_expand_filename(argv[0],
 				NULL,
@@ -4681,13 +4686,13 @@ static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[])
 				&expanded,
 				1, 0,
 				0, /* no security check, since the filesystem is not used */ 
-                                SCHEME_PLATFORM_PATH_KIND,
+                                kind,
                                 0);
   
-  if (!expanded && SCHEME_PATHP(argv[0]))
+  if (!expanded && SCHEME_GENERAL_PATHP(argv[0]))
     return argv[0];
   else
-    return scheme_make_sized_path(filename, strlen(filename), 1);
+    return scheme_make_sized_offset_kind_path(filename, 0, strlen(filename), 1, kind);
 }
 
 static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[])

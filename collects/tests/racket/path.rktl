@@ -674,9 +674,8 @@
   (test (string->path "\\\\?\\RED\\..\\..") normal-case-path (coerce "\\\\?\\RED\\..\\.."))
 
   ;; cleanse-path removes redundant backslashes
-  (when (eq? 'windows (system-type))
-    (test (string->path "\\\\?\\\\UNC\\x\\y") cleanse-path (coerce "\\\\?\\\\UNC\\x\\y"))
-    (test (string->path "\\\\?\\c:\\") cleanse-path (coerce "\\\\?\\c:\\\\")))
+  (test (string->path "\\\\?\\\\UNC\\x\\y") cleanse-path (coerce "\\\\?\\\\UNC\\x\\y"))
+  (test (string->path "\\\\?\\c:\\") cleanse-path (coerce "\\\\?\\c:\\\\"))
 
   ;; cleanse-path removes redundant backslashes, and
   ;; simplify-path uses cleanse-path under Windows:
@@ -690,9 +689,9 @@
            (test (string->path "\\\\?\\UNC\\a\\b\\.") cleanse-path (coerce "\\\\?\\UNC\\\\a\\b\\\\."))
            (test (string->path "\\\\?\\RED\\\\..") cleanse-path (coerce "\\\\?\\RED\\.."))
            (test (string->path "\\\\?\\") cleanse-path (coerce "\\\\?\\\\")))])
+    (go cleanse-path)
+    (test (string->path "\\\\?\\c:") cleanse-path (coerce "\\\\?\\c:"))
     (when (eq? 'windows (system-type))
-      (go cleanse-path)
-      (test (string->path "\\\\?\\c:") cleanse-path (coerce "\\\\?\\c:"))
       (go simplify-path))
     (go (lambda (p) (simplify-path p #f)))
     (test (string->path "a\\b") simplify-path (coerce "a/b") #f)
