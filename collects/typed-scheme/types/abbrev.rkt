@@ -143,6 +143,10 @@
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
+(define -OtherSystemPath (make-Base 'OtherSystemPath
+                           #'(and/c path-for-some-system? (not/c path?))
+                             (conjoin path-for-some-system? (negate path?))
+                             #'-OtherSystemPath))
 (define -Namespace (make-Base 'Namespace #'namespace? namespace? #'-Namespace))
 (define -Output-Port (make-Base 'Output-Port #'output-port? output-port? #'-Output-Port))
 (define -Input-Port (make-Base 'Input-Port #'input-port? input-port? #'-Input-Port))
@@ -159,8 +163,11 @@
 
 (define -Port (*Un -Output-Port -Input-Port))
 
+(define -SomeSystemPath (*Un -Path -OtherSystemPath))
 (define -Pathlike (*Un -String -Path))
-(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
+(define -SomeSystemPathlike (*Un -String -SomeSystemPath))
+;(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
+(define -SomeSystemPathlike* (*Un -String -SomeSystemPath(-val 'up) (-val 'same)))
 (define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
 
 (define -top (make-Top))
