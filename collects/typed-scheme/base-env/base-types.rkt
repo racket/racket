@@ -77,6 +77,7 @@
 [Any Univ]
 [Port -Port]
 [Path -Path]
+[SomeSystemPath -SomeSystemPath]
 [Path-String -Pathlike]
 [Regexp -Regexp]
 [PRegexp -PRegexp]

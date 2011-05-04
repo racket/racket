@@ -394,7 +394,7 @@
 [string->path (-> -String -Path)]
 
 
-[build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
+[build-path ((list -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -Path)]
 [with-input-from-file
  (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
 [with-output-to-file
@@ -750,6 +750,7 @@
 [object-name (Univ . -> . Univ)]
 
 [path? (make-pred-ty -Path)]
+[path-for-some-system? (make-pred-ty -SomeSystemPath)]
 
 ;; scheme/function
 [const (-poly (a) (-> a (->* '() Univ a)))]
@@ -843,16 +844,23 @@
 
 ;; scheme/path
 
-[explode-path (-Pathlike . -> . (-lst (Un -Path (-val 'up) (-val 'same))))]
-[find-relative-path (-Pathlike -Pathlike . -> . -Path)]
+[explode-path (-SomeSystemPathlike . -> . (-lst (Un -SomeSystemPath (-val 'up) (-val 'same))))]
+[find-relative-path (-SomeSystemPathlike -SomeSystemPathlike . -> . -SomeSystemPath)]
 [simple-form-path (-Pathlike . -> . -Path)]
 [normalize-path (cl->* (-Pathlike [-Pathlike] . ->opt . -Path))]
-[filename-extension (-Pathlike . -> . (-opt -Bytes))]
+[filename-extension (-SomeSystemPathlike . -> . (-opt -Bytes))]
 [file-name-from-path (-Pathlike . -> . (-opt -Path))]
-[path-only (-Pathlike . -> . (-opt -Path))]
-[some-system-path->string (-Path . -> . -String)]
+[path-only (-SomeSystemPathlike . -> . (-opt -Path))]
+[some-system-path->string (-SomeSystemPath . -> . -String)]
 [string->some-system-path 
- (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
+ (-String (Un (-val 'unix) (-val 'windows)) . -> . -SomeSystemPath)]
+
+[simplify-path (-SomeSystemPathlike [B] . ->opt . -SomeSystemPath)]
+[path->complete-path
+ (cl->* (-> -Pathlike -Path)
+        (-> -SomeSystemPathlike -SomeSystemPathlike -SomeSystemPath))]
+[system-path-convention-type (-> (Un (-val 'unix) (-val 'windows)))]
+
 
 ;; scheme/file
 [fold-files 
