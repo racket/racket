@@ -1692,14 +1692,16 @@ static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void
 {
   Scheme_Object *l;
 
-  for (l = cust_closers; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
-    Scheme_Exit_Closer_Func cf;
-    cf = (Scheme_Exit_Closer_Func)SCHEME_CAR(l);
-    cf(o, f, data);
+  if (cust_closers) {
+    for (l = cust_closers; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
+      Scheme_Exit_Closer_Func cf;
+      cf = (Scheme_Exit_Closer_Func)SCHEME_CAR(l);
+      cf(o, f, data);
+    }
   }
 }
 
-static void run_atexit_closers(void)
+void scheme_run_atexit_closers(void)
 {
   mz_jmp_buf newbuf, *savebuf;
 
@@ -1726,12 +1728,12 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
   if (!cust_closers) {
     if (replacement_at_exit) {
-      replacement_at_exit(run_atexit_closers);
+      replacement_at_exit(scheme_run_atexit_closers);
     } else {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
-      on_exit(run_atexit_closers, NULL);
+      on_exit(scheme_run_atexit_closers, NULL);
 #else
-      atexit(run_atexit_closers);
+      atexit(scheme_run_atexit_closers);
 #endif
     }
 

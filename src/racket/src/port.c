@@ -556,15 +556,6 @@ scheme_init_port (Scheme_Env *env)
   }
 #endif
 
-#ifdef MZ_FDS
-  scheme_add_atexit_closer(flush_if_output_fds);
-  /* Note: other threads might continue to write even after
-     the flush completes, but that's the threads' problem.
-     All writing by the main thread will get flushed on exit
-     (but not, of course, if the thread is shutdown via a
-     custodian). */
-#endif
-
   register_port_wait();
 
   scheme_add_global_constant("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
@@ -588,6 +579,16 @@ scheme_init_port (Scheme_Env *env)
 
 void scheme_init_port_places(void)
 {
+
+#ifdef MZ_FDS
+  scheme_add_atexit_closer(flush_if_output_fds);
+  /* Note: other threads might continue to write even after
+     the flush completes, but that's the threads' problem.
+     All writing by the main thread will get flushed on exit
+     (but not, of course, if the thread is shutdown via a
+     custodian). */
+#endif
+
   REGISTER_SO(read_string_byte_buffer);
   REGISTER_SO(scheme_orig_stdout_port);
   REGISTER_SO(scheme_orig_stderr_port);

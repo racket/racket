@@ -511,6 +511,10 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
 }
 
 void scheme_place_instance_destroy() {
+  /* shutdown custodian */
+  /* run atexit handlers to flush file ports */
+  scheme_run_atexit_closers();
+
   scheme_end_futures_per_place();
 #if defined(MZ_USE_PLACES)
   scheme_kill_green_thread_timer();

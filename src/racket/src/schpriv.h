@@ -558,6 +558,7 @@ typedef struct Scheme_Custodian_Box {
 
 Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_Func f);
 Scheme_Custodian *scheme_get_current_custodian(void);
+void scheme_run_atexit_closers(void);
 
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
