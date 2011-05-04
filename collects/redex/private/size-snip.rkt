@@ -46,7 +46,7 @@
      (display "hole" op)]
     [(eq? val 'hole) 
      (display ",'hole" op)]
-    [else (display val op)]))
+    [else (write val op)]))
 
 (define reflowing-snip<%>
   (interface ()

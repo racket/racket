@@ -42,4 +42,7 @@
       (cons (list (cons 15 16))
             (list (cons 15 20))))
 
+(test (diff (term |a'|) (term b))
+      (cons (list (cons 0 4)) (list (cons 0 1))))
+
 (print-tests-passed 'stepper-test.ss)
