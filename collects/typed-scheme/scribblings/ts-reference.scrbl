@@ -23,6 +23,7 @@
                  #:use-sources 
                     (typed-scheme/typed-scheme
                      typed-scheme/private/prims
+                     typed-scheme/private/extra-procs
                      typed-scheme/private/base-types 
                      typed-scheme/private/base-types-extra))
 
@@ -906,6 +907,7 @@ languages. The @racketmod[typed-scheme] language is equivalent to the
                     #:use-sources 
                     (typed-scheme/typed-scheme
                      typed-scheme/private/prims
+                     typed-scheme/private/extra-procs
                      typed-scheme/private/base-types 
                      typed-scheme/private/base-types-extra))
 
