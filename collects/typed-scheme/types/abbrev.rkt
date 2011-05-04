@@ -166,8 +166,10 @@
 (define -SomeSystemPath (*Un -Path -OtherSystemPath))
 (define -Pathlike (*Un -String -Path))
 (define -SomeSystemPathlike (*Un -String -SomeSystemPath))
-;(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
+(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
 (define -SomeSystemPathlike* (*Un -String -SomeSystemPath(-val 'up) (-val 'same)))
+(define -PathConventionType (*Un (-val 'unix) (-val 'windows)))
+
 (define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
 
 (define -top (make-Top))

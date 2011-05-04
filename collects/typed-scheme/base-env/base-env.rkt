@@ -391,10 +391,8 @@
 
 [string-copy (-> -String -String)]
 [string->immutable-string (-> -String -String)]
-[string->path (-> -String -Path)]
 
 
-[build-path ((list -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -Path)]
 [with-input-from-file
  (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
 [with-output-to-file
@@ -532,7 +530,6 @@
 [seconds->date (-Integer . -> . (make-Name #'date))]
 [current-seconds (-> -Integer)]
 [current-print (-Param (Univ . -> . Univ) (Univ . -> . Univ))]
-[path->string (-> -Path -String)]
 
 [link-exists? (-> -Pathlike B)]
 [directory-exists? (-> -Pathlike B)]
@@ -548,6 +545,88 @@
 [file-or-directory-permissions (-> -Pathlike (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))]
 [file-or-directory-identity (->opt -Pathlike (Univ) -Nat)]
 [file-size (-> -Pathlike -Nat)]
+
+
+;; path manipulation
+
+[path? (make-pred-ty -Path)]
+[path-string? (-> Univ B)]
+[path-for-some-system? (make-pred-ty -SomeSystemPath)]
+
+[string->path (-> -String -Path)]
+[bytes->path (cl->* (-> -Bytes -Path) (-> -Bytes -PathConventionType -SomeSystemPath))]
+[path->string (-> -Path -String)]
+[path->bytes (-> -SomeSystemPath -Bytes)]
+
+[string->path-element (-> -String -Path)]
+[bytes->path-element (cl->* (-> -Bytes -Path) (-> -Bytes -PathConventionType -SomeSystemPath))]
+[path-element->string (-> -Path -String)]
+[path-element->bytes (-> -SomeSystemPath -Bytes)]
+
+[path-convention-type (-> -SomeSystemPath -PathConventionType)]
+[system-path-convention-type (-> -PathConventionType)]
+
+
+
+[build-path (cl->*
+  ((list -Pathlike*) -Pathlike* . ->* . -Path)
+  ((list -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -SomeSystemPath))]
+[build-path/convention-type 
+  ((list -PathConventionType -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -SomeSystemPath)]
+
+[absolute-path? (-> -SomeSystemPath B)]
+[relative-path? (-> -SomeSystemPath B)]
+[complete-path? (-> -SomeSystemPath B)]
+
+[path->complete-path
+ (cl->* (-> -Pathlike -Path)
+        (-> -Pathlike -Pathlike -Path)
+        (-> -SomeSystemPathlike -SomeSystemPathlike -SomeSystemPath))]
+
+[path->directory-path 
+ (cl->* (-> -Pathlike -Path)
+        (-> -SomeSystemPathlike -SomeSystemPath))]
+
+[resolve-path (-> -Path -Path)]
+[cleanse-path 
+ (cl->* (-> -Pathlike -Path)
+        (-> -SomeSystemPathlike -SomeSystemPath))]
+[expand-user-path (-> -Path -Path)]
+
+[simplify-path
+ (cl->* 
+  (-Pathlike . -> . -Path)
+  (-Pathlike B . -> . -Path)
+  (-SomeSystemPathlike B . -> . -SomeSystemPath))]
+
+[normal-case-path
+ (cl->* (-> -Pathlike -Path)
+        (-> -SomeSystemPathlike -SomeSystemPath))]
+
+[split-path
+ (cl->*
+  (-> -Pathlike
+      (-values (list
+                (Un -Path (-val 'relative) (-val #f))
+                (Un -Path (-val 'up) (-val 'same))
+                B)))
+  (-> -SomeSystemPathlike
+      (-values (list
+                (Un -SomeSystemPath (-val 'relative) (-val #f))
+                (Un -SomeSystemPath (-val 'up) (-val 'same))
+                B))))]
+
+[path-replace-suffix 
+ (cl->*
+  (-> -Pathlike (Un -String -Bytes) -Path)
+  (-> -SomeSystemPathlike (Un -String -Bytes) -SomeSystemPath))]
+
+[path-add-suffix 
+ (cl->*
+  (-> -Pathlike (Un -String -Bytes) -Path)
+  (-> -SomeSystemPathlike (Un -String -Bytes) -SomeSystemPath))]
+
+
 
 
 [hash? (make-pred-ty (make-HashtableTop))]
@@ -749,8 +828,6 @@
 
 [object-name (Univ . -> . Univ)]
 
-[path? (make-pred-ty -Path)]
-[path-for-some-system? (make-pred-ty -SomeSystemPath)]
 
 ;; scheme/function
 [const (-poly (a) (-> a (->* '() Univ a)))]
@@ -855,11 +932,6 @@
 [string->some-system-path 
  (-String (Un (-val 'unix) (-val 'windows)) . -> . -SomeSystemPath)]
 
-[simplify-path (-SomeSystemPathlike [B] . ->opt . -SomeSystemPath)]
-[path->complete-path
- (cl->* (-> -Pathlike -Path)
-        (-> -SomeSystemPathlike -SomeSystemPathlike -SomeSystemPath))]
-[system-path-convention-type (-> (Un (-val 'unix) (-val 'windows)))]
 
 
 ;; scheme/file
