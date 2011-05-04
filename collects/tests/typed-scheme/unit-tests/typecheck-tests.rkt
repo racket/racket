@@ -868,6 +868,25 @@
         [tc-e (in-hash #hash((1 . 2))) (-seq -Integer -Integer)]
         [tc-e (in-hash-keys #hash((1 . 2))) (-seq -Integer)]
         [tc-e (in-hash-values #hash((1 . 2))) (-seq -Integer)]
+
+        ;;Path tests
+        (tc-e (bytes->path #"foo" 'unix) -SomeSystemPath)
+        (tc-e (bytes->path #"foo") -Path)
+        (tc-e (bytes->path-element #"foo") -Path)
+        (tc-e (bytes->path-element #"foo" 'windows) -SomeSystemPath)
+
+        (tc-e (cleanse-path "foo") -Path)
+        (tc-e (cleanse-path (string->some-system-path "foo" 'unix)) -SomeSystemPath)
+        (tc-e (simplify-path "foo") -Path)
+        (tc-e (simplify-path "foo" #t) -Path)
+        (tc-e (simplify-path (string->some-system-path "foo" 'unix) #f) -SomeSystemPath)
+        (tc-e (path->directory-path "foo") -Path)
+        (tc-e (path->directory-path (string->some-system-path "foo" 'unix)) -SomeSystemPath)
+
+
+        
+
+
         )
   (test-suite
    "check-type tests"
