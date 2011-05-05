@@ -13,6 +13,9 @@
       (curry cite bibtex-db))))
 
 (define (bibtex-parse ip)
+  (define STRING-DB (make-hash))
+  (define ENTRY-DB (make-hash))
+  
   (define (read-while pred ip)
     (match (peek-char ip)
       [(? pred)
@@ -24,15 +27,15 @@
   (define (read-until pred ip)
     (list->string
      (let loop ()
-      (match (peek-char ip)
-        [(? pred)
-         empty]
-        [_
-         (cons (read-char ip) (loop))]))))
+       (match (peek-char ip)
+         [(? pred)
+          empty]
+         [_
+          (cons (read-char ip) (loop))]))))
   
   (define (slurp-whitespace ip)
     (read-while (λ (c) (and (char? c) (char-whitespace? c))) ip))
-    
+  
   (define (read-entries ip)
     (slurp-whitespace ip)
     (match (read-char ip)
@@ -40,10 +43,10 @@
        (read-line ip)
        (read-entries ip)]
       [#\@
-       (cons (read-entry ip)
-             (read-entries ip))]
+       (read-entry ip)
+       (read-entries ip)]
       [(? eof-object?)
-       empty]
+       (void)]
       [c
        (error 'read-entries "Expected % or @, got ~v" c)]))
   
@@ -53,17 +56,15 @@
        (slurp-whitespace ip)
        (read-char ip)
        (define tag (read-tag ip))
-       (printf "string tag ~v\n" tag)
        (slurp-whitespace ip)
        (match (read-char ip)
          [#\=
           (slurp-whitespace ip)
           (define string (read-value ip))
-          (printf "string (~v,~v)\n" tag string)
           (slurp-whitespace ip)
           (match (read-char ip)
             [#\}
-             (list 'string tag string)]
+             (hash-set! STRING-DB tag string)]
             [c
              (error 'read-entry "Parsing string, expected }, got ~v" c)])]
          [c
@@ -82,27 +83,28 @@
        (slurp-whitespace ip)
        (define label (read-until (λ (c) (char=? c #\,)) ip))
        (read-char ip)
-       (printf "entry label ~v\n" label)
        (define alist
          (let loop ()
            (slurp-whitespace ip)
            (define atag (read-tag ip))
            (slurp-whitespace ip)
            (match (read-char ip)
-            [#\=
-             (slurp-whitespace ip)
-             (define aval (read-value ip))
-             (define e (cons atag aval))
-             (match (read-char ip)
-               [#\,
-                (cons e (loop))]
-               [#\}
-                (list e)]
-               [c
-                (error 'read-entry "Parsing entry, expected , or }, got ~v" c)])]
-            [c
-             (error 'read-entry "Parsing entry, expected =, got ~v" c)])))
-       (list 'entry typ label alist)]))
+             [#\=
+              (slurp-whitespace ip)
+              (define aval (read-value ip))
+              (define e (cons atag aval))
+              (match (read-char ip)
+                [#\,
+                 (cons e (loop))]
+                [#\}
+                 (list e)]
+                [c
+                 (error 'read-entry "Parsing entry, expected , or }, got ~v" c)])]
+             [c
+              (error 'read-entry "Parsing entry, expected =, got ~v" c)])))
+       (hash-set! ENTRY-DB label
+                  (list* (cons 'type typ)
+                         alist))]))
   
   (define (read-tag ip)
     (slurp-whitespace ip)
@@ -125,16 +127,15 @@
       [(? char-numeric?)
        (read-while char-numeric? ip)]
       [(? char-alphabetic?)
-       ; XXX string ref
-       (read-until (λ (c) (char=? c #\,)) ip)]
+       (define string-tag (read-until (λ (c) (char=? c #\,)) ip))
+       (hash-ref STRING-DB string-tag
+                 (λ () (error 'read-value "Unknown string constant ~v" string-tag)))]
       [c
        (error 'read-value "Parsing value, expected {, got ~v" c)]))
   
-  (with-handlers
-      ([exn? (λ (x)
-               (printf "~v\n" (read-string 100 ip))
-               (raise x))])
-    (read-entries ip)))
+  (read-entries ip)
+  
+  ENTRY-DB)
 
 (define (path->bibdb pth)
   (define bibdb
@@ -142,7 +143,7 @@
         pth
       (λ ()
         (bibtex-parse (current-input-port)))))
-  (printf "~v\n" (length bibdb))
+  (printf "~v\n" (hash-count bibdb))
   (error 'path->bibdb pth)
   #f)
 
