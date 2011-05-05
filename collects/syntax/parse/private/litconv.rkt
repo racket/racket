@@ -148,23 +148,15 @@
                 (for ([x (in-list (syntax->list #'(external ...)))])
                   (unless (identifier-binding x 'relphase)
                     (raise-syntax-error #f
-                                        (format "literal is unbound in phase ~a~a"
+                                        (format "literal is unbound in phase ~a~a~a"
                                                 'relphase
                                                 (case 'relphase
                                                   ((1) " (for-syntax)")
                                                   ((-1) " (for-template)")
                                                   ((#f) " (for-label)")
-                                                  (else "")))
+                                                  (else ""))
+                                                " relative to the enclosing module")
                                         (quote-syntax #,stx) x))))))))]))
-
-(define-syntax (phase-of-enclosing-module stx)
-  (syntax-case stx ()
-    [(poem)
-     (let ([phase-within-module (syntax-local-phase-level)])
-       #`(let ([phase-of-this-expression
-                (variable-reference->phase (#%variable-reference))])
-           (- phase-of-this-expression
-              #,(if (zero? phase-within-module) 0 1))))]))
 
 #|
 Literal sets: The goal is for literals to refer to their bindings at

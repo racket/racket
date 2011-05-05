@@ -1301,7 +1301,9 @@ A syntax class is integrable if
 (define (check-literal-entry stx ctx)
   (define (go internal external phase)
     (txlift #`(check-literal (quote-syntax #,external)
-                             #,phase (quote-syntax #,ctx)))
+                             #,phase
+                             (phase-of-enclosing-module)
+                             (quote-syntax #,ctx)))
     (list internal external phase phase))
   (syntax-case stx ()
     [(internal external #:phase phase)
