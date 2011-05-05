@@ -1409,6 +1409,33 @@ static int symbol_obj_FIXUP(void *p, struct NewGC *gc) {
 #define symbol_obj_IS_CONST_SIZE 0
 
 
+#ifdef MZ_USE_PLACES
+static int serialized_symbol_obj_SIZE(void *p, struct NewGC *gc) {
+  Scheme_Symbol *s = (Scheme_Symbol *)p;
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+}
+
+static int serialized_symbol_obj_MARK(void *p, struct NewGC *gc) {
+  Scheme_Symbol *s = (Scheme_Symbol *)p;
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+}
+
+static int serialized_symbol_obj_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Symbol *s = (Scheme_Symbol *)p;
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+}
+
+#define serialized_symbol_obj_IS_ATOMIC 1
+#define serialized_symbol_obj_IS_CONST_SIZE 0
+
+#endif
+
 static int cons_cell_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));

@@ -543,6 +543,16 @@ symbol_obj {
   gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
 }
 
+#ifdef MZ_USE_PLACES
+serialized_symbol_obj {
+  Scheme_Symbol *s = (Scheme_Symbol *)p;
+
+ mark:
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
+}
+#endif
+
 cons_cell {
  mark:
   Scheme_Object *o = (Scheme_Object *)p;

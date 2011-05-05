@@ -575,6 +575,9 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_unix_path_type, bstring_obj);
   GC_REG_TRAV(scheme_windows_path_type, bstring_obj);
   GC_REG_TRAV(scheme_symbol_type, symbol_obj);
+#ifdef MZ_USE_PLACES  
+  GC_REG_TRAV(scheme_serialized_symbol_type, serialized_symbol_obj);
+#endif
   GC_REG_TRAV(scheme_keyword_type, symbol_obj);
   GC_REG_TRAV(scheme_null_type, char_obj); /* small */
   GC_REG_TRAV(scheme_pair_type, cons_cell);
