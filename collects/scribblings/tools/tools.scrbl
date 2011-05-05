@@ -612,6 +612,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 @include-section["module-language-tools.scrbl"]
 @include-section["module-language.scrbl"]
 
+@include-section["documentation-utils.scrbl"]
+
 @section{Backwards compatibility}
 
 This section lists the bindings that begin with @tt{drscheme:} provided by the tools

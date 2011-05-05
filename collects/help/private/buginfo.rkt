@@ -8,7 +8,6 @@
 (struct bri (label get-value) #:transparent)
 (define (bri-value bri) ((bri-get-value bri)))
 
-;; update with symbol/string assoc list
 (define bug-report-infos null)
 
 (define (set-bug-report-info! str thunk)

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require setup/dirs net/sendurl net/uri-codec)
 (provide perform-search send-main-page)

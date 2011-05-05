@@ -1,8 +1,8 @@
 #lang scheme/base
 
-;; This file provides the utilities that mzscheme's `help' form uses.
-;; It is required dynamically when used from mzscheme, to avoid the
-;; loading overhead, and to have mzscheme independent of having the
+;; This file provides the utilities that racket's `help' form uses.
+;; It is required dynamically when used from racket, to avoid the
+;; loading overhead, and to have racket independent of having the
 ;; documentation system.
 
 (require setup/xref

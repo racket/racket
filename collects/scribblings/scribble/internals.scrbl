@@ -14,3 +14,4 @@
 @include-section["docreader.scrbl"]
 @include-section["xref.scrbl"]
 @include-section["config.scrbl"]
+@include-section["racket.scrbl"]
