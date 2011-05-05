@@ -129,7 +129,7 @@
       [(? char-alphabetic?)
        (define string-tag (read-until (λ (c) (char=? c #\,)) ip))
        (hash-ref STRING-DB string-tag
-                 (λ () (error 'read-value "Unknown string constant ~v" string-tag)))]
+                 (λ () string-tag))]
       [c
        (error 'read-value "Parsing value, expected {, got ~v" c)]))
   
@@ -144,8 +144,7 @@
       (λ ()
         (bibtex-parse (current-input-port)))))
   (printf "~v\n" (hash-count bibdb))
-  (error 'path->bibdb pth)
-  #f)
+  bibdb)
 
 (path->bibdb "/Users/jay/Dev/scm/github.jeapostrophe/work/papers/etc/all.bib")
 
