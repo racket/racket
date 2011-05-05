@@ -272,6 +272,16 @@
                       (dprintf "found unrelated structs: ~a ~a\n" s1 s2)
                       (fail! s t)]
                      [else (unmatch)])]
+              ;; similar case for structs and base types, which are obviously unrelated
+              [((Base: _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
+               (fail! s t)]
+              [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _))
+               (fail! s t)]
+              ;; same for Null
+              [((Value: '()) (or (? Struct? s1) (NameStruct: s1)))
+               (fail! s t)]
+              [((or (? Struct? s1) (NameStruct: s1)) (Value: '()))
+               (fail! s t)]
               ;; just checking if s/t is a struct misses recursive/union/etc cases
               [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _)) (fail! s t)]
               [((Base: _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) (fail! s t)]
