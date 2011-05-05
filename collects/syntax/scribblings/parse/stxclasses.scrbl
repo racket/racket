@@ -163,6 +163,8 @@ the pattern variables.
 
 @section{Pattern directives}
 
+@section-index{pattern-directive}
+
 Both the parsing forms and syntax class definition forms support
 @deftech{pattern directives} for annotating syntax patterns and
 specifying side conditions. The grammar for pattern directives

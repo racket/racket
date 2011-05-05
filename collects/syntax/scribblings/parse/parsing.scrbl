@@ -44,6 +44,10 @@ pattern matches, its attributes are bound to the corresponding
 subterms of the syntax object and that clause's side conditions and
 @scheme[expr] is evaluated. The result is the result of @scheme[expr].
 
+Each clause consists of a @tech{syntax pattern}, an optional sequence
+of @tech{pattern directives}, and a non-empty sequence of body
+expressions.
+
 If the syntax object fails to match any of the patterns (or all
 matches fail the corresponding clauses' side conditions), a syntax
 error is raised. 
@@ -120,11 +124,6 @@ conventions can be in the scope of syntax-class parameter
 bindings. See the section on @tech{conventions} for examples.
 }
 
-Each clause consists of a @tech{syntax pattern}, an optional sequence
-of @tech{pattern directives}, and a non-empty sequence of body
-expressions.
-}
-
 @specsubform[(code:line #:disable-colon-notation)]{
 
 Suppresses the ``colon notation'' for annotated pattern variables.
@@ -135,6 +134,7 @@ Suppresses the ``colon notation'' for annotated pattern variables.
 (syntax-parse #'(a b c) #:disable-colon-notation
   [(x:y ...) 'ok])
 ]
+}
 }
 
 @defform[(syntax-parser parse-option ... clause ...+)]{
