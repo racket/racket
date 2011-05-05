@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote make/setup-extension))
 (check-docs (quote make/make))
 (check-docs (quote make/make-unit))

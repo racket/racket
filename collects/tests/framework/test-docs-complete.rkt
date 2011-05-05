@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote framework/test))
 (check-docs (quote framework/splash))
 (check-docs (quote framework/preferences))

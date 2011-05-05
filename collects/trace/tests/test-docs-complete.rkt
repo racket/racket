@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote trace/stacktrace))
 (check-docs (quote trace))
 (check-docs (quote trace/calltrace))

@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote rnrs/unicode-6))
 (check-docs (quote rnrs/syntax-case-6))
 (check-docs (quote rnrs/sorting-6))

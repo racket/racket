@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 ;(check-docs (quote picturing-programs/private/tiles))
 ;(check-docs (quote picturing-programs/private/map-image))
 (check-docs (quote picturing-programs))

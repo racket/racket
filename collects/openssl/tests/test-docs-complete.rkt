@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote openssl/sha1))
 (check-docs (quote openssl/openssl))
 (check-docs (quote openssl/mzssl))

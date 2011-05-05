@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote planet/version))
 (check-docs (quote planet/util))
 (check-docs (quote planet/syntax))

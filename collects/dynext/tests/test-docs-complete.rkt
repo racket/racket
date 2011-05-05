@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote dynext))
 (check-docs (quote dynext/link))
 (check-docs (quote dynext/link-unit))

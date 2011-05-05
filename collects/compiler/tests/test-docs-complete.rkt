@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote compiler/zo-structs))
 (check-docs (quote compiler/zo-parse))
 (check-docs (quote compiler/zo-marshal))

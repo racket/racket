@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote ffi/vector))
 (check-docs (quote ffi/unsafe))
 (check-docs (quote ffi/objc))

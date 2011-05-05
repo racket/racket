@@ -1,4 +1,4 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote config))
 (check-docs (quote config/config))

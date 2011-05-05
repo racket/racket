@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote web-server/web-server))
 (check-docs (quote web-server/web-server-unit))
 (check-docs (quote web-server/web-server-sig))

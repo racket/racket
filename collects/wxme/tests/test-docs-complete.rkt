@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote wxme/xml))
 (check-docs (quote wxme/wxme))
 (check-docs (quote wxme/text))

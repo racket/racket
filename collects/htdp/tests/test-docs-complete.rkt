@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote htdp/world))
 (check-docs (quote htdp/testing))
 (check-docs (quote htdp/show-queen))

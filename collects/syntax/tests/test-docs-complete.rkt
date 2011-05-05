@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote syntax/zodiac))
 (check-docs (quote syntax/zodiac-unit))
 (check-docs (quote syntax/zodiac-sig))

@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote unstable/wrapc))
 (check-docs (quote unstable/syntax))
 (check-docs (quote unstable/struct))

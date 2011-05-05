@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 ;(check-docs (quote deinprogramm/world))
 ;(check-docs (quote deinprogramm/turtle))
 ;(check-docs (quote deinprogramm/test-suite))

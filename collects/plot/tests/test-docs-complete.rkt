@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote plot/view))
 (check-docs (quote plot/renderers))
 (check-docs (quote plot/renderer-helpers))

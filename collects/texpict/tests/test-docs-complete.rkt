@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote texpict/utils))
 (check-docs (quote texpict/texpict))
 (check-docs (quote texpict/texpict-unit))

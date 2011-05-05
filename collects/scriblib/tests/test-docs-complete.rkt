@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote scriblib/render-cond))
 (check-docs (quote scriblib/gui-eval))
 (check-docs (quote scriblib/footnote))

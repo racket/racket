@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote setup/xref))
 (check-docs (quote setup/winvers))
 (check-docs (quote setup/winvers-change))

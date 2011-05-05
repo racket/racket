@@ -4,8 +4,6 @@
 (define tools '(("time-keystrokes.ss" "drracket")))
 (define tool-names '("Time Keystrokes"))
 
-(define scribblings '(("utils/scribblings.scrbl")))
-
 (define compile-omit-paths
   '("2htdp"
     "aligned-pasteboard"

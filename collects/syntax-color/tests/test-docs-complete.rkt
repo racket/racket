@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote syntax-color/token-tree))
 (check-docs (quote syntax-color/scribble-lexer))
 (check-docs (quote syntax-color/scheme-lexer))

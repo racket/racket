@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote macro-debugger/syntax-browser))
 (check-docs (quote macro-debugger/stepper))
 (check-docs (quote macro-debugger/stepper-text))

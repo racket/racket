@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote graphics/value-turtles))
 (check-docs (quote graphics/value-turtles-test))
 (check-docs (quote graphics/value-turtles-examples))

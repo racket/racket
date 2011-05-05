@@ -3,10 +3,10 @@
 @(require scribble/manual
           (for-label racket))
 
-@title{Internal Testing Utilities} 
+@title{Testing Utilities} 
 
 @section{Checking documentation completeness}
-@defmodule[tests/utils/docs-complete]
+@defmodule[rackunit/docs-complete]
 
 @defproc[(check-docs [lib symbol?]
                      [#:skip skip 

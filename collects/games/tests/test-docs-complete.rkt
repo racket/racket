@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote games/show-scribbling))
 (check-docs (quote games/show-help))
 (check-docs (quote games))

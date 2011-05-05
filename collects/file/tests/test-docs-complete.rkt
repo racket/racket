@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote file/zip))
 (check-docs (quote file/tar))
 (check-docs (quote file/sha1))

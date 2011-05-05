@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote errortrace/zo-compile))
 (check-docs (quote errortrace/stacktrace))
 (check-docs (quote errortrace))

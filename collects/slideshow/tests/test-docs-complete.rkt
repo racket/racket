@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote slideshow/viewer))
 (check-docs (quote slideshow/tutorial-show))
 (check-docs (quote slideshow/step))

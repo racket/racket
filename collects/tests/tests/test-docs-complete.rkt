@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote tests/zo-size))
 (check-docs (quote tests/stress))
 (check-docs (quote tests/run-automated-tests))

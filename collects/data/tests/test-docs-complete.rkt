@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote data/splay-tree))
 (check-docs (quote data/skip-list))
 (check-docs (quote data/queue))

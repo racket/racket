@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote mrlib/text-string-style-desc))
 (check-docs (quote mrlib/tex-table))
 (check-docs (quote mrlib/tab-choice))

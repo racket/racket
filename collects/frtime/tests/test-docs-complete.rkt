@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote frtime/frtime-big))
 (check-docs (quote frtime/gui/fred))
 (check-docs (quote frtime/gui))

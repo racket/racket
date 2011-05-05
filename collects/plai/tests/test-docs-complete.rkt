@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote plai/web))
 (check-docs (quote plai/test-harness))
 (check-docs (quote plai/random-mutator))

@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote scribble/xref))
 (check-docs (quote scribble/urls))
 (check-docs (quote scribble/text))

@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote algol60/simplify))
 (check-docs (quote algol60/runtime))
 (check-docs (quote algol60/prims))

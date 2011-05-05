@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote net/websocket))
 (check-docs (quote net/url))
 (check-docs (quote net/url-unit))

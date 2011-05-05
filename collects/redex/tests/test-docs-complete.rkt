@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote redex/reduction-semantics))
 (check-docs (quote redex/pict))
 (check-docs (quote redex))

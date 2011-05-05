@@ -1,5 +1,5 @@
 #lang racket/base
-(require tests/utils/docs-complete)
+(require rackunit/docs-complete)
 (check-docs (quote guibuilder/utils))
 (check-docs (quote guibuilder/top-level))
 (check-docs (quote guibuilder/toolbar))
