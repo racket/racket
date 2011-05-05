@@ -79,8 +79,10 @@ msets "/machines/D" "workdir=/var/tmp" "moveto=" "copytobak=" \
       "more_setup_args=" "test_gui="
 # defbuild "ccs-solaris" "sparc-solaris" "moveto=/proj/racket" \
 #          "ext_lib_paths=/arch/unix/packages/openssl-0.9.7e"
-defbuild "pitcairn"    "i386-win32" "test_gui=yes" \
-         "workdir=f:" # no "/..." path (that can get interpreted as a flag)
+defbuild "pitcairn" "i386-win32" "test_gui=yes" \
+         "workdir=F:" # no "/..." path (that can get interpreted as a flag)
+defbuild "pitcairn2" "x86_64-win32" "test_gui=yes" \
+         "workdir=C:" # same here
 # The LDFLAGS is a workaround for a bug in Fink, see
 # http://wiki.finkproject.org/index.php/Fink:Packaging:Preparing_for_10.5#OpenGL_Bug
 defbuild "kauai"       "ppc-darwin" "configure_args=--enable-xonx" \
@@ -1310,7 +1312,7 @@ grab_batch_vars() { # input: batchfile args ...
   cat >> "$tmpbatch" <<-EOF
 	@echo off
 	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E1")"
-	call "$(cygpath -w "$exe")" $*
+	call "$exe" $*
 	"$(cygpath -w "$(which env)")" > "$(cygpath -w "/tmp/E2")"
 EOF
   chmod +x "$tmpbatch"
@@ -1353,9 +1355,7 @@ win_build_step() { # inputs: type, name, [args...]
                   ;;
     ( "VSNET3M" ) _cd "$PLTHOME/src/worksp/$bname"
                   _run "$VSNET" "$bname.sln" /build "Release|$arch"
-                  # `-c' shouldn't be needed, but there's some problem that is
-                  # probably due to module caching, so work around it for now.
-                  _run "$PLTHOME/Racket.exe" -c "xform.rkt" "$@"
+                  _run "$PLTHOME/Racket.exe" "xform.rkt" "$@"
                   _run "$VSNET" "$bname.sln" /build "3m|$arch"
                   ;;
     ( * ) exit_error "Unknown type for win_build_step: \"$btype\"" ;;
@@ -1366,18 +1366,24 @@ win_build_step() { # inputs: type, name, [args...]
 DO_WINDOWS_BUILD() {
 
   ## --------------------------------------------------------------------------
+  # make X: drives available as /X
   /usr/bin/mount -c /
+  # ignore an occasional use of a dos-style file
+  export CYGWIN="$CYGWIN nodosfilewarning"
 
-  export TEMP="c:\\cygwin\\tmp" TMP="c:\\cygwin\\tmp"
-
-  # Note: commands must be executed using unix paths (also PATH)
-  STUDIO="c:\\Program Files\\Microsoft Visual Studio 10.0"
-  VSNET="$(winpath2unix "$STUDIO\\Common7\\IDE\\devenv.com")"
-  NMAKE="$(winpath2unix "$STUDIO\\VC\\bin\\nmake.exe")"
+  export TEMP="C:\\cygwin\\tmp" TMP="C:\\cygwin\\tmp"
 
   local arch="x86"
   if [[ "$platform" = "x86_64-"* ]]; then arch="x64"; fi
-  grab_batch_vars "$(winpath2unix "$STUDIO\\VC\\vcvarsall.bat")" "$arch"
+
+  # Note: commands must be executed using unix paths (also PATH)
+  PROGS="C:\\Program Files"
+  if [[ "$arch" = "x64" ]]; then PROGS="C:\\Program Files (x86)"; fi
+  STUDIO="$PROGS\\Microsoft Visual Studio 10.0"
+  VSNET="$(winpath2unix "$STUDIO\\Common7\\IDE\\devenv.com")"
+  NMAKE="$(winpath2unix "$STUDIO\\VC\\bin\\nmake.exe")"
+
+  grab_batch_vars "$STUDIO\\VC\\vcvarsall.bat" "$arch"
 
   PATH="$PATH:$(winpath2unix "$PLTHOME"):."
 
