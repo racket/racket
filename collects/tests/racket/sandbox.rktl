@@ -476,7 +476,7 @@
    --top--
    (when (custodian-memory-accounting-available?)
      (t --top--
-        (parameterize ([sandbox-eval-limits '(2 5)]
+        (parameterize ([sandbox-eval-limits '(10 5)]
                        [sandbox-memory-limit 100])
           (make-base-evaluator!))
         --eval--
@@ -490,7 +490,7 @@
            (collect-garbage)
            ;; increases size of the current evaluation
            (cons (make-bytes 500000) v)))
-        =err> "out of memo(?:ry)"
+        =err> "out of mem+o(?:ry)"
         b => 1))
 
    ))
