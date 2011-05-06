@@ -1317,6 +1317,14 @@
          'x)
         (list 'a 'b 'c 'd))
   
+  
+  (let ([R (reduction-relation empty-language #:domain number (--> 1 a "first"))]
+        [S (reduction-relation empty-language (--> 2 a "second"))])
+    (test (apply-reduction-relation (union-reduction-relations R S) 2)
+          (list 'a))
+    (test (apply-reduction-relation (union-reduction-relations S R) 2)
+          (list 'a)))
+  
   (test (apply-reduction-relation
          (reduction-relation 
           empty-language

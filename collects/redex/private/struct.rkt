@@ -68,20 +68,17 @@
    language combined-rules combined-rule-names lws
    (map (λ (rule)
           (define specialized (rule language))
+          (define (f-with-contract t)
+            (unless (match-pattern compiled-domain t)
+              (error 'reduction-relation "relation reduced to ~s via ~a, which is outside its domain"
+                     t
+                     (let ([name (rewrite-proc-name rule)])
+                       (if name
+                           (format "the rule named ~a" name)
+                           "an unnamed rule"))))
+            t)
           (λ (tl-exp exp f acc)
             (unless (match-pattern compiled-domain tl-exp)
               (error 'reduction-relation "relation not defined for ~s" tl-exp))
-            (let ([ress (specialized tl-exp exp f acc)])
-              (for-each
-               (λ (res)
-                 (let ([term (caddr res)])
-                   (unless (match-pattern compiled-domain term)
-                     (error 'reduction-relation "relation reduced to ~s via ~a, which is outside its domain"
-                            term
-                            (let ([name (rewrite-proc-name rule)])
-                              (if name
-                                  (format "the rule named ~a" name)
-                                  "an unnamed rule"))))))
-               ress)
-              ress)))
+            (specialized tl-exp exp f-with-contract acc)))
         combined-rules)))
