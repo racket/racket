@@ -6,6 +6,7 @@
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          racket/match unstable/match
+         racket/function
          (rename-in racket/contract
                     [-> c->] [->* c->*])
 	 (for-syntax racket/base syntax/parse))
@@ -277,10 +278,10 @@
                (fail! s t)]
               [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _))
                (fail! s t)]
-              ;; same for Null
-              [((Value: '()) (or (? Struct? s1) (NameStruct: s1)))
+              ;; same for all values. 
+              [((Value: (? (negate struct?) _)) (or (? Struct? s1) (NameStruct: s1)))
                (fail! s t)]
-              [((or (? Struct? s1) (NameStruct: s1)) (Value: '()))
+              [((or (? Struct? s1) (NameStruct: s1)) (Value: (? (negate struct?) _)))
                (fail! s t)]
               ;; just checking if s/t is a struct misses recursive/union/etc cases
               [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _)) (fail! s t)]
