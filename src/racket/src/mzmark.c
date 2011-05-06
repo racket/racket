@@ -656,6 +656,35 @@ static int let_header_FIXUP(void *p, struct NewGC *gc) {
 #define let_header_IS_CONST_SIZE 1
 
 
+static int set_bang_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Set_Bang));
+}
+
+static int set_bang_MARK(void *p, struct NewGC *gc) {
+  Scheme_Set_Bang *b = (Scheme_Set_Bang *)p;
+  
+  gcMARK2(b->var, gc);
+  gcMARK2(b->val, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Set_Bang));
+}
+
+static int set_bang_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Set_Bang *b = (Scheme_Set_Bang *)p;
+  
+  gcFIXUP2(b->var, gc);
+  gcFIXUP2(b->val, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Set_Bang));
+}
+
+#define set_bang_IS_ATOMIC 0
+#define set_bang_IS_CONST_SIZE 1
+
+
 static int prim_proc_SIZE(void *p, struct NewGC *gc) {
   Scheme_Primitive_Proc *prim = (Scheme_Primitive_Proc *)p;
 

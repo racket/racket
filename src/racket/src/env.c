@@ -3744,8 +3744,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	  break;
 	else
           *closure_offset = delta;
-      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_syntax_type)
-                 && (SCHEME_PINT_VAL(n) == CASE_LAMBDA_EXPD)) {
+      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_case_lambda_sequence_type)) {
         if (!closure_offset)
 	  break;
 	else

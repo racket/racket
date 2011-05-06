@@ -88,36 +88,10 @@ static Scheme_Object *require_expand(Scheme_Object *form, Scheme_Comp_Env *env, 
 static Scheme_Object *provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
-static Scheme_Object *module_execute(Scheme_Object *data);
-static Scheme_Object *top_level_require_execute(Scheme_Object *data);
-
-static Scheme_Object *module_jit(Scheme_Object *data);
-static Scheme_Object *top_level_require_jit(Scheme_Object *data);
-
-static Scheme_Object *module_optimize(Scheme_Object *data, Optimize_Info *info, int context);
-static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
-static Scheme_Object *module_sfs(Scheme_Object *data, SFS_Info *info);
-static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context);
-static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
-static Scheme_Object *top_level_require_sfs(Scheme_Object *data, SFS_Info *info);
-
-static void module_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Validate_TLS tls,
-                            int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts,  
-                            void *tl_use_map, int result_ignored,
-                            struct Validate_Clearing *vc, int tailpos,
-                            Scheme_Hash_Tree *procs);
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
-                                       char *stack, Validate_TLS tls,
-                                       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts, 
-                                       void *tl_use_map, int result_ignored,
-                                       struct Validate_Clearing *vc, int tailpos,
-                                       Scheme_Hash_Tree *procs);
-
 static Scheme_Object *write_module(Scheme_Object *obj);
 static Scheme_Object *read_module(Scheme_Object *obj);
+static Scheme_Object *read_top_level_require(Scheme_Object *obj);
+static Scheme_Object *write_top_level_require(Scheme_Object *obj);
 
 static Scheme_Module *module_load(Scheme_Object *modname, Scheme_Env *env, const char *who);
 
@@ -303,17 +277,6 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 
 void scheme_init_module(Scheme_Env *env)
 {
-  scheme_register_syntax(MODULE_EXPD, 
-			 module_optimize,
-			 module_resolve, module_sfs, module_validate, 
-			 module_execute, module_jit, 
-			 NULL, NULL, -1);
-  scheme_register_syntax(REQUIRE_EXPD, 
-			 top_level_require_optimize,
-			 top_level_require_resolve, top_level_require_sfs, top_level_require_validate, 
-			 top_level_require_execute, top_level_require_jit, 
-			 NULL, NULL, 2);
-
   scheme_add_global_keyword("module", 
 			    scheme_make_compiled_syntax(module_syntax, 
 							module_expand),
@@ -386,6 +349,8 @@ void scheme_init_module(Scheme_Env *env)
 
   scheme_install_type_writer(scheme_module_type, write_module);
   scheme_install_type_reader(scheme_module_type, read_module);
+  scheme_install_type_writer(scheme_require_form_type, write_top_level_require);
+  scheme_install_type_reader(scheme_require_form_type, read_top_level_require);
 
   GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
   GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
@@ -4690,17 +4655,10 @@ static int needs_prompt(Scheme_Object *e)
     case scheme_local_type:
     case scheme_local_unbox_type:
       return 0;
-    case scheme_syntax_type:
-      switch (SCHEME_PINT_VAL(e)) {
-      case CASE_LAMBDA_EXPD:
-        return 0;
-      case DEFINE_VALUES_EXPD:
-        e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-        e = SCHEME_VEC_ELS(e)[0];
-        break;
-      default:
-        return 1;
-      }
+    case scheme_case_lambda_sequence_type:
+      return 0;
+    case scheme_define_values_type:
+      e = SCHEME_VEC_ELS(e)[0];
       break;
     default:
       return 1;
@@ -5015,9 +4973,8 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o)
     if (!c->prefix) /* => compiled module is in `code' field */
       return (Scheme_Module *)c->code;
     
-    if (SAME_TYPE(SCHEME_TYPE(c->code), scheme_syntax_type)
-	&& (SCHEME_PINT_VAL(c->code) == MODULE_EXPD)) {
-      return (Scheme_Module *)SCHEME_IPTR_VAL(c->code);
+    if (SAME_TYPE(SCHEME_TYPE(c->code), scheme_module_type)) {
+      return (Scheme_Module *)c->code;
     }
   }
 
@@ -5387,11 +5344,6 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv, i
   return scheme_void;
 }
 
-static Scheme_Object *module_execute(Scheme_Object *data)
-{
-  return do_module_execute(data, NULL, 1);
-}
-
 Scheme_Object *scheme_module_execute(Scheme_Object *data, Scheme_Env *genv)
 {
   return do_module_execute(data, genv, 0);
@@ -5507,7 +5459,7 @@ static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
   return (Scheme_Object *)m;
 }
 
-static Scheme_Object *module_jit(Scheme_Object *data)
+Scheme_Object *scheme_module_jit(Scheme_Object *data)
 {
   return do_module_clone(data, 1);
 }
@@ -5517,7 +5469,7 @@ Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
   return do_module_clone(data, 0);
 }
 
-static void module_validate(Scheme_Object *data, Mz_CPort *port, 
+void scheme_module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
 			    int num_toplevels, int num_stxes, int num_lifts, 
@@ -5529,9 +5481,6 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   int i, cnt, let_depth;
   Resolve_Prefix *rp;
   Scheme_Object *e;
-
-  if (!SAME_TYPE(SCHEME_TYPE(data), scheme_module_type))
-    scheme_ill_formed_code(port);
 
   m = (Scheme_Module *)data;
 
@@ -5590,8 +5539,8 @@ static int set_code_closure_flags(Scheme_Object *clones,
   return flags;
 }
 
-static Scheme_Object *
-module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
+Scheme_Object *
+scheme_module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *vars, *old_context;
@@ -5612,13 +5561,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
          at the expense of later inlining. */
       for (i_m = 0; i_m < cnt; i_m++) {
         e = SCHEME_VEC_ELS(m->body)[i_m];
-        if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-            && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+        if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
           int n;
 
-          e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-          vars = SCHEME_CAR(e);
-          e = SCHEME_CDR(e);
+          vars = SCHEME_VEC_ELS(e)[0];
+          e = SCHEME_VEC_ELS(e)[1];
 
           n = scheme_list_length(vars);
           if (n == 1) {
@@ -5654,11 +5601,10 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
     is_proc_def = 0;
     if (OPT_DISCOURAGE_EARLY_INLINE && info->enforce_const) {
-      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
         Scheme_Object *e2;
-        e2 = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-        e2 = SCHEME_CDR(e2);
+        e2 = (Scheme_Object *)e;
+        e2 = SCHEME_VEC_ELS(e2)[1];
         if (IS_COMPILED_PROC(e2))
           is_proc_def = 1;
       }
@@ -5682,14 +5628,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       /* If this expression/definition can't have any side effect
 	 (including raising an exception), then continue the group of
 	 simultaneous definitions: */
-      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
 	int n, cnst = 0, sproc = 0;
 
-	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-
-	vars = SCHEME_CAR(e);
-	e = SCHEME_CDR(e);
+	vars = SCHEME_VEC_ELS(e)[0];
+	e = SCHEME_VEC_ELS(e)[1];
 
 	n = scheme_list_length(vars);
 	cont = scheme_omittable_expr(e, n, -1, 0, info, -1);
@@ -5810,11 +5753,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
           e = SCHEME_VEC_ELS(m->body)[start_simltaneous];
 
           if (OPT_LIMIT_FUNCTION_RESIZE) {
-            if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-                && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+            if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
               Scheme_Object *sub_e;
-              sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-              sub_e = SCHEME_CDR(sub_e);
+              sub_e = SCHEME_VEC_ELS(e)[1];
               if (IS_COMPILED_PROC(sub_e))
                 old_sz = scheme_compiled_proc_body_size(sub_e);
               else
@@ -5833,8 +5774,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             Scheme_Object *rpos;
             rpos = scheme_hash_get(re_consts, scheme_make_integer(start_simltaneous));
             if (rpos) {
-              e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-              e = SCHEME_CDR(e);
+              e = SCHEME_VEC_ELS(e)[1];
               if (!scheme_compiled_propagate_ok(e, info)
                   && scheme_is_statically_proc(e, info)) {
                 /* If we previously installed a procedure for inlining,
@@ -5921,11 +5861,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   /* Exp-time body was optimized during compilation */
 
-  return scheme_make_syntax_compiled(MODULE_EXPD, data);
+  return data;
 }
 
-static Scheme_Object *
-module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
+Scheme_Object *
+scheme_module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *b, *lift_vec;
@@ -5967,11 +5907,11 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 
   /* Exp-time body was resolved during compilation */
 
-  return scheme_make_syntax_resolved(MODULE_EXPD, data);
+  return data;
 }
 
-static Scheme_Object *
-module_sfs(Scheme_Object *data, SFS_Info *old_info)
+Scheme_Object *
+scheme_module_sfs(Scheme_Object *data, SFS_Info *old_info)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *ex;
@@ -5984,9 +5924,7 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
 
     info = scheme_new_sfs_info(m->max_let_depth);
     info->for_mod = 1;
-    scheme_sfs(scheme_make_syntax_resolved(MODULE_EXPD, data), 
-               info, 
-               m->max_let_depth);
+    scheme_sfs(data, info, m->max_let_depth);
     return data;
   }
 
@@ -6243,7 +6181,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
         m->lang_info = pv;
     }
 
-    fm = scheme_make_syntax_compiled(MODULE_EXPD, (Scheme_Object *)m);
+    fm = (Scheme_Object *)m;
   } else {
     Scheme_Object *hints, *formname;
 
@@ -9928,21 +9866,21 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
   return scheme_void;
 }
 
-static Scheme_Object *
-top_level_require_execute(Scheme_Object *data)
+Scheme_Object *
+scheme_top_level_require_execute(Scheme_Object *data)
 {
-  do_require_execute(scheme_environment_from_dummy(SCHEME_CAR(data)),
-                     SCHEME_CDR(data));
+  do_require_execute(scheme_environment_from_dummy(SCHEME_PTR1_VAL(data)),
+                     SCHEME_PTR2_VAL(data));
   return scheme_void;
 }
 
-static Scheme_Object *
-top_level_require_jit(Scheme_Object *data)
+Scheme_Object *
+scheme_top_level_require_jit(Scheme_Object *data)
 {
   return data;
 }
 
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
+void scheme_top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
 				       int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes, int num_lifts, 
@@ -9952,24 +9890,26 @@ static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port,
 {
 }
 
-static Scheme_Object *
-top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context)
+Scheme_Object *
+scheme_top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
-  return scheme_make_syntax_compiled(REQUIRE_EXPD, data);
+  return data;
 }
 
-static Scheme_Object *
-top_level_require_resolve(Scheme_Object *data, Resolve_Info *rslv)
+Scheme_Object *
+scheme_top_level_require_resolve(Scheme_Object *data, Resolve_Info *rslv)
 {
-  Scheme_Object *dummy = SCHEME_CAR(data);
+  Scheme_Object *dummy = SCHEME_PTR1_VAL(data);
 
   dummy = scheme_resolve_expr(dummy, rslv);
 
-  return scheme_make_syntax_resolved(REQUIRE_EXPD, cons(dummy, SCHEME_CDR(data)));
+  SCHEME_PTR1_VAL(data) = dummy;
+
+  return data;
 }
 
-static Scheme_Object *
-top_level_require_sfs(Scheme_Object *data, SFS_Info *rslv)
+Scheme_Object *
+scheme_top_level_require_sfs(Scheme_Object *data, SFS_Info *rslv)
 {
   return data;
 }
@@ -9978,7 +9918,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 				 Scheme_Compile_Expand_Info *rec, int drec)
 {
   Scheme_Hash_Table *ht;
-  Scheme_Object *rn_set, *dummy, *modidx;
+  Scheme_Object *rn_set, *dummy, *modidx, *data;
   Scheme_Env *genv;
 
   if (!scheme_is_toplevel(env))
@@ -10014,9 +9954,13 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
     
     scheme_compile_rec_done_local(rec, drec);
     scheme_default_compile_rec(rec, drec);
-    return scheme_make_syntax_compiled(REQUIRE_EXPD, 
-				       cons(dummy,
-					    form));
+
+    data = scheme_alloc_object();
+    data->type = scheme_require_form_type;
+    SCHEME_PTR1_VAL(data) = dummy;
+    SCHEME_PTR2_VAL(data) = form;
+
+    return data;
   } else
     return form;
 }
@@ -10663,4 +10607,23 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   }
   
   return (Scheme_Object *)m;
+}
+
+Scheme_Object *write_top_level_require(Scheme_Object *o)
+{
+  return scheme_make_pair(SCHEME_PTR1_VAL(o), SCHEME_PTR2_VAL(o));
+}
+
+Scheme_Object *read_top_level_require(Scheme_Object *o)
+{
+  Scheme_Object *data;
+
+  if (!SCHEME_PAIRP(o)) return NULL;
+
+  data = scheme_alloc_object();
+  data->type = scheme_require_form_type;
+  SCHEME_PTR1_VAL(data) = SCHEME_CAR(o);
+  SCHEME_PTR2_VAL(data) = SCHEME_CDR(o);
+  
+  return data;
 }

@@ -107,14 +107,23 @@ scheme_init_type ()
   set_name(scheme_application3_type, "<binary-application-code>");
   set_name(scheme_compiled_unclosed_procedure_type, "<procedure-semi-code>");
   set_name(scheme_unclosed_procedure_type, "<procedure-code>");
-  set_name(scheme_syntax_type, "<syntax-code>");
-  set_name(scheme_compiled_syntax_type, "<syntax-semi-code>");
   set_name(scheme_branch_type, "<branch-code>");
   set_name(scheme_sequence_type, "<sequence-code>");
-  set_name(scheme_case_lambda_sequence_type, "<case-lambda-code>");
-  set_name(scheme_begin0_sequence_type, "<begin0-code>");
   set_name(scheme_with_cont_mark_type, "<with-continuation-mark-code>");
   set_name(scheme_quote_syntax_type, "<quote-syntax-code>");
+
+  set_name(scheme_define_values_type, "<define-values-code>");
+  set_name(scheme_define_syntaxes_type, "<define-syntaxes-code>");
+  set_name(scheme_define_for_syntax_type, "<define-for-syntax-code>");
+  set_name(scheme_begin0_sequence_type, "<begin0-code>");
+  set_name(scheme_splice_sequence_type, "<splicing-begin-code>");
+  set_name(scheme_module_type, "<module-code>");
+  set_name(scheme_set_bang_type, "<set!-code>");
+  set_name(scheme_boxenv_type, "<boxenv-code>");
+  set_name(scheme_require_form_type, "<require-code>");
+  set_name(scheme_varref_form_type, "<varref-code>");
+  set_name(scheme_apply_values_type, "<apply-values-code>");
+  set_name(scheme_case_lambda_sequence_type, "<case-lambda-code>");
 
   set_name(scheme_let_value_type, "<let-value-code>");
   set_name(scheme_let_void_type, "<let-void-code>");
@@ -214,7 +223,6 @@ scheme_init_type ()
   set_name(scheme_set_macro_type, "<set!-transformer>");
   set_name(scheme_id_macro_type, "<rename-transformer>");
 
-  set_name(scheme_module_type, "<module-code>");
   set_name(scheme_module_index_type, "<module-path-index>");
 
   set_name(scheme_subprocess_type, "<subprocess>");
@@ -502,7 +510,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_variable_type, variable_obj);
   GC_REG_TRAV(scheme_local_type, local_obj);
   GC_REG_TRAV(scheme_local_unbox_type, local_obj);
-  GC_REG_TRAV(scheme_syntax_type, iptr_obj);
   GC_REG_TRAV(scheme_application_type, app_rec);
   GC_REG_TRAV(scheme_application2_type, app2_rec);
   GC_REG_TRAV(scheme_application3_type, app3_rec);
@@ -517,12 +524,24 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_quote_syntax_type, quotesyntax_obj);
   GC_REG_TRAV(scheme_module_variable_type, module_var);
 
+  GC_REG_TRAV(scheme_define_values_type, vector_obj);
+  GC_REG_TRAV(scheme_define_syntaxes_type, vector_obj);
+  GC_REG_TRAV(scheme_define_for_syntax_type, vector_obj);
+  GC_REG_TRAV(scheme_varref_form_type, twoptr_obj);
+  GC_REG_TRAV(scheme_apply_values_type, twoptr_obj);
+  GC_REG_TRAV(scheme_boxenv_type, twoptr_obj);
+  GC_REG_TRAV(scheme_case_lambda_sequence_type, case_closure);
+  GC_REG_TRAV(scheme_begin0_sequence_type, seq_rec);
+  GC_REG_TRAV(scheme_splice_sequence_type, seq_rec);
+  GC_REG_TRAV(scheme_set_bang_type, set_bang);
+  GC_REG_TRAV(scheme_module_type, module_val);
+  GC_REG_TRAV(scheme_require_form_type, twoptr_obj);
+
   GC_REG_TRAV(_scheme_values_types_, bad_trav);
   
   GC_REG_TRAV(scheme_compiled_unclosed_procedure_type, unclosed_proc);
   GC_REG_TRAV(scheme_compiled_let_value_type, comp_let_value);
   GC_REG_TRAV(scheme_compiled_let_void_type, let_header);
-  GC_REG_TRAV(scheme_compiled_syntax_type, iptr_obj);
   GC_REG_TRAV(scheme_compiled_toplevel_type, toplevel_obj);
   GC_REG_TRAV(scheme_compiled_quote_syntax_type, local_obj);
 
@@ -603,8 +622,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_undefined_type, char_obj); /* small */
   GC_REG_TRAV(scheme_placeholder_type, small_object);
   GC_REG_TRAV(scheme_table_placeholder_type, iptr_obj);
-  GC_REG_TRAV(scheme_case_lambda_sequence_type, case_closure);
-  GC_REG_TRAV(scheme_begin0_sequence_type, seq_rec);
 
   GC_REG_TRAV(scheme_svector_type, svector_val);
 
@@ -614,7 +631,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_stx_type, stx_val);
   GC_REG_TRAV(scheme_stx_offset_type, stx_off_val);
   GC_REG_TRAV(scheme_expanded_syntax_type, twoptr_obj);
-  GC_REG_TRAV(scheme_module_type, module_val);
   GC_REG_TRAV(scheme_rt_module_exports, module_exports_val);
   GC_REG_TRAV(scheme_module_phase_exports_type, module_phase_exports_val);
   GC_REG_TRAV(scheme_module_index_type, modidx_val);

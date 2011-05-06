@@ -1789,9 +1789,11 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         int j = i + closure_size + convert_size;
         Scheme_Object *bcode;
         
-        bcode = scheme_make_syntax_resolved(BOXENV_EXPD,
-                                            scheme_make_pair(scheme_make_integer(j),
-                                                             data->code));
+        bcode = scheme_alloc_object();
+        bcode->type = scheme_boxenv_type;
+        SCHEME_PTR1_VAL(bcode) = scheme_make_integer(j);
+        SCHEME_PTR2_VAL(bcode) = data->code;
+
         data->code = bcode;
       }
     }
@@ -3585,8 +3587,8 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       name = ((Scheme_Closure_Data *)p)->name;
     } else if (type == scheme_closure_type) {
       name = SCHEME_COMPILED_CLOS_CODE(p)->name;
-    } else if (type == scheme_compiled_syntax_type) {
-      Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(p);
+    } else if (type == scheme_case_lambda_sequence_type) {
+      Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)p;
       if (!cl->count)
         name = NULL;
       else

@@ -243,6 +243,17 @@ let_header {
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Header));
 }
 
+set_bang {
+ mark:
+  Scheme_Set_Bang *b = (Scheme_Set_Bang *)p;
+  
+  gcMARK2(b->var, gc);
+  gcMARK2(b->val, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Set_Bang));
+}
+
 prim_proc {
   Scheme_Primitive_Proc *prim = (Scheme_Primitive_Proc *)p;
 

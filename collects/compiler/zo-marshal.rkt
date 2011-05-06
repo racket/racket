@@ -149,21 +149,29 @@
 ;; ----------------------------------------
 
 (define toplevel-type-num 0)
-(define syntax-type-num 3)
-(define sequence-type-num 7)
-(define unclosed-procedure-type-num 9)
-(define let-value-type-num 10)
-(define let-void-type-num 11)
-(define letrec-type-num 12)
-(define wcm-type-num 14)
-(define quote-syntax-type-num 15)
-(define variable-type-num 24)
-(define top-type-num 89)
-(define case-lambda-sequence-type-num 99)
-(define begin0-sequence-type-num 100)
-(define module-type-num 103)
-(define prefix-type-num 105)
-(define free-id-info-type-num 154)
+(define sequence-type-num 6)
+(define unclosed-procedure-type-num 8)
+(define let-value-type-num 9)
+(define let-void-type-num 10)
+(define letrec-type-num 11)
+(define wcm-type-num 13)
+(define quote-syntax-type-num 14)
+(define define-values-type-num 15)
+(define define-syntaxes-type-num 16)
+(define define-for-syntax-type-num 17)
+(define set-bang-type-num 18)
+(define boxenv-type-num 19)
+(define begin0-sequence-type-num 20)
+(define splice-sequence-type-num 21)
+(define require-form-type-num 22)
+(define varref-form-type-num 23)
+(define apply-values-type-num 24)
+(define case-lambda-sequence-type-num 25)
+(define module-type-num 26)
+(define variable-type-num 34)
+(define top-type-num 99)
+(define prefix-type-num 112)
+(define free-id-info-type-num 161)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -212,21 +220,6 @@
   CPT_PREFAB
   CPT_LET_ONE_UNUSED)
 
-(define-enum
-  0
-  DEFINE_VALUES_EXPD
-  DEFINE_SYNTAX_EXPD
-  SET_EXPD
-  CASE_LAMBDA_EXPD
-  BEGIN0_EXPD
-  BOXENV_EXPD
-  MODULE_EXPD
-  REQUIRE_EXPD
-  DEFINE_FOR_SYNTAX_EXPD
-  REF_EXPD
-  APPVALS_EXPD
-  SPLICE_EXPD)
-
 (define CPT_SMALL_NUMBER_START 36)
 (define CPT_SMALL_NUMBER_END 60)
 
@@ -270,10 +263,6 @@
                           4
                           #f
                           #f))
-
-(define-struct case-seq (name lams))
-(define-struct (seq0 seq) ())
-
 
 (define (encode-module-bindings module-bindings)
   (define encode-nominal-path
@@ -440,9 +429,6 @@
      (out-byte #xF0 out)
      (out-bytes (int->bytes n) out)]))
 
-(define (out-syntax key val out)
-  (out-marshaled syntax-type-num (list* key val) out))
-
 (define (out-marshaled type-num val out)
   (if (type-num . < . (- CPT_SMALL_MARSHALLED_END CPT_SMALL_MARSHALLED_START))
       (out-byte (+ CPT_SMALL_MARSHALLED_START type-num) out)
@@ -541,34 +527,34 @@
        [(? mod?)
         (out-module v out)]
        [(struct def-values (ids rhs))
-        (out-syntax DEFINE_VALUES_EXPD
-                    (list->vector (cons (protect-quote rhs) ids))
-                    out)]
+        (out-marshaled define-values-type-num
+                       (list->vector (cons (protect-quote rhs) ids))
+                       out)]
        [(struct def-syntaxes (ids rhs prefix max-let-depth))
-        (out-syntax DEFINE_SYNTAX_EXPD
-                    (list->vector (list* (protect-quote rhs)
-                                         prefix
-                                         max-let-depth
-                                         *dummy*
-                                         ids))
-                    out)]
+        (out-marshaled define-syntaxes-type-num
+                       (list->vector (list* (protect-quote rhs)
+                                            prefix
+                                            max-let-depth
+                                            *dummy*
+                                            ids))
+                       out)]
        [(struct def-for-syntax (ids rhs prefix max-let-depth))
-        (out-syntax DEFINE_FOR_SYNTAX_EXPD
-                    (list->vector (list* (protect-quote rhs)
-                                         prefix
-                                         max-let-depth
-                                         *dummy*
-                                         ids))
-                    out)]
-       [(struct seq0 (forms))
+        (out-marshaled define-for-syntax-type-num
+                       (list->vector (list* (protect-quote rhs)
+                                            prefix
+                                            max-let-depth
+                                            *dummy*
+                                            ids))
+                       out)]
+       [(struct beg0 (forms))
         (out-marshaled begin0-sequence-type-num (map protect-quote forms) out)]
        [(struct seq (forms))
         (out-marshaled sequence-type-num (map protect-quote forms) out)]
        [(struct splice (forms))
-        (out-syntax SPLICE_EXPD (make-seq forms) out)]
+        (out-marshaled splice-sequence-type-num forms out)]
        [(struct req (reqs dummy))
         (error "cannot handle top-level `require', yet")
-        (out-syntax REQUIRE_EXPD (cons dummy reqs) out)]
+        (out-marshaled require-form-type-num (cons dummy reqs) out)]
        [(struct toplevel (depth pos const? ready?))
         (out-marshaled toplevel-type-num
                        (cons
@@ -589,9 +575,9 @@
         (out-byte CPT_REFERENCE out)
         (out-number id out)]
        [(struct assign (id rhs undef-ok?))
-        (out-syntax SET_EXPD
-                    (cons undef-ok? (cons id rhs))
-                    out)]
+        (out-marshaled set-bang-type-num
+                       (cons undef-ok? (cons id rhs))
+                       out)]
        [(struct localref (unbox? offset clear? other-clears? flonum?))
         (if (and (not clear?) (not other-clears?) (not flonum?)
                  (offset . < . (- CPT_SMALL_LOCAL_END CPT_SMALL_LOCAL_START)))
@@ -617,19 +603,6 @@
        [(? lam?)
         (out-lam v out)]
        [(struct case-lam (name lams))
-        (let ([seq (make-case-seq name lams)])
-          ;; XXX: This seems like an optimization, which should probably happen somewhere else
-          ;; If all closures are empty, generate a case sequence directly
-          (if (andmap (lambda (lam)
-                        (or (closure? lam)
-                            (and (lam? lam)
-                                 (equal? (lam-closure-map lam) #()))))
-                      lams)
-              (out-anything seq out)
-              (out-syntax CASE_LAMBDA_EXPD
-                          seq
-                          out)))]
-       [(struct case-seq (name lams))
         (out-marshaled case-lambda-sequence-type-num
                        (cons (or name null)
                              lams)
@@ -666,11 +639,11 @@
                         (protect-quote body))
                        out)]
        [(struct boxenv (pos body))
-        (out-syntax BOXENV_EXPD
-                    (cons
-                     pos
-                     (protect-quote body))
-                    out)]
+        (out-marshaled boxenv-type-num
+                       (cons
+                        pos
+                        (protect-quote body))
+                       out)]
        [(struct branch (test then else))
         (out-byte CPT_BRANCH out)
         (out-anything (protect-quote test) out)
@@ -687,14 +660,10 @@
                       (out-anything (protect-quote e) out))
                     (cons rator rands)))]
        [(struct apply-values (proc args-expr))
-        (out-syntax APPVALS_EXPD
-                    (cons (protect-quote proc)
-                          (protect-quote args-expr))
-                    out)]
-       [(struct beg0 (exprs))
-        (out-syntax BEGIN0_EXPD
-                    (make-seq0 exprs)
-                    out)]
+        (out-marshaled apply-values-type-num
+                       (cons (protect-quote proc)
+                             (protect-quote args-expr))
+                       out)]
        [(struct with-cont-mark (key val body))
         (out-marshaled wcm-type-num
                        (list*
@@ -703,9 +672,9 @@
                         (protect-quote body))
                        out)]
        [(struct varref (expr))
-        (out-syntax REF_EXPD
-                    expr
-                    out)]
+        (out-marshaled varref-form-type-num
+                       expr
+                       out)]
        [(protected-symref v)
         (out-anything ((out-shared-index out) v #:error? #t) out)]
        [(and (? symbol?) (not (? symbol-interned?)))
@@ -823,10 +792,6 @@
         (let-values ([(name base) (module-path-index-split v)])
           (out-anything name out)
           (out-anything base out))]
-       [(module-decl content)
-        (out-marshaled module-type-num
-                       content
-                       out)]
        [(stx encoded)
         (out-byte CPT_STX out)
         (out-anything encoded out)]
@@ -866,99 +831,96 @@
         (out-bytes bstr out)]
        [else (error 'out-anything "~s" (current-type-trace))])))))
 
-(define-struct module-decl (content))
-
 (define (out-module mod-form out)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
-     (out-syntax MODULE_EXPD
-                 (let* ([lookup-req (lambda (phase)
-                                      (let ([a (assq phase requires)])
-                                        (if a
-                                            (cdr a)
-                                            null)))]
-                        [other-requires (filter (lambda (l)
-                                                  (not (memq (car l) '(#f -1 0 1))))
-                                                requires)]
-                        [extract-protects
-                         (lambda (phase)
-                           (let ([a (assq phase provides)])
-                             (and a
-                                  (let ([p (map provided-protected? (append (cadr a)
-                                                                            (caddr a)))])
-                                    (if (ormap values p)
-                                        (list->vector p)
-                                        #f)))))]
-                        [list->vector/#f (lambda (default l)
-                                           (if (andmap (lambda (x) (equal? x default)) l)
-                                               #f
-                                               (list->vector l)))]
-                        [l 
-                         (let loop ([l other-requires])
-                           (match l
-                             [(list)
-                              empty]
-                             [(list-rest (cons phase reqs) rst)
-                              (list* phase reqs (loop rst))]))]
-                        [l (cons (length other-requires) l)]
-                        [l (cons (lookup-req #f) l)] ; dt-requires
-                        [l (cons (lookup-req -1) l)] ; tt-requires
-                        [l (cons (lookup-req 1) l)] ; et-requires
-                        [l (cons (lookup-req 0) l)] ; requires
-                        [l (cons (list->vector body) l)]
-                        [l (cons (list->vector
-                                  (for/list ([i (in-list syntax-body)])
-                                    (define (maybe-one l) ;; a single symbol is ok
-                                      (if (and (pair? l) (null? (cdr l)))
-                                          (car l)
-                                          l))
-                                    (match i
-                                      [(struct def-syntaxes (ids rhs prefix max-let-depth))
-                                       (vector (maybe-one ids) rhs max-let-depth prefix #f)]
-                                      [(struct def-for-syntax (ids rhs prefix max-let-depth))
-                                       (vector (maybe-one ids) rhs max-let-depth prefix #t)])))
-                                 l)]
-                        [l (append (apply
-                                    append
-                                    (map (lambda (l)
-                                           (let ([phase (car l)]
-                                                 [all (append (cadr l) (caddr l))])
-                                             (list phase
-                                                   (list->vector/#f #f (map provided-insp all))
-                                                   (list->vector/#f 0 (map (lambda (p) (= 1 (provided-src-phase p))) 
-                                                                           all))
-                                                   (list->vector/#f #f (map (lambda (p)
-                                                                              (if (eq? (provided-nom-src p)
-                                                                                       (provided-src p))
-                                                                                  #f ; #f means "same as src"
-                                                                                  (provided-nom-src p)))
-                                                                            all))
-                                                   (list->vector (map provided-src-name all))
-                                                   (list->vector (map provided-src all))
-                                                   (list->vector (map provided-name all))
-                                                   (length (cadr l))
-                                                   (length all))))
-                                         provides))
-                                   l)]
-                        [l (cons (length provides) l)] ; number of provide sets
-                        [l (cons (extract-protects 0) l)] ; protects
-                        [l (cons (extract-protects 1) l)] ; et protects
-                        [l (list* (list->vector (car unexported)) (length (car unexported)) l)] ; indirect-provides
-                        [l (list* (list->vector (cadr unexported)) (length (cadr unexported)) l)] ; indirect-syntax-provides
-                        [l (list* (list->vector (caddr unexported)) (length (caddr unexported)) l)] ; indirect-et-provides
-                        [l (cons prefix l)]
-                        [l (cons dummy l)]
-                        [l (cons max-let-depth l)]
-                        [l (cons internal-context l)] ; module->namespace syntax
-                        [l (list* #f #f l)] ; obsolete `functional?' info
-                        [l (cons lang-info l)] ; lang-info
-                        [l (cons self-modidx l)]
-                        [l (cons srcname l)]
-                        [l (cons name l)])
-                   (make-module-decl l))
-                 out)]))
-
+     (let* ([lookup-req (lambda (phase)
+                          (let ([a (assq phase requires)])
+                            (if a
+                                (cdr a)
+                                null)))]
+            [other-requires (filter (lambda (l)
+                                      (not (memq (car l) '(#f -1 0 1))))
+                                    requires)]
+            [extract-protects
+             (lambda (phase)
+               (let ([a (assq phase provides)])
+                 (and a
+                      (let ([p (map provided-protected? (append (cadr a)
+                                                                (caddr a)))])
+                        (if (ormap values p)
+                            (list->vector p)
+                            #f)))))]
+            [list->vector/#f (lambda (default l)
+                               (if (andmap (lambda (x) (equal? x default)) l)
+                                   #f
+                                   (list->vector l)))]
+            [l 
+             (let loop ([l other-requires])
+               (match l
+                 [(list)
+                  empty]
+                 [(list-rest (cons phase reqs) rst)
+                  (list* phase reqs (loop rst))]))]
+            [l (cons (length other-requires) l)]
+            [l (cons (lookup-req #f) l)] ; dt-requires
+            [l (cons (lookup-req -1) l)] ; tt-requires
+            [l (cons (lookup-req 1) l)] ; et-requires
+            [l (cons (lookup-req 0) l)] ; requires
+            [l (cons (list->vector body) l)]
+            [l (cons (list->vector
+                      (for/list ([i (in-list syntax-body)])
+                        (define (maybe-one l) ;; a single symbol is ok
+                          (if (and (pair? l) (null? (cdr l)))
+                              (car l)
+                              l))
+                        (match i
+                          [(struct def-syntaxes (ids rhs prefix max-let-depth))
+                           (vector (maybe-one ids) rhs max-let-depth prefix #f)]
+                          [(struct def-for-syntax (ids rhs prefix max-let-depth))
+                           (vector (maybe-one ids) rhs max-let-depth prefix #t)])))
+                     l)]
+            [l (append (apply
+                        append
+                        (map (lambda (l)
+                               (let ([phase (car l)]
+                                     [all (append (cadr l) (caddr l))])
+                                 (list phase
+                                       (list->vector/#f #f (map provided-insp all))
+                                       (list->vector/#f 0 (map (lambda (p) (= 1 (provided-src-phase p))) 
+                                                               all))
+                                       (list->vector/#f #f (map (lambda (p)
+                                                                  (if (eq? (provided-nom-src p)
+                                                                           (provided-src p))
+                                                                      #f ; #f means "same as src"
+                                                                      (provided-nom-src p)))
+                                                                all))
+                                       (list->vector (map provided-src-name all))
+                                       (list->vector (map provided-src all))
+                                       (list->vector (map provided-name all))
+                                       (length (cadr l))
+                                       (length all))))
+                             provides))
+                       l)]
+            [l (cons (length provides) l)] ; number of provide sets
+            [l (cons (extract-protects 0) l)] ; protects
+            [l (cons (extract-protects 1) l)] ; et protects
+            [l (list* (list->vector (car unexported)) (length (car unexported)) l)] ; indirect-provides
+            [l (list* (list->vector (cadr unexported)) (length (cadr unexported)) l)] ; indirect-syntax-provides
+            [l (list* (list->vector (caddr unexported)) (length (caddr unexported)) l)] ; indirect-et-provides
+            [l (cons prefix l)]
+            [l (cons dummy l)]
+            [l (cons max-let-depth l)]
+            [l (cons internal-context l)] ; module->namespace syntax
+            [l (list* #f #f l)] ; obsolete `functional?' info
+            [l (cons lang-info l)] ; lang-info
+            [l (cons self-modidx l)]
+            [l (cons srcname l)]
+            [l (cons name l)])
+       (out-marshaled module-type-num
+                      l
+                      out))]))
 
 (define (lookup-encoded-wrapped w out)
   (hash-ref! (out-encoded-wraps out) w

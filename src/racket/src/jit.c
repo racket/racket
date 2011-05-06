@@ -320,15 +320,8 @@ static int is_short(Scheme_Object *obj, int fuel)
   t = SCHEME_TYPE(obj);
 
   switch (t) {
-  case scheme_syntax_type:
-    {
-      int t;
-      t = SCHEME_PINT_VAL(obj); 
-      if (t == CASE_LAMBDA_EXPD)
-	return fuel - 1;
-      else
-	return 0;
-    }
+  case scheme_case_lambda_sequence_type:
+    return fuel - 1;
     break;
   case scheme_application_type:
     {
@@ -552,12 +545,8 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
   type = SCHEME_TYPE(obj);
 
   switch (type) {
-  case scheme_syntax_type:
-    {
-      int t;
-      t = SCHEME_PINT_VAL(obj); 
-      return (t == CASE_LAMBDA_EXPD);
-    }
+  case scheme_case_lambda_sequence_type:
+    return 1;
     break;
 
   case scheme_branch_type:
@@ -636,9 +625,6 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
   type = SCHEME_TYPE(obj);
 
   switch (type) {
-  case scheme_syntax_type:
-    break;
-
   case scheme_branch_type:
     if (depth) {
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)obj;
@@ -711,8 +697,8 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
   if (SAME_TYPE(t, scheme_closure_type)
       || SAME_TYPE(t, scheme_unclosed_procedure_type))
     return 1;
-  else if (SAME_TYPE(t, scheme_syntax_type)) {
-    return (SCHEME_PINT_VAL(v) == CASE_LAMBDA_EXPD);
+  else if (SAME_TYPE(t, scheme_case_lambda_sequence_type)) {
+    return 1;
   } else if (SAME_TYPE(t, scheme_local_type)) {
     int flags;
     return scheme_mz_is_closure(jitter, SCHEME_LOCAL_POS(v), -1, &flags);
@@ -1889,420 +1875,410 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       END_JIT_DATA(3);
       return 1;
     }
-  case scheme_syntax_type:
+  case scheme_case_lambda_sequence_type:
     {
-      int pos;
-      pos = SCHEME_PINT_VAL(obj);
-      switch (pos) {
-      case CASE_LAMBDA_EXPD:
-	{
-	  START_JIT_DATA();
-	  LOG_IT(("case-lambda\n"));
-	  /* case-lambda */
-          if (for_branch) 
-            finish_branch_with_true(jitter, for_branch);
-          else
-            generate_case_closure(SCHEME_IPTR_VAL(obj), jitter, target);
-	  END_JIT_DATA(5);
-	} 
-	break;
-      case BEGIN0_EXPD:
-	{
-	  Scheme_Sequence *seq;
-	  GC_CAN_IGNORE jit_insn *ref, *ref2;
-	  int i;
-	  START_JIT_DATA();
+      START_JIT_DATA();
+      LOG_IT(("case-lambda\n"));
+      /* case-lambda */
+      if (for_branch) 
+        finish_branch_with_true(jitter, for_branch);
+      else
+        generate_case_closure(obj, jitter, target);
+      END_JIT_DATA(5);
+      return 1;
+    } 
+    break;
+  case scheme_begin0_sequence_type:
+    {
+      Scheme_Sequence *seq;
+      GC_CAN_IGNORE jit_insn *ref, *ref2;
+      int i;
+      START_JIT_DATA();
 
-	  LOG_IT(("begin0\n"));
+      LOG_IT(("begin0\n"));
 
-	  seq = (Scheme_Sequence *)SCHEME_IPTR_VAL(obj);
+      seq = (Scheme_Sequence *)obj;
 	
-	  /* Evaluate first expression, and for consistency with bytecode
-	     evaluation, allow multiple values. */
-	  scheme_generate_non_tail(seq->array[0], jitter, 1, 1, 0);
-	  CHECK_LIMIT();
+      /* Evaluate first expression, and for consistency with bytecode
+         evaluation, allow multiple values. */
+      scheme_generate_non_tail(seq->array[0], jitter, 1, 1, 0);
+      CHECK_LIMIT();
 
-	  /* Save value(s) */
-	  jit_movr_p(JIT_V1, JIT_R0);
-	  mz_pushr_p(JIT_V1);
-	  mz_pushr_p(JIT_V1);
-	  mz_pushr_p(JIT_V1);
-          mz_rs_sync();
-	  __START_SHORT_JUMPS__(1);
-	  ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
-	  CHECK_LIMIT();
-	  /* Save away multiple values */
-	  mz_popr_p(JIT_V1); /* sync'd below... */
-	  mz_popr_p(JIT_V1);
-	  mz_popr_p(JIT_V1);
-	  mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-	  CHECK_LIMIT();
-	  jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-	  jit_lshi_l(JIT_V1, JIT_V1, 0x1);
-	  jit_ori_l(JIT_V1, JIT_V1, 0x1);
-	  mz_pushr_p(JIT_V1); /* sync'd below */
-	  jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
-	  mz_pushr_p(JIT_V1); /* sync'd below */
-	  CHECK_LIMIT();
-	  (void)jit_movi_p(JIT_R1, 0x0);
-	  mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
-	  /* If multi-value array is values buffer, zero out values buffer */
-	  jit_ldxi_p(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
-          mz_rs_sync();
-	  ref2 = jit_bner_p(jit_forward(), JIT_V1, JIT_R2);
-	  jit_stxi_p(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
-	  CHECK_LIMIT();
+      /* Save value(s) */
+      jit_movr_p(JIT_V1, JIT_R0);
+      mz_pushr_p(JIT_V1);
+      mz_pushr_p(JIT_V1);
+      mz_pushr_p(JIT_V1);
+      mz_rs_sync();
+      __START_SHORT_JUMPS__(1);
+      ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
+      CHECK_LIMIT();
+      /* Save away multiple values */
+      mz_popr_p(JIT_V1); /* sync'd below... */
+      mz_popr_p(JIT_V1);
+      mz_popr_p(JIT_V1);
+      mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      CHECK_LIMIT();
+      jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
+      jit_lshi_l(JIT_V1, JIT_V1, 0x1);
+      jit_ori_l(JIT_V1, JIT_V1, 0x1);
+      mz_pushr_p(JIT_V1); /* sync'd below */
+      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
+      mz_pushr_p(JIT_V1); /* sync'd below */
+      CHECK_LIMIT();
+      (void)jit_movi_p(JIT_R1, 0x0);
+      mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
+      /* If multi-value array is values buffer, zero out values buffer */
+      jit_ldxi_p(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
+      mz_rs_sync();
+      ref2 = jit_bner_p(jit_forward(), JIT_V1, JIT_R2);
+      jit_stxi_p(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
+      CHECK_LIMIT();
 
-	  /* evaluate remaining expressions */
-	  mz_patch_branch(ref);
-	  mz_patch_branch(ref2);
-	  __END_SHORT_JUMPS__(1);
-	  for (i = 1; i < seq->count; i++) {
-	    scheme_generate_non_tail(seq->array[i], jitter, 1, 1, 1); /* sync's below */
-            CHECK_LIMIT();
-	  }
-
-	  /* Restore values, if necessary */
-	  mz_popr_p(JIT_R0);
-	  mz_popr_p(JIT_R1);
-	  mz_popr_p(JIT_R2);
-          mz_rs_sync();
-	  CHECK_LIMIT();
-	  __START_TINY_JUMPS__(1);
-	  ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
-	  CHECK_LIMIT();
-	  mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-	  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
-	  jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
-	  jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
-	  (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
-
-	  mz_patch_branch(ref);
-          if (target != JIT_R0)
-            jit_movr_p(target, JIT_R0);
-	  __END_TINY_JUMPS__(1);
-
-          if (for_branch) finish_branch(jitter, target, for_branch);
-
-	  END_JIT_DATA(6);
-	}
-	break;
-      case SET_EXPD:
-	{
-	  Scheme_Object *p, *v;
-	  int pos, set_undef;
-          GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3
-	  START_JIT_DATA();
-	
-	  LOG_IT(("set!\n"));
-
-	  p = SCHEME_IPTR_VAL(obj);
-	  v = SCHEME_CAR(p);
-	  set_undef = SCHEME_TRUEP(v);
-	  p = SCHEME_CDR(p);
-	  v = SCHEME_CAR(p);
-	  p = SCHEME_CDR(p);
-
-	  scheme_generate_non_tail(p, jitter, 0, 1, 0);
-	  CHECK_LIMIT();
-          mz_rs_sync();
-          
-	  /* Load global+stx array: */
-	  pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(v));
-	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-	  /* Try already-renamed stx: */
-	  pos = SCHEME_TOPLEVEL_POS(v);
-	  jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
-	  CHECK_LIMIT();
-	
-	  /* R0 has values, R2 has bucket */
-          __START_SHORT_JUMPS__(1);
-          jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Bucket *)0x0)->val);
-          ref1 = jit_beqi_p(jit_forward(), JIT_R1, NULL);
-          jit_ldxi_s(JIT_R1, JIT_R2, &((Scheme_Bucket_With_Flags *)0x0)->flags);
-          ref2 = jit_bmsi_i(jit_forward(), JIT_R1, GLOB_IS_IMMUTATED);
-          
-          /* Fast path: */
-          jit_stxi_p(&((Scheme_Bucket *)0x0)->val, JIT_R2, JIT_R0);
-          ref3 = jit_jmpi(jit_forward());
-
-          /* slow path: */
-          mz_patch_branch(ref1);
-          mz_patch_branch(ref2);
-          __END_SHORT_JUMPS__(1);
-	  JIT_UPDATE_THREAD_RSPTR_FOR_BRANCH_IF_NEEDED();
-	  mz_prepare(3);
-	  (void)jit_movi_i(JIT_R1, set_undef);
-	  jit_pusharg_p(JIT_R1);
-	  jit_pusharg_p(JIT_R0);
-	  jit_pusharg_p(JIT_R2);
-	  CHECK_LIMIT();
-	  (void)mz_finish_lwe(ts_call_set_global_bucket, ref1);
-	  CHECK_LIMIT();
-          
-          __START_SHORT_JUMPS__(1);
-          mz_patch_ucbranch(ref3);
-          __END_SHORT_JUMPS__(1);
-
-          if (for_branch) 
-            finish_branch_with_true(jitter, for_branch);
-          else {
-            if (!result_ignored)
-              (void)jit_movi_p(target, scheme_void);
-          }
-	  END_JIT_DATA(7);
-	}
-	break;
-      case APPVALS_EXPD:
-        {
-          Scheme_Object *p, *v;
-          GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref5, *refloop;
-          START_JIT_DATA();
-
-	  LOG_IT(("appvals\n"));
-
-          p = SCHEME_IPTR_VAL(obj);
-	  v = SCHEME_CAR(p);
-          p = SCHEME_CDR(p);
-
-          scheme_generate_non_tail(v, jitter, 0, 1, 0);
-	  CHECK_LIMIT();
-
-          /* If v is not known to produce a procedure, then check result: */
-          if (!is_a_procedure(v, jitter)) {
-            mz_rs_sync();
-            (void)jit_bmsi_l(sjc.bad_app_vals_target, JIT_R0, 0x1);
-            jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-            (void)jit_blti_i(sjc.bad_app_vals_target, JIT_R1, scheme_prim_type);
-            (void)jit_bgti_i(sjc.bad_app_vals_target, JIT_R1, scheme_native_closure_type);
-            CHECK_LIMIT();
-          }
-
-          mz_pushr_p(JIT_R0);
-          scheme_generate_non_tail(p, jitter, 1, 1, 0);
-          CHECK_LIMIT();
-
-          mz_popr_p(JIT_V1);
-          /* Function is in V1, argument(s) in R0 */
-
-          mz_rs_sync();
-
-          __START_SHORT_JUMPS__(1);
-          ref = jit_beqi_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
-          /* Single-value case: --------------- */
-          /* We definitely have stack space for one argument, because we
-             just used it for the rator. */
-          if (is_tail) {
-            mz_ld_runstack_base_alt(JIT_RUNSTACK);
-            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), WORDS_TO_BYTES(1));
-          } else {
-            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
-          }
-          CHECK_RUNSTACK_OVERFLOW();
-          jit_str_p(JIT_RUNSTACK, JIT_R0);
-          jit_movi_l(JIT_R0, 1);
-          ref2 = jit_jmpi(jit_forward());
-          CHECK_LIMIT();
-
-          /* Multiple-values case: ------------ */
-          mz_patch_branch(ref);
-          /* Get new argc: */
-          (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
-          jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          /* Enough room on runstack? */
-          mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
-          if (is_tail) {
-            mz_ld_runstack_base_alt(JIT_R0);
-            jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R0);
-          } else {
-            jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); 
-          }
-          CHECK_LIMIT();
-          /* R0 is space left (in bytes), R2 is argc */
-          jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
-          if (is_tail) {
-            int fpos, fstack;
-            fstack = scheme_mz_flostack_save(jitter, &fpos);
-            __END_SHORT_JUMPS__(1);
-            scheme_mz_flostack_restore(jitter, 0, 0, 1, 1);
-            (void)jit_bltr_ul(sjc.app_values_tail_slow_code, JIT_R0, JIT_R2);
-            __START_SHORT_JUMPS__(1);
-            scheme_mz_flostack_restore(jitter, fstack, fpos, 0, 1);
-            ref5 = 0;
-          } else {
-            GC_CAN_IGNORE jit_insn *refok;
-            refok = jit_bger_ul(jit_forward(), JIT_R0, JIT_R2);
-            __END_SHORT_JUMPS__(1);
-            if (multi_ok) {
-              (void)jit_calli(sjc.app_values_multi_slow_code);
-            } else {
-              (void)jit_calli(sjc.app_values_slow_code);
-            }
-            __START_SHORT_JUMPS__(1);
-            ref5 = jit_jmpi(jit_forward());
-            mz_patch_branch(refok);
-          }
-          CHECK_LIMIT();
-          if (is_tail) {
-            mz_ld_runstack_base_alt(JIT_RUNSTACK);
-            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), JIT_R2);
-          } else {
-            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
-          }
-          CHECK_RUNSTACK_OVERFLOW();
-          /* Copy args: */
-          jit_ldxi_l(JIT_R1, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.array);
-          refloop = _jit.x.pc;
-          ref3 = jit_blei_l(jit_forward(), JIT_R2, 0);
-          jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
-          jit_ldxr_p(JIT_R0, JIT_R1, JIT_R2);
-          jit_stxr_p(JIT_R2, JIT_RUNSTACK, JIT_R0);
-          (void)jit_jmpi(refloop);
-          CHECK_LIMIT();
-          mz_patch_branch(ref3);
-          (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-          jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-          
-          /* Perform call --------------------- */
-          /* Function is in V1, argc in R0, args on RUNSTACK */
-          mz_patch_ucbranch(ref2);
-          __END_SHORT_JUMPS__(1);
-
-          if (is_tail) {
-            if (!sjc.shared_tail_argc_code) {
-              sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0);
-            }
-            mz_set_local_p(JIT_R0, JIT_LOCAL2);
-            (void)jit_jmpi(sjc.shared_tail_argc_code);
-          } else {
-            int mo = multi_ok ? 1 : 0;
-            void *code;
-            if (!sjc.shared_non_tail_argc_code[mo]) {
-              scheme_ensure_retry_available(jitter, multi_ok);
-              code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0);
-              sjc.shared_non_tail_argc_code[mo] = code;
-            }
-            code = sjc.shared_non_tail_argc_code[mo];
-            (void)jit_calli(code);
-            /* non-tail code pops args off runstack for us */
-            jitter->need_set_rs = 1;
-            mz_patch_ucbranch(ref5);
-            if (target != JIT_R0)
-              jit_movr_p(target, JIT_R0);
-          }
-          CHECK_LIMIT();
-
-          if (for_branch) finish_branch(jitter, target, for_branch);
-
-          END_JIT_DATA(81);
-
-          if (is_tail)
-            return 2;
-        }
-        break;
-      case BOXENV_EXPD:
-	{
-	  Scheme_Object *p, *v;
-	  int pos;
-	  START_JIT_DATA();
-
-	  LOG_IT(("boxenv\n"));
-
-          mz_rs_sync();
-	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-	  p = (Scheme_Object *)SCHEME_IPTR_VAL(obj);
-	  v = SCHEME_CAR(p);
-	  pos = mz_remap(SCHEME_INT_VAL(v));
-	  p = SCHEME_CDR(p);
-
-#ifdef CAN_INLINE_ALLOC
-          scheme_inline_alloc(jitter, sizeof(Scheme_Object*), -1, 0, 0, 0, 0);
-          CHECK_LIMIT();
-          jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
-	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-          jit_str_p(JIT_R0, JIT_R2);
-#else
-	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-	  mz_prepare(1);
-	  jit_pusharg_p(JIT_R2);
-          {
-            GC_CAN_IGNORE jit_insn *refr;
-            (void)mz_finish_lwe(ts_scheme_make_envunbox, refr);
-          }
-	  jit_retval(JIT_R0);
-#endif
-	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
-	  CHECK_LIMIT();
-
-	  scheme_generate(p, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
-
-	  END_JIT_DATA(8);
-	}
-	break;
-      case REF_EXPD:
-        {
-          if (for_branch)
-            finish_branch_with_true(jitter, for_branch);
-          else {
-            Scheme_Object *dummy;
-
-            mz_rs_sync();
-
-            obj = SCHEME_IPTR_VAL(obj);
-            dummy = SCHEME_PTR2_VAL(obj);
-            obj = SCHEME_PTR1_VAL(obj);
-      
-            /* Load global array: */
-            pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
-            jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-            /* Load bucket: */
-            pos = SCHEME_TOPLEVEL_POS(obj);
-            jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
-            CHECK_LIMIT();
-
-            /* Load dummy bucket: */
-            pos = SCHEME_TOPLEVEL_POS(dummy);
-            jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
-            CHECK_LIMIT();
-
-            JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-            mz_prepare(2);
-            jit_pusharg_p(JIT_R2);
-            jit_pusharg_p(JIT_R1);
-            {
-              GC_CAN_IGNORE jit_insn *refr;
-              (void)mz_finish_lwe(ts_make_global_ref, refr);
-            }
-            CHECK_LIMIT();
-            jit_retval(target);
-            VALIDATE_RESULT(target);
-          }
-        }
-        break;
-      case SPLICE_EXPD:
-        {
-          scheme_signal_error("internal error: cannot JIT a top-level splice form");
-        }
-        break;
-      default:
-	{
-          mz_rs_sync();
-	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-	  obj = SCHEME_IPTR_VAL(obj);
-	  (void)jit_patchable_movi_p(JIT_R2, obj); /* !! */
-	  CHECK_LIMIT();
-	  mz_prepare(1);
-	  jit_pusharg_p(JIT_R2);
-	  (void)mz_finish(scheme_syntax_executers[pos]);
-	  CHECK_LIMIT();
-	  jit_retval(target);
-          VALIDATE_RESULT(target);
-          if (for_branch) finish_branch(jitter, target, for_branch);
-	}
+      /* evaluate remaining expressions */
+      mz_patch_branch(ref);
+      mz_patch_branch(ref2);
+      __END_SHORT_JUMPS__(1);
+      for (i = 1; i < seq->count; i++) {
+        scheme_generate_non_tail(seq->array[i], jitter, 1, 1, 1); /* sync's below */
+        CHECK_LIMIT();
       }
+
+      /* Restore values, if necessary */
+      mz_popr_p(JIT_R0);
+      mz_popr_p(JIT_R1);
+      mz_popr_p(JIT_R2);
+      mz_rs_sync();
+      CHECK_LIMIT();
+      __START_TINY_JUMPS__(1);
+      ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
+      CHECK_LIMIT();
+      mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
+      jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
+      jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
+      (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+
+      mz_patch_branch(ref);
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
+      __END_TINY_JUMPS__(1);
+
+      if (for_branch) finish_branch(jitter, target, for_branch);
+
+      END_JIT_DATA(6);
+
       return 1;
     }
+    break;
+  case scheme_set_bang_type:
+    {
+      Scheme_Set_Bang *sb = (Scheme_Set_Bang *)obj;
+      Scheme_Object *p, *v;
+      int pos, set_undef;
+      GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3;
+
+      START_JIT_DATA();
+      
+      LOG_IT(("set!\n"));
+      
+      p = sb->val;
+      v = sb->var;
+      set_undef = sb->set_undef;
+
+      scheme_generate_non_tail(p, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_rs_sync();
+      
+      /* Load global+stx array: */
+      pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(v));
+      jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      /* Try already-renamed stx: */
+      pos = SCHEME_TOPLEVEL_POS(v);
+      jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+      CHECK_LIMIT();
+	
+      /* R0 has values, R2 has bucket */
+      __START_SHORT_JUMPS__(1);
+      jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Bucket *)0x0)->val);
+      ref1 = jit_beqi_p(jit_forward(), JIT_R1, NULL);
+      jit_ldxi_s(JIT_R1, JIT_R2, &((Scheme_Bucket_With_Flags *)0x0)->flags);
+      ref2 = jit_bmsi_i(jit_forward(), JIT_R1, GLOB_IS_IMMUTATED);
+      
+      /* Fast path: */
+      jit_stxi_p(&((Scheme_Bucket *)0x0)->val, JIT_R2, JIT_R0);
+      ref3 = jit_jmpi(jit_forward());
+      
+      /* slow path: */
+      mz_patch_branch(ref1);
+      mz_patch_branch(ref2);
+      __END_SHORT_JUMPS__(1);
+      JIT_UPDATE_THREAD_RSPTR_FOR_BRANCH_IF_NEEDED();
+      mz_prepare(3);
+      (void)jit_movi_i(JIT_R1, set_undef);
+      jit_pusharg_p(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+      jit_pusharg_p(JIT_R2);
+      CHECK_LIMIT();
+      (void)mz_finish_lwe(ts_call_set_global_bucket, ref1);
+      CHECK_LIMIT();
+          
+      __START_SHORT_JUMPS__(1);
+      mz_patch_ucbranch(ref3);
+      __END_SHORT_JUMPS__(1);
+
+      if (for_branch) 
+        finish_branch_with_true(jitter, for_branch);
+      else {
+        if (!result_ignored)
+          (void)jit_movi_p(target, scheme_void);
+      }
+      END_JIT_DATA(7);
+
+      return 1;
+    }
+    break;
+  case scheme_apply_values_type:
+    {
+      Scheme_Object *p, *v;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref5, *refloop;
+      START_JIT_DATA();
+
+      LOG_IT(("appvals\n"));
+
+      v = SCHEME_PTR1_VAL(obj);
+      p = SCHEME_PTR2_VAL(obj);
+
+      scheme_generate_non_tail(v, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+
+      /* If v is not known to produce a procedure, then check result: */
+      if (!is_a_procedure(v, jitter)) {
+        mz_rs_sync();
+        (void)jit_bmsi_l(sjc.bad_app_vals_target, JIT_R0, 0x1);
+        jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+        (void)jit_blti_i(sjc.bad_app_vals_target, JIT_R1, scheme_prim_type);
+        (void)jit_bgti_i(sjc.bad_app_vals_target, JIT_R1, scheme_native_closure_type);
+        CHECK_LIMIT();
+      }
+
+      mz_pushr_p(JIT_R0);
+      scheme_generate_non_tail(p, jitter, 1, 1, 0);
+      CHECK_LIMIT();
+
+      mz_popr_p(JIT_V1);
+      /* Function is in V1, argument(s) in R0 */
+
+      mz_rs_sync();
+
+      __START_SHORT_JUMPS__(1);
+      ref = jit_beqi_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
+      /* Single-value case: --------------- */
+      /* We definitely have stack space for one argument, because we
+         just used it for the rator. */
+      if (is_tail) {
+        mz_ld_runstack_base_alt(JIT_RUNSTACK);
+        jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), WORDS_TO_BYTES(1));
+      } else {
+        jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      }
+      CHECK_RUNSTACK_OVERFLOW();
+      jit_str_p(JIT_RUNSTACK, JIT_R0);
+      jit_movi_l(JIT_R0, 1);
+      ref2 = jit_jmpi(jit_forward());
+      CHECK_LIMIT();
+
+      /* Multiple-values case: ------------ */
+      mz_patch_branch(ref);
+      /* Get new argc: */
+      (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
+      jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.count);
+      /* Enough room on runstack? */
+      mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
+      if (is_tail) {
+        mz_ld_runstack_base_alt(JIT_R0);
+        jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R0);
+      } else {
+        jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); 
+      }
+      CHECK_LIMIT();
+      /* R0 is space left (in bytes), R2 is argc */
+      jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
+      if (is_tail) {
+        int fpos, fstack;
+        fstack = scheme_mz_flostack_save(jitter, &fpos);
+        __END_SHORT_JUMPS__(1);
+        scheme_mz_flostack_restore(jitter, 0, 0, 1, 1);
+        (void)jit_bltr_ul(sjc.app_values_tail_slow_code, JIT_R0, JIT_R2);
+        __START_SHORT_JUMPS__(1);
+        scheme_mz_flostack_restore(jitter, fstack, fpos, 0, 1);
+        ref5 = 0;
+      } else {
+        GC_CAN_IGNORE jit_insn *refok;
+        refok = jit_bger_ul(jit_forward(), JIT_R0, JIT_R2);
+        __END_SHORT_JUMPS__(1);
+        if (multi_ok) {
+          (void)jit_calli(sjc.app_values_multi_slow_code);
+        } else {
+          (void)jit_calli(sjc.app_values_slow_code);
+        }
+        __START_SHORT_JUMPS__(1);
+        ref5 = jit_jmpi(jit_forward());
+        mz_patch_branch(refok);
+      }
+      CHECK_LIMIT();
+      if (is_tail) {
+        mz_ld_runstack_base_alt(JIT_RUNSTACK);
+        jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), JIT_R2);
+      } else {
+        jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
+      }
+      CHECK_RUNSTACK_OVERFLOW();
+      /* Copy args: */
+      jit_ldxi_l(JIT_R1, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.array);
+      refloop = _jit.x.pc;
+      ref3 = jit_blei_l(jit_forward(), JIT_R2, 0);
+      jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_R1, JIT_R2);
+      jit_stxr_p(JIT_R2, JIT_RUNSTACK, JIT_R0);
+      (void)jit_jmpi(refloop);
+      CHECK_LIMIT();
+      mz_patch_branch(ref3);
+      (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+      jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
+          
+      /* Perform call --------------------- */
+      /* Function is in V1, argc in R0, args on RUNSTACK */
+      mz_patch_ucbranch(ref2);
+      __END_SHORT_JUMPS__(1);
+
+      if (is_tail) {
+        if (!sjc.shared_tail_argc_code) {
+          sjc.shared_tail_argc_code = scheme_generate_shared_call(-1, jitter, 1, 1, 0, 0, 0);
+        }
+        mz_set_local_p(JIT_R0, JIT_LOCAL2);
+        (void)jit_jmpi(sjc.shared_tail_argc_code);
+      } else {
+        int mo = multi_ok ? 1 : 0;
+        void *code;
+        if (!sjc.shared_non_tail_argc_code[mo]) {
+          scheme_ensure_retry_available(jitter, multi_ok);
+          code = scheme_generate_shared_call(-2, jitter, multi_ok, 0, 0, 0, 0);
+          sjc.shared_non_tail_argc_code[mo] = code;
+        }
+        code = sjc.shared_non_tail_argc_code[mo];
+        (void)jit_calli(code);
+        /* non-tail code pops args off runstack for us */
+        jitter->need_set_rs = 1;
+        mz_patch_ucbranch(ref5);
+        if (target != JIT_R0)
+          jit_movr_p(target, JIT_R0);
+      }
+      CHECK_LIMIT();
+
+      if (for_branch) finish_branch(jitter, target, for_branch);
+
+      END_JIT_DATA(81);
+
+      if (is_tail)
+        return 2;
+      return 1;
+    }
+    break;
+  case scheme_boxenv_type:
+    {
+      Scheme_Object *p, *v;
+      int pos;
+      START_JIT_DATA();
+
+      LOG_IT(("boxenv\n"));
+
+      mz_rs_sync();
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+      v = SCHEME_PTR1_VAL(obj);
+      pos = mz_remap(SCHEME_INT_VAL(v));
+      p = SCHEME_PTR2_VAL(obj);
+
+#ifdef CAN_INLINE_ALLOC
+      scheme_inline_alloc(jitter, sizeof(Scheme_Object*), -1, 0, 0, 0, 0);
+      CHECK_LIMIT();
+      jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+      jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      jit_str_p(JIT_R0, JIT_R2);
+#else
+      jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      mz_prepare(1);
+      jit_pusharg_p(JIT_R2);
+      {
+        GC_CAN_IGNORE jit_insn *refr;
+        (void)mz_finish_lwe(ts_scheme_make_envunbox, refr);
+      }
+      jit_retval(JIT_R0);
+#endif
+      jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
+      CHECK_LIMIT();
+
+      scheme_generate(p, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
+
+      END_JIT_DATA(8);
+
+      return 1;
+    }
+    break;
+  case scheme_varref_form_type:
+    {
+      if (for_branch)
+        finish_branch_with_true(jitter, for_branch);
+      else {
+        Scheme_Object *dummy;
+        int pos;
+
+        mz_rs_sync();
+
+        dummy = SCHEME_PTR2_VAL(obj);
+        obj = SCHEME_PTR1_VAL(obj);
+      
+        /* Load global array: */
+        pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
+        jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+        /* Load bucket: */
+        pos = SCHEME_TOPLEVEL_POS(obj);
+        jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        CHECK_LIMIT();
+
+        /* Load dummy bucket: */
+        pos = SCHEME_TOPLEVEL_POS(dummy);
+        jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        CHECK_LIMIT();
+
+        JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+        mz_prepare(2);
+        jit_pusharg_p(JIT_R2);
+        jit_pusharg_p(JIT_R1);
+        {
+          GC_CAN_IGNORE jit_insn *refr;
+          (void)mz_finish_lwe(ts_make_global_ref, refr);
+        }
+        CHECK_LIMIT();
+        jit_retval(target);
+        VALIDATE_RESULT(target);
+      }
+
+      return 1;
+    }
+    break;
+  case scheme_splice_sequence_type:
+  case scheme_define_values_type:
+  case scheme_define_syntaxes_type:
+  case scheme_define_for_syntax_type:
+  case scheme_require_form_type:
+  case scheme_module_type:
+    {
+      scheme_signal_error("internal error: cannot JIT a top-level form");
+      return 0;
+    }
+    break;
   case scheme_application_type:
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)obj;

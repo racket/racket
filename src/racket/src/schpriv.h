@@ -2495,6 +2495,12 @@ Scheme_Object *scheme_sfs_add_clears(Scheme_Object *expr, Scheme_Object *clears,
 
 typedef struct Scheme_Object *(*Scheme_Syntax_SFSer)(Scheme_Object *data, SFS_Info *info);
 
+typedef struct Scheme_Set_Bang {
+  Scheme_Object so;
+  int set_undef;
+  Scheme_Object *var, *val;
+} Scheme_Set_Bang;
+
 /* Resolving & linking */
 #define DEFINE_VALUES_EXPD 0
 #define DEFINE_SYNTAX_EXPD 1
@@ -2510,34 +2516,10 @@ typedef struct Scheme_Object *(*Scheme_Syntax_SFSer)(Scheme_Object *data, SFS_In
 #define SPLICE_EXPD        11
 #define _COUNT_EXPD_       12
 
-#define scheme_register_syntax(i, fo, fr, fs, fv, fe, fj, cl, sh, pa)    \
-     (scheme_syntax_optimizers[i] = fo, \
-      scheme_syntax_resolvers[i] = fr, \
-      scheme_syntax_executers[i] = fe, \
-      scheme_syntax_sfsers[i] = fs, \
-      scheme_syntax_validaters[i] = fv, \
-      scheme_syntax_jitters[i] = fj, \
-      scheme_syntax_cloners[i] = cl, \
-      scheme_syntax_shifters[i] = sh, \
-      scheme_syntax_protect_afters[i] = pa)
-extern Scheme_Syntax_Optimizer scheme_syntax_optimizers[_COUNT_EXPD_];
-extern Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
-extern Scheme_Syntax_SFSer scheme_syntax_sfsers[_COUNT_EXPD_];
-extern Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
-extern Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
-extern Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
-extern Scheme_Syntax_Cloner scheme_syntax_cloners[_COUNT_EXPD_];
-extern Scheme_Syntax_Shifter scheme_syntax_shifters[_COUNT_EXPD_];
-extern int scheme_syntax_protect_afters[_COUNT_EXPD_];
-
 Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 
-Scheme_Object *scheme_make_syntax_resolved(int idx, Scheme_Object *data);
-Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data);
-
 #define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
-                                     || (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_syntax_type) \
-                                         && (SCHEME_PINT_VAL(vals_expr) == CASE_LAMBDA_EXPD)))
+                                     || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
 int scheme_compiled_proc_body_size(Scheme_Object *o);
 
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
@@ -2953,6 +2935,153 @@ int scheme_is_binding_rename_transformer(Scheme_Object *o);
 Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o);
 int scheme_is_set_transformer(Scheme_Object *o);
 Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o);
+
+Scheme_Object *scheme_define_values_execute(Scheme_Object *data);
+Scheme_Object *scheme_ref_execute(Scheme_Object *data);
+Scheme_Object *scheme_set_execute(Scheme_Object *data);
+Scheme_Object *scheme_define_syntaxes_execute(Scheme_Object *expr);
+Scheme_Object *scheme_define_for_syntaxes_execute(Scheme_Object *expr);
+Scheme_Object *scheme_case_lambda_execute(Scheme_Object *expr);
+Scheme_Object *scheme_begin0_execute(Scheme_Object *data);
+Scheme_Object *scheme_apply_values_execute(Scheme_Object *data);
+Scheme_Object *scheme_splice_execute(Scheme_Object *data);
+Scheme_Object *scheme_bangboxenv_execute(Scheme_Object *data);
+Scheme_Object *scheme_top_level_require_execute(Scheme_Object *data);
+
+Scheme_Object *scheme_define_values_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_ref_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_set_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_define_syntaxes_optimize(Scheme_Object *expr, Optimize_Info *info, int context);
+Scheme_Object *scheme_define_for_syntaxes_optimize(Scheme_Object *expr, Optimize_Info *info, int context);
+Scheme_Object *scheme_case_lambda_optimize(Scheme_Object *expr, Optimize_Info *info, int context);
+Scheme_Object *scheme_begin0_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_apply_values_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_module_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+Scheme_Object *scheme_top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context);
+
+Scheme_Object *scheme_begin0_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+Scheme_Object *scheme_set_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+Scheme_Object *scheme_apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+Scheme_Object *scheme_case_lambda_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+
+Scheme_Object *scheme_begin0_shift(Scheme_Object *data, int delta, int after_depth);
+Scheme_Object *scheme_set_shift(Scheme_Object *data, int delta, int after_depth);
+Scheme_Object *scheme_ref_shift(Scheme_Object *data, int delta, int after_depth);
+Scheme_Object *scheme_case_lambda_shift(Scheme_Object *data, int delta, int after_depth);
+Scheme_Object *scheme_apply_values_shift(Scheme_Object *data, int delta, int after_depth);
+
+Scheme_Object *scheme_define_values_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_ref_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_set_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_define_syntaxes_resolve(Scheme_Object *expr, Resolve_Info *info);
+Scheme_Object *scheme_define_for_syntaxes_resolve(Scheme_Object *expr, Resolve_Info *info);
+Scheme_Object *scheme_case_lambda_resolve(Scheme_Object *expr, Resolve_Info *info);
+Scheme_Object *scheme_begin0_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_apply_values_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_module_expr_resolve(Scheme_Object *data, Resolve_Info *info);
+Scheme_Object *scheme_top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
+
+Scheme_Object *scheme_define_values_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_ref_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_set_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_define_syntaxes_sfs(Scheme_Object *expr, SFS_Info *info);
+Scheme_Object *scheme_define_for_syntaxes_sfs(Scheme_Object *expr, SFS_Info *info);
+Scheme_Object *scheme_case_lambda_sfs(Scheme_Object *expr, SFS_Info *info);
+Scheme_Object *scheme_begin0_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_apply_values_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_bangboxenv_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_module_sfs(Scheme_Object *data, SFS_Info *info);
+Scheme_Object *scheme_top_level_require_sfs(Scheme_Object *data, SFS_Info *info);
+
+void scheme_define_values_validate(Scheme_Object *data, Mz_CPort *port, 
+                                   char *stack, Validate_TLS tls,
+                                   int depth, int letlimit, int delta, 
+				   int num_toplevels, int num_stxes, int num_lifts, 
+                                   void *tl_use_map, int result_ignored,
+                                   struct Validate_Clearing *vc, int tailpos,
+                                   Scheme_Hash_Tree *procs);
+void scheme_ref_validate(Scheme_Object *data, Mz_CPort *port, 
+                         char *stack, Validate_TLS tls,
+                         int depth, int letlimit, int delta, 
+			 int num_toplevels, int num_stxes, int num_lifts,
+                         void *tl_use_map, int result_ignored,
+                         struct Validate_Clearing *vc, int tailpos,
+                         Scheme_Hash_Tree *procs);
+void scheme_set_validate(Scheme_Object *data, Mz_CPort *port, 
+                         char *stack, Validate_TLS tls,
+                         int depth, int letlimit, int delta, 
+			 int num_toplevels, int num_stxes, int num_lifts,
+                         void *tl_use_map, int result_ignored,
+                         struct Validate_Clearing *vc, int tailpos,
+                         Scheme_Hash_Tree *procs);
+void scheme_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
+                                     char *stack, Validate_TLS tls,
+                                     int depth, int letlimit, int delta, 
+				     int num_toplevels, int num_stxes, int num_lifts,
+                                     void *tl_use_map, int result_ignored,
+                                     struct Validate_Clearing *vc, int tailpos,
+                                     Scheme_Hash_Tree *procs);
+void scheme_define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
+                                         char *stack, Validate_TLS tls,
+                                         int depth, int letlimit, int delta, 
+					 int num_toplevels, int num_stxes, int num_lifts,
+                                         void *tl_use_map, int result_ignored,
+                                         struct Validate_Clearing *vc, int tailpos,
+                                         Scheme_Hash_Tree *procs);
+void scheme_case_lambda_validate(Scheme_Object *data, Mz_CPort *port, 
+                                 char *stack, Validate_TLS tls,
+                                 int depth, int letlimit, int delta, 
+				 int num_toplevels, int num_stxes, int num_lifts,
+                                 void *tl_use_map, int result_ignored,
+                                 struct Validate_Clearing *vc, int tailpos,
+                                 Scheme_Hash_Tree *procs);
+void scheme_begin0_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Validate_TLS tls,
+                            int depth, int letlimit, int delta,
+			    int num_toplevels, int num_stxes, int num_lifts,
+                            void *tl_use_map, int result_ignored,
+                            struct Validate_Clearing *vc, int tailpos,
+                            Scheme_Hash_Tree *procs);
+void scheme_apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
+                                  char *stack, Validate_TLS tls,
+                                  int depth, int letlimit, int delta,
+                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  void *tl_use_map, int result_ignored,
+                                  struct Validate_Clearing *vc, int tailpos,
+                                  Scheme_Hash_Tree *procs);
+void scheme_bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
+                                char *stack, Validate_TLS tls,
+                                int depth, int letlimit, int delta,
+				int num_toplevels, int num_stxes, int num_lifts,
+                                void *tl_use_map, int result_ignored,
+                                struct Validate_Clearing *vc, int tailpos,
+                                Scheme_Hash_Tree *procs);
+void scheme_module_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Validate_TLS tls,
+                            int depth, int letlimit, int delta, 
+			    int num_toplevels, int num_stxes, int num_lifts,  
+                            void *tl_use_map, int result_ignored,
+                            struct Validate_Clearing *vc, int tailpos,
+                            Scheme_Hash_Tree *procs);
+void scheme_top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
+                                       char *stack, Validate_TLS tls,
+                                       int depth, int letlimit, int delta, 
+				       int num_toplevels, int num_stxes, int num_lifts, 
+                                       void *tl_use_map, int result_ignored,
+                                       struct Validate_Clearing *vc, int tailpos,
+                                       Scheme_Hash_Tree *procs);
+
+Scheme_Object *scheme_define_values_jit(Scheme_Object *data);
+Scheme_Object *scheme_ref_jit(Scheme_Object *data);
+Scheme_Object *scheme_set_jit(Scheme_Object *data);
+Scheme_Object *scheme_define_syntaxes_jit(Scheme_Object *expr);
+Scheme_Object *scheme_define_for_syntaxes_jit(Scheme_Object *expr);
+Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr);
+Scheme_Object *scheme_begin0_jit(Scheme_Object *data);
+Scheme_Object *scheme_apply_values_jit(Scheme_Object *data);
+Scheme_Object *scheme_bangboxenv_jit(Scheme_Object *data);
+Scheme_Object *scheme_module_jit(Scheme_Object *data);
+Scheme_Object *scheme_top_level_require_jit(Scheme_Object *data);
 
 /*========================================================================*/
 /*                         namespaces and modules                         */
