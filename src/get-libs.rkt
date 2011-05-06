@@ -108,6 +108,7 @@
       ["libglib-2.0-0.dll" 1267577]
       ["libgobject-2.0-0.dll" 425888]
       ["libgmodule-2.0-0.dll" 119538]
+      ["libgthread-2.0-0.dll" 126615]
       ["libpangocairo-1.0-0.dll" 185168]
       ["libpangowin32-1.0-0.dll" 192656]
       ["libpangoft2-1.0-0.dll" 1188615]
