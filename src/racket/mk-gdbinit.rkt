@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; This script generates "mz-gdbinit" to the current directory.
 ;; It's normally run via `make mz-gdbinit', in which case
@@ -71,13 +71,13 @@ define psoq
       set $TL = ((Scheme_Toplevel*) ($O))
       printf "scheme_toplevel_type depth=%d position=%d", $TL->depth, $TL->position
     end
-    if ( $OT == <<scheme_syntax_type>> )
-      set $SSO = ((Scheme_Simple_Object*) ($O))
-      set $index = $SSO->u.ptr_int_val.pint
-      set $object = (Scheme_Object *) $SSO->u.ptr_int_val.ptr
-      printf "scheme_syntax_type index=%d\n", $index
-      psox $object $arg1+1
-    end
+#    if ( $OT == <<scheme_symbol_type>> )
+#      set $SSO = ((Scheme_Simple_Object*) ($O))
+#      set $index = $SSO->u.ptr_int_val.pint
+#      set $object = (Scheme_Object *) $SSO->u.ptr_int_val.ptr
+#      printf "scheme_syntax_type index=%d\n", $index
+#      psox $object $arg1+1
+#    end
     if ( $OT == <<scheme_application_type>> )
       set $AP = ((Scheme_App_Rec*) ($O))
       set $size = $AP->num_args
@@ -210,7 +210,34 @@ define psoq
       set $OT = <<scheme_case_closure_type>>
     end
     if ( $OT == <<scheme_structure_type>>)
-      printf "scheme_structure_type\n"
+      set $st = ((struct Scheme_Structure *) $O)
+      set $size = $st->stype->num_slots
+      printf "scheme_structure_type slots %d\n", $size
+      set $cnt = 0
+      while ( $cnt < $size ) 
+        indent $arg1
+        printf "%i - ", $cnt
+        psonn $st->slots[$cnt]
+        printf "\n"
+        #psox $st->slots[$cnt] $arg1+2
+        set $cnt++
+      end
+    end
+    if ( $OT == <<scheme_serialized_structure_type>>)
+      set $st = ((struct Scheme_Serialized_Structure *) $O)
+      set $size = $st->num_slots
+      printf "scheme_serialized_structure_type slots %d\n", $size
+      indent $arg1
+      psonn $st->prefab_key
+      set $cnt = 0
+      while ( $cnt < $size ) 
+        indent $arg1
+        printf "%i - ", $cnt
+        psonn $st->slots[$cnt]
+        printf "\n"
+        #psox $st->slots[$cnt] $arg1+2
+        set $cnt++
+      end
     end
     if ( $OT == <<scheme_char_string_type>>)
       printf "scheme_char_string_type "
@@ -230,6 +257,9 @@ define psoq
     end
     if ( $OT == <<scheme_symbol_type>> )
       printf "scheme_symbol_type %s", (char *)((Scheme_Symbol*) $O)->s
+    end
+    if ( $OT == <<scheme_serialized_symbol_type>> )
+      printf "scheme_serialized_symbol_type %s", (char *)((Scheme_Symbol*) $O)->s
     end
     if ( $OT == <<scheme_null_type>> )
       printf "scheme_null"
