@@ -200,9 +200,7 @@
   (make-case-lam (car v) (cdr v)))
 
 (define (read-begin0 v) 
-  (match v
-    [(struct seq (exprs))
-     (make-beg0 exprs)]))
+  (make-beg0 v))
 
 (define (read-boxenv v)
   (make-boxenv (car v) (cdr v)))
@@ -213,7 +211,7 @@
 (define (read-apply-values v)
   (make-apply-values (car v) (cdr v)))
 (define (read-splice v)
-  (make-splice (seq-forms v)))
+  (make-splice v))
 
 (define (in-list* l n)
   (make-do-sequence
@@ -303,51 +301,39 @@
 ;; ----------------------------------------
 ;; Unmarshal dispatch for various types
 
-(define (read-more-syntax v)
-  (let ([id (car v)]
-        [v (cdr v)])
-    ;; This is the ..._EXPD mapping from "schpriv.h":
-    (case id
-      [(0) (read-define-values v)]
-      [(1) (read-define-syntax v)]
-      [(2) (read-set! v)]
-      [(3) v] ; a case-lam already
-      [(4) (read-begin0 v)]
-      [(5) (read-boxenv v)]
-      [(6) (read-module-wrap v)]
-      [(7) (read-require v)]
-      [(8) (read-define-for-syntax v)]
-      [(9) (read-#%variable-ref v)]
-      [(10) (read-apply-values v)]
-      [(11) (read-splice v)]
-      [else (error 'read-mode-unsyntax "unknown id: ~e" id)])))
-
 ;; Type mappings from "stypes.h":
 (define (int->type i)
   (case i
     [(0) 'toplevel-type]
-    [(3) 'syntax-type]
-    [(7) 'sequence-type]
-    [(9) 'unclosed-procedure-type]
-    [(10) 'let-value-type]
-    [(11) 'let-void-type]
-    [(12) 'letrec-type]
-    [(14) 'with-cont-mark-type]
-    [(15) 'quote-syntax-type]
-    [(24) 'variable-type]
-    [(25) 'module-variable-type]
-    [(99) 'case-lambda-sequence-type]
-    [(100) 'begin0-sequence-type]
-    [(103) 'module-type]
-    [(105) 'resolve-prefix-type]
-    [(154) 'free-id-info-type]
+    [(6) 'sequence-type]
+    [(8) 'unclosed-procedure-type]
+    [(9) 'let-value-type]
+    [(10) 'let-void-type]
+    [(11) 'letrec-type]
+    [(13) 'with-cont-mark-type]
+    [(14) 'quote-syntax-type]
+    [(15) 'define-values-type]
+    [(16) 'define-syntaxes-type]
+    [(17) 'define-for-syntax-type]
+    [(18) 'set-bang-type]
+    [(19) 'boxenv-type]
+    [(20) 'begin0-sequence-type]
+    [(21) 'splice-sequence-type]
+    [(22) 'require-form-type]
+    [(23) 'varref-form-type]
+    [(24) 'apply-values-type]
+    [(25) 'case-lambda-sequence-type]
+    [(26) 'module-type]
+    [(34) 'variable-type]
+    [(35) 'module-variable-type]
+    [(112) 'resolve-prefix-type]
+    [(161) 'free-id-info-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
   (make-immutable-hash
    (list
     (cons 'toplevel-type read-toplevel)
-    (cons 'syntax-type read-more-syntax)
     (cons 'sequence-type read-sequence)
     (cons 'unclosed-procedure-type read-unclosed-procedure)
     (cons 'let-value-type read-let-value)
@@ -359,10 +345,19 @@
     (cons 'module-variable-type do-not-read-variable)
     (cons 'compilation-top-type read-compilation-top)
     (cons 'case-lambda-sequence-type read-case-lambda)
-    (cons 'begin0-sequence-type read-sequence)
+    (cons 'begin0-sequence-type read-begin0)
     (cons 'module-type read-module)
     (cons 'resolve-prefix-type read-resolve-prefix)
-    (cons 'free-id-info-type read-free-id-info))))
+    (cons 'free-id-info-type read-free-id-info)
+    (cons 'define-values-type read-define-values)
+    (cons 'define-syntaxes-type read-define-syntax)
+    (cons 'define-for-syntax-type read-define-for-syntax)
+    (cons 'set-bang-type read-set!)
+    (cons 'boxenv-type read-boxenv)
+    (cons 'require-form-type read-require)
+    (cons 'varref-form-type read-#%variable-ref)
+    (cons 'apply-values-type read-apply-values)
+    (cons 'sequence-splice-type read-splice))))
 
 (define (get-reader type)
   (hash-ref type-readers type
