@@ -3043,8 +3043,7 @@ future_t *get_pending_future(Scheme_Future_State *fs)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_FUTURE_C
-#include "mzmark.c"
+#include "mzmark_future.inc"
 
 static void register_traversers(void)
 {

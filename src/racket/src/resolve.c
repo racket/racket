@@ -2895,8 +2895,7 @@ static int resolving_in_procedure(Resolve_Info *info)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_RESOLVE_C
-#include "mzmark.c"
+#include "mzmark_resolve.inc"
 
 static void register_traversers(void)
 {

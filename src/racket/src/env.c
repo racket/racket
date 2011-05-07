@@ -2531,8 +2531,7 @@ rename_transformer_p(int argc, Scheme_Object *argv[])
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_ENV_C
-#include "mzmark.c"
+#include "mzmark_env.inc"
 
 static void register_traversers(void)
 {

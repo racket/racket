@@ -9392,8 +9392,7 @@ static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_SYNTAX_C
-#include "mzmark.c"
+#include "mzmark_syntax.inc"
 
 static void register_traversers(void)
 {

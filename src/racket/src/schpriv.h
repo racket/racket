@@ -125,6 +125,9 @@ int scheme_num_types(void);
 #endif
 
 
+#define GC_REG_TRAV(type, base) \
+  GC_register_traversers2(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)
+
 void scheme_reset_finalizations(void);
 
 extern uintptr_t scheme_get_current_os_thread_stack_base(void);
@@ -3642,14 +3645,5 @@ Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
-/*========================================================================*/
-/*                           engine                                       */
-/*========================================================================*/
-
-typedef struct Scheme_Engine {
-  Scheme_Object so;
-} Scheme_Engine;
-
-Scheme_Env *scheme_engine_instance_init();
 
 #endif /* __mzscheme_private__ */

@@ -6505,8 +6505,7 @@ static Scheme_Object *expected_lang(const char *prefix, int ch,
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_READ_C
-#include "mzmark.c"
+#include "mzmark_read.inc"
 
 static void register_traversers(void)
 {

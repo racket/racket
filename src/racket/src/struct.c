@@ -5318,8 +5318,7 @@ Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, in
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_STRUCT_C
-#include "mzmark.c"
+#include "mzmark_struct.inc"
 
 static void register_traversers(void)
 {

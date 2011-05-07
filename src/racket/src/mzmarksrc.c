@@ -1164,19 +1164,6 @@ END type;
 
 /**********************************************************************/
 
-START engine;
-
-engine_val {
- mark:
-  Scheme_Engine *en = (Scheme_Engine *)p;
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Engine));
-}
-
-END engine;
-
-/**********************************************************************/
-
 START env;
 
 END env;
@@ -1341,22 +1328,6 @@ END validate;
 
 /**********************************************************************/
 
-START file;
-
-mark_reply_item {
- mark:
-  ReplyItem *r = (ReplyItem *)p;
-  
-  gcMARK2(r->next, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(ReplyItem));
-}
-
-END file;
-
-/**********************************************************************/
-
 START fun;
 
 mark_closure_info {
@@ -1462,7 +1433,7 @@ END hash;
 
 /**********************************************************************/
 
-START places;
+START place;
 
 place_bi_channel_val {
  mark:
@@ -1496,7 +1467,7 @@ place_async_channel_val {
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
 }
 
-END places;
+END place;
 
 /**********************************************************************/
 
@@ -2492,5 +2463,3 @@ sequential_fsemaphore {
 END future;
 
 /**********************************************************************/
-
-#define GC_REG_TRAV(type, base) GC_register_traversers2(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)

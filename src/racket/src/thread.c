@@ -7913,8 +7913,7 @@ uintptr_t scheme_get_current_thread_stack_start(void)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_THREAD_C
-#include "mzmark.c"
+#include "mzmark_thread.inc"
 
 static void register_traversers(void)
 {

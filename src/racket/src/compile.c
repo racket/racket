@@ -5434,8 +5434,7 @@ void scheme_add_core_stop_form(int pos, Scheme_Object *sym, Scheme_Comp_Env *env
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_COMPILE_C
-#include "mzmark.c"
+#include "mzmark_compile.inc"
 
 static void register_traversers(void)
 {

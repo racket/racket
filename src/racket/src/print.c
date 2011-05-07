@@ -4015,8 +4015,7 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_PRINT_C
-#include "mzmark.c"
+#include "mzmark_print.inc"
 
 static void register_traversers(void)
 {

@@ -1259,8 +1259,7 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_SFS_C
-#include "mzmark.c"
+#include "mzmark_sfs.inc"
 
 static void register_traversers(void)
 {

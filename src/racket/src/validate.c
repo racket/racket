@@ -1550,8 +1550,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_VALIDATE_C
-#include "mzmark.c"
+#include "mzmark_validate.inc"
 
 static void register_traversers(void)
 {

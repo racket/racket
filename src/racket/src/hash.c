@@ -2566,8 +2566,7 @@ int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_HASH_C
-#include "mzmark.c"
+#include "mzmark_hash.inc"
 
 static void register_traversers(void)
 {

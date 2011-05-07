@@ -3794,8 +3794,7 @@ void scheme_jit_fill_threadlocal_table() {
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_JIT_C
-#include "mzmark.c"
+#include "mzmark_jit.inc"
 
 void scheme_jit_register_traversers(void)
 {

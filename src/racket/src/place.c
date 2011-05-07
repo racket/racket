@@ -1758,8 +1758,7 @@ static Scheme_Object *scheme_place_async_receive(Scheme_Place_Async_Channel *ch)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_PLACES_C
-#include "mzmark.c"
+#include "mzmark_place.inc"
 
 static void register_traversers(void)
 {

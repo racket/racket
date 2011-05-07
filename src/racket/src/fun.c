@@ -8556,8 +8556,7 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_FUN_C
-#include "mzmark.c"
+#include "mzmark_fun.inc"
 
 static void register_traversers(void)
 {

@@ -219,9 +219,6 @@ total_startup:
 	mv src/schminc.newh src/schminc.h
 	$(MAKE) cgc
 
-mark:
-	$(MAKE) $(srcdir)/src/mzmark.c
-
 headers:
 	./racket@CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
@@ -234,8 +231,9 @@ $(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.
 	racket -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
 	./racketcgc -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
-$(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.rkt
-	racket -cu $(srcdir)/src/mkmark.rkt < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
+
+mark:
+	racket -cu $(srcdir)/src/mkmark.rkt $(srcdir)/src < $(srcdir)/src/mzmarksrc.c
 
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"

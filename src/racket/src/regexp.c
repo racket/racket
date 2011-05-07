@@ -5865,8 +5865,7 @@ int scheme_regexp_is_byte(Scheme_Object *re)
 
 #ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
-#define MARKS_FOR_REGEXP_C
-#include "mzmark.c"
+#include "mzmark_regexp.inc"
 END_XFORM_SKIP;
 #endif
 

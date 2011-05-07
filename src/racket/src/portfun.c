@@ -4584,8 +4584,7 @@ flush_output(int argc, Scheme_Object *argv[])
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_PORTFUN_C
-#include "mzmark.c"
+#include "mzmark_portfun.inc"
 
 static void register_traversers(void)
 {

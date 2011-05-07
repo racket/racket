@@ -501,8 +501,7 @@ static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
 
 #define RUNSTACK_ZERO_VAL NULL
 
-#define MARKS_FOR_TYPE_C
-#include "mzmark.c"
+#include "mzmark_type.inc"
 
 void scheme_register_traversers(void)
 {

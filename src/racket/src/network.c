@@ -3369,8 +3369,7 @@ static void udp_evt_needs_wakeup(Scheme_Object *_uw, void *fds)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_NETWORK_C
-#include "mzmark.c"
+#include "mzmark_network.inc"
 
 static void register_traversers(void)
 {

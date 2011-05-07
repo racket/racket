@@ -1303,8 +1303,7 @@ static Scheme_Object *make_sys_idle(int n, Scheme_Object **p)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_SEMA_C
-#include "mzmark.c"
+#include "mzmark_sema.inc"
 
 static void register_traversers(void)
 {

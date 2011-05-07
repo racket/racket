@@ -5342,8 +5342,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_EVAL_C
-#include "mzmark.c"
+#include "mzmark_eval.inc"
 
 static void register_traversers(void)
 {

@@ -5645,8 +5645,7 @@ void machine_details(char *buff)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_STRING_C
-#include "mzmark.c"
+#include "mzmark_string.inc"
 
 static void register_traversers(void)
 {

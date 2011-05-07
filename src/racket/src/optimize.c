@@ -5809,8 +5809,7 @@ static void optimize_info_done(Optimize_Info *info)
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_OPTIMIZE_C
-#include "mzmark.c"
+#include "mzmark_optimize.inc"
 
 static void register_traversers(void)
 {

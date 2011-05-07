@@ -9275,8 +9275,7 @@ void scheme_count_output_port(Scheme_Object *port, intptr_t *s, intptr_t *e,
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_PORT_C
-#include "mzmark.c"
+#include "mzmark_port.inc"
 
 static void register_traversers(void)
 {

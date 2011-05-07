@@ -294,7 +294,7 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
                  $(srcdir)/../include/schthread.h 
 JIT_HEADERS = $(srcdir)/../src/jit.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
+        $(srcdir)/../src/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
         $(srcdir)/lightning/i386/funcs.h $(srcdir)/lightning/i386/funcs-common.h \
@@ -306,7 +306,7 @@ JIT_HEADERS = $(srcdir)/../src/jit.h \
         $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 
 salloc.@LTO@: $(COMMON_HEADERS) \
-            $(srcdir)/../gc/gc.h $(srcdir)/mzmark.c
+            $(srcdir)/../gc/gc.h $(srcdir)/mzmark_salloc.inc
 bignum.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/../src/stypes.h    
 bool.@LTO@: $(COMMON_HEADERS) \
@@ -316,33 +316,33 @@ builtin.@LTO@: $(COMMON_HEADERS)  \
 char.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schuchar.inc
 compenv.@LTO@: $(COMMON_HEADERS)  \
-         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c   
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_compenv.inc   
 compile.@LTO@: $(COMMON_HEADERS)  \
-         $(srcdir)/../src/stypes.h    
+         $(srcdir)/../src/stypes.h  $(srcdir)/mzmark_compile.inc
 complex.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/../src/stypes.h    
 dynext.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/../src/stypes.h $(srcdir)/../src/schemex.h \
          $(srcdir)/schvers.h $(srcdir)/../gc/gc.h $(srcdir)/schemex.h
 env.@LTO@: $(COMMON_HEADERS)  \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark_env.inc
 error.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
 eval.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_eval.inc \
           $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h \
 				$(srcdir)/future.h
 file.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c 
+        $(srcdir)/../src/stypes.h
 fun.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_fun.inc $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
 future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/mzrt.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_future.inc $(srcdir)/mzrt.h \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-jit.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_hash.inc
+jit.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)  $(srcdir)/mzmark_jit.inc
 jitalloc.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 jitarith.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 jitcall.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
@@ -357,10 +357,10 @@ list.@LTO@: $(COMMON_HEADERS) \
 marshal.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h
 module.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h
 mzrt.@LTO@: $(COMMON_HEADERS)
 network.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_network.inc
 numarith.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
 number.@LTO@: $(COMMON_HEADERS) \
@@ -370,44 +370,44 @@ numcomp.@LTO@: $(COMMON_HEADERS) \
 numstr.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h  $(srcdir)/random.inc $(srcdir)/newrandom.inc
 optimize.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_optimize.inc
 place.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_place.inc
 port.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_port.inc
 portfun.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark_portfun.inc
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
-          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark.c
+          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc
 thread.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_thread.inc
 rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h    
 read.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_read.inc
 regexp.@LTO@:  $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schrx.h
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_regexp.inc $(srcdir)/schrx.h
 resolve.@LTO@:  $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_resolve.inc
 setjmpup.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h   $(srcdir)/schmach.h
 sfs.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_sfs.inc
 string.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark.c $(srcdir)/strops.inc \
+         $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
          $(srcdir)/schustr.inc
 struct.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_struct.inc
 syntax.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark_syntax.inc
 symbol.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h   
 sema.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_sema.inc
 type.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark_type.inc
 vector.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h
 vadliate.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/../src/stypes.h
+         $(srcdir)/../src/stypes.h $(srcdir)/mzmark_validate.inc

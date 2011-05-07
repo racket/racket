@@ -1357,8 +1357,7 @@ typedef struct Finalizations {
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_SALLOC_C
-#include "mzmark.c"
+#include "mzmark_salloc.inc"
 
 END_XFORM_SKIP;
 

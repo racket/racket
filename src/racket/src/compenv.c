@@ -2449,8 +2449,7 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
 
 START_XFORM_SKIP;
 
-#define MARKS_FOR_COMPENV_C
-#include "mzmark.c"
+#include "mzmark_compenv.inc"
 
 static void register_traversers(void)
 {
