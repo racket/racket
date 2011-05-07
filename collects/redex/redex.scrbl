@@ -890,17 +890,30 @@ names of the reductions that were used.
 
 @defproc[(apply-reduction-relation*
           [r reduction-relation?]
-          [t any/c])
+          [t any/c]
+          [#:cache-all? cache-all? boolean? (current-cache-all?)])
          (listof any/c)]{
 
-The function @racket[apply-reduction-relation*] accepts a reduction relation and a
+Accepts a reduction relation and a
 term. Starting from @racket[t], it follows every reduction
 path and returns all of the terms that do not reduce further.
 If there are infinite reduction
 sequences that do not repeat, this function will not
 terminate (it does terminate if the only infinite reduction paths are cyclic).
+
+If the @racket[cache-all?] argument is @racket[#t], then @racket[apply-reduction-relation*]
+keeps a cache of all visited terms when traversing the graph and does not revisit
+any of them. This cache can, in some cases, use a lot of memory, so it is off by
+default and the cycle checking happens by keeping track only of the current path
+it is traversing through the reduction graph.
 }
 
+@defparam[current-cache-all? cache-all? boolean?]{
+  Controls the behavior of @racket[apply-reduction-relation*]
+  and @racket[test-->>]'s cycle checking. See @racket[apply-reduction-relation*]
+  for more details.
+}
+                        
 @examples[
 #:eval redex-eval
        (define-language empty-lang)
@@ -913,7 +926,7 @@ terminate (it does terminate if the only infinite reduction paths are cyclic).
           (--> 3 3)))
        (apply-reduction-relation R 0)
        (apply-reduction-relation* R 0)]                        
-                        
+
 @defidform[-->]{ Recognized specially within
   @racket[reduction-relation]. A @racket[-->] form is an
   error elsewhere.  }
@@ -1131,10 +1144,12 @@ predicate.
 
 This test uses
 @racket[apply-reduction-relation*], so it does not terminate
-when the resulting reduction graph is infinite.
+when the resulting reduction graph is infinite, although it 
+does terminate if there are cycles in the (finite) graph.
 
-
-
+If @racket[#:cycles-ok] is not supplied then any cycles detected
+are treated as a test failure. If a @racket[pred-expr] is supplied,
+then it is used to compare the expected and actual results.
 }
 
 @defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)

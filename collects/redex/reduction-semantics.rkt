@@ -66,7 +66,8 @@
  [apply-reduction-relation (-> reduction-relation? any/c (listof any/c))]
  [apply-reduction-relation/tag-with-names
   (-> reduction-relation? any/c (listof (list/c (or/c false/c string?) any/c)))]
- [apply-reduction-relation* (-> reduction-relation? any/c (listof any/c))]
+ [apply-reduction-relation* (->* (reduction-relation? any/c) (#:cache-all? boolean?) (listof any/c))]
+ [current-cache-all? (parameter/c boolean?)]
  [union-reduction-relations (->* (reduction-relation? reduction-relation?)
                                  ()
                                  #:rest (listof reduction-relation?)

@@ -2088,8 +2088,8 @@
                 nt-line))
          (compiled-lang-nt-map lang)))
 
-(define (apply-reduction-relation* reductions exp)
-  (let-values ([(results cycle?) (traverse-reduction-graph reductions exp)])
+(define (apply-reduction-relation* reductions exp #:cache-all? [cache-all? (current-cache-all?)])
+  (let-values ([(results cycle?) (traverse-reduction-graph reductions exp #:cache-all? cache-all?)])
     results))
 
 (struct search-success ())
@@ -2098,7 +2098,9 @@
 ;; traverse-reduction-graph : 
 ;;  reduction-relation term #:goal (-> any boolean?) #:steps number? #:visit (-> any/c void?) -> (or/c search-success? search-failure?)
 ;;  reduction-relation term #:goal #f                #:steps number? #:visit (-> any/c void?) -> (values (listof any/c) boolean?)
-(define (traverse-reduction-graph reductions start #:goal [goal? #f] #:steps [steps +inf.0] #:visit [visit void])
+(define (traverse-reduction-graph reductions start #:goal [goal? #f] #:steps [steps +inf.0] #:visit [visit void] 
+                                  #:cache-all? [cache-all? (current-cache-all?)])
+  (define visited (and cache-all? (make-hash)))
   (let/ec return
     (let ([answers (make-hash)]
           [cycle? #f]
@@ -2126,15 +2128,21 @@
                       (hash-set! answers term #t))]
                    [else (if (zero? more-steps)
                              (set! cutoff? #t)
-                             (for-each 
-                              (λ (next) (loop next (hash-set path term #t) (sub1 more-steps)))
-                              nexts))]))])))
+                             (for ([next (in-list (remove-duplicates nexts))])
+                               (when (or (not visited)
+                                         (not (hash-ref visited next #f)))
+                                 (when visited (hash-set! visited next #t))
+                                 (loop next 
+                                       (hash-set path term #t) 
+                                       (sub1 more-steps)))))]))])))
       (if goal?
           (search-failure cutoff?)
           (values (sort (hash-map answers (λ (x y) x))
                         string<=?
                         #:key (λ (x) (format "~s" x)))
                   cycle?)))))
+
+(define current-cache-all? (make-parameter #f))
 
 ;; map/mt : (a -> b) (listof a) (listof b) -> (listof b)
 ;; map/mt is like map, except
@@ -2421,6 +2429,7 @@
          apply-reduction-relation/tag-with-names
          apply-reduction-relation/tagged
          apply-reduction-relation*
+         current-cache-all?
          variable-not-in
          variables-not-in)
 
