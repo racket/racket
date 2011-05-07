@@ -45,6 +45,8 @@ OBJS =  salloc.@LTO@ \
 	bool.@LTO@ \
 	builtin.@LTO@ \
 	char.@LTO@ \
+	compenv.@LTO@ \
+	compile.@LTO@ \
 	complex.@LTO@ \
 	dynext.@LTO@ \
 	env.@LTO@ \
@@ -60,9 +62,11 @@ OBJS =  salloc.@LTO@ \
 	jitcall.@LTO@ \
 	jitcommon.@LTO@ \
 	jitinline.@LTO@ \
+	jitprep.@LTO@ \
 	jitstack.@LTO@ \
 	jitstate.@LTO@ \
 	list.@LTO@ \
+	marshal.@LTO@ \
 	module.@LTO@ \
 	mzrt.@LTO@ \
 	network.@LTO@ \
@@ -70,22 +74,25 @@ OBJS =  salloc.@LTO@ \
 	number.@LTO@ \
 	numcomp.@LTO@ \
 	numstr.@LTO@ \
-	places.@LTO@ \
+	optimize.@LTO@ \
+	place.@LTO@ \
 	port.@LTO@ \
 	portfun.@LTO@ \
 	print.@LTO@ \
 	rational.@LTO@ \
 	read.@LTO@ \
 	regexp.@LTO@ \
+	resolve.@LTO@ \
 	sema.@LTO@ \
 	setjmpup.@LTO@ \
+	sfs.@LTO@ \
 	string.@LTO@ \
 	struct.@LTO@ \
-	stxobj.@LTO@ \
 	symbol.@LTO@ \
 	syntax.@LTO@ \
 	thread.@LTO@ \
 	type.@LTO@ \
+	validate.@LTO@ \
 	vector.@LTO@ \
 	$(@FOREIGN_IF_USED@_OBJ)
 
@@ -97,6 +104,8 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/bool.c \
 	$(XSRCDIR)/builtin.c \
 	$(XSRCDIR)/char.c \
+	$(XSRCDIR)/compenv.c \
+	$(XSRCDIR)/compile.c \
 	$(XSRCDIR)/complex.c \
 	$(XSRCDIR)/dynext.c \
 	$(XSRCDIR)/env.c \
@@ -112,31 +121,36 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/jitcall.c \
 	$(XSRCDIR)/jitcommon.c \
 	$(XSRCDIR)/jitinline.c \
+	$(XSRCDIR)/jitprep.c \
 	$(XSRCDIR)/jitstack.c \
 	$(XSRCDIR)/jitstate.c \
 	$(XSRCDIR)/list.c \
+	$(XSRCDIR)/marshal.c \
 	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
 	$(XSRCDIR)/numarith.c \
 	$(XSRCDIR)/numcomp.c \
 	$(XSRCDIR)/number.c \
 	$(XSRCDIR)/numstr.c \
-	$(XSRCDIR)/places.c \
+	$(XSRCDIR)/optimize.c \
+	$(XSRCDIR)/place.c \
 	$(XSRCDIR)/port.c \
 	$(XSRCDIR)/portfun.c \
 	$(XSRCDIR)/print.c \
 	$(XSRCDIR)/rational.c \
 	$(XSRCDIR)/read.c \
 	$(XSRCDIR)/regexp.c \
+	$(XSRCDIR)/resolve.c \
 	$(XSRCDIR)/sema.c \
 	$(XSRCDIR)/setjmpup.c \
+	$(XSRCDIR)/sfs.c \
 	$(XSRCDIR)/string.c \
 	$(XSRCDIR)/struct.c \
-	$(XSRCDIR)/stxobj.c \
 	$(XSRCDIR)/symbol.c \
 	$(XSRCDIR)/syntax.c \
 	$(XSRCDIR)/thread.c \
 	$(XSRCDIR)/type.c \
+	$(XSRCDIR)/validate.c \
 	$(XSRCDIR)/vector.c \
 	$(@FOREIGN_IFUSED@_C) \
 	$(XSRCDIR)/main.c
@@ -183,6 +197,10 @@ $(XSRCDIR)/builtin.c: ../src/builtin.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/builtin.c $(SRCDIR)/builtin.c
 $(XSRCDIR)/char.c: ../src/char.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/char.c $(SRCDIR)/char.c
+$(XSRCDIR)/compenv.c: ../src/compenv.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/compenv.c $(SRCDIR)/compenv.c
+$(XSRCDIR)/compile.c: ../src/compile.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/compile.c $(SRCDIR)/compile.c
 $(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/complex.c $(SRCDIR)/complex.c
 $(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
@@ -213,10 +231,14 @@ $(XSRCDIR)/jitcommon.c: ../src/jitcommon.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jitcommon.c $(SRCDIR)/jitcommon.c
 $(XSRCDIR)/jitinline.c: ../src/jitinline.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jitinline.c $(SRCDIR)/jitinline.c
+$(XSRCDIR)/jitprep.c: ../src/jitprep.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jitprep.c $(SRCDIR)/jitprep.c
 $(XSRCDIR)/jitstack.c: ../src/jitstack.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jitstack.c $(SRCDIR)/jitstack.c
 $(XSRCDIR)/jitstate.c: ../src/jitstate.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jitstate.c $(SRCDIR)/jitstate.c
+$(XSRCDIR)/marshal.c: ../src/marshal.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/marshal.c $(SRCDIR)/marshal.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
@@ -231,8 +253,10 @@ $(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
 $(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
-$(XSRCDIR)/places.c: ../src/places.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
-	$(XFORM) $(XSRCDIR)/places.c $(SRCDIR)/places.c
+$(XSRCDIR)/optimize.c: ../src/optimize.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/optimize.c $(SRCDIR)/optimize.c
+$(XSRCDIR)/place.c: ../src/place.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/place.c $(SRCDIR)/place.c
 $(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
 $(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
@@ -245,16 +269,18 @@ $(XSRCDIR)/read.c: ../src/read.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/read.c $(SRCDIR)/read.c
 $(XSRCDIR)/regexp.c: ../src/regexp.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/regexp.c $(SRCDIR)/regexp.c
+$(XSRCDIR)/resolve.c: ../src/resolve.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/resolve.c $(SRCDIR)/resolve.c
 $(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sema.c $(SRCDIR)/sema.c
 $(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
+$(XSRCDIR)/sfs.c: ../src/sfs.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
 $(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
 	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(CPPFLAGS)" -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
-$(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)
-	$(XFORM) $(XSRCDIR)/stxobj.c $(SRCDIR)/stxobj.c
 $(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/symbol.c $(SRCDIR)/symbol.c
 $(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
@@ -263,6 +289,8 @@ $(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/thread.c $(SRCDIR)/thread.c
 $(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP) $(MZCLPFDEP)
 	$(XFORM) $(XSRCDIR)/type.c $(SRCDIR)/type.c
+$(XSRCDIR)/validate.c: ../src/validate.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/validate.c $(SRCDIR)/validate.c
 $(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
 $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
@@ -280,6 +308,10 @@ builtin.@LTO@: $(XSRCDIR)/builtin.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
 char.@LTO@: $(XSRCDIR)/char.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
+compenv.@LTO@: $(XSRCDIR)/compenv.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/compenv.c -o compenv.@LTO@
+compile.@LTO@: $(XSRCDIR)/compile.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/compile.c -o compile.@LTO@
 complex.@LTO@: $(XSRCDIR)/complex.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/complex.c -o complex.@LTO@
 dynext.@LTO@: $(XSRCDIR)/dynext.c
@@ -310,12 +342,16 @@ jitcommon.@LTO@: $(XSRCDIR)/jitcommon.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitcommon.c -o jitcommon.@LTO@
 jitinline.@LTO@: $(XSRCDIR)/jitinline.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitinline.c -o jitinline.@LTO@
+jitprep.@LTO@: $(XSRCDIR)/jitprep.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitprep.c -o jitprep.@LTO@
 jitstack.@LTO@: $(XSRCDIR)/jitstack.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstack.c -o jitstack.@LTO@
 jitstate.@LTO@: $(XSRCDIR)/jitstate.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
+marshal.@LTO@: $(XSRCDIR)/marshal.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/marshal.c -o marshal.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
 mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
@@ -330,8 +366,10 @@ numcomp.@LTO@: $(XSRCDIR)/numcomp.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
 numstr.@LTO@: $(XSRCDIR)/numstr.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
-places.@LTO@: $(XSRCDIR)/places.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/places.c -o places.@LTO@
+optimize.@LTO@: $(XSRCDIR)/optimize.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/optimize.c -o optimize.@LTO@
+place.@LTO@: $(XSRCDIR)/place.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/place.c -o place.@LTO@
 port.@LTO@: $(XSRCDIR)/port.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
 portfun.@LTO@: $(XSRCDIR)/portfun.c
@@ -344,16 +382,18 @@ read.@LTO@: $(XSRCDIR)/read.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/read.c -o read.@LTO@
 regexp.@LTO@: $(XSRCDIR)/regexp.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/regexp.c -o regexp.@LTO@
+resolve.@LTO@: $(XSRCDIR)/resolve.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/resolve.c -o resolve.@LTO@
 sema.@LTO@: $(XSRCDIR)/sema.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/sema.c -o sema.@LTO@
 setjmpup.@LTO@: $(XSRCDIR)/setjmpup.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
+sfs.@LTO@: $(XSRCDIR)/sfs.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/sfs.c -o sfs.@LTO@
 string.@LTO@: $(XSRCDIR)/string.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
 struct.@LTO@: $(XSRCDIR)/struct.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/struct.c -o struct.@LTO@
-stxobj.@LTO@: $(XSRCDIR)/stxobj.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/stxobj.c -o stxobj.@LTO@
 symbol.@LTO@: $(XSRCDIR)/symbol.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/symbol.c -o symbol.@LTO@
 syntax.@LTO@: $(XSRCDIR)/syntax.c
@@ -362,6 +402,8 @@ thread.@LTO@: $(XSRCDIR)/thread.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/thread.c -o thread.@LTO@
 type.@LTO@: $(XSRCDIR)/type.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/type.c -o type.@LTO@
+validate.@LTO@: $(XSRCDIR)/validate.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/validate.c -o validate.@LTO@
 vector.@LTO@: $(XSRCDIR)/vector.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/vector.c -o vector.@LTO@
 foreign.@LTO@: $(XSRCDIR)/foreign.c

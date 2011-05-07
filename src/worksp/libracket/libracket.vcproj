@@ -562,6 +562,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\Compenv.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Compile.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\Complex.c"
 				>
 			</File>
@@ -630,6 +638,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\jitprep.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\jitstack.c"
 				>
 			</File>
@@ -643,6 +655,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Racket\Src\module.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\marshal.c"
 				>
 			</File>
 			<File
@@ -674,7 +690,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Src\places.c"
+				RelativePath="..\..\Racket\Src\optimize.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\place.c"
 				>
 			</File>
 			<File
@@ -702,6 +722,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\resolve.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\Salloc.c"
 				>
 			</File>
@@ -714,15 +738,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Racket\Src\sfs.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Racket\Src\String.c"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Racket\Src\Struct.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Src\stxobj.c"
 				>
 			</File>
 			<File
@@ -739,6 +763,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Racket\Src\Type.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\validate.c"
 				>
 			</File>
 			<File

@@ -1175,7 +1175,15 @@ engine_val {
 
 END engine;
 
+/**********************************************************************/
+
 START env;
+
+END env;
+
+/**********************************************************************/
+
+START compenv;
 
 mark_comp_env {
  mark:
@@ -1206,6 +1214,12 @@ mark_comp_env {
   gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
 }
 
+END compenv;
+
+/**********************************************************************/
+
+START resolve;
+
 mark_resolve_info {
  mark:
   Resolve_Info *i = (Resolve_Info *)p;
@@ -1225,6 +1239,30 @@ mark_resolve_info {
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
 }
 
+END resolve;
+
+/**********************************************************************/
+
+START sfs;
+
+mark_sfs_info {
+ mark:
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcMARK2(i->max_used, gc);
+  gcMARK2(i->max_calls, gc);
+  gcMARK2(i->saved, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+END sfs;
+
+/**********************************************************************/
+
+START optimize;
+
 mark_optimize_info {
  mark:
   Optimize_Info *i = (Optimize_Info *)p;
@@ -1243,18 +1281,6 @@ mark_optimize_info {
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
 }
 
-mark_sfs_info {
- mark:
-  SFS_Info *i = (SFS_Info *)p;
-  
-  gcMARK2(i->max_used, gc);
-  gcMARK2(i->max_calls, gc);
-  gcMARK2(i->saved, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(SFS_Info));
-}
-
 mark_once_used {
  mark:
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
@@ -1265,7 +1291,7 @@ mark_once_used {
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
 }
 
-END env;
+END optimize;
 
 /**********************************************************************/
 
@@ -1294,6 +1320,12 @@ mark_saved_stack {
   gcBYTES_TO_WORDS(sizeof(Scheme_Saved_Stack));
 }
 
+END eval;
+
+/**********************************************************************/
+
+START validate;
+
 mark_validate_clearing {
  mark:
   Validate_Clearing *vc = (Validate_Clearing *)p;
@@ -1305,7 +1337,7 @@ mark_validate_clearing {
   gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
 }
 
-END eval;
+END validate;
 
 /**********************************************************************/
 
@@ -2079,9 +2111,9 @@ END struct;
 
 /**********************************************************************/
 
-START syntax;
+START compile;
 
-END syntax;
+END compile;
 
 /**********************************************************************/
 
@@ -2211,7 +2243,7 @@ END string;
 
 /**********************************************************************/
 
-START stxobj;
+START syntax;
 
 mark_rename_table {
  mark:
@@ -2298,7 +2330,7 @@ mark_free_id_info {
 
 
 
-END stxobj;
+END syntax;
 
 /**********************************************************************/
 

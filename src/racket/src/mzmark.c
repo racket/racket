@@ -2922,7 +2922,15 @@ static int engine_val_FIXUP(void *p, struct NewGC *gc) {
 
 #endif  /* ENGINE */
 
+/**********************************************************************/
+
 #ifdef MARKS_FOR_ENV_C
+
+#endif  /* ENV */
+
+/**********************************************************************/
+
+#ifdef MARKS_FOR_COMPENV_C
 
 static int mark_comp_env_SIZE(void *p, struct NewGC *gc) {
   return
@@ -2989,6 +2997,12 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
 #define mark_comp_env_IS_CONST_SIZE 1
 
 
+#endif  /* COMPENV */
+
+/**********************************************************************/
+
+#ifdef MARKS_FOR_RESOLVE_C
+
 static int mark_resolve_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
@@ -3034,6 +3048,49 @@ static int mark_resolve_info_FIXUP(void *p, struct NewGC *gc) {
 #define mark_resolve_info_IS_CONST_SIZE 1
 
 
+#endif  /* RESOLVE */
+
+/**********************************************************************/
+
+#ifdef MARKS_FOR_SFS_C
+
+static int mark_sfs_info_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+static int mark_sfs_info_MARK(void *p, struct NewGC *gc) {
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcMARK2(i->max_used, gc);
+  gcMARK2(i->max_calls, gc);
+  gcMARK2(i->saved, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+static int mark_sfs_info_FIXUP(void *p, struct NewGC *gc) {
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcFIXUP2(i->max_used, gc);
+  gcFIXUP2(i->max_calls, gc);
+  gcFIXUP2(i->saved, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+#define mark_sfs_info_IS_ATOMIC 0
+#define mark_sfs_info_IS_CONST_SIZE 1
+
+
+#endif  /* SFS */
+
+/**********************************************************************/
+
+#ifdef MARKS_FOR_OPTIMIZE_C
+
 static int mark_optimize_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -3077,37 +3134,6 @@ static int mark_optimize_info_FIXUP(void *p, struct NewGC *gc) {
 #define mark_optimize_info_IS_CONST_SIZE 1
 
 
-static int mark_sfs_info_SIZE(void *p, struct NewGC *gc) {
-  return
-  gcBYTES_TO_WORDS(sizeof(SFS_Info));
-}
-
-static int mark_sfs_info_MARK(void *p, struct NewGC *gc) {
-  SFS_Info *i = (SFS_Info *)p;
-  
-  gcMARK2(i->max_used, gc);
-  gcMARK2(i->max_calls, gc);
-  gcMARK2(i->saved, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(SFS_Info));
-}
-
-static int mark_sfs_info_FIXUP(void *p, struct NewGC *gc) {
-  SFS_Info *i = (SFS_Info *)p;
-  
-  gcFIXUP2(i->max_used, gc);
-  gcFIXUP2(i->max_calls, gc);
-  gcFIXUP2(i->saved, gc);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(SFS_Info));
-}
-
-#define mark_sfs_info_IS_ATOMIC 0
-#define mark_sfs_info_IS_CONST_SIZE 1
-
-
 static int mark_once_used_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
@@ -3135,7 +3161,7 @@ static int mark_once_used_FIXUP(void *p, struct NewGC *gc) {
 #define mark_once_used_IS_CONST_SIZE 1
 
 
-#endif  /* ENV */
+#endif  /* OPTIMIZE */
 
 /**********************************************************************/
 
@@ -3201,6 +3227,12 @@ static int mark_saved_stack_FIXUP(void *p, struct NewGC *gc) {
 #define mark_saved_stack_IS_CONST_SIZE 1
 
 
+#endif  /* EVAL */
+
+/**********************************************************************/
+
+#ifdef MARKS_FOR_VALIDATE_C
+
 static int mark_validate_clearing_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
@@ -3230,7 +3262,7 @@ static int mark_validate_clearing_FIXUP(void *p, struct NewGC *gc) {
 #define mark_validate_clearing_IS_CONST_SIZE 1
 
 
-#endif  /* EVAL */
+#endif  /* VALIDATE */
 
 /**********************************************************************/
 
@@ -5076,9 +5108,9 @@ static int mark_chaperone_FIXUP(void *p, struct NewGC *gc) {
 
 /**********************************************************************/
 
-#ifdef MARKS_FOR_SYNTAX_C
+#ifdef MARKS_FOR_COMPILE_C
 
-#endif  /* SYNTAX */
+#endif  /* COMPILE */
 
 /**********************************************************************/
 
@@ -5380,7 +5412,7 @@ static int mark_string_convert_FIXUP(void *p, struct NewGC *gc) {
 
 /**********************************************************************/
 
-#ifdef MARKS_FOR_STXOBJ_C
+#ifdef MARKS_FOR_SYNTAX_C
 
 static int mark_rename_table_SIZE(void *p, struct NewGC *gc) {
   return
@@ -5601,7 +5633,7 @@ static int mark_free_id_info_FIXUP(void *p, struct NewGC *gc) {
 
 
 
-#endif  /* STXOBJ */
+#endif  /* SYNTAX */
 
 /**********************************************************************/
 

@@ -187,6 +187,8 @@
     <ClCompile Include="..\..\Racket\Src\Bool.c" />
     <ClCompile Include="..\..\Racket\Src\builtin.c" />
     <ClCompile Include="..\..\Racket\Src\Char.c" />
+    <ClCompile Include="..\..\Racket\Src\Compenv.c" />
+    <ClCompile Include="..\..\Racket\Src\Compile.c" />
     <ClCompile Include="..\..\Racket\Src\Complex.c" />
     <ClCompile Include="..\..\Racket\Src\Dynext.c" />
     <ClCompile Include="..\..\Racket\Src\Env.c" />
@@ -204,9 +206,11 @@
     <ClCompile Include="..\..\Racket\Src\jitcall.c" />
     <ClCompile Include="..\..\Racket\Src\jitcommon.c" />
     <ClCompile Include="..\..\Racket\Src\jitinline.c" />
+    <ClCompile Include="..\..\Racket\Src\jitprep.c" />
     <ClCompile Include="..\..\Racket\Src\jitstack.c" />
     <ClCompile Include="..\..\Racket\Src\jitstate.c" />
     <ClCompile Include="..\..\Racket\Src\List.c" />
+    <ClCompile Include="..\..\Racket\Src\marshal.c" />
     <ClCompile Include="..\..\Racket\Src\module.c" />
     <ClCompile Include="..\..\Racket\Src\mzrt.c" />
     <ClCompile Include="..\..\Racket\Src\mzsj86.c" />
@@ -215,23 +219,26 @@
     <ClCompile Include="..\..\Racket\Src\Number.c" />
     <ClCompile Include="..\..\Racket\Src\numcomp.c" />
     <ClCompile Include="..\..\Racket\Src\numstr.c" />
-    <ClCompile Include="..\..\Racket\Src\places.c" />
+    <ClCompile Include="..\..\Racket\Src\optimize.c" />
+    <ClCompile Include="..\..\Racket\Src\place.c" />
     <ClCompile Include="..\..\Racket\Src\Port.c" />
     <ClCompile Include="..\..\Racket\Src\portfun.c" />
     <ClCompile Include="..\..\Racket\Src\Print.c" />
     <ClCompile Include="..\..\Racket\Src\Rational.c" />
     <ClCompile Include="..\..\Racket\Src\Read.c" />
     <ClCompile Include="..\..\Racket\Src\Regexp.c" />
+    <ClCompile Include="..\..\Racket\Src\resolve.c" />
     <ClCompile Include="..\..\Racket\Src\Salloc.c" />
     <ClCompile Include="..\..\Racket\Src\Sema.c" />
     <ClCompile Include="..\..\Racket\Src\Setjmpup.c" />
+    <ClCompile Include="..\..\Racket\Src\sfs.c" />
     <ClCompile Include="..\..\Racket\Src\String.c" />
     <ClCompile Include="..\..\Racket\Src\Struct.c" />
-    <ClCompile Include="..\..\Racket\Src\stxobj.c" />
     <ClCompile Include="..\..\Racket\Src\Symbol.c" />
     <ClCompile Include="..\..\Racket\Src\Syntax.c" />
     <ClCompile Include="..\..\Racket\Src\thread.c" />
     <ClCompile Include="..\..\Racket\Src\Type.c" />
+    <ClCompile Include="..\..\Racket\Src\validate.c" />
     <ClCompile Include="..\..\Racket\Src\vector.c" />
   </ItemGroup>
   <ItemGroup>
