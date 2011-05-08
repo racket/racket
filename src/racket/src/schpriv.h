@@ -2523,10 +2523,6 @@ typedef struct Scheme_Set_Bang {
 
 Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 
-#define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
-                                     || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
-int scheme_compiled_proc_body_size(Scheme_Object *o);
-
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
 
@@ -2569,15 +2565,6 @@ Optimize_Info *scheme_optimize_info_create(void);
 void scheme_optimize_info_enforce_const(Optimize_Info *, int enforce_const);
 void scheme_optimize_info_set_context(Optimize_Info *, Scheme_Object *ctx);
 void scheme_optimize_info_never_inline(Optimize_Info *);
-
-/* Controls for inlining algorithm: */
-#define OPT_ESTIMATE_FUTURE_SIZES   1
-#define OPT_DISCOURAGE_EARLY_INLINE 1
-#define OPT_LIMIT_FUNCTION_RESIZE   0
-#define OPT_BRANCH_ADDS_NO_SIZE     1
-
-Scheme_Object *scheme_estimate_closure_size(Scheme_Object *e);
-Scheme_Object *scheme_no_potential_size(Scheme_Object *value);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);

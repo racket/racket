@@ -33,6 +33,13 @@
 
 #define cons(a,b) scheme_make_pair(a,b)
 
+/* Controls for inlining algorithm: */
+#define OPT_ESTIMATE_FUTURE_SIZES   1
+#define OPT_DISCOURAGE_EARLY_INLINE 1
+#define OPT_LIMIT_FUNCTION_RESIZE   0
+#define OPT_BRANCH_ADDS_NO_SIZE     1
+#define OPT_DELAY_GROUP_PROPAGATE   0
+
 #define MAX_PROC_INLINE_SIZE 256
 
 struct Optimize_Info
@@ -93,6 +100,14 @@ static void env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags);
 static int optimize_info_get_shift(Optimize_Info *info, int pos);
 static void optimize_info_done(Optimize_Info *info);
+
+static Scheme_Object *estimate_closure_size(Scheme_Object *e);
+static Scheme_Object *no_potential_size(Scheme_Object *value);
+
+#define IS_COMPILED_PROC(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_compiled_unclosed_procedure_type) \
+                                     || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
+
+static int compiled_proc_body_size(Scheme_Object *o);
 
 typedef struct Scheme_Once_Used {
   Scheme_Object so;
@@ -688,14 +703,14 @@ static int estimate_expr_size(Scheme_Object *expr, int sz, int fuel)
   return sz;
 }
 
-Scheme_Object *scheme_estimate_closure_size(Scheme_Object *e)
+static Scheme_Object *estimate_closure_size(Scheme_Object *e)
 {
   int sz;
   sz = estimate_expr_size(e, 0, 32);
   return scheme_box(scheme_make_integer(sz));
 }
 
-Scheme_Object *scheme_no_potential_size(Scheme_Object *v)
+static Scheme_Object *no_potential_size(Scheme_Object *v)
 {
   if (v && SCHEME_BOXP(v))
     return NULL;
@@ -1824,7 +1839,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
       while (1) {
         pos = SCHEME_TOPLEVEL_POS(rand);
         c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-        c = scheme_no_potential_size(c);
+        c = no_potential_size(c);
         if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
           rand = c;
         else
@@ -3021,7 +3036,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
       int pos;
       pos = SCHEME_TOPLEVEL_POS(value);
       value = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-      value = scheme_no_potential_size(value);
+      value = no_potential_size(value);
       if (value)
         return 1;
     }
@@ -3211,7 +3226,7 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   return flags;
 }
 
-int scheme_compiled_proc_body_size(Scheme_Object *o)
+static int compiled_proc_body_size(Scheme_Object *o)
 {
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
     return closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL);
@@ -3228,7 +3243,7 @@ int scheme_compiled_proc_body_size(Scheme_Object *o)
 
 static int expr_size(Scheme_Object *o, Optimize_Info *info)
 {
-  return scheme_compiled_proc_body_size(o) + 1;
+  return compiled_proc_body_size(o) + 1;
 }
 
 int scheme_might_invoke_call_cc(Scheme_Object *value)
@@ -3476,7 +3491,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         if ((pre_body->count == 1)
             && IS_COMPILED_PROC(pre_body->value)
             && !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
-          optimize_propagate(body_info, pos, scheme_estimate_closure_size(pre_body->value), 0);
+          optimize_propagate(body_info, pos, estimate_closure_size(pre_body->value), 0);
         }
 
         body = pre_body->body;
@@ -3766,6 +3781,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	&& ((i < 1) 
 	    || (!scheme_is_compiled_procedure(((Scheme_Compiled_Let_Value *)pre_body->body)->value, 1, 1)
 		&& !scheme_is_liftable(((Scheme_Compiled_Let_Value *)pre_body->body)->value, head->count, 5, 1)))) {
+      Scheme_Object *prop_later = NULL;
+
       if (did_set_value) {
 	/* Next RHS ends a reorderable sequence. 
 	   Re-optimize from retry_start to pre_body, inclusive.
@@ -3812,7 +3829,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	    self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
-            sz = scheme_compiled_proc_body_size(value);
+            sz = compiled_proc_body_size(value);
             rhs_info->size -= (sz + 1);
             
             /* Setting letrec_not_twice prevents inlinining
@@ -3837,12 +3854,17 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
                 /* Register re-optimized as the value for the binding, but
                    maybe only if it didn't grow too much: */
                 int new_sz;
-                if (OPT_LIMIT_FUNCTION_RESIZE)
-                  new_sz = scheme_compiled_proc_body_size(value);
+                if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE)
+                  new_sz = compiled_proc_body_size(value);
                 else
                   new_sz = 0;
-                if (new_sz < 4 * sz)
+                if (new_sz <= sz)
                   optimize_propagate(body_info, clv->position, value, 0);
+                else if (!OPT_LIMIT_FUNCTION_RESIZE
+                         || (new_sz < 4 * sz))
+                  prop_later = scheme_make_raw_pair(scheme_make_pair(scheme_make_integer(clv->position),
+                                                                     value),
+                                                    prop_later);
               }
             }
 
@@ -3875,6 +3897,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       retry_start = NULL;
       ready_pairs_start = NULL;
       did_set_value = 0;
+
+      while (prop_later) {
+        value = SCHEME_CAR(prop_later);
+        optimize_propagate(body_info, 
+                           SCHEME_INT_VAL(SCHEME_CAR(value)), 
+                           SCHEME_CDR(value),
+                           0);
+        prop_later = SCHEME_CDR(prop_later);
+      }
     }
 
     if (is_rec) {
@@ -4384,7 +4415,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                 pos = tl->position;
                 scheme_hash_set(consts, 
                                 scheme_make_integer(pos),
-                                scheme_estimate_closure_size(e));
+                                estimate_closure_size(e));
               }
             }
           }
@@ -4523,6 +4554,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       cont = 1;
 
     if (!cont) {
+      Scheme_Object *prop_later = NULL;
       /* If we have new constants, re-optimize to inline: */
       if (consts) {
         int flags;
@@ -4555,14 +4587,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
           e = SCHEME_VEC_ELS(m->body)[start_simltaneous];
 
-          if (OPT_LIMIT_FUNCTION_RESIZE) {
+          if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE) {
             if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
               Scheme_Object *sub_e;
               sub_e = SCHEME_VEC_ELS(e)[1];
-              if (IS_COMPILED_PROC(sub_e))
-                old_sz = scheme_compiled_proc_body_size(sub_e);
-              else
-                old_sz = 0;
+              old_sz = compiled_proc_body_size(sub_e);
             } else
               old_sz = 0;
           } else
@@ -4591,16 +4620,18 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               }
 
               if (e) {
-                if (OPT_LIMIT_FUNCTION_RESIZE) {
-                  if (IS_COMPILED_PROC(e))
-                    new_sz = scheme_compiled_proc_body_size(e);
-                  else
-                    new_sz = 0;
-                } else
+                if (OPT_DELAY_GROUP_PROPAGATE || OPT_LIMIT_FUNCTION_RESIZE)
+                  new_sz = compiled_proc_body_size(e);
+                else
                   new_sz = 0;
                 
-                if (!new_sz || !old_sz || (new_sz < 4 * old_sz))
+                if (!old_sz
+                    || (new_sz <= old_sz) 
+                    || (!OPT_DELAY_GROUP_PROPAGATE && !OPT_LIMIT_FUNCTION_RESIZE))
                   scheme_hash_set(info->top_level_consts, rpos, e);
+                else if (!OPT_LIMIT_FUNCTION_RESIZE
+                         || (new_sz < 4 * old_sz))
+                  prop_later = scheme_make_raw_pair(scheme_make_pair(rpos, e), prop_later);
               }
             }
           }
@@ -4621,6 +4652,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       consts = NULL;
       re_consts = NULL;
       start_simltaneous = i_m + 1;
+
+      while (prop_later) {
+        e = SCHEME_CAR(prop_later);
+        scheme_hash_set(info->top_level_consts, SCHEME_CAR(e), SCHEME_CDR(e));
+        prop_later = SCHEME_CDR(prop_later);
+      }
     }
 
     if (next_pos_ready > -1) {
@@ -4784,7 +4821,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       while (1) {
         pos = SCHEME_TOPLEVEL_POS(expr);
         c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-        c = scheme_no_potential_size(c);
+        c = no_potential_size(c);
         if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
           expr = c;
         else
