@@ -327,6 +327,9 @@ typedef struct Thread_Local_Variables {
 /* Using Pthread getspecific() */
 # include <pthread.h>
 MZ_EXTERN pthread_key_t scheme_thread_local_key;
+# if defined(__APPLE__) && defined(__MACH__)
+MZ_EXTERN int scheme_thread_local_offset;
+# endif
 # ifndef INLINE_GETSPECIFIC_ASSEMBLY_CODE
 #  define scheme_get_thread_local_variables() ((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))
 #  ifdef MZ_XFORM
@@ -341,13 +344,13 @@ static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   Thread_Local_Variables *x = NULL;
 #  if defined(__APPLE__) && defined(__MACH__)
 #   if defined(__x86_64__)
-  asm volatile("movq %%gs:0x60(,%1,8), %0" : "=r"(x) : "r"(scheme_thread_local_key));
+  asm("movq %%gs:0(%1,%2,8), %0" : "=r"(x) : "r"(scheme_thread_local_offset), "r"((int)scheme_thread_local_key));
 #   else
-  asm volatile("movl %%gs:0x48(,%1,4), %0" : "=r"(x) : "r"(scheme_thread_local_key));
+  asm("movl %%gs:0(%1,%2,4), %0" : "=r"(x) : "r"(scheme_thread_local_offset), "r"(scheme_thread_local_key));
 #   endif
 #  elif defined(linux)
 #   if defined(__x86_64__)
-  asm volatile( "mov %1, %%eax;" 
+  asm( "mov %1, %%eax;" 
   "shl $0x4, %%rax;"
   "mov %%fs:0x10, %%rdx;" 
   "mov 0x118(%%rax,%%rdx), %0;"

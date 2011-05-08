@@ -67,6 +67,12 @@ SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # endif
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+# include <sys/param.h>
+# include <sys/sysctl.h>
+int scheme_thread_local_offset = 0;
+#endif
+
 extern int scheme_num_copied_stacks;
 SHARED_OK static uintptr_t scheme_primordial_os_thread_stack_base;
 THREAD_LOCAL_DECL(static uintptr_t scheme_os_thread_stack_base);
@@ -198,47 +204,6 @@ void scheme_set_thread_local_variables(Thread_Local_Variables *tlvs) XFORM_SKIP_
 }
 #endif
 
-#if 0 && defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
-/* This code is dsiabled */
-static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
-{
-  /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
-     the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
-     In brief, we assume that thread-local variables are going to be
-     accessed via the gs segment register at offset 0x48 (i386) or 0x60 (x86_64),
-     and we also hardwire the thread-local key 0x110. Here we have to try to get
-     that particular key and double-check that it worked. */
-  pthread_key_t unwanted[16];
-  int num_unwanted = 0;
-
-  while (1) {
-    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
-      fprintf(stderr, "pthread key create failed\n");
-      abort();
-    }
-    if (scheme_thread_local_key == 0x110)
-      break;
-    else {
-      if (num_unwanted == 24) {
-        fprintf(stderr, "pthread key create never produced 0x110 for inline hack\n");
-        abort();
-      }
-      unwanted[num_unwanted++] = scheme_thread_local_key;
-    }
-  }
-
-  pthread_setspecific(scheme_thread_local_key, (void *)0xaced);
-  if (scheme_get_thread_local_variables() != (Thread_Local_Variables *)0xaced) {
-    fprintf(stderr, "pthread getspecific inline hack failed\n");
-    abort();
-  }
-
-  while (num_unwanted--) {
-    pthread_key_delete(unwanted[num_unwanted]);
-  }
-}
-#endif
-
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
 {
@@ -267,6 +232,45 @@ void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
     fprintf(stderr, "pthread key create failed\n");
     abort();
   }
+# if defined(__APPLE__) && defined(__MACH__)
+  /* Darwin version 11 (Max OS X Lion) changes the offset from %gs
+     for thread-local storage. */
+  {
+    int name[2];
+    char vers[128];
+    size_t len;
+    int i, vn = 0, bad = 0;
+
+    name[0] = CTL_KERN;
+    name[1] = KERN_OSRELEASE;
+    len = sizeof(vers);
+    if (sysctl(name, 2, vers, &len, NULL, 0))
+      bad = 1;
+    else {
+      for (i = 0; vers[i] && (vers[i] != '.'); i++) {
+        if ((vers[i] < '0') || (vers[i] > '9'))
+          break;
+        vn = (vn * 10) + (vers[i] - '0');
+      }
+      if ((vers[i] == '.') && (vn > 0) && (vn < 1000)) {
+        if (vn > 10)
+          scheme_thread_local_offset = 0;
+        else {
+#   if defined(__x86_64__)
+          scheme_thread_local_offset = 0x60;
+#   else
+          scheme_thread_local_offset = 0x48;
+#   endif
+        }
+      } else
+        bad = 1;
+    }
+    if (bad) {
+      fprintf(stderr, "kernel version lookup failed\n");
+      abort();
+    }
+  }
+# endif
 #endif
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
   {
