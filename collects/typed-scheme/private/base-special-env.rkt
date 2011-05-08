@@ -101,6 +101,19 @@
      [(i-n _ ...)
       #'i-n])
    (->opt -Bytes [-Int (-opt -Int) -Int] (-seq -Byte))]
+  ;; in-hash and friends
+  [(syntax-parse (local-expand #'(in-hash #hash((1 . 2))) 'expression #f)
+     [(i-n _ ...)
+      #'i-n])
+   (-poly (a b) (-> (-HT a b) (-seq a b)))]
+  [(syntax-parse (local-expand #'(in-hash-keys #hash((1 . 2))) 'expression #f)
+     [(i-n _ ...)
+      #'i-n])
+   (-poly (a b) (-> (-HT a b) (-seq a)))]
+  [(syntax-parse (local-expand #'(in-hash-values #hash((1 . 2))) 'expression #f)
+     [(i-n _ ...)
+      #'i-n])
+   (-poly (a b) (-> (-HT a b) (-seq b)))]
   ;; in-port
   [(syntax-parse (local-expand #'(in-port) 'expression #f)
      [(i-n _ ...)

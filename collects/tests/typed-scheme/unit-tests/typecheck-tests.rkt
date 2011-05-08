@@ -26,7 +26,8 @@
 	             (private #;base-env #;base-env-numeric
 			      base-env-indexing base-special-env))
          (for-template (private #;base-env base-types base-types-extra
-				#;base-env-numeric base-special-env
+				#;base-env-numeric 
+                                base-special-env
 				base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
@@ -34,8 +35,8 @@
          (prefix-in n: (private base-env-numeric)))
 
 (provide typecheck-tests g tc-expr/expand)
-
-(b:init) (n:init) (initialize-structs) (initialize-indexing)
+ 
+(b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-special)
 
 (define N -Number)
 (define B -Boolean)
@@ -858,6 +859,15 @@
         [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
               (-lst -Number)]
         [tc-err (list (values 1 2))]
+        
+        #| ;; should work but don't (test harness problems)
+        [tc-e (for/list ([(k v) (in-hash #hash((1 . 2)))]) 0) (-lst -Zero)]
+        [tc-e (in-list (list 1 2 3)) (-seq -Integer)]
+        [tc-e (in-vector (vector 1 2 3)) (-seq -Integer)]
+        |#
+        [tc-e (in-hash #hash((1 . 2))) (-seq -Integer -Integer)]
+        [tc-e (in-hash-keys #hash((1 . 2))) (-seq -Integer)]
+        [tc-e (in-hash-values #hash((1 . 2))) (-seq -Integer)]
         )
   (test-suite
    "check-type tests"
