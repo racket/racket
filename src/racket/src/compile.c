@@ -62,6 +62,8 @@ ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *letrec_syntaxes_symbol;
 ROSYM static Scheme_Object *values_symbol;
 
+THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
+
 /* locals */
 static Scheme_Object *lambda_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
@@ -131,7 +133,7 @@ static void register_traversers(void);
 /*                          initialization                            */
 /**********************************************************************/
 
-void scheme_init_syntax (Scheme_Env *env)
+void scheme_init_compile (Scheme_Env *env)
 {
 #ifdef MZ_PRECISE_GC
   register_traversers();
@@ -297,6 +299,11 @@ void scheme_init_syntax (Scheme_Env *env)
   scheme_add_global_keyword("#%top",    top_expander,   env);
 
   scheme_init_marshal(env);
+}
+
+void scheme_init_compile_places()
+{
+  REGISTER_SO(quick_stx);
 }
 
 Scheme_Object *
@@ -1449,9 +1456,11 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int mode)
     if (mode == 2) {
       /* sfs */
       return (Scheme_Object *)cl2;
+#ifdef MZ_USE_JIT
     } else if (mode == 1) {
       /* JIT */
       return scheme_case_lambda_jit((Scheme_Object *)cl2);
+#endif
     } else
       return (Scheme_Object *)cl2;
   }

@@ -53,6 +53,9 @@ READ_ONLY static Scheme_Env    *unsafe_env;
 READ_ONLY static Scheme_Env    *flfxnum_env;
 READ_ONLY static Scheme_Env    *futures_env;
 
+THREAD_LOCAL_DECL(static int builtin_ref_counter);
+THREAD_LOCAL_DECL(static int intdef_counter);
+
 /* local functions */
 static void make_kernel_env(void);
 
@@ -215,22 +218,6 @@ Scheme_Env *scheme_basic_env()
   env = scheme_engine_instance_init();
   
   return env;
-}
-
-static void init_toplevel_local_offsets_hashtable_caches()
-{
-  REGISTER_SO(toplevels_ht);
-  REGISTER_SO(locals_ht[0]);
-  REGISTER_SO(locals_ht[1]);
-
-  {
-    Scheme_Hash_Table *ht;
-    toplevels_ht = scheme_make_hash_table_equal();
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    locals_ht[0] = ht;
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    locals_ht[1] = ht;
-  }
 }
 
 /* READ-ONLY GLOBAL structures ONE-TIME initialization */
@@ -414,7 +401,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
   scheme_init_thread_lwc();
 
-  init_toplevel_local_offsets_hashtable_caches();
+  scheme_init_compenv_places();
 
 #ifdef TIME_STARTUP_PROCESS
   printf("pre-process @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
@@ -450,6 +437,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_string_places();
   scheme_init_logger();
   scheme_init_eval_places();
+  scheme_init_compile_places();
   scheme_init_regexp_places();
   scheme_init_stx_places(initial_main_os_thread);
   scheme_init_sema_places();
@@ -482,7 +470,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_expand_observe(env);
   scheme_init_place(env);
 /* END PRIMITIVE MODULES */
-#if defined(MZ_USE_PLACES)
+#if defined(MZ_USE_PLACES) && defined(MZ_USE_JIT)
   scheme_jit_fill_threadlocal_table();
 #endif
   scheme_init_futures_per_place();
@@ -578,7 +566,7 @@ static void make_kernel_env(void)
   MZTIMEIT(vector, scheme_init_vector(env));
   MZTIMEIT(char, scheme_init_char(env));
   MZTIMEIT(bool, scheme_init_bool(env));
-  MZTIMEIT(syntax, scheme_init_syntax(env));
+  MZTIMEIT(syntax, scheme_init_compile(env));
   MZTIMEIT(eval, scheme_init_eval(env));
   MZTIMEIT(error, scheme_init_error(env));
   MZTIMEIT(struct, scheme_init_struct(env));

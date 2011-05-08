@@ -35,6 +35,8 @@
 
 #ifdef MZ_USE_JIT
 
+static Scheme_Object *do_define_syntaxes_clone(Scheme_Object *expr, int jit);
+
 static Scheme_Object *jit_application(Scheme_Object *o)
 {
   Scheme_Object *orig, *naya = NULL;
@@ -476,44 +478,14 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
   return (Scheme_Object *)seq2;
 }
 
-static Scheme_Object *do_define_syntaxes_jit(Scheme_Object *expr, int jit)
-{
-  Resolve_Prefix *rp, *orig_rp;
-  Scheme_Object *naya, *rhs;
-  
-  rhs = SCHEME_VEC_ELS(expr)[0];
-  if (jit)
-    naya = scheme_jit_expr(rhs);
-  else
-    naya = rhs;
-
-  orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(expr)[1];
-  rp = scheme_prefix_eval_clone(orig_rp);
-  
-  if (SAME_OBJ(naya, rhs)
-      && SAME_OBJ(orig_rp, rp))
-    return expr;
-  else {
-    expr = scheme_clone_vector(expr, 0, 1);
-    SCHEME_VEC_ELS(expr)[0] = naya;
-    SCHEME_VEC_ELS(expr)[1] = (Scheme_Object *)rp;
-    return expr;
-  }
-}
-
 static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr)
 {
-  return do_define_syntaxes_jit(expr, 1);
+  return do_define_syntaxes_clone(expr, 1);
 }
 
 static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr)
 {
-  return do_define_syntaxes_jit(expr, 1);
-}
-
-Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *expr)
-{
-  return do_define_syntaxes_jit(expr, 0);
+  return do_define_syntaxes_clone(expr, 1);
 }
 
 /*========================================================================*/
@@ -642,3 +614,35 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
 }
 
 #endif
+
+static Scheme_Object *do_define_syntaxes_clone(Scheme_Object *expr, int jit)
+{
+  Resolve_Prefix *rp, *orig_rp;
+  Scheme_Object *naya, *rhs;
+  
+  rhs = SCHEME_VEC_ELS(expr)[0];
+#ifdef MZ_USE_JIT
+  if (jit)
+    naya = scheme_jit_expr(rhs);
+  else
+#endif
+    naya = rhs;
+
+  orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(expr)[1];
+  rp = scheme_prefix_eval_clone(orig_rp);
+  
+  if (SAME_OBJ(naya, rhs)
+      && SAME_OBJ(orig_rp, rp))
+    return expr;
+  else {
+    expr = scheme_clone_vector(expr, 0, 1);
+    SCHEME_VEC_ELS(expr)[0] = naya;
+    SCHEME_VEC_ELS(expr)[1] = (Scheme_Object *)rp;
+    return expr;
+  }
+}
+
+Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *expr)
+{
+  return do_define_syntaxes_clone(expr, 0);
+}

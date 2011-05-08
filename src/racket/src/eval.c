@@ -168,7 +168,6 @@ THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
 THREAD_LOCAL_DECL(uintptr_t scheme_stack_boundary);
 THREAD_LOCAL_DECL(uintptr_t volatile scheme_jit_stack_boundary);
 #endif
-THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 THREAD_LOCAL_DECL(int scheme_continuation_application_count);
 THREAD_LOCAL_DECL(static int generate_lifts_count);
 THREAD_LOCAL_DECL(int scheme_overflow_count);
@@ -348,8 +347,6 @@ scheme_init_eval (Scheme_Env *env)
 
 void scheme_init_eval_places()
 {
-  REGISTER_SO(quick_stx);
-
 #ifdef MZ_PRECISE_GC
   scheme_prefix_finalize = (Scheme_Prefix *)0x1; /* 0x1 acts as a sentenel */
   GC_set_post_propagate_hook(mark_pruned_prefixes);

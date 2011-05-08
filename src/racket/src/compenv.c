@@ -36,8 +36,6 @@ READ_ONLY static Scheme_Object *unshadowable_symbol;
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
-THREAD_LOCAL_DECL(static int intdef_counter);
-THREAD_LOCAL_DECL(static int builtin_ref_counter);
 THREAD_LOCAL_DECL(static int env_uid_counter);
 
 #define ARBITRARY_USE     0x1
@@ -85,6 +83,22 @@ void scheme_init_compenv()
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
+}
+
+void scheme_init_compenv_places(void)
+{
+  REGISTER_SO(toplevels_ht);
+  REGISTER_SO(locals_ht[0]);
+  REGISTER_SO(locals_ht[1]);
+
+  {
+    Scheme_Hash_Table *ht;
+    toplevels_ht = scheme_make_hash_table_equal();
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    locals_ht[0] = ht;
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    locals_ht[1] = ht;
+  }
 }
 
 /*========================================================================*/
