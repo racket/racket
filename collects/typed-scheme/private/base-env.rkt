@@ -286,6 +286,8 @@
                  (make-arr (list Sym -String) (Un) #:rest Univ)
                  (make-arr (list -String) (Un) #:rest Univ)
                  (make-arr (list Sym) (Un)))))
+[error-display-handler  (-Param (-polydots (a) (-String Univ . -> . Univ))
+                                (-polydots (a) (-String Univ . -> . Univ)))]
 
 [namespace-variable-value (Sym [Univ (-opt (-> Univ)) -Namespace] . ->opt . Univ)]
 
