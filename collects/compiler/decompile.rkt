@@ -328,7 +328,8 @@
                                    (list
                                     (for/list ([pos (in-set tl-map)])
                                       (list-ref/protect (glob-desc-vars globs)
-                                                        (if (pos . < . (glob-desc-num-tls globs))
+                                                        (if (or (pos . < . (glob-desc-num-tls globs))
+                                                                (zero? (glob-desc-num-stxs globs)))
                                                             pos
                                                             (+ pos (glob-desc-num-stxs globs) 1))
                                                         'lam)))))))
