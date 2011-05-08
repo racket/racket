@@ -1198,6 +1198,13 @@
                     (substring s offset))]
              [blank? (string=? s "")]
              [s (if (and (not draw?) blank?) " " s)]
+             [s (if (for/or ([c (in-string s)])
+                      (or (eqv? c #\uFFFE) (eqv? c #\uFFFF)))
+                    ;; Since \uFFFE and \uFFFF are not supposed to be in any
+                    ;; interchange, we must replace them away before passing a
+                    ;; string to Pango:
+                    (regexp-replace* #rx"[\uFFFE\uFFFF]" s "\uFFFD")
+                    s)]
              [rotate? (and draw? (not (zero? angle)))]
              [smoothing-index (case (dc-adjust-smoothing (send font get-smoothing))
                                 [(default) 0]
@@ -1725,24 +1732,27 @@
         tmp-bm))
 
     (def/public (glyph-exists? [char? c])
-      (with-cr
-       #f
-       cr
-       (let ([desc (get-pango font)]
-             [attrs (send font get-pango-attrs)]
-             [context (or (for/or ([c (in-vector contexts)])
-                            c)
-                          (pango_cairo_create_context cr))])
-         (let ([layout (pango_layout_new context)])
-           (pango_layout_set_font_description layout desc)
-           (pango_layout_set_text layout (string c))
-           (pango_cairo_update_layout cr layout)
-           (begin0
-            (or (zero? (pango_layout_get_unknown_glyphs_count layout))
-                (and substitute-fonts?
-                     (install-alternate-face c layout font desc attrs context)
-                     (zero? (pango_layout_get_unknown_glyphs_count layout))))
-            (g_object_unref layout))))))
+      (and
+       (not (eqv? c #\uFFFF))
+       (not (eqv? c #\uFFFE))
+       (with-cr
+        #f
+        cr
+        (let ([desc (get-pango font)]
+              [attrs (send font get-pango-attrs)]
+              [context (or (for/or ([c (in-vector contexts)])
+                             c)
+                           (pango_cairo_create_context cr))])
+          (let ([layout (pango_layout_new context)])
+            (pango_layout_set_font_description layout desc)
+            (pango_layout_set_text layout (string c))
+            (pango_cairo_update_layout cr layout)
+            (begin0
+             (or (zero? (pango_layout_get_unknown_glyphs_count layout))
+                 (and substitute-fonts?
+                      (install-alternate-face c layout font desc attrs context)
+                      (zero? (pango_layout_get_unknown_glyphs_count layout))))
+             (g_object_unref layout)))))))
     
     (def/public (get-char-width)
       (or (with-cr
