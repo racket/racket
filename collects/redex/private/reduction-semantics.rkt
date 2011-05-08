@@ -229,7 +229,7 @@
       [(null? procs) acc]
       [else 
        (loop (cdr procs)
-             ((car procs) v v values acc))])))
+             ((car procs) v acc))])))
 
 (define (apply-reduction-relation/tag-with-names p v) (map cdr (apply-reduction-relation/tagged p v)))
 (define (apply-reduction-relation p v) (map caddr (apply-reduction-relation/tagged p v)))
