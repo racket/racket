@@ -978,13 +978,14 @@
                        num-all-params
                        max-let-depth
                        (and tl-map
-                            (if (tl-map . < . #x7FFFFFFF)
+                            (if (tl-map . <= . #xFFFFFFF)
+                                ;; Encode as a fixnum:
                                 tl-map
                                 ;; Encode as an even-sized vector of 16-bit integers:
                                 (let ([len (* 2 (quotient (+ (integer-length tl-map) 31) 32))])
                                   (for/vector ([i (in-range len)])
-                                              (let ([s (* i 16)])
-                                                (bitwise-bit-field tl-map s (+ s 16)))))))
+                                    (let ([s (* i 16)])
+                                      (bitwise-bit-field tl-map s (+ s 16)))))))
                        name
                        l)
                       out))]))
