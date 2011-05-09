@@ -21,28 +21,42 @@ Of course, other (similar) things can go wrong, too.
 
 |#
 
-(fire-up-drscheme-and-run-tests
- (λ ()
-   (putenv "PLTDRHTDPNOCOMPILED" "yes")
-   (define drs-frame (wait-for-drscheme-frame))
-   (set-language-level! '("How to Design Programs" "Beginning Student"))
-   (clear-definitions drs-frame)
-   (type-in-definitions drs-frame "(check-expect 1 1)")
-   (do-execute drs-frame)
-   (let ([output (fetch-output drs-frame)])
-     (cond
-       [(equal? output "The test passed!")
-        (try-interaction-tests)]
-       [else
-        (fprintf (current-error-port)
-                 "teaching-lang-sharing-modules.rkt: got bad output from execute: ~s"
-                 output)]))))
+(define things-to-try
+  (list '(check-expect 1 1)
+        '(check-within 1 1.01 2)
+        '(check-error (car))
+        '(check-error (error 'x "y") "x: y")
+        '(check-member-of 1 2 3 1 4)
+        '(check-range 1 0 2)))
+
+(define first-line-output (format "All ~a tests passed!" (length things-to-try)))
+
+(define (go)
+  (fire-up-drscheme-and-run-tests
+   (λ ()
+     (putenv "PLTDRHTDPNOCOMPILED" "yes")
+     (define drs-frame (wait-for-drscheme-frame))
+     (set-language-level! '("How to Design Programs" "Beginning Student"))
+     (clear-definitions drs-frame)
+     (for ([exp (in-list things-to-try)])
+       (insert-in-definitions drs-frame (format "~s\n" exp)))
+     (do-execute drs-frame)
+     (let ([output (fetch-output drs-frame)])
+       (cond
+         [(equal? output first-line-output)
+          (try-interaction-test drs-frame)]
+         [else
+          (fprintf (current-error-port)
+                   "teaching-lang-sharing-modules.rkt: got bad output from execute: ~s"
+                   output)])))))
 
 (define (try-interaction-test drs-frame)
   (type-in-interactions drs-frame "1\n")
   (wait-for-computation drs-frame)
   (let ([interactions-output (fetch-output drs-frame)])
-    (unless (equal? interactions-output "The test passed!\n> 1\n3")
+    (unless (equal? interactions-output (format "~a\n> 1\n1" first-line-output))
       (error 'teaching-language-sharing-modules.rkt
              "got bad output from interaction: ~s\n" 
              interactions-output))))
+
+(go)
