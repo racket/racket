@@ -136,9 +136,9 @@
                    (and tl-map
                         (let* ([bits (if (exact-integer? tl-map)
                                          tl-map
-                                         (for/fold ([i 0]) ([v (in-list tl-map)]
+                                         (for/fold ([i 0]) ([v (in-vector tl-map)]
                                                             [s (in-naturals)])
-                                           (bitwise-ior i (arithmetic-shift v 16))))]
+                                           (bitwise-ior i (arithmetic-shift v (* s 16)))))]
                                [len (integer-length bits)])
                           (list->set
                            (let loop ([bit 0])
