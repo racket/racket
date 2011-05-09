@@ -646,7 +646,7 @@ void scheme_places_unblock_child_signal() XFORM_SKIP_PROC
 {
   sigset_t set;
 
-  MZ_SIGSET(SIGCHLD, SIG_IGN);
+  MZ_SIGSET(SIGCHLD, SIG_DFL);
 
   sigemptyset(&set);
   sigaddset(&set, SIGCHLD);
