@@ -141,3 +141,7 @@ Consumes a representation of bytecode and writes it to @racket[out].}
 Consumes a representation of bytecode and generates a byte string for
 the marshaled bytecode.}
 
+@; ------------------------------------------------------------
+
+@include-section["zo-struct.scrbl"]
+

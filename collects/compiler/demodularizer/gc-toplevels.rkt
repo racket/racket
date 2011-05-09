@@ -120,8 +120,9 @@
       [(struct beg0 (seq))
        (for-each (lambda (f) (build-graph! lhs f))
                  seq)]
-      [(struct varref (tl))
-       (build-graph! lhs tl)]
+      [(struct varref (tl dummy))
+       (build-graph! lhs tl)
+       (build-graph! lhs dummy)]
       [(and f (struct assign (id rhs undef-ok?)))
        (build-graph! lhs id)
        (build-graph! lhs rhs)]
@@ -252,8 +253,8 @@
         (update body))]
       [(struct beg0 (seq))
        (make-beg0 (map update seq))]
-      [(struct varref (tl))
-       (make-varref (update tl))]
+      [(struct varref (tl dummy))
+       (make-varref (update tl) (update dummy))]
       [(and f (struct assign (id rhs undef-ok?)))
        (struct-copy assign f
                     [id (update id)]
