@@ -8,6 +8,8 @@ gracket clause-once.rkt
 echo "done:--- clause-once.rkt ---" echo ""
 gracket full-scene-visible.rkt 
 echo "done:--- full-scene-visible.rkt  ---" echo ""
+gracket image-too-large.rkt
+echo "done:--- image-too-large.rkt  ---" echo ""
 gracket image-equality-performance-htdp.rkt 
 echo "done:--- image-equality-performance-htdp.rkt  ---" echo ""
 gracket image-equality-performance.rkt 

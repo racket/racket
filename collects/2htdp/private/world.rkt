@@ -137,12 +137,17 @@
         (send visible set-cursor (make-object cursor% 'arrow))
         (let ([fst-scene (ppdraw)])
           (if (2:image? fst-scene)
-              (begin
-                (set! width  (if width width (+ (image-width fst-scene) 1)))
-                (set! height (if height height (+ (image-height fst-scene) 1))))
-              (begin
-                (set! width  (if width width (image-width fst-scene)))
-                (set! height (if height height (image-height fst-scene)))))              
+              (let ([first-width  (+ (image-width fst-scene) 1)]
+                    [first-height (+ (image-height fst-scene) 1)])
+                (unless (and width height)
+                  (check-scene-dimensions (name-of draw 'your-draw) first-width first-height)
+                  (set! width first-width)
+                  (set! height first-height)))
+              (let ([first-width  (image-width fst-scene)]
+                    [first-height (image-height fst-scene)])
+                (unless (and width height)
+                  (set! width first-width)
+                  (set! height first-height))))
           (create-frame)
           (show fst-scene)))
       
@@ -352,7 +357,9 @@
       
       (define/public (start!)
         (with-handlers ([exn? (handler #t)])
-          (when draw (show-canvas))
+          (when width ;; and height
+            (check-scene-dimensions "your to-draw clause" width height))
+          (if draw (show-canvas) (error 'big-bang "internal error: draw can never be false"))
           (when register (register-with-host))
           (define w (send world get))
           (cond
