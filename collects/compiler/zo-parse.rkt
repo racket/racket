@@ -207,7 +207,7 @@
 (define (read-require v)
   (make-req (cdr v) (car v)))
 (define (read-#%variable-ref v)
-  (make-varref v))
+  (make-varref (car v) (cdr v)))
 (define (read-apply-values v)
   (make-apply-values (car v) (cdr v)))
 (define (read-splice v)

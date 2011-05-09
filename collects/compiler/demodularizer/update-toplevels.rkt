@@ -68,8 +68,8 @@
         (update body))]
       [(struct beg0 (seq))
        (make-beg0 (map update seq))]
-      [(struct varref (tl))
-       (make-varref (update tl))]
+      [(struct varref (tl dummy))
+       (make-varref (update tl) (update dummy))]
       [(and f (struct assign (id rhs undef-ok?)))
        (struct-copy assign f
                     [id (update id)]
