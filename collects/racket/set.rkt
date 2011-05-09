@@ -14,7 +14,7 @@
          (rename-out [*in-set in-set])
          for/set for/seteq for/seteqv
          for*/set for*/seteq for*/seteqv
-         set/c
+         (rename-out [*set/c set/c])
          set=?
          set->list
          list->set list->seteq list->seteqv)
@@ -321,56 +321,82 @@
     [(eqv) 'set-eqv]
     [(equal) 'set-equal]))
 
-(define (set/c ctc #:cmp [cmp 'dont-care])
-  (unless (memq cmp '(dont-care equal eq eqv))
-    (raise-type-error 'set/c 
-                      "(or/c 'dont-care 'equal? 'eq? 'eqv)" 
-                      cmp))
-  (make-set/c ctc cmp))
+(define *set/c
+  (let ()
+    (define (set/c ctc #:cmp [cmp 'dont-care])
+      (unless (memq cmp '(dont-care equal eq eqv))
+        (raise-type-error 'set/c 
+                          "(or/c 'dont-care 'equal? 'eq? 'eqv)" 
+                          cmp))
+      (if (flat-contract? ctc)
+          (flat-set/c ctc cmp (flat-contract-predicate ctc))
+          (make-set/c ctc cmp)))
+    set/c))
+
+(define (set/c-name c)
+  `(set/c ,(contract-name (set/c-ctc c))
+          ,@(if (eq? (set/c-cmp c) 'dont-care)
+                '()
+                `(#:cmp ',(set/c-cmp c)))))
+
+(define (set/c-stronger this that)
+  (and (set/c? that)
+       (or (eq? (set/c-cmp this)
+                (set/c-cmp that))
+           (eq? (set/c-cmp that) 'dont-care))
+       (contract-stronger? (set/c-ctc this)
+                           (set/c-ctc that))))
+
+(define (set/c-proj c)
+  (let ([proj (contract-projection (set/c-ctc c))]
+        [pred (get-pred c)])
+    (λ (blame)
+      (let ([pb (proj blame)])
+        (λ (s)
+          (if (pred s)
+              (cond
+                [(set-equal? s)
+                 (for/set ((e (in-set s)))
+                          (pb e))]
+                [(set-eqv? s)
+                 (for/seteqv ((e (in-set s)))
+                             (pb e))]
+                [(set-eq? s)
+                 (for/seteq ((e (in-set s)))
+                            (pb e))])
+              (raise-blame-error
+               blame
+               s
+               "expected a <~a>, got ~v" 
+               (get-name c)
+               s)))))))
 
 (define-struct set/c (ctc cmp)
-  #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property 
-   #:name
-   (λ (c) `(set/c ,(contract-name (set/c-ctc c))
-                  ,@(if (eq? (set/c-cmp c) 'dont-care)
-                        '()
-                        `(#:cmp ',(set/c-cmp c)))))
-   #:first-order
-   get-pred
-   #:stronger
-   (λ (this that)
-     (and (set/c? that)
-          (or (eq? (set/c-cmp this)
-                   (set/c-cmp that))
-              (eq? (set/c-cmp that) 'dont-care))
-          (contract-stronger? (set/c-ctc this)
-                              (set/c-ctc that))))
-   #:projection
-   (λ (c)
-     (let ([proj (contract-projection (set/c-ctc c))]
-           [pred (get-pred c)])
-       (λ (blame)
-         (let ([pb (proj blame)])
-           (λ (s)
-             (if (pred s)
-                 (cond
-                   [(set-equal? s)
-                    (for/set ((e (in-set s)))
-                             (pb e))]
-                   [(set-eqv? s)
-                    (for/seteqv ((e (in-set s)))
-                                (pb e))]
-                   [(set-eq? s)
-                    (for/seteq ((e (in-set s)))
-                               (pb e))])
-                 (raise-blame-error
-                  blame
-                  s
-                  "expected a <~a>, got ~v" 
-                  (get-name c)
-                  s)))))))))
+   #:name set/c-name
+   #:first-order get-pred
+   #:stronger set/c-stronger
+   #:projection set/c-proj))
+
+(define (flat-first-order c)
+  (let ([inner-pred (flat-set/c-pred c)]
+        [pred (get-pred c)])
+    (λ (s)
+      (and (pred s)
+           (for/and ((e (in-set s)))
+             (inner-pred e))))))
+
+(define-values (flat-set/c flat-set/c-pred)
+  (let ()
+    (define-struct (flat-set/c set/c)  (pred)
+      #:property prop:flat-contract
+      (build-flat-contract-property 
+       #:name set/c-name
+       #:first-order flat-first-order
+       #:stronger set/c-stronger
+       #:projection set/c-proj))
+    (values make-flat-set/c flat-set/c-pred)))
 
 ;; ----
 

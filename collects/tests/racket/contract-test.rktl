@@ -9323,6 +9323,8 @@ so that propagation occurs.
                         (define alpha (new-∃/c 'alpha))
                         (struct/c s alpha)))
   
+  (ctest #t flat-contract? (set/c integer?))
+          
   ;; Hash contracts with flat domain/range contracts
   (ctest #t contract?           (hash/c any/c any/c #:immutable #f))
   (ctest #t chaperone-contract? (hash/c any/c any/c #:immutable #f))
@@ -9862,6 +9864,7 @@ so that propagation occurs.
   (test-name '(set/c boolean? #:cmp 'equal) (set/c boolean? #:cmp 'equal))
   (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
+  (test-name '(set/c (-> char? char?) #:cmp 'eqv) (set/c (-> char? char?) #:cmp 'eqv))
   
   ;; NOT YET RELEASED
   #;
@@ -10499,6 +10502,22 @@ so that propagation occurs.
                        'pos 'neg)
              values)
    (list 0))
+  
+  (test/neg-blame
+   'set/c7
+   '(let ([s (set-map (contract (set/c (-> integer? integer?))
+                                (set (λ (x) #f))
+                                'pos 'neg)
+                      values)])
+      ((car s) #f)))
+  
+  (test/pos-blame
+   'set/c8
+   '(let ([s (set-map (contract (set/c (-> integer? integer?))
+                                (set (λ (x) #f))
+                                'pos 'neg)
+                      values)])
+      ((car s) 1)))
   
 ;                                                        
 ;                                                        
