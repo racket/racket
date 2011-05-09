@@ -537,7 +537,7 @@
                                      #f))))))
 
   (define (in-list l)
-    ;; (unless (list? l) (raise-type-error 'in-list "list" l))
+    (unless (list? l) (raise-type-error 'in-list "list" l))
     (make-list-stream l))
   
   (define (:list-gen l)
@@ -1519,7 +1519,7 @@
              ;;outer bindings
              ([(lst) lst-expr])
              ;; outer check
-             (void) ; (unless (list? lst) (in-list lst))
+             (unless (list? lst) (in-list lst))
              ;; loop bindings
              ([lst lst])
              ;; pos check
