@@ -586,29 +586,6 @@ case $OS in
 
     SO_SUFFIX=.dylib
 
-[   gcc_vers_three=`${CC} -v 2>&1 | grep "version [3-9][.]"` ]
-    if test "$gcc_vers_three" = "" ; then
-      # gcc 2.95.2
-      if test "${enable_quartz}" = "yes" ; then
-        MROPTIONS="$MROPTIONS -cpp-precomp"
-      fi
-    else
-      # gcc 3.x
-      if test "${enable_quartz}" = "yes" ; then
-[       gcc_vers_three_one=`${CC} -v 2>&1 | grep "version 3[.]1"` ]
-        if test "$gcc_vers_three_one" = "" ; then
-          # gcc 3.3 and up
-          GCC_VERSION_THREE_THREE="yes"
-        else
-          # gcc 3.1
-          WXPRECOMP='$(WXPRECOMPDIR)/precomp.o'
-          USE_WXPRECOMP='--load-pch $(WXPRECOMPDIR)'
-        fi
-      else
-        MROPTIONS="$MROPTIONS -no-cpp-precomp"
-      fi
-    fi
-
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
       if test "`${UNAME} -m`" != "Power Macintosh" ; then
@@ -630,7 +607,6 @@ case $OS in
 
     if test "${enable_quartz}" = "yes" ; then
       WXVARIANT="wx_mac"
-      MROPTIONS="$MROPTIONS -fpascal-strings"
       INCLUDEDEP="-include"
       OPTIONS="$OPTIONS -fno-common"
       OSX=""
