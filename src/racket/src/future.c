@@ -266,35 +266,13 @@ void scheme_end_futures_per_place()
 #define LOG2(t, a, b) DO_LOG(fprintf(stderr, t, a, b))
 #define LOG3(t, a, b, c) DO_LOG(fprintf(stderr, t, a, b, c))
 #define LOG4(t, a, b, c, d) DO_LOG(fprintf(stderr, t, a, b, c, d))
-#define LOG_THISCALL LOG(__FUNCTION__)
 #else
 #define LOG0(t)
 #define LOG(t, a)
 #define LOG2(t, a, b)
 #define LOG3(t, a, b, c)
 #define LOG4(t, a, b, c, d)
-#define LOG_THISCALL
 #endif
-
-#define LOG_RTCALL_ON_DEMAND(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_ALLOC(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c) LOG4("(function = %p, a=%p, b=%d, c=%p)", f, a, b, c)
-#define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c) LOG3("(%p, %d, %p)", a, b,c)
-#define LOG_RTCALL_INT_OBJARR_OBJ(a,b) LOG2("(%d, %p)", a, b)
-#define LOG_RTCALL_LONG_OBJ_OBJ(a,b) LOG2("(%ld, %p)", a, b)
-#define LOG_RTCALL_OBJ_OBJ(a) LOG("(%p)", a)
-#define LOG_RTCALL_OBJ_OBJ_OBJ(a,b) LOG2("(%p, %p)", a, b)
-#define LOG_RTCALL_SNCD_OBJ(a) LOG("(%p)", a)
-#define LOG_RTCALL_OBJ_VOID(a) LOG("(%p)", a)
-#define LOG_RTCALL_LONG_OBJ(a) LOG("(%ld)", a)
-#define LOG_RTCALL_BUCKET_OBJ_INT_VOID(a,b,c) LOG3("(%p, %p, %d)", a, b, c)
-#define LOG_RTCALL_INT_INT_POBJ_VOID(a,b,c) LOG3("(%d, %d, %p)", a, b, c)
-#define LOG_RTCALL_OBJ_OBJ_MZST(a,b) LOG2("(%p, %p)", a, b)
-#define LOG_RTCALL_BUCKET_VOID(a) LOG("(%p)", a)
-#define LOG_RTCALL_POBJ_LONG_OBJ(a,b) LOG2("(%p, %ld)", a, b)
-#define LOG_RTCALL_INT_POBJ_INT_OBJ(a,b,c) LOG3("(%d, %p, %d)", a, b, c)
-#define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c) LOG3("(%d, %p, %p)", a, b, c)
-#define LOG_RTCALL_ENV_ENV_VOID(a,b) LOG2("(%p, %p)", a, b) 
 
 static Scheme_Object *make_fsemaphore(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
@@ -2511,11 +2489,6 @@ static void future_raise_wrong_type_exn(const char *who, const char *expected_ty
   
   /* Fetch the future again, in case moved by a GC */ 
   future = fts->thread->current_ft;
-  future->arg_str0 = NULL;
-  future->arg_str1 = NULL;
-  future->arg_i2 = 0; 
-  future->arg_i3 = 0;
-  future->arg_S4 = NULL;
 }
 
 Scheme_Object **scheme_rtcall_on_demand(const char *who, int src_type, prim_on_demand_t f, Scheme_Object **argv)
@@ -2784,6 +2757,8 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
   }
 }
 
+#define ADJUST_RS_ARG(ft, arg_Sx) if (ft->suspended_lw) arg_Sx = scheme_adjust_runstack_argument(ft->suspended_lw, arg_Sx)
+
 /* Does the work of actually invoking a primitive on behalf of a 
    future.  This function is always invoked on the main (runtime) 
    thread. */
@@ -2843,6 +2818,8 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
 
         future->arg_S0 = NULL;
 
+        ADJUST_RS_ARG(future, arg_S0);
+
         func(arg_S0, arg_S0 + 2);
 
         future->retval_is_rs_argv = 1;
@@ -2898,14 +2875,31 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future, int is_a
       }
     case SIG_WRONG_TYPE_EXN:
       {
-        scheme_wrong_type(future->arg_str0, 
-                          future->arg_str1, 
-                          future->arg_i2, 
-                          future->arg_i3, 
-                          future->arg_S4);
+        const char *who;
+        const char *expected_type;
+        int what;
+        int argc;
+        Scheme_Object **argv;
+
+        who = future->arg_str0;
+        expected_type = future->arg_str1;
+        what = future->arg_i2;
+        argc = future->arg_i3;
+        argv = future->arg_S4;
+        
+        future->arg_str0 = NULL;
+        future->arg_str1 = NULL;
+        future->arg_S4 = NULL;
+
+        ADJUST_RS_ARG(future, argv);
+
+        scheme_wrong_type(who, expected_type, what, argc, argv);
+
+        /* doesn't return */
+
+        break;
       }
 # define JIT_TS_LOCALIZE(t, f) GC_CAN_IGNORE t f = future->f
-# define ADJUST_RS_ARG(ft, arg_Sx) if (ft->suspended_lw) arg_Sx = scheme_adjust_runstack_argument(ft->suspended_lw, arg_Sx)
 # include "jit_ts_runtime_glue.c"
     default:
       scheme_signal_error("unknown protocol %d", future->prim_protocol);
