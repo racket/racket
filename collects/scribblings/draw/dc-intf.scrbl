@@ -1151,7 +1151,7 @@ rotation settings have their identity values.
                       [dy real?])
            void?]{
 
-Adds a scaling of @racket[dx] in the X-direction and @racket[dy] in
+Adds a translation of @racket[dx] in the X-direction and @racket[dy] in
 the Y-direction to the drawing context's current transformation.
 
 Afterward, the drawing context's transformation is represented in the
