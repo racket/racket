@@ -1000,7 +1000,7 @@ static void  free_infinite_stack(Scheme_Object** st) {
   free(st);
 }
 
-inline static void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth) {
+static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   if (*indepth == IFS_CACHE_SLOT) {
     if (stack[IFS_CACHE_SLOT]) { /* cached */
@@ -1022,7 +1022,7 @@ inline static void inf_push(Scheme_Object **instack, Scheme_Object *item, uintpt
   return;
 }
 
-inline static Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *indepth) {
+static MZ_INLINE Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *indepth) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   Scheme_Object *val;
   if (*indepth == IFS_SEGMENT_BOTTOM) {
@@ -1050,7 +1050,7 @@ inline static Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *indepth
   return val;
 }
 
-inline static Scheme_Object *inf_set(Scheme_Object **instack, int pos, Scheme_Object *item, uintptr_t *indepth) {
+static MZ_INLINE Scheme_Object *inf_set(Scheme_Object **instack, int pos, Scheme_Object *item, uintptr_t *indepth) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   Scheme_Object *old;
   int realpos;
@@ -1073,7 +1073,7 @@ inline static Scheme_Object *inf_set(Scheme_Object **instack, int pos, Scheme_Ob
   return old;
 }
 
-inline static Scheme_Object *inf_get(Scheme_Object **instack, int pos, uintptr_t *indepth) {
+static MZ_INLINE Scheme_Object *inf_get(Scheme_Object **instack, int pos, uintptr_t *indepth) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   Scheme_Object *item;
   int realpos;
