@@ -1329,6 +1329,10 @@ If the namespace does not, they are colored the unbound color.
                                 (define/override (get-port-name)
                                   (send definitions-text get-port-name))
                                 (super-new))))
+                       (define settings (send definitions-text get-next-settings))
+                       (define module-language?
+                         (is-a? (drracket:language-configuration:language-settings-language settings)
+                                       drracket:module-language:module-language<%>))
                        (send definitions-text copy-self-to definitions-text-copy)
                        (with-lock/edit-sequence
                         definitions-text-copy
@@ -1336,13 +1340,11 @@ If the namespace does not, they are colored the unbound color.
                           (send the-tab clear-annotations)
                           (send the-tab reset-offer-kill)
                           (send (send the-tab get-defs) syncheck:init-arrows)
-                          (define settings (send definitions-text get-next-settings))
                           (drracket:eval:expand-program
                            #:gui-modules? #f
                            (drracket:language:make-text/pos definitions-text-copy 0 (send definitions-text-copy last-position))
                            settings
-                           (not (is-a? (drracket:language-configuration:language-settings-language settings)
-                                       drracket:module-language:module-language<%>))
+                           (not module-language?)
                            init-proc
                            kill-termination
                            (λ (sexp loop) ; =user=
@@ -1364,8 +1366,9 @@ If the namespace does not, they are colored the unbound color.
                                      (custodian-shutdown-all user-custodian))))]
                                [else
                                 (open-status-line 'drracket:check-syntax:status)
-                                (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
-                                (eval-compile-time-part-of-top-level sexp)
+                                (unless module-language?
+                                  (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
+                                  (eval-compile-time-part-of-top-level sexp))
                                 (parameterize ([current-eventspace drs-eventspace])
                                   (queue-callback
                                    (λ () ; =drs=
