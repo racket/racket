@@ -162,8 +162,8 @@ otherwise.
                        [style any/c]
                        [content content?])]{
 
-See @racket[decode] and @racket[decode-part]. The @racket[tag-prefix]
-and @racket[style] fields are propagated to the resulting
+See @racket[decode] and @racket[decode-part]. The @racket[_tag-prefix]
+and @racket[_style] fields are propagated to the resulting
 @racket[part].
 
 }

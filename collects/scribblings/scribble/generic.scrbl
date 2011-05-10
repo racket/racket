@@ -9,4 +9,5 @@
 @include-section["manual-stub.scrbl"]
 @include-section["sigplan.scrbl"]
 @include-section["jfp.scrbl"]
+@include-section["lncs.scrbl"]
 

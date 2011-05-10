@@ -1,0 +1,57 @@
+#lang scribble/manual
+@(require (except-in "utils.ss" author)
+          (for-label scribble/lncs))
+
+@(define-syntax-rule (def base-author)
+   (begin
+    (require (for-label scribble/base))
+    (define base-author @racket[author])))
+@(def base-author)
+
+@title{LNCS Paper Format}
+
+@defmodulelang[scribble/lncs #:use-sources (scribble/lncs/lang)]{
+  The @racketmodname[scribble/lncs]
+language is like @racketmodname[scribble/manual], but configured with
+Latex style defaults to use the @filepath{llncs.cls} class
+file.
+
+The class file must be downloaded from Springer and installed
+into the @racket[scribble/lncs] collection directory. (Run a module
+in the language @racketmodname[scribble/lncs] to learn the precise paths
+where the file may go.)
+}
+
+@defproc[(abstract [pre-content pre-content?] ...) block?]{
+
+Generates a @tech{nested flow} for a paper abstract.}
+
+@defform[(include-abstract module-path)]{
+
+Similar to @racket[include-section], but incorporates the document in the
+specified module as an abstract. The document must have no title or
+sub-parts.}
+
+@defform/subs[(authors auth ...)
+              ([auth (author pre-content-expr ...)
+                     (author #:inst str-expr pre-content-expr ...)])
+              #:contracts ([pre-content-expr pre-content?]
+                           [str-expr string?])]{
+
+A replacement for @base-author from @racketmodname[scribble/base].
+
+The @racket[#:inst] should be a number that matches up to one of the
+arguments to @racket[institutes].
+}
+
+
+@defform[(institutes (institute pre-content-expr ...) ...)
+         #:contracts ([pre-content-expr pre-content?])]{
+
+The @racket[pre-content-expr]s are used as the institutions of the authors.
+                                                            
+}
+
+@defform[(email pre-content-expr ...)]{
+  Specifies an email address; must be used inside @racket[institute].
+}
