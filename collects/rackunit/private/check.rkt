@@ -33,11 +33,11 @@
          check-not-equal?
          fail)
 
-;; default-check-handler : exn -> any
+;; default-check-handler : any -> any
 (define (default-check-handler e)
   (display-test-failure/error e))
 
-;; parameter current-check-handler : (-> exn any)
+;; parameter current-check-handler : (-> any any)
 (define current-check-handler
   (make-parameter
    default-check-handler
@@ -48,7 +48,7 @@
 
 ;; check-around : ( -> a) -> a
 (define (check-around thunk)
-  (with-handlers ([exn? (current-check-handler)])
+  (with-handlers ([(lambda (e) #t) (current-check-handler)])
     (thunk)))
 
 ;; top-level-check-around : ( -> a) -> a

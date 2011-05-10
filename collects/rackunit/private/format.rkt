@@ -58,13 +58,16 @@
       (begin
         (display "Unnamed test ")(newline))))
 
-;; display-exn : exn -> void
+;; display-exn : any -> void
 ;;
 ;; Outputs a printed representation of the exception to
 ;; the current-output-port
-(define (display-exn exn)
+;; If given non-exn value, says so.
+(define (display-exn v)
   (parameterize ((current-error-port (current-output-port)))
-    ((error-display-handler) (exn-message exn) exn)
+    (if (exn? v)
+        ((error-display-handler) (exn-message v) v)
+        (printf "A value other than an exception was raised: ~e\n" v))
     (newline)))
 
 ;; ----
@@ -93,6 +96,7 @@
 
 ;; ----
 
+;; display-test-failure/error : any string/#f -> void
 (define (display-test-failure/error e [name #f])
   (parameterize ((current-output-port (current-error-port)))
     (display-delimiter)
@@ -103,7 +107,7 @@
            (when #t
              (parameterize ((error-print-context-length 0))
                ((error-display-handler) (exn-message e) e)))]
-          [(exn? e)
+          [else
            (display-error) (newline)
            (display-exn e)])
     (display-delimiter)))

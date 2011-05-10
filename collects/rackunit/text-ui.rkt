@@ -108,7 +108,8 @@
          ((error-display-handler) (exn-message exn) exn)))]
     [(test-error? result)
      (let ([exn (test-error-result result)])
-       (textui-display-check-info-stack (check-info-stack (exn-continuation-marks exn)))
+       (when (exn? exn)
+         (textui-display-check-info-stack (check-info-stack (exn-continuation-marks exn))))
        (display-exn exn))]
     [else (void)]))
 

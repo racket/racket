@@ -28,10 +28,10 @@
 ;;
 ;; Run a test-case immediately, printing information on failure
 (define (default-test-case-around thunk)
-  (with-handlers ([exn? default-test-case-handler])
+  (with-handlers ([(lambda (e) #t) default-test-case-handler])
     (thunk)))
 
-;; default-test-case-handler : exn -> any
+;; default-test-case-handler : any -> any
 (define (default-test-case-handler e)
   (display-test-failure/error e (current-test-name)))
 
