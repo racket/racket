@@ -2,6 +2,7 @@
 
 (require racket/match
          srfi/13
+         "base.rkt"
          "check-info.rkt")
 
 (provide display-check-info-name-value
@@ -12,7 +13,10 @@
 
          display-delimiter
          display-failure
-         display-error)
+         display-error
+
+         display-test-failure/error
+         strip-redundant-params)
 
 ;; name-width : integer
 ;;
@@ -43,7 +47,7 @@
 (define (display-check-info-stack check-info-stack)
   (for-each
    display-check-info
-   check-info-stack)
+   (strip-redundant-params check-info-stack))
   (newline))
 
 ;; display-test-name : (U string #f) -> void
@@ -59,11 +63,47 @@
 ;; Outputs a printed representation of the exception to
 ;; the current-output-port
 (define (display-exn exn)
-  (let ([op (open-output-string)])
-    (parameterize ([current-error-port op])
-      ((error-display-handler)
-       (exn-message exn)
-       exn))
-    (display (get-output-string op))
+  (parameterize ((current-error-port (current-output-port)))
+    ((error-display-handler) (exn-message exn) exn)
     (newline)))
 
+;; ----
+
+;; strip-redundant-parms : (list-of check-info) -> (list-of check-info)
+;;
+;; Strip any check-params? is there is an
+;; actual/expected check-info in the same stack frame.  A
+;; stack frame is delimited by occurrence of a check-name?
+(define (strip-redundant-params stack)
+  (define (binary-check-this-frame? stack)
+    (let loop ([stack stack])
+      (cond
+        [(null? stack) #f]
+        [(check-name? (car stack)) #f]
+        [(check-actual? (car stack)) #t]
+        [else (loop (cdr stack))])))
+  (let loop ([stack stack])
+    (cond
+      [(null? stack) null]
+      [(check-params? (car stack))
+       (if (binary-check-this-frame? stack)
+           (loop (cdr stack))
+           (cons (car stack) (loop (cdr stack))))]
+      [else (cons (car stack) (loop (cdr stack)))])))
+
+;; ----
+
+(define (display-test-failure/error e [name #f])
+  (parameterize ((current-output-port (current-error-port)))
+    (display-delimiter)
+    (when name (display-test-name name))
+    (cond [(exn:test:check? e)
+           (display-failure) (newline)
+           (display-check-info-stack (exn:test:check-stack e))
+           (when #t
+             (parameterize ((error-print-context-length 0))
+               ((error-display-handler) (exn-message e) e)))]
+          [(exn? e)
+           (display-error) (newline)
+           (display-exn e)])
+    (display-delimiter)))

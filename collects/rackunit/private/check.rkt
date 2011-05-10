@@ -33,31 +33,9 @@
          check-not-equal?
          fail)
 
-
-(define USE-ERROR-HANDLER? #f)
-
 ;; default-check-handler : exn -> any
 (define (default-check-handler e)
-  (let ([out (open-output-string)])
-    ;;(display "check failed\n" out)
-    (parameterize ((current-output-port out))
-      (display-delimiter)
-      (cond [(exn:test:check? e)
-             (display-failure)
-             (newline)
-             (display-check-info-stack
-              (exn:test:check-stack e))]
-            [(exn? e)
-             (display-error)
-             (newline)
-             (display-exn e)])
-      (display-delimiter))
-    (cond [USE-ERROR-HANDLER?
-           ((error-display-handler) (get-output-string out)
-            ;; So that DrRacket won't recognize exn:fail:syntax, etc
-            (make-exn (exn-message exn) (exn-continuation-marks exn)))]
-          [else
-           (display (get-output-string out) (current-error-port))])))
+  (display-test-failure/error e))
 
 ;; parameter current-check-handler : (-> exn any)
 (define current-check-handler

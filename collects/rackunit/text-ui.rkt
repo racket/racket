@@ -97,37 +97,15 @@
     (else
      (void))))
 
-
-;; strip-redundant-parms : (list-of check-info) -> (list-of check-info)
-;;
-;; Strip any check-params? is there is an
-;; actual/expected check-info in the same stack frame.  A
-;; stack frame is delimited by occurrence of a check-name?
-(define (strip-redundant-params stack)
-  (define (binary-check-this-frame? stack)
-    (let loop ([stack stack])
-      (cond
-        [(null? stack) #f]
-        [(check-name? (car stack)) #f]
-        [(check-actual? (car stack)) #t]
-        [else (loop (cdr stack))])))
-  (let loop ([stack stack])
-    (cond
-      [(null? stack) null]
-      [(check-params? (car stack))
-       (if (binary-check-this-frame? stack)
-           (loop (cdr stack))
-           (cons (car stack) (loop (cdr stack))))]
-      [else (cons (car stack) (loop (cdr stack)))])))
-
-
 ;; display-context : test-result [(U #t #f)] -> void
 (define (display-context result [verbose? #f])
   (cond
     [(test-failure? result)
      (let* ([exn (test-failure-result result)]
             [stack (exn:test:check-stack exn)])
-       (textui-display-check-info-stack stack verbose?))]
+       (textui-display-check-info-stack stack verbose?)
+       (when #t
+         ((error-display-handler) (exn-message exn) exn)))]
     [(test-error? result)
      (let ([exn (test-error-result result)])
        (textui-display-check-info-stack (check-info-stack (exn-continuation-marks exn)))
