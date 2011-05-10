@@ -174,7 +174,7 @@ as the @tech{definitions window} plus a few more:
 @section{LaTeX and TeX inspired keybindings}
 
 @itemize[
-@keybinding['("C-\\" "M-\\")]{traces backwards from the insertion
+@keybinding['("C-\\" "M-\\" "c:x;l")]{traces backwards from the insertion
 point, looking for a backslash followed by a @index["LaTeX"]{LaTeX} 
 macro name or a prefix of such a name. If a macro name is found,
 it replaces the backslash and the name with the corresponding key in

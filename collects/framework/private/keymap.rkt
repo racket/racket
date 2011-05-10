@@ -1166,6 +1166,7 @@
           
           (map "~m:c:\\" "TeX compress")
           (map "~c:m:\\" "TeX compress")
+          (map "c:x;t" "TeX compress")
           
           (map "c:j" "newline")
           
