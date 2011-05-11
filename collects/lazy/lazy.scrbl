@@ -124,8 +124,8 @@ cond case
 
 @defprocthing[identity]{Lazy identity function.}
 
-@defprocthing[cycle]{Creates a lazy infinite list given a list of
-elements to repeat in order.}
+@defprocthing[cycle]{Creates a lazy infinite list that repeats its
+input arguments in order.}
 
 @; ----------------------------------------
 
