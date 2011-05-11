@@ -63,7 +63,7 @@
  file-selector
  key-symbol-to-menu-key)
 
-(import-class NSScreen NSCursor)
+(import-class NSScreen NSCursor NSMenu)
 
 (define (find-graphical-system-path what)
   #f)
@@ -106,7 +106,13 @@
                   (tell #:type _NSRect screen frame)
                   (tell #:type _NSRect screen visibleFrame))])
       (set-box! xb (->long (NSSize-width (NSRect-size f))))
-      (set-box! yb (->long (NSSize-height (NSRect-size f))))))))
+      (set-box! yb (->long (- (NSSize-height (NSRect-size f))
+                              (cond
+                               [all? 0]
+                               [(tell #:type _BOOL NSMenu menuBarVisible) 0]
+                               ;; Make result consistent when menu bar is hidden:
+                               [else 
+                                (get-menu-bar-height)]))))))))
 
 (define-appkit NSBeep (_fun -> _void))  
 (define (bell) (NSBeep))

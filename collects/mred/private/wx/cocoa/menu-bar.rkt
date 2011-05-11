@@ -83,12 +83,6 @@
         (and (<= x (NSPoint-x p) (+ x w))
              (<= (- y h) (NSPoint-y p) y)))))))
 
-
-(define initial-menubar-height 
-  (inexact->exact (floor (tell #:type _CGFloat cocoa-mb menuBarHeight))))
-(define (get-menu-bar-height)
-  initial-menubar-height)
-
 (set-menu-bar-hooks! in-menu-bar-range)
 
 ;; Init menu bar
@@ -205,3 +199,9 @@
                           (send top-wx on-menu-click))))))
 
   (super-new))
+
+(define initial-menubar-height 
+  (inexact->exact (floor (tell #:type _CGFloat cocoa-mb menuBarHeight))))
+
+(define (get-menu-bar-height)
+  initial-menubar-height)
