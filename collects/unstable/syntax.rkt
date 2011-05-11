@@ -7,13 +7,14 @@
          syntax-list
 
          ;; by cce:
-
          syntax-source-file-name
          syntax-source-directory
 
          ;; by stamourv:
+         format-unique-id
 
-         format-unique-id)
+         ;; by ryanc
+         explode-module-path-index)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -60,3 +61,12 @@
   ((make-syntax-introducer) (apply format-id
                                    lctx #:source src #:props props #:cert cert
                                    fmt args)))
+
+;; by ryanc
+
+(define (explode-module-path-index mpi)
+  (let-values ([(x y) (module-path-index-split mpi)])
+    (cons x
+          (if (module-path-index? y)
+              (explode-module-path-index y)
+              (list y)))))

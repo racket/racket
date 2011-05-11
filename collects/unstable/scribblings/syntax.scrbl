@@ -18,6 +18,20 @@
 
 @unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
+@defproc[(explode-module-path-index [mpi module-path-index?])
+         (listof (or/c module-path? resolved-module-path? #f))]{
+
+Unfolds @racket[mpi] using @racket[module-path-index-split], returning
+a list of the relative module paths together with the terminal
+resolved module path or @racket[#f] for the ``self'' module.
+
+@examples[#:eval the-eval
+(explode-module-path-index (car (identifier-binding #'lambda)))
+(explode-module-path-index (caddr (identifier-binding #'lambda)))
+(explode-module-path-index (car (identifier-binding #'define-values)))
+]
+}
+
 @;{----}
 
 @margin-note{This binding was added by Vincent St-Amour.}
