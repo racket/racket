@@ -22,11 +22,11 @@
 
 @margin-note{This binding was added by Vincent St-Amour.}
 @defproc[(format-unique-id [lctx (or/c syntax? #f)]
+                    	   [fmt string?]
+                    	   [v (or/c string? symbol? identifier? keyword? char? number?)] ...
                     	   [#:source src (or/c syntax? #f) #f]
                     	   [#:props props (or/c syntax? #f) #f]
-                    	   [#:cert cert (or/c syntax? #f) #f]
-                    	   [fmt string?]
-                    	   [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
+                    	   [#:cert cert (or/c syntax? #f) #f])
          identifier?]{
 Like @racket[format-id], but returned identifiers are guaranteed to be unique.
 }
