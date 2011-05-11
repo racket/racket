@@ -129,6 +129,14 @@
 
 (define len 1000000)
 
+(define intern-num-sym
+  (let ([ht (make-hash)])
+    (lambda (k)
+      (hash-ref ht k 
+                (lambda ()
+                  (hash-set! ht k (string->symbol (format "~s" k)))
+                  (hash-ref ht k))))))
+
 (define-syntax-rule (test-long msg desc)
   (begin
     (define l (build-list len msg))
@@ -136,8 +144,15 @@
     (printf "Master ~a length ~a\n" desc ll)
 
     (define p (place/anon ch
-      (define wl (length (place-channel-receive ch)))
+      (define l (place-channel-receive ch))
+      (define wl (length l))
       (printf "Worker length ~a\n" wl)
+      (when (symbol? (car l))
+        (for ([v (in-list l)]
+              [x (in-naturals)])
+          (unless (and (symbol? v)
+                       (eq? v (intern-num-sym (modulo x 1000))))
+            (printf "bad ~s\n" v))))
       (place-channel-send ch wl)))
 
 
@@ -220,6 +235,7 @@
 
   (test-long (lambda (x) 3) "Listof ints")
   (test-long (lambda (x) #(1 2)) "Listof vectors")
+  (test-long (lambda (x) (intern-num-sym (modulo x 1000))) "Listof symbols")
   (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs"))
 
 

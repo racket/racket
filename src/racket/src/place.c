@@ -1670,12 +1670,13 @@ static void places_deserialize_worker(Scheme_Object **pso);
 static Scheme_Object *places_deserialize_worker_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object **pso = (Scheme_Object **)p->ku.k.p1;
+  Scheme_Object *pso = (Scheme_Object **)p->ku.k.p1;
 
   p->ku.k.p1 = NULL;
 
-  places_deserialize_worker(pso);
-  return scheme_void;
+  places_deserialize_worker(&pso);
+
+  return pso;
 }
 #endif
 
@@ -1695,8 +1696,9 @@ static void places_deserialize_worker(Scheme_Object **pso)
 # include "mzstkchk.h"
     {
       Scheme_Thread *p = scheme_current_thread;
-      p->ku.k.p1 = (void *)pso;
-      scheme_handle_stack_overflow(places_deserialize_worker_k);
+      p->ku.k.p1 = *pso;
+      tmp = scheme_handle_stack_overflow(places_deserialize_worker_k);
+      *pso = tmp;
       return;
     }
   }
