@@ -70,7 +70,7 @@
               (define (string-!empty? s) (not (zero? (string-length s))))
               (when (ormap string-!empty? (list out err))
                 (append-error cc "making" null out err "output"))
-              (when last (printer (current-output-port) "made" "~a" (cc-name cc)))
+              ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
               #t]
             [else (eprintf "Failed trying to match:\n~v\n" result-type)]))]
       [else
@@ -89,6 +89,9 @@
     ;; assigns a collection to each worker to be compiled
     ;; when it runs out of collections, steals work from other workers collections
     (define/public (get-job workerid)
+      (define (say-making x)
+        (unless (null? x)
+          (printer (current-output-port) "making" "~a" (cc-name (car (car x))))))
       (define (find-job-in-cc cc id)
         (define (retry) (get-job workerid))
         (define (build-job cc file last)
@@ -103,11 +106,16 @@
           [(list (list cc (list) (list)))       ;empty collect
             (hash-remove! hash id) (retry)]
           [(cons (list cc (list) (list)) tail)  ;empty parent collect
+            (say-making tail)
             (hash-set! hash id tail) (retry)]
           [(cons (list cc (list) subs) tail)    ;empty srcs list
-            (hash-set! hash id (append subs tail)) (retry)]
+            (define nl (append subs tail))
+            (say-making nl)
+            (hash-set! hash id nl) (retry)]
           [(cons (list cc (list file) subs) tail)
-            (hash-set! hash id (append subs tail))
+            (define nl (append subs tail))
+            (hash-set! hash id nl)
+            (say-making nl)
             (build-job cc file #t)]
           [(cons (list cc (cons file ft) subs) tail)
             (hash-set! hash id (cons (list cc ft subs) tail))
@@ -125,6 +133,7 @@
         ; get next cc from cclst
         [(pair? cclst)
           (define workercc (list (car cclst)))
+          (say-making workercc)
           (set! cclst (cdr cclst))
           (hash-set! hash workerid workercc)
           (find-job-in-cc workercc workerid)]
