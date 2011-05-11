@@ -2700,11 +2700,6 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
   case scheme_local_unbox_type:
     s = sizeof(Scheme_Local);
     break;
-  case scheme_syntax_type:
-#if FORCE_KNOWN_SUBPARTS
-    e = COUNT(SCHEME_IPTR_VAL(root));
-#endif
-    break;
   case scheme_application_type:
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)root;
