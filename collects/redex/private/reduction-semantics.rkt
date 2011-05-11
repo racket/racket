@@ -1842,24 +1842,25 @@
      (begin
        (unless (identifier? #'lang-name)
          (raise-syntax-error #f "expected an identifier" stx #'lang-name))
-       (let ([non-terms (parse-non-terminals #'nt-defs stx)])
-         (with-syntax ([((names prods ...) ...) non-terms]
-                       [(all-names ...) (apply append (map car non-terms))])
-           (syntax/loc stx
-             (begin
-               (define-syntax lang-name
-                 (make-set!-transformer
-                  (make-language-id
-                   (case-lambda
-                     [(stx)
-                      (syntax-case stx (set!)
-                        [(set! x e) (raise-syntax-error (syntax-e #'form-name) "cannot set! identifier" stx #'e)]
-                        [(x e (... ...)) #'(define-language-name e (... ...))]
-                        [x 
-                         (identifier? #'x)
-                         #'define-language-name])])
-                   '(all-names ...))))
-               (define define-language-name (language form-name lang-name (all-names ...) (names prods ...) ...)))))))]))
+       (with-syntax ([(define-language-name) (generate-temporaries #'(lang-name))])
+         (let ([non-terms (parse-non-terminals #'nt-defs stx)])
+           (with-syntax ([((names prods ...) ...) non-terms]
+                         [(all-names ...) (apply append (map car non-terms))])
+             (syntax/loc stx
+               (begin
+                 (define-syntax lang-name
+                   (make-set!-transformer
+                    (make-language-id
+                     (case-lambda
+                       [(stx)
+                        (syntax-case stx (set!)
+                          [(set! x e) (raise-syntax-error (syntax-e #'form-name) "cannot set! identifier" stx #'e)]
+                          [(x e (... ...)) #'(define-language-name e (... ...))]
+                          [x 
+                           (identifier? #'x)
+                           #'define-language-name])])
+                     '(all-names ...))))
+                 (define define-language-name (language form-name lang-name (all-names ...) (names prods ...) ...))))))))]))
 
 (define-struct binds (source binds))
 
@@ -1941,7 +1942,8 @@
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)]
              [non-terms (parse-non-terminals #'nt-defs stx)])
          (with-syntax ([((names prods ...) ...) non-terms]
-                       [(all-names ...) (apply append old-names (map car non-terms))])
+                       [(all-names ...) (apply append old-names (map car non-terms))]
+                       [(define-language-name) (generate-temporaries #'(name))])
            #'(begin
                (define define-language-name (extend-language orig-lang (all-names ...) (names prods ...) ...))
                (define-syntax name
