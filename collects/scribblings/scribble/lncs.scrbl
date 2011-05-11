@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require (except-in "utils.ss" author)
-          (for-label scribble/lncs))
+          (except-in (for-label scribble/lncs/lang)
+                     #%module-begin))
 
 @(define-syntax-rule (def base-author)
    (begin
@@ -45,12 +46,15 @@ arguments to @racket[institutes].
 }
 
 
-@defform[(institutes (institute pre-content-expr ...) ...)
+@defform[#:literals (institute)
+         (institutes (institute pre-content-expr ...) ...)
          #:contracts ([pre-content-expr pre-content?])]{
 
 The @racket[pre-content-expr]s are used as the institutions of the authors.
                                                             
 }
+
+@defidform[institute]{For use only in @racket[institutes].}
 
 @defform[(email pre-content-expr ...)]{
   Specifies an email address; must be used inside @racket[institute].
