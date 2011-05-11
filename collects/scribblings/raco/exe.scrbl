@@ -5,8 +5,8 @@
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 
-@margin-note{Use a smaller base language to achieve a lower startup time such as
-@racketmodfont{#lang} @racketmodname[racket/base] instead of
+@margin-note{Use a smaller base language to achieve a faster startup time such
+as @racketmodfont{#lang} @racketmodname[racket/base] instead of
 @racketmodfont{#lang} @racketmodname[racket] rather than relying on @exec{raco
 exe}.}
 
