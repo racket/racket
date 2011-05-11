@@ -64,7 +64,7 @@
                                     (from-collection ("racket"))))
                           (and hide-libs?
                                '(or (from-collection ())
-                                    #;(from-planet-collection #f #f ())))
+                                    #|(from-planet-collection #f #f ())|#))
                           (and hide-contracts?
                                '(symbol-like #rx"^provide/contract-id-"))
                           (and hide-phase1?
@@ -74,26 +74,23 @@
 ;; entries->function : (listof Entry) (id -> choice) -> (id -> choice)
 (define (entries->function entries base-fun)
   (if (pair? entries)
-      (let ([first-fun (entry->function (car entries))]
-            [rest-fun (entries->function (cdr entries) base-fun)])
-        (lambda (id)
-          (or (first-fun id)
-              (rest-fun id))))
+      (entry->function (car entries)
+                       (entries->function (cdr entries) base-fun))
       base-fun))
 
 ;; entry->function : Entry -> (id -> choice)
-(define (entry->function entry)
+(define (entry->function entry base-fun)
   (match entry
     [(list 'show-if condition)
      (let ([pred (condition->predicate condition)])
        (lambda (id)
-         (if (pred id) 'show #f)))]
+         (if (pred id) 'show (base-fun id))))]
     [(list 'hide-if condition)
      (let ([pred (condition->predicate condition)])
        (lambda (id)
-         (if (pred id) 'hide #f)))]
+         (if (pred id) 'hide (base-fun id))))]
     [(list 'splice entries)
-     (entries->function entries)]))
+     (entries->function entries base-fun)]))
 
 ;; condition->predicate : condition -> (id -> boolean)
 (define (condition->predicate condition)
