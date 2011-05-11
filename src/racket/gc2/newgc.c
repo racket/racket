@@ -1140,15 +1140,13 @@ inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
   mpage *new_mpage = gen0_create_new_nursery_mpage(gc, gc->gen0.page_alloc_size);
 
   /* push page */
-  new_mpage->next = gc->gen0.curr_alloc_page;
-  if (new_mpage->next) {
-    new_mpage->next->prev = new_mpage;
-  }
-  gc->gen0.curr_alloc_page = new_mpage;
+  new_mpage->prev = gc->gen0.curr_alloc_page;
+  if (new_mpage->prev)
+    new_mpage->prev->next = new_mpage;
 
-  if (!gc->gen0.pages) {
+  gc->gen0.curr_alloc_page = new_mpage;
+  if (!gc->gen0.pages)
     gc->gen0.pages = new_mpage;
-  }
 
   GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
   ASSERT_VALID_OBJPTR(GC_gen0_alloc_page_ptr);
@@ -1475,7 +1473,6 @@ void GC_adopt_message_allocator(void *param) {
 
     {
       /* preserve locality of gen0, when it resizes by adding message pages to end of gen0.pages list */
-      /* append msgm->big_pages onto the tail of the list */
       mpage *gen0end = gc->gen0.curr_alloc_page;
       while (gen0end->next) { 
         gen0end = gen0end->next;

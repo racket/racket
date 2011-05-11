@@ -43,10 +43,9 @@ static int scheme_place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *s
 static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
 static Scheme_Object *scheme_place_async_receive(Scheme_Place_Async_Channel *ch);
 static Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so);
-/* Scheme_Object *scheme_places_deep_copy(Scheme_Object *so); */
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy);
+static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy, int gcable);
 #endif
 
 # ifdef MZ_PRECISE_GC
@@ -830,13 +829,17 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
   return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type) ? scheme_true : scheme_false;
 }
 
-Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
+static Scheme_Object *do_places_deep_copy(Scheme_Object *so, int gcable) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Hash_Table *ht = NULL;
-  return scheme_places_deep_copy_worker(so, &ht, 1);
+  return places_deep_copy_worker(so, &ht, 1, gcable);
 #else
   return so;
 #endif
+}
+
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
+  return do_places_deep_copy(so, 1);
 }
 
 static void bad_place_message(Scheme_Object *so) {
@@ -869,7 +872,12 @@ static Scheme_Object *trivial_copy(Scheme_Object *so)
 }
 
 static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *ht, int copy) {
-  Scheme_Object *new_so = so;
+  Scheme_Object *new_so;
+
+  new_so = trivial_copy(so);
+  if (new_so) return new_so;
+
+  new_so = so;
 
   switch (SCHEME_TYPE(so)) {
     case scheme_char_type:
@@ -882,8 +890,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *d;
         n = scheme_rational_numerator(so);
         d = scheme_rational_denominator(so);
-        n = scheme_places_deep_copy_worker(n, NULL, copy);
-        d = scheme_places_deep_copy_worker(d, NULL, copy);
+        n = shallow_types_copy(n, NULL, copy);
+        d = shallow_types_copy(d, NULL, copy);
         if (copy)
           new_so = scheme_make_rational(n, d);
       }
@@ -902,8 +910,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         Scheme_Object *i;
         r = scheme_complex_real_part(so);
         i = scheme_complex_imaginary_part(so);
-        r = scheme_places_deep_copy_worker(r, NULL, copy);
-        i = scheme_places_deep_copy_worker(i, NULL, copy);
+        r = shallow_types_copy(r, NULL, copy);
+        i = shallow_types_copy(i, NULL, copy);
         if (copy)
           new_so = scheme_make_complex(r, i);
       }
@@ -980,27 +988,36 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
 #define IFS_CACHE_SLOT (IFS_SIZE - 1)
 #define IFS_SEGMENT_BOTTOM 1
 #define IFS_PREV_SEG_SLOT  0
-static Scheme_Object* create_infinite_stack() { 
+static Scheme_Object* create_infinite_stack(int gcable) { 
   Scheme_Object **v;
-  v = malloc(IFS_SIZE* sizeof(Scheme_Object*) );
-  v[IFS_PREV_SEG_SLOT] = NULL;
-  v[IFS_CACHE_SLOT] = NULL;
+
+  if (gcable) {
+    /* If a GC is not possible, then we prefer to malloc() the stack
+       space so that the space doesn't show up as part of the
+       message allocation. */
+    v = GC_malloc(IFS_SIZE * sizeof(Scheme_Object*));
+  } else {
+    v = malloc(IFS_SIZE * sizeof(Scheme_Object*));
+    v[IFS_PREV_SEG_SLOT] = NULL;
+    v[IFS_CACHE_SLOT] = NULL;
+  }
+
   return (Scheme_Object *) v;
 }
-static void  free_infinite_stack(Scheme_Object** st) {
+static void  free_infinite_stack(Scheme_Object** st, int gcable) {
   Scheme_Object **prev;
   if (st[IFS_CACHE_SLOT]) {
-    free(st[IFS_CACHE_SLOT]);
+    if (!gcable) free(st[IFS_CACHE_SLOT]);
     st[IFS_CACHE_SLOT] = NULL;
   }
   prev = (Scheme_Object **) st[IFS_PREV_SEG_SLOT];
   if (prev) {
     prev[IFS_CACHE_SLOT] = NULL;
   }
-  free(st);
+  if (!gcable) free(st);
 }
 
-static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth) {
+static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uintptr_t *indepth, int gcable) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   if (*indepth == IFS_CACHE_SLOT) {
     if (stack[IFS_CACHE_SLOT]) { /* cached */
@@ -1008,7 +1025,7 @@ static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uin
     }
     else { /* no cache */ 
       Scheme_Object *tmp;
-      tmp = create_infinite_stack();
+      tmp = create_infinite_stack(gcable);
       stack[IFS_CACHE_SLOT] = tmp;
       stack = (Scheme_Object **)stack[IFS_CACHE_SLOT];
       stack[IFS_PREV_SEG_SLOT] = (Scheme_Object *) (*instack);
@@ -1022,13 +1039,13 @@ static MZ_INLINE void inf_push(Scheme_Object **instack, Scheme_Object *item, uin
   return;
 }
 
-static MZ_INLINE Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *indepth) {
+static MZ_INLINE Scheme_Object *inf_pop(Scheme_Object **instack, uintptr_t *indepth, int gcable) {
   Scheme_Object **stack = (Scheme_Object **) *instack;
   Scheme_Object *val;
   if (*indepth == IFS_SEGMENT_BOTTOM) {
     Scheme_Object *item;
     if (stack[IFS_CACHE_SLOT]) { /* already have cached segment, free it*/
-      free_infinite_stack((Scheme_Object **) stack[IFS_CACHE_SLOT]);
+      free_infinite_stack((Scheme_Object **) stack[IFS_CACHE_SLOT], gcable);
       stack[IFS_CACHE_SLOT] = NULL;
     }
     if (stack[IFS_PREV_SEG_SLOT]) {
@@ -1101,7 +1118,7 @@ static MZ_INLINE Scheme_Object *inf_get(Scheme_Object **instack, int pos, uintpt
 /* This code often executes with the master GC switched on */
 /* It cannot use the usual stack overflow mechanism */
 /* Therefore it must use its own stack implementation for recursion */
-Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy) {
+static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, int copy, int gcable) {
   Scheme_Object *inf_stack = NULL;
   Scheme_Object *reg0 = NULL;
   uintptr_t inf_stack_depth = 0;
@@ -1117,7 +1134,6 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   Scheme_Struct_Type *ptype;
   int local_slots;
 
-  
 #define DEEP_DO_CDR 1
 #define DEEP_DO_FIN_PAIR 2
 #define DEEP_VEC1 3
@@ -1128,21 +1144,19 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 #define DEEP_RETURN 8
 #define DEEP_DONE 9 
 #define RETURN do { goto DEEP_RETURN_L; } while(0);
-#define IFS_PUSH(x) inf_push(&inf_stack, ((Scheme_Object *) (x)), &inf_stack_depth)
-#define IFS_POP inf_pop(&inf_stack, &inf_stack_depth)
+#define IFS_PUSH(x) inf_push(&inf_stack, x, &inf_stack_depth, gcable)
+#define IFS_POP inf_pop(&inf_stack, &inf_stack_depth, gcable)
 #define IFS_POPN(n) do { int N = (n); while (N > 0) { IFS_POP; N--;} } while(0);
 #define IFS_GET(n) inf_get(&inf_stack, (n), &inf_stack_depth)
-#define IFS_SET(n, x) inf_set(&inf_stack, (n), ((Scheme_Object *) (x)), &inf_stack_depth)
-#define GOTO_NEXT_CONT(dest, cont) do { IFS_PUSH((Scheme_Object *) (cont)); goto DEEP_DO; } while(0);
-#define SET_R0(x) reg0 = ((Scheme_Object *)(x))
+#define IFS_SET(n, x) inf_set(&inf_stack, (n), x, &inf_stack_depth)
+#define GOTO_NEXT_CONT(dest, cont) do { IFS_PUSH(scheme_make_integer(cont)); goto DEEP_DO; } while(0);
+#define SET_R0(x) reg0 = x
 #define GET_R0() (reg0)
 
   Scheme_Object *new_so = so;
   int ctr = 0;
 
   /* First, check for simple values that don't need to be hashed: */
-  new_so = trivial_copy(so);
-  if (new_so) return new_so;
   new_so = shallow_types_copy(so, *ht, copy);
   if (new_so) return new_so;
 
@@ -1159,10 +1173,10 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
     *ht = _ht;
   }
 
-  inf_stack = create_infinite_stack();
+  inf_stack = create_infinite_stack(gcable);
   inf_stack_depth = 1;
 
-  IFS_PUSH(((Scheme_Object *)DEEP_DONE));
+  IFS_PUSH(scheme_make_integer(DEEP_DONE));
   SET_R0(so);
 
 DEEP_DO:
@@ -1186,9 +1200,10 @@ DEEP_DO:
   switch (SCHEME_TYPE(so)) {
     case scheme_pair_type:
       /* handle cycles: */
-      if (copy)
+      if (copy) {
         pair = scheme_make_pair(scheme_false, scheme_false);
-      else
+        SCHEME_PAIR_COPY_FLAGS(pair, so);
+      } else
         pair = so;
       scheme_hash_set(*ht, so, pair);
 
@@ -1229,8 +1244,8 @@ DEEP_DO_FIN_PAIR_L:
       if (i < size) {
         IFS_PUSH(vec);
         IFS_PUSH(so);
-        IFS_PUSH(size);
-        IFS_PUSH(i);
+        IFS_PUSH(scheme_make_integer(size));
+        IFS_PUSH(scheme_make_integer(i));
         SET_R0(SCHEME_VEC_ELS(so)[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_VEC1);
       }
@@ -1240,8 +1255,8 @@ DEEP_DO_FIN_PAIR_L:
 
 DEEP_VEC1_L:
       /* vector loop*/
-      i    = (intptr_t) IFS_GET(0);
-      size = (intptr_t) IFS_GET(1);
+      i    = SCHEME_INT_VAL(IFS_GET(0));
+      size = SCHEME_INT_VAL(IFS_GET(1));
       so   = IFS_GET(2);
       vec  = IFS_GET(3);
       if (copy) {
@@ -1249,7 +1264,7 @@ DEEP_VEC1_L:
       }
       i++;
       if (i < size) {
-        IFS_SET(0, i);
+        IFS_SET(0, scheme_make_integer(i));
         SET_R0(SCHEME_VEC_ELS(so)[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_VEC1);
       }
@@ -1258,8 +1273,8 @@ DEEP_VEC1_L:
       }
 
 DEEP_VEC2:
-      i    = (intptr_t) IFS_POP;
-      size = (intptr_t) IFS_POP;
+      i    = SCHEME_INT_VAL(IFS_POP);
+      size = SCHEME_INT_VAL(IFS_POP);
       so   = IFS_POP;
       vec  = IFS_POP;
 
@@ -1284,8 +1299,7 @@ DEEP_VEC2:
         }
       }
 
-      IFS_PUSH(st);
-      /* nprefab_key = scheme_places_deep_copy_worker(stype->prefab_key, ht, copy); */
+      IFS_PUSH((Scheme_Object *)st);
       SET_R0(SCHEME_CDR(stype->prefab_key));
       GOTO_NEXT_CONT(DEEP_DO, DEEP_ST1);
 
@@ -1304,9 +1318,9 @@ DEEP_ST1_L:
 
       i = 0;
       if (i < size) {
-        IFS_PUSH(size);
-        IFS_PUSH(i);
-        IFS_PUSH(sst);
+        IFS_PUSH(scheme_make_integer(size));
+        IFS_PUSH(scheme_make_integer(i));
+        IFS_PUSH((Scheme_Object *)sst);
         SET_R0( st->slots[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_ST2);
       }
@@ -1318,8 +1332,8 @@ DEEP_ST1_L:
       }
 
 DEEP_ST2_L:
-      i    = (intptr_t) IFS_GET(1); 
-      size = (intptr_t) IFS_GET(2); 
+      i    = SCHEME_INT_VAL(IFS_GET(1)); 
+      size = SCHEME_INT_VAL(IFS_GET(2));
       st = (Scheme_Structure*) IFS_GET(3);
       so = (Scheme_Object *) st;
       if (copy) {
@@ -1328,8 +1342,8 @@ DEEP_ST2_L:
       }
       i++;
       if (i < size) {
-        IFS_SET(1, i);
-        SET_R0( st->slots[i]);
+        IFS_SET(1, scheme_make_integer(i));
+        SET_R0(st->slots[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_ST2);
       }
       else {
@@ -1341,9 +1355,8 @@ DEEP_ST2_L:
     break;
     case scheme_serialized_structure_type:
       sst = (Scheme_Serialized_Structure*)so;
-
-      IFS_PUSH(sst);
-      /* key = scheme_places_deep_copy_worker(st->prefab_key, ht, copy); */
+      
+      IFS_PUSH((Scheme_Object *)sst);
       SET_R0(sst->prefab_key);
       GOTO_NEXT_CONT(DEEP_DO, DEEP_SST1);
 
@@ -1364,9 +1377,9 @@ DEEP_SST1_L:
 
       i = 0;
       if (i < size) {
-        IFS_PUSH(size);
-        IFS_PUSH(i);
-        IFS_PUSH(st);
+        IFS_PUSH(scheme_make_integer(size));
+        IFS_PUSH(scheme_make_integer(i));
+        IFS_PUSH((Scheme_Object *)st);
         SET_R0(sst->slots[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_SST2);
       }
@@ -1378,8 +1391,8 @@ DEEP_SST1_L:
       }
 
 DEEP_SST2_L:
-      i    = (intptr_t) IFS_GET(1); 
-      size = (intptr_t) IFS_GET(2); 
+      i    = SCHEME_INT_VAL(IFS_GET(1));
+      size = SCHEME_INT_VAL(IFS_GET(2));
       sst = (Scheme_Serialized_Structure*) IFS_GET(3);
       so = (Scheme_Object *) sst;
       if (copy) {
@@ -1388,7 +1401,7 @@ DEEP_SST2_L:
       }
       i++;
       if (i < size) {
-        IFS_SET(1, i);
+        IFS_SET(1, scheme_make_integer(i));
         SET_R0(sst->slots[i]);
         GOTO_NEXT_CONT(DEEP_DO, DEEP_SST2);
       }
@@ -1399,7 +1412,6 @@ DEEP_SST2_L:
         RETURN;
       }
       break;
-    case scheme_resolved_module_path_type:
     default:
       bad_place_message(so);
       break;
@@ -1409,7 +1421,7 @@ DEEP_RETURN_L:
   {
     ctr--;
     SET_R0(new_so);
-    switch((uintptr_t)IFS_POP) {
+    switch(SCHEME_INT_VAL(IFS_POP)) {
       case DEEP_DO_CDR:      goto DEEP_DO_CDR_L;
       case DEEP_DO_FIN_PAIR: goto DEEP_DO_FIN_PAIR_L;
       case DEEP_VEC1:        goto DEEP_VEC1_L;
@@ -1420,13 +1432,13 @@ DEEP_RETURN_L:
       case DEEP_RETURN:      goto DEEP_RETURN_L;
       case DEEP_DONE:        goto DEEP_DONE_L;
       default:
-        printf("Invalid scheme_places_deep_copy_worker state\n");
+        printf("Invalid places_deep_copy_worker state\n");
         abort();
     }
   }
 
 DEEP_DONE_L:
-  free_infinite_stack((Scheme_Object **) inf_stack);
+  free_infinite_stack((Scheme_Object **) inf_stack, gcable);
   return new_so;
 
 #undef DEEP_DO_CDR
@@ -1636,24 +1648,25 @@ Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so) {
   void *original_gc;
 
   /* forces hash codes: */
-  (void)scheme_places_deep_copy_worker(so, &ht, 0);
+  (void)places_deep_copy_worker(so, &ht, 0, 1);
   ht = NULL;
 
   original_gc = GC_switch_to_master_gc();
   scheme_start_atomic();
 
-  o = scheme_places_deep_copy_worker(so, &ht, 1);
+  o = places_deep_copy_worker(so, &ht, 1, 1);
 
   scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
   return o;
 #else
-  return scheme_places_deep_copy_worker(so, &ht, 1);
+  return places_deep_copy_worker(so, &ht, 1, 1);
 #endif
 }
 
 #ifdef DO_STACK_CHECK
-Scheme_Object *scheme_places_deserialize_worker(Scheme_Object **pso);
+static void places_deserialize_worker(Scheme_Object **pso);
+
 static Scheme_Object *places_deserialize_worker_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -1661,13 +1674,13 @@ static Scheme_Object *places_deserialize_worker_k(void)
 
   p->ku.k.p1 = NULL;
 
-  scheme_places_deserialize_worker(pso);
+  places_deserialize_worker(pso);
   return scheme_void;
 }
 #endif
 
 
-Scheme_Object *scheme_places_deserialize_worker(Scheme_Object **pso)
+static void places_deserialize_worker(Scheme_Object **pso)
 {
   Scheme_Object *so;
   Scheme_Object *tmp;
@@ -1683,14 +1696,18 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object **pso)
     {
       Scheme_Thread *p = scheme_current_thread;
       p->ku.k.p1 = (void *)pso;
-      return scheme_handle_stack_overflow(places_deserialize_worker_k);
+      scheme_handle_stack_overflow(places_deserialize_worker_k);
+      return;
     }
   }
 #endif
   SCHEME_USE_FUEL(1);
 
-  if (*pso) so = *pso;
-  else return NULL;
+  if (*pso) 
+    so = *pso;
+  else
+    return;
+
   switch (SCHEME_TYPE(so)) {
     case scheme_true_type:
     case scheme_false_type:
@@ -1717,13 +1734,19 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object **pso)
       *pso = tmp;
       break;
     case scheme_pair_type:
-      scheme_places_deserialize_worker(&(SCHEME_CAR(so)));
-      scheme_places_deserialize_worker(&(SCHEME_CDR(so)));
+      tmp = SCHEME_CAR(so);
+      places_deserialize_worker(&tmp);
+      SCHEME_CAR(so) = tmp;
+      tmp = SCHEME_CDR(so);
+      places_deserialize_worker(&tmp);
+      SCHEME_CDR(so) = tmp;
       break;
     case scheme_vector_type:
       size = SCHEME_VEC_SIZE(so);
       for (i = 0; i <size ; i++) {
-        scheme_places_deserialize_worker(&SCHEME_VEC_ELS(so)[i]);
+        tmp = SCHEME_VEC_ELS(so)[i];
+        places_deserialize_worker(&tmp);
+        SCHEME_VEC_ELS(so)[i] = tmp;
       }
       break;
     case scheme_structure_type:
@@ -1731,24 +1754,25 @@ Scheme_Object *scheme_places_deserialize_worker(Scheme_Object **pso)
     case scheme_serialized_structure_type:
       sst = (Scheme_Serialized_Structure*)so;
       size = sst->num_slots;
-      scheme_places_deserialize_worker((Scheme_Object **) &sst->prefab_key);
+      tmp = sst->prefab_key;
+      places_deserialize_worker(&tmp);
+      sst->prefab_key = tmp;
       stype = scheme_lookup_prefab_type(sst->prefab_key, size);
       st = (Scheme_Structure *) scheme_make_blank_prefab_struct_instance(stype);
 
       for (i = 0; i <size ; i++) {
-        st->slots[i] = sst->slots[i];
-        scheme_places_deserialize_worker(&(st->slots[i]));
+        tmp = sst->slots[i];
+        places_deserialize_worker(&tmp);
+        st->slots[i] = tmp;
       }
       *pso = (Scheme_Object *) st;
       break;
 
-    case scheme_resolved_module_path_type:
     default:
       scheme_log_abort("cannot deserialize object");
       abort();
       break;
   }
-  return NULL;
 }
 
 Scheme_Object *scheme_places_serialize(Scheme_Object *so, void **msg_memory) {
@@ -1760,7 +1784,7 @@ Scheme_Object *scheme_places_serialize(Scheme_Object *so, void **msg_memory) {
   if (new_so) return new_so;
 
   GC_create_message_allocator();
-  new_so = scheme_places_deep_copy(so);
+  new_so = do_places_deep_copy(so, 0);
   tmp = GC_finish_message_allocator();
   (*msg_memory) = tmp;
   return new_so;
@@ -1778,15 +1802,15 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
 
   /* small messages are deemed to be < 1k, this could be tuned in either direction */
   if (GC_message_allocator_size(msg_memory) < 1024) {
-    new_so = scheme_places_deep_copy(so);
+    new_so = do_places_deep_copy(so, 1);
     GC_dispose_short_message_allocator(msg_memory);
   }
   else {
+    GC_adopt_message_allocator(msg_memory);
 #if !defined(SHARED_TABLES)
     new_so = so;
-    scheme_places_deserialize_worker(&new_so);
+    places_deserialize_worker(&new_so);
 #endif
-    GC_adopt_message_allocator(msg_memory);
   }
   return new_so;
 #else
