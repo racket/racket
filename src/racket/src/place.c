@@ -983,8 +983,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
 static Scheme_Object* create_infinite_stack() { 
   Scheme_Object **v;
   v = malloc(IFS_SIZE* sizeof(Scheme_Object*) );
-  v[0] = NULL;
-  v[511] = NULL;
+  v[IFS_PREV_SEG_SLOT] = NULL;
+  v[IFS_CACHE_SLOT] = NULL;
   return (Scheme_Object *) v;
 }
 static void  free_infinite_stack(Scheme_Object** st) {
@@ -1138,7 +1138,6 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 #define GET_R0() (reg0)
 
   Scheme_Object *new_so = so;
-  int skip_hash;
   int ctr = 0;
 
   /* First, check for simple values that don't need to be hashed: */
@@ -1184,8 +1183,6 @@ DEEP_DO:
   if (new_so) RETURN;
   new_so = so;
 
-  skip_hash = 0;
-
   switch (SCHEME_TYPE(so)) {
     case scheme_pair_type:
       /* handle cycles: */
@@ -1194,7 +1191,6 @@ DEEP_DO:
       else
         pair = so;
       scheme_hash_set(*ht, so, pair);
-      skip_hash = 1;
 
       IFS_PUSH(so); 
       IFS_PUSH(pair); 
@@ -1229,7 +1225,6 @@ DEEP_DO_FIN_PAIR_L:
 
       /* handle cycles: */
       scheme_hash_set(*ht, so, vec);
-      skip_hash = 1;
       i = 0;
       if (i < size) {
         IFS_PUSH(vec);
@@ -1267,7 +1262,6 @@ DEEP_VEC2:
       size = (intptr_t) IFS_POP;
       so   = IFS_POP;
       vec  = IFS_POP;
-      if (copy)
 
       if (copy) {
         SCHEME_SET_IMMUTABLE(vec);
@@ -1307,7 +1301,6 @@ DEEP_ST1_L:
 
       /* handle cycles: */
       scheme_hash_set(*ht, so, new_so);
-      skip_hash = 1;
 
       i = 0;
       if (i < size) {
@@ -1368,7 +1361,6 @@ DEEP_SST1_L:
 
       /* handle cycles: */
       scheme_hash_set(*ht, so, new_so);
-      skip_hash = 1;
 
       i = 0;
       if (i < size) {
@@ -1406,17 +1398,12 @@ DEEP_SST2_L:
         IFS_POPN(4);
         RETURN;
       }
-    break;
       break;
     case scheme_resolved_module_path_type:
     default:
       bad_place_message(so);
       break;
   }
-
-  if (!skip_hash)
-    scheme_hash_set(*ht, so, new_so);
-
 
 DEEP_RETURN_L:
   {
