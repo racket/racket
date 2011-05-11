@@ -19,6 +19,10 @@ remainder of the first line must be a command to execute the script. For
 some platforms, the total length of the first line is restricted to 32
 characters, and sometimes the space is required.
 
+@margin-note{Use @racketmodfont{#lang} @racketmodname[racket/base] instead
+of @racketmodfont{#lang} @racketmodname[racket] to produce scripts with a
+lower startup time.}
+
 The simplest script format uses an absolute path to a @exec{racket}
 executable followed by a module declaration. For example, if
 @exec{racket} is installed in @filepath{/usr/local/bin}, then a file

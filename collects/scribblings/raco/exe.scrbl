@@ -5,6 +5,11 @@
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 
+@margin-note{Use a smaller base language to achieve a lower startup time such as
+@racketmodfont{#lang} @racketmodname[racket/base] instead of
+@racketmodfont{#lang} @racketmodname[racket] rather than relying on @exec{raco
+exe}.}
+
 Compiled code produced by @exec{raco make} relies on Racket
 executables to provide run-time support to the compiled code. However,
 @exec{raco exe} can package code together with its run-time support to
