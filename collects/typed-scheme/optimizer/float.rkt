@@ -92,7 +92,9 @@
                     (when (and (not safe-to-opt?)
                                (isoftype? this-syntax -Real))
                       (log-close-call "binary, args all float-arg-expr, return type not Float"
-                                      this-syntax))
+                                      this-syntax
+                                      (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))])
+                                        (not (subtypeof? x -Flonum)))))
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "binary float" #'op)

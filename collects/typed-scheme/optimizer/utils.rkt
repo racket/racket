@@ -4,13 +4,14 @@
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template scheme/base)
-         (types type-table utils subtype)
+         (types type-table utils subtype numeric-tower)
          (rep type-rep))
 
 (provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
          log-close-call *log-close-calls?*
          *show-optimized-code*
          subtypeof? isoftype?
+         in-integer-layer? in-rational-layer? in-float-layer? in-real-layer?
          mk-unsafe-tbl
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
@@ -39,9 +40,16 @@
 ;; This is meant to help users understand what hurts the performance of
 ;; their programs.
 (define *log-close-calls?* (in-command-line? "--log-close-calls"))
-(define (log-close-call kind stx)
+(define (log-close-call kind stx [irritant #f])
   (when *log-close-calls?*
-    (do-logging kind stx)))
+    (do-logging (if irritant
+                    (format "~a - caused by: ~a - ~a - ~a - ~a"
+                            kind
+                            (syntax-source-file-name irritant)
+                            (syntax-line irritant) (syntax-column irritant)
+                            (syntax->datum irritant))
+                    kind)
+                stx)))
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
@@ -54,6 +62,20 @@
 (define (isoftype? s t)
   (match (type-of s)
          [(tc-result1: (== t type-equal?)) #t] [_ #f]))
+
+;; layer predicates
+;; useful in some cases where subtyping won't do
+(define (in-integer-layer? t)
+  (subtypeof? t -Int))
+(define (in-rational-layer? t)
+  (and (subtypeof? t -Rat)
+       (not (subtypeof? t -Int))))
+(define (in-float-layer? t)
+  (subtypeof? t -Flonum))
+(define (in-real-layer? t)
+  (and (subtypeof? t -Real)
+       (not (subtypeof? t -Rat))
+       (not (subtypeof? t -Flonum))))
 
 ;; generates a table matching safe to unsafe promitives
 (define (mk-unsafe-tbl generic safe-pattern unsafe-pattern)
