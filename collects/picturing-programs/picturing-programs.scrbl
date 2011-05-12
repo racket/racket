@@ -340,7 +340,7 @@ The results of the four functions are used as the red, green, blue, and alpha
 components in the corresponding pixel of the resulting picture.
 
 For example,
-@codeblock{|
+@codeblock|{
 ; each function : num(x) num(y) num(r) num(g) num(b) num(a) -> num
 (define (zero x y r g b a) 0)
 (define (same-g x y r g b a) g)
