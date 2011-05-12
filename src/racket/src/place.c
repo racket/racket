@@ -1665,23 +1665,27 @@ Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so) {
 }
 
 #ifdef DO_STACK_CHECK
-static void places_deserialize_worker(Scheme_Object **pso);
+static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **ht);
 
 static Scheme_Object *places_deserialize_worker_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *pso = (Scheme_Object **)p->ku.k.p1;
+  Scheme_Object *pso = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Hash_Table*ht = (Scheme_Hash_Table *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
 
-  places_deserialize_worker(&pso);
+  places_deserialize_worker(&pso, &ht);
+  p = scheme_current_thread;
+  p->ku.k.p1 = ht;
 
   return pso;
 }
 #endif
 
 
-static void places_deserialize_worker(Scheme_Object **pso)
+static void places_deserialize_worker(Scheme_Object **pso, Scheme_Hash_Table **ht)
 {
   Scheme_Object *so;
   Scheme_Object *tmp;
@@ -1695,10 +1699,15 @@ static void places_deserialize_worker(Scheme_Object **pso)
   {
 # include "mzstkchk.h"
     {
-      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Thread *p;
+      p = scheme_current_thread;
       p->ku.k.p1 = *pso;
+      p->ku.k.p2 = *ht;
       tmp = scheme_handle_stack_overflow(places_deserialize_worker_k);
       *pso = tmp;
+      p = scheme_current_thread;
+      *ht = p->ku.k.p1;
+      p->ku.k.p1 = NULL;
       return;
     }
   }
@@ -1736,35 +1745,69 @@ static void places_deserialize_worker(Scheme_Object **pso)
       *pso = tmp;
       break;
     case scheme_pair_type:
+      if (*ht) {
+        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so)))
+          break;
+        else 
+          scheme_hash_set(*ht, so, so);
+      }
+      else {
+        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
+        *ht = (Scheme_Hash_Table *) tmp; 
+        scheme_hash_set(*ht, so, so);
+      }
       tmp = SCHEME_CAR(so);
-      places_deserialize_worker(&tmp);
+      places_deserialize_worker(&tmp, ht);
       SCHEME_CAR(so) = tmp;
       tmp = SCHEME_CDR(so);
-      places_deserialize_worker(&tmp);
+      places_deserialize_worker(&tmp, ht);
       SCHEME_CDR(so) = tmp;
       break;
     case scheme_vector_type:
+      if (*ht) {
+        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so)))
+          break;
+        else 
+          scheme_hash_set(*ht, so, so);
+      }
+      else {
+        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
+        *ht = (Scheme_Hash_Table *) tmp; 
+        scheme_hash_set(*ht, so, so);
+      }
       size = SCHEME_VEC_SIZE(so);
       for (i = 0; i <size ; i++) {
         tmp = SCHEME_VEC_ELS(so)[i];
-        places_deserialize_worker(&tmp);
+        places_deserialize_worker(&tmp, ht);
         SCHEME_VEC_ELS(so)[i] = tmp;
       }
       break;
     case scheme_structure_type:
       break;
     case scheme_serialized_structure_type:
+      if (*ht) {
+        if ((st = (Scheme_Structure *) scheme_hash_get(*ht, so))) {
+          *pso = (Scheme_Object *) st;
+          break;
+        }
+      }
+      else {
+        tmp = (Scheme_Object *) scheme_make_hash_table(SCHEME_hash_ptr);
+        *ht = (Scheme_Hash_Table *) tmp; 
+      }
+        
       sst = (Scheme_Serialized_Structure*)so;
       size = sst->num_slots;
       tmp = sst->prefab_key;
-      places_deserialize_worker(&tmp);
+      places_deserialize_worker(&tmp, ht);
       sst->prefab_key = tmp;
       stype = scheme_lookup_prefab_type(sst->prefab_key, size);
       st = (Scheme_Structure *) scheme_make_blank_prefab_struct_instance(stype);
+      scheme_hash_set(*ht, so, (Scheme_Object *) st);
 
       for (i = 0; i <size ; i++) {
         tmp = sst->slots[i];
-        places_deserialize_worker(&tmp);
+        places_deserialize_worker(&tmp, ht);
         st->slots[i] = tmp;
       }
       *pso = (Scheme_Object *) st;
@@ -1808,10 +1851,11 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
     GC_dispose_short_message_allocator(msg_memory);
   }
   else {
+    Scheme_Object *ht = NULL;
     GC_adopt_message_allocator(msg_memory);
 #if !defined(SHARED_TABLES)
     new_so = so;
-    places_deserialize_worker(&new_so);
+    places_deserialize_worker(&new_so, (Scheme_Hash_Table **) &ht);
 #endif
   }
   return new_so;

@@ -236,7 +236,8 @@
   (test-long (lambda (x) 3) "Listof ints")
   (test-long (lambda (x) #(1 2)) "Listof vectors")
   (test-long (lambda (x) (intern-num-sym (modulo x 1000))) "Listof symbols")
-  (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs"))
+  (test-long (lambda (x) #s(clown "Binky" "pie")) "Listof prefabs")
+  (test-long (lambda (x) (read (open-input-string "#0=(#0# . #0#)"))) "Listof cycles"))
 
 
 ;(report-errs)
