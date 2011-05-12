@@ -48,7 +48,9 @@
   (make-test-suite
    suite-name
    (for/list ([name (directory-list dir)]
-              #:when (regexp-match ".*rkt$" name))
+              #:when (and (regexp-match ".*rkt$" name)
+                          ;; skip emacs temp unsaved file backups
+                          (not (regexp-match "^\\.#" name))))
      (make-test-suite
       (path->string name)
       (proc name)))))
