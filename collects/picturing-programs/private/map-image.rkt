@@ -9,6 +9,7 @@
 ; Dec. 26, 2010: API for bitmaps has changed for 5.1, so I need to rewrite to match it.
 ; Dec. 28, 2010: Robby added alphas into the "color" type, and provided an implementation
 ; of map-image.  He recommends using racket/draw bitmaps rather than 2htdp/image bitmaps.
+; May 10, 2011: added build-image/extra and map-image/extra.
 
 (require racket/draw
         racket/snip
@@ -41,6 +42,17 @@
 (provide-higher-order-primitive build3-image (_ _ rfunc gfunc bfunc))
 (provide-higher-order-primitive build4-image (_ _ rfunc gfunc bfunc afunc))
 ;(provide-higher-order-primitive build-masked-image (_ _ f))
+(provide-higher-order-primitive build-image/extra (_ _ f _))
+(provide-higher-order-primitive map-image/extra (f _ _))
+
+; check-procedure-arity : alleged-function nat-num symbol string
+; Note: if you invoke these things from a BSL or BSLL program, the syntax checker will
+; catch non-procedure arguments before the "(and (procedure? f) ..." test ever sees them,
+; but that's no longer true if you invoke them from an ISLL, ASL, or racket program,
+; so I'm keeping the test.
+(define (check-procedure-arity f n func-name msg)
+  (unless (and (procedure? f) (procedure-arity-includes? f n))
+    (error func-name msg)))
 
 (define transparent (make-color 0 0 0 0))
 
@@ -88,7 +100,7 @@
   (cond [(color? thing) thing]
         [(eqv? thing #f) transparent]
         [(image-color? thing) (name->color thing)]
-        [else (error 'colorize "Unrecognized type")]))
+        [else (error 'colorize (format "~v is not a color" thing))]))
 
 ; colorize-func : (... -> broad-color) -> (... -> color)
 (define (colorize-func f)
@@ -199,9 +211,20 @@
     (error 'build-image "Expected natural number as first argument"))
   (unless (natural? h)
     (error 'build-image "Expected natural number as second argument"))
-  (unless (procedure-arity-includes? f 2)
-    (error 'build-image "Expected function with contract num(x) num(y) -> color as third argument"))
+  (check-procedure-arity f 2 'build-image "Expected function with contract num(x) num(y) -> color as third argument")
   (build-image-internal w h (colorize-func f)))
+
+; build-image/extra : natural(width) natural(height) (nat nat any -> broad-color) any -> image
+; Like build-image, but passes a fixed extra argument to every call of the function.
+; For students who don't yet know function closures.
+(define (build-image/extra w h f extra)
+  (unless (natural? w)
+    (error 'build-image/extra "Expected natural number as first argument"))
+  (unless (natural? h)
+    (error 'build-image/extra "Expected natural number as second argument"))
+  (check-procedure-arity f 3 'build-image/extra "Expected function with contract num(x) num(y) any -> color as third argument")
+  (build-image-internal w h
+                        (colorize-func (lambda (x y) (f x y extra)))))
 
 ; build3-image : nat(width) nat(height) rfunc gfunc bfunc -> image
 ; where each of rfunc, gfunc, bfunc is (nat(x) nat(y) -> nat)
@@ -210,12 +233,9 @@
     (error 'build3-image "Expected natural number as first argument"))
   (unless (natural? h)
     (error 'build3-image "Expected natural number as second argument"))
-  (unless (procedure-arity-includes? rfunc 2)
-    (error 'build3-image "Expected function with contract num(x) num(y) -> color as third argument"))
-  (unless (procedure-arity-includes? gfunc 2)
-    (error 'build3-image "Expected function with contract num(x) num(y) -> color as fourth argument"))
-  (unless (procedure-arity-includes? bfunc 2)
-    (error 'build3-image "Expected function with contract num(x) num(y) -> color as fifth argument"))
+  (check-procedure-arity rfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as third argument")
+  (check-procedure-arity gfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as fourth argument")
+  (check-procedure-arity bfunc 2 'build3-image "Expected function with contract num(x) num(y) -> color as fifth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y)))))
@@ -227,14 +247,10 @@
     (error 'build-image "Expected natural number as first argument"))
   (unless (natural? h)
     (error 'build-image "Expected natural number as second argument"))
-  (unless (procedure-arity-includes? rfunc 2)
-    (error 'build-image "Expected function with contract num(x) num(y) -> color as third argument"))
-  (unless (procedure-arity-includes? gfunc 2)
-    (error 'build-image "Expected function with contract num(x) num(y) -> color as fourth argument"))
-  (unless (procedure-arity-includes? bfunc 2)
-    (error 'build-image "Expected function with contract num(x) num(y) -> color as fifth argument"))
-  (unless (procedure-arity-includes? afunc 2)
-    (error 'build-image "Expected function with contract num(x) num(y) -> color as sixth argument"))
+  (check-procedure-arity rfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as third argument")
+  (check-procedure-arity gfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as fourth argument")
+  (check-procedure-arity bfunc 2 'build-image "Expected function with contract num(x) num(y) -> color as fifth argument")
+  (check-procedure-arity afunc 2 'build-image "Expected function with contract num(x) num(y) -> color as sixth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y) (afunc x y)))))
@@ -259,11 +275,22 @@
 
 ; map-image : (int int color -> broad-color) image -> image
 (define (map-image f img)
-  (unless (procedure-arity-includes? f 3)
-    (error 'map-image "Expected function with contract num(x) num(y) color -> color as first argument"))
+  (check-procedure-arity f 3 'map-image "Expected function with contract num(x) num(y) color -> color as first argument")
   (unless (image? img)
     (error 'map-image "Expected image as second argument"))
   (map-image-internal (colorize-func f) img))
+
+; map-image/extra : (nat nat color X -> broad-color) image X -> image
+; Like map-image, but passes a fixed extra argument to every call of the function.
+; For students who don't yet know function closures.
+(define (map-image/extra f img extra)
+  (check-procedure-arity f 4 'map-image/extra "Expected function with contract num(x) num(y) color other -> color as first argument")
+  (unless (image? img)
+    (error 'map-image/extra "Expected image as second argument"))
+  (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img))
+
+
+
 
 ; The version for use before students have seen structs:
 ; map3-image :
@@ -273,12 +300,9 @@
 ; image -> image
 ; Note: by default, preserves alpha values from old image.
 (define (map3-image rfunc gfunc bfunc pic)
-  (unless (procedure-arity-includes? rfunc 5)
-    (error 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument"))
-  (unless (procedure-arity-includes? gfunc 5)
-    (error 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument"))
-  (unless (procedure-arity-includes? bfunc 5)
-    (error 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument"))
+  (check-procedure-arity rfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
+  (check-procedure-arity gfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
+  (check-procedure-arity bfunc 5 'map3-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
   (unless (image? pic)
     (error 'map3-image "Expected image as fourth argument"))
    (map-image-internal
@@ -296,14 +320,10 @@
 ;  (int(x) int(y) int(r) int(g) int(b) int(a) -> int(a))
 ;  image -> image
 (define (map4-image rfunc gfunc bfunc afunc pic)
-  (unless (procedure-arity-includes? rfunc 6)
-    (error 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument"))
-  (unless (procedure-arity-includes? gfunc 6)
-    (error 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument"))
-  (unless (procedure-arity-includes? rfunc 6)
-    (error 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument"))
-  (unless (procedure-arity-includes? gfunc 6)
-    (error 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument"))
+  (check-procedure-arity rfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
+  (check-procedure-arity gfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
+  (check-procedure-arity bfunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
+  (check-procedure-arity afunc 6 'map4-image "Expected function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
   (unless (image? pic)
     (error 'map4-image "Expected image as fifth argument"))
    (map-image-internal
