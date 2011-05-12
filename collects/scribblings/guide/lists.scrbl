@@ -286,7 +286,7 @@ It turns out that if you write
     (f i)))
 ]
 
-then the @racket[for/list] form in the function both is expanded to
+then the @racket[for/list] form in the function is expanded to
 essentially the same code as the @racket[iter] local definition and
 use. The difference is merely syntactic convenience.
 

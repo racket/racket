@@ -217,7 +217,7 @@ so the following are valid instances of the grammar:
 
 (lambda (f)                (code:comment @#,elem{one definition})
   (define (log-it what)
-    (printf "~a\n"))
+    (printf "~a\n" what))
   (log-it "running")
   (f 0)
   (log-it "done"))
@@ -228,11 +228,11 @@ so the following are valid instances of the grammar:
         (log-it "done")
         (begin
           (log-it "running")
-          (f 0)
+          (f n)
           (call (- n 1)))))
   (define (log-it what)
-    (printf "~a\n"))
-  (call f n))
+    (printf "~a\n" what))
+  (call n))
 ]
 
 Internal definitions in a particular @racket[_body] sequence are

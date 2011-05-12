@@ -40,7 +40,7 @@ A literal immutable hash table can be written as an expression by using
 @litchar{#hasheqv} (for an @scheme[eqv?]-based table), or
 @litchar{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
 sequence must immediately follow @litchar{#hash}, @litchar{#hasheq},
-or @litchar{#hasheqv}, where each element is a sequence is a dotted
+or @litchar{#hasheqv}, where each element is a dotted
 key--value pair. The @litchar{#hash}, etc. forms implicitly
 @scheme[quote] their key and value sub-forms.
 
