@@ -89,12 +89,15 @@
            #:when (let ([safe-to-opt? (subtypeof? this-syntax -Flonum)])
                     ;; if we don't have a return type of float, we missed an optimization
                     ;; opportunity, report it
+                    ;; ignore operations that stay within integers or rationals, since
+                    ;; these have nothing to do with float optimizations
                     (when (and (not safe-to-opt?)
-                               (isoftype? this-syntax -Real))
+                               (in-real-layer? this-syntax))
                       (log-close-call "binary, args all float-arg-expr, return type not Float"
                                       this-syntax
-                                      (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))])
-                                        (not (subtypeof? x -Flonum)))))
+                                      (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                                  #:when (not (subtypeof? x -Flonum)))
+                                        x)))
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "binary float" #'op)

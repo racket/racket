@@ -1,9 +1,11 @@
 #;
 (
- real-in-float-expr.rkt 10:0 (#%app * (quote 3) (quote 2.3)) -- binary, args all float-arg-expr, return type not Float
+ real-in-float-expr.rkt 12:0 (#%app * (quote 3) (quote 2.3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 10:8 (quote 3)
+ real-in-float-expr.rkt 18:0 (#%app * (quote 2) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 17:8 (quote 2)
  6.8999999999999995
  6
  5
+ 4.0
  )
 #lang typed/racket
 
@@ -12,3 +14,5 @@
 
 (* (ann 2 Integer) (ann 3 Integer)) ; but these have nothing to do with floats, should not be logged
 (+ (ann 2 Integer) (ann 3 Integer))
+
+(* (ann 2 Natural) 2.0) ; close calls that result in Nonnegative-Real and co (i.e. not directly Real) should be reported too
