@@ -1,6 +1,6 @@
 #;
 (
-simple-float.rkt line 10 col 1 - + - binary float
+simple-float.rkt 10:1 + -- binary float
 5.0
 )
 

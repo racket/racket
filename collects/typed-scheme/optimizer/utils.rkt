@@ -23,10 +23,17 @@
 (define *log-file* "opt-log")
 (define *log-to-log-file?* #f) ; otherwise, goes to stdout
 
+(define (line+col->string stx)
+  (let ([line (syntax-line stx)]
+        [col  (syntax-column stx)])
+    (if (and line col)
+        (format "~a:~a" line col)
+        "(no location)")))
+
 (define (do-logging msg stx)
-  (printf "~a line ~a col ~a - ~a - ~a\n"
+  (printf "~a ~a ~a -- ~a\n"
           (syntax-source-file-name stx)
-          (syntax-line stx) (syntax-column stx)
+          (line+col->string stx)
           (syntax->datum stx)
           msg))
 
@@ -43,10 +50,9 @@
 (define (log-close-call kind stx [irritant #f])
   (when *log-close-calls?*
     (do-logging (if irritant
-                    (format "~a - caused by: ~a - ~a - ~a - ~a"
+                    (format "~a -- caused by: ~a ~a"
                             kind
-                            (syntax-source-file-name irritant)
-                            (syntax-line irritant) (syntax-column irritant)
+                            (line+col->string irritant)
                             (syntax->datum irritant))
                     kind)
                 stx)))

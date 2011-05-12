@@ -1,6 +1,6 @@
 #;
 (
-#f line #f col #f - make-sequence - in-string
+#f (no location) make-sequence -- in-string
 123)
 
 #lang typed/scheme

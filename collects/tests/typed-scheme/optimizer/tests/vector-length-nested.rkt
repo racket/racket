@@ -1,7 +1,7 @@
 #;
 (
-vector-length-nested.rkt line 11 col 1 - vector-length - vector-length
-vector-length-nested.rkt line 12 col 2 - vector-ref - vector
+vector-length-nested.rkt 11:1 vector-length -- vector-length
+vector-length-nested.rkt 12:2 vector-ref -- vector
 2
 )
 

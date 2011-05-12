@@ -1,31 +1,31 @@
 #;
 (
-fixnum-bounded-expr.rkt line 60 col 3 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 66 col 8 - * - fixnum bounded expr
-fixnum-bounded-expr.rkt line 66 col 3 - - - fixnum bounded expr
-fixnum-bounded-expr.rkt line 73 col 3 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 76 col 3 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 81 col 1 - abs - fixnum fxabs
-fixnum-bounded-expr.rkt line 84 col 1 - fx+ - fixnum fx+
-fixnum-bounded-expr.rkt line 85 col 6 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 85 col 17 - * - fixnum bounded expr
-fixnum-bounded-expr.rkt line 85 col 1 - fx+ - fixnum fx+
-fixnum-bounded-expr.rkt line 86 col 9 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 86 col 6 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 86 col 1 - fx+ - fixnum fx+
-fixnum-bounded-expr.rkt line 87 col 12 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 87 col 9 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 87 col 1 - fx+ - fixnum fx+
-fixnum-bounded-expr.rkt line 88 col 6 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 88 col 18 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 88 col 6 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 88 col 18 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 90 col 6 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 90 col 18 - + - fixnum bounded expr
-fixnum-bounded-expr.rkt line 90 col 1 - fx- - fixnum fx-
-fixnum-bounded-expr.rkt line 93 col 1 - fx* - fixnum fx*
-fixnum-bounded-expr.rkt line 96 col 1 - fxquotient - fixnum fxquotient
-fixnum-bounded-expr.rkt line 99 col 1 - fxabs - fixnum fxabs
+fixnum-bounded-expr.rkt 60:3 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 66:8 * -- fixnum bounded expr
+fixnum-bounded-expr.rkt 66:3 - -- fixnum bounded expr
+fixnum-bounded-expr.rkt 73:3 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 76:3 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 81:1 abs -- fixnum fxabs
+fixnum-bounded-expr.rkt 84:1 fx+ -- fixnum fx+
+fixnum-bounded-expr.rkt 85:6 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 85:17 * -- fixnum bounded expr
+fixnum-bounded-expr.rkt 85:1 fx+ -- fixnum fx+
+fixnum-bounded-expr.rkt 86:9 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 86:6 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 86:1 fx+ -- fixnum fx+
+fixnum-bounded-expr.rkt 87:12 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 87:9 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 87:1 fx+ -- fixnum fx+
+fixnum-bounded-expr.rkt 88:6 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 88:18 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 88:6 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 88:18 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 90:6 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 90:18 + -- fixnum bounded expr
+fixnum-bounded-expr.rkt 90:1 fx- -- fixnum fx-
+fixnum-bounded-expr.rkt 93:1 fx* -- fixnum fx*
+fixnum-bounded-expr.rkt 96:1 fxquotient -- fixnum fxquotient
+fixnum-bounded-expr.rkt 99:1 fxabs -- fixnum fxabs
 28
 89525
 28

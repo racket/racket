@@ -1,7 +1,7 @@
 #;
 (
-define-begin-float.rkt line 11 col 27 - - - binary float
-define-begin-float.rkt line 12 col 18 - * - binary float
+define-begin-float.rkt 11:27 - -- binary float
+define-begin-float.rkt 12:18 * -- binary float
 -1.0
 )
 

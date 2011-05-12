@@ -1,6 +1,6 @@
 #;
 (
-define-call-float.rkt line 9 col 17 - + - binary float
+define-call-float.rkt 9:17 + -- binary float
 )
 
 #lang typed/scheme

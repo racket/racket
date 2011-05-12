@@ -1,7 +1,7 @@
 #;
 (
-#f line #f col #f - op - string-length
-#f line #f col #f - op - bytes-length
+#f (no location) op -- string-length
+#f (no location) op -- bytes-length
 2
 2
 )

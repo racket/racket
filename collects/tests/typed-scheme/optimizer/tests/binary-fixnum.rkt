@@ -1,7 +1,7 @@
 #;
 (
-binary-fixnum.rkt line 12 col 16 - vector-length - vector-length
-binary-fixnum.rkt line 12 col 3 - bitwise-and - binary fixnum
+binary-fixnum.rkt 12:16 vector-length -- vector-length
+binary-fixnum.rkt 12:3 bitwise-and -- binary fixnum
 )
 
 #lang typed/scheme

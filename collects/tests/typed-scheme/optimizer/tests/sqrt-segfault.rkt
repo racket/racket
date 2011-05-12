@@ -1,7 +1,7 @@
 #;
 (
-sqrt-segfault.rkt line 18 col 15 - - - binary float
-sqrt-segfault.rkt line 19 col 15 - * - binary float
+sqrt-segfault.rkt 18:15 - -- binary float
+sqrt-segfault.rkt 19:15 * -- binary float
 )
 
 #lang typed/scheme

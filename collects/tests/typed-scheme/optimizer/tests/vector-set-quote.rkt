@@ -1,6 +1,6 @@
 #;
 (
-vector-set-quote.rkt line 9 col 1 - vector-set! - vector
+vector-set-quote.rkt 9:1 vector-set! -- vector
 )
 
 #lang typed/scheme

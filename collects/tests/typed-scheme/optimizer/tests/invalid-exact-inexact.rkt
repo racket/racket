@@ -1,6 +1,6 @@
 #;
 (
-invalid-exact-inexact.rkt line 9 col 1 - exact->inexact - float to float
+invalid-exact-inexact.rkt 9:1 exact->inexact -- float to float
 1.0
 )
 

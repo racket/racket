@@ -1,6 +1,6 @@
 #;
 (
-let-rhs.rkt line 12 col 10 - + - binary float
+let-rhs.rkt 12:10 + -- binary float
 3.0
 )
 

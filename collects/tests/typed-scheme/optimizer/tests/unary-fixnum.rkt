@@ -1,6 +1,6 @@
 #;
 (
-unary-fixnum.rkt line 10 col 1 - bitwise-not - unary fixnum
+unary-fixnum.rkt 10:1 bitwise-not -- unary fixnum
 -5
 )
 

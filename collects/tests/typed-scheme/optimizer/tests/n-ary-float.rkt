@@ -1,6 +1,6 @@
 #;
 (
-n-ary-float.rkt line 10 col 1 - + - binary float
+n-ary-float.rkt 10:1 + -- binary float
 6.0
 )
 

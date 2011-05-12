@@ -1,6 +1,6 @@
 #;
 (
-vector-length.rkt line 10 col 1 - vector-length - vector-length
+vector-length.rkt 10:1 vector-length -- vector-length
 3
 )
 

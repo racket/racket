@@ -1,6 +1,6 @@
 #;
 (
-literal-int.rkt line 13 col 1 - + - binary float
+literal-int.rkt 13:1 + -- binary float
 3.0
 1
 )

@@ -1,6 +1,6 @@
 #;
 (
-cross-module-struct2.rkt line 11 col 1 - x-x - struct ref
+cross-module-struct2.rkt 11:1 x-x -- struct ref
 1
 )
 

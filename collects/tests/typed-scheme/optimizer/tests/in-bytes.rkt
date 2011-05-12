@@ -1,6 +1,6 @@
 #;
 (
-#f line #f col #f - make-sequence - in-bytes
+#f (no location) make-sequence -- in-bytes
 495051)
 
 #lang typed/scheme

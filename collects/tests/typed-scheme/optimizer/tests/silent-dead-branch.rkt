@@ -1,6 +1,6 @@
 #;
 (
- silent-dead-branch.rkt line 12 col 0 - (let-values () (quote 1)) - dead then branch
+ silent-dead-branch.rkt 12:0 (let-values () (quote 1)) -- dead then branch
  )
 
 #lang typed/racket

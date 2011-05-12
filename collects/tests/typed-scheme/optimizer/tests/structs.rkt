@@ -1,7 +1,7 @@
 #;
 (
-structs.rkt line 13 col 1 - pt-x - struct ref
-structs.rkt line 14 col 1 - set-pt-y! - struct set
+structs.rkt 13:1 pt-x -- struct ref
+structs.rkt 14:1 set-pt-y! -- struct set
 3
 )
 

@@ -1,6 +1,6 @@
 #;
 (
-simple-pair.rkt line 10 col 1 - car - pair
+simple-pair.rkt 10:1 car -- pair
 1
 )
 

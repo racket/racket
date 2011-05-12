@@ -1,9 +1,9 @@
 #;
 (
-dead-then.rkt line 14 col 13 - (#%app + (quote 2.0) (quote 3.0)) - dead then branch
-dead-then.rkt line 15 col 14 - + - binary float
-dead-then.rkt line 17 col 13 - (#%app + (quote 2.0) (quote 3.0)) - dead then branch
-dead-then.rkt line 18 col 14 - + - binary float
+dead-then.rkt 14:13 (#%app + (quote 2.0) (quote 3.0)) -- dead then branch
+dead-then.rkt 15:14 + -- binary float
+dead-then.rkt 17:13 (#%app + (quote 2.0) (quote 3.0)) -- dead then branch
+dead-then.rkt 18:14 + -- binary float
 9.09.0
 )
 

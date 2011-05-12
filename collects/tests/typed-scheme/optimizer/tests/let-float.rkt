@@ -1,7 +1,7 @@
 #;
 (
-let-float.rkt line 11 col 10 - + - binary float
-let-float.rkt line 12 col 3 - * - binary float
+let-float.rkt 11:10 + -- binary float
+let-float.rkt 12:3 * -- binary float
 45.0
 )
 

@@ -1,6 +1,6 @@
 #;
 (
-rational-literal.rkt line 8 col 1 - + - binary float
+rational-literal.rkt 8:1 + -- binary float
 1.95
 )
 #lang typed/racket #:optimize

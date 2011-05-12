@@ -1,8 +1,8 @@
 #;
 (
-vector-ref-set-ref.rkt line 15 col 1 - vector-ref - vector
-vector-ref-set-ref.rkt line 16 col 1 - vector-set! - vector
-vector-ref-set-ref.rkt line 17 col 1 - vector-ref - vector
+vector-ref-set-ref.rkt 15:1 vector-ref -- vector
+vector-ref-set-ref.rkt 16:1 vector-set! -- vector
+vector-ref-set-ref.rkt 17:1 vector-ref -- vector
 1
 "2"
 )

@@ -1,20 +1,20 @@
 #;
 (
-one-arg-arith.rkt line 40 col 1 - - - unary fixnum
-one-arg-arith.rkt line 41 col 1 - - - unary float
-one-arg-arith.rkt line 42 col 1 - / - unary float
-one-arg-arith.rkt line 44 col 1 - + - unary number
-one-arg-arith.rkt line 45 col 1 - + - unary number
-one-arg-arith.rkt line 46 col 1 - + - unary number
-one-arg-arith.rkt line 47 col 1 - * - unary number
-one-arg-arith.rkt line 48 col 1 - * - unary number
-one-arg-arith.rkt line 49 col 1 - * - unary number
-one-arg-arith.rkt line 50 col 1 - min - unary number
-one-arg-arith.rkt line 51 col 1 - min - unary number
-one-arg-arith.rkt line 52 col 1 - min - unary number
-one-arg-arith.rkt line 53 col 1 - max - unary number
-one-arg-arith.rkt line 54 col 1 - max - unary number
-one-arg-arith.rkt line 55 col 1 - max - unary number
+one-arg-arith.rkt 40:1 - -- unary fixnum
+one-arg-arith.rkt 41:1 - -- unary float
+one-arg-arith.rkt 42:1 / -- unary float
+one-arg-arith.rkt 44:1 + -- unary number
+one-arg-arith.rkt 45:1 + -- unary number
+one-arg-arith.rkt 46:1 + -- unary number
+one-arg-arith.rkt 47:1 * -- unary number
+one-arg-arith.rkt 48:1 * -- unary number
+one-arg-arith.rkt 49:1 * -- unary number
+one-arg-arith.rkt 50:1 min -- unary number
+one-arg-arith.rkt 51:1 min -- unary number
+one-arg-arith.rkt 52:1 min -- unary number
+one-arg-arith.rkt 53:1 max -- unary number
+one-arg-arith.rkt 54:1 max -- unary number
+one-arg-arith.rkt 55:1 max -- unary number
 -12
 -12.0
 0.23809523809523808
