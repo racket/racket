@@ -59,11 +59,8 @@ static int place_async_channel_val_SIZE(void *p, struct NewGC *gc) {
 
 static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
-  int i;
   gcMARK2(pac->msgs, gc);
   gcMARK2(pac->msg_memory, gc);
-  for (i = pac->size; i--; )
-    gcMARK2(pac->msgs[i], gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));

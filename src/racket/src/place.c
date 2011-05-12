@@ -140,24 +140,9 @@ typedef struct Place_Start_Data {
   Scheme_Object *function;
   Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
-  mzrt_sema *ready;
-  void *place_obj;
+  mzrt_sema *ready;  /* malloc'ed item */
+  void *place_obj;   /* malloc'ed item */
 } Place_Start_Data;
-
-static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
-{
-  intptr_t status;
-
-  if (SCHEME_INTP(argv[0])) {
-    status = SCHEME_INT_VAL(argv[0]);
-    if (status < 1 || status > 255)
-      status = 0;
-  } else
-    status = 0;
-
-  mz_proc_thread_exit((void *) status);
-  return scheme_void; /* Never get here */
-}
 
 static void null_out_runtime_globals() {
   scheme_current_thread           = NULL;
@@ -254,8 +239,12 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
      here until the other place is far enough. */
   mzrt_sema_wait(ready);
   mzrt_sema_destroy(ready);
+
+  place_data->ready = NULL;
+  place_data->place_obj = NULL;
   
   place->proc_thread = proc_thread;
+
 
   {
     Scheme_Custodian *cust;
@@ -283,6 +272,8 @@ static int place_kill(Scheme_Place *place) {
     ref = --place_obj->ref;
     place_obj->die = 1;
 
+    if (ref != 0) { scheme_signal_received_at(place_obj->signal_handle); }
+
     mzrt_mutex_unlock(place_obj->lock);
   }
 
@@ -303,10 +294,11 @@ static int place_break(Scheme_Place *place) {
 
     place_obj->pbreak = 1;
 
+    scheme_signal_received_at(place_obj->signal_handle);
+
     mzrt_mutex_unlock(place_obj->lock);
   }
 
-  scheme_signal_received_at(place_obj->signal_handle);
   return 0;
 }
 
@@ -1532,6 +1524,41 @@ void scheme_place_check_for_interruption() {
       scheme_break_thread(NULL);
   }
 }
+
+static void place_release_place_object() {
+  int ref = 0;
+  Scheme_Place_Object *place_obj = (Scheme_Place_Object *) place_object;
+  if (place_obj) {
+    mzrt_mutex_lock(place_obj->lock);
+      ref = --place_obj->ref;
+      place_obj->die = 1;
+    mzrt_mutex_unlock(place_obj->lock);
+
+    if (ref == 0) { free(place_object); }
+    place_object = NULL;
+  }
+}
+
+static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
+{
+  intptr_t status;
+
+  if (SCHEME_INTP(argv[0])) {
+    status = SCHEME_INT_VAL(argv[0]);
+    if (status < 1 || status > 255)
+      status = 0;
+  } else
+    status = 0;
+
+  scheme_log(NULL, SCHEME_LOG_DEBUG, 0, "place %d: exiting via (exit)", scheme_current_place_id);
+
+  /*printf("Leavin place: proc thread id%u\n", ptid);*/
+  scheme_place_instance_destroy();
+
+  place_release_place_object();
+  mz_proc_thread_exit((void *) status);
+  return scheme_void; /* Never get here */
+}
   
 static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Place_Start_Data *place_data;
@@ -1624,20 +1651,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   /*printf("Leavin place: proc thread id%u\n", ptid);*/
   scheme_place_instance_destroy();
 
-  {
-    int ref = 0;
-    place_obj = (Scheme_Place_Object *) place_object;
-    if (place_obj) {
-      mzrt_mutex_lock(place_obj->lock);
-        ref = --place_obj->ref;
-        place_obj->die = 1;
-      mzrt_mutex_unlock(place_obj->lock);
-
-      if (ref == 0) { free(place_object); }
-      place_object = NULL;
-    }
-  }
-
+  place_release_place_object();
   return (void*) rc;
 }
 
@@ -1984,7 +1998,6 @@ Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   ch->msgs = msgs;
   ch->msg_memory = msg_memory;
   ch->wakeup_signal = NULL;
-  scheme_register_finalizer(ch, async_channel_finialize, NULL, NULL, NULL);
   return ch;
 }
 
