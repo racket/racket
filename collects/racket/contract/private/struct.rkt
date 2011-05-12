@@ -36,12 +36,12 @@
                             (append (base-struct/c-immutables ctc) (base-struct/c-mutables ctc)))])
     (λ (val fail [first-order? #f])
       (unless (pred? val)
-        (fail "expected <~a>, got ~e" name val))
+        (fail "expected <~s>, got ~e" name val))
       (when first-order?
         (for ([p (in-list ctc/ref-pairs)])
           (let ([c (car p)] [v ((cdr p) val)])
             (unless (contract-first-order-passes? c v)
-              (fail "expected <~a>, got ~e" (contract-name c) v)))))
+              (fail "expected <~s>, got ~e" (contract-name c) v)))))
       #t)))
 
 (define (struct/c-first-order ctc)

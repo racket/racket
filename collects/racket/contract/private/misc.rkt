@@ -607,7 +607,7 @@
               [cdr-p (cdr-proj blame)])
           (λ (v)
             (unless (pair? v)
-              (raise-blame-error blame v "expected <~a>, given: ~e" 'cons v))
+              (raise-blame-error blame v "expected <cons?>, given: ~e" v))
             (combine v (car-p (car v)) (cdr-p (cdr v))))))
       (cond
         [(and (flat-contract? ctc-car) (flat-contract? ctc-cdr))
