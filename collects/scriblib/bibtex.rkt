@@ -1,37 +1,26 @@
-#lang racket/base
+#lang at-exp racket/base
 (require racket/function
          racket/match
          racket/list)
 
-(define-syntax-rule
-  (define-bibtex this-generate-bib this-cite bib-pth)
-  (begin
-    (define bibtex-db (path->bibdb bib-pth))
-    (define this-generate-bib
-      (curry generate-bib bibtex-db))
-    (define this-cite
-      (curry cite bibtex-db))))
+(struct bibdb (raw bibs))
 
 (define (bibtex-parse ip)
   (define STRING-DB (make-hash))
   (define ENTRY-DB (make-hash))
   
   (define (read-while pred ip)
-    (match (peek-char ip)
-      [(? pred)
-       (read-char ip)
-       (read-while pred ip)]
-      [_
-       (void)]))
-  
-  (define (read-until pred ip)
     (list->string
      (let loop ()
        (match (peek-char ip)
          [(? pred)
-          empty]
+          (cons (read-char ip)
+                (loop))]
          [_
-          (cons (read-char ip) (loop))]))))
+          empty]))))
+  
+  (define (read-until pred ip)
+    (read-while (negate pred) ip))
   
   (define (slurp-whitespace ip)
     (read-while (λ (c) (and (char? c) (char-whitespace? c))) ip))
@@ -92,23 +81,21 @@
              [#\=
               (slurp-whitespace ip)
               (define aval (read-value ip))
-              (define e (cons atag aval))
               (match (read-char ip)
                 [#\,
-                 (cons e (loop))]
+                 (hash-set (loop) atag aval)]
                 [#\}
-                 (list e)]
+                 (hash atag aval)]
                 [c
                  (error 'read-entry "Parsing entry, expected , or }, got ~v" c)])]
              [c
               (error 'read-entry "Parsing entry, expected =, got ~v" c)])))
        (hash-set! ENTRY-DB label
-                  (list* (cons 'type typ)
-                         alist))]))
+                  (hash-set alist 'type typ))]))
   
   (define (read-tag ip)
     (slurp-whitespace ip)
-    (read-until char-whitespace? ip))
+    (string-downcase (read-until char-whitespace? ip)))
   
   (define (read-value ip)
     (slurp-whitespace ip)
@@ -135,7 +122,7 @@
   
   (read-entries ip)
   
-  ENTRY-DB)
+  (bibdb ENTRY-DB (make-hash)))
 
 (define (path->bibdb pth)
   (define bibdb
@@ -143,15 +130,91 @@
         pth
       (λ ()
         (bibtex-parse (current-input-port)))))
-  (printf "~v\n" (hash-count bibdb))
   bibdb)
 
-(path->bibdb "/Users/jay/Dev/scm/github.jeapostrophe/work/papers/etc/all.bib")
+(require scriblib/autobib
+         scribble/manual)
 
-(define (generate-bib db style)
-  "XXX")
+(define-syntax-rule
+  (define-bibtex-cite bib-pth
+    -cite-id citet-id generate-bibliography-id)
+  (begin
+    (define bibtex-db (path->bibdb bib-pth))
+    (define-cite autobib-cite autobib-citet generate-bibliography-id)
+    (define ((make-citer citer) f . r)
+      (apply citer (map (curry generate-bib bibtex-db) 
+                        (append-map (curry regexp-split #rx" +")
+                                    (cons f r)))))
+    (define -cite-id (make-citer autobib-cite))
+    (define citet-id (make-citer autobib-citet))))
 
-(define (cite db . keys)
-  "XXX")
+(define (parse-author as)
+  (apply authors
+         (for/list ([a (in-list (regexp-split #rx" *and *" as))])
+           (match (regexp-split #rx" +" a)
+             [(list one) (org-author-name one)]
+             [(list one two) (author-name one two)]
+             [(list-rest first rest) (author-name first (apply string-append (add-between rest " ")))]))))
+(define (parse-pages ps)
+  (match ps
+    [(regexp #rx"^([0-9]+)\\-+([0-9]+)$" (list _ f l))
+     (list f l)]
+    [#f
+     #f]
+    [_
+     (error 'parse-pages "Invalid page format ~e" ps)]))
 
-(provide define-bibtex)
+(define (generate-bib db key)
+  (match-define (bibdb raw bibs) db)
+  (hash-ref! bibs key
+             (λ ()
+               (define the-raw (hash-ref raw key (λ () (error 'bibtex "Unknown citation ~e" key))))
+               (define (raw-attr a [def #f])
+                 (hash-ref the-raw a def))
+               (match (raw-attr 'type)
+                 ["misc"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:url (raw-attr "url"))]
+                 ["book"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:is-book? #t
+                            #:url (raw-attr "url"))]
+                 ["article"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:location (journal-location (raw-attr "journal")
+                                                         #:pages (parse-pages (raw-attr "pages"))
+                                                         #:number (raw-attr "number")
+                                                         #:volume (raw-attr "volume"))
+                            #:url (raw-attr "url"))]
+                 ["inproceedings"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:location (proceedings-location (raw-attr "booktitle"))
+                            #:url (raw-attr "url"))]
+                 ["webpage"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:url (raw-attr "url"))]
+                 ["techreport"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:location 
+                            (match* ((raw-attr "institution") (raw-attr "number"))
+                                    [(#f #f) @elem{}]
+                                    [(l #f) @elem{@|l|}]
+                                    [(#f n) @elem{@|n|}]
+                                    [(l n) @elem{@|l|, @|n|}])
+                            #:url (raw-attr "url"))]
+                 [_
+                  (make-bib #:title (format "~v" the-raw))]))))
+
+(provide define-bibtex-cite)
