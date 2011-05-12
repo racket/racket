@@ -7,7 +7,7 @@
          (types numeric-tower)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-coerce-expr)
+(provide float-opt-expr float-arg-expr)
 
 
 (define (mk-float-tbl generic)
@@ -50,15 +50,6 @@
            #:with opt ((optimize) #'e)))
 
 
-;; generates coercions to floats
-(define-syntax-class float-coerce-expr
-  #:commit
-  (pattern e:float-arg-expr
-           #:with opt #'e.opt)
-  (pattern e:real-expr
-           #:with opt #'(exact->inexact e.opt)))
-
-
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
 ;; note: none of the unary operations have types where non-float arguments
@@ -76,7 +67,12 @@
   (pattern e:int-expr
            #:with opt #'(->fl e.opt))
   (pattern e:float-expr
-           #:with opt #'e.opt))
+           #:with opt #'e.opt)
+  ;; reals within float expressions are not always valid to optimize because
+  ;; of the exact 0 problem, but since float-opt-expr checks whether the
+  ;; surrounding expressing is of type Float and not just Real, this is safe
+  (pattern e:real-expr
+           #:with opt #'(exact->inexact e)))
 
 (define-syntax-class float-opt-expr
   #:commit

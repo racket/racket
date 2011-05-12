@@ -241,7 +241,7 @@
   
   ;; special handling of reals inside complex operations
   ;; must be after any cases that we are supposed to handle
-  (pattern e:float-coerce-expr
+  (pattern e:float-arg-expr
            #:with real-binding (unboxed-gensym 'unboxed-float-)
            #:with imag-binding #f
            #:when (log-optimization "float-coerce-expr in complex ops" #'e)
@@ -252,7 +252,7 @@
   ;; we can eliminate boxing that was introduced by the user
   (pattern (#%plain-app (~and op (~or (~literal make-rectangular)
                                       (~literal unsafe-make-flrectangular)))
-                        real:float-coerce-expr imag:float-coerce-expr)
+                        real:float-arg-expr imag:float-arg-expr)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with (bindings ...)
@@ -260,7 +260,7 @@
                   #'(((real-binding) real.opt)
                      ((imag-binding) imag.opt))))
   (pattern (#%plain-app (~and op (~literal make-polar))
-                        r:float-coerce-expr theta:float-coerce-expr)
+                        r:float-arg-expr theta:float-arg-expr)
            #:with magnitude    (unboxed-gensym)
            #:with angle        (unboxed-gensym)
            #:with real-binding (unboxed-gensym "unboxed-real-")
