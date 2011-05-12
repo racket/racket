@@ -153,7 +153,7 @@ With a structure type definition like
 ]
 
 an instance of the structure type prints in a way that does not show
-any information about the fields values. That is, structure types by
+any information about the fields' values. That is, structure types by
 default are @deftech{opaque}. If the accessors and mutators of a
 structure type are kept private to a module, then no other module can
 rely on the representation of the type's instances.

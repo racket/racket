@@ -89,10 +89,10 @@ variables} that are bound in the result expressions:
   [(hat sz stl) sz])
 ]
 
-An ellipsis, written @litchar{...}, act like a Kleene star within a
+An ellipsis, written @litchar{...}, acts like a Kleene star within a
 list or vector pattern: the preceding sub-pattern can be used to match
 any number of times for any number of consecutive elements of the list
-of vector. If a sub-pattern followed by an ellipsis includes a pattern
+or vector. If a sub-pattern followed by an ellipsis includes a pattern
 variable, the variable matches multiple times, and it is bound in the
 result expression to a list of matches:
 

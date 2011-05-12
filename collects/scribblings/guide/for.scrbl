@@ -62,7 +62,7 @@ see the kinds of sequence generators that make interesting examples.
 
 The @racket[in-range] function generates a sequence of numbers, given
 an optional starting number (which defaults to @racket[0]), a number
-before which the sequences ends, and an optional step (which defaults
+before which the sequence ends, and an optional step (which defaults
 to @racket[1]). Using a non-negative integer @racket[_k] directly as 
 a sequence is a shorthand for @racket[(in-range _k)].
 

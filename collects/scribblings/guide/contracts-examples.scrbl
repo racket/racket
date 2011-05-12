@@ -39,7 +39,7 @@ Mitchell and McKim's principles for design by contract DbC are derived
 @item{@bold{For each command, write a post-condition contract that specifies the
     changes to the observable properties in terms of the basic queries.}}
 
-@item{@bold{For each query and command, decide on suitable
+@item{@bold{For each query and command, decide on a suitable
 pre-condition contract.}}]
 
 Each of the following sections corresponds to a chapter in
