@@ -107,7 +107,7 @@ parsing.
 
 }
 
-@defproc[(decode-flow [lst (listof pre-flow?)]) flow?]{
+@defproc[(decode-flow [lst (listof pre-flow?)]) (listof block?)]{
 
 Decodes a flow. A sequence of two or more newlines separated only by
 whitespace counts is parsed as a paragraph separator. In @racket[lst],
