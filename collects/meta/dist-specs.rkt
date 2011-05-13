@@ -112,6 +112,7 @@ ppc-darwin        :=tag unix
 i386-darwin       :=tag unix
 ppc-osx-mac       :=tag mac
 i386-osx-mac      :=tag mac
+x86_64-osx-mac    :=tag mac
 sparc-solaris     :=tag unix
 
 ;; tag specs to make each distribution a proper superset of the previous
@@ -722,6 +723,7 @@ platform
          sparc-solaris     => "Solaris"
          ppc-osx-mac       => "Mac OS X (PPC)"
          i386-osx-mac      => "Mac OS X (Intel)"
+         i386-osx-mac      => "Mac OS X (x86_64)"
          ppc-darwin        => "Mac OS X using X11 (PPC)"
          i386-darwin       => "Mac OS X using X11 (Intel)"
          i386-win32        => "Windows"

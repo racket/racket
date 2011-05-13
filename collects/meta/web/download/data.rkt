@@ -54,9 +54,10 @@
     ;; binary platforms
     ["i386-win32" "Windows x86"]
     ["x86_64-win32" "Windows x64"]
-    ["(ppc|i386)-osx-mac"
+    ["(ppc|i386|x86_64)-osx-mac"
      ,(lambda (_ cpu)
-        (format "Macintosh OS X (~a)" (if (equal? cpu "ppc") "PPC" "Intel")))]
+        (format "Macintosh OS X (~a)"
+                (if (equal? cpu "ppc") "PPC" (format "Intel ~a" cpu))))]
     ["(ppc|68k)-mac-classic" "Macintosh Classic (\\1)"]
     ["(ppc|i386)-darwin"
      ,(lambda (_ cpu)

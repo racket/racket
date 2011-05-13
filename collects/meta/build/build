@@ -103,6 +103,8 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 # These builds are courtesy of Mason Loring Bliss <mason at blisses dot org>
 defbuild "blisses1" "x86_64-linux-debian-lenny"
 defbuild "blisses2" "x86_64-linux-debian-squeeze"
+# And this is from Stephen De Gabrielle <stephen.degabrielle at acm dot org>
+defbuild "osx64" "x86_64-osx-mac"
 # Start the main build last
 defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
@@ -216,6 +218,7 @@ name_of_platform() {
     ( "sparc-solaris"     ) echo "Solaris" ;;
     ( "i386-osx-mac"      ) echo "Mac OS X (Intel)" ;;
     ( "ppc-osx-mac"       ) echo "Mac OS X (PPC)" ;;
+    ( "x86_64-osx-mac"    ) echo "Mac OS X (x86_64)" ;;
     ( "ppc-darwin"        ) echo "Mac X11 on Darwin (PPC)" ;;
     ( "i386-darwin"       ) echo "Mac X11 on Darwin (Intel)" ;;
     ( "i386-win32"        ) echo "Windows" ;;
@@ -269,6 +272,7 @@ platforms_of_dist_type() {
                    "x86_64-win32" \
                    "i386-osx-mac" \
                    "ppc-osx-mac" \
+                   "x86_64-osx-mac" \
                    "ppc-darwin" \
                    "i386-darwin" \
                    "i386-linux" \
