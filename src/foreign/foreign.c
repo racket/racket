@@ -2872,7 +2872,7 @@ void scheme_check_foreign_work(void)
 
 #ifdef MZ_USE_PLACES
   if ((scheme_current_place_id == 0) && orig_place_mutex) {
-    FFI_Orig_Place_Call *todo;
+    FFI_Orig_Place_Call *todo, *next;
 
     mzrt_mutex_lock(orig_place_mutex);
     todo = orig_place_calls;
@@ -2881,8 +2881,9 @@ void scheme_check_foreign_work(void)
 
     while (todo) {
       ffi_call(todo->cif, todo->proc, todo->p, todo->avalues);
+      next = todo->next;
       mzrt_sema_post(todo->sema);
-      todo = todo->next;
+      todo = next;
     }
   }
 #endif
