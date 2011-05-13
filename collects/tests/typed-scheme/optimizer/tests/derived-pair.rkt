@@ -3,11 +3,11 @@
 #f (no location) car -- pair
 #f (no location) car -- pair
 derived-pair.rkt 23:0 (#%app caar (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3))) -- derived pair
-#f (no location) cdr -- pair
 #f (no location) car -- pair
+#f (no location) cdr -- pair
 derived-pair.rkt 24:0 (#%app cadr (#%app cons (quote 1) (#%app cons (quote 2) (quote 3)))) -- derived pair
-#f (no location) car -- pair
 #f (no location) cdr -- pair
+#f (no location) car -- pair
 derived-pair.rkt 25:0 (#%app cdar (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3))) -- derived pair
 #f (no location) cdr -- pair
 #f (no location) cdr -- pair

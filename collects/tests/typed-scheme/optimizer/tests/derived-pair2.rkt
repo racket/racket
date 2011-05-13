@@ -4,29 +4,29 @@
 #f (no location) car -- pair
 #f (no location) car -- pair
 derived-pair2.rkt 47:0 (#%app caaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
+#f (no location) car -- pair
+#f (no location) car -- pair
 #f (no location) cdr -- pair
-#f (no location) car -- pair
-#f (no location) car -- pair
 derived-pair2.rkt 48:0 (#%app caadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
 #f (no location) car -- pair
 #f (no location) cdr -- pair
 #f (no location) car -- pair
 derived-pair2.rkt 49:0 (#%app cadar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
-#f (no location) cdr -- pair
-#f (no location) cdr -- pair
 #f (no location) car -- pair
+#f (no location) cdr -- pair
+#f (no location) cdr -- pair
 derived-pair2.rkt 50:0 (#%app caddr (#%app cons (quote 1) (#%app cons (quote 2) (#%app cons (quote 3) (quote 4))))) -- derived pair
-#f (no location) car -- pair
-#f (no location) car -- pair
 #f (no location) cdr -- pair
+#f (no location) car -- pair
+#f (no location) car -- pair
 derived-pair2.rkt 51:0 (#%app cdaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
 #f (no location) cdr -- pair
 #f (no location) car -- pair
 #f (no location) cdr -- pair
 derived-pair2.rkt 52:0 (#%app cdadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
+#f (no location) cdr -- pair
+#f (no location) cdr -- pair
 #f (no location) car -- pair
-#f (no location) cdr -- pair
-#f (no location) cdr -- pair
 derived-pair2.rkt 53:0 (#%app cddar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
 #f (no location) cdr -- pair
 #f (no location) cdr -- pair

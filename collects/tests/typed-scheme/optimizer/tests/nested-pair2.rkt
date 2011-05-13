@@ -1,7 +1,7 @@
 #;
 (
-nested-pair2.rkt 11:6 cdr -- pair
 nested-pair2.rkt 11:1 car -- pair
+nested-pair2.rkt 11:6 cdr -- pair
 '(2)
 )
 
