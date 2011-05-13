@@ -1647,6 +1647,24 @@ uintptr_t scheme_get_deeper_address(void)
   return (uintptr_t)vp;
 }
 
+Scheme_Object *scheme_malloc_key()
+/* allocates a Scheme object that is useful as an `eq?'-based key,
+   that can be used from any place, and that is not GCed */
+{
+  Scheme_Object *k;
+
+  k = (Scheme_Object *)malloc(sizeof(Scheme_Small_Object));
+  k->type = scheme_box_type;
+  SCHEME_BOX_VAL(k) = scheme_false;
+
+  return k;
+}
+
+void scheme_free_key(Scheme_Object *k)
+{
+  free(k);
+}
+
 /************************************************************************/
 /*                             GC_dump                                  */
 /************************************************************************/

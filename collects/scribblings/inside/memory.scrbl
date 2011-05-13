@@ -85,7 +85,9 @@ variable must be registered with
 visible to the garbage collector. Registered variables need not
 contain a collectable pointer at all times (even with 3m, but the
 variable must contain some pointer, possibly uncollectable, at all
-times).
+times). Beware that static or global variables that are not 
+thread-specific (in the OS sense of ``thread'') generally do not
+work with multiple @|tech-place|s.
 
 With conservative collection, no registration is needed for the global
 or static variables of an embedding program, unless it calls
@@ -162,12 +164,14 @@ retaining such a pointer can lead to a crash.
 As explained in @secref["im:values+types"], the @cpp{scheme_make_type}
 function can be used to obtain a new tag for a new type of object.
 These new types are in relatively short supply for 3m; the maximum tag
-is 255, and Racket itself uses nearly 200.
+is 512, and Racket itself uses nearly 300.
 
 After allocating a new tag in 3m (and before creating instances of the
 tag), a @defterm{size procedure}, a @defterm{mark procedure}, and a
 @defterm{fixup procedure} must be installed for the tag using
-@cppi{GC_register_traversers}.
+@cppi{GC_register_traversers}. A type tag and its associated GC
+procedures apply to all @|tech-place|s, even though specific allocated
+objects are confined to a particular @|tech-place|.
 
 A size procedure simply takes a pointer to an object with the tag and
 returns its size in words (not bytes). The @cppi{gcBYTES_TO_WORDS}
@@ -727,8 +731,11 @@ Frees memory allocated with @cpp{scheme_malloc_code}.}
            [intptr_t size])]{
 
 Registers an extension's global variable that can contain Racket
- pointers. The address of the global is given in @var{ptr}, and its
- size in bytes in @var{size}.In addition to global variables, this
+ pointers (for the current @|tech-place|). The address of the global 
+ is given in @var{ptr}, and its
+ size in bytes in @var{size}.
+
+In addition to global variables, this
  function can be used to register any permanent memory that the
  collector would otherwise treat as atomic. A garbage collection can
  occur during the registration.}

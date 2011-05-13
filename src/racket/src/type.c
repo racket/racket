@@ -41,9 +41,19 @@ SHARED_OK static Scheme_Type maxtype, allocmax;
 SHARED_OK intptr_t scheme_type_table_count;
 #endif
 
+#ifdef MZ_USE_PLACES
+static mzrt_mutex *type_array_mutex;
+#endif
+
+#define RAW_MALLOC_N(t, n) (t*)malloc(n * sizeof(t))
+
 static void init_type_arrays()
 {
   intptr_t n;
+
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_create(&type_array_mutex);
+#endif
 
   REGISTER_SO(type_names);
   REGISTER_SO(scheme_type_readers);
@@ -55,8 +65,8 @@ static void init_type_arrays()
   maxtype = _scheme_last_type_;
   allocmax = maxtype + 100;
 
-  type_names = MALLOC_N(char *, allocmax);
-  scheme_type_readers = MALLOC_N_ATOMIC(Scheme_Type_Reader2, allocmax);
+  type_names = RAW_MALLOC_N(char *, allocmax);
+  scheme_type_readers = RAW_MALLOC_N(Scheme_Type_Reader2, allocmax);
   n = allocmax * sizeof(Scheme_Type_Reader);
   memset((char *)scheme_type_readers, 0, n);
 
@@ -65,7 +75,7 @@ static void init_type_arrays()
   scheme_misc_count += (allocmax * sizeof(char *));
 #endif
 
-  scheme_type_writers = MALLOC_N_ATOMIC(Scheme_Type_Writer, allocmax);
+  scheme_type_writers = RAW_MALLOC_N(Scheme_Type_Writer, allocmax);
   n = allocmax * sizeof(Scheme_Type_Writer);
   memset((char *)scheme_type_writers, 0, n);
 
@@ -73,15 +83,15 @@ static void init_type_arrays()
   scheme_type_table_count += n;
 #endif  
 
-  scheme_type_equals = MALLOC_N_ATOMIC(Scheme_Equal_Proc, allocmax);
+  scheme_type_equals = RAW_MALLOC_N(Scheme_Equal_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Equal_Proc);
   memset((char *)scheme_type_equals, 0, n);
 
-  scheme_type_hash1s = MALLOC_N_ATOMIC(Scheme_Primary_Hash_Proc, allocmax);
+  scheme_type_hash1s = RAW_MALLOC_N(Scheme_Primary_Hash_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Primary_Hash_Proc);
   memset((char *)scheme_type_hash1s, 0, n);
 
-  scheme_type_hash2s = MALLOC_N_ATOMIC(Scheme_Secondary_Hash_Proc, allocmax);
+  scheme_type_hash2s = RAW_MALLOC_N(Scheme_Secondary_Hash_Proc, allocmax);
   n = allocmax * sizeof(Scheme_Secondary_Hash_Proc);
   memset((char *)scheme_type_hash2s, 0, n);
 }
@@ -298,13 +308,13 @@ scheme_init_type ()
 Scheme_Type scheme_make_type(const char *name)
 {
   Scheme_Type newtype;
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *saved_gc; 
-  saved_gc = GC_switch_to_master_gc();
-#endif
 
   if (!type_names)
     init_type_arrays();
+
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_lock(type_array_mutex);
+#endif
 
   if (maxtype == allocmax) {
     /* Expand arrays */
@@ -313,33 +323,39 @@ Scheme_Type scheme_make_type(const char *name)
     
     allocmax += 20;
 
-    naya = scheme_malloc(allocmax * sizeof(char *));
+    naya = malloc(allocmax * sizeof(char *));
     memcpy(naya, type_names, maxtype * sizeof(char *));
+    free(type_names);
     type_names = (char **)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Type_Reader2));
+    naya = malloc(n = allocmax * sizeof(Scheme_Type_Reader2));
     memset((char *)naya, 0, n);
     memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader2));
+    free(scheme_type_readers);
     scheme_type_readers = (Scheme_Type_Reader2 *)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Type_Writer));
+    naya = malloc(n = allocmax * sizeof(Scheme_Type_Writer));
     memset((char *)naya, 0, n);
     memcpy(naya, scheme_type_writers, maxtype * sizeof(Scheme_Type_Writer));
+    free(scheme_type_writers);
     scheme_type_writers = (Scheme_Type_Writer *)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Equal_Proc));
+    naya = malloc(n = allocmax * sizeof(Scheme_Equal_Proc));
     memset((char *)naya, 0, n);
     memcpy(naya, scheme_type_equals, maxtype * sizeof(Scheme_Equal_Proc));
+    free(scheme_type_equals);
     scheme_type_equals = (Scheme_Equal_Proc *)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Primary_Hash_Proc));
+    naya = malloc(n = allocmax * sizeof(Scheme_Primary_Hash_Proc));
     memset((char *)naya, 0, n);
     memcpy(naya, scheme_type_hash1s, maxtype * sizeof(Scheme_Primary_Hash_Proc));
+    free(scheme_type_hash1s);
     scheme_type_hash1s = (Scheme_Primary_Hash_Proc *)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Secondary_Hash_Proc));
+    naya = malloc(n = allocmax * sizeof(Scheme_Secondary_Hash_Proc));
     memset((char *)naya, 0, n);
     memcpy(naya, scheme_type_hash2s, maxtype * sizeof(Scheme_Secondary_Hash_Proc));
+    free(scheme_type_hash2s);
     scheme_type_hash2s = (Scheme_Secondary_Hash_Proc *)naya;
 
 #ifdef MEMORY_COUNTING_ON
@@ -351,15 +367,20 @@ Scheme_Type scheme_make_type(const char *name)
 
   {
     char *tn;
-    tn = scheme_strdup(name);
+    int len;
+    len = strlen(name) + 1;
+    tn = (char *)malloc(len);
+    memcpy(tn, name, len);
     type_names[maxtype] = tn;
   }
 
   newtype = maxtype;
   maxtype++;
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  GC_switch_back_from_master(saved_gc);
+
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_unlock(type_array_mutex);
 #endif
+
   return newtype;
 }
 

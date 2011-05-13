@@ -1152,3 +1152,6 @@ MZ_EXTERN Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
 
 MZ_EXTERN Scheme_Object *scheme_get_place_table(void);
 MZ_EXTERN void *scheme_register_process_global(const char *key, void *val);
+
+MZ_EXTERN Scheme_Object *scheme_malloc_key(void);
+MZ_EXTERN void scheme_free_key(Scheme_Object *k);

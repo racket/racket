@@ -2725,7 +2725,6 @@ void GC_gcollect(void)
     garbage_collect(gc, 1, 0, NULL);
 }
 
-static inline int atomic_mark(void *p) { return 0; }
 void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,
                              Fixup2_Proc fixup, int constant_Size, int atomic)
 {

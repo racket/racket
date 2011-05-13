@@ -117,8 +117,6 @@ static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]) {
   return SHARED_ALLOCATEDP(args[0]) ? scheme_true : scheme_false;
 }
 
-
-
 void scheme_init_places_once() {
 #ifdef MZ_USE_PLACES
   scheme_add_evt(scheme_place_type,            (Scheme_Ready_Fun)scheme_place_channel_ready, NULL, NULL, 1); 

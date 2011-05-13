@@ -654,7 +654,8 @@ Creates a new weak box containing the value @var{v}.}
 @function[(Scheme_Type scheme_make_type
            [char* name])]{
 
-Creates a new type (not a Racket value).}
+Creates a new type (not a Racket value). The type tag is valid across
+all @|tech-place|s.}
 
 @function[(Scheme_Object* scheme_make_cptr
            [void* ptr]

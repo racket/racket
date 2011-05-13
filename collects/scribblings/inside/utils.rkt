@@ -11,6 +11,7 @@
          mzc cpp cppi cppdef (rename-out [*var var])
          function subfunction
          FormatD
+         tech-place
          (except-out (all-from-out scribble/manual) var)
          (for-label (all-from-out scheme/base)))
 
@@ -159,6 +160,9 @@
 
 (define Racket
   (other-manual '(lib "scribblings/reference/reference.scrbl")))
+
+(define tech-place 
+  (tech #:doc '(lib "scribblings/reference/reference.scrbl") "place"))
 
 (define (FormatD s)
   (litchar (string-append "%" s)))

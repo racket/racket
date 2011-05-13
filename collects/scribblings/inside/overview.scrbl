@@ -71,10 +71,10 @@ steps:
  This initialization function can install new global primitive
  procedures or other values into the namespace, or it can simply
  return a Racket value. The initialization function is called when the
- extension is loaded with @racket[load-extension] (the first time);
- the return value from @cpp{scheme_initialize} is used as the return
- value for @racket[load-extension]. The namespace provided to
- @cpp{scheme_initialize} is the current namespace when
+ extension is loaded with @racket[load-extension] the first time in a
+ given @|tech-place|; the return value from @cpp{scheme_initialize} is used
+ as the return value for @racket[load-extension]. The namespace
+ provided to @cpp{scheme_initialize} is the current namespace when
  @racket[load-extension] is called.}
 
 
@@ -82,9 +82,9 @@ steps:
  arguments and return type as @cpp{scheme_initialize}.
 
  This function is called if @racket[load-extension] is called a second
- time (or more times) for an extension. Like @cpp{scheme_initialize},
- the return value from this function is the return value for
- @racket[load-extension].}
+ time (or more times) for an extension in a given @|tech-place|. Like
+ @cpp{scheme_initialize}, the return value from this function is the
+ return value for @racket[load-extension].}
 
 
  @item{Define the C function @cppi{scheme_module_name}, which takes
@@ -165,7 +165,9 @@ so pointers to Racket objects can be kept in registers, stack
 variables, or structures allocated with @cppi{scheme_malloc}. However,
 static variables that contain pointers to collectable memory must be
 registered using @cppi{scheme_register_extension_global} (see
-@secref["im:memoryalloc"]).
+@secref["im:memoryalloc"]); even then, such static variables must be
+thread-local (in the OS-thread sense) to work with multiple
+@|tech-place|s (see @secref["places"]).
 
 As an example, the following C code defines an extension that returns
 @racket["hello world"] when it is loaded:
@@ -225,7 +227,7 @@ compiled under Unix for 3m with the following three commands:
 
 @commandline{raco ctool --xform hw.c}
 @commandline{raco ctool --3m --cc hw.3m.c}
-@commandline{raco ctool --3m --ld hw.so hw.o}
+@commandline{raco ctool --3m --ld hw.so hw_3m.o}
 
 Some examples in @filepath{collects/mzscheme/examples} work with
 Racket 3m in this way. A few examples are manually instrumented, in
@@ -612,6 +614,30 @@ and when all temporary values are put into variables.
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "places"]{Racket and Places}
+
+Each Racket @|tech-place| corresponds to a separate OS-implemented
+thread. Each place has its own memory manager. Pointers to GC-managed
+memory cannot be communicated from one place to another, because such
+pointers in one place are invisible to the memory manager of another
+place.
+
+When @|tech-place| support is enabled, static variables in an
+extension or an embedding generally cannot hold pointers to GC-managed
+memory, since the static variable may be used from multiple places.
+For some OSes, a static variable can be made thread-local, in which
+case it has a different address in each OS thread, and each different
+address can be registered with the GC for a given place.
+
+The OS thread that originally calls @cpp{scheme_basic_env} is the OS
+thread of the original place. When @cpp{scheme_basic_env} is called a
+second time to reset the interpreter, it can be called in an OS thread
+that is different from the original call to
+@cpp{scheme_basic_env}. Thereafter, the new thread is the OS thread
+for the original place.
+
+@; ----------------------------------------------------------------------
+
 @section{Racket and Threads}
 
 Racket implements threads for Racket programs without aid from the
@@ -624,15 +650,15 @@ Racket API.
 
 In an embedding application, Racket can co-exist with additional
 OS-implemented threads, but the additional OS threads must not call
-any @cpp{scheme_} function.  Only the OS thread that originally calls
-@cpp{scheme_basic_env} can call @cpp{scheme_} functions. (This
-restriction is stronger than saying all calls must be serialized
-across threads. Racket relies on properties of specific threads to
-avoid stack overflow and garbage collection.) When
-@cpp{scheme_basic_env} is called a second time to reset the
-interpreter, it can be called in an OS thread that is different from
-the original call to @cpp{scheme_basic_env}. Thereafter, all calls to
-@cpp{scheme_} functions must originate from the new thread.
+any @cpp{scheme_} function.  Only the OS thread representing a
+particular @|tech-place| can call @cpp{scheme_} functions. (This
+restriction is stronger than saying all calls for a given place must
+be serialized across threads. Racket relies on properties of specific
+threads to avoid stack overflow and garbage collection.) For the
+original place, only the OS thread used to call @cpp{scheme_basic_env}
+can call @cpp{scheme_} functions. For any other place, only the OS
+thread that is created by Racket for the place can be used to call
+@cpp{scheme_} functions.
 
 See @secref["threads"] for more information about threads, including
 the possible effects of Racket's thread implementation on extension
