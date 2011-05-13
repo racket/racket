@@ -210,6 +210,7 @@
     ("Lists"
       (cons? (any -> boolean)
 	"to determine whether some value is a constructed list")
+      #;
       (pair? (any -> boolean)
 	"to determine whether some value is a constructed list")	
       (empty? (any -> boolean)
