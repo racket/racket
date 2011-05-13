@@ -5,71 +5,14 @@
 ;; can contain a mixture of cons cells and syntax objects,
 ;; hence the need for `stx-null?', `stx-car', etc.
 
-(provide stx-null? stx-pair? stx-list?
-         stx-car stx-cdr stx->list
-         stx-map
-         module-or-top-identifier=?)
+(require racket/private/stx)
 
-;; a syntax null?
-(define (stx-null? p)
-  (or (null? p)
-      (and (syntax? p) 
-           (null? (syntax-e p)))))
-
-;; a syntax pair?
-(define (stx-pair? p)
-  (or (pair? p)
-      (and (syntax? p)
-           (pair? (syntax-e p)))))
-
-;; a syntax list?
-(define (stx-list? p)
-  (or (list? p)
-      (if (syntax? p) 
-          (or (list? (syntax-e p))
-              (let loop ([l (syntax-e p)])
-                (if (pair? l)
-                    (loop (cdr l))
-                    (stx-list? l))))
-          (and (pair? p)
-               (stx-list? (cdr p))))))
-
-;; car of a syntax pair
-(define (stx-car p)
-  (if (pair? p)
-      (car p)
-      (car (syntax-e p))))
-
-;; cdr of a syntax pair
-(define (stx-cdr p)
-  (if (pair? p)
-      (cdr p)
-      (cdr (syntax-e p))))
-
-;; Flattens a syntax list into a list
-(define (stx->list e)
-  (if (syntax? e)
-      (syntax->list e)
-      (let ([flat-end
-             (let loop ([l e])
-               (if (null? l) 
-                   #f
-                   (if (pair? l)
-                       (loop (cdr l))
-                       (if (syntax? l) 
-                           (syntax->list l)
-                           #f))))])
-        (if flat-end
-            ;; flatten
-            (let loop ([l e])
-              (if (null? l) 
-                  null
-                  (if (pair? l) 
-                      (cons (car l) (loop (cdr l)))
-                      (if (syntax? l) 
-                          flat-end
-                          #f))))
-            e))))
+(provide 
+ ;; from racket/private/stx
+ stx-null? stx-pair? stx-list?
+ stx-car stx-cdr stx->list
+ ;; defined here        
+ stx-map module-or-top-identifier=?)
 
 (define (stx-map f . stxls)
   (for ([stxl (in-list stxls)]
