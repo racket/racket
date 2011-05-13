@@ -139,6 +139,7 @@
 (define-glib g_queue_foreach (_pfun _GQueue _fpointer #;(_fun _pointer -> _void) _pointer -> _void))
 (define-glib g_queue_free (_pfun _GQueue -> _void))
 (define-glib g_queue_new (_pfun -> _GQueue))
+(define-gobj raw_g_object_unref _fpointer #:c-id g_object_unref)
 
 (define (unref-font-map v)
   (when (eq? (system-type) 'windows)
@@ -151,7 +152,7 @@
     ;; flushing the queue of freed fonts before the font map is
     ;; unreffed.
     (let ([fm (cast v _pointer _PangoWin32FontMap-pointer)])
-      (g_queue_foreach (PangoWin32FontMap-freed_fonts fm) g_object_unref #f)
+      (g_queue_foreach (PangoWin32FontMap-freed_fonts fm) raw_g_object_unref #f)
       (g_queue_free (PangoWin32FontMap-freed_fonts fm))
       (set-PangoWin32FontMap-freed_fonts! fm (g_queue_new))))
   (g_object_unref v))
