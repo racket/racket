@@ -19,6 +19,7 @@
   racket/mpair
   racket/base
   racket/set
+  syntax/stx racket/private/stx
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
@@ -1058,3 +1059,6 @@
 [ephemeron? (make-pred-ty (make-Ephemeron Univ))]
 [ephemeron-value (-poly (v) (-> (make-Ephemeron v) (Un (-val #f) v)))]
 
+; syntax/stx (needed for `with-syntax')
+[stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
+[stx-list? (-> (-Syntax Univ) -Boolean)]

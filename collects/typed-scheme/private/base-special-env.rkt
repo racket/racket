@@ -138,5 +138,26 @@
   [(syntax-parse (local-expand #'(in-bytes-lines) 'expression #f)
      [(i-n _ ...)
       #'i-n])
-   (->opt [-Input-Port -Symbol] (-seq -Bytes))])
+   (->opt [-Input-Port -Symbol] (-seq -Bytes))]
+  
+  ;; from the expansion of `with-syntax'
+  [(syntax-parse (local-expand #'(with-syntax ([x 1]) #'(x)) 'expression null)
+     #:literals (let-values #%plain-app #%plain-lambda if letrec-syntaxes+values)
+     [(let-values _
+        (let-values _
+          (let-values _
+            (if _
+                (let-values _ (letrec-syntaxes+values _ _ (#%plain-app (#%plain-lambda _ (#%plain-app apply-pattern-substitute _ _ _)) _)))
+                _))))
+      #'apply-pattern-substitute])
+   (->* (list (-Syntax Univ) Univ) Univ Any-Syntax)]
+  
+  [(syntax-parse (local-expand #'(with-syntax ([x 1]) #'(x)) 'expression null)
+     #:literals (let-values #%plain-app #%plain-lambda if letrec-syntaxes+values)
+    [(let-values _ (let-values _ 
+                     (let-values _ (if _ _ (let-values _ 
+                                             (if _ (let-values _ (letrec-syntaxes+values _ _ (#%plain-app with-syntax-fail _))) _))))))
+      #'with-syntax-fail])
+   (-> (-Syntax Univ) (Un))]
+  )
 
