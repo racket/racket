@@ -12,7 +12,7 @@
       (cons new properties)))
 
 (define (scribble-file s)
-  (path->main-collects-relative (build-path (collection-path "scribble") s)))
+  (path->main-collects-relative (collection-file-path s "scribble")))
 
 (define (add-defaults doc pfx styl extras version?)
   (struct-copy part doc [style (make-style (style-name (part-style doc))
