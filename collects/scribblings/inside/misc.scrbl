@@ -340,7 +340,7 @@ Returns the string that is used as the Racket startup banner.}
 
 Returns a string for the executing version of Racket.}
 
-@function[(Scheme_Object* scheme_get_place_table)]{
+@function[(Scheme_Hash_Table* scheme_get_place_table)]{
 
 Returns an @racket[eq?]-based hash table that is global to the current
 @|tech-place|.

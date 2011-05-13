@@ -2333,11 +2333,11 @@ void scheme_init_process_globals(void)
 #endif
 }
 
-Scheme_Object *scheme_get_place_table(void)
+Scheme_Hash_Table *scheme_get_place_table(void)
 {
   if (!place_local_misc_table)
     place_local_misc_table = scheme_make_hash_table(SCHEME_hash_ptr);
-  return (Scheme_Object *)place_local_misc_table;
+  return place_local_misc_table;
 }
 
 /*========================================================================*/
