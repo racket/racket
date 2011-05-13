@@ -24,7 +24,7 @@ Returns @scheme[#t] if @scheme[v] is a list, or if it is a sequence of
 pairs leading to a syntax object such that @scheme[syntax->list] would
 produce a list.}
 
-@defproc[(stx->list [stx-list stx-list?]) list?]{
+@defproc[(stx->list [stx-list stx-list?]) (or/c list? #f)]{
 
 Produces a list by flatting out a trailing syntax object using
 @scheme[syntax->list].}
