@@ -1120,13 +1120,14 @@ void scheme_collapse_win_fd(void *fds)
 
 /* Racket creates Windows threads for various purposes, including
    non-blocking FILE reads. Unfortunately, these threads can confuse
-   the GC if they move virtual pages around while its marking. So we
+   the Boehm GC if they move virtual pages around while its marking. So we
    remember each created thread and suspend it during GC.
 
    This work is not necessary if GC_use_registered_statics is set. */
 
+#ifndef MZ_PRECISE_GC
 
-#ifdef WINDOWS_PROCESSES
+# ifdef WINDOWS_PROCESSES
 typedef struct Scheme_Thread_Memory {
   MZTAG_IF_REQUIRED
   void *handle;
@@ -1140,22 +1141,16 @@ Scheme_Thread_Memory *tm_start, *tm_next;
 
 void scheme_init_thread_memory()
 {
-#ifndef MZ_PRECISE_GC
   REGISTER_SO(tm_start);
   REGISTER_SO(tm_next);
-#endif
 
   /* We start with a pre-allocated tm because we
      want to register a thread before performing any
      allocations. */
-#ifdef MZ_PRECISE_GC
-  tm_next = (Scheme_Thread_Memory *)malloc(sizeof(Scheme_Thread_Memory));
-#else
   tm_next = MALLOC_ONE_RT(Scheme_Thread_Memory);
-#endif
-#ifdef MZTAG_REQUIRED
+#  ifdef MZTAG_REQUIRED
   tm_next->type = scheme_rt_thread_memory;
-#endif
+#  endif
 
   /* scheme_init_thread() will replace these: */
   GC_set_collect_start_callback(scheme_suspend_remembered_threads);
@@ -1176,14 +1171,10 @@ Scheme_Thread_Memory *scheme_remember_thread(void *t, int autoclose)
     tm->next->prev = tm;
   tm_start = tm;
 
-#ifdef MZ_PRECISE_GC
-  tm_next = (Scheme_Thread_Memory *)malloc(sizeof(Scheme_Thread_Memory));
-#else
   tm_next = MALLOC_ONE_RT(Scheme_Thread_Memory);
-#endif
-#ifdef MZTAG_REQUIRED
+#  ifdef MZTAG_REQUIRED
   tm_next->type = scheme_rt_thread_memory;
-#endif
+#  endif
 
   return tm;
 }
@@ -1206,10 +1197,6 @@ void scheme_forget_thread(struct Scheme_Thread_Memory *tm)
 
   tm->next = NULL;
   tm->prev = NULL;
-
-#ifdef MZ_PRECISE_GC
-  free(tm);
-#endif
 }
 
 void scheme_forget_subthread(struct Scheme_Thread_Memory *tm)
@@ -1240,9 +1227,6 @@ void scheme_suspend_remembered_threads(void)
 	  tm->next->prev = prev;
 	tm->next = NULL;
 	tm->prev = NULL;
-#ifdef MZ_PRECISE_GC
-	free(tm);
-#endif
 	keep = 0;
       }
     }
@@ -1268,7 +1252,22 @@ void scheme_resume_remembered_threads(void)
   }
 }
 
+# endif
+
+#else
+
+typedef struct Scheme_Thread_Memory Scheme_Thread_Memory;
+
+void scheme_init_thread_memory() { }
+Scheme_Thread_Memory *scheme_remember_thread(void *t, int autoclose) { return NULL; }
+void scheme_remember_subthread(struct Scheme_Thread_Memory *tm, void *t) { }
+void scheme_forget_thread(struct Scheme_Thread_Memory *tm) { }
+void scheme_forget_subthread(struct Scheme_Thread_Memory *tm) { }
+void scheme_suspend_remembered_threads() { }
+void scheme_resume_remembered_threads(void) { }
+
 #endif
+
 
 /*========================================================================*/
 /*                        Generic port support                            */
@@ -8861,51 +8860,86 @@ int scheme_get_external_event_fd(void)
 
 #ifdef USE_WIN32_THREAD_TIMER
 
-static HANDLE itimer;
-static OS_SEMAPHORE_TYPE itimer_semaphore;
-static intptr_t itimer_delay;
-typedef struct {
+typedef struct ITimer_Data {
+  int done;
+  HANDLE itimer;
+  intptr_t delay;
+  OS_SEMAPHORE_TYPE semaphore;
+  OS_SEMAPHORE_TYPE done_semaphore;
   int volatile *fuel_counter_ptr;
   uintptr_t volatile *jit_stack_boundary_ptr;
-} Win_Itimer_Data;
+} ITimer_Data;
+
+THREAD_LOCAL_DECL(static ITimer_Data *itimerdata);
 
 static long WINAPI ITimer(void *data)
   XFORM_SKIP_PROC
 {
-  Win_Itimer_Data *d = (Win_Itimer_Data *)data;
+  ITimer_Data *d = (ITimer_Data *)data;
 
-  WaitForSingleObject(itimer_semaphore, INFINITE);
+  WaitForSingleObject(d->semaphore, INFINITE);
 
-  scheme_init_os_thread();
-
-  while (1) {
-    if (WaitForSingleObject(itimer_semaphore, itimer_delay / 1000) == WAIT_TIMEOUT) {
+  while (!d->done) {
+    if (WaitForSingleObject(d->semaphore, d->delay / 1000) == WAIT_TIMEOUT) {
       *d->fuel_counter_ptr = 0;
       *d->jit_stack_boundary_ptr = (uintptr_t)-1;
-      WaitForSingleObject(itimer_semaphore, INFINITE);
+      if (!d->done)
+	WaitForSingleObject(d->semaphore, INFINITE);
     }
   }
 
-  /* scheme_done_os_thread(); */
+  ReleaseSemaphore(d->done_semaphore, 1, NULL);
+
+  return 0;
 }
 
 static void scheme_start_itimer_thread(intptr_t usec)
 {
   DWORD id;
 
-  if (!itimer) {
-    Win_Itimer_Data *d;
-    d = malloc(sizeof(Win_Itimer_Data));
+  if (!itimerdata) {
+    ITimer_Data *d;
+    HANDLE itimer, sema;
+
+    d = malloc(sizeof(ITimer_Data));
+    memset(d, 0, sizeof(ITimer_Data));
+
     d->fuel_counter_ptr = &scheme_fuel_counter;
     d->jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
+
+    sema = CreateSemaphore(NULL, 0, 1, NULL);
+    d->semaphore = sema;
+    sema = CreateSemaphore(NULL, 0, 1, NULL);
+    d->done_semaphore = sema;
+
     itimer = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)ITimer, 
 			  d, 0, &id);
-    itimer_semaphore = CreateSemaphore(NULL, 0, 1, NULL);
     scheme_remember_thread(itimer, 0);
+    d->itimer = itimer;
+
+    itimerdata = d;
   }
 
-  itimer_delay = usec;
-  ReleaseSemaphore(itimer_semaphore, 1, NULL);
+  itimerdata->delay = usec;
+  ReleaseSemaphore(itimerdata->semaphore, 1, NULL);
+}
+
+static void scheme_stop_itimer_thread()
+{
+  ITimer_Data *d = itimerdata;
+
+  scheme_forget_thread(d->itimer);
+
+  d->done = 1;
+  ReleaseSemaphore(d->semaphore, 1, NULL);
+
+  WaitForSingleObject(d->done_semaphore, INFINITE);
+
+  CloseHandle(d->semaphore);
+  CloseHandle(d->done_semaphore);
+  CloseHandle(d->itimer);
+
+  free(d);
 }
 
 #endif
@@ -9072,6 +9106,8 @@ void scheme_kill_green_thread_timer()
 {
 #if defined(USE_PTHREAD_THREAD_TIMER)
   kill_green_thread_timer();
+#elif defined(USE_WIN32_THREAD_TIMER)
+  scheme_stop_itimer_thread();
 #endif
 }
 
@@ -9280,9 +9316,6 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
-#ifdef WINDOWS_PROCESSES
-  GC_REG_TRAV(scheme_rt_thread_memory, mark_thread_memory);
-#endif
   GC_REG_TRAV(scheme_rt_input_file, mark_input_file);
   GC_REG_TRAV(scheme_rt_output_file, mark_output_file);
 

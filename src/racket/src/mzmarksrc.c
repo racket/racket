@@ -1538,18 +1538,6 @@ END portfun;
 
 START port;
 
-#ifdef WINDOWS_PROCESSES
-mark_thread_memory {
- mark:
-  Scheme_Thread_Memory *tm = (Scheme_Thread_Memory *)p;
-  gcMARK2(tm->prev, gc);
-  gcMARK2(tm->next, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Memory));
-}
-#endif
-
 mark_input_file {
  mark:
   Scheme_Input_File *i = (Scheme_Input_File *)p;
