@@ -2716,7 +2716,11 @@ void GC_switch_back_from_master(void *gc) {
 void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
-  garbage_collect(gc, 1, 0, NULL);
+
+  if (postmaster_and_master_gc(gc))
+    master_collect_initiate(gc);
+  else
+    garbage_collect(gc, 1, 0, NULL);
 }
 
 static inline int atomic_mark(void *p) { return 0; }

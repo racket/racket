@@ -1961,7 +1961,7 @@ static void* GC_master_malloc_tagged(size_t size) {
   return ptr;
 }
 
-static void async_channel_finialize(void *p, void* data) {
+static void async_channel_finalize(void *p, void* data) {
   Scheme_Place_Async_Channel *ch;
   int i;
   ch = (Scheme_Place_Async_Channel*)p;
@@ -1984,6 +1984,9 @@ Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   Scheme_Object **msgs;
   Scheme_Place_Async_Channel *ch;
   void **msg_memory;
+#ifdef MZ_PRECISE_GC
+  void *original_gc;
+#endif
 
   ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Async_Channel));
   msgs = GC_master_malloc(sizeof(Scheme_Object*) * 8);
@@ -1998,6 +2001,15 @@ Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   ch->msgs = msgs;
   ch->msg_memory = msg_memory;
   ch->wakeup_signal = NULL;
+
+#ifdef MZ_PRECISE_GC
+  original_gc = GC_switch_to_master_gc();
+  GC_set_finalizer(ch, 1, 1, async_channel_finalize, NULL, NULL, NULL);
+  GC_switch_back_from_master(original_gc);
+#endif
+  /* FIXME? Need finalizer for non-precise GC if places become supported 
+     in that mode. */
+
   return ch;
 }
 
