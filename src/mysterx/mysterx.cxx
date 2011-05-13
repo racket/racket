@@ -70,17 +70,19 @@ static void GC_BOX_DONE(void *v) {
 # define GC_HANDLER_BOX_DONE(x) (scheme_gc_ptr_ok(x))
 #endif
 
-static Scheme_Object *mx_omit_obj; /* omitted argument placeholder */
+static Scheme_Object *mx_omit_obj_key; /* omitted argument placeholder */
+
+static int is_mx_omit_obj(Scheme_Object *v) {
+  Scheme_Object *mx_omit_obj;
+  mx_omit_obj = scheme_hash_get(scheme_get_place_table(), mx_omit_obj_key);  
+  return SAME_OBJ(v, mx_omit_obj);
+}
 
 /* Normally false, but when true, mysterx will marshal any scheme */
 /* object it would otherwise fail to marshal by simply sticking   */
 /* the 32-bit value in an UNSIGNED I4 variant and hoping for the  */
 /* best.  Obviously this has GC implications, so don't use it.    */
 /* jrm uses it for dotnet.                                        */
-
-Scheme_Object * mx_marshal_raw_scheme_objects;
-
-Scheme_Object *scheme_date_type;
 
 MYSSINK_TABLE myssink_table;
 
@@ -399,9 +401,6 @@ static MX_PRIM mxPrims[] = {
   { mx_event_error_pred,"event-error?",1,1},
   { mx_block_until_event,"block-until-event",1,1},
   { mx_process_win_events,"process-win-events",0,0},
-
-  // dotnet hack
-  { initialize_dotnet_runtime,"%%initialize-dotnet-runtime",0,0},
 
 };
 
@@ -2668,7 +2667,7 @@ BOOL schemeValueFitsElemDesc(Scheme_Object *val, ELEMDESC *pElemDesc)
 
   flags = pElemDesc->paramdesc.wParamFlags;
   if (flags & PARAMFLAG_FOPT) {
-    if (val == mx_omit_obj)
+    if (is_mx_omit_obj(val))
       return TRUE;
 
     if (flags & PARAMFLAG_FHASDEFAULT)
@@ -2833,14 +2832,9 @@ void marshalSchemeValueToVariant(Scheme_Object *val, VARIANTARG *pVariantArg)
     pVariantArg->parray = sa;
   }
 
-  else if (scheme_apply(mx_marshal_raw_scheme_objects, 0, NULL) == scheme_false)
+  else
     scheme_signal_error("Unable to inject Scheme value %V into VARIANT", val);
-  else {
-    uintptr_t v2;
-    pVariantArg->vt = VT_INT;
-    v2 = PtrToInt(val);
-    pVariantArg->intVal = v2;
-  }
+
   return;
 }
 
@@ -3766,7 +3760,7 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 #endif
 
-    if (argv[k] == mx_omit_obj) { // omitted argument
+    if (is_mx_omit_obj(argv[k])) { // omitted argument
       methodArguments->rgvarg[j].vt = VT_ERROR;
       methodArguments->rgvarg[j].lVal = DISP_E_PARAMNOTFOUND;
     }
@@ -3947,7 +3941,7 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 #endif
 
-    if (argv[k] == mx_omit_obj) { // omitted argument
+    if (is_mx_omit_obj(argv[k])) { // omitted argument
       methodArguments->rgvarg[j].vt = VT_ERROR;
       methodArguments->rgvarg[j].lVal = DISP_E_PARAMNOTFOUND;
     }
@@ -4173,6 +4167,7 @@ static Scheme_Object *mx_make_direct_call(int argc, Scheme_Object **argv,
 {
   HRESULT hr;
   Scheme_Object *retval;
+  Scheme_Object *mx_omit_obj;
   MX_ARGS_COUNT argsCount;
   IDispatch *pInterface;
   COMPTR funPtr;
@@ -4230,6 +4225,8 @@ END_XFORM_SKIP;
     allocateDirectRetval(&retvalVa);
     pushOneArg(retvalVa, buff);
   }
+
+  mx_omit_obj = scheme_hash_get(scheme_get_place_table(), mx_omit_obj_key);  
 
   // these must be macros, not functions, so that stack is maintained
 
@@ -5266,40 +5263,17 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 #endif
 
-Scheme_Object *scheme_initialize(Scheme_Env *env)
+Scheme_Object *scheme_reload(Scheme_Env *env)
 {
   HRESULT hr;
   Scheme_Object *mx_fun;
   int i;
   Scheme_Object *mx_name;
-  Scheme_Object * arglist[1];
-
-  scheme_register_extension_global(&mx_omit_obj, sizeof(mx_omit_obj));
-  scheme_register_extension_global(&scheme_date_type, sizeof(scheme_date_type));
+  Scheme_Object * arglist[1], *mx_omit_obj;
 
   // globals in mysterx.cxx
 
   mx_name = scheme_intern_symbol(MXMAIN);
-  scheme_date_type = scheme_builtin_value("struct:date");
-
-  mx_com_object_type   = scheme_make_type("<com-object>");
-  mx_com_type_type     = scheme_make_type("<com-type>");
-  mx_browser_type      = scheme_make_type("<mx-browser>");
-  mx_document_type     = scheme_make_type("<mx-document>");
-  mx_element_type      = scheme_make_type("<mx-element>");
-  mx_event_type        = scheme_make_type("<mx-event>");
-  mx_com_cy_type       = scheme_make_type("<com-currency>");
-  mx_com_date_type     = scheme_make_type("<com-date>");
-  mx_com_scode_type    = scheme_make_type("<com-scode>");
-  mx_com_iunknown_type = scheme_make_type("<com-iunknown>");
-  mx_com_omit_type     = scheme_make_type("<com-omit>");
-  mx_com_typedesc_type = scheme_make_type("<com-typedesc>");
-
-  mx_tbl_entry_type = scheme_make_type("<tbl-entry>");
-
-#ifdef MZ_PRECISE_GC
-  register_traversers();
-#endif
 
   hr = CoInitialize(NULL);
 
@@ -5308,17 +5282,6 @@ Scheme_Object *scheme_initialize(Scheme_Env *env)
   if (FAILED(hr) && hr != S_FALSE) {
     return scheme_false;
   }
-
-  arglist[0] = scheme_false;
-  scheme_register_extension_global(&mx_unmarshal_strings_as_symbols,
-                                   sizeof mx_unmarshal_strings_as_symbols);
-  scheme_register_extension_global(&mx_marshal_raw_scheme_objects,
-                                   sizeof mx_marshal_raw_scheme_objects);
-
-  mx_unmarshal_strings_as_symbols =
-    scheme_apply(scheme_builtin_value("make-parameter"), 1, arglist);
-  mx_marshal_raw_scheme_objects =
-    scheme_apply(scheme_builtin_value("make-parameter"), 1, arglist);
 
   // export prims + omit value
 
@@ -5332,8 +5295,12 @@ Scheme_Object *scheme_initialize(Scheme_Env *env)
     scheme_add_global(mxPrims[i].name, mx_fun, env);
   }
 
-  mx_omit_obj = (Scheme_Object *)scheme_malloc_atomic_tagged(sizeof(MX_OMIT));
-  mx_omit_obj->type = mx_com_omit_type;
+  mx_omit_obj = scheme_hash_get(scheme_get_place_table(), mx_omit_obj_key);
+  if (!mx_omit_obj) {
+    mx_omit_obj = (Scheme_Object *)scheme_malloc_atomic_tagged(sizeof(MX_OMIT));
+    mx_omit_obj->type = mx_com_omit_type;
+    scheme_hash_set(scheme_get_place_table(), mx_omit_obj_key, mx_omit_obj);
+  }
 
   scheme_add_global("com-omit", mx_omit_obj, env);
 
@@ -5349,15 +5316,41 @@ Scheme_Object *scheme_initialize(Scheme_Env *env)
             "Copyright (c) 1999-2003 PLT (Paul Steckler)\n");
   }
 
+  return scheme_void;
+}
+
+Scheme_Object *scheme_initialize(Scheme_Env *env)
+{
+  if (!mx_com_object_type) {
+    mx_com_object_type   = scheme_make_type("<com-object>");
+    mx_com_type_type     = scheme_make_type("<com-type>");
+    mx_browser_type      = scheme_make_type("<mx-browser>");
+    mx_document_type     = scheme_make_type("<mx-document>");
+    mx_element_type      = scheme_make_type("<mx-element>");
+    mx_event_type        = scheme_make_type("<mx-event>");
+    mx_com_cy_type       = scheme_make_type("<com-currency>");
+    mx_com_date_type     = scheme_make_type("<com-date>");
+    mx_com_scode_type    = scheme_make_type("<com-scode>");
+    mx_com_iunknown_type = scheme_make_type("<com-iunknown>");
+    mx_com_omit_type     = scheme_make_type("<com-omit>");
+    mx_com_typedesc_type = scheme_make_type("<com-typedesc>");
+    
+    mx_tbl_entry_type = scheme_make_type("<tbl-entry>");
+    
+#ifdef MZ_PRECISE_GC
+    register_traversers();
+#endif
+  }
+
+  if (!mx_omit_obj_key)
+    mx_omit_obj_key = scheme_malloc_key();
+
+  scheme_reload(env);
+
   scheme_add_atexit_closer(mx_exit_closer);
   atexit(mx_cleanup);
 
   return scheme_void;
-}
-
-Scheme_Object *scheme_reload(Scheme_Env *env)
-{
-  return scheme_initialize(env);
 }
 
 // for some reason, couldn't put ATL stuff in browser.cxx
@@ -5487,87 +5480,6 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD reason, LPVOID lpReserved)
 
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
-#endif
-
-#if defined (MYSTERX_DOTNET)
-/// JRM HACKS for CLR
-// Note that these must come last because the #include and #import
-// both screw up some names used above.
-
-#include <Mscoree.h>
-// The import has a useless warning in it.
-#pragma warning (disable: 4278)
-#import <mscorlib.tlb>
-#pragma warning (default: 4278)
-
-// This doesn't appear to be necessary.
-//
-//  raw_interfaces_only high_property_prefixes("_get", "_put", "_putref")
-//
-using namespace mscorlib;
-
-ICorRuntimeHost * pCLR = NULL;
-
-Scheme_Object* initialize_dotnet_runtime(int argc, Scheme_Object **argv)
-{
-  HRESULT hr;
-  _AppDomain *pDefaultDomain = NULL;
-  IUnknown   *pAppDomainPunk = NULL;
-  IDispatch  *pAppDomainDispatch = NULL;
-
-  hr = CorBindToRuntimeEx(NULL, // latest version
-                          // workspace mode
-                          L"wks",
-                          // We'll only be running one domain.
-                          STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN,
-                          CLSID_CorRuntimeHost,
-                          IID_ICorRuntimeHost,
-                          (void **) &pCLR);
-
-  if (FAILED(hr))
-    scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                        "CorBindToRuntimeEx() failed.");
-
-  hr = pCLR->Start();
-  if (FAILED(hr))
-    scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                        "CLR failed to start.");
-
-  hr = pCLR->GetDefaultDomain(&pAppDomainPunk);
-  if (FAILED(hr) || pAppDomainPunk == NULL)
-    scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                        "GetDefaultDomain() failed.");
-
-  hr = pAppDomainPunk->QueryInterface(__uuidof(_AppDomain),
-                                      (void **) &pDefaultDomain);
-  if (FAILED(hr) || pDefaultDomain == NULL)
-    scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                        "QueryInterface for _AppDomain failed.");
-  pDefaultDomain->Release();
-
-  hr = pAppDomainPunk->QueryInterface(IID_IDispatch,
-                                      (void **) &pAppDomainDispatch);
-  if (FAILED(hr) || pAppDomainDispatch == NULL)
-    scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                        "QueryInterface for IDispatch failed.");
-
-  Scheme_Object * arglist[1] = {scheme_true};
-
-  scheme_apply(mx_unmarshal_strings_as_symbols, 1, arglist);
-  scheme_apply(mx_marshal_raw_scheme_objects, 1, arglist);
-
-  return mx_make_idispatch(pAppDomainDispatch);
-}
-
-/// END OF JRM HACK
-#else
-Scheme_Object *
-initialize_dotnet_runtime(int argc, Scheme_Object **argv)
-{
-  scheme_signal_error("%%%%initialize-dotnet-runtime: "
-                      "Support for .NET is not available in this image.");
-  return scheme_false;
-}
 #endif
 
 #endif // MYSTERX_3M

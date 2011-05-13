@@ -353,7 +353,7 @@ static int offsets[12] =
 
 Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
   SYSTEMTIME sysTime;
-  Scheme_Object *p[10];
+  Scheme_Object *p[10], *date_type;
   int yearDay;
   GUARANTEE_DATE ("date->com-date", 0);
 
@@ -379,7 +379,9 @@ Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
   p[8] = scheme_false;
   p[9] = scheme_make_integer(0); // time zone offset
 
-  return scheme_make_struct_instance(scheme_date_type,sizeray(p),p);
+  date_type = scheme_builtin_value("struct:date");
+  
+  return scheme_make_struct_instance(date_type,sizeray(p),p);
 }
 
 static char *fieldNames[] = {
@@ -390,10 +392,12 @@ static char *fieldNames[] = {
 Scheme_Object *scheme_date_to_mx_date(int argc,Scheme_Object **argv) {
   SYSTEMTIME sysTime;
   DATE vDate;
-  Scheme_Object *date;
+  Scheme_Object *date, *date_type;
   int i;
 
-  if (scheme_is_struct_instance(scheme_date_type,argv[0]) == FALSE)
+  date_type = scheme_builtin_value("struct:date");
+
+  if (scheme_is_struct_instance(date_type,argv[0]) == FALSE)
     scheme_wrong_type("date->com-date","struct:date",0,argc,argv);
 
   date = argv[0];

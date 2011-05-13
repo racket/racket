@@ -337,11 +337,11 @@ VARTYPE schemeValueToCOMType(Scheme_Object* val)
   else if (MX_SCODEP(val))             return VT_ERROR;
   else if (MX_COM_OBJP(val))           return VT_DISPATCH;
   else if (MX_IUNKNOWNP(val))          return VT_UNKNOWN;
-  else if (SCHEME_VECTORP(val)) getSchemeVectorType(val);
-  else if (scheme_apply(mx_marshal_raw_scheme_objects, 0, NULL) == scheme_false)
+  else if (SCHEME_VECTORP(val)) return getSchemeVectorType(val);
+  else
     scheme_signal_error("Unable to inject Scheme value %V into VARIANT", val);
-  else return VT_INT;
-  return VT_VARIANT; // If all else fails. (Eli: Looks like this is redundant)
+
+  return VT_VARIANT;
 }
 
 

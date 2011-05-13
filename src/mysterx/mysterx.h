@@ -251,8 +251,6 @@ typedef struct _managed_obj_ {
 
 extern const CLSID emptyClsId;
 
-extern Scheme_Object *scheme_date_type;
-
 extern Scheme_Type mx_com_object_type;
 extern Scheme_Type mx_com_type_type;
 extern Scheme_Type mx_browser_type;
@@ -267,11 +265,6 @@ extern Scheme_Type mx_com_omit_type;
 extern Scheme_Type mx_com_typedesc_type;
 
 extern Scheme_Type mx_tbl_entry_type;
-
-extern Scheme_Object *hash_table_get;
-extern Scheme_Object *hash_table_put;
-extern Scheme_Object *hash_table_remove;
-extern Scheme_Object *make_hash_table;
 
 Scheme_Object *mx_make_cy(CY *);
 Scheme_Object *mx_make_date(DATE *);
@@ -904,9 +897,6 @@ extern unsigned long browserCount;
       scheme_signal_error(buff); }; } while (0)
 
 void *mx_wrap_handler(Scheme_Object *h);
-
-// So array.cxx sees it
-extern Scheme_Object * mx_marshal_raw_scheme_objects;
 
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())

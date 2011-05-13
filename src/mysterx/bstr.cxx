@@ -215,16 +215,9 @@ Scheme_Object * BSTRToSchemeSymbol (BSTR bstr)
   return scheme_intern_exact_char_symbol (string, nchars);
 }
 
-// This parameter controls whether strings returned by
-// COM are converted to scheme symbols or to scheme strings.
-Scheme_Object * mx_unmarshal_strings_as_symbols;
-
 Scheme_Object * unmarshalBSTR (BSTR bstr)
 {
-  return
-      scheme_apply (mx_unmarshal_strings_as_symbols, 0, NULL) == scheme_false
-      ? BSTRToSchemeString (bstr)
-      : BSTRToSchemeSymbol (bstr);
+  return BSTRToSchemeString (bstr);
 }
 
 static
