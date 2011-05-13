@@ -148,3 +148,10 @@ There is only one writer function at the moment:
    (with-handlers ([exn:fail:filesystem? void])
      (delete-file "output.txt")))
 
+@section{Testing}
+
+@defform[(simulate-file process str ...)]{
+ simulates a file system for the function @scheme[process], which reads a
+ file and may produce one. Note: this form is under development and will be
+ documented in a precise manner after it is finalized and useful for a wide
+ audience.} 

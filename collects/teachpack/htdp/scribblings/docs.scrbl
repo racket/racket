@@ -6,7 +6,8 @@
 
 @teachpack["docs"]{Manipulating Simple HTML Documents}
 
-@declare-exporting[teachpack/htdp/docs]
+@;declare-exporting[teachpack/htdp/docs]
+@defmodule[#:require-form beginner-require htdp/docs]
 
 The teachpack provides three operations for creating simple ``HTML'' documents: 
 

@@ -7,6 +7,9 @@
 
 @teachpack["matrix"]{Matrix Operations}
 
+@;declare-exporting[teachpack/htdp/matrix]
+@defmodule[#:require-form beginner-require htdp/matrix]
+
 The experimental teachpack supports matrices and matrix operations. A
 matrix is just a rectangle of 'objects'. It is displayed as an image, just
 like the images from @secref["image"]. Matrices are images and, indeed,
@@ -19,8 +22,6 @@ row first, column second.
 
 The operations aren't tuned for efficiency so don't expect to build
 programs that process lots of data. 
-
-@declare-exporting[teachpack/htdp/matrix]
 
 @deftech{Rectangle} 
 A Rectangle (of X) is a non-empty list of lists containing X where all

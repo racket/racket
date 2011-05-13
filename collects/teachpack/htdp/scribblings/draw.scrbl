@@ -6,7 +6,8 @@
 
 @teachpack["draw"]{Simple Drawing}
 
-@declare-exporting[teachpack/htdp/draw]
+@;declare-exporting[teachpack/htdp/draw]
+@defmodule[#:require-form beginner-require htdp/draw]
 
 The teachpack provides two sets of functions: one for drawing into a canvas
 and one for reacting to canvas events. 

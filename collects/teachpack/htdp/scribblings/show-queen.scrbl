@@ -6,7 +6,8 @@
 
 @teachpack["show-queen"]{Queens}
 
-@declare-exporting[teachpack/htdp/show-queen]
+@;declare-exporting[teachpack/htdp/show-queen]
+@defmodule[#:require-form beginner-require htdp/show-queen]
 
 The teachpack provides the operation @scheme[show-queen], which implements
 a GUI for exploring the n-queens problem.

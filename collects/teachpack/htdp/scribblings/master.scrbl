@@ -6,7 +6,8 @@
 
 @teachpack["master"]{MasterMinding}
 
-@declare-exporting[teachpack/htdp/master]
+@;declare-exporting[teachpack/htdp/master]
+@defmodule[#:require-form beginner-require htdp/master]
 
 The teachpack implements GUI for playing a simple master mind-like game,
 based on a function designed by a student. The player clicks on two colors

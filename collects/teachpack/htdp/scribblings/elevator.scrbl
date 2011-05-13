@@ -6,7 +6,8 @@
 
 @teachpack["elevator"]{Controlling an Elevator}
 
-@declare-exporting[teachpack/htdp/elevator]
+@;declare-exporting[teachpack/htdp/elevator]
+@defmodule[#:require-form beginner-require htdp/elevator]
 
 The teachpack implements an elevator simulator.
 

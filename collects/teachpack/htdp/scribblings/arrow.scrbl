@@ -6,7 +6,8 @@
 
 @teachpack["arrow"]{Managing Control Arrows}
 
-@declare-exporting[teachpack/htdp/arrow]
+@;declare-exporting[teachpack/htdp/arrow]
+@defmodule[#:require-form beginner-require htdp/arrow]
 
 The teachpack implements a controller for moving shapes across a canvass. A
 shape is a class of data for which @scheme[move] and @scheme[draw]

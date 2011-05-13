@@ -6,7 +6,8 @@
 
 @teachpack["gui"]{Simple Graphical User Interfaces}
 
-@declare-exporting[teachpack/htdp/gui]
+@;declare-exporting[teachpack/htdp/gui]
+@defmodule[#:require-form beginner-require htdp/gui]
 
 The teachpack provides operations for creating and manipulating graphical
 user interfaces. We recommend using the @seclink["world"]{world teachpack}

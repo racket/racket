@@ -6,7 +6,8 @@
 
 @teachpack["convert"]{Converting Temperatures}
 
-@declare-exporting[teachpack/htdp/convert]
+@;declare-exporting[teachpack/htdp/convert]
+@defmodule[#:require-form beginner-require htdp/convert]
 
 The teachpack @scheme[convert.ss] provides three functions for
 converting Fahrenheit temperatures to Celsius. It is useful for a single

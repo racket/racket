@@ -6,7 +6,8 @@
 
 @teachpack["guess"]{Guessing Numbers}
 
-@declare-exporting[teachpack/htdp/guess]
+@;declare-exporting[teachpack/htdp/guess]
+@defmodule[#:require-form beginner-require htdp/guess]
 
 The teachpack provides operations to play a guess-the-number game. Each
 operation display a GUI in which a player can choose specific values for

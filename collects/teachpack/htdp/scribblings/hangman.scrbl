@@ -6,7 +6,8 @@
 
 @teachpack["hangman"]{Hangman}
 
-@declare-exporting[teachpack/htdp/hangman]
+@;declare-exporting[teachpack/htdp/hangman]
+@defmodule[#:require-form beginner-require htdp/hangman]
 
 The teachpack implements the callback functions for playing a
 @emph{Hangman} game, based on a function designed by a student. The player

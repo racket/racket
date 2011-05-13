@@ -45,6 +45,12 @@ second one generalizes the first by adding interactive GUI features.
 @; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
 
+@defproc[(run-movie [r (and/c real? positive?)] [m [Listof image?]]) 
+         true]{
+
+ @scheme[run-movie] displays the list of images @scheme[m] at the rate of
+ @scheme[r] images per second.}
+
 @defproc[(run-simulation
            [w natural-number/c]
            [h natural-number/c]

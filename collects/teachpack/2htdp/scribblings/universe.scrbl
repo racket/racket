@@ -25,7 +25,7 @@
 
 @author{Matthias Felleisen}
 
-@defmodule[#:require-form beginner-require 2htdp/universe #:use-sources (teachpack/htdp/image)]
+@defmodule[#:require-form beginner-require 2htdp/universe #:use-sources (teachpack/2htdp/image)]
 
 @;{FIXME: the following paragraph uses `defterm' instead of `deftech',
    because the words "world" and "universe" are used as datatypes, and
@@ -105,6 +105,13 @@ Example:
 
  @scheme[animate] was originally called @scheme[run-simulation], and this
  binding is retained for backwards compatibility}
+
+@defproc[(run-movie [r (and/c real? positive?)] [m [Listof image?]]) 
+         true]{
+
+ @scheme[run-movie] displays the list of images @scheme[m] at the rate of
+ @scheme[r] images per second.}
+
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "interactive"]{Interactions}

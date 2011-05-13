@@ -6,7 +6,7 @@
 
 @teachpack["arrow-gui"]{An Arrow GUI}
 
-@declare-exporting[teachpack/htdp/arrow-gui]
+@defmodule[#:require-form beginner-require htdp/arrow-gui]
 
 The teachpack provides operations for creating and manipulating an arrow
 GUI. We recommend using the @seclink["world"]{world teachpack} instead.

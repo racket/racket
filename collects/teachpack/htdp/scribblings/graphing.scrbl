@@ -6,7 +6,8 @@
 
 @teachpack["graphing"]{Graphing Functions}
 
-@declare-exporting[teachpack/htdp/graphing]
+@;declare-exporting[teachpack/htdp/graphing]
+@defmodule[#:require-form beginner-require htdp/graphing]
 
 The teachpack provides two operations for graphing functions in the regular
 (upper right) quadrant of the Cartesian plane (between 0 and 10 in both

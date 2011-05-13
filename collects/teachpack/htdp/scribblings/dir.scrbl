@@ -7,7 +7,8 @@
 
 @teachpack["dir"]{Working with Files and Directories}
 
-@declare-exporting[teachpack/htdp/dir]
+@;declare-exporting[teachpack/htdp/dir]
+@defmodule[#:require-form beginner-require htdp/dir]
 
 The teachpack provides structures and operations for working with files and
 directories: 
