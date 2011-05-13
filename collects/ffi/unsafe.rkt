@@ -441,13 +441,14 @@
                       #:wrapper     [wrapper #f]
                       #:keep        [keep    #t]
                       #:atomic?     [atomic? #f]
-                      #:async-apply [async-apply   #f]
+                      #:in-original-place? [orig-place? #f]
+                      #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic? async-apply errno))
+  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic? async-apply errno)
+(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
@@ -460,7 +461,7 @@
                                   (if (or (null? x) (pair? x)) (cons cb x) cb)))]
                      [(procedure? keep) (keep cb)])
                cb)))
-      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno))))))
+      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno orig-place?))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
@@ -483,7 +484,8 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:async-apply ,#'#f] [#:save-errno ,#'#f]))
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:in-original-place? ,#'#f] 
+    [#:async-apply ,#'#f] [#:save-errno ,#'#f]))
 (define-syntax (_fun stx)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
@@ -632,6 +634,7 @@
                              #,wrapper
                              #,(kwd-ref '#:keep)
                              #,(kwd-ref '#:atomic?)
+                             #,(kwd-ref '#:in-original-place?)
                              #,(kwd-ref '#:async-apply)
                              #,(kwd-ref '#:save-errno)))])
       (if (or (caddr output) input-names (ormap caddr inputs)

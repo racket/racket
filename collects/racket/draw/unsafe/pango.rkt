@@ -114,10 +114,19 @@
                                  [glyphs _PangoGlyphString-pointer]))
 (provide (struct-out PangoGlyphItem))
 
+;; As of Pango 1.28, Pango is not thread-safe at the C level, which
+;; means that it isn't place-safe in Racket. Also, for some reason,
+;; when parts of Pango are initialized in a non-main place under
+;; Windows, then font operations start to fail when that place exits.
+;; Run all Pango calls in the original place, which synchronizes them
+;; and avoids Windows problems.
+(define-syntax-rule (_pfun spec ...)
+  (_fun #:in-original-place? #t spec ...))
+
 (provide g_object_unref g_free)
-(define-gobj g_object_unref (_fun _pointer -> _void)
+(define-gobj g_object_unref (_pfun _pointer -> _void)
   #:wrap (deallocator))
-(define-glib g_free (_fun _pointer -> _void)
+(define-glib g_free (_pfun _pointer -> _void)
   #:wrap (deallocator))
 
 ;; For working around a Win32 Pango bug (see `unref-font-map'):
@@ -127,9 +136,9 @@
 				    [qdata _pointer]
 				    [font_cache _pointer]
 				    [freed_fonts _GQueue]))
-(define-glib g_queue_foreach (_fun _GQueue (_fun _pointer -> _void) _pointer -> _void))
-(define-glib g_queue_free (_fun _GQueue -> _void))
-(define-glib g_queue_new (_fun -> _GQueue))
+(define-glib g_queue_foreach (_pfun _GQueue _fpointer #;(_fun _pointer -> _void) _pointer -> _void))
+(define-glib g_queue_free (_pfun _GQueue -> _void))
+(define-glib g_queue_new (_pfun -> _GQueue))
 
 (define (unref-font-map v)
   (when (eq? (system-type) 'windows)
@@ -147,11 +156,11 @@
       (set-PangoWin32FontMap-freed_fonts! fm (g_queue_new))))
   (g_object_unref v))
 
-(define-pangocairo pango_cairo_font_map_get_default (_fun -> PangoFontMap)) ;; not an allocator
-(define-pangocairo pango_cairo_font_map_new (_fun -> PangoFontMap)
+(define-pangocairo pango_cairo_font_map_get_default (_pfun -> PangoFontMap)) ;; not an allocator
+(define-pangocairo pango_cairo_font_map_new (_pfun -> PangoFontMap)
   #:wrap (allocator unref-font-map))
 
-(define-pango pango_context_new (_fun -> PangoContext)
+(define-pango pango_context_new (_pfun -> PangoContext)
   #:wrap (allocator g_object_unref))
 ;; pango_font_map_create_context() is in 1.22 and later
 (provide pango_font_map_create_context)
@@ -159,7 +168,7 @@
   (let ([c (pango_context_new)])
     (pango_context_set_font_map c fm)
     c))
-(define-pangocairo pango_cairo_update_context (_fun _cairo_t PangoContext -> _void))
+(define-pangocairo pango_cairo_update_context (_pfun _cairo_t PangoContext -> _void))
 
 ;; The convenince function pango_cairo_create_context() is in 1.22 and later
 (provide pango_cairo_create_context)
@@ -169,31 +178,31 @@
     (pango_cairo_update_context cr ctx)
     ctx))
 
-(define-pangocairo pango_cairo_create_layout (_fun _cairo_t -> PangoLayout)
+(define-pangocairo pango_cairo_create_layout (_pfun _cairo_t -> PangoLayout)
   #:wrap (allocator g_object_unref))
-(define-pangocairo pango_cairo_update_layout (_fun _cairo_t PangoLayout -> _void))
-(define-pango pango_layout_set_text (_fun PangoLayout [s : _string] [_int = -1] -> _void))
-(define-pangocairo pango_cairo_show_layout (_fun _cairo_t PangoLayout -> _void))
-(define-pangocairo pango_cairo_show_layout_line (_fun _cairo_t PangoLayoutLine -> _void))
-(define-pangocairo pango_cairo_show_glyph_string (_fun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
+(define-pangocairo pango_cairo_update_layout (_pfun _cairo_t PangoLayout -> _void))
+(define-pango pango_layout_set_text (_pfun PangoLayout [s : _string] [_int = -1] -> _void))
+(define-pangocairo pango_cairo_show_layout (_pfun _cairo_t PangoLayout -> _void))
+(define-pangocairo pango_cairo_show_layout_line (_pfun _cairo_t PangoLayoutLine -> _void))
+(define-pangocairo pango_cairo_show_glyph_string (_pfun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
 
-(define-pango pango_layout_iter_free (_fun PangoLayoutIter -> _void)
+(define-pango pango_layout_iter_free (_pfun PangoLayoutIter -> _void)
   #:wrap (deallocator))
-(define-pango pango_layout_get_iter (_fun PangoLayout -> PangoLayoutIter)
+(define-pango pango_layout_get_iter (_pfun PangoLayout -> PangoLayoutIter)
   #:wrap (allocator pango_layout_iter_free))
-(define-pango pango_layout_iter_get_baseline (_fun PangoLayoutIter -> _int))
-(define-pango pango_layout_iter_next_run (_fun PangoLayoutIter -> _bool))
-(define-pango pango_layout_iter_get_run (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
-(define-pango pango_layout_iter_get_run_readonly (_fun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer))
+(define-pango pango_layout_iter_get_baseline (_pfun PangoLayoutIter -> _int))
+(define-pango pango_layout_iter_next_run (_pfun PangoLayoutIter -> _bool))
+(define-pango pango_layout_iter_get_run (_pfun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer)))
+(define-pango pango_layout_iter_get_run_readonly (_pfun PangoLayoutIter -> (_or-null _PangoGlyphItem-pointer))
   #:fail (lambda () pango_layout_iter_get_run))
 
-(define-pango pango_layout_get_line (_fun PangoLayout _int -> PangoLayoutLine))
-(define-pango pango_layout_get_line_readonly (_fun PangoLayout _int -> PangoLayoutLine)
+(define-pango pango_layout_get_line (_pfun PangoLayout _int -> PangoLayoutLine))
+(define-pango pango_layout_get_line_readonly (_pfun PangoLayout _int -> PangoLayoutLine)
   #:fail (lambda () pango_layout_get_line))
 
-(define-pango pango_layout_get_context (_fun PangoLayout -> PangoContext)) ;; not an allocator
-(define-pango pango_layout_get_extents (_fun PangoLayout  _pointer _PangoRectangle-pointer -> _void))
-(define-pango pango_layout_get_baseline (_fun PangoLayout -> _int)
+(define-pango pango_layout_get_context (_pfun PangoLayout -> PangoContext)) ;; not an allocator
+(define-pango pango_layout_get_extents (_pfun PangoLayout  _pointer _PangoRectangle-pointer -> _void))
+(define-pango pango_layout_get_baseline (_pfun PangoLayout -> _int)
   ;; The convenince function pango_layout_get_baseline() is in 1.22 and later
   #:fail (lambda ()
            (lambda (layout)
@@ -201,60 +210,60 @@
                (begin0
                 (pango_layout_iter_get_baseline iter)
                 (pango_layout_iter_free iter))))))
-(define-pango pango_layout_get_spacing (_fun PangoLayout -> _int))
+(define-pango pango_layout_get_spacing (_pfun PangoLayout -> _int))
 
-(define-pango pango_layout_new (_fun PangoContext -> PangoLayout)
+(define-pango pango_layout_new (_pfun PangoContext -> PangoLayout)
   #:wrap (allocator g_object_unref))
 
-(define-pangocairo pango_cairo_context_get_font_options (_fun PangoContext -> _cairo_font_options_t)) ;; not an allocator
-(define-pangocairo pango_cairo_context_set_font_options (_fun PangoContext _cairo_font_options_t -> _void)) ;; makes a copy
+(define-pangocairo pango_cairo_context_get_font_options (_pfun PangoContext -> _cairo_font_options_t)) ;; not an allocator
+(define-pangocairo pango_cairo_context_set_font_options (_pfun PangoContext _cairo_font_options_t -> _void)) ;; makes a copy
 
-(define-pango pango_layout_set_font_description (_fun PangoLayout PangoFontDescription -> _void)) ;; makes a copy
-(define-pango pango_context_get_font_map (_fun PangoContext -> PangoFontMap)) ;; not an allocator
-(define-pango pango_context_set_font_map (_fun PangoContext PangoFontMap -> _void))
-(define-pango pango_font_family_get_name (_fun PangoFontFamily -> _string)) ;; not an allocator
-(define-pango pango_font_family_is_monospace (_fun PangoFontFamily -> _bool))
+(define-pango pango_layout_set_font_description (_pfun PangoLayout PangoFontDescription -> _void)) ;; makes a copy
+(define-pango pango_context_get_font_map (_pfun PangoContext -> PangoFontMap)) ;; not an allocator
+(define-pango pango_context_set_font_map (_pfun PangoContext PangoFontMap -> _void))
+(define-pango pango_font_family_get_name (_pfun PangoFontFamily -> _string)) ;; not an allocator
+(define-pango pango_font_family_is_monospace (_pfun PangoFontFamily -> _bool))
 
-(define-pango pango_language_get_default (_fun -> PangoLanguage)
+(define-pango pango_language_get_default (_pfun -> PangoLanguage)
   ;; not available before 1.16
   #:fail (lambda () (lambda () #f)))
-(define-pango pango_font_map_load_font (_fun PangoFontMap PangoContext PangoFontDescription -> (_or-null PangoFont)))
-(define-pango pango_coverage_unref (_fun PangoCoverage -> _void)
+(define-pango pango_font_map_load_font (_pfun PangoFontMap PangoContext PangoFontDescription -> (_or-null PangoFont)))
+(define-pango pango_coverage_unref (_pfun PangoCoverage -> _void)
   #:wrap (deallocator))
-(define-pango pango_font_get_coverage (_fun PangoFont PangoLanguage -> PangoCoverage)
+(define-pango pango_font_get_coverage (_pfun PangoFont PangoLanguage -> PangoCoverage)
   #:wrap (allocator pango_coverage_unref))
-(define-pango pango_coverage_get (_fun PangoCoverage _int -> _int))
+(define-pango pango_coverage_get (_pfun PangoCoverage _int -> _int))
 
-(define-pango pango_font_metrics_unref (_fun PangoFontMetrics -> _void)
+(define-pango pango_font_metrics_unref (_pfun PangoFontMetrics -> _void)
   #:wrap (deallocator))
-(define-pango pango_font_get_metrics (_fun PangoFont (_or-null PangoLanguage) -> PangoFontMetrics)
+(define-pango pango_font_get_metrics (_pfun PangoFont (_or-null PangoLanguage) -> PangoFontMetrics)
   #:wrap (allocator pango_font_metrics_unref))
-(define-pango pango_font_metrics_get_approximate_char_width (_fun PangoFontMetrics -> _int))
-(define-pango pango_font_metrics_get_ascent (_fun PangoFontMetrics -> _int))
-(define-pango pango_font_metrics_get_descent (_fun PangoFontMetrics -> _int))
+(define-pango pango_font_metrics_get_approximate_char_width (_pfun PangoFontMetrics -> _int))
+(define-pango pango_font_metrics_get_ascent (_pfun PangoFontMetrics -> _int))
+(define-pango pango_font_metrics_get_descent (_pfun PangoFontMetrics -> _int))
 
-(define-pango pango_layout_get_unknown_glyphs_count (_fun PangoLayout -> _int)
+(define-pango pango_layout_get_unknown_glyphs_count (_pfun PangoLayout -> _int)
   ;; not available in old versions:
   #:fail (lambda () (lambda (lo) 0)))
 
-(define-pango pango_attr_list_unref (_fun PangoAttrList -> _void)
+(define-pango pango_attr_list_unref (_pfun PangoAttrList -> _void)
   #:wrap (deallocator))
-(define-pango pango_attr_list_new (_fun -> PangoAttrList)
+(define-pango pango_attr_list_new (_pfun -> PangoAttrList)
   #:wrap (allocator pango_attr_list_unref))
-(define-pango pango_attr_list_insert (_fun PangoAttrList PangoAttribute -> _void)
+(define-pango pango_attr_list_insert (_pfun PangoAttrList PangoAttribute -> _void)
   ;; takes ownership of the attribute
   #:wrap (deallocator cadr))
 
-(define-pango pango_attribute_destroy (_fun PangoAttribute -> _void)
+(define-pango pango_attribute_destroy (_pfun PangoAttribute -> _void)
   #:wrap (deallocator))
-(define-pango pango_attr_underline_new (_fun _int -> PangoAttribute)
+(define-pango pango_attr_underline_new (_pfun _int -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
-(define-pango pango_attr_fallback_new (_fun _bool -> PangoAttribute)
+(define-pango pango_attr_fallback_new (_pfun _bool -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
 
-(define-pango pango_layout_set_attributes (_fun PangoLayout PangoAttrList -> _void))
+(define-pango pango_layout_set_attributes (_pfun PangoLayout PangoAttrList -> _void))
 
-(define-pango pango_font_map_list_families (_fun PangoFontMap
+(define-pango pango_font_map_list_families (_pfun PangoFontMap
                                                  (fams : (_ptr o _pointer))
                                                  (len : (_ptr o _int))
                                                  -> _void
@@ -263,31 +272,31 @@
                                                         (ptr-ref fams PangoFontFamily i))
                                                       (g_free fams))))
 
-(define-pango pango_font_description_free (_fun PangoFontDescription -> _void) 
+(define-pango pango_font_description_free (_pfun PangoFontDescription -> _void) 
   #:wrap (deallocator))
-(define-pango pango_font_description_new (_fun -> PangoFontDescription) 
+(define-pango pango_font_description_new (_pfun -> PangoFontDescription) 
   #:wrap (allocator pango_font_description_free))
-(define-pango pango_font_description_from_string (_fun _string -> PangoFontDescription)
+(define-pango pango_font_description_from_string (_pfun _string -> PangoFontDescription)
   #:wrap (allocator pango_font_description_free))
-(define-pango pango_font_description_set_family (_fun PangoFontDescription _string -> _void))
-(define-pango pango_font_description_set_style (_fun PangoFontDescription _int -> _void))
-(define-pango pango_font_description_set_weight (_fun PangoFontDescription _int -> _void))
-(define-pango pango_font_description_set_size (_fun PangoFontDescription _int -> _void))
-(define-pango pango_font_description_set_absolute_size (_fun PangoFontDescription _double* -> _void))
+(define-pango pango_font_description_set_family (_pfun PangoFontDescription _string -> _void))
+(define-pango pango_font_description_set_style (_pfun PangoFontDescription _int -> _void))
+(define-pango pango_font_description_set_weight (_pfun PangoFontDescription _int -> _void))
+(define-pango pango_font_description_set_size (_pfun PangoFontDescription _int -> _void))
+(define-pango pango_font_description_set_absolute_size (_pfun PangoFontDescription _double* -> _void))
 
 (define _PangoWin32FontCache (_cpointer 'PangoWin32FontCache))
 (define _HFONT (_cpointer 'HFONT))
 (define _LOGFONT-pointer _pointer)
-(define-pangowin32 pango_win32_font_map_for_display (_fun -> PangoFontMap)
+(define-pangowin32 pango_win32_font_map_for_display (_pfun -> PangoFontMap)
   #:make-fail make-not-available)
-(define-pangowin32 pango_win32_font_logfont (_fun PangoFont -> _LOGFONT-pointer)
+(define-pangowin32 pango_win32_font_logfont (_pfun PangoFont -> _LOGFONT-pointer)
   #:make-fail make-not-available
   #:wrap (allocator g_free))
-(define-pangowin32 pango_win32_font_cache_unload (_fun _PangoWin32FontCache _HFONT -> _void)
+(define-pangowin32 pango_win32_font_cache_unload (_pfun _PangoWin32FontCache _HFONT -> _void)
   #:make-fail make-not-available)
-(define-pangowin32 pango_win32_font_cache_load (_fun _PangoWin32FontCache _LOGFONT-pointer -> _HFONT)
+(define-pangowin32 pango_win32_font_cache_load (_pfun _PangoWin32FontCache _LOGFONT-pointer -> _HFONT)
   #:make-fail make-not-available)
-(define-pangowin32 pango_win32_font_cache_new (_fun -> _PangoWin32FontCache)
+(define-pangowin32 pango_win32_font_cache_new (_pfun -> _PangoWin32FontCache)
   #:make-fail make-not-available)
 
 (define-enum

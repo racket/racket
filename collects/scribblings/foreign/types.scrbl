@@ -364,6 +364,7 @@ the later case, the result is the @scheme[ctype]).}
                       [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any) . -> . any)) #f]
+                      [#:in-original-place? in-original-place? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
@@ -437,6 +438,20 @@ thread support, which is the default for many platforms. If a callback
 with an @scheme[async-apply] is called from foreign code in the same
 OS-level thread that runs Racket, then the @scheme[async-apply] wrapper is
 not used.
+
+@margin-note{The @racket[atomic?] and @racket[async-apply] arguments
+affect callbacks into Racket, while @scheme[in-original-place?]
+affects calls from Racket into foreign code.}
+
+If @scheme[in-original-place?] is true, then when a foreign procedure
+with the generated type is called in any Racket @tech[#:doc '(lib
+"scribblings/reference/reference.scrbl")]{place}, the procedure is
+called from the original Racket place. Use this mode for a foreign
+function that is not thread-safe at the C level, which means that it
+is not place-safe at the Racket level. Callbacks from place-unsafe
+code back into Racket at a non-original place typically will not work,
+since the place of the Racket code may have a different allocator than
+the original place.
 
 If @scheme[save-errno] is @scheme['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
@@ -521,7 +536,8 @@ values: @itemize[
                            (code:line #:save-errno save-errno-expr)
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)
-                           (code:line #:async-apply async-apply-expr)]
+                           (code:line #:async-apply async-apply-expr)
+                           (code:line #:in-original-place? in-original-place?-expr)]
                [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)
