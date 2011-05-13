@@ -2717,9 +2717,11 @@ void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
 
+#ifdef MZ_USE_PLACES
   if (postmaster_and_master_gc(gc))
     master_collect_initiate(gc);
   else
+#endif
     garbage_collect(gc, 1, 0, NULL);
 }
 
