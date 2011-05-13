@@ -110,6 +110,7 @@ void mzrt_set_segfault_debug_handler()
 void mzrt_sleep(int seconds)
 {
 #ifdef WIN32
+  Sleep(seconds * 1000);
 #else
   struct timespec set;
   struct timespec rem;
