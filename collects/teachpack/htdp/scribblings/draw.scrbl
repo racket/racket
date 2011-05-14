@@ -60,9 +60,32 @@ Draws @scheme[s] at @scheme[p].}
 Suspends evaluation for @scheme[s] seconds.}
 
 The teachpack also provides @scheme[clear-] operations for each
-@scheme[draw-] operation. The arguments are the same. Note: use
-@scheme[clear-rectangle] instead of @scheme[clear-string] for now.
-The color argument for all @scheme[clear-] functions are optional.
+@scheme[draw-] operation:
+
+@defproc[(clear-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
+         true]{
+clears a @scheme[c] circle at @scheme[p] with radius @scheme[r].}
+
+@defproc[(clear-solid-disk [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
+         true]{
+clears a @scheme[c] disk at @scheme[p] with radius @scheme[r].}
+
+@defproc[(clear-solid-rect [ul posn?] [width number?] [height number?]
+                          [c (unsyntax @tech{DrawColor})])
+         true]{
+clears a @scheme[width] x @scheme[height], @scheme[c] rectangle with the
+upper-left corner at @scheme[ul].}
+
+@defproc[(clear-solid-line [strt posn?] [end posn?]
+                          [c (unsyntax @tech{DrawColor})])
+         true]{
+clears a @scheme[c] line from @scheme[strt] to @scheme[end].}
+
+@defproc[(clear-solid-string [p posn?] [s string?]) true]{
+ clears @scheme[s] at @scheme[p].}
+
+@defproc[(clear-all) true]{
+ clears the entire screen.}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "interaction"]{Interactions with Canvas}

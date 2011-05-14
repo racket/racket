@@ -6,16 +6,12 @@
 
 @teachpack["hangman"]{Hangman}
 
-@;declare-exporting[teachpack/htdp/hangman]
 @defmodule[#:require-form beginner-require htdp/hangman]
 
 The teachpack implements the callback functions for playing a
 @emph{Hangman} game, based on a function designed by a student. The player
 guesses a letter and the program responds with an answer that indicates
 how many times, if at all, the letter occurs in the secret word.
-
-The teachpack provides all the drawing operations from @secref{draw} for
-managing a canvas into which the ``hangman'' is drawn.
 
 @defproc[(hangman [make-word (-> symbol? symbol? symbol? word?)][reveal (-> word? word? word?)][draw-next-part (-> symbol? true)]) true]{
 Chooses a ``secret'' three-letter word and uses the given functions to
@@ -32,3 +28,6 @@ in the secret word;
 @scheme[draw-next-part] is given the symbolic name of a body part and draws
 it on a separately managed canvas.
 }
+
+In addition, the teachpack re-exports the entire functionality of the
+drawing library; see @secref{draw} for documentation. 
