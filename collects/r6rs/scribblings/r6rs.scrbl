@@ -12,7 +12,7 @@
                      rnrs/hashtables-6
                      r6rs
                      (only-in racket/base
-                              lib
+                              module lib
                               current-library-collection-paths
                               parameterize
                               uncaught-exception-handler
@@ -46,13 +46,13 @@ other modules.
 
 @; ----------------------------------------
 
-@section{Using R6RS with DrRacket}
+@section[#:tag "Using R6RS with DrRacket"]{Using @|r6rs| with DrRacket}
 
-To run an R6RS program with DrRacket choose "Use language declared in source"
+To run an @|r6rs| program with DrRacket choose @onscreen{Use language declared in source}
 from the language dialog box and add the following line to the top of your program.
 @racketmetafont{#!r6rs}.
 
-Here is a small example R6RS program that will work in DrRacket.
+Here is a small example @|r6rs| program that will work in DrRacket.
 @racketblock[
 #,(racketmetafont "#!r6rs")
 (import (rnrs lists (6))
@@ -60,7 +60,7 @@ Here is a small example R6RS program that will work in DrRacket.
         (rnrs io simple (6)))
 (display (find even? '(3 1 4 1 5 9)))]
 
-@section{Running Top-Level Programs}
+@section[#:tag "Running Top-Level Programs"]{Running Top-Level Programs}
 
 To run a top-level program, either:
 
@@ -129,7 +129,7 @@ To run a top-level program, either:
 
 @; ----------------------------------------
 
-@section{Installing Libraries}
+@section[#:tag "Installing Libraries"]{Installing Libraries}
        
 To reference an @|r6rs| library from a top-level program or another
 library, it must be installed as a collection-based library in
@@ -195,13 +195,30 @@ are searched in order, and before the installation's collections.
 The @racketmodname[r6rs] language is usually used in the form
 @racketmetafont{#!}@racketmodname[r6rs], which is equivalent to
 @racket[@#,hash-lang[] @#,racketmodname[r6rs]] and is also valid
-@|r6rs| syntax.
+@|r6rs| syntax. 
 
-The @racketmodname[r6rs] module language provides only a
-@racketidfont{#%module-begin} binding, which is used to process the
-entire module body (see @racket[module]). It allows the body of a
-module to use the syntax of either a @|r6rs| library or a @|r6rs|
-top-level program.
+@subsection[#:tag "using-r6rs"]{Using @|r6rs|}
+
+See @secref["Using\x20R6RS\x20with\x20DrRacket"],
+@secref["Running\x20Top-Level\x20Programs"], and
+@secref["Installing\x20Libraries"] for more information on writing and
+running @|r6rs| programs with Racket.
+
+@subsection{The Implementation of @|r6rs|}
+
+The @|r6rs| language is itself implemented as a module within
+Racket. The details of that implementation, as provided in this
+section, are not normally relevant to programmers using @|r6rs|; see
+the links in @secref["using-r6rs"], instead. The details may be
+relevant to programmers who are developing new tools or deriving
+variants of @|r6rs| within Racket.
+
+As a Racket module, the @racketmodname[r6rs] module language provides
+only a @racket[#%module-begin] binding, which is used to process the
+entire body of a Racket module (see @racket[module]). The
+@racket[#%module-begin] binding from @racketmodname[r6rs] allows the
+body of a module to use the syntax of either a @|r6rs| library or a
+@|r6rs| top-level program.
 
 @defform*[#:literals (library import export)
           [(#%module-begin 
