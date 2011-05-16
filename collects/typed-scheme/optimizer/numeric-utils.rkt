@@ -21,6 +21,9 @@
   (and (subtypeof? t -Real)
        (not (subtypeof? t -Rat))
        (not (subtypeof? t -Flonum))))
+(define (in-complex-layer? t)
+  (and (subtypeof? t -Number)
+       (not (subtypeof? t -Real))))
 
 (define-syntax-class arith-expr
   (pattern (#%plain-app op:arith-op args ...)))
