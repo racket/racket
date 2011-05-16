@@ -19,7 +19,7 @@
           [prefix drracket:language-configuration: drracket:language-configuration^])
   (export drracket:module-language-tools^)
 
-  (define-local-member-name initialized? move-to-new-language get-in-module-language?)
+  (define-local-member-name when-initialized move-to-new-language get-in-module-language?)
 
   (define-struct opt-out-toolbar-button (make-button id) #:transparent)
   (define opt-out-toolbar-buttons '())
@@ -50,7 +50,17 @@
       (inherit unregister-toolbar-button get-definitions-text)
   
       (define toolbar-button-panel #f)
-      (define/public (initialized?) (and toolbar-button-panel #t))
+      (define/public (when-initialized thunk) 
+        (cond
+          [toolbar-button-panel
+           (thunk)]
+          [else
+           (set! after-initialized 
+                 (let ([old-after-initialized after-initialized])
+                   (λ () 
+                     (old-after-initialized) 
+                     (thunk))))]))
+      (define after-initialized void)
       (define/public (get-toolbar-button-panel) toolbar-button-panel)
       (define/public (remove-toolbar-button button)
         (send toolbar-button-panel change-children (λ (l) (remq button l)))
@@ -68,6 +78,8 @@
       ;; move button panel to the front of the list
       (send (get-button-panel) change-children 
             (λ (l) (cons toolbar-button-panel (remq toolbar-button-panel l))))
+      (after-initialized)
+      (set! after-initialized void)
       
       (define/public (initialize-module-language)
         (let ([defs (get-definitions-text)])
@@ -92,21 +104,22 @@
       (define timer #f)
       
       (define/private (modification-at start)
-        (when (send (send (get-tab) get-frame) initialized?) 
-          (when in-module-language?
-            (when (or (not hash-lang-last-location)
-                      (<= start hash-lang-last-location))
-              
-              (unless timer
-                (set! timer (new timer% 
-                                 [notify-callback
-                                  (λ () 
-                                    (when in-module-language?
-                                      (move-to-new-language)))]
-                                 [just-once? #t])))
-              (send timer stop)
-              (send timer start 200 #t)))))
-      
+        (send (send (get-tab) get-frame) when-initialized
+              (λ ()
+                (when in-module-language?
+                  (when (or (not hash-lang-last-location)
+                            (<= start hash-lang-last-location))
+                    
+                    (unless timer
+                      (set! timer (new timer% 
+                                       [notify-callback
+                                        (λ () 
+                                          (when in-module-language?
+                                            (move-to-new-language)))]
+                                       [just-once? #t])))
+                    (send timer stop)
+                    (send timer start 200 #t))))))
+
       (define/private (update-in-module-language? new-one)
         (unless (equal? new-one in-module-language?)
           (set! in-module-language? new-one)
@@ -166,41 +179,42 @@
       (define/private (register-new-buttons buttons opt-out-ids)
         (let* ([tab (get-tab)]
                [frame (send tab get-frame)])
-          (when (send frame initialized?)
-            (send frame begin-container-sequence)
-            
-            ;; avoid any time with both sets of buttons in the panel so the window doesn't get too wide
-            (send (send frame get-toolbar-button-panel) change-children (λ (x) '()))
-            
-            (let ([directly-specified-buttons
-                   (map (λ (button-spec)
-                          (new switchable-button%
-                               [label (list-ref button-spec 0)]
-                               [bitmap (list-ref button-spec 1)]
-                               [parent (send frame get-toolbar-button-panel)]
-                               [callback
-                                (lambda (button)
-                                  ((list-ref button-spec 2) frame))]))
-                        (or buttons '()))]
-                  [opt-out-buttons
-                   (if (eq? opt-out-ids #f)
-                       '()
-                       (map
-                        (λ (opt-out-toolbar-button)
-                          ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
-                           frame
-                           (send frame get-toolbar-button-panel)))
-                        (filter (λ (opt-out-toolbar-button)
-                                  (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
-                                               opt-out-ids)))
-                                opt-out-toolbar-buttons)))])
-              (send tab set-lang-toolbar-buttons
-                    (sort
-                     (append directly-specified-buttons
-                             opt-out-buttons)
-                     string<=?
-                     #:key (λ (x) (send x get-label)))))
-            (send frame end-container-sequence))))
+          (send frame when-initialized
+                (λ ()
+                  (send frame begin-container-sequence)
+                  
+                  ;; avoid any time with both sets of buttons in the panel so the window doesn't get too wide
+                  (send (send frame get-toolbar-button-panel) change-children (λ (x) '()))
+                  
+                  (let ([directly-specified-buttons
+                         (map (λ (button-spec)
+                                (new switchable-button%
+                                     [label (list-ref button-spec 0)]
+                                     [bitmap (list-ref button-spec 1)]
+                                     [parent (send frame get-toolbar-button-panel)]
+                                     [callback
+                                      (lambda (button)
+                                        ((list-ref button-spec 2) frame))]))
+                              (or buttons '()))]
+                        [opt-out-buttons
+                         (if (eq? opt-out-ids #f)
+                             '()
+                             (map
+                              (λ (opt-out-toolbar-button)
+                                ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
+                                 frame
+                                 (send frame get-toolbar-button-panel)))
+                              (filter (λ (opt-out-toolbar-button)
+                                        (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
+                                                     opt-out-ids)))
+                                      opt-out-toolbar-buttons)))])
+                    (send tab set-lang-toolbar-buttons
+                          (sort
+                           (append directly-specified-buttons
+                                   opt-out-buttons)
+                           string<=?
+                           #:key (λ (x) (send x get-label)))))
+                  (send frame end-container-sequence)))))
       
       (inherit get-text)
       (define/private (get-lang-name pos)
