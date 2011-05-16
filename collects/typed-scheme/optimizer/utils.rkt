@@ -4,14 +4,13 @@
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template scheme/base)
-         (types type-table utils subtype numeric-tower)
+         (types type-table utils subtype)
          (rep type-rep))
 
 (provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
          log-close-call *log-close-calls?*
          *show-optimized-code*
          subtypeof? isoftype?
-         in-integer-layer? in-rational-layer? in-float-layer? in-real-layer?
          mk-unsafe-tbl
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
@@ -68,20 +67,6 @@
 (define (isoftype? s t)
   (match (type-of s)
          [(tc-result1: (== t type-equal?)) #t] [_ #f]))
-
-;; layer predicates
-;; useful in some cases where subtyping won't do
-(define (in-integer-layer? t)
-  (subtypeof? t -Int))
-(define (in-rational-layer? t)
-  (and (subtypeof? t -Rat)
-       (not (subtypeof? t -Int))))
-(define (in-float-layer? t)
-  (subtypeof? t -Flonum))
-(define (in-real-layer? t)
-  (and (subtypeof? t -Real)
-       (not (subtypeof? t -Rat))
-       (not (subtypeof? t -Flonum))))
 
 ;; generates a table matching safe to unsafe promitives
 (define (mk-unsafe-tbl generic safe-pattern unsafe-pattern)
