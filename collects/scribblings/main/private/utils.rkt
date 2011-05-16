@@ -56,8 +56,7 @@
                                    (if (not force-racket-css?)
                                        null
                                        (list
-                                        (make-css-addition (build-path (collection-path "scribble")
-                                                                       "racket.css"))))))
+                                        (make-css-addition (collection-file-path "racket.css" "scribble"))))))
            title-string
            #;
            ;; the "(installation)" part shouldn't be visible on the web, but
