@@ -41,7 +41,7 @@ provides a subset of functions and syntactic forms of
 @scheme[r5rs] forms. See below for a complete list. The
 language is intended for use with the textbook @cite["EoPL"].
 
-@defmodule[eopl/eopl]
+@defmodulelang[eopl #:use-sources (eopl/eopl)]
 
 The following bindings are re-@scheme[provide]d from
 @schememodname[mzscheme]:
@@ -203,7 +203,7 @@ The following bindings are re-@scheme[provide]d from
 
 @defform[(provide provide-spec ...)]{
 
-  Useful only with a module that uses @schememodname[eopl/eopl] as a
+  Useful only with a module that uses @schememodname[eopl] as a
   language: exports identifiers from the module. See @mzscheme-provide
   from @schememodname[mzscheme] for more information.}
 
@@ -213,7 +213,7 @@ The following bindings are re-@scheme[provide]d from
   mutate this variable to install an exception-handling
   thunk. Typically, the handler thunk escapes through a continuation.
 
-  The @schememodname[eopl/eopl] library sets this variable to
+  The @schememodname[eopl] library sets this variable to
   @scheme[#f] in the current namespace when it executes.}
 
 @defproc[(install-eopl-exception-handler) void?]{
@@ -221,7 +221,7 @@ The following bindings are re-@scheme[provide]d from
   Sets an exception handler to one that checks
   @scheme[eopl:error-stop].
 
-  The @schememodname[eopl/eopl] library calls this function when it
+  The @schememodname[eopl] library calls this function when it
   executes.}
 
 @(bibliography
