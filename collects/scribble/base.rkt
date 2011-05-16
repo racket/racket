@@ -27,7 +27,8 @@
              (#:tag (or/c #f string? (listof string?))
                     #:tag-prefix (or/c #f string? module-path?)
                     #:style (or/c style? string? symbol? (listof symbol?) #f)
-                    #:version (or/c string? #f))
+                    #:version (or/c string? #f)
+                    #:date (or/c string? #f))
              #:rest (listof pre-content?)
              title-decl?)]
  [section (title-like-contract)]
@@ -60,12 +61,18 @@
    [else (raise-type-error who "style, string, symbol, list of symbols, or #f" s)]))
 
 (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style plain]
-               #:version [version #f] . str)
+               #:version [version #f] #:date [date #f]
+               . str)
   (let ([content (decode-content str)])
     (make-title-decl (prefix->string prefix)
                      (convert-tag tag content)
                      version
-                     (convert-part-style 'title style)
+                     (let ([s (convert-part-style 'title style)])
+                       (if date
+                           (make-style (style-name s)
+                                       (cons (make-document-date date)
+                                             (style-properties s)))
+                           s))
                      content)))
 
 (define (section #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style plain]

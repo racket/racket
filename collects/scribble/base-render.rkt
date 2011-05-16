@@ -139,10 +139,16 @@
 
     (define/public (extract-version d)
       (or (ormap (lambda (v)
-               (and (document-version? v)
-                    (document-version-text v)))
+                   (and (document-version? v)
+                        (document-version-text v)))
                  (style-properties (part-style d)))
           ""))
+
+    (define/public (extract-date d)
+      (ormap (lambda (v)
+               (and (document-date? v)
+                    (document-date-text v)))
+             (style-properties (part-style d))))
 
     (define/private (extract-pre-paras d sym)
       (let loop ([l (part-blocks d)])

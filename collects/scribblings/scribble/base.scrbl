@@ -65,6 +65,7 @@ have @racketmodname[scribble/manual]).
                 [#:tag-prefix tag-prefix (or/c false/c string? module-path?) #f]
                 [#:style style (or/c style? #f string? symbol? (listof symbol?)) #f]
                 [#:version vers (or/c string? false/c) #f]
+                [#:date date (or/c string? false/c) #f]
                 [pre-content pre-content?] ...+)
          title-decl?]{
 
@@ -91,6 +92,11 @@ path, it is converted to a string using
 The @racket[vers] argument is propagated to the @racket[title-decl]
 structure. Use @racket[""] as @racket[vers] to suppress version
 rendering in the output.
+
+The @racket[date] argument is propagated to the @racket[title-decl]
+structure via a @racket[document-date] @tech{style property}. Use
+@racket[""] as @racket[date] to suppress date rendering in Latex
+output.
 
 The section title is automatically indexed by
 @racket[decode-part]. For the index key, leading whitespace and a

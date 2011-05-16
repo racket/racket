@@ -369,6 +369,13 @@ The recognized @tech{style properties} are as follows:
        attached to a part representing the whole document. The default
        version for a document is @racket[(version)].}
 
+ @item{@racket[document-date] structure --- A date for the part,
+       normally used on a document's main part for for Latex
+       output. The default date for a document is @racket[#f], which
+       avoids explicitly specifying a date at the Latex level, so that
+       the current date is used as the document date. Set the date to
+       @racket[""] to suppress a date in an output document.}
+
   @item{@racket[body-id] structure --- Generated HTML uses the given
         string @tt{id} attribute of the @tt{body} tag; this style can
         be set separately for parts that start different HTML pages,
@@ -407,6 +414,9 @@ recognized:
        @racket[part] for a document, where they are treated specially
        by the Latex renderer by moving the author information to the
        title.}
+
+ @item{@racket['pretitle] --- Typeset before the title of the
+       enclosing part.}
 
 ]
 
@@ -918,8 +928,14 @@ than a file path.}
 
 @defstruct[document-version ([text (or/c string? false/c)])]{
 
-Used as a @tech{style property} for a @racket[path] to indicate a
+Used as a @tech{style property} for a @racket[part] to indicate a
 version number.}
+
+
+@defstruct[document-date ([text (or/c string? false/c)])]{
+
+Used as a @tech{style property} for a @racket[part] to indicate a
+date (which is typically used for Latex output).}
 
 
 @defstruct[color-property ([color (or/c string? (list/c byte? byte? byte?))])]{

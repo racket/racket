@@ -49,6 +49,7 @@
              format-number
              extract-part-style-files
              extract-version
+             extract-date
              extract-authors
              extract-pretitle)
 
@@ -93,10 +94,13 @@
         (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
           (let ([vers (extract-version d)]
+                [date (extract-date d)]
                 [pres (extract-pretitle d)]
                 [auths (extract-authors d)])
             (for ([pre (in-list pres)])
+              (printf "\n\n")
               (do-render-paragraph pre d ri #t))
+            (when date (printf "\\date{~a}\n" date))
             (printf "\\titleAnd~aVersionAnd~aAuthors{" 
                     (if (equal? vers "") "Empty" "")
                     (if (null? auths) "Empty" ""))
@@ -115,6 +119,10 @@
         (when (and (part-title-content d) (pair? number))
           (when (eq? (style-name (part-style d)) 'index)
             (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
+          (let ([pres (extract-pretitle d)])
+            (for ([pre (in-list pres)])
+              (printf "\n\n")
+              (do-render-paragraph pre d ri #t)))
           (let ([no-number? (and (pair? number) 
                                  (or (not (car number))
                                      ((length number) . > . 3)))])
