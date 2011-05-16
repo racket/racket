@@ -86,18 +86,42 @@
                         f2:float-arg-expr
                         fs:float-arg-expr ...)
            ;; if the result is a float, we can coerce integers to floats and optimize
-           #:when (let ([safe-to-opt? (subtypeof? this-syntax -Flonum)])
-                    ;; if we don't have a return type of float, we missed an optimization
-                    ;; opportunity, report it
-                    ;; ignore operations that stay within integers or rationals, since
-                    ;; these have nothing to do with float optimizations
-                    (when (and (not safe-to-opt?)
-                               (in-real-layer? this-syntax))
+           #:when (let* ([safe-to-opt? (subtypeof? this-syntax -Flonum)]
+                         ;; if we don't have a return type of float, we missed an optimization
+                         ;; opportunity, report it
+                         ;; ignore operations that stay within integers or rationals, since
+                         ;; these have nothing to do with float optimizations
+                         [close-call? (and (not safe-to-opt?)
+                                           (in-real-layer? this-syntax))])
+                    (when close-call?
                       (log-close-call "binary, args all float-arg-expr, return type not Float"
                                       this-syntax
                                       (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
                                                   #:when (not (subtypeof? x -Flonum)))
                                         x)))
+                    ;; If an optimization was expected (whether it was safe or not doesn't matter),
+                    ;; report subexpressions doing expensive exact arithmetic (Exact-Rational and
+                    ;; Real arithmetic), since that extra precision would be "lost" by going to
+                    ;; floating-point in this expression.
+                    ;; Since this exact behavior can be desirable, it's invalid to optimize it away,
+                    ;; but it's more likely to be there by accident. I can't really think of many
+                    ;; use cases for computing exact intermediate results, then converting them to
+                    ;; floats at the end.
+                    (when (or safe-to-opt? close-call?)
+                      (for ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
+                            #:when (or (in-real-layer? subexpr)
+                                       (in-rational-layer? subexpr)))
+                        (syntax-parse subexpr
+                          ;; Only warn about subexpressions that actually perform exact arithmetic.
+                          ;; There's not much point in warning about literals/variables that will
+                          ;; be coerced anyway, or about things like:
+                          ;; (vector-ref vector-of-rationals x)
+                          ;; which don't perform arithmetic despite returning numbers.
+                          [(#%plain-app (~var op (float-op binary-float-ops)) xs ...)
+                           (log-close-call
+                            "exact arithmetic subexpression inside a float expression, extra precision discarded"
+                            subexpr this-syntax)]
+                          [_ #f])))
                     safe-to-opt?)
            #:with opt
            (begin (log-optimization "binary float" #'op)
