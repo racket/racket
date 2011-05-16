@@ -14,7 +14,7 @@
  (private parse-type)
  racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base racket/contract (utils any-wrap)
+ (for-template scheme/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
@@ -184,6 +184,7 @@
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
+	[(Set: t) #`(set/c #,(t->c t))]
         [(Vector: t)
          (if flat?
              #`(vectorof #,(t->c t #:flat #t) #:flat? #t)
