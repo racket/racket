@@ -524,7 +524,7 @@
     (rec draw-arc-viewport
 	 (case-lambda
 	  [(p width height start-radians end-radians)
-           (draw-arc-viewport p width height (make-rgb 0 0 0))]
+           (draw-arc-viewport p width height start-radians end-radians (make-rgb 0 0 0))]
 	  [(p width height start-radians end-radians color)
 	   (check 'draw-arc
 		  posn? p "posn"
