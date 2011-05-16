@@ -134,10 +134,14 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
     abort();
 }
 #  define NEED_SIGACTION
-#  if (defined(__FreeBSD__) && (__FreeBSD_version < 700000)) || defined(__FreeBSD_kernel__)
+#  if (defined(__FreeBSD__) && (__FreeBSD_version < 700000))
 #    define USE_SIGACTON_SIGNAL_KIND SIGBUS
 #  else
 #    define USE_SIGACTON_SIGNAL_KIND SIGSEGV
+#    ifdef __FreeBSD_kernel__
+       /* Some versions of the kFreeBSD C library use SIGBUS */
+#      define USE_ANOTHER_SIGACTON_SIGNAL_KIND SIGBUS
+#    endif
 #  endif
 #endif
 
@@ -230,6 +234,9 @@ static void initialize_signal_handler(GCTYPE *gc)
     act.sa_flags |= SA_ONSTACK;
 #  endif
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
+#  ifdef USE_ANOTHER_SIGACTON_SIGNAL_KIND
+    sigaction(USE_ANOTHER_SIGACTON_SIGNAL_KIND, &act, &oact); 
+#  endif
   }
 # endif
 # ifdef NEED_SIGWIN
@@ -263,6 +270,9 @@ static void remove_signal_handler(GCTYPE *gc)
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_SIGINFO;
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
+#  ifdef USE_ANOTHER_SIGACTON_SIGNAL_KIND
+    sigaction(USE_ANOTHER_SIGACTON_SIGNAL_KIND, &act, &oact); 
+#  endif
   }
 # endif
 # ifdef NEED_SIGWIN
