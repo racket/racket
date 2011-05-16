@@ -1,7 +1,7 @@
 #;
 (
-float-real.rkt line 13 col 1 - + - binary float
-float-real.rkt line 14 col 1 - + - binary float
+float-real.rkt 13:1 + -- binary float
+float-real.rkt 14:1 + -- binary float
 5.3
 8.7
 14.26
