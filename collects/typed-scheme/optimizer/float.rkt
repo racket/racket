@@ -117,7 +117,7 @@
                           ;; be coerced anyway, or about things like:
                           ;; (vector-ref vector-of-rationals x)
                           ;; which don't perform arithmetic despite returning numbers.
-                          [(#%plain-app (~var op (float-op binary-float-ops)) xs ...)
+                          [e:arith-expr
                            (log-close-call
                             "exact arithmetic subexpression inside a float expression, extra precision discarded"
                             subexpr this-syntax)]
