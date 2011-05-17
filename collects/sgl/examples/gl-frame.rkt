@@ -61,9 +61,13 @@
     (class canvas%
       (inherit refresh with-gl-context swap-gl-buffers)
 
+      (define init? #f)
       (define/override (on-paint)
         (with-gl-context 
          (lambda ()
+           (unless init?
+             (gl-init)
+             (set! init? #t))
            (gl-draw)
            (swap-gl-buffers)))
         (refresh))
@@ -77,7 +81,7 @@
       (define/override (on-char key)
         (gl-handlekey key)
         (refresh))
-      (super-new (style '(no-autoclear)))))
+      (super-new (style '(gl no-autoclear)))))
   
   (define (gl-run)
     (let* ((frame (new frame% (label "OpenGL Window") 
@@ -88,8 +92,7 @@
         (display "Error: OpenGL context failed to initialize")
         (newline)
         (exit))
-      (send frame show #t)
-      (send glcanvas with-gl-context gl-init)))
+      (send frame show #t)))
   
   (define *textures* '())
   
