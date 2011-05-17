@@ -4,7 +4,7 @@
          "../utils/utils.rkt" racket/unsafe/ops
          (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
          (types numeric-tower)
-         (optimizer utils float))
+         (optimizer utils numeric-utils float))
 
 (provide float-complex-opt-expr
          float-complex-arith-opt-expr
@@ -359,6 +359,33 @@
 
 (define-syntax-class float-complex-opt-expr
   #:commit
+
+  ;; Dummy pattern that can't actually match.
+  ;; We just want to detect "unexpected" Complex _types_ that come up.
+  ;; (not necessarily complex _values_, in fact, most of the time this
+  ;; case would come up, no actual complex values will be generated,
+  ;; but the type system has to play it safe, and must assume that it
+  ;; could happen. ex: (sqrt Integer), if the type system can't prove
+  ;; that the argument is non-negative, it must assume that complex
+  ;; results can happen, even if it never does in the user's program.
+  ;; This is exactly what makes complex types like this "unexpected")
+  ;; We define unexpected as: the whole expression has a Complex type,
+  ;; but none of its subexpressions do. Since our definition of
+  ;; arithmetic expression (see the arith-expr syntax class) exclude
+  ;; constructors (like make-rectangular) and coercions, this is a
+  ;; reasonable definition.
+  (pattern e:arith-expr
+           #:when (when (and (in-complex-layer? #'e)
+                             (for/and ([subexpr (in-list (syntax->list #'(e.args ...)))])
+                               (subtypeof? subexpr -Real)))
+                    (log-close-call "unexpected complex value"
+                                    this-syntax #'e.op))
+           ;; We don't actually want to match.
+           #:when #f
+           #:with real-binding #'#f ; required, otherwise syntax/parse is not happy
+           #:with imag-binding #'#f
+           #:with (bindings ...) #'()
+           #:with opt #'#f)
 
   ;; we can optimize taking the real of imag part of an unboxed complex
   ;; hopefully, the compiler can eliminate unused bindings for the other part if it's not used
