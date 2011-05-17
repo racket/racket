@@ -22,10 +22,10 @@
 @(defmodulelang* (typed/racket/base typed/racket)
                  #:use-sources 
                     (typed-scheme/typed-scheme
-                     typed-scheme/private/prims
-                     typed-scheme/private/extra-procs
-                     typed-scheme/private/base-types 
-                     typed-scheme/private/base-types-extra))
+                     typed-scheme/base-env/prims
+                     typed-scheme/base-env/extra-procs
+                     typed-scheme/base-env/base-types
+                     typed-scheme/base-env/base-types-extra))
 
 @section[#:tag "type-ref"]{Type Reference}
 
@@ -906,10 +906,10 @@ languages. The @racketmod[typed-scheme] language is equivalent to the
 @(declare-exporting typed/scheme/base typed/scheme typed-scheme
                     #:use-sources 
                     (typed-scheme/typed-scheme
-                     typed-scheme/private/prims
-                     typed-scheme/private/extra-procs
-                     typed-scheme/private/base-types 
-                     typed-scheme/private/base-types-extra))
+                     typed-scheme/base-env/prims
+                     typed-scheme/base-env/extra-procs
+                     typed-scheme/base-env/base-types
+                     typed-scheme/base-env/base-types-extra))
 
 
 
