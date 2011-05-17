@@ -365,4 +365,32 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (get-column-alpha bm x y)
+    (define bs (make-bytes 4))
+    (send bm get-argb-pixels x y 1 1 bs #t)
+    bs)
+  (define abm (make-object bitmap% 2 2 #f #t))
+  (define nbm (make-object bitmap% 2 2 #f #f))
+  (define (avg bstr) (- 255
+                        (quotient (+ (bytes-ref bstr 0)
+                                     (bytes-ref bstr 1)
+                                     (bytes-ref bstr 2))
+                                  3)))
+  (send abm set-argb-pixels 0 0 2 2 #"0123456789abcdef")
+  (send nbm set-argb-pixels 0 0 2 2 #"0123456789abcdef")  
+
+  (test (bytes (char->integer #\0) 0 0 0) 'a0+0 (get-column-alpha abm 0 0))
+  (test (bytes (char->integer #\4) 0 0 0) 'a1+0 (get-column-alpha abm 1 0))
+  (test (bytes (char->integer #\8) 0 0 0) 'a0+1 (get-column-alpha abm 0 1))
+  (test (bytes (char->integer #\c) 0 0 0) 'a1+1 (get-column-alpha abm 1 1))
+
+  (test (bytes (avg #"123") 0 0 0) 'n0+0 (get-column-alpha nbm 0 0))
+  (test (bytes (avg #"567") 0 0 0) 'n1+0 (get-column-alpha nbm 1 0))
+  (test (bytes (avg #"9ab") 0 0 0) 'n0+1 (get-column-alpha nbm 0 1))
+  (test (bytes (avg #"def") 0 0 0) 'n1+1 (get-column-alpha nbm 1 1)))
+
+
+;; ----------------------------------------
+
 (report-errs)

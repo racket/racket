@@ -76,7 +76,8 @@ The pixel RGB values are copied into @scheme[pixels]. The first byte
 If @scheme[alpha?] is false, if the bitmap does not have an alpha
  channel, then the alpha value for each pixel is set to 255. If
  @scheme[alpha?] is true, then @italic{only} the alpha value is set
- for each pixel, based on each pixel's inverted value. Thus, when a
+ for each pixel; if the bitmap has no alpha channel, then the alpha
+ value is based on each pixel's inverted RGB average. Thus, when a
  bitmap has a separate mask bitmap, the same @scheme[pixels] byte
  string is in general filled from two bitmaps: one (the main image)
  for the pixel values and one (the mask) for the alpha values.

@@ -718,7 +718,7 @@
         (for ([j (in-range y (min (+ y h) height))])
           (let ([row (* j row-width)])
             (for ([i (in-range x (min (+ x w) width))])
-              (let ([p (* 4 (+ i (* j w)))]
+              (let ([p (* 4 (+ (- i x) (* (- j y) w)))]
                     [q (+ row (* i 4))])
                 (bytes-set! bstr p (bytes-ref data (+ q A)))))))))
     
