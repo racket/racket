@@ -8,7 +8,7 @@
 (define unit? (make-parameter #f))
 (define int? (make-parameter #f))
 (define opt? (make-parameter #f))
-(define close-calls? (make-parameter #f))
+(define missed-opt? (make-parameter #f))
 (define bench? (make-parameter #f))
 (define single (make-parameter #f))
 (current-namespace (make-base-namespace))
@@ -17,11 +17,11 @@
  ["--unit" "run the unit tests" (unit? #t)]
  ["--int" "run the integration tests" (int? #t)]
  ["--opt" "run the optimization tests" (opt? #t)]
- ["--close-calls" "run the close call tests" (close-calls? #t)]
+ ["--missed-opt" "run the missed optimization tests" (missed-opt? #t)]
  ["--benchmarks" "compile the typed benchmarks" (bench? #t)]
  ["--just" path "run only this test" (single (just-one path))]
  ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t))]
- ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (close-calls? #t) (bench? #t))]
+ ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (missed-opt? #t) (bench? #t))]
  ["--gui" "run using the gui" 
           (if (gui-available?)
               (begin (exec go))
@@ -33,10 +33,10 @@
                         [else
                          (make-test-suite
                           "Typed Racket Tests"
-                          (append (if (unit?)        (list unit-tests)           '())
-                                  (if (int?)         (list int-tests)            '())
-                                  (if (opt?)         (list optimization-tests)   '())
-                                  (if (close-calls?) (list close-call-tests)     '())
-                                  (if (bench?)       (list (compile-benchmarks)) '())))])])
+                          (append (if (unit?)       (list unit-tests)                    '())
+                                  (if (int?)        (list int-tests)                     '())
+                                  (if (opt?)        (list optimization-tests)            '())
+                                  (if (missed-opt?) (list missed-optimization-tests)     '())
+                                  (if (bench?)      (list (compile-benchmarks))          '())))])])
       (unless (= 0 ((exec) to-run))
         (eprintf "Typed Racket Tests did not pass.\n"))))

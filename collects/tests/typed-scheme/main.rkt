@@ -121,8 +121,8 @@
              (lambda (p thnk) (check-not-exn thnk))]
             [(equal? dir "optimizer/tests/")
              (lambda (p* thnk) (test-opt p))]
-            [(equal? dir "optimizer/close-calls/")
-             (lambda (p* thnk) (test-close-call p))])))
+            [(equal? dir "optimizer/missed-optimizations/")
+             (lambda (p* thnk) (test-missed-optimization p))])))
   (test-suite
    (path->string p)
    (f
@@ -141,4 +141,4 @@
 
 (provide go go/text just-one
          int-tests unit-tests compile-benchmarks
-         optimization-tests close-call-tests)
+         optimization-tests missed-optimization-tests)

@@ -2,8 +2,8 @@
 (require racket/runtime-path
          rackunit rackunit/text-ui)
 
-(provide optimization-tests close-call-tests
-         test-opt test-close-call)
+(provide optimization-tests missed-optimization-tests
+         test-opt test-missed-optimization)
 
 (define (generate-log name dir flags)
   ;; some tests require other tests, so some fiddling is required
@@ -38,14 +38,14 @@
                     (read)))))))
 
 
-(define-runtime-path tests-dir       "./tests")
-(define-runtime-path close-calls-dir "./close-calls")
+(define-runtime-path tests-dir                "./tests")
+(define-runtime-path missed-optimizations-dir "./missed-optimizations")
 
 ;; these two return lists of tests to be run for that category of tests
 (define (test-opt name)
   (list (compare-logs name tests-dir '#("--log-optimizations"))))
-(define (test-close-call name)
-  (list (compare-logs name close-calls-dir '#("--log-close-calls"))))
+(define (test-missed-optimization name)
+  (list (compare-logs name missed-optimizations-dir '#("--log-missed-optimizations"))))
 
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
@@ -61,5 +61,5 @@
 
 (define optimization-tests
   (mk-suite "Optimization Tests" tests-dir test-opt))
-(define close-call-tests
-  (mk-suite "Close Call Tests" close-calls-dir test-close-call))
+(define missed-optimization-tests
+  (mk-suite "Missed Optimization Tests" missed-optimizations-dir test-missed-optimization))

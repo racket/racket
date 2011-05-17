@@ -81,7 +81,7 @@
            #:with opt #'other))
 
 (define (optimize-top stx)
-  (let* ([log-file? (and (or *log-optimizations?* *log-close-calls?*)
+  (let* ([log-file? (and (or *log-optimizations?* *log-missed-optimizations?*)
                          *log-to-log-file?*)]
          [port (if log-file?
                    (open-output-file *log-file* #:exists 'append)

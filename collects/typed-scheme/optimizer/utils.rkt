@@ -8,7 +8,7 @@
          (rep type-rep))
 
 (provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
-         log-close-call *log-close-calls?*
+         log-missed-optimization *log-missed-optimizations?*
          *show-optimized-code*
          subtypeof? isoftype?
          mk-unsafe-tbl
@@ -45,9 +45,9 @@
 ;; of reporting them to the user.
 ;; This is meant to help users understand what hurts the performance of
 ;; their programs.
-(define *log-close-calls?* (in-command-line? "--log-close-calls"))
-(define (log-close-call kind stx [irritant #f])
-  (when *log-close-calls?*
+(define *log-missed-optimizations?* (in-command-line? "--log-missed-optimizations"))
+(define (log-missed-optimization kind stx [irritant #f])
+  (when *log-missed-optimizations?*
     (do-logging (if irritant
                     (format "~a -- caused by: ~a ~a"
                             kind

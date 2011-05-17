@@ -45,8 +45,8 @@
                       ;; it has to be a list, otherwise, there would have been
                       ;; a type error
                       (begin
-                        (log-close-call "car/cdr on a potentially empty list"
-                                        this-syntax #'p)
+                        (log-missed-optimization "car/cdr on a potentially empty list"
+                                                 this-syntax #'p)
                         #f))
            #:with opt
            (begin (log-optimization "pair" #'op)
@@ -54,8 +54,8 @@
   (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
            #:when (or (has-mpair-type? #'p)
                       (begin
-                        (log-close-call "mpair op on a potentially empty mlist"
-                                        this-syntax #'p)
+                        (log-missed-optimization "mpair op on a potentially empty mlist"
+                                                 this-syntax #'p)
                         #f))
            #:with opt
            (begin (log-optimization "mutable pair" #'op)

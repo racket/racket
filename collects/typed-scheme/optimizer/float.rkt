@@ -91,14 +91,14 @@
                          ;; opportunity, report it
                          ;; ignore operations that stay within integers or rationals, since
                          ;; these have nothing to do with float optimizations
-                         [close-call? (and (not safe-to-opt?)
-                                           (in-real-layer? this-syntax))])
-                    (when close-call?
-                      (log-close-call "binary, args all float-arg-expr, return type not Float"
-                                      this-syntax
-                                      (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                                  #:when (not (subtypeof? x -Flonum)))
-                                        x)))
+                         [missed-optimization? (and (not safe-to-opt?)
+                                                    (in-real-layer? this-syntax))])
+                    (when missed-optimization?
+                      (log-missed-optimization "binary, args all float-arg-expr, return type not Float"
+                                               this-syntax
+                                               (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                                           #:when (not (subtypeof? x -Flonum)))
+                                                 x)))
                     ;; If an optimization was expected (whether it was safe or not doesn't matter),
                     ;; report subexpressions doing expensive exact arithmetic (Exact-Rational and
                     ;; Real arithmetic), since that extra precision would be "lost" by going to
@@ -107,7 +107,7 @@
                     ;; but it's more likely to be there by accident. I can't really think of many
                     ;; use cases for computing exact intermediate results, then converting them to
                     ;; floats at the end.
-                    (when (or safe-to-opt? close-call?)
+                    (when (or safe-to-opt? missed-optimization?)
                       (for ([subexpr (in-list (syntax->list #'(f1 f2 fs ...)))]
                             #:when (or (in-real-layer? subexpr)
                                        (in-rational-layer? subexpr)))
@@ -118,7 +118,7 @@
                           ;; (vector-ref vector-of-rationals x)
                           ;; which don't perform arithmetic despite returning numbers.
                           [e:arith-expr
-                           (log-close-call
+                           (log-missed-optimization
                             "exact arithmetic subexpression inside a float expression, extra precision discarded"
                             subexpr this-syntax)]
                           [_ #f])))
