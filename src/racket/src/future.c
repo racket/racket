@@ -383,6 +383,12 @@ typedef struct Scheme_Future_Thread_State {
   mzrt_sema *worker_can_continue_sema;
   intptr_t runstack_size;
 
+  /* After a future thread starts, only the runtime thread
+     modifies the values at these pointers. Future threads
+     read them without any locks; assembly-level instructions,
+     such as mfence, ensure that future threads eventually see 
+     changes made by the runtime thread, and the runtime thread 
+     waits as needed. */
   volatile int *fuel_pointer;
   volatile uintptr_t *stack_boundary_pointer;
   volatile int *need_gc_pointer;
@@ -809,8 +815,10 @@ void scheme_future_block_until_gc()
   for (i = 0; i < fs->thread_pool_size; i++) { 
     if (fs->pool_threads[i]) {
       *(fs->pool_threads[i]->need_gc_pointer) = 1;
-      *(fs->pool_threads[i]->fuel_pointer) = 0;
-      *(fs->pool_threads[i]->stack_boundary_pointer) += INITIAL_C_STACK_SIZE;
+      if (*(fs->pool_threads[i]->fuel_pointer)) {
+        *(fs->pool_threads[i]->fuel_pointer) = 0;
+        *(fs->pool_threads[i]->stack_boundary_pointer) += INITIAL_C_STACK_SIZE;
+      }
     }
   }
 
@@ -2103,6 +2111,8 @@ void *worker_thread_future_loop(void *arg)
         trigger_added_touches(fs, ft);
 
         record_fevent(FEVENT_COMPLETE, fid);
+
+        fts->thread->current_ft = NULL;
       }
 
       /* Clear stacks */
@@ -2327,6 +2337,24 @@ void scheme_check_future_work()
       }
     } else
       break;
+  }
+
+  /* If any future thread has its fuel revoked (must have been a custodian
+     shutdown) but doesn't have a future (shutdown future must have been
+     handled), then we can restore the thread's fuel. Races are
+     possible, but they should be rare, and they lead at worst to bad
+     performance. */
+  {
+    int i;
+    for (i = 0; i < fs->thread_pool_size; i++) { 
+      if (fs->pool_threads[i]) {
+        if (!*(fs->pool_threads[i]->fuel_pointer)
+            && !fs->pool_threads[i]->thread->current_ft) {
+          *(fs->pool_threads[i]->fuel_pointer) = 1;
+          *(fs->pool_threads[i]->stack_boundary_pointer) -= INITIAL_C_STACK_SIZE;
+        }
+      }
+    }
   }
 }
 
