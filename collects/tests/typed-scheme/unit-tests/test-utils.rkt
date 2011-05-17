@@ -9,7 +9,7 @@
          (types comparison utils)
          rackunit rackunit/text-ui)
 
-(provide private typecheck (rename-out [infer r:infer]) utils env rep types)
+(provide private typecheck (rename-out [infer r:infer]) utils env rep types base-env)
 
 (define (mk-suite ts)
   (match (map (lambda (f) (f)) ts)

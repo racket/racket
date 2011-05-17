@@ -6,7 +6,6 @@
                racket/tcp 
                (only-in rnrs/lists-6 fold-left)
                '#%paramz
-               "extra-procs.rkt"
                (only-in '#%kernel [apply kernel:apply])
                racket/promise racket/system
                (only-in string-constants/private/only-once maybe-print-message)

@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(require typed-scheme/private/extra-procs)
+(require typed-scheme/base-env/extra-procs)
 
 ((inst map Number Number Number Number Number Number Number) 
  + 

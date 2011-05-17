@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(require typed-scheme/private/extra-procs)
+(require typed-scheme/base-env/extra-procs)
 
 (: f (All (A ...) (All (B ...) (A ... A -> Integer))))
 

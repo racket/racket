@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(require typed-scheme/private/extra-procs)
+(require typed-scheme/base-env/extra-procs)
 
 (: f (Integer Integer -> Integer))
 (define (f x y) (+ x y))

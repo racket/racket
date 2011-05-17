@@ -3,10 +3,10 @@
 (require "test-utils.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
-(require (private prims type-annotation 
-		  base-types-extra base-special-env
-		  base-env-indexing base-structs
-                  parse-type)
+(require (private type-annotation parse-type)
+         (base-env prims
+                   base-types-extra base-special-env
+                   base-env-indexing base-structs)
 	 (typecheck typechecker)
 	 (rep type-rep filter-rep object-rep)
          (rename-in (types utils union convenience abbrev filter-ops)
@@ -23,16 +23,16 @@
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)
 	             (env global-env)
-	             (private #;base-env #;base-env-numeric
-			      base-env-indexing base-special-env))
-         (for-template (private #;base-env base-types base-types-extra
-				#;base-env-numeric 
-                                base-special-env
-				base-env-indexing))
+	             (base-env #;base-env #;base-env-numeric
+			       base-env-indexing base-special-env))
+         (for-template (base-env #;base-env base-types base-types-extra
+				 #;base-env-numeric 
+                                 base-special-env
+				 base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
-(require (prefix-in b: (private base-env))
-         (prefix-in n: (private base-env-numeric)))
+(require (prefix-in b: (base-env base-env))
+         (prefix-in n: (base-env base-env-numeric)))
 
 (provide typecheck-tests g tc-expr/expand)
  

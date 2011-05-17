@@ -1,13 +1,13 @@
 #lang scheme/base
 
 (require 
- (except-in "private/prims.rkt"
+ (except-in "base-env/prims.rkt"
             require/typed require/opaque-type require-typed-struct)
- "private/base-types-extra.rkt"
+ "base-env/base-types-extra.rkt"
  (for-syntax scheme/base syntax/parse syntax/struct))
 (provide (all-from-out scheme/base)
 	 (all-defined-out)
-	 (all-from-out "private/prims.rkt" "private/base-types-extra.rkt"))
+	 (all-from-out "base-env/prims.rkt" "base-env/base-types-extra.rkt"))
 
 
 (define-syntax (require/typed stx)

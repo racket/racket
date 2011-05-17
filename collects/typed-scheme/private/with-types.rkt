@@ -3,11 +3,11 @@
 (require racket/require
          (for-template 
           (except-in racket/base for for*)
-          "prims.rkt"
+          "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
-         "extra-procs.rkt" "prims.rkt"
+         "../base-env/extra-procs.rkt" "../base-env/prims.rkt"
          syntax/parse racket/block racket/match
-         unstable/sequence  "base-types-extra.rkt"
+         unstable/sequence  "../base-env/base-types-extra.rkt"
          (except-in (path-up "env/type-name-env.rkt"
                              "env/type-alias-env.rkt"
                              "infer/infer-dummy.rkt"

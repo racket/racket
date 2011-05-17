@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(require typed-scheme/private/extra-procs)
+(require typed-scheme/base-env/extra-procs)
 
 
 (call-with-values (lambda () (values 1 2)) (lambda: ([x : Number] [y : Number]) (+ x y)))

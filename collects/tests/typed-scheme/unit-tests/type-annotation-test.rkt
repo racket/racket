@@ -16,9 +16,9 @@
                           (type-ascription (let ([ons (current-namespace)]
                                                  [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
-                                               (namespace-require 'typed-scheme/private/prims)
-                                               (namespace-require 'typed-scheme/private/base-types)
-                                               (namespace-require 'typed-scheme/private/base-types-extra)
+                                               (namespace-require 'typed-scheme/base-env/prims)
+                                               (namespace-require 'typed-scheme/base-env/base-types)
+                                               (namespace-require 'typed-scheme/base-env/base-types-extra)
                                                (expand 'ann-stx))))
                           ty))
 

@@ -85,6 +85,7 @@ at least theoretically.
 (define-requirer private private-out)
 (define-requirer types types-out)
 (define-requirer optimizer optimizer-out)
+(define-requirer base-env base-env-out)
 
 ;; run `h' last, but drop its return value
 (define-syntax-rule (reverse-begin h . forms) (begin0 (begin . forms) h))

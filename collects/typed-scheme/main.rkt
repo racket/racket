@@ -3,15 +3,15 @@
 
 
 (providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app for for*)
-                 (except "private/prims.rkt")
-                 (except "private/base-types.rkt")
-                 (except "private/base-types-extra.rkt"))
+                 (except "base-env/prims.rkt")
+                 (except "base-env/base-types.rkt")
+                 (except "base-env/base-types-extra.rkt"))
 	   (basics #%module-begin		   		   		   
 		   #%top-interaction
 		   lambda
 		   #%app))
-(require "private/extra-procs.rkt"
-         (for-syntax "private/base-types-extra.rkt"))
+(require "base-env/extra-procs.rkt"
+         (for-syntax "base-env/base-types-extra.rkt"))
 (provide (rename-out [with-handlers: with-handlers])
-         (for-syntax (all-from-out "private/base-types-extra.rkt"))
+         (for-syntax (all-from-out "base-env/base-types-extra.rkt"))
 	 assert defined? with-type for for*)

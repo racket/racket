@@ -42,12 +42,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
           racket/struct-info
           syntax/struct
           "../rep/type-rep.rkt"
-          "parse-type.rkt"
+          "../private/parse-type.rkt"
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"	  
           "../env/type-name-env.rkt"
-          "type-contract.rkt"
+          "../private/type-contract.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt")
 (provide index?) ; useful for assert, and racket doesn't have it

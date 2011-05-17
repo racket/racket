@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(require typed-scheme/private/extra-procs)
+(require typed-scheme/base-env/extra-procs)
 
 (map + (list 1 2 3) (list 10 20 30) (list 'a 'b 'c))
 
