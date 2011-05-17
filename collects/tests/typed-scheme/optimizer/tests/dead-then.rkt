@@ -1,8 +1,8 @@
 #;
 (
-#f line #f col #f - op - dead then branch
+dead-then.rkt line 14 col 13 - (#%app + (quote 2.0) (quote 3.0)) - dead then branch
 dead-then.rkt line 15 col 14 - + - binary float
-#f line #f col #f - op - dead then branch
+dead-then.rkt line 17 col 13 - (#%app + (quote 2.0) (quote 3.0)) - dead then branch
 dead-then.rkt line 18 col 14 - + - binary float
 9.09.0
 )
