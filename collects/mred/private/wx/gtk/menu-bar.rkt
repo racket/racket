@@ -92,15 +92,17 @@
     ;; return initial size; also, add a menu to make sure there is one,
     ;; and force the menu bar to be at least that tall always
     (atomically
-     (let ([item (gtk_menu_item_new_with_mnemonic "Xyz")])
-       (gtk_menu_shell_append gtk item)
-       (gtk_widget_show item)
-       (begin0
-        (let ([req (make-GtkRequisition 0 0)])
-          (gtk_widget_size_request gtk req)
-          (gtk_widget_set_usize gtk -1 (GtkRequisition-height req))
-          (GtkRequisition-height req))
-        (gtk_container_remove gtk item)))))
+     (define item (gtk_menu_item_new_with_mnemonic "Xyz"))
+     (gtk_menu_shell_append gtk item)
+     (gtk_widget_show item)
+     (define req (make-GtkRequisition 0 0))
+     (gtk_widget_size_request item req)
+     (define item-height (GtkRequisition-height req))
+     (gtk_widget_size_request gtk req)
+     (define height (max (GtkRequisition-height req) item-height))
+     (gtk_widget_set_usize gtk -1 height)
+     (gtk_container_remove gtk item)
+     height))
 
   (define/public (get-top-window)
     top-wx)
