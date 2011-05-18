@@ -12,21 +12,21 @@
   (syntax-parse stx
     [(_ arg:expr attr:id pat)
      (let* ([i (generate-temporary)]
-            [get-i (datum->syntax 
-		    i 
-		    (string->symbol 
-		     (string-append (symbol->string (syntax-e i)) 
+            [get-i (datum->syntax
+		    i
+		    (string->symbol
+		     (string-append (symbol->string (syntax-e i))
 				    "."
 				    (symbol->string #'attr.datum))))])
        (quasisyntax/loc stx
-         (syntax-parse arg 
+         (syntax-parse arg
            [#,i #:declare #,i pat #'#,get-i])))]))
 
 (define (atom? v)
   (or (number? v) (string? v) (boolean? v) (symbol? v) (keyword? v) (char? v) (bytes? v) (regexp? v)))
 
 (define-syntax-class (3d pred)
-  (pattern s           
+  (pattern s
            #:attr datum (syntax-e #'s)
            #:fail-unless (pred (attribute datum)) #f))
 

@@ -15,7 +15,7 @@
          instantiate-poly
          instantiate-poly-dotted
          tc-result?
-         tc-result-equal? 
+         tc-result-equal?
          effects-equal?
          tc-result-t
          unfold
@@ -35,7 +35,7 @@
 
 (define (instantiate-poly t types)
   (match t
-    [(Poly: ns body) 
+    [(Poly: ns body)
      (unless (= (length types) (length ns))
        (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
      (subst-all (make-simple-substitution ns types) body)]
@@ -52,7 +52,7 @@
   (match t
     [(PolyDots: (list fixed ... dotted) body)
      (unless (= (length fixed) (length types))
-       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a" 
+       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a"
                 (length fixed) (length types) types))
      (let ([body* (subst-all (make-simple-substitution fixed types) body)])
        (substitute-dotted image var dotted body*))]
@@ -72,7 +72,7 @@
   (syntax-parser
    [(_ tp fp op)
     #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) #f))]
-   [(_ tp fp op dty dbound) 
+   [(_ tp fp op dty dbound)
     #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) (cons dty dbound)))]
    [(_ tp)
     #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
@@ -134,7 +134,7 @@
 ;(trace ret)
 
 (provide/cond-contract
- [ret    
+ [ret
   (->i ([t (or/c Type/c (listof Type/c))])
        ([f (t) (if (list? t)
                    (listof FilterSet/c)
@@ -157,8 +157,8 @@
 ;; equality - good
 
 (define tc-result-equal? equal?)
-(define (effects-equal? fs1 fs2) 
-  (and 
+(define (effects-equal? fs1 fs2)
+  (and
    (= (length fs1) (length fs2))
    (andmap eq? fs1 fs2)))
 
@@ -175,7 +175,7 @@
   return)
 
 ;; error for unbound variables
-(define (lookup-fail e) 
+(define (lookup-fail e)
   (match (identifier-binding e)
     ['lexical (tc-error/expr "untyped lexical variable ~a" (syntax-e e))]
     [#f (tc-error/expr "untyped top-level identifier ~a" (syntax-e e))]
@@ -183,7 +183,7 @@
      (let-values ([(x y) (module-path-index-split nominal-source-mod)])
        (cond [(and (not x) (not y))
               (tc-error/expr "untyped identifier ~a" (syntax-e e))]
-             [else 
+             [else
               (tc-error/expr "untyped identifier ~a imported from module <~a>" (syntax-e e) x)]))]))
 
 (define (lookup-type-fail i)

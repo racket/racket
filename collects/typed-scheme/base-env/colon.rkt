@@ -15,19 +15,19 @@
     ;; explicitly parenthesized
     (syntax-parse stx #:literals (: t:->)
       [(: id : x ...)
-       #:fail-unless (= 1 (length 
+       #:fail-unless (= 1 (length
                            (for/list ([i (syntax->list #'(x ...))]
                                       #:when (and (identifier? i)
                                                   (free-identifier=? i #'t:->)))
-                                     i))) #f       
+                                     i))) #f
        (syntax/loc stx (: id (x ...)))]
       [(: id : . more)
        (syntax/loc stx (: id . more))]
       [_ stx]))
   (define (err str . sub)
-    (apply raise-syntax-error '|type declaration| str stx sub))  
+    (apply raise-syntax-error '|type declaration| str stx sub))
   (syntax-parse stx*
-    [_ 
+    [_
      #:when (eq? 'expression (syntax-local-context))
      (err "must be used in a definition context")]
     [(_ i:id ty)

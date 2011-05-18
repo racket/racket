@@ -80,7 +80,7 @@
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
                                    (make-Values
-                                    (append 
+                                    (append
                                      (map sb types)
                                      ;; We need to recur first, just to expand out any dotted usages of this.
                                      (let ([expanded (sb dty)])
@@ -93,7 +93,7 @@
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))
-                            (make-arr (append 
+                            (make-arr (append
                                        (map sb dom)
                                        ;; We need to recur first, just to expand out any dotted usages of this.
                                        (let ([expanded (sb (car drest))])
@@ -149,7 +149,7 @@
       [(i-subst imgs)
        (substitute-dots imgs #f v t)]
       [(i-subst/starred imgs rest)
-       (substitute-dots imgs rest v t)]     
+       (substitute-dots imgs rest v t)]
       [(i-subst/dotted null dty dbound)
        (substitute-dotted dty dbound v t)]
       [(i-subst/dotted imgs dty dbound)

@@ -1,12 +1,12 @@
 #lang racket/base
 
 #|
-This file is for utilities that are of general interest, 
+This file is for utilities that are of general interest,
 at least theoretically.
 |#
 
 (require (for-syntax racket/base syntax/parse racket/string)
-         racket/contract racket/require-syntax 
+         racket/contract racket/require-syntax
 	 racket/provide-syntax racket/unit (prefix-in d: unstable/debug)
 	 racket/pretty mzlib/pconvert syntax/parse)
 
@@ -17,7 +17,7 @@ at least theoretically.
  ;; optimization
  optimize?
  ;; timing
- start-timing do-time  
+ start-timing do-time
  ;; logging
  printf/log show-input?
  ;; struct printing
@@ -39,14 +39,14 @@ at least theoretically.
             (syntax-parse stx
               [(form id:identifier ...)
                (with-syntax ([(id* ...)
-                              (map (lambda (id) 
-                                     (datum->syntax 
+                              (map (lambda (id)
+                                     (datum->syntax
                                       id
                                       `(lib
-					,(datum->syntax 
+					,(datum->syntax
 					  #f
 					  (string-join
-					   (list "typed-scheme" 
+					   (list "typed-scheme"
 						 (symbol->string (syntax-e #'nm))
 						 (string-append (symbol->string (syntax-e id)) ".rkt"))
 					   "/")
@@ -60,14 +60,14 @@ at least theoretically.
             (syntax-parse stx
               [(_ id:identifier ...)
                (with-syntax ([(id* ...)
-                              (map (lambda (id) 
-                                     (datum->syntax 
+                              (map (lambda (id)
+                                     (datum->syntax
                                       id
                                       `(lib
-					,(datum->syntax 
+					,(datum->syntax
 					  #f
 					  (string-join
-					   (list "typed-scheme" 
+					   (list "typed-scheme"
 						 (symbol->string (syntax-e #'nm))
 						 (string-append (symbol->string (syntax-e id)) ".rkt"))
 					   "/")
@@ -97,9 +97,9 @@ at least theoretically.
 (define-for-syntax logging? #f)
 
 (define-syntax (printf/log stx)
-  (if logging?         
+  (if logging?
       (syntax-case stx ()
-        [(_ fmt . args) 
+        [(_ fmt . args)
 	 #'(log-debug (format fmt . args))])
       #'(void)))
 
@@ -108,7 +108,7 @@ at least theoretically.
 
 (define last-time (make-parameter #f))
 (define-syntaxes (start-timing do-time)
-  (if timing?        
+  (if timing?
       (values
        (syntax-rules ()
          [(_ msg)
@@ -151,13 +151,13 @@ at least theoretically.
     (pretty-print (print-convert s))))
 
 (define custom-printer (make-parameter #t))
-  
+
 (define-syntax (define-struct/printer stx)
   (syntax-parse stx
     [(form name (flds ...) printer:expr)
-     #`(define-struct name (flds ...) 
+     #`(define-struct name (flds ...)
          #:property prop:custom-print-quotable 'never
-         #:property prop:custom-write 
+         #:property prop:custom-write
          (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
          #:transparent)]))
 
@@ -205,7 +205,7 @@ at least theoretically.
 (define-syntax define/cond-contract
   (if enable-contracts?
       (make-rename-transformer #'define/contract)
-      (lambda (stx)        
+      (lambda (stx)
         (syntax-parse stx
           [(_ head cnt . body)
            #'(define head . body)]))))
@@ -221,7 +221,7 @@ at least theoretically.
   (syntax-case stx ()
     [(_ nm cnt)
      (if enable-contracts?
-         (list #'[contracted (nm cnt)])     
+         (list #'[contracted (nm cnt)])
          (list #'nm))]))
 
 (define (list-update l i f)

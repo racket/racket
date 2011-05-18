@@ -5,8 +5,8 @@
 (define-syntax (define-other-types stx)
   (syntax-case stx ()
     [(_ nm ...)
-     #'(begin (define-syntax nm 
-                (lambda (stx) 
+     #'(begin (define-syntax nm
+                (lambda (stx)
                   (raise-syntax-error 'type-check "type name used out of context" stx))) ...
               (provide nm) ...)]))
 

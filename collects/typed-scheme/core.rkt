@@ -10,10 +10,10 @@
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
          (env type-name-env type-alias-env)
-         (r:infer infer)         
+         (r:infer infer)
          (rep type-rep)
          (except-in (utils utils tc-utils) infer)
-         (only-in (r:infer infer-dummy) infer-param)          
+         (only-in (r:infer infer-dummy) infer-param)
          "tc-setup.rkt")
 
 (provide mb-core ti-core wt-core)
@@ -26,10 +26,10 @@
      (let ([pmb-form (syntax/loc stx (#%plain-module-begin forms ...))])
        (parameterize ([optimize? (or (and (not (attribute opt?)) (optimize?))
                                      (and (attribute opt?) (syntax-e (attribute opt?))))])
-         (tc-setup 
+         (tc-setup
           stx pmb-form 'module-begin new-mod tc-module after-code
           (with-syntax*
-           (;; pmb = #%plain-module-begin    
+           (;; pmb = #%plain-module-begin
             [(pmb . body2) new-mod]
             ;; add in syntax property on useless expression to draw check-syntax arrows
             [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
@@ -48,8 +48,8 @@
            ;; use the regular %#module-begin from `racket/base' for top-level printing
            #`(#%module-begin optimized-body ... #,after-code check-syntax-help)))))]))
 
-(define (ti-core stx)  
-  (syntax-parse stx 
+(define (ti-core stx)
+  (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
     [(_ . form)
@@ -66,7 +66,7 @@
                            [(tc-results: t)
                             (format "- : ~a\n" (cons 'Values t))]
                            [x (int-err "bad type result: ~a" x)])])
-             (if ty-str                  
+             (if ty-str
                  #`(let ([type '#,ty-str])
                      (begin0 #,body2 (display type)))
                  body2))]))]))

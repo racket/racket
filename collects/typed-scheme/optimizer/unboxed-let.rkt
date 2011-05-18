@@ -168,11 +168,11 @@
   ;; if not, recur on the subforms
   (define (look-at exp)
     (ormap rec (syntax->list exp)))
-  
+
   (define (rec exp)
     (syntax-parse exp
       #:literal-sets (kernel-literals)
-      
+
       ;; can be used in a complex arithmetic expr, can be a direct child
       [exp:float-complex-arith-opt-expr
        #:when (not (identifier? #'exp))
@@ -195,7 +195,7 @@
        (or (look-at #'(e-rhs ... e-body ...))
            (ormap (lambda (x) (could-be-unboxed-in? x exp))
                   (syntax->list #'rebindings)))]
-      
+
       ;; recur down
       [((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
         formals e:expr ...)
@@ -207,7 +207,7 @@
                      (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
                            #'#%variable-reference #'with-continuation-mark))
        (look-at #'(expr ...))]
-            
+
       ;; not used, not worth unboxing
       [_ #f]))
 

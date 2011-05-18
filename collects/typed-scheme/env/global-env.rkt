@@ -3,7 +3,7 @@
 ;; Top-level type environment
 ;; maps identifiers to their types, updated by mutation
 
-(require "../utils/utils.rkt" 
+(require "../utils/utils.rkt"
 	 syntax/id-table
          (utils tc-utils)
          (types utils))
@@ -51,7 +51,7 @@
 
 ;; given an identifier, return the type associated with it
 ;; if none found, calls lookup-fail
-;; identifier -> type 
+;; identifier -> type
 (define (lookup-type id [fail-handler (lambda () (lookup-type-fail id))])
   (let ([v (free-id-table-ref the-mapping id fail-handler)])
     (if (box? v) (unbox v) v)))
@@ -71,20 +71,20 @@
   (void))
 
 (define (check-all-registered-types)
-  (free-id-table-for-each 
-   the-mapping 
-   (lambda (id e) 
-     (when (box? e) 
+  (free-id-table-for-each
+   the-mapping
+   (lambda (id e)
+     (when (box? e)
        (let ([bnd (identifier-binding id)])
          (tc-error/expr #:stx id
-                        "Declaration for ~a provided, but ~a ~a" 
+                        "Declaration for ~a provided, but ~a ~a"
                         (syntax-e id) (syntax-e id)
                         (cond [(eq? bnd 'lexical) "is a lexical binding"] ;; should never happen
-                              [(not bnd) "has no definition"] 
+                              [(not bnd) "has no definition"]
                               [else "is defined in another module"]))))
      (void))))
 
 ;; map over the-mapping, producing a list
-;; (id type -> T) -> listof[T]  
+;; (id type -> T) -> listof[T]
 (define (type-env-map f)
   (free-id-table-map the-mapping f))

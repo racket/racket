@@ -43,7 +43,7 @@
                      ;; this is a parameter to avoid dependency issues
                      [current-type-names
                       (lambda ()
-                        (append 
+                        (append
                          (type-name-env-map (lambda (id ty)
                                               (cons (syntax-e id) ty)))
                          (type-alias-env-map (lambda (id ty)

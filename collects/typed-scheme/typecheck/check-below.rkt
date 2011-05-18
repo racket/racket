@@ -23,7 +23,7 @@
 ;;                   (Results Results -> Result)
 ;;                   (Type Results -> Type)
 ;;                   (Type Type -> Type))
-(define (check-below tr1 expected)     
+(define (check-below tr1 expected)
   (define (filter-better? f1 f2)
     (match* (f1 f2)
       [(f f) #t]
@@ -35,14 +35,14 @@
     (match* (o1 o2)
       [(o o) #t]
       [(o (or (NoObject:) (Empty:))) #t]
-      [(_ _) #f]))  
+      [(_ _) #f]))
   (match* (tr1 expected)
     ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
     [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (ret ts2)]
     [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
      expected]
-    
+
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))
        (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
@@ -52,12 +52,12 @@
          (ret ts2 fs os)
          (ret ts2))]
     [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
-     (cond 
+     (cond
        [(not (subtype t1 t2))
         (tc-error/expr "Expected ~a, but got ~a" t2 t1)])
      expected]
     [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
-     (cond 
+     (cond
        [(not (subtype t1 t2))
         (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
        [(and (not (filter-better? f1 f2))

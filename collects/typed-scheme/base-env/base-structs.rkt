@@ -1,12 +1,12 @@
 #lang racket/base
 
-(require 
+(require
  "../utils/utils.rkt"
  (utils tc-utils)
- (env init-envs)          
+ (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
  (types convenience union)
- (only-in (types convenience) [make-arr* make-arr])          
+ (only-in (types convenience) [make-arr* make-arr])
  (typecheck tc-structs))
 
 (require (for-template racket/base))
@@ -38,7 +38,7 @@
 
 
 (define (initialize-structs)
-  
+
 
   (define-hierarchy srcloc
     ([source : Univ]
@@ -47,24 +47,24 @@
      [position : (*Un -Integer (-val #f))]
      [span : (*Un -Integer (-val #f))]))
 
-  (define-hierarchy date 
+  (define-hierarchy date
     ([second : -Number]
      [minute : -Number]
      [hour : -Number]
      [day : -Number]
-     [month : -Number] 
+     [month : -Number]
      [year : -Number]
      [weekday : -Number]
      [year-day : -Number]
      [dst? : -Boolean]
      [time-zone-offset : -Number]))
-  
+
   (define-hierarchy arity-at-least
     ([value : -Nat]))
 
   (define-hierarchy exn
     ([message : -String] [continuation-marks : -Cont-Mark-Set])
-    
+
     (define-hierarchy exn:break ([continuation : top-func]))
 
     (define-hierarchy exn:fail ()

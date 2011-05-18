@@ -15,7 +15,7 @@
          type-name-env-map)
 
 ;; a mapping from id -> type (where id is the name of the type)
-(define the-mapping 
+(define the-mapping
   (make-module-identifier-mapping))
 
 (define (mapping-put! id v) (module-identifier-mapping-put! the-mapping id v))
@@ -34,7 +34,7 @@
 
 ;; given an identifier, return the type associated with it
 ;; optional argument is failure continuation - default calls lookup-fail
-;; identifier (-> error) -> type 
+;; identifier (-> error) -> type
 (define (lookup-type-name id [k (lambda () (lookup-type-fail id))])
   (begin0
     (module-identifier-mapping-get the-mapping id k)

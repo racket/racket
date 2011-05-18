@@ -1,4 +1,4 @@
-#lang scheme/base  
+#lang scheme/base
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
@@ -63,7 +63,7 @@
 
 (define In-Syntax
   (-mu e
-       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number 
+       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number
            (make-Vector (-Syntax e))
            (make-Box (-Syntax e))
            (-lst (-Syntax e))
@@ -74,7 +74,7 @@
 (define (-Sexpof t)
   (-mu sexp
        (Un (-val '())
-           -Number -Boolean -Symbol -String -Keyword -Char           
+           -Number -Boolean -Symbol -String -Keyword -Char
            (-pair sexp sexp)
            (make-Vector sexp)
            (make-Box sexp)

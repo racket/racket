@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; this implements the Delta environment from the TOPLAS paper 
+;; this implements the Delta environment from the TOPLAS paper
 ;; (as well as every other paper on System F)
 
 ;; this environment maps type variables names (symbols)

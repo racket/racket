@@ -75,7 +75,7 @@
 (define (subtypes* A ss ts)
   (cond [(and (null? ss) (null? ts) A)]
         [(or (null? ss) (null? ts)) (fail! ss ts)]
-        [(subtype* A (car ss) (car ts)) 
+        [(subtype* A (car ss) (car ts))
          =>
          (lambda (A*) (subtypes* A* (cdr ss) (cdr ts)))]
         [else (fail! (car ss) (car ts))]))
@@ -100,11 +100,11 @@
 	    A-last)))]))
 
 (define (kw-subtypes* A0 t-kws s-kws)
-  (let loop ([A A0] [t t-kws] [s s-kws])    
+  (let loop ([A A0] [t t-kws] [s s-kws])
     (match* (t s)
       [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
        (cond [(eq? kt ks)
-              (if  
+              (if
                ;; if s is optional, t must be as well
                (or rs (not rt))
                (loop (subtype* A tt ts) rest-t rest-s)
@@ -162,12 +162,12 @@
                     (subtypes* t-dom s-dom)
                     (kw-subtypes* t-kws s-kws)
                     (subtype* s-rng t-rng))]
-      [(_ _) 
+      [(_ _)
        (fail! s t)])))
 
 (define (subtypes/varargs args dom rst)
   (with-handlers
-      ([exn:subtype? (lambda _ #f)])      
+      ([exn:subtype? (lambda _ #f)])
     (subtypes*/varargs (empty-set) args dom rst)))
 
 (define (subtypes*/varargs A0 argtys dom rst)
@@ -240,7 +240,7 @@
   (parameterize ([match-equality-test =t]
                  [current-seen A])
     (let ([ks (Type-key s)] [kt (Type-key t)])
-      (cond 
+      (cond
        [(or (seen? s t) (type-equal? s t)) A]
        [(and (symbol? ks) (symbol? kt) (not (eq? ks kt))) (fail! s t)]
        [(and (symbol? ks) (pair? kt) (not (memq ks kt))) (fail! s t)]
@@ -258,12 +258,12 @@
 	      ;; (Un) is bot
 	      [(_ (Union: (list))) (fail! s t)]
 	      [((Union: (list)) _) A0]
-	      ;; value types              
+	      ;; value types
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; values are subtypes of their "type"
 	      [((Value: v) (Base: _ _ pred _)) (if (pred v) A0 (fail! s t))]
 	      ;; tvars are equal if they are the same variable
-	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]              
+	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
               ;; Avoid needing to resolve things that refer to different structs.
               ;; Saves us from non-termination
               ;; Must happen *before* the sequence cases, which sometimes call `resolve' in match expanders
@@ -278,7 +278,7 @@
                (fail! s t)]
               [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _))
                (fail! s t)]
-              ;; same for all values. 
+              ;; same for all values.
               [((Value: (? (negate struct?) _)) (or (? Struct? s1) (NameStruct: s1)))
                (fail! s t)]
               [((or (? Struct? s1) (NameStruct: s1)) (Value: (? (negate struct?) _)))
@@ -316,7 +316,7 @@
 	       (when (null? arr1) (fail! s t))
 	       (let loop-arities ([A* A0]
 				  [arr2 arr2])
-		 (cond 
+		 (cond
 		  [(null? arr2) A*]
 		  [(supertype-of-one/arr A* (car arr2) arr1) => (lambda (A) (loop-arities A (cdr arr2)))]
 		  [else (fail! s t)]))]
@@ -330,9 +330,9 @@
               [((ListDots: s-dty dbound) (Listof: t-elem))
                (subtype* A0 (substitute Univ dbound s-dty) t-elem)]
 	      ;; quantification over two types preserves subtyping
-	      [((Poly: ns b1) (Poly: ms b2)) 
+	      [((Poly: ns b1) (Poly: ms b2))
 	       (=> unmatch)
-	       (unless (= (length ns) (length ms)) 
+	       (unless (= (length ns) (length ms))
 		       (unmatch))
 	       (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
 	      [((Refinement: par _ _) t)
@@ -340,7 +340,7 @@
 	      ;; use unification to see if we can use the polytype here
 	      [((Poly: vs b) s)
 	       (=> unmatch)
-	       (if (unify vs (list b) (list s)) A0 (unmatch))]              
+	       (if (unify vs (list b) (list s)) A0 (unmatch))]
 	      [(s (Poly: vs b))
 	       (=> unmatch)
 	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
@@ -360,7 +360,7 @@
                                    (fail! s t))]
 	      [(s (Union: es)) (or (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)
                                    (fail! s t))]
-	      ;; subtyping on immutable structs is covariant	      
+	      ;; subtyping on immutable structs is covariant
 	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _))
                (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
                               [proc* (fail! proc proc*)]
@@ -381,7 +381,7 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
-	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
+	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other)
                ;(dprintf "subtype - hierarchy : ~a ~a ~a\n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
@@ -403,7 +403,7 @@
 	       (subtype* A0 t t*)]
               [((Class: '() '() (list (and s  (list names  meths )) ...))
                 (Class: '() '() (list (and s* (list names* meths*)) ...)))
-               (for/fold ([A A0]) 
+               (for/fold ([A A0])
                          ([n names*] [m meths*])
                          (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
                                [else (fail! s t)]))]

@@ -8,12 +8,12 @@
 	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
-         ;racket/trace 
+         ;racket/trace
          racket/match (prefix-in c: racket/contract)
          (except-in racket/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse unstable/syntax
-         
-         (for-template 
+
+         (for-template
           racket/base
           "internal-forms.rkt"))
 
@@ -32,13 +32,13 @@
        (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
       (#:abstract any/c)
-      . c:->* . 
+      . c:->* .
       tc-results?)
      (with-cond-contract t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
                               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
                               [props          (listof (listof Filter?))])
           (define-values (types expected-types props)
-            (for/lists (t e p) 
+            (for/lists (t e p)
               ([r     (in-list results)]
                [e-r   (in-list expected-results)]
                [names (in-list namess)])
@@ -69,7 +69,7 @@
    (append p1 p2)
    (for-each expr->type
              clauses
-             exprs 
+             exprs
              expected-results)
    (let ([subber (lambda (proc lst)
                    (for/list ([i (in-list lst)])
@@ -91,8 +91,8 @@
       expected-types ; types w/o undefined
       (append p1 p2)
       ;; typecheck the body
-      (if expected 
-          (check-below 
+      (if expected
+          (check-below
            (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
            expected)
           (run (tc-exprs (syntax->list body))))))))
@@ -126,7 +126,7 @@
               names
               exprs)
     (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
-      (cond 
+      (cond
         ;; after everything, check the body expressions
         [(null? names)
          ;(if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))
@@ -137,7 +137,7 @@
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
-          (list (match (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) 
+          (list (match (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names)))
                                        tc-expr/check)
                   [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
@@ -216,7 +216,7 @@
     [(#%plain-lambda () _)
      #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
      (tc-expr/check e (ret (-> (tc-results->values expected))))]
-    [_ 
+    [_
      #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
      (tc-expr/check e expected)]
     [_ (tc-expr e)]))
@@ -229,8 +229,8 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs]) 
-                  (get-type/infer name e (tc-expr-t/maybe-expected expected) 
+         [types (for/list ([name names] [e exprs])
+                  (get-type/infer name e (tc-expr-t/maybe-expected expected)
                                          tc-expr/check))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])

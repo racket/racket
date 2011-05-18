@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/unit racket/contract racket/require
-         "constraint-structs.rkt" 
+         "constraint-structs.rkt"
          (path-up "utils/utils.rkt" "utils/unit-utils.rkt" "rep/type-rep.rkt"))
 (provide (all-defined-out))
 
@@ -31,9 +31,9 @@
 
 (define-signature infer^
   ([cond-contracted infer ((;; variables from the forall
-                            (listof symbol?) 
+                            (listof symbol?)
                             ;; indexes from the forall
-                            (listof symbol?) 
+                            (listof symbol?)
                             ;; actual argument types from call site
                             (listof Type?)
                             ;; domain
@@ -41,12 +41,12 @@
                             ;; range
                             (or/c #f Type?))
                            ;; optional expected type
-                           ((or/c #f Type?)) 
+                           ((or/c #f Type?))
                            . ->* . any)]
    [cond-contracted infer/vararg ((;; variables from the forall
-                                   (listof symbol?) 
+                                   (listof symbol?)
                                    ;; indexes from the forall
-                                   (listof symbol?) 
+                                   (listof symbol?)
                                    ;; actual argument types from call site
                                    (listof Type?)
                                    ;; domain
@@ -57,7 +57,7 @@
                                    (or/c #f Type?))
                                   ;; [optional] expected type
                                   ((or/c #f Type?)) . ->* . any)]
-   [cond-contracted infer/dots (((listof symbol?) 
+   [cond-contracted infer/dots (((listof symbol?)
                                  symbol?
                                  (listof Type?) (listof Type?) Type? Type? (listof symbol?))
                                 (#:expected (or/c #f Type?)) . ->* . any)]))

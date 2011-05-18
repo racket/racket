@@ -192,7 +192,7 @@
 
 ;; convenient syntax
 
-(define-syntax -v 
+(define-syntax -v
   (syntax-rules ()
     [(_ x) (make-F 'x)]))
 
@@ -219,11 +219,11 @@
 
 (define top-func (make-Function (list (make-top-arr))))
 
-(define/cond-contract (make-arr* dom rng 
+(define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                                  #:filters [filters -no-filter] #:object [obj -no-obj])
   (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
-         (#:rest (or/c #f Type/c) 
+         (#:rest (or/c #f Type/c)
           #:drest (or/c #f (cons/c Type/c symbol?))
           #:kws (listof Keyword?)
           #:filters FilterSet?
@@ -238,7 +238,7 @@
   (define-syntax-class c
     (pattern x:id #:fail-unless (eq? ': (syntax-e #'x)) #f))
   (syntax-parse stx
-    [(_ dom rng)       
+    [(_ dom rng)
      #'(make-Function (list (make-arr* dom rng)))]
     [(_ dom rst rng)
      #'(make-Function (list (make-arr* dom rng #:rest rst)))]
@@ -290,7 +290,7 @@
    [(_ [(dom ...) rng] ...)
     #'(cl->* (dom ... . -> . rng) ...)]))
 
-(define-syntax (->key stx)  
+(define-syntax (->key stx)
   (syntax-parse stx
                 [(_ ty:expr ... (~seq k:keyword kty:expr opt:boolean) ... rng)
                  #'(make-Function
@@ -307,7 +307,7 @@
 
 (define/cond-contract (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i))) 
+     (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-TypeFilter t p i)))
 
@@ -334,19 +334,19 @@
           (c:-> (listof Type/c) Type/c Type/c Type/c)
           (c:-> (listof Type/c) Type/c Type/c integer? Type/c)
           (c:-> (listof Type/c) Type/c Type/c integer? (listof PathElem?) Type/c))
-  (case-lambda 
+  (case-lambda
     [(in out t n p)
      (define xs (for/list ([(_ i) (in-indexed (in-list in))]) i))
      (make-Function
       (list
-       (make-arr* 
-	in out 
+       (make-arr*
+	in out
 	#:filters (-FS (-filter t (list-ref xs n) p) (-not-filter t (list-ref xs n) p)))))]
     [(in out t n)
      (make-pred-ty in out t n null)]
     [(in out t)
      (make-pred-ty in out t 0 null)]
-    [(t) 
+    [(t)
      (make-pred-ty (list Univ) -Boolean t 0 null)]))
 
 (define true-filter (-FS -top -bot))
@@ -355,7 +355,7 @@
 (define false-lfilter (-FS -bot -top))
 
 (define (opt-fn args opt-args result)
-  (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         
+  (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])
                  (make-Function (list (make-arr* (append args (take opt-args i)) result))))))
 
 (define-syntax-rule (->opt args ... [opt ...] res)

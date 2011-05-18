@@ -17,7 +17,7 @@
 (define-struct (resolved alias-def) (ty) #:inspector #f)
 
 ;; a mapping from id -> alias-def (where id is the name of the type)
-(define the-mapping 
+(define the-mapping
   (make-module-identifier-mapping))
 
 (define (mapping-put! id v) (module-identifier-mapping-put! the-mapping id v))
@@ -38,12 +38,12 @@
     (match (module-identifier-mapping-get the-mapping id (lambda () (return (k))))
       [(struct unresolved (stx #f))
        (resolve-type-alias id parse-type)]
-      [(struct unresolved (stx #t)) 
+      [(struct unresolved (stx #t))
        (tc-error/stx stx "Recursive Type Alias Reference")]
       [(struct resolved (t)) t])))
 
 (define (resolve-type-alias id parse-type)
-  (define v (module-identifier-mapping-get the-mapping id))  
+  (define v (module-identifier-mapping-get the-mapping id))
   (match v
     [(struct unresolved (stx _))
      (set-unresolved-in-process! v #t)

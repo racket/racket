@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.rkt" 
+(require "../utils/utils.rkt"
 	 (rep type-rep)
 	 (utils tc-utils)
 	 (env global-env)
@@ -29,7 +29,7 @@
     [(a . b) (begin
                (printf/log "Annotation Sexp Pair \n")
                (print-size #'a)
-               (print-size #'b))]      
+               (print-size #'b))]
     [_ (printf/log "Annotation Sexp \n")]))
 
 ;; get the type annotation of this syntax
@@ -37,7 +37,7 @@
 ;; is let-binding really necessary? - remember to record the bugs!
 (define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
-    (when (and (identifier? stx) 
+    (when (and (identifier? stx)
                let-binding
                (lookup-type stx (lambda () #f)))
       (maybe-finish-register-type stx)
@@ -47,7 +47,7 @@
         (parse-type/id stx prop)))
   ;(unless let-binding (error 'ohno))
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
-  (cond       
+  (cond
     [(syntax-property stx type-label-symbol) => pt]
     [(syntax-property stx type-ascrip-symbol) => pt]
     ;; this is so that : annotation works in internal def ctxts
@@ -66,18 +66,18 @@
         (parse-tc-results prop)
         (parse-tc-results/id stx prop)))
   (cond
-    [(syntax-property stx type-ascrip-symbol) 
+    [(syntax-property stx type-ascrip-symbol)
      =>
      (lambda (prop)
        (if (pair? prop)
            (pt (car prop))
-           (pt prop)))]    
+           (pt prop)))]
     [else #f]))
 
 (define (remove-ascription stx)
-  (syntax-property stx type-ascrip-symbol 
+  (syntax-property stx type-ascrip-symbol
                    (cond
-                     [(syntax-property stx type-ascrip-symbol) 
+                     [(syntax-property stx type-ascrip-symbol)
                       =>
                       (lambda (prop)
                         (if (pair? prop)
@@ -124,14 +124,14 @@
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
-               [(tc-results: tys fs os) 
+               [(tc-results: tys fs os)
                 (if (not (= (length stxs) (length tys)))
                     (begin
-                      (tc-error/delayed 
+                      (tc-error/delayed
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
                       (ret (map (lambda _ (Un)) stxs)))
-                    (combine-results 
+                    (combine-results
                      (for/list ([stx stxs] [ty tys] [a anns] [f fs] [o os])
                        (cond [a (check-type stx ty a) (ret a f o)]
 			     ;; mutated variables get generalized, so that we don't infer too small a type

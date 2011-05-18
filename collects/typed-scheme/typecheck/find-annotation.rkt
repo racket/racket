@@ -40,7 +40,7 @@
   (pattern (case-lambda [_ expr] ...))
   (pattern (set! _ e)
            #:with (expr ...) #'(e))
-  (pattern _ 
+  (pattern _
            #:with (expr ...) #'()))
 
 ;; expr id -> type or #f
@@ -60,7 +60,7 @@
        (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
       [c:lv-clause
        #:with (#%plain-app reverse n:id) #'c.e
-       #:with (v) #'(c.v ...) 
+       #:with (v) #'(c.v ...)
        #:fail-unless (free-identifier=? name #'n) #f
        (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
       [_ #f]))

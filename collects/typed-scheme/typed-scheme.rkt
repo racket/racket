@@ -22,7 +22,7 @@
   ((dynamic-require 'typed-scheme/base-env/base-env-numeric 'init)))
 
 (define-syntax-rule (drivers [name sym] ...)
-  (begin 
+  (begin
     (define-syntax (name stx)
       (do-standard-inits)
       ((dynamic-require 'typed-scheme/core 'sym) stx))

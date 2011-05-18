@@ -10,10 +10,10 @@
          (typecheck tc-envops tc-metafunctions)
          (types type-table)
          syntax/kerncase
-         racket/trace 
+         racket/trace
          racket/match)
 
-;; if typechecking   
+;; if typechecking
 (import tc-expr^)
 (export tc-if^)
 
@@ -45,7 +45,7 @@
                     [env-els (env+ (lexical-env) (list fs-) flag-)]
                     [new-thn-props (filter (λ (e) (and (atomic-filter? e) (not (memq e (env-props (lexical-env))))))
                                            (env-props env-thn))]
-                    [new-els-props (filter (λ (e) (and (atomic-filter? e) (not (memq e (env-props (lexical-env)))))) 
+                    [new-els-props (filter (λ (e) (and (atomic-filter? e) (not (memq e (env-props (lexical-env))))))
                                            (env-props env-els))]
                     [(tc-results: ts fs2 os2) (with-lexical-env env-thn (tc thn (unbox flag+)))]
                     [(tc-results: us fs3 os3) (with-lexical-env env-els (tc els (unbox flag-)))])

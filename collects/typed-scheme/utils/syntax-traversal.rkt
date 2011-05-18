@@ -61,7 +61,7 @@
      (and (eq? src (syntax-source lookfor))
           (hash-ref syntax-locs (syntax-loc lookfor) #f)
           #;(printf "chose branch one: ~a\n" (hash-ref syntax-locs (syntax-loc lookfor) #f)))
-     
+
      ;; look for some enclosing expression
      (and enclosing
           (begin0

@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require "../utils/utils.rkt" 
+(require "../utils/utils.rkt"
 	 "signatures.rkt" "constraint-structs.rkt"
 	 (utils tc-utils) racket/contract
 	 unstable/sequence unstable/hash racket/match)
@@ -16,7 +16,7 @@
                                              (struct dcon-exact (fixed2 rest2))))
      (unless (and rest2 (= (length fixed1) (length fixed2)))
        (fail! fixed1 fixed2))
-     (make-dcon-exact 
+     (make-dcon-exact
       (for/list ([c1 fixed1]
                  [c2 fixed2])
         (c-meet c1 c2 (c-X c1)))
@@ -27,7 +27,7 @@
     [((struct dcon (fixed1 #f)) (struct dcon (fixed2 #f)))
      (unless (= (length fixed1) (length fixed2))
        (fail! fixed1 fixed2))
-     (make-dcon 
+     (make-dcon
       (for/list ([c1 fixed1]
                  [c2 fixed2])
         (c-meet c1 c2 (c-X c1)))

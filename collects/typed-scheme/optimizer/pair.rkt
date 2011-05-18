@@ -54,7 +54,7 @@
            (begin (log-optimization "mutable pair" #'op)
                   #`(op.unsafe p.opt #,@(syntax-map (optimize) #'(e ...))))))
 
-  
+
 ;; if the equivalent sequence of cars and cdrs is guaranteed not to fail,
 ;; we can optimize
 

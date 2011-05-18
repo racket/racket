@@ -19,8 +19,8 @@
             (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
             (provide nm) ...
             ;(define-syntax provider (lambda (stx) #'(begin (provide nm) ...)))
-            ;(provide provider)            
-            (begin-for-syntax 
+            ;(provide provider)
+            (begin-for-syntax
               ;(printf "running base-types\n")
               (initialize-type-name-env
                (list (list #'nm ty) ...))))))]

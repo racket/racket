@@ -12,7 +12,7 @@
  (types resolve utils)
  (prefix-in t: (types convenience abbrev))
  (private parse-type)
- racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax scheme/list 
+ racket/match unstable/match syntax/struct syntax/stx mzlib/trace racket/syntax scheme/list
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
@@ -33,10 +33,10 @@
      (let ([typ (if maker?
                     ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
                     typ)])
-       (with-syntax ([cnt (type->contract 
-                           typ 
+       (with-syntax ([cnt (type->contract
+                           typ
                            ;; this is for a `require/typed', so the value is not from the typed side
-                           #:typed-side #f 
+                           #:typed-side #f
                            #:flat flat?
                            (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
          (syntax/loc stx (define-values (n) cnt))))]
@@ -66,7 +66,7 @@
           [(Function: (list (top-arr:))) #'procedure?]
           [(Function: arrs)
            (when flat? (exit (fail)))
-           (let ()           
+           (let ()
              (define ((f [case-> #f]) a)
                (define-values (dom* opt-dom* rngs* rst)
                  (match a
@@ -76,7 +76,7 @@
                                  [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
                       (values (append (map t->c/neg dom) (append-map conv mand-kws))
                               (append-map conv opt-kws)
-                              (map t->c rngs) 
+                              (map t->c rngs)
                               (and rst (t->c/neg rst))))]
                    ;; functions with filters or objects
                    [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
@@ -87,7 +87,7 @@
                                 (and rst (t->c/neg rst)))
                         (exit (fail)))]
                    [_ (exit (fail))]))
-               (with-syntax 
+               (with-syntax
                    ([(dom* ...) (if method? (cons #'any/c dom*) dom*)]
                     [(opt-dom* ...) opt-dom*]
                     [rng* (match rngs*
@@ -177,10 +177,10 @@
         [(Base: sym cnt _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
-        [(Union: elems)         
+        [(Union: elems)
          (let-values ([(vars notvars) (partition F? elems)])
            (unless (>= 1 (length vars)) (exit (fail)))
-           (with-syntax 
+           (with-syntax
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
@@ -231,12 +231,12 @@
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
-         (cond 
+         (cond
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>
             cdr]
            [proc (exit (fail))]
-           [poly? 
+           [poly?
             (with-syntax* ([(rec blame val) (generate-temporaries '(rec blame val))]
                            [maker maker-id]
                            [cnt-name nm])
@@ -280,11 +280,11 @@
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v) 
+	[(Hashtable: k v)
          (if flat?
              #`(hash/c #,(t->c k #:flat #t) #,(t->c v #:flat #t) #:flat? #t #:immutable 'dont-care)
              #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care))]
-        [else          
+        [else
          (exit (fail))]))))
 
 

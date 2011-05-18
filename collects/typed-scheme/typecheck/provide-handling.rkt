@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.rkt" 
+(require "../utils/utils.rkt"
 	 (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
          (env type-name-env type-alias-env)
@@ -18,8 +18,8 @@
 
 (provide remove-provides provide? generate-prov get-alternate)
 
-(define (provide? form)    
-  (syntax-parse form 
+(define (provide? form)
+  (syntax-parse form
     #:literals (#%provide)
     [(#%provide . rest) form]
     [_ #f]))
@@ -36,8 +36,8 @@
 ;; provs: provides in this module
 ;; pos-blame-id: a #%variable-reference for the module
 
-;; internal-id : the id being provided 
-;; if `internal-id' is defined in this module, we will produce a (begin def ... provide) block 
+;; internal-id : the id being provided
+;; if `internal-id' is defined in this module, we will produce a (begin def ... provide) block
 ;;    and a name to provide instead of internal-id
 
 ;; anything already recorded in the mapping is given an empty (begin) and the already-recorded id
@@ -84,7 +84,7 @@
                           [export-id new-id]
                           [module-source pos-blame-id]
                           [the-contract (generate-temporary 'generated-contract)])
-             #`(begin 
+             #`(begin
                  (define the-contract #,cnt)
                  (define-syntax cnt-id
                    (make-provide/contract-transformer
@@ -99,7 +99,7 @@
            (with-syntax* ([id internal-id]
                           [error-id (generate-temporary #'id)]
                           [export-id new-id])
-               #'(begin        
+               #'(begin
                    (define-syntax (error-id stx)
                      (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))
                    (def-export export-id id error-id)))

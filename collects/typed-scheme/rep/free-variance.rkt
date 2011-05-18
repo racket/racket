@@ -27,7 +27,7 @@
 
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees
-(define (combine-frees freess)    
+(define (combine-frees freess)
   (define ((combine-var v) w)
     (cond
       [(eq? v w) v]
@@ -46,7 +46,7 @@
 ;;  appropriately so that things that expect to see
 ;;  it as "free" will -- fixes the case where the
 ;;  dotted pre-type base doesn't use the bound).
-(define (fix-bound vs bound)  
+(define (fix-bound vs bound)
   (hash-set vs bound Dotted))
 
 ;; frees -> frees
@@ -70,7 +70,7 @@
                #:when (>= k n))
     (values k v)))
 
-(define-syntax (unless-in-table stx) 
+(define-syntax (unless-in-table stx)
   (syntax-case stx ()
     [(_ table val . body)
      (quasisyntax/loc stx

@@ -1,15 +1,15 @@
 #lang scheme/base
 (provide (all-defined-out))
 (require "../utils/utils.rkt"
-         "global-env.rkt" 
+         "global-env.rkt"
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
          unstable/struct racket/dict
          (rep type-rep object-rep filter-rep rep-utils)
-	 (for-template (rep type-rep object-rep filter-rep) 
+	 (for-template (rep type-rep object-rep filter-rep)
 		       (types union)
 		       mzlib/pconvert mzlib/shared scheme/base)
-	 (types union convenience)         
+	 (types union convenience)
 	 mzlib/pconvert racket/match mzlib/shared)
 
 (define (initialize-type-name-env initial-type-names)
@@ -27,7 +27,7 @@
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id cert maker-id)
-     `(make-Struct ,(sub name) ,(sub parent) 
+     `(make-Struct ,(sub name) ,(sub parent)
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id) (syntax-local-certifier)
                    (quote-syntax ,maker-id))]
@@ -46,7 +46,7 @@
                                               `(quote-syntax ,i)
                                               i))]
     [(NotTypeFilter: t p i)
-     `(make-NotTypeFilter ,(sub t) ,(sub p) 
+     `(make-NotTypeFilter ,(sub t) ,(sub p)
                           ,(if (identifier? i)
                                `(quote-syntax ,i)
                                i))]
@@ -64,32 +64,32 @@
      `(,(gen-constructor tag) ,@(map sub vals))]
     [_ (basic v)]))
 
-(define (bound-in-this-module id) 
+(define (bound-in-this-module id)
   (let ([binding (identifier-binding id)])
     (if (and (list? binding) (module-path-index? (car binding)))
         (let-values ([(mp base) (module-path-index-split (car binding))])
           (not mp))
         #f)))
 
-(define (tname-env-init-code)    
+(define (tname-env-init-code)
   (define (f id ty)
     (if (bound-in-this-module id)
         #`(register-type-name #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
-                 (booleans-as-true/false #f))                   
+                 (booleans-as-true/false #f))
     (with-syntax ([registers (filter (lambda (x) x) (type-name-env-map f))])
       #'(begin-for-syntax  . registers))))
 
-(define (talias-env-init-code)    
+(define (talias-env-init-code)
   (define (f id ty)
     (if (bound-in-this-module id)
         #`(register-resolved-type-alias #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
-                 (booleans-as-true/false #f))                   
+                 (booleans-as-true/false #f))
     (with-syntax ([registers (filter (lambda (x) x) (type-alias-env-map f))])
       #'(begin-for-syntax  . registers))))
 
@@ -97,12 +97,12 @@
   (define (f id ty)
     (if (and (bound-in-this-module id)
              ;; if there are no syntax provides, then we only need this identifier if it's provided
-             #;(or syntax-provide? (dict-ref provide-tbl id #f)))     
+             #;(or syntax-provide? (dict-ref provide-tbl id #f)))
         #`(register-type #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
-                 (booleans-as-true/false #f))                   
+                 (booleans-as-true/false #f))
     (with-syntax ([registers (filter values (type-env-map f))])
       #'(begin-for-syntax . registers))))
 

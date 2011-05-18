@@ -10,7 +10,7 @@
 ;; options currently always empty
 (define (configure options)
   (namespace-require 'scheme/base)
-  (eval '(begin 
+  (eval '(begin
            (require (for-syntax typed-scheme/utils/tc-utils scheme/base))
            (begin-for-syntax (set-box! typed-context? #t)))
         (current-namespace))

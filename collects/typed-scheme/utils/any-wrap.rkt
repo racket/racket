@@ -11,7 +11,7 @@
   (define (t v)
     (match v
       [(? (lambda (e) (and (any-wrap? e) (not wrap?)))) (any-wrap-val v)]
-      [(? (lambda (e) 
+      [(? (lambda (e)
             (or (number? e) (string? e) (char? e) (symbol? e)
                 (keyword? e) (bytes? e) (boolean? e) (void? e))))
        v]
@@ -31,9 +31,9 @@
          (apply make-prefab-struct k (for/list ([i (in-vector vals 1)]) i)))]
       [_ (if wrap? (make-any-wrap v) v)]))
   t)
-  
+
 (define any-wrap/c
-  (make-contract 
+  (make-contract
    #:name 'Any
    #:projection (compose traverse blame-original?)))
 

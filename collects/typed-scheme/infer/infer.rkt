@@ -7,7 +7,7 @@
          (only-in scheme/unit provide-signature-elements
                   define-values/invoke-unit/infer link)
          (utils unit-utils))
-         
+
 (provide-signature-elements restrict^ infer^)
 
 (define-values/invoke-unit/infer

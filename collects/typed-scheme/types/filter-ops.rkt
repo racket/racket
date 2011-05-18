@@ -94,7 +94,7 @@
           [(and p (NotTypeFilter: t1 f1 x) (? (lambda _ (not or?))))
            (hash-update! ntf-map
                          (list f1 (hash-name-ref x))
-                         (match-lambda [(NotTypeFilter: t2 _ _) 
+                         (match-lambda [(NotTypeFilter: t2 _ _)
                                         (-not-filter (Un t1 t2) x f1)]
                                        [p (int-err "got something that isn't a nottypefilter ~a" p)])
                          p)
@@ -119,7 +119,7 @@
         (apply mk others)
         (match-let ([(AndFilter: elems) (car ands)])
           (apply -and (for/list ([a (in-list elems)])
-                        (apply -or a (append (cdr ands) others)))))))  
+                        (apply -or a (append (cdr ands) others)))))))
   (let loop ([fs args] [result null])
     (if (null? fs)
         (match result
@@ -130,7 +130,7 @@
           [(and t (Top:)) t]
           [(OrFilter: fs*) (loop (append fs* (cdr fs)) result)]
           [(Bot:) (loop (cdr fs) result)]
-          [t 
+          [t
            (cond [(for/or ([f (in-list (append (cdr fs) result))])
                     (opposite? f t))
                   -top]
@@ -157,13 +157,13 @@
                             (if (filter-equal? f1 f2)
                                 f1
                                 (apply mk (compact (list f1 f2) #f))))]
-          [_ 
+          [_
            ;; first, remove anything implied by the atomic propositions
            ;; We commonly see: (And (Or P Q) (Or P R) (Or P S) ... P), which this fixes
            (let-values ([(atomic not-atomic) (partition atomic-filter? result)])
-             (define not-atomic* 
+             (define not-atomic*
                (for/list ([p (in-list not-atomic)]
-                          #:when 
+                          #:when
                           (not (for/or ([a (in-list atomic)])
                                        (implied-atomic? p a))))
                          p))

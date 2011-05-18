@@ -24,22 +24,22 @@
 ;; Union constructor
 ;; Normalizes representation by sorting types.
 (define Un
-  (case-lambda 
+  (case-lambda
     [() empty-union]
     [(t) t]
     [args
      ;; a is a Type (not a union type)
      ;; b is a List[Type]
-     (define (union2 a b)     
+     (define (union2 a b)
        (define b* (make-union* b))
-       (cond 
+       (cond
          [(subtype a b*) (list b*)]
-         [(subtype b* a) (list a)]            
+         [(subtype b* a) (list a)]
          [else (cons a b)]))
      (let ([types (remove-dups (sort (apply append (map flat args)) type<?))])
        (cond
          [(null? types) (make-union* null)]
-         [(null? (cdr types)) (car types)]   
+         [(null? (cdr types)) (car types)]
          ;; FIXME: this sort is unneccessary
          [else (make-union* (sort (foldr union2 '() (remove-subtypes types)) type<?))]))]))
 

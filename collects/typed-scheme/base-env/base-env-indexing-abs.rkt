@@ -1,9 +1,9 @@
 #lang racket
 
 (require
- "../utils/utils.rkt" 
+ "../utils/utils.rkt"
  (for-template '#%paramz racket/base racket/list
-               racket/tcp 
+               racket/tcp
                (only-in rnrs/lists-6 fold-left)
                '#%paramz
                (only-in '#%kernel [apply kernel:apply])
@@ -12,17 +12,17 @@
                (only-in racket/match/runtime match:error matchable? match-equality-test)
                racket/unsafe/ops)
  (utils tc-utils)
- (types union convenience) 
+ (types union convenience)
  (rename-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 
 (define-syntax-rule (indexing index-type)
   (make-env
-   
+
    [build-list (-poly (a) (index-type (-Index . -> . a) . -> . (-lst a)))]
    [make-list (-poly (a) (index-type a . -> . (-lst a)))]
-   
+
    [string-ref (-> -String index-type -Char)]
    [substring (->opt -String index-type [index-type] -String)]
    [make-string (cl-> [(index-type) -String] [(index-type -Char) -String])]
@@ -57,10 +57,10 @@
                                          [(-Bytes -Output-Port index-type index-type) -Index])]
 
 
-   
+
    [list-ref  (-poly (a) ((-lst a) index-type . -> . a))]
    [list-tail (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
-   
+
    [regexp-match
     (let ([?outp   (-opt -Output-Port)]
           [N       index-type]
@@ -100,7 +100,7 @@
           [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))])
       (->opt -Pattern -Input-Port [index-type ?N ?outp] (optlist -Bytes)))]
-   
+
    [regexp-match-positions
     (let ([?outp   (-opt -Output-Port)]
           [N       index-type]
@@ -118,8 +118,8 @@
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
           [-InpBts (Un -Input-Port -Bytes)])
       (->opt -Pattern (Un -String -InpBts) [index-type ?N ?outp] (-lst (-pair -Index -Index))))]
-   
-   
+
+
    [take   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [drop   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [take-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
@@ -128,7 +128,7 @@
     (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
    [split-at-right
     (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
-   
+
    [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
@@ -160,21 +160,21 @@
 
    [integer->integer-bytes (-Integer index-type Univ [Univ -Bytes index-type] . ->opt . -Bytes)]
    [integer-bytes->integer (-Bytes Univ [Univ index-type index-type] . ->opt . -Integer)]
-   
+
    [peek-char
     (cl->* [->opt [-Input-Port index-type] (Un -Char (-val eof))])]
    [peek-byte
     (cl->* [->opt [-Input-Port index-type] (Un -Byte (-val eof))])]
-   
+
    ;; string.rkt
    [real->decimal-string (-Real [index-type] . ->opt .  -String)]
-   
+
    [random (cl-> [(index-type) -Nat] [() -Real])]
-   
+
    [raise-type-error
     (cl->*
      [-> Sym -String Univ (Un)]
      [->* (list Sym -String index-type) Univ (Un)])]
-   
+
    ))
- 
+

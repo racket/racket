@@ -106,7 +106,7 @@
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(unsafe-fl/ 1.0 f.opt)))
-  
+
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
            #:with opt

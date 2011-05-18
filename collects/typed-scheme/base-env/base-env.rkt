@@ -1,9 +1,9 @@
 #lang s-exp "env-lang.rkt"
 
 (require
- 
- 
- (for-template 
+
+
+ (for-template
   (except-in racket -> ->* one-of/c)
   racket/unsafe/ops
   racket/tcp
@@ -13,7 +13,7 @@
   '#%paramz
   "extra-procs.rkt"
   (only-in '#%kernel [apply kernel:apply])
-  (only-in racket/private/pre-base new-apply-proc) 
+  (only-in racket/private/pre-base new-apply-proc)
   scheme/promise scheme/system
   racket/function
   racket/mpair
@@ -31,7 +31,7 @@
           make-HeterogenousVector))
 
 [raise (Univ . -> . (Un))]
-[raise-syntax-error (cl->* 
+[raise-syntax-error (cl->*
                      (-> (Un (-val #f) -Symbol)
                                -String
                                (Un))
@@ -45,11 +45,11 @@
                                Univ
                                (Un)))]
 
-[car   (-poly (a b) 
+[car   (-poly (a b)
               (cl->*
                (->acc (list (-pair a b)) a (list -car))
                (->* (list (-lst a)) a)))]
-[cdr   (-poly (a b) 
+[cdr   (-poly (a b)
               (cl->*
                (->acc (list (-pair a b)) b (list -cdr))
                (->* (list (-lst a)) (-lst a))))]
@@ -147,7 +147,7 @@
                       [-> (-lst a) (-lst a)]))]
 
 
-[first (-poly (a b) 
+[first (-poly (a b)
               (cl->*
                (->acc (list (-pair a (-lst b))) a (list -car))
                (->* (list (-lst a)) a)))]
@@ -164,7 +164,7 @@
 [eighth  (-poly (a) ((-lst a) . -> .  a))]
 [ninth   (-poly (a) ((-lst a) . -> .  a))]
 [tenth   (-poly (a) ((-lst a) . -> .  a))]
-[rest (-poly (a b) 
+[rest (-poly (a b)
              (cl->*
               (->acc (list (-pair a (-lst b))) (-lst b) (list -cdr))
               (->* (list (-lst a)) (-lst a))))]
@@ -245,11 +245,11 @@
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
 [procedure? (make-pred-ty top-func)]
-[map (-polydots (c a b) 
+[map (-polydots (c a b)
 		(cl->*
 		 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
-		((list 
-		  ((list a) (b b) . ->... . c) 
+		((list
+		  ((list a) (b b) . ->... . c)
 		  (-lst a))
 		 ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
@@ -282,8 +282,8 @@
 [remq*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 [remv*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 
-(error 
- (make-Function (list 
+(error
+ (make-Function (list
                  (make-arr (list Sym -String) (Un) #:rest Univ)
                  (make-arr (list -String) (Un) #:rest Univ)
                  (make-arr (list Sym) (Un)))))
@@ -396,12 +396,12 @@
 [with-input-from-file
  (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
 [with-output-to-file
- (-poly (a) (->key -Pathlike (-> a) 
+ (-poly (a) (->key -Pathlike (-> a)
                    #:exists (one-of/c 'error 'append 'update 'can-update
                            'replace 'truncate
                            'must-truncate 'truncate/replace)
                    #f
-                   #:mode (one-of/c 'binary 'text) #f 
+                   #:mode (one-of/c 'binary 'text) #f
                    a))]
 
 
@@ -416,15 +416,15 @@
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [time-apply (-poly (a b c)
                    (cl->*
-                    (-> 
+                    (->
                      (-> a)
                      (-Tuple (list))
                      (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))
-                    (-> 
+                    (->
                      (-> b a)
                      (-Tuple (list b))
                      (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))
-                    (-> 
+                    (->
                      (-> b c a)
                      (-Tuple (list b c))
                      (-values (list (-pair a (-val '())) -Nat -Nat -Nat)))))]
@@ -521,7 +521,7 @@
 [call-with-input-file (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
 [call-with-output-file (-poly (a) (-Pathlike (-Output-Port . -> . a)
                                    #:exists (one-of/c error 'append 'update 'replace 'truncate 'truncate/replace) #f
-                                   #:mode (Un (-val 'binary) (-val 'text)) #f 
+                                   #:mode (Un (-val 'binary) (-val 'text)) #f
                                    . ->key .  a))]
 
 [current-output-port (-Param -Output-Port -Output-Port)]
@@ -571,7 +571,7 @@
 [build-path (cl->*
   ((list -Pathlike*) -Pathlike* . ->* . -Path)
   ((list -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -SomeSystemPath))]
-[build-path/convention-type 
+[build-path/convention-type
   ((list -PathConventionType -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -SomeSystemPath)]
 
 [absolute-path? (-> -SomeSystemPath B)]
@@ -583,18 +583,18 @@
         (-> -Pathlike -Pathlike -Path)
         (-> -SomeSystemPathlike -SomeSystemPathlike -SomeSystemPath))]
 
-[path->directory-path 
+[path->directory-path
  (cl->* (-> -Pathlike -Path)
         (-> -SomeSystemPathlike -SomeSystemPath))]
 
 [resolve-path (-> -Path -Path)]
-[cleanse-path 
+[cleanse-path
  (cl->* (-> -Pathlike -Path)
         (-> -SomeSystemPathlike -SomeSystemPath))]
 [expand-user-path (-> -Path -Path)]
 
 [simplify-path
- (cl->* 
+ (cl->*
   (-Pathlike . -> . -Path)
   (-Pathlike B . -> . -Path)
   (-SomeSystemPathlike B . -> . -SomeSystemPath))]
@@ -616,12 +616,12 @@
                 (Un -SomeSystemPath (-val 'up) (-val 'same))
                 B))))]
 
-[path-replace-suffix 
+[path-replace-suffix
  (cl->*
   (-> -Pathlike (Un -String -Bytes) -Path)
   (-> -SomeSystemPathlike (Un -String -Bytes) -SomeSystemPath))]
 
-[path-add-suffix 
+[path-add-suffix
  (cl->*
   (-> -Pathlike (Un -String -Bytes) -Path)
   (-> -SomeSystemPathlike (Un -String -Bytes) -SomeSystemPath))]
@@ -776,14 +776,14 @@
 
 [syntax-source (-> (-Syntax Univ) Univ)]
 [syntax-position (-> (-Syntax Univ) (-opt N))]
-[datum->syntax 
+[datum->syntax
  (let* ([Pre Syntax-Sexp]
         [I (-Syntax Sym)]
         [A Any-Syntax]
         [S (-Syntax Univ)]
         [ctxt (-opt S)]
         [srclist (-Tuple (list
-                          Univ 
+                          Univ
                           (-opt -Integer)
                           (-opt -Integer)
                           (-opt -Integer)
@@ -840,7 +840,7 @@
 [parse-command-line
  (let ([mode-sym (one-of/c 'once-each 'once-any 'multi 'final 'help-labels)])
    (-polydots (b a)
-              (cl->* (-Pathlike 
+              (cl->* (-Pathlike
                       (Un (-lst -String) (-vec -String))
                       (-lst (-pair mode-sym (-lst (-lst Univ))))
                       ((list Univ) [a a] . ->... . b)
@@ -852,8 +852,8 @@
                   ((list
                     ((list a) (b b) . ->... . Univ)
                     (-lst a))
-                   ((-lst b) b) 
-                   . ->... . 
+                   ((-lst b) b)
+                   . ->... .
                    -Index))]
 [filter-map (-polydots (c a b)
                        ((list
@@ -864,7 +864,7 @@
 [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
 
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
-                       . -> . 
+                       . -> .
                        (Un (-pair a a) (-pair a (-val '())))))]
 [remove-duplicates
  (-poly (a)
@@ -929,15 +929,15 @@
 [file-name-from-path (-Pathlike . -> . (-opt -Path))]
 [path-only (-SomeSystemPathlike . -> . (-opt -Path))]
 [some-system-path->string (-SomeSystemPath . -> . -String)]
-[string->some-system-path 
+[string->some-system-path
  (-String (Un (-val 'unix) (-val 'windows)) . -> . -SomeSystemPath)]
 
 
 
 ;; scheme/file
-[fold-files 
- (-poly 
-  (a) 
+[fold-files
+ (-poly
+  (a)
   (let ([funarg* (-Path (one-of/c 'file 'dir 'link) a . -> . (-values (list a Univ)))]
         [funarg (-Path (one-of/c 'file 'dir 'link) a . -> . a)])
     (cl->*
@@ -955,11 +955,11 @@
 
 [unsafe-vector-length ((make-VectorTop) . -> . -Index)]
 [unsafe-vector*-length ((make-VectorTop) . -> . -Index)]
-[unsafe-car (-poly (a b) 
+[unsafe-car (-poly (a b)
                    (cl->*
                     (->acc (list (-pair a b)) a (list -car))
                     (->* (list (-lst a)) a)))]
-[unsafe-cdr (-poly (a b) 
+[unsafe-cdr (-poly (a b)
                    (cl->*
                     (->acc (list (-pair a b)) b (list -cdr))
                     (->* (list (-lst a)) (-lst a))))]
@@ -971,7 +971,7 @@
                            ((list a) (b b) . ->... . Univ)
                            (-vec a))
                           ((-vec b) b)
-                          . ->... . 
+                          . ->... .
                           -Index))]
 [vector-filter (-poly (a b) (cl->*
                              ((make-pred-ty (list a) Univ b)
@@ -983,7 +983,7 @@
 [vector-filter-not
  (-poly (a b) (cl->* ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
 [vector-copy
- (-poly (a)  
+ (-poly (a)
         (cl->* ((-vec a) . -> . (-vec a))
                ((-vec a) -Integer . -> . (-vec a))
                ((-vec a) -Integer -Integer . -> . (-vec a))))]
@@ -1023,14 +1023,14 @@
 [write-special (cl-> [(Univ) -Boolean]
                      [(Univ -Output-Port) -Boolean])]
 ;; Need event type before we can include these
-;;write-special-avail* 
+;;write-special-avail*
 ;;write-bytes-avail-evt
 ;;write-special-evt
 [port-writes-atomic? (-Output-Port . -> . -Boolean)]
 [port-writes-special? (-Output-Port . -> . -Boolean)]
 
 ;; probably the most useful cases
-[curry (-poly (a b c) 
+[curry (-poly (a b c)
 	      (cl->* ((a b . -> . c) a . -> . (b . -> . c))
 		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
 ;; mutable pairs

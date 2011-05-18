@@ -10,12 +10,12 @@
 (define-syntax (providing stx)
   (syntax-case stx (libs from basics except)
     [(form (libs (except lb ex ...) ...) (basics b ...) (from spec id ...) ...)
-     (datum->syntax 
+     (datum->syntax
       stx
       (syntax->datum
        (with-syntax ([(b* ...) (generate-temporaries #'(b ...))]
                      [ts ts-mod])
-         (syntax/loc 
+         (syntax/loc
              stx
            (begin
              (require (except-in ts b ...))

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../utils/utils.rkt")
 
-(require (rep type-rep rep-utils)  
+(require (rep type-rep rep-utils)
 	 (env type-name-env)
 	 (utils tc-utils)
          (types utils)
@@ -23,7 +23,7 @@
 
 (define (resolve-app rator rands stx)
   (parameterize ([current-orig-stx stx]
-                 
+
                  [already-resolving? #t])
     (match rator
       [(Poly-unsafe: n _)
@@ -31,8 +31,8 @@
          (tc-error "wrong number of arguments to polymorphic type: expected ~a and got ~a"
                    n (length rands)))
        (instantiate-poly rator rands)]
-      [(Name: n) 
-       (when (and (current-poly-struct) 
+      [(Name: n)
+       (when (and (current-poly-struct)
                   (free-identifier=? n (poly-name (current-poly-struct)))
                   (not (or (ormap Error? rands)
                            (andmap type-equal? rands (poly-vars (current-poly-struct))))))
@@ -50,11 +50,11 @@
 
 (define (resolve-once t)
   (define seq (Rep-seq t))
-  (define r (hash-ref resolver-cache seq #f)) 
+  (define r (hash-ref resolver-cache seq #f))
   (or r
       (let ([r* (match t
                   [(Mu: _ _) (unfold t)]
-                  [(App: r r* s)   
+                  [(App: r r* s)
                    (resolve-app r r* s)]
                   [(Name: _) (resolve-name t)])])
         (when r*

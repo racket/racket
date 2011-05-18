@@ -3,7 +3,7 @@
 (require scheme/contract
          syntax/location
          (for-syntax scheme/base
-                     syntax/parse                     
+                     syntax/parse
                      (prefix-in tr: "../private/typed-renaming.rkt")))
 
 (provide require/contract define-ignored)
@@ -12,7 +12,7 @@
   (syntax-case stx ()
     [(_ name expr)
      (syntax-case (local-expand/capture-lifts #'expr
-                                              'expression 
+                                              'expression
                                               null #;(list #'define-values))
        (begin define-values)
        [(begin (define-values (n) e) e*)
@@ -38,8 +38,8 @@
   (syntax-parse stx
     [(require/contract nm:renameable cnt lib)
      #`(begin (require (only-in lib [nm nm.r]))
-              (define-ignored nm 
-                (contract cnt 
+              (define-ignored nm
+                (contract cnt
                           (get-alternate nm.r)
                           '(interface for #,(syntax->datum #'nm))
                           (current-contract-region)
@@ -47,9 +47,9 @@
                           (quote-srcloc nm))))]
     [(require/contract (orig-nm:renameable nm:id) cnt lib)
      #`(begin (require (only-in lib [orig-nm orig-nm.r]))
-              (define-ignored nm 
-                (contract cnt 
-                          (get-alternate orig-nm.r) 
+              (define-ignored nm
+                (contract cnt
+                          (get-alternate orig-nm.r)
                           '#,(syntax->datum #'nm)
                           (current-contract-region)
                           (quote nm)

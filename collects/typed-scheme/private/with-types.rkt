@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/require
-         (for-template 
+         (for-template
           (except-in racket/base for for*)
           "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
@@ -14,7 +14,7 @@
                              "private/parse-type.rkt"
                              "private/type-contract.rkt"
                              "typecheck/typechecker.rkt"
-                             "env/type-env-structs.rkt" 
+                             "env/type-env-structs.rkt"
                              "env/global-env.rkt"
                              "env/tvar-env.rkt"
                              "infer/infer.rkt"
@@ -42,11 +42,11 @@
   (define ex-cnts (for/list ([t (in-list ex-types)]
                              [stx (in-list (syntax->list extys))])
                     (type->contract t #:typed-side #t (no-contract t))))
-  (define region-tc-result 
+  (define region-tc-result
     (and expr? (parse-tc-results resty)))
-  (define region-cnts 
+  (define region-cnts
     (if region-tc-result
-        (match region-tc-result 
+        (match region-tc-result
           [(tc-result1: t)
            (list (type->contract t #:typed-side #t (no-contract t #'region-ty-stx)))]
           [(tc-results: ts)
@@ -58,7 +58,7 @@
   (for ([i (in-list (syntax->list fvids))]
         [ty (in-list fv-types)])
     (register-type i ty))
-  (define expanded-body 
+  (define expanded-body
     (if expr?
         (with-syntax ([body body])
           (local-expand #'(let () . body) ctx null))
@@ -76,7 +76,7 @@
                  ;; this is a parameter to avoid dependency issues
                  [current-type-names
                   (lambda ()
-                    (append 
+                    (append
                      (type-name-env-map (lambda (id ty)
                                           (cons (syntax-e id) ty)))
                      (type-alias-env-map (lambda (id ty)
@@ -85,7 +85,7 @@
                  [type-name-references null]
                  ;; for error reporting
                  [orig-module-stx stx]
-                 [expanded-module-stx expanded-body])     
+                 [expanded-module-stx expanded-body])
     (tc-expr/check expanded-body (if expr? region-tc-result (ret ex-types))))
   (report-all-errors)
   (set-box! typed-context? old-context)
@@ -104,7 +104,7 @@
           (begin check-syntax-help
                  (c:with-contract typed-region
                                   #:results (region-cnt ...)
-                                  #:freevars ([fv.id cnt] ...)                                
+                                  #:freevars ([fv.id cnt] ...)
                                   body)))
         (syntax/loc stx
           (begin
@@ -138,4 +138,4 @@
      (with-type-helper stx #'body #'(fv.id ...) #'(fv.ty ...) #'(id ...) #'(ty ...) #f #f (syntax-local-context))]
     [(_ :result-ty fv:free-vars . body)
      (with-type-helper stx #'body #'(fv.id ...) #'(fv.ty ...) #'() #'() #'ty #t (syntax-local-context))]))
- 
+

@@ -70,7 +70,7 @@
 
 (define-splicing-syntax-class annotated-star-rest
   #:attributes (name ann-name ty formal-ty)
-  #:literals (:)  
+  #:literals (:)
   (pattern (~seq name:id : ty s:star)
            #:with formal-ty #'(ty s)
            #:with ann-name (syntax-property #'name 'type-label #'ty)))

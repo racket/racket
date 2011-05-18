@@ -4,10 +4,10 @@
 (require
  "../utils/utils.rkt"
  racket/promise
- string-constants/string-constant 
+ string-constants/string-constant
  (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)
              (utils tc-utils)
-             (env init-envs)          
+             (env init-envs)
              (except-in (rep filter-rep object-rep type-rep) make-arr)
              (types convenience union)
              (only-in (types convenience) [make-arr* make-arr])))
@@ -42,7 +42,7 @@
   [(syntax-parse (local-expand #'`(,@'() 1) 'expression null)
      #:context #'qq-append
      [(_ qqa . _) #'qqa])
-   (-poly (a b) 
+   (-poly (a b)
          (cl->*
           (-> (-lst a) (-val '()) (-lst a))
           (-> (-lst a) (-lst b) (-lst (*Un a b)))))]
@@ -53,9 +53,9 @@
      [(let-values ([_ (m-s '(_) '())]) . _)
       #'m-s])
    (-poly (a b)
-          (let ([seq-vals 
+          (let ([seq-vals
                  (lambda (a)
-                   (-values (list 
+                   (-values (list
                              (-> Univ (-values a))
                              (-> Univ Univ)
                              Univ
@@ -139,7 +139,7 @@
      [(i-n _ ...)
       #'i-n])
    (->opt [-Input-Port -Symbol] (-seq -Bytes))]
-  
+
   ;; from the expansion of `with-syntax'
   [(syntax-parse (local-expand #'(with-syntax ([x 1]) #'(x)) 'expression null)
      #:literals (let-values #%plain-app #%plain-lambda if letrec-syntaxes+values)
@@ -151,11 +151,11 @@
                 _))))
       #'apply-pattern-substitute])
    (->* (list (-Syntax Univ) Univ) Univ Any-Syntax)]
-  
+
   [(syntax-parse (local-expand #'(with-syntax ([x 1]) #'(x)) 'expression null)
      #:literals (let-values #%plain-app #%plain-lambda if letrec-syntaxes+values)
-    [(let-values _ (let-values _ 
-                     (let-values _ (if _ _ (let-values _ 
+    [(let-values _ (let-values _
+                     (let-values _ (if _ _ (let-values _
                                              (if _ (let-values _ (letrec-syntaxes+values _ _ (#%plain-app with-syntax-fail _))) _))))))
       #'with-syntax-fail])
    (-> (-Syntax Univ) (Un))]

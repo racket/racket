@@ -1,12 +1,12 @@
 #lang scheme/base
 
 (require "../utils/utils.rkt")
-(require (rename-in (types subtype convenience remove-intersect union utils filter-ops)                   
+(require (rename-in (types subtype convenience remove-intersect union utils filter-ops)
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
          (rep type-rep filter-rep rep-utils) scheme/list
-         scheme/contract racket/match unstable/match 
+         scheme/contract racket/match unstable/match
          (for-syntax scheme/base)
          "tc-metafunctions.rkt")
 
@@ -26,7 +26,7 @@
 (define/cond-contract (subst-filter-set fs k o polarity [t #f])
        (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
        (define extra-filter (if t (make-TypeFilter t null k) -top))
-       (define (add-extra-filter f) 
+       (define (add-extra-filter f)
          (define f* (-and extra-filter f))
          (match f*
            [(Bot:) f*]
@@ -41,7 +41,7 @@
      (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
   (define/cond-contract (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
-  (type-case (#:Type st 
+  (type-case (#:Type st
 	      #:Filter sf
 	      #:Object (lambda (f) (subst-object f k o polarity)))
 	      t
@@ -71,13 +71,13 @@
 	   [(Path: p* i*) (make-Path (append p p*) i*)])
 	 t)]))
 
-;; this is the substitution metafunction 
+;; this is the substitution metafunction
 (define/cond-contract (subst-filter f k o polarity)
   (-> Filter/c name-ref/c Object? boolean? Filter/c)
   (define (ap f) (subst-filter f k o polarity))
   (define (tf-matcher t p i k o polarity maker)
     (match o
-      [(or (Empty:) (NoObject:)) 
+      [(or (Empty:) (NoObject:))
        (cond [(name-ref=? i k)
 	      (if polarity -top -bot)]
 	     [(index-free-in? k t) (if polarity -top -bot)]
@@ -103,7 +103,7 @@
      (tf-matcher t p i k o polarity -not-filter)]))
 
 (define (index-free-in? k type)
-  (let/ec 
+  (let/ec
    return
    (define (for-object o)
      (object-case (#:Type for-type)
@@ -151,8 +151,8 @@
   (match tc
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
      (if formals
-         (let-values ([(ts fs os) 
-                       (for/lists (ts fs os) ([r (in-list rs)]) 
+         (let-values ([(ts fs os)
+                       (for/lists (ts fs os) ([r (in-list rs)])
                          (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
            (ret ts fs os
                 (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])

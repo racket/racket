@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../utils/utils.rkt")
 
-(require (utils tc-utils) 
+(require (utils tc-utils)
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          mzlib/trace racket/match mzlib/etc
          scheme/contract
@@ -29,7 +29,7 @@
 (def-type Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])
 
 (define (scope-depth k)
-  (flat-named-contract 
+  (flat-named-contract
    (format "Scope of depth ~a" k)
    (lambda (sc)
      (define (f k sc)
@@ -74,7 +74,7 @@
      (let ([t (free-idxs* scope)]
            [base-count (sub1 n)]
            [extras (max 0 (- n num-rands))])
-       (append 
+       (append
         ;; variances of the fixed arguments
         (for/list ([i (in-range base-count)])
           (hash-ref t i))
@@ -436,7 +436,7 @@
       (add-scopes (sub1 n) (*Scope t))))
 
 (define (remove-scopes n sc)
-  (if (zero? n) 
+  (if (zero? n)
       sc
       (match sc
         [(Scope: sc*) (remove-scopes (sub1 n) sc*)]
@@ -476,19 +476,19 @@
                   #:PathElem (sub-pe st))
                  e))
 
-;; abstract-many : Names Type -> Scope^n 
-;; where n is the length of names  
+;; abstract-many : Names Type -> Scope^n
+;; where n is the length of names
 (define (abstract-many names ty)
   (define (nameTo name count type)
     (let loop ([outer 0] [ty type])
       (define (sb t) (loop outer t))
-      (type-case 
+      (type-case
        (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
        ty
        [#:F name* (if (eq? name name*) (*B (+ count outer)) ty)]
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
-       ;; functions 
+       ;; functions
        [#:arr dom rng rest drest kws
               (*arr (map sb dom)
                     (sb rng)
@@ -506,10 +506,10 @@
                    (*ListDots (sb dty)
                               (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
-       [#:PolyDots n body* 
+       [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (*Scope (loop (+ n outer) body))))]
-       [#:Poly n body* 
+       [#:Poly n body*
                (let ([body (remove-scopes n body*)])
                  (*Poly n (*Scope (loop (+ n outer) body))))])))
   (let ([n (length names)])
@@ -523,20 +523,20 @@
 ;(trace abstract-many)
 
 
-;; instantiate-many : List[Type] Scope^n -> Type 
-;; where n is the length of types  
+;; instantiate-many : List[Type] Scope^n -> Type
+;; where n is the length of types
 ;; all of the types MUST be Fs
 (define (instantiate-many images sc)
   (define (replace image count type)
     (let loop ([outer 0] [ty type])
-      (define (sb t) (loop outer t))    
-      (define sf (sub-f sb))  
-      (type-case 
+      (define (sb t) (loop outer t))
+      (define sf (sub-f sb))
+      (type-case
        (#:Type sb #:Filter sf #:Object (sub-o sb))
        ty
        [#:B idx (if (= (+ count outer) idx)
                     image
-                    ty)]      
+                    ty)]
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
@@ -557,7 +557,7 @@
                    (*ListDots (sb dty)
                               (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
-       [#:PolyDots n body* 
+       [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (*Scope (loop (+ n outer) body))))]
        [#:Poly n body*
@@ -580,7 +580,7 @@
 #;(trace instantiate-many abstract-many)
 
 ;; the 'smart' constructor
-(define (Mu* name body)    
+(define (Mu* name body)
   (let ([v (*Mu (abstract name body))])
     (hash-set! name-table v name)
     v))
@@ -663,19 +663,19 @@
     (syntax-case stx ()
       [(_ nps bp)
        #'(? Poly?
-            (app (lambda (t) 
+            (app (lambda (t)
                    (let* ([n (Poly-n t)]
                           [syms (build-list n (lambda _ (gensym)))])
                      (list syms (Poly-body* syms t))))
                  (list nps bp)))])))
 
-;; This match expander uses the names from the hashtable  
+;; This match expander uses the names from the hashtable
 (define-match-expander Poly-names:
   (lambda (stx)
     (syntax-case stx ()
       [(_ nps bp)
        #'(? Poly?
-            (app (lambda (t) 
+            (app (lambda (t)
                    (let* ([n (Poly-n t)]
                           [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (Poly-body* syms t))))
@@ -688,19 +688,19 @@
     (syntax-case stx ()
       [(_ nps bp)
        #'(? PolyDots?
-            (app (lambda (t) 
+            (app (lambda (t)
                    (let* ([n (PolyDots-n t)]
                           [syms (build-list n (lambda _ (gensym)))])
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
-;; This match expander uses the names from the hashtable  
+;; This match expander uses the names from the hashtable
 (define-match-expander PolyDots-names:
   (lambda (stx)
     (syntax-case stx ()
       [(_ nps bp)
        #'(? PolyDots?
-            (app (lambda (t) 
+            (app (lambda (t)
                    (let* ([n (PolyDots-n t)]
                           [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (PolyDots-body* syms t))))
@@ -711,7 +711,7 @@
 (provide
  Mu-name: Poly-names:
  PolyDots-names:
- Type-seq  
+ Type-seq
  Mu-unsafe: Poly-unsafe:
  PolyDots-unsafe:
  Mu? Poly? PolyDots?
@@ -724,7 +724,7 @@
  remove-dups
  sub-f sub-o sub-pe
  Values: Values? Values-rs
- (rename-out [Mu:* Mu:]               
+ (rename-out [Mu:* Mu:]
              [Poly:* Poly:]
              [PolyDots:* PolyDots:]
              [Mu* make-Mu]

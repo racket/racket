@@ -33,7 +33,7 @@
   (pattern e:sequence-opt-expr        #:with opt #'e.opt)
   (pattern e:box-opt-expr             #:with opt #'e.opt)
   (pattern e:struct-opt-expr          #:with opt #'e.opt)
-  
+
   ;; boring cases, just recur down
   (pattern ((~and op (~or (~literal #%plain-lambda) (~literal define-values)))
             formals e:expr ...)
@@ -68,7 +68,7 @@
                          (opt-clauses ...)
                          #,@(syntax-map (optimize) #'(e-body ...))))
   (pattern (kw:identifier expr ...)
-           #:when 
+           #:when
 	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
 			     #'#%variable-reference #'with-continuation-mark)])
 	     (free-identifier=? k #'kw))

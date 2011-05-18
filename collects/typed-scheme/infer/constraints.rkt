@@ -43,7 +43,7 @@
                         dmap)))]))
 
 ;; a stupid impl
-(define (meet S T) 
+(define (meet S T)
   (let ([s* (restrict S T)])
     (if (and (subtype s* S)
              (subtype s* T))
@@ -71,7 +71,7 @@
                          ([(map1 dmap1) (in-pairs (remove-duplicates maps1))]
                           [(map2 dmap2) (in-pairs (remove-duplicates maps2))])
                          (with-handlers ([exn:infer? (lambda (_) #f)])
-                           (cons 
+                           (cons
                             (hash-union map1 map2 #:combine c-meet)
                             (dmap-meet dmap1 dmap2)))))])
       (when (null? maps)

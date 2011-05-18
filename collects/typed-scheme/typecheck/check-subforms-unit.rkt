@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
 	 syntax/kerncase
 	 syntax/parse
-         racket/match 
+         racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
          (types utils convenience union subtype)
 	 (utils tc-utils)
@@ -16,13 +16,13 @@
 ;; syntax -> any
 (define (check-subforms/with-handlers form [expected #f])
   (define handler-tys '())
-  (define body-ty #f)    
+  (define body-ty #f)
   (define (get-result-ty t)
     (match t
-      [(Function: 
-	(list 
-	 (arr: _ 
-	       (Values: (list (Result: rngs _ _) ...)) 
+      [(Function:
+	(list
+	 (arr: _
+	       (Values: (list (Result: rngs _ _) ...))
 	       _ _ (list (Keyword: _ _ #t) ...))))
        (apply Un rngs)]
       [_ (int-err "Internal error in get-result-ty: not a function type: \n~a" t)]))
@@ -39,8 +39,8 @@
          #:when (syntax-property form 'typechecker:exn-handler)
          (let ([t (tc-expr form)])
            (match t
-	     [(tc-result1: 
-	       (and t 
+	     [(tc-result1:
+	       (and t
 		    (Function: (list (arr: (list _) _ _ _ (list (Keyword: _ _ #f) ...)) ...))))
 	      (set! handler-tys (cons (get-result-ty t) handler-tys))]
 	     [(tc-results: t)

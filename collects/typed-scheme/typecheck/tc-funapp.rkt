@@ -46,7 +46,7 @@
      (tc/funapp1 f-stx args-stx a argtys expected)]
     [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests (and drests #f) kws) ...)))))
       (and argtys (list (tc-result1: argtys-t) ...)))
-     (or 
+     (or
       ;; find the first function where the argument types match
       (for/first ([dom doms] [rng rngs] [rest rests] [a arrs]
                   #:when (subtypes/varargs argtys-t dom rest))
@@ -60,13 +60,13 @@
                                        (string-append "No function domains matched in function application:\n"
                                                       dom))))]
     ;; any kind of dotted polymorphic function without mandatory keyword args
-    [((tc-result1: (and t (PolyDots: 
+    [((tc-result1: (and t (PolyDots:
                            (and vars (list fixed-vars ... dotted-var))
                            (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms rngs rests drests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
-                     (lambda (dom _ rest drest a) 
+                     (lambda (dom _ rest drest a)
                        (cond [rest (<= (length dom) (length argtys))]
                              [drest (and (<= (length dom) (length argtys))
                                          (eq? dotted-var (cdr drest)))]
@@ -74,11 +74,11 @@
                      ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
                      ;; note that we have to use argtys-t here, since argtys is a list of tc-results
                      (lambda (dom rng rest drest a)
-                       (cond 
+                       (cond
                          [drest
-                          (infer/dots fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng) 
+                          (infer/dots fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng)
                                        #:expected (and expected (tc-results->values expected)))]
-                         [rest 
+                         [rest
                           (infer/vararg fixed-vars (list dotted-var) argtys-t dom rest rng
                                         (and expected (tc-results->values expected)))]
                          ;; no rest or drest
@@ -86,10 +86,10 @@
                                       (and expected (tc-results->values expected)))]))
                      t argtys expected)]
     ;; regular polymorphic functions without dotted rest, and without mandatory keyword args
-    [((tc-result1: 
+    [((tc-result1:
        (and t
-            (Poly: 
-             vars 
+            (Poly:
+             vars
              (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms rngs rests arrs) f-stx args-stx
@@ -105,11 +105,11 @@
     ;; parameters are functions too
     [((tc-result1: (Param: in out)) (list)) (ret out)]
     [((tc-result1: (Param: in out)) (list (tc-result1: t)))
-     (if (subtype t in) 
+     (if (subtype t in)
          (ret -Void true-filter)
          (tc-error/expr #:return (ret -Void true-filter)
                         "Wrong argument to parameter - expected ~a and got ~a" in t))]
-    [((tc-result1: (Param: _ _)) _) 
+    [((tc-result1: (Param: _ _)) _)
      (tc-error/expr #:return (ret (Un))
                     "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                     (length argtys))]
@@ -118,12 +118,12 @@
      (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
     ;; a union of functions can be applied if we can apply all of the elements
     [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
-     (ret (for/fold ([result (Un)]) ([fty ts])            
+     (ret (for/fold ([result (Un)]) ([fty ts])
             (match (tc/funapp f-stx args-stx (ret fty) argtys expected)
               [(tc-result1: t) (Un result t)])))]
     ;; error type is a perfectly good fcn type
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
-    [((tc-result1: f-ty) _) 
+    [((tc-result1: f-ty) _)
      (tc-error/expr #:return (ret (Un))
                     "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))

@@ -15,7 +15,7 @@
     [(def-export export-id:identifier id:identifier cnt-id:identifier #:alias)
      #'(define-syntax export-id
          (if (unbox typed-context?)
-             (begin                           
+             (begin
                (add-alias #'export-id #'id)
                (renamer #'id #:alt #'cnt-id))
              (renamer #'cnt-id)))]))

@@ -27,7 +27,7 @@
                                (hash-set! table key new)
                                new))))))))]))
 
-(define (make-count!)  
+(define (make-count!)
   (let ([state 0])
     (lambda () (begin0 state (set! state (add1 state))))))
 
@@ -37,9 +37,9 @@
 (define identifier-table (make-module-identifier-mapping))
 
 (define (hash-id id)
-  (module-identifier-mapping-get 
-   identifier-table 
-   id 
+  (module-identifier-mapping-get
+   identifier-table
+   id
    (lambda () (let ([c (id-count!)])
                 (module-identifier-mapping-put! identifier-table id c)
                 c))))

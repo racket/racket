@@ -9,7 +9,7 @@
   (let ([ch (peek-char port)])
     (unless (eof-object? ch)
       ;; Consult current readtable:
-      (let-values ([(like-ch/sym proc dispatch-proc) 
+      (let-values ([(like-ch/sym proc dispatch-proc)
                     (readtable-mapping (current-readtable) ch)])
         ;; If like-ch/sym is whitespace, then ch is whitespace
         (when (and (char? like-ch/sym)
@@ -28,7 +28,7 @@
            (raise-read-eof-error "unexpected EOF in type annotation" src l c p 1))]
         [else v]))))
 
-(define (parse port read-one src)    
+(define (parse port read-one src)
   (skip-whitespace port)
   (let ([name (read-one)])
     (begin0
@@ -48,11 +48,11 @@
                         (datum->syntax name `(inst ,name : ,@elems)))]
                  ;; arbitrary property annotation
                  [(PROP) (skip-whitespace port)
-                         (let* ([prop-name (syntax-e (read-one))])   
+                         (let* ([prop-name (syntax-e (read-one))])
                            (skip-whitespace port)
                            (syntax-property name prop-name (read-one)))]
                  ;; otherwise error
-                 [else 
+                 [else
                   (let-values ([(l c p) (port-next-location port)])
                     (raise-read-error (format "typed expression ~a must be followed by :, ::, or @"
                                               (syntax->datum name)) src l c p 1))])))
@@ -68,7 +68,7 @@
      ;; `read-syntax' mode
      (datum->syntax
       #f
-      (parse port 
+      (parse port
              (lambda () (read-syntax src port ))
              src)
       (let-values ([(l c p) (port-next-location port)])

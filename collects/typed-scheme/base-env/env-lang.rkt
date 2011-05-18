@@ -4,7 +4,7 @@
 
 (require (for-syntax scheme/base syntax/parse)
          (utils tc-utils)
-         (env init-envs)         
+         (env init-envs)
          (r:infer infer)
          (only-in (r:infer infer-dummy) infer-param)
          (except-in (rep object-rep filter-rep type-rep) make-arr)
@@ -33,5 +33,5 @@
 (provide (rename-out [-#%module-begin #%module-begin])
          require
          (except-out (all-from-out scheme/base) #%module-begin)
-         types rep private utils         
+         types rep private utils
          (types-out convenience union filter-ops))

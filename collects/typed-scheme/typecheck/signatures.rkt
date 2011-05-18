@@ -30,7 +30,7 @@
    [cond-contracted tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) tc-results? . -> . tc-results?)]))
 
 (define-signature tc-app^
-  ([cond-contracted tc/app (syntax? . -> . tc-results?)] 
+  ([cond-contracted tc/app (syntax? . -> . tc-results?)]
    [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]))
 
 (define-signature tc-apply^
