@@ -7,7 +7,7 @@
          (private type-annotation)
          (for-template scheme/base))
 
-(p/c [find-annotation (syntax? identifier? . -> . (or/c #f Type/c))])
+(provide/cond-contract [find-annotation (syntax? identifier? . -> . (or/c #f Type/c))])
 
 (define-syntax-class lv-clause
   #:transparent

@@ -89,18 +89,18 @@
 
 ;; construct all the various types for structs, and then register the approriate names
 ;; identifier listof[identifier] type listof[fld] listof[Type] boolean -> Type listof[Type] listof[Type]
-(d/c (mk/register-sty nm flds parent parent-fields types 
-                      #:wrapper [wrapper values] 
-                      #:type-wrapper [type-wrapper values]
-                      #:pred-wrapper [pred-wrapper values]
-                      #:mutable [setters? #f]
-                      #:struct-info [si #f]
-                      #:proc-ty [proc-ty #f]
-                      #:maker [maker* #f]
-                      #:predicate [pred* #f]
-                      #:constructor-return [cret #f]
-                      #:poly? [poly? #f]
-                      #:type-only [type-only #f])
+(define/cond-contract (mk/register-sty nm flds parent parent-fields types 
+                                       #:wrapper [wrapper values] 
+                                       #:type-wrapper [type-wrapper values]
+                                       #:pred-wrapper [pred-wrapper values]
+                                       #:mutable [setters? #f]
+                                       #:struct-info [si #f]
+                                       #:proc-ty [proc-ty #f]
+                                       #:maker [maker* #f]
+                                       #:predicate [pred* #f]
+                                       #:constructor-return [cret #f]
+                                       #:poly? [poly? #f]
+                                       #:type-only [type-only #f])
      (c->* (identifier? (listof identifier?) (or/c Type/c #f) (listof fld?) (listof Type/c)) 
            (#:wrapper procedure?
             #:type-wrapper procedure?
@@ -144,15 +144,15 @@
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
 ;; identifier Type Listof[identifer] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
-(d/c (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
-                            #:wrapper [wrapper values]
-                            #:struct-info [si #f]
-                            #:type-wrapper [type-wrapper values]
-                            #:pred-wrapper [pred-wrapper values]
-                            #:maker [maker* #f]
-                            #:predicate [pred* #f]
-                            #:poly? [poly? #f]
-                            #:constructor-return [cret #f])
+(define/cond-contract (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
+                                             #:wrapper [wrapper values]
+                                             #:struct-info [si #f]
+                                             #:type-wrapper [type-wrapper values]
+                                             #:pred-wrapper [pred-wrapper values]
+                                             #:maker [maker* #f]
+                                             #:predicate [pred* #f]
+                                             #:poly? [poly? #f]
+                                             #:constructor-return [cret #f])
      (c->* (identifier? Struct? (listof identifier?) (listof Type/c) (listof Type/c) boolean?)
            (#:wrapper procedure?
             #:type-wrapper procedure?
@@ -248,10 +248,10 @@
 
 ;; typecheck a non-polymophic struct and register the approriate types
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
-(d/c (tc/struct nm/par flds tys [proc-ty #f] 
-                #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f]
-                #:predicate [pred #f]
-                #:type-only [type-only #f])
+(define/cond-contract (tc/struct nm/par flds tys [proc-ty #f] 
+                                 #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f]
+                                 #:predicate [pred #f]
+                                 #:type-only [type-only #f])
      (c->* (syntax? (listof identifier?) (listof syntax?))
            ((or/c #f syntax?)
             #:maker any/c
@@ -283,7 +283,7 @@
 ;; register a struct type
 ;; convenience function for built-in structs
 ;; tc/builtin-struct : identifier identifier Listof[identifier] Listof[Type] Listof[Type] -> void
-(d/c (tc/builtin-struct nm parent flds tys #;parent-tys)
+(define/cond-contract (tc/builtin-struct nm parent flds tys #;parent-tys)
      (c-> identifier? (or/c #f identifier?) (listof identifier?)
           (listof Type/c) #;(listof fld?)
           any/c)

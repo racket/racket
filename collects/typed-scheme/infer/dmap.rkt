@@ -9,7 +9,7 @@
 (export dmap^)
 
 ;; dcon-meet : dcon dcon -> dcon
-(d/c (dcon-meet dc1 dc2)
+(define/cond-contract (dcon-meet dc1 dc2)
   (dcon/c dcon/c . -> . dcon/c)
   (match* (dc1 dc2)
     [((struct dcon-exact (fixed1 rest1)) (or (struct dcon (fixed2 rest2))

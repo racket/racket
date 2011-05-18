@@ -9,7 +9,7 @@
          scheme/contract)
 
 (provide resolve-name resolve-app needs-resolving? resolve)
-(p/c [resolve-once (Type/c . -> . (or/c Type/c #f))])
+(provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])
 
 (define-struct poly (name vars) #:prefab)
 

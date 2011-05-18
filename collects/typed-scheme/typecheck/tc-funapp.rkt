@@ -38,7 +38,7 @@
                       (tc/funapp1 f-stx args-stx (subst-all substitution a) argtys expected #:check #f))))
              (poly-fail f-stx args-stx t argtys #:name (and (identifier? f-stx) f-stx) #:expected expected))))]))
 
-(d/c (tc/funapp f-stx args-stx ftype0 argtys expected)
+(define/cond-contract (tc/funapp f-stx args-stx ftype0 argtys expected)
   (syntax? syntax? tc-results? (c:listof tc-results?) (c:or/c #f tc-results?) . c:-> . tc-results?)
   (match* (ftype0 argtys)
     ;; we special-case this (no case-lambda) for improved error messages

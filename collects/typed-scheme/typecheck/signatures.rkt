@@ -7,39 +7,39 @@
 (provide (all-defined-out))
 
 (define-signature tc-expr^
-  ([cnt tc-expr (syntax? . -> . tc-results?)]
-   [cnt tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]
-   [cnt tc-expr/check (syntax? tc-results? . -> . tc-results?)]
-   [cnt tc-expr/check/t (syntax? tc-results? . -> . Type/c)]
-   [cnt tc-exprs ((listof syntax?) . -> . tc-results?)]
-   [cnt tc-exprs/check ((listof syntax?) tc-results? . -> . tc-results?)]
-   [cnt tc-expr/t (syntax? . -> . Type/c)]
-   [cnt single-value ((syntax?) ((or/c tc-results? #f)) . ->* . tc-results?)]))
+  ([cond-contracted tc-expr (syntax? . -> . tc-results?)]
+   [cond-contracted tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]
+   [cond-contracted tc-expr/check (syntax? tc-results? . -> . tc-results?)]
+   [cond-contracted tc-expr/check/t (syntax? tc-results? . -> . Type/c)]
+   [cond-contracted tc-exprs ((listof syntax?) . -> . tc-results?)]
+   [cond-contracted tc-exprs/check ((listof syntax?) tc-results? . -> . tc-results?)]
+   [cond-contracted tc-expr/t (syntax? . -> . Type/c)]
+   [cond-contracted single-value ((syntax?) ((or/c tc-results? #f)) . ->* . tc-results?)]))
 
 (define-signature check-subforms^
-  ([cnt check-subforms/ignore (syntax? . -> . any)]
-   [cnt check-subforms/with-handlers (syntax? . -> . any)]
-   [cnt check-subforms/with-handlers/check (syntax? tc-results? . -> . any)]))
+  ([cond-contracted check-subforms/ignore (syntax? . -> . any)]
+   [cond-contracted check-subforms/with-handlers (syntax? . -> . any)]
+   [cond-contracted check-subforms/with-handlers/check (syntax? tc-results? . -> . any)]))
 
 (define-signature tc-if^
-  ([cnt tc/if-twoarm ((syntax? syntax? syntax?) (tc-results?) . ->* . tc-results?)]))
+  ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results?) . ->* . tc-results?)]))
 
 (define-signature tc-lambda^
-  ([cnt tc/lambda (syntax? syntax? syntax? . -> . tc-results?)]
-   [cnt tc/lambda/check (syntax? syntax? syntax? tc-results? . -> . tc-results?)]
-   [cnt tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) tc-results? . -> . tc-results?)]))
+  ([cond-contracted tc/lambda (syntax? syntax? syntax? . -> . tc-results?)]
+   [cond-contracted tc/lambda/check (syntax? syntax? syntax? tc-results? . -> . tc-results?)]
+   [cond-contracted tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) tc-results? . -> . tc-results?)]))
 
 (define-signature tc-app^
-  ([cnt tc/app (syntax? . -> . tc-results?)] 
-   [cnt tc/app/check (syntax? tc-results? . -> . tc-results?)]))
+  ([cond-contracted tc/app (syntax? . -> . tc-results?)] 
+   [cond-contracted tc/app/check (syntax? tc-results? . -> . tc-results?)]))
 
 (define-signature tc-apply^
-  ([cnt tc/apply (syntax? syntax? . -> . tc-results?)]))
+  ([cond-contracted tc/apply (syntax? syntax? . -> . tc-results?)]))
 
 (define-signature tc-let^
-  ([cnt tc/let-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]
-   [cnt tc/letrec-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]))
+  ([cond-contracted tc/let-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]
+   [cond-contracted tc/letrec-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]))
 
 (define-signature tc-dots^
-  ([cnt tc/dots (syntax? . -> . (values Type/c symbol?))]))
+  ([cond-contracted tc/dots (syntax? . -> . (values Type/c symbol?))]))
 

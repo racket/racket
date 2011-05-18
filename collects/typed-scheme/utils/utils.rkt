@@ -163,14 +163,20 @@ at least theoretically.
 
 
 ;; turn contracts on and off - off by default for performance.
-(provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c d/c/p)
+(provide (for-syntax enable-contracts?)
+         provide/cond-contract
+         with-cond-contract
+         cond-contracted
+         define-struct/cond-contract
+         define/cond-contract
+         define/cond-contract/provide)
 
-(define-syntax-rule (d/c/p (name . args) c . body)
-  (begin (d/c (name . args) c . body)
-         (p/c [name c])))
+(define-syntax-rule (define/cond-contract/provide (name . args) c . body)
+  (begin (define/cond-contract (name . args) c . body)
+         (provide/cond-contract [name c])))
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'
-(define-syntax p/c
+(define-syntax provide/cond-contract
   (if enable-contracts?
       (make-rename-transformer #'provide/contract)
       (lambda (stx)
@@ -186,17 +192,17 @@ at least theoretically.
           [(_ c:clause ...)
            #'(provide c.i ...)]))))
 
-(define-syntax w/c
+(define-syntax with-cond-contract
   (if enable-contracts?
       (make-rename-transformer #'with-contract)
-      (lambda (stx)        
+      (lambda (stx)
         (syntax-parse stx
           [(_ name (~or #:results #:result) spec . body)
            #'(let () . body)]
           [(_ name specs . body)
            #'(begin . body)]))))
 
-(define-syntax d/c
+(define-syntax define/cond-contract
   (if enable-contracts?
       (make-rename-transformer #'define/contract)
       (lambda (stx)        
@@ -204,14 +210,14 @@ at least theoretically.
           [(_ head cnt . body)
            #'(define head . body)]))))
 
-(define-syntax d-s/c
+(define-syntax define-struct/cond-contract
   (if enable-contracts?
       (make-rename-transformer #'define-struct/contract)
       (syntax-rules ()
         [(_ hd ([i c] ...) . opts)
          (define-struct hd (i ...) . opts)])))
 
-(define-signature-form (cnt stx)
+(define-signature-form (cond-contracted stx)
   (syntax-case stx ()
     [(_ nm cnt)
      (if enable-contracts?

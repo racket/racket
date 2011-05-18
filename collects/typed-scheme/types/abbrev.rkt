@@ -89,11 +89,11 @@
        #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
 
 
-(d/c (-result t [f -no-filter] [o -no-obj])
+(define/cond-contract (-result t [f -no-filter] [o -no-obj])
   (c:->* (Type/c) (FilterSet? Object?) Result?)
   (make-Result t f o))
 
-(d/c (-values args)
+(define/cond-contract (-values args)
      (c:-> (listof Type/c) (or/c Type/c Values?))
      (match args
        ;[(list t) t]
@@ -178,7 +178,7 @@
 (define -no-obj (make-Empty))
 
 
-(d/c (-FS + -)
+(define/cond-contract (-FS + -)
       (c:-> Filter/c Filter/c FilterSet?)
       (match* (+ -)
              [((Bot:) _) (make-FilterSet -bot -top)]
@@ -219,9 +219,9 @@
 
 (define top-func (make-Function (list (make-top-arr))))
 
-(d/c (make-arr* dom rng 
-                #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
-                #:filters [filters -no-filter] #:object [obj -no-obj])
+(define/cond-contract (make-arr* dom rng 
+                                 #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
+                                 #:filters [filters -no-filter] #:object [obj -no-obj])
   (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
          (#:rest (or/c #f Type/c) 
           #:drest (or/c #f (cons/c Type/c symbol?))
@@ -305,13 +305,13 @@
 (define (-struct name parent flds constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
   (make-Struct name parent flds proc poly pred cert constructor))
 
-(d/c (-filter t i [p null])
+(define/cond-contract (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
      (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i))) 
          -top
          (make-TypeFilter t p i)))
 
-(d/c (-not-filter t i [p null])
+(define/cond-contract (-not-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
      (if (or (type-equal? (make-Union null) t) (and (identifier? i) (is-var-mutated? i)))
          -top
@@ -329,7 +329,7 @@
 (define (asym-pred dom rng filter)
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))
 
-(d/c make-pred-ty
+(define/cond-contract make-pred-ty
   (case-> (c:-> Type/c Type/c)
           (c:-> (listof Type/c) Type/c Type/c Type/c)
           (c:-> (listof Type/c) Type/c Type/c integer? Type/c)

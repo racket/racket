@@ -184,7 +184,7 @@
 
 ;(trace subtypes*/varargs)
 
-(d/c (combine-arrs arrs)
+(define/cond-contract (combine-arrs arrs)
   (c-> (listof arr?) (or/c #f arr?))
   (match arrs
     [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)

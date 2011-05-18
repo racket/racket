@@ -7,7 +7,8 @@
 (define-struct (def-stx-binding binding) () #:transparent)
 (define-struct (def-struct-stx-binding def-stx-binding) (static-info) #:transparent)
 
-(p/c (struct binding ([name identifier?]))
-     (struct (def-binding binding) ([name identifier?] [ty any/c]))
-     (struct (def-stx-binding binding) ([name identifier?]))
-     (struct (def-struct-stx-binding binding) ([name identifier?] [static-info (or/c #f struct-info?)])))
+(provide/cond-contract
+ (struct binding ([name identifier?]))
+ (struct (def-binding binding) ([name identifier?] [ty any/c]))
+ (struct (def-stx-binding binding) ([name identifier?]))
+ (struct (def-struct-stx-binding binding) ([name identifier?] [static-info (or/c #f struct-info?)])))

@@ -18,7 +18,7 @@
 
 (provide lexical-env with-lexical-env with-lexical-env/extend
          with-lexical-env/extend/props)
-(p/c
+(provide/cond-contract
  [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
  [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (prop-env?) . ->* . env?)])
 

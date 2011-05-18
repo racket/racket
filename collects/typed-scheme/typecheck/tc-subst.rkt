@@ -12,7 +12,7 @@
 
 (provide (all-defined-out))
 
-(d/c (open-Result r objs [ts #f])
+(define/cond-contract (open-Result r objs [ts #f])
      (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
        (match r
          [(Result: t fs old-obj)
@@ -23,7 +23,7 @@
                     (subst-filter-set fs k o #t arg-ty)
                     (subst-object old-obj k o #t)))]))
 
-(d/c (subst-filter-set fs k o polarity [t #f])
+(define/cond-contract (subst-filter-set fs k o polarity [t #f])
        (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
        (define extra-filter (if t (make-TypeFilter t null k) -top))
        (define (add-extra-filter f) 
@@ -37,10 +37,10 @@
           (subst-filter (add-extra-filter f-) k o polarity))]
     [_ (-FS -top -top)]))
 
-(d/c (subst-type t k o polarity)
+(define/cond-contract (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
-  (d/c (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
+  (define/cond-contract (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
   (type-case (#:Type st 
 	      #:Filter sf
 	      #:Object (lambda (f) (subst-object f k o polarity)))
@@ -57,7 +57,7 @@
                                  (and drest (cons (st (car drest)) (cdr drest)))
                                  (map st kws)))]))
 
-(d/c (subst-object t k o polarity)
+(define/cond-contract (subst-object t k o polarity)
      (-> Object? name-ref/c Object? boolean? Object?)
   (match t
     [(NoObject:) t]
@@ -72,7 +72,7 @@
 	 t)]))
 
 ;; this is the substitution metafunction 
-(d/c (subst-filter f k o polarity)
+(define/cond-contract (subst-filter f k o polarity)
   (-> Filter/c name-ref/c Object? boolean? Filter/c)
   (define (ap f) (subst-filter f k o polarity))
   (define (tf-matcher t p i k o polarity maker)
@@ -146,7 +146,7 @@
 
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
-(d/c (values->tc-results tc formals)
+(define/cond-contract (values->tc-results tc formals)
   ((or/c Values? ValuesDots?) (or/c #f (listof identifier?)) . -> . tc-results?)
   (match tc
     [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)

@@ -12,7 +12,7 @@
 (provide abstract-results)
 
 
-(d/c (abstract-results results arg-names)
+(define/cond-contract (abstract-results results arg-names)
      (tc-results? (listof identifier?) . -> . (or/c Values? ValuesDots?))
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
@@ -27,7 +27,7 @@
            (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
 
 
-(d/c (abstract-object ids keys o)
+(define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
   (define (lookup y)
     (for/first ([x ids] [i keys] #:when (free-identifier=? x y)) i))
@@ -39,16 +39,16 @@
     [_ (make-Empty)]))
 
 
-(d/c (abstract-filter ids keys fs)
+(define/cond-contract (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
   (match fs
     [(FilterSet: f+ f-)
      (-FS (abo ids keys f+) (abo ids keys f-))]
     [(NoFilter:) (-FS -top -top)]))
 
-(d/c (abo xs idxs f)
+(define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
-  (d/c (lookup y)
+  (define/cond-contract (lookup y)
        (identifier? . -> . (or/c #f integer?))
        (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
@@ -77,7 +77,7 @@
 (provide combine-props tc-results->values)
 
 
-(d/c (resolve atoms prop)
+(define/cond-contract (resolve atoms prop)
   ((listof Filter/c) 
    Filter/c
    . -> . 
@@ -102,7 +102,7 @@
       [(cons (AndFilter: ps*) ps) (loop (append ps* ps))]
       [(cons p ps) (cons p (loop ps))])))
 
-(d/c (combine-props new-props old-props flag)
+(define/cond-contract (combine-props new-props old-props flag)
   ((listof Filter/c) (listof Filter/c) (box/c boolean?)
    . -> . 
    (values (listof (or/c ImpFilter? OrFilter? AndFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))

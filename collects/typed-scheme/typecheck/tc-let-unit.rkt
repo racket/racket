@@ -27,16 +27,16 @@
     [(tc-results: ts _ _)
      (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
 
-(d/c (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
+(define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results? . c:-> . any/c)
        (listof (listof identifier?)) (listof tc-results?) (listof tc-results?)
        syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
       (#:abstract any/c)
       . c:->* . 
       tc-results?)
-     (w/c t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
-               [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
-               [props          (listof (listof Filter?))])
+     (with-cond-contract t/p ([types          (listof (listof Type/c))] ; types that may contain undefined (letrec)
+                              [expected-types (listof (listof Type/c))] ; types that may not contain undefined (what we got from the user)
+                              [props          (listof (listof Filter?))])
           (define-values (types expected-types props)
             (for/lists (t e p) 
               ([r     (in-list results)]
@@ -56,8 +56,8 @@
                                         (make-ImpFilter (-filter (-val #f) n) f-)))))]
                 [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
                  (values ts e-ts null)]))))
-     (w/c append-region ([p1 (listof Filter?)]
-                         [p2 (listof Filter?)])
+     (with-cond-contract append-region ([p1 (listof Filter?)]
+                                        [p2 (listof Filter?)])
           (define-values (p1 p2)
             (combine-props (apply append props) (env-props (lexical-env)) (box #t))))
      ;; extend the lexical environment for checking the body

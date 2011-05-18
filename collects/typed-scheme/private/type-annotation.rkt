@@ -115,7 +115,7 @@
 ;; expr : the RHS expression
 ;; tc-expr : a function like `tc-expr' from tc-expr-unit
 ;; tc-expr/check : a function like `tc-expr/check' from tc-expr-unit
-(d/c (get-type/infer stxs expr tc-expr tc-expr/check)
+(define/cond-contract (get-type/infer stxs expr tc-expr tc-expr/check)
   ((listof identifier?) syntax? (syntax? . -> . tc-results?) (syntax? tc-results? . -> . tc-results?) . -> . tc-results?)
   (match stxs
     [(list stx ...)

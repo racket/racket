@@ -1,4 +1,4 @@
-#lang scheme/base  
+#lang scheme/base
 
 (require scheme/contract unstable/sequence racket/dict syntax/id-table
          (prefix-in r: "../utils/utils.rkt")
@@ -20,12 +20,12 @@
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 ;; props is a list of known propositions
-(r:d-s/c env ([l (and/c (not/c dict-mutable?) dict?)]) 
+(r:define-struct/cond-contract env ([l (and/c (not/c dict-mutable?) dict?)])
          #:transparent
          #:property prop:custom-write
          (lambda (e prt mode)
            (fprintf prt "(env ~a)" (dict-map (env-l e) list))))
-(r:d-s/c (prop-env env) ([props (listof Filter/c)])
+(r:define-struct/cond-contract (prop-env env) ([props (listof Filter/c)])
          #:transparent
          #:property prop:custom-write
          (lambda (e prt mode)
@@ -39,34 +39,34 @@
 (define (env-filter f e)
   (match e
     [(env l)
-     (mk-env e 
+     (mk-env e
              (for/fold ([h l])
                ([(k v) (in-dict l)]
                 #:when (not (f (cons k v))))
                (dict-remove h k)))]))
 
-(r:d/c (make-empty-env dict)
+(r:define/cond-contract (make-empty-env dict)
        (dict? . -> . env?)
        (env dict))
 
-(r:d/c (make-empty-prop-env dict)
+(r:define/cond-contract (make-empty-prop-env dict)
        (dict? . -> . prop-env?)
        (prop-env dict null))
 
-(r:d/c (env-props e)
+(r:define/cond-contract (env-props e)
        (prop-env? . -> . (listof Filter/c))
        (prop-env-props e))
 
 (define (env-keys+vals e)
   (match e
-    [(env l) (for/list ([(k v) (in-dict l)]) (cons k v))]))  
+    [(env l) (for/list ([(k v) (in-dict l)]) (cons k v))]))
 
-(r:d/c (env-map f e)
+(r:define/cond-contract (env-map f e)
   ((any/c any/c . -> . any/c) env? . -> . env?)
   (mk-env e (dict-map f (env-l e))))
 
 ;; extend that works on single arguments
-(define (extend e k v) 
+(define (extend e k v)
   (match e
     [(env l) (mk-env e (dict-set l k v))]
     [_ (int-err "extend: expected environment, got ~a" e)]))
@@ -88,10 +88,10 @@
     [_ (int-err "lookup: expected environment, got ~a" e)]))
 
 
-;; takes two lists of sets to be added, which are either added one at a time, if the 
+;; takes two lists of sets to be added, which are either added one at a time, if the
 ;; elements are not lists, or all at once, if the elements are lists
 (define (extend/values kss vss env)
-  (foldr (lambda (ks vs env) 
+  (foldr (lambda (ks vs env)
            (cond [(and (list? ks) (list? vs))
                   (extend-env ks vs env)]
                  [(or (list? ks) (list? vs))

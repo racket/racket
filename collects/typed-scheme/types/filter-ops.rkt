@@ -59,7 +59,7 @@
 ;; compact : (Listof prop) bool -> (Listof prop)
 ;; props : propositions to compress
 ;; or? : is this an OrFilter (alternative is AndFilter)
-(d/c (compact props or?)
+(define/cond-contract (compact props or?)
      ((listof Filter/c) boolean? . --> . (listof Filter/c))
   (define tf-map (make-hash))
   (define ntf-map (make-hash))

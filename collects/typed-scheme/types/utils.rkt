@@ -60,8 +60,8 @@
 
 
 ;; this structure represents the result of typechecking an expression
-(d-s/c tc-result ([t Type/c] [f FilterSet/c] [o Object?]) #:transparent)
-(d-s/c tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)]) #:transparent)
+(define-struct/cond-contract tc-result ([t Type/c] [f FilterSet/c] [o Object?]) #:transparent)
+(define-struct/cond-contract tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)]) #:transparent)
 
 (define-match-expander tc-result:
   (syntax-parser
@@ -133,7 +133,7 @@
 
 ;(trace ret)
 
-(p/c
+(provide/cond-contract
  [ret    
   (->i ([t (or/c Type/c (listof Type/c))])
        ([f (t) (if (list? t)

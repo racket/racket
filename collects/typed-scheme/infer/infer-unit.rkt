@@ -55,7 +55,7 @@
 ;; cset : the constraints being manipulated
 ;; takes the constraints on vars and creates a dmap entry contstraining dbound to be |vars| 
 ;; with the constraints that cset places on vars
-(d/c (move-vars-to-dmap cset dbound vars)
+(define/cond-contract (move-vars-to-dmap cset dbound vars)
   (cset? symbol? (listof symbol?) . -> . cset?)
   (mover cset dbound vars
          (λ (cmap dmap)
@@ -67,7 +67,7 @@
 ;; dbound : index variable
 ;; cset : the constraints being manipulated
 ;; 
-(d/c (move-rest-to-dmap cset dbound #:exact [exact? #f])
+(define/cond-contract (move-rest-to-dmap cset dbound #:exact [exact? #f])
   ((cset? symbol?) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound null
          (λ (cmap dmap)
@@ -79,7 +79,7 @@
 ;; dbound : index variable
 ;; cset : the constraints being manipulated
 ;; 
-(d/c (move-dotted-rest-to-dmap cset dbound)
+(define/cond-contract (move-dotted-rest-to-dmap cset dbound)
   (cset? symbol? . -> . cset?)
   (mover cset dbound null
          (λ (cmap dmap)
@@ -94,7 +94,7 @@
 ;; in place, and the "simple" case will then call move-rest-to-dmap.  This means
 ;; we need to extract that result from the dmap and merge it with the fixed vars
 ;; we now handled.  So I've extended the mover to give access to the dmap, which we use here.
-(d/c (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
+(define/cond-contract (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
   ((cset? symbol? (listof symbol?)) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound vars
          (λ (cmap dmap)
@@ -298,7 +298,7 @@
 ;; produces a cset which determines a substitution that makes S a subtype of T
 ;; implements the V |-_X S <: T => C judgment from Pierce+Turner, extended with
 ;; the index variables from the TOPLAS paper
-(d/c (cgen V X Y S T)
+(define/cond-contract (cgen V X Y S T)
   ((listof symbol?) (listof symbol?) (listof symbol?) Type? Type? . -> . cset?)
   ;; useful quick loop
   (define (cg S T) (cgen V X Y S T))
@@ -541,7 +541,7 @@
 ;; C : cset? - set of constraints found by the inference engine
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type? - result type into which we will be substituting
-(d/c (subst-gen C Y R)
+(define/cond-contract (subst-gen C Y R)
   (cset? (listof symbol?) Type? . -> . (or/c #f substitution/c))
   (define var-hash (free-vars* R))
   (define idx-hash (free-idxs* R))
@@ -647,8 +647,8 @@
 ;; expected-cset : a cset representing the expected type, to meet early and
 ;;  keep the number of constraints in check. (empty by default)
 ;; produces a cset which determines a substitution that makes the Ss subtypes of the Ts
-(d/c (cgen/list V X Y S T
-                #:expected-cset [expected-cset (empty-cset '() '())])
+(define/cond-contract (cgen/list V X Y S T
+                                 #:expected-cset [expected-cset (empty-cset '() '())])
   (((listof symbol?) (listof symbol?) (listof symbol?) (listof Type?) (listof Type?))
    (#:expected-cset cset?) . ->* . cset?)
   (unless (= (length S) (length T))

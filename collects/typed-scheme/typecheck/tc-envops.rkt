@@ -71,7 +71,7 @@
      t]))
 
 ;; sets the flag box to #f if anything becomes (U)
-(d/c (env+ env fs flag)
+(define/cond-contract (env+ env fs flag)
   (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
    #:pre (bx) (unbox bx) . ->i . [_ env?])
   (define-values (props atoms) (combine-props fs (env-props env) flag))
@@ -86,5 +86,6 @@
                             x Γ)]
       [_ Γ])))
 
-(p/c [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
-	    #:pre (bx) (unbox bx) . ->i . [_ env?])])
+(provide/cond-contract
+ [env+ (([e env?] [fs (listof Filter/c)] [bx (box/c boolean?)])
+        #:pre (bx) (unbox bx) . ->i . [_ env?])])

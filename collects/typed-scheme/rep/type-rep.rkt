@@ -420,7 +420,7 @@
 
 ;; remove-dups: List[Type] -> List[Type]
 ;; removes duplicate types from a SORTED list
-(d/c (remove-dups types)
+(define/cond-contract (remove-dups types)
   ((listof Rep?) . -> . (listof Rep?))
   (cond [(null? types) types]
         [(null? (cdr types)) types]
@@ -443,14 +443,16 @@
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
 
 ;; type equality
-(d/c (type-equal? s t) (Rep? Rep? . -> . boolean?) (eq? (Rep-seq s) (Rep-seq t)))
+(define/cond-contract (type-equal? s t)
+  (Rep? Rep? . -> . boolean?)
+  (eq? (Rep-seq s) (Rep-seq t)))
 
 ;; inequality - good
-(d/c (type<? s t)
+(define/cond-contract (type<? s t)
   (Rep? Rep? . -> . boolean?)
   (< (Rep-seq s) (Rep-seq t)))
 
-(d/c (type-compare s t)
+(define/cond-contract (type-compare s t)
   (Rep? Rep? . -> . (or/c -1 0 1))
   (cond [(type-equal? s t) 0]
         [(type<? s t) 1]
@@ -732,6 +734,6 @@
              [Poly-body* Poly-body]
              [PolyDots-body* PolyDots-body]))
 
-(p/c [type-equal? (Rep? Rep? . -> . boolean?)])
+(provide/cond-contract [type-equal? (Rep? Rep? . -> . boolean?)])
 
 ;(trace unfold)

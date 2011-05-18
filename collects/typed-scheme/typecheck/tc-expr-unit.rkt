@@ -170,7 +170,7 @@
 ;; typecheck an identifier
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-results
-(d/c (tc-id id)
+(define/cond-contract (tc-id id)
   (--> identifier? tc-results?)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
@@ -229,7 +229,7 @@
                     t)]))))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
-(d/c (tc-expr/check/internal form expected)
+(define/cond-contract (tc-expr/check/internal form expected)
   (--> syntax? tc-results? tc-results?)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax-object->datum form))
@@ -426,7 +426,7 @@
            (add-typeof-expr form r)
            r)]))))
 
-(d/c (tc/send form rcvr method args [expected #f])
+(define/cond-contract (tc/send form rcvr method args [expected #f])
   (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results? #f)) tc-results?)
   (match (tc-expr rcvr)
     [(tc-result1: (Instance: (and c (Class: _ _ methods))))

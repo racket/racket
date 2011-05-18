@@ -12,7 +12,7 @@
 
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
-(d/c (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
+(define/cond-contract (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   ((syntax? syntax? arr? (c:listof tc-results?) (c:or/c #f tc-results?)) (#:check boolean?) . c:->* . tc-results?)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
@@ -65,9 +65,9 @@
           [else (string-append (stringify (map make-printable dom)) rng-string)])))
 
 ;; Generates error messages when operand types don't match operator domains.
-(d/c (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
-                           #:expected [expected #f] #:return [return (make-Union null)]
-                           #:msg-thunk [msg-thunk (lambda (dom) dom)])
+(define/cond-contract (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
+                                         #:expected [expected #f] #:return [return (make-Union null)]
+                                         #:msg-thunk [msg-thunk (lambda (dom) dom)])
    ((syntax? syntax? Type/c (c:listof (c:listof Type/c)) (c:listof (c:or/c #f Type/c))
      (c:listof (c:or/c #f (c:cons/c Type/c (c:or/c c:natural-number/c symbol?))))
      (c:listof (c:or/c Values? ValuesDots?)) (c:listof tc-results?) (c:or/c #f Type/c) c:any/c)

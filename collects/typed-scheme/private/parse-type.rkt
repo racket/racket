@@ -15,10 +15,10 @@
 
 (define-struct poly (name vars) #:prefab)
 
-(p/c [parse-type (syntax? . c:-> . Type/c)]
-     [parse-type/id (syntax? c:any/c . c:-> . Type/c)] 
-     [parse-tc-results (syntax? . c:-> . tc-results?)] 
-     [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results?)])
+(provide/cond-contract [parse-type (syntax? . c:-> . Type/c)]
+                       [parse-type/id (syntax? c:any/c . c:-> . Type/c)] 
+                       [parse-tc-results (syntax? . c:-> . tc-results?)] 
+                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results?)])
 
 (provide star ddd/bound)
 (define enable-mu-parsing (make-parameter #t))
