@@ -63,7 +63,8 @@ When a @scheme[bits] byte string is provided: Creates a monochrome
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? mutable?)]
-                            [alpha? any/c #f])
+                            [just-alpha? any/c #f]
+                            [pre-multiplied? any/c #f])
            void?]{
 
 Produces the same result as @xmethod[bitmap-dc% get-argb-pixels], but the
@@ -264,7 +265,8 @@ A monochrome bitmap saved as @scheme['png] without a mask bitmap
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels bytes?]
-                            [alpha? any/c #f])
+                            [just-alpha? any/c #f]
+                            [pre-multiplied? any/c #f])
            void?]{
 
 The same as @xmethod[bitmap-dc% set-argb-pixels], but the

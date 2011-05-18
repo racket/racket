@@ -572,7 +572,8 @@
                                  [exact-nonnegative-integer? w]
                                  [exact-nonnegative-integer? h]
                                  [bytes? bstr]
-                                 [any? [get-alpha? #f]])
+                                 [any? [get-alpha? #f]]
+                                 [any? [pre-mult? #f]])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'get-argb-pixels)
                               "byte string is too short: "
@@ -581,10 +582,10 @@
         (if alt?
             (call-with-alt-bitmap
              x y w h 
-             (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha?)))
-            (do-get-argb-pixels x y w h bstr get-alpha?))))
+             (lambda (bm) (send bm get-argb-pixels 0 0 w h bstr get-alpha? pre-mult?)))
+            (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?))))
 
-    (define/private (do-get-argb-pixels x y w h bstr get-alpha?)
+    (define/private (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?)
       ;; Fill range that is beyond edge of picture:
       (if get-alpha?
           (for* ([i (in-range width (+ x w))]
@@ -603,7 +604,7 @@
           (cairo_surface_flush s)
           (let ([data (cairo_image_surface_get_data s)]
                 [row-width (cairo_image_surface_get_stride s)]
-                [use-alpha? (or alpha-channel? b&w?)]
+                [use-alpha? (or (and alpha-channel? (not pre-mult?)) b&w?)]
                 [set-alpha? alpha-channel?])
             (let ([w2 (+ x (min (- width x) w))])
               (for* ([j (in-range y (min (+ y h) height))])
@@ -652,7 +653,8 @@
                                  [exact-nonnegative-integer? w]
                                  [exact-nonnegative-integer? h]
                                  [bytes? bstr]
-                                 [any? [set-alpha? #f]])
+                                 [any? [set-alpha? #f]]
+                                 [any? [pre-mult? #f]])
       (unless ((bytes-length bstr) . >=  . (* w h 4))
         (raise-mismatch-error (method-name 'bitmap% 'set-argb-pixels)
                               "byte string is too short: "
@@ -687,7 +689,9 @@
                             (if alpha-channel?
                                 (let ([a (bytes-ref bstr pi)]
                                       [pm (lambda (a v)
-                                            (quotient (* a v) 255))])
+                                            (if pre-mult?
+                                                (min a v)
+                                                (quotient (* a v) 255)))])
                                   (bytes-set! data (+ ri A) a)
                                   (bytes-set! data (+ ri R) (pm a (bytes-ref bstr (+ pi 1))))
                                   (bytes-set! data (+ ri G) (pm a (bytes-ref bstr (+ pi 2))))

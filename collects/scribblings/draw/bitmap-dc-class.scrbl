@@ -54,7 +54,8 @@ In older versions, this method smoothed drawing more than
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? (not/c immutable?))]
-                            [alpha? any/c #f])
+                            [just-alpha? any/c #f]
+                            [pre-multiplied? any/c #f])
            void?]{
 
 Gets a rectangle of pixels in the bitmap, subject to the same rules
@@ -73,14 +74,19 @@ The pixel RGB values are copied into @scheme[pixels]. The first byte
  DC. The pixels are in row-major order, left to right then top to
  bottom.
 
-If @scheme[alpha?] is false, if the bitmap does not have an alpha
+If @scheme[just-alpha?] is false, if the bitmap does not have an alpha
  channel, then the alpha value for each pixel is set to 255. If
- @scheme[alpha?] is true, then @italic{only} the alpha value is set
+ @scheme[just-alpha?] is true, then @italic{only} the alpha value is set
  for each pixel; if the bitmap has no alpha channel, then the alpha
  value is based on each pixel's inverted RGB average. Thus, when a
  bitmap has a separate mask bitmap, the same @scheme[pixels] byte
  string is in general filled from two bitmaps: one (the main image)
  for the pixel values and one (the mask) for the alpha values.
+
+If @racket[pre-multiplied?] is true, @scheme[just-alpha?] is false,
+ and the bitmap has an alpha channel, then RGB values in the result
+ are scaled by the corresponding alpha value (i.e., multiplied by the
+ alpha value and then divided by 255).
 
 }
 
@@ -110,7 +116,8 @@ result is @scheme[#f].
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels bytes?]
-                            [alpha? any/c #f])
+                            [just-alpha? any/c #f]
+                            [pre-multiplied? any/c #f])
            void?]{
 
 
@@ -126,14 +133,23 @@ The pixel RGB values are taken from @scheme[pixels]. The first byte
  determine the new pixel values in the DC. The pixels are in row-major
  order, left to right then top to bottom.
 
-If @scheme[alpha?] is false, then the alpha value for each pixel is
- used only if the DC's current bitmap has an alpha channel. If @scheme[alpha?] is true, then each
+If @scheme[just-alpha?] is false, then the alpha value for each pixel is
+ used only if the DC's current bitmap has an alpha channel. If 
+ @scheme[just-alpha?] is true and the bitmap has no alpha channel, then each
  pixel is set based @italic{only} on the alpha value, but inverted to serve
  as a mask. Thus, when working with bitmaps that have an associated mask
  bitmap instead of an alpha channel, the same
  @scheme[pixels] byte string is used with two bitmaps: one
  (the main image) for the pixel values and one (the mask) for the
  alpha values.
+
+If @racket[pre-multiplied?] is true, @scheme[just-alpha?] is false,
+ and the bitmap has an alpha channel, then RGB values in
+ @racket[pixels] are interpreted as scaled by the corresponding alpha value
+ (i.e., multiplied by the alpha value and then divided by 255). If an
+ R, G, or B value is greater than its corresponding alpha value (which
+ is not possible if the value is properly scaled), then it is effectively 
+ reduced to the alpha value.
 
 }
 

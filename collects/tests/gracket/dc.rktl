@@ -364,6 +364,7 @@
   (mk #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0" 'opaque black white #t))
 
 ;; ----------------------------------------
+;; check get-alpha mode of `get-argb-pixels'
 
 (let ()
   (define (get-column-alpha bm x y)
@@ -378,7 +379,7 @@
                                      (bytes-ref bstr 2))
                                   3)))
   (send abm set-argb-pixels 0 0 2 2 #"0123456789abcdef")
-  (send nbm set-argb-pixels 0 0 2 2 #"0123456789abcdef")  
+  (send nbm set-argb-pixels 0 0 2 2 #"0123456789abcdef") ; alphas ignored
 
   (test (bytes (char->integer #\0) 0 0 0) 'a0+0 (get-column-alpha abm 0 0))
   (test (bytes (char->integer #\4) 0 0 0) 'a1+0 (get-column-alpha abm 1 0))
@@ -389,6 +390,34 @@
   (test (bytes (avg #"567") 0 0 0) 'n1+0 (get-column-alpha nbm 1 0))
   (test (bytes (avg #"9ab") 0 0 0) 'n0+1 (get-column-alpha nbm 0 1))
   (test (bytes (avg #"def") 0 0 0) 'n1+1 (get-column-alpha nbm 1 1)))
+
+;; ----------------------------------------
+;; check pre-mult mode of `{get,set}-argb-pixels'
+
+(let ()
+  (define abm (make-object bitmap% 2 2 #f #t))
+  (define nbm (make-object bitmap% 2 2 #f #f))
+  (send abm set-argb-pixels 0 0 2 2 #"30127456b89afcde" #f #t)
+  (send nbm set-argb-pixels 0 0 2 2 #"0123456789abcdef" #f #t) ; alphas ignored
+
+  (define (get-pixels bm pre-mult?)
+    (define bs (make-bytes 16))
+    (send bm get-argb-pixels 0 0 2 2 bs #f pre-mult?)
+    bs)
+
+  (define (unmul b)
+    (define (um v) (quotient (* v 255) (bytes-ref b 0)))
+    (bytes (bytes-ref b 0)
+           (um (bytes-ref b 1))
+           (um (bytes-ref b 2))
+           (um (bytes-ref b 3))))
+
+  (test #"\xFF123\xFF567\xFF9ab\xFFdef" 'no-alpha (get-pixels nbm #f))
+  (test #"\xFF123\xFF567\xFF9ab\xFFdef" 'no-alpha (get-pixels nbm #t))
+
+  (test (apply bytes-append (map unmul '(#"3012" #"7456" #"b89a" #"fcde")))
+        'alpha-normal (get-pixels abm #f))
+  (test #"30127456b89afcde" 'alpha-premult (get-pixels abm #t)))
 
 
 ;; ----------------------------------------
