@@ -93,6 +93,6 @@
                              (loop dir (build-path 'up path)
                                    (string-append "../" pathstr))
                              (raise-syntax-error 'path-up
-                                                 "file no found in any parent directory"
+                                                 "file not found in any parent directory"
                                                  stx ps)))))))])
          (syntax/loc stx (combine-in paths ...))))]))
