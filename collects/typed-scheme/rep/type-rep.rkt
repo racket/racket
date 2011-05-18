@@ -26,7 +26,7 @@
 ;; Type is defined in rep-utils.rkt
 
 ;; t must be a Type
-(dt Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])
+(def-type Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])
 
 (define (scope-depth k)
   (flat-named-contract 
@@ -39,29 +39,29 @@
      (f k sc))))
 
 ;; this is ONLY used when a type error ocurrs
-(dt Error () [#:frees #f] [#:fold-rhs #:base])
+(def-type Error () [#:frees #f] [#:fold-rhs #:base])
 
 ;; de Bruijn indexes - should never appear outside of this file
 ;; bound type variables
 ;; i is an nat
-(dt B ([i natural-number/c]) [#:frees #f] [#:fold-rhs #:base])
+(def-type B ([i natural-number/c]) [#:frees #f] [#:fold-rhs #:base])
 
 ;; free type variables
 ;; n is a Name
-(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
+(def-type F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
 
 ;; id is an Identifier
-(dt Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
+(def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
-(dt App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
-    [#:intern (list rator rands)]
-    [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
-    [#:fold-rhs (*App (type-rec-id rator)
-                      (map type-rec-id rands)
-                      stx)])
+(def-type App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
+  [#:intern (list rator rands)]
+  [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
+  [#:fold-rhs (*App (type-rec-id rator)
+                    (map type-rec-id rands)
+                    stx)])
 
 (define (get-variances t num-rands)
   (match t
@@ -90,53 +90,54 @@
     [(Contravariant) (flip-variances tbl)]))
 
 ;; left and right are Types
-(dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
+(def-type Pair ([left Type/c] [right Type/c]) [#:key 'pair])
 
 ;; dotted list -- after expansion, becomes normal Pair-based list type
-(dt ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (if (symbol? dbound)
-                 (hash-remove (free-vars* dty) dbound)
-                 (free-vars* dty))
-             (if (symbol? dbound)
-                 (combine-frees (list (make-immutable-hasheq (list (cons dbound Covariant))) (free-idxs* dty)))
-                 (free-idxs* dty))]
-    [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
+(def-type ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
+  [#:frees (if (symbol? dbound)
+               (hash-remove (free-vars* dty) dbound)
+               (free-vars* dty))
+           (if (symbol? dbound)
+               (combine-frees (list (make-immutable-hasheq (list (cons dbound Covariant))) (free-idxs* dty)))
+               (free-idxs* dty))]
+  [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
 
 ;; *mutable* pairs - distinct from regular pairs
 ;; left and right are Types
-(dt MPair ([left Type/c] [right Type/c])     
-    [#:frees (λ (f) (make-invariant (combine-frees (list (f left) (f right)))))]
-    [#:key 'mpair])
+(def-type MPair ([left Type/c] [right Type/c])
+  [#:frees (λ (f) (make-invariant (combine-frees (list (f left) (f right)))))]
+  [#:key 'mpair])
 
 
 ;; elem is a Type
-(dt Vector ([elem Type/c]) 
-    [#:frees (λ (f) (make-invariant (f elem)))]
-    [#:key 'vector])
+(def-type Vector ([elem Type/c])
+  [#:frees (λ (f) (make-invariant (f elem)))]
+  [#:key 'vector])
 
 ;; elems are all Types
-(dt HeterogenousVector ([elems (listof Type/c)])
-    [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
-    [#:key 'vector]
-    [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
+(def-type HeterogenousVector ([elems (listof Type/c)])
+  [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
+  [#:key 'vector]
+  [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
 
 ;; elem is a Type
-(dt Box ([elem Type/c]) 
-    [#:frees (λ (f) (make-invariant (f elem)))]
-    [#:key 'box])  
+(def-type Box ([elem Type/c])
+  [#:frees (λ (f) (make-invariant (f elem)))]
+  [#:key 'box])
 
 ;; elem is a Type
-(dt Channel ([elem Type/c])
-    [#:frees (λ (f) (make-invariant (f elem)))]
-    [#:key 'channel])
+(def-type Channel ([elem Type/c])
+  [#:frees (λ (f) (make-invariant (f elem)))]
+  [#:key 'channel])
 
 ;; elem is a Type
-(dt Ephemeron ([elem Type/c])
-    [#:key 'ephemeron])
+(def-type Ephemeron ([elem Type/c])
+  [#:key 'ephemeron])
 
 
 ;; elem is a Type
-(dt Set      ([elem Type/c]) [#:key 'set])
+(def-type Set ([elem Type/c])
+  [#:key 'set])
 
 
 ;; name is a Symbol (not a Name)
@@ -147,130 +148,130 @@
 ;; marshaled has to be a syntax object that refers to the base type
 ;; being created. this allows us to avoid reconstructing the base type
 ;; when using it from its marshaled representation
-(dt Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?])
-    [#:frees #f] [#:fold-rhs #:base] [#:intern name]
-    [#:key (case name
-	     [(Number Integer) 'number]
-	     [(Boolean) 'boolean]
-	     [(String) 'string]
-	     [(Symbol) 'symbol]
-             [(Keyword) 'keyword]
-	     [else #f])])
+(def-type Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?])
+  [#:frees #f] [#:fold-rhs #:base] [#:intern name]
+  [#:key (case name
+           [(Number Integer) 'number]
+           [(Boolean) 'boolean]
+           [(String) 'string]
+           [(Symbol) 'symbol]
+           [(Keyword) 'keyword]
+           [else #f])])
 
 ;; body is a Scope
-(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (λ (f) (f body))]
-    [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
-    [#:key (Type-key body)])
+(def-type Mu ([body (scope-depth 1)]) #:no-provide [#:frees (λ (f) (f body))]
+  [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
+  [#:key (Type-key body)])
 
 ;; n is how many variables are bound here
 ;; body is a Scope
-(dt Poly (n body) #:no-provide 
-    [#:contract (->i ([n natural-number/c]
-                      [body (n) (scope-depth n)])
-                     (#:syntax [stx (or/c #f syntax?)])
-                     [result Poly?])]
-    [#:frees (λ (f) (f body))]
-    [#:fold-rhs (let ([body* (remove-scopes n body)])
-                  (*Poly n (add-scopes n (type-rec-id body*))))]
-    [#:key (Type-key body)])
+(def-type Poly (n body) #:no-provide
+  [#:contract (->i ([n natural-number/c]
+                    [body (n) (scope-depth n)])
+                   (#:syntax [stx (or/c #f syntax?)])
+                   [result Poly?])]
+  [#:frees (λ (f) (f body))]
+  [#:fold-rhs (let ([body* (remove-scopes n body)])
+                (*Poly n (add-scopes n (type-rec-id body*))))]
+  [#:key (Type-key body)])
 
 ;; n is how many variables are bound here
 ;; there are n-1 'normal' vars and 1 ... var
 ;; body is a Scope
-(dt PolyDots (n body) #:no-provide
-    [#:contract (->i ([n natural-number/c]
-                      [body (n) (scope-depth n)])
-                     (#:syntax [stx (or/c #f syntax?)])
-                     [result PolyDots?])]
-    [#:key (Type-key body)]
-    [#:frees (λ (f) (f body))]
-    [#:fold-rhs (let ([body* (remove-scopes n body)])
-                  (*PolyDots n (add-scopes n (type-rec-id body*))))])
+(def-type PolyDots (n body) #:no-provide
+  [#:contract (->i ([n natural-number/c]
+                    [body (n) (scope-depth n)])
+                   (#:syntax [stx (or/c #f syntax?)])
+                   [result PolyDots?])]
+  [#:key (Type-key body)]
+  [#:frees (λ (f) (f body))]
+  [#:fold-rhs (let ([body* (remove-scopes n body)])
+                (*PolyDots n (add-scopes n (type-rec-id body*))))])
 
 ;; pred : identifier
 ;; cert : syntax certifier
-(dt Opaque ([pred identifier?] [cert procedure?]) 
-    [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
+(def-type Opaque ([pred identifier?] [cert procedure?])
+  [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
 ;; kw : keyword?
 ;; ty : Type
 ;; required? : Boolean
-(dt Keyword ([kw keyword?] [ty Type/c] [required? boolean?])
-    [#:frees (λ (f) (f ty))]
-    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
+(def-type Keyword ([kw keyword?] [ty Type/c] [required? boolean?])
+  [#:frees (λ (f) (f ty))]
+  [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
 
-(dt Result ([t Type/c] [f FilterSet?] [o Object?])
-    [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
-    [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
+(def-type Result ([t Type/c] [f FilterSet?] [o Object?])
+  [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
+  [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
 
-(dt Values ([rs (listof Result?)]) 
-    [#:frees (λ (f) (combine-frees (map f rs)))]
-    [#:fold-rhs (*Values (map type-rec-id rs))])
+(def-type Values ([rs (listof Result?)])
+  [#:frees (λ (f) (combine-frees (map f rs)))]
+  [#:fold-rhs (*Values (map type-rec-id rs))])
 
-(dt ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (if (symbol? dbound)
-                 (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
-                 (combine-frees (map free-vars* (cons dty rs))))
-             (if (symbol? dbound)
-                 (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant))) 
-                                      (map free-idxs* (cons dty rs))))
-                 (combine-frees (map free-idxs* (cons dty rs))))]
-    [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
+(def-type ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
+  [#:frees (if (symbol? dbound)
+               (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
+               (combine-frees (map free-vars* (cons dty rs))))
+           (if (symbol? dbound)
+               (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant)))
+                                    (map free-idxs* (cons dty rs))))
+               (combine-frees (map free-idxs* (cons dty rs))))]
+  [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
 ;; arr is NOT a Type
-(dt arr ([dom (listof Type/c)] 
-         [rng (or/c Values? ValuesDots?)]
-         [rest (or/c #f Type/c)] 
-         [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
-         [kws (listof Keyword?)])
-    [#:intern (list dom rng rest drest kws)]
-    [#:frees (combine-frees 
-              (append (map (compose flip-variances free-vars*) 
-                           (append (if rest (list rest) null)
-                                   (map Keyword-ty kws)
-                                   dom))
-                      (match drest
-                        [(cons t (? symbol? bnd))
-                         (list (hash-remove (flip-variances (free-vars* t)) bnd))]
-                        [(cons t _)
-                         (list (flip-variances (free-vars* t)))]
-                        [_ null])
-                      (list (free-vars* rng))))
-             (combine-frees 
-              (append (map (compose flip-variances free-idxs*) 
-                           (append (if rest (list rest) null)
-                                   (map Keyword-ty kws)
-                                   dom))
-                      (match drest
-                        [(cons t (? symbol? bnd))
-                         (list (make-immutable-hasheq (list (cons bnd Contravariant)))
-                               (flip-variances (free-idxs* t)))]
-                        [(cons t _)
-                         (list (flip-variances (free-idxs* t)))]
-                        [_ null])
-                      (list (free-idxs* rng))))]
-    [#:fold-rhs (*arr (map type-rec-id dom)
-                      (type-rec-id rng)
-                      (and rest (type-rec-id rest))
-                      (and drest (cons (type-rec-id (car drest)) (cdr drest)))
-                      (map type-rec-id kws))])
+(def-type arr ([dom (listof Type/c)]
+               [rng (or/c Values? ValuesDots?)]
+               [rest (or/c #f Type/c)]
+               [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
+               [kws (listof Keyword?)])
+  [#:intern (list dom rng rest drest kws)]
+  [#:frees (combine-frees
+            (append (map (compose flip-variances free-vars*)
+                         (append (if rest (list rest) null)
+                                 (map Keyword-ty kws)
+                                 dom))
+                    (match drest
+                      [(cons t (? symbol? bnd))
+                       (list (hash-remove (flip-variances (free-vars* t)) bnd))]
+                      [(cons t _)
+                       (list (flip-variances (free-vars* t)))]
+                      [_ null])
+                    (list (free-vars* rng))))
+           (combine-frees
+            (append (map (compose flip-variances free-idxs*)
+                         (append (if rest (list rest) null)
+                                 (map Keyword-ty kws)
+                                 dom))
+                    (match drest
+                      [(cons t (? symbol? bnd))
+                       (list (make-immutable-hasheq (list (cons bnd Contravariant)))
+                             (flip-variances (free-idxs* t)))]
+                      [(cons t _)
+                       (list (flip-variances (free-idxs* t)))]
+                      [_ null])
+                    (list (free-idxs* rng))))]
+  [#:fold-rhs (*arr (map type-rec-id dom)
+                    (type-rec-id rng)
+                    (and rest (type-rec-id rest))
+                    (and drest (cons (type-rec-id (car drest)) (cdr drest)))
+                    (map type-rec-id kws))])
 
 ;; top-arr is the supertype of all function types
-(dt top-arr () [#:fold-rhs #:base])
+(def-type top-arr () [#:fold-rhs #:base])
 
 (define arr/c (or/c top-arr? arr?))
 
 ;; arities : Listof[arr]
-(dt Function ([arities (listof arr/c)])
-    [#:key 'procedure]
-    [#:frees (λ (f) (combine-frees (map f arities)))]
-    [#:fold-rhs (*Function (map type-rec-id arities))])
+(def-type Function ([arities (listof arr/c)])
+  [#:key 'procedure]
+  [#:frees (λ (f) (combine-frees (map f arities)))]
+  [#:fold-rhs (*Function (map type-rec-id arities))])
 
 
-(dt fld ([t Type/c] [acc identifier?] [mutable? boolean?])
-    [#:frees (λ (f) (if mutable? (make-invariant (f t)) (f t)))]
-    [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
-    [#:intern (list t (hash-id acc) mutable?)])
+(def-type fld ([t Type/c] [acc identifier?] [mutable? boolean?])
+  [#:frees (λ (f) (if mutable? (make-invariant (f t)) (f t)))]
+  [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
+  [#:intern (list t (hash-id acc) mutable?)])
 
 ;; name : symbol
 ;; parent : Struct
@@ -281,128 +282,128 @@
 ;; cert : syntax certifier for pred-id
 ;; acc-ids : names of the accessors
 ;; maker-id : name of the constructor
-(dt Struct ([name symbol?]
-            [parent (or/c #f Struct? Name?)]
-            [flds (listof fld?)]
-            [proc (or/c #f Function?)]
-            [poly? (or/c #f (listof symbol?))]
-            [pred-id identifier?]
-            [cert procedure?]
-            [maker-id identifier?])
-    [#:intern (list name parent flds proc)]
-    [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
-                                                           (if parent (list parent) null)                                                     
-                                                           flds))))]
-    [#:fold-rhs (*Struct name 
-                         (and parent (type-rec-id parent))
-                         (map type-rec-id flds)
-                         (and proc (type-rec-id proc))
-                         poly?
-                         pred-id
-                         cert
-                         maker-id)]
-    [#:key 'struct])
+(def-type Struct ([name symbol?]
+                  [parent (or/c #f Struct? Name?)]
+                  [flds (listof fld?)]
+                  [proc (or/c #f Function?)]
+                  [poly? (or/c #f (listof symbol?))]
+                  [pred-id identifier?]
+                  [cert procedure?]
+                  [maker-id identifier?])
+  [#:intern (list name parent flds proc)]
+  [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
+                                                (if parent (list parent) null)
+                                                flds))))]
+  [#:fold-rhs (*Struct name
+                       (and parent (type-rec-id parent))
+                       (map type-rec-id flds)
+                       (and proc (type-rec-id proc))
+                       poly?
+                       pred-id
+                       cert
+                       maker-id)]
+  [#:key 'struct])
 
 ;; A structure type descriptor
 ;; s : struct
-(dt StructType ([s Struct?]) [#:key 'struct-type])
+(def-type StructType ([s Struct?]) [#:key 'struct-type])
 
 ;; the supertype of all of these values
-(dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
-(dt ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
-(dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
-(dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
-(dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
-(dt StructTop ([name Struct?]) [#:key 'struct])
+(def-type BoxTop () [#:fold-rhs #:base] [#:key 'box])
+(def-type ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
+(def-type VectorTop () [#:fold-rhs #:base] [#:key 'vector])
+(def-type HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
+(def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
+(def-type StructTop ([name Struct?]) [#:key 'struct])
 
 ;; v : Scheme Value
-(dt Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
-							    [(boolean? v) 'boolean]
-							    [(null? v) 'null]
-							    [else #f])])
+(def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
+                                                                  [(boolean? v) 'boolean]
+                                                                  [(null? v) 'null]
+                                                                  [else #f])])
 
 ;; elems : Listof[Type]
-(dt Union ([elems (and/c (listof Type/c)                         
-                         (lambda (es)
-                           (or (null? es)
-                               (let-values ([(sorted? k)
-                                             (for/fold ([sorted? #t]
-                                                        [last (car es)])
-                                               ([e (cdr es)])
-                                               (values
-                                                (and sorted? (type<? last e))
-                                                e))])
-                                 sorted?))))]) 
-    [#:frees (λ (f) (combine-frees (map f elems)))]
-    [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
-    [#:key (let loop ([res null] [ts elems])
-             (if (null? ts) res
-                 (let ([k (Type-key (car ts))])
-                   (cond [(pair? k) (loop (append k res) (cdr ts))]
-                         [k (loop (cons k res) (cdr ts))]
-                         [else #f]))))])
-    
-(dt Univ () [#:frees #f] [#:fold-rhs #:base])
+(def-type Union ([elems (and/c (listof Type/c)
+                               (lambda (es)
+                                 (or (null? es)
+                                     (let-values ([(sorted? k)
+                                                   (for/fold ([sorted? #t]
+                                                              [last (car es)])
+                                                       ([e (cdr es)])
+                                                     (values
+                                                      (and sorted? (type<? last e))
+                                                      e))])
+                                       sorted?))))])
+  [#:frees (λ (f) (combine-frees (map f elems)))]
+  [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
+  [#:key (let loop ([res null] [ts elems])
+           (if (null? ts) res
+               (let ([k (Type-key (car ts))])
+                 (cond [(pair? k) (loop (append k res) (cdr ts))]
+                       [k (loop (cons k res) (cdr ts))]
+                       [else #f]))))])
+
+(def-type Univ () [#:frees #f] [#:fold-rhs #:base])
 
 ;; in : Type
 ;; out : Type
-(dt Param ([in Type/c] [out Type/c]) 
-    [#:key 'parameter]
-    [#:frees (λ (f) (combine-frees (list (f out) (flip-variances (f in)))))])
+(def-type Param ([in Type/c] [out Type/c])
+  [#:key 'parameter]
+  [#:frees (λ (f) (combine-frees (list (f out) (flip-variances (f in)))))])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
-    [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
+(def-type Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
+  [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
 ;; parent : Type
 ;; pred : Identifier
 ;; cert : Certifier
-(dt Refinement (parent pred cert)
-    [#:key (Type-key parent)]
-    [#:intern (list parent (hash-id pred))]
-    [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
-    [#:frees (λ (f) (f parent))])
-    
+(def-type Refinement (parent pred cert)
+  [#:key (Type-key parent)]
+  [#:intern (list parent (hash-id pred))]
+  [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
+  [#:frees (λ (f) (f parent))])
+
 
 ;; t : Type
-(dt Syntax ([t Type/c]) [#:key 'syntax])
+(def-type Syntax ([t Type/c]) [#:key 'syntax])
 
 ;; pos-flds  : (Listof Type)
 ;; name-flds : (Listof (Tuple Symbol Type Boolean))
 ;; methods   : (Listof (Tuple Symbol Function))
-(dt Class ([pos-flds (listof Type/c)]
-           [name-flds (listof (list/c symbol? Type/c boolean?))]
-           [methods (listof (list/c symbol? Function?))])
-    [#:frees (λ (f) (combine-frees
-                     (map f (append pos-flds 
-                                    (map cadr name-flds)
-                                    (map cadr methods)))))]
-    [#:key 'class]
-    [#:fold-rhs (match (list pos-flds name-flds methods)
-                  [(list
-                    pos-tys 
-                    (list (list init-names init-tys reqd) ___)
-                    (list (list mname mty) ___))
-                   (*Class
-                    (map type-rec-id pos-tys)
-                    (map list
-                         init-names
-                         (map type-rec-id init-tys)
-                         reqd)
-                    (map list mname (map type-rec-id mty)))])])
+(def-type Class ([pos-flds (listof Type/c)]
+                 [name-flds (listof (list/c symbol? Type/c boolean?))]
+                 [methods (listof (list/c symbol? Function?))])
+  [#:frees (λ (f) (combine-frees
+                   (map f (append pos-flds
+                                  (map cadr name-flds)
+                                  (map cadr methods)))))]
+  [#:key 'class]
+  [#:fold-rhs (match (list pos-flds name-flds methods)
+                [(list
+                  pos-tys
+                  (list (list init-names init-tys reqd) ___)
+                  (list (list mname mty) ___))
+                 (*Class
+                  (map type-rec-id pos-tys)
+                  (map list
+                       init-names
+                       (map type-rec-id init-tys)
+                       reqd)
+                  (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
-(dt Instance ([cls Type/c]) [#:key 'instance])
+(def-type Instance ([cls Type/c]) [#:key 'instance])
 
 ;; sequences
 ;; includes lists, vectors, etc
 ;; tys : sequence produces this set of values at each step
-(dt Sequence ([tys (listof Type/c)])
-    [#:frees (λ (f) (combine-frees (map f tys)))]
-    [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
+(def-type Sequence ([tys (listof Type/c)])
+  [#:frees (λ (f) (combine-frees (map f tys)))]
+  [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
 
-(dt Future ([t Type/c]) [#:key 'future])
+(def-type Future ([t Type/c]) [#:key 'future])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

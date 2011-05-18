@@ -226,10 +226,10 @@
                                     '(i.kw ...)))
                          (list i.ht ...))))))]))
 
-(make-prim-type [Type dt #:Type type-case print-type* type-name-ht type-rec-id #:key]
-                [Filter df #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
-                [Object do #:Object object-case print-object* object-name-ht object-rec-id]
-                [PathElem dpe #:PathElem pathelem-case print-pathelem* pathelem-name-ht pathelem-rec-id])
+(make-prim-type [Type def-type #:Type type-case print-type* type-name-ht type-rec-id #:key]
+                [Filter def-filter #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
+                [Object def-object #:Object object-case print-object* object-name-ht object-rec-id]
+                [PathElem def-pathelem #:PathElem pathelem-case print-pathelem* pathelem-name-ht pathelem-rec-id])
 
 (provide PathElem? (rename-out [Rep-seq Type-seq]
                                [Rep-free-vars free-vars*]
