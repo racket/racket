@@ -35,7 +35,7 @@
   (define toolbar%
     (class mred:canvas%
       (inherit min-height stretchable-height get-dc)
-      (init [style '()])
+      (init parent [style '()])
       (private-field
        [margin 2]
        [icon-size 16]
@@ -130,7 +130,7 @@
 			   #f))))])
 	    (hash-table-put! icons name icon)
 	    (set! tools (append tools (list (make-tool icon cb #f))))))])
-      (super-new [style (cons 'no-focus style)])
+      (super-new [parent parent] [style (cons 'no-focus style)])
       (min-height (+ icon-size (* margin 2)))
       (stretchable-height #f)))
 
