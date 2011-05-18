@@ -96,3 +96,26 @@
                                                  "file not found in any parent directory"
                                                  stx ps)))))))])
          (syntax/loc stx (combine-in paths ...))))]))
+
+(provide sub-in)
+(define-require-syntax (sub-in stx)
+  (syntax-case stx ()
+    [(_ dir files ...)
+     (or (andmap (lambda (f) ; directory + all files
+                   (let ([s (syntax-e f)]) (and (string? s) (module-path? s))))
+                 (syntax->list #'(files ...)))
+         (andmap (lambda (f) (symbol? (syntax-e f))) ; collects path
+                 (syntax->list #'(files ...))))
+     (let ([dir (syntax-e #'dir)])
+       (with-syntax
+           ([(paths ...)
+             (map (lambda (f)
+                    (datum->syntax
+                     stx (if (string? dir)
+                             (string-append dir "/" (syntax-e f))
+                             (string->symbol
+                              (string-append (symbol->string dir) "/"
+                                             (symbol->string (syntax-e f)))))
+                     stx stx))
+                  (syntax->list #'(files ...)))])
+         (syntax/loc stx (combine-in paths ...))))]))
