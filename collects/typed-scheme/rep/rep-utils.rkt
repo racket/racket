@@ -192,30 +192,19 @@
                    [_ error-msg]))))])))
 
 
-(define-syntax (make-prim-type stx)    
-  (define-syntax-class type-name-base
-    #:attributes (i d-id key? (fld-names 1))
-    #:transparent
-    (pattern [i:id (~optional (~and #:key
-                                    (~bind [key? #'#t]
-                                           [(fld-names 1) (list #'key)]))
-                              #:defaults ([key? #'#f]
-                                          [(fld-names 1) null]))
-                   #:d d-id:id]))
+(define-syntax (make-prim-type stx)
   (define-syntax-class type-name
+    #:attributes (name d-id key? (fld-names 1) case printer ht rec-id kw pred? (accs 1))
     #:transparent
-    #:auto-nested-attributes
-    (pattern :type-name-base
-             #:with lower-s (string->symbol (string-downcase (symbol->string (syntax-e #'i))))
-             #:with name #'i
-             #:with keyword (string->keyword (symbol->string (syntax-e #'i)))
-             #:with tmp-rec-id (generate-temporary)
-             #:with case (format-id #'i "~a-case" #'lower-s)
-             #:with printer (format-id #'i "print-~a*" #'lower-s)
-             #:with ht (format-id #'i "~a-name-ht" #'lower-s)
-             #:with rec-id (format-id #'i "~a-rec-id" #'lower-s)
+    (pattern [name:id
+              d-id:id kw:keyword case:id printer:id ht:id rec-id:id
+              (~optional (~and #:key
+                               (~bind [key? #'#t]
+                                      [(fld-names 1) (list #'key)]))
+                         #:defaults ([key? #'#f]
+                                     [(fld-names 1) null]))]
              #:with (_ _ pred? accs ...)
-                    (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name)))
+             (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name)))
   (syntax-parse stx
     [(_ i:type-name ...)
      #'(begin
@@ -234,13 +223,13 @@
                            (mk-fold ht 
                                     (car rec-ids)
                                     rec-ids
-                                    '(i.keyword ...)))
+                                    '(i.kw ...)))
                          (list i.ht ...))))))]))
 
-(make-prim-type [Type #:key #:d dt]
-                [Filter #:d df]
-                [Object #:d do] 
-                [PathElem #:d dpe])
+(make-prim-type [Type dt #:Type type-case print-type* type-name-ht type-rec-id #:key]
+                [Filter df #:Filter filter-case print-filter* filter-name-ht filter-rec-id]
+                [Object do #:Object object-case print-object* object-name-ht object-rec-id]
+                [PathElem dpe #:PathElem pathelem-case print-pathelem* pathelem-name-ht pathelem-rec-id])
 
 (provide PathElem? (rename-out [Rep-seq Type-seq]
                                [Rep-free-vars free-vars*]
