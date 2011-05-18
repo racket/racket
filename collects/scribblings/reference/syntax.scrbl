@@ -1161,6 +1161,12 @@ but then sub-directories that are called
 @filepath{utils} override the one in the project's root.
 In other words, the previous method requires only a single unique name.}
 
+@defform[(sub-in parent child ...)]{
+Specifies multiple files to be required from directory
+@racket[parent] relative to the current directory, or from
+subcollects @racket[child] in collect @racket[parent].
+}
+
 @; --------------------
 
 @subsection{Additional @racket[provide] Forms}
