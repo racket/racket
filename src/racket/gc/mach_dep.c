@@ -176,9 +176,10 @@ void GC_with_callee_saves_pushed(void (*fn)(ptr_t, void *),
 #   if defined(HAVE_PUSH_REGS)
       GC_push_regs();
 #   elif defined(UNIX_LIKE) && !defined(DARWIN) && !defined(ARM32) && \
-	 !defined(HURD) && !defined(OPENBSD)
+	 !defined(HURD) && !defined(OPENBSD) && !defined(__UCLIBC__)
       /* Older versions of Darwin seem to lack getcontext(). */
       /* ARM Linux often doesn't support a real getcontext(). */
+      /* uClibc doesn't support getcontext(), at least as of Mar 2011. */
       ucontext_t ctxt;
       if (getcontext(&ctxt) < 0)
 	ABORT ("Getcontext failed: Use another register retrieval method?");
