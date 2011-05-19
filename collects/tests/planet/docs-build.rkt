@@ -43,7 +43,7 @@
 
 (define failed?
   (or (not res)
-      (regexp-match #rx"error" (get-output-string sp))))
+      (regexp-match #rx"error running" (get-output-string sp))))
 
 (remove-hard-link "planet" "docs-test.plt" 1 0)
 

@@ -1584,6 +1584,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   a[0] = scheme_places_deep_copy(place_data->current_library_collection_paths);
   scheme_current_library_collection_paths(1, a);
+  scheme_seal_parameters();
 
   a[0] = scheme_places_deep_copy(place_data->module);
   a[1] = scheme_places_deep_copy(place_data->function);
