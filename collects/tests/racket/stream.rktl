@@ -21,4 +21,10 @@
                                    (stream-cons (let loop () (loop)) 
                                                 empty)))
 
+(test #t stream-empty? (sequence->stream (in-producer void (void))))
+(test #t stream-empty? (sequence->stream (in-port read-byte (open-input-string ""))))
+
+(test "hello" stream-first (sequence->stream (in-producer (lambda () "hello") (void))))
+(test 65 stream-first (sequence->stream (in-port read-byte (open-input-string "A"))))
+
 (report-errs)

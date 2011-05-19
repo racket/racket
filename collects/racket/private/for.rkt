@@ -1062,7 +1062,7 @@
                       (set! vals (call-with-values (lambda () (pos->val pos)) list))
                       (unless (if pre-cont? (apply pre-cont? vals) #t)
                         (set! vals #f)
-                        (set! empty? #f)))
+                        (set! empty? #t)))
                     (set! empty? #t))
                 (set! done? #t)))
             (make-do-stream (lambda () (force!) empty?)
