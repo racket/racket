@@ -1,11 +1,16 @@
 #;
 (
-precision-loss.rkt 16:3 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 16:0 (#%app + (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
-precision-loss.rkt 20:3 (#%app - (quote 3/4)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 20:0 (#%app + (#%app - (quote 3/4)) (quote 2.0))
+precision-loss.rkt 21:3 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 21:0 (#%app + (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
+precision-loss.rkt 25:3 (#%app - (quote 3/4)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 25:0 (#%app + (#%app - (quote 3/4)) (quote 2.0))
+precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:11 (quote 3/4)
+precision-loss.rkt 33:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:8 (#%app * (quote 3/4) (quote 2/3))
+precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 33:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
+precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:11 (quote 3/4)
 2.5
 2.75
 1.25
 2.5
+1.0
  )
 
 #lang typed/racket
@@ -20,4 +25,10 @@ precision-loss.rkt 20:3 (#%app - (quote 3/4)) -- exact arithmetic subexpression 
 (+ (- 3/4) ; should work on unary exprs too
    2.0)
 (+ (vector-ref '#(2/3 1/2 3/4) (assert (+ 1/4 3/4) exact-integer?)) ; and this is not an arith expr
+   2.0)
+
+;; in this case, the return type is Real, so we can't optimize
+;; however, given that the return _value_ will be a float, the precision
+;; is thrown away nonetheless, so a warning is warranted
+(* (ann (* 3/4 2/3) Real)
    2.0)
