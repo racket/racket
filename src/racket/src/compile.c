@@ -1901,7 +1901,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       if (!scheme_env_check_reset_any_use(env)
           && !scheme_might_invoke_call_cc(ce))
         SCHEME_CLV_FLAGS(lv) |= SCHEME_CLV_NO_GROUP_USES;
-      else if (!scheme_env_min_use_below(env, lv->position))
+      if (!scheme_env_min_use_below(env, lv->position))
         SCHEME_CLV_FLAGS(lv) |= SCHEME_CLV_NO_GROUP_LATER_USES;
     }
   }

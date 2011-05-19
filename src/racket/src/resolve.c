@@ -72,7 +72,6 @@ static void resolve_info_set_toplevel_pos(Resolve_Info *info, int pos);
 static void merge_resolve_tl_map(Resolve_Info *info, Resolve_Info *new_info);
 static Scheme_Object *resolve_generate_stub_lift(void);
 static int resolve_toplevel_pos(Resolve_Info *info);
-static int resolve_is_toplevel_available(Resolve_Info *info);
 static int resolve_quote_syntax_offset(int i, Resolve_Info *info);
 static int resolve_quote_syntax_pos(Resolve_Info *info);
 static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready);
@@ -80,6 +79,8 @@ static Scheme_Object *resolve_invent_toplevel(Resolve_Info *info);
 static Scheme_Object *resolve_invented_toplevel_to_defn(Resolve_Info *info, Scheme_Object *tl);
 static Scheme_Object *shift_toplevel(Scheme_Object *expr, int delta);
 static int resolving_in_procedure(Resolve_Info *info);
+static int is_nonconstant_procedure(Scheme_Object *data, Resolve_Info *info, int skip);
+static int resolve_is_inside_proc(Resolve_Info *info);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -855,6 +856,8 @@ static Scheme_Object *drop_zero_value_return(Scheme_Object *expr)
   return NULL;
 }
 
+#define NUM_SKIPS_FAST 5
+
 Scheme_Object *
 scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 {
@@ -864,9 +867,9 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   Scheme_Let_Value *lv, *last = NULL;
   Scheme_Object *first = NULL, *body, *last_body = NULL, *last_seq = NULL;
   Scheme_Letrec *letrec;
-  mzshort *skips, skips_fast[5];
-  char *flonums, flonums_fast[5];
-  Scheme_Object **lifted, *lifted_fast[5], *boxes;
+  mzshort *skips, skips_fast[NUM_SKIPS_FAST];
+  char *flonums, flonums_fast[NUM_SKIPS_FAST];
+  Scheme_Object **lifted, *lifted_fast[NUM_SKIPS_FAST], *boxes;
   int i, pos, opos, rpos, recbox, num_rec_procs = 0, extra_alloc;
   int rec_proc_nonapply = 0;
   int max_let_depth = 0;
@@ -922,7 +925,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
             if (recbox)
               break;
 
-            if (scheme_is_compiled_procedure(clv->value, 0, 0)) {
+            if (is_nonconstant_procedure(clv->value, info, head->count)) {
               num_rec_procs++;
               if (!(clv->flags[0] & SCHEME_WAS_ONLY_APPLIED))
                 rec_proc_nonapply = 1;
@@ -960,7 +963,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       }
 
       j = head->num_clauses;
-      if (j <= 5) {
+      if (j <= NUM_SKIPS_FAST) {
 	skips = skips_fast; 
         lifted = lifted_fast;
 	flonums = flonums_fast; 
@@ -1181,8 +1184,8 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   linfo = 0;
   for (resolve_phase = ((num_rec_procs && !rec_proc_nonapply) ? 0 : 2); resolve_phase < 3; resolve_phase++) {
 
-    /* Don't try plain lifting if top level is not available: */
-    if ((resolve_phase == 1) && !resolve_is_toplevel_available(info))
+    /* Don't try plain lifting if we're not inside a proc: */
+    if ((resolve_phase == 1) && !resolve_is_inside_proc(info))
       resolve_phase = 2;
 
     if (resolve_phase < 2) {
@@ -1221,7 +1224,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           skip = 0;
           if (num_rec_procs 
               && (clv->count == 1)
-              && scheme_is_compiled_procedure(clv->value, 0, 0)) {
+              && is_nonconstant_procedure(clv->value, info, head->count)) {
             if (resolve_phase == 0) {
               lift = scheme_resolve_generate_stub_closure();
               lifted_recs[rpos] = lift;
@@ -1268,14 +1271,14 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           if ((clv->count == 1) && !(clv->flags[0] & SCHEME_WAS_USED)) {
             /* skipped */
           } else if ((clv->count == 1)
-                     && scheme_is_compiled_procedure(clv->value, 0, 0)) {
+                     && is_nonconstant_procedure(clv->value, info, head->count)) {
             Scheme_Object *lift, *old_lift;
             int old_convert_count;
 
             old_lift = lifted_recs[rpos];
             old_convert_count = get_convert_arg_count(old_lift);
 
-            lift = resolve_closure_compilation(clv->value, val_linfo, 1, 1, 1, 
+            lift = resolve_closure_compilation(clv->value, val_linfo, 1, 1, 1,
                                                (resolve_phase ? NULL : old_lift));
 
             if (is_closed_reference(lift)
@@ -1315,7 +1318,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           opos = clv->position;
           if ((clv->count == 1) && !(clv->flags[0] & SCHEME_WAS_USED)) {
             /* skipped */
-          } else if ((clv->count == 1) && scheme_is_compiled_procedure(clv->value, 0, 0)) {
+          } else if ((clv->count == 1) && is_nonconstant_procedure(clv->value, info, head->count)) {
             Scheme_Object *lift;
             lift = lifted_recs[rpos];
             if (is_closed_reference(lift)) {
@@ -1372,12 +1375,15 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       if (!clv->value)
         isproc = 1;
       else if (clv->count == 1)
-        isproc = scheme_is_compiled_procedure(clv->value, 0, 0);
+        isproc = is_nonconstant_procedure(clv->value, info, head->count);
       else
         isproc = 0;
       if (num_rec_procs && isproc) {
         if (!lifted_recs) {
           expr = resolve_closure_compilation(clv->value, val_linfo, 0, 0, 0, NULL);
+          if (!SAME_TYPE(SCHEME_TYPE(expr), scheme_unclosed_procedure_type)) {
+            scheme_signal_error("internal error: unexpected empty closure");
+          }
           letrec->procs[rpos++] = expr;
         } else {
           if (!is_closed_reference(lifted_recs[rpos])) {
@@ -1590,6 +1596,40 @@ XFORM_NONGCING static int boxmap_get(mzshort *boxmap, int j, int bit)
     return 1;
   else
     return 0;
+}
+
+static int is_nonconstant_procedure(Scheme_Object *_data, Resolve_Info *info, int skip)
+{
+  /* check whether `data' --- which is in a `letrec' --- can be converted to
+     a constant independent of other bindings in the `letrec' */
+  Scheme_Closure_Data *data;
+  Closure_Info *cl;
+  Scheme_Object *lifted;
+  int i, sz;
+
+  if (SAME_TYPE(SCHEME_TYPE(_data), scheme_compiled_unclosed_procedure_type)) {
+    data = (Scheme_Closure_Data *)_data;
+    sz = data->closure_size;
+
+    cl = (Closure_Info *)data->closure_map;
+    if (cl->has_tl)
+      return 1;
+
+    for (i = 0; i < sz; i++) {
+      if (cl->base_closure_map[i] < skip)
+        return 1;
+      resolve_info_lookup(info, cl->base_closure_map[i] - skip, NULL, &lifted, 0);
+      if (!lifted)
+        return 1;
+      if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
+          || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type))
+        return 1;
+    }
+
+    return 0;
+  }
+
+  return 0;
 }
 
 static Scheme_Object *
@@ -2785,19 +2825,17 @@ static int resolve_toplevel_pos(Resolve_Info *info)
     return info->toplevel_pos + pos;
 }
 
-static int resolve_is_toplevel_available(Resolve_Info *info)
+static int resolve_is_inside_proc(Resolve_Info *info)
 {
   while (info) {
-    if (info->toplevel_pos >= 0)
-      return 1;
     if (info->in_proc)
-      return 0;
+      return 1;
     info = info->next;
   }
 
   return 0;
 }
-
+ 
 static int resolve_quote_syntax_offset(int i, Resolve_Info *info)
 {
   Scheme_Hash_Table *ht;

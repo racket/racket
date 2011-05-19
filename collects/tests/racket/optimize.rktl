@@ -1426,5 +1426,35 @@
         (f 1.0 100)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test against letrec-splitting bug:
+
+(err/rt-test (eval `(begin
+                      (define (T x) 'v)
+                      (let ([A (lambda (x) 'v)]) 
+                        (define (B x) (F))
+                        (define (C x) (A)) ; turns into constant
+                        (define (D x) (D))
+                        (define (E x) (A) (T))
+                        (define (F x) 'v)
+                        (list (C) (E) (D)))))
+             exn:fail:contract:arity?)
+
+(err/rt-test (eval `(begin
+                      (define (T x) 'v)
+                      (let ()
+                        (define (A x) 'v)
+                        (define (B x) 'v)
+                        (define (C x) 'v)
+                        (define (D x) (B))
+                        (define (E x) (H) (E))
+                        (define (F x) (C))
+                        (define (G x) (T))
+                        (define (H x) (A) (T))
+                        (define (I x) 'v)
+                        (H)
+                        (F))))
+             exn:fail:contract:arity?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
