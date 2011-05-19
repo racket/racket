@@ -411,22 +411,22 @@
                 (apply finish options args)
                 (raise-user-error
                  (program-name program)
-                 (format "expects~a on the command line, given ~a argument~a~a"
-                         (if (null? finish-help)
-                           " no arguments"
-                           (let ([s (open-output-string)])
-                             (parameterize ([current-output-port s])
-                               (print-args s finish-help finish))
-                             (let ([s (get-output-string s)])
-                               (if (equal? 2 (procedure-arity finish))
-                                 (format " 1~a" s)
-                                 s))))
-                         c
-                         (cond [(zero? c) "s"] [(= c 1) ": "] [else "s: "])
-                         (let loop ([args args])
-                           (if (null? args)
-                             ""
-                             (string-append (car args) " " (loop (cdr args))))))))))]
+                 "expects~a on the command line, given ~a argument~a~a"
+                 (if (null? finish-help)
+                     " no arguments"
+                     (let ([s (open-output-string)])
+                       (parameterize ([current-output-port s])
+                         (print-args s finish-help finish))
+                       (let ([s (get-output-string s)])
+                         (if (equal? 2 (procedure-arity finish))
+                             (format " 1~a" s)
+                             s))))
+                 c
+                 (cond [(zero? c) "s"] [(= c 1) ": "] [else "s: "])
+                 (let loop ([args args])
+                   (if (null? args)
+                       ""
+                       (string-append (car args) " " (loop (cdr args)))))))))]
          [call-handler
           (lambda (handler flag args r-acc k)
             (let* ([a (procedure-arity handler)]

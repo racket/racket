@@ -521,7 +521,7 @@ Various common pieces of code that both the client and server need to access
                     (display l outport)
                     (newline outport)
                     (flush-output outport))
-                  (planet-log l)
+                  (planet-log "~a" l)
                   (loop)]))))))
       (begin0
         (parameterize ([current-output-port out])
