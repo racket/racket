@@ -1,31 +1,23 @@
 #;
 (
-unboxed-let.rkt 38:14 t1 -- unbox float-complex
-unboxed-let.rkt 38:17 3.0+6.0i -- unboxed literal
-unboxed-let.rkt 38:12 - -- unboxed binary float complex
-unboxed-let.rkt 38:11 (#%app - t1 (quote 3.0+6.0i)) -- unboxed float complex
-unboxed-let.rkt 37:14 1.0+2.0i -- unboxed literal
-unboxed-let.rkt 37:23 2.0+4.0i -- unboxed literal
-unboxed-let.rkt 37:12 + -- unboxed binary float complex
-unboxed-let.rkt 37:0 (let-values (((t1) (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)))) (let-values (((t2) (#%app - t1 (quote 3.0+6.0i)))) (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3)))) -- unboxed let bindings
-unboxed-let.rkt 40:5 t2 -- unbox float-complex
-unboxed-let.rkt 40:8 t3 -- unbox float-complex
-unboxed-let.rkt 40:3 + -- unboxed binary float complex
-unboxed-let.rkt 40:2 (#%app + t2 t3) -- unboxed float complex
-unboxed-let.rkt 38:14 t1 -- leave var unboxed
-unboxed-let.rkt 38:17 3.0+6.0i -- unboxed literal
-unboxed-let.rkt 38:12 - -- unboxed binary float complex
-unboxed-let.rkt 37:0 (let-values (((t2) (#%app - t1 (quote 3.0+6.0i)))) (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3))) -- unboxed let bindings
-unboxed-let.rkt 40:5 t2 -- leave var unboxed
-unboxed-let.rkt 40:8 t3 -- unbox float-complex
-unboxed-let.rkt 40:3 + -- unboxed binary float complex
-unboxed-let.rkt 40:2 (#%app + t2 t3) -- unboxed float complex
-unboxed-let.rkt 39:11 4.0+8.0i -- unboxed literal
-unboxed-let.rkt 37:0 (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3)) -- unboxed let bindings
-unboxed-let.rkt 40:5 t2 -- leave var unboxed
-unboxed-let.rkt 40:8 t3 -- leave var unboxed
-unboxed-let.rkt 40:3 + -- unboxed binary float complex
-unboxed-let.rkt 40:2 (#%app + t2 t3) -- unboxed float complex
+unboxed-let.rkt 30:14 t1 -- unbox float-complex
+unboxed-let.rkt 30:17 3.0+6.0i -- unboxed literal
+unboxed-let.rkt 30:12 - -- unboxed binary float complex
+unboxed-let.rkt 30:11 (#%app - t1 (quote 3.0+6.0i)) -- unboxed float complex
+unboxed-let.rkt 29:14 1.0+2.0i -- unboxed literal
+unboxed-let.rkt 29:23 2.0+4.0i -- unboxed literal
+unboxed-let.rkt 29:12 + -- unboxed binary float complex
+unboxed-let.rkt 29:0 (let-values (((t1) (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i)))) (let-values (((t2) (#%app - t1 (quote 3.0+6.0i)))) (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3)))) -- unboxed let bindings
+unboxed-let.rkt 32:5 t2 -- unbox float-complex
+unboxed-let.rkt 32:8 t3 -- unbox float-complex
+unboxed-let.rkt 32:3 + -- unboxed binary float complex
+unboxed-let.rkt 32:2 (#%app + t2 t3) -- unboxed float complex
+unboxed-let.rkt 30:14 t1 -- leave var unboxed
+unboxed-let.rkt 29:0 (let-values (((t2) (#%app - t1 (quote 3.0+6.0i)))) (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3))) -- unboxed let bindings
+unboxed-let.rkt 32:5 t2 -- leave var unboxed
+unboxed-let.rkt 31:11 4.0+8.0i -- unboxed literal
+unboxed-let.rkt 29:0 (let-values (((t3) (quote 4.0+8.0i))) (#%app + t2 t3)) -- unboxed let bindings
+unboxed-let.rkt 32:8 t3 -- leave var unboxed
 4.0+8.0i
 )
 

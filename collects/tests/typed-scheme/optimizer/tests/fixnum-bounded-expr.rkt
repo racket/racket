@@ -18,8 +18,6 @@ fixnum-bounded-expr.rkt 87:9 + -- fixnum bounded expr
 fixnum-bounded-expr.rkt 87:1 fx+ -- fixnum fx+
 fixnum-bounded-expr.rkt 88:6 + -- fixnum bounded expr
 fixnum-bounded-expr.rkt 88:18 + -- fixnum bounded expr
-fixnum-bounded-expr.rkt 88:6 + -- fixnum bounded expr
-fixnum-bounded-expr.rkt 88:18 + -- fixnum bounded expr
 fixnum-bounded-expr.rkt 90:6 + -- fixnum bounded expr
 fixnum-bounded-expr.rkt 90:18 + -- fixnum bounded expr
 fixnum-bounded-expr.rkt 90:1 fx- -- fixnum fx-
@@ -49,6 +47,8 @@ fixnum-bounded-expr.rkt 99:1 fxabs -- fixnum fxabs
 64235
 4
 )
+
+
 
 #lang typed/racket
 #:optimize

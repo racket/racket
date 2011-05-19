@@ -1,9 +1,8 @@
 #;
 (
-float-promotion.rkt 14:4 modulo -- binary nonzero fixnum
-float-promotion.rkt 14:4 modulo -- binary nonzero fixnum
+float-promotion.rkt 13:4 modulo -- binary nonzero fixnum
+float-promotion.rkt 13:1 + -- binary float
 float-promotion.rkt 14:1 + -- binary float
-float-promotion.rkt 15:1 + -- binary float
 2.0
 1e+200
 )

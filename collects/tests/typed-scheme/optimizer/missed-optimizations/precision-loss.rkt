@@ -1,11 +1,10 @@
 #;
 (
-precision-loss.rkt 21:3 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 21:0 (#%app + (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
-precision-loss.rkt 25:3 (#%app - (quote 3/4)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 25:0 (#%app + (#%app - (quote 3/4)) (quote 2.0))
-precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:11 (quote 3/4)
-precision-loss.rkt 33:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:8 (#%app * (quote 3/4) (quote 2/3))
-precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 33:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
-precision-loss.rkt 33:8 (#%app * (quote 3/4) (quote 2/3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 33:11 (quote 3/4)
+precision-loss.rkt 20:3 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 20:0 (#%app + (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
+precision-loss.rkt 24:3 (#%app - (quote 3/4)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 24:0 (#%app + (#%app - (quote 3/4)) (quote 2.0))
+precision-loss.rkt 32:8 (#%app * (quote 3/4) (quote 2/3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 32:11 (quote 3/4)
+precision-loss.rkt 32:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 32:8 (#%app * (quote 3/4) (quote 2/3))
+precision-loss.rkt 32:8 (#%app * (quote 3/4) (quote 2/3)) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 32:0 (#%app * (#%app * (quote 3/4) (quote 2/3)) (quote 2.0))
 2.5
 2.75
 1.25

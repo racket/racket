@@ -1,22 +1,16 @@
 #;
 (
-unboxed-letrec.rkt 31:5 x -- unbox float-complex
-unboxed-letrec.rkt 31:7 y -- unbox float-complex
-unboxed-letrec.rkt 31:3 + -- unboxed binary float complex
-unboxed-letrec.rkt 31:2 (#%app + x y) -- unboxed float complex
-unboxed-letrec.rkt 31:5 x -- unbox float-complex
-unboxed-letrec.rkt 31:7 y -- unbox float-complex
-unboxed-letrec.rkt 31:3 + -- unboxed binary float complex
-unboxed-letrec.rkt 31:2 (#%app + x y) -- unboxed float complex
-unboxed-letrec.rkt 29:31 1.0+2.0i -- unboxed literal
-unboxed-letrec.rkt 30:34 2.0+4.0i -- unboxed literal
-unboxed-letrec.rkt 30:43 3.0+6.0i -- unboxed literal
-unboxed-letrec.rkt 30:32 + -- unboxed binary float complex
-unboxed-letrec.rkt 28:0 (letrec-values (((f) (lambda (x) (#%app f x))) ((x) (quote 1.0+2.0i)) ((y) (#%app + (quote 2.0+4.0i) (quote 3.0+6.0i)))) (#%app + x y)) -- unboxed let bindings
-unboxed-letrec.rkt 31:5 x -- leave var unboxed
-unboxed-letrec.rkt 31:7 y -- leave var unboxed
-unboxed-letrec.rkt 31:3 + -- unboxed binary float complex
-unboxed-letrec.rkt 31:2 (#%app + x y) -- unboxed float complex
+unboxed-letrec.rkt 25:5 x -- unbox float-complex
+unboxed-letrec.rkt 25:7 y -- unbox float-complex
+unboxed-letrec.rkt 25:3 + -- unboxed binary float complex
+unboxed-letrec.rkt 25:2 (#%app + x y) -- unboxed float complex
+unboxed-letrec.rkt 23:31 1.0+2.0i -- unboxed literal
+unboxed-letrec.rkt 24:34 2.0+4.0i -- unboxed literal
+unboxed-letrec.rkt 24:43 3.0+6.0i -- unboxed literal
+unboxed-letrec.rkt 24:32 + -- unboxed binary float complex
+unboxed-letrec.rkt 22:0 (letrec-values (((f) (lambda (x) (#%app f x))) ((x) (quote 1.0+2.0i)) ((y) (#%app + (quote 2.0+4.0i) (quote 3.0+6.0i)))) (#%app + x y)) -- unboxed let bindings
+unboxed-letrec.rkt 25:5 x -- leave var unboxed
+unboxed-letrec.rkt 25:7 y -- leave var unboxed
 6.0+12.0i
 )
 

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/match racket/match
+(require unstable/match racket/match racket/set
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template scheme/base)
@@ -29,12 +29,19 @@
         (format "~a:~a" line col)
         "(no location)")))
 
+;; we keep track of log entries, to avoid repetitions that would be
+;; caused by traversing the same syntax multiple times (which is not
+;; a problem per se)
+(define log-so-far (set))
 (define (do-logging msg stx)
-  (printf "~a ~a ~a -- ~a\n"
-          (syntax-source-file-name stx)
-          (line+col->string stx)
-          (syntax->datum stx)
-          msg))
+  (let ([new-message (format "~a ~a ~a -- ~a\n"
+                             (syntax-source-file-name stx)
+                             (line+col->string stx)
+                             (syntax->datum stx)
+                             msg)])
+    (unless (set-member? log-so-far new-message)
+      (set! log-so-far (set-add log-so-far new-message))
+      (display new-message))))
 
 (define *log-optimizations?* (in-command-line? "--log-optimizations"))
 (define (log-optimization kind stx)
