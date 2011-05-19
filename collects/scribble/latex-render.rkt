@@ -321,7 +321,8 @@
                         (printf "{}")
                         (for ([i (in-list (multiarg-element-contents e))])
                           (printf "{")
-                          (render-content i part ri)
+                          (parameterize ([rendering-tt (or tt? (rendering-tt))])
+                            (render-content i part ri))
                           (printf "}")))]
                    [else
                     (wrap e style-name tt?)]))]
