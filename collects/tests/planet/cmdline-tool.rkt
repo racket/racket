@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 #|
 
@@ -7,12 +7,12 @@ using 'system' to call out to the tool and then reading its results, etc.
 
 |#
 
-(require scheme/system
+(require racket/system
          planet/config
          net/url)
 
 (define planet-bin-path
-  (simplify-path (build-path (collection-path "scheme") 'up 'up "bin" "planet")))
+  (simplify-path (build-path (collection-path "racket") 'up 'up "bin" "planet")))
 
 (define test-connection-spec '("planet" "test-connection.plt" "1" "0"))
 (define test-connection.plt-cache
@@ -81,16 +81,16 @@ using 'system' to call out to the tool and then reading its results, etc.
 ;;  planet fetch vs planet url
 ;;  
 
-;; NB: this test leaves behind test-connection.plt, which other test rely on
+;; NB: this test leaves behind test-connection.plt, which other tests rely on
 
 (define (fetch-vs-url)
   (define direct-file (format "direct-~a" (list-ref test-connection-spec 1)))
   
-  (define stupid-internal-definition-syntax1 
-    (begin (ensure-not-there direct-file)
-           (ensure-not-there (list-ref test-connection-spec 1))
-           (printf "Downloading test-connection.plt (2 ways) ... ")
-           (flush-output)))
+
+  (ensure-not-there direct-file)
+  (ensure-not-there (list-ref test-connection-spec 1))
+  (printf "Downloading test-connection.plt (2 ways) ... ")
+  (flush-output)
   
   (define direct-download-thread
     (thread
@@ -137,9 +137,8 @@ using 'system' to call out to the tool and then reading its results, etc.
 ;;
 
 (define (do-structure)
-  (define stupid-internal-definition-syntax0
-    (begin (printf "Running open vs structure & print test ... ")
-           (flush-output)))
+  (printf "Running open vs structure & print test ... ")
+  (flush-output)
   (define structure-files 
     (filter
      (λ (x) (not (equal? "" x)))
@@ -147,11 +146,9 @@ using 'system' to call out to the tool and then reading its results, etc.
       (regexp-split #rx"\n" (call-planet "structure" (list-ref test-connection-spec 1)))
       string<=?)))
   (define tmp-dir "test-connection-contents")
-  (define stupid-internal-definition-syntax1
-    (when (directory-exists? tmp-dir)
-      (error 'cmdline-tool.ss "expected the directory ~a to not exist" tmp-dir)))
-  (define stupid-internal-definition-syntax2
-    (call-planet "open" (list-ref test-connection-spec 1) tmp-dir))
+  (when (directory-exists? tmp-dir)
+      (error 'cmdline-tool.ss "expected the directory ~a to not exist" tmp-dir))
+  (call-planet "open" (list-ref test-connection-spec 1) tmp-dir)
   (define open-files
     (sort (let f/d-loop ([f/d #f]
                          [acc '()])
@@ -196,6 +193,80 @@ using 'system' to call out to the tool and then reading its results, etc.
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  planet create
+;;
+
+(define files
+  '(("info.rkt"
+     #<<--
+#lang setup/infotab
+
+(define name "the-name")
+(define blurb
+  (list "the blurb"))
+(define primary-file "main.rkt")
+(define scribblings '(("doc.scrbl")))
+(define release-notes '("release notes"))
+(define categories '(misc))
+(define repositories '("4.x"))
+--
+     )
+    ("doc.scrbl" 
+     #<<--
+#lang scribble/doc
+@(require scribble/base)
+@title{the docs}
+--
+     )
+    ("main.rkt" "#lang racket\n(provide the-export)\n(define the-export 1)\n")))
+     
+(define (do-create)
+  (printf "Running create test ... ")
+  (flush-output)
+  (define tmp-root-dir (make-temporary-file "planet-cmdline-tool-test-create-~a" 'directory))
+  (define tmp-dir (build-path tmp-root-dir "the-source"))
+  (define plt-file (build-path tmp-root-dir "the-source.plt"))
+  (make-directory tmp-dir)
+  (for ([f (in-list files)])
+    (define file (list-ref f 0))
+    (define contents (list-ref f 1))
+    (call-with-output-file (build-path tmp-dir file)
+      (λ (port) (display contents port))))
+  (define output (parameterize ([current-directory tmp-root-dir])
+                   (call-planet "create" (path->string tmp-dir))))
+  (cond
+    [(or (regexp-match #rx"[Ee]rror" output)
+         (regexp-match #rx"Refusing" output)
+         (regexp-match #rx"=== context ===" output))
+     (eprintf "error during planet create test:\n~a" output)]
+    [(regexp-match #rx"WARNING" output)
+     (eprintf "warning during planet create test:\n~a" output)]
+    [else
+     (define contents 
+       (filter
+        (λ (x) (not (equal? x "")))
+        (sort (regexp-split #rx"\n" (call-planet "structure" (path->string plt-file)))
+              string<=?)))
+     (unless (equal? contents
+                     (list "    index.html"
+                           "    scribble-common.js"
+                           "    scribble-style.css"
+                           "    scribble.css"
+                           "  doc:"
+                           "doc.scrbl"
+                           "info.rkt"
+                           "main.rkt"
+                           "planet-docs:"))
+       (eprintf "planet create test doesn't contain expected stuff; got:\n  ~s\n"
+                contents))])
+  
+  (delete-directory/files tmp-root-dir)
+  (printf "done\n"))
+                           
+    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  util
 ;;
   
@@ -234,6 +305,7 @@ using 'system' to call out to the tool and then reading its results, etc.
 (do-remove)
 (do-fileinject)
 (do-structure)
+(do-create)
 
 (delete-file (list-ref test-connection-spec 1))
 (printf "Finished tests\n")

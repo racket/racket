@@ -418,15 +418,19 @@
            (unless 
                (or (null? critical-errors)
                    (force-package-building?))
-             (error '|PLaneT packager| "~a\nRefusing to continue packaging." (car critical-errors)))
-           
+             (raise-user-error '|PLaneT packager| "~a\nRefusing to continue packaging." (car critical-errors)))
+
            (pack archive-name
                  "archive" 
-                 (list ".")
+                 (list ".") ;; if this changes, the filter (just below) must also change
                  null
                  (if (PLANET-ARCHIVE-FILTER)
                      (regexp->filter (PLANET-ARCHIVE-FILTER))
-                     std-filter)
+                     (λ (p)
+                       (or (for/and ([always-in (list 'same (string->path "planet-docs"))]
+                                     [this-one (explode-path p)])
+                             (equal? always-in this-one))
+                           (std-filter p))))
                  #t
                  'file
                  #f
