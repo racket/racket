@@ -262,6 +262,14 @@
            2))
          0 0 0 3))
   
+  (test (normalize-lw (to-lw (|+1| x)))
+        (build-lw
+         (list (build-lw "(" 0 0 0 1)
+               (build-lw '|+1| 0 0 1 4)
+               (build-lw 'x 0 0 6 1)
+               (build-lw ")" 0 0 7 1))
+         0 0 0 8))
+  
   ;; this one seems suspicious: why does the second comma start at 1 instead of 0?
   ;; rendering seems to work, however, so we'll go with it ..
   (test (normalize-lw (to-lw ,,x))

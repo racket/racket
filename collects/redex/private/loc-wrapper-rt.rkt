@@ -58,7 +58,7 @@
       [(string? e) 
        (values line col (+ col (string-length e)))]
       [(symbol? e)
-       (values line col (+ col (string-length (symbol->string e))))]
+       (values line col (+ col (string-length (format "~s" e))))]
       [(not e) (values line col col)]
       [else 
        (let loop ([lws e]
