@@ -137,7 +137,7 @@
 
 (define-syntax-rule
   (define-bibtex-cite bib-pth
-    -cite-id citet-id generate-bibliography-id)
+    ~cite-id citet-id generate-bibliography-id)
   (begin
     (define bibtex-db (path->bibdb bib-pth))
     (define-cite autobib-cite autobib-citet generate-bibliography-id)
@@ -145,7 +145,7 @@
       (apply citer (map (curry generate-bib bibtex-db) 
                         (append-map (curry regexp-split #rx" +")
                                     (cons f r)))))
-    (define -cite-id (make-citer autobib-cite))
+    (define ~cite-id (make-citer autobib-cite))
     (define citet-id (make-citer autobib-citet))))
 
 (define (parse-author as)
