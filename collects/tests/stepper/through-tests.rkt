@@ -2121,6 +2121,22 @@
       -> (+ {6} 1000)
       :: {(+ 6 1000)} -> {1006})
     
+   (let ([def '(define ones (cons 1 ones))])
+     (t 'lazy-cyclic1 m:lazy
+        ,def (+ (second ones) (third ones))
+        :: ,def (+ (second {ones}) (third ones))
+        -> ,def (+ (second {(cons 1 ones)}) (third ones))
+        :: (define ones {ones}) (+ (second {ones}) (third ones)) ; extra step
+        -> (define ones {,(<delay#> 0)}) (+ (second {,(<delay#> 0)}) (third ones))
+        :: ,def (+ {(second (cons 1 ,(<delay#> 0)))} (third ones))
+        -> ,def (+ {1} (third ones))
+        :: ,def (+ 1 (third {ones}))
+        -> ,def (+ 1 (third {(cons 1 ,(<delay#> 0))}))
+        :: ,def (+ 1 {(third (cons 1 ,(<delay#> 0)))})
+        -> ,def (+ 1 {1})
+        :: ,def {(+ 1 1)} -> ,def {2}))
+        
+      
     
     
    
