@@ -18,7 +18,7 @@
  ["--opt" "run the optimization tests" (opt? #t)]
  ["--benchmarks" "compile the typed benchmarks" (bench? #t)]
  ["--just" path "run only this test" (single (just-one path))]
- ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (int? #t) (opt? #t))]
+ ["--nightly" "for the nightly builds" (begin (nightly? #t) (unit? #t) (opt? #t))]
  ["--all" "run all tests" (begin (unit? #t) (int? #t) (opt? #t) (bench? #t))]
  ["--gui" "run using the gui" 
           (if (gui-available?)
