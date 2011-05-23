@@ -2292,7 +2292,7 @@ atan_prim (int argc, Scheme_Object *argv[])
 #endif
 
     v = atan2(v, v2);
-  } else {
+  } else { /* 1-argument case */
     if (argv[0] == zeroi)
       return zeroi;
 
@@ -2300,7 +2300,7 @@ atan_prim (int argc, Scheme_Object *argv[])
 
 #ifdef MZ_USE_SINGLE_FLOATS
 # ifndef USE_SINGLE_FLOATS_AS_DEFAULT
-    sgl++;
+    sgl++; /* sgl needs to be 2 to return a single-precision result */
 # endif
 #endif    
   }
