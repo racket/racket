@@ -5,7 +5,6 @@
 (require racket/class)
 
 (require "private/honu-typed-scheme.rkt"
-         ;; "private/honu.ss"
          "private/parse.ss"
          (for-syntax "private/literals.rkt")
          (for-syntax "private/honu-typed-scheme.rkt")
@@ -23,19 +22,6 @@
          (for-syntax "private/macro.rkt")
          "private/macro.ss")
 
-(define test-x-class
-  (class object%
-    (init-field tuna)
-    (super-new)))
-
-(define x (new test-x-class [tuna 5]))
-
-(define (sql1 . x) #f)
-(define (sql2) #f)
-(define (sql3) #f)
-(define (sql4) #f)
-(define (sql5) #f)
-
 (define-for-syntax (syntax-to-string stx)
   (format "original '~a' - ~a" (syntax->datum stx) (to-honu-string stx)))
 
@@ -51,7 +37,6 @@
            (define name (lambda args (apply make-object new-name args)))))]))
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
-                     ;; (honu-top #%top)
                      (semicolon \;
                                 )
                      (honu-+ +)
@@ -75,21 +60,9 @@
                      (expression-comma expression_comma)
                      )
 
-         #;
-         (rename-out [honu-print print])
-
          (for-syntax (rename-out [syntax-to-string syntax_to_string]))
 
          #%top
-
-         ;; sql nonsense
-         (rename-out 
-           (sql1 SQL_create_insert)
-           (sql2 foo)
-           (sql3 cheese)
-           (sql4 monkeys)
-           (sql5 horse))
-         ;; end sql
 
          #%datum
          (for-template #%datum)
@@ -104,7 +77,6 @@
                      ...
                      map
                      syntax->list
-                     ;identifier
                      expression
                      statement
                      (rename-out (semicolon \;
@@ -144,15 +116,10 @@
          (for-template #%app)
          quote
          ...
-         foobar2000
          expression
          str
-         ;; define-struct
-         #;
-         (for-template #%parens #%brackets #%braces)
          in-range
          honu-struct
-         ;; (for-meta 2 (rename-out (honu-syntax syntax)))
          (rename-out
            (struct scheme-struct)
            (syntax real-syntax)
@@ -170,55 +137,5 @@
            (honu-syntax syntax)
            (honu-pattern pattern)
            (honu-keywords keywords)
-           #;
-           (honu-scheme scheme2)
            (scheme-syntax scheme:syntax)
            ))
-
-#;
-(provide int real bool obj 
-         function var const
-         string
-         -> >->
-         \;
-         ? :
-         && \|\|
-         /
-         < > <= >=
-         !=
-         cons list
-         true false
-         display write newline
-         #%datum
-         #%top
-         #%parens #%brackets #%braces #%angles
-         #%prefix #%postfix
-         ;; define-honu-syntax
-         ...
-         (for-syntax ...)
-
-         (rename-out (set! =)
-                     (honu-return return)
-                     (honu-if if)
-                     (honu-macro macro)
-                     (honu-time time)
-                     (honu-class class)
-                     (honu+ +)
-                     (honu- -)
-                     (honu* *) 
-                     (do do)
-                     (honu-end end)
-                     (modulo %)
-                     (equal? ==)
-                     (string->number stringToNumber)
-                     (number->string numberToString)
-                     (car first) 
-                     (cdr rest)
-                     (null empty)
-                     (null? isEmpty)
-                     (pair? isCons)
-                     (#%dynamic-honu-module-begin #%module-begin)
-                     (honu-#%app #%app)
-                     (honu-top #%top-interaction)
-                     (honu-provide provide)
-                     (honu-require require)))

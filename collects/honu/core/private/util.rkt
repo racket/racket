@@ -8,11 +8,6 @@
          syntax/stx
          racket/list)
 
-#;
-(provide delim-identifier=?
-         extract-until
-         call-values)
-
 
 (define (delim-identifier=? a b)
   (eq? (syntax-e a) (syntax-e b)))
@@ -74,9 +69,6 @@
         (debug " delimiter expected ~a actual ~a\n" (syntax->datum expected-delimiter) (syntax->datum hit))
         ))))
 
-#;
-(test)
-
 ;; better version of caddadadr-type functions
 (define-syntax (list-match stx)
   (define (convert-pattern pattern)
@@ -103,12 +95,3 @@
                    [match-variable (extract-variable #'pattern)])
        #'(match expression
            [match-pattern match-variable]))]))
-
-#;
-(test
-  (list-match a '(1 2 3)) => '(1 2 3)
-  (list-match (a _ ...) '(1 2 3)) => 1
-  (list-match (_ _ a ...) '(1 2 3 4)) => '(3 4)
-  (list-match ((_ a _ ...) _ ...) '((1 2 3 4) 5 6)) => 2
-  (list-match ((_ _ a _ ...) _ ...) '((7 6 5 4 3 2 1) 8 9)) => 5
-  )

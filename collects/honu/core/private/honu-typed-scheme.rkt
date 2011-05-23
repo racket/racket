@@ -28,15 +28,7 @@
 
 (provide (all-defined-out))
 
-;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
-
 (begin-for-syntax
-
-;; these functions use parse-block-one 
-;; (define parse-a-tail-expr #f)
-;; (define parse-an-expr #f)
-;; (set! parse-a-tail-expr parse-tail-expr)
-;; (set! parse-an-expr parse-expr)
 
 (define parse-expr
   ;; The given syntax sequence must not be empty
@@ -75,15 +67,7 @@
                            (let ([trans (get-transformer #'pexpr)])
                              (let-values ([(expr-or-type rest) (trans #'pexpr the-type-or-expression-context)])
                                (cons expr-or-type
-                                       (start-operator #'(expr . more)))
-                               #;
-                               (if (honu-type? expr-or-type)
-                                 ;; parens as a unary prefix operator
-                                 (cons (make-cast-prefix (stx-car (stx-car stx)) expr-or-type)
-                                       (start-expr #'(expr . more)))
-                                 ;; must have been an expression
-                                 (cons expr-or-type
-                                       (start-operator #'(expr . more))))))]
+                                     (start-operator #'(expr . more)))))]
                           [((#%braces . pexpr))
                            (if (stx-null? #'pexpr)
                              (raise-syntax-error
@@ -165,19 +149,6 @@
             (cond
               [(null? seq)
                (cond
-                 #;
-                 [(cast-prefix? op)
-                  (let ([after (reverse since)])
-                    (group (append (reverse before)
-                                   (list (quasisyntax/loc (op-id op)
-                                                          (op-cast #,(op-id op) 
-                                                                   #,(let ([t (cast-prefix-type op)])
-                                                                       (list (honu-type-stx t)
-                                                                             (honu-type-name-stx t)
-                                                                             (honu-type-pred-stx t)
-                                                                             (honu-type-protect-stx t)))
-                                                                   #,(car after))))
-                                   (cdr after))))]
                  [(prefix? op)
                   (let ([after (reverse since)])
                     (group (append (reverse before)
@@ -278,13 +249,6 @@
                                                  ))
                        parse-one )]))
 
-#|
-(define-honu-macro (e ... * e ... \;))
-
-(foo . bar ())
-x(2)
-|#
-
 (define (parse-block stx ctx)
   (let loop ([stx stx])
     (parse-block-one ctx
@@ -333,16 +297,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-infix-transformer rhs))))))
 
-#;
-(define-honu-syntax honu-provide
-  (lambda (stx ctx)
-    (syntax-parse stx
-      #:literals (semicolon)
-      [(_ something:id semicolon . rest)
-       (values #'(provide something)
-               #'rest)])))
-
-;; (honu-syntax ...)
 
 (define-honu-syntax honu-macro-item
   (lambda (stx ctx)
@@ -377,23 +331,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
     (define (parse-complete-block stx)
       ;; (debug "Parsing complete block ~a\n" (syntax->datum stx))
       (with-syntax ([(exprs ...) (parse-block stx the-expression-block-context)])
-        #'(begin exprs ...))
-      #;
-      (let-values ([(a b)
-                    (parse-block-one
-                      (if (block-context-return? ctx)
-                        the-expression-return-block-context
-                        the-expression-block-context)
-                      stx
-                      (lambda (expr rest)
-                        (values expr rest))
-                      (lambda ()
-                        (raise-syntax-error
-                          #f
-                          "expected a braced block or a statement"
-                          )))])
-        (debug "Result is ~a and ~a\n" a b)
-        a))
+        #'(begin exprs ...)))
     ;; TODO: move these syntax classes to a module
     (define-syntax-class expr
       [pattern e])
@@ -402,9 +340,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [pattern (#%parens expr:expression) #:with result #'expr.result])
     (define-syntax-class block
                          [pattern (#%braces statement ...)
-                                  #:with line #'(honu-unparsed-begin statement ...)
-                                  #;
-                                  (parse-complete-block #'(statement ...))])
+                                  #:with line #'(honu-unparsed-begin statement ...)])
     ;; (debug "Original syntax ~a\n" (syntax->datum stx))
     (syntax-parse stx
       #:literals (else)
@@ -414,80 +350,13 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
        (let ([result #'(if condition.result on-true.line on-false.line)])
          (values
            (lambda () result)
-           #'rest)
-           #;
-           (expression-result ctx result (syntax/loc #'rest rest)))]
+           #'rest))]
       [(_ condition:paren-expr on-true:block . rest)
        ;; (debug "used if with no else\n")
        (let ([result #'(when condition.result on-true.line)])
          (values
            (lambda () result)
-           #'rest)
-           #;
-           (expression-result ctx result #'rest))])))
-
-#|
-if (foo){
-  blah..
-} else {
-}
-
-|#
-
-#;
-(define-honu-syntax honu-if
-  (lambda (stx ctx)
-    (define (get-block-or-statement kw rest)
-      (syntax-parse rest (#%braces)
-        [((#%braces then ...) . rrest)
-         (values
-           #`(honu-unparsed-block #f obj 'obj #f #,(and (block-context-return? ctx)
-                                                        (stx-null? rest))
-                                  . #,(stx-cdr (stx-car rest)))
-           #'rrest)]
-        [else
-          (parse-block-one (if (block-context-return? ctx)
-                             the-expression-return-block-context
-                             the-expression-block-context)
-                           rest
-                           (lambda (expr rest)
-                             (values expr rest))
-                           (lambda ()
-                             (raise-syntax-error
-                               #f
-                               "expected a braced block or a statement"
-                               kw)))]))
-
-    (unless (block-context? ctx)
-      (raise-syntax-error
-        #f
-        "allowed only in a block context"
-        (stx-car stx)))
-
-    (syntax-parse stx (#%parens)
-      [(_ (#%parens test ...) . rest)
-       (let* ([tests #'(test ...)])
-         (when (stx-null? tests)
-           (raise-syntax-error
-             #f
-             "missing test expression"
-             (stx-car stx)
-             (stx-car (stx-cdr stx))))
-         (let ([test-expr (parse-expr (syntax->list tests))])
-           (let-values ([(then-exprs rest) (get-block-or-statement (stx-car stx) #'rest)])
-             (syntax-case rest (else)
-               [(else . rest2)
-                (let-values ([(else-exprs rest) (get-block-or-statement (stx-car rest) #'rest2)])
-                  (expression-result ctx
-                                     #`(if (as-test #,test-expr) #,then-exprs #,else-exprs)
-                                     rest))]
-               [_else
-                 (expression-result ctx #`(if (as-test #,test-expr) #,then-exprs (void)) rest)]))))]
-      [_else
-        (raise-syntax-error
-          #f
-          "expected a parenthesized test after `if' keyword"
-          (stx-car stx))])))
+           #'rest))])))
 
 (define true #t)
 (define false #f)
@@ -512,11 +381,6 @@ if (foo){
 (define-syntax (honu-top stx)
   (debug "Honu ~a\n" (syntax->datum stx))
   (raise-syntax-error #f "interactive use is not yet supported"))
-
-(define-syntax (foobar2000 stx)
-  (debug "Called foobar2000 on ~a\n" (syntax->datum stx))
-  (syntax-case stx ()
-    [(_ x y ...) #'(debug "foobar2000 ~a\n" x)]))
 
 (define (display2 x y)
   (debug "~a ~a" x y))
@@ -581,88 +445,16 @@ if (foo){
                    #'(form.result ...))
              body
              body))
-         #'rest)])
-    #;
-    (syntax-parse body #:literals (#%parens honu-for-syntax semicolon)
-      [(_ (#%parens honu-for-syntax what) semicolon . rest)
-       (values
-         (lambda ()
-           (apply-scheme-syntax
-             #'(require (for-syntax what))))
          #'rest)])))
-
-#;
-(define-splicing-syntax-class unparsed
-  [pattern (~seq x ...) #:with result #'(honu-unparsed-begin x ...)])
 
 (define-syntax (honu-unparsed-begin stx)
   (emit-remark "Honu unparsed begin!" stx)
-  #;
-  (emit-remark "Honu unparsed begin" stx)
   (debug "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
-  #'(void)
-  #;
-  (syntax-case stx ()
-    [(_) #'(void)]
-    [(_ . body)
-     (begin
-       (debug "Body is ~a\n" #'body)
-     (let-values ([(code rest) (parse-block-one/2 #'body
-                                                  the-top-block-context
-                                                  #;
-                                                  the-expression-context
-                                                  #;
-                                                  the-top-block-context)])
-                  ;; (debug "Rest is ~a\n" (syntax->datum rest))
-                  (with-syntax ([code code]
-                                [(rest ...) rest])
-                    (if (stx-null? #'(rest ...))
-                      (syntax/loc stx
-                                    code)
-                      #;
-                      (if (raw-scheme? #'code)
-                        (syntax/loc stx
-                                    code)
-                        (with-syntax ([(code* ...) #'code])
-                          (syntax/loc stx (honu-unparsed-begin code* ...))))
-                      (syntax/loc stx
-                                    (begin code (honu-unparsed-begin rest ...)))
-                      #;
-                      (if (raw-scheme? #'code)
-                        (syntax/loc stx
-                                    (begin code (honu-unparsed-begin rest ...)))
-                        (with-syntax ([(code* ...) #'code])
-                          (syntax/loc stx (honu-unparsed-begin code* ... rest ...))))))))]
-    #;
-    [(_ . body) (let-values ([(code rest) (parse-block-one the-top-block-context
-                                                           #'body 
-                                                           values
-                                                           (lambda ()
-                                                             (values #'(void) null)))])
-                  (with-syntax ([code code]
-                                [(rest ...) rest])
-                    #'(begin code (honu-unparsed-begin rest ...))))]))
-
-#;
-(define-syntax-rule (#%dynamic-honu-module-begin forms ...)
-                    #;
-                    (#%module-begin-typed-scheme
-                     ;; (require honu/private/typed-utils)
-                     (honu-unparsed-begin forms ...))
-                    (#%plain-module-begin (honu-unparsed-begin forms ...)))
-
-#;
-(define (honu-print arg)
-  (debug "~a\n" arg))
+  #'(void))
 
 (define-syntax (#%dynamic-honu-module-begin stx)
   (syntax-case stx ()
     [(_ forms ...)
      (begin
        (debug "Module begin ~a\n" (syntax->datum #'(forms ...)))
-       #'(#%plain-module-begin (honu-unparsed-begin forms ...))
-       #;
-       (with-syntax ([all (syntax-local-introduce #'(provide (all-defined-out)))])
-         #'(#%plain-module-begin all (honu-unparsed-begin forms ...))
-         #;
-         #'(#%plain-module-begin (provide (all-defined-out)) (honu-unparsed-begin forms ...))))]))
+       #'(#%plain-module-begin (honu-unparsed-begin forms ...)))]))
