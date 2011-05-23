@@ -252,13 +252,18 @@
 
 (define blurb "Racket is a programming language")
 
+(provide news-flash)
+(define news-flash (box #f))
+
 (provide index)
 (define index
   (page #:link-title "About" #:window-title "Racket"
         #:extra-headers @list{@meta[name: 'description content: blurb]
                               @(delay more.css)}
-    @div[class: 'whatpane]{
-      @span{@span[class: 'whatb]{Racket} is a programming language.}}
+    @div[class: 'leftpane]{
+      @span{@span[style: "font-size: large; font-weight: bold;"]{Racket}
+            is a programming language.}@;
+      @(and (unbox news-flash) (list br br news-flash))}
     @div[class: 'downloadbutton]{@download-button}
     @div[class: 'aboutpane]{
       @div[class: 'panetitle]{Start Quickly}
@@ -406,14 +411,10 @@
       background-repeat: no-repeat;
       background-position: center top;
     }
-    .whatpane {
+    .leftpane {
       font-size: medium;
       float: left;
       width: 20%;
-    }
-    .whatb {
-      font-size: large;
-      font-weight: bold;
     }
     .aboutpane {
       width: 56%;
