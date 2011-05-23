@@ -1004,13 +1004,21 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
     v = do_chaperone_prop_accessor(((Scheme_Primitive_Proc *)prim)->name, SCHEME_PRIM_CLOSURE_ELS(prim)[0], v);
   else
     v = do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], v);
-  
-  if (!v)
-    scheme_wrong_type(((Scheme_Primitive_Proc *)prim)->name, 
+
+  if (v)
+    return v;
+  else if (argc == 1) {
+    scheme_wrong_type(((Scheme_Primitive_Proc *)prim)->name,
 		      "struct or struct-type with property",
-                      0, 1, args);
-  
-  return v;
+		      0, 1, args);
+    return NULL;
+  } else {
+    v = args[1];
+    if (SCHEME_PROCP(v))
+      return _scheme_tail_apply(v, 0, NULL);
+    else
+      return v;
+  }
 }
 
 static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *argv[],
@@ -1090,7 +1098,7 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
   memcpy(name + len, "-accessor", 10);
 
-  v = scheme_make_folding_prim_closure(prop_accessor, 1, a, name, 1, 1, 0);
+  v = scheme_make_folding_prim_closure(prop_accessor, 1, a, name, 1, 2, 0);
   ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
   
   *accessout = v;

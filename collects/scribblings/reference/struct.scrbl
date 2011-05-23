@@ -309,11 +309,17 @@ Creates a new structure type property and returns three values:
        descriptor or instance of a structure type that has a value for
        the property, @racket[#f] otherwise;}
 
- @item{an @deftech{property accessor} procedure, which returns the
+ @item{a @deftech{property accessor} procedure, which returns the
        value associated with the structure type given its descriptor or
        one of its instances; if the structure type does not have a
        value for the property, or if any other kind of value is
-       provided, the @exnraise[exn:fail:contract].}
+       provided, the @exnraise[exn:fail:contract] unless a second
+       argument, @racket[failure-result], is supplied to the
+       procedure. In that case, if @racket[failure-result] is a
+       procedure, it is called (through a tail call) with no arguments
+       to produce the result of the property accessor procedure;
+       otherwise, @racket[failure-result] is itself returned as the
+       result.}
 
 ]
 

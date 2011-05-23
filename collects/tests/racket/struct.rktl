@@ -636,6 +636,14 @@
 		one32-y x132 4))))
 
 ;; ------------------------------------------------------------
+;; Property accessor errors
+
+(let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 'can-impersonate '())])
+  (test 42 p-ref 5 42)
+  (test 17 p-ref 5 (lambda () (* 1 17)))
+  (err/rt-test (p-ref 5) exn:fail:contract?))
+
+;; ------------------------------------------------------------
 ;; Property type supers
 
 (require (only-in mzscheme [prop:procedure mz:prop:procedure])) ; more primitive - no keywords
