@@ -117,6 +117,7 @@
       ;; delayed values
       [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
       [(promise? x) (loop (force x))]
+      [(box?     x) (loop (unbox x))]
       ;; special output wrappers
       [(special? x)
        (let ([c (special-contents x)])
