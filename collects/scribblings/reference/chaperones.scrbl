@@ -542,8 +542,7 @@ Creates a new @tech{impersonator property} and returns three values:
        returns the value associated with an impersonator for the property;
        if a value given to the accessor is not an impersonator or does not
        have a value for the property (i.e. if the corresponding impersonator
-       property predicate returns @racket[#f]), the accessor raises
-       @exnraise[exn:fail:contract].}
+       property predicate returns @racket[#f]), the @exnraise[exn:fail:contract].}
 
 ]}
 
