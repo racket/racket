@@ -131,6 +131,8 @@
 
   (define wx-text-field%
     (class100 wx-horizontal-panel% (mred proxy parent fun label value style _font)
+      (sequence
+       (send (send parent get-top-level) begin-container-sequence))
       ;; Make text field first because we'll have to exit
       ;;  for keymap initializer
       (private-field
@@ -336,4 +338,5 @@
 	(let ([min-size (get-min-size)])
 	  (set-min-width (car min-size))
 	  (set-min-height (cadr min-size)))
+	(send (send parent get-top-level) end-container-sequence)
 	(callback-ready)))))
