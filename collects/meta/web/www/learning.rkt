@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt" "people.rkt" "techreports.rkt")
+(require "resources.rkt" "people.rkt" "techreports.rkt" "old-techreports.rkt")
 
 (provide learning)
 (define learning
