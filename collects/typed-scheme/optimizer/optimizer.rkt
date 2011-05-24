@@ -48,12 +48,13 @@
                            (cons (car l)
                                  (map (optimize) (cdr l)))))
                        #'([formals e ...] ...))
-           #:with opt #'(case-lambda opt-parts ...))
+           #:with opt (syntax/loc this-syntax (case-lambda opt-parts ...)))
   (pattern ((~and op (~or (~literal let-values) (~literal letrec-values)))
             ([ids e-rhs:expr] ...) e-body:expr ...)
            #:with (opt-rhs ...) (syntax-map (optimize) #'(e-rhs ...))
-           #:with opt #`(op ([ids opt-rhs] ...)
-                            #,@(syntax-map (optimize) #'(e-body ...))))
+           #:with opt (quasisyntax/loc this-syntax
+                        (op ([ids opt-rhs] ...)
+                            #,@(syntax-map (optimize) #'(e-body ...)))))
   (pattern (letrec-syntaxes+values stx-bindings
                                    ([(ids ...) e-rhs:expr] ...)
                                    e-body:expr ...)
@@ -63,17 +64,19 @@
                          (let ((l (syntax->list clause)))
                            (list (car l) ((optimize) (cadr l)))))
                        #'([(ids ...) e-rhs] ...))
-           #:with opt #`(letrec-syntaxes+values
+           #:with opt (quasisyntax/loc this-syntax
+                        (letrec-syntaxes+values
                          stx-bindings
                          (opt-clauses ...)
-                         #,@(syntax-map (optimize) #'(e-body ...))))
+                         #,@(syntax-map (optimize) #'(e-body ...)))))
   (pattern (kw:identifier expr ...)
            #:when
 	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
 			     #'#%variable-reference #'with-continuation-mark)])
 	     (free-identifier=? k #'kw))
            ;; we don't want to optimize in the cases that don't match the #:when clause
-           #:with opt #`(kw #,@(syntax-map (optimize) #'(expr ...))))
+           #:with opt (quasisyntax/loc this-syntax
+                        (kw #,@(syntax-map (optimize) #'(expr ...)))))
   (pattern other:expr
            #:with opt #'other))
 
