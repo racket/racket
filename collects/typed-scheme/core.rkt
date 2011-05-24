@@ -18,6 +18,13 @@
 
 (provide mb-core ti-core wt-core)
 
+(define (maybe-optimize body)
+  ;; do we optimize?
+  (if (optimize?)
+      (begin0 (map optimize-top (syntax->list body))
+        (do-time "Optimized"))
+      body))
+
 (define (mb-core stx)
   (syntax-parse stx
     [(mb (~optional (~or (~and #:optimize    (~bind [opt? #'#t])) ; kept for backward compatibility
@@ -38,12 +45,7 @@
             ;; add the real definitions of contracts on requires
             [transformed-body (change-contract-fixups #'transformed-body)]
             ;; potentially optimize the code based on the type information
-            [(optimized-body ...)
-             ;; do we optimize?
-             (if (optimize?)
-                 (begin0 (map optimize-top (syntax->list #'transformed-body))
-                         (do-time "Optimized"))
-                 #'transformed-body)])
+            [(optimized-body ...) (maybe-optimize #'transformed-body)])
            ;; reconstruct the module with the extra code
            ;; use the regular %#module-begin from `racket/base' for top-level printing
            #`(#%module-begin optimized-body ... #,after-code check-syntax-help)))))]))
@@ -55,18 +57,20 @@
     [(_ . form)
      (tc-setup
       stx #'form 'top-level body2 tc-toplevel-form type
-      (syntax-parse body2
-        ;; any of these do not produce an expression to be printed
-        [(head:invis-kw . _) body2]
-        [_ (let ([ty-str (match type
-                           ;; don't print results of type void
-                           [(tc-result1: (== -Void type-equal?)) #f]
-                           [(tc-result1: t f o)
-                            (format "- : ~a\n" t)]
-                           [(tc-results: t)
-                            (format "- : ~a\n" (cons 'Values t))]
-                           [x (int-err "bad type result: ~a" x)])])
-             (if ty-str
-                 #`(let ([type '#,ty-str])
-                     (begin0 #,body2 (display type)))
-                 body2))]))]))
+      (with-syntax*
+       ([optimized-body (car (maybe-optimize #`(#,body2)))])
+       (syntax-parse body2
+         ;; any of these do not produce an expression to be printed
+         [(head:invis-kw . _) #'optimized-body]
+         [_ (let ([ty-str (match type
+                            ;; don't print results of type void
+                            [(tc-result1: (== -Void type-equal?)) #f]
+                            [(tc-result1: t f o)
+                             (format "- : ~a\n" t)]
+                            [(tc-results: t)
+                             (format "- : ~a\n" (cons 'Values t))]
+                            [x (int-err "bad type result: ~a" x)])])
+              (if ty-str
+                  #`(let ([type '#,ty-str])
+                      (begin0 optimized-body (display type)))
+                  #'optimized-body))])))]))
