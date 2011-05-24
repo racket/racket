@@ -20,8 +20,10 @@
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
       @|br hr|
       @div[align: "center"]{
-        @small{@all-version-pages @nbsp @bull @nbsp
-               @license @nbsp @bull @nbsp @pre:installers}}
+        @(let ([links (list all-version-pages
+                            @license{License}
+                            @pre:installers{Nightly installers})])
+           (small (add-between links @list{ @nbsp @bull @nbsp })))}
       @hr
       @div[id: "linux_explain"
            style: '("font-size: 75%; display: none; width: 28em;"
