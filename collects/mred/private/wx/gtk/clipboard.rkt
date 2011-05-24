@@ -241,19 +241,47 @@
                                   bstr
                                   (bytes-length bstr))))))
 
+  (define/private (self-data data-format)
+    ;; Due to the way we block for X-selection data and 
+    ;; provide only when the request arrives in the right
+    ;; eventspace, we handle self-X-selection specially:
+    (and x-selection?
+         self-box
+         (let ([c client]
+               [types client-types]
+               [orig-types client-orig-types])
+           (for/or ([t (in-list types)]
+                    [o (in-list orig-types)])
+             (and (equal? t data-format)
+                  (let ([e (send c get-client-eventspace)])
+                    (if (eq? (current-eventspace) e)
+                        (send client get-data t)
+                        (let ([s #f]
+                              [done (make-semaphore)])
+                          (parameterize ([current-eventspace e])
+                            (queue-callback
+                             (lambda ()
+                               (set! s (send client get-data t))
+                               (semaphore-post done))))
+                          (sync/timeout 0.1 done)
+                          s))))))))
+
   (define/public (get-data data-format)
     (let* ([data-format (if (equal? data-format "TEXT")
 			    "UTF8_STRING"
 			    data-format)]
 	   [atom (gdk_atom_intern data-format #t)])
-      (wait-request-backref 
-       (atomically
-	(let-values ([(l backref) (make-request-backref)])
-	  (gtk_clipboard_request_contents cb atom backref)
-	  l)))))
+      (or (self-data data-format)
+          (wait-request-backref 
+           (atomically
+            (let-values ([(l backref) (make-request-backref)])
+              (gtk_clipboard_request_contents cb atom backref)
+              l))))))
 
   (define/public (get-text-data)
-    (or (wait-request-backref 
+    (or (let ([s (self-data "UTF8_STRING")])
+          (and s (bytes->string/utf-8 s #\?)))
+        (wait-request-backref 
          (atomically
           (let-values ([(l backref) (make-request-backref)])
             (gtk_clipboard_request_text cb backref)
