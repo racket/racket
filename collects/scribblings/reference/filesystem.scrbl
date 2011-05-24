@@ -1077,7 +1077,7 @@ The @racket[call-with-file-lock/timeout] function uses a separate lock file to
 prevent race conditions on @racket[filename], when @racket[filename] has not yet
 been created.  On the Windows platfom, the @racket[call-with-file-lock/timeout]
 function uses a separate lock file (@racket["_LOCKfilename"]), because a lock
-on @racket[filename] would interfere with replacing @racket[filename]] via
+on @racket[filename] would interfere with replacing @racket[filename] via
 @racket[rename-file-or-directory].
 }
 
