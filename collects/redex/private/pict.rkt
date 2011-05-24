@@ -150,7 +150,7 @@
                                 (tp rewritten))))
                     (map (lambda (v) 
                            (if (pair? v)
-                               (cons (tp (car v)) (tp (cdr v)))
+                               (where-pict (tp (car v)) (tp (cdr v)))
                                (tp v)))
                          (rule-pict-side-conditions/pattern-binds rp))
                     (map tp (rule-pict-fresh-vars rp)))))
@@ -306,9 +306,7 @@
                ltl-superimpose ltl-superimpose
                2 2))))
 
-;; side-condition-pict : (listof pict) (listof (or/c (cons/c pict pict) pict)) number -> pict
-;; the elements of pattern-binds/sc that are pairs are bindings (ie "x = <something>")
-;;     and the elements of pattern-binds/sc that are just picts are just plain side-conditions
+;; side-condition-pict : (listof pict) (listof pict) number -> pict
 (define (side-condition-pict fresh-vars pattern-binds/sc max-w)
   (let* ([frsh 
           (if (null? fresh-vars)
@@ -321,18 +319,10 @@
                   (basic-text ", " (default-style))
                   fresh-vars))
                 (basic-text " fresh" (default-style)))))]
-         [binds (map (lambda (b)
-                       (if (pair? b)
-                           (htl-append
-                            (car b)
-                            (make-=)
-                            (cdr b))
-                           b))
-                     pattern-binds/sc)]
          [lst (add-between
                'comma
                (append
-                binds
+                pattern-binds/sc
                 frsh))])
     (if (null? lst)
         (blank)
@@ -349,6 +339,9 @@
                              (vl-append p
                                         (loop (car lst) (cdr lst)))]
                             [else (loop (htl-append p (car lst)) (cdr lst))]))))))))
+
+(define (where-pict lhs rhs)
+  (htl-append lhs (make-=) rhs))
 
 (define (rp->side-condition-pict rp max-w)
   (side-condition-pict (rule-pict-fresh-vars rp)
@@ -857,7 +850,7 @@
                                                        '() fresh)
                                                 (map (match-lambda
                                                       [(struct metafunc-extra-where (lhs rhs))
-                                                       (cons (wrapper->pict lhs) (wrapper->pict rhs))]
+                                                       (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
                                                       [(struct metafunc-extra-side-cond (expr))
                                                        (wrapper->pict expr)])
                                                      where/sc)
@@ -1070,7 +1063,13 @@
                (metafunc-proc-pict-info (metafunction-proc mf)))]
          [eqns (select-cases all-eqns)]
          [conclusions (select-cases all-conclusions)]
-         [premisess (map (lambda (eqn) (map wrapper->pict (list-ref eqn 2))) eqns)])
+         [premisess (map (lambda (eqn)
+                           (append (map wrapper->pict (list-ref eqn 2))
+                                   (map (match-lambda
+                                          [(struct metafunc-extra-where (lhs rhs))
+                                           (where-pict (wrapper->pict lhs) (wrapper->pict rhs))])
+                                        (list-ref eqn 1))))
+                         eqns)])
     ((relation-clauses-combine)
      (for/list ([conclusion (in-list conclusions)]
                 [premises (in-list premisess)])

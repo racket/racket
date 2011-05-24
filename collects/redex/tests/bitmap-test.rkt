@@ -250,7 +250,12 @@
     [(r x)])
   (test (render-relation r) "relation.png"))
 
-    
+(let ()
+  ;; a relation with a `name' pattern in its conclusion
+  (define-relation lang
+    [(r (name e (λ (x) x)))
+     (r x)])
+  (test (render-relation r) "relation-with-name.png"))    
 
 (printf "bitmap-test.ss: ")
 (done)
