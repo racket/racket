@@ -416,7 +416,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
   int saw_digit, saw_digit_since_slash, saw_nonzero_digit;
   Scheme_Object *o;
 #ifdef MZ_USE_SINGLE_FLOATS
-  int single;
+  int sgl;
 #endif
 
   if (len < 0)
@@ -1044,17 +1044,17 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 
 #ifdef MZ_USE_SINGLE_FLOATS
   if (has_expt && str[has_expt]) {
-    single = str[has_expt];
-    single = ((single == 'f') || (single == 'F')
+    sgl = str[has_expt];
+    sgl = ((sgl == 'f') || (sgl == 'F')
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
-	      || (single == 'e') || (single == 'E')
+	      || (sgl == 'e') || (sgl == 'E')
 #endif
-	      || (single == 's') || (single == 'S'));
+	      || (sgl == 's') || (sgl == 'S'));
   } else {
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
-    single = 1;
+    sgl = 1;
 # else
-    single = 0;
+    sgl = 0;
 # endif
   }
 #endif
@@ -1111,7 +1111,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (str[delta] == '-') {
 	/* Make sure it's -0.0 */
 #ifdef MZ_USE_SINGLE_FLOATS
-	if (single) return scheme_nzerof;
+	if (sgl) return scheme_nzerof;
 #endif
 	return scheme_nzerod;
       }
@@ -1121,14 +1121,14 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (str[delta] == '-') {
 	/* Make sure it's -0.0 */
 #ifdef MZ_USE_SINGLE_FLOATS
-	if (single) return scheme_nzerof;
+	if (sgl) return scheme_nzerof;
 #endif
 	return scheme_nzerod;
       }
     }
 
 #ifdef MZ_USE_SINGLE_FLOATS
-    if (single)
+    if (sgl)
       return scheme_make_float((float)d);
 #endif
     return scheme_make_double(d);
@@ -1280,14 +1280,14 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (result_is_float) {
 	if (scheme_bin_gt(exponent, scheme_make_integer(CHECK_INF_EXP_THRESHOLD))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_minus_inf_object, single);
+	    return CHECK_SINGLE(scheme_minus_inf_object, sgl);
 	  else
-	    return CHECK_SINGLE(scheme_inf_object, single);
+	    return CHECK_SINGLE(scheme_inf_object, sgl);
 	} else if (scheme_bin_lt(exponent, scheme_make_integer(-CHECK_INF_EXP_THRESHOLD))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_nzerod, single);
+	    return CHECK_SINGLE(scheme_nzerod, sgl);
 	  else
-	    return CHECK_SINGLE(scheme_zerod, single);
+	    return CHECK_SINGLE(scheme_zerod, sgl);
 	}
       }
     }
@@ -1304,9 +1304,9 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     n = scheme_bin_mult(mantissa, power);
 
     if (result_is_float)
-      n = CHECK_SINGLE(TO_DOUBLE(n), single);
+      n = CHECK_SINGLE(TO_DOUBLE(n), sgl);
     else
-      n = CHECK_SINGLE(n, single);
+      n = CHECK_SINGLE(n, sgl);
 
     if (SCHEME_FLOATP(n) && str[delta] == '-') {
       if (SCHEME_FLOAT_VAL(n) == 0.0) {
@@ -1396,7 +1396,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     } else if (is_float)
       n1 = TO_DOUBLE(n1);
 
-    return CHECK_SINGLE(n1, single);
+    return CHECK_SINGLE(n1, sgl);
   }
 
   o = scheme_read_bignum(str, delta, radix);
@@ -1409,12 +1409,12 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     /* Special case: "#i-0" => -0. */
     if ((o == zeroi) && str[delta] == '-') {
 #ifdef MZ_USE_SINGLE_FLOATS
-      if (single) return scheme_nzerof;
+      if (sgl) return scheme_nzerof;
 #endif
       return scheme_nzerod;
     }
 
-    return CHECK_SINGLE(TO_DOUBLE(o), single);
+    return CHECK_SINGLE(TO_DOUBLE(o), sgl);
   }
 
   return o;

@@ -2193,8 +2193,8 @@ atan_prim (int argc, Scheme_Object *argv[])
   int dbl = 0;
 # define MZ_USE_SINGLE !dbl
 # else
-  int single = 0;
-# define MZ_USE_SINGLE single == 2
+  int sgl = 0;
+# define MZ_USE_SINGLE sgl == 2
 #endif
 #endif
 
@@ -2206,7 +2206,7 @@ atan_prim (int argc, Scheme_Object *argv[])
   else if (SCHEME_FLTP(n1)) {
     v = SCHEME_FLT_VAL(n1);
 # ifndef USE_SINGLE_FLOATS_AS_DEFAULT
-    single++;
+    sgl++;
 # endif
   }
 #endif
@@ -2254,7 +2254,7 @@ atan_prim (int argc, Scheme_Object *argv[])
     else if (SCHEME_FLTP(n2)) {
       v2 = SCHEME_FLT_VAL(n2);
 # ifndef USE_SINGLE_FLOATS_AS_DEFAULT
-      single++;
+      sgl++;
 # endif
     }
 #endif
@@ -2300,7 +2300,7 @@ atan_prim (int argc, Scheme_Object *argv[])
 
 #ifdef MZ_USE_SINGLE_FLOATS
 # ifndef USE_SINGLE_FLOATS_AS_DEFAULT
-    single++;
+    sgl++;
 # endif
 #endif    
   }
@@ -2623,7 +2623,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	if (!norm) {
 	  int isnonneg, iseven, negz;
 #ifdef MZ_USE_SINGLE_FLOATS
-	  int single = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
+	  int sgl = !SCHEME_DBLP(n) && !SCHEME_DBLP(e);
 #endif
 
 	  if (scheme_is_integer(e)) {
@@ -2638,13 +2638,13 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	  if (isnonneg) {
 	    if (iseven || !negz) {
 #ifdef MZ_USE_SINGLE_FLOATS
-	      if (single)
+	      if (sgl)
 		return scheme_zerof;
 #endif
 	      return scheme_zerod;
 	    } else {
 #ifdef MZ_USE_SINGLE_FLOATS
-	      if (single)
+	      if (sgl)
 		return scheme_nzerof;
 #endif
 	      return scheme_nzerod;
@@ -2652,13 +2652,13 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	  } else {
 	    if (iseven || !negz) {
 #ifdef MZ_USE_SINGLE_FLOATS
-	      if (single)
+	      if (sgl)
 		return scheme_single_inf_object;
 #endif
 	      return scheme_inf_object;
 	    } else {
 #ifdef MZ_USE_SINGLE_FLOATS
-	      if (single)
+	      if (sgl)
 		return scheme_single_minus_inf_object;
 #endif
 	      return scheme_minus_inf_object;
