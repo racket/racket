@@ -275,9 +275,9 @@ provide @racketidfont{snip-class} object that implements the
 @racket[snip-class%] class. The second quoted module path is used by
 the @racketmodname[wxme] library for converting @tech{WXME} streams
 without graphical support; the corresponding module must provide a
-@racketidfont{reader} object that implements the @racket[reader<%>]
+@racketidfont{reader} object that implements the @racket[snip-reader<%>]
 interface. Naturally, the @racket[snip-class%] instance and
-@racket[reader<%>] instance are expected to parse the same format, but
+@racket[snip-reader<%>] instance are expected to parse the same format, but
 generate different results suitable for the different contexts (i.e.,
 graphical or not).
 
