@@ -4694,6 +4694,7 @@ scheme_file_buffer(int argc, Scheme_Object *argv[])
 static int try_lock(int fd, int writer, int *_errid)
 {
 #ifdef UNIX_FILE_SYSTEM
+# ifdef USE_FLOCK_FOR_FILE_LOCKS
   {
     int ok;
 
@@ -4712,6 +4713,13 @@ static int try_lock(int fd, int writer, int *_errid)
     *_errid = errno;
     return 0;
   }
+# else
+  /* using fcntl(F_SETFL, ...) isn't really an option, since the
+     any-close-release-the-lock semantics of fcntl()-based locks
+     doesn't work with Racket threads that compete for a lock */
+  *_errid = ENOTSUP;
+  return 0;
+# endif
 #endif
 #ifdef WINDOWS_FILE_HANDLES
   {
@@ -4804,11 +4812,16 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
   check_already_closed("port-file-unlock", argv[0]);
 
 #ifdef UNIX_FILE_SYSTEM
+# ifdef USE_FLOCK_FOR_FILE_LOCKS
   do {
     ok = flock(fd, LOCK_UN);
   } while ((ok == -1) && (errno == EINTR));
   ok = !ok;
   errid = errno;
+# else
+  ok = 0;
+  errid = ENOTSUP;
+# endif
 #endif
 #ifdef WINDOWS_FILE_HANDLES
   ok = UnlockFile((HANDLE)fd, 0, 0, LOCK_ALL_FILE_LO, LOCK_ALL_FILE_HI);

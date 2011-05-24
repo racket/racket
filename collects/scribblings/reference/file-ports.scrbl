@@ -321,7 +321,8 @@ advisory on other platforms.
 
 Typically, locking is supported only for file ports, and attempting to
 acquire a lock with other kinds of file-stream ports raises an
-@racket[exn:fail:filesystem] exception.}
+@racket[exn:fail:filesystem] exception. Locking is not supported under Solaris,
+where the @racket[exn:fail:unsupported] exception is raised.}
 
 
 @defproc[(port-file-unlock [port file-stream-port?])
