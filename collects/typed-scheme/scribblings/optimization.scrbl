@@ -12,6 +12,11 @@ Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
 your programs slower or unsafe.
 
+@margin-note{For general information Racket performance and
+benchmarking, see @secref[#:doc '(lib
+"scribblings/guide/guide.scrbl")]{performance}.}
+
+
 @section{Turning the optimizer off}
 
 Typed Racket's optimizer is turned on by default. If you want to

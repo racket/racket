@@ -5,6 +5,9 @@
 
 @title[#:tag "performance"]{Performance}
 
+@section-index["benchmarking"]
+@section-index["speed"]
+
 Alan Perlis famously quipped ``Lisp programmers know the value of
 everything and the cost of nothing.'' A Racket programmer knows, for
 example, that a @racket[lambda] anywhere in a program produces a value
@@ -17,6 +20,27 @@ underlying computing machinery can be quite large.
 In this chapter, we narrow the gap by explaining details of the
 Racket compiler and run-time system and how they affect the run-time
 and memory performance of Racket code.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "DrRacket-perf"]{Performance in DrRacket}
+
+By default, DrRacket instruments programs for debugging, and
+debugging instrumentation can significantly degrade performance for
+some programs. Even when debugging is disabled through the
+@onscreen{Choose Language...} dialog's @onscreen{Show Details} panel,
+the @onscreen{Preserve stacktrace} checkbox is clicked by default,
+which also affects performance. Disabling debugging and stacktrace
+preservation provides performance results that are more consistent
+with running in plain @exec{racket}.
+
+Even so, DrRacket and programs developed within DrRacket use the same
+Racket virtual machine, so garbage collection times (see
+@secref["gc-perf"]) may be longer in DrRacket than when a program is
+run by itself, and DrRacket threads may impede execution of program
+threads. For the most reliable timing results for a program, run in
+plain @exec{racket} instead of in the DrRacket development
+environment.
 
 @; ----------------------------------------------------------------------
 
