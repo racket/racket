@@ -4,7 +4,6 @@
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
-
 (define (render-download-page [version current-version] [package 'racket])
   @center-div{
     @h2{Download @(package->name package)

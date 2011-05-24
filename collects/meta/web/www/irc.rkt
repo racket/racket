@@ -2,8 +2,6 @@
 
 (require "resources.rkt")
 
-(provide irc-quick)
-
 (define webchat-link
   "http://webchat.freenode.net?channels=racket&uio=OT10cnVlJjExPTIzNg6b")
 
@@ -20,6 +18,7 @@
     }
     (lambda (text) @a[href: "irc-logs/"]{@text})))
 
+(provide irc-quick)
 (define (irc-quick)
   @parlist[@strong{Discussion Channel}
     @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel on

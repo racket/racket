@@ -252,8 +252,9 @@
 
 (define blurb "Racket is a programming language")
 
-(provide news-flash)
-(define news-flash (box #f))
+(provide set-news-flash!)
+(define news-flash #f)
+(define (set-news-flash! . text) (set! news-flash text))
 
 (provide index)
 (define index
@@ -263,7 +264,7 @@
     @div[class: 'leftpane]{
       @span{@span[style: "font-size: large; font-weight: bold;"]{Racket}
             is a programming language.}@;
-      @(and (unbox news-flash) (list br br news-flash))}
+      @(and news-flash (list br br news-flash))}
     @div[class: 'downloadbutton]{@download-button}
     @div[class: 'aboutpane]{
       @div[class: 'panetitle]{Start Quickly}

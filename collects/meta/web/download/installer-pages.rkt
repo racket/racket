@@ -47,8 +47,6 @@
     @; (looks redundant now that all of the installers are pretty standard)
     @;section{Installation instructions}
     @;(bundle-installation-instructions bundle)
-    @;br{}
-    @;div[align: 'right]{(@(link-to 'license))}
     })
 
 (provide installer->page)

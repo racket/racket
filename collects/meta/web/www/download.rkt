@@ -2,8 +2,7 @@
 
 (require "resources.rkt" "../download/download-pages.rkt")
 
-(provide download-button download)
-
+(provide download)
 (define download
   @page[#:link-title "Download" #:window-title "Download Racket"
         #:file "download/" #:part-of 'download]{
@@ -12,6 +11,7 @@
 (define images (list (copyfile (in-here "download.png"))
                      (copyfile (in-here "download-dark.png"))))
 
+(provide download-button)
 (define (download-button)
   @text{
     @script/inline[type: "text/javascript"]{
