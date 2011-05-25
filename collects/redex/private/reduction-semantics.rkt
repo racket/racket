@@ -9,9 +9,7 @@
          racket/trace
          racket/contract
          racket/list
-         (lib "etc.ss")
-         (for-syntax syntax/parse
-                     syntax/parse/experimental/contract))
+         (lib "etc.ss"))
 
 (require (for-syntax (lib "name.ss" "syntax")
                      "loc-wrapper-ct.ss"
@@ -20,7 +18,10 @@
                      "underscore-allowed.ss"
                      (lib "boundmap.ss" "syntax")
                      scheme/base
-                     (prefix-in pattern- scheme/match)))
+                     (prefix-in pattern- scheme/match)
+                     syntax/parse
+                     syntax/parse/experimental/contract
+                     syntax/name))
 
 (define (language-nts lang)
   (hash-map (compiled-lang-ht lang) (λ (x y) x)))
@@ -1104,9 +1105,10 @@
                    [(nts) (language-id-nts #'lang-exp what)]
                    [(ids/depths _) (extract-names nts what #t #'pattern)])
        (with-syntax ([side-condition-rewritten (rewrite-side-conditions/check-errs nts what #t #'pattern)]
-                     [binders (map syntax-e ids/depths)])
+                     [binders (map syntax-e ids/depths)]
+                     [name (syntax-local-infer-name stx)])
          (syntax 
-          (do-test-match lang-exp `side-condition-rewritten 'binders))))]
+          (do-test-match lang-exp `side-condition-rewritten 'binders 'name))))]
     [(form-name lang-exp pattern expression)
      (identifier? #'lang-exp)
      (syntax 
@@ -1118,17 +1120,19 @@
 
 (define-struct match (bindings) #:inspector #f)
 
-(define (do-test-match lang pat binders)
+(define (do-test-match lang pat binders name)
   (unless (compiled-lang? lang)
     (error 'redex-match "expected first argument to be a language, got ~e" lang))
   (let ([cpat (compile-pattern lang pat #t)])
-    (λ (exp)
-      (let ([ans (match-pattern cpat exp)])
-        (and ans
-             (map (λ (m) (make-match (sort-bindings 
-                                      (filter (λ (x) (memq (bind-name x) binders))
-                                              (bindings-table (mtch-bindings m))))))
-                  ans))))))
+    (procedure-rename
+     (λ (exp)
+       (let ([ans (match-pattern cpat exp)])
+         (and ans
+              (map (λ (m) (make-match (sort-bindings 
+                                       (filter (λ (x) (memq (bind-name x) binders))
+                                               (bindings-table (mtch-bindings m))))))
+                   ans))))
+     name)))
 
 (define (sort-bindings bnds)
   (sort
