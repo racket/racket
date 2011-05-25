@@ -8964,7 +8964,7 @@ typedef struct ITimer_Data {
   int itimer;
   int state;
   int die;
-  pthread_t thread;
+  mz_proc_thread *thread;
   pthread_mutex_t mutex;
   pthread_cond_t cond;
   int delay;
@@ -9008,13 +9008,15 @@ static void *green_thread_timer(void *data)
 
 static void start_green_thread_timer(intptr_t usec) 
 {
+  mz_proc_thread *tmp;
   itimerdata->die = 0;
   itimerdata->delay = usec;
   itimerdata->fuel_counter_ptr = &scheme_fuel_counter;
   itimerdata->jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
   pthread_mutex_init(&itimerdata->mutex, NULL);
   pthread_cond_init(&itimerdata->cond, NULL);
-  pthread_create(&itimerdata->thread, NULL, green_thread_timer, itimerdata);
+  tmp = mz_proc_thread_create_w_stacksize(green_thread_timer, itimerdata, 4096);
+  itimerdata->thread = tmp;
   itimerdata->itimer = 1;
 }
 
@@ -9033,7 +9035,8 @@ static void kill_green_thread_timer()
        asked it to continue */
   }
   pthread_mutex_unlock(&itimerdata->mutex);
-  pthread_join(itimerdata->thread, &rc);
+  rc = mz_proc_thread_wait(itimerdata->thread);
+  free(itimerdata);
   itimerdata = NULL;
 }
 
