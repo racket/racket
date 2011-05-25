@@ -10,7 +10,7 @@
   (arity-test make-struct-type-property 1 3)
   (test 3 primitive-result-arity make-struct-type-property)
   (arity-test p? 1 1)
-  (arity-test p-ref 1 1)
+  (arity-test p-ref 1 2)
   (arity-test struct-type-property? 1 1)
   (test #t struct-type-property? prop:p)
   (test #f struct-type-property? 5)
