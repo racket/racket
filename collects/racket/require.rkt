@@ -97,25 +97,36 @@
                                                  stx ps)))))))])
          (syntax/loc stx (combine-in paths ...))))]))
 
+
+(define-for-syntax (multi xs)
+  (define (loop xs)
+    (if (null? xs)
+      '(())
+      (let ([first (car xs)]
+            [rest (loop (cdr xs))])
+        (if (list? first)
+          (let ([bads (filter list? first)])
+            (if (null? bads)
+              (append-map (λ (x) (map (λ (y) (cons x y)) rest)) first)
+              (error 'multi-in "not a simple element" (car bads))))
+          (map (λ (x) (cons first x)) rest)))))
+  (define options (loop xs))
+  (define (try pred? ->str str->)
+    (and (andmap (λ (x) (andmap pred? x)) options)
+         (map (λ (x)
+                (let ([r (apply string-append
+                                (add-between (if ->str (map ->str x) x)
+                                             "/"))])
+                  (if str-> (str-> r) r)))
+              options)))
+  (or (try string? #f #f)
+      (try symbol? symbol->string string->symbol)
+      (error 'multi-in "only accepts all strings or all symbols")))
+
 (provide multi-in)
 (define-require-syntax (multi-in stx)
   (syntax-case stx ()
-    [(_ dir files ...)
-     (or (andmap (lambda (f) ; directory + all files
-                   (let ([s (syntax-e f)]) (and (string? s) (module-path? s))))
-                 (syntax->list #'(files ...)))
-         (andmap (lambda (f) (symbol? (syntax-e f))) ; collects path
-                 (syntax->list #'(files ...))))
-     (let ([dir (syntax-e #'dir)])
-       (with-syntax
-           ([(paths ...)
-             (map (lambda (f)
-                    (datum->syntax
-                     stx (if (string? dir)
-                             (string-append dir "/" (syntax-e f))
-                             (string->symbol
-                              (string-append (symbol->string dir) "/"
-                                             (symbol->string (syntax-e f)))))
-                     stx stx))
-                  (syntax->list #'(files ...)))])
-         (syntax/loc stx (combine-in paths ...))))]))
+    [(_ elem ...)
+     (quasisyntax/loc stx
+       (combine-in #,@(datum->syntax stx (multi (syntax->datum #'(elem ...)))
+                                     stx stx stx)))]))
