@@ -7,8 +7,7 @@
 
   (provide-and-document
    procedures
-   (all-from-except beginner: lang/private/beginner-funs procedures
-                    + * - / append)
+   (all-from-except beginner: lang/private/beginner-funs procedures + * - / append)
 
    ("Numbers (relaxed conditions)"
     
@@ -27,7 +26,7 @@
 	 "to construct a new list by applying a function to each item on one or more existing lists") 
     (for-each ((any ... -> any) (listof any) ... -> void)
 	      "to apply a function to each item on one or more lists for effect only")
-    (filter ((X -> boolean) (listof X) -> (listof X))
+    ((intermediate-filter filter) ((X -> boolean) (listof X) -> (listof X))
 	    "to construct a list from all those items on a list for which the predicate holds")
     ((intermediate-foldr foldr) ((X Y -> Y) Y (listof X) -> Y)
 	   "(foldr f base (list x-1 ... x-n)) = (f x-1 ... (f x-n base))")
@@ -52,8 +51,8 @@
     (argmax ((X -> real) (listof X) -> X)
             "to find the (first) element of the list that maximizes the output of the function")
     
-    (memf ((X -> boolean) (listof X) -> (union false (listof X)))
-	  "to determine whether the first argument produces true for some value in the second argument")
+    (memf ((X -> any) (listof X) -> (union false (listof X)))
+	  "to determine whether the first argument produces a non-false value for any item in the second argument")
     (apply ((X-1 ... X-N -> Y) X-1 ... X-i (list X-i+1 ... X-N) -> Y)
 	      "to apply a function using items from a list as the arguments")
     (compose ((Y-1 -> Z) ... (Y-N -> Y-N-1) (X-1 ... X-N -> Y-N) -> (X-1 ... X-N -> Z))

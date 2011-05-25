@@ -1,3 +1,5 @@
+#lang scheme 
+
 #| tests are at plt/collects/tests/mzscheme/
 collects/tests/mzscheme/beginner.ss
                     .../beginner-abbr.ss
@@ -9,10 +11,6 @@ Each one has to run separately, since they mangle the top-level
 namespace.
 |#
 
-;; MF: switched from 
-;; module teachprims mzscheme
-;; to 
-#lang scheme 
 
 (require mzlib/list 
          mzlib/math
@@ -334,24 +332,6 @@ namespace.
 
 (provide hocheck)
 
-(define (do-sort l cmp? name)
-  (unless (beginner-list? l) 
-    (hocheck name "first argument must be of type <list>, given ~e" l))
-  (unless (and (procedure? cmp?) (procedure-arity-includes? cmp? 2))
-    (hocheck name "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
-  (sort l (lambda (x y) 
-            (define r (cmp? x y))
-            (unless (boolean? r)
-              (hocheck name "the results of the procedure argument must be of type <boolean>, produced ~e" r))
-            r)))
-
-(define-teach intermediate quicksort
-  (lambda (l cmp?)
-    (do-sort l cmp? 'quicksort)))
-(define-teach intermediate sort
-  (lambda (l cmp?)
-    (do-sort l cmp? 'sort)))
-
 (define-teach intermediate foldr
   (lambda (f e l)
     (unless (and (procedure? f) (procedure-arity-includes? f 2))
@@ -448,8 +428,6 @@ namespace.
  beginner-equal?
  beginner-equal~?
  beginner-=~
- intermediate-quicksort
- intermediate-sort
  intermediate-foldr
  intermediate-foldl
  intermediate-build-string
