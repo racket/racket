@@ -8980,13 +8980,9 @@ static void *green_thread_timer(void *data)
   ITimer_Data *itimer_data;
   itimer_data = (ITimer_Data *)data;
 
-  scheme_init_os_thread();
-  
   while (1) {
-    if (itimer_data->die) {
-      scheme_done_os_thread();
+    if (itimer_data->die)
       return NULL;
-    }
     usleep(itimer_data->delay);
     *(itimer_data->fuel_counter_ptr) = 0;
     *(itimer_data->jit_stack_boundary_ptr) = (uintptr_t)-1;
