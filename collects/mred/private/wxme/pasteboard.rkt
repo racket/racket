@@ -729,7 +729,10 @@
     (case-args
      args
      [()
-      (delete-some (lambda (s) (loc-selected? (snip-loc s))))]
+      (delete-some (lambda (s) 
+                     (let ([l (snip-loc s)])
+                       (and l ;; deleted already!
+                            (loc-selected? l)))))]
      [([snip% s])
       (unless (or s-user-locked?
                   (not (zero? write-locked)))
@@ -1295,7 +1298,7 @@
 
   ;; called by the administrator to trigger a redraw
   (def/override (refresh [real? left] [real? top] [nonnegative-real? width] [nonnegative-real? height]
-                         [(symbol-in no-caret show-inactive-caret show-caret) show-caret]
+                         [caret-status? show-caret]
                          [(make-or-false color%) bg-color])
 
     (cond
