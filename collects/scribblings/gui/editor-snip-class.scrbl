@@ -9,7 +9,7 @@ An @scheme[editor-snip%] object is a @scheme[snip%] object that
  another editor.
 
 
-@defconstructor[([editor (or/c (is-a?/c text%) false/c) #f]
+@defconstructor[([editor (or/c (is-a?/c editor<%>) false/c) #f]
                  [with-border? any/c #t]
                  [left-margin exact-nonnegative-integer? 5]
                  [top-margin exact-nonnegative-integer? 5]
