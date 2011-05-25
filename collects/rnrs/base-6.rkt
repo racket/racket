@@ -457,8 +457,12 @@
 ;; letrec
 ;;   Need bindings like R5RS, but int-def body like Racket
 
-(define-syntax-rule (r6rs:letrec bindings . body)
-  (r5rs:letrec bindings (let () (#%stratified-body . body))))
+(define-syntax (r6rs:letrec stx)
+  (syntax-case stx (r6rs:lambda)
+    [(_ ([id (r6rs:lambda . rest)] ...) . body)
+     #'(letrec ([id (r6rs:lambda . rest)] ...) (let () (#%stratified-body . body)))]
+    [(_ bindings . body)
+     #'(r5rs:letrec bindings (let () (#%stratified-body . body)))]))
 
 (define-syntax-rule (r6rs:letrec* bindings . body)
   (letrec bindings (#%stratified-body . body)))
