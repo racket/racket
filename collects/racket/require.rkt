@@ -97,8 +97,8 @@
                                                  stx ps)))))))])
          (syntax/loc stx (combine-in paths ...))))]))
 
-(provide sub-in)
-(define-require-syntax (sub-in stx)
+(provide multi-in)
+(define-require-syntax (multi-in stx)
   (syntax-case stx ()
     [(_ dir files ...)
      (or (andmap (lambda (f) ; directory + all files
