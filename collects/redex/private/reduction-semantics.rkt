@@ -1120,19 +1120,24 @@
 
 (define-struct match (bindings) #:inspector #f)
 
-(define (do-test-match lang pat binders name)
+(define (do-test-match lang pat binders context-name)
   (unless (compiled-lang? lang)
     (error 'redex-match "expected first argument to be a language, got ~e" lang))
-  (let ([cpat (compile-pattern lang pat #t)])
-    (procedure-rename
-     (λ (exp)
-       (let ([ans (match-pattern cpat exp)])
-         (and ans
-              (map (λ (m) (make-match (sort-bindings 
-                                       (filter (λ (x) (memq (bind-name x) binders))
-                                               (bindings-table (mtch-bindings m))))))
-                   ans))))
-     name)))
+  (define name (or context-name
+                   (and (symbol? pat)
+                        pat)))
+  (define cpat (compile-pattern lang pat #t))
+  (define redex-match-proc
+    (λ (exp)
+      (let ([ans (match-pattern cpat exp)])
+        (and ans
+             (map (λ (m) (make-match (sort-bindings 
+                                      (filter (λ (x) (memq (bind-name x) binders))
+                                              (bindings-table (mtch-bindings m))))))
+                  ans)))))
+  (if name
+      (procedure-rename redex-match-proc name)
+      redex-match-proc))
 
 (define (sort-bindings bnds)
   (sort
