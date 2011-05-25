@@ -125,7 +125,7 @@
 		   [else (cons (car l) (loop (cdr l) (sub1 p)))]))) 
 	  (when pb
 	    (send c gb-install pb this)
-	    (send pb insert c x (+ y h)))
+	    (send pb insert c (send pb find-first-snip) x (+ y h)))
 	  (gb-need-recalc-size)]))
        (gb-remove-child 
 	(lambda (c) 
@@ -147,7 +147,7 @@
 	  (set! id (send pb new-id))
 	  (for-each
 	   (lambda (c)
-	     (send pb insert c x (+ y h))
+	     (send pb insert c (send pb find-first-snip) x (+ y h))
 	     (send c gb-install pb this))
 	   children)))
        
