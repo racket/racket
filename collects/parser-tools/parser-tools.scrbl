@@ -22,6 +22,10 @@ style lexer and parser generators.
 
 @section{Lexers}
 
+@section-index["lex"]
+@section-index["scanning"]
+@section-index["scanner"]
+
 @defmodule[parser-tools/lex]
 
 @; ----------------------------------------
@@ -483,6 +487,8 @@ the right choice when using @scheme[lexer] in other situations.
 @; ----------------------------------------------------------------------
 
 @section{Parsers}
+
+@section-index["yacc"]
 
 @defmodule[parser-tools/yacc]
 
