@@ -79,6 +79,15 @@ The resulting contract is a flat contract if @racket[contract] is a
 flat contract.
 }
 
+@addition{Asumu Takikawa}
+
+@defproc[(option/c [contract contract?]) contract?]{
+
+Creates a contract that acts like @racket[contract] but will also
+accept @racket[#f]. Intended to describe situations where a failure
+or default value may be used.
+}
+
 @addition[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @section{Flat Contracts}
