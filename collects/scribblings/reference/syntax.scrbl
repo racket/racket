@@ -1161,20 +1161,34 @@ but then sub-directories that are called
 @filepath{utils} override the one in the project's root.
 In other words, the previous method requires only a single unique name.}
 
-@defform[(multi-in parent child ...)
-         #:contracts ([parent module-path?] [child module-path?])]{
-Specifies multiple files to be required from directory
-@racket[parent] relative to the current directory, or from
-subcollects @racket[child] in collect @racket[parent].
+@defform[(multi-in (dir ...) ...)
+         #:contracts ([dir module-path?])]{
+Specifies multiple files to be required from a hierarchy of
+directories or collects.
 
 For example:
-@racketblock[(require (multi-in racket list dict))]
+@racketblock[(require (multi-in racket (list dict)))]
 is equivalent to:
 @racketblock[(require racket/list racket/dict)]
 Similarly:
-@racketblock[(require (multi-in "utils" "math.rkt" "matrix.rkt"))]
+@racketblock[(require (multi-in "utils" ("math.rkt" "matrix.rkt")))]
 is equivalent to:
 @racketblock[(require "utils/math.rkt" "utils/matrix.rkt")]
+
+It is also possible to require to require files with identical names
+located in different directories:
+@racketblock[(require (multi-in ("math" "matrix") "utils.rkt"))]
+which is equivalent to:
+@racketblock[(require "math/utils.rkt" "matrix/utils.rkt")]
+or even:
+@racketblock[(require (multi-in ("math" "matrix") ("utils.rkt" "helpers.rkt")))]
+which is equivalent to:
+@racketblock[(require "math/utils.rkt" "math/helpers.rkt" "matrix/utils.rkt" "matrix/helpers.rkt")]
+
+Deeper nesting is also possible:
+@racketblock[(require (multi-in "math" "matrix" "utils.rkt"))]
+is equivalent to:
+@racketblock[(require "math/matrix/utils.rkt")]
 }
 
 @; --------------------
