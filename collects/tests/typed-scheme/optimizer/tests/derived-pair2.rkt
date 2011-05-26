@@ -1,15 +1,27 @@
 #;
 (
-#f (no location) car -- pair
-derived-pair2.rkt 25:0 (#%app caaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
-#f (no location) cdr -- pair
-derived-pair2.rkt 26:0 (#%app caadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
-derived-pair2.rkt 27:0 (#%app cadar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
-derived-pair2.rkt 28:0 (#%app caddr (#%app cons (quote 1) (#%app cons (quote 2) (#%app cons (quote 3) (quote 4))))) -- derived pair
-derived-pair2.rkt 29:0 (#%app cdaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
-derived-pair2.rkt 30:0 (#%app cdadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
-derived-pair2.rkt 31:0 (#%app cddar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
-derived-pair2.rkt 32:0 (#%app cdddr (#%app cons (quote 1) (#%app cons (quote 2) (#%app cons (quote 3) (quote 4))))) -- derived pair
+derived-pair2.rkt 37:0 car -- pair
+derived-pair2.rkt 37:0 (#%app caaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
+derived-pair2.rkt 38:0 car -- pair
+derived-pair2.rkt 38:0 cdr -- pair
+derived-pair2.rkt 38:0 (#%app caadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
+derived-pair2.rkt 39:0 car -- pair
+derived-pair2.rkt 39:0 cdr -- pair
+derived-pair2.rkt 39:0 (#%app cadar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
+derived-pair2.rkt 40:0 car -- pair
+derived-pair2.rkt 40:0 cdr -- pair
+derived-pair2.rkt 40:0 (#%app caddr (#%app cons (quote 1) (#%app cons (quote 2) (#%app cons (quote 3) (quote 4))))) -- derived pair
+derived-pair2.rkt 41:0 cdr -- pair
+derived-pair2.rkt 41:0 car -- pair
+derived-pair2.rkt 41:0 (#%app cdaar (#%app cons (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3)) (quote 4))) -- derived pair
+derived-pair2.rkt 42:0 cdr -- pair
+derived-pair2.rkt 42:0 car -- pair
+derived-pair2.rkt 42:0 (#%app cdadr (#%app cons (quote 1) (#%app cons (#%app cons (quote 2) (quote 3)) (quote 4)))) -- derived pair
+derived-pair2.rkt 43:0 cdr -- pair
+derived-pair2.rkt 43:0 car -- pair
+derived-pair2.rkt 43:0 (#%app cddar (#%app cons (#%app cons (quote 1) (#%app cons (quote 2) (quote 3))) (quote 4))) -- derived pair
+derived-pair2.rkt 44:0 cdr -- pair
+derived-pair2.rkt 44:0 (#%app cdddr (#%app cons (quote 1) (#%app cons (quote 2) (#%app cons (quote 3) (quote 4))))) -- derived pair
 1
 2
 2

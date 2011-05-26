@@ -62,6 +62,10 @@
                   #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))
 
 
+;; change the source location of a given syntax object
+(define (relocate stx loc-stx)
+  (datum->syntax stx (syntax->datum stx) loc-stx stx stx))
+
 ;; if the equivalent sequence of cars and cdrs is guaranteed not to fail,
 ;; we can optimize
 
@@ -73,7 +77,7 @@
        (if (null? accessors)
            #'arg
            (quasisyntax/loc stx
-             (#%plain-app #,(car accessors)
+             (#%plain-app #,(relocate (car accessors) stx)
                           #,(gen-alt-helper (cdr accessors))))))
      (let ((ty  (type-of stx))
            (obj (gen-alt-helper accessors)))
