@@ -1862,6 +1862,11 @@ Returns @racket[#t] if its argument is a contract that guarantees that
 it returns a value which passes @racket[chaperone-of?] when compared to
 the original, uncontracted value.}
 
+@defproc[(impersonator-contract? [v any/c]) boolean?]{
+
+Returns @racket[#t] if its argument is a contract that is not a chaperone
+contract nor a flat contract.}
+
 @defproc[(flat-contract? [v any/c]) boolean?]{
 
 Returns @racket[#t] when its argument is a contract that can be

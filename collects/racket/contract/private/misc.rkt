@@ -34,6 +34,7 @@
          make-none/c 
 
          chaperone-contract?
+         impersonator-contract?
          flat-contract?
          contract?
          
@@ -827,6 +828,12 @@
   (let ([c (coerce-contract/f x)])
     (and c
          (chaperone-contract-struct? c))))
+
+(define (impersonator-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (not (flat-contract-struct? c))
+         (not (chaperone-contract-struct? c)))))
 
 (define (contract-name ctc)
   (contract-struct-name
