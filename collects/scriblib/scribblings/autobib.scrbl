@@ -20,7 +20,7 @@ to one or more bibliography entries with a preceding non-breaking
 space. It has the contract
 
 @schemeblock[
-((bib?) () (listof bib?) . ->* . element?)
+(->* (bib?) () #:rest (listof bib?) element?)
 ]
 
 The function bound to @scheme[citet-id] generates an element suitable
@@ -28,15 +28,19 @@ for use as a noun---referring to a document or its author---for one
 or more bibliography entries which share an author. It has the contract
 
 @schemeblock[
-((bib?) () (listof bib?) . ->* . element?)
+(->* (bib?) () #:rest (listof bib?) element?)
 ]
 
 The function bound to @scheme[generate-bibliography-id] generates the
 section for the bibliography. It has the contract
 
 @schemeblock[
-(() (#:tag [tag "doc-bibliography"]) null? . ->* . part?)
-]}
+(->* () (#:tag string? #:sec-title string?) part?)
+]
+
+The default value for the @racket[#:tag] argument is @racket["doc-bibliography"]
+and for @racket[#:sec-title] is @racket["Bibliography"].
+}
 
 
 @defproc[(bib? [v any/c]) boolean?]{

@@ -96,7 +96,7 @@
   (string->number (auto-bib-date b)))
 
 
-(define (gen-bib tag group)
+(define (gen-bib tag group sec-title)
   (let* ([author/date<? 
           (lambda (a b)
             (or
@@ -110,7 +110,7 @@
     (make-part
      #f
      `((part ,tag))
-     '("Bibliography")
+     (list sec-title)
      (make-style #f '(unnumbered))
      null
      (list
@@ -150,8 +150,8 @@
       (add-cites group (cons bib-entry bib-entries)))
     (define (citet bib-entry . bib-entries)
       (add-inline-cite group (cons bib-entry bib-entries)))
-    (define (generate-bibliography #:tag [tag "doc-bibliography"])
-      (gen-bib tag group))))
+    (define (generate-bibliography #:tag [tag "doc-bibliography"] #:sec-title [sec-title "Bibliography"])
+      (gen-bib tag group sec-title))))
 
 (define (ends-in-punc? e)
   (regexp-match? #rx"[.!?,]$" (content->string e)))
