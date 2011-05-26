@@ -3,7 +3,10 @@
          racket/serialize)
 
 (define (read/string str)
-  (read (open-input-string str)))
+  (match (read (open-input-string str))
+    [(? eof-object? e) (raise-type-error 'read/string "nonempty string" str)]
+    [other other]))
+
 ;; Eli: Same comments as `read/bytes'.
 
 (define (write/string v)
