@@ -130,3 +130,23 @@
      (quasisyntax/loc stx
        (combine-in #,@(datum->syntax stx (multi (syntax->datum #'(elem ...)))
                                      stx stx stx)))]))
+
+
+;; Tests for multi.
+;; We don't want to run them every time the file is required, so they are
+;; commented out. A proper test suite for racket/require should be written.
+;; (require tests/eli-tester)
+;; (test (multi '("a" "b" "c"))       => '("a/b/c")
+;;       (multi '("a" ("b" "c") "d"))   => '("a/b/d" "a/c/d")
+;;       (multi '("a" "b" ("c" "d")))   => '("a/b/c" "a/b/d")
+;;       (multi '(("a" "b") "c" "d"))   => '("a/c/d" "b/c/d")
+;;       (multi '(("a" "b") ("c" "d"))) => '("a/c" "a/d" "b/c" "b/d")
+;;       (multi '(("a" "b" "c" "d")))   => '("a" "b" "c" "d")
+;;       (multi '(("a" "b" ("c" "d")))) =error> ""
+;;       (multi '(a b c))       => '(a/b/c)
+;;       (multi '(a (b c) d))   => '(a/b/d a/c/d)
+;;       (multi '(a b (c d)))   => '(a/b/c a/b/d)
+;;       (multi '((a b) c d))   => '(a/c/d b/c/d)
+;;       (multi '((a b) (c d))) => '(a/c a/d b/c b/d)
+;;       (multi '((a b c d)))   => '(a b c d)
+;;       (multi '((a b (c d)))) =error> "")
