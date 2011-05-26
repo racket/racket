@@ -252,9 +252,9 @@
 
 (define blurb "Racket is a programming language")
 
-(provide set-news-flash!)
-(define news-flash #f)
-(define (set-news-flash! . text) (set! news-flash text))
+(provide set-news-flashes!)
+(define news-flashes #f)
+(define (set-news-flashes! . text) (set! news-flashes text))
 
 (provide index)
 (define index
@@ -262,9 +262,9 @@
         #:extra-headers @list{@meta[name: 'description content: blurb]
                               @(delay more.css)}
     @div[class: 'leftpane]{
-      @span{@span[style: "font-size: large; font-weight: bold;"]{Racket}
-            is a programming language.}@;
-      @(and news-flash (list br br news-flash))}
+      @span[style: "font-size: large; font-weight: bold;"]{Racket}
+      is a programming language.
+      @(and news-flashes (list br (div style: "width: 100%;" news-flashes)))}
     @div[class: 'downloadbutton]{@download-button}
     @div[class: 'aboutpane]{
       @div[class: 'panetitle]{Start Quickly}
@@ -326,7 +326,7 @@
         @invisible-separator
         @div[class: 'slideshowframe id: @list{frame@pos}
              style: @list{display: @(if (zero? pos) "block" "none")@";"}]{
-          @(example-code elem)}@;
+          @pre{@(example-code elem)}}@;
         @; have the descriptions appear in a logical place and then ...
         @div[id: @list{helpframe@pos} style: "display: none;"]{
           @(example-desc elem)}})
