@@ -467,7 +467,7 @@
     (define/override (flip y h) (flip-screen (+ y h)))
 
     (define/override (get-y)
-      (- (- (super get-y) (if caption? 22 0)) (get-menu-bar-height)))
+      (- (super get-y) (get-menu-bar-height)))
 
     (define/override (set-size x y w h)
       (unless (and (= x -1) (= y -1))
