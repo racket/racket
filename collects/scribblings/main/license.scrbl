@@ -22,7 +22,7 @@ General Public License (LGPL).  This means
 
 ]
 
-See @filepath{doc/release-notes/COPYING.LIB} in your Racket installation
+See @filepath{doc/release-notes/COPYING.txt} in your Racket installation
 for more information.
 
 @copyright{

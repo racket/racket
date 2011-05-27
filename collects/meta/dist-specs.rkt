@@ -360,7 +360,7 @@ mz-base := "/racket/README"
 mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (doc: "license/" "release/" "acks/" "search/"
                     "getting-started/")
-              (notes: "COPYING.LIB" "COPYING-libscheme.txt")
+              (notes: "COPYING.txt" "COPYING-libscheme.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
               (doc+src: "reference/" "guide/" "quick/" "more/"
                         "foreign/" "inside/" ;; "places/" <- not ready yet

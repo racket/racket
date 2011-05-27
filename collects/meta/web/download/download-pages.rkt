@@ -105,7 +105,7 @@
 (define license
   @page[#:title "Software License" #:part-of 'download]{
     @p{Racket is distributed under the
-       @a[href: "http://www.gnu.org/copyleft/lesser.html"]{
+       @a[href: "http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html#SEC1"]{
          GNU Lesser General Public License (LGPL)}.
        This means that you can link parts of Racket (such as racket or gracket)
        into proprietary applications, provided that you follow the specific
