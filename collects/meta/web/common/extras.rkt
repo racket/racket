@@ -21,10 +21,10 @@
 ;; a grayish tt text
 (provide TT)
 (define (TT . xs)
-  @tt[style: "background-color: #dde;"]{@xs})
+  @tt[style: "background-color: #d8d8e8;"]{@xs})
 (provide PRE)
 (define (PRE . xs)
-  @pre[style: "background-color: #dde;"]{@xs})
+  @pre[style: "background-color: #d8d8e8;"]{@xs})
 
 ;; some tags with convenient separators
 (provide make-separated-tag (rename-out [the-separator ~])

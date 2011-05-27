@@ -48,7 +48,7 @@
         ", "))
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
-    @div[style: (box-style 3 "#ddd")]{
+    @div[style: (box-style 3 "#dddddd")]{
     @p*{
       Dear Prospective Graduate Student,
       @|br br|
@@ -58,7 +58,7 @@
       Because you are more interested in PLT than in our specific institutions,
       we have created the following common application form.  By filling it in
       once, you can automatically apply to all current PLT institutions.
-    @~ @|style: (box-style 1 "#bbb")|@;
+    @~ @|style: (box-style 1 "#bbbbbb")|@;
       Yes, we know you don't like @place-names (circle those applicable).  But
       we like them, or we wouldn't be living there.  Think about the message
       you're sending by rejecting our choices.  Moreover, we think very highly

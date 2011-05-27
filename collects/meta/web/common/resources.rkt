@@ -41,14 +41,14 @@
   ;; be used in places with their own CSS (eg, blog.racket-lang.org)
   @list{
     .racketnav {
-      background-color: #000;
-      color: #fff;
+      background-color: #000000;
+      color: #ffffff;
       margin-bottom: 1em;
       padding: 0.5em 0em;
       white-space: nowrap;
     }
     .racketnav a {
-      color: #fff;
+      color: #ffffff;
       text-decoration: none;
     }
     .racketnav .navcontent {
@@ -68,11 +68,11 @@
     }
     .racketnav .navcurlink a {
       padding: 0em 1em;
-      background-color: #555;
+      background-color: #555555;
     }
     .racketnav .navlink    a:hover,
     .racketnav .navcurlink a:hover {
-      background-color: #888;
+      background-color: #888888;
     }
     .racketnav .navlinkcell {
       text-align: center;

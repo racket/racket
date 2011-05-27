@@ -170,7 +170,7 @@
 (define index
   @page[#:title "Bug Reports" #:extra-headers bugs-script
         #:extra-body-attrs `(onLoad: "initBugData();")]{
-    @p[style: '("padding: 5px; color: #a00; background-color: #ffe;"
+    @p[style: '("padding: 5px; color: #aa0000; background-color: #ffffee;"
                 " border: 1px solid; font-weight: bold;")]{
          If you can, please use the “Submit Bug Report” item in DrRacket's Help
          menu.  It works better than this page, because it helps you supply
@@ -192,8 +192,8 @@
            [else (error 'field "internal error")])))
     @form[action: bug-report-cgi method: 'post id: 'BugForm
           ;; enctype: "multipart/form-data"
-          style: '("border: 2px solid #44f; padding: 6px;"
-                   " background-color: #eef;")
+          style: '("border: 2px solid #4444ff; padding: 6px;"
+                   " background-color: #eeeeff;")
           onsubmit: "return CheckSubmit();"]{
       @input[type: 'hidden name: 'cont value: thanks]
       @field['br "Your name"]{

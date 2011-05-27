@@ -357,8 +357,9 @@
         set_display("none");
         showing = new_showing;
         set_display("block");
-        rewbutton_s.color = (showing==0) ? "#aaa" : "#444";
-        advbutton_s.color = (showing==@(sub1 (length l))) ? "#aaa" : "#444";
+        rewbutton_s.color = (showing==0) ? "#aaaaaa" : "#444444";
+        advbutton_s.color =
+           (showing==@(sub1 (length l))) ? "#aaaaaa" : "#444444";
       }
       function advance_show() {
         if (showing < @(sub1 (length l))) change_show_to(showing+1);
@@ -428,7 +429,7 @@
       width: 100%;
       font-size: large;
       font-weight: bold;
-      color: #d00;
+      color: #dd0000;
     }
     .threepanes {
       width: 100%;
@@ -455,10 +456,10 @@
     }
     #advancebutton, #rewindbutton, #helpbutton, #closebutton {
       text-decoration: none;
-      border: 1px solid #ddd;
+      border: 1px solid #ddddd;
       font-weight: bold;
-      color: #444;
-      background-color: #eee;
+      color: #44444;
+      background-color: #eeeee;
       padding: 0px 1px 0px 1px;
     }
     #advancebutton, #rewindbutton {
@@ -473,7 +474,7 @@
     }
     .helpcontent {
       width: 20em;
-      background-color: #ffe;
+      background-color: #ffffee;
       padding: 10px;
       margin-top: 3px;
       border: 1px solid black;

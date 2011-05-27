@@ -31,13 +31,13 @@
        (tr (map (lambda (_) @td{}) MLs)))
     @(define (sec . text)
        @list{@gap1
-             @tr{@td[style: '("background-color: #ddd; font-weight: bold;"
+             @tr{@td[style: '("background-color: #dddddd; font-weight: bold;"
                               " padding: 0;")
                      colspan: (length MLs)]{@text}}
              @gap2})
     @table[style: "width: 100%; margin: auto; text-align: center;"
            frame: 'box rules: 'cols cellpadding: 5]{
-      @tr[style: "border-bottom: 1px solid; background-color: #ccf;"]{
+      @tr[style: "border-bottom: 1px solid; background-color: #ccccff;"]{
         @(list-cells 'header-cell)}
       @tr[valign: 'top style: "text-align: left;"]{@(list-cells 'description)}
       @tr{@(list-cells 'main-page-cell)}

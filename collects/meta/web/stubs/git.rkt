@@ -105,7 +105,7 @@
       font-family: monospace;
       font-size: large;
       font-weight: bold;
-      background-color: #eee;
+      background-color: #eeeeee;
     }
     .code, .path, .man {
       white-space: nowrap;
