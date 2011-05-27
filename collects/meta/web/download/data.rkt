@@ -135,13 +135,15 @@
     (lambda (v)
       (hash-ref! t v
         (lambda ()
-          (let* ([info   (get-version-tag-info v)]
-                 [tagger (car info)]
-                 [date   (cadr info)]
-                 [announcement (caddr info)]
-                 [year   (date-year date)]
-                 [month  (vector-ref months (sub1 (date-month date)))])
-            (release v date (format "~a ~a" month year) announcement)))))))
+          (define info (get-version-tag-info v))
+          (if info
+            (let* ([tagger (car info)]
+                   [date   (cadr info)]
+                   [announcement (caddr info)]
+                   [year   (date-year date)]
+                   [month  (vector-ref months (sub1 (date-month date)))])
+              (release v date (format "~a ~a" month year) announcement))
+            (release v #f "(unknown date)" "(no release text found)")))))))
 
 ;; ----------------------------------------------------------------------------
 ;; Installer information
