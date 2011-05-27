@@ -21,8 +21,9 @@
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
       @|br hr|
       @div[align: "center"]{
-        @(let ([links (list all-version-pages
+        @(let ([links (list ((release-page release) "Release Notes")
                             @license{License}
+                            all-version-pages
                             @pre:installers{Nightly installers})])
            (small (add-between links @list{ @nbsp @bull @nbsp })))}
       @hr
@@ -41,32 +42,65 @@
                                   (equal? package (installer-package i))))
              @li{@(installer->page i 'only-platform)})}}})
 
+(define (release-page* rel)
+  (define ver (release-version rel))
+  (define title @list{v@ver Release Notes})
+  @page[#:file (format "v~a.html" ver) #:title title #:part-of 'download]{
+    @h2{Release Announcements for Version @ver}
+    @pre{@release-announcement[rel]}
+  })
+(define release-page
+  (let ([t (make-hash)])
+    (lambda (rel) (hash-ref! t rel (lambda () (release-page* rel))))))
+
 (define all-version-pages
   (let ()
     (define (make-page rel pkg)
       (define ver   (release-version rel))
       (define file  (format "~a-v~a.html" pkg ver))
-      (define title @list{@(package->name pkg) v@ver})
-      (define label @list{v@ver @small{(@(release-date-string rel))}})
-      (define the-page
-        @page[#:file file #:title title #:part-of 'download]{
-          @(render-download-page rel pkg)})
-      (the-page label))
-    @page[#:id 'all-versions #:title "All Versions" #:part-of 'download]{
-      @table[width: "90%" align: 'center cellspacing: 10 cellpadding: 10
-             rules: 'cols frame: 'box]{
+      (define title @list{Download @(package->name pkg) v@ver})
+      @page[#:file file #:title title #:part-of 'download]{
+        @(render-download-page rel pkg)})
+    (define style
+      @style/inline[type: 'text/css]{
+        .version-row {
+          background-color: #ffffc0;
+        }
+        .version-row:hover {
+          background-color: #e0e0a0;
+        }
+        .version-row a {
+          text-decoration: none;
+        }
+        .version-row a:hover {
+          background-color: #eeee22;
+        }})
+    @page[#:id 'all-versions #:title "All Versions" #:part-of 'download
+          #:extra-headers style]{
+      @table[align: 'center cellspacing: 0 cellpadding: 4 frame: 'box
+             rules: 'groups]{
         @thead{
-          @tr[style: "border-bottom: 1px solid;"]{
-            @(map (lambda (p)
-                    @th[width: "50%" align: 'center]{@(package->name p)})
-                  all-packages)}}
-        @tbody{
-          @(map (lambda (r)
-                  (tr (map (lambda (p) (td align: 'center (make-page r p)))
-                           all-packages)))
-                all-releases)
-          @tr{@td[align: 'center colspan: 2 style: "border-top: solid 1px;"]{
-                @pre:installers}}}}}))
+          @tr{@td{@nbsp @strong{Version & Release Notes}}
+              @(map (lambda (p) @th[align: 'center]{@(package->name p)})
+                    all-packages)}}
+        @(let ([sep (tr style: "height: 4px; margin: 0; padding: 0;"
+                        (td) (map (lambda (_) (td)) all-packages))])
+           (define (cell rel pkg)
+             @td[align: 'center]{
+               @nbsp @(make-page rel pkg){[download]} @nbsp})
+           @tbody{
+             @sep
+             @(map (lambda (r)
+                     @list{
+                       @tr[class: 'version-row]{
+                         @td{@|nbsp nbsp| @strong{Version @release-version[r]},
+                             @(release-page r){@release-date-string[r]} @nbsp}
+                         @(map (lambda (p) (cell r p)) all-packages)}
+                       @sep})
+                   all-releases)})
+        @tfoot{
+          @tr[class: 'version-row]{@td[align: 'center colspan: 3]{
+            @pre:installers}}}}}))
 
 (define license
   @page[#:title "Software License" #:part-of 'download]{
