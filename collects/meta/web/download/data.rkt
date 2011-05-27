@@ -1,51 +1,5 @@
 #lang racket/base
 
-(define -versions+dates-
-  '(["5.1.1" "April 2011"]
-    ["5.1"   "February 2011"]
-    ["5.0.2" "November 2010"]
-    ["5.0.1" "August 2010"]
-    ["5.0"   "June 2010"]
-    ["4.2.5" "April 2010"]
-    ["4.2.4" "January 2010"]
-    ["4.2.3" "December 2009"]
-    ["4.2.2" "October 2009"]
-    ["4.2.1" "July 2009"]
-    ["4.2"   "June 2009"]
-    ["4.1.5" "March 2009"]
-    ["4.1.4" "January 2009"]
-    ["4.1.3" "November 2008"]
-    ["4.1.2" "October 2008"]
-    ["4.1.1" "October 2008"]
-    ["4.1"   "August 2008"]
-    ["4.0.2" "July 2008"]
-    ["4.0.1" "June 2008"]
-    ["4.0"   "June 2008"]
-    ["372"   "December 2007"]
-    ["371"   "August 2007"]
-    ["370"   "May 2007"]
-    ["360"   "November 2006"]
-    ["352"   "July 2006"]
-    ["351"   "July 2006"]
-    ["350"   "June 2006"]
-    ["301"   "January 2006"]
-    ["300"   "December 2005"]
-    ["209"   "December 2004"]
-    ["208"   "August 2004"]
-    ["207"   "May 2004"]
-    ["206p1" "January 2004"]
-    ["206"   "January 2004"]
-    ["205"   "August 2003"]
-    ["204"   "May 2003"]
-    ["203"   "December 2002"]
-    ["202"   "August 2002"]
-    ["201"   "July 2002"]
-    ["200"   "June 2002"]
-    ["103p1" "August 2001"]
-    ["103"   "September 2000"]
-    ["053"   "July 1998"]
-    ))
-
 (define -platform-names-
   `(;; source platforms
     ["win"  "Windows"]
@@ -134,7 +88,7 @@
      "solsona@acm.org"]
     ))
 
-;; Used to sort packages when more then one is rendered on a page
+;; Used to sort packages when more then one is rendered on a page (delayed)
 (define (-installer-orders-)
   `((,installer-package ,eq? (racket racket-textual))
     (,installer-binary? ,eq? (#t #f))
@@ -145,38 +99,17 @@
 
 ;; ----------------------------------------------------------------------------
 
-(provide versions+dates all-versions current-version version->date
-         (struct-out mirror) mirrors
-         (struct-out installer) all-installers
-         package->name platform->name suffix->name)
+(provide (struct-out mirror) mirrors
+         (struct-out release) (struct-out installer)
+         all-installers current-release all-releases all-packages
+         package->name platform->name suffix->name
+         set-announcements-file!)
 
-(require racket/list racket/file version/utils racket/runtime-path)
-
-;; ----------------------------------------------------------------------------
-
-;; accepts "053"
-(define (version->integer* v)
-  (version->integer (regexp-replace #rx"^0+" v "")))
-
-(define versions+dates
-  (sort -versions+dates- <
-        #:key (lambda (vd) (version->integer* (car vd)))
-        #:cache-keys? #t))
-
-;; sorted from oldest to newest
-(define all-versions (map car versions+dates))
-
-(define current-version (last all-versions))
-
-(define version->date
-  (let ([t (make-hash)])
-    (for ([vd (in-list versions+dates)])
-      (hash-set! t (car vd) (cadr vd)))
-    (lambda (v)
-      (hash-ref t v (lambda ()
-                      (error 'version->date "unknown version: ~e" v))))))
+(require racket/list racket/file version/utils racket/runtime-path
+         "release-info.rkt")
 
 ;; ----------------------------------------------------------------------------
+;; Mirror information
 
 (struct mirror (location url person email))
 
@@ -187,19 +120,43 @@
        -mirrors-))
 
 ;; ----------------------------------------------------------------------------
+;; Release information
+
+(struct release (version date date-string announcement))
+
+(define announcements #f)
+(define (set-announcements-file! file)
+  (set! announcements #t))
+
+(define version->release
+  (let ([t (make-hash)]
+        [months '#("January" "February" "March" "April" "May" "June" "July"
+                   "August" "September" "October" "November" "December")])
+    (lambda (v)
+      (hash-ref! t v
+        (lambda ()
+          (let* ([info   (get-version-tag-info v)]
+                 [tagger (car info)]
+                 [date   (cadr info)]
+                 [announcement (caddr info)]
+                 [year   (date-year date)]
+                 [month  (vector-ref months (sub1 (date-month date)))])
+            (release v date (format "~a ~a" month year) announcement)))))))
+
+;; ----------------------------------------------------------------------------
+;; Installer information
 
 (define-runtime-path installers-data "installers.txt")
 
 (struct installer
-        (path     ; path to file from the installers directory
-         file     ; just the file name
-         version  ; version of the installer (as a string)
-         version-number ; version as a number (via version->integer*)
-         size     ; human-readable size string
-         package  ; package kind symbol 'racket or 'racket-textual
-         binary?  ; #t = binary distribution, #f = source distribution
-         platform ; platform name string (generic for srcs, cpu-os for bins)
-         suffix)) ; string
+  (path     ; path to file from the installers directory
+   file     ; just the file name
+   release  ; the release that this installer comes from
+   size     ; human-readable size string
+   package  ; package kind symbol 'racket or 'racket-textual
+   binary?  ; #t = binary distribution, #f = source distribution
+   platform ; platform name string (generic for srcs, cpu-os for bins)
+   suffix)) ; string
 
 (define installer-rx
   (pregexp (string-append
@@ -219,7 +176,7 @@
             "))$")))
 
 (define (make-installer size path version package file type platform suffix)
-  (installer path file version (version->integer* version) size
+  (installer path file (version->release version) size
              (string->symbol package) (equal? "bin" type) platform suffix))
 
 (define (parse-installers in)
@@ -245,7 +202,9 @@
 (define all-installers
   (sort
    (call-with-input-file installers-data parse-installers)
-   (let ([fns `([,installer-version-number . ,>]
+   (let ([fns `([,(lambda (i)
+                    (version->integer (release-version (installer-release i))))
+                 . ,>]
                 ,@(map (lambda (o) (cons (car o) (order->precedes (cdr o))))
                        (-installer-orders-)))])
      (lambda (i1 i2)
@@ -254,6 +213,12 @@
            #f
            (let* ([get (caar fns)] [<? (cdar fns)] [x1 (get i1)] [x2 (get i2)])
              (or (<? x1 x2) (and (equal? x1 x2) (loop (cdr fns)))))))))))
+
+(define all-releases ; still sorted from newest to oldest
+  (remove-duplicates (map installer-release all-installers)))
+(define all-packages ; also sorted
+  (remove-duplicates (map installer-package all-installers)))
+(define current-release (car all-releases))
 
 (define package->name
   (let ([t (make-hasheq)])

@@ -2008,11 +2008,11 @@ BUILD_WEB() {
   # distribute only if this is a normal build
   if [[ "$prewebdir" = "$prewebdir_default" ]]; then
     separator "Making and distributing web content"
-    _run "$PLTHOME/$webscript" $webflags --dist
+    webflags="$webflags --dist"
   else
     separator "Making web content -- not distributing"
-    _run "$PLTHOME/$webscript" $webflags
   fi
+  GIT_DIR="$maindir/$cleandir/.git" _run "$PLTHOME/$webscript" $webflags
 
 }
 

@@ -4,17 +4,18 @@
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
-(define (render-download-page [version current-version] [package 'racket])
+(define (render-download-page [release current-release] [package 'racket])
+  (define version (release-version release))
   @center-div{
     @h2{Download @(package->name package)
-                 v@version (@(version->date version))}
+                 v@version (@(release-date-string release))}
     @div[id: "download_panel" style: "display: none;"]{
       Platform:
       @select[id: "platform_selector"
               onchange: "selection_changed();"
               onkeypress: "selection_changed();"]{
         @(for/list ([i (in-list all-installers)]
-                    #:when (and (equal? version (installer-version i))
+                    #:when (and (equal? release (installer-release i))
                                 (equal? package (installer-package i))))
            (installer->page i 'render-option))}
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
@@ -36,23 +37,20 @@
     @noscript{
       Installers are available for the following platforms:
       @ul{@(for/list ([i (in-list all-installers)]
-                      #:when (and (equal? version (installer-version i))
+                      #:when (and (equal? release (installer-release i))
                                   (equal? package (installer-package i))))
              @li{@(installer->page i 'only-platform)})}}})
 
 (define all-version-pages
   (let ()
-    (define all-versions
-      (remove-duplicates (map installer-version all-installers)))
-    (define all-packages
-      (remove-duplicates (map installer-package all-installers)))
-    (define (make-page ver pkg)
+    (define (make-page rel pkg)
+      (define ver   (release-version rel))
       (define file  (format "~a-v~a.html" pkg ver))
       (define title @list{@(package->name pkg) v@ver})
-      (define label @list{v@ver @small{(@(version->date ver))}})
+      (define label @list{v@ver @small{(@(release-date-string rel))}})
       (define the-page
         @page[#:file file #:title title #:part-of 'download]{
-          @(render-download-page ver pkg)})
+          @(render-download-page rel pkg)})
       (the-page label))
     @page[#:id 'all-versions #:title "All Versions" #:part-of 'download]{
       @table[width: "90%" align: 'center cellspacing: 10 cellpadding: 10
@@ -63,10 +61,10 @@
                     @th[width: "50%" align: 'center]{@(package->name p)})
                   all-packages)}}
         @tbody{
-          @(map (lambda (v)
-                  (tr (map (lambda (p) (td align: 'center (make-page v p)))
+          @(map (lambda (r)
+                  (tr (map (lambda (p) (td align: 'center (make-page r p)))
                            all-packages)))
-                all-versions)
+                all-releases)
           @tr{@td[align: 'center colspan: 2 style: "border-top: solid 1px;"]{
                 @pre:installers}}}}}))
 

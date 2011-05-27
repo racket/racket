@@ -78,9 +78,9 @@
       @h2{Specific Versions}
       @blockquote{
         @table[frame: 'box rules: 'rows cellpadding: 10]{
-          @(for/list ([v (remove-duplicates
-                          (map installer-version all-installers))])
-             @tr{@td{@b{@v} @br @small{(@version->date[v])}}
+          @(for/list ([r (in-list all-releases)])
+             (define v (release-version r))
+             @tr{@td{@b{@v} @br @small{(@(release-date-string r))}}
                  @td{@TT{\cite[Version @v]{plt-tr@num}} @br
                      @TT|{@cite[(in-bib plt-tr|@num "Version |@v")]}|}
                  @td{@link['html v], @link['pdf v]}})}

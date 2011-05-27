@@ -3,4 +3,5 @@
 (require "resources.rkt" "data.rkt")
 
 (define version.txt
-  (plain (format "~s" `((recent ,current-version) (stable ,current-version)))))
+  (let ([v (release-version current-release)])
+    (plain (format "~s" `((recent ,v) (stable ,v))))))
