@@ -49,8 +49,8 @@
 (define bug-report-cgi (cgi-link "bug-report" "bug-report.cgi"))
 (define bug-report-captcha (cgi-link "bug-report-captcha"))
 
-(provide captcha-file)
-(define captcha-file (make-parameter #f))
+(provide captcha-file+num)
+(define captcha-file+num (make-parameter #f))
 
 (define query (cgi-link "gnatsweb" "query"))
 
@@ -230,9 +230,10 @@
       @; that is in "multipart/form-data" format.
       @; @field['line "Attachment"]{
       @;   @input[type: 'file name: 'attachment size: 20]}
-      @(let* ([c (captcha-file)]
-              [c (and c (img src: (cgi-link c) align: "middle"))])
-         (and c @field['line @list{Please type @c}]{
+      @(let* ([c (captcha-file+num)]
+              [n (and c (cdr c))]
+              [c (and c (img src: (cgi-link (car c)) align: "middle"))])
+         (and c @field['line @list{Please type @c and then a “@tt{*@n}”}]{
                   @input[type: 'text name: 'captcha value: "" size: 10]}))
       @input[type: 'submit value: "Submit"]}})
 
