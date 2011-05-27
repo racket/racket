@@ -81,11 +81,13 @@
            #:with opt #'other))
 
 (define (optimize-top stx)
-  (let* ([log-file? (and (or *log-optimizations?* *log-missed-optimizations?*)
-                         *log-to-log-file?*)]
+  (let* ([log? (or *log-optimizations?* *log-missed-optimizations?*)]
+         [log-file? (and log? *log-to-log-file?*)]
          [port (if log-file?
                    (open-output-file *log-file* #:exists 'append)
                    (current-output-port))])
+    (when log? ; Reset log. We don't want to accumulate after each top-level expression.
+      (clear-log))
     (begin0
       (parameterize ([current-output-port port]
                      [optimize (syntax-parser
@@ -100,5 +102,7 @@
           (when *show-optimized-code*
             (pretty-print (syntax->datum result)))
           result))
+      (when log?
+        (print-log))
       (when log-file?
         (close-output-port port)))))

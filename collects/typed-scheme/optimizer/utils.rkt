@@ -1,14 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 (require unstable/match racket/match racket/set
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
-         (for-template scheme/base)
+         (for-template racket/base)
          (types type-table utils subtype)
          (rep type-rep))
 
 (provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
          log-missed-optimization *log-missed-optimizations?*
+         print-log clear-log
          *show-optimized-code*
          subtypeof? isoftype?
          mk-unsafe-tbl
@@ -29,19 +30,49 @@
         (format "~a:~a" line col)
         "(no location)")))
 
+(struct log-entry (msg line col) #:transparent)
+
 ;; we keep track of log entries, to avoid repetitions that would be
 ;; caused by traversing the same syntax multiple times (which is not
 ;; a problem per se)
 (define log-so-far (set))
 (define (do-logging msg stx)
-  (let ([new-message (format "~a ~a ~a -- ~a\n"
-                             (syntax-source-file-name stx)
-                             (line+col->string stx)
-                             (syntax->datum stx)
-                             msg)])
-    (unless (set-member? log-so-far new-message)
-      (set! log-so-far (set-add log-so-far new-message))
-      (display new-message))))
+  (let* ([new-message (format "~a ~a ~a -- ~a\n"
+                              (syntax-source-file-name stx)
+                              (line+col->string stx)
+                              (syntax->datum stx)
+                              msg)]
+         [new-entry (log-entry new-message
+                               (syntax-line stx)
+                               (syntax-column stx))])
+    (unless (set-member? log-so-far new-entry)
+      (set! log-so-far (set-add log-so-far new-entry)))))
+;; once the optimizer is done, we sort the log according to source
+;; location, then print it
+(define (print-log)
+  (for-each (lambda (x) (display (log-entry-msg x)))
+            (sort (set->list log-so-far)
+                  (lambda (x y)
+                    (match* (x y)
+                      [((log-entry msg-x line-x col-x)
+                        (log-entry msg-y line-y col-y))
+                       (cond [(not (or line-x line-y))
+                              ;; neither have location, sort by message
+                              (string<? msg-x msg-y)]
+                             [(not line-y) #f]
+                             [(not line-x) #t]
+                             [else
+                              ;; both have location
+                              (let* ([loc-x (+ (* 1000 line-x) col-x)]
+                                     ;; 1000 is a conservative bound
+                                     [loc-y (+ (* 1000 line-y) col-y)])
+                                (cond [(= loc-x loc-y)
+                                       ;; same location, sort by message
+                                       (string<? msg-x msg-y)]
+                                      ;; sort by source location
+                                      [else (< loc-x loc-y)]))])])))))
+(define (clear-log)
+  (set! log-so-far (set)))
 
 (define *log-optimizations?* (in-command-line? "--log-optimizations"))
 (define (log-optimization kind stx)

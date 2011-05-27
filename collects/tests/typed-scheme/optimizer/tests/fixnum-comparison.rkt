@@ -1,8 +1,8 @@
 #;
 (
-fixnum-comparison.rkt 12:4 vector-length -- vector-length
 #f (no location) op -- string-length
 fixnum-comparison.rkt 12:1 < -- binary fixnum
+fixnum-comparison.rkt 12:4 vector-length -- vector-length
 #t
 )
 

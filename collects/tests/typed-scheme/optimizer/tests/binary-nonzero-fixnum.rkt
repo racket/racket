@@ -1,7 +1,7 @@
 #;
 (
-binary-nonzero-fixnum.rkt 11:9 vector-length -- vector-length
 binary-nonzero-fixnum.rkt 11:1 modulo -- binary nonzero fixnum
+binary-nonzero-fixnum.rkt 11:9 vector-length -- vector-length
 1
 )
 
