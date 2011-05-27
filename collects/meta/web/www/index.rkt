@@ -324,9 +324,9 @@
     (for/list ([elem (in-list l)] [pos (in-naturals)])
       @list{
         @invisible-separator
-        @div[class: 'slideshowframe id: @list{frame@pos}
+        @pre[class: 'slideshowframe id: @list{frame@pos}
              style: @list{display: @(if (zero? pos) "block" "none")@";"}]{
-          @pre{@(example-code elem)}}@;
+          @(example-code elem)}@;
         @; have the descriptions appear in a logical place and then ...
         @div[id: @list{helpframe@pos} style: "display: none;"]{
           @(example-desc elem)}})
@@ -441,7 +441,7 @@
       position: relative;
     }
     .slideshowframe {
-      height: 12ex;
+      height: 17ex;
     }
     .buttonpanel {
       display: block;
