@@ -254,7 +254,9 @@
 
 (provide set-news-flashes!)
 (define news-flashes #f)
-(define (set-news-flashes! . text) (set! news-flashes text))
+(define (set-news-flashes! . text)
+  (when news-flashes (error 'set-news-flashes! "text already set"))
+  (set! news-flashes text))
 
 (provide index)
 (define index
