@@ -1076,7 +1076,7 @@ Scheme_Object *mx_set_coclass_from_progid(int argc, Scheme_Object **argv)
   return scheme_void;
 }
 
-ITypeInfo *typeInfoFromComObject(MX_COM_Object *obj)
+ITypeInfo *typeInfoFromComObject(MX_COM_Object *obj, bool exn)
 {
   HRESULT hr;
   ITypeInfo *pITypeInfo;
@@ -1084,17 +1084,36 @@ ITypeInfo *typeInfoFromComObject(MX_COM_Object *obj)
   unsigned int count;
 
   pITypeInfo = obj->pITypeInfo;
-  if (pITypeInfo) return pITypeInfo;
+
+  if (pITypeInfo)
+	  return pITypeInfo;
+  
   pIDispatch = obj->pIDispatch;
   pIDispatch->GetTypeInfoCount(&count);
-  if (count == 0)
-    scheme_signal_error("COM object does not expose type information");
+  
+  if (count == 0) {
+	  if (exn) {
+		  scheme_signal_error("COM object does not expose type information");
+	  } else {
+		  return NULL;
+	  }
+  }
+
   hr = pIDispatch->GetTypeInfo(0, LOCALE_SYSTEM_DEFAULT, &pITypeInfo);
+
   if (FAILED(hr) || pITypeInfo == NULL)
     codedComError("Error getting COM type information", hr);
+
   obj->pITypeInfo = pITypeInfo;
+
   return pITypeInfo;
 }
+
+ITypeInfo *typeInfoFromComObjectExn(MX_COM_Object *obj)
+{
+	return typeInfoFromComObject(obj, true);
+}
+
 
 Scheme_Object *mx_com_get_object_type(int argc, Scheme_Object **argv)
 {
@@ -1105,7 +1124,7 @@ Scheme_Object *mx_com_get_object_type(int argc, Scheme_Object **argv)
   GUARANTEE_COM_OBJ("com-object-type", 0);
 
   obj = (MX_COM_Object *)argv[0];
-  pITypeInfo = typeInfoFromComObject(obj);
+  pITypeInfo = typeInfoFromComObjectExn(obj);
   retval = (MX_COM_Type *)scheme_malloc_tagged(sizeof(MX_COM_Type));
   retval->so.type = mx_com_type_type;
   retval->released = FALSE;
@@ -1142,7 +1161,7 @@ Scheme_Object *mx_com_is_a(int argc, Scheme_Object **argv)
 
   GUARANTEE_COM_OBJ("com-is-a?", 0);
   GUARANTEE_COM_TYPE("com-is-a?", 1);
-  pITypeInfo1 = typeInfoFromComObject((MX_COM_Object *)argv[0]);
+  pITypeInfo1 = typeInfoFromComObjectExn((MX_COM_Object *)argv[0]);
   pITypeInfo2 = MX_COM_TYPE_VAL((MX_COM_Type *)argv[1]);
   return typeInfoEq(pITypeInfo1, pITypeInfo2) ? scheme_true : scheme_false;
 }
@@ -1164,7 +1183,7 @@ Scheme_Object *mx_com_help(int argc, Scheme_Object **argv)
     ? MX_COM_TYPE_VAL(argv[0])
     : (MX_COM_OBJ_VAL(argv[0]) == NULL)
     ? (scheme_signal_error("com-help: NULL COM object"), (ITypeInfo*)NULL)
-    : typeInfoFromComObject((MX_COM_Object *)argv[0]);
+    : typeInfoFromComObjectExn((MX_COM_Object *)argv[0]);
 
   hr = pITypeInfo->GetDocumentation(MEMBERID_NIL, NULL, NULL, NULL,
                                     &helpFileName);
@@ -1570,7 +1589,7 @@ MX_TYPEDESC *typeDescFromTypeInfo(LPCTSTR name, INVOKEKIND invKind,
   return retval;
 }
 
-MX_TYPEDESC *getMethodType(MX_COM_Object *obj, LPCTSTR name, INVOKEKIND invKind)
+MX_TYPEDESC *getMethodType(MX_COM_Object *obj, LPCTSTR name, INVOKEKIND invKind, bool exn)
 {
   IDispatch *pIDispatch;
   MX_TYPEDESC *pTypeDesc;
@@ -1593,15 +1612,26 @@ MX_TYPEDESC *getMethodType(MX_COM_Object *obj, LPCTSTR name, INVOKEKIND invKind)
 
     if (pITypeInfo == NULL)
       scheme_signal_error("Can't find event type information");
-  } else
-    pITypeInfo = typeInfoFromComObject(obj);
+  } else {
+    pITypeInfo = typeInfoFromComObject(obj, exn);
+
+	if (pITypeInfo == NULL) {
+		return NULL;
+	}
+  }
 
   pTypeDesc = typeDescFromTypeInfo(name, invKind, pITypeInfo);
+
   // pTypeDesc may be NULL
   if (pTypeDesc != NULL)
     addTypeToTable(obj, name, invKind, pTypeDesc);
 
   return pTypeDesc;
+}
+
+MX_TYPEDESC *getMethodTypeExn(MX_COM_Object *obj, LPCTSTR name, INVOKEKIND invKind)
+{
+	return getMethodType(obj, name, invKind, true);
 }
 
 static int dispatchCmp(const char * s1, const char * * s2)
@@ -1724,7 +1754,7 @@ Scheme_Object *mx_do_get_methods(int argc, Scheme_Object **argv,
     scheme_signal_error("com-{methods, {get, set}-properties}: NULL COM object");
     return NULL;
   } else {
-    pITypeInfo = typeInfoFromComObject((MX_COM_Object *)argv[0]);
+    pITypeInfo = typeInfoFromComObjectExn((MX_COM_Object *)argv[0]);
   }
 
   hr = pITypeInfo->GetTypeAttr(&pTypeAttr);
@@ -2428,7 +2458,7 @@ Scheme_Object *mx_do_get_method_type(int argc, Scheme_Object **argv,
     scheme_signal_error("com-method-type: IDispatch methods not available");
 
   if (MX_COM_OBJP(argv[0]))
-    pTypeDesc = getMethodType((MX_COM_Object *)argv[0], name, invKind);
+    pTypeDesc = getMethodTypeExn((MX_COM_Object *)argv[0], name, invKind);
 
   else {
     pITypeInfo =
@@ -4312,7 +4342,7 @@ static Scheme_Object *mx_make_call(int argc, Scheme_Object **argv,
 
   // check arity, types of method arguments
 
-  pTypeDesc = getMethodType((MX_COM_Object *)argv[0], name, invKind);
+  pTypeDesc = getMethodType((MX_COM_Object *)argv[0], name, invKind, false);
 
 #ifndef _WIN64
   // try direct call via function pointer
