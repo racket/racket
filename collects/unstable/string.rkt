@@ -3,9 +3,9 @@
          racket/serialize)
 
 (define (read/string str)
-  (match (read (open-input-string str))
-    [(? eof-object? e) (raise-type-error 'read/string "nonempty string" str)]
-    [other other]))
+  (define r (read (open-input-string str)))
+  (cond [(eof-object? r) (raise-type-error 'read/string "nonempty string" str)]
+        [else r]))
 
 ;; Eli: Same comments as `read/bytes'.
 
