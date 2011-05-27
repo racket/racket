@@ -5,13 +5,56 @@
 ;; This code is intended only to keep the old techreports/ page up for
 ;; old links.
 
-(require "resources.rkt" "techreports.rkt" "people.rkt" "../download/data.rkt"
+(require "resources.rkt" "techreports.rkt" "people.rkt"
          (prefix-in - version/utils))
 
 ;; ----------------------------------------------------------------------------
 ;; Data
 
 (define last-old-tr "4.9")
+
+;; This list is fixed to these versions (since this is an old page, no
+;; need to update with new versions)
+(define versions+dates
+  '(["4.2.5" "April" "2010"]
+    ["4.2.4" "January" "2010"]
+    ["4.2.3" "December" "2009"]
+    ["4.2.2" "October" "2009"]
+    ["4.2.1" "July" "2009"]
+    ["4.2"   "June" "2009"]
+    ["4.1.5" "March" "2009"]
+    ["4.1.4" "January" "2009"]
+    ["4.1.3" "November" "2008"]
+    ["4.1.2" "October" "2008"]
+    ["4.1.1" "October" "2008"]
+    ["4.1"   "August" "2008"]
+    ["4.0.2" "July" "2008"]
+    ["4.0.1" "June" "2008"]
+    ["4.0"   "June" "2008"]
+    ["372"   "December" "2007"]
+    ["371"   "August" "2007"]
+    ["370"   "May" "2007"]
+    ["360"   "November" "2006"]
+    ["352"   "July" "2006"]
+    ["351"   "July" "2006"]
+    ["350"   "June" "2006"]
+    ["301"   "January" "2006"]
+    ["300"   "December" "2005"]
+    ["209"   "December" "2004"]
+    ["208"   "August" "2004"]
+    ["207"   "May" "2004"]
+    ["206p1" "January" "2004"]
+    ["206"   "January" "2004"]
+    ["205"   "August" "2003"]
+    ["204"   "May" "2003"]
+    ["203"   "December" "2002"]
+    ["202"   "August" "2002"]
+    ["201"   "July" "2002"]
+    ["200"   "June" "2002"]
+    ["103p1" "August" "2001"]
+    ["103"   "September" "2000"]
+    ["053"   "July" "1998"]
+    ))
 
 (define authors
   '([plt      "PLT"]
@@ -291,21 +334,14 @@
 ;; Version etc
 
 ;; Use this instead of the built-in one, to make sure that we only deal
-;; with known released version.
+;; with known versions.
 (define version->integer
-  (let ([t (for*/hash ([r (in-list releases)]
-                       [v (in-value (release-version r))])
+  (let ([t (for*/hash ([v (in-list (map car versions+dates))])
              (values v (-version->integer (regexp-replace #rx"^0+" v ""))))])
     (lambda (ver)
-      (hash-ref t ver (lambda ()
-                        (error 'version->integer
-                               "unknown pltreport version: ~e" ver))))))
-
-(define (date->year+month date)
-  (let ([m (regexp-match #rx"^([A-Z][a-z]+) +([0-9]+)$" date)])
-    (if m
-      (values (caddr m) (cadr m))
-      (error 'date->year+month "unexpected date string: ~.a" date))))
+      (hash-ref t ver
+        (lambda ()
+          (error 'version->integer "unknown pltreport version: ~e" ver))))))
 
 ;; "V...V"        version range
 ;; "...V", "V..." open-ended version range
@@ -377,15 +413,15 @@
 (define last-old-tr-version (-version->integer last-old-tr))
 
 (define bibs
-  (for*/list ([rel (in-list (reverse releases))]
-              [ver (in-value (release-version rel))]
-              #:when (<= (version->integer ver) last-old-tr-version)
-              [doc (in-list doc-defs*)]
-              #:when ((car doc) ver))
+  (for/list ([ver   (in-list (map car versions+dates))]
+             [month (in-list (map cadr versions+dates))]
+             [year  (in-list (map caddr versions+dates))]
+             #:when (<= (version->integer ver) last-old-tr-version)
+             [doc (in-list doc-defs*)]
+             #:when ((car doc) ver))
     (define attrs (cdr doc))
     (define (get key [dflt #f]) (cond [(assq key attrs) => cadr] [else dflt]))
     (define docname (get '#:docname))
-    (define-values (year month) (date->year+month (version->date ver)))
     (define number (format (get '#:number-template) year ver))
     (define key (regexp-replace* #rx":" (string-downcase number) "_"))
     (define old? (< (version->integer ver) v:4->5))
