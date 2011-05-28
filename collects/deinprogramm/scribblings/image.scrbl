@@ -28,7 +28,7 @@ Ein @deftech{Bild} (Name: @scheme[image]) ist die Repräsentation eines Bildes.
 Ein leeres Bild mit Breite und Höhe 0.
 }
 
-@defthing[image? (%a -> boolean?)]{Der Aufruf @scheme[(image? x)] stellt fest, ob @scheme[x] ein Bild ist.}
+@defthing[image? (any -> boolean?)]{Der Aufruf @scheme[(image? x)] stellt fest, ob @scheme[x] ein Bild ist.}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "modes-colors"]{Modi und Farben}

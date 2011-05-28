@@ -98,7 +98,7 @@ Form:
 Ggf. schreiben Sie außerdem Signaturen für das Prädikat und die Selektoren:
 
 @schemeblock[
-(: pred? (%a -> boolean))
+(: pred? (any -> boolean))
 (: #,(elem (scheme select) (subscript "1")) (sig -> #,(elem (scheme sig) (subscript "1"))))
 ...
 (: #,(elem (scheme select) (subscript "n")) (sig -> #,(elem (scheme sig) (subscript "n"))))
