@@ -9,6 +9,8 @@
 #include "mzrt.h"
 #include "schgc.h"
 
+THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
+
 #ifdef MZ_XFORM
 START_XFORM_SUSPEND;
 #endif
