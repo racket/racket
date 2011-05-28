@@ -84,6 +84,22 @@ Rückgabewerte von Operationen, die nur Seiteneffekte haben wie @scheme[set!]
 oder @scheme[write-string].
 }
 
+@section[#:tag "advanced-definitions"]{Definitionen}
+
+@defform[(define id expr)]{Diese Form ist wie in den unteren
+Sprachebenen, mit dem Unterschied, dass an @scheme[id] mit
+@scheme[set!] zugewiesen werden kann.}
+
+@section[#:tag "advanced-lambda"]{@scheme[lambda]}
+
+@defform[(lambda (id id ... . id) expr)]{Bei @scheme[lambda] ist in
+dieser Sprachebene in einer Form zulässig, die es erlaubt, eine
+Prozedur mit einer variablen Anzahl von Paramern zu erzeugen: Alle
+Parameter vor dem Punkt funktionieren wie gewohnt und werden jeweils
+an die entsprechenden Argumente gebunden.  Alle restlichen Argumente
+werden in eine Liste verpackt und an den Parameter nach dem Punkt
+gebunden.}
+
 
 @section[#:tag "assignments-prim-op"]{Primitive Operationen}
 
