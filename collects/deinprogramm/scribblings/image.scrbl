@@ -60,14 +60,40 @@ also z.B. @scheme[(make-color 100 200 30)].}
 @defthing[color-blue (color -> octet)]{
  liefert den Blau-Anteil einer RGB-Farbe.}
 
+@defthing[color? (any -> boolean)]{
+stellt fest, ob ein Objekt eine @tech{RGB-Farbe} ist.}
+
 @defthing[image-color signature]{
-@scheme[(mixed string color)] 
+@scheme[(mixed string rgb-color)] 
 
 Eine @deftech{Farbe} (Name: @scheme[image-color]) ist eine Zeichenkette aus einer Farbbezeichnung
 (z.B. @scheme["blue"]) oder eine @tech{RGB-Farbe}.}
 
-@defthing[image-color? (%a -> boolean?)]{ stellt fest, ob ein Objekt
+@defthing[image-color? (any -> boolean?)]{ stellt fest, ob ein Objekt
 eine @tech{Farbe} ist.}
+
+@defthing[alpha-rgb-color signature]{
+Eine @deftech{Alpha/RGB-Farbe} ist eine Farbe (Name: @scheme[color], die vom
+Record-Konstruktor @scheme[make-alpha-color] zurückgegeben wird:
+}
+
+@defthing[make-alpha-color (octet octet octet octet -> alpha-color)]{
+Eine @tech{Alpha/RGB-Farbe} beschreibt eine Farbe mit den Alpha-, roten,
+blaue und grünen Anteilen, also z.B. @scheme[(make-color 50 100 200
+30)].  Der Alpha-Anteil beschreibt, wie durchsichtig die Farbe ist.}
+
+@defthing[alpha-color-red (color -> octet)]{
+ liefert den Rot-Anteil einer RGB-Farbe.}
+@defthing[alpha-color-green (color -> octet)]{
+ liefert den Grün-Anteil einer RGB-Farbe.}
+@defthing[alpha-color-blue (color -> octet)]{
+ liefert den Blau-Anteil einer RGB-Farbe.}
+@defthing[alpha-color-alpha (color -> octet)]{
+ liefert den Alpha-Anteil einer RGB-Farbe.}
+
+@defthing[alpha-color? (any -> boolean)]{
+stellt fest, ob ein Objekt eine @tech{Alpha/RGB-Farbe} ist.}
+
 
 
 @;-----------------------------------------------------------------------------
@@ -122,6 +148,14 @@ nämlich Breite und Höhe:
 
 @defthing[image-height (image -> natural)]{
  liefert die Höhe von @scheme[i] in Pixeln.}
+
+@defthing[image-inside? (image image -> boolean)]{
+Der Aufruf @scheme[(image-inside? i1 i2)] stellt fest, ob das Bild
+@scheme[i2] im Bild @scheme[i1] enthalten ist.}
+
+@defthing[find-image (image image -> posn)]{
+Der Aufruf @scheme[(find-image i1 i2)] findet die Position von @scheme[i2]
+im Bild @scheme[i1] (in dem es vorkommen muss).}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "composition"]{Bilder zusammensetzen}
@@ -193,3 +227,25 @@ oberen Kante, der untern Kante oder der Mitte angeordnet werden.}
   @scheme[l] Pixel links, @scheme[r] Pixel rechts, @scheme[t] Pixel oben und
   @scheme[b] Pixel unten.}
 
+
+@;-----------------------------------------------------------------------------
+@section[#:tag "from-pixels"]{Bilder aus Pixeln konstruieren}
+
+@defthing[color-list->image ((list-of color) natural natural -> image)]{
+  Der Aufruf @scheme[(color-list->image lis w h)] stellt ein Bild mit
+  Breite @scheme[w] und Höhe @scheme[h] her, in dem die Pixel die
+  Farben aus der Liste @scheme[lis] (welche die Länge @scheme[(* w h)]
+  haben muß) haben.}
+
+@defthing[image->color-list (image -> (list-of rgb-color))]{
+  Diese Prozedur liefert eine Liste der RGB-Farben der Pixel eines Bildes.}
+
+@defthing[alpha-color-list->image ((list-of alpha-rgb-color) natural natural -> image)]{
+  Der Aufruf @scheme[(color-list->image lis w h)] stellt ein Bild mit
+  Breite @scheme[w] und Höhe @scheme[h] her, in dem die Pixel die
+  Farben aus der Liste @scheme[lis] (welche die Länge @scheme[(* w h)]
+  haben muß) haben.}
+
+@defthing[image->alpha-color-list (image -> (list-of rgb-color))]{
+  Diese Prozedur liefert eine Liste der Alpha/RGB-Farben der Pixel
+  eines Bildes.}

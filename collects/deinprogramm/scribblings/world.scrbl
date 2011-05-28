@@ -18,7 +18,7 @@ Dieses Teachpack ermöglicht, kleine Animationen und Spiele zu programmieren.
 Es enthält alle Prozeduren aus dem 
 @seclink["image"]{image-Teachpack}.
 
-@declare-exporting[teachpack/deinprogramm/world #:use-sources (teachpack/deinprogramm/world)]
+@declare-exporting[teachpack/deinprogramm/world #:use-sources (deinprogramm/world)]
 
 @defthing[world signature]{
 Eine @deftech{Welt} (Name: @scheme[world]) ist die Repräsentation des Zustands,
