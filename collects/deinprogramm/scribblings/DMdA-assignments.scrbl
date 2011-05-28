@@ -85,12 +85,14 @@ oder @scheme[write-string].
 }
 
 @section[#:tag "advanced-definitions"]{Definitionen}
+@declare-exporting[deinprogramm/DMdA-deflam]
 
 @defform[(define id expr)]{Diese Form ist wie in den unteren
 Sprachebenen, mit dem Unterschied, dass an @scheme[id] mit
 @scheme[set!] zugewiesen werden kann.}
 
 @section[#:tag "advanced-lambda"]{@scheme[lambda]}
+@declare-exporting[deinprogramm/DMdA-deflam]
 
 @defform[(lambda (id id ... . id) expr)]{Bei @scheme[lambda] ist in
 dieser Sprachebene in einer Form zulässig, die es erlaubt, eine
