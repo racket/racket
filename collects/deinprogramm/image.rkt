@@ -61,7 +61,7 @@ plt/collects/tests/deinprogramm/image.ss
 	 alpha-color-blue
 	 alpha-color?
 
-	 octet rgb-color mode image image-color
+	 octet rgb-color alpha-rgb-color mode image image-color
 	 h-place v-place h-mode v-mode)
 
 ;; ----------------------------------------
@@ -859,6 +859,7 @@ converting from the computer's coordinates, we get:
 
 (define octet (signature (combined natural (predicate (lambda (n) (<= n 255))))))
 (define rgb-color (signature (predicate color?)))
+(define alpha-rgb-color (signature (predicate alpha-color?)))
 (define mode (signature (one-of "solid" "outline")))
 (define image (signature (predicate image?)))
 (define image-color (signature (predicate image-color?)))
