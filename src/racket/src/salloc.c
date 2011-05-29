@@ -74,7 +74,7 @@ int scheme_thread_local_offset = 0;
 #endif
 
 extern int scheme_num_copied_stacks;
-SHARED_OK static uintptr_t scheme_primordial_os_thread_stack_base;
+SHARED_OK static uintptr_t primordial_os_thread_stack_base;
 THREAD_LOCAL_DECL(static uintptr_t scheme_os_thread_stack_base);
 #ifdef USE_THREAD_LOCAL
 SHARED_OK Thread_Local_Variables *scheme_vars; /* for debugging */
@@ -118,8 +118,8 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
   scheme_register_traversers();
 #endif
 
-  scheme_primordial_os_thread_stack_base  = (uintptr_t) base;
-  scheme_os_thread_stack_base             = (uintptr_t) base;
+  primordial_os_thread_stack_base = (uintptr_t) base;
+  scheme_os_thread_stack_base     = (uintptr_t) base;
 
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   GC_set_stack_base(base);
@@ -150,6 +150,11 @@ void scheme_set_current_os_thread_stack_base(void *base)
 uintptr_t scheme_get_current_os_thread_stack_base()
 {
   return scheme_os_thread_stack_base;
+}
+
+uintptr_t scheme_get_primordial_thread_stack_base()
+{
+  return primordial_os_thread_stack_base;
 }
 
 typedef struct {

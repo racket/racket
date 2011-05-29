@@ -426,6 +426,54 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
   return NULL; /* never gets here */
 }
 
+#ifdef LINUX_FIND_STACK_BASE
+uintptr_t adjust_stack_base(uintptr_t bnd) {
+  if (bnd == scheme_get_primordial_thread_stack_base()) {
+    /* The address `base' might be far from the actual stack base
+       if Exec Sheild is enabled. Use "/proc/self/maps" to get 
+       exacty the stack base. */
+    FILE *f;
+    char *buf;
+    f = fopen("/proc/self/maps", "r");
+    if (f) {
+      buf = malloc(256);
+      while (fgets(buf, 256, f)) {
+	int len;
+	len = strlen(buf);
+	if ((len > 8) && !strcmp("[stack]\n", buf + len - 8)) {
+	  uintptr_t p = 0;
+	  int i;
+	  /* find separator: */
+	  for (i = 0; buf[i]; i++) {
+	    if (buf[i] == '-') {
+	      i++;
+	      break;
+	    }
+	  }
+	  /* parse number after separator: */
+	  for (; buf[i]; i++) {
+	    if ((buf[i] >= '0') && (buf[i] <= '9')) {
+	      p = (p << 4) | (buf[i] - '0');
+	    } else if ((buf[i] >= 'a') && (buf[i] <= 'f')) {
+	      p = (p << 4) | (buf[i] - 'a' + 10);
+	    } else if ((buf[i] >= 'A') && (buf[i] <= 'F')) {
+	      p = (p << 4) | (buf[i] - 'A' + 10);
+	    } else
+	      break;
+	  }
+	  /* printf("%p vs. %p: %d\n", (void*)bnd, (void*)p, p - bnd); */
+	  return p;
+	}
+      }
+      free(buf);
+      fclose(f);
+    }
+  }
+
+  return bnd;
+}
+#endif
+
 void scheme_init_stack_check()
      /* Finds the C stack limit --- platform-specific. */
 {
@@ -502,6 +550,10 @@ void scheme_init_stack_check()
     {
       uintptr_t bnd, lim;
       bnd = (uintptr_t)scheme_get_current_os_thread_stack_base();
+
+#  ifdef LINUX_FIND_STACK_BASE
+      bnd = adjust_stack_base(bnd);
+#  endif
 
       lim = (uintptr_t)rl.rlim_cur;
 #  ifdef UNIX_STACK_MAXIMUM

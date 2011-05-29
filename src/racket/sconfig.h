@@ -203,6 +203,7 @@
 # define SIGSET_IS_SIGNAL
 # define SIGSET_NEEDS_REINSTALL
 
+# define LINUX_FIND_STACK_BASE
 # define USE_DYNAMIC_FDSET_SIZE
 
 # define USE_TIMEZONE_VAR_W_DLS
@@ -1307,6 +1308,9 @@
     WINDOWS_FIND_STACK_BOUNDS figures out the maximum stack position
      under Windows (uses GC_find_stack_base())
     MACOS_FIND_STACK_BOUNDS figures out the stack limit on the Mac.
+    LINUX_FIND_STACK_BASE figures out the stack base under Linux
+     by reading from /proc/self/maps and looking for "[stack]"
+     line.
     ASSUME_FIXED_STACK_SIZE assumes that the main stack size is
      always FIXED_STACK_SIZE.
     Use only one of these if DO_STACK_CHECK is used, or none otherwise. */

@@ -130,7 +130,8 @@ int scheme_num_types(void);
 
 void scheme_reset_finalizations(void);
 
-extern uintptr_t scheme_get_current_os_thread_stack_base(void);
+uintptr_t scheme_get_primordial_thread_stack_base(void);
+uintptr_t scheme_get_current_os_thread_stack_base(void);
 void scheme_set_current_os_thread_stack_base(void *base);
 
 int scheme_propagate_ephemeron_marks(void);
