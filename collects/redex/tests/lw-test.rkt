@@ -49,10 +49,11 @@
 ;                                                                 
 
 
-(module lw-test mzscheme
+(module lw-test racket/base
   (require "test-util.ss"
            "../private/loc-wrapper.ss"
-           "lw-test-util.ss")
+           "lw-test-util.ss"
+           (only-in "../pict.rkt" to-lw/stx))
   
   (reset-count)
   
@@ -285,6 +286,9 @@
            0 0 1 2
            #t #f))
          0 0 0 3))
+  
+  (test (normalize-lw (to-lw (a ((b)) c 1 #t)))
+        (normalize-lw (to-lw/stx #'(a ((b)) c 1 #t))))
   
   (print-tests-passed "lw-test.ss"))
 

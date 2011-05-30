@@ -67,7 +67,8 @@
         #,quoted?)]
     [x 
      (and (identifier? #'x)
-          (or (term-fn? (syntax-local-value #'x (λ () #f)))
+          (or (and (syntax-transforming?)
+                   (term-fn? (syntax-local-value #'x (λ () #f))))
               ((is-term-fn?) #'x)))
      #`(make-lw
         '#,(syntax-e #'x)

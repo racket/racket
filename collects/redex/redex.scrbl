@@ -339,7 +339,8 @@ bound to @racket['()].
 If @racket[redex-match] receives three arguments, it
 matches the pattern (in the language) against its third
 argument. If it matches, this returns a list of match
-structures describing the matches. If it fails, it returns
+structures describing the matches (see @racket[match?] and 
+@racket[match-bindings]). If it fails, it returns
 @racket[#f].
 
 If @racket[redex-match] receives only two arguments, it
@@ -2587,6 +2588,13 @@ corresponds to these structs:
 and the @racket['spring] causes there to be no space between
 the empty string and the @racket[x] in the typeset output.
 
+}
+
+@defproc[(to-lw/stx [stx syntax?]) lw?]{
+  This is the runtime variant on @racket[to-lw]; it accepts a 
+  syntax object and returns the corresponding @racket[lw] structs.
+  It only uses the location information in the syntax object,
+  so metafunctions will not be rendered properly.
 }
 
 @defproc[(render-lw (language/nts (or/c (listof symbol?) compiled-lang?))

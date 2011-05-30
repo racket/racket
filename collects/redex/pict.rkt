@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract
+(require racket/contract
          "private/pict.ss"
          "private/core-layout.ss"
          "private/loc-wrapper.ss"
@@ -108,7 +108,31 @@
  lw-column-span)
 
 (provide to-lw
+         to-lw/stx
          (struct-out lw))
+
+(require (prefix-in lw/ct: "private/loc-wrapper-ct.rkt")
+         (prefix-in lw/rt: "private/loc-wrapper-rt.rkt"))
+(define (to-lw/stx stx)
+  (let loop ([stx (lw/ct:to-lw/proc stx)])
+    (syntax-case stx (init-loc-wrapper make-lw add-spans list quote)
+      [(make-lw arg ...) 
+       (apply make-lw (map loop (syntax->list #'(arg ...))))]
+      [(init-loc-wrapper arg ...)
+       (apply lw/rt:init-loc-wrapper (map loop (syntax->list #'(arg ...))))]
+      [(add-spans arg ...)
+       (apply lw/rt:add-spans (map loop (syntax->list #'(arg ...))))]
+      [(list arg ...)
+       (apply list (map loop (syntax->list #'(arg ...))))]
+      [(quote arg)
+       (syntax->datum #'arg)]
+      [_ 
+       (let ([x (syntax-e stx)])
+         (unless (or (number? x)
+                     (string? x)
+                     (boolean? x))
+           (error 'to-lw/stx "unk thing: ~s\n" (syntax->datum stx)))
+         x)])))
 
 (provide/contract
  [just-before (-> (or/c pict? string? symbol?) lw? lw?)]
