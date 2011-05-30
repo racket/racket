@@ -159,11 +159,11 @@ Like @scheme[make-hash], @scheme[make-hasheq], and
 keys weakly.}
 
 @deftogether[(
-@defproc[(make-immutable-hash [assocs (listof pair?)])
+@defproc[(make-immutable-hash [assocs (listof pair?) null])
          (and/c hash? hash-equal? immutable?)]
-@defproc[(make-immutable-hasheqv [assocs (listof pair?)])
+@defproc[(make-immutable-hasheqv [assocs (listof pair?) null])
          (and/c hash? hash-eqv? immutable?)]
-@defproc[(make-immutable-hasheq [assocs (listof pair?)])
+@defproc[(make-immutable-hasheq [assocs (listof pair?) null])
          (and/c hash? hash-eq? immutable?)]
 )]{
 

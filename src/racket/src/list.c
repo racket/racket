@@ -510,17 +510,17 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("make-immutable-hash",
 			     scheme_make_immed_prim(make_immutable_hash,
 						    "make-immutable-hash",
-						    1, 1),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-immutable-hasheq",
 			     scheme_make_immed_prim(make_immutable_hasheq,
 						    "make-immutable-hasheq",
-						    1, 1),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-immutable-hasheqv",
 			     scheme_make_immed_prim(make_immutable_hasheqv,
 						    "make-immutable-hasheqv",
-						    1, 1),
+						    0, 1),
 			     env);
   scheme_add_global_constant("hash",
 			     scheme_make_immed_prim(direct_hash,
@@ -1848,7 +1848,7 @@ static Scheme_Object *make_weak_hasheqv(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *make_immutable_table(const char *who, int kind, int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *l = argv[0], *a;
+  Scheme_Object *l = (argc ? argv[0] : scheme_null), *a;
   Scheme_Hash_Tree *ht;
 
   if (scheme_proper_list_length(l) >= 0) {
@@ -1860,11 +1860,11 @@ static Scheme_Object *make_immutable_table(const char *who, int kind, int argc, 
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_type("make-immutable-hash", "list of pairs", 0, argc, argv);
+    scheme_wrong_type(who, "list of pairs", 0, argc, argv);
 
   ht = scheme_make_hash_tree(kind);
 
-  for (l = argv[0]; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+  for (l = (argc ? argv[0] : scheme_null); SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
     ht = scheme_hash_tree_set(ht, SCHEME_CAR(a), SCHEME_CDR(a));
   }

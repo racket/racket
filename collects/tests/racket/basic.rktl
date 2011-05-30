@@ -312,6 +312,7 @@
 (test #t immutable? (string->immutable-string "hi"))
 (test #t immutable? (string->immutable-string (string-copy "hi")))
 
+(test #t immutable? (make-immutable-hasheq))
 (test #t immutable? (make-immutable-hasheq null))
 (test #t immutable? (make-immutable-hasheq '((a . b))))
 (test #t immutable? (make-immutable-hash '((a . b))))
@@ -2417,8 +2418,9 @@
                     3 4)
         ht))
 
-(arity-test make-immutable-hash 1 1)
-(arity-test make-immutable-hasheq 1 1)
+(arity-test make-immutable-hash 0 1)
+(arity-test make-immutable-hasheq 0 1)
+(arity-test make-immutable-hasheqv 0 1)
 (arity-test hash-keys 1 1)
 (arity-test hash-values 1 1)
 (arity-test hash-count 1 1)
