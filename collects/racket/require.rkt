@@ -126,9 +126,9 @@
 (provide multi-in)
 (define-require-syntax (multi-in stx)
   (syntax-case stx ()
-    [(_ elem ...)
+    [(_ elem0 elem ...)
      (quasisyntax/loc stx
-       (combine-in #,@(datum->syntax stx (multi (syntax->datum #'(elem ...)))
+       (combine-in #,@(datum->syntax stx (multi (syntax->datum #'(elem0 elem ...)))
                                      stx stx stx)))]))
 
 
