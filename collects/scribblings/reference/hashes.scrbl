@@ -366,10 +366,10 @@ within @scheme[proc]. @see-also-concurrency-caveat[]}
 @defproc[(hash-count [hash hash?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @scheme[hash]. If @scheme[hash]
-is not created with @scheme['weak], then the result is computed in
-constant time and atomically. If @scheme[hash] is created with
-@scheme['weak], see the @concurrency-caveat[] above.}
+Returns the number of keys mapped by @scheme[hash]. Unless @scheme[hash]
+retains keys weakly, the result is computed in
+constant time and atomically. If @scheme[hash] retains it keys weakly, a
+traversal is required to count the keys.}
 
 
 @defproc[(hash-iterate-first [hash hash?])

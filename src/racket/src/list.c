@@ -1972,6 +1972,8 @@ static Scheme_Object *hash_table_count(int argc, Scheme_Object *argv[])
     Scheme_Bucket **buckets, *bucket;
     const char *key;
 
+    if (t->mutex) scheme_wait_sema(t->mutex,0);
+
     buckets = t->buckets;
     weak = t->weak;
 
@@ -1988,6 +1990,8 @@ static Scheme_Object *hash_table_count(int argc, Scheme_Object *argv[])
       }
       SCHEME_USE_FUEL(1);
     }
+
+    if (t->mutex) scheme_post_sema(t->mutex);
 
     return scheme_make_integer(count);
   } else {
