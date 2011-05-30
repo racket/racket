@@ -427,11 +427,11 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 }
 
 #ifdef LINUX_FIND_STACK_BASE
-uintptr_t adjust_stack_base(uintptr_t bnd) {
+static uintptr_t adjust_stack_base(uintptr_t bnd) {
   if (bnd == scheme_get_primordial_thread_stack_base()) {
     /* The address `base' might be far from the actual stack base
-       if Exec Sheild is enabled. Use "/proc/self/maps" to get 
-       exacty the stack base. */
+       if Exec Shield is enabled (in some versions)? Use 
+       "/proc/self/maps" to get exactly the stack base. */
     FILE *f;
     char *buf;
     f = fopen("/proc/self/maps", "r");
