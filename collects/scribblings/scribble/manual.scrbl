@@ -639,7 +639,12 @@ determined by the enclosing context).
 If a @racket[#:contracts] clause is provided, each
 @racket[subform-datum] (typically an identifier that serves as a
 meta-variable in @racket[form-datum]) is shown as producing a value
-that must satisfy the contract described by @racket[contract-expr-datum].
+that must satisfy the contract described by
+@racket[contract-expr-datum].  Use @racket[#:contracts] only to
+specify constraints on a @emph{value} produced by an expression;
+for constraints on the @emph{syntax} of a @racket[subform-datum],
+use grammar notation instead, possibly through an 
+auxiliary grammar specified using @racket[defform/subs].
 
 The typesetting of @racket[form-datum], @racket[subform-datum], and
 @racket[contract-expr-datum] preserves the source layout, like
