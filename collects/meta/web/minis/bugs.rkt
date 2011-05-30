@@ -5,42 +5,36 @@
 (define planet-bugs "http://planet.racket-lang.org/trac/newticket")
 
 ;; a starred option is the default
-(define (platform-option-links)
-  (mk-options '([* "...or choose" ""]
-                ["Windows Vista" "windows-vista"]
-                ["Windows XP" "windows-xp"]
-                ["Windows 2000" "windows-2000"]
-                ["Windows NT" "windows-nt"]
-                ["Windows 95/98/Me" "windows-9x"]
-                ["Macintosh PowerPC (MacOS X)" "mac-ppc-osx"]
-                ["Macintosh Intel (MacOS X)" "mac-i386-osx"]
-                ["Linux, Fedora/RedHat based" "linux-fedora"]
-                ["Linux, Ubuntu/Debian based" "linux-ubuntu"]
-                ["Linux, other distro" "linux-other"]
-                ["Sun Solaris" "solaris"]
-                ;; ["Sun Solaris 8" "solaris-8"]
-                ;; ["Sun Solaris, other version" "solaris-other"]
-                ["Other Unix" "unix-other"]
-                ;; ["Macintosh PowerPC (MacOS Classic)" "mac-ppc-macos"]
-                ;; ["Macintosh 68K" "mac-68k"]
-                ;; ["BeOS" "beos"]
-                ;; ["MzScheme kernel" "mzkernel"]
-                )))
-(define (severity-option-links)
-  (mk-options '(["Critical" "critical"]
-                [* "Serious" "serious"]
-                ["Non-critical" "non-critical"])))
-(define (bug-class-option-links)
-  (mk-options '([* "Software Bug" "sw-bug"]
-                ["Documentation Bug" "doc-bug"]
-                ["Change Request" "change-request"]
-                ["Support" "support"])))
-
-(define (mk-options opts)
-  (for/list ([s (in-list opts)])
-    (if (eq? '* (car s))
-      @option[selected: 'true value: (caddr s)]{@(cadr s)}
-      @option[value: (cadr s)]{@(car s)})))
+(define platform-options
+  '([* "...or choose"   ""]
+    ["Windows Vista"    windows-vista]
+    ["Windows XP"       windows-xp]
+    ["Windows 2000"     windows-2000]
+    ["Windows NT"       windows-nt]
+    ["Windows 95/98/Me" windows-9x]
+    ["Macintosh PowerPC (MacOS X)" mac-ppc-osx]
+    ["Macintosh Intel (MacOS X)"   mac-i386-osx]
+    ["Linux, Fedora/RedHat based"  linux-fedora]
+    ["Linux, Ubuntu/Debian based"  linux-ubuntu]
+    ["Linux, other distro"         linux-other]
+    ["Sun Solaris"      solaris]
+    ;; ["Sun Solaris 8"              solaris-8]
+    ;; ["Sun Solaris, other version" solaris-other]
+    ["Other Unix"       unix-other]
+    ;; ["Macintosh PowerPC (MacOS Classic)" mac-ppc-macos]
+    ;; ["Macintosh 68K"                     mac-68k]
+    ;; ["BeOS"                              beos]
+    ;; ["MzScheme kernel"                   mzkernel]
+    ))
+(define severity-options
+  '([  "Critical"     critical]
+    [* "Serious"      serious]
+    [  "Non-critical" non-critical]))
+(define bug-class-options
+  '([* "Software Bug"      sw-bug]
+    [  "Documentation Bug" doc-bug]
+    [  "Change Request"    change-request]
+    [  "Support"           support]))
 
 (require (only-in "../www/all.rkt" download))
 
@@ -183,58 +177,73 @@
            @li{@download a newer Racket version if there is one (Racket
                displays its version number on startup),}
            @li{@a[href: (list query "/")]{Query existing bug reports}.}}}
-    @(define (field mode title . input)
-       (let ([title (b title ":")])
+    @(define (mk-options opts)
+       (for/list ([s (in-list opts)])
+         (if (eq? '* (car s))
+           @option[selected: 'true value: (caddr s)]{@(cadr s)}
+           @option[value: (cadr s)]{@(car s)})))
+    @(define (field name mode html-mode html-title . args)
+       (define title (and html-title (b html-title ":")))
+       (define html-input
          (case mode
-           [(line) (list title " " input br)]
-           [(br)   (list title br input br br)]
-           [(tr)   (tr (td title) (td input))]
-           [else (error 'field "internal error")])))
+           [(text)
+            (let ([args (if (memq value: args) args (list* value: "" args))])
+              (apply input type: 'text name: name args))]
+           [(textarea)
+            (apply textarea name: name style: "font-family: monospace;" args)]
+           [(options)
+            (if (null? args)
+              (error 'field "internal error (missing options)")
+              (apply select name: name
+                     `(,@(cdr args) ,(mk-options (car args)))))]
+           [else (error 'field "internal error")]))
+       (case html-mode
+         [(line)  (list (and title (list title " ")) html-input br)]
+         [(br)    (list (and title (list title br)) html-input br br)]
+         [(tr)    (tr (td title) (td html-input))]
+         [(as-is) (list (and title (list title " ")) html-input)]
+         [else (error 'field "internal error")]))
     @form[action: bug-report-cgi method: 'post id: 'BugForm
           ;; enctype: "multipart/form-data"
           style: '("border: 2px solid #4444ff; padding: 6px;"
                    " background-color: #eeeeff;")
           onsubmit: "return CheckSubmit();"]{
       @input[type: 'hidden name: 'cont value: thanks]
-      @field['br "Your name"]{
-        @input[type: 'text name: 'name value: "" size: 40]}
-      @field['br "Your e-mail address"]{
-        @input[type: 'text name: 'email value: "" size: 40]}
-      @field['br "Summary of the problem"]{
-        @input[type: 'text name: 'subject value: "" size: 60]}
+      @field['name 'text 'br "Your name" size: 40]
+      @field['email 'text 'br "Your e-mail address" size: 40]
+      @field['subject 'text 'br "Summary of the problem" size: 60]
       @table{
-        @field['tr "Version"]{
-          @input[type: 'text name: 'version value: "" size: 14]}
-        @field['tr "Platform"]{
-          @input[type: 'text name: 'platform_user size: 30
-                 onchange: "UpdatePlatformUser();"
-                 onkeyup: "UpdatePlatformUser();"]@;
-          @|nbsp|@;
-          @select[name: 'platform_options
-                  onchange: "UpdatePlatformOptions();"]{
-            @platform-option-links}@;
-          @input[type: 'hidden name: 'platform]}
-        @field['tr "Severity"]{
-          @select[name: 'severity]{@severity-option-links}}
-        @field['tr "Class"]{
-          @select[name: 'class]{@bug-class-option-links}}}
+        @field['version 'text 'tr "Version" size: 14]
+        @; Note: if this is ever used to produce something that
+        @; help/bug-report.rkt can parse, then the following three
+        @; fields are actually a single editable drop-down called
+        @; "platform".
+        @tr{@td{@b{Platform:}}
+            @td{@field['platform_user 'text 'as-is #f value: #f size: 30
+                       onchange: "UpdatePlatformUser();"
+                       onkeyup: "UpdatePlatformUser();"]@;
+                @|nbsp|@;
+                @field['platform_options 'options 'as-is #f platform-options
+                       onchange: "UpdatePlatformOptions();"]@;
+                @input[type: 'hidden name: 'platform]}}
+        @field['severity 'options 'tr "Severity" severity-options]
+        @field['class 'options 'tr "Class" bug-class-options]}
       @br
-      @field['br "Description of the problem"]{
-        @textarea[name: 'description rows: 12 cols: 70
-          style: "font-family: monospace;"]{}}
-      @field['br '("If possible, please give a short sequence of steps to"
-                   " reproduce the problem")]{
-        @textarea[name: 'how-to-repeat rows: 8 cols: 70
-                  style: "font-family: monospace;"]{}}
+      @field['description 'textarea 'br "Description of the problem"
+             rows: 12 cols: 70]
+      @field['how-to-repeat 'textarea 'br
+             '("If possible, please give a short sequence of steps to"
+               " reproduce the problem")
+             rows: 8 cols: 70]
       @; An attachement requires a cgi script that can deal with input
       @; that is in "multipart/form-data" format.
-      @; @field['line "Attachment"]{
-      @;   @input[type: 'file name: 'attachment size: 20]}
+      @; @field['file 'attachment 'line "Attachment" size: 20]
       @(let* ([c (captcha-file+num)]
               [n (and c (cdr c))]
               [c (and c (img src: (cgi-link (car c)) align: "middle"))])
-         (and c @field['line @list{Please type @c and then a “@tt{*@n}”}]{
-                  @input[type: 'text name: 'captcha value: "" size: 10]}))
+         (and c @field['captcha 'text 'line
+                       @list{Please type @c and then a “@tt{*@n}”}
+                       size: 10]))
       @input[type: 'submit value: "Submit"]}})
 
 (define thanks
@@ -248,3 +257,15 @@
        @tt{@small{racket@"@"racket-lang.org}}
        or to the Racket
        @a[href: "http://lists.racket-lang.org/users/"]{mailing list}.}})
+
+(define captcha-text
+  ;; This is currently empty -- help/bug-report.rkt will poll it for
+  ;; text that is used for a captcha challenge question, and if it's not
+  ;; empty, then it will show that in the dialog.  It's intended to be
+  ;; used in the future if spam bug reports that use drracket (or racket
+  ;; code) directly become a problem.  In this case, adding a challenge
+  ;; here will make existing installations start asking for an answer.
+  ;; (And this could be done with a changes-on-each-build basis, or some
+  ;; script that will create and remember short-lived captcha
+  ;; challenges.)
+  @plain[#:file "captcha-text" #:newline #f]{})
