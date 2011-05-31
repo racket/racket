@@ -261,11 +261,13 @@
 (define captcha-text
   ;; This is currently empty -- help/bug-report.rkt will poll it for
   ;; text that is used for a captcha challenge question, and if it's not
-  ;; empty, then it will show that in the dialog.  It's intended to be
-  ;; used in the future if spam bug reports that use drracket (or racket
-  ;; code) directly become a problem.  In this case, adding a challenge
-  ;; here will make existing installations start asking for an answer.
-  ;; (And this could be done with a changes-on-each-build basis, or some
-  ;; script that will create and remember short-lived captcha
-  ;; challenges.)
+  ;; empty, then it will show that in an input dialog.  It's intended to
+  ;; be used in the future if spam bug reports that use drracket (or
+  ;; racket code) directly become a problem.  In this case, adding a
+  ;; challenge here will make existing installations start asking for an
+  ;; answer.  (And this could be done with a changes-on-each-build
+  ;; basis, or some script that will create and remember short-lived
+  ;; captcha challenges.)  Note that the text should be a complete text
+  ;; for a question, including a "?" and instructions.  It is used as is
+  ;; in the `message' argument for `get-text-from-user'.
   @plain[#:file "captcha-text" #:newline #f]{})

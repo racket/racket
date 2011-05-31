@@ -16,8 +16,10 @@
          saved-bug-report-titles/ids
          discard-all-saved-bug-reports)
 
-(define bug-www-server "bugs.racket-lang.org")
-(define bug-www-server-port 80)
+(define (bug-server-url path)
+  (string->url (string-append "http://bugs.racket-lang.org/" path)))
+(define bug-report-url   (bug-server-url "bug-report.cgi"))
+(define captcha-text-url (bug-server-url "captcha-text"))
 
 (preferences:set-default 'drracket:email "" string? #:aliases '(drscheme:email))
 (preferences:set-default 'drracket:full-name "" string? #:aliases '(drscheme:full-name))
@@ -191,10 +193,6 @@
   ;; initiates sending the bug report and switches the GUI's mode
   (define (send-bug-report)
     (define query (get-query))
-    (define url
-      (string->url (format "http://~a:~a/cgi-bin/bug-report"
-                           bug-www-server
-                           bug-www-server-port)))
     (define post-data
       (parameterize ([current-alist-separator-mode 'amp])
         (string->bytes/utf-8 (alist->form-urlencoded query))))
@@ -207,11 +205,9 @@
          (λ ()
            (with-handlers ([exn:fail? (λ (x) (channel-put exn-chan x))])
              (parameterize ([current-alist-separator-mode 'amp])
-               (call/input-url 
-                url
-                (case-lambda
-                  [(x) (post-pure-port x post-data)]
-                  [(x y) (post-pure-port x post-data y)])
+               (call/input-url
+                bug-report-url
+                (lambda (x) (post-pure-port x post-data))
                 (lambda (port)
                   (define response-text (new html-text%))
                   (render-html-to-text port response-text #t #f)
