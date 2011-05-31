@@ -88,6 +88,7 @@ Keep documentation and tests up to date.
 @include-section["hash.scrbl"]
 @include-section["class-iop.scrbl"] ;; Interface-oriented Programming
 @include-section["list.scrbl"]
+@include-section["logging.scrbl"]
 @include-section["markparam.scrbl"]
 @include-section["match.scrbl"]
 @include-section["net.scrbl"]
