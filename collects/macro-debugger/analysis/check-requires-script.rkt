@@ -41,7 +41,7 @@ Example (from racket root directory):
            (when (show-keep?)
              (printf "KEEP ~a at ~a~a\n"
                      (mpi->key mpi) phase
-                     (if comment (format "(~a)" comment #f) "")))]
+                     (if comment (format " (~a)" comment) "")))]
           [(list 'bypass mpi phase)
            (when (show-bypass?)
              (printf "BYPASS ~a at ~a\n" (mpi->key mpi) phase))]
