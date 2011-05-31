@@ -81,28 +81,18 @@
            #:with opt #'other))
 
 (define (optimize-top stx)
-  (let* ([log? (or *log-optimizations?* *log-missed-optimizations?*)]
-         [log-file? (and log? *log-to-log-file?*)]
-         [port (if log-file?
-                   (open-output-file *log-file* #:exists 'append)
-                   (current-output-port))])
-    (when log? ; Reset log. We don't want to accumulate after each top-level expression.
-      (clear-log))
-    (begin0
-      (parameterize ([current-output-port port]
-                     [optimize (syntax-parser
-                                [e:expr
-                                 #:when (and (not (syntax-property #'e 'typechecker:ignore))
-                                             (not (syntax-property #'e 'typechecker:ignore-some))
-                                             (not (syntax-property #'e 'typechecker:with-handlers)))
-                                 #:with e*:opt-expr #'e
-                                 #'e*.opt]
-                                [e:expr #'e])])
+  (clear-log) ; Reset log. We don't want to accumulate after each top-level expression.
+  (begin0
+      (parameterize ([optimize (syntax-parser
+                                 [e:expr
+                                  #:when (and (not (syntax-property #'e 'typechecker:ignore))
+                                              (not (syntax-property #'e 'typechecker:ignore-some))
+                                              (not (syntax-property #'e 'typechecker:with-handlers)))
+                                  #:with e*:opt-expr #'e
+                                  #'e*.opt]
+                                 [e:expr #'e])])
         (let ((result ((optimize) stx)))
           (when *show-optimized-code*
             (pretty-print (syntax->datum result)))
           result))
-      (when log?
-        (print-log))
-      (when log-file?
-        (close-output-port port)))))
+    (print-log))) ; Now that we have the full log for this top-level expression, print it in order.

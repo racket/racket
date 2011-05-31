@@ -7,8 +7,7 @@
          (types type-table utils subtype)
          (rep type-rep))
 
-(provide *log-file* *log-to-log-file?* log-optimization *log-optimizations?*
-         log-missed-optimization *log-missed-optimizations?*
+(provide log-optimization log-missed-optimization
          print-log clear-log
          *show-optimized-code*
          subtypeof? isoftype?
@@ -16,12 +15,6 @@
          n-ary->binary
          unboxed-gensym reset-unboxed-gensym
          optimize)
-
-(define (in-command-line? opt)
-  (member opt (vector->list (current-command-line-arguments))))
-
-(define *log-file* "opt-log")
-(define *log-to-log-file?* #f) ; otherwise, goes to stdout
 
 (define (line+col->string stx)
   (let ([line (syntax-line stx)]
@@ -37,7 +30,7 @@
 ;; a problem per se)
 (define log-so-far (set))
 (define (do-logging msg stx)
-  (let* ([new-message (format "~a ~a ~a -- ~a\n"
+  (let* ([new-message (format "~a ~a ~a -- ~a"
                               (syntax-source-file-name stx)
                               (line+col->string stx)
                               (syntax->datum stx)
@@ -50,7 +43,7 @@
 ;; once the optimizer is done, we sort the log according to source
 ;; location, then print it
 (define (print-log)
-  (for-each (lambda (x) (display (log-entry-msg x)))
+  (for-each (lambda (x) (log-warning (log-entry-msg x)))
             (sort (set->list log-so-far)
                   (lambda (x y)
                     (match* (x y)
@@ -74,25 +67,20 @@
 (define (clear-log)
   (set! log-so-far (set)))
 
-(define *log-optimizations?* (in-command-line? "--log-optimizations"))
-(define (log-optimization kind stx)
-  (when *log-optimizations?*
-    (do-logging kind stx)))
+(define (log-optimization kind stx) (do-logging kind stx))
 
 ;; Keep track of optimizations that "almost" happened, with the intention
 ;; of reporting them to the user.
 ;; This is meant to help users understand what hurts the performance of
 ;; their programs.
-(define *log-missed-optimizations?* (in-command-line? "--log-missed-optimizations"))
 (define (log-missed-optimization kind stx [irritant #f])
-  (when *log-missed-optimizations?*
-    (do-logging (if irritant
-                    (format "~a -- caused by: ~a ~a"
-                            kind
-                            (line+col->string irritant)
-                            (syntax->datum irritant))
-                    kind)
-                stx)))
+  (do-logging (if irritant
+                  (format "~a -- caused by: ~a ~a"
+                          kind
+                          (line+col->string irritant)
+                          (syntax->datum irritant))
+                  kind)
+              stx))
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
