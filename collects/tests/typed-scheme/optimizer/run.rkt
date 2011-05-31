@@ -5,24 +5,46 @@
 (provide optimization-tests missed-optimization-tests
          test-opt test-missed-optimization)
 
-(define (generate-log name dir flags)
+(define (with-logging-to-port port level proc)
+  (let* ([logger   (current-logger)]
+         [receiver (make-log-receiver logger level)]
+         [stop-key (gensym)]
+         [t (thread (lambda ()
+                      (let loop ()
+                        (let ([l (sync receiver)])
+                          (unless (eq? (vector-ref l 2) stop-key)
+                            (displayln (vector-ref l 1) ; actual message
+                                       port)
+                            (loop))))))])
+    (begin0 (proc)
+      (log-message logger level "" stop-key) ; stop the receiver thread
+      (thread-wait t))))
+;; TODO put in unstable somewhere
+
+
+(define (generate-log name dir)
   ;; some tests require other tests, so some fiddling is required
-  (parameterize ([current-load-relative-directory dir]
-                 [current-command-line-arguments  flags])
-    (let ((log-string
-           (with-output-to-string
-             (lambda ()
-               (parameterize ([current-namespace (make-base-empty-namespace)])
-                 (dynamic-require (build-path (current-load-relative-directory)
-                                              name)
-                                  #f))))))
-      ;; have the log as an sexp, since that's what the expected log is
-      (with-input-from-string (string-append "(" log-string ")")
-        read))))
+  (let* ([log-port (open-output-string)]
+         [out-string
+          (with-output-to-string
+            (lambda ()
+              (with-logging-to-port log-port 'warning ; catch opt logs
+               (lambda ()
+                 (parameterize
+                     ([current-namespace (make-base-empty-namespace)]
+                      [current-load-relative-directory dir])
+                   (dynamic-require
+                    (build-path (current-load-relative-directory) name)
+                    #f))))))])
+    ;; have the log as an sexp, since that's what the expected log is
+    (with-input-from-string
+        (string-append "(" (get-output-string log-port) ; join log and results
+                       " " out-string ")")
+      read)))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen
-(define (compare-logs name dir flags)
+(define (compare-logs name dir)
   (test-suite "Log Comparison"
               (check-equal?
                ;; ugly, but otherwise rackunit spews the entire logs to
@@ -30,7 +52,7 @@
                #t
                (equal?
                 ;; actual log
-                (generate-log name dir flags)
+                (generate-log name dir)
                 ;; expected log
                 (with-input-from-file (build-path dir name)
                   (lambda () ; from the test file
@@ -43,9 +65,9 @@
 
 ;; these two return lists of tests to be run for that category of tests
 (define (test-opt name)
-  (list (compare-logs name tests-dir '#("--log-optimizations"))))
+  (list (compare-logs name tests-dir)))
 (define (test-missed-optimization name)
-  (list (compare-logs name missed-optimizations-dir '#("--log-missed-optimizations"))))
+  (list (compare-logs name missed-optimizations-dir)))
 
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
