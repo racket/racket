@@ -368,3 +368,12 @@ Example (from racket root directory):
 
 @commandline{racket -l macro-debugger/analysis/check-requires-script \
   collects/syntax/*.rkt}
+
+
+@defproc[(show-requires [module-name module-path?])
+         (listof (list/c 'keep   module-path? number? (or/c string? #f))
+	         (list/c 'bypass module-path? number?)
+		 (list/c 'drop   module-path? number?))]{
+Similar to @racket[check-requires], but outputs module paths instead of
+module path indexes, for more readability.
+}
