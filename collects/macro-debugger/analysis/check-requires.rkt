@@ -12,6 +12,7 @@
          "private/util.rkt")
 (provide/contract
  [check-requires (-> module-path? list?)]
+ [show-requires  (-> module-path? list?)]
  [add-disappeared-uses? (parameter/c boolean?)]
  [mpi->key (-> module-path-index? any/c)])
 
@@ -314,6 +315,21 @@ A recommendation is one of
     (let ([refs (new-reftable)])
       (analyze deriv refs)
       (nom-use-alg refs compiled))))
+
+#|
+A displayed-recommendation is one of
+  (list 'keep   string phase string/#f)
+  (list 'bypass string phase)
+  (list 'drop   string phase)
+A displayed-recommendation is similar to a recommendation, but prints
+out the module-path-index for easier user consumption.
+|#
+
+;; show-requires: module-path -> (listof displayed-recommendation)
+(define (show-requires mod-path)
+  (map (match-lambda [(list-rest key mpi rest)
+                      (list* key (mpi->key mpi) rest)])
+       (check-requires mod-path)))
 
 #|
 TODO
