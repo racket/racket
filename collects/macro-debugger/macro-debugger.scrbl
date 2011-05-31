@@ -313,3 +313,58 @@ The binding information of a syntax object may not be the same as
 the binding structure of the program it represents. The binding
 structure of a program is only determined after macro expansion is
 complete.
+
+
+@section{Checking requires}
+@section-index["useless-requires"]
+
+@defmodule[macro-debugger/analysis/check-requires]
+
+@defproc[(check-requires [module-name module-path?])
+         (listof (list/c 'keep   module-path-index? number? (or/c string? #f))
+	         (list/c 'bypass module-path-index? number?)
+		 (list/c 'drop   module-path-index? number?))]{
+
+Estimate a module's useless requires.
+The procedure returns one element per (non-label) require in the
+following format:
+@itemlist[
+@item{
+  @racket['keep] @racket[module] at @racket[phase] @racket[(optional-comment)]
+  @itemlist[
+  @item{The require must be kept because bindings defined within it are used.}
+  @item{The optional comment indicates if the require must be kept
+        @itemlist[
+	@item{only because its bindings are re-exported}
+	@item{only because the whitelist DB says so}
+	]}]}
+@item{
+  @racket['bypass] @racket[module] at @racket[phase]
+  @itemlist[
+  @item{The require is used, but only for bindings that could be more
+        directly obtained via another module. For example, @racket[racket]
+	can be bypassed in favor of some subset of @racket[racket/base],
+	@racket[racket/contract], etc.}]}
+@item{
+  @racket['drop] @racket[module] at @racket[phase]
+  @itemlist[
+  @item{The require appears to be unused. Unless it must be kept for side
+        effects or for bindings of a very unusual macro, it can be dropped
+        entirely.}]}]
+
+Examples:
+@racketblock[
+ (check-requires 'typed-scheme)
+ (check-requires 'unstable/markparam)
+ (check-requires 'macro-debugger/syntax-browser/widget)
+]
+}
+
+A scripting interface to @racket[macro-debugger/analysis/check-requires]
+usable from the command-line is available at
+@racket[macro-debugger/analysis/check-requires-script.rkt].
+
+Example (from racket root directory):
+
+@commandline{racket -l macro-debugger/analysis/check-requires-script \
+  collects/syntax/*.rkt}
