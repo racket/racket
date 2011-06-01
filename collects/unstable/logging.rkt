@@ -2,6 +2,15 @@
 
 (require racket/contract)
 
+;; Known limitations:
+;; - If another thread is logging while t is running, these messages will be
+;;   sent to the port as well, even if they don't come from proc.
+;; - In the following example:
+;;     (with-logging-to-port port level
+;;       (lambda () (log-warning "ok") 3))
+;;     (log-warning "not ok")
+;;   If the logging on the last line is executed before the thread listening
+;;   to the logs sees the stop message, "not ok" will also be sent to port.
 (define (with-logging-to-port port level proc)
   (let* ([logger    (make-logger #f (current-logger))]
          [receiver  (make-log-receiver logger level)]
