@@ -12,14 +12,15 @@
          [out-string
           (with-output-to-string
             (lambda ()
-              (with-logging-to-port log-port 'warning ; catch opt logs
+              (with-logging-to-port log-port ; catch opt logs
                (lambda ()
                  (parameterize
                      ([current-namespace (make-base-empty-namespace)]
                       [current-load-relative-directory dir])
                    (dynamic-require
                     (build-path (current-load-relative-directory) name)
-                    #f))))))])
+                    #f)))
+               #:level 'warning)))])
     ;; have the log as an sexp, since that's what the expected log is
     (with-input-from-string
         (string-append "(" (get-output-string log-port) ; join log and results
