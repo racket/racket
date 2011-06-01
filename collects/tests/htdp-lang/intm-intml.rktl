@@ -1,5 +1,3 @@
 
-(htdp-syntax-test #'(recur empty-f () 10))
-
-(htdp-syntax-test #'(let name ([x 12]) 10))
+(htdp-syntax-test #'(let name ([x 12]) 10) "let: expected at least one binding (in parentheses) after let, but found something else")
 

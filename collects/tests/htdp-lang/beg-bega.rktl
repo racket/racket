@@ -1,14 +1,14 @@
 
-(htdp-syntax-test #'(local [(define x 5)] x))
-(htdp-syntax-test #'(recur name ([x 18]) x))
+(htdp-syntax-test #'(local [(define x 5)] x) "local: this function is not defined")
+(htdp-syntax-test #'(recur name ([x 18]) x) "recur: this function is not defined")
 
-(htdp-syntax-test #'(define (f78 a) (a))) ; no functions as arguments
+(htdp-syntax-test #'(define (f78 a) (a)) "function call: expected a function after the open parenthesis, but found a variable")
 
 ;; See htdp-top uses in beg-adv.rkt:
 (htdp-error-test #'f)
 (htdp-error-test #'(x 1))
 (htdp-error-test #'(+ f 1))
-(htdp-error-test #'((f 1)))
+(htdp-error-test #'((f 1)) )
 (htdp-error-test #'a1)
 (htdp-error-test #'make-a1)
 (htdp-error-test #'a1?)
@@ -24,7 +24,7 @@
 (htdp-top-pop 1)
 
 (htdp-top (define (my-f x) (+ x 5)))
-(htdp-syntax-test #'my-f #rx"a procedure, so it must be applied")
+(htdp-syntax-test #'my-f #rx"found a use that does not follow an open parenthesis")
 (htdp-top-pop 1)
 
 ;; Teachpacks with higher-order primitives
@@ -34,13 +34,13 @@
 (htdp-top (define (my-f x) x))
 (htdp-top (define-struct foo (a b)))
 
-(htdp-syntax-test #'(go 5 8))
-(htdp-syntax-test #'(go add1 add1))
-(htdp-syntax-test #'(go my-f add1))
-(htdp-syntax-test #'(go foo? add1))
-(htdp-syntax-test #'(go make-foo add1))
-(htdp-syntax-test #'(go foo-a add1))
-(htdp-syntax-test #'(go go add1))
+(htdp-syntax-test #'(go 5 8) "go: expects a function in this position at: 8 in: (go 5 8)")
+(htdp-syntax-test #'(go add1 add1) "add1: found a use that does not follow an open parenthesis in: add1")
+(htdp-syntax-test #'(go my-f add1) "my-f: found a use that does not follow an open parenthesis in: my-f")
+(htdp-syntax-test #'(go foo? add1) "foo?: found a use that does not follow an open parenthesis in: foo?")
+(htdp-syntax-test #'(go make-foo add1) "make-foo: found a use that does not follow an open parenthesis in: make-foo")
+(htdp-syntax-test #'(go foo-a add1) "foo-a: found a use that does not follow an open parenthesis in: foo-a")
+(htdp-syntax-test #'(go go add1) "go: found a use that does not follow an open parenthesis in: go")
 
 (htdp-top-pop 1)
 (htdp-teachpack-pop)

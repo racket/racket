@@ -175,7 +175,9 @@ transcript.
 					      (printf " WRONG EXN ELEM ~s: ~s " sel e)
 					      (record-error (list e (cons 'exn-elem sel) expr)))))))
 			  exn-table)
-
+                         
+                         (printf "~s~n" (if (exn? e) (exn-message e) e))
+                         #; ;g;
                          ((error-display-handler)
                           (if (exn? e)
                               (exn-message e)

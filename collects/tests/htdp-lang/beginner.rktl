@@ -91,11 +91,11 @@
 (load-relative "beg-intm.rktl")
 (load-relative "beg-bega.rktl")
 
-(htdp-syntax-test #'quote)
-(htdp-syntax-test #''1)
-(htdp-syntax-test #''"hello")
-(htdp-syntax-test #''(1 2))
-(htdp-syntax-test #'''a)
+(htdp-syntax-test #'quote "found a use that isn't before a parenthesis")
+(htdp-syntax-test #''1 "quote: expected the name of the symbol after the quote, but found a number")
+(htdp-syntax-test #''"hello" "quote: expected the name of the symbol after the quote, but found a string")
+(htdp-syntax-test #''(1 2) "quote: expected the name of the symbol after the quote, but found a part")
+(htdp-syntax-test #'''a "quote: expected the name of the symbol after the quote, but found a part")
 
 
-(report-errs)
+

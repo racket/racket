@@ -16,17 +16,16 @@
 (htdp-test '(quasiquote (unquote 22)) 'qq ``,,(* 11 2))
 (htdp-test '(quasiquote ((unquote-splicing (22)))) 'qq ``(,@(,@(list (* 11 2)))))
 
-(htdp-syntax-test #'quasiquote)
-(htdp-syntax-test #'`unquote)
-(htdp-syntax-test #'`unquote-splicing)
-(htdp-syntax-test #'`(unquote-splicing 10))
+(htdp-syntax-test #'quasiquote "quasiquote: found a use that does not precede an open parenthesis")
+(htdp-syntax-test #'`unquote "quasiquote: misuse of unquote within a quasiquoting backquote")
+(htdp-syntax-test #'`unquote-splicing "quasiquote: misuse of ,@ or unquote-splicing within a quasiquoting backquote")
+(htdp-syntax-test #'`(unquote-splicing 10) "quasiquote: misuse of ,@ or unquote-splicing within a quasiquoting backquote")
 
-(htdp-syntax-test #'unquote)
-(htdp-syntax-test #'(unquote))
-(htdp-syntax-test #'(unquote 10))
+(htdp-syntax-test #'unquote "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
+(htdp-syntax-test #'(unquote) "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
+(htdp-syntax-test #'(unquote 10) "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
 
-(htdp-syntax-test #'unquote-splicing)
-(htdp-syntax-test #'(unquote-splicing (list 10)))
-(htdp-syntax-test #'((unquote-splicing (list 10))))
+(htdp-syntax-test #'unquote-splicing "unquote-splicing: misuse of ,@ or unquote-splicing, not under a quasiquoting backquote")
+(htdp-syntax-test #'(unquote-splicing (list 10)) "unquote-splicing: misuse of ,@ or unquote-splicing, not under a quasiquoting backquote")
 
-(htdp-err/rt-test `(,@4))
+(htdp-err/rt-test `(,@4) (exn-type-and-msg exn:fail:contract? "append: expected argument of type <proper list>; given 4"))

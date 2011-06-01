@@ -708,7 +708,22 @@ TODO
           (reset-highlighting)
           
           (set! error-ranges locs)
-          
+
+#|
+      TODO
+send: target is not an object: #f for method: begin-edit-sequence
+
+ === context ===
+C:\documents\projects\plt\collects\racket\private\class-internal.rkt:4550:0: obj-error
+C:\documents\projects\plt\collects\racket\private\class-internal.rkt:3814:0: find-method/who
+C:\documents\projects\plt\collects\drracket\private\rep.rkt:719:20
+C:\documents\projects\plt\collects\racket\private\map.rkt:45:11: for-each
+C:\documents\projects\plt\collects\drracket\private\rep.rkt:660:6: core
+C:\documents\projects\plt\collects\mred\private\wx\common\queue.rkt:430:6
+C:\documents\projects\plt\collects\mred\private\wx\common\queue.rkt:470:32
+C:\documents\projects\plt\collects\mred\private\wx\common\queue.rkt:607:3
+
+|#
           (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
           
           (when color?

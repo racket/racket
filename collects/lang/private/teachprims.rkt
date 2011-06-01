@@ -462,10 +462,10 @@ namespace.
 ;; is s a list of 1-letter strings
 ;; effect: not a list, not a list of strings 
 (define (1-letter*? tag s)
-  (unless (list? s) (err tag "expected a ~a, but received a list: ~e" 1-LETTER* s))
+  (unless (list? s) (err tag "expected a ~a, but received: ~e" 1-LETTER* s))
   (for-each 
    (lambda (c) 
-     (unless (string? c) (err tag "expected a ~a, but received a string: ~e" 1-LETTER* c)))
+     (unless (string? c) (err tag "expected a ~a, but received: ~e" 1-LETTER* c)))
    s)
   (andmap (compose (curry = 1) string-length) s))
 

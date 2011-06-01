@@ -12,5 +12,10 @@
 
 (err/rt-test (1 2 3))
 
+(htdp-syntax-test #'(recur empty-f () 10) "recur: expected a function name after recur, but nothing's there"
+(htdp-syntax-test #'(local [(lambda (x) x)] 1) "local: expected a definition, but found a part")
+
+(htdp-syntax-test #'((unquote-splicing (list 10))) "unquote-splicing: misuse of ,@ or unquote-splicing, not under a quasiquoting backquote")
+
 
 

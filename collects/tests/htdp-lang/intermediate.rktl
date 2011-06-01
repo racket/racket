@@ -32,4 +32,6 @@
 (load-relative "intm-intml.rktl")
 (load-relative "intm-adv.rktl")
 
+(htdp-syntax-test #'(local [(lambda (x) x)] 1) "lambda: found a lambda that is not a function definition")
+
 (report-errs)

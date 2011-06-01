@@ -227,9 +227,10 @@
 
     ;; Raise a syntax error:
     (define (teach-syntax-error form stx detail msg . args)
-      (let ([form (if (eq? form '|function call|)
+      (let (#;[form (if (eq? form '|function call|)
 		      form
 		      #f)] ; extract name from stx
+            [form (or form (first (flatten (syntax->datum stx))))]
 	    [msg (apply format msg args)])
 	(if detail
 	    (raise-syntax-error form msg stx detail)
@@ -564,7 +565,7 @@
 		'define
 		stx
 		dup
-		"found a variable that was used more than once: ~a"
+		"found a variable that is used more than once: ~a"
 		(syntax-e dup))))
 	   (check-single-result-expr (syntax->list (syntax (expr ...)))
 				     #f
@@ -703,7 +704,7 @@
                    'lambda
                    rhs
                    dup
-                   "found a variable that was used more than once: ~a"
+                   "found a variable that is used more than once: ~a"
                    (syntax-e dup))))
               (check-single-result-expr (syntax->list (syntax (lexpr ...)))
                                         #f
@@ -772,7 +773,7 @@
 		   'define-struct
 		   stx
 		   field
-		   "found a field name that was used more than once: ~a"
+		   "found a field name that is used more than once: ~a"
 		   sym))
 		(hash-table-put! ht sym #t)))
 	    fields)
@@ -1040,7 +1041,7 @@
                               'define-datatype
                               stx
                               v-stx
-                              "found a variant name that was used more than once: ~a"
+                              "found a variant name that is used more than once: ~a"
                               v)))              
            
            (for-each
@@ -1063,7 +1064,7 @@
                                    'define-datatype
                                    stx
                                    f-stx
-                                   "in variant `~a': found a field name that was used more than once: ~a"
+                                   "in variant `~a': found a field name that is used more than once: ~a"
                                    (syntax-e #'variant)
                                    (syntax-e f-stx))))))
             (syntax->list #'((variant field ...) ...))))
@@ -1232,12 +1233,12 @@
          (if (not (identifier-binding #'id))
              (if (syntax-property #'id 'was-in-app-position)
                  (teach-syntax-error
-                  'unknown
+                  #f
                   #'id
                   #f
                   "this function is not defined")
                  (teach-syntax-error
-                  'unknown
+                  #f
                   #'id
                   #f
                   "this variable is not defined"))
@@ -1377,9 +1378,11 @@
 	       'if
 	       stx
 	       #f
-	       "expected a question and two answers, but found ~a part~a"
-	       (if (zero? n) "no" n)
-	       (if (= n 1) "" "s")))]
+	       "expected a question and two answers, but ~a"
+	       (cond [(zero? n) "nothing's there"]
+                     [(= n 1) "found only 1 part"]
+                     [(= n 2) "found only 2 parts"]
+                     [else (format "found ~a parts" n)])))]
 	   [_else (bad-use-error 'if stx)]))))
     
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1405,9 +1408,9 @@
 				where
 				stx
 				#f
-				"expected at least two expressions after ~a, but found ~a"
+				"expected at least two expressions after ~a, but ~a"
 				where
-				(if (zero? n) "no expressions" "only one expression")))
+				(if (zero? n) "nothing's there" "found only one expression")))
 			     (let loop ([clauses-consumed 0]
 					[remaining (syntax->list #`clauses)])
 			       (if (null? remaining)
@@ -1444,7 +1447,7 @@
 	      'quote
 	      stx
 	      #f
-	      "expected the name of the symbol after the quote, found ~a"
+	      "expected the name of the symbol after the quote, but found ~a"
 	      (something-else sym)))
 	   (syntax/loc stx (quote expr)))]
 	[_else (bad-use-error 'quote stx)]))
@@ -1686,7 +1689,7 @@
 		     (syntax-e dup)))
 		  (let ([exprs (syntax->list (syntax exprs))])
 		    (check-single-expression 'local
-					     "after the local definition sequence"
+					     "after the local definitions"
 					     stx
 					     exprs
 					     (append val-ids stx-ids)))
@@ -1881,30 +1884,23 @@
 	 (let ([bindings (syntax->list (syntax (binding ...)))])
 	   (for-each (lambda (binding)
 		       (syntax-case binding ()
+            		 [(something . exprs)
+                          (not (identifier/non-kw? (syntax something)))
+			  (teach-syntax-error
+			   who
+			   orig-stx
+			   (syntax something)
+                           "expected a variable for the binding, but found ~a"
+			   (something-else/kw (syntax something)))]
 			 [(name expr)
-			  (let ([name (syntax name)])
-			    (unless (identifier/non-kw? name)
-			      (teach-syntax-error
-			       who
-			       orig-stx
-			       name
-			       "expected a variable for the binding, but found ~a"
-			       (something-else/kw name))))]
+                          (void)]
 			 [(name . exprs)
-			  (identifier/non-kw? (syntax name))
 			  (check-single-expression who
 						   (format "after the name ~a"
 							   (syntax-e (syntax name)))
 						   binding
 						   (syntax->list (syntax exprs))
 						   #f)]
-			 [(something . exprs)
-			  (teach-syntax-error
-			   who
-			   orig-stx
-			   (syntax something)
-                           "expected a variable after the square bracket, but found ~a"
-			   (something-else/kw (syntax something)))]
 			 [_else
 			  (teach-syntax-error
 			   who
@@ -1927,7 +1923,7 @@
 		  (syntax-e dup)))))
 	   (let ([exprs (syntax->list (syntax exprs))])
 	     (check-single-expression who 
-				      "after the name-defining sequence"
+				      "after the bindings"
 				      orig-stx
 				      exprs
 				      #f)))]
@@ -2050,7 +2046,7 @@
 		   "found a variable that is used more than once: ~a"
 		   (syntax-e dup))))
 	      (check-single-expression 'lambda
-				       "within lambda"
+				       "after the variables"
 				       stx
 				       (syntax->list (syntax (lexpr ...)))
 				       args)
@@ -2082,7 +2078,7 @@
 	  [(_ expr ...)
 	   (begin
 	     (check-single-expression 'quote
-				      "after the quote keyword"
+				      "after quote"
 				      stx
 				      (syntax->list (syntax (expr ...)))
 				      ;; Don't expand expr!
@@ -2406,24 +2402,28 @@
 		  stx
 		  (lambda ()
 		    (syntax-case stx ()
-		      [(_ q expr ...)
-		       (let ([exprs (syntax->list (syntax (expr ...)))])
-			 (check-single-expression who
-						  (format "for the answer in ~a"
-							  who)
-						  stx
-						  exprs
-						  null)
-			 (with-syntax ([who who]
-				       [target target-stx])
-			   (syntax/loc stx (target (verify-boolean q 'who) expr ...))))]
 		      [(_)
 		       (teach-syntax-error
 			who
 			stx
 			#f
-			"expected a question after ~a, but nothing's there"
-			who)]
+			"expected a question and an answer, but nothing's there")]
+		      [(_ q)
+		       (teach-syntax-error
+			who
+			stx
+			#'q
+			"expected a question and an answer, but found only one part")]		      
+                      [(_ q a)
+		       (with-syntax ([who who]
+                                     [target target-stx])
+			   (syntax/loc stx (target (verify-boolean q 'who) a)))]
+		      [(_ . parts)
+                       (teach-syntax-error*
+                        who
+                        stx
+                        (syntax->list #'parts)
+                        "expected a question and an answer, but found ~a parts" (length (syntax->list #'parts)))]
 		      [_else
 		       (bad-use-error who stx)])))))])
 	(values (mk 'when (quote-syntax when))
@@ -2445,17 +2445,22 @@
        stx
        (lambda ()
 	 (syntax-case stx ()
-	   [(_ name ids body)
+	   [(_form name . rest)
 	    (identifier/non-kw? (syntax name))
-	    (syntax/loc stx (let name ids body))]
-	   [(_ name . rest)
+            (begin
+              (bad-let-form 'let (syntax (_form . rest)) stx)
+              (syntax/loc stx (let name . rest)))]
+           [(_ name)
 	    (identifier/non-kw? (syntax name))
-	    (teach-syntax-error
-	     'let
+            (teach-syntax-error
+             'let
 	     stx
 	     #f
-	     "bad syntax for named let")]
-	   [(_ . rest)
+             "expected at least one binding (in parentheses) after ~a, but nothing's there" (syntax->datum (syntax name)))]
+	   [(_form name . rest)
+	    (identifier/non-kw? (syntax name))
+            (bad-let-form 'let (syntax (_form . rest)) stx)]
+           [(_ . rest)
 	    (syntax/loc stx (intermediate-let . rest))]
 	   [_else
 	    (bad-use-error 'let stx)]))))
@@ -2517,7 +2522,7 @@
 	     'case
 	     stx
 	     #f
-	     "expected a clause with choices and an answer after the expression, but nothing's there")]
+	     "expected a clause with at least one choice (in parentheses) and an answer after the expression, but nothing's there")]
 	   [(_ v-expr clause ...)
 	    (let ([clauses (syntax->list (syntax (clause ...)))])
 	      (for-each
@@ -2534,7 +2539,7 @@
                                     in its case expression"))
 		      (let ([answers (syntax->list (syntax (answer ...)))])
 			(check-single-expression 'case
-						 "for the answer in a case clause"
+						 "for the answer in the case clause"
 						 clause
 						 answers
 						 null)))]
@@ -2568,7 +2573,7 @@
 			 choices
 			 "expected at least one choice (in parentheses), but nothing's there"))
 		      (check-single-expression 'case
-					       "for the answer in a case clause"
+					       "for the answer in the case clause"
 					       clause
 					       answers
 					       null))]
@@ -2743,7 +2748,7 @@
 	     [(_ expr ...)
 	      (begin
 		(check-single-expression 'delay
-					 "after the delay keyword"
+					 "after delay"
 					 stx
 					 (syntax->list (syntax (expr ...)))
 					 null)
@@ -2813,7 +2818,18 @@
 					 "after the bindings"
 					 stx
 					 (syntax->list (syntax exprs))
-					 #f))]
+					 #f)
+                (let ([dup (check-duplicate-identifier (map (lambda (binding)
+							   (syntax-case binding ()
+							     [(name . _) (syntax name)]))
+							 bindings))])
+                  (when dup
+                        (teach-syntax-error
+                         'shared
+                         stx
+                         dup
+                         "found a variable that is used more than once: ~a"
+                         (syntax-e dup)))))]
 	     [(_ bad-bind . exprs)
 	      (teach-syntax-error
 	       'shared

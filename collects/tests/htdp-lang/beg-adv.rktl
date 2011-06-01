@@ -1,64 +1,63 @@
 
-(htdp-syntax-test #'())
-(htdp-syntax-test #'#%app)
+(htdp-syntax-test #'() "function call: expected a function after the open parenthesis, but nothing's there")
 
+(htdp-syntax-test #'#%app)
 (htdp-syntax-test #'quote)
 (htdp-syntax-test #'(quote 1 2))
 
-(htdp-syntax-test #'define)
-(htdp-syntax-test #'(define))
-(htdp-syntax-test #'(define x))
-(htdp-syntax-test #'(define x 10 12))
-(htdp-syntax-test #'(define (10 y) 12))
-(htdp-syntax-test #'(define (10) 12))
-(htdp-syntax-test #'(define ("x" y) 12))
-(htdp-syntax-test #'(define (y 10) 12))
-(htdp-syntax-test #'(define (y "x") 12))
-(htdp-syntax-test #'(define (y z 10) 12))
-(htdp-syntax-test #'(define (x y) 10 12))
-(htdp-syntax-test #'(define (x y y) 10))
-(htdp-syntax-test #'(define () 10))
-(htdp-syntax-test #'(define 1 10))
-(htdp-syntax-test #'(define x lambda))
-(htdp-syntax-test #'(define x (lambda)))
-(htdp-syntax-test #'(define x (lambda (x))))
-(htdp-syntax-test #'(define x (lambda y)))
-(htdp-syntax-test #'(define x (lambda y 10)))
-(htdp-syntax-test #'(define x (lambda (10) 10)))
-(htdp-syntax-test #'(define x (lambda (x 10) 10)))
-(htdp-syntax-test #'(define x (lambda (y) 10 11)))
-(htdp-syntax-test #'(define x (lambda (y) 10 11)))
-(htdp-syntax-test #'(define x (lambda (y y) 10)))
-(htdp-syntax-test #'(+ (define x 5)))
+(htdp-syntax-test #'define "define: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(define) "define: expected a variable name, or a function name and its variables (in parentheses)")
+(htdp-syntax-test #'(define x) "define: expected an expression after the variable name")
+(htdp-syntax-test #'(define x 10 12) "define: expected only one expression after the variable name")
+(htdp-syntax-test #'(define (10 y) 12) "define: expected the name of the function, but found a number")
+(htdp-syntax-test #'(define (10) 12) "define: expected the name of the function, but found a number")
+(htdp-syntax-test #'(define ("x" y) 12) "define: expected the name of the function, but found a string")
+(htdp-syntax-test #'(define (y 10) 12) "define: expected a variable, but found a number")
+(htdp-syntax-test #'(define (y "x") 12) "define: expected a variable, but found a string")
+(htdp-syntax-test #'(define (y z 10) 12) "define: expected a variable, but found a number")
+(htdp-syntax-test #'(define (x y) 10 12) "define: expected only one expression for the function body, but found 1 extra part")
+(htdp-syntax-test #'(define (x y y) 10) "define: found a variable that is used more than once: y")
+(htdp-syntax-test #'(define () 10) "define: expected a name for the function, but nothing's there")
+(htdp-syntax-test #'(define 1 10) "define: expected a variable name, or a function name and its variables (in parentheses), but found a number")
+(htdp-syntax-test #'(define x lambda) "lambda: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(define x (lambda)) "lambda: expected at least one variable (in parentheses) after lambda, but nothing's there")
+(htdp-syntax-test #'(define x (lambda (x))) "lambda: expected an expression after the variables, but nothing's there")
+(htdp-syntax-test #'(define x (lambda y)) "lambda: expected at least one variable (in parentheses) after lambda, but found something else")
+(htdp-syntax-test #'(define x (lambda y 10) "lambda: expected at least one variable (in parentheses) after lambda, but found something else"))
+(htdp-syntax-test #'(define x (lambda (10) 10)) "lambda: expected a variable, but found a number")
+(htdp-syntax-test #'(define x (lambda (x 10) 10)) "lambda: expected a variable, but found a number")
+(htdp-syntax-test #'(define x (lambda (y) 10 11)) "lambda: expected only one expression after the variables, but found 1 extra part")
+(htdp-syntax-test #'(define x (lambda (y y) 10)) "lambda: found a variable that is used more than once: y")
+(htdp-syntax-test #'(+ (define x 5)) "define: found a definition that is not at the top level")
 
 ;; Keywords:
-(htdp-syntax-test #'(define (define y) 12))
-(htdp-syntax-test #'(define (lambda y) 12))
-(htdp-syntax-test #'(define (cond y) 12))
-(htdp-syntax-test #'(define (if y) 12))
-(htdp-syntax-test #'(define (y define) 12))
-(htdp-syntax-test #'(define (y lambda) 12))
-(htdp-syntax-test #'(define (y cond) 12))
-(htdp-syntax-test #'(define (y if) 12))
-(htdp-syntax-test #'(define (y and) 12))
-(htdp-syntax-test #'(define (y or) 12))
-(htdp-syntax-test #'(define (y true) 12))
-(htdp-syntax-test #'(define (y false) 12))
-(htdp-syntax-test #'(define (y empty) 12))
+(htdp-syntax-test #'(define (define y) 12) "define: expected the name of the function, but found a keyword")
+(htdp-syntax-test #'(define (lambda y) 12) "define: expected the name of the function, but found a keyword")
+(htdp-syntax-test #'(define (cond y) 12) "define: expected the name of the function, but found a keyword")
+(htdp-syntax-test #'(define (if y) 12) "define: expected the name of the function, but found a keyword")
+(htdp-syntax-test #'(define (y define) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y lambda) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y cond) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y if) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y and) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y or) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y true) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y false) 12) "define: expected a variable, but found a keyword")
+(htdp-syntax-test #'(define (y empty) 12) "define: expected a variable, but found a keyword")
 
-(htdp-syntax-test #'define-struct)
-(htdp-syntax-test #'(define-struct))
-(htdp-syntax-test #'(define-struct a))
-(htdp-syntax-test #'(define-struct a (b) 10))
-(htdp-syntax-test #'(define-struct a (b) 10 11 12))
-(htdp-syntax-test #'(define-struct 10 (b)))
-(htdp-syntax-test #'(define-struct a b))
-(htdp-syntax-test #'(define-struct a (10)))
-(htdp-syntax-test #'(define-struct a (b 10)))
-(htdp-syntax-test #'(define-struct (a) (b)))
-(htdp-syntax-test #'(define-struct a (b b)))
-(htdp-syntax-test #'(define-struct lambda (b)))
-(htdp-syntax-test #'(+ 1 (define-struct a (b))))
+(htdp-syntax-test #'define-struct "define-struct: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(define-struct) "define-struct: expected the structure name after define-struct, but nothing's there")
+(htdp-syntax-test #'(define-struct a) "define-struct: expected at least one field name (in parentheses) after the structure name, but nothing's there")
+(htdp-syntax-test #'(define-struct a (b) 10) "define-struct: expected nothing after the field names, but found 1 extra part")
+(htdp-syntax-test #'(define-struct a (b) 10 11 12) "define-struct: expected nothing after the field names, but found 3 extra parts")
+(htdp-syntax-test #'(define-struct 10 (b)) "define-struct: expected the structure name after define-struct, but found a number")
+(htdp-syntax-test #'(define-struct a b) "define-struct: expected at least one field name after the structure name, but found something else")
+(htdp-syntax-test #'(define-struct a (10)) "define-struct: expected a field name, but found a number")
+(htdp-syntax-test #'(define-struct a (b 10)) "define-struct: expected a field name, but found a number")
+(htdp-syntax-test #'(define-struct (a) (b)) "define-struct: expected the structure name after define-struct, but found a part")
+(htdp-syntax-test #'(define-struct a (b b)) "define-struct: found a field name that is used more than once: b")
+(htdp-syntax-test #'(define-struct lambda (b)) "define-struct: expected the structure name after define-struct, but found a keyword")
+(htdp-syntax-test #'(+ 1 (define-struct a (b))) "define-struct: found a definition that is not at the top level")
 
 (htdp-top (define x 5))
 (htdp-top (define (f y) (+ x y)))
@@ -77,49 +76,50 @@
 (htdp-test #t 'a3? (a3? (make-a3 1 2 3)))
 (htdp-test #f 'a1? (a1? (make-a3 1 2 3)))
 (htdp-test #f 'a3? (a3? (make-a1 1)))
-(htdp-err/rt-test (a1-b 10) #rx"a1-b")
-(htdp-syntax-test #'(a0 1 2 3))
+(htdp-err/rt-test (a1-b 10) "a1-b: expects argument of type <struct:a1>; given 10")
+(htdp-syntax-test #'(a0 1 2 3) "a0: cannot use a structure name after an open parenthesis for a function call")
 
-(htdp-syntax-test #'cond)
-(htdp-syntax-test #'(cond))
-(htdp-syntax-test #'(cond 1))
-(htdp-syntax-test #'(cond [#t 6] 2))
-(htdp-syntax-test #'(cond [else 6] [#f 10]))
-(htdp-syntax-test #'(cond [else 6] [else 10]))
-(htdp-syntax-test #'(cond []))
-(htdp-syntax-test #'(cond [1]))
-(htdp-syntax-test #'(cond [1 2 3]))
-(htdp-syntax-test #'(cond [1 2][]))
-(htdp-syntax-test #'(cond [1 2][3 4 5]))
+(htdp-syntax-test #'cond "cond: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(cond) "cond: expected a clause after cond, but nothing's there")
+(htdp-syntax-test #'(cond 1) "cond: expected a clause with a question and an answer, but found a number")
+(htdp-syntax-test #'(cond [#t 6] 2) "cond: expected a clause with a question and an answer, but found a number")
+(htdp-syntax-test #'(cond [else 6] [#f 10]) "cond: found an else clause that isn't the last clause in its cond expression")
+(htdp-syntax-test #'(cond [else 6] [else 10]) "cond: found an else clause that isn't the last clause in its cond expression")
+(htdp-syntax-test #'(cond []) "cond: expected a clause with a question and an answer, but found an empty part")
+(htdp-syntax-test #'(cond [1]) "cond: expected a clause with a question and an answer, but found a clause with only one part")
+(htdp-syntax-test #'(cond [1 2 3]) "cond: expected a clause with a question and an answer, but found a clause with 3 parts")
+(htdp-syntax-test #'(cond [1 2][]) "cond: expected a clause with a question and an answer, but found an empty part")
+(htdp-syntax-test #'(cond [1 2][3 4 5]) "cond: expected a clause with a question and an answer, but found a clause with 3 parts")
 
 (htdp-test 17 'cond (cond [else 17]))
 (htdp-test 18 'cond (cond [#t 18]))
 (htdp-test 19 'cond (cond [(zero? 10) 0] [#t 19]))
 (htdp-test 19 'cond (cond [(zero? 10) 0] [else 19]))
 
-(htdp-err/rt-test (cond [#f 10]) exn:fail?) ;; Should it be a different exception?
+
+(htdp-err/rt-test (cond [#f 10]) "cond: all question results were false") ;; Should it be a different exception?
 (define rx:not-true-or-false "not true or false")
 (htdp-err/rt-test (cond [1 10]) rx:not-true-or-false)
 
-(htdp-syntax-test #'if)
-(htdp-syntax-test #'(if))
-(htdp-syntax-test #'(if #t))
-(htdp-syntax-test #'(if #t 1))
-(htdp-syntax-test #'(if #t 1 2 3))
+(htdp-syntax-test #'if "if: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(if) "if: expected a question and two answers, but nothing's there")
+(htdp-syntax-test #'(if #t) "if: expected a question and two answers, but found only 1 part")
+(htdp-syntax-test #'(if #t 1) "if: expected a question and two answers, but found only 2 parts")
+(htdp-syntax-test #'(if #t 1 2 3) "if: expected a question and two answers, but found 4 parts")
 
 (htdp-err/rt-test (if 1 2 3) rx:not-true-or-false)
 
-(htdp-syntax-test #'and)
-(htdp-syntax-test #'(and))
-(htdp-syntax-test #'(and #t))
+(htdp-syntax-test #'and "and: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(and) "and: expected at least two expressions after and, but nothing's there")
+(htdp-syntax-test #'(and #t) "and: expected at least two expressions after and, but found only one expression")
 
 (htdp-err/rt-test (and 1 #t) rx:not-true-or-false)
 (htdp-err/rt-test (and #t 1) rx:not-true-or-false)
 (htdp-test #f 'ok-and (and #t #f 1))
 
-(htdp-syntax-test #'or)
-(htdp-syntax-test #'(or))
-(htdp-syntax-test #'(or #t))
+(htdp-syntax-test #'or "or: found a use that does not follow an open parenthesis")
+(htdp-syntax-test #'(or) "or: expected at least two expressions after or, but nothing's there")
+(htdp-syntax-test #'(or #t) "or: expected at least two expressions after or, but found only one expression")
 
 (htdp-err/rt-test (or 1 #f) rx:not-true-or-false)
 (htdp-err/rt-test (or #f 1) rx:not-true-or-false)
@@ -128,8 +128,6 @@
 (htdp-test #t 'empty? (empty? empty))
 (htdp-test #t 'cons? (cons? (cons 1 empty)))
 
-(htdp-err/rt-test (cons 1 2))
-(htdp-err/rt-test (append (list 1) 2))
 
 (htdp-test #t 'boolean? (boolean? true))
 (htdp-test #t 'boolean? (boolean? false))
@@ -158,6 +156,9 @@
 (htdp-error-test #'(define-struct an-example-function (y)))
 (htdp-error-test #'(define-struct an-example (function y)))
 (htdp-top-pop 1)
+
+
+
 
 (htdp-test #t 'equal? (equal? 1 1))
 (htdp-test #t 'equal? (equal? (list 1) (list 1)))
@@ -223,15 +224,17 @@
 ;; Error messages
 (htdp-top (define my-x 5))
 (htdp-top (define (my-f x) (+ x 5)))
+
 (htdp-syntax-test #'(cond [true my-x 5]) #rx"found a clause with 3 parts")
-(htdp-syntax-test #'(define foo17 my-x 5) #rx"found one extra part")
-(htdp-syntax-test #'(my-y 17) #rx"not defined, not a parameter, and not a primitive name")
-(htdp-syntax-test #'(cond [true my-y 17]) #rx"not defined, not a parameter, and not a primitive name")
+(htdp-syntax-test #'(define foo17 my-x 5) #rx"define: expected only one expression after the variable name foo17, but found 1 extra part")
+(htdp-syntax-test #'(my-y 17) #rx"my-y: this function is not defined")
+(htdp-syntax-test #'(cond [true my-y 17]) #rx"my-y: this variable is not defined")
 (htdp-syntax-test #'(define my-f 12) #rx"cannot be re-defined")
 (htdp-syntax-test #'(define (my-x h) 12) #rx"cannot be re-defined")
 (htdp-top-pop 1)
 (htdp-top-pop 1)
-(htdp-syntax-test #'define #rx"does not follow")
+(htdp-syntax-test #'define #rx"define: found a use that does not follow an open parenthesis")
+
 
 (htdp-syntax-test #'(require) #rx"found nothing")
 (htdp-syntax-test #'(require a!) #rx"bad syntax for a module path")
@@ -298,88 +301,69 @@
 (htdp-test 2 'two 2)
 (htdp-top-pop 1)
 
+
 ;; -----------------------------------------------------------------------------
 ;; mf's tests for string functions replacing chars 
 
 (htdp-test "h" 'string-ith (string-ith "hell" 0))
 
-(htdp-err/rt-test (string-ith "hell" 4) exn:fail:contract?
-  #;
-  (string-append 
-    "string-ith:"
-    " <exact integer in [0, length of the given string (4)]>"
-    " for second argument expected, given "
-    "4"))
+(htdp-err/rt-test (string-ith "hell" 4)
+                  (exn-type-and-msg exn:fail:contract?
+                                    "string-ith: expected an exact integer in [0, length of the given string] for the second argument, but received 4"))
 
-(htdp-err/rt-test (string-ith 10 4) exn:fail:contract?
-  #;
-  (string-append "string-ith: <string> for first argument expected, given "
-    "10"))
+(htdp-err/rt-test (string-ith 10 4)
+                  (exn-type-and-msg exn:fail:contract?
+                                    "string-ith: expected a string for the first argument, but received 10"))
 
-(htdp-err/rt-test (string-ith "10" 'a) exn:fail:contract?
-  #;
-  (string-append "string-ith: <natural number> for second argument expected, given "
-    "a"))
+
+(htdp-err/rt-test (string-ith "10" 'a)
+                  (exn-type-and-msg exn:fail:contract?
+                                    "string-ith: expected a natural number for the second argument, but received 'a"))
 
 (htdp-test "aaa" 'replicate (replicate 3 "a"))
 
 (htdp-test "ababab" 'replicate (replicate 3 "ab"))
 
-(htdp-err/rt-test (replicate 3 10) exn:fail:contract?
-  #;
-  "replicate: <string> expected, given 10")
+(htdp-err/rt-test (replicate 3 10)
+                  (exn-type-and-msg exn:fail:contract? "replicate: expected a string, but received 10"))
 
 (htdp-test "\n" 'int->string (int->string 10))
 
-(htdp-err/rt-test (int->string 56555) exn:fail:contract?
-  #;
-  (string-append 
-    "int->string: <exact integer in [0,55295] or [57344 1114111]> expected, given "
-    "56555"))
+(htdp-err/rt-test (int->string 56555)
+                  (exn-type-and-msg exn:fail:contract? "int->string: expected an exact integer in [0,55295] or [57344 1114111], but received 56555"))
 
-(htdp-err/rt-test (int->string "A") exn:fail:contract?
-  #;
-  (string-append 
-    "int->string: <exact integer in [0,55295] or [57344 1114111]> expected, given "
-    (format "~s" "A")))
+(htdp-err/rt-test (int->string "A")
+                  (exn-type-and-msg exn:fail:contract? "int->string: expected an exact integer in [0,55295] or [57344 1114111], but received \"A\""))
 
 (htdp-test 65 'string->int (string->int "A"))
 
-(htdp-err/rt-test (string->int 10) exn:fail:contract?
-  #;
-  (string-append "string->int: " 1-LETTER " expected, not a string: 10"))
+(htdp-err/rt-test (string->int 10)
+                  (exn-type-and-msg exn:fail:contract? "string->int: expected a 1-letter string, but received a string: 10"))
 
-(htdp-err/rt-test (string->int "AB") exn:fail:contract?
-  #;
-  (string-append
-    "string->int: " 1-LETTER " expected, given " (format "~s" "AB")))
+(htdp-err/rt-test (string->int "AB")
+                  (exn-type-and-msg exn:fail:contract? "string->int: expected a 1-letter string, but received \"AB\""))
 
 (htdp-test (list "h" "e" "l" "l" "o") 'explode (explode "hello"))
 
-(htdp-err/rt-test (explode 10) exn:fail:contract?
-  #;
-  (string-append "explode: <string> expected, given " "10"))
+(htdp-err/rt-test (explode 10)
+                  (exn-type-and-msg exn:fail:contract? "explode: expected a string, but received 10"))
 
 (htdp-test "hello" 'implode (implode (list "h" "e" "l" "l" "o")))
 
-(htdp-err/rt-test (implode 10) exn:fail:contract?
-  #;
-  (string-append "implode: " 1-LETTER* " expected, not a <list>: 10"))
+(htdp-err/rt-test (implode 10)
+                  (exn-type-and-msg exn:fail:contract? "implode: expected a list of 1-letter strings, but received: 10"))
 
-(htdp-err/rt-test (implode (list "he" "l")) exn:fail:contract?
-  #;
-  (string-append "implode: " 1-LETTER* " expected, given " 
-    (format "~s" (list "he" "l"))))
+(htdp-err/rt-test (implode (list "he" "l"))
+                  (exn-type-and-msg exn:fail:contract? "implode: expected a list of 1-letter strings, but received '(\"he\" \"l\")"))
+
 
 (htdp-test true 'string-numeric? (string-numeric? "0"))
 (htdp-test true 'string-numeric? (string-numeric? "10"))
 (htdp-test false 'string-numeric? (string-numeric? "a"))
 (htdp-test false 'string-numeric? (string-numeric? "ab"))
 
-(htdp-err/rt-test (string-numeric? 10) exn:fail:contract?
-  #;
-  (string-append "string-numeric?: <string> expected, given 10"))
-
+(htdp-err/rt-test (string-numeric? 10)
+                  (exn-type-and-msg exn:fail:contract? "string-numeric?: expected a string, but received 10"))
 
 (htdp-test false 'string-alphabetic? (string-alphabetic? "a0"))
 (htdp-test true 'string-alphabetic? (string-alphabetic? "a"))
