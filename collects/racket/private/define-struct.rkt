@@ -592,7 +592,20 @@
                      (let ([result
                             (cond
                              [(and (not omit-define-values?) (not omit-define-syntaxes?))
-                              #`(begin #,(run-time-defns) #,(compile-time-defns))]
+                              (if (eq? (syntax-local-context) 'top-level)
+                                  ;; Top level: declare names to be bound by `define',
+                                  ;; but put run-time expressions after `define-syntaxes'
+                                  ;; to they can refer to bindings that are bound by
+                                  ;; `define-syntaxes' (e.g. use of the constructor name
+                                  ;; in the body of a property value that is a procedure)
+                                  #`(begin 
+                                      (define-syntaxes (#,struct: #,make- #,? #,@sels #,@sets) (values))
+                                      #,(compile-time-defns) 
+                                      #,(run-time-defns))
+                                  ;; Other contexts: order should't matter:
+                                  #`(begin 
+                                      #,(run-time-defns) 
+                                      #,(compile-time-defns)))]
                              [omit-define-syntaxes?
                               (run-time-defns)]
                              [omit-define-values?
