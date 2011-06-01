@@ -207,24 +207,43 @@
              (parameterize ([current-alist-separator-mode 'amp])
                (call/input-url
                 bug-report-url
-                (lambda (x) (post-pure-port x post-data))
+                (lambda (x) (post-impure-port x post-data))
                 (lambda (port)
-                  (define response-text (new html-text%))
-                  (render-html-to-text port response-text #t #f)
-                  (send response-text auto-wrap #t)
-                  (send response-text lock #t)
-                  (channel-put response-chan response-text)))))))))
+                  (define error?
+                    (cond [(regexp-match #rx"^HTTP/[0-9.]+ +([0-9]+) *(.*)$"
+                                         (read-line port 'any))
+                           => (lambda (m)
+                                ;; ignore the status text -- the reply should
+                                ;; have a better indication of what went wrong
+                                ((string->number (cadr m)) . >= . 400))]
+                          [else #f]))
+                  ;; skip HTTP headers
+                  (regexp-match-positions #rx"\r?\n\r?\n" port)
+                  (if error?
+                    ;; error status => show as error
+                    (begin (with-pending-text
+                            (λ ()
+                              (send pending-text erase)
+                              (render-html-to-text port pending-text #t #f)))
+                           (channel-put exn-chan #f)) ; #f = "already rendered"
+                    ;; (hopefully) a good result
+                    (let ([response-text (new html-text%)])
+                      (render-html-to-text port response-text #t #f)
+                      (send response-text auto-wrap #t)
+                      (send response-text lock #t)
+                      (channel-put response-chan response-text)))))))))))
     (define (render-error to-render)
       (cond
         [(string? to-render)
          (let ([str (string-append "<pre>\n\nERROR:\n"to-render"\n</pre>\n")])
            (render-error (open-input-string str)))]
         [(exn? to-render) (render-error (exn-message to-render))]
-        [(input-port? to-render)
+        [(or (input-port? to-render) (not to-render))
          (queue-callback
           (λ ()
-            (with-pending-text
-             (λ () (render-html-to-text to-render pending-text #t #f)))
+            (when to-render
+              (with-pending-text
+               (λ () (render-html-to-text to-render pending-text #t #f))))
             (send pending-back enable #t)
             (send pending-abort enable #f)))]
         [else (error 'render-error "internal error")]))
