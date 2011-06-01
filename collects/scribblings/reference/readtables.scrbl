@@ -354,7 +354,7 @@ using @racket[datum->syntax].
 When a reader-extension procedure is called in non-syntax-reading
 modes, it should generally not return a syntax object. If a syntax
 object is returned, it is converted to a plain value using
-@racket[syntax-object->datum].
+@racket[syntax->datum].
 
 In either context, when the result from a reader-extension procedure
 is a special-comment value (see @secref["special-comments"]), then
