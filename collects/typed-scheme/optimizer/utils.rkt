@@ -8,6 +8,7 @@
          (rep type-rep))
 
 (provide log-optimization log-missed-optimization
+         optimization-log-key
          print-log clear-log
          *show-optimized-code*
          subtypeof? isoftype?
@@ -24,6 +25,12 @@
         "(no location)")))
 
 (struct log-entry (msg line col) #:transparent)
+
+;; to identify log messages that come from the optimizer
+;; to be stored in the data section of log messages
+;; external tools/scripts (like the test harness) can look for it
+;; since this is used across phases, can't be a gensym
+(define optimization-log-key 'log-message-coming-from-the-TR-optimizer)
 
 ;; we keep track of log entries, to avoid repetitions that would be
 ;; caused by traversing the same syntax multiple times (which is not
@@ -43,7 +50,9 @@
 ;; once the optimizer is done, we sort the log according to source
 ;; location, then print it
 (define (print-log)
-  (for-each (lambda (x) (log-warning (log-entry-msg x)))
+  (define logger (current-logger))
+  (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
+                                     optimization-log-key))
             (sort (set->list log-so-far)
                   (lambda (x y)
                     (match* (x y)
