@@ -214,45 +214,32 @@
                   (send response-text auto-wrap #t)
                   (send response-text lock #t)
                   (channel-put response-chan response-text)))))))))
-    
+    (define (render-error to-render)
+      (cond
+        [(string? to-render)
+         (let ([str (string-append "<pre>\n\nERROR:\n"to-render"\n</pre>\n")])
+           (render-error (open-input-string str)))]
+        [(exn? to-render) (render-error (exn-message to-render))]
+        [(input-port? to-render)
+         (queue-callback
+          (λ ()
+            (with-pending-text
+             (λ () (render-html-to-text to-render pending-text #t #f)))
+            (send pending-back enable #t)
+            (send pending-abort enable #f)))]
+        [else (error 'render-error "internal error")]))
+
     (thread
      (λ ()
-       (sync
-        (handle-evt
-         exn-chan
-         (λ (exn)
-           (queue-callback
-            (λ ()
-              (define sp (open-output-string))
-              (define-values (in out) (make-pipe))
-              (thread
-               (λ ()
-                 (fprintf out "<pre>\n")
-                 (display (exn-message exn) out)
-                 (fprintf out "\n</pre>\n")
-                 (close-output-port out)))
-              (with-pending-text
-               (λ () (render-html-to-text in pending-text #t #f)))
-              (send pending-back enable #t)
-              (send pending-abort enable #f)))))
-        (handle-evt
-         (thread-dead-evt worker-thread)
-         (λ (_)
-           (queue-callback
-            (λ ()
-              (with-pending-text
-               (λ () 
-                 (define p (send pending-text last-position))
-                 (send pending-text insert "Killed." p p)))
-              (send pending-back enable #t)
-              (send pending-abort enable #f)))))
-        (handle-evt
-         response-chan
-         (λ (finished-text)
-           (queue-callback
-            (lambda ()
-              (switch-to-finished-view finished-text))))))))
-    
+       (sync (handle-evt exn-chan render-error)
+             (handle-evt (thread-dead-evt worker-thread)
+                         (λ (_) (render-error "reporting process killed")))
+             (handle-evt response-chan
+                         (λ (finished-text)
+                           (queue-callback
+                            (λ ()
+                              (switch-to-finished-view finished-text))))))))
+
     (init-pending-view))
 
   (define (ok)
