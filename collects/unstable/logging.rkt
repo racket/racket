@@ -43,7 +43,14 @@
                           port))
    proc #:level level))
 
-(provide/contract [with-logging-to-port
+(define level/c (or/c 'fatal 'error 'warning 'info 'debug))
+
+(provide/contract [with-intercepted-logging
+                   (->* ((-> (vector/c level/c string? any/c) any)
+                         (-> any))
+                        (#:level level/c)
+                        any)]
+                  [with-logging-to-port
                    (->* (output-port? (-> any))
-                        (#:level (or/c 'fatal 'error 'warning 'info 'debug))
+                        (#:level level/c)
                         any)])
