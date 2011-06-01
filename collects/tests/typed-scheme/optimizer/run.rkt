@@ -1,6 +1,7 @@
 #lang racket
 (require racket/runtime-path
          rackunit rackunit/text-ui
+         typed-scheme/optimizer/utils
          unstable/logging)
 
 (provide optimization-tests missed-optimization-tests
@@ -8,23 +9,25 @@
 
 (define (generate-log name dir)
   ;; some tests require other tests, so some fiddling is required
-  (let* ([log-port (open-output-string)]
-         [out-string
-          (with-output-to-string
-            (lambda ()
-              (with-logging-to-port log-port ; catch opt logs
-               (lambda ()
-                 (parameterize
-                     ([current-namespace (make-base-empty-namespace)]
-                      [current-load-relative-directory dir])
-                   (dynamic-require
-                    (build-path (current-load-relative-directory) name)
-                    #f)))
-               #:level 'warning)))])
+  (let ([out-string
+         (with-output-to-string
+           (lambda ()
+             (with-intercepted-logging ; catch opt logs
+              (lambda (l)
+                (when (eq? (vector-ref l 2) ; look only for optimizer messages
+                           optimization-log-key)
+                    (displayln (vector-ref l 1)))) ; print log message
+              (lambda ()
+                (parameterize
+                    ([current-namespace (make-base-empty-namespace)]
+                     [current-load-relative-directory dir])
+                  (dynamic-require
+                   (build-path (current-load-relative-directory) name)
+                   #f)))
+              #:level 'warning)))])
     ;; have the log as an sexp, since that's what the expected log is
     (with-input-from-string
-        (string-append "(" (get-output-string log-port) ; join log and results
-                       " " out-string ")")
+        (string-append "(" out-string ")")
       read)))
 
 ;; we log optimizations and compare to an expected log to make sure that all
