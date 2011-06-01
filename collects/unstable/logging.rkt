@@ -11,7 +11,7 @@
 ;;     (log-warning "not ok")
 ;;   If the logging on the last line is executed before the thread listening
 ;;   to the logs sees the stop message, "not ok" will also be sent to port.
-(define (with-logging-to-port port level proc)
+(define (with-logging-to-port port proc #:level [level 'debug])
   (let* ([logger    (make-logger #f (current-logger))]
          [receiver  (make-log-receiver logger level)]
          [stop-chan (make-channel)]
@@ -41,7 +41,6 @@
       (thread-wait t))))
 
 (provide/contract [with-logging-to-port
-                   (-> output-port?
-                       (or/c 'fatal 'error 'warning 'info 'debug)
-                       (-> any)
-                       any)])
+                   (->* (output-port? (-> any))
+                        (#:level (or/c 'fatal 'error 'warning 'info 'debug))
+                        any)])
