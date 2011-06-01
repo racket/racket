@@ -2,24 +2,26 @@
 
 (require racket/contract)
 
-;; Known limitations:
-;; - If another thread is logging while t is running, these messages will be
-;;   intercepted as well, even if they don't come from proc.
-;; - In the following example:
-;;     (with-logging-to-port port level
-;;       (lambda () (log-warning "ok") 3))
-;;     (log-warning "not ok")
-;;   If the logging on the last line is executed before the thread listening
-;;   to the logs sees the stop message, "not ok" will also be sent to port.
 (define (with-intercepted-logging interceptor proc #:level [level 'debug])
-  (let* ([logger    (make-logger #f (current-logger))]
-         [receiver  (make-log-receiver logger level)]
-         [stop-chan (make-channel)]
+  (let* ([orig-logger (current-logger)]
+         ;; the new logger is unrelated to the original, to avoid getting
+         ;; messages sent to it that didn't originate from proc
+         [logger      (make-logger)]
+         [receiver    (make-log-receiver logger level)]
+         [stop-chan   (make-channel)]
          [t (thread (lambda ()
+                      (define (intercept l)
+                        ;; we want to send l to the original logger, so that
+                        ;; the rest of the system can see it too.
+                        (log-message orig-logger
+                                     (vector-ref l 0)  ; level
+                                     (vector-ref l 1)  ; message
+                                     (vector-ref l 2)) ; data
+                        (interceptor l))
                       (define (clear-events)
                         (let ([l (sync/timeout 0 receiver)])
                           (when l ; still something to read
-                            (interceptor l) ; interceptor get the whole vector
+                            (intercept l) ; interceptor get the whole vector
                             (clear-events))))
                       (let loop ()
                         (let ([l (sync receiver stop-chan)])
@@ -29,7 +31,7 @@
                                  ;; stop
                                  (clear-events)]
                                 [else ; keep going
-                                 (interceptor l)
+                                 (intercept l)
                                  (loop)])))))])
     (begin0
         (parameterize ([current-logger logger])
