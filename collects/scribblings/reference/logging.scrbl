@@ -150,7 +150,7 @@ is equivalent to
 ]}
 
 @; ----------------------------------------
-@section{Receiving Logged Events}
+@section[#:tag "receiving-logged-events"]{Receiving Logged Events}
 
 @defproc[(log-receiver? [v any/c]) boolean?]{
 
