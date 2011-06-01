@@ -265,9 +265,15 @@
   ;; be used in the future if spam bug reports that use drracket (or
   ;; racket code) directly become a problem.  In this case, adding a
   ;; challenge here will make existing installations start asking for an
-  ;; answer.  (And this could be done with a changes-on-each-build
-  ;; basis, or some script that will create and remember short-lived
-  ;; captcha challenges.)  Note that the text should be a complete text
-  ;; for a question, including a "?" and instructions.  It is used as is
-  ;; in the `message' argument for `get-text-from-user'.
+  ;; answer.  Note that the text should be a complete text for a
+  ;; question, including a "?" and instructions.  It is used as-is in
+  ;; the `message' argument for `get-text-from-user'.
+  ;;
+  ;; When there is a captcha challenge, the existing code will send back
+  ;; not only the answer (as the value of the `captcha' field), but also
+  ;; the question (as a `captcha-question' field).  A first-level
+  ;; captcha could be doing that it does today: change rarely on each
+  ;; page build, and further extensions can be to generate random
+  ;; captchas, and use the question text to validate (and/or expire)
+  ;; challenges.
   @plain[#:file "captcha-text" #:newline #f]{})
