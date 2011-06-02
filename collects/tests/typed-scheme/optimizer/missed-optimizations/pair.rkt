@@ -1,16 +1,38 @@
 #;
 (
-pair.rkt 36:0 (#%app car (#%app list (quote 1) (quote 2) (quote 3))) -- car/cdr on a potentially empty list -- caused by: 36:10 (#%app list (quote 1) (quote 2) (quote 3))
-pair.rkt 38:0 (#%app cdr (#%app list (quote 1) (quote 2) (quote 3))) -- car/cdr on a potentially empty list -- caused by: 38:10 (#%app list (quote 1) (quote 2) (quote 3))
-pair.rkt 42:16 (#%app cdr (#%app cdr (#%app cdr (#%app cdr (#%app list (quote 1) (quote 2) (quote 3)))))) -- car/cdr on a potentially empty list -- caused by: 42:21 (#%app cdr (#%app cdr (#%app cdr (#%app list (quote 1) (quote 2) (quote 3)))))
-pair.rkt 45:0 (#%app mcar (#%app mcons (quote 1) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 1) null)
-pair.rkt 47:0 (#%app mcdr (#%app mcons (quote 1) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 1) null)
-pair.rkt 51:0 (#%app set-mcar! (#%app mcons (quote 2) null) (quote 2)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 2) null)
-pair.rkt 53:0 (#%app set-mcdr! (#%app mcons (quote 2) null) (#%app mcons (quote 2) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 2) null)
-pair.rkt 59:17 (#%app mcar (quote ())) -- mpair op on a potentially empty mlist -- caused by: 59:23 (quote ())
-pair.rkt 60:17 (#%app mcdr (quote ())) -- mpair op on a potentially empty mlist -- caused by: 60:23 (quote ())
-pair.rkt 61:17 (#%app set-mcar! (quote ()) (quote 2)) -- mpair op on a potentially empty mlist -- caused by: 61:28 (quote ())
-pair.rkt 62:17 (#%app set-mcdr! (quote ()) (#%app mcons (quote 3) null)) -- mpair op on a potentially empty mlist -- caused by: 62:33 (quote ())
+pair.rkt 58:0 (#%app car (#%app list (quote 1) (quote 2) (quote 3))) -- car/cdr on a potentially empty list -- caused by: 58:10 (#%app list (quote 1) (quote 2) (quote 3))
+pair.rkt 59:1 car -- pair
+pair.rkt 60:0 (#%app cdr (#%app list (quote 1) (quote 2) (quote 3))) -- car/cdr on a potentially empty list -- caused by: 60:10 (#%app list (quote 1) (quote 2) (quote 3))
+pair.rkt 61:1 cdr -- pair
+pair.rkt 62:1 cdr -- pair
+pair.rkt 62:6 cdr -- pair
+pair.rkt 63:1 cdr -- pair
+pair.rkt 63:6 cdr -- pair
+pair.rkt 63:11 cdr -- pair
+pair.rkt 64:16 (#%app cdr (#%app cdr (#%app cdr (#%app cdr (#%app list (quote 1) (quote 2) (quote 3)))))) -- car/cdr on a potentially empty list -- caused by: 64:21 (#%app cdr (#%app cdr (#%app cdr (#%app list (quote 1) (quote 2) (quote 3)))))
+pair.rkt 64:22 cdr -- pair
+pair.rkt 64:27 cdr -- pair
+pair.rkt 64:32 cdr -- pair
+pair.rkt 67:0 (#%app mcar (#%app mcons (quote 1) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 1) null)
+pair.rkt 68:1 mcar -- mutable pair
+pair.rkt 69:0 (#%app mcdr (#%app mcons (quote 1) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 1) null)
+pair.rkt 70:1 mcdr -- mutable pair
+pair.rkt 71:1 mcdr -- mutable pair
+pair.rkt 71:7 mcdr -- mutable pair
+pair.rkt 72:1 mcdr -- mutable pair
+pair.rkt 72:7 mcdr -- mutable pair
+pair.rkt 72:13 mcdr -- mutable pair
+pair.rkt 73:0 (#%app set-mcar! (#%app mcons (quote 2) null) (quote 2)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 2) null)
+pair.rkt 74:1 set-mcar! -- mutable pair
+pair.rkt 75:0 (#%app set-mcdr! (#%app mcons (quote 2) null) (#%app mcons (quote 2) null)) -- mpair op on a potentially empty mlist -- caused by: (no location) (#%app mcons (quote 2) null)
+pair.rkt 77:1 mcar -- mutable pair
+pair.rkt 78:1 mcdr -- mutable pair
+pair.rkt 79:1 set-mcar! -- mutable pair
+pair.rkt 80:1 set-mcdr! -- mutable pair
+pair.rkt 81:17 (#%app mcar (quote ())) -- mpair op on a potentially empty mlist -- caused by: 81:23 (quote ())
+pair.rkt 82:17 (#%app mcdr (quote ())) -- mpair op on a potentially empty mlist -- caused by: 82:23 (quote ())
+pair.rkt 83:17 (#%app set-mcar! (quote ()) (quote 2)) -- mpair op on a potentially empty mlist -- caused by: 83:28 (quote ())
+pair.rkt 84:17 (#%app set-mcdr! (quote ()) (#%app mcons (quote 3) null)) -- mpair op on a potentially empty mlist -- caused by: 84:33 (quote ())
 1
 1
 '(2 3)
