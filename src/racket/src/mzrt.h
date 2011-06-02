@@ -132,7 +132,7 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
 
 #  if defined(__powerpc64__) || defined(__ppc64__) || defined(__64BIT__)
 /* FIXME: Completely untested.  */
-  AO_t oldval;
+  size_t oldval;
   int result = 0;
 
   __asm__ __volatile__(
@@ -149,7 +149,7 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
 
   return result;
 #  else
-  AO_t oldval;
+  size_t oldval;
   int result = 0;
 
   __asm__ __volatile__(
