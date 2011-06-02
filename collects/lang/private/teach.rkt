@@ -227,10 +227,7 @@
 
     ;; Raise a syntax error:
     (define (teach-syntax-error form stx detail msg . args)
-      (let (#;[form (if (eq? form '|function call|)
-		      form
-		      #f)] ; extract name from stx
-            [form (or form (first (flatten (syntax->datum stx))))]
+      (let ([form (or form (first (flatten (syntax->datum stx))))]
 	    [msg (apply format msg args)])
 	(if detail
 	    (raise-syntax-error form msg stx detail)
@@ -329,7 +326,7 @@
             (with-syntax ([(name ...) (if (eq? assign #t)
                                           names
                                           assign)]
-                          [make-up (gensym)]
+                          [made-up (gensym)]
                           [defn defn])
               (with-syntax ([made-up-defn (stepper-syntax-property 
                                            (syntax (define made-up (lambda () (advanced-set! name 10) ...)))
@@ -538,7 +535,7 @@
 	     (teach-syntax-error
 	      'define
 	      stx
-	      names
+	      #f
 	      "expected a name for the function, but nothing's there"))
 	   (let loop ([names names][pos 0])
 	     (unless (null? names)
@@ -724,7 +721,7 @@
             (teach-syntax-error
              'lambda
              rhs
-             (syntax args)
+             #f
              "expected at least one variable (in parentheses) after lambda, but nothing's there")]
            [_else 'ok])]
         [_else 'ok]))
@@ -975,7 +972,7 @@
 	 (teach-syntax-error
 	  'define-struct
 	  stx
-	  (syntax something)
+	  #f
 	  "expected at least one field name (in parentheses) after the structure name, but nothing's there")]
 	[(_)
 	 (teach-syntax-error
@@ -1073,11 +1070,17 @@
                         (map (lambda (stx)
                                (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx)))))
                              (syntax->list #'(name variant ...)))])
-           (syntax/loc stx
-              (begin (advanced-define (name? x)
-                                      (or (variant? x) ...))
-                     (advanced-define-struct variant (field ...))
-                     ...)))]
+                      ;; Here we are using an explicit loop and the "/proc" functions instead of producing a syntax with "..."
+                      ;; to preserve the syntax location information.
+                      (with-syntax ([the-definition (advanced-define/proc (syntax/loc stx (define (name? x) (or (variant? x) ...))))]
+                                    [(the-struct-definitions ...)
+                                     (map
+                                      (lambda (v)
+                                        (syntax-case v ()
+                                          [(variant field ...)
+                                           (advanced-define-struct/proc (syntax/loc stx (define-struct variant (field ...))))]))
+                                      (syntax->list #'((variant field ...) ...)))])
+                                   (syntax/loc stx (begin the-definition the-struct-definitions ...))))]
         [(_ name_ (variant field ...) ... something . rest)
 	 (teach-syntax-error
 	  'define-datatype
@@ -2384,7 +2387,7 @@
 		       (teach-syntax-error
 			'set!
 			stx
-			(syntax id)
+			#f
 			"expected a variable after set!, but nothing's there")]
 		      [_else (bad-use-error 'set! stx)])))))])
 	(values (proc #f)
@@ -2804,7 +2807,7 @@
 		      (teach-syntax-error
 		       'shared
 		       stx
-		       (syntax a)
+		       #f
 		       "expected a variable for a binding, but nothing's there")]
 		     [_else
 		      (teach-syntax-error
@@ -2841,7 +2844,7 @@
 	      (teach-syntax-error
 	       'shared
 	       stx
-	       (syntax bad-bind)
+	       #f
 	       "expected at least one binding (in parentheses) after shared, but nothing's there")]
 	     [_else (bad-use-error 'shared stx)])
 
