@@ -2,7 +2,7 @@
 
 (require syntax/parse
          racket/dict racket/flonum
-         (for-template scheme/base racket/flonum scheme/unsafe/ops)
+         (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (types numeric-tower)
          (optimizer utils fixnum))
@@ -106,6 +106,10 @@
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(unsafe-fl/ 1.0 f.opt)))
+  (pattern (#%plain-app (~and op (~literal sqr)) f:float-expr)
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
