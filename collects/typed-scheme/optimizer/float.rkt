@@ -77,7 +77,13 @@
 (define-syntax-class float-opt-expr
   #:commit
   (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-arg-expr)
-           #:when (subtypeof? this-syntax -Flonum)
+           #:when (let* ([safe-to-opt? (subtypeof? this-syntax -Flonum)]
+                         [missed-optimization? (and (not safe-to-opt?)
+                                                    (in-real-layer? this-syntax))])
+                    (when missed-optimization?
+                      (log-missed-optimization "unary, arg float-arg-expr, return type not Float"
+                                               this-syntax))
+                    safe-to-opt?)
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
