@@ -717,6 +717,8 @@ static MemoryChunk *sys_malloc_others;
 int GC_dl_entries;
 int GC_fo_entries;
 
+int GC_dont_gc;
+
 void (*GC_push_last_roots)(void);
 void (*GC_push_last_roots_again)(void);
 
@@ -2440,7 +2442,7 @@ static void *do_malloc(SET_NO_BACKINFO
 
   block = (BlockOfMemory *)malloc_sector(c, sector_kind_block, 1);
   if (!block) {
-    if (mem_use >= mem_limit) {
+    if ((mem_use >= mem_limit) && !GC_dont_gc) {
       GC_gcollect();
       return do_malloc(KEEP_SET_INFO_ARG(set_no)
 		       size, common, othersptr, flags);
@@ -4743,6 +4745,9 @@ void GC_gcollect(void)
   intptr_t dummy;
 
   if (!sector_mem_use)
+    return;
+
+  if (GC_dont_gc)
     return;
 
   FLUSH_REGISTER_WINDOWS;

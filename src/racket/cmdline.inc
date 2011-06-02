@@ -1140,6 +1140,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
       stderr_level = get_log_level(prog, NULL, "PLTSTDERR", "stderr", s);
     }
   }
+  if (getenv("PLTDISABLEGC")) {
+    scheme_enable_garbage_collection(0);
+  }
 #endif
 
   scheme_set_logging(syslog_level, stderr_level);

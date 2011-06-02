@@ -247,6 +247,7 @@
   scheme_extension_table->scheme_dont_gc_ptr = scheme_dont_gc_ptr;
   scheme_extension_table->scheme_gc_ptr_ok = scheme_gc_ptr_ok;
   scheme_extension_table->scheme_collect_garbage = scheme_collect_garbage;
+  scheme_extension_table->scheme_disable_garbage_collection = scheme_disable_garbage_collection;
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
   scheme_extension_table->GC_variable_stack = GC_variable_stack;

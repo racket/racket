@@ -154,6 +154,10 @@ GC2_EXTERN void GC_gcollect(void);
 /*
    Performs an immediate (full) collection. */
 
+GC2_EXTERN void GC_enable_collection(int on);
+/*
+   Performs an immediate (full) collection. */
+
 GC2_EXTERN void GC_free_all(void);
 /*
    Releases all memory, removes all signal handlers, etc.

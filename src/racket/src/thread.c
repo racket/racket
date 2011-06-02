@@ -7616,6 +7616,23 @@ static void done_with_GC()
 #ifdef MZ_USE_FUTURES
   scheme_future_continue_after_gc();
 #endif
+
+#ifndef MZ_PRECISE_GC
+  {
+    Scheme_Logger *logger = scheme_get_main_logger();
+    if (logger) {
+      char buf[64];
+      intptr_t buflen;
+
+      sprintf(buf,
+              "GC in %" PRIdPTR " msec",
+              end_this_gc_time - start_this_gc_time);
+      buflen = strlen(buf);
+
+      scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, NULL);
+    }
+  }
+#endif
 }
 
 #ifdef MZ_PRECISE_GC

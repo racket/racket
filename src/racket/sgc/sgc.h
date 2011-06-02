@@ -106,6 +106,8 @@ SGC_EXTERN void GC_register_indirect_disappearing_link(void **p, void *a);
 SGC_EXTERN void (*GC_push_last_roots)(void);
 SGC_EXTERN void (*GC_push_last_roots_again)(void);
 
+SGC_EXTERN int GC_dont_gc;
+
 # ifdef __cplusplus
 };
 # endif

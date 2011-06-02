@@ -209,6 +209,7 @@ EXPORTS
  scheme_dont_gc_ptr
  scheme_gc_ptr_ok
  scheme_collect_garbage
+ scheme_disable_garbage_collection
  scheme_malloc_immobile_box
  scheme_free_immobile_box
  scheme_add_gc_callback

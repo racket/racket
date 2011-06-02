@@ -2517,6 +2517,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   if (parentgc) {
     newgc->mark_table  = parentgc->mark_table;
     newgc->fixup_table = parentgc->fixup_table;
+    newgc->dumping_avoid_collection = parentgc->dumping_avoid_collection - 1;
   }
   else {
 
@@ -2660,7 +2661,9 @@ void GC_switch_out_master_gc() {
     NewGC *gc = GC_get_GC();
 
     initialized = 1;
-    garbage_collect(gc, 1, 1, NULL);
+
+    if (!gc->dumping_avoid_collection)
+      garbage_collect(gc, 1, 1, NULL);
 
 #ifdef MZ_USE_PLACES
     GC_gen0_alloc_page_ptr = 2;
@@ -2669,7 +2672,8 @@ void GC_switch_out_master_gc() {
 #endif
  
     MASTERGC = gc;
-    MASTERGC->dumping_avoid_collection = 1;
+    MASTERGC->dumping_avoid_collection++;
+
     save_globals_to_gc(MASTERGC);
     GC_construct_child_gc();
     GC_allow_master_gc_check();
@@ -2717,12 +2721,24 @@ void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
 
+  if (gc->dumping_avoid_collection) return;
+
 #ifdef MZ_USE_PLACES
   if (postmaster_and_master_gc(gc))
     master_collect_initiate(gc);
   else
 #endif
     garbage_collect(gc, 1, 0, NULL);
+}
+
+void GC_enable_collection(int on)
+{
+  NewGC *gc = GC_get_GC();
+
+  if (on)
+    --gc->dumping_avoid_collection;
+  else
+    gc->dumping_avoid_collection++;
 }
 
 void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,

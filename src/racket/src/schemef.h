@@ -438,6 +438,7 @@ MZ_EXTERN void scheme_dont_gc_ptr(void *p);
 MZ_EXTERN void scheme_gc_ptr_ok(void *p);
 
 MZ_EXTERN void scheme_collect_garbage(void);
+MZ_EXTERN void scheme_enable_garbage_collection(int on);
 
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL

@@ -1645,6 +1645,18 @@ void scheme_collect_garbage(void)
   GC_gcollect();
 }
 
+void scheme_enable_garbage_collection(int on)
+{
+#ifdef MZ_PRECISE_GC
+  GC_enable_collection(on);
+#else
+  if (on)
+    --GC_dont_gc;
+  else
+    GC_dont_gc++;
+#endif
+}
+
 uintptr_t scheme_get_deeper_address(void)
 {
   int v, *vp;

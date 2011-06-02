@@ -184,7 +184,6 @@ typedef struct NewGC {
   unsigned int owner_table_size;
   AccountHook *hooks;
 
-
   uintptr_t number_of_gc_runs;
   unsigned int since_last_full;
   uintptr_t last_full_mem_use;

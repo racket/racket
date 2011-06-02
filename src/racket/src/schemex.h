@@ -339,6 +339,7 @@ void (*scheme_remove_all_finalization)(void *p);
 void (*scheme_dont_gc_ptr)(void *p);
 void (*scheme_gc_ptr_ok)(void *p);
 void (*scheme_collect_garbage)(void);
+void (*scheme_enable_garbage_collection)(int on);
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
 void **GC_variable_stack;

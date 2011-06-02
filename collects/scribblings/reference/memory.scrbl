@@ -170,15 +170,19 @@ execution. Otherwise, @racket[#f] is returned.}
 @;------------------------------------------------------------------------
 @section[#:tag "garbagecollection"]{Garbage Collection}
 
+Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
+value) before Racket starts to disable @tech{garbage collection}.
+
 @defproc[(collect-garbage) void?]{
 
-Forces an immediate garbage collection. Some effectively unreachable
-data may remain uncollected, because the collector cannot prove that
-it is unreachable.
+Forces an immediate @tech{garbage collection} (unless garbage
+collection is disabled by setting @envvar{PLTDISABLEGC}). Some
+effectively unreachable data may remain uncollected, because the
+collector cannot prove that it is unreachable.
 
 The @racket[collect-garbage] procedure provides some control over the
 timing of collections, but garbage will obviously be collected even if
-this procedure is never called.}
+this procedure is never called (unless garbage collection is disabled).}
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 

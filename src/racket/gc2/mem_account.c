@@ -218,11 +218,13 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
   int i;
 
   if(!gc->really_doing_accounting) {
-    gc->park[0] = custodian;
-    gc->really_doing_accounting = 1;
-    garbage_collect(gc, 1, 0, NULL);
-    custodian = gc->park[0]; 
-    gc->park[0] = NULL;
+    if (!gc->dumping_avoid_collection) {
+      gc->park[0] = custodian;
+      gc->really_doing_accounting = 1;
+      garbage_collect(gc, 1, 0, NULL);
+      custodian = gc->park[0]; 
+      gc->park[0] = NULL;
+    }
   }
 
   i = custodian_to_owner_set(gc, (Scheme_Custodian *)custodian);
@@ -433,12 +435,14 @@ inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
   AccountHook *work;
 
   if(!gc->really_doing_accounting) {
-    gc->park[0] = c1; 
-    gc->park[1] = c2;
-    gc->really_doing_accounting = 1;
-    garbage_collect(gc, 1, 0, NULL);
-    c1 = gc->park[0]; gc->park[0] = NULL;
-    c2 = gc->park[1]; gc->park[1] = NULL;
+    if (!gc->dumping_avoid_collection) {
+      gc->park[0] = c1; 
+      gc->park[1] = c2;
+      gc->really_doing_accounting = 1;
+      garbage_collect(gc, 1, 0, NULL);
+      c1 = gc->park[0]; gc->park[0] = NULL;
+      c2 = gc->park[1]; gc->park[1] = NULL;
+    }
   }
 
   if (type == MZACCT_LIMIT)
