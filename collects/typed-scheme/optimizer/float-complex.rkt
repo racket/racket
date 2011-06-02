@@ -244,7 +244,7 @@
   (pattern e:float-arg-expr
            #:with real-binding (unboxed-gensym 'unboxed-float-)
            #:with imag-binding #f
-           #:when (log-optimization "float-coerce-expr in complex ops" #'e)
+           #:when (log-optimization "float-arg-expr in complex ops" #'e)
            #:with (bindings ...)
            #`(((real-binding) e.opt)))
 

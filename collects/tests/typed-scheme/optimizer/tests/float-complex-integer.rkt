@@ -2,7 +2,7 @@
 (
 float-complex-integer.rkt 13:0 (#%app + (#%app expt (quote 2) (quote 100)) (quote 1.0+2.0i)) -- unboxed float complex
 float-complex-integer.rkt 13:1 + -- unboxed binary float complex
-float-complex-integer.rkt 13:3 (#%app expt (quote 2) (quote 100)) -- float-coerce-expr in complex ops
+float-complex-integer.rkt 13:3 (#%app expt (quote 2) (quote 100)) -- float-arg-expr in complex ops
 float-complex-integer.rkt 13:16 1.0+2.0i -- unboxed literal
 1.2676506002282294e+30+2.0i
 )

@@ -15,7 +15,7 @@ unboxed-let-functions6.rkt 31:11 loop -- call to fun with unboxed args
 unboxed-let-functions6.rkt 31:11 loop -- unboxed call site
 unboxed-let-functions6.rkt 31:17 + -- unboxed binary float complex
 unboxed-let-functions6.rkt 31:19 z -- leave var unboxed
-unboxed-let-functions6.rkt 31:21 (#%app car l) -- float-coerce-expr in complex ops
+unboxed-let-functions6.rkt 31:21 (#%app car l) -- float-arg-expr in complex ops
 unboxed-let-functions6.rkt 31:22 car -- pair
 unboxed-let-functions6.rkt 32:17 cdr -- pair
 6.0+1.0i

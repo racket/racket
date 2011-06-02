@@ -7,7 +7,7 @@ unboxed-let-functions4.rkt 24:18 (#%app + x y) -- unboxed float complex
 unboxed-let-functions4.rkt 24:19 + -- unboxed binary float complex
 unboxed-let-functions4.rkt 24:21 x -- leave var unboxed
 unboxed-let-functions4.rkt 24:21 x -- unbox float-complex
-unboxed-let-functions4.rkt 24:23 y -- float-coerce-expr in complex ops
+unboxed-let-functions4.rkt 24:23 y -- float-arg-expr in complex ops
 unboxed-let-functions4.rkt 25:3 f -- call to fun with unboxed args
 unboxed-let-functions4.rkt 25:3 f -- unboxed call site
 unboxed-let-functions4.rkt 26:6 + -- unboxed binary float complex

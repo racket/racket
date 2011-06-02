@@ -17,7 +17,7 @@ real-part-loop.rkt 33:7 loop -- call to fun with unboxed args
 real-part-loop.rkt 33:7 loop -- unboxed call site
 real-part-loop.rkt 33:13 + -- unboxed binary float complex
 real-part-loop.rkt 33:15 v -- leave var unboxed
-real-part-loop.rkt 33:17 (quote 3.6) -- float-coerce-expr in complex ops
+real-part-loop.rkt 33:17 (quote 3.6) -- float-arg-expr in complex ops
 0
 )
 
