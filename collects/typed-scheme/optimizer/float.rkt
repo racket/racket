@@ -126,7 +126,7 @@
                           [e:arith-expr
                            (log-missed-optimization
                             "exact arithmetic subexpression inside a float expression, extra precision discarded"
-                            subexpr this-syntax)]
+                            this-syntax subexpr)]
                           [_ #f])))
                     safe-to-opt?)
            #:with opt
