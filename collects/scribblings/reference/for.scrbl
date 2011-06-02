@@ -255,11 +255,58 @@ Like @scheme[for/list], etc., but with the implicit nesting of
 @defform[(for/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
 Like @scheme[for/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+
+@mz-examples[
+(define-syntax (for/digits stx)
+  (syntax-case stx ()
+    [(_ clauses . defs+exprs)
+     (with-syntax ([original stx])
+       #'(let-values
+           ([(n k)
+             (for/fold/derived original ([n 0] [k 1]) clauses
+               (define d (let () . defs+exprs))
+               (values (+ n (* d k)) (* k 10)))])
+           n))]))
+
+(for/digits
+    [a (in-list '(1 2 3))]
+    [b (in-list '(4 5 6))]
+  (+ a b))
+
+(for/digits
+    ([a (in-list '(1 2 3))]
+     [b (in-list '(2 4 6))])
+  (+ a b))
+]
 }
 
 @defform[(for*/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
 Like @scheme[for*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+
+@mz-examples[
+(define-syntax (for*/digits stx)
+  (syntax-case stx ()
+    [(_ clauses . defs+exprs)
+     (with-syntax ([original stx])
+       #'(let-values
+           ([(n k)
+             (for*/fold/derived original ([n 0] [k 1]) clauses
+               (define d (let () . defs+exprs))
+               (values (+ n (* d k)) (* k 10)))])
+           n))]))
+
+(for*/digits
+    [ds (in-list '((8 3) (1 1)))]
+    [d (in-list ds)]
+  d)
+
+(for*/digits
+    ([ds (in-list '((8 3) (1 1)))]
+     [d (in-list ds)])
+  d)
+]
+
 }
 
 @defform[(define-sequence-syntax id
@@ -293,6 +340,32 @@ should not be treated specially (perhaps because the number of bound
 identifiers is inconsistent with the @scheme[(id . _rest)] form), or a
 new @scheme[_clause] to replace the given one. The new clause might
 use @scheme[:do-in].}
+
+@mz-examples[
+(define-sequence-syntax in-digits
+  (lambda () #'in-digits/proc)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(d) (_ nat)]
+       #'[(d)
+          (:do-in
+            ([(n) nat])
+            (unless (exact-nonnegative-integer? n)
+              (raise-type-error 'in-digits "exact non-negative integer" n))
+            ([i n])
+            (not (zero? i))
+            ([(j d) (quotient/remainder i 10)])
+            #true
+            #true
+            [j])]])))
+
+(define (in-digits/proc n [b 10])
+  (for/list ([d (in-digits n)]) d))
+
+(for/list ([d (in-digits 1138)]) d)
+
+(map in-digits (list 137 216))
+]
 
 @defform[(:do-in ([(outer-id ...) outer-expr] ...)
                  outer-check
@@ -334,6 +407,7 @@ arguments to support iterations in parallel with the @scheme[:do-in]
 form, and the other pieces are similarly accompanied by pieces from
 parallel iterations.}
 
+For an example of @racket[:do-in], see @racket[define-sequence-syntax] above.
 
 @section{Do Loops}
 
