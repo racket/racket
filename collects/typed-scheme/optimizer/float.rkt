@@ -76,7 +76,7 @@
 
 (define-syntax-class float-opt-expr
   #:commit
-  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-expr)
+  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-arg-expr)
            #:when (subtypeof? this-syntax -Flonum)
            #:with opt
            (begin (log-optimization "unary float" #'op)
