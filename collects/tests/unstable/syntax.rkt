@@ -54,4 +54,21 @@
        (test-case "identifier"
          (check bound-identifier=?
                 (with-syntax* ([a #'id] [b #'a]) #'b)
-                #'id))))))
+                #'id))))
+
+   (test-suite "syntax-within?"
+     (let* ([a #'a]
+            [b #'b]
+            [c #'(a b c)]
+            [c1 (car (syntax->list c))]
+            [c2 (cadr (syntax->list c))])
+       (test-case "reflexive"
+         (check-equal? (syntax-within? a a) #t))
+       (test-case "unrelated"
+         (check-equal? (syntax-within? a b) #f))
+       (test-case "child"
+         (check-equal? (syntax-within? c1 c) #t))
+       (test-case "parent"
+         (check-equal? (syntax-within? c c1) #f))
+       (test-case "sibling"
+         (check-equal? (syntax-within? c2 c1) #f))))))

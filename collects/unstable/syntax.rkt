@@ -12,6 +12,7 @@
 
          ;; by stamourv:
          format-unique-id
+         syntax-within?
 
          ;; by ryanc
          explode-module-path-index)
@@ -61,6 +62,17 @@
   ((make-syntax-introducer) (apply format-id
                                    lctx #:source src #:props props #:cert cert
                                    fmt args)))
+
+;; is syntax a contained within syntax b, inclusively
+(define (syntax-within? a b)
+  (let ([pos-a  (syntax-position a)]
+        [span-a (syntax-span a)]
+        [pos-b  (syntax-position b)]
+        [span-b (syntax-span b)])
+    (and pos-a span-a pos-b span-b
+         (<= pos-b pos-a)
+         (>= (+ pos-b span-b) (+ pos-a span-a)))))
+
 
 ;; by ryanc
 

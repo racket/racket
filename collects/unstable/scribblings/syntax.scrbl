@@ -34,7 +34,7 @@ resolved module path or @racket[#f] for the ``self'' module.
 
 @;{----}
 
-@margin-note{This binding was added by Vincent St-Amour.}
+@addition{@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]}
 @defproc[(format-unique-id [lctx (or/c syntax? #f)]
                     	   [fmt string?]
                     	   [v (or/c string? symbol? identifier? keyword? char? number?)] ...
@@ -43,6 +43,11 @@ resolved module path or @racket[#f] for the ``self'' module.
                     	   [#:cert cert (or/c syntax? #f) #f])
          identifier?]{
 Like @racket[format-id], but returned identifiers are guaranteed to be unique.
+}
+@defproc[(syntax-within? [a syntax?] [b syntax?])
+         boolean?]{
+Returns true is syntax @racket[a] is within syntax @racket[b] in the source.
+Bounds are inclusive.
 }
 
 @;{----}
