@@ -2,7 +2,7 @@
 (
 sqrt-segfault.rkt 18:15 - -- binary float
 sqrt-segfault.rkt 19:15 * -- binary float
-sqrt-segfault.rkt 20:31 (#%app sqrt dist2) -- unexpected complex type -- caused by: 20:32 sqrt
+sqrt-segfault.rkt 20:31 (#%app sqrt dist2) -- unexpected complex type
 )
 
 #lang typed/scheme
