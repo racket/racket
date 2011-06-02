@@ -1,6 +1,6 @@
 #;
 (
-unexpected-complex.rkt 16:0 (#%app sqrt (quote 4)) -- unexpected complex value -- caused by: 16:1 sqrt
+unexpected-complex.rkt 16:0 (#%app sqrt (quote 4)) -- unexpected complex type -- caused by: 16:1 sqrt
 unexpected-complex.rkt 17:0 (#%app + (quote 1.2+3.4i) (quote 2.0)) -- unboxed float complex
 unexpected-complex.rkt 17:1 + -- unboxed binary float complex
 unexpected-complex.rkt 17:3 1.2+3.4i -- unboxed literal
