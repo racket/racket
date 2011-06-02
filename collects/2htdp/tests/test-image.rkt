@@ -1665,6 +1665,14 @@
        160 160 0 1/2
        (make-pen "black" 12 "solid" "round" "round")))
 
+(test (add-line (rectangle 30 30 "outline" "black")
+                0 0 30 30 
+                (make-pen (make-color 0 0 0 255) 15 "solid" "butt" "round"))
+      =>
+      (add-line (rectangle 30 30 "outline" "black")
+                0 0 30 30 
+                (make-pen "black" 15 "solid" "butt" "round")))
+
 (test (image->color-list
        (above (beside (rectangle 1 1 'solid (color 1 1 1))
                       (rectangle 1 1 'solid (color 2 2 2))

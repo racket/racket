@@ -1136,7 +1136,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (pen->pen-obj/cache pen)
   (send the-pen-list find-or-create-pen 
-        (pen-color pen)
+        (get-color-arg (pen-color pen))
         (pen-width pen)
         (pen-style pen)
         (pen-cap pen)
