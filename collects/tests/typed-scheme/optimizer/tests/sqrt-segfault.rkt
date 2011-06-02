@@ -2,11 +2,11 @@
 (
 sqrt-segfault.rkt 18:15 - -- binary float
 sqrt-segfault.rkt 19:15 * -- binary float
+sqrt-segfault.rkt 20:31 (#%app sqrt dist2) -- unexpected complex value -- caused by: 20:32 sqrt
 )
 
 #lang typed/scheme
 #:optimize
-
 
 
 ;; from the nbody-generic benchmark.
