@@ -89,10 +89,10 @@
 
 (drracket:modes:add-initial-modes)
 
-(finder:default-filters (list* '("Racket (.rkt)" "*.rkt")
-                               '("Racket (.ss)" "*.ss")
-                               '("Racket (.scm)" "*.scm")
-                               (finder:default-filters)))
+(finder:default-filters
+ `(["Racket Sources" "*.rkt;*.scrbl;*.ss;*.scm"]
+   ,@(finder:default-filters)))
+
 (application:current-app-name (string-constant drscheme))
 
 (drr:set-default 'drracket:language-dialog:hierlist-default #f (λ (x) (or (not x) (and (list? x) (andmap string? x)))))

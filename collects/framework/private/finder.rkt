@@ -25,7 +25,7 @@
               (message-box (string-constant error) msg)
               #f)))))
   
-  (define default-filters (make-parameter '(("Any" "*.*"))))
+  (define default-filters (make-parameter '(["Any" "*.*"])))
   (define default-extension (make-parameter ""))
   
   ;; dialog wrappers
@@ -66,7 +66,8 @@
              [filter #f]
              [filter-msg (string-constant file-wrong-form)]
              [parent-win (dialog-parent-parameter)])
-      (let ([f (get-file prompt parent-win directory #f #f style)])
+      (let ([f (get-file prompt parent-win directory #f
+                         (default-extension) style (default-filters))])
         (and f (or (not filter) (filter-match? filter f filter-msg))
              (let ([f (normalize-path f)])
                (cond [(directory-exists? f)
