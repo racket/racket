@@ -52,7 +52,7 @@ Bounds are inclusive.
 
 @;{----}
 
-@addition{Sam Tobin-Hochstadt}
+@addition{@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]}
 
 @defproc[(syntax-map [f (-> syntax? A)] [stxl syntax?] ...) (listof A)]{
 Performs @racket[(map f (syntax->list stxl) ...)].
