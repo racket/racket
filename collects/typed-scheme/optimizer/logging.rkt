@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/set racket/string racket/match
+(require racket/set racket/string racket/match racket/list
          unstable/syntax)
 
 (provide log-optimization log-missed-optimization
@@ -87,18 +87,69 @@
 ;; badness : Integer. crude measure of how severe the missed optimizations are
 ;;  currently, it's simply a count of how many missed optimizations occur
 ;;  within a given syntax object
-(struct missed-optimization (kind stx irritants [badness #:mutable])
+;; irritants are the original, potentially indirect causes of the miss
+;; merged-irritants are intermediate steps between stx and an irritant
+;; they are not actual irritants anymore because they were the stx for a miss
+;; that got merged into this miss. we need to keep them around to detect
+;; future potential merges.
+(struct missed-optimization (kind stx irritants merged-irritants badness)
         #:transparent)
 
 (define missed-optimizations-log '())
 
+;; is parent the "parent" missed optimization of child?
+;; this determines whether they get reported together or not
+;; currently, parents and children must be of the same kind of missed
+;; optimization, and the child must be an irritant of the parent, or be a
+;; merged irritant of the parent
+(define (parent-of? parent child)
+  (and (equal? (missed-optimization-kind parent)
+               (missed-optimization-kind child))
+       (member (missed-optimization-stx child)
+               (append (missed-optimization-irritants parent)
+                       (missed-optimization-merged-irritants parent)))))
+
+;; combine reporting of two missed optimizations, increasing badness in the
+;; process
+(define (combine-missed-optmizations parent child)
+  (missed-optimization
+   (missed-optimization-kind parent) ; same as child's
+   (missed-optimization-stx  parent) ; we report the outermost one
+   (remove-duplicates
+    (append (remove (missed-optimization-stx child)
+                    (missed-optimization-irritants parent))
+            (missed-optimization-irritants child)))
+   (remove-duplicates
+    (append (missed-optimization-merged-irritants child)
+            (missed-optimization-merged-irritants parent)
+            ;; we merge child in, keep it for future merges
+            (list (missed-optimization-stx child))))
+   (+ (missed-optimization-badness parent)
+      (missed-optimization-badness child))))
+
 (define (log-missed-optimization kind stx [irritants '()])
   ;; for convenience, if a single irritant is given, wrap it in a list
   ;; implicitly
-  (let ([irritants (if (list? irritants) irritants (list irritants))])
+  (let* ([irritants (if (list? irritants) irritants (list irritants))]
+         [new       (missed-optimization kind stx irritants '() 1)]
+         ;; check if the new one is the child of an old one, or vice versa
+         ;; we check for either to do a single traversal
+         [parent/child (for/first ([m (in-list missed-optimizations-log)]
+                                   #:when (or (parent-of? m new)
+                                              (parent-of? new m)))
+                         m)]
+         ;; if we found a related entry, is it our parent or our child?
+         [parent? (and parent/child (parent-of? parent/child new))])
+    ;; update
     (set! missed-optimizations-log
-          (cons (missed-optimization kind stx irritants 1)
-                missed-optimizations-log))))
+          (cond [parent/child
+                 ;; we replace the related entry with a new one
+                 (cons (if parent?
+                           (combine-missed-optmizations parent/child new)
+                           (combine-missed-optmizations new parent/child))
+                       (remove parent/child missed-optimizations-log))]
+                ;; no related entry, just add the new one
+                [else (cons new missed-optimizations-log)]))))
 
 (define (format-missed-optimization m)
   (let ([kind      (missed-optimization-kind      m)]
