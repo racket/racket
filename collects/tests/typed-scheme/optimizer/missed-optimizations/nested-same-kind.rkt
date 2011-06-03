@@ -9,12 +9,12 @@ nested-same-kind.rkt 27:0 (#%app * (quote 2.0) (#%app * (quote 3.0) (quote 4) (q
 nested-same-kind.rkt 28:0 (#%app * (#%app * (quote 3.0) (quote 4)) (#%app * (quote 3.0) (quote 4))) -- binary, args all float-arg-expr, return type not Float -- caused by: 28:15 (quote 4), 28:39 (quote 4)
 nested-same-kind.rkt 28:0 (#%app * (#%app * (quote 3.0) (quote 4)) (#%app * (quote 3.0) (quote 4))) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 28:27 (#%app * (quote 3.0) (quote 4))
 nested-same-kind.rkt 28:0 (#%app * (#%app * (quote 3.0) (quote 4)) (#%app * (quote 3.0) (quote 4))) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 28:3 (#%app * (quote 3.0) (quote 4))
-nested-same-kind.rkt 28:3 (#%app * (quote 3.0) (quote 4)) -- binary, args all float-arg-expr, return type not Float -- caused by: 28:15 (quote 4)
 24.0
 24.0
 120.0
 144.0
 )
+
 
 #lang typed/racket
 
@@ -25,4 +25,4 @@ nested-same-kind.rkt 28:3 (#%app * (quote 3.0) (quote 4)) -- binary, args all fl
 (* 2.0 (* 3.0 (ann 4 Integer)))
 (* 1.0 (* 2.0 (* 3.0 (ann 4 Integer))))
 (* 2.0 (* 3.0 (ann 4 Integer) (ann 5 Integer)))
-(* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer))) ; doesn't currently work properly
+(* (* 3.0 (ann 4 Integer)) (* 3.0 (ann 4 Integer)))

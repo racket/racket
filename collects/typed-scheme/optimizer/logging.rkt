@@ -125,24 +125,34 @@
   ;; implicitly
   (let* ([irritants (if (list? irritants) irritants (list irritants))]
          [new       (missed-optimization kind stx irritants '() 1)]
-         ;; check if the new one is the child of an old one, or vice versa
-         ;; we check for either to do a single traversal
-         [parent/child (for/first ([m (in-list missed-optimizations-log)]
-                                   #:when (or (parent-of? m new)
-                                              (parent-of? new m)))
-                         m)]
-         ;; if we found a related entry, is it our parent or our child?
-         [parent? (and parent/child (parent-of? parent/child new))])
+         ;; check if the new one is the child of an old one
+         ;; for/first is ok, since we can only have one parent in the list
+         ;; (if we had more, one would have to be the parent of the other, so
+         ;; only one would be in the list)
+         [parent (for/first ([m (in-list missed-optimizations-log)]
+                             #:when (parent-of? m new))
+                   m)]
+         ;; do we have children in the list, if so, merge with all of them
+         [children (for/list ([m (in-list missed-optimizations-log)]
+                              #:when (parent-of? new m))
+                     m)])
     ;; update
     (set! missed-optimizations-log
-          (cond [parent/child
-                 ;; we replace the related entry with a new one
-                 (cons (if parent?
-                           (combine-missed-optmizations parent/child new)
-                           (combine-missed-optmizations new parent/child))
-                       (remove parent/child missed-optimizations-log))]
-                ;; no related entry, just add the new one
-                [else (cons new missed-optimizations-log)]))))
+          (cond [parent
+                 ;; we found our parent, merge with it
+                 (cons (combine-missed-optmizations parent new)
+                       (remove parent missed-optimizations-log))]
+                [(not (null? children))
+                 ;; we found children, merge with them
+                 (let ([new (for/fold ([new new])
+                                ([child children])
+                              (combine-missed-optmizations new child))])
+                   (cons new
+                         (filter (lambda (x) (not (member x children)))
+                                 missed-optimizations-log)))]
+                [else
+                 ;; no related entry, just add the new one
+                 (cons new missed-optimizations-log)]))))
 
 (define (format-missed-optimization m)
   (let ([kind      (missed-optimization-kind      m)]
