@@ -47,7 +47,7 @@
 (define (print-log)
   (define logger (current-logger))
   ;; add missed optimizations messages to the log, now that we know all of them
-  (for-each (lambda (x) (do-logging (missed-optimization-msg x)
+  (for-each (lambda (x) (do-logging (format-missed-optimization x)
                                     (missed-optimization-stx x)))
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
@@ -87,7 +87,7 @@
 ;; badness : Integer. crude measure of how severe the missed optimizations are
 ;;  currently, it's simply a count of how many missed optimizations occur
 ;;  within a given syntax object
-(struct missed-optimization (msg stx irritants [badness #:mutable])
+(struct missed-optimization (kind stx irritants [badness #:mutable])
         #:transparent)
 
 (define missed-optimizations-log '())
@@ -95,18 +95,22 @@
 (define (log-missed-optimization kind stx [irritants '()])
   ;; for convenience, if a single irritant is given, wrap it in a list
   ;; implicitly
-  (let* ([irritants (if (list? irritants) irritants (list irritants))]
-         [msg (if (not (null? irritants))
-                  (format "~a -- caused by: ~a"
-                          kind
-                          (string-join
-                           (map (lambda (irritant)
-                                  (format "~a ~a"
-                                          (line+col->string irritant)
-                                          (syntax->datum irritant)))
-                                irritants)
-                           ", "))
-                  kind)])
+  (let ([irritants (if (list? irritants) irritants (list irritants))])
     (set! missed-optimizations-log
-          (cons (missed-optimization msg stx irritants 1)
+          (cons (missed-optimization kind stx irritants 1)
                 missed-optimizations-log))))
+
+(define (format-missed-optimization m)
+  (let ([kind      (missed-optimization-kind      m)]
+        [irritants (missed-optimization-irritants m)])
+    (if (not (null? irritants))
+        (format "~a -- caused by: ~a"
+                kind
+                (string-join
+                 (map (lambda (irritant)
+                        (format "~a ~a"
+                                (line+col->string irritant)
+                                (syntax->datum irritant)))
+                      irritants)
+                 ", "))
+        kind)))
