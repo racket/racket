@@ -43,8 +43,11 @@
 (define bug-report-cgi (cgi-link "bug-report" "bug-report.cgi"))
 (define bug-report-captcha (cgi-link "bug-report-captcha"))
 
-(provide captcha-file+num)
+(provide captcha-file+num captcha-text)
 (define captcha-file+num (make-parameter #f))
+(define captcha-text (make-parameter #f))
+(define captcha-text-file
+  @plain[#:file "captcha-text" #:newline #f (or (captcha-text) "")])
 
 (define query (cgi-link "gnatsweb" "query"))
 
@@ -257,23 +260,3 @@
        @tt{@small{racket@"@"racket-lang.org}}
        or to the Racket
        @a[href: "http://lists.racket-lang.org/users/"]{mailing list}.}})
-
-(define captcha-text
-  ;; This is currently empty -- help/bug-report.rkt will poll it for
-  ;; text that is used for a captcha challenge question, and if it's not
-  ;; empty, then it will show that in an input dialog.  It's intended to
-  ;; be used in the future if spam bug reports that use drracket (or
-  ;; racket code) directly become a problem.  In this case, adding a
-  ;; challenge here will make existing installations start asking for an
-  ;; answer.  Note that the text should be a complete text for a
-  ;; question, including a "?" and instructions.  It is used as-is in
-  ;; the `message' argument for `get-text-from-user'.
-  ;;
-  ;; When there is a captcha challenge, the existing code will send back
-  ;; not only the answer (as the value of the `captcha' field), but also
-  ;; the question (as a `captcha-question' field).  A first-level
-  ;; captcha could be doing that it does today: change rarely on each
-  ;; page build, and further extensions can be to generate random
-  ;; captchas, and use the question text to validate (and/or expire)
-  ;; challenges.
-  @plain[#:file "captcha-text" #:newline #f]{})
