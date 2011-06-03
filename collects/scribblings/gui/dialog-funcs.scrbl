@@ -57,7 +57,14 @@ Under Windows and X, @scheme[filters] determines a set of filters from
  which the user can choose in the dialog. Each element of the
  @scheme[filters] list contains two strings: a description of the filter
  as seen by the user, and a filter pattern matched against file names.
+ Pattern strings can be a simple ``glob'' pattern, or a number of glob
+ patterns separated by a @litchar[";"] character.
  Under X, a @racket["*.*"] pattern is implicitly replaced with @racket["*"].
+ Under Mac OS X, suffix names are extracted from all globs that match a
+ fixed suffix (e.g., two suffixes of @racket["foo"] and @racket["bar"]
+ are extracted from a @racket["*.foo;*.bar;*.baz*"] pattern), and files
+ that have any of these suffixes in any filter are selectable; a
+ @racket["*.*"] glob makes all files available for selection.
 
 See also @scheme[path-dialog%].
 

@@ -9,10 +9,10 @@
 @defclass[path-dialog% dialog% ()]{
 
 The @scheme[path-dialog%] class implements a platform-independent
-file/directory dialog.  The dialog is the same as the dialog under X
-for the @scheme[get-file], @scheme[put-file], @scheme[get-directory],
-and @scheme[get-file-list] procedures, but considerable extra
-functionality is available through the @scheme[path-dialog%] class.
+file/directory dialog.  The dialog is similar in functionality to the
+@scheme[get-file], @scheme[put-file], @scheme[get-directory], and
+@scheme[get-file-list] procedures, but considerable extra functionality
+is available through the @scheme[path-dialog%] class.
 
 
 @defconstructor[([label (or/c label-string? false/c) #f]
