@@ -9,8 +9,7 @@
          "queue.rkt"
          "frame.rkt")
 
-(provide 
- (protect-out file-selector))
+(provide (protect-out file-selector))
 
 (import-class NSOpenPanel NSSavePanel NSURL NSArray)
 
@@ -28,27 +27,35 @@
                      (not (send parent get-sheet))
                      parent)])
 
-    (let ([extensions (append
-                       (if (and extension 
-                                (not (equal? "" extension)))
-                           (list extension) 
-                           null)
-                       (if (memq 'packages style) (list "app") null)
-                       (for/list ([e (in-list filters)]
-                                  #:when (and (regexp-match #rx"[*][.][^.]+$" (cadr e))
-                                              (not (equal? (cadr e) "*.*"))))
-                         (car (regexp-match #rx"[^.]+$" (cadr e)))))])
+    (let* ([globs (apply append
+                         (map (lambda (f) (regexp-split #rx" *; *" (cadr f)))
+                              filters))]
+           ;; get suffixes from "*.foo" globs (and *only* such globs)
+           [extensions
+            (for/list ([g (in-list globs)]
+                       #:when (and (regexp-match #rx"[*][.][^.]+$" g)
+                                   (not (equal? g "*.*"))))
+              (car (regexp-match #rx"[^.]+$" g)))]
+           [extensions
+            (if (memq 'packages style) (cons "app" extensions) extensions)]
+           [extensions
+            (if (and extension (not (equal? "" extension)))
+              (cons extension extensions) extensions)]
+           ;; add "foo~" suffixes too.
+           [extensions
+            (append (for/list ([e (in-list extensions)]
+                               #:when (not (regexp-match? #rx"~$" e)))
+                      (string-append e "~"))
+                    extensions)])
       (unless (null? extensions)
         (when (memq 'put style)
           (tellv ns setCanSelectHiddenExtension: #:type _BOOL #t))
-        (let ([a (tell NSArray 
+        (let ([a (tell NSArray
                        arrayWithObjects: #:type (_list i _NSString) extensions
                        count: #:type _NSUInteger (length extensions))])
           (tellv ns setAllowedFileTypes: a))
-        (let ([others? (ormap (lambda (e)
-                                (equal? (cadr e) "*.*"))
-                              filters)])
-          (tellv ns setAllowsOtherFileTypes: #:type _BOOL others?))))
+        (tellv ns setAllowsOtherFileTypes:
+               #:type _BOOL (and (member "*.*" globs) #t))))
 
     (cond
      [(memq 'multi style)
