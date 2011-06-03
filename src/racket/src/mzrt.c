@@ -130,34 +130,6 @@ void mzrt_sleep(int seconds)
 }
 
 /***********************************************************************/
-/*                Atomic Ops                                           */
-/***********************************************************************/
-
-MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value) {
-#ifdef WIN32
-# if defined(__MINGW32__)
-  return InterlockedExchangeAdd((intptr_t *)counter, value);
-# else
-  return InterlockedExchangeAdd(counter, value);
-# endif
-
-#elif defined (__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-  asm volatile ("lock; xaddl %0,%1"
-      : "=r" (value), "=m" (*counter)
-      : "0" (value), "m" (*counter)
-      : "memory", "cc");
-  return value;
-#else
-#error !!!Atomic ops not provided!!!
-#endif
-}
-
-/* returns the pre-incremented value */
-MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
-  return mzrt_atomic_add_32(counter, 1);
-}
-
-/***********************************************************************/
 /*                Threads                                              */
 /***********************************************************************/
 typedef struct mzrt_thread_stub_data {

@@ -11,10 +11,6 @@ typedef unsigned int uint32_t;
 # include <stdint.h>
 #endif
 
-MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value);
-MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter);
-
-
 /****************** SIGNAL HANDLING ***************************************/
 /* mzrt.c */
 void mzrt_set_segfault_debug_handler();
@@ -113,62 +109,7 @@ void pt_mbox_destroy(pt_mbox *mbox);
 
 static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val) {
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-# if defined(__i386__)
-  char result;
-  __asm__ __volatile__("lock; cmpxchgl %3, %0; setz %1"
-      : "=m"(*addr), "=q"(result)
-      : "m"(*addr), "r" (new_val), "a"(old) 
-      : "memory");
-  return (int) result;
-# elif defined(__x86_64__)
-  char result;
-  __asm__ __volatile__("lock; cmpxchgq %3, %0; setz %1"
-      : "=m"(*addr), "=q"(result)
-      : "m"(*addr), "r" (new_val), "a"(old) 
-      : "memory");
-  return (int) result;
-# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) \
-     || defined(__powerpc64__) || defined(__ppc64__)
-
-#  if defined(__powerpc64__) || defined(__ppc64__) || defined(__64BIT__)
-/* FIXME: Completely untested.  */
-  size_t oldval;
-  int result = 0;
-
-  __asm__ __volatile__(
-               "1:ldarx %0,0,%2\n"   /* load and reserve              */
-               "cmpd %0, %4\n"      /* if load is not equal to  */
-               "bne 2f\n"            /*   old, fail     */
-               "stdcx. %3,0,%2\n"    /* else store conditional         */
-               "bne- 1b\n"           /* retry if lost reservation      */
-         "li %1,1\n"       /* result = 1;     */
-               "2:\n"
-              : "=&r"(oldval), "=&r"(result)
-              : "r"(addr), "r"(new_val), "r"(old), "1"(result)
-              : "memory", "cc");
-
-  return result;
-#  else
-  size_t oldval;
-  int result = 0;
-
-  __asm__ __volatile__(
-               "1:lwarx %0,0,%2\n"   /* load and reserve              */
-               "cmpw %0, %4\n"      /* if load is not equal to  */
-               "bne 2f\n"            /*   old, fail     */
-               "stwcx. %3,0,%2\n"    /* else store conditional         */
-               "bne- 1b\n"           /* retry if lost reservation      */
-         "li %1,1\n"       /* result = 1;     */
-               "2:\n"
-              : "=&r"(oldval), "=&r"(result)
-              : "r"(addr), "r"(new_val), "r"(old), "1"(result)
-              : "memory", "cc");
-
-  return result;
-#  endif
-# else
-# error mzrt_cas not defined on this platform
-# endif
+  return __sync_bool_compare_and_swap(addr, old, new_val);
 #elif defined(_MSC_VER)
 # if defined(_AMD64_)
   return _InterlockedCompareExchange64((LONGLONG volatile *)addr, (LONGLONG)new_val, (LONGLONG)old) == (LONGLONG)old;
