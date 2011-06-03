@@ -36,21 +36,30 @@
 ;; caused by traversing the same syntax multiple times (which is not
 ;; a problem per se)
 (define log-so-far (set))
+
+(define (gen-log-message msg stx)
+  (format "~a ~a ~a -- ~a"
+          (syntax-source-file-name stx)
+          (line+col->string stx)
+          (syntax->datum stx)
+          msg))
+
 (define (do-logging msg stx)
-  (let* ([new-message (format "~a ~a ~a -- ~a"
-                              (syntax-source-file-name stx)
-                              (line+col->string stx)
-                              (syntax->datum stx)
-                              msg)]
+  (let* ([new-message (gen-log-message msg stx)]
          [new-entry (log-entry new-message
                                (syntax-line stx)
                                (syntax-column stx))])
     (unless (set-member? log-so-far new-entry)
       (set! log-so-far (set-add log-so-far new-entry)))))
+
 ;; once the optimizer is done, we sort the log according to source
 ;; location, then print it
 (define (print-log)
   (define logger (current-logger))
+  ;; add missed optimizations messages to the log, now that we know all of them
+  (for-each (lambda (x) (do-logging (missed-optimization-msg x)
+                                    (missed-optimization-stx x)))
+            missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))
             (sort (set->list log-so-far)
@@ -74,7 +83,8 @@
                                       ;; sort by source location
                                       [else (< loc-x loc-y)]))])])))))
 (define (clear-log)
-  (set! log-so-far (set)))
+  (set! log-so-far (set))
+  (set! missed-optimizations-log '()))
 
 (define (log-optimization kind stx) (do-logging kind stx))
 
@@ -82,22 +92,34 @@
 ;; of reporting them to the user.
 ;; This is meant to help users understand what hurts the performance of
 ;; their programs.
+
+;; badness : Integer. crude measure of how severe the missed optimizations are
+;;  currently, it's simply a count of how many missed optimizations occur
+;;  within a given syntax object
+(struct missed-optimization (msg stx irritants [badness #:mutable])
+        #:transparent)
+
+(define missed-optimizations-log '())
+
 (define (log-missed-optimization kind stx [irritants '()])
   ;; for convenience, if a single irritant is given, wrap it in a list
   ;; implicitly
-  (let ([irritants (if (list? irritants) irritants (list irritants))])
-    (do-logging
-     (if (not (null? irritants))
-         (format "~a -- caused by: ~a"
-                 kind
-                 (string-join (map (lambda (irritant)
-                                     (format "~a ~a"
-                                             (line+col->string irritant)
-                                             (syntax->datum irritant)))
-                                   irritants)
-                              ", "))
-         kind)
-     stx)))
+  (let* ([irritants (if (list? irritants) irritants (list irritants))]
+         [msg (if (not (null? irritants))
+                  (format "~a -- caused by: ~a"
+                          kind
+                          (string-join
+                           (map (lambda (irritant)
+                                  (format "~a ~a"
+                                          (line+col->string irritant)
+                                          (syntax->datum irritant)))
+                                irritants)
+                           ", "))
+                  kind)])
+    (set! missed-optimizations-log
+          (cons (missed-optimization msg stx irritants 1)
+                missed-optimizations-log))))
+
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)
