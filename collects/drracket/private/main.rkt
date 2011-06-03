@@ -90,7 +90,7 @@
 (drracket:modes:add-initial-modes)
 
 (finder:default-filters
- `(["Racket Sources" "*.rkt;*.scrbl;*.ss;*.scm"]
+ `(["Racket Sources" "*.rkt;*.scrbl;*.rktl;*.rktd;*.ss;*.scm"]
    ,@(finder:default-filters)))
 
 (application:current-app-name (string-constant drscheme))
