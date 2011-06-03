@@ -6,7 +6,7 @@
          (for-template scheme/base scheme/unsafe/ops)
          (rep type-rep)
          (types type-table utils)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide box-opt-expr)
 

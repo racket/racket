@@ -4,7 +4,7 @@
          (for-template scheme/base)
          "../utils/utils.rkt"
          (types type-table)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide dead-code-opt-expr)
 

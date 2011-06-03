@@ -1,7 +1,7 @@
 #lang racket
 (require racket/runtime-path
          rackunit rackunit/text-ui
-         typed-scheme/optimizer/utils
+         typed-scheme/optimizer/logging
          unstable/logging)
 
 (provide optimization-tests missed-optimization-tests

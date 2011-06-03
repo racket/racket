@@ -7,7 +7,7 @@
          (rep type-rep)
          (types type-table utils)
          (typecheck typechecker)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide pair-opt-expr)
 

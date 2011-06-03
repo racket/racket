@@ -4,7 +4,7 @@
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types abbrev)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide string-opt-expr string-expr bytes-expr)
 

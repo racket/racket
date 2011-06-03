@@ -6,7 +6,7 @@
          "../utils/utils.rkt"
          (rep type-rep)
          (types type-table utils)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide vector-opt-expr)
 

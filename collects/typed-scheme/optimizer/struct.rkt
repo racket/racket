@@ -4,7 +4,7 @@
          (for-template scheme/base scheme/unsafe/ops)
          "../utils/utils.rkt"
          (types type-table)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide struct-opt-expr)
 

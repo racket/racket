@@ -3,7 +3,7 @@
 (require syntax/parse
          (for-template scheme/base)
          "../utils/utils.rkt"
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide number-opt-expr)
 

@@ -7,7 +7,7 @@
          (for-template scheme/base)
          (types numeric-tower utils type-table)
          (rep type-rep)
-         (optimizer utils float-complex))
+         (optimizer utils logging float-complex))
 
 (provide unboxed-let-opt-expr)
 

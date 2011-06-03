@@ -6,7 +6,7 @@
          "../utils/utils.rkt" "../utils/tc-utils.rkt"
          (rep type-rep)
          (types abbrev type-table utils)
-         (optimizer utils string))
+         (optimizer utils logging string))
 
 (provide sequence-opt-expr)
 

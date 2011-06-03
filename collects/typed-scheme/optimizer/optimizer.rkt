@@ -4,8 +4,9 @@
          racket/pretty
          (for-template scheme/base)
          "../utils/utils.rkt"
-         (optimizer utils number fixnum float float-complex vector string
-                    pair sequence box struct dead-code apply unboxed-let))
+         (optimizer utils logging
+                    number fixnum float float-complex vector string pair
+                    sequence box struct dead-code apply unboxed-let))
 
 (provide optimize-top)
 

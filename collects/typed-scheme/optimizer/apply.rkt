@@ -2,7 +2,7 @@
 (require syntax/parse
          (for-template scheme/unsafe/ops racket/base (prefix-in k: '#%kernel))
          "../utils/utils.rkt"
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide apply-opt-expr)
 

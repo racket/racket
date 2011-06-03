@@ -4,7 +4,7 @@
          "../utils/utils.rkt"
          (for-template scheme/base scheme/fixnum scheme/unsafe/ops)
          (types numeric-tower)
-         (optimizer utils))
+         (optimizer utils logging))
 
 (provide fixnum-expr fixnum-opt-expr)
 

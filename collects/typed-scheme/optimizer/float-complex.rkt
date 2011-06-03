@@ -4,7 +4,7 @@
          "../utils/utils.rkt" racket/unsafe/ops
          (for-template scheme/base scheme/math racket/flonum scheme/unsafe/ops)
          (types numeric-tower)
-         (optimizer utils numeric-utils float))
+         (optimizer utils numeric-utils logging float))
 
 (provide float-complex-opt-expr
          float-complex-arith-opt-expr
