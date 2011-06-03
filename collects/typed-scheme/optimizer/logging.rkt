@@ -14,7 +14,7 @@
         (format "~a:~a" line col)
         "(no location)")))
 
-(struct log-entry (msg line col) #:transparent)
+(struct log-entry (msg pos) #:transparent)
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
@@ -36,9 +36,7 @@
 
 (define (do-logging msg stx)
   (let* ([new-message (gen-log-message msg stx)]
-         [new-entry (log-entry new-message
-                               (syntax-line stx)
-                               (syntax-column stx))])
+         [new-entry (log-entry new-message (syntax-position stx))])
     (unless (set-member? log-so-far new-entry)
       (set! log-so-far (set-add log-so-far new-entry)))))
 
@@ -53,25 +51,20 @@
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))
             (sort (set->list log-so-far)
-                  (lambda (x y)
-                    (match* (x y)
-                      [((log-entry msg-x line-x col-x)
-                        (log-entry msg-y line-y col-y))
-                       (cond [(not (or line-x line-y))
-                              ;; neither have location, sort by message
-                              (string<? msg-x msg-y)]
-                             [(not line-y) #f]
-                             [(not line-x) #t]
-                             [else
-                              ;; both have location
-                              (let* ([loc-x (+ (* 1000 line-x) col-x)]
-                                     ;; 1000 is a conservative bound
-                                     [loc-y (+ (* 1000 line-y) col-y)])
-                                (cond [(= loc-x loc-y)
-                                       ;; same location, sort by message
-                                       (string<? msg-x msg-y)]
-                                      ;; sort by source location
-                                      [else (< loc-x loc-y)]))])])))))
+                  (match-lambda*
+                   [(list (log-entry msg-x pos-x) (log-entry msg-y pos-y))
+                    (cond [(not (or pos-x pos-y))
+                           ;; neither have location, sort by message
+                           (string<? msg-x msg-y)]
+                          [(not pos-y) #f]
+                          [(not pos-x) #t]
+                          [else
+                           ;; both have location
+                           (cond [(= pos-x pos-y)
+                                  ;; same location, sort by message
+                                  (string<? msg-x msg-y)]
+                                 ;; sort by source location
+                                 [else (< pos-x pos-y)])])]))))
 (define (clear-log)
   (set! log-so-far (set))
   (set! missed-optimizations-log '()))
