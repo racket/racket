@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require unstable/match racket/match racket/set
+(require unstable/match racket/match racket/set racket/string
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template racket/base)
@@ -82,14 +82,22 @@
 ;; of reporting them to the user.
 ;; This is meant to help users understand what hurts the performance of
 ;; their programs.
-(define (log-missed-optimization kind stx [irritant #f])
-  (do-logging (if irritant
-                  (format "~a -- caused by: ~a ~a"
-                          kind
-                          (line+col->string irritant)
-                          (syntax->datum irritant))
-                  kind)
-              stx))
+(define (log-missed-optimization kind stx [irritants '()])
+  ;; for convenience, if a single irritant is given, wrap it in a list
+  ;; implicitly
+  (let ([irritants (if (list? irritants) irritants (list irritants))])
+    (do-logging
+     (if (not (null? irritants))
+         (format "~a -- caused by: ~a"
+                 kind
+                 (string-join (map (lambda (irritant)
+                                     (format "~a ~a"
+                                             (line+col->string irritant)
+                                             (syntax->datum irritant)))
+                                   irritants)
+                              ", "))
+         kind)
+     stx)))
 
 ;; if set to #t, the optimizer will dump its result to stdout before compilation
 (define *show-optimized-code* #f)

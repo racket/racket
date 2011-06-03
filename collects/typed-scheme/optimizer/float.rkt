@@ -102,8 +102,8 @@
                     (when missed-optimization?
                       (log-missed-optimization "binary, args all float-arg-expr, return type not Float"
                                                this-syntax
-                                               (for/first ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
-                                                           #:when (not (subtypeof? x -Flonum)))
+                                               (for/list ([x (in-list (syntax->list #'(f1 f2 fs ...)))]
+                                                          #:when (not (subtypeof? x -Flonum)))
                                                  x)))
                     ;; If an optimization was expected (whether it was safe or not doesn't matter),
                     ;; report subexpressions doing expensive exact arithmetic (Exact-Rational and

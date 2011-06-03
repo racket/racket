@@ -1,7 +1,7 @@
 #;
 (
- all-real.rkt 24:0 (#%app + (quote 3) (quote 4)) -- binary, args all float-arg-expr, return type not Float -- caused by: 24:8 (quote 3)
- all-real.rkt 25:0 (#%app * (quote 3) (quote 4)) -- binary, args all float-arg-expr, return type not Float -- caused by: 25:8 (quote 3)
+ all-real.rkt 24:0 (#%app + (quote 3) (quote 4)) -- binary, args all float-arg-expr, return type not Float -- caused by: 24:8 (quote 3), 24:21 (quote 4)
+ all-real.rkt 25:0 (#%app * (quote 3) (quote 4)) -- binary, args all float-arg-expr, return type not Float -- caused by: 25:8 (quote 3), 25:21 (quote 4)
  7
  12
  )
