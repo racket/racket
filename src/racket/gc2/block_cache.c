@@ -7,7 +7,8 @@ static void  *os_alloc_pages(size_t len);
 static void   os_free_pages(void *p, size_t len);
 static void   os_protect_pages(void *p, size_t len, int writable);
 
-#define BC_BLOCK_SIZE (1 << 24)  /* 16 MB */
+#define BC_STARTING_BLOCK_SIZE (1 << 21)  /* 2 MB */
+#define BC_MAX_BLOCK_SIZE (1 << 24)  /* 16 MB */
 
 struct block_desc;
 static AllocCacheBlock *alloc_cache_create();
@@ -42,6 +43,7 @@ typedef struct block_group {
   GCList full;
   GCList free;
   int atomic;
+  int block_size;
 } block_group;
 
 typedef struct BlockCache {
@@ -62,9 +64,11 @@ static BlockCache* block_cache_create(MMU *mmu) {
   gclist_init(&bc->atomic.full);
   gclist_init(&bc->atomic.free);
   bc->atomic.atomic = 1;
+  bc->atomic.block_size = BC_STARTING_BLOCK_SIZE;
   gclist_init(&bc->non_atomic.full);
   gclist_init(&bc->non_atomic.free);
   bc->non_atomic.atomic = 0;
+  bc->non_atomic.block_size = BC_STARTING_BLOCK_SIZE;
   bc->bigBlockCache = alloc_cache_create();
   bc->page_range = page_range_create();
   bc->mmu = mmu;
@@ -79,13 +83,18 @@ static ssize_t block_cache_free(BlockCache* bc) {
 }
 
 static block_desc *bc_alloc_std_block(block_group *bg) {
-  void *r = os_alloc_pages(BC_BLOCK_SIZE);
+  int this_block_size = bg->block_size;
+  void *r = os_alloc_pages(this_block_size);
   void *ps = align_up_ptr(r, APAGE_SIZE);
+
+  if (this_block_size < BC_MAX_BLOCK_SIZE) {
+    bg->block_size <<= 1;
+  }
 
   block_desc *bd = (block_desc*) ofm_malloc(sizeof(block_desc));
   bd->block = r;
   bd->free = ps;
-  bd->size = BC_BLOCK_SIZE;
+  bd->size = this_block_size;
   bd->used = 0;
   bd->group = bg;
   gclist_init(&bd->gclist);
@@ -97,9 +106,9 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     if (diff) {
       intptr_t enddiff = APAGE_SIZE - diff;
       os_free_pages(r, diff);
-      os_free_pages(r + BC_BLOCK_SIZE - enddiff, enddiff);
+      os_free_pages(r + this_block_size - enddiff, enddiff);
       bd->block = ps;
-      bd->size  = BC_BLOCK_SIZE - APAGE_SIZE;
+      bd->size  = this_block_size - APAGE_SIZE;
       /* printf("UNALIGNED FROM OS %p %li %li\n", r, diff, enddiff); */
     }
   }
