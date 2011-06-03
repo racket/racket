@@ -111,6 +111,8 @@
                         (format "~a ~a"
                                 (line+col->string irritant)
                                 (syntax->datum irritant)))
-                      irritants)
+                      (sort irritants <
+                            #:key (lambda (x)
+                                    (or (syntax-position x) 0))))
                  ", "))
         kind)))
