@@ -40,22 +40,18 @@
             (if (memq 'packages style) (cons "app" extensions) extensions)]
            [extensions
             (if (and extension (not (equal? "" extension)))
-              (cons extension extensions) extensions)]
-           ;; add "foo~" suffixes too.
-           [extensions
-            (append (for/list ([e (in-list extensions)]
-                               #:when (not (regexp-match? #rx"~$" e)))
-                      (string-append e "~"))
-                    extensions)])
+              (cons extension extensions) extensions)])
       (unless (null? extensions)
         (when (memq 'put style)
           (tellv ns setCanSelectHiddenExtension: #:type _BOOL #t))
-        (let ([a (tell NSArray
-                       arrayWithObjects: #:type (_list i _NSString) extensions
-                       count: #:type _NSUInteger (length extensions))])
-          (tellv ns setAllowedFileTypes: a))
-        (tellv ns setAllowsOtherFileTypes:
-               #:type _BOOL (and (member "*.*" globs) #t))))
+        (let ([allow-any? (member "*.*" globs)])
+          (when (or (not allow-any?)
+                    (memq 'put style))
+            (let ([a (tell NSArray
+                           arrayWithObjects: #:type (_list i _NSString) extensions
+                           count: #:type _NSUInteger (length extensions))])
+              (tellv ns setAllowedFileTypes: a))
+            (tellv ns setAllowsOtherFileTypes: #:type _BOOL allow-any?)))))
 
     (cond
      [(memq 'multi style)
