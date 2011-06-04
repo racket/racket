@@ -119,8 +119,7 @@
                        (make-bytes n (char->integer #\.)) #")")
          (format "(?:~a)(?<=~a)" rx (make-bytes n (char->integer #\.)))))))
   (define-syntax-rule (regexp-loop
-                       name loop start end pattern string
-                       ipre
+                       name loop start end pattern string ipre
                        success-choose failure-k
                        port-success-k port-success-choose port-failure-k
                        need-leftover? peek?)
@@ -235,14 +234,14 @@
                       (lambda (acc new-start new-end)
                         (loop acc new-start new-end ipre 0-ok?))
                       acc start end mstart mend)
-                     (loop (success-choose start mstart mend m acc)
+                     (loop (success-choose start m acc)
                            mend end ipre 0-ok?)))))))))))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""])
     (regexp-loop regexp-match-positions* loop start end pattern string ipre
       ;; success-choose:
-      (lambda (start mstart mend ms acc) (cons (cons mstart mend) acc))
+      (lambda (start ms acc) (cons (car ms) acc))
       ;; failure-k:
       (lambda (acc start end) acc)
       ;; port-success-k: need to shift index of rest as reading; cannot
@@ -255,10 +254,9 @@
                           (loop '() 0 (and end (- end mend))))
                      (cons (cons mstart mend) acc))))
       ;; other port functions: use string case
-      #f
-      #f
-      #f
-      #f))
+      #f #f
+      ;; flags
+      #f #f))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f]
@@ -266,32 +264,34 @@
     (regexp-loop regexp-match-peek-positions* loop start end
       pattern string ipre
       ;; success-choose:
-      (lambda (start mstart mend ms acc) (cons (cons mstart mend) acc))
+      (lambda (start ms acc) (cons (car ms) acc))
       ;; failure-k:
       (lambda (acc start end) acc)
       ;; port functions: use string case
-      #f
-      #f
-      #f
-      #f
-      #t))
+      #f #f #f
+      ;; flags
+      #f #t))
+
+  ;; Small helper for the functions below
+  (define (get-buf+sub string pattern)
+    (let ([buf
+           (if (and (string? string)
+                    (or (byte-regexp? pattern) (bytes? pattern)))
+             (string->bytes/utf-8 string (char->integer #\?))
+             string)])
+      (values
+       buf
+       (if (or (bytes? buf) (and (path? string)
+                                 (or (bytes? pattern) (byte-regexp? pattern))))
+         subbytes substring))))
 
   ;; Splits a string into a list by removing any piece which matches
   ;; the pattern.
   (define (regexp-split pattern string [start 0] [end #f] [ipre #""])
-    (define buf
-      (if (and (string? string) (or (byte-regexp? pattern) (bytes? pattern)))
-        (string->bytes/utf-8 string (char->integer #\?))
-        string))
-    (define sub
-      (if (or (bytes? buf)
-              (and (path? string)
-                   (or (bytes? pattern) (byte-regexp? pattern))))
-        subbytes
-        substring))
+    (define-values [buf sub] (get-buf+sub string pattern))
     (regexp-loop regexp-split loop start end pattern buf ipre
       ;; success-choose:
-      (lambda (start mstart mend ms acc) (cons (sub buf start mstart) acc))
+      (lambda (start ms acc) (cons (sub buf start (caar ms)) acc))
       ;; failure-k:
       (lambda (acc start end)
         (cons (if end (sub buf start end) (sub buf start)) acc))
@@ -301,19 +301,14 @@
       (lambda (match-string leftovers ms acc) (cons leftovers acc))
       ;; port-failure-k:
       (lambda (acc leftover) (if leftover (cons leftover acc) acc))
-      #t
-      #f))
+      ;; flags
+      #t #f))
 
   ;; Like splitting, but insert a replacement between matches
   (define -regexp-replace*
     (let ([regexp-replace*
            (lambda (pattern string orig-replacement [ipre #""])
-             (define buf
-               (if (and (string? string)
-                        (or (byte-regexp? pattern) (bytes? pattern)))
-                 (string->bytes/utf-8 string (char->integer #\?))
-                 string))
-             (define sub (if (bytes? buf) subbytes substring))
+             (define-values [buf sub] (get-buf+sub string pattern))
              (define start 0)
              (define end #f)
              (define needs-string?
@@ -402,43 +397,30 @@
               (if (bytes? buf) bytes-append string-append)
               (regexp-loop regexp-replace* loop start end pattern buf ipre
                 ;; success-choose:
-                (lambda (start mstart mend ms acc)
+                (lambda (start ms acc)
                   (list* (if (procedure? replacement)
                            (check
                             replacement
                             (for/list ([m ms])
                               (and m (sub buf (car m) (cdr m)))))
                            (replac ms replacement))
-                         (sub buf start mstart)
+                         (sub buf start (caar ms))
                          acc))
                 ;; failure-k:
                 (lambda (acc start end)
                   (cons (if end (sub buf start end) (sub buf start)) acc))
-                ;; port-success-k:
-                #f
-                ;; port-success-choose:
-                #f
-                ;; port-failure-k:
-                #f
-                #t
-                #f)))])
+                ;; port functions: use string case
+                #f #f #f
+                ;; flags
+                #t #f)))])
       regexp-replace*))
 
   ;; Returns all the matches for the pattern in the string.
   (define (regexp-match* pattern string [start 0] [end #f] [ipre #""])
-    (define buf
-      (if (and (string? string) (or (byte-regexp? pattern) (bytes? pattern)))
-        (string->bytes/utf-8 string (char->integer #\?))
-        string))
-    (define sub
-      (if (or (bytes? buf)
-              (and (path? string)
-                   (or (bytes? pattern) (byte-regexp? pattern))))
-        subbytes
-        substring))
+    (define-values [buf sub] (get-buf+sub string pattern))
     (regexp-loop regexp-match* loop start end pattern buf ipre
       ;; success-choose:
-      (lambda (start mstart mend ms acc) (cons (sub buf mstart mend) acc))
+      (lambda (start ms acc) (cons (sub buf (caar ms) (cdar ms)) acc))
       ;; failure-k:
       (lambda (acc start end) acc)
       ;; port-success-k:
@@ -447,8 +429,8 @@
       (lambda (match-string leftovers ms acc) (cons match-string acc))
       ;; port-failure-k:
       (lambda (acc leftover) acc)
-      #f
-      #f))
+      ;; flags
+      #f #f))
 
   (define (regexp-match-exact? p s)
     (let ([m (regexp-match-positions p s)])
