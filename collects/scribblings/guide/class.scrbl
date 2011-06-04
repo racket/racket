@@ -348,6 +348,13 @@ and makes the overriding implementation augmentable.
 
 @section[#:tag "extnames"]{Controlling the Scope of External Names}
 
+@margin-note{
+  Java's access control mechanisms (like @index["protected method"]{protected})
+  play a role similar to @racket[define-member-name], but
+  unlike in Java, Racket's mechanism for controlling access
+  is based on lexical scope, not the inheritance hierarchy.
+}
+
 As noted in @secref["intnames"], class members have both
 internal and external names. A member definition binds an internal
 name locally, and this binding can be locally renamed.  External
