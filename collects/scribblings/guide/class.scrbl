@@ -349,7 +349,7 @@ and makes the overriding implementation augmentable.
 @section[#:tag "extnames"]{Controlling the Scope of External Names}
 
 @margin-note{
-  Java's access control mechanisms (like @index["protected method"]{protected})
+  Java's access modifiers (like @index["protected method"]{@tt{protected}})
   play a role similar to @racket[define-member-name], but
   unlike in Java, Racket's mechanism for controlling access
   is based on lexical scope, not the inheritance hierarchy.
