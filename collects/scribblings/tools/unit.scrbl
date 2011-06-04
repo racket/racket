@@ -132,27 +132,45 @@ Calls the definitions text's
 @defmethod[#:mode override 
            (set-breakables [thread (or/c thread? false/c)]
                            [custodian (or/c custodian? false/c)])
-           void?]{}}
+           void?]{}
+
+@defmethod[#:mode public-final
+                  (add-bkg-running-color [id symbol?]
+                                         [color (or/c string? (is-a?/c color%))]
+                                         [label string?])
+                  void?]{
+  
+   Sets the color of the circle in the bottom-right corner of the 
+   DrRacket window to @racket[color] with the tooltip window that
+   appears over it containing @racket[label]. If multiple coors are
+   registered they are all shown.
+
+   See also @method[drracket:unit:tab<%> remove-bkg-running-color].
+}
+@defmethod[#:mode public-final
+                  (remove-bkg-running-color [id symbol?])
+                  void?]{
+                         
+   Removes the color and label added with @racket[id].
+                         
+   See also @method[drracket:unit:tab<%> add-bkg-running-color].
+  }
+                 
+}
 
 
 @defclass[drracket:unit:tab% object% (drracket:unit:tab<%>)]{
 
 The base class that implements the tab's functionality.
 
-
-
 @defconstructor/make[()]{}
 
 @defmethod[#:mode override 
            (clear-annotations)
            void?]{
-
-Clears any error highlighting.
-
-
-
-
-}}
+ Clears any error highlighting.
+ }
+}
 
 
 @defmixin[drracket:unit:program-editor-mixin (text% editor:basic<%>) ()]{

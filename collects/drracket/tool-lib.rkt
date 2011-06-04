@@ -102,6 +102,31 @@ all of the names in the tools library, for use defining keybindings
     })
  
  (proc-doc/names
+  drracket:module-language-tools:add-online-expansion-handler 
+  (-> path-string? symbol? (-> (is-a?/c drracket:unit:definitions-text<%>) any/c any) void?)
+  (mod-path id local-handler)
+  @{Registers a pair of procedures with DrRacket's online expansion machinery. 
+    
+    The first two arguments name a procedure in a module that is loaded by 
+    @racket[dynamic-require] is a separate place. When DrRacket detects that
+    the editor has been modified, it sends the contents of the editor over to
+    that separate place, @racket[expand]s the program there, and then supplies
+    the fully expanded object to that first procedure. (The procedure is called
+    in the same context as the expansion process.) 
+    
+    Note that the thread that calls this procedure may be
+    killed at anytime: DrRacket may kill it when the user types in the buffer
+    (in order to start a new expansion), but bizarro code may also create a separate
+    thread during expansion that lurks around and then mutates arbitrary things.
+    
+    The result of the procedure is expected to be something that can be sent
+    across a @racket[place-channel], which is then sent back to the original
+    place where DrRacket itself is running and passed to the @racket[local-handler]
+    argument. At this point, the only code running is trusted code (DrRacket itself
+    and other tools), but any long running computations may freeze DrRacket's GUI, 
+    since this procedure is invoked on DrRacket's eventspace's handler thread.})
+ 
+ (proc-doc/names
   drracket:module-language:add-module-language
   (-> any)
   ()

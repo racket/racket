@@ -216,6 +216,12 @@ please adhere to these guidelines:
   (cs-mode-menu-show-client-obligations "Client Contract Obligations")
   (cs-mode-menu-show-syntax "Syntactic Categories")
   
+ ;; the online check syntax status messages (mouse over the bottom right of drracket's window to see the messages during online expansion's various phases)
+ (online-expansion-running "Online expansion running")
+ (only-raw-text-files-supported "Only pure text files supported")
+ (abnormal-termination "Online expansion terminated abnormally")
+ (jump-to-error "Jump to Error")
+  
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
   (read-only "Read only")
@@ -223,7 +229,8 @@ please adhere to these guidelines:
  (overwrite "Overwrite")
  (running "running")
  (not-running "not running")
- 
+  
+
  ;;; misc
  (welcome-to-something "Welcome to ~a")
  

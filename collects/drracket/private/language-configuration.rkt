@@ -56,7 +56,7 @@
             [prefix drracket:app: drracket:app^]
             [prefix drracket:tools: drracket:tools^]
             [prefix drracket:help-desk: drracket:help-desk^]
-            [prefix drracket:module-language: drracket:module-language^])
+            [prefix drracket:module-language: drracket:module-language/int^])
     (export drracket:language-configuration/internal^)
     
     ;; settings-preferences-symbol : symbol

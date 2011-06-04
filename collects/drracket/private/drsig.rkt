@@ -4,6 +4,7 @@
 (provide drracket:eval^
          drracket:debug^
          drracket:module-language^
+         drracket:module-language/int^
          drracket:module-language-tools^
          drracket:get-collection^
          drracket:main^
@@ -31,7 +32,8 @@
          drracket:tool^
          drracket:tool-cm^
          drscheme:tool^
-         drscheme:tool-cm^)
+         drscheme:tool-cm^
+         drracket:interface^)
 
 (define-signature drracket:modes-cm^
   ())
@@ -90,16 +92,23 @@
 (define-signature drracket:module-language^ extends drracket:module-language-cm^
   (add-module-language
    module-language-put-file-mixin))
+(define-signature drracket:module-language/int^ extends drracket:module-language^
+  (module-language-online-expand-text-mixin
+   module-language-online-expand-frame-mixin
+   module-language-online-expand-tab-mixin))
 
 (define-signature drracket:module-language-tools-cm^
   (frame-mixin
-   frame<%>
    tab-mixin
-   tab<%>
-   definitions-text-mixin
-   definitions-text<%>))
+   definitions-text-mixin))
 (define-signature drracket:module-language-tools^ extends drracket:module-language-tools-cm^
-  (add-opt-out-toolbar-button))
+  (add-opt-out-toolbar-button
+   add-online-expansion-handler
+   
+   ;; the below should be hidden from tools
+   (struct online-expansion-handler (mod-path id local-handler))
+   get-online-expansion-handlers
+   no-more-online-expansion-handlers))
 
 (define-signature drracket:get-collection-cm^ ())
 (define-signature drracket:get-collection^ extends drracket:get-collection-cm^
@@ -177,12 +186,9 @@
 
 (define-signature drracket:unit-cm^
   (tab%
-   tab<%>
    frame% 
-   frame<%>
    definitions-canvas%
    get-definitions-text%
-   definitions-text<%>
    interactions-canvas%))
 (define-signature drracket:unit^ extends drracket:unit-cm^
   (open-drscheme-window
@@ -196,10 +202,8 @@
    add-search-help-desk-menu-item))
 
 (define-signature drracket:frame-cm^
-  (<%>
-   mixin
-   basics-mixin
-   basics<%>))
+  (mixin
+   basics-mixin))
 (define-signature drracket:frame^ extends drracket:frame-cm^
   (create-root-menubar
    add-keybindings-item
@@ -234,8 +238,7 @@
 (define-signature drracket:rep-cm^
   (drs-bindings-keymap-mixin
    text%
-   text<%>
-   context<%>))
+   text<%>))
 (define-signature drracket:rep^ extends drracket:rep-cm^
   (current-rep
    current-language-settings
@@ -332,6 +335,18 @@
 (define-signature drracket:tracing^ extends drracket:tracing-cm^
   (annotate))
 
+(define-signature drracket:interface^
+  (frame:basics<%>
+   frame:<%>
+   unit:frame<%>
+   unit:definitions-text<%>
+   unit:tab<%>
+   rep:context<%>
+   
+   module-language-tools:definitions-text<%>
+   module-language-tools:tab<%>
+   module-language-tools:frame<%>))
+
 (define-signature drracket:tool-exports-cm^
   ())
 (define-signature drracket:tool-exports^ extends drracket:tool-exports-cm^
@@ -352,7 +367,8 @@
    (open (prefix modes: drracket:modes-cm^))
    (open (prefix tracing: drracket:tracing-cm^))
    (open (prefix module-language: drracket:module-language-cm^))
-   (open (prefix module-language-tools: drracket:module-language-tools-cm^))))
+   (open (prefix module-language-tools: drracket:module-language-tools-cm^))
+   (open drracket:interface^)))
 
 (define-signature drracket:tool-cm^
   ((open (prefix drracket: no-prefix:tool-cm^))))
@@ -372,7 +388,8 @@
    (open (prefix modes: drracket:modes^))
    (open (prefix tracing: drracket:tracing^))
    (open (prefix module-language: drracket:module-language^))
-   (open (prefix module-language-tools: drracket:module-language-tools^))))
+   (open (prefix module-language-tools: drracket:module-language-tools^))
+   (open drracket:interface^)))
 
 (define-signature drracket:tool^
   ((open (prefix drracket: no-prefix:tool^))))

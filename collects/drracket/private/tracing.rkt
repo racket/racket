@@ -18,7 +18,8 @@
   (import [prefix drracket:frame: drracket:frame^]
           [prefix drracket:rep: drracket:rep^]
           [prefix drracket:init: drracket:init^]
-          [prefix drracket:unit: drracket:unit^])
+          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket: drracket:interface^])
   (export drracket:tracing^)
   
   (define-local-member-name

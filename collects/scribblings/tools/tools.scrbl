@@ -9,7 +9,9 @@
             (for-label racket/unit racket/contract)
             (for-label racket/base racket/gui)
             (for-label framework/framework)
-            (for-label drracket/syncheck-drracket-button))
+            (for-label drracket/syncheck-drracket-button
+                       drracket/check-syntax)
+            scribble/extract)
    
    (define (File x) @tt[x])
    (define (FileFirst x) @tt[x]) ;; indexing missing
@@ -66,8 +68,8 @@ help being early clients for DrRacket plugins.
 Plugins are designed for major extensions in DrRacket's
 functionality.  To extend the appearance
 or the functionality the DrRacket window (say, to annotate
-programs in certain ways, to add buttons to the DrRacket
-frame or to add additional languages to DrRacket) use a
+programs in certain ways or to add buttons to the DrRacket
+frame) use a
 tool. The Macro Stepper, the Syntax Checker, the Stepper,
 and the teaching languages are all implemented as tools.
 
@@ -574,6 +576,182 @@ for a list of the capabilities registered by default.
 @section{Check Syntax}
 
 Check Syntax is a part of the DrRacket collection, but is implemented via the tools API.
+
+@subsection{Accessing Check Syntax Programmatically}
+
+@defmodule[drracket/check-syntax]
+
+@defproc[(make-traversal [namespace namespace?]
+                         [path (or/c #f path-string?)])
+         (values (->* (syntax?) ((-> (and/c syntax?
+                                            (λ (x)
+                                              (define lst (syntax->list x))
+                                              (and lst (andmap identifier? lst))))
+                                     void?))
+                      void?)
+                 (-> void?))]{
+  This function creates some local state about a traversal of syntax objects
+  and returns two functions. The first one should be called with each of the
+  syntax objects that make up a program (there will be only one if the program
+  is a module) and then the second one should be called to indicate there are no
+  more. 
+  
+  The optional argument to the first function is called for each sequence
+  of binding identifiers encountered in @racket[define-values], @racket[define-syntaxes],
+  and @racket[define-values-for-syntax].
+  
+  During the dynamic extent of the call to the two result functions, the value
+  of the @racket[current-annotations] parameter is consulted and various
+  methods are invoked in the corresponding object (if any), to indicate
+  what has been found in the syntax object.
+}
+
+@defparam[current-annotations ca (or/c #f (is-a?/c syncheck-annotations<%>))]{
+  The methods of the value of this parameter are invoked by the functions returned
+  from @racket[make-traversal]. 
+}
+
+@definterface[syncheck-annotations<%> ()]{
+                                       
+  Classes implementing this interface are
+  accceptors of information about a traversal
+  of syntax objects. See @racket[make-traversal].
+  
+  Do not implement this interface directly, as it
+  is liable to change without warning. Instead, use
+  the @racket[annotations-mixin] and override
+  the methods you're interested in. The
+  @racket[annotations-mixin] will keep in sync
+  with this interface, providing methods that 
+  ignore their arguments. 
+
+  @defmethod[(syncheck:find-source-object [stx syntax?]) (or/c #f (not/c #f))]{
+    This should return @racket[#f] if the source of this syntax object is
+    uninteresting for annotations (if, for example, the only interesting
+    annotations are those in the original file and this is a syntax object
+    introduced by a macro and thus has a source location from some other file).
+    
+    Otherwise, it should return some (non-@racket[#f])
+    value that will then be passed to one of the other methods below as 
+    a @racket[_source-obj] argument.
+  }
+  
+ @defmethod[(syncheck:add-background-color [source-obj (not/c #f)] 
+                                           [start exact-nonnegative-integer?]
+                                           [end exact-nonnegative-integer?]
+                                           [color string?])
+            void?]{
+   Called to indicate that the color @racket[color] should be drawn on the background of 
+   the given range in the editor, when the mouse moves over it. This method is typically
+   called in conjuction with some other method that provides some other annotation
+   on the source.
+ }
+ @defmethod[(syncheck:add-require-open-menu [source-obj (not/c #f)]
+                                            [start exact-nonnegative-integer?]
+                                            [end exact-nonnegative-integer?]
+                                            [file path-string?])
+            void?]{
+   Called to indicate that there is a @racket[require] at the location from @racket[start] to @racket[end],
+   and that it corresponds to @racket[file]. Check Syntax adds a popup menu.
+ }
+                                                                 
+ @defmethod[(syncheck:add-docs-menu [source-obj (not/c #f)]
+                                    [start exact-nonnegative-integer?]
+                                    [end exact-nonnegative-integer?]
+                                    [id symbol?]
+                                    [label any/c]
+                                    [path any/c]
+                                    [tag any/c])
+            void?]{
+   Called to indicate that there is something that has documentation between the range @racket[start] and @racket[end]. The
+   documented identifier's name is given by @racket[id] and the docs are found in the html file @racket[path] at the
+   html tag @racket[tag]. The @racket[label] argument describes the binding for use in the menu item (although it may
+   be longer than 200 characters).
+ }
+                  
+ @defmethod[(syncheck:add-rename-menu [id symbol?]
+                                      [all-ids (listof (list/c (not/c #f) exact-nonnegative-integer? exact-nonnegative-integer?))]
+                                      [new-name-interferes? (-> symbol boolean?)])
+            void?]{
+   Called to indicate that there is a variable that can be renamed. The
+   identifier's name is @racket[id] and all of the occurrences of the identifier are given in the
+   list @racket[all-ids]. The @racket[new-name-interferes?] procedure determines if a potential name would 
+   interfere with the existing bindings.
+ }
+                  
+ @defmethod[(syncheck:add-arrow [start-source-obj (not/c #f)]
+                                [start-left exact-nonnegative-integer?]
+                                [start-right exact-nonnegative-integer?]
+                                [end-source-obj (not/c #f)]
+                                [end-left exact-nonnegative-integer?]
+                                [end-right exact-nonnegative-integer?]
+                                [actual? boolean?]
+                                [phase-level (or/c exact-nonnegative-integer? #f)])
+            void?]{
+   Called to indicate that there should be an arrow between the locations described by the first six arguments.
+   The @racket[phase-level] argument indicates the phase of the binding and the @racket[actual?] argument
+   indicates if the binding is a real one, or a predicted one from a syntax template (predicted bindings
+   are drawn with question marks in Check Syntax).
+ }
+ @defmethod[(syncheck:add-tail-arrow [from-source-obj (not/c #f)]
+                                     [from-pos exact-nonnegative-integer?]
+                                     [to-source-obj (not/c #f)]
+                                     [to-pos exact-nonnegative-integer?])
+            void?]{
+   Called to indicate that there are two expressions, beginning at @racket[from-pos] and @racket[to-pos]
+   that are in tail position with respect to each other.
+ }
+ @defmethod[(syncheck:add-mouse-over-status [source-obj (not/c #f)]
+                                            [pos-left exact-nonnegative-integer?]
+                                            [pos-right exact-nonnegative-integer?]
+                                            [str string?])
+            void?]{
+   Called to indicate that the message in @racket[str] should be shown when the mouse passes over the given position.
+ }
+ @defmethod[(syncheck:add-jump-to-definition [source-obj (not/c #f)] 
+                                             [start exact-nonnegative-integer?]
+                                             [end exact-nonnegative-integer?]
+                                             [id any/c]
+                                             [filename path-string?])
+            void?]{
+   Called to indicate that there is some identifier at the given location (named @racket[id]) that
+   is defined in the file @racket[filename].
+ }
+ @defmethod[(syncheck:color-range [source-obj (not/c #f)]
+                                  [start exact-nonnegative-integer?]
+                                  [finish exact-nonnegative-integer?]
+                                  [style-name any/c]
+                                  [mode any/c])
+            void?]{
+   Called to indicate that the given location should be colored according to the style @racket[style-name] when
+   in @racket[mode]. The mode either indicates regular check syntax or is used indicate blame for potential contract
+   violations (and still experimental).
+ }
+}
+
+@defmixin[annotations-mixin () (syncheck-annotations<%>)]{
+  Supplies all of the methods in @racket[syncheck-annotations<%>]
+  with default behavior. Be sure to use this mixin to future-proof
+  your code and then override the methods you're interested in.
+}
+
+@(define-syntax-rule 
+   (syncheck-method-id x ...)
+   (begin @defidform[x]{Bound to an identifier created with @racket[define-local-member-name]
+                                                           that is used in @racket[syncheck-annotations<%>].}
+          ...))
+@syncheck-method-id[syncheck:find-source-editor
+                    syncheck:add-background-color
+                    syncheck:add-require-open-menu
+                    syncheck:add-docs-menu
+                    syncheck:add-rename-menu
+                    syncheck:add-arrow
+                    syncheck:add-tail-arrow
+                    syncheck:add-mouse-over-status
+                    syncheck:add-jump-to-definition
+                    syncheck:color-range]
+
+@subsection{Check Syntax Button}
 
 @defmodule[drracket/syncheck-drracket-button]
 

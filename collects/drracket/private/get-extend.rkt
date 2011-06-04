@@ -8,6 +8,7 @@
         [prefix drracket:rep: drracket:rep^]
         [prefix drracket:debug: drracket:debug^]
         [prefix drracket:tracing: drracket:tracing^]
+        [prefix drracket:module-language: drracket:module-language/int^]
         [prefix drracket:module-language-tools: drracket:module-language-tools^])
 (export drracket:get/extend^)
 
@@ -45,11 +46,12 @@
          built)))))
 
 (define (get-base-tab%)
-  (drracket:module-language-tools:tab-mixin
-   (drracket:tracing:tab-mixin
-    (drracket:debug:test-coverage-tab-mixin
-     (drracket:debug:profile-tab-mixin
-      drracket:unit:tab%)))))
+  (drracket:module-language:module-language-online-expand-tab-mixin
+   (drracket:module-language-tools:tab-mixin
+    (drracket:tracing:tab-mixin
+     (drracket:debug:test-coverage-tab-mixin
+      (drracket:debug:profile-tab-mixin
+       drracket:unit:tab%))))))
 
 (define-values (extend-tab get-tab) (make-extender get-base-tab% 'tab%))
 
@@ -82,10 +84,11 @@
   (make-extender get-base-interactions-text% 'interactions-text%))
 
 (define (get-base-definitions-text%)
-  (drracket:module-language-tools:definitions-text-mixin
-   (drracket:debug:test-coverage-definitions-text-mixin
-    (drracket:debug:profile-definitions-text-mixin
-     (drracket:unit:get-definitions-text%)))))
+  (drracket:module-language:module-language-online-expand-text-mixin
+   (drracket:module-language-tools:definitions-text-mixin
+    (drracket:debug:test-coverage-definitions-text-mixin
+     (drracket:debug:profile-definitions-text-mixin
+      (drracket:unit:get-definitions-text%))))))
 
 (define-values (extend-definitions-text get-definitions-text)
   (make-extender get-base-definitions-text% 'definitions-text%))

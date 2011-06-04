@@ -30,7 +30,8 @@
         [prefix drracket:tracing: drracket:tracing^]
         [prefix drracket:module-language: drracket:module-language^]
         [prefix drracket:module-language-tools: drracket:module-language-tools^]
-        [prefix drracket:tools-drs: drracket:tools-drs^])
+        [prefix drracket:tools-drs: drracket:tools-drs^]
+        [prefix drracket: drracket:interface^])
 (export drracket:tools^)
 
 ;; An installed-tool is
@@ -451,6 +452,7 @@
 
 ;; run-phases : -> void
 (define (run-phases phase1-extras phase2-extras)
+  (drracket:module-language-tools:no-more-online-expansion-handlers)
   (let* ([after-phase1 (run-one-phase 'phase1
                                       (string-constant tool-error-phase1)
                                       successfully-loaded-tool-phase1

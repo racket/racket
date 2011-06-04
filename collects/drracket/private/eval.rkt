@@ -6,9 +6,11 @@
            racket/class
            syntax/toplevel
            framework
+           "eval-helpers.rkt"
            "drsig.rkt")
   
-  ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
+  ;; to ensure this guy is loaded (and the snipclass installed)
+  ;; in the drracket namespace & eventspace
   ;; these things are for effect only!
   (require mrlib/cache-image-snip
            (prefix-in image-core: mrlib/image-core))
@@ -166,22 +168,7 @@
     (define (set-basic-parameters snip-classes #:gui-modules? [gui-modules? #t])
       (for-each (λ (snip-class) (send (get-the-snip-class-list) add snip-class))
                 snip-classes)
-      
-      (let ([cust (current-custodian)])
-        (define (drracket-plain-exit-handler arg)
-          (custodian-shutdown-all cust))
-        (exit-handler drracket-plain-exit-handler))
-      
-      (current-thread-group (make-thread-group))
-      (current-command-line-arguments #())
-      (current-pseudo-random-generator (make-pseudo-random-generator))
-      (current-evt-pseudo-random-generator (make-pseudo-random-generator))
-      (read-curly-brace-as-paren #t)
-      (read-square-bracket-as-paren #t)
-      (error-print-width 250)
-      (current-ps-setup (make-object ps-setup%))
-      
-      (current-namespace (make-empty-namespace))
+      (set-basic-parameters/no-gui)
       (for-each (λ (x) (namespace-attach-module drracket:init:system-namespace x))
                 to-be-copied-module-names)
       (when gui-modules?
@@ -196,8 +183,7 @@
     
     ;; these module specs are copied over to each new user's namespace 
     (define to-be-copied-module-specs
-      (list 'racket/base 
-            ''#%foreign
+      (list ''#%foreign
             '(lib "mzlib/pconvert-prop.rkt")
             '(lib "planet/terse-info.rkt")))
     

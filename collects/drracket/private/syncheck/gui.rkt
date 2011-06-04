@@ -19,12 +19,16 @@ If the namespace does not, they are colored the unbound color.
 
 (require string-constants
          racket/unit
+         racket/match
          racket/contract
          racket/class
          racket/list
          racket/promise
          racket/pretty
          racket/dict
+         racket/set
+         racket/runtime-path
+         racket/place
          data/interval-map
          drracket/tool
          syntax/toplevel
@@ -41,10 +45,12 @@ If the namespace does not, they are colored the unbound color.
          net/uri-codec
          browser/external
          (for-syntax racket/base)
+         (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
          "intf.rkt"
          "colors.rkt"
-         "traversals.rkt")
+         "traversals.rkt"
+         "annotate.rkt")
 (provide tool@)
 
 (define orig-output-port (current-output-port))
@@ -64,10 +70,89 @@ If the namespace does not, they are colored the unbound color.
 (define cs-mode-menu-show-client-obligations (string-constant cs-mode-menu-show-client-obligations))
 (define cs-mode-menu-show-syntax (string-constant cs-mode-menu-show-syntax))
 
+(define cs-syncheck-running "Check Syntax Running")
+
 (preferences:set-default 'drracket:syncheck-mode 'default-mode
                          (λ (x) (memq x '(default-mode 
                                            my-obligations-mode 
                                            client-obligations-mode))))
+
+(define (syncheck-add-to-preferences-panel parent)
+  (color-prefs:build-color-selection-panel parent
+                                           lexically-bound-variable-style-pref
+                                           lexically-bound-variable-style-name
+                                           (string-constant cs-lexical-variable))
+  (color-prefs:build-color-selection-panel parent
+                                           imported-variable-style-pref
+                                           imported-variable-style-name
+                                           (string-constant cs-imported-variable))
+  (color-prefs:build-color-selection-panel parent
+                                           set!d-variable-style-pref
+                                           set!d-variable-style-name
+                                           (string-constant cs-set!d-variable))
+  (color-prefs:build-color-selection-panel parent
+                                           unused-require-style-pref
+                                           unused-require-style-name
+                                           (string-constant cs-unused-require))
+  (color-prefs:build-color-selection-panel parent
+                                           free-variable-style-pref
+                                           free-variable-style-name
+                                           (string-constant cs-free-variable))
+  
+  (color-prefs:build-color-selection-panel parent
+                                           my-obligation-style-pref
+                                           my-obligation-style-name
+                                           cs-my-obligation-color)
+  (color-prefs:build-color-selection-panel parent
+                                           their-obligation-style-pref
+                                           their-obligation-style-name
+                                           cs-their-obligation-color)
+  (color-prefs:build-color-selection-panel parent
+                                           unk-obligation-style-pref
+                                           unk-obligation-style-name
+                                           cs-unk-obligation-color)
+  (color-prefs:build-color-selection-panel parent
+                                           both-obligation-style-pref
+                                           both-obligation-style-name
+                                           cs-both-obligation-color))
+
+(color-prefs:register-color-preference lexically-bound-variable-style-pref
+                                       lexically-bound-variable-style-name
+                                       (make-object color% 81 112 203)
+                                       (make-object color% 50 163 255))
+(color-prefs:register-color-preference set!d-variable-style-pref
+                                       set!d-variable-style-name
+                                       (send the-color-database find-color "firebrick")
+                                       (send the-color-database find-color "pink"))
+(color-prefs:register-color-preference unused-require-style-pref
+                                       unused-require-style-name
+                                       (send the-color-database find-color "red")
+                                       (send the-color-database find-color "pink"))
+(color-prefs:register-color-preference free-variable-style-pref
+                                       free-variable-style-name
+                                       (send the-color-database find-color "red")
+                                       (send the-color-database find-color "pink"))
+
+(color-prefs:register-color-preference imported-variable-style-pref
+                                       imported-variable-style-name
+                                       (make-object color% 68 0 203)
+                                       (make-object color% 166 0 255))
+(color-prefs:register-color-preference my-obligation-style-pref
+                                       my-obligation-style-name
+                                       (send the-color-database find-color "firebrick")
+                                       (send the-color-database find-color "pink"))
+(color-prefs:register-color-preference their-obligation-style-pref
+                                       their-obligation-style-name
+                                       (make-object color% 0 116 0)
+                                       (send the-color-database find-color "limegreen"))
+(color-prefs:register-color-preference unk-obligation-style-pref
+                                       unk-obligation-style-name
+                                       (send the-color-database find-color "black")
+                                       (send the-color-database find-color "white"))
+(color-prefs:register-color-preference both-obligation-style-pref
+                                       both-obligation-style-name
+                                       (make-object color% 139 142 28)
+                                       (send the-color-database find-color "khaki"))
 
 (define tool@ 
   (unit 
@@ -201,6 +286,7 @@ If the namespace does not, they are colored the unbound color.
                 (when (and st
                            (is-a? st drracket:unit:definitions-text<%>))
                   (let ([tab (send st get-tab)])
+                    (send (send tab get-frame) set-syncheck-running-mode #f)
                     (send tab syncheck:clear-error-message)
                     (send tab syncheck:clear-highlighting))))))
           
@@ -217,12 +303,12 @@ If the namespace does not, they are colored the unbound color.
         (let* ([cursor-arrow (make-object cursor% 'arrow)])
           (class* super% (syncheck-text<%>)
             (inherit set-cursor get-admin invalidate-bitmap-cache set-position
-                     get-pos/text position-location
+                     get-pos/text get-pos/text-dc-location position-location
                      get-canvas last-position dc-location-to-editor-location
                      find-position begin-edit-sequence end-edit-sequence
                      highlight-range unhighlight-range
                      paragraph-end-position first-line-currently-drawn-specially?)
-
+            
             ;; arrow-records : (U #f hash[text% => arrow-record])
             ;; arrow-record = interval-map[(listof arrow-entry)]
             ;; arrow-entry is one of
@@ -418,6 +504,27 @@ If the namespace does not, they are colored the unbound color.
                 (hash-set! style-mapping mode (cons (list txt start finish style)
                                                     (hash-ref style-mapping mode '())))))
             
+            (define/public (syncheck:color-range source start finish style-name mode)
+              (when (is-a? source text%)
+                (define (apply-style/remember ed start finish style mode)
+                  (let ([outermost (find-outermost-editor ed)])
+                    (and (is-a? outermost syncheck-text<%>)
+                         (send outermost syncheck:apply-style/remember ed start finish style mode))))
+                
+                (define (find-outermost-editor ed)
+                  (let loop ([ed ed])
+                    (let ([admin (send ed get-admin)])
+                      (if (is-a? admin editor-snip-editor-admin<%>)
+                          (let* ([enclosing-snip (send admin get-snip)]
+                                 [enclosing-snip-admin (send enclosing-snip get-admin)])
+                            (loop (send enclosing-snip-admin get-editor)))
+                          ed))))
+                
+                (let ([style (send (send source get-style-list)
+                                   find-named-style
+                                   style-name)])
+                  (apply-style/remember source start finish style mode))))
+
             ;; add-to-cleanup/apply-style : (is-a?/c text%) number number style% symbol -> boolean
             (define/private (add-to-cleanup/apply-style txt start finish style)
               (cond
@@ -429,15 +536,142 @@ If the namespace does not, they are colored the unbound color.
                  #t]
                 [else #f]))
             
-            (define/public (syncheck:add-menu text start-pos end-pos key make-menu)
+            (define/public (syncheck:add-require-open-menu text start-pos end-pos file)
+              (define (make-require-open-menu file)
+                (λ (menu)
+                  (let-values ([(base name dir?) (split-path file)])
+                    (instantiate menu-item% ()
+                      (label (fw:gui-utils:format-literal-label (string-constant cs-open-file) (path->string name)))
+                      (parent menu)
+                      (callback (λ (x y) (fw:handler:edit-file file))))
+                    (void))))
+              (syncheck:add-menu text start-pos end-pos #f (make-require-open-menu file)))
+            
+            (define/public (syncheck:add-docs-menu text start-pos end-pos id the-label path tag)
+              (syncheck:add-menu 
+               text start-pos end-pos id
+               (λ (menu)
+                 (instantiate menu-item% ()
+                   (parent menu)
+                   (label (gui-utils:format-literal-label "~a" the-label))
+                   (callback
+                    (λ (x y)
+                      (let* ([url (path->url path)]
+                             [url2 (if tag
+                                       (make-url (url-scheme url)
+                                                 (url-user url)
+                                                 (url-host url)
+                                                 (url-port url)
+                                                 (url-path-absolute? url)
+                                                 (url-path url)
+                                                 (url-query url)
+                                                 tag)
+                                       url)])
+                        (send-url (url->string url2)))))))))
+            
+            (define/public (syncheck:add-rename-menu id-as-sym to-be-renamed/poss name-dup?)
+              (define (make-menu menu)
+                (let ([name-to-offer (format "~a" id-as-sym)])
+                  (instantiate menu-item% ()
+                    (parent menu)
+                    (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
+                    (callback
+                     (λ (x y)
+                       (let ([frame-parent (find-menu-parent menu)])
+                         (rename-callback name-to-offer
+                                          frame-parent)))))))
+              
+              ;; rename-callback : string 
+              ;;                   (and/c syncheck-text<%> definitions-text<%>)
+              ;;                   (list source number number)
+              ;;                   (listof id-set) 
+              ;;                   (union #f (is-a?/c top-level-window<%>)) 
+              ;;                -> void
+              ;; callback for the rename popup menu item
+              (define (rename-callback name-to-offer parent)
+                (let ([new-str
+                       (fw:keymap:call/text-keymap-initializer
+                        (λ ()
+                          (get-text-from-user
+                           (string-constant cs-rename-id)
+                           (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
+                           parent
+                           name-to-offer)))])
+                  (when new-str
+                    (define new-sym (format "~s" (string->symbol new-str)))
+                    (define dup-name? (name-dup? new-sym))
+                    
+                    (define do-renaming?
+                      (or (not dup-name?)
+                          (equal?
+                           (message-box/custom
+                            (string-constant check-syntax)
+                            (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
+                                                               new-sym)
+                            (string-constant cs-rename-anyway)
+                            (string-constant cancel)
+                            #f
+                            parent
+                            '(stop default=2))
+                           1)))
+                    
+                    (when do-renaming?
+                      (unless (null? to-be-renamed/poss)
+                        (let ([txts (list this)])
+                          (define positions-to-rename 
+                            (remove-duplicates
+                             (sort to-be-renamed/poss
+                                   >
+                                   #:key cadr)))
+                          (begin-edit-sequence)
+                          (for ([info (in-list positions-to-rename)])
+                            (define source-editor (list-ref info 0))
+                            (define start (list-ref info 1))
+                            (define end (list-ref info 2))
+                            (when (is-a? source-editor text%)
+                              (unless (memq source-editor txts)
+                                (send source-editor begin-edit-sequence)
+                                (set! txts (cons source-editor txts)))
+                              (send source-editor delete start end #f)
+                              (send source-editor insert new-sym start start #f)))
+                          (invalidate-bitmap-cache)
+                          (for ([txt (in-list txts)])
+                            (send txt end-edit-sequence))))))))
+              
+              
+              ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
+              (define (find-menu-parent menu)
+                (let loop ([menu menu])
+                  (cond
+                    [(is-a? menu menu-bar%) (send menu get-frame)]
+                    [(is-a? menu popup-menu%)
+                     (let ([target (send menu get-popup-target)])
+                       (cond
+                         [(is-a? target editor<%>) 
+                          (let ([canvas (send target get-canvas)])
+                            (and canvas
+                                 (send canvas get-top-level-window)))]
+                         [(is-a? target window<%>) 
+                          (send target get-top-level-window)]
+                         [else #f]))]
+                    [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
+                    [else #f])))
+              
+              (for ([loc (in-list to-be-renamed/poss)])
+                (define source (list-ref loc 0))
+                (define start (list-ref loc 1))
+                (define fin (list-ref loc 2))
+                (syncheck:add-menu source start fin id-as-sym make-menu)))
+              
+            (define/private (syncheck:add-menu text start-pos end-pos key make-menu)
               (when arrow-records
                 (when (and (<= 0 start-pos end-pos (last-position)))
-                  (add-to-range/key text start-pos end-pos make-menu key #t))))
+                  (add-to-range/key text start-pos end-pos make-menu key (and key #t)))))
             
-            (define/public (syncheck:add-background-color text color start fin key)
+            (define/public (syncheck:add-background-color text start fin color)
               (when arrow-records
                 (when (is-a? text text:basic<%>)
-                  (add-to-range/key text start fin (make-colored-region color text start fin) key #f))))
+                  (add-to-range/key text start fin (make-colored-region color text start fin) #f #f))))
             
             ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
             ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
@@ -445,13 +679,13 @@ If the namespace does not, they are colored the unbound color.
                                                end-text end-pos-left end-pos-right
                                                actual? level)
               (when arrow-records
-                (let* ([arrow (make-var-arrow #f #f #f #f
-                                              start-text start-pos-left start-pos-right
-                                              end-text end-pos-left end-pos-right
-                                              actual? level)])
-                  (when (add-to-bindings-table
-                         start-text start-pos-left start-pos-right
-                         end-text end-pos-left end-pos-right)
+                (when (add-to-bindings-table
+                       start-text start-pos-left start-pos-right
+                       end-text end-pos-left end-pos-right)
+                  (let ([arrow (make-var-arrow #f #f #f #f
+                                               start-text start-pos-left start-pos-right
+                                               end-text end-pos-left end-pos-right
+                                               actual? level)])
                     (add-to-range/key start-text start-pos-left start-pos-right arrow #f #f)
                     (add-to-range/key end-text end-pos-left end-pos-right arrow #f #f)))))
             
@@ -469,8 +703,9 @@ If the namespace does not, they are colored the unbound color.
             
             ;; syncheck:add-mouse-over-status : text pos-left pos-right string -> void
             (define/public (syncheck:add-mouse-over-status text pos-left pos-right str)
-              (when arrow-records
-                (add-to-range/key text pos-left pos-right str #f #f)))
+              (let ([str (gui-utils:format-literal-label "~a" str)])
+                (when arrow-records
+                  (add-to-range/key text pos-left pos-right str #f #f))))
             
             ;; add-to-range/key : text number number any any boolean -> void
             ;; adds `key' to the range `start' - `end' in the editor
@@ -634,7 +869,18 @@ If the namespace does not, they are colored the unbound color.
               (for-each-tail-arrows/to/from tail-arrow-from-pos tail-arrow-from-text
                                             tail-arrow-to-pos tail-arrow-to-text))
             
+            (define last-known-mouse-x #f)
+            (define last-known-mouse-y #f)
             (define/override (on-event event)
+              
+              (cond
+                [(send event leaving?)
+                 (set! last-known-mouse-x #f)
+                 (set! last-known-mouse-y #f)]
+                [else
+                 (set! last-known-mouse-x (send event get-x))
+                 (set! last-known-mouse-y (send event get-y))])
+              
               (if arrow-records
                   (cond
                     [(send event leaving?)
@@ -650,36 +896,7 @@ If the namespace does not, they are colored the unbound color.
                      (super on-event event)]
                     [(or (send event moving?)
                          (send event entering?))
-                     (let-values ([(pos text) (get-pos/text event)])
-                       (cond
-                         [(and pos (is-a? text text%))
-                          (unless (and (equal? pos cursor-location)
-                                       (eq? cursor-text text))
-                            (set! cursor-location pos)
-                            (set! cursor-text text)
-                            
-                            (let* ([arrow-record (hash-ref arrow-records cursor-text #f)]
-                                   [eles (and arrow-record (interval-map-ref arrow-record cursor-location null))])
-                              
-                              (unless (equal? cursor-eles eles)
-                                (set! cursor-eles eles)
-                                (update-docs-background eles)
-                                (when eles
-                                  (update-status-line eles)
-                                  (for ([ele (in-list eles)])
-                                    (cond [(arrow? ele)
-                                           (update-arrow-poss ele)]))
-                                  (invalidate-bitmap-cache)))))]
-                         [else
-                          (update-docs-background #f)
-                          (let ([f (get-top-level-window)])
-                            (when f
-                              (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
-                          (when (or cursor-location cursor-text)
-                            (set! cursor-location #f)
-                            (set! cursor-text #f)
-                            (set! cursor-eles #f)
-                            (invalidate-bitmap-cache))]))
+                     (syncheck:update-drawn-arrows)
                      (super on-event event)]
                     [(send event button-down? 'right)
                      (define menu
@@ -694,6 +911,40 @@ If the namespace does not, they are colored the unbound color.
                         (super on-event event)])]
                     [else (super on-event event)])
                   (super on-event event)))
+            
+            (define/public (syncheck:update-drawn-arrows)
+              (let-values ([(pos text) (if (and last-known-mouse-x last-known-mouse-y)
+                                           (get-pos/text-dc-location last-known-mouse-x last-known-mouse-y)
+                                           (values #f #f))])
+                (cond
+                  [(and pos (is-a? text text%))
+                   (unless (and (equal? pos cursor-location)
+                                (eq? cursor-text text))
+                     (set! cursor-location pos)
+                     (set! cursor-text text)
+                     
+                     (let* ([arrow-record (hash-ref arrow-records cursor-text #f)]
+                            [eles (and arrow-record (interval-map-ref arrow-record cursor-location null))])
+                       
+                       (unless (equal? cursor-eles eles)
+                         (set! cursor-eles eles)
+                         (update-docs-background eles)
+                         (when eles
+                           (update-status-line eles)
+                           (for ([ele (in-list eles)])
+                             (cond [(arrow? ele)
+                                    (update-arrow-poss ele)]))
+                           (invalidate-bitmap-cache)))))]
+                  [else
+                   (update-docs-background #f)
+                   (let ([f (get-top-level-window)])
+                     (when f
+                       (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
+                   (when (or cursor-location cursor-text)
+                     (set! cursor-location #f)
+                     (set! cursor-text #f)
+                     (set! cursor-eles #f)
+                     (invalidate-bitmap-cache))])))
 
             (define/public (syncheck:build-popup-menu pos text)
               (and pos
@@ -1002,7 +1253,31 @@ If the namespace does not, they are colored the unbound color.
                 
                 (for ((txt (in-list edit-sequences)))
                   (send txt end-edit-sequence))))
-                          
+
+            (define/public (syncheck:find-source-object stx)
+              (cond
+                [(not (syntax-source stx)) #f]
+                [(and (symbol? (syntax-source stx))
+                      (text:lookup-port-name (syntax-source stx)))
+                 => values]
+                [else
+                 (let txt-loop ([text this])
+                   (cond
+                     [(and (is-a? text text:basic<%>)
+                           (send text port-name-matches? (syntax-source stx)))
+                      text]
+                     [else
+                      (let snip-loop ([snip (send text find-first-snip)])
+                        (cond
+                          [(not snip)
+                           #f]
+                          [(and (is-a? snip editor-snip%)
+                                (send snip get-editor))
+                           (or (txt-loop (send snip get-editor))
+                               (snip-loop (send snip next)))]
+                          [else 
+                           (snip-loop (send snip next))]))]))]))
+            
             (super-new)))))
     
     (define syncheck-frame<%>
@@ -1094,6 +1369,96 @@ If the namespace does not, they are colored the unbound color.
                     (if visible?
                         (list check-syntax-button)
                         '())))))
+        
+        ;; set-syncheck-running-mode : (or/c (box boolean?) 'button #f) -> boolean
+        ;; records how a particular check syntax is being played out in the editor right now.
+        ;; - #f means nothing is currently running.
+        ;; - 'button means someone clicked the check syntax button (or the menu item or keyboard shortcut...)
+        ;; - the boxed boolean means that a trace is being replayed from the other place.
+        ;;   if the box is set to #f, then the trace replay will be stopped.
+        ;; if #f is returned, then the mode change is not allowed; this only happens when
+        ;;    a box is passed in
+        (define/public (set-syncheck-running-mode mode)
+          (cond
+            [(not mode)
+             (when (box? current-syncheck-running-mode)
+               (set-box! current-syncheck-running-mode #f))
+             (set! current-syncheck-running-mode #f)
+             #t]
+            [(box? mode)
+             (cond
+               [(eq? current-syncheck-running-mode 'button)
+                #f]
+               [(eq? mode current-syncheck-running-mode)
+                ;; this shouldn't happen, I think
+                #t]
+               [else
+                (when (box? current-syncheck-running-mode)
+                  (set-box! current-syncheck-running-mode #f))
+                (set! current-syncheck-running-mode mode)
+                #t])]
+            [(eq? 'button mode)
+             (when (box? current-syncheck-running-mode)
+               (set-box! current-syncheck-running-mode #f))
+             (set! current-syncheck-running-mode mode)
+             #t]
+            [else
+             (error 'set-syncheck-running-mode "unknown new mode ~s\n" mode)]))
+        
+        (define current-syncheck-running-mode #f)
+    
+        (define/public (replay-compile-comp-trace defs-text val)
+          (define bx (box #t))
+          (when (set-syncheck-running-mode bx)
+            (send (send defs-text get-tab) add-bkg-running-color 'syncheck "forestgreen" cs-syncheck-running)
+            (send defs-text syncheck:init-arrows)
+            (let loop ([val val]
+                       [i 0])
+              (cond
+                [(null? val)
+                 (send defs-text syncheck:update-drawn-arrows)
+                 (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
+                 (set-syncheck-running-mode #f)]
+                [(= i 500)
+                 (queue-callback
+                  (λ ()
+                    (when (unbox bx)
+                      (loop (cdr val) 0)))
+                  #f)]
+                [else
+                 (process-trace-element defs-text (car val))
+                 (loop (cdr val) (+ i 1))]))))
+        
+        (define/private (process-trace-element defs-text x)
+          ;; using 'defs-text' all the time is wrong in the case of embedded editors,
+          ;; but they already don't work and we've arranged for them to not appear here ....
+          (match x
+            [`(syncheck:add-arrow ,start-text ,start-pos-left ,start-pos-right
+                                  ,end-text ,end-pos-left ,end-pos-right
+                                  ,actual? ,level)
+             (send defs-text syncheck:add-arrow
+                   defs-text start-pos-left start-pos-right
+                   defs-text end-pos-left end-pos-right 
+                   actual? level)]
+            [`(syncheck:add-tail-arrow ,from-text ,from-pos ,to-text ,to-pos)
+             (send defs-text syncheck:add-tail-arrow defs-text from-pos defs-text to-pos)]
+            [`(syncheck:add-mouse-over-status ,text ,pos-left ,pos-right ,str)
+             (send defs-text syncheck:add-mouse-over-status defs-text pos-left pos-right str)]
+            [`(syncheck:add-background-color ,text ,color ,start ,fin)
+             (send defs-text syncheck:add-background-color defs-text color start fin)]
+            [`(syncheck:add-jump-to-definition ,text ,start ,end ,id ,filename)
+             (send defs-text syncheck:add-jump-to-definition defs-text start end id filename)]
+            [`(syncheck:add-require-open-menu ,text ,start-pos ,end-pos ,file)
+             (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
+            [`(syncheck:add-docs-menu ,text ,start-pos ,end-pos ,key ,the-label ,path ,tag)
+             (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path tag)]
+            [`(syncheck:add-rename-menu ,id-as-sym ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
+             (define (name-dup? name) (place-channel-put/get name-dup-pc (list name-dup-id name)))
+             (define to-be-renamed/poss/fixed
+               (for/list ([lst (in-list to-be-renamed/poss)])
+                 (list defs-text (list-ref lst 1) (list-ref lst 2))))
+             (send defs-text syncheck:add-rename-menu id-as-sym to-be-renamed/poss/fixed 
+                   name-dup?)]))
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)
@@ -1224,165 +1589,212 @@ If the namespace does not, they are colored the unbound color.
                (open-status-line 'drracket:check-syntax:status)
                (update-status-line 'drracket:check-syntax:status status-init)
                (ensure-rep-hidden)
-               (let-values ([(expanded-expression expansion-completed) (make-traversal)])
-                 (let* ([definitions-text (get-definitions-text)]
-                        [interactions-text (get-interactions-text)]
-                        [drs-eventspace (current-eventspace)]
-                        [the-tab (get-current-tab)])
-                   (let-values ([(old-break-thread old-custodian) (send the-tab get-breakables)])
-                     (let* ([user-namespace #f]
-                            [user-directory #f]
-                            [user-custodian #f]
-                            [normal-termination? #f]
-                            
-                            [show-error-report/tab
-                             (λ () ; =drs=
-                               (send the-tab turn-on-error-report)
-                               (send (send the-tab get-error-report-text) scroll-to-position 0)
-                               (when (eq? (get-current-tab) the-tab)
-                                 (show-error-report)))]
-                            [cleanup
-                             (λ () ; =drs=
-                               (send the-tab set-breakables old-break-thread old-custodian)
-                               (send the-tab enable-evaluation)
-                               (close-status-line 'drracket:check-syntax:status)
-                               
-                               ;; do this with some lag ... not great, but should be okay.
-                               (let ([err-port (send (send the-tab get-error-report-text) get-err-port)])
-                                 (thread
-                                  (λ ()
-                                    (flush-output err-port)
-                                    (queue-callback
-                                     (λ ()
-                                       (unless (= 0 (send (send the-tab get-error-report-text) last-position))
-                                         (show-error-report/tab))))))))]
-                            [kill-termination
-                             (λ ()
-                               (unless normal-termination?
-                                 (parameterize ([current-eventspace drs-eventspace])
-                                   (queue-callback
-                                    (λ ()
-                                      (send the-tab syncheck:clear-highlighting)
-                                      (cleanup)
-                                      (custodian-shutdown-all user-custodian))))))]
-                            [error-display-semaphore (make-semaphore 0)]
-                            [uncaught-exception-raised
-                             (λ () ;; =user=
-                               (set! normal-termination? #t)
-                               (parameterize ([current-eventspace drs-eventspace])
-                                 (queue-callback
-                                  (λ () ;;  =drs=
-                                    (yield error-display-semaphore) ;; let error display go first
-                                    (send the-tab syncheck:clear-highlighting)
-                                    (cleanup)
-                                    (custodian-shutdown-all user-custodian)))))]
-                            [error-port (send (send the-tab get-error-report-text) get-err-port)]
-                            [output-port (send (send the-tab get-error-report-text) get-out-port)]
-                            [init-proc
-                             (λ () ; =user=
-                               (send the-tab set-breakables (current-thread) (current-custodian))
-                               (set-directory definitions-text)
-                               (current-error-port error-port)
-                               (current-output-port output-port)
-                               (error-display-handler 
-                                (λ (msg exn) ;; =user=
-                                  (parameterize ([current-eventspace drs-eventspace])
-                                    (queue-callback
-                                     (λ () ;; =drs=
-                                       
-                                       ;; this has to come first or else the positioning
-                                       ;; computations in the highlight-errors/exn method
-                                       ;; will be wrong by the size of the error report box
-                                       (show-error-report/tab)
-                                       
-                                       ;; a call like this one also happens in 
-                                       ;; drracket:debug:error-display-handler/stacktrace
-                                       ;; but that call won't happen here, because
-                                       ;; the rep is not in the current-rep parameter
-                                       (send interactions-text highlight-errors/exn exn))))
-                                  
-                                  (drracket:debug:error-display-handler/stacktrace 
-                                   msg 
-                                   exn 
-                                   '()
-                                   #:definitions-text definitions-text)
-                                  
-                                  (semaphore-post error-display-semaphore)))
-                               
-                               (error-print-source-location #f) ; need to build code to render error first
-                               (uncaught-exception-handler
-                                (let ([oh (uncaught-exception-handler)])
-                                  (λ (exn)
-                                    (uncaught-exception-raised)
-                                    (oh exn))))
-                               (update-status-line 'drracket:check-syntax:status status-expanding-expression)
-                               (set! user-custodian (current-custodian))
-                               (set! user-directory (current-directory)) ;; set by set-directory above
-                               (set! user-namespace (current-namespace)))])
-                       (send the-tab disable-evaluation) ;; this locks the editor, so must be outside.
-
-                       (define definitions-text-copy 
-                         (new (class text:basic%
-                                ;; overriding get-port-name like this ensures
-                                ;; that the resulting syntax objects are connected
-                                ;; to the actual definitions-text, not this copy
-                                (define/override (get-port-name)
-                                  (send definitions-text get-port-name))
-                                (super-new))))
-                       (define settings (send definitions-text get-next-settings))
-                       (define module-language?
-                         (is-a? (drracket:language-configuration:language-settings-language settings)
-                                       drracket:module-language:module-language<%>))
-                       (send definitions-text copy-self-to definitions-text-copy)
-                       (with-lock/edit-sequence
-                        definitions-text-copy
+               (define definitions-text (get-definitions-text))
+               (define interactions-text (get-interactions-text))
+               (define drs-eventspace (current-eventspace))
+               (define the-tab (get-current-tab))
+               (define-values (old-break-thread old-custodian) (send the-tab get-breakables))
+               
+               ;; set by the init-proc
+               (define expanded-expression void)
+               (define expansion-completed void)
+               (define user-custodian #f)
+               
+               (define normal-termination? #f)
+               
+               (define show-error-report/tab
+                 (λ () ; =drs=
+                   (send the-tab turn-on-error-report)
+                   (send (send the-tab get-error-report-text) scroll-to-position 0)
+                   (when (eq? (get-current-tab) the-tab)
+                     (show-error-report))))
+               (define cleanup
+                 (λ () ; =drs=
+                   (send the-tab set-breakables old-break-thread old-custodian)
+                   (send the-tab enable-evaluation)
+                   (set-syncheck-running-mode #f) 
+                   (close-status-line 'drracket:check-syntax:status)
+                   
+                   ;; do this with some lag ... not great, but should be okay.
+                   (let ([err-port (send (send the-tab get-error-report-text) get-err-port)])
+                     (thread
+                      (λ ()
+                        (flush-output err-port)
+                        (queue-callback
+                         (λ ()
+                           (unless (= 0 (send (send the-tab get-error-report-text) last-position))
+                             (show-error-report/tab)))))))))
+               (define kill-termination
+                 (λ ()
+                   (unless normal-termination?
+                     (parameterize ([current-eventspace drs-eventspace])
+                       (queue-callback
                         (λ ()
-                          (send the-tab clear-annotations)
-                          (send the-tab reset-offer-kill)
-                          (send (send the-tab get-defs) syncheck:init-arrows)
-                          (drracket:eval:expand-program
-                           #:gui-modules? #f
-                           (drracket:language:make-text/pos definitions-text-copy 0 (send definitions-text-copy last-position))
-                           settings
-                           (not module-language?)
-                           init-proc
-                           kill-termination
-                           (λ (sexp loop) ; =user=
-                             (cond
-                               [(eof-object? sexp)
-                                (set! normal-termination? #t)
-                                (parameterize ([current-eventspace drs-eventspace])
-                                  (queue-callback
-                                   (λ () ; =drs=
-                                     (with-lock/edit-sequence
-                                      definitions-text
-                                      (λ ()
-                                        (parameterize ([currently-processing-definitions-text definitions-text])
-                                          (expansion-completed user-namespace user-directory)
-                                          (send (send (get-current-tab) get-defs) set-syncheck-mode mode)
-                                          (update-menu-status (get-current-tab))
-                                          (send definitions-text syncheck:sort-bindings-table))))
-                                     (cleanup)
-                                     (custodian-shutdown-all user-custodian))))]
-                               [else
+                          (send the-tab syncheck:clear-highlighting)
+                          (cleanup)
+                          (custodian-shutdown-all user-custodian)))))))
+               (define error-display-semaphore (make-semaphore 0))
+               (define uncaught-exception-raised
+                 (λ () ;; =user=
+                   (set! normal-termination? #t)
+                   (parameterize ([current-eventspace drs-eventspace])
+                     (queue-callback
+                      (λ () ;;  =drs=
+                        (yield error-display-semaphore) ;; let error display go first
+                        (send the-tab syncheck:clear-highlighting)
+                        (cleanup)
+                        (custodian-shutdown-all user-custodian))))))
+               (define error-port (send (send the-tab get-error-report-text) get-err-port))
+               (define output-port (send (send the-tab get-error-report-text) get-out-port))
+               (define init-proc
+                 (λ () ; =user=
+                   (send the-tab set-breakables (current-thread) (current-custodian))
+                   (set-directory definitions-text)
+                   (current-error-port error-port)
+                   (current-output-port output-port)
+                   (error-display-handler 
+                    (λ (msg exn) ;; =user=
+                      (parameterize ([current-eventspace drs-eventspace])
+                        (queue-callback
+                         (λ () ;; =drs=
+                           
+                           ;; this has to come first or else the positioning
+                           ;; computations in the highlight-errors/exn method
+                           ;; will be wrong by the size of the error report box
+                           (show-error-report/tab)
+                           
+                           ;; a call like this one also happens in 
+                           ;; drracket:debug:error-display-handler/stacktrace
+                           ;; but that call won't happen here, because
+                           ;; the rep is not in the current-rep parameter
+                           (send interactions-text highlight-errors/exn exn))))
+                      
+                      (drracket:debug:error-display-handler/stacktrace 
+                       msg 
+                       exn 
+                       '()
+                       #:definitions-text definitions-text)
+                      
+                      (semaphore-post error-display-semaphore)))
+                   
+                   (error-print-source-location #f) ; need to build code to render error first
+                   (uncaught-exception-handler
+                    (let ([oh (uncaught-exception-handler)])
+                      (λ (exn)
+                        (uncaught-exception-raised)
+                        (oh exn))))
+                   (update-status-line 'drracket:check-syntax:status status-expanding-expression)
+                   (set!-values (expanded-expression expansion-completed) 
+                                (make-traversal (current-namespace)
+                                                (current-directory))) ;; set by set-directory above
+                   (set! user-custodian (current-custodian))))
+               
+               (set-syncheck-running-mode 'button)
+               (send the-tab disable-evaluation) ;; this locks the editor, so must be outside.
+               (define definitions-text-copy 
+                 (new (class text:basic%
+                        ;; overriding get-port-name like this ensures
+                        ;; that the resulting syntax objects are connected
+                        ;; to the actual definitions-text, not this copy
+                        (define/override (get-port-name)
+                          (send definitions-text get-port-name))
+                        (super-new))))
+               (define settings (send definitions-text get-next-settings))
+               (define module-language?
+                 (is-a? (drracket:language-configuration:language-settings-language settings)
+                        drracket:module-language:module-language<%>))
+               (send definitions-text copy-self-to definitions-text-copy)
+               (with-lock/edit-sequence
+                definitions-text-copy
+                (λ ()
+                  (send the-tab clear-annotations)
+                  (send the-tab reset-offer-kill)
+                  (send (send the-tab get-defs) syncheck:init-arrows)
+                  (drracket:eval:expand-program
+                   #:gui-modules? #f
+                   (drracket:language:make-text/pos definitions-text-copy 0 (send definitions-text-copy last-position))
+                   settings
+                   (not module-language?)
+                   init-proc
+                   kill-termination
+                   (λ (sexp loop) ; =user=
+                     (cond
+                       [(eof-object? sexp)
+                        (set! normal-termination? #t)
+                        (parameterize ([current-eventspace drs-eventspace])
+                          (queue-callback
+                           (λ () ; =drs=
+                             (with-lock/edit-sequence
+                              definitions-text
+                              (λ ()
+                                (parameterize ([current-annotations definitions-text])
+                                  (expansion-completed))
+                                (send (send (get-current-tab) get-defs) set-syncheck-mode mode)
+                                (update-menu-status (get-current-tab))
+                                (send definitions-text syncheck:sort-bindings-table)))
+                             (cleanup)
+                             (custodian-shutdown-all user-custodian))))]
+                       [else
+                        (open-status-line 'drracket:check-syntax:status)
+                        (unless module-language?
+                          (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
+                          (eval-compile-time-part-of-top-level sexp))
+                        (parameterize ([current-eventspace drs-eventspace])
+                          (queue-callback
+                           (λ () ; =drs=
+                             (with-lock/edit-sequence
+                              definitions-text
+                              (λ ()
                                 (open-status-line 'drracket:check-syntax:status)
-                                (unless module-language?
-                                  (update-status-line 'drracket:check-syntax:status status-eval-compile-time)
-                                  (eval-compile-time-part-of-top-level sexp))
-                                (parameterize ([current-eventspace drs-eventspace])
-                                  (queue-callback
-                                   (λ () ; =drs=
-                                     (with-lock/edit-sequence
-                                      definitions-text
-                                      (λ ()
-                                        (open-status-line 'drracket:check-syntax:status)
-                                        (update-status-line 'drracket:check-syntax:status status-coloring-program)
-                                        (parameterize ([currently-processing-definitions-text definitions-text])
-                                          (expanded-expression user-namespace user-directory sexp jump-to-id))
-                                        (close-status-line 'drracket:check-syntax:status))))))
-                                (update-status-line 'drracket:check-syntax:status status-expanding-expression)
-                                (close-status-line 'drracket:check-syntax:status)
-                                (loop)]))))))))))]))
+                                (update-status-line 'drracket:check-syntax:status status-coloring-program)
+                                (parameterize ([current-annotations definitions-text])
+                                  (expanded-expression sexp (if jump-to-id (make-visit-id jump-to-id) void)))
+                                (close-status-line 'drracket:check-syntax:status))))))
+                        (update-status-line 'drracket:check-syntax:status status-expanding-expression)
+                        (close-status-line 'drracket:check-syntax:status)
+                        (loop)]))))))]))
+
+        (define (make-visit-id jump-to-id)
+          (λ (vars)
+            (when jump-to-id
+              (for ([id (in-list (syntax->list vars))])
+                (let ([binding (identifier-binding id 0)])
+                  (when (pair? binding)
+                    (let ([nominal-source-id (list-ref binding 3)])
+                      (when (eq? nominal-source-id jump-to-id)
+                        (let ([stx id])
+                          (let ([src (find-source-editor stx)]
+                                [pos (syntax-position stx)]
+                                [span (syntax-span stx)])
+                            (when (and (is-a? src text%)
+                                       pos
+                                       span)
+                              (send src begin-edit-sequence)
+                              
+                              ;; try to scroll so stx's location is
+                              ;; near the top of the visible region
+                              (let ([admin (send src get-admin)])
+                                (when admin 
+                                  (let ([wb (box 0.0)]
+                                        [hb (box 0.0)]
+                                        [xb (box 0.0)]
+                                        [yb (box 0.0)])
+                                    (send admin get-view #f #f wb hb)
+                                    (send src position-location (- pos 1) xb yb #t #f #t)
+                                    (let ([w (unbox wb)]
+                                          [h (unbox hb)]
+                                          [x (unbox xb)]
+                                          [y (unbox yb)])
+                                      (send src scroll-editor-to 
+                                            (max 0 (- x (* .1 w)))
+                                            (max 0 (- y (* .1 h)))
+                                            w h
+                                            #t
+                                            'none)))))
+                              
+                              (send src set-position (- pos 1) (+ pos span -1))
+                              (send src end-edit-sequence))))))))))))
+
         
         ;; set-directory : text -> void
         ;; sets the current-directory and current-load-relative-directory
@@ -1506,4 +1918,14 @@ If the namespace does not, they are colored the unbound color.
     (drracket:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
     (drracket:get/extend:extend-definitions-text make-syncheck-text%)
     (drracket:get/extend:extend-unit-frame unit-frame-mixin #f)
-    (drracket:get/extend:extend-tab tab-mixin)))
+    (drracket:get/extend:extend-tab tab-mixin)
+    
+    (drracket:module-language-tools:add-online-expansion-handler
+     compile-comp.rkt
+     'go
+     (λ (defs-text val) (send (send (send defs-text get-canvas) get-top-level-window)
+                              replay-compile-comp-trace
+                              defs-text 
+                              val)))))
+
+(define-runtime-path compile-comp.rkt "online-comp.rkt")

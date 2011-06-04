@@ -22,7 +22,8 @@
          "tracing.rkt"
          "get-extend.rkt"
          "help-desk.rkt"
-         "module-language-tools.rkt")
+         "module-language-tools.rkt"
+         "interface.rkt")
 
 (provide drracket@)
 
@@ -39,11 +40,12 @@
           drracket:eval^
           drracket:modes^
           drracket:tracing^
-          drracket:module-language^
-          drracket:module-language-tools^)
-  (link init@ tools@ tools-drs@ modes@ text@ eval@ frame@ rep@ language@
-        module-overview@ unit@ debug@ multi-file-search@ get-extend@
-        language-configuration@ font@ module-language@ module-language-tools@
+          drracket:module-language/int^
+          drracket:module-language-tools^
+          drracket:interface^)
+  (link interface@ init@ tools@ tools-drs@ modes@ text@ eval@ frame@ rep@ language@
+        module-overview@ module-language@ unit@ debug@ multi-file-search@ get-extend@
+        language-configuration@ font@ module-language-tools@
         help-desk@ tracing@ app@
         main@))
 
@@ -65,8 +67,9 @@
     (prefix drracket:eval: drracket:eval^)
     (prefix drracket:modes: drracket:modes^)
     (prefix drracket:tracing: drracket:tracing^)
-    (prefix drracket:module-language: drracket:module-language^)
+    (prefix drracket:module-language: drracket:module-language/int^)
     (prefix drracket:module-language-tools: drracket:module-language-tools^)
+    (prefix drracket: drracket:interface^)
     
     (prefix drscheme:debug: drracket:debug^)
     (prefix drscheme:unit: drracket:unit^)
@@ -79,6 +82,7 @@
     (prefix drscheme:eval: drracket:eval^)
     (prefix drscheme:modes: drracket:modes^)
     (prefix drscheme:tracing: drracket:tracing^)
-    (prefix drscheme:module-language: drracket:module-language^)
-    (prefix drscheme:module-language-tools: drracket:module-language-tools^))
+    (prefix drscheme:module-language: drracket:module-language/int^)
+    (prefix drscheme:module-language-tools: drracket:module-language-tools^)
+    (prefix drscheme: drracket:interface^))
    drracket-unit@))

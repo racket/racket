@@ -6,30 +6,15 @@
          "contract-traversal.rkt"
          string-constants
          racket/unit
-         racket/contract
+         racket/set
          racket/class
          racket/list
-         racket/pretty
-         drracket/tool
-         syntax/toplevel
          syntax/boundmap
-         mrlib/switchable-button
-         (prefix-in drracket:arrow: drracket/arrow)
-         (prefix-in fw: framework/framework)
-         mred
-         framework
-         setup/xref
          scribble/xref
          scribble/manual-struct
-         net/url
-         net/uri-codec
-         browser/external
-         (for-syntax racket/base)
-         "../../syncheck-drracket-button.rkt")
+         (for-syntax racket/base))
 
-
-(provide make-traversal)    
-    
+(provide make-traversal)
     
     
     ;                                                                                                             
@@ -51,13 +36,13 @@
     
     
     
-    ;; make-traversal : -> (values (namespace syntax (union #f syntax) -> void)
-    ;;                             (namespace string[directory] -> void))
+    ;; make-traversal : namespace string[directory] -> (values (syntax (union #f syntax) -> void)
+    ;;                                                         (-> void))
     ;; returns a pair of functions that close over some state that
     ;; represents the top-level of a single program. The first value
     ;; is called once for each top-level expression and the second
     ;; value is called once, after all expansion is complete.
-    (define (make-traversal)
+    (define (make-traversal user-namespace user-directory)
       (let* ([tl-low-binders (make-id-set)]
              [tl-high-binders (make-id-set)]
              [tl-low-varrefs (make-id-set)]
@@ -73,7 +58,7 @@
              [tl-require-for-templates (make-hash)]
              [tl-require-for-labels (make-hash)]
              [expanded-expression
-              (λ (user-namespace user-directory sexp jump-to-id)
+              (λ (sexp [visit-id void])
                 (parameterize ([current-load-relative-directory user-directory])
                   (let ([is-module? (syntax-case sexp (module)
                                       [(module . rest) #t]
@@ -95,7 +80,7 @@
                              [require-for-templates (make-hash)]
                              [require-for-labels (make-hash)])
                           (annotate-basic sexp
-                                          user-namespace user-directory jump-to-id
+                                          user-namespace user-directory visit-id
                                           low-binders high-binders
                                           varrefs high-varrefs
                                           varsets high-varsets
@@ -121,7 +106,7 @@
                          (annotate-contracts sexp low-binders binding-inits))]
                       [else
                        (annotate-basic sexp
-                                       user-namespace user-directory jump-to-id
+                                       user-namespace user-directory visit-id
                                        tl-low-binders tl-high-binders
                                        tl-low-varrefs tl-high-varrefs
                                        tl-low-varsets tl-high-varsets
@@ -133,7 +118,7 @@
                                        tl-require-for-templates
                                        tl-require-for-labels)]))))]
              [expansion-completed
-              (λ (user-namespace user-directory)
+              (λ ()
                 (parameterize ([current-load-relative-directory user-directory])
                   (annotate-variables user-namespace
                                       user-directory
@@ -164,7 +149,7 @@
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
     (define (annotate-basic sexp 
-                            user-namespace user-directory jump-to-id
+                            user-namespace user-directory visit-id
                             low-binders high-binders 
                             low-varrefs high-varrefs 
                             low-varsets high-varsets
@@ -174,16 +159,7 @@
                             requires require-for-syntaxes require-for-templates require-for-labels)
       
       (let ([tail-ht (make-hasheq)]
-            [maybe-jump
-             (λ (vars)
-               (when jump-to-id
-                 (for-each (λ (id)
-                             (let ([binding (identifier-binding id 0)])
-                               (when (pair? binding)
-                                 (let ([nominal-source-id (list-ref binding 3)])
-                                   (when (eq? nominal-source-id jump-to-id)
-                                     (jump-to id))))))
-                           (syntax->list vars))))])
+            [maybe-jump (λ (vars) (visit-id vars))])
 
         (let level-loop ([sexp sexp]
                          [high-level? #f])
@@ -491,10 +467,7 @@
                                 require-for-templates
                                 require-for-labels)
       
-      (let ([rename-ht
-             ;; hash-table[(list source number number) -> (listof syntax)]
-             (make-hash)]
-            [unused-requires (make-hash)]
+      (let ([unused-requires (make-hash)]
             [unused-require-for-syntaxes (make-hash)]
             [unused-require-for-templates (make-hash)]
             [unused-require-for-labels (make-hash)]
@@ -528,8 +501,7 @@
                (λ (var varsets)
                  (when (syntax-original? var)
                    (color-variable var 0 varsets)
-                   (document-variable var 0)
-                   (record-renamable-var rename-ht var)))])
+                   (document-variable var 0)))])
           (for-each (λ (vars) 
                       (for-each (λ (var) (handle-var-bind var high-varsets)) 
                                 vars))
@@ -546,7 +518,6 @@
                  (when (syntax-original? var)
                    (document-variable var index))
                  (connect-identifier var
-                                     rename-ht
                                      binders
                                      unused/phases
                                      requires/phases
@@ -568,7 +539,6 @@
                                   (lambda (var)
                                     ;; no color variable
                                     (connect-identifier var
-                                                        rename-ht
                                                         low-binders
                                                         unused/phases
                                                         requires/phases
@@ -577,7 +547,6 @@
                                                         user-directory
                                                         #f)
                                     (connect-identifier var
-                                                        rename-ht
                                                         high-binders
                                                         unused/phases
                                                         requires/phases
@@ -586,7 +555,6 @@
                                                         user-directory
                                                         #f)
                                     (connect-identifier var
-                                                        rename-ht
                                                         template-binders ;; dummy; always empty
                                                         unused/phases
                                                         requires/phases
@@ -595,7 +563,6 @@
                                                         user-directory
                                                         #f)
                                     (connect-identifier var
-                                                        rename-ht
                                                         label-binders ;; dummy; always empty
                                                         unused/phases
                                                         requires/phases
@@ -610,7 +577,7 @@
          (λ (vars) 
            (for-each
             (λ (var) 
-              (color/connect-top rename-ht user-namespace user-directory low-binders var))
+              (color/connect-top user-namespace user-directory low-binders var))
             vars))
          (get-idss low-tops))
         
@@ -618,7 +585,7 @@
          (λ (vars) 
            (for-each
             (λ (var) 
-              (color/connect-top rename-ht user-namespace user-directory high-binders var))
+              (color/connect-top user-namespace user-directory high-binders var))
             vars))
          (get-idss high-tops))
         
@@ -627,22 +594,25 @@
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
         
-        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu k rename-ht id-sets)))))
-    
-        
-    ;; record-renamable-var : rename-ht syntax -> void
-    (define (record-renamable-var rename-ht stx)
-      (let ([key (list (syntax-source stx) (syntax-position stx) (syntax-span stx))])
-        (hash-set! rename-ht
-                   key
-                   (cons stx (hash-ref rename-ht key '())))))
+        (make-rename-menus id-sets)))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
     (define (color-unused requires unused)
       (hash-for-each
        unused
        (λ (k v)
-         (for-each (λ (stx) (color stx error-style-name 'default-mode))
+         (for-each (λ (stx) 
+                     (define defs-text (current-annotations))
+                     (define source-editor (find-source-editor stx))
+                     (when (and defs-text source-editor)
+                       (define pos (syntax-position stx))
+                       (define span (syntax-span stx))
+                       (when (and pos span)
+                         (define start (- pos 1))
+                         (define fin (+ start span))
+                         (send defs-text syncheck:add-background-color
+                               source-editor start fin "firebrick")))
+                     (color stx unused-require-style-name 'default-mode))
                    (hash-ref requires k)))))
     
     ;; connect-identifier : syntax
@@ -656,14 +626,12 @@
     ;;                      boolean
     ;;                   -> void
     ;; adds arrows and rename menus for binders/bindings
-    (define (connect-identifier var rename-ht all-binders
+    (define (connect-identifier var all-binders
                                 unused/phases requires/phases
                                 phase-level user-namespace user-directory actual?)
       (connect-identifier/arrow var all-binders 
                                 unused/phases requires/phases
-                                phase-level user-namespace user-directory actual?)
-      (when (and actual? (get-ids all-binders var))
-        (record-renamable-var rename-ht var)))
+                                phase-level user-namespace user-directory actual?))
     
     ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
     (define (id-level phase-level id)
@@ -723,7 +691,7 @@
                                        source-id
                                        filename))))
                                 (add-mouse-over var
-                                                (fw:gui-utils:format-literal-label 
+                                                (format 
                                                  (string-constant cs-mouse-over-import)
                                                  (syntax-e var)
                                                  req-path))
@@ -775,7 +743,7 @@
                [else #f]))))
     
     ;; color/connect-top : namespace directory id-set syntax -> void
-    (define (color/connect-top rename-ht user-namespace user-directory binders var)
+    (define (color/connect-top user-namespace user-directory binders var)
       (let ([top-bound?
              (or (get-ids binders var)
                  (parameterize ([current-namespace user-namespace])
@@ -784,8 +752,8 @@
                      #t)))])
         (if top-bound?
             (color var lexically-bound-variable-style-name 'default-mode)
-            (color var error-style-name 'default-mode))
-        (connect-identifier var rename-ht binders #f #f 0 user-namespace user-directory #t)))
+            (color var free-variable-style-name 'default-mode))
+        (connect-identifier var binders #f #f 0 user-namespace user-directory #t)))
     
     ;; color-variable : syntax phase-level module-identifier-mapping -> void
     (define (color-variable var phase-level varsets)
@@ -818,7 +786,7 @@
     (define (connect-syntaxes from to actual? level)
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
-            [defs-text (get-defs-text)])
+            [defs-text (current-annotations)])
         (when (and from-source to-source defs-text)
           (let ([pos-from (syntax-position from)]
                 [span-from (syntax-span from)]
@@ -840,7 +808,7 @@
     ;; this area shows up in the status line.
     (define (add-mouse-over stx str)
       (let* ([source (find-source-editor stx)]
-             [defs-text (get-defs-text)])
+             [defs-text (current-annotations)])
         (when (and defs-text 
                    source
                    (syntax-position stx)
@@ -856,7 +824,7 @@
     ;; to the definition of the id.
     (define (add-jump-to-definition stx id filename)
       (let ([source (find-source-editor stx)]
-            [defs-text (get-defs-text)])
+            [defs-text (current-annotations)])
         (when (and source 
                    defs-text
                    (syntax-position stx)
@@ -869,19 +837,6 @@
                   pos-right
                   id
                   filename)))))
-    
-    ;; find-syncheck-text : text% -> (union #f (is-a?/c syncheck-text<%>))
-    (define (find-syncheck-text text)
-      (let loop ([text text])
-        (cond
-          [(is-a? text syncheck-text<%>) text]
-          [else 
-           (let ([admin (send text get-admin)])
-             (and (is-a? admin editor-snip-editor-admin<%>)
-                  (let* ([enclosing-editor-snip (send admin get-snip)]
-                         [editor-snip-admin (send enclosing-editor-snip get-admin)]
-                         [enclosing-editor (send editor-snip-admin get-editor)])
-                    (loop enclosing-editor))))])))
     
     ;; annotate-tail-position/last : (listof syntax) -> void
     (define (annotate-tail-position/last orig-stx stxs tail-ht)
@@ -909,10 +864,10 @@
       (λ (require-spec)
         (when (syntax-original? require-spec)
           (let ([source (find-source-editor require-spec)])
-            (when (and (is-a? source text%)
+            (when (and source
                        (syntax-position require-spec)
                        (syntax-span require-spec))
-              (let ([defs-text (get-defs-text)])
+              (let ([defs-text (current-annotations)])
                 (when defs-text
                   (let* ([start (- (syntax-position require-spec) 1)]
                          [end (+ start (syntax-span require-spec))]
@@ -920,11 +875,8 @@
                                                      user-namespace
                                                      user-directory)])
                     (when file
-                      (send defs-text syncheck:add-menu
-                            source
-                            start end 
-                            #f
-                            (make-require-open-menu file)))))))))))
+                      (send defs-text syncheck:add-require-open-menu
+                            source start end file))))))))))
     
     ;; get-require-filename : sexp-or-module-path-index namespace string[directory] -> filename or #f
     ;; finds the filename corresponding to the require in stx
@@ -954,16 +906,6 @@
                 (unless (file-exists? ss-path)
                   (k rkt-path/f))
                 ss-path))))))
-    
-    ;; make-require-open-menu : path -> menu -> void
-    (define (make-require-open-menu file)
-      (λ (menu)
-        (let-values ([(base name dir?) (split-path file)])
-          (instantiate menu-item% ()
-            (label (fw:gui-utils:format-literal-label (string-constant cs-open-file) (path->string name)))
-            (parent menu)
-            (callback (λ (x y) (fw:handler:edit-file file))))
-          (void))))
     
     ;; possible-suffixes : (listof string)
     ;; these are the suffixes that are checked for the reverse 
@@ -1106,40 +1048,6 @@
                    [(box? stx-e)
                     (loop (unbox stx-e) (unbox datum))]
                    [else (void)]))])))))
-    
-    ;; jump-to : syntax -> void
-    (define (jump-to stx)
-      (let ([src (find-source-editor stx)]
-            [pos (syntax-position stx)]
-            [span (syntax-span stx)])
-        (when (and (is-a? src text%)
-                   pos
-                   span)
-          (send src begin-edit-sequence)
-          
-          ;; try to scroll so stx's location is
-          ;; near the top of the visible region
-          (let ([admin (send src get-admin)])
-            (when admin 
-              (let ([wb (box 0.0)]
-                    [hb (box 0.0)]
-                    [xb (box 0.0)]
-                    [yb (box 0.0)])
-                (send admin get-view #f #f wb hb)
-                (send src position-location (- pos 1) xb yb #t #f #t)
-                (let ([w (unbox wb)]
-                      [h (unbox hb)]
-                      [x (unbox xb)]
-                      [y (unbox yb)])
-                  (send src scroll-editor-to 
-                        (max 0 (- x (* .1 w)))
-                        (max 0 (- y (* .1 h)))
-                        w h
-                        #t
-                        'none)))))
-
-          (send src set-position (- pos 1) (+ pos span -1))
-          (send src end-edit-sequence))))
 
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
@@ -1189,7 +1097,7 @@
     (define (add-tail-ht-link from-stx to-stx)
       (let* ([to-src (find-source-editor to-stx)]
              [from-src (find-source-editor from-stx)]
-             [defs-text (get-defs-text)])
+             [defs-text (current-annotations)])
         (when (and to-src from-src defs-text)
 	  (let ([from-pos (syntax-position from-stx)]
 		[to-pos (syntax-position to-stx)])
@@ -1202,7 +1110,7 @@
     (define (add-tail-link? from-stx to-stx)
       (let* ([to-src (find-source-editor to-stx)]
              [from-src (find-source-editor from-stx)]
-             [defs-text (get-defs-text)])
+             [defs-text (current-annotations)])
         (and to-src from-src defs-text
              (let ([from-pos (syntax-position from-stx)]
                    [to-pos (syntax-position to-stx)])
@@ -1230,7 +1138,7 @@
     
     ;; document-variable : stx[identifier,original] phase-level -> void
     (define (document-variable stx phase-level)
-      (let ([defs-text (currently-processing-definitions-text)])
+      (let ([defs-text (current-annotations)])
         (when defs-text
           (let ([binding-info (identifier-binding stx phase-level)])
             (when (and (pair? binding-info)
@@ -1238,50 +1146,36 @@
                        (syntax-span stx))
               (let* ([start (- (syntax-position stx) 1)]
                      [fin (+ start (syntax-span stx))]
-                     [source-editor (find-source-editor stx)]
-                     [xref (get-xref)])
-                (when (and xref source-editor)
-                  (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
-                    (when definition-tag
-                      (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
-                        (when path
-                          (let ([index-entry (xref-tag->index-entry xref definition-tag)])
-                            (when index-entry
-                              (send defs-text syncheck:add-background-color
-                                    source-editor "navajowhite" start fin (syntax-e stx))
-                              (send defs-text syncheck:add-menu
-                                    source-editor
-                                    start 
-                                    fin 
-                                    (syntax-e stx)
-                                    (λ (menu)
-                                      (instantiate menu-item% ()
-                                        (parent menu)
-                                        (label (build-docs-label (entry-desc index-entry)))
-                                        (callback
-                                         (λ (x y)
-                                           (let* ([url (path->url path)]
-                                                  [url2 (if tag
-                                                            (make-url (url-scheme url)
-                                                                      (url-user url)
-                                                                      (url-host url)
-                                                                      (url-port url)
-                                                                      (url-path-absolute? url)
-                                                                      (url-path url)
-                                                                      (url-query url)
-                                                                      tag)
-                                                            url)])
-                                             (send-url (url->string url2)))))))))))))))))))))
+                     [source-editor (find-source-editor stx)])
+                (when source-editor
+                  (let ([xref (get-xref)])
+                    (when xref
+                      (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
+                        (when definition-tag
+                          (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
+                            (when path
+                              (let ([index-entry (xref-tag->index-entry xref definition-tag)])
+                                (when index-entry
+                                  (send defs-text syncheck:add-background-color
+                                        source-editor start fin "navajowhite")
+                                  (send defs-text syncheck:add-docs-menu
+                                        source-editor
+                                        start 
+                                        fin 
+                                        (syntax-e stx)
+                                        (build-docs-label (entry-desc index-entry))
+                                        path
+                                        tag))))))))))))))))
     
     (define (build-docs-label desc)
       (let ([libs (exported-index-desc-from-libs desc)])
         (cond
           [(null? libs)
-           (fw:gui-utils:format-literal-label
+           (format
             (string-constant cs-view-docs)
             (exported-index-desc-name desc))]
           [else
-           (fw:gui-utils:format-literal-label
+           (format
             (string-constant cs-view-docs-from)
             (format 
              (string-constant cs-view-docs)
@@ -1310,141 +1204,44 @@
     ;                                                     ;;;  
     
     
-    ;; make-rename-menu : (list source number number) rename-ht (listof id-set) -> void
-    (define (make-rename-menu key rename-ht id-sets)
-      (let* ([source (list-ref key 0)]
-             [pos (list-ref key 1)]
-             [span (list-ref key 2)]
-             [defs-text (currently-processing-definitions-text)]
-             [example-id
-              ;; we know that there is at least one there b/c that's how make-rename-menu is called
-              (car (hash-ref rename-ht key))] 
-             [id-as-sym (syntax-e example-id)])
-                      
+    ;; make-rename-menus : (listof id-set) -> void
+    (define (make-rename-menus id-sets)
+      (define id-to-sets (make-module-identifier-mapping))
+      (let ([defs-text (current-annotations)])
         (when defs-text
-          (let ([source-editor (find-source-editor example-id)])
-            (when (is-a? source-editor text%)
-              (let* ([start (- pos 1)]
-                     [fin (+ start span)])
-                (send defs-text syncheck:add-menu
-                      source-editor
-                      start 
-                      fin 
-                      id-as-sym
-                      (λ (menu)
-                        (let ([name-to-offer (format "~a" id-as-sym)])
-                          (instantiate menu-item% ()
-                            (parent menu)
-                            (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
-                            (callback
-                             (λ (x y)
-                               (let ([frame-parent (find-menu-parent menu)])
-                                 (rename-callback name-to-offer
-                                                  defs-text
-                                                  key
-                                                  id-sets
-                                                  rename-ht
-                                                  frame-parent))))))))))))))
-    
-    ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
-    (define (find-menu-parent menu)
-      (let loop ([menu menu])
-        (cond
-          [(is-a? menu menu-bar%) (send menu get-frame)]
-          [(is-a? menu popup-menu%)
-           (let ([target (send menu get-popup-target)])
-             (cond
-               [(is-a? target editor<%>) 
-                (let ([canvas (send target get-canvas)])
-                  (and canvas
-                       (send canvas get-top-level-window)))]
-               [(is-a? target window<%>) 
-                (send target get-top-level-window)]
-               [else #f]))]
-          [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
-          [else #f])))
-    
-    ;; rename-callback : string 
-    ;;                   (and/c syncheck-text<%> definitions-text<%>)
-    ;;                   (list source number number)
-    ;;                   (listof id-set) 
-    ;;                   rename-ht
-    ;;                   (union #f (is-a?/c top-level-window<%>)) 
-    ;;                -> void
-    ;; callback for the rename popup menu item
-    (define (rename-callback name-to-offer defs-text key id-sets rename-ht parent)
-      (let ([new-str
-             (fw:keymap:call/text-keymap-initializer
-              (λ ()
-                (get-text-from-user
-                 (string-constant cs-rename-id)
-                 (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
-                 parent
-                 name-to-offer)))])
-        (when new-str
-          (define new-sym (format "~s" (string->symbol new-str)))
-          (define src-locs (make-hash))
-          (define all-stxs (make-hash))
-          (let loop ([key key])
-            (unless (hash-ref src-locs key #f)
-              (hash-set! src-locs key #t)
-              (for ([stx (in-list (hash-ref rename-ht key))])
-                (for ([id-set (in-list id-sets)])
-                  (for ([stx (in-list (or (get-ids id-set stx) '()))])
-                    (hash-set! all-stxs stx #t)
-                    (loop (list (syntax-source stx)
-                                (syntax-position stx)
-                                (syntax-span stx))))))))
-          (define to-be-renamed (hash-map all-stxs (λ (k v) k)))
-          (define do-renaming?
-            (or (not (name-duplication? to-be-renamed id-sets new-sym))
-                (equal?
-                 (message-box/custom
-                  (string-constant check-syntax)
-                  (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
-                                                     new-sym)
-                  (string-constant cs-rename-anyway)
-                  (string-constant cancel)
-                  #f
-                  parent
-                  '(stop default=2))
-                 1)))
-          (when do-renaming?
-            (unless (null? to-be-renamed)
-              (let ([txts (list defs-text)])
-                (define positions-to-rename 
-                  (remove-duplicates
-                   (sort (map (λ (stx) (list (find-source-editor/defs stx defs-text)
-                                             (syntax-position stx)
-                                             (syntax-span stx)))
-                              to-be-renamed)
-                         >
-                         #:key cadr)))
-                (send defs-text begin-edit-sequence)
-                (for ([info (in-list positions-to-rename)])
-                  (define source-editor (list-ref info 0))
-                  (define position (list-ref info 1))
-                  (define span (list-ref info 2))
-                  (when (is-a? source-editor text%)
-                    (unless (memq source-editor txts)
-                      (send source-editor begin-edit-sequence)
-                      (set! txts (cons source-editor txts)))
-                    (let* ([start (- position 1)]
-                           [end (+ start span)])
-                      (send source-editor delete start end #f)
-                      (send source-editor insert new-sym start start #f))))
-                (send defs-text invalidate-bitmap-cache)
-                (for ([txt (in-list txts)])
-                  (send txt end-edit-sequence))))))))
-    
-    ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
-    ;; returns #t if the name chosen would be the same as another name in this scope.
-    (define (name-duplication? to-be-renamed id-sets new-str)
-      (let ([new-ids (map (λ (id) (datum->syntax id (string->symbol new-str)))
-                          to-be-renamed)])
-        (for*/or ([id-set (in-list id-sets)]
-                  [new-id (in-list new-ids)])
-          (get-ids id-set new-id))))
+          (for ([id-set (in-list id-sets)])
+            (for-each-ids 
+             id-set
+             (λ (vars)
+               (for ([var (in-list vars)])
+                 (define ed (find-source-editor var))
+                 (when ed
+                   (define pos (syntax-position var))
+                   (define span (syntax-span var))
+                   (define start (- pos 1))
+                   (define fin (+ start span))
+                   (define loc (list ed start fin))
+                   (module-identifier-mapping-put!
+                    id-to-sets
+                    var
+                    (set-add (module-identifier-mapping-get id-to-sets var set)
+                             loc)))))))
+          (module-identifier-mapping-for-each
+           id-to-sets
+           (λ (id locs)
+             (define (name-dup? new-str) 
+               (and (for/or ([id-set (in-list id-sets)])
+                      (for/or ([id (in-list (or (get-ids id-set id) '()))])
+                        (let ([new-id (datum->syntax id (string->symbol new-str))])
+                          (for/or ([id-set (in-list id-sets)])
+                            (get-ids id-set new-id)))))
+                    #t))
+             (define loc-lst (set->list locs))
+             (define id-as-sym (syntax-e id))
+             (send defs-text syncheck:add-rename-menu
+                   id-as-sym
+                   loc-lst
+                   name-dup?))))))
     
     ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
     ;; removes duplicates, based on the source locations of the identifiers
@@ -1506,4 +1303,7 @@
     ;; for-each-ids : id-set ((listof identifier) -> void) -> void
     (define (for-each-ids mapping f)
       (module-identifier-mapping-for-each mapping (λ (x y) (f y))))
+    
+
+    
     

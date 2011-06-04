@@ -7,19 +7,19 @@
          racket/unit
          racket/class
          racket/gui/base
-         "drsig.rkt")
+         "drsig.rkt"
+         "local-member-names.rkt")
 
 (define op (current-output-port))
 (define (oprintf . args) (apply fprintf op args))
 
 (define-unit module-language-tools@
   (import [prefix drracket:unit: drracket:unit^]
-          [prefix drracket:module-language: drracket:module-language^]
+          [prefix drracket:module-language: drracket:module-language/int^]
           [prefix drracket:language: drracket:language^]
-          [prefix drracket:language-configuration: drracket:language-configuration^])
+          [prefix drracket:language-configuration: drracket:language-configuration^]
+          [prefix drracket: drracket:interface^])
   (export drracket:module-language-tools^)
-
-  (define-local-member-name when-initialized move-to-new-language get-in-module-language?)
 
   (define-struct opt-out-toolbar-button (make-button id) #:transparent)
   (define opt-out-toolbar-buttons '())
@@ -29,10 +29,8 @@
           (cons (make-opt-out-toolbar-button make-button id)
                 opt-out-toolbar-buttons)))
     
-  (define tab<%> (interface ()))
-  
   (define tab-mixin
-    (mixin (drracket:unit:tab<%>) (tab<%>)
+    (mixin (drracket:unit:tab<%>) (drracket:module-language-tools:tab<%>)
       (inherit get-frame)
       (define toolbar-buttons '())
       (define/public (get-lang-toolbar-buttons) toolbar-buttons)
@@ -48,9 +46,8 @@
                       (λ (l) toolbar-buttons)))))
       (super-new)))
   
-  (define frame<%> (interface ()))
   (define frame-mixin
-    (mixin (drracket:unit:frame<%>) (frame<%>)
+    (mixin (drracket:unit:frame<%>) (drracket:module-language-tools:frame<%>)
       (inherit unregister-toolbar-button get-definitions-text)
   
       (define toolbar-button-panel #f)
@@ -90,9 +87,8 @@
           (when (send defs get-in-module-language?)
             (send defs move-to-new-language))))))
   
-  (define definitions-text<%> (interface ()))
   (define definitions-text-mixin
-    (mixin (text:basic<%> drracket:unit:definitions-text<%>) (definitions-text<%>)
+    (mixin (text:basic<%> drracket:unit:definitions-text<%>) (drracket:module-language-tools:definitions-text<%>)
       (inherit get-next-settings)
       (define in-module-language? #f)      ;; true when we are in the module language
       (define hash-lang-last-location #f)  ;; non-false when we know where the hash-lang line ended
@@ -242,4 +238,27 @@
       (super-new)
       (set! in-module-language? 
             (is-a? (drracket:language-configuration:language-settings-language (get-next-settings))
-                   drracket:module-language:module-language<%>)))))
+                   drracket:module-language:module-language<%>))))
+  
+  
+  (define no-more-online-expansion-handlers? #f)
+  (define (no-more-online-expansion-handlers) (set! no-more-online-expansion-handlers? #t))
+  (struct online-expansion-handler (mod-path id local-handler))
+  (define online-expansion-handlers '())
+  (define (get-online-expansion-handlers) 
+    (cond
+      [no-more-online-expansion-handlers?
+       online-expansion-handlers]
+      [else
+       (error 'get-online-expansion-handlers 
+              "online-expansion-handlers can still be registered")]))
+  (define (add-online-expansion-handler mod-path id local-handler)
+    (cond
+      [no-more-online-expansion-handlers?
+       (error 'add-online-expansion-handler 
+              "no more online-expansion-handlers can be registered; got ~e ~e ~e"
+              mod-path id local-handler)]
+      [else
+       (set! online-expansion-handlers
+             (cons (online-expansion-handler mod-path id local-handler)
+                   online-expansion-handlers))])))

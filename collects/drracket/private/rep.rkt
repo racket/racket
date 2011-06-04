@@ -79,17 +79,18 @@ TODO
   (parameterize-break #f (current-break-parameterization)))
 
 (define-unit rep@
-  (import (prefix drracket:init: drracket:init^)
-          (prefix drracket:language-configuration: drracket:language-configuration/internal^)
-          (prefix drracket:language: drracket:language^)
-          (prefix drracket:app: drracket:app^)
-          (prefix drracket:frame: drracket:frame^)
-          (prefix drracket:unit: drracket:unit^)
-          (prefix drracket:text: drracket:text^)
-          (prefix drracket:help-desk: drracket:help-desk^)
-          (prefix drracket:debug: drracket:debug^)
+  (import [prefix drracket:init: drracket:init^]
+          [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+          [prefix drracket:language: drracket:language^]
+          [prefix drracket:app: drracket:app^]
+          [prefix drracket:frame: drracket:frame^]
+          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:text: drracket:text^]
+          [prefix drracket:help-desk: drracket:help-desk^]
+          [prefix drracket:debug: drracket:debug^]
           [prefix drracket:eval: drracket:eval^]
-          [prefix drracket:module-language: drracket:module-language^])
+          [prefix drracket:module-language: drracket:module-language/int^]
+          [prefix drracket: drracket:interface^])
   (export (rename drracket:rep^
                   [-text% text%]
                   [-text<%> text<%>]))
@@ -140,51 +141,6 @@ TODO
       get-prompt
       insert-prompt
       get-context))
-  
-  
-  (define context<%>
-    (interface ()
-      ensure-rep-shown   ;; (interactions-text -> void)
-      ;; make the rep visible in the frame
-      
-      repl-submit-happened ;; (-> boolean)
-      ;; notify the context that an evaluation is about to
-      ;; happen in the REPL (so it can show a warning about
-      ;; the language/etc is out of sync if neccessary).
-      
-      enable-evaluation  ;; (-> void)
-      ;; make the context enable all methods of evaluation
-      ;; (disable buttons, menus, etc)
-      
-      disable-evaluation ;; (-> void)
-      ;; make the context disable all methods of evaluation
-      ;; (disable buttons, menus, etc)
-      
-      set-breakables ;; (union thread #f) (union custodian #f) -> void
-      ;; the context might initiate breaks or kills to
-      ;; the thread passed to this function
-      
-      get-breakables ;; -> (values (union thread #f) (union custodian #f))
-      ;; returns the last values passed to set-breakables.
-      
-      reset-offer-kill ;; (-> void)
-      ;; the next time the break button is pushed, it will only
-      ;; break. (if the break button is clicked twice without
-      ;; this method being called in between, it will offer to
-      ;; kill the user's program)
-      
-      update-running        ;; (boolean -> void)
-      ;; a callback to indicate that the repl may have changed its running state
-      ;; use the repls' get-in-evaluation? method to find out what the current state is.
-      
-      clear-annotations  ;; (-> void)
-      ;; clear any error highlighting context
-      
-      get-directory      ;; (-> (union #f string[existing directory]))
-      ;; returns the directory that should be the default for
-      ;; the `current-directory' and `current-load-relative-directory'
-      ;; parameters in the repl.
-      ))
   
   (define sized-snip<%>
     (interface ((class->interface snip%))
@@ -553,7 +509,7 @@ TODO
       (define/public (set-definitions-text dt) (set! definitions-text dt))
       (define/public (get-definitions-text) definitions-text)
       
-      (unless (is-a? context context<%>)
+      (unless (is-a? context drracket:rep:context<%>)
         (error 'drracket:rep:text% 
                "expected an object that implements drracket:rep:context<%> as initialization argument, got: ~e"
                context))

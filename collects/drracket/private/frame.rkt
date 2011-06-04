@@ -16,16 +16,15 @@
           [prefix drracket:app: drracket:app^]
           [prefix help: drracket:help-desk^]
           [prefix drracket:multi-file-search: drracket:multi-file-search^]
-          [prefix drracket:init: drracket:init^])
+          [prefix drracket:init: drracket:init^]
+          [prefix drracket: drracket:interface^])
   (export (rename drracket:frame^
                   [-mixin mixin]))
-  
-  (define basics<%> (interface (frame:standard-menus<%>)))
   
   (define last-keybindings-planet-attempt "")
   
   (define basics-mixin
-    (mixin (frame:standard-menus<%>) (basics<%>)
+    (mixin (frame:standard-menus<%>) (drracket:frame:basics<%>)
       
       (define/override (on-subwindow-char receiver event)
         (let ([user-key? (send (keymap:get-user) 
@@ -588,14 +587,8 @@
       (update-bindings)
       (send f show #t)))
   
-  (define <%>
-    (interface (frame:editor<%> basics<%> frame:text-info<%>)
-      get-show-menu
-      update-shown
-      add-show-menu-items))
-  
   (define -mixin
-    (mixin (frame:editor<%> frame:text-info<%> basics<%>) (<%>)
+    (mixin (frame:editor<%> frame:text-info<%> drracket:frame:basics<%>) (drracket:frame:<%>)
       (inherit get-editor get-menu% get-menu-bar)
       (define show-menu #f)
       (define/public get-show-menu (λ () show-menu))

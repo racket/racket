@@ -12,9 +12,14 @@
 
 ;; special type names that are not bound to particular types
 (define-other-types
-  -> case-> U Rec All Opaque Vector
+  #;-> case-> U Rec All Opaque Vector
   Parameterof List List* Class Values Instance Refinement
   pred)
+
+(define-syntax ->
+  (lambda (stx)
+    (raise-syntax-error 'type-check "type name used out of context" stx))) 
+(provide ->)
 
 (provide (rename-out [All ∀]
                      [U Un]

@@ -36,7 +36,8 @@ This file sets up the right lexical environment to invoke the tools that want to
         [prefix drscheme:modes: drracket:modes^]
         [prefix drscheme:tracing: drracket:tracing^]
         [prefix drscheme:module-language: drracket:module-language^]
-        [prefix drscheme:module-language-tools: drracket:module-language-tools^])
+        [prefix drscheme:module-language-tools: drracket:module-language-tools^]
+        [prefix drscheme: drracket:interface^])
 (export drracket:tools-drs^)
 
 (define-syntax (wrap-tool-inputs stx)

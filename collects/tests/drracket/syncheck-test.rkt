@@ -133,7 +133,7 @@ trigger runtime errors in check syntax.
                   (" ([" default-color)
                   ("x"   lexically-bound-variable)
                   (" "   default-color)
-                  ("x"   error)
+                  ("x"   free-variable)
                   ("]) " default-color)
                   ("x"   lexically-bound-variable)
                   (")"   default-color))
@@ -153,13 +153,13 @@ trigger runtime errors in check syntax.
                  '(("("     default-color) 
                    ("#%top" imported-syntax)
                    (" . "   default-color)
-                   ("x"     error)
+                   ("x"     free-variable)
                    (")"    default-color)))
      (build-test "(set! x 1)"
                 '(("("    default-color)
                   ("set!" imported-syntax)
                   (" "    default-color)
-                  ("x"    error)
+                  ("x"    free-variable)
                   (" "    default-color)
                   ("1"    constant)
                   (")"    default-color)))
@@ -195,7 +195,7 @@ trigger runtime errors in check syntax.
      (build-test "object%"
                 '(("object%" imported-syntax))) ; used to be lexically-bound-variable
      (build-test "unbound-id"
-                '(("unbound-id" error)))
+                '(("unbound-id" free-variable)))
      (build-test "(define bd 1) bd"
                 '(("("       default-color)
                   ("define"  imported-syntax)
@@ -221,9 +221,9 @@ trigger runtime errors in check syntax.
                   (")"                      default-color)))
      (build-test "(f x)"
                 '(("(" default-color)
-                  ("f" error)
+                  ("f" free-variable)
                   (" " default-color)
-                  ("x" error)
+                  ("x" free-variable)
                   (")" default-color)))
      (build-test "(define-syntax (f stx) (syntax 1))"
                 '(("("             default-color)
@@ -287,19 +287,19 @@ trigger runtime errors in check syntax.
                 '(("("        default-color)
                   ("module"   imported-syntax)
                   (" m "      default-color)
-                  ("mzscheme" error)
+                  ("mzscheme" unused-require)
                   (")"        default-color)))
      (build-test "(require-for-syntax mzscheme)"
                 '(("("                  default-color)
                   ("require-for-syntax" imported-syntax)
                   (" "          default-color)
-                  ("mzscheme"   error)
+                  ("mzscheme"   unused-require)
                   (")"          default-color)))
      (build-test "(require mzlib/list)"
                 '(("("                   default-color)
                   ("require"             imported-syntax)
                   (" "                   default-color)
-                  ("mzlib/list"          error)
+                  ("mzlib/list"          unused-require)
                   (")"                   default-color)))
      (build-test "(module m mzscheme (provide x) (define x 1))"
                 '(("("             default-color)
@@ -336,7 +336,7 @@ trigger runtime errors in check syntax.
                   (" m mzscheme ("     default-color)
                   ("require"           imported-syntax)
                   (" "                 default-color)
-                  ("mzlib/list"        error)
+                  ("mzlib/list"        unused-require)
                   ("))"                default-color))
                 (list '((10 18) (20 27))))
      
@@ -542,7 +542,7 @@ trigger runtime errors in check syntax.
                   ("("        default-color)
                   ("1"        constant)
                   (" ,"       default-color)
-                  ("x"        error)
+                  ("x"        free-variable)
                   (" "        default-color)
                   ("2"        constant)
                   (")"        default-color)))
@@ -864,7 +864,7 @@ trigger runtime errors in check syntax.
      
      (build-test "#lang scheme/base\n(require scheme)\n(define-syntax m (lambda (x) #'1))"
                  '(("#lang "        default-color)
-                   ("scheme/base"   error)
+                   ("scheme/base"   unused-require)
                    ("\n("           default-color)
                    ("require"       imported)
                    (" scheme)\n("   default-color)

@@ -37,7 +37,8 @@ profile todo:
           [prefix drracket:unit: drracket:unit^]
           [prefix drracket:language: drracket:language^]
           [prefix drracket:language-configuration: drracket:language-configuration/internal^]
-          [prefix drracket:init: drracket:init^])
+          [prefix drracket:init: drracket:init^]
+          [prefix drracket: drracket:interface^])
   (export drracket:debug^)
   
   ;                                                          

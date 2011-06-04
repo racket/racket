@@ -10,7 +10,8 @@
            "drsig.rkt")
   
   (import [prefix drracket:frame: drracket:frame^]
-          [prefix drracket:unit: drracket:unit^])
+          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket: drracket:interface^])
   (export drracket:multi-file-search^)
   
   ;; multi-file-search : -> void

@@ -18,7 +18,7 @@
         [prefix drracket:get/extend: drracket:get/extend^]
         [prefix drracket:language-configuration: drracket:language-configuration/internal^]
         [prefix drracket:language: drracket:language^]
-        [prefix drracket:module-language: drracket:module-language^]
+        [prefix drracket:module-language: drracket:module-language/int^]
         [prefix drracket:tools: drracket:tools^]
         [prefix drracket:debug: drracket:debug^]
         [prefix drracket:frame: drracket:frame^]
@@ -522,6 +522,9 @@
                   (or settings (send lang default-settings)))))))))
 
   ;; preferences initialization
+
+  (preferences:set-default 'drracket:online-compilation #t boolean?)
+
   (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
   (drr:set-default 'drracket:multi-file-search:filter-regexp "\\.(rkt.?|scrbl|ss|scm)$" string?)
