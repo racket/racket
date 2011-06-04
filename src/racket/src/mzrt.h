@@ -108,7 +108,24 @@ void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, 
 void pt_mbox_destroy(pt_mbox *mbox);
 
 static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val) {
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && __GNUC__ <= 4 && __GNUC_MINOR__ < 1
+# if defined(__i386__)
+    char result;
+    __asm__ __volatile__("lock; cmpxchgl %3, %0; setz %1"
+        : "=m"(*addr), "=q"(result)
+        : "m"(*addr), "r" (new_val), "a"(old)
+        : "memory");
+    return (int) result;
+# elif defined(__x86_64__)
+    char result;
+    __asm__ __volatile__("lock; cmpxchgq %3, %0; setz %1"
+        : "=m"(*addr), "=q"(result)
+        : "m"(*addr), "r" (new_val), "a"(old)
+        : "memory");
+    return (int) result;
+# endif
+
+#elif defined(__GNUC__) && !defined(__INTEL_COMPILER)
   return __sync_bool_compare_and_swap(addr, old, new_val);
 #elif defined(_MSC_VER)
 # if defined(_AMD64_)
