@@ -14,21 +14,6 @@ This module provides tools for higher-order programming and creating functions.
 
 @section{Simple Functions}
 
-@defform[(thunk body ...)]{
-
-Creates a function that ignores its inputs and evaluates the given body.  Useful
-for creating event handlers with no (or irrelevant) arguments.
-
-@defexamples[
-#:eval the-eval
-(define f (thunk (define x 1) (printf "~a\n" x)))
-(f)
-(f 'x)
-(f #:y 'z)
-]
-
-}
-
 @section{Higher Order Predicates}
 
 @defproc[((negate [f (-> A ... boolean?)]) [x A] ...) boolean?]{

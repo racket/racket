@@ -56,6 +56,19 @@
   (test 'foo (const 'foo) 1)
   (test 'foo (const 'foo) 1 2 3 4 5))
 
+;; ---------- thunk ----------
+(let ([th1 (thunk 'foo)] [th2 (thunk* 'bar)])
+  (test #t procedure? th1)
+  (test #t procedure? th2)
+  (test 0 procedure-arity th1)
+  (test (arity-at-least 0) procedure-arity th2)
+  (test 'foo th1)
+  (err/rt-test (th1 1))
+  (test 'bar th2)
+  (test 'bar th2 1)
+  (test 'bar th2 1 2 3)
+  (test 'bar th2 1 #:x 2 3 #:y 4 5))
+
 ;; ---------- negate ----------
 (let ()
   (define *not  (negate not))

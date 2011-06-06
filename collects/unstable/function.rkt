@@ -87,26 +87,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  Degenerate Functions
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-syntax (thunk stx)
-  (syntax-case stx ()
-    [(thunk body ...)
-     (syntax/loc stx
-       (make-keyword-thunk (lambda () body ...)))]))
-
-(define (make-keyword-thunk f)
-  (make-intermediate-procedure
-   'thunk-function
-    [(x ... 8) (f)]
-    [xs (f)]
-    #:keyword
-    [(ks vs . xs) (f)]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;;  Higher-Order Boolean Operations
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -363,7 +343,6 @@
 
 (provide
  ;; functions
- thunk
  conjoin disjoin
  curryn currynr papply papplyr call
  ;; macros

@@ -495,6 +495,25 @@ Returns a procedure that accepts any arguments and returns @scheme[v].
 ((const 'foo))
 ]}
 
+@deftogether[(@defform[(thunk  body ...+)]
+              @defform[(thunk* body ...+)])]{
+
+@scheme[thunk] creates a nullary function that evaluates the given body.
+@scheme[thunk*] is similar, except that the resulting function accepts
+any number of inputs and keyword arguments.
+
+@defexamples[
+#:eval the-eval
+(define th1 (thunk (define x 1) (printf "~a\n" x)))
+(th1)
+(th1 'x)
+(th1 #:y 'z)
+(define th2 (thunk* (define x 1) (printf "~a\n" x)))
+(th2)
+(th2 'x)
+(th2 #:y 'z)
+]}
+
 @defproc[(negate [proc procedure?]) procedure?]{
 
 Returns a procedure that is just like @scheme[proc], except that it

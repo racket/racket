@@ -1,12 +1,31 @@
-#lang scheme/base
+#lang racket/base
 
-(provide identity const negate curry curryr)
+(require (for-syntax racket/base syntax/name))
+
+(provide identity const thunk thunk* negate curry curryr)
 
 (define (identity x) x)
 
 (define (const c)
   (define (const . _) c)
   (make-keyword-procedure const const))
+
+(define-syntax (thunk stx)
+  (syntax-case stx ()
+    [(_ body0 body ...) (syntax/loc stx (lambda () body0 body ...))]))
+
+(define-syntax (thunk* stx)
+  (syntax-case stx ()
+    [(_ body0 body ...)
+     (with-syntax ([proc (syntax-property
+                          (syntax/loc stx
+                            ;; optimize 0- and 1-argument cases
+                            (case-lambda [() body0 body ...]
+                                         [(x) (th)] [xs (th)]))
+                          'inferred-name (syntax-local-infer-name stx))])
+       (syntax/loc stx
+         (letrec ([th proc])
+           (make-keyword-procedure (lambda (_1 _2 . _3) (th)) proc))))]))
 
 (define (negate f)
   (unless (procedure? f) (raise-type-error 'negate "procedure" f))
