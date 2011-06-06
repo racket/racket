@@ -16,7 +16,7 @@
   (for-each (lambda (nm/ty) (register-resolved-type-alias (car nm/ty) (cadr nm/ty))) initial-type-names))
 
 (define (initialize-type-env initial-env)
-  (for-each (lambda (nm/ty) (register-type (car nm/ty) (cadr nm/ty))) initial-env))
+  (for-each (lambda (nm/ty) (register-type-if-undefined (car nm/ty) (cadr nm/ty))) initial-env))
 
 (define (converter v basic sub)
   (define (gen-constructor sym)
