@@ -4,6 +4,7 @@
 
 (require (types abbrev numeric-predicates)
          (rep type-rep)
+         racket/function
          unstable/function
          (for-template racket/base racket/contract racket/flonum (types numeric-predicates)))
 

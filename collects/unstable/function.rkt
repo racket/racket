@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/dict racket/match racket/function
+(require racket/dict racket/match
          (for-syntax racket/base racket/list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -367,7 +367,7 @@
  ;; functions
  identity
  thunk
- negate conjoin disjoin
+ conjoin disjoin
  curryn currynr papply papplyr call
  ;; macros
  eta eta*

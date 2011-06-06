@@ -14,11 +14,6 @@
          (let* ([sym (gensym)])
            (check-eq? (identity sym) sym))))
 
-     (test-suite "const"
-       (test-case "unique symbol"
-         (let* ([sym (gensym)])
-           (check-eq? ((const sym) 'x #:y 'z) sym))))
-
      (test-suite "thunk"
        (test-case "unique symbol"
          (let* ([count 0]
@@ -28,16 +23,6 @@
            (check = count 1)))))
 
    (test-suite "Higher Order Predicates"
-
-     (test-suite "negate"
-       (test-case "integer?"
-         (check-false ((negate integer?) 5)))
-       (test-case "not integer?"
-         (check-true ((negate integer?) 1/5)))
-       (test-case "non-boolean"
-         (check-false ((negate symbol->string) 'sym)))
-       (test-case "binary"
-         (check-false ((negate +) 1 2 3))))
 
      (test-suite "conjoin"
        (test-case "no functions"

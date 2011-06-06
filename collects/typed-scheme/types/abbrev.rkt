@@ -7,6 +7,7 @@
          (utils tc-utils)
          racket/list
          racket/match
+         racket/function
          unstable/function
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
