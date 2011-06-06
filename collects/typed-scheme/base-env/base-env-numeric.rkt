@@ -1812,18 +1812,24 @@
 [unsafe-fl< fl<-type]
 [unsafe-flmin flmin-type]
 [unsafe-flmax flmax-type]
-[unsafe-flround flround-type]
-[unsafe-flfloor flfloor-type]
-[unsafe-flceiling flceiling-type]
-[unsafe-fltruncate flround-type]
-[unsafe-flsin fl-unop]
-[unsafe-flcos fl-unop]
-[unsafe-fltan fl-unop]
-[unsafe-flatan fl-unop]
-[unsafe-flasin fl-unop]
-[unsafe-flacos fl-unop]
-[unsafe-fllog fllog-type]
-[unsafe-flexp flexp-type]
+
+;These are currently the same binding as the safe versions 
+;and so are not needed. If this changes they should be 
+;uncommented.
+;
+;[unsafe-flround flround-type]
+;[unsafe-flfloor flfloor-type]
+;[unsafe-flceiling flceiling-type]
+;[unsafe-fltruncate flround-type]
+;[unsafe-flsin fl-unop]
+;[unsafe-flcos fl-unop]
+;[unsafe-fltan fl-unop]
+;[unsafe-flatan fl-unop]
+;[unsafe-flasin fl-unop]
+;[unsafe-flacos fl-unop]
+;[unsafe-fllog fllog-type]
+;[unsafe-flexp flexp-type]
+;
 [unsafe-flsqrt flsqrt-type]
 [unsafe-fx->fl fx->fl-type]
 [unsafe-make-flrectangular make-flrectangular-type]

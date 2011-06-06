@@ -208,7 +208,6 @@
                               ;; 1 means predicate on second argument
                               (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
-[newline (->opt [-Output-Port] -Void)]
 [not (-> Univ B)]
 [box (-poly (a) (a . -> . (-box a)))]
 [unbox (-poly (a) (cl->*
@@ -292,7 +291,7 @@
 
 [namespace-variable-value (Sym [Univ (-opt (-> Univ)) -Namespace] . ->opt . Univ)]
 
-[match:error (Univ . -> . (Un))]
+;[match:error (Univ . -> . (Un))]
 [match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
 [matchable? (make-pred-ty (Un -String -Bytes))]
 [display (Univ [-Output-Port] . ->opt . -Void)]
@@ -448,7 +447,6 @@
 [make-parameter (-poly (a b) (cl-> [(a) (-Param a a)]
                                    [(b (a . -> . b)) (-Param a b)]))]
 [current-directory (-Param -Pathlike -Path)]
-[current-namespace (-Param -Namespace -Namespace)]
 [print-struct (-Param B B)]
 [read-decimal-as-inexact (-Param B B)]
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
@@ -462,9 +460,6 @@
 [pregexp (-String . -> . -PRegexp)]
 [byte-regexp (-Bytes . -> . -Byte-Regexp)]
 [byte-pregexp (-Bytes . -> . -Byte-PRegexp)]
-[regexp-quote (cl->*
-	       (-String [-Boolean] . ->opt . -String)
-	       (-Bytes  [-Boolean] . ->opt . -Bytes))]
 
 [regexp-match-exact?
  (-Pattern (Un -String -Bytes -Input-Port) . -> . B)]
@@ -645,7 +640,6 @@
 
 [hash-set (-poly (a b) ((-HT a b) a b . -> . (-HT a b)))]
 [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
-[hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-ref (-poly (a b c)
                  (cl-> [((-HT a b) a) b]
                        [((-HT a b) a (-> c)) (Un b c)]))]
@@ -740,14 +734,14 @@
         [-Input-Port . -> . (Un -Byte (-val eof))])]
 [make-pipe
  (cl->* [->opt [N] (-values (list -Input-Port -Output-Port))])]
+[open-output-string 
+ ([Univ] . ->opt . -Output-Port)]
 [open-output-bytes
- (cl->* [[Univ] . ->opt . -Output-Port])]
+ ([Univ] . ->opt . -Output-Port)]
 [get-output-bytes (-Output-Port [Univ N N] . ->opt . -Bytes)]
 [char-ready? (->opt [-Input-Port] B)]
 [byte-ready? (->opt [-Input-Port] B)]
 
-[open-output-string (-> -Output-Port)]
-[open-output-bytes (-> -Output-Port)]
 ;; FIXME - this is too general
 [get-output-string (-> -Output-Port -String)]
 
