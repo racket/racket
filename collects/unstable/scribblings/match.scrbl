@@ -1,13 +1,9 @@
 #lang scribble/manual
-@(require scribble/eval	  
-	  "utils.rkt"
-          (for-label unstable/match
-                     racket/match
-                     racket/contract
-                     racket/base))
+@(require scribble/eval "utils.rkt"
+          (for-label unstable/match racket/match racket/contract racket/base))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/match racket/match))
+@(the-eval '(require racket/match unstable/match))
 
 @title[#:tag "match"]{Match}
 
@@ -42,7 +38,7 @@ Returns @scheme[#t] if the result of @scheme[val-expr] matches any of
 @scheme[pat], and returns @scheme[#f] otherwise.
 
 @defexamples[
-#:eval (eval/require 'racket/match 'unstable/match)
+#:eval the-eval
 (match? (list 1 2 3)
   (list a b c)
   (vector x y z))
@@ -63,7 +59,7 @@ result value of @scheme[rhs-expr], and continues matching each subsequent
 @scheme[pat].
 
 @defexamples[
-#:eval (eval/require 'racket/match 'unstable/match)
+#:eval the-eval
 (match (list 1 2 3)
   [(as ([a 0]) (list b c d)) (list a b c d)])
 ]

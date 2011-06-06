@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label racket unstable/port))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/port))
+
 @title{Ports}
 
 @defmodule[unstable/port]
@@ -18,7 +21,7 @@ This function produces a list of all the values produced by calling
 until it produces @scheme[eof].
 
 @defexamples[
-#:eval (eval/require 'unstable/port)
+#:eval the-eval
 (read-all read (open-input-string "1 2 3"))
 (parameterize ([current-input-port (open-input-string "a b c")])
   (read-all))
@@ -36,7 +39,7 @@ is set to @scheme[port], up until it produces @scheme[eof].  The source location
 of the result spans the entire portion of the port that was read.
 
 @defexamples[
-#:eval (eval/require 'unstable/port)
+#:eval the-eval
 (define port1 (open-input-string "1 2 3"))
 (port-count-lines! port1)
 (read-all-syntax read-syntax port1)
@@ -59,7 +62,7 @@ missing fields.  This function relies on @scheme[port-next-location], so line
 counting must be enabled for @scheme[port] to get meaningful results.
 
 @defexamples[
-#:eval (eval/require 'unstable/port)
+#:eval the-eval
 (define port (open-input-string "1 2 3"))
 (port-count-lines! port)
 (read port)
@@ -68,3 +71,5 @@ counting must be enabled for @scheme[port] to get meaningful results.
 ]
 
 }
+
+@(close-eval the-eval)

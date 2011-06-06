@@ -1,16 +1,10 @@
 #lang scribble/manual
-@(require scribble/struct
-          scribble/decode
-          scribble/eval
-	  "utils.rkt"
-          (for-label racket/base
-                     racket/contract
-                     syntax/kerncase
+@(require scribble/struct scribble/decode scribble/eval "utils.rkt"
+          (for-label racket/base racket/contract syntax/kerncase
                      unstable/syntax))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/syntax))
-@(the-eval '(require (for-syntax racket/base unstable/syntax)))
+@(the-eval '(require unstable/syntax (for-syntax racket/base unstable/syntax)))
 
 @title[#:tag "syntax"]{Syntax}
 
@@ -69,7 +63,7 @@ This form constructs a list of syntax objects based on the given templates.  It
 is equivalent to @scheme[(syntax->list (syntax (template ...)))].
 
 @defexamples[
-#:eval (eval/require '(for-syntax racket/base unstable/syntax) 'unstable/syntax)
+#:eval the-eval
 (with-syntax ([(x ...) (syntax (1 2 3))]) (syntax-list x ...))
 ]
 }
@@ -87,7 +81,7 @@ These produce the directory and file name, respectively, of the path with which
 with a path.
 
 @defexamples[
-#:eval (eval/require '(for-syntax racket/base unstable/syntax) 'unstable/syntax)
+#:eval the-eval
 (define loc
   (list (build-path "/tmp" "dir" "somewhere.ss")
         #f #f #f #f))

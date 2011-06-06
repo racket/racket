@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label racket unstable/function))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/function))
+
 @title{Functions}
 
 @defmodule[unstable/function]
@@ -23,7 +26,7 @@ Creates a function that ignores its inputs and evaluates the given body.  Useful
 for creating event handlers with no (or irrelevant) arguments.
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (thunk (define x 1) (printf "~a\n" x)))
 (f)
 (f 'x)
@@ -41,7 +44,7 @@ Negates the results of @scheme[f]; equivalent to @scheme[(not (f x ...))].
 This function is reprovided from @schememodname[scheme/function].
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (negate exact-integer?))
 (f 1)
 (f 'one)
@@ -55,7 +58,7 @@ Combines calls to each function with @scheme[and].  Equivalent to
 @scheme[(and (f x ...) ...)]
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (conjoin exact? integer?))
 (f 1)
 (f 1.0)
@@ -71,7 +74,7 @@ Combines calls to each function with @scheme[or].  Equivalent to
 @scheme[(or (f x ...) ...)]
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (disjoin exact? integer?))
 (f 1)
 (f 1.0)
@@ -89,7 +92,7 @@ Passes @scheme[x ...] to @scheme[f].  Keyword arguments are allowed.  Equivalent
 to @scheme[(f x ...)].  Useful for application in higher-order contexts.
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (map call
      (list + - * /)
      (list 1 2 3 4)
@@ -121,7 +124,7 @@ equations:
 ]
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define reciprocal (papply / 1))
 (reciprocal 3)
 (reciprocal 4)
@@ -169,7 +172,7 @@ to @scheme[curryn] and @scheme[currynr] in the following manner:
 ]
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 
 (define reciprocal (curryn 1 / 1))
 (reciprocal 3)
@@ -211,7 +214,7 @@ This is useful for function expressions that may be run, but not called, before
 without evaluating @scheme[f].
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (eta g))
 f
 (define g (lambda (x) (+ x 1)))
@@ -230,7 +233,7 @@ This macro behaves similarly to @scheme[eta], but produces a function with
 statically known arity which may improve efficiency and error reporting.
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define f (eta* g x))
 f
 (procedure-arity f)
@@ -256,7 +259,7 @@ argument @scheme[id] is @scheme[(param)]; @scheme[param] is bound to @scheme[id]
 via @scheme[parameterize] during the function call.
 
 @defexamples[
-#:eval (eval/require 'unstable/function)
+#:eval the-eval
 (define p (open-output-string))
 (define hello-world
   (lambda/parameter ([port #:param current-output-port])
@@ -267,3 +270,5 @@ via @scheme[parameterize] during the function call.
 ]
 
 }
+
+@(close-eval the-eval)

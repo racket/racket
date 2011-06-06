@@ -7,10 +7,10 @@
                      syntax/id-table
                      racket/base))
 
-@title[#:tag "mutated-vars"]{Finding Mutated Variables}
-
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/mutated-vars syntax/id-table racket/dict))
+
+@title[#:tag "mutated-vars"]{Finding Mutated Variables}
 
 @defmodule[unstable/mutated-vars]
 

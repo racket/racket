@@ -1,11 +1,10 @@
 #lang scribble/manual
-@(require
-   scribble/eval
-   "utils.rkt"
-   (for-label
-     racket
-     unstable/define
-     (only-in mzlib/etc define-syntax-set)))
+@(require scribble/eval "utils.rkt"
+          (for-label racket unstable/define
+                     (only-in mzlib/etc define-syntax-set)))
+
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/define (for-syntax racket/base)))
 
 @title{Definitions}
 
@@ -23,7 +22,7 @@ When used at the top level of a module, evaluates @scheme[expr] at the end of
 the module.  This can be useful for calling functions before their definitions.
 
 @defexamples[
-#:eval (eval/require 'unstable/define)
+#:eval the-eval
 (module Failure scheme
   (f 5)
   (define (f x) x))
@@ -58,7 +57,7 @@ Racket with different bindings, to provide an implementation of a binding for
 versions that do not have it but use the built-in one in versions that do.
 
 @defexamples[
-#:eval (eval/require 'unstable/define)
+#:eval the-eval
 (define-if-unbound x 1)
 x
 (define y 2)
@@ -81,7 +80,7 @@ for each @scheme[new] identifier, redirecting it to the corresponding
 @scheme[old] identifier.
 
 @defexamples[
-#:eval (eval/require 'unstable/define)
+#:eval the-eval
 (define-renaming use #%app)
 (define-renamings [def define] [lam lambda])
 (def plus (lam (x y) (use + x y)))
@@ -109,7 +108,7 @@ Defines the form @scheme[name] as a shorthand for setting the parameter
 to @scheme[(parameterize ([parameter value]) body ...)].
 
 @defexamples[
-#:eval (eval/require 'unstable/define)
+#:eval the-eval
 (define-with-parameter with-input current-input-port)
 (with-input (open-input-string "Tom Dick Harry") (read))
 ]
@@ -124,7 +123,7 @@ definition form with function shorthand like @scheme[define] and
 which works like @scheme[define-values] or @scheme[define-syntaxes].
 
 @defexamples[
-#:eval (eval/require 'unstable/define)
+#:eval the-eval
 (define-single-definition define-like define-values)
 (define-like x 0)
 x
@@ -148,7 +147,7 @@ Especially useful for mutually recursive expander functions and phase 1 macro
 definitions.  Subsumes the behavior of @racket[define-syntax-set].
 
 @defexamples[
-#:eval (eval/require 'unstable/define '(for-syntax racket/base))
+#:eval the-eval
 (define-syntax-block
     ([implies expand-implies]
      nand)
@@ -183,3 +182,5 @@ Executes @scheme[e] during phase 1 (the syntax transformation phase)
 relative to its context, during pass 2 (after head expansion).
 
 }
+
+@(close-eval the-eval)

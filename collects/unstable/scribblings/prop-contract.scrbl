@@ -1,11 +1,6 @@
 #lang scribble/manual
-@(require scribble/struct
-          scribble/decode
-          scribble/eval
-	  "utils.rkt"
-          (for-label racket/base
-                     racket/contract
-                     unstable/prop-contract))
+@(require scribble/struct scribble/decode scribble/eval "utils.rkt"
+          (for-label racket/base racket/contract unstable/prop-contract))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/contract unstable/prop-contract))

@@ -1,16 +1,9 @@
 #lang scribble/manual
-@(require scribble/struct
-          scribble/decode
-          scribble/eval
-	  "utils.rkt"
-          (for-label racket/base
-                     racket/contract
-                     unstable/wrapc
-                     racket/syntax))
+@(require scribble/struct scribble/decode scribble/eval "utils.rkt"
+          (for-label racket/base racket/contract unstable/wrapc racket/syntax))
 
-@(begin
-  (define the-eval (make-base-eval))
-  (the-eval '(require racket/contract (for-syntax racket/base unstable/wrapc))))
+@(define the-eval (make-base-eval))
+@(the-eval '(require racket/contract (for-syntax racket/base unstable/wrapc)))
 
 @title[#:tag "wrapc"]{Contracts for macro subexpressions}
 

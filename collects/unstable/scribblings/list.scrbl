@@ -1,13 +1,7 @@
 #lang scribble/doc
-@(require scribble/base
-          scribble/manual
-          scribble/eval
-	  "utils.rkt"
-          (for-label racket/dict
-                     unstable/list
-                     syntax/id-table
-                     racket/contract
-                     racket/base))
+@(require scribble/base scribble/manual scribble/eval "utils.rkt"
+          (for-label racket/base racket/dict syntax/id-table racket/contract
+                     unstable/list))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/list))
@@ -75,7 +69,7 @@ Produces @racket[(values (filter f l) ...)].
 @defproc[(extend [l1 list?] [l2 list?] [v any/c]) list?]{
 Extends @racket[l2] to be as long as @racket[l1] by adding @racket[(-
 (length l1) (length l2))] copies of @racket[v] to the end of
-@racket[l2].   
+@racket[l2].
 
 @examples[#:eval the-eval
 (extend '(1 2 3) '(a) 'b)
@@ -115,7 +109,7 @@ true value. The procedures @racket[equal?], @racket[eqv?], and
 ]
 }
 
-                         
+
 @addition{Carl Eastlund}
 
 @defproc[(map/values [n natural-number/c]
@@ -145,7 +139,7 @@ Produces a pair of lists of the respective values of @scheme[f] applied to the
 elements in @scheme[lst ...] sequentially.
 
 @defexamples[
-#:eval (eval/require 'unstable/list)
+#:eval the-eval
 (map2 (lambda (x) (values (+ x 1) (- x 1))) (list 1 2 3))
 ]
 

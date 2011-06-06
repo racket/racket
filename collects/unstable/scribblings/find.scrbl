@@ -1,16 +1,11 @@
 #lang scribble/manual
-@(require scribble/eval
-          "utils.rkt"
-          (for-label unstable/find
-                     racket/contract
-                     racket/shared
-                     racket/base))
-
-@title[#:tag "find"]{Find}
+@(require scribble/eval "utils.rkt"
+          (for-label unstable/find racket/contract racket/shared racket/base))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/find))
-@(the-eval '(require racket/shared))
+@(the-eval '(require unstable/find racket/shared))
+
+@title[#:tag "find"]{Find}
 
 @defmodule[unstable/find]
 

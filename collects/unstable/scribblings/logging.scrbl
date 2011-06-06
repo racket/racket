@@ -1,11 +1,10 @@
 #lang scribble/manual
-
 @(require scribble/eval "utils.rkt" (for-label racket unstable/logging))
-
-@title{Logging}
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/logging))
+
+@title{Logging}
 
 @defmodule[unstable/logging]
 

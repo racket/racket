@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label racket unstable/require))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/require))
+
 @title{Requiring Modules}
 
 @defmodule[unstable/require]
@@ -23,8 +26,10 @@ Re-exports all bindings provided by each @scheme[module-path].  Equivalent to:
 Produces the names exported by the @scheme[require-spec]s as a list of symbols.
 
 @examples[
-#:eval (eval/require 'unstable/require)
+#:eval the-eval
 (quote-require racket/bool racket/function)
 ]
 
 }
+
+@(close-eval the-eval)

@@ -6,10 +6,10 @@
                      racket/contract
                      racket/base))
 
-@title[#:tag "class-iop"]{Interface-Oriented Programming for Classes}
-
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/class unstable/class-iop (for-syntax racket/base)))
+
+@title[#:tag "class-iop"]{Interface-Oriented Programming for Classes}
 
 @defmodule[unstable/class-iop]
 

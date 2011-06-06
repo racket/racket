@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label racket unstable/dict))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require racket/dict unstable/dict))
+
 @title{Dictionaries}
 
 @defmodule[unstable/dict]
@@ -14,7 +17,7 @@ This module provides tools for manipulating dictionary values.
 Reports whether @scheme[d] is empty (has no keys).
 
 @defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
+#:eval the-eval
 (dict-empty? '())
 (dict-empty? '([1 . one] [2 . two]))
 ]
@@ -38,7 +41,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
+#:eval the-eval
 (dict-union '([1 . one]) '([2 . two]) '([3 . three]))
 (dict-union '([1 . (one uno)] [2 . (two dos)])
             '([1 . (ein une)] [2 . (zwei deux)])
@@ -64,7 +67,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (eval/require 'racket/dict 'unstable/dict)
+#:eval the-eval
 (define d (make-hash))
 d
 (dict-union! d '([1 . (one uno)] [2 . (two dos)]))
@@ -76,3 +79,5 @@ d
 ]
 
 }
+
+@(close-eval the-eval)

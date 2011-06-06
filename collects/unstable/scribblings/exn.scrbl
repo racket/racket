@@ -1,9 +1,9 @@
 #lang scribble/manual
-@(require scribble/eval
-          "utils.rkt"
-          (for-label unstable/exn
-                     racket/contract
-                     racket/base))
+@(require scribble/eval "utils.rkt"
+          (for-label unstable/exn racket/contract racket/base))
+
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/exn))
 
 @title[#:tag "exn"]{Exceptions}
 
@@ -36,10 +36,12 @@ level before continuing.  Exceptions raised by the final expression are not
 caught by @scheme[try].
 
 @defexamples[
-#:eval (eval/require 'unstable/exn)
+#:eval the-eval
 (try (+ 1 2) (+ 3 4))
 (try (+ 'one 'two) (+ 3 4))
 (try (+ 'one 'two) (+ 'three 'four))
 ]
 
 }
+
+@(close-eval the-eval)

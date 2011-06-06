@@ -1,15 +1,12 @@
 #lang scribble/manual
-@(require scribble/eval
-          "../utils.rkt"
-          (for-label unstable/gui/notify
-                     racket/contract
-                     racket/class
-                     racket/base))
-
-@title[#:tag "gui-notify"]{Notify-boxes}
+@(require scribble/eval "../utils.rkt"
+          (for-label racket/base unstable/gui/notify racket/contract
+                     racket/class))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/class unstable/private/notify))
+
+@title[#:tag "gui-notify"]{Notify-boxes}
 
 @defmodule[unstable/gui/notify]
 

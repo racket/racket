@@ -1,14 +1,11 @@
 #lang scribble/manual
-@(require scribble/eval
-          "utils.rkt"
-          (for-label unstable/struct
-                     racket/contract
-                     racket/base))
-
-@title[#:tag "struct"]{Structs}
+@(require scribble/eval "utils.rkt"
+          (for-label racket/base unstable/struct racket/contract))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/struct))
+
+@title[#:tag "struct"]{Structs}
 
 @defmodule[unstable/struct]
 

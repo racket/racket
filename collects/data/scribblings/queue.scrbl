@@ -1,6 +1,7 @@
 #lang scribble/manual
-@(require scribble/eval "utils.rkt" (for-label racket data/queue))
-@(define qeval (eval/require 'data/queue))
+@(require scribble/eval (for-label racket data/queue))
+@(define qeval (make-base-eval))
+@(qeval '(require data/queue))
 
 @title{Imperative Queues}
 

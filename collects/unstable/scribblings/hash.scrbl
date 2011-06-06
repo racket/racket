@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label scheme unstable/hash))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/hash))
+
 @title{Hash Tables}
 
 @defmodule[unstable/hash]
@@ -26,7 +29,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (eval/require 'unstable/hash)
+#:eval the-eval
 (hash-union (make-immutable-hash '([1 . one])) (make-immutable-hash '([2 . two])) (make-immutable-hash '([3 . three])))
 (hash-union (make-immutable-hash '([1 . (one uno)] [2 . (two dos)]))
             (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
@@ -52,7 +55,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (eval/require 'unstable/hash)
+#:eval the-eval
 (define h (make-hash))
 h
 (hash-union! h (make-immutable-hash '([1 . (one uno)] [2 . (two dos)])))
@@ -64,3 +67,5 @@ h
 ]
 
 }
+
+@(close-eval the-eval)

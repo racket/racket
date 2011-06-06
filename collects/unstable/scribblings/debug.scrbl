@@ -2,6 +2,9 @@
 @(require scribble/eval "utils.rkt"
           (for-label racket unstable/debug unstable/syntax))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require unstable/debug))
+
 @title{Debugging}
 
 @defmodule[unstable/debug]
@@ -22,7 +25,7 @@ current error port.  The name and source location of the expression may be
 overridden by keyword options; their defaults are the syntactic form of the
 expression and its syntactic source location, respectively.
 
-@examples[#:eval (eval/require 'unstable/debug)
+@examples[#:eval the-eval
 (debug 0)
 (debug #:name "one, two, three" (values 1 2 3))
 (debug #:source (make-srcloc 'here 1 2 3 4)
@@ -37,7 +40,7 @@ Constructs a message in the same manner as @scheme[format] and writes it to
 @scheme[(current-error-port)], with indentation reflecting the number of nested
 @scheme[debug] forms.
 
-@examples[#:eval (eval/require 'unstable/debug)
+@examples[#:eval the-eval
 (dprintf "level: ~a" 0)
 (debug (dprintf "level: ~a" 1))
 (debug (debug (dprintf "level: ~a" 2)))
@@ -53,7 +56,7 @@ Constructs a message in the same manner as @scheme[format] and writes it to
 Logs debugging information for @scheme[(#%app function-expr argument ...)],
 including the evaluation and results of the function and each argument.
 
-@examples[#:eval (eval/require 'unstable/debug)
+@examples[#:eval the-eval
 (debugf + 1 2 3)
 ]
 
@@ -91,3 +94,5 @@ expressions in @scheme[begin], @scheme[define], @scheme[define/private],
 @scheme[with-syntax*], and @scheme[parameterize].
 
 }
+
+@(close-eval the-eval)

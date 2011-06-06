@@ -1,6 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval "utils.rkt" (for-label racket unstable/contract))
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require racket/contract racket/dict unstable/contract))
+
 @title[#:tag "contract"]{Contracts}
 
 @defmodule[unstable/contract]
@@ -195,7 +198,7 @@ result is not guaranteed to be the same kind of sequence as the original value;
 for instance, a wrapped list is not guaranteed to satisfy @scheme[list?].
 
 @defexamples[
-#:eval (eval/require 'racket/contract 'unstable/contract)
+#:eval the-eval
 (define/contract predicates
   (sequence/c (-> any/c boolean?))
   (list integer? string->symbol))
@@ -214,7 +217,7 @@ dictionary as the original value; for instance, a wrapped hash table is not
 guaranteed to satisfy @scheme[hash?].
 
 @defexamples[
-#:eval (eval/require 'racket/contract 'racket/dict 'unstable/contract)
+#:eval the-eval
 (define/contract table
   (dict/c symbol? string?)
   (make-immutable-hash (list (cons 'A "A") (cons 'B 2) (cons 3 "C"))))
@@ -231,3 +234,5 @@ immutable dictionaries (which may be passed through a constructor that involves
 efficient than the original dictionaries.
 
 }
+
+@(close-eval the-eval)
