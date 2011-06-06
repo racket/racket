@@ -14,12 +14,6 @@ This module provides tools for higher-order programming and creating functions.
 
 @section{Simple Functions}
 
-@defproc[(identity [x any/c]) (one-of/c x)]{
-
-Returns @scheme[x].
-
-}
-
 @defform[(thunk body ...)]{
 
 Creates a function that ignores its inputs and evaluates the given body.  Useful

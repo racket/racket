@@ -9,11 +9,6 @@
 
    (test-suite "Simple Functions"
 
-     (test-suite "identity"
-       (test-case "unique symbol"
-         (let* ([sym (gensym)])
-           (check-eq? (identity sym) sym))))
-
      (test-suite "thunk"
        (test-case "unique symbol"
          (let* ([count 0]

@@ -43,6 +43,13 @@
   (test 'f object-name (rec  f (lambda (x) x)))
   (test (list 2) (rec (f . x) (if (= (car x) 3) (f 2) x)) 3))
 
+;; ---------- identity ----------
+(let ()
+  (test 'foo identity 'foo)
+  (test 1 identity 1)
+  (err/rt-test (identity 1 2))
+  (err/rt-test (identity)))
+
 ;; ---------- const ----------
 (let ()
   (test 'foo (const 'foo))

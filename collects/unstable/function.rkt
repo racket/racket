@@ -91,8 +91,6 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (identity x) x)
-
 (define-syntax (thunk stx)
   (syntax-case stx ()
     [(thunk body ...)
@@ -365,7 +363,6 @@
 
 (provide
  ;; functions
- identity
  thunk
  conjoin disjoin
  curryn currynr papply papplyr call

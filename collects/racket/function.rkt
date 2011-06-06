@@ -1,6 +1,8 @@
 #lang scheme/base
 
-(provide const negate curry curryr)
+(provide identity const negate curry curryr)
+
+(define (identity x) x)
 
 (define (const c)
   (define (const . _) c)

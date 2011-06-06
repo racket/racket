@@ -482,6 +482,10 @@ applied.}
 @(define fun-eval (make-base-eval))
 @(interaction-eval #:eval fun-eval (require racket/function))
 
+@defproc[(identity [v any/c]) any/c]{
+Returns @scheme[v].
+}
+
 @defproc[(const [v any]) procedure?]{
 
 Returns a procedure that accepts any arguments and returns @scheme[v].
