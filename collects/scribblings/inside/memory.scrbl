@@ -1009,6 +1009,18 @@ See @cpp{scheme_dont_gc_ptr}.}
 
 Forces an immediate garbage-collection.}
 
+@function[(void scheme_enable_garbage_collection [int on])]{
+
+Garbage collection is enabled only when an internal counter is
+@cpp{0}.  Calling @cpp{scheme_enable_garbage_collection} with a false
+value increments the counter, and calling
+@cpp{scheme_enable_garbage_collection} with a true value decrements
+the counter.
+
+When the @envvar{PLTDISABLEGC} environment variable is set, then
+@exec{racket} initializes the internal counter to @cpp{1} to initially
+disable garbage collection.}
+
 
 @function[(void GC_register_traversers
            [short tag]
