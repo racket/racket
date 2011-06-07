@@ -2,7 +2,8 @@
 
 @begin[(require "utils.rkt"
 		scribble/core scribble/eval
-		(for-label (only-meta-in 0 typed/racket) mzlib/etc))]
+		(for-label (only-meta-in 0 typed/racket)
+                           (only-in mzlib/etc let+)))]
 
 @title[#:tag "more"]{Specifying Types}
 
@@ -17,7 +18,7 @@ language, allowing types to be specified and used.
 @section{Type Annotation and Binding Forms}
 
 In general, variables in Typed Racket must be annotated with their
-type.  
+type.
 
 @subsection{Annotating Definitions}
 
@@ -159,3 +160,5 @@ Any type can be given a name with @racket[define-type].
 
 Anywhere the name @racket[NN] is used, it is expanded to
 @racket[(Number -> Number)].   Type names may not be recursive.
+
+@(close-eval the-eval)

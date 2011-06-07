@@ -503,7 +503,7 @@ Returns a procedure that accepts any arguments and returns @scheme[v].
 any number of inputs and keyword arguments.
 
 @defexamples[
-#:eval the-eval
+#:eval fun-eval
 (define th1 (thunk (define x 1) (printf "~a\n" x)))
 (th1)
 (th1 'x)

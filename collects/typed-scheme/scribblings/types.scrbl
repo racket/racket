@@ -2,7 +2,7 @@
 
 @begin[(require "utils.rkt"
 		scribble/core scribble/eval
-		(for-label (only-meta-in 0 typed/racket) mzlib/etc))]
+		(for-label (only-meta-in 0 typed/racket)))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require typed/racket))
@@ -254,6 +254,7 @@ The new type constructor @racket[All] takes a list of type
 variables and a body type.  The type variables are allowed to
 appear free in the body of the @racket[All] form.
 
+@(close-eval the-eval)
 
 @include-section["varargs.scrbl"]
 
