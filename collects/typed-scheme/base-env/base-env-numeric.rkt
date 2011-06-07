@@ -579,6 +579,31 @@
           (-> non-neg non-pos)
           (-> neg pos)
           (-> non-pos non-neg)))
+
+
+  ;Check to ensure we fail fast if the flonum bindings change
+  (define-namespace-anchor anchor)
+  (let ((flonum-ops #'([unsafe-flround    flround]
+                       [unsafe-flfloor    flfloor]
+                       [unsafe-flceiling  flceiling]
+                       [unsafe-fltruncate fltruncate]
+                       [unsafe-flsin      flsin]
+                       [unsafe-flcos      flcos]
+                       [unsafe-fltan      fltan]
+                       [unsafe-flatan     flatan]
+                       [unsafe-flasin     flasin ]
+                       [unsafe-flacos     flacos]
+                       [unsafe-fllog      fllog]
+                       [unsafe-flexp      flexp])))
+   (define phase (namespace-base-phase (namespace-anchor->namespace anchor)))
+
+   (for-each
+    (lambda (ids)
+     (let* ((ids (syntax->list ids)) (id1 (first ids)) (id2 (second ids)))
+      (unless (free-identifier=? id1 id2 (sub1 phase))
+       (error 'flonum-operations "The assumption that the safe and unsafe flonum-ops are the same binding has been violated. ~a and ~a are diffferent bindings." id1 id2))))
+    (syntax->list flonum-ops)))
+
   )
 
 ;; numeric predicates
@@ -1815,7 +1840,8 @@
 
 ;These are currently the same binding as the safe versions 
 ;and so are not needed. If this changes they should be 
-;uncommented.
+;uncommented. There is a check in the definitions part of
+;the file that makes sure that they are the same binding.
 ;
 ;[unsafe-flround flround-type]
 ;[unsafe-flfloor flfloor-type]
