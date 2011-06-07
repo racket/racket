@@ -3,11 +3,11 @@
   (require "private/teach.ss"
            "private/teachprims.ss"
 	   "private/teach-module-begin.ss"
-           "private/rewrite-error-message.rkt"
 	   mzlib/etc
 	   mzlib/list
 	   syntax/docprovide
-           test-engine/scheme-tests)
+           test-engine/scheme-tests
+           (for-syntax scheme/base))
 
   ;; syntax:
   (provide (rename-out 
@@ -55,7 +55,7 @@
 ; 	   check-property for-all ==> expect expect-within expect-member-of expect-range
 	   )
 
-  ;; procedures:
+
   (provide-and-document
    procedures
    (all-from beginner: lang/private/intermediate-funs procedures))

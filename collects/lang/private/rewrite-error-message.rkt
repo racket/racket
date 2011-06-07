@@ -1,68 +1,29 @@
 #lang scheme/base
 
-(require mzlib/etc mzlib/list)
-(require (for-syntax scheme/base))
-(require (for-syntax "firstorder.ss"))
+(require mzlib/etc 
+         mzlib/list
+         (for-template scheme/base "rewrite-error-message-for-tpl.rkt")
+         (for-syntax "firstorder.ss"
+                     scheme/base))
 
-(provide rewrite-contract-error-message
-         rewrite-lookup-error-message/rand
-         rewrite-lookup-error-message/rator
-         wrap-for-contract-error-message
-         wrap-for-lookup-error-message
-         ::)
+(provide wrap-top-for-lookup-error-message
+         wrap-for-contract-error-message)
 
-(define (rewrite-lookup-error-message/rator e)
-  (rewrite-lookup-error-message e "function"))
-
-(define (rewrite-lookup-error-message/rand e)
-  (rewrite-lookup-error-message e "variable"))
-
-(define (rewrite-lookup-error-message e var-or-function)
-  (define new-message
-    (regexp-replace* #rx"reference to an identifier before its definition"
-                     (exn-message e)
-                     (format "this is ~a not defined" var-or-function)))
-  (struct-copy exn e [message new-message]))
-
-(define-syntax (wrap-for-lookup-error-message stx)
+(define (wrap-top-for-lookup-error-message stx was-in-app-position)
   (syntax-case stx ()
     [(_ . id)
-     (with-syntax ([top (syntax/loc stx #%top)])
-       (syntax/loc stx
-         (with-handlers ([exn:fail:contract:variable?
-                          (compose raise rewrite-lookup-error-message)])
-           (top . id))))]))
+     (quasisyntax/loc 
+      stx
+      (with-handlers ([exn:fail:contract:variable?
+                       (lambda (e) (rewrite-lookup-error-message e #'id #,was-in-app-position))])
+                     (#%top . id)))]))
 
-(define (change-contract-exn-messages e msg)
-  (define constructor
-    (cond [(exn:fail:contract:arity? e) make-exn:fail:contract:arity]
-          [(exn:fail:contract:divide-by-zero? e) make-exn:fail:contract:divide-by-zero]
-          [(exn:fail:contract:non-fixnum-result? e) make-exn:fail:contract:non-fixnum-result]
-          [(exn:fail:contract:continuation? e) make-exn:fail:contract:continuation]
-          [else make-exn:fail:contract]))
-  (constructor msg (exn-continuation-marks e)))
 
-(define (rewrite-contract-error-message e)
-  (define replacements
-    (list (list #rx"expects argument of type (<([^>]+)>)"
-                (lambda (all one two) (format "expects a ~a" two)))
-          (list #rx"expects type (<([^>]+)>)"
-                (lambda (all one two) (format "expects a ~a" two)))
-          (list #rx"^procedure "
-                (lambda (all) ""))
-          ))
-  (define new-message
-    (for/fold ([msg (exn-message e)]) ([repl. replacements])
-      (regexp-replace* (first repl.) msg (second repl.))))
-  (change-contract-exn-messages e new-message))
-
-(define-for-syntax (wrap-for-contract-error-message* stx)
+(define ((wrap-for-contract-error-message app) orig-name stx)
   (syntax-case stx ()
-    [(_ new old)
-     #'(define (new . args)
-         (with-handlers ([exn:fail:contract? (compose raise rewrite-contract-error-message)])
-           (apply old args)))]))
+    [(id . args)
+     (quasisyntax/loc stx
+                      (with-handlers ([exn:fail:contract? (compose raise rewrite-contract-error-message)])
+                                     #,(quasisyntax/loc stx (#,app #,orig-name . args))))]))
 
-(define-syntax wrap-for-contract-error-message wrap-for-contract-error-message*)
 
-(define-syntax :: wrap-for-contract-error-message*) ;; to circumvent most of the ugliness of provide-and-document/wrap's renaming of the function's infered name

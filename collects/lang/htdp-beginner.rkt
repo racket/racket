@@ -55,10 +55,6 @@
   
   (require (for-syntax "private/firstorder.ss"))
     
-  ;; This is essentially a specialized version of `define-primitive'
-  ;;  that refines the error messages for built-in things, which
-  ;;  we might like to call "contructor" or "predicate" instead of
-  ;;  just "primitive".
   (define-syntax (in-rator-position-only stx)
     (syntax-case stx ()
       [(_ new-name orig-name)
@@ -67,35 +63,19 @@
          ;; Some things are not really functions:
          (if (memq (syntax-e orig) '(beginner:pi beginner:e beginner:null beginner:eof))
              #'(define new-name orig-name)
-	     (with-syntax ([(what something)
-			    (case (syntax-e orig)
-			      [(beginner:make-posn)
-			       #'("constructor"
-				  "called with values for the structure fields")]
-			      [(beginner:posn-x beginner:posn-y)
-			       #'("selector"
-				  "applied to a structure to get the field value")]
-			      [(beginner:posn?)
-			       #'("predicate"
-				  "applied to an argument")]
-			      [else
-			       #'("primitive operator"
-				  "applied to arguments")])])
-	       #'(define-syntax new-name 
-                   (make-first-order
-                    (lambda (stx)
-                      (syntax-case stx ()
-                        [(id . args)
-                         (syntax/loc stx
-                           (with-handlers ([exn:fail:contract? (compose raise rewrite-contract-error-message)])
-                             (beginner-app orig-name . args)))]
-                        [_else
-                         (raise-syntax-error
-                          #f
-                          (format
-                           "found a use that does not follow an open parenthesis")
-                          stx)]))
-                    #'orig-name)))))]))
+	     #'(define-syntax new-name 
+                 (make-first-order
+                  (lambda (stx)
+                    (syntax-case stx ()
+                      [(id . args)
+                       ((wrap-for-contract-error-message #'beginner-app) #'orig-name stx)]
+                      [_else
+                       (raise-syntax-error
+                        #f
+                        (format
+                         "found a use that does not follow an open parenthesis")
+                        stx)]))
+                  #'orig-name))))]))
   
   ;; procedures:
   (provide-and-document/wrap

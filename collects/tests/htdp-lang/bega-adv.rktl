@@ -16,7 +16,7 @@
 (htdp-test '(quasiquote (unquote 22)) 'qq ``,,(* 11 2))
 (htdp-test '(quasiquote ((unquote-splicing (22)))) 'qq ``(,@(,@(list (* 11 2)))))
 
-(htdp-syntax-test #'quasiquote "quasiquote: found a use that does not precede an open parenthesis")
+(htdp-syntax-test #'quasiquote "quasiquote: found a use that does not follow an open parenthesis")
 (htdp-syntax-test #'`unquote "quasiquote: misuse of unquote within a quasiquoting backquote")
 (htdp-syntax-test #'`unquote-splicing "quasiquote: misuse of ,@ or unquote-splicing within a quasiquoting backquote")
 (htdp-syntax-test #'`(unquote-splicing 10) "quasiquote: misuse of ,@ or unquote-splicing within a quasiquoting backquote")

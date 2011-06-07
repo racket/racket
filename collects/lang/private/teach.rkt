@@ -40,7 +40,6 @@
            scheme/match
            "set-result.rkt"
            (only racket/base define-struct)
-           "rewrite-error-message.rkt"
 	   racket/struct-info
 	   deinprogramm/signature/signature-english
 	   (all-except deinprogramm/signature/signature signature-violation)
@@ -54,16 +53,18 @@
            (only lang/private/teachprims
                  beginner-equal? beginner-equal~? teach-equal?
                  advanced-cons advanced-list*))
-  (require-for-syntax "teachhelp.rkt"
-                      "teach-shared.rkt"
-                      syntax/kerncase
-                      syntax/stx
-                      syntax/struct
-                      syntax/context
-                      mzlib/include
-                      scheme/list
-                      (rename racket/base racket:define-struct define-struct)
-                      (only racket/base syntax->datum datum->syntax)
+
+  (require-for-syntax "teachhelp.ss"
+                      "teach-shared.ss"
+                      "rewrite-error-message.rkt"
+		      syntax/kerncase
+		      syntax/stx
+		      syntax/struct
+		      syntax/context
+		      mzlib/include
+		      scheme/list
+		      (rename racket/base racket:define-struct define-struct)
+		      (only racket/base syntax->datum datum->syntax)
                       (rename racket/base kw-app #%app)
                       racket/struct-info
                       stepper/private/shared
@@ -104,7 +105,7 @@
 				[exn:fail:syntax? (lambda (exn) #t)])
 		  (namespace-variable-value (syntax-e id) #t)
 		  #t)))
-      (error who "cannot redefine name: ~a" (syntax-e id))))
+      (raise-syntax-error #f "this name was defined previously and cannot be re-defined" id)))
 
   ;; For quasiquote and shared:
   (require (rename "teachprims.rkt" the-cons advanced-cons))
@@ -317,10 +318,10 @@
 		    (let ([b (identifier-binding name)])
 		      (when b
 			(teach-syntax-error
-			 'duplicate
-			 stx
+			 (syntax-e name)
+			 name
 			 #f
-                         "~a was defined previously and cannot be re-defined" (syntax-e name)))))
+                         "this name was defined previously and cannot be re-defined"))))
 		  names)
         (if assign
             (with-syntax ([(name ...) (if (eq? assign #t)
@@ -1068,7 +1069,7 @@
          
          (with-syntax ([(name? variant? ...)
                         (map (lambda (stx)
-                               (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx)))))
+                               (datum->syntax stx (string->symbol (format "~a?" (syntax->datum stx))) stx))
                              (syntax->list #'(name variant ...)))])
                       ;; Here we are using an explicit loop and the "/proc" functions instead of producing a syntax with "..."
                       ;; to preserve the syntax location information.
@@ -1220,14 +1221,10 @@
 	     ;; delay the check.
              (stepper-ignore-checker 
               (syntax/loc stx (#%app values (beginner-top-continue id))))
-             (with-syntax ([rewriter
-                            (if (syntax-property #'id 'was-in-app-position)
-                                'rewrite-lookup-error-message/rator
-                                'rewrite-lookup-error-message/rand)])
-               (syntax/loc stx
-                 (with-handlers ([exn:fail:contract:variable?
-                                  (compose raise rewriter)])
-                   (#%top . id)))))]))
+             
+             (wrap-top-for-lookup-error-message 
+              stx
+              (syntax-property #'id 'was-in-app-position)))]))
     
     (define (beginner-top-continue/proc stx)
       (syntax-case stx ()
@@ -2049,7 +2046,7 @@
 		   "found a variable that is used more than once: ~a"
 		   (syntax-e dup))))
 	      (check-single-expression 'lambda
-				       "after the variables"
+				       "for the function body"
 				       stx
 				       (syntax->list (syntax (lexpr ...)))
 				       args)
@@ -2227,7 +2224,7 @@
 	 ;; new syntax object that is an `intermediate-define' form;
 	 ;; that's important for syntax errors, so that they
 	 ;; report `advanced-define' as the source.
-	 (define/proc #f #t stx #'beginner-lambda)]
+         (define/proc #f #t stx #'beginner-lambda)]
 	[_else
 	 (bad-use-error 'define stx)]))
 
@@ -2260,7 +2257,7 @@
                    "found a variable that is used more than once: ~a"
 		   (syntax-e dup))))
 	      (check-single-expression 'lambda 
-				       "after the variables"
+				       "for the function body"
 				       stx
 				       (syntax->list (syntax exprs))
 				       names)
@@ -2339,18 +2336,19 @@
 			      'set!
 			      stx
 			      (syntax id)
-                              "expected a mutable variable after set!, but found a variable that cannot be modified")))
+                              "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
+                              (syntax-e #'id))))
 			 ;; If we're in a module, we'd like to check here whether
 			 ;;  the identier is bound, but we need to delay that check
 			 ;;  in case the id is defined later in the module. So only
 			 ;;  do this in continuing mode:
-			 (when continuing?
+                         (when continuing?
 			   (let ([binding (identifier-binding #'id)])
 			     (cond
 			      [(and (not binding)
 				    (syntax-source-module #'id))
 			       (teach-syntax-error
-				'unknown
+				#f
 				#'id
 				#f
 				"this variable is not defined")]
@@ -2359,23 +2357,26 @@
 					(let-values ([(path rel) (module-path-index-split (car binding))])
 					  path)))
 			       (teach-syntax-error
-				'unknown
+				'set!
 				#'id
 				#f
-                                "expected a mutable variable after set!, but found a variable that cannot be modified")])))
+                                "expected a mutable variable after set!, but found a variable that cannot be modified: ~a"
+                                (syntax-e #'id))])))
 			 ;; Check the RHS
 			 (check-single-expression 'set!
 						  "for the new value"
 						  stx
 						  exprs
 						  null)
+
 			 (if continuing?
 			     (stepper-syntax-property
-			      (syntax/loc stx (begin (set! id expr ...) set!-result))
+			      (quasisyntax/loc stx (begin #,(datum->syntax #'here `(set! ,#'id ,@(syntax->list #'(expr ...))) stx) set!-result))
 			      'stepper-skipto
                               (append skipto/cdr
                                       skipto/first))
-			     (stepper-ignore-checker (syntax/loc stx (#%app values (advanced-set!-continue id expr ...))))))]
+			     (stepper-ignore-checker (quasisyntax/loc stx (#%app values #,(advanced-set!-continue/proc
+                                                                                           (syntax/loc stx (_ id expr ...))))))))]
 		      [(_ id . __)
 		       (teach-syntax-error
 			'set!
@@ -2574,7 +2575,7 @@
 			 'case
 			 stx
 			 choices
-			 "expected at least one choice (in parentheses), but nothing's there"))
+			 "expected a symbol (without its quote) or a number as a choice, but nothing's there"))
 		      (check-single-expression 'case
 					       "for the answer in the case clause"
 					       clause

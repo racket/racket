@@ -21,12 +21,12 @@
 (htdp-syntax-test #'(define 1 10) "define: expected a variable name, or a function name and its variables (in parentheses), but found a number")
 (htdp-syntax-test #'(define x lambda) "lambda: found a use that does not follow an open parenthesis")
 (htdp-syntax-test #'(define x (lambda)) "lambda: expected at least one variable (in parentheses) after lambda, but nothing's there")
-(htdp-syntax-test #'(define x (lambda (x))) "lambda: expected an expression after the variables, but nothing's there")
+(htdp-syntax-test #'(define x (lambda (x))) "lambda: expected an expression for the function body, but nothing's there")
 (htdp-syntax-test #'(define x (lambda y)) "lambda: expected at least one variable (in parentheses) after lambda, but found something else")
 (htdp-syntax-test #'(define x (lambda y 10) "lambda: expected at least one variable (in parentheses) after lambda, but found something else"))
 (htdp-syntax-test #'(define x (lambda (10) 10)) "lambda: expected a variable, but found a number")
 (htdp-syntax-test #'(define x (lambda (x 10) 10)) "lambda: expected a variable, but found a number")
-(htdp-syntax-test #'(define x (lambda (y) 10 11)) "lambda: expected only one expression after the variables, but found 1 extra part")
+(htdp-syntax-test #'(define x (lambda (y) 10 11)) "lambda: expected only one expression for the function body, but found 1 extra part")
 (htdp-syntax-test #'(define x (lambda (y y) 10)) "lambda: found a variable that is used more than once: y")
 (htdp-syntax-test #'(+ (define x 5)) "define: found a definition that is not at the top level")
 
@@ -65,6 +65,7 @@
 (htdp-test 9 'app-f (f 4))
 (htdp-top (define f2 (lambda (y) (+ x y))))
 (htdp-test 15 'app-f (f 10))
+(htdp-top-pop 1)
 (htdp-top-pop 1)
 (htdp-top-pop 1)
 

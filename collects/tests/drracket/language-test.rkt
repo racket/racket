@@ -346,7 +346,7 @@ the settings above should match r5rs
                      (regexp (regexp-quote "#%module-begin: illegal use (not a module body) in: (#%module-begin)"))
                      #rx"read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     #rx"reference to undefined identifier:")))
+                     #rx"reference to undefined identifier")))
 
 
 ;                                                             
@@ -385,71 +385,57 @@ the settings above should match r5rs
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
-                     "define: cannot redefine name: x")
+                     "x: this name was defined previously and cannot be re-defined")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" 
                      "(make-spider 4)"
-                     "define-struct: cannot redefine name: spider\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i\n")
     
-    (test-expression "class" 
-                     "class: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: class")
-    (test-expression "shared"
-                     "shared: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: shared")
+    (test-undefined-var "class") 
+    (test-undefined-var "shared")
     (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
     
-    (test-expression "call/cc"
-                     "call/cc: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: call/cc")
+    (test-undefined-var "call/cc")
     
     (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
     (test-expression "(error \"a\" \"a\")" "aa")
     
-    (test-expression "(time 1)"
-                     "time: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: time")
+    (test-undefined-fn "(time 1)" "time"))
     
     (test-expression "true" 
                      "true"
                      "true")
-    (test-expression "mred^" 
-                     "mred^: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: mred^")
+    (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
                      "false"
                      "false")
-    (test-expression "(set! x 1)"
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
-    (test-expression "(define qqq 2) (set! qqq 1)" 
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
+    (test-undefined-fn "(set! x 1)" "set!")
+    (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     
     (test-expression "(cond [(= 1 2) 3])"
                      "cond: all question results were false")
     (test-expression "(cons 1 2)" 
-                     "cons: second argument must be of type <list>, given 1 and 2")
+                     "cons: second argument must be a list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)"
-                     "+: expects type <number> as 1st argument, given: (cons 1 empty); other arguments were: 2")
+                     "+: expects a number as 1st argument, given: (cons 1 empty); other arguments were: 2")
     (test-expression "'(1)"
-                     "quote: expected a name after a ', found something else")
+                     "quote: expected the name of the symbol after the quote, but found a part")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
-                     "define: cannot redefine name: shrd\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
-    (test-expression "(local ((define x x)) 1)"
-                     "local: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
-    (test-expression "(letrec ([x x]) 1)"
-                     "letrec: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
+                     "shrd: this name was defined previously and cannot be re-defined\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
+    (test-expression "(local ((define x x)) 1)" 
+                     "local: this function is not defined" 
+                     "function call: expected a function after the open parenthesis, but found a part")
+    (test-expression "(letrec ([x x]) 1)" 
+                     "letrec: this function is not defined"
+                     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "+: expects at least 2 arguments, given 1: 1")
     
     (test-expression "1.0" "1" "1")
     (test-expression "#i1.0" "#i1.0" "#i1.0")
@@ -487,34 +473,29 @@ the settings above should match r5rs
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" "true")
-    (test-expression "(print (floor (sqrt 2)))" 
-                     "print: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: print")
+    (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)"
-                     "let: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
+                     "let: this function is not defined"
+                     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression ",1"
                      "read: illegal use of comma")
     
     (test-expression "(list 1)" 
                      "(cons 1 empty)"
                      "(cons 1 empty)")
-    (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
+    (test-expression "(car (list))" 
+                     "car: expects a pair; given empty")
     
-    (test-expression "argv" 
-                     "argv: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: argv")
-    (test-expression "(define-syntax app syntax-case)"
-                     "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")
+    (test-undefined-var "argv")
+    (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "module: this function is not defined"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "define: expected at least one argument name after the function name, but found none"
-                     #rx"define: function definitions are not allowed in the interactions window")))
+                       "define: expected at least one variable after the function name, but found none"
+                       #rx"define: function definitions are not allowed in the interactions window"))
 
 
 ;                                                                            
@@ -557,69 +538,55 @@ the settings above should match r5rs
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
-                     "define: cannot redefine name: x")
+                     "x: this name was defined previously and cannot be re-defined")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "define-struct: cannot redefine name: spider\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i")
     
-    (test-expression "class"
-                     "class: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: class")
-    (test-expression "shared"
-                     "shared: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: shared")
+    (test-undefined-var "class")
+    (test-undefined-var "shared")
     
     (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
     
-    (test-expression "call/cc"
-                     "call/cc: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: call/cc")
+    (test-undefined-var "call/cc")
     
     (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
     (test-expression "(error \"a\" \"a\")" "aa")
     
-    (test-expression "(time 1)"
-                     "time: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: time")
+    (test-undefined-fn "(time 1)" "time")
     
     (test-expression "true" 
                      "true"
                      "true")
-    (test-expression "mred^" 
-                     "mred^: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: mred^")
+    (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
                      "false"
                      "false")
-    (test-expression "(set! x 1)"
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
-    (test-expression "(define qqq 2) (set! qqq 1)" 
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
+    (test-undefined-fn "(set! x 1)" "set!")
+    (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
-    (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(cons 1 2)" "cons: second argument must be a list, but received 1 and 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)"
-                     "local: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
+                     "local: this function is not defined"
+                     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(letrec ([x x]) 1)"
-                     "letrec: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
+                     "letrec: this function is not defined"
+                     "function call: expected a function after the open parenthesis, but found a part")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "+: expects at least 2 arguments, given 1: 1")
     
     (test-expression "1.0" "1" "1")
     (test-expression "#i1.0" "#i1.0" "#i1.0")
@@ -657,34 +624,28 @@ the settings above should match r5rs
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" "true")
-    (test-expression "(print (floor (sqrt 2)))" 
-                     "print: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: print")
+    (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
-                     "let: name is not defined, not a parameter, and not a primitive name"
-                     "function call: expected a defined function name or a primitive operation name after an open parenthesis, but found something else")
+                     "let: this function is not defined"
+                       "function call: expected a function after the open parenthesis, but found a part")
     (test-expression ",1"
-                     "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
+                     "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
-    (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
+    (test-expression "(car (list))" "car: expects a pair; given empty")
     
-    (test-expression "argv" 
-                     "argv: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: argv")
+    (test-undefined-var "argv")
     
-    (test-expression "(define-syntax app syntax-case)" 
-                     "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")
+    (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "module: this function is not defined"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "define: expected at least one argument name after the function name, but found none"
+                     "define: expected at least one variable after the function name, but found none"
                      #rx"define: function definitions are not allowed in the interactions window")))
 
 
@@ -726,29 +687,23 @@ the settings above should match r5rs
     
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
-                     "define: cannot redefine name: x")
+                     "x: this name was defined previously and cannot be re-defined")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "define-struct: cannot redefine name: spider\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i")
     
-    (test-expression "class" 
-                     "class: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: class")
-    (test-expression "shared"
-                     "shared: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: shared")
+    (test-undefined-var "class")
+    (test-undefined-var "shared")
     
     (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
     
-    (test-expression "call/cc"
-                     "call/cc: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: call/cc")
+    (test-undefined-var "call/cc")
     
     (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
     (test-expression "(error \"a\" \"a\")" "aa")
@@ -759,27 +714,21 @@ the settings above should match r5rs
     (test-expression "true" 
                      "true"
                      "true")
-    (test-expression "mred^" 
-                     "mred^: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: mred^")
+    (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
                      "false"
                      "false")
-    (test-expression "(set! x 1)"
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
-    (test-expression "(define qqq 2) (set! qqq 1)" 
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
+    (test-undefined-fn "(set! x 1)" "set!")
+    (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
-    (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(cons 1 2)"   "cons: second argument must be a list, but received 1 and 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (cons 1 empty); other arguments were: 2")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -821,34 +770,28 @@ the settings above should match r5rs
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" "true")
-    (test-expression "(print (floor (sqrt 2)))" 
-                     "print: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: print")
+    (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "function:f"
                      "function:f")
     (test-expression ",1"
-                     "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
+                     "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
-    (test-expression "argv" 
-                     "argv: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: argv")
+    (test-undefined-var "argv")
     
-    (test-expression "(define-syntax app syntax-case)" 
-                     "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")
+    (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "module: this function is not defined"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "define: expected at least one argument name after the function name, but found none"
-                     #rx"define: expected at least one argument name after the function name, but found none")))
+                     "define: expected at least one variable after the function name, but found none"
+                     #rx"define: expected at least one variable after the function name, but found none")))
 
 
 
@@ -891,29 +834,23 @@ the settings above should match r5rs
                      "true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
-                     "define: cannot redefine name: x")
+                     "x: this name was defined previously and cannot be re-defined")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "define-struct: cannot redefine name: spider\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i")
     
-    (test-expression "class"
-                     "class: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: class")
-    (test-expression "shared" 
-                     "shared: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: shared")
+    (test-undefined-var "class")
+    (test-undefined-var "shared")
     
     (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
     (test-expression "'(1 . 2)" "read: illegal use of \".\"")
     
-    (test-expression "call/cc"
-                     "call/cc: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: call/cc")
+    (test-undefined-var "call/cc")
     
     (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
     (test-expression "(error \"a\" \"a\")" "aa")
@@ -924,27 +861,21 @@ the settings above should match r5rs
     (test-expression "true" 
                      "true"
                      "true")
-    (test-expression "mred^" 
-                     "mred^: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: mred^")
+    (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
                      "false"
                      "false")
-    (test-expression "(set! x 1)"
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
-    (test-expression "(define qqq 2) (set! qqq 1)" 
-                     "set!: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: set!")
+    (test-undefined-fn "(set! x 1)" "set!")
+    (test-undefined-fn "(define qqq 2) (set! qqq 1)" "set!")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
-    (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
-    (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
+    (test-expression "(cons 1 2)" "cons: second argument must be a list, but received 1 and 2")
+    (test-expression "(+ (list 1) 2)" "+: expects a number as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(list (list 1) (list 1))"
-                     "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
+                     "shrd: this name was defined previously and cannot be re-defined\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -982,34 +913,28 @@ the settings above should match r5rs
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" "true")
-    (test-expression "(print (floor (sqrt 2)))" 
-                     "print: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: print")
+    (test-undefined-fn "(print (floor (sqrt 2)))" "print")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
                      "(lambda (a1) ...)"
                      "(lambda (a1) ...)")
     (test-expression ",1"
-                     "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
+                       "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
-    (test-expression "argv" 
-                     "argv: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: argv")
+    (test-undefined-var "argv")
     
-    (test-expression "(define-syntax app syntax-case)" 
-                     "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")
+    (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "module: this function is not defined"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
-                     "define: expected at least one argument name after the function name, but found none"
-                     #rx"define: expected at least one argument name after the function name, but found none")))
+                       "define: expected at least one variable after the function name, but found none"
+                     #rx"define: expected at least one variable after the function name, but found none")))
 
 
 
@@ -1032,17 +957,17 @@ the settings above should match r5rs
 
 (define (advanced)
   (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
-    (check-top-of-repl)
+;    (check-top-of-repl)
     
-    (generic-settings #t)
-    (generic-output #t #t #t #f)
-    (teaching-language-fraction-output)
+;    (generic-settings #t)
+;    (generic-output #t #t #t #f)
+;    (teaching-language-fraction-output)
     
-    (test-hash-bang)
-    (test-error-after-definition)
+;    (test-hash-bang)
+;    (test-error-after-definition)
     
     (prepare-for-test-expression)
-    
+    #|
     (test-expression "'|.|" 
                      "'|.|"
                      "'|.|")
@@ -1051,28 +976,24 @@ the settings above should match r5rs
                      "true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
-                     "define: cannot redefine name: x")
+                     "x: this name was defined previously and cannot be re-defined")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
                      "(make-spider 4)"
-                     "define-struct: cannot redefine name: spider\n(make-spider 4)")
+                     "spider: this name was defined previously and cannot be re-defined\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
                      "0+1i"
                      "0+1i")
+    |#
+    (test-undefined-var "class")
     
-    (test-expression "class"
-                     "class: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: class")
-    
-    (test-expression "shared" "shared: found a use of `shared' that does not follow an open parenthesis")
+    (test-expression "shared" "shared: found a use that does not follow an open parenthesis")
     
     (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
     
-    (test-expression "call/cc" 
-                     "call/cc: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: call/cc")
+    (test-undefined-var "call/cc")
     
     (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
     (test-expression "(error \"a\" \"a\")" "aa")
@@ -1083,27 +1004,25 @@ the settings above should match r5rs
     (test-expression "true" 
                      "true"
                      "true")
-    (test-expression "mred^" 
-                     "mred^: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: mred^")
+    (test-undefined-var "mred^")
     (test-expression "(eq? 'a 'A)" 
                      "false"
                      "false")
     (test-expression "(set! x 1)"
-                     "x: name is not defined"
+                     "x: this variable is not defined"
                      "set!: cannot set variable before its definition: x")
     (test-expression "(define qqq 2) (set! qqq 1)" 
                      "(void)" 
-                     "define: cannot redefine name: qqq\n(void)")
+                     "qqq: this name was defined previously and cannot be re-defined\n(void)")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
-    (test-expression "(cons 1 2)" "cons: second argument must be of type <list or cyclic list>, given 1 and 2")
+    (test-expression "(cons 1 2)"   "cons: second argument must be a list or cyclic list, but received 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
                      "(shared ((-1- (list 1))) (list -1- -1-))"
-                     "define: cannot redefine name: shrd\n(shared ((-1- (list 1))) (list -1- -1-))")
+                     "shrd: this name was defined previously and cannot be re-defined\n(shared ((-1- (list 1))) (list -1- -1-))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -1151,22 +1070,18 @@ the settings above should match r5rs
                      "(lambda (a1) ...)"
                      "(lambda (a1) ...)")
     (test-expression ",1"
-                     "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
+                     "unquote: misuse of a comma or unquote, not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
                      "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
-    (test-expression "argv"
-                     "argv: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: argv")
+    (test-undefined-var "argv")
     
-    (test-expression "(define-syntax app syntax-case)" 
-                     "define-syntax: name is not defined, not a parameter, and not a primitive name"
-                     "reference to an identifier before its definition: define-syntax")
+    (test-undefined-fn "(define-syntax app syntax-case)" "define-syntax")
     
     (test-expression "#lang racket"
-                     "module: name is not defined, not a parameter, and not a primitive name"
+                     "module: this function is not defined"
                      "read: #lang not enabled in the current context")
     (test-expression "(define (f)\n(+ (raise-user-error 'a \"b\")))\n(if (zero? (random 1)) (void) (set! f void))\n(f)"
                      #rx"raise-user-error"
@@ -1422,6 +1337,7 @@ the settings above should match r5rs
 ;; types an expression in the definitions window, executes it and tests the output
 ;; types an expression in the REPL and tests the output from the REPL.
 (define (test-expression expression defs-expected [repl-expected defs-expected])
+  (printf "test-expression ~a~n" expression)
   (let* ([drs (wait-for-drscheme-frame)]
          [interactions-text (queue-callback/res (λ () (send drs get-interactions-text)))]
          [definitions-text (queue-callback/res (λ () (send drs get-definitions-text)))]
@@ -1514,6 +1430,11 @@ the settings above should match r5rs
                    (language)
                    expression repl-expected got))))))
 
+(define (test-undefined-var id)
+  (test-expression id (format "~a: this variable is not defined" id)))
+
+(define (test-undefined-fn exp id)
+  (test-expression exp (format "~a: this function is not defined" id)))
 
 (define-syntax (go stx)
   (syntax-case stx ()
@@ -1535,6 +1456,7 @@ the settings above should match r5rs
   (go beginner/abbrev)
   (go intermediate)
   (go intermediate/lambda)
-  (go advanced))
+  (go advanced)
+  )
 
 (fire-up-drscheme-and-run-tests run-test)

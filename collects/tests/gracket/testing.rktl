@@ -49,6 +49,8 @@
 	(test vals 'method (call-with-values (lambda () (send obj method . args)) list)))])))
 
 (define (report-errs)
+  (flush-output)
+  (sleep 1)
   (newline)
   (if (null? errs)
       (printf "Passed all ~a tests\n" test-count)

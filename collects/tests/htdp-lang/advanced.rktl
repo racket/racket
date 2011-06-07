@@ -61,15 +61,19 @@
 (htdp-test 2 'begin0 (begin0 2 1))
 (htdp-test 3 'begin0 (begin0 3 2 1))
 
+
 (htdp-syntax-test #'set! "set!: found a use that does not follow an open parenthesis")
 (htdp-syntax-test #'(set!) "set!: expected a variable after set!, but nothing's there")
 (htdp-syntax-test #'(set! x) "set!: expected an expression for the new value, but nothing's there")
 (htdp-syntax-test #'(set! 1 2) "set!: expected a variable after set!, but found a number")
 (htdp-syntax-test #'(set! x 2 3) "set!: expected only one expression for the new value, but found 1 extra part")
 (htdp-syntax-test #'(set! set! 2) "set!: expected a variable after set!, but found a set!")
-(htdp-syntax-test #'(lambda (x) (set! x 2)) "set!: expected a mutable variable after set!, but found a variable that cannot be modified")
+(htdp-syntax-test #'(set! x 1) "x: this variable is not defined")
+(htdp-syntax-test #'(lambda (x) (set! x 2)) "set!: expected a mutable variable after set!, but found a variable that cannot be modified: x")
+
 (htdp-syntax-test #'(let ([x 5]) (lambda (x) (set! x 2))) "set!: expected a mutable variable after set!, but found a variable that cannot be modified")
 
+(htdp-top (define x 5))
 (htdp-top (set! x 'hello))
 (htdp-test 'hello 'access-x x)
 (htdp-test 18 'set! (local [(define x 12)]
@@ -95,16 +99,7 @@
 (htdp-top (set! x 13))
 (htdp-test 12 force d)
 (htdp-test 13 'access-x x)
-
-
-
-
-
-
-
-
-"let: bad syntax (not a sequence of identifier--expression bindings)"
-
+(htdp-top-pop 4)
 
 (htdp-syntax-test #'(let name) "let: expected at least one binding (in parentheses) after let, but nothing's there")
 (htdp-syntax-test #'(let name 10) "let: expected at least one binding (in parentheses) after let, but found a number")
@@ -129,7 +124,7 @@
 (htdp-syntax-test #'(case 5 [(5)]) "case: expected an expression for the answer in the case clause, but nothing's there")
 (htdp-syntax-test #'(case 5 [(5) 12 13]) "case: expected only one expression for the answer in the case clause, but found 1 extra part")
 (htdp-syntax-test #'(case 5 [("a") 10]) "case: expected a symbol (without its quote) or a number as a choice, but found a string")
-(htdp-syntax-test #'(case 5 [() 10]) "case: expected at least one choice, but nothing's there")
+(htdp-syntax-test #'(case 5 [() 10]) "expected a symbol (without its quote) or a number as a choice, but nothing's there")
 (htdp-syntax-test #'(case 5 [(5 "a") 10]) "case: expected a symbol (without its quote) or a number as a choice, but found a string")
 (htdp-syntax-test #'(case 5 [else 12][(5) 10]) "case: found an else clause that isn't the last clause in its case expression")
 (htdp-syntax-test #'(case 5 [(5) 10][else 12][else 13]) "case: found an else clause that isn't the last clause in its case expression")
@@ -432,12 +427,11 @@
 (htdp-syntax-test #'(define-datatype dt [(v1)]) #rx"define-datatype: expected a variant name, found a part")
 (htdp-syntax-test #'(define-datatype dt [v1 10]) #rx"define-datatype: in variant `v1': expected a field name, found a number")
 (htdp-syntax-test #'(define-datatype dt [v1] [v1]) #rx"define-datatype: found a variant name that is used more than once: v1")
-(htdp-syntax-test #'(define-datatype posn [v1]) #rx"posn\\?: this name has a built-in meaning and cannot be re-defined")
-(htdp-syntax-test #'(define-datatype dt [posn]) #rx"posn: this name has a built-in meaning and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype posn [v1]) "posn?: this name was defined previously and cannot be re-defined")
+(htdp-syntax-test #'(define-datatype dt [posn]) "posn: this name was defined previously and cannot be re-defined")
 (htdp-syntax-test #'(define-datatype lambda [v1]) #rx"define-datatype: expected a datatype type name after `define-datatype', but found a keyword")
 (htdp-syntax-test #'(define-datatype dt [lambda]) #rx"define-datatype: expected a variant name, found a keyword")
-(htdp-syntax-test #'(define-datatype (dt)) #rx"define-datatype: expected a datatype type name after `define-datatype',
-but found a part")
+(htdp-syntax-test #'(define-datatype (dt)) #rx"define-datatype: expected a datatype type name after `define-datatype', but found a part")
 (htdp-syntax-test #'(+ 1 (define-datatype dt [v1])) #rx"define-datatype: found a definition that is not at the top level")
 
 (htdp-top (define-datatype dt))
@@ -474,15 +468,15 @@ but found a part")
 (htdp-syntax-test #'(match 1 x) #rx"match: expected a pattern--answer clause, but found something else")
 (htdp-syntax-test #'(match 1 []) #rx"match: expected a pattern--answer clause, but found an empty clause")
 (htdp-syntax-test #'(match 1 [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
-(htdp-syntax-test #'(match 1 [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
-(htdp-syntax-test #'(match 1 [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found 1 extra part")
+(htdp-syntax-test #'(match 1 [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found 1 extra part")
 
 (htdp-syntax-test #'(match 1 [x 10] 10) #rx"match: expected a pattern--answer clause, but found a number")
 (htdp-syntax-test #'(match 1 [x 10] x) #rx"match: expected a pattern--answer clause, but found something else")
 (htdp-syntax-test #'(match 1 [x 10] []) #rx"match: expected a pattern--answer clause, but found an empty clause")
 (htdp-syntax-test #'(match 1 [x 10] [x]) #rx"expected an expression for the answer in a `match' clause, but nothing's there")
-(htdp-syntax-test #'(match 1 [x 10] [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
-(htdp-syntax-test #'(match 1 [x 10] [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found one extra part")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 10]) #rx"expected only one expression for the answer in a `match' clause, but found 1 extra part")
+(htdp-syntax-test #'(match 1 [x 10] [x 10 x]) #rx"expected only one expression for the answer in a `match' clause, but found 1 extra part")
 
 (define-syntax-rule (htdp-match/v res pat expr val)
   (htdp-test res 'pat (match expr [pat val] [else #f])))
