@@ -1,8 +1,7 @@
-#lang scheme/base
-(require mzlib/etc
-         racket/function
-         scheme/match
-         scheme/list
+#lang racket/base
+(require racket/function
+         racket/match
+         racket/list
          unstable/struct
          compiler/zo-structs
          racket/dict
@@ -393,12 +392,11 @@
   (+ (cport-pos cp) (cport-shared-start cp)))
 
 (define (cp-getc cp)
-  (begin-with-definitions
-    (when ((cport-pos cp) . >= . (cport-size cp))
-      (error "off the end"))
-    (define r (cport-get-byte cp (cport-pos cp)))
-    (set-cport-pos! cp (add1 (cport-pos cp)))
-    r))
+  (when ((cport-pos cp) . >= . (cport-size cp))
+    (error "off the end"))
+  (define r (cport-get-byte cp (cport-pos cp)))
+  (set-cport-pos! cp (add1 (cport-pos cp)))
+  r)
 
 (define small-list-max 65)
 (define cpt-table
@@ -750,234 +748,228 @@
 
 (define (read-compact cp)
   (let loop ([need-car 0] [proper #f])
-    (begin-with-definitions
-      (define ch (cp-getc cp))
-      (define-values (cpt-start cpt-tag) 
-        (let ([x (cpt-table-lookup ch)])
-          (unless x
-            (error 'read-compact "unknown code : ~a" ch))
-          (values (car x) (cdr x))))
-      (define v 
-        (case cpt-tag
-          [(delayed)
-           (let ([pos (read-compact-number cp)])
-             (read-sym cp pos))]
-          [(escape)
-           (let* ([len (read-compact-number cp)]
-                  [s (cport-get-bytes cp len)])
-             (set-cport-pos! cp (+ (cport-pos cp) len))
-             (parameterize ([read-accept-compiled #t]
-                            [read-accept-bar-quote #t]
-                            [read-accept-box #t]
-                            [read-accept-graph #t]
-                            [read-case-sensitive #t]
-                            [read-square-bracket-as-paren #t]
-                            [read-curly-brace-as-paren #t]
-                            [read-decimal-as-inexact #t]
-                            [read-accept-dot #t]
-                            [read-accept-infix-dot #t]
-                            [read-accept-quasiquote #t]
-                            [current-readtable
-                             (make-readtable 
-                              #f
-                              #\^ 
-                              'dispatch-macro
-                              (lambda (char port src line col pos)
-                                (let ([b (read port)])
-                                  (unless (bytes? b)
-                                    (error 'read-escaped-path
-                                           "expected a byte string after #^"))
-                                  (let ([p (bytes->path b)])
-                                    (if (and (relative-path? p)
-                                             (current-load-relative-directory))
-                                        (build-path (current-load-relative-directory) p)
-                                        p)))))])
-               (read/recursive (open-input-bytes s))))]
-          [(reference)
-           (make-primval (read-compact-number cp))]
-          [(small-list small-proper-list)
-           (let* ([l (- ch cpt-start)]
-                  [ppr (eq? cpt-tag 'small-proper-list)])
-             (if (positive? need-car)
-                 (if (= l 1)
-                     (cons (read-compact cp)
-                           (if ppr null (read-compact cp)))
-                     (read-compact-list l ppr cp))
-                 (loop l ppr)))]
-          [(let-one let-one-flonum let-one-unused)
-           (make-let-one (read-compact cp) (read-compact cp)
-                         (eq? cpt-tag 'let-one-flonum)
-                         (eq? cpt-tag 'let-one-unused))]
-          [(branch)
-           (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
-          [(module-index) (module-path-index-join (read-compact cp) (read-compact cp))]
-          [(module-var)
-           (let ([mod (read-compact cp)]
-                 [var (read-compact cp)]
-                 [pos (read-compact-number cp)])
-             (let-values ([(mod-phase pos)
-                           (if (= pos -2)
-                               (values 1 (read-compact-number cp))
-                               (values 0 pos))])
-               (make-module-variable mod var pos mod-phase)))]
-          [(local-unbox)
-           (let* ([p* (read-compact-number cp)]
-                  [p (if (< p* 0)
-                         (- (add1 p*))
-                         p*)]
-                  [flags (if (< p* 0)
-                             (read-compact-number cp)
-                             0)])
-             (make-local #t p flags))]
-          [(path)
-           (let* ([p (bytes->path (read-compact-bytes cp (read-compact-number cp)))])
-             (if (relative-path? p)
-                 (path->complete-path p (or (current-load-relative-directory)
-                                            (current-directory)))
-                 p))]
-          [(small-number)
-           (let ([l (- ch cpt-start)])
-             l)]
-          [(int)
-           (read-compact-number cp)]
-          [(false) #f]
-          [(true) #t]
-          [(null) null]
-          [(void) (void)]
-          [(vector) 
-           ; XXX We should provide build-immutable-vector and write this as:
-           #;(build-immutable-vector (read-compact-number cp)
-                                     (lambda (i) (read-compact cp)))
-           ; XXX Now it allocates an unnessary list AND vector
-           (let* ([n (read-compact-number cp)]
-                  [lst (for/list ([i (in-range n)])
-                         (read-compact cp))])
-             (vector->immutable-vector (list->vector lst)))]
-          [(pair)
-           (let* ([a (read-compact cp)]
-                  [d (read-compact cp)])
-             (cons a d))]
-          [(list) 
-           (let ([len (read-compact-number cp)])
-             (let loop ([i len])
-               (if (zero? i)
-                   (read-compact cp)
-                   (list* (read-compact cp)
-                          (loop (sub1 i))))))]
-          [(prefab)
-           (let ([v (read-compact cp)])
-             ; XXX This is faster than apply+->list, but can we avoid allocating the vector?
-             (call-with-values (lambda () (vector->values v))
-                               make-prefab-struct))]
-          [(hash-table)
-           ; XXX Allocates an unnessary list (maybe use for/hash(eq))
-           (let ([eq (read-compact-number cp)]
-                 [len (read-compact-number cp)])
-             ((case eq
-                [(0) make-hasheq-placeholder]
-                [(1) make-hash-placeholder]
-                [(2) make-hasheqv-placeholder])
-              (for/list ([i (in-range len)])
-                (cons (read-compact cp)
-                      (read-compact cp)))))]
-          [(marshalled) (read-marshalled (read-compact-number cp) cp)]
-          [(stx)
-           (let ([v (make-reader-graph (read-compact cp))])
-             (make-stx (decode-stx cp v)))]
-          [(local local-unbox)
-           (let ([c (read-compact-number cp)]
-                 [unbox? (eq? cpt-tag 'local-unbox)])
-             (if (negative? c)
-                 (make-local unbox? (- (add1 c)) (read-compact-number cp))
-                 (make-local unbox? c 0)))]
-          [(small-local)
-           (make-local #f (- ch cpt-start) 0)]
-          [(small-local-unbox)
-           (make-local #t (- ch cpt-start) 0)]
-          [(small-symbol)
-           (let ([l (- ch cpt-start)])
-             (string->symbol (read-compact-chars cp l)))]
-          [(symbol)
-           (let ([l (read-compact-number cp)])
-             (string->symbol (read-compact-chars cp l)))]
-          [(keyword)
-           (let ([l (read-compact-number cp)])
-             (string->keyword (read-compact-chars cp l)))]
-          [(byte-string)
-           (let ([l (read-compact-number cp)])
-             (read-compact-bytes cp l))]
-          [(string)
-           (let ([l (read-compact-number cp)]
-                 [cl (read-compact-number cp)])
-             (read-compact-chars cp l))]
-          [(char)
-           (integer->char (read-compact-number cp))]
-          [(box)
-           (box (read-compact cp))]
-          [(quote)
-           (make-reader-graph 
-            ;; Nested escapes need to share graph references. So get inside the
-            ;;  read where `read/recursive' can be used:
-            (let ([rt (current-readtable)])
-              (parameterize ([current-readtable (make-readtable
-                                                 #f
-                                                 #\x 'terminating-macro
-                                                 (lambda args
-                                                   (parameterize ([current-readtable rt])
-                                                     (read-compact cp))))])
-                (read (open-input-bytes #"x")))))]
-          [(symref)
-           (let* ([l (read-compact-number cp)])
-             (read-sym cp l))]                        
-          [(weird-symbol)
-           (let ([uninterned (read-compact-number cp)]
-                 [str (read-compact-chars cp (read-compact-number cp))])
-             (if (= 1 uninterned)
-                 ; uninterned is equivalent to weird in the C implementation 
-                 (string->uninterned-symbol str)
-                 ; unreadable is equivalent to parallel in the C implementation
-                 (string->unreadable-symbol str)))]
-          [(small-marshalled)
-           (read-marshalled (- ch cpt-start) cp)]
-          [(small-application2)
+    (define ch (cp-getc cp))
+    (define-values (cpt-start cpt-tag) 
+      (let ([x (cpt-table-lookup ch)])
+        (unless x
+          (error 'read-compact "unknown code : ~a" ch))
+        (values (car x) (cdr x))))
+    (define v
+      (case cpt-tag
+        [(delayed)
+         (let ([pos (read-compact-number cp)])
+           (read-sym cp pos))]
+        [(escape)
+         (let* ([len (read-compact-number cp)]
+                [s (cport-get-bytes cp len)])
+           (set-cport-pos! cp (+ (cport-pos cp) len))
+           (parameterize ([read-accept-compiled #t]
+                          [read-accept-bar-quote #t]
+                          [read-accept-box #t]
+                          [read-accept-graph #t]
+                          [read-case-sensitive #t]
+                          [read-square-bracket-as-paren #t]
+                          [read-curly-brace-as-paren #t]
+                          [read-decimal-as-inexact #t]
+                          [read-accept-dot #t]
+                          [read-accept-infix-dot #t]
+                          [read-accept-quasiquote #t]
+                          [current-readtable
+                           (make-readtable 
+                            #f
+                            #\^
+                            'dispatch-macro
+                            (lambda (char port src line col pos)
+                              (let ([b (read port)])
+                                (unless (bytes? b)
+                                  (error 'read-escaped-path
+                                         "expected a byte string after #^"))
+                                (let ([p (bytes->path b)])
+                                  (if (and (relative-path? p)
+                                           (current-load-relative-directory))
+                                    (build-path (current-load-relative-directory) p)
+                                    p)))))])
+             (read/recursive (open-input-bytes s))))]
+        [(reference)
+         (make-primval (read-compact-number cp))]
+        [(small-list small-proper-list)
+         (let* ([l (- ch cpt-start)]
+                [ppr (eq? cpt-tag 'small-proper-list)])
+           (if (positive? need-car)
+             (if (= l 1)
+               (cons (read-compact cp)
+                     (if ppr null (read-compact cp)))
+               (read-compact-list l ppr cp))
+             (loop l ppr)))]
+        [(let-one let-one-flonum let-one-unused)
+         (make-let-one (read-compact cp) (read-compact cp)
+                       (eq? cpt-tag 'let-one-flonum)
+                       (eq? cpt-tag 'let-one-unused))]
+        [(branch)
+         (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
+        [(module-index) (module-path-index-join (read-compact cp) (read-compact cp))]
+        [(module-var)
+         (let ([mod (read-compact cp)]
+               [var (read-compact cp)]
+               [pos (read-compact-number cp)])
+           (let-values ([(mod-phase pos)
+                         (if (= pos -2)
+                           (values 1 (read-compact-number cp))
+                           (values 0 pos))])
+             (make-module-variable mod var pos mod-phase)))]
+        [(local-unbox)
+         (let* ([p* (read-compact-number cp)]
+                [p (if (< p* 0) (- (add1 p*)) p*)]
+                [flags (if (< p* 0) (read-compact-number cp) 0)])
+           (make-local #t p flags))]
+        [(path)
+         (let* ([p (bytes->path (read-compact-bytes cp (read-compact-number cp)))])
+           (if (relative-path? p)
+             (path->complete-path p (or (current-load-relative-directory)
+                                        (current-directory)))
+             p))]
+        [(small-number)
+         (let ([l (- ch cpt-start)])
+           l)]
+        [(int)
+         (read-compact-number cp)]
+        [(false) #f]
+        [(true) #t]
+        [(null) null]
+        [(void) (void)]
+        [(vector)
+         ; XXX We should provide build-immutable-vector and write this as:
+         #;(build-immutable-vector (read-compact-number cp)
+                                   (lambda (i) (read-compact cp)))
+         ; XXX Now it allocates an unnessary list AND vector
+         (let* ([n (read-compact-number cp)]
+                [lst (for/list ([i (in-range n)]) (read-compact cp))])
+           (vector->immutable-vector (list->vector lst)))]
+        [(pair)
+         (let* ([a (read-compact cp)]
+                [d (read-compact cp)])
+           (cons a d))]
+        [(list)
+         (let ([len (read-compact-number cp)])
+           (let loop ([i len])
+             (if (zero? i)
+               (read-compact cp)
+               (list* (read-compact cp)
+                      (loop (sub1 i))))))]
+        [(prefab)
+         (let ([v (read-compact cp)])
+           ; XXX This is faster than apply+->list, but can we avoid allocating the vector?
+           (call-with-values (lambda () (vector->values v))
+                             make-prefab-struct))]
+        [(hash-table)
+         ; XXX Allocates an unnessary list (maybe use for/hash(eq))
+         (let ([eq (read-compact-number cp)]
+               [len (read-compact-number cp)])
+           ((case eq
+              [(0) make-hasheq-placeholder]
+              [(1) make-hash-placeholder]
+              [(2) make-hasheqv-placeholder])
+            (for/list ([i (in-range len)])
+              (cons (read-compact cp)
+                    (read-compact cp)))))]
+        [(marshalled) (read-marshalled (read-compact-number cp) cp)]
+        [(stx)
+         (let ([v (make-reader-graph (read-compact cp))])
+           (make-stx (decode-stx cp v)))]
+        [(local local-unbox)
+         (let ([c (read-compact-number cp)]
+               [unbox? (eq? cpt-tag 'local-unbox)])
+           (if (negative? c)
+             (make-local unbox? (- (add1 c)) (read-compact-number cp))
+             (make-local unbox? c 0)))]
+        [(small-local)
+         (make-local #f (- ch cpt-start) 0)]
+        [(small-local-unbox)
+         (make-local #t (- ch cpt-start) 0)]
+        [(small-symbol)
+         (let ([l (- ch cpt-start)])
+           (string->symbol (read-compact-chars cp l)))]
+        [(symbol)
+         (let ([l (read-compact-number cp)])
+           (string->symbol (read-compact-chars cp l)))]
+        [(keyword)
+         (let ([l (read-compact-number cp)])
+           (string->keyword (read-compact-chars cp l)))]
+        [(byte-string)
+         (let ([l (read-compact-number cp)])
+           (read-compact-bytes cp l))]
+        [(string)
+         (let ([l (read-compact-number cp)]
+               [cl (read-compact-number cp)])
+           (read-compact-chars cp l))]
+        [(char)
+         (integer->char (read-compact-number cp))]
+        [(box)
+         (box (read-compact cp))]
+        [(quote)
+         (make-reader-graph 
+          ;; Nested escapes need to share graph references. So get inside the
+          ;;  read where `read/recursive' can be used:
+          (let ([rt (current-readtable)])
+            (parameterize ([current-readtable (make-readtable
+                                               #f
+                                               #\x 'terminating-macro
+                                               (lambda args
+                                                 (parameterize ([current-readtable rt])
+                                                   (read-compact cp))))])
+              (read (open-input-bytes #"x")))))]
+        [(symref)
+         (let* ([l (read-compact-number cp)])
+           (read-sym cp l))]
+        [(weird-symbol)
+         (let ([uninterned (read-compact-number cp)]
+               [str (read-compact-chars cp (read-compact-number cp))])
+           (if (= 1 uninterned)
+             ; uninterned is equivalent to weird in the C implementation 
+             (string->uninterned-symbol str)
+             ; unreadable is equivalent to parallel in the C implementation
+             (string->unreadable-symbol str)))]
+        [(small-marshalled)
+         (read-marshalled (- ch cpt-start) cp)]
+        [(small-application2)
+         (make-application (read-compact cp)
+                           (list (read-compact cp)))]
+        [(small-application3)
+         (make-application (read-compact cp)
+                           (list (read-compact cp)
+                                 (read-compact cp)))]
+        [(small-application)
+         (let ([c (add1 (- ch cpt-start))])
            (make-application (read-compact cp)
-                             (list (read-compact cp)))]
-          [(small-application3)
+                             (for/list ([i (in-range (sub1 c))])
+                               (read-compact cp))))]
+        [(application)
+         (let ([c (read-compact-number cp)])
            (make-application (read-compact cp)
-                             (list (read-compact cp)
-                                   (read-compact cp)))]
-          [(small-application)
-           (let ([c (add1 (- ch cpt-start))])
-             (make-application (read-compact cp)
-                               (for/list ([i (in-range (sub1 c))])
-                                 (read-compact cp))))]          
-          [(application)
-           (let ([c (read-compact-number cp)])
-             (make-application (read-compact cp)
-                               (for/list ([i (in-range c)])
-                                 (read-compact cp))))]          
-          [(closure)
-           (read-compact-number cp) ; symbol table pos. our marshaler will generate this
-           (let ([v (read-compact cp)])
-             (make-closure 
-              v
-              (gensym
-               (let ([s (lam-name v)])
-                 (cond
-                   [(symbol? s) s]
-                   [(vector? s) (vector-ref s 0)]
-                   [else 'closure])))))]
-          [(svector)
-           (read-compact-svector cp (read-compact-number cp))]
-          [(small-svector)
-           (read-compact-svector cp (- ch cpt-start))]
-          [else (error 'read-compact "unknown tag ~a" cpt-tag)]))
-      (cond 
-        [(zero? need-car) v]
-        [(and proper (= need-car 1))
-         (cons v null)]
-        [else
-         (cons v (loop (sub1 need-car) proper))]))))
+                             (for/list ([i (in-range c)])
+                               (read-compact cp))))]
+        [(closure)
+         (read-compact-number cp) ; symbol table pos. our marshaler will generate this
+         (let ([v (read-compact cp)])
+           (make-closure
+            v
+            (gensym
+             (let ([s (lam-name v)])
+               (cond
+                 [(symbol? s) s]
+                 [(vector? s) (vector-ref s 0)]
+                 [else 'closure])))))]
+        [(svector)
+         (read-compact-svector cp (read-compact-number cp))]
+        [(small-svector)
+         (read-compact-svector cp (- ch cpt-start))]
+        [else (error 'read-compact "unknown tag ~a" cpt-tag)]))
+    (cond
+      [(zero? need-car) v]
+      [(and proper (= need-car 1))
+       (cons v null)]
+      [else
+       (cons v (loop (sub1 need-car) proper))])))
 
 (define (unmarshal-stx-get/decode cp pos decode-stx)
   (define v2 (read-sym cp pos))
@@ -1003,9 +995,9 @@
   (if (memq i (mark-parameter-all read-sym-mark))
       ph
       ; Otherwise, try to read it and return the real thing
-      (local [(define vv (placeholder-get ph))]
+      (let ([vv (placeholder-get ph)])
         (when (not-ready? vv)
-          (local [(define save-pos (cport-pos cp))]
+          (let ([save-pos (cport-pos cp)])
             (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 i)))
             (mark-parameterize
              ([read-sym-mark i])
@@ -1017,55 +1009,55 @@
 ;; path -> bytes
 ;; implementes read.c:read_compiled
 (define (zo-parse [port (current-input-port)])
-  (begin-with-definitions    
-    ;; skip the "#~"
-    (unless (equal? #"#~" (read-bytes 2 port))
-      (error 'zo-parse "not a bytecode stream"))
-    
-    (define version (read-bytes (min 63 (read-byte port)) port))
+  ;; skip the "#~"
+  (unless (equal? #"#~" (read-bytes 2 port))
+    (error 'zo-parse "not a bytecode stream"))
 
-    ;; Skip module hash code
-    (read-bytes 20 port)
-    
-    (define symtabsize (read-simple-number port))
-    
-    (define all-short (read-byte port))
-    
-    (define cnt (* (if (not (zero? all-short)) 2 4)
-                   (sub1 symtabsize)))
-    
-    (define so (read-bytes cnt port))
-    
-    (define so* (list->vector (split-so all-short so)))
-    
-    (define shared-size (read-simple-number port))
-    (define size* (read-simple-number port))
-    
-    (when (shared-size . >= . size*) 
-      (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
-    
-    (define rst-start (file-position port))
-    
-    (file-position port (+ rst-start size*))
-    
-    (unless (eof-object? (read-byte port))
-      (error 'zo-parse "File too big"))
-    
-    (define nr (make-not-ready))
-    (define symtab 
-      (build-vector symtabsize (λ (i) (make-placeholder nr))))
-    
-    (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
-    
-    (for ([i (in-range 1 symtabsize)])
-      (read-sym cp i))
-    
-    #;(printf "Parsed table:\n")
-    #;(for ([(i v) (in-dict (cport-symtab cp))])
-      (printf "~a = ~a\n" i (placeholder-get v)) )
-    (set-cport-pos! cp shared-size)
-    (make-reader-graph
-     (read-marshalled 'compilation-top-type cp))))
+  (define version (read-bytes (min 63 (read-byte port)) port))
+
+  ;; Skip module hash code
+  (read-bytes 20 port)
+
+  (define symtabsize (read-simple-number port))
+
+  (define all-short (read-byte port))
+
+  (define cnt (* (if (not (zero? all-short)) 2 4)
+                 (sub1 symtabsize)))
+
+  (define so (read-bytes cnt port))
+
+  (define so* (list->vector (split-so all-short so)))
+
+  (define shared-size (read-simple-number port))
+  (define size* (read-simple-number port))
+
+  (when (shared-size . >= . size*) 
+    (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
+
+  (define rst-start (file-position port))
+
+  (file-position port (+ rst-start size*))
+
+  (unless (eof-object? (read-byte port))
+    (error 'zo-parse "File too big"))
+
+  (define nr (make-not-ready))
+  (define symtab
+    (build-vector symtabsize (λ (i) (make-placeholder nr))))
+
+  (define cp
+    (make-cport 0 shared-size port size* rst-start symtab so*
+                (make-vector symtabsize #f) (make-hash) (make-hash)))
+
+  (for ([i (in-range 1 symtabsize)])
+    (read-sym cp i))
+
+  #;(printf "Parsed table:\n")
+  #;(for ([(i v) (in-dict (cport-symtab cp))])
+      (printf "~a = ~a\n" i (placeholder-get v)))
+  (set-cport-pos! cp shared-size)
+  (make-reader-graph (read-marshalled 'compilation-top-type cp)))
 
 ;; ----------------------------------------
 
@@ -1078,12 +1070,12 @@
              (compile sexp))
            s)
     (get-output-bytes s))
-  
-  (define (compile/parse sexp)  
+
+  (define (compile/parse sexp)
     (let* ([bs (compile/write sexp)]
            [p (open-input-bytes bs)])
       (zo-parse p)))
-  
+
   #;(compile/parse #s(foo 10 13))
   (zo-parse (open-input-file "/home/mflatt/proj/plt/collects/scheme/private/compiled/more-scheme_ss.zo"))
   )
