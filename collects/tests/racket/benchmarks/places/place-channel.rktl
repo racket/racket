@@ -15,17 +15,6 @@
     (exact->inexact B/sE) 'bytes-per-second
     (exact->inexact (/ B/sE (* 1024 1024))) 'MB-per-second)))
 
-(define (current-executable-path) 
- (parameterize ([current-directory (find-system-path 'orig-dir)])
-  (find-executable-path (find-system-path 'exec-file) #f)))
-
-(define (current-collects-path)
- (let ([p (find-system-path 'collects-dir)])
-  (if (complete-path? p)
-      p
-      (path->complete-path p (or (path-only (current-executable-path))
-                                 (find-system-path 'orig-dir))))))
-
 (define (processes-byte-message-test)
   (let ([pl
     (pp:place/base (bo ch)
@@ -115,27 +104,38 @@ END
 
     (place-wait pl)))
 
+(define (current-executable-path) 
+ (parameterize ([current-directory (find-system-path 'orig-dir)])
+  (find-executable-path (find-system-path 'exec-file) #f)))
+
+(define (current-collects-path)
+ (let ([p (find-system-path 'collects-dir)])
+  (if (complete-path? p)
+      p
+      (path->complete-path p (or (path-only (current-executable-path))
+                                 (find-system-path 'orig-dir))))))
+
 (define (process-pipe-test)
   (define worker-cmdline-list (list (current-executable-path) "-X" (path->string (current-collects-path)) "-e" "(eval(read))"))
-  ;(define worker-cmdline-list (list "/bin/cat" "/etc/passwd"))
-  ;(let-values ([(_process-handle _out _in _err) (apply subprocess (current-output-port) #f (current-error-port) worker-cmdline-list)])
   (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
     (define message-size (* 4024 1024))
     (define four-k-message (make-bytes message-size 65))
     (define count 10)
     (define-values (r t1 t2 t3)
-      (time-apply (lambda ()
+      (begin
         (write
           `(for ([x (in-range ,count)])
-            (define k (read))
-            (write k)
+            (define k (read-bytes (* 4024 1024)))
+            (write-bytes k)
             (flush-output)) _in)
         (flush-output _in)
-        (for ([i (in-range count)])
-             (write four-k-message _in)
-             (flush-output _in)
-             (read _out))) 
-                  null))
+        (time-apply 
+          (lambda ()
+            (for ([i (in-range count)])
+                 (write-bytes four-k-message _in)
+                 (flush-output _in)
+                 (read-bytes message-size _out))) 
+          null)))
     (subprocess-wait _process-handle)
     (printf "~a ~a ~a ~a\n" r t1 t2 t3)
 
