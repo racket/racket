@@ -61,28 +61,35 @@
              ;; index? will be checked at runtime, can be platform-specific
              ;; portable-index? will be checked at compile-time, must be portable
              #'(and/c index? positive? (not/c byte?))
-             (conjoin portable-index? positive? (negate byte?))
+             (lambda (x) (and (portable-index? x)
+                              (positive? x)
+                              (not (byte? x))))
              #'-PosIndexNotByte))
 (define -PosIndex    (*Un -One -Byte>1 -PosIndexNotByte))
 (define -Index       (*Un -Zero -PosIndex))
 (define -PosFixnumNotIndex
   (make-Base 'Positive-Fixnum-Not-Index
              #'(and/c fixnum? positive? (not/c index?))
-             (conjoin portable-fixnum? positive? (negate portable-index?))
+             (lambda (x) (and (portable-fixnum? x)
+                              (positive? x)
+                              (not (portable-index? x))))
              #'-PosFixnumNotIndex))
 (define -PosFixnum    (*Un -PosFixnumNotIndex -PosIndex))
 (define -NonNegFixnum (*Un -PosFixnum -Zero))
 (define -NegFixnum
   (make-Base 'Negative-Fixnum
              #'(and/c fixnum? negative?)
-             (conjoin portable-fixnum? negative?)
+             (lambda (x) (and (portable-fixnum? x)
+                              (negative? x)))
              #'-NegFixnum))
 (define -NonPosFixnum (*Un -NegFixnum -Zero))
 (define -Fixnum       (*Un -NegFixnum -Zero -PosFixnum))
 (define -PosIntNotFixnum
   (make-Base 'Positive-Integer-Not-Fixnum
              #'(and/c exact-integer? positive? (not/c fixnum?))
-             (conjoin exact-integer? positive? (negate portable-fixnum?))
+             (lambda (x) (and (exact-integer? x)
+                              (positive? x)
+                              (not (portable-fixnum? x))))
              #'-PosIntNotFixnum))
 (define -PosInt    (*Un -PosIntNotFixnum -PosFixnum))
 (define -NonNegInt (*Un -PosInt -Zero))
@@ -90,7 +97,9 @@
 (define -NegIntNotFixnum
   (make-Base 'Negative-Integer-Not-Fixnum
              #'(and/c exact-integer? negative? (not/c fixnum?))
-             (conjoin exact-integer? negative? (negate portable-fixnum?))
+             (lambda (x) (and (exact-integer? x)
+                              (negative? x)
+                              (not (portable-fixnum? x))))
              #'-NegIntNotFixnum))
 (define -NegInt    (*Un -NegIntNotFixnum -NegFixnum))
 (define -NonPosInt (*Un -NegInt -Zero))
@@ -100,14 +109,18 @@
 (define -PosRatNotInt
   (make-Base 'Positive-Rational-Not-Integer
              #'(and/c exact-rational? positive? (not/c integer?))
-             (conjoin exact-rational? positive? (negate integer?))
+             (lambda (x) (and (exact-rational? x)
+                              (positive? x)
+                              (not (exact-integer? x))))
              #'-PosRatNotInt))
 (define -PosRat    (*Un -PosRatNotInt -PosInt))
 (define -NonNegRat (*Un -PosRat -Zero))
 (define -NegRatNotInt
   (make-Base 'Negative-Rational-Not-Integer
              #'(and/c exact-rational? negative? (not/c integer?))
-             (conjoin exact-rational? negative? (negate integer?))
+             (lambda (x) (and (exact-rational? x)
+                              (negative? x)
+                              (not (exact-integer? x))))
              #'-NegRatNotInt))
 (define -NegRat    (*Un -NegRatNotInt -NegInt))
 (define -NonPosRat (*Un -NegRat -Zero))
@@ -125,18 +138,18 @@
 (define -FlonumZero (*Un -FlonumPosZero -FlonumNegZero))
 (define -FlonumNan (make-Base 'Float-Nan
                               #'(and/c flonum? (lambda (x) (eqv? x +nan.0)))
-                              (conjoin flonum? (lambda (x) (eqv? x +nan.0)))
+                              (lambda (x) (and (flonum? x) (eqv? x +nan.0)))
                               #'-FlonumNan))
 (define -PosFlonum
   (make-Base 'Positive-Float
              #'(and/c flonum? positive?)
-             (conjoin flonum? positive?)
+             (lambda (x) (and (flonum? x) (positive? x)))
              #'-PosFlonum))
 (define -NonNegFlonum (*Un -PosFlonum -FlonumPosZero))
 (define -NegFlonum
   (make-Base 'Negative-Float
              #'(and/c flonum? negative?)
-             (conjoin flonum? negative?)
+             (lambda (x) (and (flonum? x) (negative? x)))
              #'-NegFlonum))
 (define -NonPosFlonum (*Un -NegFlonum -FlonumNegZero))
 (define -Flonum (*Un -NegFlonum -FlonumNegZero -FlonumPosZero -PosFlonum -FlonumNan)) ; 64-bit floats
@@ -210,9 +223,9 @@
              #'(and/c number?
                       (not/c real?)
                       (lambda (x) (exact? (imag-part x))))
-             (conjoin number?
-                      (negate real?)
-                      (lambda (x) (exact? (imag-part x))))
+             (lambda (x) (and (number? x)
+                              (not (real? x))
+                              (exact? (imag-part x))))
              #'-ExactNumberNotReal))
 (define -ExactNumber (*Un -ExactNumberNotReal -Rat))
 (define -FloatComplex (make-Base 'Float-Complex
@@ -220,20 +233,20 @@
                                           (lambda (x)
                                             (and (flonum? (imag-part x))
                                                  (flonum? (real-part x)))))
-                                 (conjoin number?
-                                          (lambda (x)
-                                            (and (flonum? (imag-part x))
-                                                 (flonum? (real-part x)))))
+                                 (lambda (x) 
+                                   (and (number? x)
+                                        (flonum? (imag-part x))
+                                        (flonum? (real-part x))))
                                  #'-FloatComplex))
 (define -SingleFlonumComplex (make-Base 'Single-Flonum-Complex
                                       #'(and/c number?
                                                (lambda (x)
                                                  (and (single-flonum? (imag-part x))
                                                       (single-flonum? (real-part x)))))
-                                      (conjoin number?
-                                               (lambda (x)
-                                                 (and (single-flonum? (imag-part x))
-                                                      (single-flonum? (real-part x)))))
+                                      (lambda (x)
+                                        (and (number? x)
+                                             (single-flonum? (imag-part x))
+                                             (single-flonum? (real-part x))))
                                       #'-SingleFlonumComplex))
 (define -InexactComplex (*Un -FloatComplex -SingleFlonumComplex))
 (define -Complex (*Un -Real -InexactComplex -ExactNumberNotReal))
