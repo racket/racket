@@ -476,7 +476,7 @@ returns @scheme[1], since most primitives return a single value when
 applied.}
 
 @; ----------------------------------------
-@section{Additional Procedure Functions}
+@section{Additional Higher-Order Functions}
 
 @note-lib[racket/function]
 @(define fun-eval (make-base-eval))
