@@ -286,6 +286,23 @@ typedef struct Scheme_FD {
 # endif
 } Scheme_FD;
 
+int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so) {
+  Scheme_FD *fds;
+  if (p->type == scheme_input_port_type) {
+    fds = (Scheme_FD *) ((Scheme_Input_Port *)p)->port_data;
+    so->name = ((Scheme_Input_Port *)p)->name;
+  }
+  else {
+    fds = (Scheme_FD *) ((Scheme_Output_Port *)p)->port_data;
+    so->name = ((Scheme_Input_Port *)p)->name;
+  }
+  so->regfile = fds->regfile;
+  so->textmode = fds->textmode;
+  so->flush_mode = fds->flush;
+  return 1;
+}
+
+
 #endif
 
 #define MZ_FLUSH_NEVER 0
@@ -1167,6 +1184,47 @@ void scheme_collapse_win_fd(void *fds)
   }
 #endif
 }
+
+intptr_t scheme_dup_socket(intptr_t fd) {
+#ifdef USE_WINSOCK_TCP
+  intptr_t nsocket;
+  WSAPROTOCOL_INFO protocolInfo;
+  WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
+  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+  return nsocket;
+#else
+  intptr_t nfd;
+  do {
+    nfd = dup(fd);
+  } while (nfd == -1 && errno == EINTR);
+  return nfd;
+#endif
+}
+
+intptr_t scheme_dup_file(intptr_t fd) {
+#ifdef WINDOWS_FILE_HANDLES
+  HANDLE  newhandle;
+  BOOL rc;
+
+  rc = DuplicateHandle(GetCurrentProcess(), (HANDLE) fd,
+          GetCurrentProcess(), &newhandle,
+          0, FALSE, DUPLICATE_SAME_ACCESS);
+
+  if (rc == FALSE) {
+    return -1;
+  }
+  else {
+    return (intptr_t) newhandle;
+  }
+#else
+  intptr_t nfd;
+  do {
+    nfd = dup(fd);
+  } while (nfd == -1 && errno == EINTR);
+  return nfd;
+#endif
+}
+
 
 /*========================================================================*/
 /*                      Windows thread suspension                         */

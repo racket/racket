@@ -1468,6 +1468,15 @@ place_async_channel_val {
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
 }
 
+serialized_file_fd_val {
+ mark:
+  Scheme_Serialized_File_FD *ffd = (Scheme_Serialized_File_FD *) p;
+  gcMARK2(ffd->name, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
+}
+
 END place;
 
 /**********************************************************************/

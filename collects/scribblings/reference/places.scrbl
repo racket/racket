@@ -226,7 +226,11 @@ messages:
        automatically replaced by a plain place channel;}
 
  @item{foreign pointers such as @racket[_cpointers] and 
-       cstructs; and}
+       cstructs;}
+
+ @item{file ports and tcp ports, the underlying 
+       file descriptor is dupped and a new port is created with the 
+       dupped file descriptor in the destination place; and}
 
  @item{values produced by @racket[shared-flvector],
        @racket[make-shared-flvector], @racket[shared-fxvector],

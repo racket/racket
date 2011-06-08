@@ -3675,6 +3675,21 @@ typedef struct Scheme_Place_Object {
   /*Thread_Local_Variables *tlvs; */
 } Scheme_Place_Object;
 
+typedef struct Scheme_Serialized_File_FD{
+  Scheme_Object so;
+  Scheme_Object *name;
+  intptr_t fd;
+  intptr_t type;
+  char regfile;
+  char textmode;
+  char flush_mode;
+} Scheme_Serialized_File_FD;
+
+int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *so);
+intptr_t scheme_dup_socket(intptr_t fd);
+intptr_t scheme_dup_file(intptr_t fd);
+
+
 #define SCHEME_PLACE_OBJECTP(o) (SCHEME_TYPE(o) == scheme_place_object_type)
 
 Scheme_Env *scheme_place_instance_init();

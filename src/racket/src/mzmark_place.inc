@@ -102,3 +102,28 @@ static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
 #define place_async_channel_val_IS_CONST_SIZE 1
 
 
+static int serialized_file_fd_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
+}
+
+static int serialized_file_fd_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Serialized_File_FD *ffd = (Scheme_Serialized_File_FD *) p;
+  gcMARK2(ffd->name, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
+}
+
+static int serialized_file_fd_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Serialized_File_FD *ffd = (Scheme_Serialized_File_FD *) p;
+  gcFIXUP2(ffd->name, gc);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Serialized_File_FD));
+}
+
+#define serialized_file_fd_val_IS_ATOMIC 0
+#define serialized_file_fd_val_IS_CONST_SIZE 1
+
+
