@@ -505,8 +505,9 @@ variants.
 ]]{
 These behave like their non-annotated counterparts, with the exception
 that @racket[#:when] clauses can only appear as the last
-@racket[for:-clause]. The last @racket[expr] of the body must have
-type @racket[u].
+@racket[for:-clause]. The return value of the entire form must be of
+type @racket[u]. For example, a @racket[for/list:] form would be
+annotated with a @racket[Listof] type.
 }
 
 @deftogether[[
