@@ -140,13 +140,16 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
                        (-> input-port? any)
                        (cons/c (-> input-port? any/c any) any/c)))]{
 
-Like @scheme[scheme-lexer], but
+Like @scheme[scheme-lexer], but with several differences:
 
 @itemize[
 
- @item{A @scheme[module-lexer] accepts an offset and lexer mode,
-       instead of just an input port, and it returns a backup distance 
-       and a new lexer mode.}
+ @item{The @scheme[module-lexer] function accepts an offset and lexer
+       mode, instead of just an input port.}
+
+ @item{In addition to the results of @racket[scheme-lexer],
+       @scheme[module-lexer] returns a backup distance and a new lexer
+       mode.}
 
  @item{When @scheme[mode] is @scheme[#f] (indicating the start of the
        stream), the lexer checks @scheme[in] for a @hash-lang[]
