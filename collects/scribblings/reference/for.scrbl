@@ -14,7 +14,8 @@ The @scheme[for] iteration forms are based on SRFI-42
 @defform/subs[(for (for-clause ...) body ...+)
               ([for-clause [id seq-expr]
                            [(id ...) seq-expr]
-                           (code:line #:when guard-expr)])
+                           (code:line #:when guard-expr)
+                           (code:line #:unless guard-expr)])
               #:contracts ([seq-expr sequence?])]{
 
 Iteratively evaluates @scheme[body]. The @scheme[for-clause]s
@@ -45,7 +46,7 @@ a sequence containing a single element. All of the @scheme[id]s must
 be distinct according to @scheme[bound-identifier=?].
 
 If any @scheme[for-clause] has the form @scheme[#:when guard-expr],
-then only the preceding clauses (containing no @scheme[#:when])
+then only the preceding clauses (containing no @scheme[#:when] or @scheme[#:unless])
 determine iteration as above, and the @scheme[body] is effectively
 wrapped as
 
@@ -54,7 +55,9 @@ wrapped as
   (for (for-clause ...) body ...+))
 ]
 
-using the remaining @scheme[for-clauses].
+using the remaining @scheme[for-clauses]. A @scheme[for-clause] of
+the form @scheme[#:unless guard-expr] corresponds to the same transformation
+with @racket[unless] in place of @racket[when].
 
 @examples[
 (for ([i '(1 2 3)]
@@ -74,6 +77,9 @@ using the remaining @scheme[for-clauses].
 @scheme[for], but that the last expression in the @scheme[body]s must
 produce a single value, and the result of the @scheme[for/list]
 expression is a list of the results in order.
+When evaluation of a @scheme[body] is skipped due to a @racket[#:when]
+or @racket[#:unless] clause, the result list includes no corresponding
+element.
 
 @examples[
 (for/list ([i '(1 2 3)]
@@ -89,9 +95,8 @@ expression is a list of the results in order.
 @defform*[((for/vector (for-clause ...) body ...+)
            (for/vector #:length length-expr (for-clause ...) body ...+))]{
 
-Iterates like @scheme[for], but the last expression
-in the @scheme[body]s must produce a single value, which is placed in
-the corresponding slot of a vector.  If the optional @scheme[#:length]
+Iterates like @scheme[for/list], but the result are accumulated into
+a vector instead of a list.  If the optional @scheme[#:length]
 form is used, then @scheme[length-expr] must evaluate to an
 @scheme[exact-nonnegative-integer?], and the result vector is
 constructed with this length.  In this case, the iteration can be

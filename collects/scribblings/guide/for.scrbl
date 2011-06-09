@@ -132,7 +132,8 @@ A more complete syntax of @racket[for] is
 (for (clause ...)
   body ...+)
 ([clause [id sequence-expr]
-         (code:line #:when boolean-expr)])
+         (code:line #:when boolean-expr)
+         (code:line #:unless boolean-expr)])
 ]{}
 
 When multiple @racket[[_id _sequence-expr]] clauses are provided
@@ -193,6 +194,10 @@ mutually nested, instead of in parallel, even with @racket[for].
       #:when (not (equal? chapter "Index")))
   (printf "~a Chapter ~a. ~a\n" book i chapter))
 ]
+
+An @racket[#:unless] clause is analogus to a @racket[#:when] clause, but
+the @racket[_body]s evaluate only when the @racket[_boolean-expr]
+produces a false value.
 
 @section{@racket[for/list] and @racket[for*/list]}
 

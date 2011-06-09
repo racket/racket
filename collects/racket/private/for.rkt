@@ -1224,6 +1224,18 @@
             (#:when expr . rest) . body)
        #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...)
               (#:when expr . rest) . body)]
+      ;; Negative guard case, no pending emits:
+      [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:unless expr . rest) . body)
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+             (values* fold-var ...)
+             (for/foldX/derived [orig-stx nested? #f ()]
+                                ([fold-var fold-var] ...) rest . body)))]
+      ;; Negative guard case, pending emits need to be flushed first
+      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
+            (#:unless expr . rest) . body)
+       #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...)
+              (#:unless expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
       [(_ [orig-stx nested? #f binds] fold-bind ([id rhs] . rest) . body)
        (identifier? #'id)
