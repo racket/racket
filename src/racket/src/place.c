@@ -838,7 +838,7 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so) {
 }
 
 static void bad_place_message(Scheme_Object *so) {
-  scheme_arg_mismatch("place-channel-send", 
+  scheme_arg_mismatch("place-channel-put", 
                       "cannot transmit a message containing value: ", 
                       so);
 }
@@ -1893,12 +1893,12 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
     }
     else {
       ch = NULL;
-      scheme_wrong_type("place-channel-send", "place-channel", 0, argc, args);
+      scheme_wrong_type("place-channel-put", "place-channel", 0, argc, args);
     }
     scheme_place_async_send((Scheme_Place_Async_Channel *) ch->sendch, args[1]);
   }
   else {
-    scheme_wrong_count_m("place-channel-send", 2, 2, argc, args, 0);
+    scheme_wrong_count_m("place-channel-put", 2, 2, argc, args, 0);
   }
   return scheme_void;
 }
@@ -1914,12 +1914,12 @@ Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]) {
     }
     else {
       ch = NULL;
-      scheme_wrong_type("place-channel-receive", "place-channel", 0, argc, args);
+      scheme_wrong_type("place-channel-get", "place-channel", 0, argc, args);
     }
     return scheme_place_async_receive((Scheme_Place_Async_Channel *) ch->recvch);
   }
   else {
-    scheme_wrong_count_m("place-channel-receive", 1, 1, argc, args, 0);
+    scheme_wrong_count_m("place-channel-get", 1, 1, argc, args, 0);
   }
   ESCAPED_BEFORE_HERE;
 }
