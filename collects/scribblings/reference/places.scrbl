@@ -50,8 +50,8 @@ places that share the value, because they are allowed in a
 
 A @tech{place channel} can be used as a @tech{synchronizable event}
 (see @secref["sync"]) to receive a value through the channel. A place
-can also receive messages with @racket[place-channel-receive], and
-messages can be sent with @racket[place-channel-send].
+can also receive messages with @racket[place-channel-get], and
+messages can be sent with @racket[place-channel-put].
 
 Constraints on messages across a place channel---and therefore on the
 kinds of data that places share---enable greater parallelism than
@@ -67,8 +67,8 @@ message to each, and then waits for the places to complete and return:
               (place "place-worker.rkt" 'place-main))])
    (for ([i (in-range 2)]
          [p pls])
-      (place-channel-send p i)
-      (printf "~a\n" (place-channel-receive p)))
+      (place-channel-put p i)
+      (printf "~a\n" (place-channel-get p)))
    (map place-wait pls))
 ]
 
@@ -82,8 +82,8 @@ racket
 (provide place-main)
 
 (define (place-main pch)
-  (place-channel-send pch (format "Hello from place ~a" 
-                                  (place-channel-receive pch))))
+  (place-channel-put pch (format "Hello from place ~a" 
+                                  (place-channel-get pch))))
 ]
 
 
@@ -158,15 +158,15 @@ racket
   channel}).
 }
 
-@defproc[(place-channel-send [pch place-channel?] [v any/c]) void]{
+@defproc[(place-channel-put [pch place-channel?] [v any/c]) void]{
   Sends an immutable message @racket[v] on channel @racket[pch].
 }
 
-@defproc[(place-channel-receive [pch place-channel?]) any/c]{
+@defproc[(place-channel-get [pch place-channel?]) any/c]{
   Returns an immutable message received on channel @racket[pch].
 }
 
-@defproc[(place-channel-send/receive [pch place-channel?] [v any/c]) void]{
+@defproc[(place-channel-put/get [pch place-channel?] [v any/c]) void]{
   Sends an immutable message @racket[v] on channel @racket[pch] and then 
   waits for a reply message on the same channel.
 }

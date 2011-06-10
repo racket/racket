@@ -24,12 +24,12 @@
   fn)
 
 (define (barrier-m pls)
-  (for ([ch pls]) (place-channel-receive ch))
-  (for ([ch pls]) (place-channel-send ch 1)))
+  (for ([ch pls]) (place-channel-get ch))
+  (for ([ch pls]) (place-channel-put ch 1)))
 
 (define (barrier ch)
-  (place-channel-send ch 0)
-  (place-channel-receive ch))
+  (place-channel-put ch 0)
+  (place-channel-get ch))
 
 (define (places-wait pls)
   (for ([p pls]) (place-wait p)))

@@ -14,7 +14,7 @@
     (provide place-main)
 
     (define (place-main ch)
-      (match (place-channel-receive ch)
+      (match (place-channel-get ch)
         [(list id reps cnt)
           (define ids (number->string id))
           (for ([j (in-range reps)])
@@ -37,7 +37,7 @@ END
 
   (for ([i (in-range plcnt)]
         [pl pls])
-    (place-channel-send pl (list i reps symcnt)))
+    (place-channel-put pl (list i reps symcnt)))
   (for ([j (in-range reps)])
     (time-n "1million-symbols" j
       (barrier-m pls)

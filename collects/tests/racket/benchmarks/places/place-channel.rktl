@@ -22,8 +22,8 @@
       (define count 10)
       (define fourk-b-message (make-bytes message-size 66))
       (for ([i (in-range count)])
-       (place-channel-receive ch)
-       (place-channel-send ch fourk-b-message)))])
+       (place-channel-get ch)
+       (place-channel-put ch fourk-b-message)))])
 
     (define message-size (* 4024 1024))
     (define four-k-message (make-bytes message-size 65))
@@ -31,8 +31,8 @@
     (define-values (r t1 t2 t3)
       (time-apply (lambda ()
       (for ([i (in-range count)])
-        (pp:place-channel-send pl four-k-message)
-        (pp:place-channel-receive pl))) null))
+        (pp:place-channel-put pl four-k-message)
+        (pp:place-channel-get pl))) null))
 
 
     (print-out "processes-emulated-places" (/ (* 2 count message-size) (/ t2 1000)))
@@ -51,8 +51,8 @@
       (define count 150)
       (define fourk-b-message (make-bytes message-size 66))
       (for ([i (in-range count)])
-       (place-channel-receive ch)
-       (place-channel-send ch fourk-b-message)))
+       (place-channel-get ch)
+       (place-channel-put ch fourk-b-message)))
   )
 END
   "pct1.ss")
@@ -64,8 +64,8 @@ END
     (define-values (r t1 t2 t3)
       (time-apply (lambda ()
       (for ([i (in-range count)])
-        (place-channel-send pl four-k-message)
-        (place-channel-receive pl))) null))
+        (place-channel-put pl four-k-message)
+        (place-channel-get pl))) null))
 
 
     (print-out "places" (/ (* 2 count message-size) (/ t2 1000)))
@@ -81,7 +81,7 @@ END
     (define (place-main ch)
       (define count 500)
       (for ([i (in-range count)])
-       (place-channel-send ch (place-channel-receive ch))))
+       (place-channel-put ch (place-channel-get ch))))
   )
 END
   "pct1.ss")
@@ -95,8 +95,8 @@ END
     (define-values (r t1 t2 t3)
       (time-apply (lambda ()
       (for ([i (in-range count)])
-        (place-channel-send pl tree)
-        (place-channel-receive pl))) null))
+        (place-channel-put pl tree)
+        (place-channel-get pl))) null))
 
     (define s (* (- (expt 2 9) 1) 4 8 count))
     (printf "cons-tree ~a ~a ~a ~a\n" t1 t2 t3  (exact->inexact (/ t2 1000)))

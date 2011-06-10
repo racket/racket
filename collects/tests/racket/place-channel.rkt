@@ -15,19 +15,19 @@
 
 (define big (make-string 1025 #\K))
 
-(define (big-sender ch msg) (car (place-channel-send/receive ch (cons msg big))))
+(define (big-sender ch msg) (car (place-channel-put/get ch (cons msg big))))
 
 (define-syntax (normal-receiver stx)
   (syntax-case stx ()
     [(_ ch x body ...) 
-      #'(let ([x (place-channel-receive ch)])
-        (place-channel-send ch (begin body ...)))]))
+      #'(let ([x (place-channel-get ch)])
+        (place-channel-put ch (begin body ...)))]))
 
 (define-syntax (big-receiver stx)
   (syntax-case stx ()
     [(_ ch x body ...) 
-      #'(let ([x (car (place-channel-receive ch))])
-        (place-channel-send ch (cons (begin body ...) big)))]))
+      #'(let ([x (car (place-channel-get ch))])
+        (place-channel-put ch (cons (begin body ...) big)))]))
 
 (define (test expect fun . args)
   (printf "~s ==> " (cons fun args))
@@ -41,28 +41,28 @@
         (printf "  BUT EXPECTED ~s\n" expect))
       ok?)))
 
-(define (echo ch) (place-channel-send ch (place-channel-receive ch)))
-(define (recv/print ch) (displayln (place-channel-receive ch)))
+(define (echo ch) (place-channel-put ch (place-channel-get ch)))
+(define (recv/print ch) (displayln (place-channel-get ch)))
 
 (define-struct building (rooms location) #:prefab)
 (define-struct (house building) (occupied ) #:prefab)
 (define h1 (make-house 5 'factory 'yes))
 
-(define-syntax (test-place-channel-receive/send stx)
+(define-syntax (test-place-channel-get/put stx)
   (syntax-case stx ()
     [(_ ch x body ...) #'(normal-receiver ch x body ...)]))
 
-(define-syntax (test-place-channel-receive/send-* stx)
+(define-syntax (test-place-channel-get/put-* stx)
   (syntax-case stx ()
     [(_ ch x body ...) #'(begin (normal-receiver ch x body) ...)]))
 
 
 (define-syntax-rule (channel-test-basic-types-worker receiver ch)
   (begin
-    (define-syntax-rule (test-place-channel-receive/send-* x body (... ...))
+    (define-syntax-rule (test-place-channel-get/put-* x body (... ...))
       (begin (receiver ch x body) (... ...)))
 
-    (test-place-channel-receive/send-* x
+    (test-place-channel-get/put-* x
       (not x)
       (not x)
       (void)
@@ -80,10 +80,10 @@
       `(,x))))
 
 (define (channel-test-basic-types-master sender ch)
-  (define-syntax-rule (test-place-channel-send-receive sender ch (send expect) ...) 
+  (define-syntax-rule (test-place-channel-put-receive sender ch (send expect) ...) 
     (begin (test expect sender ch send) ...))
 
-  (test-place-channel-send-receive sender ch
+  (test-place-channel-put-receive sender ch
     (#t #f)
     (#f #t)
     (null (void))
@@ -104,13 +104,13 @@
   (channel-test-basic-types-worker normal-receiver ch)
   (channel-test-basic-types-worker big-receiver ch)
 
-  (define pc1 (place-channel-receive ch))
-  (test-place-channel-receive/send pc1 x (string-append x "-ok"))
+  (define pc1 (place-channel-get ch))
+  (test-place-channel-get/put pc1 x (string-append x "-ok"))
 
-  (define pc3 (first (place-channel-receive ch)))
-  (test-place-channel-receive/send pc3 x (string-append x "-ok3"))
+  (define pc3 (first (place-channel-get ch)))
+  (test-place-channel-get/put pc3 x (string-append x "-ok3"))
 
-  (test-place-channel-receive/send-* ch x
+  (test-place-channel-get/put-* ch x
     (begin (flvector-set! x 2 5.0) "Ready1")
     (begin (flvector-set! x 2 6.0) "Ready2")
     (begin (fxvector-set! x 2 5)   "Ready2.1")
@@ -118,8 +118,8 @@
     (begin (bytes-set! x 2 67)     "Ready3")
     (begin (bytes-set! x 2 67)     "Ready4"))
 
-  (define pc5 (place-channel-receive ch))
-  (place-channel-send pc5 "Ready5")
+  (define pc5 (place-channel-get ch))
+  (place-channel-put pc5 "Ready5")
 
   (channel-test-basic-types-worker normal-receiver pc5)
   (channel-test-basic-types-worker big-receiver pc5)
@@ -144,7 +144,7 @@
     (printf "Master ~a length ~a\n" desc ll)
 
     (define p (place/anon ch
-      (define l (place-channel-receive ch))
+      (define l (place-channel-get ch))
       (define wl (length l))
       (printf "Worker length ~a\n" wl)
       (when (symbol? (car l))
@@ -153,11 +153,11 @@
           (unless (and (symbol? v)
                        (eq? v (intern-num-sym (modulo x 1000))))
             (printf "bad ~s\n" v))))
-      (place-channel-send ch wl)))
+      (place-channel-put ch wl)))
 
 
-    (place-channel-send p l)
-    (define wlen (place-channel-receive p))
+    (place-channel-put p l)
+    (define wlen (place-channel-get p))
     (unless (= wlen ll)
       (raise (format "~a master length ~a != worker length ~a\n" desc ll wlen))
     (place-wait p))))
@@ -171,66 +171,66 @@
   (define b1 (shared-bytes 66 66 66 66))
   (define b2 (make-shared-bytes 4 65))
 
-  (channel-test-basic-types-master place-channel-send/receive pl)
+  (channel-test-basic-types-master place-channel-put/get pl)
   (channel-test-basic-types-master big-sender pl)
 
   (define-values (pc1 pc2) (place-channel))
-  (place-channel-send pl pc2)
-  (test "Testing-ok" place-channel-send/receive pc1 "Testing")
+  (place-channel-put pl pc2)
+  (test "Testing-ok" place-channel-put/get pc1 "Testing")
 
   (define-values (pc3 pc4) (place-channel))
-  (place-channel-send pl (list pc4))
-  (test "Testing-ok3" place-channel-send/receive pc3 "Testing")
+  (place-channel-put pl (list pc4))
+  (test "Testing-ok3" place-channel-put/get pc3 "Testing")
 
-  (test "Ready1" place-channel-send/receive pl flv1)
+  (test "Ready1" place-channel-put/get pl flv1)
   (test 5.0 flvector-ref flv1 2)
 
-  (test "Ready2" place-channel-send/receive pl flv2)
+  (test "Ready2" place-channel-put/get pl flv2)
   (test 6.0 flvector-ref flv2 2)
 
-  (test "Ready2.1" place-channel-send/receive pl fxv1)
+  (test "Ready2.1" place-channel-put/get pl fxv1)
   (test 5 fxvector-ref fxv1 2)
 
-  (test "Ready2.2" place-channel-send/receive pl fxv2)
+  (test "Ready2.2" place-channel-put/get pl fxv2)
   (test 6 fxvector-ref fxv2 2)
 
-  (test "Ready3" place-channel-send/receive pl b1)
+  (test "Ready3" place-channel-put/get pl b1)
   (test 67 bytes-ref b1 2)
 
-  (test "Ready4" place-channel-send/receive pl b2)
+  (test "Ready4" place-channel-put/get pl b2)
   (test 67 bytes-ref b2 2)
 
   (define-values (pc5 pc6) (place-channel))
-  (place-channel-send pl pc5)
+  (place-channel-put pl pc5)
   (test "Ready5" sync pc6)
-  (channel-test-basic-types-master place-channel-send/receive pc6)
+  (channel-test-basic-types-master place-channel-put/get pc6)
   (channel-test-basic-types-master big-sender pc6)
 
   (let ([try-graph
          (lambda (s)
            (let ([v (read (open-input-string s))])
-             (place-channel-send pc6 v)
-             (test v place-channel-receive pc6)))])
+             (place-channel-put pc6 v)
+             (test v place-channel-get pc6)))])
     (try-graph "#0=(#0# . #0#)")
     (try-graph "#0=#(#0# 7 #0#)")
     (try-graph "#0=#s(thing 7 #0#)"))
 
-  (check-exn exn:fail? (λ () (place-channel-send pl (open-output-string))))
-  (check-not-exn (λ () (place-channel-send pl "Test String")))
-  (check-not-exn (λ () (place-channel-send pl (bytes->path #"/tmp/unix" 'unix))))
-  (check-not-exn (λ () (place-channel-send pl (bytes->path #"C:\\Windows" 'windows))))
+  (check-exn exn:fail? (λ () (place-channel-put pl (open-output-string))))
+  (check-not-exn (λ () (place-channel-put pl "Test String")))
+  (check-not-exn (λ () (place-channel-put pl (bytes->path #"/tmp/unix" 'unix))))
+  (check-not-exn (λ () (place-channel-put pl (bytes->path #"C:\\Windows" 'windows))))
 
   (place-wait pl))
 
   (let ([p (place/anon ch
-             (with-handlers ([exn:break? (lambda (x) (place-channel-send ch "OK"))])
-              (place-channel-send ch "ALIVE")
+             (with-handlers ([exn:break? (lambda (x) (place-channel-put ch "OK"))])
+              (place-channel-put ch "ALIVE")
               (sync never-evt)
-              (place-channel-send ch "NOK")))])
+              (place-channel-put ch "NOK")))])
 
-  (test "ALIVE" place-channel-receive p)
+  (test "ALIVE" place-channel-get p)
   (place-break p)
-  (test "OK" place-channel-receive p)
+  (test "OK" place-channel-get p)
   (place-wait p))
 
   (test-long (lambda (x) 3) "Listof ints")

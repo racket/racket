@@ -17,11 +17,11 @@
          place-kill
          place-break
          place-channel
-         place-channel-send
-         place-channel-receive
+         place-channel-put
+         place-channel-get
          place-channel?
          place?
-         place-channel-send/receive
+         place-channel-put/get
          processor-count
          place/anon
          place/thunk
@@ -31,9 +31,9 @@
 (define-struct TH-place (th ch cust) 
   #:property prop:evt (lambda (x) (TH-place-channel-in (TH-place-ch x))))
 
-(define (place-channel-send/receive ch msg)
-  (place-channel-send ch msg)
-  (place-channel-receive ch))
+(define (place-channel-put/get ch msg)
+  (place-channel-put ch msg)
+  (place-channel-get ch))
 
 (define (make-th-async-channel)
   (define ch (make-channel))
@@ -95,25 +95,25 @@
         (apply make-prefab-struct 
                key 
                (map dcw (cdr (vector->list (struct->vector o)))))]
-      [else (raise-mismatch-error 'place-channel-send "cannot transmit a message containing value: " o)]))
+      [else (raise-mismatch-error 'place-channel-put "cannot transmit a message containing value: " o)]))
 
   (dcw x))
 
 
-(define (th-place-channel-send pl msg)
+(define (th-place-channel-put pl msg)
   (define th  
     (cond
       [(TH-place? pl) (TH-place-channel-out (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-out pl)]
-      [else (raise-type-error 'place-channel-send "expect a place? or place-channel?" pl)]))
+      [else (raise-type-error 'place-channel-put "expect a place? or place-channel?" pl)]))
   (void (thread-send th (deep-copy msg) #f)))
 
-(define (th-place-channel-receive pl)
+(define (th-place-channel-get pl)
   (channel-get
     (cond
       [(TH-place? pl) (TH-place-channel-in (TH-place-ch pl))]
       [(TH-place-channel? pl) (TH-place-channel-in pl)]
-      [else (raise-type-error 'place-channel-receive "expect a place? or place-channel?" pl)])))
+      [else (raise-type-error 'place-channel-get "expect a place? or place-channel?" pl)])))
 
 (define (th-place-channel? pl)
   (or (TH-place? pl)
@@ -127,8 +127,8 @@
 (define-pl place-kill         pl-place-kill         th-place-kill)
 (define-pl place-break        pl-place-break        th-place-break)
 (define-pl place-channel      pl-place-channel      th-place-channel)
-(define-pl place-channel-send pl-place-channel-send th-place-channel-send)
-(define-pl place-channel-receive pl-place-channel-receive th-place-channel-receive)
+(define-pl place-channel-put  pl-place-channel-put  th-place-channel-put)
+(define-pl place-channel-get  pl-place-channel-get  th-place-channel-get)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
 

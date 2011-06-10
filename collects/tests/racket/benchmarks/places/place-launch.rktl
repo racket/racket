@@ -12,11 +12,11 @@
     (provide place-main)
 
     (define (barrier ch)
-      (place-channel-send ch 0)
-      (place-channel-receive ch))
+      (place-channel-put ch 0)
+      (place-channel-get ch))
 
     (define (place-main ch)
-      (place-channel-send ch 2)
+      (place-channel-put ch 2)
       (barrier ch))
   )
 END
@@ -28,11 +28,11 @@ END
     (provide place-main)
 
     (define (barrier ch)
-      (place-channel-send ch 0)
-      (place-channel-receive ch))
+      (place-channel-put ch 0)
+      (place-channel-get ch))
 
     (define (place-main ch)
-      (place-channel-send ch 2)
+      (place-channel-put ch 2)
       (barrier ch))
   )
 END
@@ -49,7 +49,7 @@ END
     (let ([pls (time-n msg 0
                      (for/list ([i (in-range plcnt)]) 
                         (let ([p (place module-path 'place-main)]) 
-                          (place-channel-receive p)
+                          (place-channel-get p)
                           p)))])
       (barrier-m pls)
       (places-wait pls))
@@ -58,7 +58,7 @@ END
     (let ([pls (time-n msg 1 
                      (let ([pls (for/list ([i (in-range plcnt)])
                                   (place module-path 'place-main))])
-                        (map place-channel-receive pls) pls))])
+                        (map place-channel-get pls) pls))])
       (barrier-m pls)
       (places-wait pls)))
 

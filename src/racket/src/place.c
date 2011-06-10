@@ -96,8 +96,8 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-break",           scheme_place_break,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",                scheme_place_p,         1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-channel",         scheme_place_channel,   0, 0, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-send",    scheme_place_send,      1, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-receive", scheme_place_receive,   1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-put",     scheme_place_send,      1, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-get",     scheme_place_receive,   1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-channel?",        scheme_place_channel_p, 1, 1, plenv);
 
 #ifdef MZ_USE_PLACES
