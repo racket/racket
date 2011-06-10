@@ -10,6 +10,7 @@
          "runtime.rkt")
 (provide define-conventions
          define-literal-set
+         literal-set->predicate
          kernel-literals)
 
 (define-syntax (define-conventions stx)
@@ -181,6 +182,24 @@ Use cases, explained:
        (that's why the weird (if (z?) 0 1) term)
 |#
 
+;; FIXME: keep one copy of each identifier (?)
+
+(define-syntax (literal-set->predicate stx)
+  (syntax-case stx ()
+    [(literal-set->predicate litset-id)
+     (let ([val (and (identifier? #'litset-id)
+                     (syntax-local-value/record #'litset-id literalset?))])
+       (unless val (raise-syntax-error #f "expected literal set name" stx #'litset-id))
+       (let ([lits (literalset-literals val)])
+         (with-syntax ([((_sym lit phase-var) ...) lits])
+           #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)))))]))
+
+(define (make-literal-set-predicate lits)
+  (lambda (x [phase (syntax-local-phase-level)])
+    (for/or ([lit (in-list lits)])
+      (let ([lit-id (car lit)]
+            [lit-phase (cadr lit)])
+        (free-identifier=?/phases x phase lit-id lit-phase)))))
 
 ;; Literal sets
 

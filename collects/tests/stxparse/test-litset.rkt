@@ -3,7 +3,6 @@
          syntax/parse/debug
          rackunit
          "setup.rkt")
-(require (for-syntax syntax/parse))
 
 (define-literal-set lits0 #:phase 0
   (define lambda))
@@ -96,4 +95,15 @@
     (go #'lambda 'lambda)
     (go #'define 'define)
     (go #'begin #f)
+    (void)))
+
+(require (for-label '#%kernel))
+
+(test-case "litset->pred"
+  (let ([kernel? (literal-set->predicate kernel-literals)])
+    (check-equal? (kernel? #'#%plain-lambda) #t)
+    (check-equal? (kernel? #'define-values) #t)
+    (check-equal? (kernel? #'define-values #f) #t)
+    (check-equal? (kernel? #'define-values 4) #f)
+    (check-equal? (kernel? #'foo) #f)
     (void)))

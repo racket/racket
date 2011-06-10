@@ -93,6 +93,24 @@ whose binding at phase 1 is the @scheme[x] from module
 @schememodname['common].
 }
 
+@defform[(literal-set->predicate litset-id)]{
+
+Given the name of a literal set, produces a predicate that recognizes
+identifiers in the literal set. The predicate takes one required
+argument, an identifier @racket[_id], and one optional argument, the
+phase @racket[_phase] at which to examine the binding of @racket[_id];
+the @racket[_phase] argument defaults to
+@racket[(syntax-local-phase-level)].
+
+@myexamples[
+(define kernel? (literal-set->predicate kernel-literals))
+(kernel? #'lambda)
+(kernel? #'#%plain-lambda)
+(kernel? #'define-values)
+(kernel? #'define-values 4)
+]
+}
+
 @defform/subs[(define-conventions name-id convention-rule ...)
               ([convention-rule (name-pattern syntax-class)]
                [name-pattern exact-id
