@@ -902,7 +902,10 @@
 ;; scheme/port
 [port->lines (cl->* ([-Input-Port] . ->opt . (-lst -String)))]
 [port->bytes-lines (cl->* ([-Input-Port] . ->opt . (-lst -Bytes)))]
-[port->list (-poly (a) (->opt [(-> -Input-Port a) -Input-Port] (-lst a)))]
+[port->list
+ (-poly (a) (cl->*
+  (-> (-lst Univ))
+  (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
 [port->bytes (->opt [-Input-Port] -Bytes)]
 [port->string (->opt [-Input-Port] -String)]
 [with-output-to-string
