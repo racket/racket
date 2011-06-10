@@ -1,7 +1,8 @@
 #lang racket/base
 ;; owner: ryanc (and cce and stamourv, where noted)
 (require racket/syntax
-         syntax/stx)
+         syntax/stx
+         (for-syntax racket/base))
 
 (provide (rename-out [stx-map syntax-map])
          syntax-list
@@ -15,7 +16,8 @@
          syntax-within?
 
          ;; by ryanc
-         explode-module-path-index)
+         explode-module-path-index
+         phase-of-enclosing-module)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,3 +84,12 @@
           (if (module-path-index? y)
               (explode-module-path-index y)
               (list y)))))
+
+(define-syntax (phase-of-enclosing-module stx)
+  (syntax-case stx ()
+    [(poem)
+     (let ([phase-within-module (syntax-local-phase-level)])
+       #`(let ([phase-of-this-expression
+                (variable-reference->phase (#%variable-reference))])
+           (- phase-of-this-expression
+              #,(if (zero? phase-within-module) 0 1))))]))

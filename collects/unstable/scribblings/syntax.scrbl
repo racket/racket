@@ -26,6 +26,25 @@ resolved module path or @racket[#f] for the ``self'' module.
 ]
 }
 
+@defform[(phase-of-enclosing-module)]{
+
+Returns the phase level of the module in which the form occurs (and
+for the instantiation of the module in which the form is
+executed). For example, if a module is required directly by the
+``main'' module (or the top level), its phase level is 0. If a module
+is required for-syntax by the ``main'' module (or the top level), its
+phase level is 1.
+
+@examples[#:eval the-eval
+(module helper racket
+  (require unstable/syntax)
+  (displayln (phase-of-enclosing-module)))
+(require 'helper)
+(require (for-meta 1 'helper))
+]
+}
+
+
 @;{----}
 
 @addition{@author+email["Vincent St-Amour" "stamourv@racket-lang.org"]}

@@ -7,7 +7,8 @@
                      "rep-data.rkt"
                      "rep.rkt"
                      "kws.rkt")
-         "runtime.rkt")
+         "runtime.rkt"
+         (only-in unstable/syntax phase-of-enclosing-module))
 (provide define-conventions
          define-literal-set
          literal-set->predicate

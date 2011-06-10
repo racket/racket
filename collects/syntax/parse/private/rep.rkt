@@ -2,7 +2,8 @@
 (require (for-template racket/base
                        racket/stxparam
                        "keywords.rkt"
-                       "runtime.rkt")
+                       "runtime.rkt"
+                       (only-in unstable/syntax phase-of-enclosing-module))
          racket/contract/base
          "minimatch.rkt"
          syntax/id-table

@@ -369,16 +369,3 @@
      ;; For now, let #%app handle it.
      (with-syntax ([((kw-part ...) ...) #'((kw kwarg) ...)])
        #'(proc kw-part ... ... extra-parg ... parg ...))]))
-
-;; ----
-
-(provide phase-of-enclosing-module)
-
-(define-syntax (phase-of-enclosing-module stx)
-  (syntax-case stx ()
-    [(poem)
-     (let ([phase-within-module (syntax-local-phase-level)])
-       #`(let ([phase-of-this-expression
-                (variable-reference->phase (#%variable-reference))])
-           (- phase-of-this-expression
-              #,(if (zero? phase-within-module) 0 1))))]))
