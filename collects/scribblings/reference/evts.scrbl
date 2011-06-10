@@ -185,12 +185,12 @@ generate events (see @racket[prop:evt]).
    event's result is @|void-const|.}
 
  @item{@racket[place-channel] --- a place-channel is ready when
- @racket[place-channel-receive] would not block. The channel's result as an
- event is the same as the @racket[place-channel-receive] result.}
+ @racket[place-channel-get] would not block. The channel's result as an
+ event is the same as the @racket[place-channel-get] result.}
 
- @item{@racket[place] --- a place is ready when @racket[place-channel-receive]
+ @item{@racket[place] --- a place is ready when @racket[place-channel-get]
  would not block. The result as an event is the same as the
- @racket[place-channel-receive] result.}
+ @racket[place-channel-get] result.}
 
  ]
 

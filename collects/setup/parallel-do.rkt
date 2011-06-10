@@ -120,9 +120,9 @@
       (when initialmsg (send/msg (s-exp->fasl (serialize (initialmsg id))))))
   (define/public (send/msg msg)
     (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" pl msg))
-    (place-channel-send pl msg))
+    (place-channel-put pl msg))
   (define/public (recv/msg)
-    (define r (place-channel-receive pl))
+    (define r (place-channel-get pl))
     (DEBUG_COMM (eprintf "CRECEIVNG ~v ~v\n" pl r))
     r)
   (define/public (read-all) "")
@@ -306,12 +306,12 @@
         (define orig-in  (current-input-port))
         (define (raw-send msg)
           (cond 
-            [ch (place-channel-send ch msg)]
+            [ch (place-channel-put ch msg)]
             [else (write msg orig-out)
                   (flush-output orig-out)]))
         (define (raw-recv)
           (cond 
-            [ch (place-channel-receive ch)]
+            [ch (place-channel-get ch)]
             [else (read orig-in)]))
         (define (pdo-send msg)
           (with-handlers ([exn:fail?
