@@ -802,13 +802,19 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
 
     rc = scheme_make_integer((intptr_t)wd->rc);
     free(wd);
+    /*
     return rc;
+    */
+    return scheme_void;
   }
 # else
   {
     void *rcvoid;
     rcvoid = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
+    /*
     return scheme_make_integer((intptr_t) rcvoid);
+    */
+    return scheme_void;
   }
 # endif
 }
