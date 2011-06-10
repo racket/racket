@@ -57,7 +57,7 @@
 END
   "pct1.ss")
 
-  (let ([pl (place "pct1.ss" 'place-main)])
+  (let ([pl (place-dynamic "pct1.ss" 'place-main)])
     (define message-size (* 4024 1024))
     (define four-k-message (make-bytes message-size 65))
     (define count 150)
@@ -86,7 +86,7 @@ END
 END
   "pct1.ss")
 
-  (let ([pl (place "pct1.ss" 'place-main)])
+  (let ([pl (place-dynamic "pct1.ss" 'place-main)])
     (define tree (let loop ([depth 8])
       (if (depth . <= . 0)
         1

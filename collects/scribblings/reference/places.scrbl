@@ -64,7 +64,7 @@ message to each, and then waits for the places to complete and return:
 
 @racketblock[
 (let ([pls (for/list ([i (in-range 2)])
-              (place "place-worker.rkt" 'place-main))])
+              (place-dynamic "place-worker.rkt" 'place-main))])
    (for ([i (in-range 2)]
          [p pls])
       (place-channel-put p i)
@@ -98,7 +98,7 @@ racket
   @racket[#f] otherwise.
 }
 
-@defproc[(place [module-path module-path?] [start-proc symbol?]) place?]{
+@defproc[(place-dynamic [module-path module-path?] [start-proc symbol?]) place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
  @racket[module-path] and @racket[start-proc]. The result is a
@@ -127,23 +127,10 @@ racket
   Terminates the place indicated by @racket[p],
 }
 
-
-@defform[(place/thunk place-channel? body ...)]{
+@defform[(place place-channel? body ...)]{
   In-line definition of a place worker body, which is lifted up to module scope.
-  @racket[place/thunk] closes over only module scope variables.
-  Returns a thunk for creating the described place.
-}
-
-@defform[(place/anon place-channel? body ...)]{
-  In-line definition of a place worker body, which is lifted up to module scope.
-  @racket[place/anon] closes over only module scope variables.
+  @racket[place] closes over only module scope variables.
   Returns the place descriptor for the newly constructed place.
-}
-
-@defform[(define-place (place-name-id place-channel-id) body ...)]{
-  In-line definition of a place worker body, which is lifted up to module scope.
-  @racket[define-place] closes over only module scope variables.
-  Defines a procedure for creating the described place.
 }
 
 @defproc[(place-channel) (values place-channel? place-channel?)]{

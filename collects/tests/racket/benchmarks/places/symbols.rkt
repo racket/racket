@@ -33,7 +33,7 @@ END
       [(vector) (values (processor-count) 10 1000000)]
       [(vector a b c) (values a b c)]))
 
-  (define pls (for/list ([i (in-range plcnt)]) (place "pct1.ss" 'place-main)))
+  (define pls (for/list ([i (in-range plcnt)]) (place-dynamic "pct1.ss" 'place-main)))
 
   (for ([i (in-range plcnt)]
         [pl pls])
@@ -70,7 +70,7 @@ END
 
   (for ([j (in-range reps)])
     (time-n "require-algol-parse/racket-class" j
-      (define pls (for/list ([i (in-range plcnt)]) (place "pct2.ss" 'place-main)))
+      (define pls (for/list ([i (in-range plcnt)]) (place-dynamic "pct2.ss" 'place-main)))
       (barrier-m pls))))
 
 (symbol-test)

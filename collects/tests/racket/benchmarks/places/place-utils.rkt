@@ -56,7 +56,7 @@
 
         (splat (syntax->datum worker-syntax) module-path-str)
 
-        (define place-syntax #`(place #,module-path (quote name)))
+        (define place-syntax #`(place-dynamic #,module-path (quote name)))
         ;(write (syntax->datum place-syntax)) (newline)
         place-syntax)]))
 

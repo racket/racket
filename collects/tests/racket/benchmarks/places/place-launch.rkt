@@ -48,7 +48,7 @@ END
 
     (let ([pls (time-n msg 0
                      (for/list ([i (in-range plcnt)]) 
-                        (let ([p (place module-path 'place-main)]) 
+                        (let ([p (place-dynamic module-path 'place-main)]) 
                           (place-channel-get p)
                           p)))])
       (barrier-m pls)
@@ -57,7 +57,7 @@ END
 
     (let ([pls (time-n msg 1 
                      (let ([pls (for/list ([i (in-range plcnt)])
-                                  (place module-path 'place-main))])
+                                  (place-dynamic module-path 'place-main))])
                         (map place-channel-get pls) pls))])
       (barrier-m pls)
       (places-wait pls)))

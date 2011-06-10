@@ -143,7 +143,7 @@
     (define ll (length l))
     (printf "Master ~a length ~a\n" desc ll)
 
-    (define p (place/anon ch
+    (define p (place ch
       (define l (place-channel-get ch))
       (define wl (length l))
       (printf "Worker length ~a\n" wl)
@@ -222,7 +222,7 @@
 
   (place-wait pl))
 
-  (let ([p (place/anon ch
+  (let ([p (place ch
              (with-handlers ([exn:break? (lambda (x) (place-channel-put ch "OK"))])
               (place-channel-put ch "ALIVE")
               (sync never-evt)

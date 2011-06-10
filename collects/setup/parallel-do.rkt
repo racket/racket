@@ -116,7 +116,7 @@
              
   (define/public (spawn _id module-path funcname [initialmsg #f])
       (set! id _id)
-      (set! pl (place (string->path module-path) funcname))
+      (set! pl (place-dynamic (string->path module-path) funcname))
       (when initialmsg (send/msg (s-exp->fasl (serialize (initialmsg id))))))
   (define/public (send/msg msg)
     (DEBUG_COMM (eprintf "CSENDING ~v ~v\n" pl msg))
