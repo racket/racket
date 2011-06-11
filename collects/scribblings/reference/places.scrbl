@@ -64,7 +64,7 @@ message to each, and then waits for the places to complete and return:
 
 @racketblock[
 (let ([pls (for/list ([i (in-range 2)])
-              (place-dynamic "place-worker.rkt" 'place-main))])
+              (dynamic-place "place-worker.rkt" 'place-main))])
    (for ([i (in-range 2)]
          [p pls])
       (place-channel-put p i)
@@ -98,7 +98,7 @@ racket
   @racket[#f] otherwise.
 }
 
-@defproc[(place-dynamic [module-path module-path?] [start-proc symbol?]) place?]{
+@defproc[(dynamic-place [module-path module-path?] [start-proc symbol?]) place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
  @racket[module-path] and @racket[start-proc]. The result is a

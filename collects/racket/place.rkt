@@ -11,7 +11,7 @@
          (for-syntax racket/base
                      racket/syntax))
 
-(provide place-dynamic
+(provide dynamic-place
          place-sleep
          place-wait 
          place-kill
@@ -45,7 +45,7 @@
             (loop)))))
     ch))
   
-(define (th-place-dynamic mod funcname)
+(define (th-dynamic-place mod funcname)
   (unless (or (path-string? mod) (resolved-module-path? mod))
     (raise-type-error 'place "resolved-module-path? or path-string?" 0 mod funcname))
   (unless (symbol? funcname)
@@ -120,7 +120,7 @@
 
 (define-syntax-rule (define-pl x p t) (define x (if (pl-place-enabled?) p t)))
 
-(define-pl place-dynamic      pl-place-dynamic      th-place-dynamic)
+(define-pl dynamic-place      pl-dynamic-place      th-dynamic-place)
 (define-pl place-sleep        pl-place-sleep        th-place-sleep)
 (define-pl place-wait         pl-place-wait         th-place-wait)
 (define-pl place-kill         pl-place-kill         th-place-kill)
@@ -146,7 +146,7 @@
       #'(let ([module-path (resolved-module-path-name
               (variable-reference->resolved-module-path
                (#%variable-reference)))])
-       (place-dynamic module-path (quote funcname))))]))
+       (dynamic-place module-path (quote funcname))))]))
 
 (define-syntax (place/thunk stx)
   (with-syntax ([create-place (gen-create-place stx)])

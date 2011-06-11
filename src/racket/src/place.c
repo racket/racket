@@ -89,7 +89,7 @@ void scheme_init_place(Scheme_Env *env)
 
   GLOBAL_PRIM_W_ARITY("place-enabled?",       scheme_place_enabled,   0, 0, plenv);
   GLOBAL_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-dynamic",         scheme_place,           2, 2, plenv);
+  PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           2, 2, plenv);
   PLACE_PRIM_W_ARITY("place-sleep",           scheme_place_sleep,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",            scheme_place_wait,      1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-kill",            scheme_place_kill,      1, 1, plenv);

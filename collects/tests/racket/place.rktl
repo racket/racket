@@ -26,9 +26,9 @@
 (arity-test place-channel-put/get 2 2)
 (arity-test processor-count 0 0)
 
-(err/rt-test (place-dynamic "foo.rkt"))
-(err/rt-test (place-dynamic null 10))
-(err/rt-test (place-dynamic "foo.rkt" 10))
+(err/rt-test (dynamic-place "foo.rkt"))
+(err/rt-test (dynamic-place null 10))
+(err/rt-test (dynamic-place "foo.rkt" 10))
         
 (let ([p (place/base (p1 ch)
           (printf "Hello form place 2\n")

@@ -12,7 +12,7 @@
                      racket/file))
 
 (provide
-  place-dynamic
+  dynamic-place
   place-wait
   place-kill
   place-channel-get
@@ -45,7 +45,7 @@
   (deserialize (fasl->s-exp (read (place-channel-s-in (resolve->channel ch))))))
 
 ;; create a place given a module file path and a func-name to invoke
-(define (place-dynamic module-name func-name)
+(define (dynamic-place module-name func-name)
   (define (send/msg x ch)
     (write x ch)
     (flush-output ch))
@@ -133,7 +133,7 @@
 
         (splat (syntax->datum worker-syntax) module-path)
 
-        (define place-syntax #`(place-dynamic #,module-path (quote name)))
+        (define place-syntax #`(dynamic-place #,module-path (quote name)))
         ;(write (syntax->datum place-syntax))
         place-syntax)]))
 
@@ -144,7 +144,7 @@
        (define (place/current-module-path funcname)
          (with-syntax ([funcname funcname])
            #'(let ([module-path (resolved-module-path-name (variable-reference->resolved-module-path (#%variable-reference)))])
-               (place-dynamic module-path (quote funcname)))))
+               (dynamic-place module-path (quote funcname)))))
        (with-syntax ([interal-def-name (syntax-local-lift-expression #'(lambda () ((lambda (args ...) body ...) (place-child-channel))))])
          (syntax-local-lift-provide #'(rename interal-def-name name)))
        (place/current-module-path #'name))]))
