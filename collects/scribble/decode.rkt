@@ -189,10 +189,13 @@
           (part-to-collect part)
           (append para (part-blocks part))
           (cons (car l) (part-parts part))))]
-      [(and (part-start? (car l))
-            (or (not part-depth)
-                ((part-start-depth (car l)) . <= . part-depth)))
-       (unless part-depth (error 'decode "misplaced part: ~e" (car l)))
+      [(part-start? (car l))
+       (unless part-depth
+         (error 'decode "misplaced part; title: ~s" (part-start-title (car l))))
+       (unless ((part-start-depth (car l)) . <= . part-depth)
+         (error 'decode
+                "misplaced part (the part is more than one layer deeper than its container); title: ~s"
+                (part-start-title (car l))))
        (let ([s (car l)])
          (let loop ([l (cdr l)] [s-accum null])
            (if (or (null? l)
