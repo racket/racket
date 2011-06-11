@@ -1092,6 +1092,8 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   name[len+1] = 0;
 
   v = scheme_make_folding_prim_closure(prop_pred, 1, a, name, 1, 1, 0);
+  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
+                                                    | SCHEME_PRIM_TYPE_STRUCT_PROP_PRED);
   *predout = v;
 
   name = MALLOC_N_ATOMIC(char, len + 10);
@@ -1099,7 +1101,8 @@ static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *
   memcpy(name + len, "-accessor", 10);
 
   v = scheme_make_folding_prim_closure(prop_accessor, 1, a, name, 1, 2, 0);
-  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
+  ((Scheme_Closed_Primitive_Proc *)v)->pp.flags |= (SCHEME_PRIM_IS_STRUCT_OTHER
+                                                    | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER);
   
   *accessout = v;
 
@@ -2979,8 +2982,8 @@ struct_prop_getter_p(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
   return ((STRUCT_mPROCP(v, 
-                         SCHEME_PRIM_OTHER_TYPE_MASK,
-                         SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type))
 	  ? scheme_true : scheme_false);
 }
@@ -2991,8 +2994,8 @@ chaperone_prop_getter_p(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
   return ((STRUCT_mPROCP(v, 
-                         SCHEME_PRIM_OTHER_TYPE_MASK,
-                         SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
+                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_chaperone_property_type))
 	  ? scheme_true : scheme_false);
 }

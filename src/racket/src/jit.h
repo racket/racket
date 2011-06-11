@@ -232,6 +232,9 @@ struct scheme_jit_common_record {
   void *struct_pred_branch_code;
   void *struct_get_code, *struct_get_multi_code;
   void *struct_set_code, *struct_set_multi_code;
+  void *struct_prop_get_code, *struct_prop_get_multi_code;
+  void *struct_prop_get_defl_code, *struct_prop_get_defl_multi_code;
+  void *struct_prop_pred_code, *struct_prop_pred_multi_code;
   void *struct_proc_extract_code;
   void *bad_app_vals_target;
   void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;

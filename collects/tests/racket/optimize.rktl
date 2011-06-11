@@ -14,7 +14,13 @@
 	       [eval-jit-enabled #t])
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/fixnum)
-  (let* ([check-error-message (lambda (name proc [fixnum? #f])
+  (eval '(define-values (prop:thing thing? thing-ref) 
+           (make-struct-type-property 'thing)))
+  (eval '(struct rock (x) #:property prop:thing 'yes))
+  (let* ([struct:rock (eval 'struct:rock)]
+         [a-rock (eval '(rock 0))]
+         [chap-rock (eval '(chaperone-struct (rock 0) rock-x (lambda (r v) (add1 v))))]
+         [check-error-message (lambda (name proc [fixnum? #f])
 				(unless (memq name '(eq? eqv? equal? 
                                                          not null? pair? list?
 							 real? number? boolean? 
@@ -24,7 +30,8 @@
 							 eof-object?
                                                          exact-integer?
                                                          exact-nonnegative-integer?
-                                                         exact-positive-integer?))
+                                                         exact-positive-integer?
+                                                         thing?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc (if fixnum? 10 'bad)))]
 					[name (symbol->string name)])
@@ -172,6 +179,10 @@
     (un #f 'string? #"apple")
     (un #f 'bytes? "apple")
     (un #t 'bytes? #"apple")
+    (un #f 'thing? 10)
+    (un #t 'thing? a-rock)
+    (un #t 'thing? chap-rock)
+    (un #t 'thing? struct:rock)
 
     (bin #f 'eq? 0 10)
     (bin-exact #t 'eq? 10 10)
@@ -650,6 +661,10 @@
     (bin-exact #t 'procedure-arity-includes? (lambda (x) x) 1)
     (bin-exact #f 'procedure-arity-includes? (lambda (x) x) 2)
     (bin-exact #t 'procedure-arity-includes? (lambda x x) 2)
+
+    (un0 'yes 'thing-ref a-rock)
+    (bin0 'yes 'thing-ref a-rock 99)
+    (bin0 99 'thing-ref 10 99)
 
     ))
 

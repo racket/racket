@@ -314,11 +314,11 @@ Creates a new structure type property and returns three values:
        one of its instances; if the structure type does not have a
        value for the property, or if any other kind of value is
        provided, the @exnraise[exn:fail:contract] unless a second
-       argument, @racket[failure-result], is supplied to the
-       procedure. In that case, if @racket[failure-result] is a
+       argument, @racket[_failure-result], is supplied to the
+       procedure. In that case, if @racket[_failure-result] is a
        procedure, it is called (through a tail call) with no arguments
        to produce the result of the property accessor procedure;
-       otherwise, @racket[failure-result] is itself returned as the
+       otherwise, @racket[_failure-result] is itself returned as the
        result.}
 
 ]

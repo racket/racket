@@ -58,11 +58,21 @@ static int check_val_struct_prim(Scheme_Object *p, int arity)
         return 1;
       else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
         return 2;
+      else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER) {
+        int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+        if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+          return 4;
+        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_PRED)
+          return 6;
+      }
     } else if (arity == 2) {
-      if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER)
-          && ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK)
-              == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER))
-        return 3;
+      if ((((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_OTHER)) {
+        int t = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+        if (t == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
+          return 3;
+        else if (t == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+          return 5;
+      }
     }
   }
   return 0;
@@ -326,12 +336,32 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     } else {
       (void)jit_calli(sjc.struct_get_code);
     }
-  } else {
+  } else if (kind == 3) {
     if (multi_ok) {
       (void)jit_calli(sjc.struct_set_multi_code);
     } else {
       (void)jit_calli(sjc.struct_set_code);
     }
+  } else if (kind == 4) {
+    if (multi_ok) {
+      (void)jit_calli(sjc.struct_prop_get_multi_code);
+    } else {
+      (void)jit_calli(sjc.struct_prop_get_code);
+    }
+  } else if (kind == 5) {
+    if (multi_ok) {
+      (void)jit_calli(sjc.struct_prop_get_defl_multi_code);
+    } else {
+      (void)jit_calli(sjc.struct_prop_get_defl_code);
+    }
+  } else if (kind == 6) {
+    if (multi_ok) {
+      (void)jit_calli(sjc.struct_prop_pred_multi_code);
+    } else {
+      (void)jit_calli(sjc.struct_prop_pred_code);
+    }
+  } else {
+    scheme_signal_error("internal error: unknown struct-op mode");
   }
 
   return 1;
@@ -353,8 +383,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       generate_inlined_struct_op(1, jitter, rator, app->rand, NULL, for_branch, branch_short, multi_ok);
       scheme_direct_call_count++;
       return 1;
-    } else if ((k == 2) && !for_branch) {
-      generate_inlined_struct_op(2, jitter, rator, app->rand, NULL, for_branch, branch_short, multi_ok);
+    } else if (((k == 2) || (k == 4) || (k == 6)) && !for_branch) {
+      generate_inlined_struct_op(k, jitter, rator, app->rand, NULL, for_branch, branch_short, multi_ok);
       scheme_direct_call_count++;
       return 1;
     }
@@ -1595,11 +1625,14 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 {
   Scheme_Object *rator = app->rator;
 
-  if (!for_branch
-      && inlineable_struct_prim(rator, jitter, 2, 2)) {
-    generate_inlined_struct_op(3, jitter, rator, app->rand1, app->rand2, for_branch, branch_short, multi_ok);
-    scheme_direct_call_count++;
-    return 1;
+  if (!for_branch) {
+    int k;
+    k = inlineable_struct_prim(rator, jitter, 2, 2);
+    if (k) {
+      generate_inlined_struct_op(k, jitter, rator, app->rand1, app->rand2, for_branch, branch_short, multi_ok);
+      scheme_direct_call_count++;
+      return 1;
+    }
   }
 
 

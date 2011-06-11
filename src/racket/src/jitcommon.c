@@ -1503,6 +1503,174 @@ static int common4(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common4b(mz_jit_state *jitter, void *_data)
+{
+  int i, ii;
+
+  /* *** struct_prop_{pred,get[_defl]}_[multi_]code *** */
+  /* R0 is (potential) struct-prop proc, R1 is (potential) struct.
+     If defl_, V1 is second argument for default value. */
+  for (i = 0; i < 3; i++) {
+    for (ii = 0; ii < 2; ii++) {
+      void *code;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop, *refrts;
+
+      code = jit_get_ip().ptr;
+      
+      if (i == 0) {
+        if (ii == 1) 
+          sjc.struct_prop_get_multi_code = code;
+        else
+          sjc.struct_prop_get_code = code;
+      } else if (i == 1) {
+        if (ii == 1) 
+          sjc.struct_prop_get_defl_multi_code = code;
+        else
+          sjc.struct_prop_get_defl_code = code;
+      } else if (i == 2) {
+        if (ii == 1) 
+          sjc.struct_prop_pred_multi_code = code;
+        else
+          sjc.struct_prop_pred_code = code;
+      }
+    
+      mz_prolog(JIT_R2);
+
+      if (i == 1) {
+        /* push second argument now, since we don't have a better
+           place to keep it */
+        jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+        jit_str_p(JIT_RUNSTACK, JIT_V1);
+      }
+    
+      __START_SHORT_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      CHECK_LIMIT();
+
+      /* Slow path: non-struct-prop proc, or argument type is
+         bad for a getter. */
+      refslow = _jit.x.pc;
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
+      JIT_UPDATE_THREAD_RSPTR();
+      jit_str_p(JIT_RUNSTACK, JIT_R1);
+      jit_movi_i(JIT_V1, ((i == 1) ? 2 : 1));
+      jit_prepare(3);
+      jit_pusharg_p(JIT_RUNSTACK);
+      jit_pusharg_i(JIT_V1);
+      jit_pusharg_p(JIT_R0);
+      if (ii == 1) {
+        (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refrts);
+      } else {
+        (void)mz_finish_lwe(ts__scheme_apply_from_native, refrts);
+      }
+      jit_retval(JIT_R0);
+      VALIDATE_RESULT(JIT_R0);
+      if (ii == 1) {
+        /* second argument was pushed early */
+        jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      } else {
+        jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      }
+      JIT_UPDATE_THREAD_RSPTR();
+      mz_epilog(JIT_V1);
+      CHECK_LIMIT();
+      if (i == 2) {
+        refno = _jit.x.pc;
+        jit_movi_p(JIT_R0, scheme_false);
+        mz_epilog(JIT_V1);
+        CHECK_LIMIT();
+      } else
+        refno = refslow;
+
+      /* Continue trying fast path: check proc */
+      mz_patch_branch(ref);
+      (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
+      (void)jit_bmci_i(refslow, JIT_R2, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER);
+      CHECK_LIMIT();
+
+      /* Check argument: */
+      (void)jit_bmsi_ul(refno, JIT_R1, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
+      __START_INNER_TINY__(1);
+      ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+      __END_INNER_TINY__(1);
+      if (i == 2) {
+        (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
+        (void)jit_beqi_i(refslow, JIT_R2, scheme_chaperone_type);
+        (void)jit_beqi_i(refslow, JIT_R2, scheme_struct_type_type);
+      }
+      (void)jit_bnei_i(refno, JIT_R2, scheme_proc_struct_type);
+      __START_INNER_TINY__(1);
+      mz_patch_branch(ref2);
+      __END_INNER_TINY__(1);
+      CHECK_LIMIT();
+
+      /* Put argument struct type in R2, array prop count in V1: */
+      jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+      jit_ldxi_i(JIT_V1, JIT_R2, &((Scheme_Struct_Type *)0x0)->num_props);
+      CHECK_LIMIT();
+
+      /* negative count means use the hash table (in the slow path);
+         zero count means we've run out */
+      if (i == 2) {
+        (void)jit_blei_i(refslow, JIT_V1, 0);
+      }
+      refloop = _jit.x.pc;
+      (void)jit_blei_i(refno, JIT_V1, 0);
+      jit_subi_i(JIT_V1, JIT_V1, 1);
+      mz_set_local_p(JIT_V1, JIT_LOCAL3);
+
+      jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+      jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->props);
+      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+      jit_ldxr_p(JIT_R2, JIT_R2, JIT_V1);
+      /* extract car of table entry, which is the key: */
+      (void)jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Simple_Object *)0x0)->u.pair_val.car);
+      CHECK_LIMIT();
+
+      /* target struct-type property in V1 */
+      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+    
+      ref3 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
+    
+      mz_get_local_p(JIT_V1, JIT_LOCAL3);
+      jit_jmpi(refloop);
+
+      /* Success! */
+      mz_patch_branch(ref3);
+
+      if (i == 2) {
+        jit_movi_p(JIT_R0, scheme_true);
+      } else {
+        if (i == 1) {
+          /* pop second argument, which we don't need */
+          jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+        }
+
+        /* same as above, but get the cdr this time: */
+        mz_get_local_p(JIT_V1, JIT_LOCAL3);
+        jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+        jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->props);
+        jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+        jit_ldxr_p(JIT_R2, JIT_R2, JIT_V1);
+        (void)jit_ldxi_p(JIT_R0, JIT_R2, &((Scheme_Simple_Object *)0x0)->u.pair_val.cdr);
+      }
+      CHECK_LIMIT();
+
+      mz_epilog(JIT_V1);
+
+      __END_SHORT_JUMPS__(1);
+
+      scheme_jit_register_sub_func(jitter, code, scheme_false);
+    }
+  }
+
+  return 1;
+}
+
 static int common5(mz_jit_state *jitter, void *_data)
 {
   int i, ii;
@@ -2194,6 +2362,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common2(jitter, _data)) return 0;
   if (!common3(jitter, _data)) return 0;
   if (!common4(jitter, _data)) return 0;
+  if (!common4b(jitter, _data)) return 0;
   if (!common5(jitter, _data)) return 0;
   if (!common6(jitter, _data)) return 0;
   if (!common7(jitter, _data)) return 0;
