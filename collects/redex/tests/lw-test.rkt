@@ -287,8 +287,40 @@
            #t #f))
          0 0 0 3))
   
-  (test (normalize-lw (to-lw (a ((b)) c 1 #t)))
-        (normalize-lw (to-lw/stx #'(a ((b)) c 1 #t))))
+  (let ([from-str (λ (str) 
+                    (define p (open-input-string str))
+                    (port-count-lines! p)
+                    (read-syntax #f p))])
+    
+    (test (normalize-lw (to-lw/stx (from-str "()")))
+          (normalize-lw (to-lw ())))
+
+    (test (normalize-lw (to-lw/stx (from-str "a")))
+          (normalize-lw (to-lw a)))
+
+    (test (normalize-lw (to-lw/stx (from-str "(c)")))
+          (normalize-lw (to-lw (c))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "((b))")))
+          (normalize-lw (to-lw ((b)))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "(a b c)")))
+          (normalize-lw (to-lw (a b c))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "1")))
+          (normalize-lw (to-lw 1)))
+    
+    (test (normalize-lw (to-lw/stx (from-str "(#t)")))
+          (normalize-lw (to-lw (#t))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "#f")))
+          (normalize-lw (to-lw #f)))
+    
+    (test (normalize-lw (to-lw/stx (from-str "(a b)")))
+          (normalize-lw (to-lw (a b))))
+    
+    (test (normalize-lw (to-lw/stx (from-str "(a ((b)) c 1 #t)")))
+          (normalize-lw (to-lw (a ((b)) c 1 #t)))))
   
   (print-tests-passed "lw-test.ss"))
 
