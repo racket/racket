@@ -323,8 +323,10 @@ following spaces (or tabs) are part of the comment (similar to
        blah}
 }===|
 
-Tip: if you're editing in a Racket-aware editor (like DrRacket or
-Emacs), it is useful to comment out blocks like this:
+Tip: if you use an editor in some Scheme mode without support for
+@"@"-forms, balanced comments can be confusing, since the open brace
+looks commented out, and the closing one isn't.  In such cases it is
+useful to ``comment'' out the closing brace too:
 
 @verbatim[#:indent 2]|==={
   @;{
@@ -333,7 +335,7 @@ Emacs), it is useful to comment out blocks like this:
 }===|
 
 so the editor does not treat the file as having unbalanced
-parenthesis.
+parentheses.
 
 If only the @nonterm{cmd} part of an @"@"-form is specified, then the
 result is the command part only, without an extra set of parenthesis.
