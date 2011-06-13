@@ -17,7 +17,8 @@
 
 @title[#:tag "top"]{The Typed Racket Reference} 
 
-@author["Sam Tobin-Hochstadt"]
+@author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]
+        @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
 
 @(defmodulelang* (typed/racket/base typed/racket)
                  #:use-sources 

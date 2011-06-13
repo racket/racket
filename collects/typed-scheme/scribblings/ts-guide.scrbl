@@ -4,7 +4,8 @@
 
 @title[#:tag "top"]{@bold{Typed Racket}: Racket with Static Types}
 
-@author["Sam Tobin-Hochstadt"]
+@author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]
+        @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]]
 
 @section-index["typechecking" "typechecker" "typecheck"]
 
