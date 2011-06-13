@@ -20,7 +20,7 @@ The following people have contributed to RackUnit:
   @item{Jacob Matthews and Guillaume Marceau for bug reports
     and fixes}
 
-  @item{Eric Hanchow suggested test/text-ui return a useful
+  @item{Eric Hanchrow suggested test/text-ui return a useful
     result}
 
   @item{Ray Racine and Richard Cobbe provided require/expose}
