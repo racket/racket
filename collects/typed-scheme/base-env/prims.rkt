@@ -603,10 +603,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
         #'a.ty)])))
 (define-syntax (define-for*-variants stx)
   (syntax-parse stx
-    [(_ (name no-*-name) ...)
+    [(_ (name no-colon-name) ...)
      (quasisyntax/loc
          stx
-       (begin (define-syntax name (define-for*-variant #'no-*-name)) ...))]))
+       (begin (define-syntax name (define-for*-variant #'no-colon-name))
+              ...))]))
 (define-for*-variants
   (for*/list: for*/list)
   (for*/hash: for*/hash)
