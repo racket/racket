@@ -540,16 +540,27 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; clauses with these 2.
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
-    [(_ a:optional-standalone-annotation
+    [(_ : ty
         ((var:optionally-annotated-name) ...)
         (clause:for-clause ...)
         c:expr ...)
-     (maybe-annotate-body
+     (syntax-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
           c ...))
-      #'a.ty)]))
+      'type-ascription
+      #'ty)]
+    [(_ ((var:annotated-name) ...)
+        (clause:for-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/lists (var.ann-name ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'(values var.ty ...))]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
