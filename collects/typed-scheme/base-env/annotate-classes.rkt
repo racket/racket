@@ -133,3 +133,11 @@
                        (~or rest:annotated-star-rest rest:annotated-dots-rest)))
            #:with ann-formals #'(n.ann-name ... . rest.ann-name)
            #:with (arg-ty ...) #'(n.ty ... . rest.formal-ty)))
+
+(define-splicing-syntax-class standalone-annotation
+  #:literals (:)
+  (pattern (~seq : t)
+           #:with ty #'t))
+(define-splicing-syntax-class optional-standalone-annotation
+  (pattern (~optional a:standalone-annotation)
+           #:with ty (if (attribute a) #'a.ty #f)))

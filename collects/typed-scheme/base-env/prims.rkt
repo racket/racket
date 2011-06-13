@@ -491,6 +491,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
               (when guard
                 #,(loop #'(rest ...))))])))]))
 
+(define-for-syntax (maybe-annotate-body body ty)
+  (if (syntax-e ty)
+      (syntax-property body 'type-ascription ty)
+      body))
+
 ;; Handling #:when clauses manually, like we do with for: above breaks
 ;; the semantics of for/list and co.
 ;; We must leave it to the untyped versions of the macros.
@@ -500,19 +505,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (define-for-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
-      [(_ : ty
+      [(_ a:optional-standalone-annotation
           (clause:for-clause ...)
           c:expr ...)
-       (syntax-property
+       (maybe-annotate-body
         (quasisyntax/loc stx
-         (#,name
-          (clause.expand ... ...)
-          #,@(syntax-property
-              #'(c ...)
-              'type-ascription
-              #'ty)))
-        'type-ascription
-        #'ty)])))
+          (#,name
+           (clause.expand ... ...)
+           #,@(maybe-annotate-body
+               #'(c ...)
+               #'a.ty)))
+        #'a.ty)])))
 (define-syntax (define-for-variants stx)
   (syntax-parse stx
     [(_ (name untyped-name) ...)
@@ -537,17 +540,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; clauses with these 2.
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
-    [(_ : ty
+    [(_ a:optional-standalone-annotation
         ((var:optionally-annotated-name) ...)
         (clause:for-clause ...)
         c:expr ...)
-     (syntax-property
+     (maybe-annotate-body
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
           c ...))
-      'type-ascription
-      #'ty)]))
+      #'a.ty)]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
@@ -591,15 +593,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (define-for*-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
-      [(_ : ty
+      [(_ a:optional-standalone-annotation
           (clause:for-clause ...)
           c:expr ...)
-       (syntax-property
+       (maybe-annotate-body
         (quasisyntax/loc stx
           (#,name (clause.expand ... ...)
                   c ...))
-        'type-ascription
-        #'ty)])))
+        #'a.ty)])))
 (define-syntax (define-for*-variants stx)
   (syntax-parse stx
     [(_ (name no-*-name) ...)
