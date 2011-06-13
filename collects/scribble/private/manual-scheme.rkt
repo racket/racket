@@ -156,13 +156,41 @@
 (define-code racketid to-element/id unsyntax keep-s-expr add-sq-prop)
 (define-code *racketmodname to-element unsyntax keep-s-expr add-sq-prop)
 
+(define-syntax (**racketmodname stx)
+  (syntax-case stx ()
+    [(_ form)
+     (let ([stx #'form])
+       #`(*racketmodname
+          ;; We want to remove lexical context from identifiers
+          ;; that correspond to module names, but keep context
+          ;; for `lib' or `planet' (which are rarely used)
+          #,(if (identifier? stx)
+                (datum->syntax #f (syntax-e stx) stx stx)
+                (if (and (pair? (syntax-e stx))
+                         (memq (syntax-e (car (syntax-e stx))) '(lib planet file)))
+                    (let ([s (car (syntax-e stx))]
+                          [rest (let loop ([a (cdr (syntax-e stx))] [head? #f])
+                                  (cond
+                                   [(identifier? a) (datum->syntax #f (syntax-e a) a a)]
+                                   [(and head? (pair? a) (free-identifier=? #'unsyntax (car a)))
+                                    a]
+                                   [(pair? a) (cons (loop (car a) #t) 
+                                                    (loop (cdr a) #f))]
+                                   [(syntax? a) (datum->syntax a
+                                                               (loop (syntax-e a) head?)
+                                                               a 
+                                                               a)]
+                                   [else a]))])
+                      (datum->syntax stx (cons s rest) stx stx))
+                    stx))))]))
+
 (define-syntax racketmodname
   (syntax-rules (unsyntax)
     [(racketmodname #,n)
      (let ([sym n])
        (as-modname-link sym (to-element sym)))]
     [(racketmodname n)
-     (as-modname-link 'n (*racketmodname n))]))
+     (as-modname-link 'n (**racketmodname n))]))
 
 (define-syntax racketmodlink
   (syntax-rules (unsyntax)
