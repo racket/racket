@@ -4,7 +4,7 @@
 @title[#:tag "eventspace-funcs"]{Eventspaces}
 
 @defproc[(make-eventspace)
-         eventspace]{
+         eventspace?]{
 Creates and returns a new eventspace value. The new eventspace is
  created as a child of the current eventspace. The eventspace is used
  by making it the current eventspace with the
@@ -215,7 +215,7 @@ Blocks for at least the specified number of seconds, handling events
 
 }
 
-@defproc[(eventspace-shutdown? [e eventspace])
+@defproc[(eventspace-shutdown? [e eventspace?])
          boolean?]{
 Returns @scheme[#t] if the given eventspace has been shut down by its
  custodian, @scheme[#f] otherwise. Attempting to create a new window,
@@ -229,8 +229,8 @@ Attempting to use certain methods of windows and timers in a shut-down
 
 }
 
-@defproc[(eventspace-handler-thread [e eventspace])
-         (or/c thread false/c)]{
+@defproc[(eventspace-handler-thread [e eventspace?])
+         (or/c thread #f)]{
 Returns the handler thread of the given eventspace. If the handler
  thread has terminated (e.g., because the eventspace was shut down), the
  result is @scheme[#f].

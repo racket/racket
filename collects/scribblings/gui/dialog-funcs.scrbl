@@ -183,7 +183,7 @@ See also @scheme[path-dialog%].
 }
 
 @defproc[(message-box [title label-string?]
-                      [message string]
+                      [message string?]
                       [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                       [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
          (or/c 'ok 'cancel 'yes 'no)]{
@@ -319,7 +319,7 @@ The @racket[message-box/custom] function can be called int a thread
  current thread blocks while the dialog runs on the handler thread.}
 
 @defproc[(message+check-box [title label-string?]
-                            [message string]
+                            [message string?]
                             [check-label label-string?]
                             [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                             [style (listof (or/c 'ok 'ok-cancel 'yes-no 
@@ -367,7 +367,7 @@ Like @scheme[message-box/custom], except that
 
 }
 
-@defproc[(get-text-from-user [title string]
+@defproc[(get-text-from-user [title string?]
                              [message (or/c string? #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
@@ -391,7 +391,7 @@ If @scheme[style] includes @scheme['password], the dialog's text field
 
 }
 
-@defproc[(get-choices-from-user [title string]
+@defproc[(get-choices-from-user [title string?]
                                 [message (or/c string? #f)]
                                 [choices (listof string?)]
                                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]

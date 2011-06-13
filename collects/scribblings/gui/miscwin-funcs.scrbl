@@ -37,13 +37,13 @@ Rings the system bell.
 See @racket[begin-busy-cursor].
 }
 
-@defproc*[([(file-creator-and-type [filename path]
+@defproc*[([(file-creator-and-type [filename path?]
                                    [creator-string (lambda (s) (and (bytes? s)
                                                                     (= 4 (bytes-length s))))]
                                    [type-bytes (lambda (s) (and (bytes? s)
                                                                  (= 4 (bytes-length s))))])
             void?]
-           [(file-creator-and-type [filename path])
+           [(file-creator-and-type [filename path?])
             (values (lambda (s) (and (bytes? s)
                                 (= 4 (bytes-length s))))
                     (lambda (s) (and (bytes? s)
@@ -128,7 +128,7 @@ Returns the color that is used to draw selected text or @racket[#f] if
 selected text is drawn with its usual color.}
 
 
-@defproc[(get-window-text-extent [string string]
+@defproc[(get-window-text-extent [string string?]
                                  [font (is-a?/c font%)]
                                  [combine? any/c #f])
          (values exact-nonnegative-integer?
@@ -141,7 +141,7 @@ argument is as for @xmethod[dc<%> get-text-extent].
 See also @xmethod[dc<%> get-text-extent].
 }
 
-@defproc[(graphical-read-eval-print-loop [eval-eventspace eventspace #f]
+@defproc[(graphical-read-eval-print-loop [eval-eventspace (or/c eventspace? #f) #f]
                                          [redirect-ports? any/c (not eval-eventspace)])
          void?]{
 
@@ -213,7 +213,7 @@ Returns @racket[#t] if a busy cursor has been installed with
 @racket[end-busy-cursor].
 }
 
-@defproc[(label->plain-label [label string]) string?]{
+@defproc[(label->plain-label [label string?]) string?]{
 
 Strips shortcut ampersands from @racket[label], removes parenthesized
  ampersand--character combinations along with any surrounding space,
@@ -226,7 +226,7 @@ Strips shortcut ampersands from @racket[label], removes parenthesized
 @defproc[(make-gl-bitmap [width exact-positive-integer?]
                          [height exact-positive-integer?]
                          [config (is-a?/c gl-config%)])
-         (is-a/c? bitmap%)]{
+         (is-a?/c bitmap%)]{
 
 Creates a bitmap that supports both normal @racket[dc<%>] drawing an
 OpenGL drawing through a context returned by @xmethod[dc<%> get-gl-context].
@@ -252,7 +252,7 @@ environment of the result namespace.}
 
 @defproc[(make-screen-bitmap [width exact-positive-integer?]
                              [height exact-positive-integer?]) 
-         (is-a/c? bitmap%)]{
+         (is-a?/c bitmap%)]{
 
 Creates a bitmap that draws in a way that is the same as drawing to a
 canvas in its default configuration.

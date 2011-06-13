@@ -196,7 +196,7 @@ Returns @racket[#t] if @litchar{m:} corresponds to Command,
 }
 
 @defproc[(open-input-graphical-file [filename string?])
-         input-port]{
+         input-port?]{
 
 Opens @racket[filename] (in @racket['binary] mode) and checks whether it looks
  like a ``graphical'' file in editor format. If the file does not
@@ -210,7 +210,7 @@ Opens @racket[filename] (in @racket['binary] mode) and checks whether it looks
 
 @defproc[(open-input-text-editor [text-editor (is-a?/c text%)]
                                  [start-position exact-nonnegative-integer? 0]
-                                 [end-position (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
+                                 [end-position (or/c exact-nonnegative-integer? 'end) 'end]
                                  [snip-filter ((is-a?/c snip%) . -> . any/c) (lambda (s) s)]
                                  [port-name any/c text-editor]
                                  [expect-to-read-all? any/c #f]
@@ -354,7 +354,7 @@ If @racket[raise-errors?] is true, then an error in reading triggers an
 }
 
 @defproc[(text-editor-load-handler [filename path string]
-                                   [expected-module-name (or/c symbol false/c)])
+                                   [expected-module-name (or/c symbol? #f)])
          any/c]{
 
 This procedure is a load handler for use with @racket[current-load].

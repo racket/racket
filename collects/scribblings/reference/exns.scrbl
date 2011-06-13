@@ -385,7 +385,7 @@ To report a run-time error, use @racket[raise] or procedures like
 @racket[error], instead of calling the error display handler
 directly.}
 
-@defparam[error-print-width width (and exact-integer? (>=/c 3))]{
+@defparam[error-print-width width (and/c exact-integer? (>=/c 3))]{
 
 A parameter whose value is used as the maximum number of characters
 used to print a Racket value that is embedded in a primitive error
