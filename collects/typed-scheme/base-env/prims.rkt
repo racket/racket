@@ -521,7 +521,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (begin (define-syntax name (define-for-variant #'untyped-name)) ...))]))
 ;; for/hash{,eq,eqv}:, for/vector:, for/flvector:, for/and:, for/first: and
 ;; for/last:'s expansions can't currently be handled by the typechecker.
-;; They have been left out of the documentation.
 (define-for-variants
   (for/list: for/list)
   (for/hash: for/hash)
@@ -561,7 +560,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (clause.expand ... ...)
           c ...))
       'type-ascription
-      #'ty)]))
+      #'ty)]
+    [(_ ((var:annotated-name init:expr) ...)
+        (clause:for-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/fold ((var.ann-name init) ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'(values var.ty ...))]))
 
 (define-syntax (for*: stx)
   (syntax-parse stx #:literals (:)
