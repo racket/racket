@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require "utils.rkt" (for-label (only-meta-in 0 typed/racket)))
+@(require "../utils.rkt" (for-label (only-meta-in 0 typed/racket)))
 @(provide typed-mod)
 
 @title[#:tag "quick"]{Quick Start}

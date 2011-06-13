@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt" (for-label typed/racket/base))]
+@begin[(require "../utils.rkt" (for-label typed/racket/base))]
 
 @title[#:tag "varargs"]{Variable-Arity Functions: Programming with Rest Arguments}
 

@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt"
+@begin[(require "../utils.rkt"
 		scribble/core scribble/eval
 		(for-label (only-meta-in 0 typed/racket)))]
 

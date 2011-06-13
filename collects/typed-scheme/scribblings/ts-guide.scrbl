@@ -16,11 +16,11 @@ with Racket.  For an introduction to Racket, see the @(other-manual '(lib "scrib
 
 @local-table-of-contents[]
 
-@include-section["quick.scrbl"]
-@include-section["begin.scrbl"]
-@include-section["more.scrbl"]
-@include-section["types.scrbl"]
-@include-section["optimization.scrbl"]
+@include-section["guide/quick.scrbl"]
+@include-section["guide/begin.scrbl"]
+@include-section["guide/more.scrbl"]
+@include-section["guide/types.scrbl"]
+@include-section["guide/optimization.scrbl"]
 
 @;@section{How the Type System Works}
 
