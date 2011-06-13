@@ -583,13 +583,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (for: (clause.expand ... ...)
              c ...))]))
 
-;; These expand into code equivalent to the above macros with
-;; interspersed "#:when #t" clauses. As such, they will fail to
-;; typecheck in the same cases. These macros (except for*:) will only
-;; work in very limited cases (usually a single clause), at least
-;; until inference can handle their expansion.
-;; Because of their current very limited usefulness, these are not
-;; currently documented.
+;; These currently only typecheck in very limited cases.
 (define-for-syntax (define-for*-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
