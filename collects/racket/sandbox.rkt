@@ -640,7 +640,7 @@
    (current-continuation-marks)
    reason))
 
-(define (make-evaluator* init-hook allow program-maker)
+(define (make-evaluator* who init-hook allow program-maker)
   (define orig-code-inspector (current-code-inspector))
   (define orig-security-guard (current-security-guard))
   (define orig-cust     (current-custodian))
@@ -849,7 +849,7 @@
                 (let ([buf (get-output-bytes out #t)])
                   (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
-          [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
+          [else (error who "bad sandox-~a spec: ~e" what out)]))
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory
@@ -869,7 +869,7 @@
              [(and (procedure? inp) (procedure-arity-includes? inp 0)) (inp)]
              [(eq? 'pipe inp)
               (let-values ([(i o) (make-pipe)]) (set! input o) i)]
-             [else (error 'make-evaluator "bad sandbox-input: ~e" inp)]))]
+             [else (error who "bad sandbox-input: ~e" inp)]))]
     [current-output-port (make-output 'output (sandbox-output)
                                       (lambda (o) (set! output o)))]
     [current-error-port (make-output 'error-output (sandbox-error-output)
@@ -927,13 +927,13 @@
                          (make-eventspace))])
    (let ([t (bg-run->thread (run-in-bg user-process))])
      (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
-     (set! user-thread t))
-   (let ([r (get-user-result)])
-     (if (eq? r 'ok)
-       ;; initial program executed ok, so return an evaluator
-       evaluator
-       ;; program didn't execute
-       (raise r)))))
+     (set! user-thread t)))
+  (let ([r (get-user-result)])
+    (if (eq? r 'ok)
+      ;; initial program executed ok, so return an evaluator
+      evaluator
+      ;; program didn't execute
+      (raise r))))
 
 (define (make-evaluator language
                         #:requires [requires null] #:allow-read [allow null]
@@ -950,7 +950,8 @@
                          r
                          `(file ,(path->string (simplify-path* r)))))
                      requires))])
-    (make-evaluator* (init-hook-for-language lang)
+    (make-evaluator* 'make-evaluator
+                     (init-hook-for-language lang)
                      (append (extract-required (or (decode-language lang) lang)
                                                reqs)
                              allow)
@@ -963,7 +964,7 @@
     (let-values ([(prog source)
                   (input->code (list input-program) 'program #f)])
       (unless (= 1 (length prog))
-        (error 'make-evaluator "expecting a single `module' program; ~a"
+        (error 'make-module-evaluator "expecting a single `module' program; ~a"
                (if (zero? (length prog))
                  "no program expressions given"
                  "got more than a single expression")))
@@ -971,11 +972,13 @@
         [(module modname lang body ...)
          (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
            (values (car prog) source)
-           (error 'make-evaluator
+           (error 'make-module-evaluator
                   "module code used `~.s' for a language, expecting `~.s'"
                   (syntax->datum #'lang) reqlang))]
-        [_else (error 'make-evaluator "expecting a `module' program; got ~.s"
+        [_else (error 'make-module-evaluator
+                      "expecting a `module' program; got ~.s"
                       (syntax->datum (car prog)))])))
-  (make-evaluator* void
+  (make-evaluator* 'make-module-evaluator
+                   void
                    (if (path? input-program) (cons input-program allow) allow)
                    make-program))
