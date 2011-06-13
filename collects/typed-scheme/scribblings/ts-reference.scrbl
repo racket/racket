@@ -469,7 +469,7 @@ A polymorphic function with optional arguments.}
 @defform/subs[(for: type-ann-maybe (for-clause ...)
                 expr ...+)
               ([type-ann-maybe code:blank
-                               @code:line[: Void]]
+                               @code:line[: u]]
 	       [for:-clause [id : t seq-expr]
 	                    [id seq-expr]
 	                    @code:line[#:when guard]])]{
@@ -482,39 +482,39 @@ variants.
 }
 
 @deftogether[[
-@defform[(for/list: : u (for:-clause ...) expr ...+)]
-@defform[(for/hash: : u (for:-clause ...) expr ...+)]
-@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
-@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
-@defform[(for/vector: : u (for:-clause ...) expr ...+)]
-@defform[(for/flvector: : u (for:-clause ...) expr ...+)]
-@defform[(for/and: : u (for:-clause ...) expr ...+)]
-@defform[(for/or:   : u (for:-clause ...) expr ...+)]
-@defform[(for/first: : u (for:-clause ...) expr ...+)]
-@defform[(for/last: : u (for:-clause ...) expr ...+)]
-@defform[(for*/list: : u (for:-clause ...) expr ...+)]
-@defform[(for*/hash: : u (for:-clause ...) expr ...+)]
-@defform[(for*/hasheq: : u (for:-clause ...) expr ...+)]
-@defform[(for*/hasheqv: : u (for:-clause ...) expr ...+)]
-@defform[(for*/vector: : u (for:-clause ...) expr ...+)]
-@defform[(for*/flvector: : u (for:-clause ...) expr ...+)]
-@defform[(for*/and: : u (for:-clause ...) expr ...+)]
-@defform[(for*/or:   : u (for:-clause ...) expr ...+)]
-@defform[(for*/first: : u (for:-clause ...) expr ...+)]
-@defform[(for*/last: : u (for:-clause ...) expr ...+)]
+@defform[(for/list: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/hash: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/hasheq: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/hasheqv: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/vector: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/flvector: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/and: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/or:   type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/first: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for/last: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/list: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/hash: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/hasheq: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/hasheqv: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/vector: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/flvector: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/and: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/or:   type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/first: type-ann-maybe (for:-clause ...) expr ...+)]
+@defform[(for*/last: type-ann-maybe (for:-clause ...) expr ...+)]
 ]]{
 These behave like their non-annotated counterparts, with the exception
 that @racket[#:when] clauses can only appear as the last
 @racket[for:-clause]. The return value of the entire form must be of
 type @racket[u]. For example, a @racket[for/list:] form would be
-annotated with a @racket[Listof] type.
+annotated with a @racket[Listof] type. All annotations are optional.
 }
 
 @deftogether[[
-@defform[(for/lists: : u ([id : t] ...)
+@defform[(for/lists: type-ann-maybe ([id : t] ...)
            (for:-clause ...)
 	   expr ...+)]
-@defform[(for/fold:  : u ([id : t init-expr] ...)
+@defform[(for/fold:  type-ann-maybe ([id : t init-expr] ...)
 	   (for:-clause ...)
 	   expr ...+)]]]{
 These behave like their non-annotated counterparts. Unlike the above,
@@ -522,12 +522,12 @@ These behave like their non-annotated counterparts. Unlike the above,
 }
 
 @deftogether[[
-@defform[(for*: type-ann-maybe (for-clause ...)
+@defform[(for*: void-ann-maybe (for-clause ...)
            expr ...+)]
-@defform[(for*/lists: : u ([id : t] ...)
+@defform[(for*/lists: type-ann-maybe ([id : t] ...)
            (for:-clause ...)
 	   expr ...+)]
-@defform[(for*/fold:  : u ([id : t init-expr] ...)
+@defform[(for*/fold:  type-ann-maybe ([id : t init-expr] ...)
 	   (for:-clause ...)
 	   expr ...+)]]]{
 These behave like their non-annotated counterparts.
