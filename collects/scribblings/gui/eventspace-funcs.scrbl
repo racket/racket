@@ -230,7 +230,7 @@ Attempting to use certain methods of windows and timers in a shut-down
 }
 
 @defproc[(eventspace-handler-thread [e eventspace?])
-         (or/c thread #f)]{
+         (or/c thread? #f)]{
 Returns the handler thread of the given eventspace. If the handler
  thread has terminated (e.g., because the eventspace was shut down), the
  result is @scheme[#f].
