@@ -164,7 +164,7 @@ consumed or not consumed, and other threads can safely use the port.}
 thread. If breaking is disabled in @racket[thd], the break will be
 ignored until breaks are re-enabled (see @secref["breakhandler"]).}
 
-@defproc[(sleep [secs nonnegative-number? 0]) void?]{
+@defproc[(sleep [secs (>=/c 0) 0]) void?]{
 
 Causes the current thread to sleep until at least @racket[secs]
 seconds have passed after it starts sleeping. A zero value for
