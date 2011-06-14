@@ -102,7 +102,7 @@
       [(type-annotation stx #:infer infer)]
       [default default]
       [(not (syntax-original? stx))
-       (tc-error "untyped variable: ~a" (syntax-e stx))]
+       (tc-error "insufficient type information to typecheck. please add more type annotations")]
       [else
        (tc-error "no type information on variable ~a" (syntax-e stx))])))
 
