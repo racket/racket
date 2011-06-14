@@ -100,8 +100,10 @@ transcript.
 (define test
   (let ()
     (define (test* expect fun args kws kvs)
+      (define form
+        `(,fun ,@args ,@(apply append (if kws (map list kws kvs) '()))))
       (set! number-of-tests (add1 number-of-tests))
-      (printf "~s ==> " (cons fun args))
+      (printf "~s ==> " form)
       (flush-output)
       (let ([res (if (procedure? fun)
                    (if kws (keyword-apply fun kws kvs args) (apply fun args))
@@ -109,7 +111,7 @@ transcript.
         (printf "~s\n" res)
         (let ([ok? (equal? expect res)])
           (unless ok?
-            (record-error (list res expect (cons fun args)))
+            (record-error (list res expect form))
             (printf "  BUT EXPECTED ~s\n" expect))
           ok?)))
     (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
