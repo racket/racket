@@ -32,20 +32,35 @@ arguments; otherwise, the @exnraise[exn:fail:contract]. The given
 (apply sort (list (list '(2) '(1)) <) #:key car)
 ]}
 
-@defproc[(compose [proc procedure?] ...) procedure?]{
+@deftogether[(@defproc[(compose  [proc procedure?] ...) procedure?]
+              @defproc[(compose1 [proc procedure?] ...) procedure?])]{
 
-Returns a procedure that composes the given functions, applying the
-last @scheme[proc] first and the first @scheme[proc] last. The
-composed functions can consume and produce any number of values, as
-long as each function produces as many values as the preceding
-function consumes.  When no @scheme[proc] arguments are given, the
-result is @scheme[values].
+Returns a procedure that composes the given functions, applying the last
+@scheme[proc] first and the first @scheme[proc] last.  @scheme[compose]
+allows the functions to consume and produce any number of values, as
+long as each function produces as many values as the preceding function
+consumes, and @scheme[compose1] restricts the internal value passing to
+a single value.  In both cases the input arity of the last function and
+the output arity of the first are unrestricted, and become the
+corresponding arity of the resulting composition (including keyword
+arguments for the input side).
+
+When no @scheme[proc] arguments are given, the result is
+@scheme[values].  When exactly one is given, it is returned.
 
 @mz-examples[
-((compose - sqrt) 10)
-((compose sqrt -) 10)
+((compose1 - sqrt) 10)
+((compose1 sqrt -) 10)
 ((compose list split-path) (bytes->path #"/a" 'unix))
-]}
+]
+
+Note that in many cases @scheme[compose1] is preferred.  For example,
+using @scheme[compose] with two library functions may lead to problems
+when one function is extended to return two values, and the preceding
+one has an optional input with different semantics.  In addition,
+@scheme[compose1] may create faster compositions.
+
+}
 
 @defproc[(procedure-rename [proc procedure?]
                            [name symbol?])

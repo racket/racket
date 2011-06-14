@@ -1,4 +1,3 @@
-
 (module list "pre-base.rkt"
 
   (provide foldl
@@ -27,7 +26,8 @@
            build-string
            build-list
 
-           compose)
+           compose
+           compose1)
 
   (#%require (rename "sort.rkt" raw-sort sort)
              (for-syntax "stxcase-scheme.rkt")
@@ -289,7 +289,7 @@
         (if (= i n)
             str
             (begin (string-set! str i (fcn i)) (loop (add1 i)))))))
-  
+
   (define (build-list n fcn)
     (unless (exact-nonnegative-integer? n)
       (raise-type-error 'build-list "exact-nonnegative-integer" n))
@@ -301,26 +301,101 @@
             [else (cons (fcn j)
                         (recr (add1 j) (sub1 i)))])))
 
-  (define compose
-    (case-lambda
-      [(f) (if (procedure? f)
-               f
-               (raise-type-error 'compose "procedure" f))]
-      [(f g)
-       (let ([f (compose f)]
-             [g (compose g)])
-         (if (eqv? 1 (procedure-arity f)) ; optimize: don't use call-w-values
-             (if (eqv? 1 (procedure-arity g)) ; optimize: single arity everywhere
-                 (lambda (x) (f (g x)))
-                 (lambda args (f (apply g args))))
-             (if (eqv? 1 (procedure-arity g)) ; optimize: single input
-                 (lambda (a)
-                   (call-with-values (lambda () (g a)) f))
-                 (lambda args
-                   (call-with-values (lambda () (apply g args)) f)))))]
-      [() values]
-      [(f . more)
-       (if (procedure? f)
-           (let ([m (apply compose more)])
-             (compose f m))
-           (compose f))])))
+  (define-values [compose1 compose]
+    (let ()
+      (define-syntax-rule (app1 E1 E2) (E1 E2))
+      (define-syntax-rule (app* E1 E2) (call-with-values (lambda () E2) E1))
+      (define-syntax-rule (mk-simple-compose app)
+        (lambda (f g)
+          (let*-values
+              ([(arity) (procedure-arity g)]
+               [(required-kwds allowed-kwds) (procedure-keywords g)]
+               [(composed)
+                ;; FIXME: would be nice to use `procedure-reduce-arity' and
+                ;; `procedure-reduce-keyword-arity' in the places marked below,
+                ;; but they currently add a significant overhead.
+                (if (eq? 1 arity)
+                  (lambda (x) (app f (g x)))
+                  (case-lambda          ; <--- here
+                    [(x)   (app f (g x))]
+                    [(x y) (app f (g x y))]
+                    [args  (app f (apply g args))]))])
+            (if (null? allowed-kwds)
+              composed
+              (make-keyword-procedure   ; <--- and here
+               (lambda (kws kw-args . xs)
+                 (app f (keyword-apply g kws kw-args xs)))
+               composed)))))
+      (define-syntax-rule (can-compose* name n g f fs)
+        (unless (null? (let-values ([(req _) (procedure-keywords g)]) req))
+          (apply raise-type-error 'name "procedure (no required keywords)"
+                 n f fs)))
+      (define-syntax-rule (can-compose1 name n g f fs)
+        (begin (unless (procedure-arity-includes? g 1)
+                 (apply raise-type-error 'name "procedure (arity 1)" n f fs))
+               ;; need to check this too (see PR 11978)
+               (can-compose* name n g f fs)))
+      (define-syntax-rule (mk name app can-compose pipeline)
+        (define name
+          (let ([simple-compose (mk-simple-compose app)])
+            (case-lambda
+              [(f)
+               (if (procedure? f) f (raise-type-error 'name "procedure" 0 f))]
+              [(f g)
+               (unless (procedure? f)
+                 (raise-type-error 'name "procedure" 0 f g))
+               (unless (procedure? g)
+                 (raise-type-error 'name "procedure" 1 f g))
+               (can-compose name 0 f f '())
+               (simple-compose f g)]
+              [() values]
+              [(f0 . fs0)
+               (let loop ([f f0] [fs fs0] [i 0] [rfuns '()])
+                 (unless (procedure? f)
+                   (apply raise-type-error 'name "procedure" i f0 fs0))
+                 (if (pair? fs)
+                   (begin (can-compose name i f f0 fs0)
+                          (loop (car fs) (cdr fs) (add1 i) (cons f rfuns)))
+                   (simple-compose (pipeline (car rfuns) (cdr rfuns)) f)))]))))
+      (define (pipeline1 f rfuns)
+        ;; (very) slightly slower alternative:
+        ;; (if (null? rfuns)
+        ;;   f
+        ;;   (pipeline1 (let ([fst (car rfuns)]) (lambda (x) (fst (f x))))
+        ;;              (cdr rfuns)))
+        (lambda (x)
+          (let loop ([x x] [f f] [rfuns rfuns])
+            (if (null? rfuns)
+              (f x)
+              (loop (f x) (car rfuns) (cdr rfuns))))))
+      (define (pipeline* f rfuns)
+        ;; use the other composition style in this case, to optimize an
+        ;; occasional arity-1 procedure in the pipeline
+        (if (eqv? 1 (procedure-arity f))
+          ;; if `f' is single arity, then going in reverse they will *all* be
+          ;; single arities
+          (let loop ([f f] [rfuns rfuns])
+            (if (null? rfuns)
+              f
+              (loop (let ([fst (car rfuns)])
+                      (if (eqv? 1 (procedure-arity fst))
+                        (lambda (x) (fst (f x)))
+                        (lambda (x) (app* fst (f x)))))
+                    (cdr rfuns))))
+          ;; otherwise, going in reverse means that they're all n-ary, which
+          ;; means that the list of arguments will be built for each stage, so
+          ;; to avoid that go forward in this case
+          (let ([funs (reverse (cons f rfuns))])
+            (let loop ([f (car funs)] [funs (cdr funs)])
+              (if (null? funs)
+                f
+                (loop (let ([fst (car funs)])
+                        (if (eqv? 1 (procedure-arity fst))
+                          (lambda (x) (app* f (fst x)))
+                          (lambda xs (app* f (apply fst xs)))))
+                      (cdr funs)))))))
+      (mk compose1 app1 can-compose1 pipeline1)
+      (mk compose  app* can-compose* pipeline*)
+      (values compose1 compose)))
+
+  )

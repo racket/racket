@@ -29,20 +29,12 @@
 
 (define (negate f)
   (unless (procedure? f) (raise-type-error 'negate "procedure" f))
-  (let-values ([(arity) (procedure-arity f)]
-               [(required-kws accepted-kws) (procedure-keywords f)])
-    (define negated ; simple version, optimize some cases
-      (case arity
-        [(0) (lambda () (not (f)))]
-        [(1) (lambda (x) (not (f x)))]
-        [(2) (lambda (x y) (not (f x y)))]
-        [else (lambda xs (not (apply f xs)))]))
-    (if (and (null? required-kws) (null? accepted-kws))
-      negated
-      ;; keyworded function
-      (make-keyword-procedure (lambda (kws kvs . args)
-                                (not (keyword-apply f kws kvs args)))
-                              negated))))
+  (let-values ([(arity) (procedure-arity f)] [(_ kwds) (procedure-keywords f)])
+    (case (and (null? kwds) arity) ; optimize some simple cases
+      [(0) (lambda () (not (f)))]
+      [(1) (lambda (x) (not (f x)))]
+      [(2) (lambda (x y) (not (f x y)))]
+      [else (compose1 not f)]))) ; keyworded or more args => just compose
 
 (define (make-curry right?)
   ;; The real code is here
