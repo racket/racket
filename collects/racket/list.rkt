@@ -157,7 +157,10 @@
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case
-               [(l . lss) (apply append (apply list* l lss))]))
+               [(l1 l2) (apply append l1 l2)]
+               [(l1 l2 l3) (apply append l1 l2 l3)]
+               [(l1 l2 l3 l4) (apply append l1 l2 l3 l4)]
+               [(l . lss) (apply apply append l lss)]))
 
 (define (flatten orig-sexp)
   (let loop ([sexp orig-sexp] [acc null])

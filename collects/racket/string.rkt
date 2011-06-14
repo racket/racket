@@ -4,7 +4,11 @@
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common case
-               [(str . strss) (apply string-append (apply list* str strss))]))
+               [(s1 strs) (apply string-append s1 strs)]
+               [(s1 s2 strs) (apply string-append s1 s2 strs)]
+               [(s1 s2 s3 strs) (apply string-append s1 s2 s3 strs)]
+               [(s1 s2 s3 s4 strs) (apply string-append s1 s2 s3 s4 strs)]
+               [(str . strss) (apply apply string-append str strss)]))
 
 (require (only-in scheme/list add-between))
 
