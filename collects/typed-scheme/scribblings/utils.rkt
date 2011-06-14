@@ -21,3 +21,6 @@
   (make-element #f (list @schemeparenfont["#{"]
 			 @scheme[x :: t]
 			 @schemeparenfont["}"])))
+
+(define-syntax-rule (defalias id1 id2)
+  @defidform[id1]{An alias for @racket[id2].})
