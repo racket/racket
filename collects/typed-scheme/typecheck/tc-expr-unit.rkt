@@ -13,7 +13,7 @@
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
          (except-in syntax/parse id)
-         unstable/function
+         unstable/function #;unstable/debug
          (only-in srfi/1 split-at))
 
 (require (for-template scheme/base racket/private/class-internal))
@@ -236,7 +236,8 @@
     ;; the argument must be syntax
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
-    (let (;; a local version of ret that does the checking
+    (let ([old-ret ret]
+          ;; a local version of ret that does the checking
           [ret
            (lambda args
              (define te (apply ret args))
@@ -292,7 +293,7 @@
         ;; begin
         [(begin e . es) (tc-exprs/check (syntax->list #'(e . es)) expected)]
         [(begin0 e . es)
-         (begin (tc-exprs/check (syntax->list #'es) Univ)
+         (begin (tc-exprs/check (syntax->list #'es) (old-ret Univ))
                 (tc-expr/check #'e expected))]
         ;; if
         [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
