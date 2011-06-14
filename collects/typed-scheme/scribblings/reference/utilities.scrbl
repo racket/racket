@@ -21,12 +21,12 @@ is provided, simply checks that the value is not
 }
 
 @examples[#:eval the-top-eval
-(define: x : (U #f Number) (string->number "7"))
+(define: x : (U #f String) (number->string 7))
 x
 (assert x)
-(define: y : (U String Number) 0)
+(define: y : (U String Symbol) "hello")
 y
-(assert y number?)
+(assert y string?)
 (assert y boolean?)]
 
 @defform*/subs[[(with-asserts ([id maybe-pred] ...) body ...+)]
