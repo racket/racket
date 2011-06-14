@@ -12,7 +12,7 @@ Typed Racket provides a type-driven optimizer that rewrites well-typed
 programs to potentially make them faster. It should in no way make
 your programs slower or unsafe.
 
-@margin-note{For general information Racket performance and
+@margin-note{For general information on Racket performance and
 benchmarking, see @secref[#:doc '(lib
 "scribblings/guide/guide.scrbl")]{performance}.}
 
