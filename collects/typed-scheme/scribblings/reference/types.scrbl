@@ -1,11 +1,7 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval scriblib/footnote
-                racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])
-                           (only-in racket/base for)
-                           racket/list srfi/14
-                           version/check))]
+@begin[(require "../utils.rkt" scribble/eval racket/sandbox)
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
@@ -354,3 +350,5 @@ recursive type in the body @racket[t]
 
 @defform[(Option t)]{Either @racket[t] or @racket[#f]}
 @defform[(Opaque t)]{A type constructed using @racket[require-opaque-type].}
+
+@(close-eval the-eval)

@@ -1,19 +1,10 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval scriblib/footnote
-                racket/sandbox)
+@begin[(require "../utils.rkt")
        (require (for-label (only-meta-in 0 [except-in typed/racket for])
                            (only-in racket/base for)
-                           racket/list srfi/14
+                           racket/list srfi/14 net/url
                            version/check))]
-
-@(define the-eval (make-base-eval))
-@(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
-@(define the-top-eval (make-base-eval))
-@(the-top-eval '(require (except-in typed/racket #%module-begin)))
-
-@(define-syntax-rule (ex . args)
-   (examples #:eval the-top-eval . args))
 
 
 @title{Libraries Provided With Typed Racket}

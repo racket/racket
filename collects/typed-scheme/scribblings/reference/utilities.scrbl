@@ -1,20 +1,12 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval scriblib/footnote
-                racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])
-                           (only-in racket/base for)
-                           racket/list srfi/14
-                           version/check))]
+@begin[(require "../utils.rkt" scribble/eval racket/sandbox)
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
 @(define the-top-eval (make-base-eval))
 @(the-top-eval '(require (except-in typed/racket #%module-begin)))
-
-@(define-syntax-rule (ex . args)
-   (examples #:eval the-top-eval . args))
-
 
 @title{Utilities}
 
@@ -51,3 +43,4 @@ program errors. These assertions behave like @racket[assert].
 @defproc[(index? [v any/c]) boolean?]{A predicate for the @racket[Index]
 type.}
 
+@(close-eval the-eval)

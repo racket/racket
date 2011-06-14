@@ -1,20 +1,7 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval scriblib/footnote
-                racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])
-                           (only-in racket/base for)
-                           racket/list srfi/14
-                           version/check))]
-
-@(define the-eval (make-base-eval))
-@(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
-@(define the-top-eval (make-base-eval))
-@(the-top-eval '(require (except-in typed/racket #%module-begin)))
-
-@(define-syntax-rule (ex . args)
-   (examples #:eval the-top-eval . args))
-
+@begin[(require "../utils.rkt")
+       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
 
 @title{Typed Racket Syntax Without Type Checking}
 

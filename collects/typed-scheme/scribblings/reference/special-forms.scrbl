@@ -1,11 +1,8 @@
 #lang scribble/manual
 
-@begin[(require "../utils.rkt" scribble/eval scriblib/footnote
-                racket/sandbox)
+@begin[(require "../utils.rkt" scribble/eval racket/sandbox)
        (require (for-label (only-meta-in 0 [except-in typed/racket for])
-                           (only-in racket/base for)
-                           racket/list srfi/14
-                           version/check))]
+                           (only-in racket/base for)))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
@@ -368,3 +365,5 @@ a @racket[require/typed] form. Here is an example of using
 
 @racket[file-or-directory-modify-seconds] has some arguments which are optional, 
 so we need to use @racket[case->].}
+
+@(close-eval the-eval)
