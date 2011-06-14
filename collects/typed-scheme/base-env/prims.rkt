@@ -625,22 +625,53 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for*/vector: for*/vector)
   (for*/flvector: for*/flvector))
 
-(define-for-syntax (define-for*-folding-variant name)
-  (lambda (stx)
-    (syntax-parse stx #:literals (:)
-      [(_ : ty
-          (var ...)
-          (clause:for*-clause ...)
-          c:expr ...)
-       (quasisyntax/loc stx
-         (#,name : ty
-           (var ...)
-           (clause.expand ... ...)
-           c ...))])))
-
 ;; Like for/lists: and for/fold:, the inferencer can handle these correctly.
-(define-syntax for*/lists: (define-for*-folding-variant #'for/lists:))
-(define-syntax for*/fold:  (define-for*-folding-variant #'for/fold:))
+(define-syntax (for*/lists: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ : ty
+        ((var:optionally-annotated-name) ...)
+        (clause:for*-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/lists (var.ann-name ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'ty)]
+    [(_ ((var:annotated-name) ...)
+        (clause:for*-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/lists (var.ann-name ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'(values var.ty ...))]))
+(define-syntax (for*/fold: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ : ty
+        ((var:optionally-annotated-name init:expr) ...)
+        (clause:for*-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/fold ((var.ann-name init) ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'ty)]
+    [(_ ((var:annotated-name init:expr) ...)
+        (clause:for*-clause ...)
+        c:expr ...)
+     (syntax-property
+      (quasisyntax/loc stx
+        (for/fold ((var.ann-name init) ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'(values var.ty ...))]))
 
 (define-syntax (provide: stx)
   (syntax-parse stx
