@@ -99,7 +99,11 @@
             (directory-exists? dest)
             (link-exists? dest))
     (delete-directory/files dest))
-  (copy-file src dest))
+  (copy-file src dest)
+  (file-or-directory-permissions dest
+                                 (bitwise-ior
+                                  (file-or-directory-permissions dest 'bits)
+                                  user-write-bit)))
 
 (define (script-variant? v)
   (memq v '(script-3m script-cgc)))
