@@ -154,3 +154,8 @@ fashion as @racket[car] and @racket[cdr].
 (vector-ref x color-name) ; good
 (vector-ref x (* 0 10)) ; bad
 )
+
+In many such cases, however, @seclink[#:doc '(lib
+"scribblings/guide/guide.scrbl") "define-struct"]{structs} are
+preferable to vectors. Typed Racket can optimize struct access in all
+cases.
