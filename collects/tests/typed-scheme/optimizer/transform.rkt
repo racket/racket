@@ -30,5 +30,19 @@
              #:when (test-file? name))
     (transform name dir)))
 
-(transform-dir tests-dir)
-(transform-dir missed-optimizations-dir)
+(cond [(= (vector-length (current-command-line-arguments)) 0)
+       (transform-dir tests-dir)
+       (transform-dir missed-optimizations-dir)]
+      [else ; set of paths to transform
+       (define l (vector->list (current-command-line-arguments)))
+       (for-each (lambda (f)
+                   (define-values (path p b) (split-path f))
+                   (define dir (path->string path))
+                   ;; this only works if run from the optimizer tests dir
+                   (transform
+                    p
+                    (cond [(equal? dir "tests/")
+                           tests-dir]
+                          [(equal? dir "missed-optimizations/")
+                           missed-optimizations-dir])))
+                 l)])
