@@ -206,10 +206,29 @@
 [null (-val null)]
 [char? (make-pred-ty -Char)]
 
+;Section 3.1
+
 [boolean? (make-pred-ty B)]
-[eq? (-> Univ Univ B)]
-[eqv? (-> Univ Univ B)]
+[not (-> Univ B)]
 [equal? (-> Univ Univ B)]
+[eqv? (-> Univ Univ B)]
+[eq? (-> Univ Univ B)]
+
+[equal?/recur (-> Univ Univ (-> Univ Univ Univ) B)]
+[immutable? (-> Univ B)]
+[prop:equal+hash -Struct-Type-Property]
+
+
+;; scheme/bool
+[true (-val #t)]
+[false (-val #f)]
+[boolean=? (B B . -> . B)]
+[symbol=? (Sym Sym . -> . B)]
+[false? (make-pred-ty (-val #f))]
+
+
+
+
 [assert (-poly (a b) (cl->*
 		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
 		      (-> (Un a (-val #f)) a)))]
@@ -231,7 +250,7 @@
                               ;; 1 means predicate on second argument
                               (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
-[not (-> Univ B)]
+
 [box (-poly (a) (a . -> . (-box a)))]
 [unbox (-poly (a) (cl->*
                    ((-box a) . -> . a)
@@ -968,10 +987,6 @@
 [tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
 
-;; scheme/bool
-[boolean=? (B B . -> . B)]
-[symbol=? (Sym Sym . -> . B)]
-[false? (make-pred-ty (-val #f))]
 
 ;; with-stx.rkt
 [generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]

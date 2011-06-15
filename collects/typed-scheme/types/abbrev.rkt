@@ -177,6 +177,12 @@
 
 (define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
 
+(define -Struct-Type-Property
+  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
+
+
+
+
 (define -top (make-Top))
 (define -bot (make-Bot))
 (define -no-filter (make-FilterSet -top -top))
