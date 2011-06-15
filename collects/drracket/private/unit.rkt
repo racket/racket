@@ -2111,12 +2111,9 @@ module browser threading seems wrong.
                        (andmap eq? tab-label-cache-valid current-paths))
             (set! tab-label-cache-valid current-paths)
             (set! tab-label-cache (make-hasheq)))
-          (hash-ref tab-label-cache 
-                    fn
-                    (lambda ()
-                      (define ans (compute-tab-label-from-filename fn))
-                      (hash-set! tab-label-cache fn ans)
-                      ans)))
+          (hash-ref! tab-label-cache 
+                     fn
+                     (lambda () (compute-tab-label-from-filename fn))))
 
         (define/private (compute-tab-label-from-filename fn)
           (let* ([take-n
