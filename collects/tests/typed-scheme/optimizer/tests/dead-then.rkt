@@ -1,11 +1,10 @@
 #;
 (
-TR opt: dead-then.rkt 14:13 (#%app + (quote 2.0) (quote 3.0)) -- dead then branch
-TR opt: dead-then.rkt 15:14 + -- binary float
-TR opt: dead-then.rkt 17:13 (#%app + (quote 2.0) (quote 3.0)) -- dead then branch
-TR opt: dead-then.rkt 18:14 + -- binary float
-9.09.0
-)
+TR opt: dead-then.rkt 13:13 (+ 2.0 3.0) -- dead then branch
+TR opt: dead-then.rkt 14:14 + -- binary float
+TR opt: dead-then.rkt 16:13 (+ 2.0 3.0) -- dead then branch
+TR opt: dead-then.rkt 17:14 + -- binary float
+9.09.0)
 
 #lang typed/scheme
 #:optimize

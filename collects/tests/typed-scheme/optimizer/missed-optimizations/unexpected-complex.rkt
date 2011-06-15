@@ -1,13 +1,13 @@
 #;
 (
-TR missed opt: unexpected-complex.rkt 16:0 (#%app sqrt (quote 4)) -- unexpected complex type
-TR opt: unexpected-complex.rkt 17:0 (#%app + (quote 1.2+3.4i) (quote 2.0)) -- unboxed float complex
+TR missed opt: unexpected-complex.rkt 16:0 (sqrt (ann 4 Integer)) -- unexpected complex type
+TR opt: unexpected-complex.rkt 17:0 (+ 1.2+3.4i 2.0) -- unboxed float complex
 TR opt: unexpected-complex.rkt 17:1 + -- unboxed binary float complex
 TR opt: unexpected-complex.rkt 17:3 1.2+3.4i -- unboxed literal
-TR opt: unexpected-complex.rkt 17:12 (quote 2.0) -- float-arg-expr in complex ops
+TR opt: unexpected-complex.rkt 17:12 2.0 -- float-arg-expr in complex ops
 2
 3.2+3.4i
- )
+)
 
 #lang typed/racket
 

@@ -1,15 +1,13 @@
 #;
 (
-TR opt: derived-pair.rkt 21:0 (#%app caar (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3))) -- derived pair
-TR opt: derived-pair.rkt 21:0 car -- pair
-TR opt: derived-pair.rkt 22:0 (#%app cadr (#%app cons (quote 1) (#%app cons (quote 2) (quote 3)))) -- derived pair
-TR opt: derived-pair.rkt 22:0 car -- pair
-TR opt: derived-pair.rkt 22:0 cdr -- pair
-TR opt: derived-pair.rkt 23:0 (#%app cdar (#%app cons (#%app cons (quote 1) (quote 2)) (quote 3))) -- derived pair
-TR opt: derived-pair.rkt 23:0 car -- pair
-TR opt: derived-pair.rkt 23:0 cdr -- pair
-TR opt: derived-pair.rkt 24:0 (#%app cddr (#%app cons (quote 1) (#%app cons (quote 2) (quote 3)))) -- derived pair
-TR opt: derived-pair.rkt 24:0 cdr -- pair
+TR opt: derived-pair.rkt 19:0 (caar (cons (cons 1 2) 3)) -- derived pair
+TR opt: derived-pair.rkt 19:0 (caar (cons (cons 1 2) 3)) -- pair
+TR opt: derived-pair.rkt 20:0 (cadr (cons 1 (cons 2 3))) -- derived pair
+TR opt: derived-pair.rkt 20:0 (cadr (cons 1 (cons 2 3))) -- pair
+TR opt: derived-pair.rkt 21:0 (cdar (cons (cons 1 2) 3)) -- derived pair
+TR opt: derived-pair.rkt 21:0 (cdar (cons (cons 1 2) 3)) -- pair
+TR opt: derived-pair.rkt 22:0 (cddr (cons 1 (cons 2 3))) -- derived pair
+TR opt: derived-pair.rkt 22:0 (cddr (cons 1 (cons 2 3))) -- pair
 1
 2
 2

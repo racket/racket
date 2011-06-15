@@ -1,6 +1,6 @@
 #;
 (
-TR opt: #f (no location) make-sequence -- in-list
+TR opt: in-list.rkt 6:0 #%module-begin -- in-list
 123)
 
 #lang typed/scheme

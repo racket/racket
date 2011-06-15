@@ -3,7 +3,7 @@
 TR opt: unboxed-let-functions3.rkt 23:7 f -- fun -> unboxed fun
 TR opt: unboxed-let-functions3.rkt 23:7 f -- unboxed function -> table
 TR opt: unboxed-let-functions3.rkt 23:20 x -- unboxed var -> table
-TR opt: unboxed-let-functions3.rkt 24:18 (#%app + x y) -- unboxed float complex
+TR opt: unboxed-let-functions3.rkt 24:18 (+ x y) -- unboxed float complex
 TR opt: unboxed-let-functions3.rkt 24:19 + -- unboxed binary float complex
 TR opt: unboxed-let-functions3.rkt 24:21 x -- leave var unboxed
 TR opt: unboxed-let-functions3.rkt 24:21 x -- unbox float-complex

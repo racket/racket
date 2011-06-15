@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require racket/set racket/string racket/match racket/list
-         unstable/syntax)
+         unstable/syntax
+         "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization
          optimization-log-key
@@ -28,12 +29,13 @@
 (define log-so-far (set))
 
 (define (gen-log-message msg stx from)
-  (format "~a: ~a ~a ~a -- ~a"
-          from
-          (syntax-source-file-name stx)
-          (line+col->string stx)
-          (syntax->datum stx)
-          msg))
+  (let ([stx (locate-stx stx)])
+    (format "~a: ~a ~a ~a -- ~a"
+            from
+            (syntax-source-file-name stx)
+            (line+col->string stx)
+            (syntax->datum stx)
+            msg)))
 
 (define (log-optimization msg stx #:from [from "TR opt"])
   (let* ([new-message (gen-log-message msg stx from)]

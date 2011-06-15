@@ -1,9 +1,8 @@
 #;
 (
-TR opt: define-begin-float.rkt 11:27 - -- binary float
-TR opt: define-begin-float.rkt 12:18 * -- binary float
--1.0
-)
+TR opt: define-begin-float.rkt 10:27 - -- binary float
+TR opt: define-begin-float.rkt 11:18 * -- binary float
+-1.0)
 
 #lang typed/scheme
 #:optimize

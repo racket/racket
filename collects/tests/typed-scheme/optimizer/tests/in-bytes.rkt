@@ -1,6 +1,6 @@
 #;
 (
-TR opt: #f (no location) make-sequence -- in-bytes
+TR opt: in-bytes.rkt 6:0 #%module-begin -- in-bytes
 495051)
 
 #lang typed/scheme

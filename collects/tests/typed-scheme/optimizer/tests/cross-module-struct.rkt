@@ -1,5 +1,6 @@
 #;
-()
+(
+)
 
 #lang typed/scheme #:optimize
 

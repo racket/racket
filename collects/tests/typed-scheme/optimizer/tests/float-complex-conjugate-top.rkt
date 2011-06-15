@@ -1,6 +1,6 @@
 #;
 (
-TR opt: float-complex-conjugate-top.rkt 14:0 (#%app conjugate (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i))) -- unboxed float complex
+TR opt: float-complex-conjugate-top.rkt 14:0 (conjugate (+ 1.0+2.0i 2.0+4.0i)) -- unboxed float complex
 TR opt: float-complex-conjugate-top.rkt 14:1 conjugate -- unboxed unary float complex
 TR opt: float-complex-conjugate-top.rkt 14:12 + -- unboxed binary float complex
 TR opt: float-complex-conjugate-top.rkt 14:14 1.0+2.0i -- unboxed literal

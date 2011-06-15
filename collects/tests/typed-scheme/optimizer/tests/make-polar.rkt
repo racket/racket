@@ -2,11 +2,11 @@
 (
 TR opt: make-polar.rkt 28:1 make-polar -- make-polar
 TR opt: make-polar.rkt 28:1 make-polar -- make-rectangular elimination
-TR opt: make-polar.rkt 31:0 (let-values (((p) (#%app + (quote 1.0+2.0i) (#%app make-polar (quote 2.0) (quote 4.0))))) (#%app string-append (#%app real->decimal-string (#%app real-part p) (quote 10)) (#%app real->decimal-string (#%app imag-part p) (quote 10)))) -- unboxed let bindings
+TR opt: make-polar.rkt 31:0 (let ((p (+ 1.0+2.0i (make-polar 2.0 4.0)))) (string-append (real->decimal-string (real-part p) 10) (real->decimal-string (imag-part p) 10))) -- unboxed let bindings
 TR opt: make-polar.rkt 31:10 + -- unboxed binary float complex
 TR opt: make-polar.rkt 31:12 1.0+2.0i -- unboxed literal
 TR opt: make-polar.rkt 31:22 make-polar -- make-rectangular elimination
-TR opt: make-polar.rkt 32:39 (#%app real-part p) -- unboxed float complex->float
+TR opt: make-polar.rkt 32:39 (real-part p) -- unboxed float complex->float
 TR opt: make-polar.rkt 32:40 real-part -- unboxed float complex
 TR opt: make-polar.rkt 32:40 real-part -- unboxed unary float complex
 TR opt: make-polar.rkt 32:50 p -- leave var unboxed

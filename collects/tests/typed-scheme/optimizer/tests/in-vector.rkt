@@ -1,6 +1,6 @@
 #;
 (
-TR opt: #f (no location) make-sequence -- in-vector
+TR opt: in-vector.rkt 6:0 #%module-begin -- in-vector
 123)
 
 #lang typed/scheme
