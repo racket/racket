@@ -34,7 +34,7 @@
           (syntax->datum stx)
           msg))
 
-(define (do-logging msg stx)
+(define (log-optimization msg stx)
   (let* ([new-message (gen-log-message msg stx)]
          [new-entry (log-entry new-message (syntax-position stx))])
     (unless (set-member? log-so-far new-entry)
@@ -45,8 +45,8 @@
 (define (print-log)
   (define logger (current-logger))
   ;; add missed optimizations messages to the log, now that we know all of them
-  (for-each (lambda (x) (do-logging (format-missed-optimization x)
-                                    (missed-optimization-stx x)))
+  (for-each (lambda (x) (log-optimization (format-missed-optimization x)
+                                          (missed-optimization-stx x)))
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))
@@ -68,8 +68,6 @@
 (define (clear-log)
   (set! log-so-far (set))
   (set! missed-optimizations-log '()))
-
-(define (log-optimization kind stx) (do-logging kind stx))
 
 
 ;; Keep track of optimizations that "almost" happened, with the intention
