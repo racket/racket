@@ -787,21 +787,12 @@
 [bytes>? (->* (list -Bytes) -Bytes B)]
 [bytes=? (->* (list -Bytes) -Bytes B)]
 
-[read-bytes-line (->opt [-Input-Port Sym] (Un -Bytes (-val eof)))]
-[read-line  (->opt [-Input-Port Sym] (Un -String (-val eof)))]
 [copy-file (-> -Pathlike -Pathlike -Void)]
 
 [force (-poly (a) (-> (-Promise a) a))]
 [regexp-replace*
  (cl->* (-Pattern -String -String . -> . -String)
 	(-Pattern (Un -Bytes -String) (Un -Bytes -String) . -> . -Bytes))]
-[read-char
- (cl->* [->opt [-Input-Port] (Un -Char (-val eof))])]
-[read-byte
- (cl->* [-> (Un -Byte (-val eof))]
-        [-Input-Port . -> . (Un -Byte (-val eof))])]
-[char-ready? (->opt [-Input-Port] B)]
-[byte-ready? (->opt [-Input-Port] B)]
 
 
 [make-directory (-> -Pathlike -Void)]
@@ -975,12 +966,6 @@
      (funarg* a [(-opt -Pathlike) Univ]. ->opt . a))))]
 
 
-;; scheme/pretty
-
-[pretty-print (Univ [-Output-Port] . ->opt . -Void)]
-[pretty-display (Univ [-Output-Port] . ->opt . -Void)]
-[pretty-format (Univ [-Output-Port] . ->opt . -Void)]
-
 ;; unsafe
 
 [unsafe-vector-length ((make-VectorTop) . -> . -Index)]
@@ -1039,20 +1024,6 @@
 [system/exit-code ((Un -String -Bytes) . -> . -Integer)]
 [system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Integer)]
 
-;; Byte and String Output (Section 12.3 of the Reference)
-;; some are now in base-env-indexing-abs.rkt
-[write-char (cl-> [(-Char) -Void]
-                  [(-Char -Output-Port) -Void])]
-[newline (cl-> [() -Void]
-               [(-Output-Port) -Void])]
-[write-special (cl-> [(Univ) -Boolean]
-                     [(Univ -Output-Port) -Boolean])]
-;; Need event type before we can include these
-;;write-special-avail*
-;;write-bytes-avail-evt
-;;write-special-evt
-[port-writes-atomic? (-Output-Port . -> . -Boolean)]
-[port-writes-special? (-Output-Port . -> . -Boolean)]
 
 ;; probably the most useful cases
 [curry (-poly (a b c)
@@ -1372,5 +1343,165 @@
 
 [convert-stream (-> -String -Input-Port -String -Output-Port -Void)]
 [copy-port (->* (list -Input-Port -Output-Port) -Output-Port -Void)]
+
+;12.2
+
+[read-char (->opt [-Input-Port] (Un -Char (-val eof)))]
+[read-byte (->opt [-Input-Port] (Un -Byte (-val eof)))]
+
+[read-line  (->opt [-Input-Port Sym] (Un -String (-val eof)))]
+[read-bytes-line (->opt [-Input-Port Sym] (Un -Bytes (-val eof)))]
+
+;read-string (in index)
+;read-bytes (in index)
+
+;read-string! (in index)
+[read-bytes! (->opt -Bytes [-Input-Port -Nat -Nat] (Un -PosInt (-val eof)))]
+[read-bytes-avail! (->opt -Bytes [-Input-Port -Nat -Nat] (Un -PosInt (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+[read-bytes-avail!* (->opt -Bytes [-Input-Port -Nat -Nat] (Un -Nat (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+[read-bytes-avail!/enable-break (->opt -Bytes [-Input-Port -Nat -Nat] (Un -PosInt (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+
+[peek-string (->opt -Nat -Nat [-Input-Port] (Un -String (-val eof)))]
+[peek-bytes (->opt -Nat -Nat [-Input-Port] (Un -Bytes (-val eof)))]
+
+[peek-string! (->opt -String -Nat [-Input-Port -Nat -Nat] (Un -PosInt (-val eof)))]
+[peek-bytes! (->opt -Bytes -Nat [-Input-Port -Nat -Nat] (Un -PosInt (-val eof)))]
+[peek-bytes-avail! (->opt -Bytes -Nat [(-val #f) -Input-Port -Nat -Nat] (Un -Nat (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+[peek-bytes-avail!* (->opt -Bytes -Nat [(-val #f) -Input-Port -Nat -Nat] (Un -Nat (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+[peek-bytes-avail!/enable-break (->opt -Bytes -Nat [(-val #f) -Input-Port -Nat -Nat] (Un -Nat (-val eof) (-> (-opt -PosInt) (-opt -Nat) (-opt -PosInt) (-opt -Nat) Univ)))]
+
+
+[read-char-or-special (->opt [-Input-Port] Univ)]
+[read-byte-or-special (->opt [-Input-Port] Univ)]
+
+;peek-char (in index)
+;peek-byte (in index)
+[peek-char-or-special (->opt [-Input-Port -Nat] Univ)]
+[peek-byte-or-special (->opt [-Input-Port -Nat] Univ)]
+
+;port-progress-evt
+
+[port-provides-progress-evts? (-> -Input-Port B)]
+
+[port-commit-peeked (->opt -Nat Univ Univ [-Input-Port] B)]
+
+[byte-ready? (->opt [-Input-Port] B)]
+[char-ready? (->opt [-Input-Port] B)]
+
+
+
+;; Byte and String Output (Section 12.3 of the Reference)
+;; some are now in base-env-indexing-abs.rkt
+
+[write-char (cl-> [(-Char) -Void]
+                  [(-Char -Output-Port) -Void])]
+;write-byte (in index)
+
+
+[newline (->opt [-Output-Port] -Void)]
+
+;write-string
+;write-bytes
+;write-bytes-avail*
+;write-bytes-avail/enable-break
+
+[write-special (->opt Univ [-Output-Port] B)]
+[write-special-avail* (->opt Univ [-Output-Port] B)]
+
+;; Need event type before we can include these
+;;write-special-avail*
+;;write-bytes-avail-evt
+;;write-special-evt
+;;
+[port-writes-atomic? (-Output-Port . -> . -Boolean)]
+[port-writes-special? (-Output-Port . -> . -Boolean)]
+
+
+;Section 12.8
+;; racket/pretty
+
+[pretty-print (Univ [-Output-Port (Un (-val 0) (-val 1))] . ->opt . -Void)]
+[pretty-write (Univ [-Output-Port] . ->opt . -Void)]
+[pretty-display (Univ [-Output-Port] . ->opt . -Void)]
+[pretty-format (Univ [-Output-Port] . ->opt . -Void)]
+[pretty-print-handler (-> Univ -Void)]
+
+[pretty-print-columns (-Param (-opt -Nat) (-opt -Nat))]
+[pretty-print-depth (-Param (-opt -Nat) (-opt -Nat))]
+[pretty-print-exact-as-decimal (-Param Univ B)]
+[pretty-print-.-symbol-without-bars (-Param Univ B)]
+[pretty-print-show-inexactness (-Param Univ B)]
+[pretty-print-abbreviate-read-macros (-Param Univ B)]
+
+[pretty-print-style-table? (make-pred-ty -Pretty-Print-Style-Table)]
+[pretty-print-current-style-table (-Param -Pretty-Print-Style-Table -Pretty-Print-Style-Table)]
+[pretty-print-extend-style-table (-> (-opt -Pretty-Print-Style-Table) (-lst Sym) (-lst Sym) -Pretty-Print-Style-Table)]
+[pretty-print-remap-stylable (-Param (-> Univ (-opt Sym)) (-> Univ (-opt Sym)))]
+
+[pretty-print-newline (-> -Output-Port -Nat -Void)]
+[pretty-print-print-line (-Param (-> (-opt -Nat) -Output-Port -Nat (Un -Nat (-val 'infinity)) -Nat)
+                                 (-> (-opt -Nat) -Output-Port -Nat (Un -Nat (-val 'infinity)) -Nat))]
+[pretty-print-size-hook (-Param (-> Univ B -Output-Port (-opt -Nat)) (-> Univ B -Output-Port (-opt -Nat)))]
+[pretty-print-print-hook (-Param (-> Univ B -Output-Port -Void) (-> Univ B -Output-Port -Void))]
+[pretty-print-pre-print-hook (-Param (-> Univ -Output-Port -Void) (-> Univ -Output-Port -Void))]
+[pretty-print-post-print-hook (-Param (-> Univ -Output-Port -Void) (-> Univ -Output-Port -Void))]
+
+[pretty-printing (-Param Univ B)]
+
+[make-tentative-pretty-print-output-port (-> -Output-Port -Nat (-> ManyUniv) -Output-Port)]
+[tentative-pretty-print-port-transfer (-> -Output-Port -Output-Port -Void)]
+[tentative-pretty-print-port-cancel (-> -Output-Port -Void)]
+
+
+;Section 12.9
+
+;12.9.1
+[readtable? (make-pred-ty -Read-Table)]
+;[make-readtable (-> -ReadTable ??? -ReadTable)] 
+
+[readtable-mapping (-> -Read-Table -Char
+                       (-values (list
+                                 (Un -Char (-val 'terminating-macro) (-val 'non-terminating-macro))
+                                 (-opt (Un (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
+                                               (-opt -PosInt) (-opt -Nat) Univ)
+                                           (cl->* 
+
+                                             (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
+                                                 (-opt -PosInt) (-opt -Nat) Univ)
+                                             (-> -Char -Input-Port Univ)))) 
+                                 (-opt (Un (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
+                                               (-opt -PosInt) (-opt -Nat) Univ)
+                                           (cl->* 
+
+                                             (-> -Char -Input-Port (-opt -PosInt) (-opt -Nat)
+                                                 (-opt -PosInt) (-opt -Nat) Univ)
+                                             (-> -Char -Input-Port Univ)))))))]
+
+;12.9.2
+;Nothing defined here
+
+
+;12.9.3
+
+[special-comment? (make-pred-ty -Special-Comment)]
+[make-special-comment (-> Univ -Special-Comment)]
+[special-comment-value (-> -Special-Comment Univ)]
+
+;Section 12.10
+
+
+[prop:custom-write -Struct-Type-Property]
+[custom-write? (-> Univ B)]
+[custom-write-accessor (-> Univ (-> Univ -Output-Port B ManyUniv))]
+
+
+[prop:custom-print-quotable -Struct-Type-Property]
+[custom-print-quotable? (-> Univ B)]
+[custom-print-quotable-accessor (-> Univ Univ)]
+
+;Section 12.11
+
+;Section 12.12
+
 
 
