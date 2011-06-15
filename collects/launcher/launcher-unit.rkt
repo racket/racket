@@ -104,7 +104,7 @@
   (let* ([perms1 (file-or-directory-permissions dest 'bits)]
          [perms2 (bitwise-ior user-read-bit user-write-bit user-execute-bit
                               perms1)])
-    (unless (equal perms1 perms2)
+    (unless (equal? perms1 perms2)
       (file-or-directory-permissions dest perms2))))
 
 (define (script-variant? v)
