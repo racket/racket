@@ -30,20 +30,44 @@
           make-Ephemeron
           make-HeterogenousVector))
 
+;Section 9.2
+
 [raise (Univ . -> . (Un))]
-[raise-syntax-error (cl->*
-                     (-> (Un (-val #f) -Symbol)
-                               -String
-                               (Un))
-                     (-> (Un (-val #f) -Symbol)
-                               -String
-                               Univ
-                               (Un))
-                     (-> (Un (-val #f) -Symbol)
-                               -String
-                               Univ
-                               Univ
-                               (Un)))]
+
+[error
+ (make-Function (list
+                 (make-arr (list Sym -String) (Un) #:rest Univ)
+                 (make-arr (list -String) (Un) #:rest Univ)
+                 (make-arr (list Sym) (Un))))]
+
+
+[raise-user-error
+ (make-Function (list
+                 (make-arr (list Sym -String) (Un) #:rest Univ)
+                 (make-arr (list -String) (Un) #:rest Univ)
+                 (make-arr (list Sym) (Un))))]
+
+;raise-type-error (in index)
+[raise-mismatch-error (-> Sym -String Univ (Un))]
+;raise-arity-error
+
+[raise-syntax-error (->opt (-opt Sym) -String [Univ Univ (-lst (-Syntax Univ))] (Un))]
+
+
+[call-with-exception-handler (-poly (a) (-> (-> Univ a) (-> a) a))]
+[uncaught-exception-handler (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
+
+[error-escape-handler (-Param (-> ManyUniv) (-> ManyUniv))]
+[error-display-handler (-Param (-> -String Univ ManyUniv) (-> -String Univ ManyUniv))]
+[error-value->string-handler (-Param (-> Univ -Nat -String) (-> Univ -Nat -String))]
+[error-print-context-length (-Param -Nat -Nat)]
+[error-print-width (-Param -Nat -Nat)]
+[error-print-source-location (-Param Univ B)]
+
+
+
+
+
 
 [car   (-poly (a b)
               (cl->*
@@ -372,13 +396,6 @@
 [remq*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 [remv*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 
-(error
- (make-Function (list
-                 (make-arr (list Sym -String) (Un) #:rest Univ)
-                 (make-arr (list -String) (Un) #:rest Univ)
-                 (make-arr (list Sym) (Un)))))
-[error-display-handler  (-Param (-polydots (a) (-String Univ . -> . Univ))
-                                (-polydots (a) (-String Univ . -> . Univ)))]
 
 [namespace-variable-value (Sym [Univ (-opt (-> Univ)) -Namespace] . ->opt . Univ)]
 

@@ -162,6 +162,10 @@
 (define Univ (make-Univ))
 (define Err (make-Error))
 
+;A Type that corresponds to the any contract for the
+;return type of functions
+(define ManyUniv Univ) 
+
 (define -Port (*Un -Output-Port -Input-Port))
 
 (define -SomeSystemPath (*Un -Path -OtherSystemPath))
