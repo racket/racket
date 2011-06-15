@@ -190,7 +190,6 @@
 		      (Univ (make-pred-ty (list a) Univ b) . -> . b)
 		      (-> (Un a (-val #f)) a)))]
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
-[gensym (->opt [Sym] Sym)]
 
 [open-input-string (-> -String -Input-Port)]
 [open-input-bytes (-> -Bytes -Input-Port)]
@@ -317,8 +316,21 @@
 [string-join (-> (-lst -String) -String -String)]
 
 
-
+;Section 3.6
 [symbol? (make-pred-ty Sym)]
+[symbol-interned? (-> Sym B)]
+[symbol-unreadable? (-> Sym B)]
+
+[symbol->string (Sym . -> . -String)]
+
+
+[string->symbol (-String . -> . Sym)]
+[string->uninterned-symbol (-String . -> . Sym)]
+[string->unreadable-symbol (-String . -> . Sym)]
+[gensym (->opt [Sym] Sym)]
+
+
+
 [keyword? (make-pred-ty -Keyword)]
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
@@ -547,8 +559,6 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-[string->symbol (-String . -> . Sym)]
-[symbol->string (Sym . -> . -String)]
 [string->keyword (-String . -> . -Keyword)]
 [keyword->string (-Keyword . -> . -String)]
 
