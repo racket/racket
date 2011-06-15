@@ -16,6 +16,7 @@
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
+               (only-in unstable/contract sequence/c)
 	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
@@ -185,6 +186,7 @@
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
 	[(Set: t) #`(set/c #,(t->c t))]
+        [(Sequence: ts) #`(sequence/c #,@(map t->c ts))]
         [(Vector: t)
          (if flat?
              #`(vectorof #,(t->c t #:flat #t) #:flat? #t)
