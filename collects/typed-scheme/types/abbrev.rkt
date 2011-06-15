@@ -122,20 +122,35 @@
              (lambda (x) (equal? (letrec ([y y]) y) x))
              #'-Undefined))
 (define -Bytes (make-Base 'Bytes #'bytes? bytes? #'-Bytes))
-(define -Regexp (make-Base 'Regexp
-                           #'(and/c regexp? (not/c pregexp?) (not/c byte-regexp?))
-                           (conjoin regexp? (negate pregexp?) (negate byte-regexp?))
-                           #'-Regexp))
+(define -String (make-Base 'String #'string? string? #'-String))
+
+
+(define -Base-Regexp (make-Base 'Base-Regexp
+                           #'(and/c regexp? (not/c pregexp?))
+                           (conjoin regexp? (negate pregexp?))
+                           #'-Regexp))                     
 (define -PRegexp (make-Base 'PRegexp
-                            #'(and/c pregexp? (not/c byte-pregexp?))
-                            (conjoin pregexp? (negate byte-pregexp?))
-                            #'-PRegexp))
-(define -Byte-Regexp (make-Base 'Byte-Regexp
+                            #'pregexp?                      
+                            pregexp?                        
+                            #'-PRegexp))                    
+(define -Regexp (*Un -PRegexp -Base-Regexp))
+
+(define -Byte-Base-Regexp (make-Base 'Byte-Regexp
                                 #'(and/c byte-regexp? (not/c byte-pregexp?))
                                 (conjoin byte-regexp? (negate byte-pregexp?))
-                                #'-Byte-Regexp))
-(define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp))
-(define -String (make-Base 'String #'string? string? #'-String))
+                                #'-Byte-Regexp))                
+(define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp? byte-pregexp? #'-Byte-PRegexp)) 
+(define -Byte-Regexp (*Un -Byte-Base-Regexp -Byte-PRegexp))
+
+(define -Pattern (*Un -Bytes -Regexp -Byte-Regexp -String))
+
+
+
+
+
+
+
+
 (define -Keyword (make-Base 'Keyword #'keyword? keyword? #'-Keyword))
 (define -Char (make-Base 'Char #'char? char? #'-Char))
 (define -Thread (make-Base 'Thread #'thread? thread? #'-Thread))
@@ -177,7 +192,6 @@
 (define -SomeSystemPathlike* (*Un -String -SomeSystemPath(-val 'up) (-val 'same)))
 (define -PathConventionType (*Un (-val 'unix) (-val 'windows)))
 
-(define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
 
 (define -Struct-Type-Property
   (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
