@@ -8,11 +8,13 @@
          racket/list
          racket/match
          racket/function
+         racket/pretty
          unstable/function
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
+         racket/pretty
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
@@ -179,6 +181,16 @@
 
 (define -Struct-Type-Property
   (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
+
+(define -Pretty-Print-Style-Table
+  (make-Base 'Pretty-Print-Style-Table #'pretty-print-style-table? pretty-print-style-table? #'-Pretty-Print-Style-Table))
+
+
+(define -Read-Table (make-Base 'Read-Table #'readtable? readtable? #'-Read-Table))
+
+(define -Special-Comment
+  (make-Base 'Special-Comment #'special-comment? special-comment? #'-Special-Comment))
+
 
 
 
