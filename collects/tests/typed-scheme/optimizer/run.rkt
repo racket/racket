@@ -5,30 +5,26 @@
          unstable/logging)
 
 (provide optimization-tests missed-optimization-tests
-         test-opt test-missed-optimization)
+         test-opt test-missed-optimization test-file?
+         generate-log tests-dir missed-optimizations-dir)
 
 (define (generate-log name dir)
   ;; some tests require other tests, so some fiddling is required
-  (let ([out-string
-         (with-output-to-string
-           (lambda ()
-             (with-intercepted-logging ; catch opt logs
-              (lambda (l)
-                (when (eq? (vector-ref l 2) ; look only for optimizer messages
-                           optimization-log-key)
-                    (displayln (vector-ref l 1)))) ; print log message
-              (lambda ()
-                (parameterize
-                    ([current-namespace (make-base-empty-namespace)]
-                     [current-load-relative-directory dir])
-                  (dynamic-require
-                   (build-path (current-load-relative-directory) name)
-                   #f)))
-              #:level 'warning)))])
-    ;; have the log as an sexp, since that's what the expected log is
-    (with-input-from-string
-        (string-append "(" out-string ")")
-      read)))
+  (with-output-to-string
+    (lambda ()
+      (with-intercepted-logging ; catch opt logs
+       (lambda (l)
+         (when (eq? (vector-ref l 2) ; look only for optimizer messages
+                    optimization-log-key)
+           (displayln (vector-ref l 1)))) ; print log message
+       (lambda ()
+         (parameterize
+             ([current-namespace (make-base-empty-namespace)]
+              [current-load-relative-directory dir])
+           (dynamic-require
+            (build-path (current-load-relative-directory) name)
+            #f)))
+       #:level 'warning))))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen
@@ -40,7 +36,9 @@
                #t
                (equal?
                 ;; actual log
-                (generate-log name dir)
+                (with-input-from-string
+                    (string-append "(" (generate-log name dir) ")")
+                  read)
                 ;; expected log
                 (with-input-from-file (build-path dir name)
                   (lambda () ; from the test file
@@ -57,14 +55,17 @@
 (define (test-missed-optimization name)
   (list (compare-logs name missed-optimizations-dir)))
 
+(define (test-file? name)
+  (and (regexp-match ".*rkt$" name)
+       ;; skip emacs temp unsaved file backups
+       (not (regexp-match "^\\.#" name))))
+
 ;; proc returns the list of tests to be run on each file
 (define (mk-suite suite-name dir proc)
   (make-test-suite
    suite-name
    (for/list ([name (directory-list dir)]
-              #:when (and (regexp-match ".*rkt$" name)
-                          ;; skip emacs temp unsaved file backups
-                          (not (regexp-match "^\\.#" name))))
+              #:when (test-file? name))
      (make-test-suite
       (path->string name)
       (proc name)))))
