@@ -380,6 +380,14 @@ Equivalent to @racket[(lambda (id) (match id clause ...))].
 Equivalent to @racket[(lambda lst (match lst clause ...))].
 }
 
+@defform[(match-lambda** clause* ...)]{
+
+Equivalent to @racket[(lambda (args ...) (match* (args ...) clause* ...))],
+where the number of @racket[args ...] is computed from the number of patterns
+appearing in each of the @racket[clause*].
+}
+
+
 @defform[(match-let ([pat expr] ...) body ...+)]{
 
 Generalizes @racket[let] to support pattern bindings. Each
@@ -456,6 +464,15 @@ A transformer produced by a second @racket[proc-expr] sub-expression is
 A parameter that determines the comparison procedure used to check
 whether multiple uses of an identifier match the ``same'' value. The
 default is @racket[equal?].}
+
+@deftogether[[@defform[(match/derived val-expr original-datum clause ...)]
+              @defform[(match*/derived (val-expr ...) original-datum clause*
+              ...)]]]{ 
+Like @racket[match] and @racket[match*] respectively, but includes a
+sub-expression to be used as the source for all syntax errors within the form.
+For example, @racket[match-lambda] expands to @racket[match/derived] so that
+errors in the body of the form are reported in terms of @racket[match-lambda]
+instead of @racket[match].}
 
 @; ----------------------------------------------------------------------
 
