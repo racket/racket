@@ -537,32 +537,72 @@
 [read-decimal-as-inexact (-Param B B)]
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
-;; regexp stuff
+
+;; Section 3.7
+;; Regular Expressions 
+
 [regexp? (make-pred-ty -Regexp)]
 [pregexp? (make-pred-ty -PRegexp)]
 [byte-regexp? (make-pred-ty -Byte-Regexp)]
 [byte-pregexp? (make-pred-ty -Byte-PRegexp)]
-[regexp (-String . -> . -Regexp)]
+[regexp (-String . -> . -Base-Regexp)]
 [pregexp (-String . -> . -PRegexp)]
-[byte-regexp (-Bytes . -> . -Byte-Regexp)]
+[byte-regexp (-Bytes . -> . -Byte-Base-Regexp)]
 [byte-pregexp (-Bytes . -> . -Byte-PRegexp)]
-
-[regexp-match-exact?
- (-Pattern (Un -String -Bytes -Input-Port) . -> . B)]
-
-
-#;
-[regexp-match-peek-positions*]
-#;
-[regexp-split]
 
 [regexp-quote (cl->*
                (->opt -String [Univ] -String)
                (->opt -Bytes [Univ] -Bytes))]
+
+[regexp-max-lookbehind (-> (Un -Regexp -Byte-Regexp) -Nat)]
+
+;In Index
+;regexp-match
+;regexp-match*
+;regexp-try-match
+;regexp-match-positions
+;regexp-match?
+
+
+
+
+
+
+[regexp-match-exact? (-> -Pattern (Un -String -Bytes -Path) B)]
+
+;In Index
+;regexp-match-peek
+;regexp-match-peek-positions
+;regexp-match-peek-immediate
+;regexp-match-peek-positions-immediate
+;regexp-match-peek-positions*
+;regexp-match/end
+;regexp-match-positions/end
+;regexp-match-peek-positions/end
+;regexp-match-peek-positions-immediate/end
+
+
+[regexp-replace
+ (cl->*
+  (->opt (Un -String -Regexp) -String (Un -String (->* (list -String) -String -String)) [-Bytes] -String)
+  (->opt (Un -Bytes -Byte-Regexp) (Un -Bytes -String) (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes)
+  (->opt -Pattern -Bytes (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes))]
+
+[regexp-replace*
+ (cl->*
+  (->opt (Un -String -Regexp) -String (Un -String (->* (list -String) -String -String)) [-Bytes] -String)
+  (->opt (Un -Bytes -Byte-Regexp) (Un -Bytes -String) (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes)
+  (->opt -Pattern -Bytes (Un -Bytes -String (->* (list -Bytes) -Bytes -Bytes)) [-Bytes] -Bytes))]
+
+
 [regexp-replace-quote
  (cl->*
   [-> -String -String]
   [-> -Bytes -Bytes])]
+
+
+
+
 
 [number->string (->opt N [N] -String)]
 [string->number (->opt -String [N] (Un (-val #f) N))]
@@ -790,9 +830,6 @@
 [copy-file (-> -Pathlike -Pathlike -Void)]
 
 [force (-poly (a) (-> (-Promise a) a))]
-[regexp-replace*
- (cl->* (-Pattern -String -String . -> . -String)
-	(-Pattern (Un -Bytes -String) (Un -Bytes -String) . -> . -Bytes))]
 
 
 [make-directory (-> -Pathlike -Void)]
