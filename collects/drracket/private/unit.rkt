@@ -2095,7 +2095,30 @@ module browser threading seems wrong.
                 (get-tab-label-from-filename fn)
                 (send defs get-filename/untitled-name))))
         
+	;; tab-label-cache-valid : (listof path)
+	;; If the current set of filenames in the tabs is the
+        ;;   same set of filenames as in this list, then the
+        ;;   tab-label-cache is valid; otherwise not
+	(define tab-label-cache-valid '())
+
+        ;; tab-label-cache : path -o> string
+        (define tab-label-cache (make-hasheq))
+
         (define/private (get-tab-label-from-filename fn)
+          (define current-paths (map (lambda (tab) (send (send tab get-defs) get-filename))
+                                     tabs))
+          (unless (and (= (length tab-label-cache-valid) (length current-paths))
+                       (andmap eq? tab-label-cache-valid current-paths))
+            (set! tab-label-cache-valid current-paths)
+            (set! tab-label-cache (make-hasheq)))
+          (hash-ref tab-label-cache 
+                    fn
+                    (lambda ()
+                      (define ans (compute-tab-label-from-filename fn))
+                      (hash-set! tab-label-cache fn ans)
+                      ans)))
+
+        (define/private (compute-tab-label-from-filename fn)
           (let* ([take-n
                   (λ (n lst)
                     (let loop ([n n]
