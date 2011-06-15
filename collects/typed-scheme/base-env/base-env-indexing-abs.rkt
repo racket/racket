@@ -23,11 +23,16 @@
    [build-list (-poly (a) (index-type (-Index . -> . a) . -> . (-lst a)))]
    [make-list (-poly (a) (index-type a . -> . (-lst a)))]
 
-   [string-ref (-> -String index-type -Char)]
-   [substring (->opt -String index-type [index-type] -String)]
+   ;Section 3.3
+
    [make-string (cl-> [(index-type) -String] [(index-type -Char) -String])]
+   [string-ref (-> -String index-type -Char)]
    [string-set! (-String index-type -Char . -> . -Void)]
+   [substring (->opt -String index-type [index-type] -String)]
    [string-copy! (-String index-type -String [index-type index-type] . ->opt . -Void)]
+   [build-string (index-type (index-type . -> . -Char) . -> . -String)]
+
+
 
    [read-string (index-type [-Input-Port] . ->opt . (Un -String (-val eof)))]
    [read-string! (-String [-Input-Port index-type index-type] . ->opt . (Un -Index (-val eof)))]
