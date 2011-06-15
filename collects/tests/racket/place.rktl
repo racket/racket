@@ -13,10 +13,10 @@
 
   (err/rt-test (place-wait 1))
   (err/rt-test (place-wait void))
-  (test 0 place-wait p)
+  (test (void) place-wait p)
 )
 
-(arity-test place 2 2)
+(arity-test dynamic-place 2 2)
 (arity-test place-wait 1 1)
 (arity-test place-channel 0 0)
 (arity-test place-channel-put 2 2)
