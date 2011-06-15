@@ -286,9 +286,10 @@ profile todo:
                          (if (null? stack)
                              '()
                              (list (car stack))))]
-           [stack-editions (map (λ (x) (srcloc->edition/pair defs ints x)) stack)]
+           [port-name-matches-cache (make-hasheq)]
+           [stack-editions (map (λ (x) (srcloc->edition/pair defs ints x port-name-matches-cache)) stack)]
            [src-locs-edition (and (pair? src-locs)
-                                  (srcloc->edition/pair defs ints (car src-locs)))])
+                                  (srcloc->edition/pair defs ints (car src-locs) port-name-matches-cache))])
       (print-planet-icon-to-stderr exn)
       (unless (exn:fail:user? exn)
         (unless (null? stack)
@@ -310,18 +311,22 @@ profile todo:
              ;; and still running here?
              (send ints highlight-errors src-locs stack)))))))
   
-  (define (srcloc->edition/pair defs ints srcloc)
+  (define (srcloc->edition/pair defs ints srcloc [port-name-matches-cache #f])
     (let ([src (srcloc-source srcloc)])
       (cond
         [(and (or (symbol? src)
                   (path? src))
               ints
-              (send ints port-name-matches? src))
+              (if port-name-matches-cache
+                  (hash-ref! port-name-matches-cache (cons ints src) (λ () (send ints port-name-matches? src)))
+                  (send ints port-name-matches? src)))
          (cons (make-weak-box ints) (send ints get-edition-number))]
         [(and (or (symbol? src)
                   (path? src))
               defs
-              (send defs port-name-matches? src))
+              (if port-name-matches-cache
+                  (hash-ref! port-name-matches-cache (cons defs src) (λ () (send defs port-name-matches? src)))
+                  (send defs port-name-matches? src)))
          (cons (make-weak-box defs) (send defs get-edition-number))]
         [(path? src)
          (let ([frame (send (group:get-the-frame-group) locate-file src)])
@@ -1072,6 +1077,8 @@ profile todo:
                [already-frozen-ht (make-hasheq)]
                [actions-ht (make-hash)]
                
+               [port-name-cache (make-hasheq)]
+               
                ;; can-annotate : (listof (list boolean srcloc))
                ;; boolean is #t => code was run
                ;;            #f => code was not run
@@ -1086,7 +1093,7 @@ profile todo:
                                        [span (syntax-span stx)])
                                    (and pos
                                         span
-                                        (send (get-defs) port-name-matches? src)
+                                        (hash-ref! port-name-cache src (λ () (send (get-defs) port-name-matches? src)))
                                         (list (mcar covered?)
                                               (make-srcloc (get-defs) #f #f pos span))))))))]
                
@@ -1743,12 +1750,16 @@ profile todo:
                [in-edit-sequence (make-hasheq)]
                [clear-highlight void]
                [max-value (extract-maximum infos)]
+               
+               [port-name-matches-cache (make-hasheq)]
                [show-highlight
                 (λ (info)
                   (let* ([expr (prof-info-expr info)]
                          [src (and (syntax-source expr)
-                                   (send definitions-text port-name-matches? (syntax-source expr))
-                                   definitions-text)]
+                                   definitions-text
+                                   (hash-ref! port-name-matches-cache
+                                              (syntax-source expr)
+                                              (λ () (send definitions-text port-name-matches? (syntax-source expr)))))]
                          [pos (syntax-position expr)]
                          [span (syntax-span expr)])
                     (when (and (is-a? src text:basic<%>)

@@ -522,24 +522,32 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:debug:srcloc->edition/pair
-  (-> srcloc?
-      (or/c #f (is-a?/c drracket:rep:text<%>))
-      (or/c #f (is-a?/c drracket:unit:definitions-text<%>))
-      (or/c #f (cons/c (let ([weak-box-containing-an-editor?
-                              (λ (x) (and (weak-box? x)
-                                          (let ([v (weak-box-value x)])
-                                            (or (not v)
-                                                (is-a?/c v editor<%>)))))])
-                         weak-box-containing-an-editor?)
-                       number?)))
-  (srcloc ints defs)
+  (->* (srcloc?
+        (or/c #f (is-a?/c drracket:rep:text<%>))
+        (or/c #f (is-a?/c drracket:unit:definitions-text<%>)))
+       ((or/c #f (and/c hash? hash-equal?)))
+       (or/c #f (cons/c (let ([weak-box-containing-an-editor?
+                               (λ (x) (and (weak-box? x)
+                                           (let ([v (weak-box-value x)])
+                                             (or (not v)
+                                                 (is-a?/c v editor<%>)))))])
+                          weak-box-containing-an-editor?)
+                        number?)))
+  ((srcloc ints defs)
+   ((cache #f)))
   @{Constructs a edition pair from a source location,
     returning the current edition of the editor editing
     the source location (if any).
     
     The @racket[ints] and @racket[defs] arguments are used to map source locations, 
     in the case that the source location corresponds to the definitions
-    window (when it has not been saved) or the interactions window.
+    window (when it has not been saved) or the interactions window. This calls
+    @racket[normalize-path], so to avoid the severe performance penalty that can
+    incur on some filesystems, the @racket[cache] argument is consulted and updated, 
+    when it is provided. Use this argument if you're calling 
+    @racket[drracket:debug:srcloc->edition/pair] a number of times in a loop, when you
+    do not expect the filesystem to change across iterations of the loop. The initial
+    argument should be an empty equal hash (e.g., @racket[(make-hash)]).
     })
  
  

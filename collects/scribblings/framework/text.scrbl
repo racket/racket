@@ -125,14 +125,17 @@
     See also
     @method[text:basic<%> port-name-matches?].
   }
-  @defmethod*[(((port-name-matches? (id any/c)) boolean?))]{
+  @defmethod[(port-name-matches? (id any/c)) boolean?]{
 
     Indicates if @scheme[id] matches the port name of this file. If
     the file is saved, the port name matches when the save file
     is the path as @scheme[id]. If the file has not been saved, the
     port name matches if the symbol is the same as the result of
-    @method[text:basic<%> port-name-matches?].
+    @method[text:basic<%> get-port-name].
 
+    This method calls @racket[normalize-path] and thus can be very
+    expensive on some filesystems. If it is called many times in a 
+    loop, cache the results to avoid calling it too often.    
   }
   @defmethod[(get-edition-number) exact-nonnegative-integer?]{
      Returns a number that increments every time something in
