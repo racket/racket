@@ -103,6 +103,13 @@
 [Module-Path -Module-Path]
 [Module-Path-Index -Module-Path-Index]
 [Compiled-Module-Expression -Compiled-Module-Expression]
+[Read-Table -Read-Table]
+[Special-Comment -Special-Comment]
+[Struct-Type-Property -Struct-Type-Property]
+[Pretty-Print-Style-Table -Pretty-Print-Style-Table]
+
+
+
 [Listof -Listof]
 [Vectorof (-poly (a) (make-Vector a))]
 [FlVector -FlVector]
