@@ -941,6 +941,25 @@
         (tc-e (string-locale-ci<? "a" "A") B)
         (tc-e (string-locale-ci>? "a" "A") B)
 
+        ;Symbols
+
+        (tc-e (symbol? 'foo) #:ret (ret B (-FS -top -bot)))
+        (tc-e (symbol? 2) #:ret (ret B (-FS -bot -top)))
+
+        (tc-e (symbol-interned? 'foo) B)
+        (tc-e (symbol-interned? (string->unreadable-symbol "bar")) B)
+        (tc-e (symbol-interned? (string->uninterned-symbol "bar")) B)
+        (tc-e (symbol-interned? (gensym 'foo)) B)
+
+        (tc-e (symbol-unreadable? (gensym)) B)
+        (tc-e (symbol-unreadable? 'foo) B)
+        (tc-e (string->unreadable-symbol "bar") -Symbol)
+        (tc-e (string->uninterned-symbol "bar") -Symbol)
+
+        (tc-e (symbol->string 'foo) -String)
+        (tc-e (string->symbol (symbol->string 'foo)) -Symbol)
+
+
 
         )
   (test-suite
