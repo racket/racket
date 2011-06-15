@@ -1,6 +1,6 @@
 #;
 (
-vector-set.rkt 9:1 vector-set! -- vector
+TR opt: vector-set.rkt 9:1 vector-set! -- vector
 )
 
 #lang typed/scheme

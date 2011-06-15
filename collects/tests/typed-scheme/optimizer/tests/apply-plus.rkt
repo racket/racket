@@ -1,7 +1,7 @@
 #;
 (
-apply-plus.rkt 12:7 + -- apply-map
-apply-plus.rkt 13:7 * -- apply-map
+TR opt: apply-plus.rkt 12:7 + -- apply-map
+TR opt: apply-plus.rkt 13:7 * -- apply-map
 9
 24
 )

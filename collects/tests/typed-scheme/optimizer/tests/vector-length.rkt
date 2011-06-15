@@ -1,6 +1,6 @@
 #;
 (
-vector-length.rkt 10:1 vector-length -- vector-length
+TR opt: vector-length.rkt 10:1 vector-length -- vector-length
 3
 )
 

@@ -1,19 +1,19 @@
 #;
 (
-invalid-unboxed-let.rkt 22:0 (let-values (((t1) (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i))) ((t2) (#%app + (quote 3.0+6.0i) (quote 4.0+8.0i))) ((t3) (quote 1.0+2.0i)) ((t4) (quote 1))) (#%app display (#%app + t1 t1)) (#%app display t2) (#%app display t3) (#%app display t4)) -- unboxed let bindings
-invalid-unboxed-let.rkt 22:11 + -- unboxed binary float complex
-invalid-unboxed-let.rkt 22:13 1.0+2.0i -- unboxed literal
-invalid-unboxed-let.rkt 22:22 2.0+4.0i -- unboxed literal
-invalid-unboxed-let.rkt 23:10 (#%app + (quote 3.0+6.0i) (quote 4.0+8.0i)) -- unboxed float complex
-invalid-unboxed-let.rkt 23:11 + -- unboxed binary float complex
-invalid-unboxed-let.rkt 23:13 3.0+6.0i -- unboxed literal
-invalid-unboxed-let.rkt 23:22 4.0+8.0i -- unboxed literal
-invalid-unboxed-let.rkt 26:11 (#%app + t1 t1) -- unboxed float complex
-invalid-unboxed-let.rkt 26:12 + -- unboxed binary float complex
-invalid-unboxed-let.rkt 26:14 t1 -- leave var unboxed
-invalid-unboxed-let.rkt 26:14 t1 -- unbox float-complex
-invalid-unboxed-let.rkt 26:17 t1 -- leave var unboxed
-invalid-unboxed-let.rkt 26:17 t1 -- unbox float-complex
+TR opt: invalid-unboxed-let.rkt 22:0 (let-values (((t1) (#%app + (quote 1.0+2.0i) (quote 2.0+4.0i))) ((t2) (#%app + (quote 3.0+6.0i) (quote 4.0+8.0i))) ((t3) (quote 1.0+2.0i)) ((t4) (quote 1))) (#%app display (#%app + t1 t1)) (#%app display t2) (#%app display t3) (#%app display t4)) -- unboxed let bindings
+TR opt: invalid-unboxed-let.rkt 22:11 + -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 22:13 1.0+2.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 22:22 2.0+4.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 23:10 (#%app + (quote 3.0+6.0i) (quote 4.0+8.0i)) -- unboxed float complex
+TR opt: invalid-unboxed-let.rkt 23:11 + -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 23:13 3.0+6.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 23:22 4.0+8.0i -- unboxed literal
+TR opt: invalid-unboxed-let.rkt 26:11 (#%app + t1 t1) -- unboxed float complex
+TR opt: invalid-unboxed-let.rkt 26:12 + -- unboxed binary float complex
+TR opt: invalid-unboxed-let.rkt 26:14 t1 -- leave var unboxed
+TR opt: invalid-unboxed-let.rkt 26:14 t1 -- unbox float-complex
+TR opt: invalid-unboxed-let.rkt 26:17 t1 -- leave var unboxed
+TR opt: invalid-unboxed-let.rkt 26:17 t1 -- unbox float-complex
 6.0+12.0i7.0+14.0i1.0+2.0i1)
 
 #lang typed/scheme

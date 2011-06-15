@@ -1,7 +1,7 @@
 #;
 (
-invalid-float-promotion.rkt 12:0 (#%app / (quote 1) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 12:8 (quote 1)
-invalid-float-promotion.rkt 13:0 (#%app * (quote 2/3) (quote 3.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 13:8 (quote 2/3)
+TR missed opt: invalid-float-promotion.rkt 12:0 (#%app / (quote 1) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 12:8 (quote 1)
+TR missed opt: invalid-float-promotion.rkt 13:0 (#%app * (quote 2/3) (quote 3.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 13:8 (quote 2/3)
 0.5
 2.0
 )

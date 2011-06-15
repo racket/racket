@@ -1,20 +1,20 @@
 #;
 (
-one-arg-arith.rkt 40:1 - -- unary fixnum
-one-arg-arith.rkt 41:1 - -- unary float
-one-arg-arith.rkt 42:1 / -- unary float
-one-arg-arith.rkt 44:1 + -- unary number
-one-arg-arith.rkt 45:1 + -- unary number
-one-arg-arith.rkt 46:1 + -- unary number
-one-arg-arith.rkt 47:1 * -- unary number
-one-arg-arith.rkt 48:1 * -- unary number
-one-arg-arith.rkt 49:1 * -- unary number
-one-arg-arith.rkt 50:1 min -- unary number
-one-arg-arith.rkt 51:1 min -- unary number
-one-arg-arith.rkt 52:1 min -- unary number
-one-arg-arith.rkt 53:1 max -- unary number
-one-arg-arith.rkt 54:1 max -- unary number
-one-arg-arith.rkt 55:1 max -- unary number
+TR opt: one-arg-arith.rkt 40:1 - -- unary fixnum
+TR opt: one-arg-arith.rkt 41:1 - -- unary float
+TR opt: one-arg-arith.rkt 42:1 / -- unary float
+TR opt: one-arg-arith.rkt 44:1 + -- unary number
+TR opt: one-arg-arith.rkt 45:1 + -- unary number
+TR opt: one-arg-arith.rkt 46:1 + -- unary number
+TR opt: one-arg-arith.rkt 47:1 * -- unary number
+TR opt: one-arg-arith.rkt 48:1 * -- unary number
+TR opt: one-arg-arith.rkt 49:1 * -- unary number
+TR opt: one-arg-arith.rkt 50:1 min -- unary number
+TR opt: one-arg-arith.rkt 51:1 min -- unary number
+TR opt: one-arg-arith.rkt 52:1 min -- unary number
+TR opt: one-arg-arith.rkt 53:1 max -- unary number
+TR opt: one-arg-arith.rkt 54:1 max -- unary number
+TR opt: one-arg-arith.rkt 55:1 max -- unary number
 -12
 -12.0
 0.23809523809523808

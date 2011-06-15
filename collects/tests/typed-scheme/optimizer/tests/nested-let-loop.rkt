@@ -1,36 +1,36 @@
 #;
 (
-#f (no location) (letrec-values (((loop1) (lambda (x r) (if (#%app null? x) r (#%app (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) (quote (3.0+6.0i 4.0+8.0i)) (quote 0.0+0.0i)))))) loop1) -- unboxed call site
-#f (no location) (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) -- unboxed call site
-nested-let-loop.rkt 40:6 loop1 -- fun -> unboxed fun
-nested-let-loop.rkt 40:6 loop1 -- unboxed function -> table
-nested-let-loop.rkt 40:6 loop1 -- unboxed let loop
-nested-let-loop.rkt 42:8 r -- unboxed var -> table
-nested-let-loop.rkt 42:28 0.0+0.0i -- unboxed literal
-nested-let-loop.rkt 44:10 r -- unboxed complex variable
-nested-let-loop.rkt 45:16 loop2 -- fun -> unboxed fun
-nested-let-loop.rkt 45:16 loop2 -- unboxed function -> table
-nested-let-loop.rkt 45:16 loop2 -- unboxed let loop
-nested-let-loop.rkt 47:18 s -- unboxed var -> table
-nested-let-loop.rkt 47:38 0.0+0.0i -- unboxed literal
-nested-let-loop.rkt 49:21 loop1 -- call to fun with unboxed args
-nested-let-loop.rkt 49:21 loop1 -- unboxed call site
-nested-let-loop.rkt 49:28 cdr -- pair
-nested-let-loop.rkt 49:35 (#%app + r s) -- unboxed float complex
-nested-let-loop.rkt 49:36 + -- unboxed binary float complex
-nested-let-loop.rkt 49:38 r -- leave var unboxed
-nested-let-loop.rkt 49:38 r -- unbox float-complex
-nested-let-loop.rkt 49:40 s -- leave var unboxed
-nested-let-loop.rkt 49:40 s -- unbox float-complex
-nested-let-loop.rkt 50:21 loop2 -- call to fun with unboxed args
-nested-let-loop.rkt 50:21 loop2 -- unboxed call site
-nested-let-loop.rkt 50:28 cdr -- pair
-nested-let-loop.rkt 50:36 + -- unboxed binary float complex
-nested-let-loop.rkt 50:38 s -- leave var unboxed
-nested-let-loop.rkt 50:40 (#%app car x) -- unbox float-complex
-nested-let-loop.rkt 50:41 car -- pair
-nested-let-loop.rkt 50:48 (#%app car y) -- unbox float-complex
-nested-let-loop.rkt 50:49 car -- pair
+TR opt: #f (no location) (letrec-values (((loop1) (lambda (x r) (if (#%app null? x) r (#%app (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) (quote (3.0+6.0i 4.0+8.0i)) (quote 0.0+0.0i)))))) loop1) -- unboxed call site
+TR opt: #f (no location) (letrec-values (((loop2) (lambda (y s) (if (#%app null? y) (#%app loop1 (#%app cdr x) (#%app + r s)) (#%app loop2 (#%app cdr y) (#%app + s (#%app car x) (#%app car y))))))) loop2) -- unboxed call site
+TR opt: nested-let-loop.rkt 40:6 loop1 -- fun -> unboxed fun
+TR opt: nested-let-loop.rkt 40:6 loop1 -- unboxed function -> table
+TR opt: nested-let-loop.rkt 40:6 loop1 -- unboxed let loop
+TR opt: nested-let-loop.rkt 42:8 r -- unboxed var -> table
+TR opt: nested-let-loop.rkt 42:28 0.0+0.0i -- unboxed literal
+TR opt: nested-let-loop.rkt 44:10 r -- unboxed complex variable
+TR opt: nested-let-loop.rkt 45:16 loop2 -- fun -> unboxed fun
+TR opt: nested-let-loop.rkt 45:16 loop2 -- unboxed function -> table
+TR opt: nested-let-loop.rkt 45:16 loop2 -- unboxed let loop
+TR opt: nested-let-loop.rkt 47:18 s -- unboxed var -> table
+TR opt: nested-let-loop.rkt 47:38 0.0+0.0i -- unboxed literal
+TR opt: nested-let-loop.rkt 49:21 loop1 -- call to fun with unboxed args
+TR opt: nested-let-loop.rkt 49:21 loop1 -- unboxed call site
+TR opt: nested-let-loop.rkt 49:28 cdr -- pair
+TR opt: nested-let-loop.rkt 49:35 (#%app + r s) -- unboxed float complex
+TR opt: nested-let-loop.rkt 49:36 + -- unboxed binary float complex
+TR opt: nested-let-loop.rkt 49:38 r -- leave var unboxed
+TR opt: nested-let-loop.rkt 49:38 r -- unbox float-complex
+TR opt: nested-let-loop.rkt 49:40 s -- leave var unboxed
+TR opt: nested-let-loop.rkt 49:40 s -- unbox float-complex
+TR opt: nested-let-loop.rkt 50:21 loop2 -- call to fun with unboxed args
+TR opt: nested-let-loop.rkt 50:21 loop2 -- unboxed call site
+TR opt: nested-let-loop.rkt 50:28 cdr -- pair
+TR opt: nested-let-loop.rkt 50:36 + -- unboxed binary float complex
+TR opt: nested-let-loop.rkt 50:38 s -- leave var unboxed
+TR opt: nested-let-loop.rkt 50:40 (#%app car x) -- unbox float-complex
+TR opt: nested-let-loop.rkt 50:41 car -- pair
+TR opt: nested-let-loop.rkt 50:48 (#%app car y) -- unbox float-complex
+TR opt: nested-let-loop.rkt 50:49 car -- pair
 20.0+40.0i
 )
 

@@ -1,7 +1,7 @@
 #;
 (
-unary-fixnum-nested.rkt 11:1 bitwise-not -- unary fixnum
-unary-fixnum-nested.rkt 11:14 bitwise-not -- unary fixnum
+TR opt: unary-fixnum-nested.rkt 11:1 bitwise-not -- unary fixnum
+TR opt: unary-fixnum-nested.rkt 11:14 bitwise-not -- unary fixnum
 3
 )
 

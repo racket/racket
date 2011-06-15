@@ -1,6 +1,6 @@
 #;
 (
-double-float.rkt 10:1 + -- binary float
+TR opt: double-float.rkt 10:1 + -- binary float
 6.0
 )
 

@@ -1,6 +1,6 @@
 #;
 (
-pair-fun.rkt 13:7 car -- pair
+TR opt: pair-fun.rkt 13:7 car -- pair
 )
 
 #lang typed/scheme

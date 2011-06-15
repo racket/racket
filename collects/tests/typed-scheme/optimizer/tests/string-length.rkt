@@ -1,7 +1,7 @@
 #;
 (
-#f (no location) op -- string-length
-#f (no location) op -- bytes-length
+TR opt: #f (no location) op -- string-length
+TR opt: #f (no location) op -- bytes-length
 2
 2
 )

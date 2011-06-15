@@ -1,6 +1,6 @@
 #;
 (
-literal-int.rkt 13:1 + -- binary float
+TR opt: literal-int.rkt 13:1 + -- binary float
 3.0
 1
 )

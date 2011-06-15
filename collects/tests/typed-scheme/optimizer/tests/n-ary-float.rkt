@@ -1,6 +1,6 @@
 #;
 (
-n-ary-float.rkt 10:1 + -- binary float
+TR opt: n-ary-float.rkt 10:1 + -- binary float
 6.0
 )
 

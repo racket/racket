@@ -1,6 +1,6 @@
 #;
 (
-simple-pair.rkt 10:1 car -- pair
+TR opt: simple-pair.rkt 10:1 car -- pair
 1
 )
 

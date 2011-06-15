@@ -1,8 +1,8 @@
 #;
 (
-sqrt-segfault.rkt 18:15 - -- binary float
-sqrt-segfault.rkt 19:15 * -- binary float
-sqrt-segfault.rkt 20:31 (#%app sqrt dist2) -- unexpected complex type
+TR opt: sqrt-segfault.rkt 18:15 - -- binary float
+TR opt: sqrt-segfault.rkt 19:15 * -- binary float
+TR missed opt: sqrt-segfault.rkt 20:31 (#%app sqrt dist2) -- unexpected complex type
 )
 
 #lang typed/scheme

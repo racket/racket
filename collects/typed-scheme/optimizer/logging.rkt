@@ -27,15 +27,16 @@
 ;; a problem per se)
 (define log-so-far (set))
 
-(define (gen-log-message msg stx)
-  (format "~a ~a ~a -- ~a"
+(define (gen-log-message msg stx from)
+  (format "~a: ~a ~a ~a -- ~a"
+          from
           (syntax-source-file-name stx)
           (line+col->string stx)
           (syntax->datum stx)
           msg))
 
-(define (log-optimization msg stx)
-  (let* ([new-message (gen-log-message msg stx)]
+(define (log-optimization msg stx #:from [from "TR opt"])
+  (let* ([new-message (gen-log-message msg stx from)]
          [new-entry (log-entry new-message (syntax-position stx))])
     (unless (set-member? log-so-far new-entry)
       (set! log-so-far (set-add log-so-far new-entry)))))
@@ -46,7 +47,8 @@
   (define logger (current-logger))
   ;; add missed optimizations messages to the log, now that we know all of them
   (for-each (lambda (x) (log-optimization (format-missed-optimization x)
-                                          (missed-optimization-stx x)))
+                                          (missed-optimization-stx x)
+                                          #:from "TR missed opt"))
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))

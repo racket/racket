@@ -1,6 +1,6 @@
 #;
 (
-#f (no location) make-sequence -- in-vector
+TR opt: #f (no location) make-sequence -- in-vector
 123)
 
 #lang typed/scheme

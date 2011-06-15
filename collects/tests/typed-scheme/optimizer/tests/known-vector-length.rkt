@@ -1,7 +1,7 @@
 #;
 (
-known-vector-length.rkt 11:1 + -- fixnum bounded expr
-known-vector-length.rkt 11:6 vector-length -- known-length vector-length
+TR opt: known-vector-length.rkt 11:1 + -- fixnum bounded expr
+TR opt: known-vector-length.rkt 11:6 vector-length -- known-length vector-length
 4
 )
 

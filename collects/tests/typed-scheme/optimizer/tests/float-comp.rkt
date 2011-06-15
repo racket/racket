@@ -1,6 +1,6 @@
 #;
 (
-float-comp.rkt 10:1 < -- binary float comp
+TR opt: float-comp.rkt 10:1 < -- binary float comp
 #t
 )
 

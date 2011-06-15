@@ -1,6 +1,6 @@
 #;
 (
-vector-ref2.rkt 10:1 vector-ref -- vector
+TR opt: vector-ref2.rkt 10:1 vector-ref -- vector
 1
 )
 

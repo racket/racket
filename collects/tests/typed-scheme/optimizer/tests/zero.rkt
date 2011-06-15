@@ -1,8 +1,8 @@
 #;
 (
-zero.rkt 13:1 zero? -- fixnum zero?
-zero.rkt 14:1 zero? -- float zero?
-zero.rkt 14:8 sqrt -- unary float
+TR opt: zero.rkt 13:1 zero? -- fixnum zero?
+TR opt: zero.rkt 14:1 zero? -- float zero?
+TR opt: zero.rkt 14:8 sqrt -- unary float
 #f
 #f
 )

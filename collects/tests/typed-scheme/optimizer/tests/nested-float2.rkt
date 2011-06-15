@@ -1,7 +1,7 @@
 #;
 (
-nested-float2.rkt 11:1 + -- binary float
-nested-float2.rkt 11:8 * -- binary float
+TR opt: nested-float2.rkt 11:1 + -- binary float
+TR opt: nested-float2.rkt 11:8 * -- binary float
 14.0
 )
 

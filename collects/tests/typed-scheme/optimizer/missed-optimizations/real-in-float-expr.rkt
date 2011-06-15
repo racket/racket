@@ -1,9 +1,9 @@
 #;
 (
-real-in-float-expr.rkt 17:0 (#%app * (quote 3) (quote 2.3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 17:8 (quote 3)
-real-in-float-expr.rkt 22:1 * -- fixnum bounded expr
-real-in-float-expr.rkt 23:1 + -- fixnum bounded expr
-real-in-float-expr.rkt 26:0 (#%app * (quote 2) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 26:8 (quote 2)
+TR missed opt: real-in-float-expr.rkt 17:0 (#%app * (quote 3) (quote 2.3)) -- binary, args all float-arg-expr, return type not Float -- caused by: 17:8 (quote 3)
+TR opt: real-in-float-expr.rkt 22:1 * -- fixnum bounded expr
+TR opt: real-in-float-expr.rkt 23:1 + -- fixnum bounded expr
+TR missed opt: real-in-float-expr.rkt 26:0 (#%app * (quote 2) (quote 2.0)) -- binary, args all float-arg-expr, return type not Float -- caused by: 26:8 (quote 2)
  6.8999999999999995
  6
  5
