@@ -1,6 +1,6 @@
 #;
 (
-with-type.rkt line 13 col 19 - + - binary float
+with-type.rkt 13:19 + -- binary float
 34.6
 )
 
