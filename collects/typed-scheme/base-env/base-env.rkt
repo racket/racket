@@ -202,7 +202,6 @@
 #;[*list? (make-pred-ty (-lst Univ))]
 
 [null? (make-pred-ty (-val null))]
-[eof-object? (make-pred-ty (-val eof))]
 [null (-val null)]
 [char? (make-pred-ty -Char)]
 
@@ -234,16 +233,7 @@
 		      (-> (Un a (-val #f)) a)))]
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 
-[open-input-string (-> -String -Input-Port)]
-[open-input-bytes (-> -Bytes -Input-Port)]
-[open-output-file
- (->key -Pathlike
-        #:mode (one-of/c 'binary 'text) #f
-        #:exists (one-of/c 'error 'append 'update 'can-update
-                           'replace 'truncate
-                           'must-truncate 'truncate/replace)
-        #f
-        -Output-Port)]
+
 [read (->opt [-Input-Port] Univ)]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
 [andmap (-polydots (a c d b) (cl->*
@@ -498,16 +488,6 @@
 
 
 
-[with-input-from-file
- (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
-[with-output-to-file
- (-poly (a) (->key -Pathlike (-> a)
-                   #:exists (one-of/c 'error 'append 'update 'can-update
-                           'replace 'truncate
-                           'must-truncate 'truncate/replace)
-                   #f
-                   #:mode (one-of/c 'binary 'text) #f
-                   a))]
 
 
 [assq  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
@@ -617,15 +597,7 @@
 
 
 
-[call-with-input-file (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
-[call-with-output-file (-poly (a) (-Pathlike (-Output-Port . -> . a)
-                                   #:exists (one-of/c error 'append 'update 'replace 'truncate 'truncate/replace) #f
-                                   #:mode (Un (-val 'binary) (-val 'text)) #f
-                                   . ->key .  a))]
 
-[current-output-port (-Param -Output-Port -Output-Port)]
-[current-error-port (-Param -Output-Port -Output-Port)]
-[current-input-port (-Param -Input-Port -Input-Port)]
 [seconds->date (-Integer . -> . (make-Name #'date))]
 [current-seconds (-> -Integer)]
 [current-print (-Param (Univ . -> . Univ) (Univ . -> . Univ))]
@@ -816,16 +788,8 @@
 [bytes=? (->* (list -Bytes) -Bytes B)]
 
 [read-bytes-line (->opt [-Input-Port Sym] (Un -Bytes (-val eof)))]
-[open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
-[close-input-port (-> -Input-Port -Void)]
-[close-output-port (-> -Output-Port -Void)]
 [read-line  (->opt [-Input-Port Sym] (Un -String (-val eof)))]
 [copy-file (-> -Pathlike -Pathlike -Void)]
-[flush-output (->opt [-Output-Port] -Void)]
-[file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
-                               [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
-[file-position (cl-> [(-Port) -Nat]
-                     [(-Port -Integer) -Void])]
 
 [force (-poly (a) (-> (-Promise a) a))]
 [regexp-replace*
@@ -836,18 +800,9 @@
 [read-byte
  (cl->* [-> (Un -Byte (-val eof))]
         [-Input-Port . -> . (Un -Byte (-val eof))])]
-[make-pipe
- (cl->* [->opt [N] (-values (list -Input-Port -Output-Port))])]
-[open-output-string 
- ([Univ] . ->opt . -Output-Port)]
-[open-output-bytes
- ([Univ] . ->opt . -Output-Port)]
-[get-output-bytes (-Output-Port [Univ N N] . ->opt . -Bytes)]
 [char-ready? (->opt [-Input-Port] B)]
 [byte-ready? (->opt [-Input-Port] B)]
 
-;; FIXME - this is too general
-[get-output-string (-> -Output-Port -String)]
 
 [make-directory (-> -Pathlike -Void)]
 
@@ -906,7 +861,6 @@
 [values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
 [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
 
-[eof (-val eof)]
 [read-accept-reader (-Param B B)]
 
 [maybe-print-message (-String . -> . -Void)]
@@ -994,23 +948,6 @@
 
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
-
-;; scheme/port
-[port->lines (cl->* ([-Input-Port] . ->opt . (-lst -String)))]
-[port->bytes-lines (cl->* ([-Input-Port] . ->opt . (-lst -Bytes)))]
-[port->list
- (-poly (a) (cl->*
-  (-> (-lst Univ))
-  (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
-[port->bytes (->opt [-Input-Port] -Bytes)]
-[port->string (->opt [-Input-Port] -String)]
-[with-output-to-string
-  (-> (-> Univ) -String)]
-[open-output-nowhere (-> -Output-Port)]
-[copy-port (->* (list -Input-Port -Output-Port) -Output-Port -Void)]
-
-[input-port? (make-pred-ty -Input-Port)]
-[output-port? (make-pred-ty -Output-Port)]
 
 ;; scheme/path
 
@@ -1230,3 +1167,210 @@
 ; syntax/stx (needed for `with-syntax')
 [stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
 [stx-list? (-> (-Syntax Univ) -Boolean)]
+
+;Section 12
+
+;Section 12.1 (Ports)
+
+;Section 12.1.1
+[current-locale (-Param -String -String)]
+
+;Section 12.1.2
+
+[input-port? (make-pred-ty -Input-Port)]
+[output-port? (make-pred-ty -Output-Port)]
+[port? (make-pred-ty -Port)]
+
+
+[close-input-port (-> -Input-Port -Void)]
+[close-output-port (-> -Output-Port -Void)]
+
+[port-closed? (-> -Port B)]
+
+[current-input-port (-Param -Input-Port -Input-Port)]
+[current-output-port (-Param -Output-Port -Output-Port)]
+[current-error-port (-Param -Output-Port -Output-Port)]
+
+
+[file-stream-port? (-> Univ B)]
+[terminal-port? (-> Univ B)]
+
+[eof (-val eof)]
+[eof-object? (make-pred-ty (-val eof))]
+
+;Section 12.1.3
+[flush-output (->opt [-Output-Port] -Void)]
+[file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
+                               [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
+[file-position (cl-> [(-Port) -Nat]
+                     [(-Port -Integer) -Void])]
+
+;Section 12.1.4
+[port-count-lines! (-> (Un -Input-Port -Output-Port) -Void)]
+[port-next-location (-> (Un -Input-Port -Output-Port) (-values (list (-opt -PosInt) (-opt -Nat) (-opt -PosInt))))]
+[port-count-lines-enabled (-Param Univ B)]
+
+;Section 12.1.5
+[open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
+[open-output-file
+ (->key -Pathlike
+        #:mode (one-of/c 'binary 'text) #f
+        #:exists (one-of/c 'error 'append 'update 'can-update
+                           'replace 'truncate
+                           'must-truncate 'truncate/replace)
+        #f
+        -Output-Port)]
+[open-input-output-file
+ (->key -Pathlike
+        #:mode (one-of/c 'binary 'text) #f
+        #:exists (one-of/c 'error 'append 'update 'can-update
+                           'replace 'truncate
+                           'must-truncate 'truncate/replace)
+        #f
+        (-values (list -Input-Port -Output-Port)))]
+
+
+[call-with-input-file (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
+[call-with-output-file (-poly (a) (-Pathlike (-Output-Port . -> . a)
+                                   #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
+                                   #:mode (Un (-val 'binary) (-val 'text)) #f
+                                   . ->key .  a))]
+[call-with-input-file* (-poly (a) (-Pathlike (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
+[call-with-output-file* (-poly (a) (-Pathlike (-Output-Port . -> . a)
+                                   #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
+                                   #:mode (Un (-val 'binary) (-val 'text)) #f
+                                   . ->key .  a))]
+
+[with-input-from-file
+ (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
+[with-output-to-file
+ (-poly (a) (->key -Pathlike (-> a)
+                   #:exists (one-of/c 'error 'append 'update 'can-update
+                           'replace 'truncate
+                           'must-truncate 'truncate/replace)
+                   #f
+                   #:mode (one-of/c 'binary 'text) #f
+                   a))]
+
+
+[port-try-file-lock? (-> (Un -Input-Port -Output-Port) (Un (-val 'shared) (-val 'exclusive)) B)]
+[port-file-unlock (-> (Un -Input-Port -Output-Port) -Void)]
+[port-file-identity (-> (Un -Input-Port -Output-Port) -PosInt)]
+
+;12.1.6
+
+[open-input-string (-> -String -Input-Port)]
+[open-input-bytes (-> -Bytes -Input-Port)]
+[open-output-string 
+ ([Univ] . ->opt . -Output-Port)]
+[open-output-bytes
+ ([Univ] . ->opt . -Output-Port)]
+[get-output-bytes (-Output-Port [Univ N N] . ->opt . -Bytes)]
+[get-output-string (-> -Output-Port -String)]
+
+
+;12.1.7
+
+[make-pipe
+ (cl->* [->opt [N] (-values (list -Input-Port -Output-Port))])]
+[pipe-content-length (-> (Un -Input-Port -Output-Port) -Nat)]
+
+;12.1.8
+
+[prop:input-port -Struct-Type-Property]
+[prop:output-port -Struct-Type-Property]
+
+;12.1.9
+
+;make-input-port
+;make-output-port
+
+;12.1.10
+
+
+;12.1.10.1
+[port->list
+ (-poly (a) (cl->*
+  (-> (-lst Univ))
+  (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
+[port->string (->opt [-Input-Port] -String)]
+[port->bytes (->opt [-Input-Port] -Bytes)]
+[port->lines
+ (cl->*
+  (->key #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f (-lst -String))
+  (->key -Input-Port #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f (-lst -String)))]
+[port->bytes-lines
+ (cl->*
+  (->key #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f (-lst -Bytes))
+  (->key -Input-Port #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f (-lst -Bytes)))]
+
+[display-lines (cl->*
+ ((-lst Univ) #:seperator Univ #f . ->key . -Void)
+ ((-lst Univ) -Output-Port #:seperator Univ #f . ->key . -Void))]
+
+
+[call-with-output-string (-> (-> -Output-Port ManyUniv) -String)]
+[call-with-output-bytes (-> (-> -Output-Port ManyUniv) -Bytes)]
+
+[with-output-to-string
+  (-> (-> ManyUniv) -String)]
+[with-output-to-bytes
+  (-> (-> ManyUniv) -Bytes)]
+
+[call-with-input-string (-poly (a) (-> -String (-> -Input-Port a) a))]
+[call-with-input-bytes (-poly (a) (-> -Bytes (-> -Input-Port a) a))]
+
+[with-input-from-string (-poly (a) (-> -String (-> a) a))]
+[with-input-from-bytes (-poly (a) (-> -Bytes (-> a) a))]
+
+
+;12.1.10.2
+
+[input-port-append  (->* (list Univ) -Input-Port -Input-Port)]
+
+;make-input-port/read-to-peek
+
+[make-limited-input-port (->opt -Input-Port -Nat [Univ] -Input-Port)]
+[make-pipe-with-specials (->opt [-Nat Univ Univ] (-values (list -Input-Port -Output-Port)))]
+
+[merge-input (->opt -Input-Port -Input-Port [(-opt -Nat)] -Input-Port)]
+[open-output-nowhere (-> -Output-Port)]
+[peeking-input-port (->opt -Input-Port [Univ -Nat] -Input-Port)]
+
+[reencode-input-port 
+ (->opt -Input-Port -String (-opt -Bytes) [Univ Univ Univ (-> -String -Input-Port ManyUniv)] -Input-Port)]
+[reencode-output-port 
+ (->opt -Output-Port -String (-opt -Bytes) [Univ Univ (-opt -Bytes) (-> -String -Output-Port ManyUniv)] -Output-Port)]
+
+[dup-input-port (-Input-Port (B) . ->opt . -Input-Port)]
+[dup-output-port (-Output-Port (B) . ->opt . -Input-Port)]
+
+[relocate-input-port (->opt -Input-Port (-opt -PosInt) (-opt -Nat) -PosInt [Univ] -Input-Port)]
+[relocate-output-port (->opt -Output-Port (-opt -PosInt) (-opt -Nat) -PosInt [Univ] -Output-Port)]
+
+[transplant-input-port (->opt -Input-Port (-opt (-> (-values (list (-opt -PosInt) (-opt -Nat) (-opt -PosInt))))) -PosInt [Univ (-> ManyUniv)] -Input-Port)]
+[transplant-output-port (->opt -Output-Port (-opt (-> (-values (list (-opt -PosInt) (-opt -Nat) (-opt -PosInt))))) -PosInt [Univ (-> ManyUniv)] -Output-Port)]
+
+;12.1.10.3
+
+;eof-evt
+;read-bytes-evt
+;read-bytes!-evt
+;read-bytes-avail!-evt
+;read-string-evt
+;read-string!-evt
+;read-line-evt
+;read-bytes-line-evt
+;peek-bytes-evt
+;peek-bytes!-evt
+;peek-bytes-avail!-evt
+;peek-string-evt
+;peek-string!-evt
+;regexp-match-evt
+
+;12.1.10.4
+
+[convert-stream (-> -String -Input-Port -String -Output-Port -Void)]
+[copy-port (->* (list -Input-Port -Output-Port) -Output-Port -Void)]
+
+
