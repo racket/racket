@@ -191,7 +191,7 @@
                                    rev-open-points)))
 
     (def/public (arc [real? x] [real? y] 
-                     [nonnegative-real? w] [nonnegative-real? h]
+                     [real? w] [real? h]
                      [real? start] [real? end] [any? [ccw? #t]])
       (do-arc x y w h start end ccw?))
     
@@ -209,6 +209,8 @@
             ;; Change top-left to center:
             (let ([x (+ x (/ w 2.0))]
                   [y (+ y (/ h 2.0))]
+                  [w (abs w)]
+                  [h (abs h)]
                   [pts null])
               ;; make up to 4 curves to represent the arc:
               (let loop ([start start]
@@ -382,13 +384,13 @@
                          (* (min w h) (- radius))
                          radius))])
         (move-to (+ x (- w dx)) y)
-        (arc (+ x (- w (* 2 dx))) y (* 2 dx) (* 2 dy) pi/2 0.0 #f)
+        (arc (+ x w) y (* -2 dx) (* 2 dy) pi/2 0.0 #f)
         (line-to (+ x w) (+ y dy))
         (line-to (+ x w) (+ y (- h dy)))
-        (arc (+ x (- w (* 2 dx))) (+ y (- h (* 2 dy))) (* 2 dx) (* 2 dy) 0 (- pi/2) #f)
+        (arc (+ x w) (+ y h) (* -2 dx) (* -2 dy) 0 (- pi/2) #f)
         (line-to (+ x (- w dx)) (+ y h))
         (line-to (+ x dx) (+ y h))
-        (arc x (+ y (- h (* 2 dy))) (* 2 dx) (* 2 dy) (- pi/2) (- pi) #f)
+        (arc x (+ y h) (* 2 dx) (* -2 dy) (- pi/2) (- pi) #f)
         (line-to x (+ y (- h dy)))
         (line-to x (+ y dy))
         (arc x y (* 2 dx) (* 2 dy) pi pi/2 #f)

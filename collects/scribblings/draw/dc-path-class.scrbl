@@ -57,19 +57,30 @@ Adds the sub-paths of @scheme[path] to @this-obj[]. @tech{Closed
 
 @defmethod[(arc [x real?]
                 [y real?]
-                [width (and/c real? (not/c negative?))]
-                [height (and/c real? (not/c negative?))]
+                [width real?]
+                [height real?]
                 [start-radians real?]
                 [end-radians real?]
                 [counter-clockwise? any/c #t])
            void?]{
 
 Extends or starts the path's @tech{open sub-path} with a curve that
- corresponds to a section of an ellipse. The ellipse is the one
+ corresponds to a section of an ellipse. If @racket[width] and @racket[height]
+ are non-negative, the ellipse is the one
  bounded by a rectangle whose top-left corner is @math{(@scheme[x],
  @scheme[y])} and whose dimensions are @scheme[width] by
- @scheme[height]. The ellipse section starts a the angle
- @scheme[start-radians] (@scheme[0] is three o'clock and half-pi is
+ @scheme[height]; if @racket[width] is negative, then 
+ the rectangle's right edge is @racket[x], and the ellipse
+ width is @racket[(abs width)], while a negative @racket[height]
+ similarly makes @racket[y] is the bottom edge of the ellipse and
+ the height @racket[(abs height)].
+ @margin-note*{Support for negative @racket[width] and @racket[height]
+ helps avoid round-off problems for aligned drawing in an eventual 
+ destination, since @method[dc-path% arc] reduces its input to a sequence of curves.
+ In contrast, @xmethod[dc<%> draw-arc] can automatically correct for round off,
+ since the drawing mode is known immediately.}
+ The ellipse section starts a the angle
+ @scheme[start-radians] (@scheme[0] is three o'clock and half-π is
  twelve o'clock) and continues to the angle @scheme[end-radians]; if
  @scheme[counter-clockwise?] is true, then the arc runs
  counter-clockwise from @scheme[start-radians] to
