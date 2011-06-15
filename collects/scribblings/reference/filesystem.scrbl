@@ -330,7 +330,7 @@ such file exists).}
 
 
 @defproc[(file-or-directory-identity [path path-string?]
-                                     [as-link? any/c #f]) 
+                                     [as-link? any/c #f])
          exact-positive-integer?]{
 
 @index['("inode")]{Returns} a number that represents the identity of
@@ -1105,15 +1105,15 @@ to the file portion of the path.
   (make-lock-file-name "/home/george/project/important-file")]}
 
 @deftogether[(
-@defthing[user-read-bit    @#,schemevalfont{#o100}]
-@defthing[user-write-bit   @#,schemevalfont{#o200}]
-@defthing[user-execute-bit @#,schemevalfont{#o400}]
-@defthing[group-read-bit    @#,schemevalfont{#o010}]
+@defthing[user-read-bit     @#,schemevalfont{#o400}]
+@defthing[user-write-bit    @#,schemevalfont{#o200}]
+@defthing[user-execute-bit  @#,schemevalfont{#o100}]
+@defthing[group-read-bit    @#,schemevalfont{#o040}]
 @defthing[group-write-bit   @#,schemevalfont{#o020}]
-@defthing[group-execute-bit @#,schemevalfont{#o040}]
-@defthing[other-read-bit    @#,schemevalfont{#o001}]
+@defthing[group-execute-bit @#,schemevalfont{#o010}]
+@defthing[other-read-bit    @#,schemevalfont{#o004}]
 @defthing[other-write-bit   @#,schemevalfont{#o002}]
-@defthing[other-execute-bit @#,schemevalfont{#o004}]
+@defthing[other-execute-bit @#,schemevalfont{#o001}]
 )]{
 
 Constants that are useful with @racket[file-or-directory-permissions]

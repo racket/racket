@@ -26,7 +26,7 @@
          write-to-file
          display-lines-to-file
 
-         user-read-bit     
+         user-read-bit
          user-write-bit
          user-execute-bit
          group-read-bit
@@ -599,12 +599,12 @@
   (->file 'display-lines-to-file f mode exists
           (lambda (p) (do-lines->port l p newline))))
 
-(define user-read-bit     #o100)
+(define user-read-bit     #o400)
 (define user-write-bit    #o200)
-(define user-execute-bit  #o400)
-(define group-read-bit    #o010)
+(define user-execute-bit  #o100)
+(define group-read-bit    #o040)
 (define group-write-bit   #o020)
-(define group-execute-bit #o040)
-(define other-read-bit    #o001)
+(define group-execute-bit #o010)
+(define other-read-bit    #o004)
 (define other-write-bit   #o002)
-(define other-execute-bit #o004)
+(define other-execute-bit #o001)
