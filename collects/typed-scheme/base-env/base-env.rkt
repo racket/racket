@@ -191,7 +191,7 @@
 		      (-> (Un a (-val #f)) a)))]
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 [gensym (->opt [Sym] Sym)]
-[string-append (->* null -String -String)]
+
 [open-input-string (-> -String -Input-Port)]
 [open-input-bytes (-> -Bytes -Input-Port)]
 [open-output-file
@@ -234,10 +234,89 @@
 [channel-try-get (-poly (a) ((-channel a) . -> . (Un a (-val #f))))]
 [channel-put (-poly (a) ((-channel a) a . -> . -Void))]
 
+
+
+;Section 3.3
+
 [string? (make-pred-ty -String)]
+;make-string (in Index)
 [string (->* '() -Char -String)]
+
+[string->immutable-string (-> -String -String)]
+
 [string-length (-String . -> . -Index)]
 [unsafe-string-length (-String . -> . -Index)]
+
+;string-ref (in Index)
+;string-set! (in Index)
+;substring (in Index)
+
+[string-copy (-> -String -String)]
+;string-copy! (in Index)
+[string-fill! (-> -String -Char -Void)]
+
+[string-append (->* null -String -String)]
+
+
+
+
+
+[string->list (-String . -> . (-lst -Char))]
+[list->string ((-lst -Char) . -> . -String)]
+;build-string (in Index)
+
+
+
+[string=? (->* (list -String -String) -String B)]
+[string<? (->* (list -String -String) -String B)]
+[string<=? (->* (list -String -String) -String B)]
+[string>? (->* (list -String -String) -String B)]
+[string>=? (->* (list -String -String) -String B)]
+
+
+
+[string-ci=? (->* (list -String -String) -String B)]
+[string-ci<? (->* (list -String -String) -String B)]
+[string-ci<=? (->* (list -String -String) -String B)]
+[string-ci>? (->* (list -String -String) -String B)]
+[string-ci>=? (->* (list -String -String) -String B)]
+
+[string-upcase (-> -String -String)]
+[string-downcase (-> -String -String)]
+[string-titlecase (-> -String -String)]
+[string-foldcase (-> -String -String)]
+
+
+[string-normalize-nfd (-> -String -String)]
+[string-normalize-nfkd (-> -String -String)]
+[string-normalize-nfc (-> -String -String)]
+[string-normalize-nfkc (-> -String -String)]
+
+
+
+[string-locale=? (->* (list -String -String) -String B)]
+[string-locale<? (->* (list -String -String) -String B)]
+[string-locale>? (->* (list -String -String) -String B)]
+
+
+
+[string-locale-ci=? (->* (list -String -String) -String B)]
+[string-locale-ci<? (->* (list -String -String) -String B)]
+[string-locale-ci>? (->* (list -String -String) -String B)]
+
+[string-locale-upcase (-> -String -String)]
+[string-locale-downcase (-> -String -String)]
+
+
+
+; racket/string
+[string-append*
+ (cl->* (-> (-lst -String) -String)
+        (-> -String (-lst -String) -String))]
+
+[string-join (-> (-lst -String) -String -String)]
+
+
 
 [symbol? (make-pred-ty Sym)]
 [keyword? (make-pred-ty -Keyword)]
@@ -333,9 +412,6 @@
 [member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
 [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
 
-[string<? (->* (list -String -String) -String B)]
-[string>? (->* (list -String -String) -String B)]
-[string=? (->* (list -String -String) -String B)]
 [char=? (->* (list -Char -Char) -Char B)]
 [char<=? (->* (list -Char -Char) -Char B)]
 [char>=? (->* (list -Char -Char) -Char B)]
@@ -346,8 +422,6 @@
 [char-ci>=? (->* (list -Char -Char) -Char B)]
 [char-ci>? (->* (list -Char -Char) -Char B)]
 [char-ci<? (->* (list -Char -Char) -Char B)]
-[string<=? (->* (list -String -String) -String B)]
-[string>=? (->* (list -String -String) -String B)]
 
 [char-alphabetic? (-> -Char B)]
 [char-lower-case? (-> -Char B)]
@@ -365,16 +439,6 @@
     pc po sc sm sk so zs zp zl cc cf cs co cn))))]
 [make-known-char-range-list (-> (-lst (-Tuple (list -PosInt -PosInt B))))]
 
-[string-ci<? (->* (list -String -String) -String B)]
-[string-ci>? (->* (list -String -String) -String B)]
-[string-ci=? (->* (list -String -String) -String B)]
-[string-ci<=? (->* (list -String -String) -String B)]
-[string-ci>=? (->* (list -String -String) -String B)]
-
-[string-upcase (-> -String -String)]
-[string-downcase (-> -String -String)]
-[string-titlecase (-> -String -String)]
-[string-foldcase (-> -String -String)]
 [char-upcase (-> -Char -Char)]
 [char-downcase (-> -Char -Char)]
 [char-titlecase (-> -Char -Char)]
@@ -383,13 +447,7 @@
 [integer->char (-> -Integer -Char)]
 [char-utf-8-length (-> -Char (apply Un (map -val '(1 2 3 4 5 6))))]
 
-[string-normalize-nfd (-> -String -String)]
-[string-normalize-nfkd (-> -String -String)]
-[string-normalize-nfc (-> -String -String)]
-[string-normalize-nfkc (-> -String -String)]
 
-[string-copy (-> -String -String)]
-[string->immutable-string (-> -String -String)]
 
 
 [with-input-from-file
@@ -807,10 +865,6 @@
 
 [maybe-print-message (-String . -> . -Void)]
 
-[list->string ((-lst -Char) . -> . -String)]
-[string->list (-String . -> . (-lst -Char))]
-[build-string (-Nat (-Index . -> . -Char) . -> . -String)]
-
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
                           #:cache-keys? B #f
                           . ->key . (-lst a))
@@ -999,11 +1053,6 @@
  (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
 
 
-;; racket/string
-[string-join (-> (-lst -String) -String -String)]
-[string-append*
- (cl->* (-> (-lst -String) -String)
-        (-> -String (-lst -String) -String))]
 
 ;; scheme/system
 [system ((Un -String -Bytes) . -> . -Boolean)]
