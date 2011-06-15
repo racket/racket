@@ -6,7 +6,6 @@
          (private with-types type-contract)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match
-         (optimizer optimizer)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
          (env type-name-env type-alias-env)
@@ -17,13 +16,6 @@
          "tc-setup.rkt")
 
 (provide mb-core ti-core wt-core)
-
-(define (maybe-optimize body)
-  ;; do we optimize?
-  (if (optimize?)
-      (begin0 (map optimize-top (syntax->list body))
-        (do-time "Optimized"))
-      body))
 
 (define (mb-core stx)
   (syntax-parse stx

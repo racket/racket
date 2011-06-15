@@ -6,6 +6,7 @@
           "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
          "../base-env/extra-procs.rkt" "../base-env/prims.rkt"
+         "../tc-setup.rkt"
          syntax/parse racket/block racket/match
          unstable/sequence  "../base-env/base-types-extra.rkt"
          (except-in (path-up "env/type-name-env.rkt"
@@ -97,7 +98,7 @@
                 [(ex-id ...) exids]
                 [(ex-cnt ...) ex-cnts]
                 [(region-cnt ...) region-cnts]
-                [body expanded-body]
+                [body (maybe-optimize expanded-body)]
                 [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))])
     (if expr?
         (quasisyntax/loc stx

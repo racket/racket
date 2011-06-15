@@ -5,6 +5,7 @@
          unstable/mutated-vars
          racket/pretty
          scheme/base
+         (optimizer optimizer)
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
@@ -18,11 +19,18 @@
          (for-syntax racket/base)
          (for-template racket/base))
 
-(provide tc-setup invis-kw)
+(provide tc-setup invis-kw maybe-optimize)
 
 (define-syntax-class invis-kw
   #:literals (define-values define-syntaxes #%require #%provide begin)
   (pattern (~or define-values define-syntaxes #%require #%provide begin)))
+
+(define (maybe-optimize body)
+  ;; do we optimize?
+  (if (optimize?)
+      (begin0 (map optimize-top (syntax->list body))
+        (do-time "Optimized"))
+      body))
 
 (define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx checker result . body)
   (let ()
