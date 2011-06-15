@@ -883,8 +883,63 @@
         (tc-e (path->directory-path "foo") -Path)
         (tc-e (path->directory-path (string->some-system-path "foo" 'unix)) -SomeSystemPath)
 
+        ;;String Tests
+        (tc-e (string? "a") #:ret (ret B (-FS -top -bot)))
+        (tc-e (string? 2) #:ret (ret B (-FS -bot -top)))
 
-        
+        (tc-e (string->immutable-string (string #\a #\b)) -String)
+        (tc-e (string-length (make-string 5 #\z)) -Index)
+        (tc-e (string-copy (build-string 26 integer->char)) -String)
+        (tc-e (string-copy! (make-string 4) 0 "foob") -Void)
+        (tc-e (string-copy! (make-string 4) 1 "bark" 1) -Void)
+        (tc-e (string-copy! (make-string 4) 1 "zend" 1 2) -Void)
+
+        (tc-e (string-fill! (make-string 5) #\Z) -Void)
+
+        (tc-e (string-append) -String)
+        (tc-e (string-append "a" "b") -String)
+        (tc-e (string-append "c" "d" "f") -String)
+
+        (tc-e (string->list "abcde") (-lst -Char))
+        (tc-e (list->string (list #\a #\d #\d)) -String)
+
+        (tc-e (string=? "a" "a") B)
+        (tc-e (string<? "a" "a") B)
+        (tc-e (string>? "a" "a") B)
+        (tc-e (string<=? "a" "a") B)
+        (tc-e (string>=? "a" "a") B)
+
+        (tc-e (string-upcase "a") -String)
+        (tc-e (string-downcase "a") -String)
+        (tc-e (string-titlecase "a") -String)
+        (tc-e (string-foldcase "a") -String)
+
+
+        (tc-e (string-ci=? "a" "A") B)
+        (tc-e (string-ci<? "a" "A") B)
+        (tc-e (string-ci>? "a" "A") B)
+        (tc-e (string-ci<=? "a" "A") B)
+        (tc-e (string-ci>=? "a" "A") B)
+
+
+        (tc-e (string-normalize-nfd "a") -String)
+        (tc-e (string-normalize-nfkd "a") -String)
+        (tc-e (string-normalize-nfc "a") -String)
+        (tc-e (string-normalize-nfkc "a") -String)
+
+
+
+        (tc-e (string-locale=? "a" "a") B)
+        (tc-e (string-locale<? "a" "a") B)
+        (tc-e (string-locale>? "a" "a") B)
+
+        (tc-e (string-locale-upcase "a") -String)
+        (tc-e (string-locale-downcase "a") -String)
+
+
+        (tc-e (string-locale-ci=? "a" "A") B)
+        (tc-e (string-locale-ci<? "a" "A") B)
+        (tc-e (string-locale-ci>? "a" "A") B)
 
 
         )
