@@ -234,7 +234,6 @@
 [defined? (->* (list Univ) -Boolean : (-FS (-not-filter -Undefined 0 null) (-filter -Undefined 0 null)))]
 
 
-[read (->opt [-Input-Port] Univ)]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
 [andmap (-polydots (a c d b) (cl->*
                               ;; 1 means predicate on second argument
@@ -411,16 +410,8 @@
 ;[match:error (Univ . -> . (Un))]
 [match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
 [matchable? (make-pred-ty (Un -String -Bytes))]
-[display (Univ [-Output-Port] . ->opt . -Void)]
-[displayln (Univ [-Output-Port] . ->opt . -Void)]
-[write   (Univ [-Output-Port] . ->opt . -Void)]
-[print   (Univ [-Output-Port] . ->opt . -Void)]
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
-[printf (->* (list -String) Univ -Void)]
-[eprintf (->* (list -String) Univ -Void)]
-[fprintf (->* (list -Output-Port -String) Univ -Void)]
-[format (->* (list -String) Univ -String)]
 
 [thread (-> (-> Univ) -Thread)]
 [thread? (make-pred-ty -Thread)]
@@ -533,8 +524,6 @@
 [make-parameter (-poly (a b) (cl-> [(a) (-Param a a)]
                                    [(b (a . -> . b)) (-Param a b)]))]
 [current-directory (-Param -Pathlike -Path)]
-[print-struct (-Param B B)]
-[read-decimal-as-inexact (-Param B B)]
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
 
@@ -1454,6 +1443,90 @@
 [port-writes-special? (-Output-Port . -> . -Boolean)]
 
 
+;Section 12.4
+;Reading
+
+[read (->opt [-Input-Port] Univ)]
+[read-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
+[read/recursive (->opt [-Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
+[read-syntax/recursive (->opt [Univ -Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
+[read-language (->opt [-Input-Port (-> ManyUniv)] (-> Univ Univ ManyUniv))]
+
+[read-case-sensitive (-Param Univ B)]
+[read-square-bracket-as-paren (-Param Univ B)]
+[read-curly-brace-as-paren (-Param Univ B)]
+[read-accept-box (-Param Univ B)]
+[read-accept-compiled (-Param Univ B)]
+[read-accept-bar-quote (-Param Univ B)]
+[read-accept-graph (-Param Univ B)]
+[read-decimal-as-inexact (-Param Univ B)]
+[read-accept-dot (-Param Univ B)]
+[read-accept-infix-dot (-Param Univ B)]
+[read-accept-quasiquote (-Param Univ B)]
+[read-accept-lang (-Param Univ B)]
+[current-reader-guard (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
+[current-readtable (-Param (-opt -Read-Table) (-opt -Read-Table))]
+[read-on-demand-source (-Param -Path -Path)]
+
+[port-read-handler
+ (cl->* (-> -Input-Port (->opt -Input-Port [Univ] Univ))
+        (-> -Input-Port (->opt -Input-Port [Univ] Univ) -Void))]
+
+[read-honu (->opt [-Input-Port] Univ)]
+[read-honu-syntax (->opt [Univ -Input-Port] (Un (-Syntax Univ) (-val eof)))]
+[read-honu/recursive (->opt [-Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
+[read-honu-syntax/recursive (->opt [Univ -Input-Port (-opt -Char) (-opt -Read-Table) Univ] Univ)]
+
+; Section 12.5
+; Writing
+[write   (Univ [-Output-Port] . ->opt . -Void)]
+[display (Univ [-Output-Port] . ->opt . -Void)]
+[print   (Univ [-Output-Port] . ->opt . -Void)]
+[displayln (Univ [-Output-Port] . ->opt . -Void)]
+[fprintf (->* (list -Output-Port -String) Univ -Void)]
+[printf (->* (list -String) Univ -Void)]
+[eprintf (->* (list -String) Univ -Void)]
+[format (->* (list -String) Univ -String)]
+
+[print-pair-curly-braces (-Param Univ B)]
+[print-mpair-curly-braces (-Param Univ B)]
+[print-unreadable (-Param Univ B)]
+[print-graph (-Param Univ B)]
+[print-struct (-Param Univ B)]
+[print-box (-Param Univ B)]
+[print-vector-length (-Param Univ B)]
+[print-hash-table (-Param Univ B)]
+[print-boolean-long-form (-Param Univ B)]
+[print-reader-abbreviations (-Param Univ B)]
+[print-as-expression (-Param Univ B)]
+[print-honu (-Param Univ B)]
+[print-syntax-width (-Param (Un (-val +inf.0) -Nat) (Un (-val +inf.0) -Nat))]
+
+[current-write-relative-directory (-Param (-opt -Path) (-opt -Path))]
+
+[port-write-handler
+ (cl->* (-> -Output-Port (-> Univ -Output-Port ManyUniv))
+        (-> -Output-Port (-> Univ -Output-Port ManyUniv) -Void))]
+[port-display-handler
+ (cl->* (-> -Output-Port (-> Univ -Output-Port ManyUniv))
+        (-> -Output-Port (-> Univ -Output-Port ManyUniv) -Void))]
+[port-print-handler
+ (cl->* (-> -Output-Port (-> Univ -Output-Port ManyUniv))
+        (-> -Output-Port (-> Univ -Output-Port ManyUniv) -Void))]
+
+[global-port-print-handler (-Param (Un (-> Univ -Output-Port ManyUniv) (-> Univ -Output-Port (Un (-val 0) (-val 1)) ManyUniv))
+                                   (-> Univ -Output-Port (Un (-val 0) (-val 1)) ManyUniv))]
+
+
+
+;Section 12.6
+;The Reader
+
+;Section 12.7
+;The Printer
+
+
+
 ;Section 12.8
 ;; racket/pretty
 
@@ -1494,7 +1567,7 @@
 
 ;12.9.1
 [readtable? (make-pred-ty -Read-Table)]
-;[make-readtable (-> -ReadTable ??? -ReadTable)] 
+;[make-readtable (-> -Read-Table ??? -Read-Table)]
 
 [readtable-mapping (-> -Read-Table -Char
                        (-values (list
