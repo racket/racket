@@ -25,6 +25,24 @@ set to @racket['string]. If @racket[eval] is not provided, an
 evaluator is created using @racket[make-base-eval]. See also
 @racket[make-eval-factory].
 
+As an example,
+@codeblock|{
+#lang scribble/manual
+@(require racket/sandbox
+          scribble/eval)
+@(define my-evaluator
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'typed/racket/base)))
+@interaction[#:eval my-evaluator
+
+                    (: my-sqr (Real -> Real))
+                    (define (my-sqr x)
+                      (* x x))                    
+                    (my-sqr 42)]
+}|
+uses an evaluator whose language is @racketmodname[typed/racket/base].
+
 If the value of @racket[current-print] in the sandbox is changed from
 its default value, or if @racket[print-as-expression] in the sandbox
 is set to @racket[#f], then each evaluation result is formatted to a
