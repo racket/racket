@@ -4868,18 +4868,18 @@
   (test/spec-passed/result
    'with-contract-#%app
    '(begin
-      (eval '(module app racket
+      (eval '(module with-contract-#%app-app racket
                (define-syntax (-app x) #''apped)
                (provide (rename-out (-app #%app)))))
-      (eval '(module b racket
-               (require 'app)
-               (provide h i)
+      (eval '(module with-contract-#%app-client racket
+               (require 'with-contract-#%app-app)
+               (provide with-contract-#%app-h with-contract-#%app-i)
                (with-contract x ([f any/c]) (define (f x) 'f))
                (define (g x) 'g)
-               (define h (f 2))
-               (define i (g 2))))
-      (eval '(require 'b))
-      (eval '(list h i)))
+               (define with-contract-#%app-h (f 2))
+               (define with-contract-#%app-i (g 2))))
+      (eval '(require 'with-contract-#%app-client))
+      (eval '(list with-contract-#%app-h with-contract-#%app-i)))
    (list 'apped 'apped))
 
 ;                                                                                                                         
