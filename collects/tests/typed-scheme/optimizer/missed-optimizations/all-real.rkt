@@ -1,7 +1,7 @@
 #;
 (
-TR missed opt: all-real.rkt 24:0 (+ (ann 3 Real) (ann 4 Real)) -- binary, args all float-arg-expr, return type not Float -- caused by: 24:8 (quote 3), 24:21 (quote 4)
-TR missed opt: all-real.rkt 25:0 (* (ann 3 Real) (ann 4 Real)) -- binary, args all float-arg-expr, return type not Float -- caused by: 25:8 (quote 3), 25:21 (quote 4)
+TR missed opt: all-real.rkt 24:0 (+ (ann 3 Real) (ann 4 Real)) -- binary, args all float-arg-expr, return type not Float -- caused by: 24:8 3, 24:21 4
+TR missed opt: all-real.rkt 25:0 (* (ann 3 Real) (ann 4 Real)) -- binary, args all float-arg-expr, return type not Float -- caused by: 25:8 3, 25:21 4
 7
 12
 )

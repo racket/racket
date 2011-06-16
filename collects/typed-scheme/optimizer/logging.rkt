@@ -180,9 +180,10 @@
                 kind
                 (string-join
                  (map (lambda (irritant)
-                        (format "~a ~a"
-                                (line+col->string irritant)
-                                (syntax->datum irritant)))
+                        (let ([irritant (locate-stx irritant)])
+                          (format "~a ~s"
+                                  (line+col->string irritant)
+                                  (syntax->datum irritant))))
                       (sort irritants <
                             #:key (lambda (x)
                                     (or (syntax-position x) 0))))

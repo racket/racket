@@ -1,7 +1,7 @@
 #;
 (
-TR missed opt: invalid-derived-pair.rkt 12:2 (cadr x) -- car/cdr on a potentially empty list -- caused by: 12:2 (#%app cdr x)
-TR missed opt: invalid-derived-pair.rkt 17:6 (cadr x) -- car/cdr on a potentially empty list -- caused by: 17:6 (#%app cdr x)
+TR missed opt: invalid-derived-pair.rkt 12:2 (cadr x) -- car/cdr on a potentially empty list -- caused by: 12:2 (cadr x)
+TR missed opt: invalid-derived-pair.rkt 17:6 (cadr x) -- car/cdr on a potentially empty list -- caused by: 17:6 (cadr x)
 )
 
 #lang typed/racket #:optimize
