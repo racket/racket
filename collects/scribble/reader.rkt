@@ -50,7 +50,7 @@
 ;; regexps based on the above (more in make-dispatcher)
 (define re:whitespaces   (^px "\\s+"))
 (define re:comment-start (^px ch:comment))
-(define re:comment-line  (^px "[^\n]*\n[ \t]*")) ; like tex's `%'
+(define re:comment-line  (^px "[^\n]*(?:\n|$)[ \t]*")) ; like tex's `%'
 (define re:expr-escape   (^px ch:expr-escape))
 (define re:datums-begin  (^px ch:datums-begin))
 (define re:datums-end    (^px ch:datums-end))

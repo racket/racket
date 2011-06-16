@@ -416,6 +416,10 @@ fo@o  -@->  fo@o
 -@->
 (foo "bar " "\n" "baz")
 ---
+hello @; comment at eof
+-@->
+hello
+---
 @foo{bar @;{a balanced comment} baz}
 -@->
 (foo "bar  baz")
