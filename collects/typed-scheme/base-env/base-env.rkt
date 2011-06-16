@@ -208,7 +208,7 @@
 ;Section 3.1
 
 [boolean? (make-pred-ty B)]
-[not (-> Univ B)]
+[not (make-pred-ty (-val #f))]
 [equal? (-> Univ Univ B)]
 [eqv? (-> Univ Univ B)]
 [eq? (-> Univ Univ B)]

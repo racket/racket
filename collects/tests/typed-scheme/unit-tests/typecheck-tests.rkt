@@ -959,7 +959,24 @@
         (tc-e (symbol->string 'foo) -String)
         (tc-e (string->symbol (symbol->string 'foo)) -Symbol)
 
+        ;Booleans
+        (tc-e (not #f) #:ret (ret B (-FS -top -bot)))
+        (tc-e (false? #f) #:ret (ret B (-FS -top -bot)))
+        (tc-e (not #t) #:ret (ret B (-FS -bot -top)))
+        (tc-e (false? #t) #:ret (ret B (-FS -bot -top)))
 
+
+        (tc-e (boolean? true) #:ret (ret B (-FS -top -bot)))
+        (tc-e (boolean? 6) #:ret (ret B (-FS -bot -top)))
+        (tc-e (immutable? (cons 3 4)) B)
+
+        (tc-e (boolean=? #t false) B)
+        (tc-e (symbol=? 'foo 'foo) B)
+
+        (tc-e (equal? 1 2) B)
+        (tc-e (eqv? 1 2) B)
+        (tc-e (eq? 1 2) B)
+        (tc-e (equal?/recur 'foo 'bar eq?) B)
 
         )
   (test-suite

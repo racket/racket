@@ -513,7 +513,7 @@
        [((tc-result1: t) (tc-result1: t* f o))
         (ret t f o)])]
     ;; special-case for not - flip the filters
-    [(#%plain-app (~or not false?) arg)
+    [(#%plain-app (~or false? not) arg)
      (match (single-value #'arg)
        [(tc-result1: t (FilterSet: f+ f-) _)
         (ret -Boolean (make-FilterSet f- f+))])]
