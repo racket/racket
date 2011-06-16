@@ -208,7 +208,7 @@
                               ;; 1 means predicate on second argument
                               (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
-[not (-> Univ B)]
+[not (make-pred-ty (-val #f))]
 [box (-poly (a) (a . -> . (-box a)))]
 [unbox (-poly (a) (cl->*
                    ((-box a) . -> . a)

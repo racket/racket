@@ -261,7 +261,7 @@
 (define (tc/app/internal form expected)
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
-                values apply k:apply not list list* call-with-values do-make-object make-object cons
+                values apply k:apply not false? list list* call-with-values do-make-object make-object cons
                 map andmap ormap reverse extend-parameterization
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
                 vector-set! unsafe-vector-set! unsafe-vector*-set!
@@ -513,7 +513,7 @@
        [((tc-result1: t) (tc-result1: t* f o))
         (ret t f o)])]
     ;; special-case for not - flip the filters
-    [(#%plain-app not arg)
+    [(#%plain-app (~or not false?) arg)
      (match (single-value #'arg)
        [(tc-result1: t (FilterSet: f+ f-) _)
         (ret -Boolean (make-FilterSet f- f+))])]
