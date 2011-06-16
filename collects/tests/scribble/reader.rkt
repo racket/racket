@@ -404,6 +404,10 @@ fo@o  -@->  fo@o
 -@->
 (1 2 3 4)
 ---
+hello @; another comment at eof
+-@->
+hello
+---
 @foo{bar @; comment
      baz@;
      blah}
