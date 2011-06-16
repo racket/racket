@@ -15,7 +15,7 @@
         (format "~a:~a" line col)
         "(no location)")))
 
-(struct log-entry (msg pos) #:transparent)
+(struct log-entry (msg stx pos) #:transparent)
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
@@ -26,7 +26,7 @@
 ;; we keep track of log entries, to avoid repetitions that would be
 ;; caused by traversing the same syntax multiple times (which is not
 ;; a problem per se)
-(define log-so-far (set))
+(define log-so-far '())
 
 (define (gen-log-message msg stx from)
   (let ([stx (locate-stx stx)])
@@ -39,9 +39,8 @@
 
 (define (log-optimization msg stx #:from [from "TR opt"])
   (let* ([new-message (gen-log-message msg stx from)]
-         [new-entry (log-entry new-message (syntax-position stx))])
-    (unless (set-member? log-so-far new-entry)
-      (set! log-so-far (set-add log-so-far new-entry)))))
+         [new-entry (log-entry new-message stx (syntax-position stx))])
+    (set! log-so-far (cons new-entry log-so-far))))
 
 ;; once the optimizer is done, we sort the log according to source
 ;; location, then print it
@@ -54,9 +53,10 @@
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))
-            (sort (set->list log-so-far)
+            (sort (remove-duplicates log-so-far)
                   (match-lambda*
-                   [(list (log-entry msg-x pos-x) (log-entry msg-y pos-y))
+                   [(list (log-entry msg-x stx-x pos-x)
+                          (log-entry msg-y stx-y pos-y))
                     (cond [(not (or pos-x pos-y))
                            ;; neither have location, sort by message
                            (string<? msg-x msg-y)]
@@ -70,7 +70,7 @@
                                  ;; sort by source location
                                  [else (< pos-x pos-y)])])]))))
 (define (clear-log)
-  (set! log-so-far (set))
+  (set! log-so-far '())
   (set! missed-optimizations-log '()))
 
 
