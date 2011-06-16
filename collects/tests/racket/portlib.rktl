@@ -540,8 +540,13 @@
   (test #"12345" peek-bytes 6 0 s2)
   (test #"12" read-bytes 2 s2)
   (test #"345" read-bytes 6 s2)
-  (test eof read-bytes 6 s2)
-  (test #f port-provides-progress-evts? s2))
+  (test eof read-bytes 6 s2))
+(let* ([s (open-input-string "123456789")]
+       [s2 (make-limited-input-port s 5)])
+  (test #t port-provides-progress-evts? s2)
+  (test #"123" peek-bytes 3 0 s2)
+  (test #t port-commit-peeked 3 (port-progress-evt s2) always-evt s2)
+  (test #"45" read-bytes 2 s2))
 (let-values ([(i o) (make-pipe)])
   (let ([s (make-limited-input-port i 5)])
     (test #f char-ready? s)
@@ -763,29 +768,32 @@
   (define (check-all count-lines!)
     (define (check-made first-three-bytes char-len
                         [get-loc #f] [on-consume void]
-                        [init-pos 1])
+                        [init-pos 1]
+                        #:wrap [wrap values])
       (define stream (append first-three-bytes (list (char->integer #\4))))
-      (define p (make-input-port/read-to-peek
-                 'made
-                 (lambda (bstr)
-                   (let ([b (car stream)])
-                     (set! stream (cdr stream))
-                     (if (byte? b)
-                         (begin
-                           (bytes-set! bstr 0 b)
-                           1)
-                         (lambda (srcloc line col pos) b))))
-                 #f
-                 void
-                 get-loc
-                 void
-                 init-pos
-                 #f
-                 #f
-                 on-consume))
+      (define p (wrap
+                 (make-input-port/read-to-peek
+                  'made
+                  (lambda (bstr)
+                    (let ([b (car stream)])
+                      (set! stream (cdr stream))
+                      (if (byte? b)
+                          (begin
+                            (bytes-set! bstr 0 b)
+                            1)
+                          (lambda (srcloc line col pos) b))))
+                  #f
+                  void
+                  get-loc
+                  void
+                  init-pos
+                  #f
+                  #f
+                  on-consume)))
       (count-lines! p)
       (check p (sub1 init-pos) first-three-bytes char-len))
     (check-made (bytes->list #"123") 3)
+    (check-made (bytes->list #"123") 3 #:wrap (lambda (in) (make-limited-input-port in 5)))
     (check-made (list (char->integer #\1) 'special (char->integer #\3)) 3)
     (check-made (bytes->list (string->bytes/utf-8 "1\u3BB")) 2)
     (let ()
