@@ -4864,6 +4864,23 @@
                           (define (f) (values 3 "foo"))
                           (f))])
       1))
+  
+  (test/spec-passed/result
+   'with-contract-#%app
+   '(begin
+      (eval '(module app racket
+               (define-syntax (-app x) #''apped)
+               (provide (rename-out (-app #%app)))))
+      (eval '(module b racket
+               (require 'app)
+               (provide h i)
+               (with-contract x ([f any/c]) (define (f x) 'f))
+               (define (g x) 'g)
+               (define h (f 2))
+               (define i (g 2))))
+      (eval '(require 'b))
+      (eval '(list h i)))
+   (list 'apped 'apped))
 
 ;                                                                                                                         
 ;                                                                                                                         

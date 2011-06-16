@@ -467,9 +467,11 @@
           (quasisyntax/loc stx
             (set! id (contract ctc arg neg pos (quote id) (quote-srcloc id))))]
          [(f arg ...)
-          (quasisyntax/loc stx
-            ((contract ctc id pos neg (quote id) (quote-srcloc id))
-             arg ...))]
+          (with-syntax ([app (datum->syntax stx '#%app)])
+            (quasisyntax/loc stx
+              (app
+               (contract ctc id pos neg (quote id) (quote-srcloc id))
+               arg ...)))]
          [ident
           (identifier? (syntax ident))
           (quasisyntax/loc stx
