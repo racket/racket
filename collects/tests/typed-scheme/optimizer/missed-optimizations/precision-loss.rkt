@@ -6,7 +6,7 @@ TR opt: precision-loss.rkt 26:1 + -- binary float
 TR missed opt: precision-loss.rkt 28:0 (+ (- 3/4) 2.0) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 28:3 (#%app - (quote 3/4))
 TR opt: precision-loss.rkt 28:1 + -- binary float
 TR opt: precision-loss.rkt 30:1 + -- binary float
-TR missed opt: precision-loss.rkt 36:0 (* (ann (* 3/4 2/3) Real) 2.0) -- binary, args all float-arg-expr, return type not Float -- caused by: 36:11 (quote 3/4), 36:15 (quote 2/3)
+TR missed opt: precision-loss.rkt 36:0 (* (ann (* 3/4 2/3) Real) 2.0) -- binary, args all float-arg-expr, return type not Float -- caused by: 36:11 (quote 3/4), 36:15 (quote 2/3) (3 times)
 TR missed opt: precision-loss.rkt 36:0 (* (ann (* 3/4 2/3) Real) 2.0) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 36:8 (#%app * (quote 3/4) (quote 2/3))
 2.5
 2.75

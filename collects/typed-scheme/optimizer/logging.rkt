@@ -28,17 +28,22 @@
 ;; a problem per se)
 (define log-so-far '())
 
-(define (gen-log-message msg stx from)
-  (let ([stx (locate-stx stx)])
-    (format "~a: ~a ~a ~s -- ~a"
-            from
-            (syntax-source-file-name stx)
-            (line+col->string stx)
-            (syntax->datum stx)
-            msg)))
+(define (gen-log-message msg stx from show-badness?)
+  (let* ([stx (locate-stx stx)]
+         [str (format "~a: ~a ~a ~s -- ~a"
+                      from
+                      (syntax-source-file-name stx)
+                      (line+col->string stx)
+                      (syntax->datum stx)
+                      msg)])
+    (if show-badness? ; #f or integer
+        (format "~a (~a times)" str show-badness?)
+        str)))
 
-(define (log-optimization msg stx #:from [from "TR opt"])
-  (let* ([new-message (gen-log-message msg stx from)]
+(define (log-optimization msg stx
+                          #:from [from "TR opt"]
+                          #:show-badness? [show-badness? #f])
+  (let* ([new-message (gen-log-message msg stx from show-badness?)]
          [new-entry (log-entry new-message stx (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
@@ -47,9 +52,14 @@
 (define (print-log)
   (define logger (current-logger))
   ;; add missed optimizations messages to the log, now that we know all of them
-  (for-each (lambda (x) (log-optimization (format-missed-optimization x)
-                                          (missed-optimization-stx x)
-                                          #:from "TR missed opt"))
+  (for-each (lambda (x)
+              (log-optimization
+               (format-missed-optimization x)
+               (missed-optimization-stx x)
+               #:from "TR missed opt"
+               #:show-badness?
+               (let ([badness (missed-optimization-badness x)])
+                 (and (> badness 1) badness))))
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
                                      optimization-log-key))
