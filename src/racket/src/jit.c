@@ -1899,70 +1899,79 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       seq = (Scheme_Sequence *)obj;
 	
-      /* Evaluate first expression, and for consistency with bytecode
-         evaluation, allow multiple values. */
-      scheme_generate_non_tail(seq->array[0], jitter, 1, 1, 0);
+      /* Evaluate first expression: */
+      scheme_generate_non_tail(seq->array[0], jitter, multi_ok, 1, result_ignored);
       CHECK_LIMIT();
 
       /* Save value(s) */
-      jit_movr_p(JIT_V1, JIT_R0);
-      mz_pushr_p(JIT_V1);
-      mz_pushr_p(JIT_V1);
-      mz_pushr_p(JIT_V1);
-      mz_rs_sync();
-      __START_SHORT_JUMPS__(1);
-      ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
-      CHECK_LIMIT();
-      /* Save away multiple values */
-      mz_popr_p(JIT_V1); /* sync'd below... */
-      mz_popr_p(JIT_V1);
-      mz_popr_p(JIT_V1);
-      mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-      CHECK_LIMIT();
-      jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
-      jit_lshi_l(JIT_V1, JIT_V1, 0x1);
-      jit_ori_l(JIT_V1, JIT_V1, 0x1);
-      mz_pushr_p(JIT_V1); /* sync'd below */
-      jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
-      mz_pushr_p(JIT_V1); /* sync'd below */
-      CHECK_LIMIT();
-      (void)jit_movi_p(JIT_R1, 0x0);
-      mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
-      /* If multi-value array is values buffer, zero out values buffer */
-      jit_ldxi_p(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
-      mz_rs_sync();
-      ref2 = jit_bner_p(jit_forward(), JIT_V1, JIT_R2);
-      jit_stxi_p(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
-      CHECK_LIMIT();
+      if (!result_ignored) {
+        mz_pushr_p(JIT_R0);
+        if (multi_ok) {
+          mz_pushr_p(JIT_R0);
+          mz_pushr_p(JIT_R0);
+          mz_pushr_p(JIT_R0);
+          mz_rs_sync();
+          __START_SHORT_JUMPS__(1);
+          ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
+          CHECK_LIMIT();
+          /* Save away multiple values */
+          mz_popr_p(JIT_V1); /* sync'd below... */
+          mz_popr_p(JIT_V1);
+          mz_popr_p(JIT_V1);
+          mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+          CHECK_LIMIT();
+          jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
+          jit_lshi_l(JIT_V1, JIT_V1, 0x1);
+          jit_ori_l(JIT_V1, JIT_V1, 0x1);
+          mz_pushr_p(JIT_V1); /* sync'd below */
+          jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
+          mz_pushr_p(JIT_V1); /* sync'd below */
+          CHECK_LIMIT();
+          (void)jit_movi_p(JIT_R1, 0x0);
+          mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
+          /* If multi-value array is values buffer, zero out values buffer */
+          jit_ldxi_p(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
+          mz_rs_sync();
+          ref2 = jit_bner_p(jit_forward(), JIT_V1, JIT_R2);
+          jit_stxi_p(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
+          CHECK_LIMIT();
+
+          mz_patch_branch(ref);
+          mz_patch_branch(ref2);
+          __END_SHORT_JUMPS__(1);
+        }
+      }
 
       /* evaluate remaining expressions */
-      mz_patch_branch(ref);
-      mz_patch_branch(ref2);
-      __END_SHORT_JUMPS__(1);
       for (i = 1; i < seq->count; i++) {
         scheme_generate_non_tail(seq->array[i], jitter, 1, 1, 1); /* sync's below */
         CHECK_LIMIT();
       }
 
       /* Restore values, if necessary */
-      mz_popr_p(JIT_R0);
-      mz_popr_p(JIT_R1);
-      mz_popr_p(JIT_R2);
-      mz_rs_sync();
-      CHECK_LIMIT();
-      __START_TINY_JUMPS__(1);
-      ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
-      CHECK_LIMIT();
-      mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-      jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
-      jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
-      jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
-      (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+      if (!result_ignored) {
+        mz_popr_p(JIT_R0);
+        if (multi_ok) {
+          mz_popr_p(JIT_R1);
+          mz_popr_p(JIT_R2);
+          mz_rs_sync();
+          CHECK_LIMIT();
+          __START_TINY_JUMPS__(1);
+          ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
+          CHECK_LIMIT();
+          mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+          jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
+          jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
+          jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
+          (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
 
-      mz_patch_branch(ref);
-      if (target != JIT_R0)
-        jit_movr_p(target, JIT_R0);
-      __END_TINY_JUMPS__(1);
+          mz_patch_branch(ref);
+          __END_TINY_JUMPS__(1);
+        }
+
+        if (target != JIT_R0)
+          jit_movr_p(target, JIT_R0);
+      }
 
       if (for_branch) finish_branch(jitter, target, for_branch);
 

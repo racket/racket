@@ -1372,5 +1372,22 @@
 (test 10 dynamic-require ''set-local-dfs 'ten)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test single-result checking in `begin0':
+
+(let ()
+  (define (twice x) (printf "ouch\n") (values x x))
+  
+  (define (pipeline2 . rfuns)
+    (let ([x (begin0 ((car rfuns) 1) 123)])
+      x))
+  
+  (define (try f)
+    (call-with-values
+        (lambda () (with-handlers ([void values]) (f twice)))
+      (lambda xs xs)))
+  
+  (test #t exn? (caar (map try (list pipeline2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
