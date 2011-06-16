@@ -12,11 +12,12 @@
                   Ask your questions here!})
         (ML "announce" "announce" #f
             @text{A low-volume, moderated list for announcements, only.
-                  @small{(These are posted on the @TT{users} list too, so no
-                         need to subscribe to both.)}})
+                  @small{(These are posted on the @TT{users} list too, no need
+                         to subscribe to both.)}})
         (ML "dev" "devel" #f
-            @text{A mailing list for Racket development, for people who want to
-                  see how the sausages are made — and help make them.})))
+            @text{A mailing list for Racket development.
+                  @small{(For people who want to see how the sausages are made
+                         — and help make them.)}})))
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
@@ -41,6 +42,7 @@
         @(list-cells 'header-cell)}
       @tr[valign: 'top style: "text-align: left;"]{@(list-cells 'description)}
       @tr{@(list-cells 'main-page-cell)}
+      @tr{@(list-cells 'graph-cell)}
       @sec{Subscription: enter your email here to subscribe to a mailing list}
       @tr{@(list-cells 'subscribe-cell)}
       @sec{Gmane Mirror}
@@ -89,6 +91,9 @@
            @a[href: (list name "/")]{page}
            @bull
            @a[href: (list name "/archive/")]{archive}}]
+      [(graph-cell)
+       @td{@img[src: (list "http://gmane.org/plot-rate.php?group=" gmane)
+                style: "width: 80%;"]}]
       [(subscribe-cell)
        @form-cell[(list name "/subscribe") #:method 'post]{
          @input[type: 'text name: 'email size: 20 value: ""]}]
@@ -114,7 +119,7 @@
          @span[style: "white-space: nowrap;"]{
            Search: @input[type: 'text name: 'q value: "" size: 20].}}]
       [(gmane-cell)
-       @form-cell[(list "http://search.gmane.org/")]{
+       @form-cell["http://search.gmane.org/"]{
          @input[type: 'hidden name: 'group value: gmane]
          @gmane-link["dir"]{@TT{@gmane}}
          @br
