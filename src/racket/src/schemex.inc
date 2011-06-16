@@ -247,7 +247,7 @@
   scheme_extension_table->scheme_dont_gc_ptr = scheme_dont_gc_ptr;
   scheme_extension_table->scheme_gc_ptr_ok = scheme_gc_ptr_ok;
   scheme_extension_table->scheme_collect_garbage = scheme_collect_garbage;
-  scheme_extension_table->scheme_disable_garbage_collection = scheme_disable_garbage_collection;
+  scheme_extension_table->scheme_enable_garbage_collection = scheme_enable_garbage_collection;
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
   scheme_extension_table->GC_variable_stack = GC_variable_stack;
@@ -488,6 +488,7 @@
   scheme_extension_table->scheme_set_next_port_custodian = scheme_set_next_port_custodian;
   scheme_extension_table->scheme_set_port_location_fun = scheme_set_port_location_fun;
   scheme_extension_table->scheme_set_port_count_lines_fun = scheme_set_port_count_lines_fun;
+  scheme_extension_table->scheme_port_count_lines = scheme_port_count_lines;
   scheme_extension_table->scheme_progress_evt_via_get = scheme_progress_evt_via_get;
   scheme_extension_table->scheme_peeked_read_via_get = scheme_peeked_read_via_get;
   scheme_extension_table->scheme_write_evt_via_write = scheme_write_evt_via_write;

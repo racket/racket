@@ -5,7 +5,7 @@
 
 (define SLEEP-TIME 0.1)
 
-(require scheme/port)
+(require racket/port)
 
 ;; ----------------------------------------
 
@@ -740,6 +740,68 @@
     (display "x " out)
     (test 'x read in)))
     
+;; --------------------------------------------------
+;; Test port-commit-peeked and position counting
+
+(let ([check
+       (lambda (in [d 0] [first-three-bytes (bytes->list #"123")] [char-len 3])
+         (test d file-position in)
+         (let-values ([(l c p) (port-next-location in)])
+           (test p add1 d)
+           (test (car first-three-bytes) peek-byte-or-special in 0)
+           (test (cadr first-three-bytes) peek-byte-or-special in 1)
+           (test (caddr first-three-bytes) peek-byte-or-special in 2)
+           (test d file-position in)
+           (let-values ([(l2 c2 p2) (port-next-location in)])
+             (test (list l c p) list l2 c2 p2))
+           (port-commit-peeked 3 (port-progress-evt in) always-evt in)
+           (test (+ d 3) file-position in)
+           (let-values ([(l2 c2 p2) (port-next-location in)])
+             (test (list l (and c (+ c char-len)) (+ p (if c char-len 3))) 
+                   list l2 c2 p2))
+           (test #\4 read-char in)))])
+  (define (check-all count-lines!)
+    (define (check-made first-three-bytes char-len
+                        [get-loc #f] [on-consume void]
+                        [init-pos 1])
+      (define stream (append first-three-bytes (list (char->integer #\4))))
+      (define p (make-input-port/read-to-peek
+                 'made
+                 (lambda (bstr)
+                   (let ([b (car stream)])
+                     (set! stream (cdr stream))
+                     (if (byte? b)
+                         (begin
+                           (bytes-set! bstr 0 b)
+                           1)
+                         (lambda (srcloc line col pos) b))))
+                 #f
+                 void
+                 get-loc
+                 void
+                 init-pos
+                 #f
+                 #f
+                 on-consume))
+      (count-lines! p)
+      (check p (sub1 init-pos) first-three-bytes char-len))
+    (check-made (bytes->list #"123") 3)
+    (check-made (list (char->integer #\1) 'special (char->integer #\3)) 3)
+    (check-made (bytes->list (string->bytes/utf-8 "1\u3BB")) 2)
+    (let ()
+      (define line 1) (define col 0) (define pos 1)
+      (check-made (bytes->list (string->bytes/utf-8 "123"))
+                  1 ;; claim that "123" is a single character
+                  (lambda () (values line col pos))
+                  (lambda (n)
+                    (let ([n (if (= col 0) 
+                                 1 ;; "123" is a single character
+                                 n)])
+                      (set! col (+ col n))
+                      (set! pos (+ pos n))))))
+    (void))
+  (check-all void)
+  (check-all port-count-lines!))
 
 ;; --------------------------------------------------
 

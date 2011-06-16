@@ -226,7 +226,7 @@ scheme_remove_all_finalization
 scheme_dont_gc_ptr
 scheme_gc_ptr_ok
 scheme_collect_garbage
-scheme_disable_garbage_collection
+scheme_enable_garbage_collection
 GC_variable_stack
 GC_register_traversers
 GC_resolve
@@ -446,6 +446,7 @@ scheme_make_output_port
 scheme_set_next_port_custodian
 scheme_set_port_location_fun
 scheme_set_port_count_lines_fun
+scheme_port_count_lines
 scheme_progress_evt_via_get
 scheme_peeked_read_via_get
 scheme_write_evt_via_write

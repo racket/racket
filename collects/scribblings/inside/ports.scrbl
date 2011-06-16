@@ -479,7 +479,15 @@ The functions are as follows.
     argument to @scheme[make-input-port]. Use
     @cpp{scheme_peeked_read_via_get} for the default implementation of
     commits when @var{progress_evt_fun} is
-    @cpp{scheme_progress_evt_via_get}.}
+    @cpp{scheme_progress_evt_via_get}.
+
+    The @var{peeked_read_fun} function must call
+    @cpp{scheme_port_count_lines} on a successful commit to adjust the
+    port's position. If line counting is enabled for the port and if
+    line counting uses the default implementation,
+    @var{peeked_read_fun} should supply a non-@cpp{NULL} byte-string
+    argument to @cpp{scheme_port_count_lines}, so that character and
+    line counts can be tracked correctly.}
 
  @subfunction[(int char_ready_fun
                [Scheme_Input_Port* port])]{
@@ -633,6 +641,52 @@ The functions are as follows.
     produce an error for this port.}
 
 }
+
+@function[(void scheme_set_port_location_fun [Scheme_Port* port]
+					     [Scheme_Location_Fun location_fun])]{
+
+Sets the implementation of @racket[port-next-location] for @var{port},
+which is used when line counting is enabled for @var{port}.
+
+ @subfunction[(Scheme_Object* location_fun
+               [Scheme_Port* port])]{
+   Returns three values: a positive exact integer or @racket[#f] for a line number,
+   a non-negative exact integer or @racket[#f] for a column (which must be @racket[#f]
+   if and only if the line number is @racket[#f]), and
+   a positive exact integer or @racket[#f] for a character position.
+ }
+}
+
+@function[(void scheme_set_port_count_lines_fun [Scheme_Port* port]
+					        [Scheme_Count_Lines_Fun count_lines_fun])]{
+
+Installs a notification callback that is invoked if line counting is subsequently
+enabled for @var{port}.
+
+ @subfunction[(void count_lines_fun
+               [Scheme_Port* port])]
+}
+
+@function[(void scheme_port_count_lines [Scheme_Port* port]
+                                        [const-char* buffer]
+                                        [intptr_t offset]
+                                        [intptr_t got])]{
+
+Updates the position of @var{port} as reported by
+@racket[file-position] as well as the locations reported by
+@racket[port-next-location] when the default implement of character
+and line counting is used. This function is intended for use by a
+peek-commit implementation in an input port.
+
+The @var{got} argument indicates the number of bytes read from or
+written to @var{port}. The @var{buffer} argument is used only when
+line counting is enabled, and it represents specific bytes read or
+written for the purposes of character and line coutning. The
+@var{buffer} argument can be @cpp{NULL}, in which case @var{got}
+non-newline characters are assumed. The @var{offset} argument
+indicates a starting offset into @var{buffer}, so @racket{buffer} must
+be at least @var{offset} plus @var{got} bytes long.}
+
 
 @function[(Scheme_Object* scheme_make_file_input_port
            [FILE* fp])]{

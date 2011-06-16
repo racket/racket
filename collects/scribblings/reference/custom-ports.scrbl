@@ -286,6 +286,15 @@ The arguments implement the port as follows:
      progress event must be ready (perhaps because data has just been
      committed).}
 
+     @item{It should return a byte string as a true result when line
+     counting is enabled and @racket[get-location] is @racket[#f] (so
+     that line counting is implemented the default way); the result
+     byte string represents the data that was committed for the
+     purposes of character and line counting. If any other true result
+     is returned when a byte string is expected, it is treated like a
+     byte string where each byte corresponds to a non-newline
+     character.}
+
      @item{It must raise an exception if no data (including
      @scheme[eof]) has been peeked from the beginning of the port's
      stream, or if it would have to block indefinitely to wait for the

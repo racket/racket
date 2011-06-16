@@ -130,6 +130,7 @@
     (define special-peeked null)
     (define special-peeked-tail #f)
     (define progress-requested? #f)
+    (define line-counting? #f)
     (define use-manager? #f)
     (define manager-th #f)
     (define manager-ch (make-channel))
@@ -313,11 +314,15 @@
         #f
         (let* ([avail (pipe-content-length peeked-r)]
                [p-commit (min avail amt)])
-          (let loop ([amt (- amt p-commit)] [l special-peeked])
+          (let loop ([amt (- amt p-commit)]
+                     [l special-peeked]
+                     ;; result is either bytes (if needed for line ounting)
+                     ;; or an integer count (for on-consumed)
+                     [result (if line-counting? null 0)])
             (cond
               [(amt . <= . 0)
                ;; Enough has been peeked. Do commit...
-               (actual-commit p-commit l unless-evt done-evt)]
+               (actual-commit p-commit l unless-evt done-evt result)]
               [(null? l)
                ;; Requested commit was larger than previous peeks
                #f]
@@ -330,21 +335,39 @@
                      (set-mcdr! l next)
                      (when (eq? l special-peeked-tail)
                        (set! special-peeked-tail next))
-                     (loop 0 (mcdr l)))
+                     (loop 0 (mcdr l) (if line-counting?
+                                          (cons (subbytes (mcar l) 0 amt) result)
+                                          (+ amt result))))
                    ;; Consume this string...
-                   (loop  (- amt bl) (mcdr l))))]
+                   (loop  (- amt bl) (mcdr l) (if line-counting?
+                                                  (cons (mcar l) result)
+                                                  (+ bl result)))))]
               [else
-               (loop (sub1 amt) (mcdr l))])))))
-    (define (actual-commit p-commit l unless-evt done-evt)
+               (loop (sub1 amt) (mcdr l) (if line-counting?
+                                             (cons #"." result)
+                                             (add1 result)))])))))
+    (define (actual-commit p-commit l unless-evt done-evt result)
       ;; The `finish' proc finally, actually, will commit...
       (define (finish)
-        (unless (zero? p-commit)
-          (peek-byte peeked-r (sub1 p-commit))
-          (port-commit-peeked p-commit unless-evt always-evt peeked-r))
-        (set! special-peeked l)
-        (when (null? special-peeked) (set! special-peeked-tail #f))
-        (when (and progress-requested? (zero? p-commit)) (make-progress))
-        #t)
+        (let ([result (if line-counting?
+                          (cons (peek-bytes p-commit 0 peeked-r) result)
+                          (+ p-commit result))])
+          (unless (zero? p-commit)
+            (peek-byte peeked-r (sub1 p-commit))
+            (port-commit-peeked p-commit unless-evt always-evt peeked-r))
+          (set! special-peeked l)
+          (when (null? special-peeked) (set! special-peeked-tail #f))
+          (when (and progress-requested? (zero? p-commit)) (make-progress))
+          (if line-counting?
+              ;; bytes representation of committed text allows line counting
+              ;; to be updated correctly (when line counting is implemented
+              ;; automatically)
+              (let ([bstr (apply bytes-append (reverse result))])
+                (when on-consumed (on-consumed (bytes-length bstr)))
+                bstr)
+              (begin
+                (when on-consumed (on-consumed result))
+                #t))))
       ;; If we can sync done-evt immediately, then finish.
       (if (sync/timeout 0 (wrap-evt done-evt (lambda (x) #t)))
         (finish)
@@ -429,7 +452,9 @@
        (port-progress-evt peeked-r))
      commit-it
      location-proc
-     count-lines!-proc
+     (lambda ()
+       (set! line-counting? #t)
+       (count-lines!-proc))
      init-position
      (and buffer-mode-proc
           (case-lambda

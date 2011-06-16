@@ -627,5 +627,53 @@
           (write-byte 0 p))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test port-commit-peeked and position counting
+
+(let ([check
+       (lambda (in [d 0] [first-three-bytes #"123"] [char-len 3])
+         (test d file-position in)
+         (let-values ([(l c p) (port-next-location in)])
+           (test p add1 d)
+           (test first-three-bytes peek-bytes 3 0 in)
+           (test d file-position in)
+           (let-values ([(l2 c2 p2) (port-next-location in)])
+             (test (list l c p) list l2 c2 p2))
+           (port-commit-peeked 3 (port-progress-evt in) always-evt in)
+           (test (+ d 3) file-position in)
+           (let-values ([(l2 c2 p2) (port-next-location in)])
+             (test (list l (and c (+ c char-len)) (+ p (if c char-len 3))) 
+                   list l2 c2 p2))
+           (test #\4 read-char in)))])
+  (define (check-all count-lines!)
+    (let ()
+      (define s (open-input-string "12345"))
+      (count-lines! s)
+      (check s))
+    (let ()
+      (define s (open-input-string "012345"))
+      (count-lines! s)
+      (read-byte s)
+      (check s 1))
+    (let ()
+      (define s (open-input-string "1\u03BB45"))
+      (count-lines! s)
+      (check s 0 (string->bytes/utf-8 "1\u3BB") 2))
+    (let ()
+      (define-values (in out) (make-pipe))
+      (display "12345" out)
+      (count-lines! in)
+      (check in))
+    (let ()
+      (with-output-to-file "tmp8" 
+        #:exists 'truncate/replace
+        (lambda () (display "12345")))
+      (define in (open-input-file "tmp8"))
+      (count-lines! in)
+      (check in)
+      (delete-file "tmp8")))
+  (check-all void)
+  (check-all port-count-lines!))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

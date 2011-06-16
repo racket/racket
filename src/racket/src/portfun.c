@@ -1049,6 +1049,25 @@ user_peeked_read(Scheme_Input_Port *port,
 
   scheme_pop_break_enable(&cframe, 1);
 
+  if (SCHEME_TRUEP(val)) {
+    char *buf;
+
+    if (SCHEME_BYTE_STRINGP(val)) {
+      size = SCHEME_BYTE_STRLEN_VAL(val);
+      buf = SCHEME_BYTE_STR_VAL(val);
+    } else
+      buf = NULL;
+  
+    if (port->p.count_lines) {
+      if (!buf) {
+        buf = scheme_malloc_atomic(size);
+        memset(buf, 'x', size);
+      }
+    }
+
+    scheme_port_count_lines((Scheme_Port *)port, buf, 0, size);
+  }
+
   return SCHEME_TRUEP(val);
 }
 

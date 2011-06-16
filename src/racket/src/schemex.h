@@ -698,6 +698,8 @@ void (*scheme_set_port_location_fun)(Scheme_Port *port,
 					    Scheme_Location_Fun location_fun);
 void (*scheme_set_port_count_lines_fun)(Scheme_Port *port,
 					       Scheme_Count_Lines_Fun count_lines_fun);
+void (*scheme_port_count_lines)(Scheme_Port *ip, const char *buffer, 
+                                       intptr_t offset, intptr_t got);
 Scheme_Object *(*scheme_progress_evt_via_get)(Scheme_Input_Port *port);
 int (*scheme_peeked_read_via_get)(Scheme_Input_Port *port,
 					 intptr_t size,

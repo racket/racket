@@ -1646,6 +1646,15 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
   mzAssert(ip->position >= 0);
 }
 
+void scheme_port_count_lines(Scheme_Port *ip, const char *buffer, intptr_t offset, intptr_t got)
+{
+  if (ip->position >= 0)
+    ip->position += got;
+    
+  if (ip->count_lines)
+    do_count_lines(ip, buffer, offset, got);
+}
+
 intptr_t scheme_get_byte_string_unless(const char *who,
 				   Scheme_Object *port,
 				   char *buffer, intptr_t offset, intptr_t size,
@@ -2133,6 +2142,9 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
 {
   Scheme_Get_String_Fun gs;
   int did;
+  char *buf, _buf[16];
+  int buf_size = 16;
+  buf = _buf;
   
   did = 0;
   
@@ -2140,12 +2152,30 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
   
   /* First remove ungotten_count chars */
   if (ip->ungotten_count) {
-    if (ip->ungotten_count > size)
+    int i, amt;
+
+    if (ip->ungotten_count > size) {
+      amt = size;
       ip->ungotten_count -= size;
-    else {
+    } else {
+      amt = ip->ungotten_count;
       size -= ip->ungotten_count;
       ip->ungotten_count = 0;
     }
+
+    if (ip->p.position >= 0)
+      ip->p.position += amt;
+    if (ip->p.count_lines) {
+      if (buf_size < amt) {
+        buf = scheme_malloc_atomic(amt);
+        buf_size = amt;
+      }
+      for (i = 0; i < amt; i++) {
+        buf[i] = ip->ungotten[ip->ungotten_count + amt - i - 1];
+      }
+      do_count_lines((Scheme_Port *)ip, buf, 0, amt);
+    }
+
     if (ip->progress_evt)
       post_progress(ip);
     did = 1;
@@ -2176,10 +2206,21 @@ static int complete_peeked_read_via_get(Scheme_Input_Port *ip,
     }
       
     if (gs) {
-      size = gs(pip, NULL, 0, size, 1, NULL);
+      if (ip->p.count_lines) {
+        if (buf_size < size) {
+          buf = scheme_malloc_atomic(size);
+          buf_size = size;
+        }
+      } else
+        buf = NULL;
+      size = gs(pip, buf, 0, size, 1, NULL);
       if (size > 0) {
 	if (ip->progress_evt)
 	  post_progress(ip);
+        if (ip->p.position >= 0)
+          ip->p.position += size;
+        if (buf)
+          do_count_lines((Scheme_Port *)ip, buf, 0, size);
 	did = 1;
       }
     }

@@ -189,11 +189,11 @@ input ports as it becomes available.}
                              #f)
                        #f]
           [buffering? any/c #f]
-          [on-consume (or/c ((or/c exact-nonnegative-integer? eof-object? 
-                                   procedure? evt?) 
-                             . -> . any)
-                            #f)
-                      #f])
+          [on-consumed (or/c ((or/c exact-nonnegative-integer? eof-object? 
+                                    procedure? evt?) 
+                              . -> . any)
+                             #f)
+                       #f])
          input-port?]{
 
 Similar to @racket[make-input-port], but if the given @racket[read-in]
@@ -225,7 +225,7 @@ then @racket[buffering?] determines the initial buffer mode, and
 new mode is @racket['block].
 
 If @racket[on-consumed] is not @racket[#f], it is called when data is
-read from the port, as opposed to merely peeked. The argument to
+read (or committed) from the port, as opposed to merely peeked. The argument to
 @racket[on-consumed] is the result value of the port's reading
 procedure, so it can be an integer or any result from
 @racket[read-in].}
