@@ -57,27 +57,26 @@
           (make-element style (list s)))))
 
   (define (format-output str style)
-    (if (string=? "" str)
-        null
+    (cond
+      [(not (string? str))
+       (error 'format-output "missing output, possibly from a sandbox ~a"
+              "without a `sandbox-output' configured to 'string")]
+      [(string=? "" str) null]
+      [else
+       (list
         (list
-         (list
-          (make-flow 
-           (list
-            (let ([s (regexp-split #rx"\n"
-                                   (regexp-replace #rx"\n$"
-                                                   str
-                                                   ""))])
-              (if (= 1 (length s))
-                  (make-paragraph
-                   (list
-                    (literal-string style (car s))))
-                  (make-table
-                   #f
-                   (map (lambda (s)
-                          (list (make-flow (list (make-paragraph
-                                                  (list
-                                                   (literal-string style s)))))))
-                        s))))))))))
+         (make-flow
+          (list
+           (let ([s (regexp-split #rx"\n" (regexp-replace #rx"\n$" str ""))])
+             (if (= 1 (length s))
+               (make-paragraph (list (literal-string style (car s))))
+               (make-table
+                #f
+                (map (lambda (s)
+                       (list (make-flow
+                              (list (make-paragraph
+                                     (list (literal-string style s)))))))
+                     s))))))))]))
 
     (define (format-output-stream in style)
       (define (add-string string-accum line-accum)
@@ -257,7 +256,7 @@
                   (raise-syntax-error 'eval "example result check failed" s))))
             r)
           (values (list (list (void)) "" "")))))
-                   
+
 
   (define (install ht v v2)
     (hash-set! ht v v2)
