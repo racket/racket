@@ -406,6 +406,8 @@ extern Scheme_Object *scheme_impersonator_of_property;
 
 extern Scheme_Object *scheme_app_mark_impersonator_property;
 
+extern Scheme_Object *scheme_no_arity_property;
+
 extern Scheme_Object *scheme_reduced_procedure_struct;
 
 /*========================================================================*/

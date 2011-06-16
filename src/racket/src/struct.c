@@ -32,6 +32,7 @@ READ_ONLY Scheme_Object *scheme_source_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
 READ_ONLY Scheme_Object *scheme_equal_property;
+READ_ONLY Scheme_Object *scheme_no_arity_property;
 READ_ONLY Scheme_Object *scheme_impersonator_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
@@ -335,6 +336,12 @@ scheme_init_struct (Scheme_Env *env)
     REGISTER_SO(proc_property);
     proc_property = scheme_make_struct_type_property(scheme_intern_symbol("procedure"));
     scheme_add_global_constant("prop:procedure", proc_property, env);
+  }
+
+  {
+    REGISTER_SO(scheme_no_arity_property);
+    scheme_no_arity_property = scheme_make_struct_type_property(scheme_intern_symbol("incomplete-arity"));
+    scheme_add_global_constant("prop:incomplete-arity", scheme_no_arity_property, env);
   }
 
   {

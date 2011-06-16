@@ -63,7 +63,8 @@
                               hash-iterate-first hash-iterate-next
                               hash-iterate-value hash-iterate-key
                               log-message log-level? make-logger logger? current-logger logger-name
-                              make-log-receiver log-receiver?)
+                              make-log-receiver log-receiver?
+                              prop:incomplete-arity)
              (rename syntax->datum syntax-object->datum)
              (rename datum->syntax datum->syntax-object)
              (rename free-identifier=? module-identifier=?)

@@ -145,7 +145,9 @@
                                     (list (cons prop:arity-string 
                                                 generate-arity-string)
                                           (cons prop:named-keyword-procedure 
-                                                (cons name fail-proc)))
+                                                (cons name fail-proc))
+                                          (cons prop:incomplete-arity
+                                                #t))
                                     (current-inspector) fail-proc)])
       mk))
 

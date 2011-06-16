@@ -1992,7 +1992,7 @@
 (err/rt-test (procedure-arity-includes? cons 1.0))
 (err/rt-test (procedure-arity-includes? 'cons 1))
 
-(arity-test procedure-arity-includes? 2 2)
+(arity-test procedure-arity-includes? 2 3)
 
 (newline)
 (display ";testing scheme 4 functions; ")

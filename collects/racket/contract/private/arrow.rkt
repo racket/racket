@@ -425,7 +425,7 @@ v4 todo:
       (and (procedure? x) 
            (if (base->-dom-rest/c ctc)
                (procedure-accepts-and-more? x l)
-               (procedure-arity-includes? x l))
+               (procedure-arity-includes? x l #t))
            (keywords-match (base->-mandatory-kwds ctc) (base->-optional-kwds ctc) x)
            #t))))
 
@@ -1720,8 +1720,8 @@ v4 todo:
 
 (define (procedure-arity-includes?/optionals f base optionals)
   (cond
-    [(zero? optionals) (procedure-arity-includes? f base)]
-    [else (and (procedure-arity-includes? f (+ base optionals))
+    [(zero? optionals) (procedure-arity-includes? f base #t)]
+    [else (and (procedure-arity-includes? f (+ base optionals) #t)
                (procedure-arity-includes?/optionals f base (- optionals 1)))]))
 
 (define (keywords-match mandatory-kwds optional-kwds val)

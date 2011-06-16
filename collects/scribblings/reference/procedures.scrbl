@@ -168,15 +168,21 @@ elements.
 (procedure-arity (case-lambda [(x) 0] [(x y) 1]))
 ]}
 
-@defproc[(procedure-arity-includes? [proc procedure?] [k exact-nonnegative-integer?])
+@defproc[(procedure-arity-includes? [proc procedure?]
+                                    [k exact-nonnegative-integer?]
+                                    [kws-ok? any/c #f])
          boolean?]{
 
-Returns @scheme[#t] if the procedure can accept @scheme[k] arguments
-when no keyword arguments are supplied, @scheme[#f] otherwise.
+Returns @scheme[#t] if the procedure can accept @scheme[k] by-position
+arguments, @scheme[#f] otherwise.  If @racket[kws-ok?] is @racket[#f],
+the result is @racket[#t] only if @racket[proc] has no required
+keyword arguments.
 
 @mz-examples[
 (procedure-arity-includes? cons 2)
 (procedure-arity-includes? display 3)
+(procedure-arity-includes? (lambda (x #:y y) x) 1)
+(procedure-arity-includes? (lambda (x #:y y) x) 1 #t)
 ]}
 
 @defproc[(procedure-reduce-arity [proc procedure?]
