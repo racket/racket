@@ -30,7 +30,7 @@
 
 (define (gen-log-message msg stx from)
   (let ([stx (locate-stx stx)])
-    (format "~a: ~a ~a ~a -- ~a"
+    (format "~a: ~a ~a ~s -- ~a"
             from
             (syntax-source-file-name stx)
             (line+col->string stx)
