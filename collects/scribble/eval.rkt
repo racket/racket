@@ -50,20 +50,18 @@
 (define list.flow.list (compose1 list make-flow list))
 
 (define (format-output str style)
-  (unless (string? str)
-    (error 'format-output "missing output, possibly from a sandbox ~a"
-           "without a `sandbox-output' configured to 'string"))
-  (and (not (string=? "" str))
-       (list.flow.list
-        (let ([s (regexp-split #rx"\n" (regexp-replace #rx"\n$" str ""))])
-          (if (= 1 (length s))
-            (make-paragraph (list (literal-string style (car s))))
-            (make-table
-             #f
-             (map (lambda (s)
-                    (list.flow.list
-                     (make-paragraph (list (literal-string style s)))))
-                  s)))))))
+  (if (string=? "" str)
+    '()
+    (list (list.flow.list
+           (let ([s (regexp-split #rx"\n" (regexp-replace #rx"\n$" str ""))])
+             (if (= 1 (length s))
+               (make-paragraph (list (literal-string style (car s))))
+               (make-table
+                #f
+                (map (lambda (s)
+                       (list.flow.list
+                        (make-paragraph (list (literal-string style s)))))
+                     s))))))))
 
 (define (format-output-stream in style)
   (define (add-string string-accum line-accum)
@@ -125,12 +123,12 @@
              (append
               (list (list (let ([p (car expr-paras)])
                             (if (flow? p) p (make-flow (list p))))))
-              (or (format-output (cadar val-list+outputs) output-color) '())
-              (or (format-output (caddar val-list+outputs) error-color) '())
+              (format-output (cadar val-list+outputs) output-color)
+              (format-output (caddar val-list+outputs) error-color)
               (cond
                 [(string? (caar val-list+outputs))
                  ;; Error result case:
-                 (map (lambda (s) (format-output s error-color))
+                 (map (lambda (s) (car (format-output s error-color)))
                       (string->wrapped-lines (caar val-list+outputs)))]
                 [(box? (caar val-list+outputs))
                  ;; Output written to a port
@@ -181,44 +179,49 @@
              (list (syntax->datum (datum->syntax #f (extract s cdr cdr car)))))]
       [else (values s expect)])))
 
-(define ((do-eval ev) s)
-  (let-values ([(s expect) (extract-to-evaluate s)])
-    (if (not (nothing-to-eval? s))
-      (let ([r (with-handlers ([(lambda (x) (not (exn:break? x)))
-                                (lambda (e)
-                                  (list (if (exn? e)
-                                          (exn-message e)
-                                          (format "uncaught exception: ~s" e))
-                                        (get-output ev)
-                                        (get-error-output ev)))])
-                 (list (let ([v (do-plain-eval ev s #t)])
-                         (if (call-in-sandbox-context
-                              ev
-                              (let ([cp (current-print)])
-                                (lambda ()
-                                  (and (eq? (current-print) cp)
-                                       (print-as-expression)))))
-                           ;; default printer => get result as S-expression
-                           (make-reader-graph (copy-value v (make-hasheq)))
-                           ;; other printer => go through a string
-                           (box
-                            (call-in-sandbox-context
-                             ev
-                             (lambda ()
-                               (let-values ([(in out)
-                                             (make-pipe-with-specials)])
-                                 (parameterize ([current-output-port out])
-                                   (map (current-print) v))
-                                 (close-output-port out)
-                                 in))))))
-                       (get-output ev)
-                       (get-error-output ev)))])
-        (when expect
-          (let ([expect (do-plain-eval ev (car expect) #t)])
-            (unless (equal? (car r) expect)
-              (raise-syntax-error 'eval "example result check failed" s))))
-        r)
-      (values (list (list (void)) "" "")))))
+(define (do-eval ev who)
+  (define (get-outputs)
+    (define (get getter what)
+      (define s (getter ev))
+      (if (string? s)
+        s
+        (error who "missing ~a, possibly from a sandbox ~a"
+               what "without a `sandbox-output' configured to 'string")))
+    (list (get get-output "output") (get get-error-output "error output")))
+  (define (render-value v)
+    (if (call-in-sandbox-context
+         ev (let ([cp (current-print)])
+              (lambda () (and (eq? (current-print) cp) (print-as-expression)))))
+      ;; default printer => get result as S-expression
+      (make-reader-graph (copy-value v (make-hasheq)))
+      ;; other printer => go through a string
+      (box (call-in-sandbox-context
+            ev
+            (lambda ()
+              (define-values [in out] (make-pipe-with-specials))
+              (parameterize ([current-output-port out]) (map (current-print) v))
+              (close-output-port out)
+              in)))))
+  (define (do-ev s)
+    (with-handlers ([(lambda (x) (not (exn:break? x)))
+                     (lambda (e)
+                       (cons (if (exn? e)
+                               (exn-message e)
+                               (format "uncaught exception: ~s" e))
+                             (get-outputs)))])
+      (cons (render-value (do-plain-eval ev s #t)) (get-outputs))))
+  (define (do-ev/expect s expect)
+    (define r (do-ev s))
+    (when expect
+      (let ([expect (do-plain-eval ev (car expect) #t)])
+        (unless (equal? (car r) expect)
+          (raise-syntax-error 'eval "example result check failed" s))))
+    r)
+  (lambda (str)
+    (let-values ([(s expect) (extract-to-evaluate str)])
+      (if (nothing-to-eval? s)
+        (values (list (list (void)) "" ""))
+        (do-ev/expect s expect)))))
 
 ;; Since we evaluate everything in an interaction before we typeset,
 ;;  copy each value to avoid side-effects.
@@ -399,30 +402,37 @@
        [(_ e) #'(racketblock0+line e)])]
     [(_ e) #'(racketinput* e)]))
 
-(define (do-titled-interaction inset? ev t shows evals)
-  (interleave inset? t shows (map (do-eval ev) evals)))
+(define (do-titled-interaction who inset? ev t shows evals)
+  (interleave inset? t shows (map (do-eval ev who) evals)))
 
 (define-syntax titled-interaction
   (syntax-rules ()
-    [(_ inset? #:eval ev t racketinput* e ...)
+    [(_ who inset? #:eval ev t racketinput* e ...)
      (do-titled-interaction
-      inset? ev t (list (racketinput* e) ...) (list (quote-expr e) ...))]
-    [(_ inset? t racketinput* e ...)
+      'who inset? ev t (list (racketinput* e) ...) (list (quote-expr e) ...))]
+    [(_ who inset? t racketinput* e ...)
      (titled-interaction
-      inset? #:eval (make-base-eval) t racketinput* e ...)]))
+      who inset? #:eval (make-base-eval) t racketinput* e ...)]))
+
+(define-syntax (-interaction stx)
+  (syntax-case stx ()
+    [(_ who #:eval ev e ...)
+     (syntax/loc stx
+       (titled-interaction who #f #:eval ev #f racketinput* e ...))]
+    [(_ who e ...)
+     (syntax/loc stx
+       (titled-interaction who #f #f racketinput* e ...))]))
 
 (define (code-inset p)
   (make-blockquote 'code-inset (list p)))
 
-(define-syntax interaction
-  (syntax-rules ()
-    [(_ e ...) (code-inset (interaction0 e ...))]))
+(define-syntax (interaction stx)
+  (syntax-case stx ()
+    [(H e ...) (syntax/loc stx (code-inset (-interaction H e ...)))]))
 
-(define-syntax interaction0
-  (syntax-rules ()
-    [(_ #:eval ev e ...)
-     (titled-interaction #f #:eval ev #f racketinput* e ...)]
-    [(_ e ...) (titled-interaction #f #f racketinput* e ...)]))
+(define-syntax (interaction0 stx)
+  (syntax-case stx ()
+    [(H e ...) (syntax/loc stx (-interaction H e ...))]))
 
 (define-syntax racketblock+eval
   (syntax-rules ()
@@ -453,25 +463,27 @@
     [(_ name e ...)
      (racketmod+eval #:eval (make-base-eval) name e ...)]))
 
-(define-syntax def+int
-  (syntax-rules ()
-    [(_ #:eval ev def e ...)
-     (let ([eva ev])
-       (column (list (racketblock0+eval #:eval eva def)
-                     blank-line
-                     (interaction0 #:eval eva e ...))))]
+(define-syntax (def+int stx)
+  (syntax-case stx ()
+    [(H #:eval ev def e ...)
+     (syntax/loc stx
+       (let ([eva ev])
+         (column (list (racketblock0+eval #:eval eva def)
+                       blank-line
+                       (-interaction H #:eval eva e ...)))))]
     [(_ def e ...)
-     (def+int #:eval (make-base-eval) def e ...)]))
+     (syntax/loc stx (def+int #:eval (make-base-eval) def e ...))]))
 
-(define-syntax defs+int
-  (syntax-rules ()
-    [(_ #:eval ev [def ...] e ...)
-     (let ([eva ev])
-       (column (list (racketblock0+eval #:eval eva def ...)
-                     blank-line
-                     (interaction0 #:eval eva e ...))))]
+(define-syntax (defs+int stx)
+  (syntax-case stx ()
+    [(H #:eval ev [def ...] e ...)
+     (syntax/loc stx
+       (let ([eva ev])
+         (column (list (racketblock0+eval #:eval eva def ...)
+                       blank-line
+                       (-interaction H #:eval eva e ...)))))]
     [(_ [def ...] e ...)
-     (defs+int #:eval (make-base-eval) [def ...] e ...)]))
+     (syntax/loc stx (defs+int #:eval (make-base-eval) [def ...] e ...))]))
 
 (define example-title
   (make-paragraph (list "Example:")))
@@ -483,33 +495,42 @@
     [(_ e) example-title]
     [(_ . _) examples-title]))
 
-(define-syntax examples
-  (syntax-rules ()
-    [(_ #:eval ev e ...)
-     (titled-interaction #t #:eval ev
-                         (pick-example-title e ...) racketinput* e ...)]
-    [(_ e ...)
-     (titled-interaction #t (pick-example-title e ...)  racketinput* e ...)]))
-(define-syntax examples*
-  (syntax-rules ()
-    [(_ #:eval ev example-title e ...)
-     (titled-interaction #t #:eval ev example-title racketinput* e ...)]
-    [(_ example-title e ...)
-     (titled-interaction #t example-title racketinput* e ...)]))
-(define-syntax defexamples
-  (syntax-rules ()
-    [(_ #:eval ev e ...)
-     (titled-interaction #t #:eval ev
-                         (pick-example-title e ...)  racketdefinput* e ...)]
-    [(_ e ...)
-     (titled-interaction #t
-                         (pick-example-title e ...)  racketdefinput* e ...)]))
-(define-syntax defexamples*
-  (syntax-rules ()
-    [(_ #:eval ev example-title e ...)
-     (titled-interaction #t #:eval ev example-title racketdefinput* e ...)]
-    [(_ example-title e ...)
-     (titled-interaction #t example-title racketdefinput* e ...)]))
+(define-syntax (examples stx)
+  (syntax-case stx ()
+    [(H #:eval ev e ...)
+     (syntax/loc stx
+       (titled-interaction
+        H #t #:eval ev (pick-example-title e ...) racketinput* e ...))]
+    [(H e ...)
+     (syntax/loc stx
+       (titled-interaction
+        H #t (pick-example-title e ...)  racketinput* e ...))]))
+(define-syntax (examples* stx)
+  (syntax-case stx ()
+    [(H #:eval ev example-title e ...)
+     (syntax/loc stx
+       (titled-interaction H #t #:eval ev example-title racketinput* e ...))]
+    [(H example-title e ...)
+     (syntax/loc stx
+       (titled-interaction H #t example-title racketinput* e ...))]))
+(define-syntax (defexamples stx)
+  (syntax-case stx ()
+    [(H #:eval ev e ...)
+     (syntax/loc stx
+       (titled-interaction
+        H #t #:eval ev (pick-example-title e ...)  racketdefinput* e ...))]
+    [(H e ...)
+     (syntax/loc stx
+       (titled-interaction
+        H #t (pick-example-title e ...)  racketdefinput* e ...))]))
+(define-syntax (defexamples* stx)
+  (syntax-case stx ()
+    [(H #:eval ev example-title e ...)
+     (syntax/loc stx
+       (titled-interaction H #t #:eval ev example-title racketdefinput* e ...))]
+    [(H example-title e ...)
+     (syntax/loc stx
+       (titled-interaction H #t example-title racketdefinput* e ...))]))
 
 (define blank-line (make-paragraph (list 'nbsp)))
 
