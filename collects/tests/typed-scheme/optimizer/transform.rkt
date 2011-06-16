@@ -26,8 +26,8 @@
 
 ;; proc returns the list of tests to be run on each file
 (define (transform-dir dir)
-  (for/list ([name (directory-list dir)]
-             #:when (test-file? name))
+  (for ([name (directory-list dir)]
+        #:when (test-file? name))
     (transform name dir)))
 
 (cond [(= (vector-length (current-command-line-arguments)) 0)
