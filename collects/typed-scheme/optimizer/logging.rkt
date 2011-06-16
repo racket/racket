@@ -152,8 +152,14 @@
     (set! missed-optimizations-log
           (cond [parent
                  ;; we found our parent, merge with it
-                 (cons (combine-missed-optmizations parent new)
-                       (remove parent missed-optimizations-log))]
+                 (if (member (missed-optimization-stx new)
+                             (missed-optimization-merged-irritants
+                              parent))
+                     ;; we have been merged in the past, do nothing
+                     missed-optimizations-log
+                     ;; do the actual merge
+                     (cons (combine-missed-optmizations parent new)
+                           (remove parent missed-optimizations-log)))]
                 [(not (null? children))
                  ;; we found children, merge with them
                  (let ([new (for/fold ([new new])
