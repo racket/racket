@@ -775,6 +775,7 @@
 [hash? (make-pred-ty (make-HashtableTop))]
 [hash-eq? (-> (make-HashtableTop) B)]
 [hash-eqv? (-> (make-HashtableTop) B)]
+[hash-equal? (-> (make-HashtableTop) B)]
 [hash-weak? (-> (make-HashtableTop) B)]
 [make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
@@ -824,6 +825,10 @@
 [hash-iterate-value (-poly (a b)
                            ((-HT a b) -Integer . -> . b))]
 
+[make-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
+[make-immutable-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
+[make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
+
 ;Set operations
 [set (-poly (e) (->* (list) e (-set e)))]
 [seteqv (-poly (e) (->* (list) e (-set e)))]
@@ -832,16 +837,29 @@
 [set-count (-poly (e) (-> (-set e) -Index))]
 [set-member? (-poly (e) (-> (-set e) e B))]
 [set-add (-poly (e) (-> (-set e) e (-set e)))]
-
 [set-remove (-poly (e) (-> (-set e) e (-set e)))]
 
+[set-union (-poly (e) (->* (list (-set e)) (-set e) (-set e)))]
+[set-intersect (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
+[set-subtract (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
+[set-symmetric-difference (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
+
+[set=? (-poly (a b) (-> (-set a) (-set b) B))]
+
 [subset? (-poly (e) (-> (-set e) (-set e) B))]
+[proper-subset? (-poly (e) (-> (-set e) (-set e) B))]
 [set-map (-poly (e b) (-> (-set e) (-> e b) (-lst b)))]
 [set-for-each (-poly (e b) (-> (-set e) (-> e b) -Void))]
 [set? (make-pred-ty (-poly (e) (-set e)))]
 [set-equal? (-poly (e) (-> (-set e) B))]
 [set-eqv? (-poly (e) (-> (-set e) B))]
 [set-eq? (-poly (e) (-> (-set e) B))]
+
+
+[list->set    (-poly (e) (-> (-lst e) (-set e)))]
+[list->seteq  (-poly (e) (-> (-lst e) (-set e)))]
+[list->seteqv (-poly (e) (-> (-lst e) (-set e)))]
+[set->list (-poly (e) (-> (-set e) (-lst e)))]
 
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
