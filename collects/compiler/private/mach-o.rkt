@@ -133,7 +133,7 @@
                            [exportbindoff (read-ulong p)]
                            [exportbindsize (read-ulong p)])
                        (set! dyld-info-pos pos)
-                       (set! dyld-info-offs (vector bindoff weakbindoff lazybindoff exportbindoff)))]
+                       (set! dyld-info-offs (vector rebaseoff bindoff weakbindoff lazybindoff exportbindoff)))]
                     [else
                      (void)])
                   (file-position p (+ pos sz))
@@ -224,12 +224,13 @@
                 (when dyld-info-pos
                   (let ([update (lambda (n)
                                   (unless (< (vector-ref dyld-info-offs n) out-offset)
-                                    (file-position out (+ dyld-info-pos new-cmd-sz 16 (* n 8)))
+                                    (file-position out (+ dyld-info-pos new-cmd-sz 8 (* n 8)))
                                     (write-ulong (+ (vector-ref dyld-info-offs n) outlen) out)))])
                     (update 0)
                     (update 1)
                     (update 2)
-                    (update 3))))
+                    (update 3)
+                    (update 4))))
               ;; Write segdata to former link-data offset:
               (file-position out out-offset)
               (display segdata out)
