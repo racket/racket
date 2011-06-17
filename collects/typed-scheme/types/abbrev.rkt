@@ -32,6 +32,7 @@
 (define -Param make-Param)
 (define -box make-Box)
 (define -channel make-Channel)
+(define -thread-cell make-ThreadCell)
 (define -set make-Set)
 (define -vec make-Vector)
 (define -future make-Future)

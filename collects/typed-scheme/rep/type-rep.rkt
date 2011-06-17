@@ -131,6 +131,12 @@
   [#:key 'channel])
 
 ;; elem is a Type
+(def-type ThreadCell ([elem Type/c])
+  [#:frees (λ (f) (make-invariant (f elem)))]
+  [#:key 'thread-cell])
+
+
+;; elem is a Type
 (def-type Ephemeron ([elem Type/c])
   [#:key 'ephemeron])
 
@@ -138,6 +144,8 @@
 ;; elem is a Type
 (def-type Set ([elem Type/c])
   [#:key 'set])
+
+
 
 
 ;; name is a Symbol (not a Name)
@@ -315,6 +323,7 @@
 (def-type HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (def-type MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
 (def-type StructTop ([name Struct?]) [#:key 'struct])
+(def-type ThreadCellTop () [#:fold-rhs #:base] [#:key 'thread-cell])
 
 ;; v : Scheme Value
 (def-type Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]

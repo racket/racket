@@ -495,6 +495,8 @@
            (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
           [((Channel: e) (Channel: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((ThreadCell: e) (ThreadCell: e*))
+           (cset-meet (cg e e*) (cg e* e))]
           [((Ephemeron: e) (Ephemeron: e*))
            (cg e e*)]
           [((Set: a) (Set: a*))
