@@ -25,7 +25,6 @@
          place-channel-put/get
          processor-count
          place
-         define-place
          (rename-out [pl-place-enabled? place-enabled?]))
 
 (define-struct TH-place (th ch cust) 
@@ -153,15 +152,5 @@
                (#%variable-reference)))])
        (dynamic-place module-path (quote funcname))))]))
 
-(define-syntax (place/thunk stx)
-  (with-syntax ([create-place (gen-create-place stx)])
-    #'(lambda () create-place)))
-
 (define-syntax (place stx)
   (gen-create-place stx))
-
-
-(define-syntax (define-place stx)
- (syntax-case stx ()
-   [(_ (name ch) body ...)
-    #'(define name (place/thunk ch body ...))]))

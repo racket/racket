@@ -8,6 +8,9 @@
 
 (provide main)
 
+(define-syntax-rule (define-place (name ch) body ...)
+  (define name (lambda () (place ch body ...))))
+
 (define (splat txt fn)
   (call-with-output-file fn #:exists 'replace
       (lambda (out)
