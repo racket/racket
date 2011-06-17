@@ -1505,6 +1505,19 @@
         (send new-snip set-style (send snip get-style))
         new-snip))
     
+    (define todo '())
+    (define timer (new timer% 
+                       [notify-callback
+                        (λ ()
+                          (for ([th (in-list (reverse todo))])
+                            (th))
+                          (set! todo '()))]))
+    (define/private (to-delegate thunk)
+      (when delegate
+        (send timer stop)
+        (send timer start 250 #t)
+        (set! todo (cons thunk todo))))
+    
     (define delegate #f)
     (inherit get-highlighted-ranges)
     (define/public-final (get-delegate) delegate)
@@ -1516,52 +1529,57 @@
       (refresh-delegate))
     
     (define/private (refresh-delegate)
-      (when delegate
-        (send delegate begin-edit-sequence)
-        (send delegate lock #f)
-        (when (is-a? this scheme:text<%>)
-          (send delegate set-tabs null (send this get-tab-size) #f))
-        (send delegate hide-caret #t)
-        (send delegate erase)
-        (send delegate set-style-list (get-style-list))
-        (let loop ([snip (find-first-snip)])
-          (when snip
-            (let ([copy-of-snip (copy snip)])
-              (send delegate insert
-                    copy-of-snip
-                    (send delegate last-position)
-                    (send delegate last-position))
-              (loop (send snip next)))))
-        (for-each
-         (λ (range)
-           (send delegate unhighlight-range 
-                 (range-start range)
-                 (range-end range)
-                 (range-color range)
-                 (range-caret-space? range)
-                 (range-style range)))
-         (send delegate get-highlighted-ranges))
-        (for-each
-         (λ (range)
-           (send delegate highlight-range 
-                 (range-start range)
-                 (range-end range)
-                 (range-color range)
-                 (range-caret-space? range)
-                 'high
-                 (range-style range)))
-         (reverse (get-highlighted-ranges)))
-        (send delegate lock #t)
-        (send delegate end-edit-sequence)))
+      (set! todo '())
+      (to-delegate (λ () (refresh-delegate/do-work))))
+    
+    (define/private (refresh-delegate/do-work)
+      (send delegate begin-edit-sequence)
+      (send delegate lock #f)
+      (when (is-a? this scheme:text<%>)
+        (send delegate set-tabs null (send this get-tab-size) #f))
+      (send delegate hide-caret #t)
+      (send delegate erase)
+      (send delegate set-style-list (get-style-list))
+      (let loop ([snip (find-first-snip)])
+        (when snip
+          (let ([copy-of-snip (copy snip)])
+            (send delegate insert
+                  copy-of-snip
+                  (send delegate last-position)
+                  (send delegate last-position))
+            (loop (send snip next)))))
+      (for-each
+       (λ (range)
+         (send delegate unhighlight-range 
+               (range-start range)
+               (range-end range)
+               (range-color range)
+               (range-caret-space? range)
+               (range-style range)))
+       (send delegate get-highlighted-ranges))
+      (for-each
+       (λ (range)
+         (send delegate highlight-range 
+               (range-start range)
+               (range-end range)
+               (range-color range)
+               (range-caret-space? range)
+               'high
+               (range-style range)))
+       (reverse (get-highlighted-ranges)))
+      (send delegate lock #t)
+      (send delegate end-edit-sequence))
     
     (define/override (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
-      (when delegate
-        (send delegate highlight-range start end color caret-space? priority style))
+      (to-delegate
+       (λ ()
+         (send delegate highlight-range start end color caret-space? priority style)))
       (super highlight-range start end color caret-space? priority style))
     
     (define/override (unhighlight-range start end color [caret-space? #f] [style 'rectangle])
-      (when delegate
-        (send delegate unhighlight-range start end color caret-space? style))
+      (to-delegate
+       (λ ()
+         (send delegate unhighlight-range start end color caret-space? style)))
       (super unhighlight-range start end color caret-space? style))
     
     (inherit get-canvases get-active-canvas has-focus?)
@@ -1570,77 +1588,77 @@
       (unless before?
         (let ([active-canvas (get-active-canvas)])
           (when active-canvas
-            (send (send active-canvas get-top-level-window) delegate-moved)))))
+            (to-delegate
+             (λ ()
+               (send (send active-canvas get-top-level-window) delegate-moved)))))))
     
     (define/augment (on-edit-sequence)
-      (when delegate
-        (send delegate begin-edit-sequence))
+      (to-delegate
+       (λ ()
+         (send delegate begin-edit-sequence)))
       (inner (void) on-edit-sequence))
-    
+
     (define/augment (after-edit-sequence)
-      (when delegate
-        (send delegate end-edit-sequence))
+      (to-delegate
+       (λ ()
+         (send delegate end-edit-sequence)))
       (inner (void) after-edit-sequence))
     
     (define/override (resized snip redraw-now?)
       (super resized snip redraw-now?)
       (when (and delegate
-                 linked-snips
                  (not (is-a? snip string-snip%)))
-        (let ([delegate-copy (hash-ref linked-snips snip (λ () #f))])
-          (when delegate-copy
-            (send delegate resized delegate-copy redraw-now?)))))
+        (to-delegate
+         (λ ()
+           (when linked-snips
+             (let ([delegate-copy (hash-ref linked-snips snip (λ () #f))])
+               (when delegate-copy
+                 (send delegate resized delegate-copy redraw-now?))))))))
     
     (define/augment (after-insert start len)
-      (when delegate
-        (send delegate begin-edit-sequence)
-        (send delegate lock #f)
-        (split-snip start)
-        (split-snip (+ start len))
-        (let loop ([snip (find-snip (+ start len) 'before-or-none)])
-          (when snip
-            (unless ((get-snip-position snip) . < . start)
-              (send delegate insert (copy snip) start start)
-              (loop (send snip previous)))))
-        (send delegate lock #t)
-        (send delegate end-edit-sequence))
+      (to-delegate
+       (λ ()
+         (send delegate begin-edit-sequence)
+         (send delegate lock #f)
+         (split-snip start)
+         (split-snip (+ start len))
+         (let loop ([snip (find-snip (+ start len) 'before-or-none)])
+           (when snip
+             (unless ((get-snip-position snip) . < . start)
+               (send delegate insert (copy snip) start start)
+               (loop (send snip previous)))))
+         (send delegate lock #t)
+         (send delegate end-edit-sequence)))
       (inner (void) after-insert start len))
     
     (define/augment (after-delete start len)
-      (when delegate
-        (send delegate lock #f)
-        (send delegate begin-edit-sequence)
-        (send delegate delete start (+ start len))
-        (send delegate end-edit-sequence)
-        (send delegate lock #t))
+      (to-delegate
+       (λ ()
+         (send delegate lock #f)
+         (send delegate begin-edit-sequence)
+         (send delegate delete start (+ start len))
+         (send delegate end-edit-sequence)
+         (send delegate lock #t)))
       (inner (void) after-delete start len))
     
     (define/augment (after-change-style start len)
-      (when delegate
-        (send delegate begin-edit-sequence)
-        (send delegate lock #f)
-        (split-snip start)
-        (let* ([snip (find-snip start 'after)]
-               [style (send snip get-style)]
-               [other-style 
-                '(send (send delegate get-style-list) find-or-create-style
-                       style delegate-style-delta)])
-          (send delegate change-style style start (+ start len)))
-        (send delegate lock #f)
-        (send delegate end-edit-sequence))
+      (to-delegate
+       (λ ()
+         (send delegate begin-edit-sequence)
+         (send delegate lock #f)
+         (split-snip start)
+         (let* ([snip (find-snip start 'after)]
+                [style (send snip get-style)])
+           (send delegate change-style style start (+ start len)))
+         (send delegate lock #f)
+         (send delegate end-edit-sequence)))
       (inner (void) after-change-style start len))
     
-    (define filename #f)
-    (define format #f)
-    (define/augment (on-load-file _filename _format)
-      (set! filename _filename)
-      (set! format _format)
-      (inner (void) on-load-file _filename _format))
     (define/augment (after-load-file success?)
       (when success?
         (refresh-delegate))
       (inner (void) after-load-file success?))
-    (super-instantiate ())))
+    (super-new)))
 
 (define info<%> (interface (basic<%>)))
 
