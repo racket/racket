@@ -207,6 +207,8 @@
 (define -Special-Comment
   (make-Base 'Special-Comment #'special-comment? special-comment? #'-Special-Comment))
 
+(define -Custodian (make-Base 'Custodian #'custodian? custodian? #'Custodian))
+
 
 
 
