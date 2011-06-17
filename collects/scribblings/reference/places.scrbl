@@ -18,11 +18,12 @@
 
 @; ----------------------------------------------------------------------
 
-@margin-note{Currently, parallel support for @racket[place] is enabled
+@margin-note{Currently, parallel support for places is enabled
   only for Racket 3m (which is the main variant of Racket), and only
   by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
   enable support for other platforms, use @DFlag{enable-places} with
-  @exec{configure} when building Racket.}
+  @exec{configure} when building Racket. The @racket[place-enabled?]
+  function reports whether places run in parallel.}
 
 @note-lib[racket/place]
 
@@ -35,9 +36,8 @@ instance of the Racket virtual machine. Places communicate through
 @deftech{place channels}, which are endpoints for a two-way buffered
 communication.
 
-To a first approximation, place channels allow only immutable values
-as messages over the channel: numbers, characters, booleans, immutable
-pairs, immutable vectors, and immutable structures. In addition, place
+To a first approximation, place channels support only immutable,
+transparent values as messages. In addition, place
 channels themselves can be sent across channels to establish new
 (possibly more direct) lines of communication in addition to any
 existing lines. Finally, mutable values produced by
@@ -46,7 +46,7 @@ existing lines. Finally, mutable values produced by
 @racket[shared-bytes], and @racket[make-shared-bytes] can be sent
 across place channels; mutation of such values is visible to all
 places that share the value, because they are allowed in a
-@deftech{shared memory space}.
+@deftech{shared memory space}. See @racket[place-message-allowed?].
 
 A @tech{place channel} can be used as a @tech{synchronizable event}
 (see @secref["sync"]) to receive a value through the channel. A place
@@ -87,6 +87,14 @@ racket
 ]
 
 
+@defproc[(place-enabled?) boolean?]{
+
+Returns @racket[#t] if Racket is configured so that
+@racket[dynamic-place] and @racket[place] create places that can run
+in parallel, @racket[#f] if @racket[dynamic-place] and @racket[place]
+are simulated using @racket[thread].}
+
+
 @defproc[(place? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a @deftech{place descriptor}
   value, @racket[#f] otherwise. Every @tech{place descriptor}
@@ -97,6 +105,7 @@ racket
   Returns @racket[#t] if @racket[v] is @tech{place channel}, 
   @racket[#f] otherwise.
 }
+
 
 @defproc[(dynamic-place [module-path module-path?] [start-proc symbol?]) place?]{
 
@@ -113,6 +122,16 @@ racket
  other end of communication for the @tech{place descriptor} returned
  by @racket[place].}
 
+@defform[(place id body ...+)]{
+  Creates a place that evaluates @racket[body]
+  expressions with @racket[id] bound to a place channel.  The
+  @racket[body]s close only over @racket[id] plus the top-level
+  bindings of the enclosing module, because the
+  @racket[body]s are lifted to a function that is exported by
+  the module. The result of @racket[place] is a place descriptor,
+  like the result of @racket[dynamic-place].
+}
+
 
 @defproc[(place-wait [p place?]) exact-integer?]{
   Returns the completion value of the place indicated by @racket[p],
@@ -127,12 +146,6 @@ racket
   Terminates the place indicated by @racket[p],
 }
 
-@defform[(place place-channel? body ...)]{
-  In-line definition of a place worker body, which is lifted up to module scope.
-  @racket[place] closes over only module scope variables.
-  Returns the place descriptor for the newly constructed place.
-}
-
 @defproc[(place-channel) (values place-channel? place-channel?)]{
 
   Returns two @tech{place channels}. Data sent through the first
@@ -145,15 +158,57 @@ racket
   channel}).
 }
 
-@defproc[(place-channel-put [pch place-channel?] [v any/c]) void]{
-  Sends an immutable message @racket[v] on channel @racket[pch].
+@defproc[(place-channel-put [pch place-channel?] [v place-message-allowed?]) void]{
+  Sends a message @racket[v] on channel @racket[pch].
+
+ See @racket[place-message-allowed?] form information on automatic
+ coercions in @racket[v], such as converting a mutable string to an
+ immutable string.
+
 }
 
-@defproc[(place-channel-get [pch place-channel?]) any/c]{
-  Returns an immutable message received on channel @racket[pch].
+@defproc[(place-channel-get [pch place-channel?]) place-message-allowed?]{
+  Returns a message received on channel @racket[pch].
 }
 
 @defproc[(place-channel-put/get [pch place-channel?] [v any/c]) void]{
   Sends an immutable message @racket[v] on channel @racket[pch] and then 
   waits for a reply message on the same channel.
 }
+
+@defproc[(place-message-allowed? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is allowed as a message on a place channel,
+@racket[#f] otherwise.
+
+If @racket[(place-enabled?)] returns @racket[#f], then the result is
+always @racket[#t] and no conversions are performed on @racket[v] as a
+message. Otherwise, the following kinds of data are allowed as
+messages:
+
+@itemlist[
+
+ @item{@tech{numbers}, @tech{characters}, @tech{booleans}, and
+       @|void-const|;}
+
+ @item{@tech{symbols} that are @tech{interned};}
+ 
+ @item{@tech{strings} and @tech{byte strings}, where mutable strings
+       and byte strings are automatically replaced by immutable
+       variants;}
+
+ @item{@tech{pairs}, @tech{lists}, @tech{vectors}, and immutable
+       @tech{prefab} structures containing message-allowed values,
+       where a mutable vector is automatically replaced by an
+       immutable vector;}
+
+ @item{@tech{place channels}, where a @tech{place descriptor} is
+       automatically replaced by a plain place channel; and}
+
+ @item{values produced by @racket[shared-flvector],
+       @racket[make-shared-flvector], @racket[shared-fxvector],
+       @racket[make-shared-fxvector], @racket[shared-bytes], and
+       @racket[make-shared-bytes].}
+
+]}
+

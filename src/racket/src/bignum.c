@@ -646,6 +646,35 @@ static bigdig* allocate_bigdig_array(intptr_t length)
   return res;
 }
 
+Scheme_Object *scheme_bignum_copy(const Scheme_Object *n)
+{
+  Scheme_Object *o;
+  intptr_t len;
+  bigdig* digs;
+
+  len = SCHEME_BIGLEN(n);
+
+  if (SCHEME_BIGDIG(n) == ((Small_Bignum *) mzALIAS n)->v) {
+    o = (Scheme_Object *)scheme_malloc_tagged(sizeof(Small_Bignum));
+#if MZ_PRECISE_GC
+    SCHEME_SET_BIGINLINE(o);
+#endif
+    ((Small_Bignum *)o)->v[0] = SCHEME_BIGDIG(n)[0];
+    SCHEME_BIGDIG(o) = ((Small_Bignum *) mzALIAS o)->v;
+  } else {
+    o = (Scheme_Object *)MALLOC_ONE_TAGGED(Scheme_Bignum);
+    digs = allocate_bigdig_array(len);
+    memcpy(digs, SCHEME_BIGDIG(n), len * sizeof(bigdig));
+    SCHEME_BIGDIG(o) = digs;
+  }
+
+  o->type = scheme_bignum_type;
+  SCHEME_SET_BIGPOS(o, SCHEME_BIGPOS(n));
+  SCHEME_BIGLEN(o) = len;
+
+  return o;
+}
+
 /* We don't want to count leading digits of 0 in the bignum's length */
 XFORM_NONGCING static intptr_t bigdig_length(bigdig* array, intptr_t alloced)
 {

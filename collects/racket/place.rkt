@@ -21,6 +21,7 @@
          place-channel-get
          place-channel?
          place?
+         place-message-allowed?
          place-channel-put/get
          processor-count
          place
@@ -118,6 +119,9 @@
   (or (TH-place? pl)
       (TH-place-channel? pl)))
 
+(define (th-place-message-allowed? pl)
+  #t)
+
 (define-syntax-rule (define-pl x p t) (define x (if (pl-place-enabled?) p t)))
 
 (define-pl dynamic-place      pl-dynamic-place      th-dynamic-place)
@@ -130,6 +134,7 @@
 (define-pl place-channel-get  pl-place-channel-get  th-place-channel-get)
 (define-pl place-channel?     pl-place-channel?     th-place-channel?)
 (define-pl place?             pl-place?             TH-place?)
+(define-pl place-message-allowed? pl-place-message-allowed? th-place-message-allowed?)
 
 (define-syntax-rule (define-syntax-case (N a ...) b ...)
   (define-syntax (N stx)

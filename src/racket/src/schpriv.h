@@ -1700,6 +1700,8 @@ typedef struct {
 XFORM_NONGCING Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *s);
 char *scheme_number_to_string(int radix, Scheme_Object *obj);
 
+Scheme_Object *scheme_bignum_copy(const Scheme_Object *n);
+
 XFORM_NONGCING int scheme_bignum_get_int_val(const Scheme_Object *o, intptr_t *v);
 XFORM_NONGCING int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, uintptr_t *v);
 XFORM_NONGCING int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v);
