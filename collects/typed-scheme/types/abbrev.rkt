@@ -181,6 +181,8 @@
 
 ;A Type that corresponds to the any contract for the
 ;return type of functions
+;FIXME
+;This is not correct as Univ is only a single value.
 (define ManyUniv Univ) 
 
 (define -Port (*Un -Output-Port -Input-Port))
