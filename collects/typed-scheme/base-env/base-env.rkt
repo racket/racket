@@ -27,6 +27,7 @@
  (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
  (only-in (rep type-rep) make-HashtableTop make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
+          make-ThreadCellTop
           make-Ephemeron
           make-HeterogenousVector))
 
@@ -447,7 +448,14 @@
 [thread-try-receive (-> Univ)]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
 
+;Section 10.3.1 (Thread Cells)
 
+[thread-cell? (make-pred-ty (make-ThreadCellTop))]
+[make-thread-cell (-poly (a) (->opt a [Univ] (-thread-cell a)))]
+[thread-cell-ref (-poly (a) (-> (-thread-cell a) a))]
+[thread-cell-set! (-poly (a) (-> (-thread-cell a) a -Void))]
+[current-preserved-thread-cell-values
+ (cl->* (-> Univ) (-> Univ -Void))]
 
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]

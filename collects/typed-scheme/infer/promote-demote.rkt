@@ -26,6 +26,7 @@
              [#:Vector t (make-Vector (inv t))]
              [#:Box t (make-Box (inv t))]
              [#:Channel t (make-Channel (inv t))]
+             [#:ThreadCell t (make-ThreadCell (inv t))]
              [#:Hashtable k v
                           (if (V-in? V v)
                               Univ
@@ -60,6 +61,7 @@
              [#:Vector t (make-Vector (inv t))]
              [#:Box t (make-Box (inv t))]
              [#:Channel t (make-Channel (inv t))]
+             [#:ThreadCell t (make-ThreadCell (inv t))]
              [#:Hashtable k v
                           (if (V-in? V v)
                               (Un)
