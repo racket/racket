@@ -396,6 +396,8 @@
                       ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
 [filter-not (-poly (a) (cl->*
                         ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
+[shuffle (-poly (a) (-> (-lst a) (-lst a)))]
+
 [remove  (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remq    (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remv    (-poly (a) (a (-lst a) . -> . (-lst a)))]
@@ -408,6 +410,10 @@
 ;[match:error (Univ . -> . (Un))]
 [match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
 [matchable? (make-pred-ty (Un -String -Bytes))]
+
+
+;Section 3.18
+
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 
@@ -862,7 +868,7 @@
 
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
-[make-bytes (cl-> [(-Integer -Integer) -Bytes]
+[make-bytes (cl-> [(-Integer -Byte) -Bytes]
                   [(-Integer) -Bytes])]
 [bytes->immutable-bytes (-> -Bytes -Bytes)]
 [byte? (make-pred-ty -Byte)]
@@ -872,6 +878,9 @@
 [bytes-copy (-> -Bytes -Bytes)]
 [bytes->list (-> -Bytes (-lst -Byte))]
 [list->bytes (-> (-lst -Integer) -Bytes)]
+[make-shared-bytes (cl-> [(-Integer -Byte) -Bytes]
+                         [(-Integer) -Bytes])]
+[shared-bytes (->* (list) -Byte -Bytes)]
 [bytes<? (->* (list -Bytes) -Bytes B)]
 [bytes>? (->* (list -Bytes) -Bytes B)]
 [bytes=? (->* (list -Bytes) -Bytes B)]
@@ -932,8 +941,10 @@
 
 
 
-
+;Section 9.7 (Exiting)
 [exit (-> (Un))]
+[exit-handler (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
+[executable-yield-handler (-Param (-> -Byte ManyUniv) (-> -Byte ManyUniv))]
 
 [collect-garbage (-> -Void)]
 [current-memory-use (-> -Nat)]
@@ -1016,6 +1027,11 @@
                       . -> . b))))]
 
 ;; scheme/list
+[filter-map (-polydots (c a b)
+                       ((list
+                         ((list a) (b b) . ->... . (-opt c))
+                         (-lst a))
+                        ((-lst b) b) . ->... . (-lst c)))]
 [count (-polydots (a b)
                   ((list
                     ((list a) (b b) . ->... . Univ)
@@ -1023,11 +1039,10 @@
                    ((-lst b) b)
                    . ->... .
                    -Index))]
-[filter-map (-polydots (c a b)
-                       ((list
-                         ((list a) (b b) . ->... . (-opt c))
-                         (-lst a))
-                        ((-lst b) b) . ->... . (-lst c)))]
+[partition
+ (-poly (a b) (cl->* (-> (-> a Univ) (-lst a) (-values (list (-lst a) (-lst a))))
+                     (-> (make-pred-ty a) (-lst b) (-values (list (-lst a) (-lst b))))))]
+
 [last   (-poly (a) ((-lst a) . -> . a))]
 [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
 
@@ -1150,8 +1165,8 @@
 ;; scheme/system
 [system ((Un -String -Bytes) . -> . -Boolean)]
 [system* ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Boolean)]
-[system/exit-code ((Un -String -Bytes) . -> . -Integer)]
-[system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Integer)]
+[system/exit-code ((Un -String -Bytes) . -> . -Byte)]
+[system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Byte)]
 
 
 ;; probably the most useful cases
