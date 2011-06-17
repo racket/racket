@@ -106,8 +106,8 @@ Combines @racket[racketblock0] and @racket[interaction].}
 Combines @racket[racketblock0] and @racket[interaction-eval].}
 
 
-@defform*[[(racketmod+interaction datum ...)
-           (racketmod+interaction #:eval eval-expr datum ...)]]{
+@defform*[[(racketmod+interaction name datum ...)
+           (racketmod+interaction #:eval eval-expr name datum ...)]]{
 
 Combines @racket[racketmod] and @racket[interaction].}
 

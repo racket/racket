@@ -439,7 +439,7 @@
 
 (define-syntax racketblock+interaction
   (syntax-rules ()
-    [(_ #:eval ev name e ...)
+    [(_ #:eval ev e ...)
      (let ([eva ev])
        (#%expression
         (begin (interaction #:eval eva e) ...
@@ -459,7 +459,7 @@
 
 (define-syntax racketblock0+interaction
   (syntax-rules ()
-    [(_ #:eval ev name e ...)
+    [(_ #:eval ev e ...)
      (let ([eva ev])
        (#%expression
         (begin (interaction #:eval eva e) ...
