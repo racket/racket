@@ -207,9 +207,9 @@
   communicate with remote repositories — including repositories on the PLT
   server, is via ssh.  (Access is controlled via a tool called “gitolite” —
   more on this below.)  The username and hostname of the server is
-  "git@at-git-racket" — and you should be able to connect to this account using
-  the ssh identity key that corresponds to the public key that you use with the
-  git server.  To try it, run
+  @cmd{git@at-git-racket} — and you should be able to connect to this account
+  using the ssh identity key that corresponds to the public key that you use
+  with the git server.  To try it, run
   @pre{ssh git@at-git-racket}
   and the server (gitolite, actually) should reply with information about your
   current permissions.  The exact details of this is not important for now,
@@ -473,13 +473,13 @@
   @~ @cmd{git clone http://@|git-host|/plt.git}@br
      clone the repository over http
   @~ @cmd{git clone http://github.com/plt/racket.git}@br
-     this uses the repository mirror on github (which is automatically kept in
-     sync)}
+     this uses the repository mirror on github, which is automatically kept in
+     sync (you can also use @cmd{https://...})}
   and some present a web interface for additional information:
   @ul*{
   @~ @cmd{@selflink{http://@|git-host|/plt}}@br
      a web interface to inspect the repository
-  @~ @cmd{@selflink{http://github.com/plt/racket}}@br
+  @~ @cmd{@selflink{https://github.com/plt/racket}}@br
      github's fancier web interface}}
 
 @section{Start working: git commits vs subversion commits}
@@ -2725,7 +2725,7 @@
   or achieved as described in the previous subsection.  In the case of
   contributing to the plt repository, the contributor can maintain a public
   fork of the plt repository (eg, by forking the plt github mirror at
-  @selflink{http://github.com/plt/racket} directly on github).
+  @selflink{https://github.com/plt/racket} directly on github).
 @~
   In this workflow there is no need to mail patches — instead, the receiver
   simply pulls them directly from the sender's repository.  For example,
@@ -2739,9 +2739,9 @@
   this, you can use @cmd{fetch} instead:
   @pre{git checkout -b someones-work
        git fetch @i{someones-repository-url}}
-  Either way, this fetches the remote repository's HEAD.  You can create
-  the branch in a single fetch command by specifying the remote branch
-  name, and the local branch to fetch into, for example:
+  Either way, this fetches the remote repository's HEAD.  You can create the
+  branch in a single fetch command by specifying the remote branch name, and
+  the local branch to fetch into, for example:
   @pre{git fetch @i{someones-repository-url} master:someone}
 @~
   If you expect to do this often (eg, you're going to suggest fixes for the
@@ -2766,11 +2766,11 @@
   usual.
 @~
   Git has a tool that makes this mode of work a little more organized and
-  robust for the contributor: @cmd{git request-pull}.  This simple
-  command (surprisingly, it has no flags) expects a commit that marks the start
-  of the new work (actually, the last one before it, eg, @cmd{origin/master}),
-  and the url of the repository.  For example: @pre{git request-pull origin
-  git://github.com/someone/somefork.git}
+  robust for the contributor: @cmd{git request-pull}.  This simple command
+  (surprisingly, it has no flags) expects a commit that marks the start of the
+  new work (actually, the last one before it, eg, @cmd{origin/master}), and the
+  url of the repository.  For example:
+  @pre{git request-pull origin git://github.com/someone/somefork.git}
 @~
   Of course, the contributor doesn't have to work directly in the available
   repository — in the case of github or with an over-the-web setup like the one
@@ -2800,7 +2800,7 @@
      @~ Send the resulting text to @cmd{dev@at-racket}
      @~ You're done — thanks!}
 @p{Alternatively, you can fork the plt repository on github:
-   @cmd{http://github.com/plt/racket}, commit, then do a pull request.  Note:
+   @cmd{https://github.com/plt/racket}, commit, then do a pull request.  Note:
    it is better to send a note about your pull request to @cmd{dev@at-racket},
    or you can do the pull request directly with git as listed above (using
    github to have a public repository).}
@@ -2841,6 +2841,24 @@
    @pre{git branch -d foo}
 @~ Push things back as usual}
 
+@subsection{Merging github pull-requests}
+@p*{
+  Github is popular enough that some people prefer to work with a github fork
+  of the PLT repository, and then send a pull request.  Merging these pull
+  requests can be done as with any other repository, as explained in the
+  previous section.  However, with github there is an easy way to deal with
+  it.
+@~
+  A pull request has a URL like @cmd{https://github.com/plt/racket/pull/123}
+  which you can use in your browser to inspect the changes.  To apply the
+  changes locally, a convenient feature is that you can add a @cmd{.patch}
+  suffix to every pull request URL which will have a text version of the patch.
+  This means that applying the patch is particularly easy on the command line,
+  for example:
+  @pre{curl https://github.com/plt/racket/pull/123.patch | git am}
+  will fetch the patch text and apply it (and you can now push as usual, or
+  locally inspect the ptach and possibly edit it in the usual ways).}
+
 @section{Additional Resources}
 @dl*{
 @~ @strong{Quick and short:}
@@ -2850,46 +2868,41 @@
    @~ Cheat sheets:
    @~ @dl*{
       @~ @selflink{http://gitref.org/}
-      @~ Quick reference thing, with links to the git man pages
-         and the progit book
+      @~ Quick reference thing, with links to the git man pages and the progit
+         book
       @~ @selflink{http://jonas.nitro.dk/git/quick-reference.html}
       @~ Really short
       @~ @selflink{http://cheat.errtheblog.com/s/git}
       @~ Explains some more
       @~ @selflink{http://ktown.kde.org/~zrusin/git/git-cheat-sheet.svg}
       @~ Short, intended for printing
-      @~ @selflink{http://github.com/guides/git-cheat-sheet}
+      @~ @selflink{http://help.github.com/git-cheat-sheets/}
       @~ Similar}
    @~ @selflink{http://git.or.cz/course/svn.html}
    @~ subversion->git crash course
    @~ @selflink{http://www.kernel.org/pub/software/scm/git/docs/everyday.html}
-   @~ Nice summary of a few things, but too verbose or too advanced
-      in some places, and also a little outdated.}
+   @~ Nice summary of a few things, but too verbose or too advanced in some
+      places, and also a little outdated.}
 @~ @strong{Books:}
 @~ @dl*{
    @~ @selflink{http://book.git-scm.com/}
    @~ The git community book.  Also, there are a bunch of videos
       linked, and some tutorial links in the “Welcome” part.
-   @~ @selflink{http://progit.org/}
-   @~ A frequently recommended book.
+   @~ @selflink{http://progit.org/book/}
+   @~ A frequently recommended book.  (Also some good blog entries.)
    @~ @selflink{http://www-cs-students.stanford.edu/~blynn/gitmagic/}
    @~ Another good book (a bit more verbose than the previous one)}
 @~ @strong{Misc:}
 @~ @dl*{
    @~ @selflink{http://www.kernel.org/pub/software/scm/git/docs/@;
                 gittutorial.html}
-   @~ The git tutorial, also available as the @man{gittutorial} man
-      page.
-   @~ @selflink{http://github.com/guides/home}
-   @~ Some github guides, including some screencasts, etc.
-   @~ @selflink{http://learn.github.com/}
-   @~ github learning materials — work in progress, but useful.
+   @~ The git tutorial, also available as the @man{gittutorial} man page.
+   @~ @selflink{http://help.github.com/}
+   @~ Some github guides, well-organized by levels.
    @~ @selflink{http://www.gitready.com/}
-   @~ A kind of a collection of small tips; looks like it didn't
-      change in a while though.
+   @~ A kind of a collection of small tips; didn't change in a while though.
    @~ @selflink{http://marklodato.github.com/visual-git-guide/}
-   @~ This a short visual document about git.  But it goes a little
-      fast, so it would be useful after you're comfortable with the
-      basics.}}
+   @~ This is a short visual document about git.  But it goes a little fast, so
+      it would be useful after you're comfortable with the basics.}}
 
 }}))
