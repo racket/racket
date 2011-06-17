@@ -31,7 +31,17 @@
        (+ num num)
        (* num 0+1i)
        (- num))
-  (fx byte (- byte) (expt 2 32) (expt 2 64) (- (expt 2 32)) (- (expt 2 64)))
+  (fx byte (- byte) 
+      (- (expt 2 30) 1)
+      (- (expt 2 30))
+      (if (eq? (- (expt 2 62))
+               (- (expt 2 62)))
+          (- (expt 2 62))
+          17)
+      (if (eq? (- (expt 2 62))
+               (- (expt 2 62)))
+          (- (expt 2 62) 1)
+          17))
   (fl 1.1 1.2 1.3 0.0 1e12 -1e33 1e-11 -1e-22 +inf.0 -inf.0 +nan.0)
   (byte 0 1 2 8 100 255))
   
@@ -51,3 +61,4 @@
 (redex-check L legal-message 
              (try-message (term legal-message))
              #:attempts 10000)
+
