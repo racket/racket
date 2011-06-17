@@ -84,32 +84,17 @@ Like @racket[interaction-eval], but produces an element representing
 the printed form of the evaluation result.}
 
 
-@defform*[[(racketblock+interaction datum ...)
-           (racketblock+interaction #:eval eval-expr datum ...)]]{
-
-Combines @racket[racketblock] and @racket[interaction].}
-
 @defform*[[(racketblock+eval datum ...)
            (racketblock+eval #:eval eval-expr datum ...)]]{
 
 Combines @racket[racketblock] and @racket[interaction-eval].}
 
 
-@defform*[[(racketblock0+interaction datum ...)
-           (racketblock0+interaction #:eval eval-expr datum ...)]]{
-
-Combines @racket[racketblock0] and @racket[interaction].}
-
 @defform*[[(racketblock0+eval datum ...)
            (racketblock0+eval #:eval eval-expr datum ...)]]{
 
 Combines @racket[racketblock0] and @racket[interaction-eval].}
 
-
-@defform*[[(racketmod+interaction name datum ...)
-           (racketmod+interaction #:eval eval-expr name datum ...)]]{
-
-Combines @racket[racketmod] and @racket[interaction].}
 
 @defform*[[(racketmod+eval name datum ...)
            (racketmod+eval #:eval eval-expr name datum ...)]]{

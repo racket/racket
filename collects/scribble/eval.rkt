@@ -9,11 +9,8 @@
          interaction0
          interaction-eval
          interaction-eval-show
-         racketblock+interaction
          racketblock+eval (rename-out [racketblock+eval schemeblock+eval])
-         racketblock0+interaction
          racketblock0+eval
-         racketmod+interaction
          racketmod+eval (rename-out [racketmod+eval schememod+eval])
          def+int
          defs+int
@@ -437,16 +434,6 @@
   (syntax-case stx ()
     [(H e ...) (syntax/loc stx (-interaction H e ...))]))
 
-(define-syntax racketblock+interaction
-  (syntax-rules ()
-    [(_ #:eval ev e ...)
-     (let ([eva ev])
-       (#%expression
-        (begin (interaction #:eval eva e) ...
-               (racketblock name e ...))))]
-    [(_ name e ...)
-     (racketblock+interaction #:eval (make-base-eval) name e ...)]))
-
 (define-syntax racketblock+eval
   (syntax-rules ()
     [(_ #:eval ev e ...)
@@ -457,16 +444,6 @@
     [(_ e ...)
      (racketblock+eval #:eval (make-base-eval) e ...)]))
 
-(define-syntax racketblock0+interaction
-  (syntax-rules ()
-    [(_ #:eval ev e ...)
-     (let ([eva ev])
-       (#%expression
-        (begin (interaction #:eval eva e) ...
-               (racketblock0 name e ...))))]
-    [(_ name e ...)
-     (racketblock0+interaction #:eval (make-base-eval) name e ...)]))
-
 (define-syntax racketblock0+eval
   (syntax-rules ()
     [(_ #:eval ev e ...)
@@ -475,16 +452,6 @@
                             (racketblock0 e ...))))]
     [(_ e ...)
      (racketblock0+eval #:eval (make-base-eval) e ...)]))
-
-(define-syntax racketmod+interaction
-  (syntax-rules ()
-    [(_ #:eval ev name e ...)
-     (let ([eva ev])
-       (#%expression
-        (begin (interaction #:eval eva e) ...
-               (racketmod name e ...))))]
-    [(_ name e ...)
-     (racketmod+interaction #:eval (make-base-eval) name e ...)]))
 
 (define-syntax racketmod+eval
   (syntax-rules ()
