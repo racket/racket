@@ -404,7 +404,6 @@
 [remv*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 
 
-[namespace-variable-value (Sym [Univ (-opt (-> Univ)) -Namespace] . ->opt . Univ)]
 
 ;[match:error (Univ . -> . (Un))]
 [match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
@@ -771,7 +770,7 @@
 
 
 
-
+;Section 3.13 (Hash Tables)
 [hash? (make-pred-ty (make-HashtableTop))]
 [hash-eq? (-> (make-HashtableTop) B)]
 [hash-eqv? (-> (make-HashtableTop) B)]
@@ -829,7 +828,7 @@
 [make-immutable-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 [make-weak-custom-hash (->opt (-> Univ Univ Univ) (-> Univ -Nat) [(-> Univ -Nat)] Univ)]
 
-;Set operations
+;Section 3.16 (Sets)
 [set (-poly (e) (->* (list) e (-set e)))]
 [seteqv (-poly (e) (->* (list) e (-set e)))]
 [seteq (-poly (e) (->* (list) e (-set e)))]
@@ -885,9 +884,54 @@
 [make-directory (-> -Pathlike -Void)]
 
 [delete-file (-> -Pathlike -Void)]
-[make-namespace (->opt [(one-of/c 'empty 'initial)] -Namespace)]
-[make-base-namespace (-> -Namespace)]
 [eval (->opt Univ [-Namespace] Univ)]
+
+
+
+
+
+;Section 13.1 (Namespaces)
+[namespace? (make-pred-ty -Namespace)]
+[make-namespace (->opt [(Un (-val 'empty) (-val 'initial))] -Namespace)]
+[make-empty-namespace (-> -Namespace)]
+[make-base-empty-namespace (-> -Namespace)]
+[make-base-namespace (-> -Namespace)]
+
+[namespace-anchor? (make-pred-ty -Namespace-Anchor)]
+[namespace-anchor->empty-namespace (-> -Namespace-Anchor -Namespace)]
+[namespace-anchor->namespace (-> -Namespace-Anchor -Namespace)]
+
+[current-namespace (-Param -Namespace -Namespace)]
+[namespace-symbol->identifier (-> Sym Ident)]
+[namespace-base-phase (->opt [-Namespace] -Integer)]
+[namespace-module-identifier (->opt [(Un -Namespace -Integer (-val #f))] Ident)]
+[namespace-variable-value (->opt Sym [Univ (-opt (-> Univ)) -Namespace] Univ)]
+[namespace-set-variable-value! (->opt Sym [Univ Univ -Namespace] -Void)]
+[namespace-undefine-variable! (->opt Sym [-Namespace] -Void)]
+[namespace-mapped-symbols (->opt [-Namespace] (-lst Sym))]
+[namespace-require (-> Univ -Void)]
+[namespace-require/copy (-> Univ -Void)]
+[namespace-require/constant (-> Univ -Void)]
+[namespace-require/expansion-time (-> Univ -Void)]
+[namespace-attach-module (->opt -Namespace -Module-Path [-Namespace] Univ)]
+[namespace-unprotect-module (->opt -Inspector -Module-Path [-Namespace] -Void)]
+[namespace-module-registry (-> -Namespace Univ)]
+[module->namespace (-> (-mu x (-lst (Un Sym -String -Nat x (-val #f)))) -Namespace)]
+[namespace-syntax-introduce (-poly (a) (-> (-Syntax a) (-Syntax a)))]
+[module-provide-protected? (-> -Module-Path-Index Sym B)]
+
+[variable-reference? (make-pred-ty -Variable-Reference)]
+[variable-reference->empty-namespace (-> -Variable-Reference -Namespace)]
+[variable-reference->namespace (-> -Variable-Reference -Namespace)]
+[variable-reference->resolved-module-path (-> -Variable-Reference (-opt -Resolved-Module-Path))]
+[variable-reference->module-source (-> -Variable-Reference (Un Sym (-val #f) -Path))]
+[variable-reference->phase (-> -Variable-Reference -Nat)]
+
+
+
+
+
+
 
 [exit (-> (Un))]
 
@@ -895,8 +939,6 @@
 [current-memory-use (-> -Nat)]
 [dump-memory-stats (-> Univ)]
 
-[module->namespace (-> (-mu x (-lst (Un -Symbol -String -Nat x (-val #f)))) -Namespace)]
-[current-namespace (-Param -Namespace -Namespace)]
 
 [getenv (-> -String (Un -String (-val #f)))]
 

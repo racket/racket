@@ -212,6 +212,12 @@
 (define -Parameterization (make-Base 'Parameterization #'parameterization? parameterization? #'Parameterization))
 
 
+(define -Inspector (make-Base 'Inspector #'inspector inspector? #'-Inspector))
+
+(define -Namespace-Anchor (make-Base 'Namespace-Anchor #'namespace-anchor? namespace-anchor? #'-Namespace-Anchor))
+
+(define -Variable-Reference (make-Base 'Variable-Reference #'variable-reference? variable-reference? #'-Variable-Reference))
+
 
 
 
