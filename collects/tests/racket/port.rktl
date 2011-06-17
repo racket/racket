@@ -670,6 +670,7 @@
       (define in (open-input-file "tmp8"))
       (count-lines! in)
       (check in)
+      (close-input-port in)
       (delete-file "tmp8")))
   (check-all void)
   (check-all port-count-lines!))
