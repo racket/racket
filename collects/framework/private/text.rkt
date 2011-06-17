@@ -1509,8 +1509,10 @@
     (define timer (new timer% 
                        [notify-callback
                         (λ ()
+                          (send delegate begin-edit-sequence)
                           (for ([th (in-list (reverse todo))])
                             (th))
+                          (send delegate end-edit-sequence)
                           (set! todo '()))]))
     (define/private (to-delegate thunk)
       (when delegate
