@@ -411,21 +411,43 @@
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 
+;Section 10.1
+
+;Section 10.1.1
 [thread (-> (-> Univ) -Thread)]
 [thread? (make-pred-ty -Thread)]
 [current-thread (-> -Thread)]
 [thread/suspend-to-kill (-> (-> Univ) -Thread)]
+[call-in-nested-thread (-poly (a) (->opt (-> a) [-Custodian] a))]
+
+;Section 10.1.2
 [thread-suspend (-Thread . -> . -Void)]
+[thread-resume (->opt -Thread [(Un (-val #f) -Thread -Custodian)] -Void)]
 [kill-thread (-Thread . -> . -Void)]
 [break-thread (-Thread . -> . -Void)]
 [sleep ([N] . ->opt . -Void)]
 [thread-running? (-Thread . -> . B)]
 [thread-dead? (-Thread . -> . B)]
+
+;Section 10.1.3
 [thread-wait (-Thread . -> . -Void)]
-[thread-send (-poly (a) (-Thread Univ [(-> a)] . ->opt . (Un -Void (-val #f) a)))]
+
+;TODO need event types
+;thread-dead-evt
+;thread-resume-evt
+;thread-suspend-evt
+
+;Section 10.1.4
+[thread-send (-poly (a) 
+ (cl->*
+  (-> -Thread Univ -Void)
+  (-> -Thread Univ (-val #f) (-opt -Void))
+  (-> -Thread Univ (-> a) (Un -Void a))))]
 [thread-receive (-> Univ)]
 [thread-try-receive (-> Univ)]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
+
+
 
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
