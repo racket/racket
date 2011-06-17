@@ -457,6 +457,27 @@
 [current-preserved-thread-cell-values
  (cl->* (-> Univ) (-> Univ -Void))]
 
+
+;Section 10.3.3 (Parameters)
+
+;hidden parameter bindings
+[parameterization-key Sym]
+[extend-parameterization (-poly (a b) (-> Univ (-Param a b) a Univ))]
+
+[make-parameter (-poly (a b) (cl-> [(a) (-Param a a)]
+                                   [(b (a . -> . b)) (-Param a b)]))]
+[make-derived-parameter (-poly (a b c d) (-> (-Param a b) (-> c a) (-> b d) (-Param c d)))]
+[parameter? (make-pred-ty (-poly (a b) (-Param a b)))]
+[parameter-procedure=? (-poly (a b c d) (-> (-Param a b) (-Param c d) B))]
+
+[current-parameterization (-> -Parameterization)]
+[call-with-parameterization (-poly (a) (-> -Parameterization (-> a) a))]
+[parameterization? (make-pred-ty -Parameterization)]
+
+
+
+
+
 [future (-poly (A) ((-> A) . -> . (-future A)))]
 [touch (-poly (A) ((-future A) . -> . A))]
 
@@ -544,13 +565,7 @@
 [unsafe-struct-set! top-func]
 [unsafe-struct*-set! top-func]
 
-;; parameter stuff
-
-[parameterization-key Sym]
-[extend-parameterization (-poly (a b) (-> Univ (-Param a b) a Univ))]
 [continuation-mark-set-first (-> (-opt -Cont-Mark-Set) Univ Univ)]
-[make-parameter (-poly (a b) (cl-> [(a) (-Param a a)]
-                                   [(b (a . -> . b)) (-Param a b)]))]
 [current-directory (-Param -Pathlike -Path)]
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
