@@ -23,26 +23,26 @@ static mzrt_mutex *id_counter_mutex;
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(void *place_object);
 static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_kill(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_break(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_kill(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_break(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_sleep(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_p(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_send(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_receive(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_channel_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_channel(int argc, Scheme_Object *args[]);
-static Scheme_Object* scheme_place_allowed_p(int argc, Scheme_Object *args[]);
+static Scheme_Object *place_channel(int argc, Scheme_Object *args[]);
+static Scheme_Object* place_allowed_p(int argc, Scheme_Object *args[]);
 static int cust_kill_place(Scheme_Object *pl, void *notused);
 
-static Scheme_Place_Async_Channel *scheme_place_async_channel_create();
-static Scheme_Place_Bi_Channel *scheme_place_bi_channel_create();
-static Scheme_Place_Bi_Channel *scheme_place_bi_peer_channel_create(Scheme_Place_Bi_Channel *orig);
-static int scheme_place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo);
-static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
-static Scheme_Object *scheme_place_async_receive(Scheme_Place_Async_Channel *ch);
-static Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so);
+static Scheme_Place_Async_Channel *place_async_channel_create();
+static Scheme_Place_Bi_Channel *place_bi_channel_create();
+static Scheme_Place_Bi_Channel *place_bi_peer_channel_create(Scheme_Place_Bi_Channel *orig);
+static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo);
+static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
+static Scheme_Object *place_async_receive(Scheme_Place_Async_Channel *ch);
+static Scheme_Object *places_deep_copy_to_master(Scheme_Object *so);
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
 static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table **ht, 
@@ -92,16 +92,16 @@ void scheme_init_place(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("place-enabled?",       scheme_place_enabled,   0, 0, plenv);
   GLOBAL_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, plenv);
   PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           2, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-sleep",           scheme_place_sleep,     1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-wait",            scheme_place_wait,      1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-kill",            scheme_place_kill,      1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-break",           scheme_place_break,     1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place?",                scheme_place_p,         1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel",         scheme_place_channel,   0, 0, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-put",     scheme_place_send,      2, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-get",     scheme_place_receive,   1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel?",        scheme_place_channel_p, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-message-allowed?", scheme_place_allowed_p, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place?",                place_p,         1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel",         place_channel,   0, 0, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-put",     place_send,      2, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-get",     place_receive,   1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel?",        place_channel_p, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-message-allowed?", place_allowed_p, 1, 1, plenv);
 
 #ifdef MZ_USE_PLACES
   REGISTER_SO(scheme_def_place_exit_proc);
@@ -121,8 +121,8 @@ static Scheme_Object* scheme_place_shared(int argc, Scheme_Object *args[]) {
 
 void scheme_init_places_once() {
 #ifdef MZ_USE_PLACES
-  scheme_add_evt(scheme_place_type,            (Scheme_Ready_Fun)scheme_place_channel_ready, NULL, NULL, 1); 
-  scheme_add_evt(scheme_place_bi_channel_type, (Scheme_Ready_Fun)scheme_place_channel_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_place_type,            (Scheme_Ready_Fun)place_channel_ready, NULL, NULL, 1); 
+  scheme_add_evt(scheme_place_bi_channel_type, (Scheme_Ready_Fun)place_channel_ready, NULL, NULL, 1);
   mzrt_mutex_create(&id_counter_mutex);
 #endif
 }
@@ -155,7 +155,7 @@ static void null_out_runtime_globals() {
   scheme_current_cont_mark_pos    = 0;
 }
 
-Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]) {
+Scheme_Object *place_sleep(int argc, Scheme_Object *args[]) {
   mzrt_sleep(SCHEME_INT_VAL(args[0]));
   return scheme_void;
 }
@@ -208,18 +208,18 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       scheme_wrong_type("place", "symbol", 1, argc, args);
     }
 
-    so = scheme_places_deep_copy_to_master(args[0]);
+    so = places_deep_copy_to_master(args[0]);
     place_data->module   = so;
-    so = scheme_places_deep_copy_to_master(args[1]);
+    so = places_deep_copy_to_master(args[1]);
     place_data->function = so;
     place_data->ready    = ready;
     
     /* create channel */
     {
       Scheme_Place_Bi_Channel *channel;
-      channel = scheme_place_bi_channel_create();
+      channel = place_bi_channel_create();
       place->channel = (Scheme_Object *) channel;
-      channel = scheme_place_bi_peer_channel_create(channel);
+      channel = place_bi_peer_channel_create(channel);
       place_data->channel = (Scheme_Object *) channel;
     }
   }
@@ -228,7 +228,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   }
 
   collection_paths = scheme_current_library_collection_paths(0, NULL);
-  collection_paths = scheme_places_deep_copy_to_master(collection_paths);
+  collection_paths = places_deep_copy_to_master(collection_paths);
   place_data->current_library_collection_paths = collection_paths;
 
   /* create new place */
@@ -261,7 +261,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   return (Scheme_Object*) place;
 }
 
-static int place_kill(Scheme_Place *place) {
+static int do_place_kill(Scheme_Place *place) {
   Scheme_Place_Object *place_obj;
   int ref = 0;
   place_obj = (Scheme_Place_Object*) place->place_obj;
@@ -285,7 +285,7 @@ static int place_kill(Scheme_Place *place) {
   return 0;
 }
 
-static int place_break(Scheme_Place *place) {
+static int do_place_break(Scheme_Place *place) {
   Scheme_Place_Object *place_obj;
   place_obj = (Scheme_Place_Object*) place->place_obj;
 
@@ -303,10 +303,10 @@ static int place_break(Scheme_Place *place) {
 }
 
 static int cust_kill_place(Scheme_Object *pl, void *notused) {
-  return place_kill((Scheme_Place *)pl);
+  return do_place_kill((Scheme_Place *)pl);
 }
 
-static Scheme_Object *scheme_place_kill(int argc, Scheme_Object *args[]) {
+static Scheme_Object *place_kill(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
@@ -316,10 +316,10 @@ static Scheme_Object *scheme_place_kill(int argc, Scheme_Object *args[]) {
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
     scheme_wrong_type("place-kill", "place", 0, argc, args);
   }
-  return scheme_make_integer(place_kill(place));
+  return scheme_make_integer(do_place_kill(place));
 }
 
-static Scheme_Object *scheme_place_break(int argc, Scheme_Object *args[]) {
+static Scheme_Object *place_break(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
@@ -329,7 +329,7 @@ static Scheme_Object *scheme_place_break(int argc, Scheme_Object *args[]) {
   if (!SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
     scheme_wrong_type("place-break", "place", 0, argc, args);
   }
-  return scheme_make_integer(place_break(place));
+  return scheme_make_integer(do_place_break(place));
 }
 
 
@@ -773,7 +773,7 @@ static int place_wait_ready(Scheme_Object *o) {
 }
 # endif
 
-static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
+static Scheme_Object *place_wait(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
 
@@ -822,7 +822,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
 # endif
 }
 
-static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
+static Scheme_Object *place_p(int argc, Scheme_Object *args[])
 {
   return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type) ? scheme_true : scheme_false;
 }
@@ -1693,7 +1693,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   return (void*) rc;
 }
 
-Scheme_Object *scheme_places_deep_copy_to_master(Scheme_Object *so) {
+Scheme_Object *places_deep_copy_to_master(Scheme_Object *so) {
   Scheme_Hash_Table *ht = NULL;
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *o;
@@ -1916,7 +1916,7 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) {
 #endif
 }
 
-Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) 
+Scheme_Object *place_send(int argc, Scheme_Object *args[]) 
 {
   Scheme_Place_Bi_Channel *ch;
   if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
@@ -1929,11 +1929,11 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[])
     ch = NULL;
     scheme_wrong_type("place-channel-put", "place-channel", 0, argc, args);
   }
-  scheme_place_async_send((Scheme_Place_Async_Channel *) ch->sendch, args[1]);
+  place_async_send((Scheme_Place_Async_Channel *) ch->sendch, args[1]);
   return scheme_void;
 }
 
-Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]) {
+Scheme_Object *place_receive(int argc, Scheme_Object *args[]) {
   Scheme_Place_Bi_Channel *ch;
   if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
     ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
@@ -1945,10 +1945,10 @@ Scheme_Object *scheme_place_receive(int argc, Scheme_Object *args[]) {
     ch = NULL;
     scheme_wrong_type("place-channel-get", "place-channel", 0, argc, args);
   }
-  return scheme_place_async_receive((Scheme_Place_Async_Channel *) ch->recvch);
+  return place_async_receive((Scheme_Place_Async_Channel *) ch->recvch);
 }
 
-static Scheme_Object* scheme_place_allowed_p(int argc, Scheme_Object *args[])
+static Scheme_Object* place_allowed_p(int argc, Scheme_Object *args[])
 {
   Scheme_Hash_Table *ht = NULL;
   
@@ -2018,7 +2018,7 @@ static void async_channel_finalize(void *p, void* data) {
   ch->count = 0;
 }
 
-Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
+Scheme_Place_Async_Channel *place_async_channel_create() {
   Scheme_Object **msgs;
   Scheme_Place_Async_Channel *ch;
   void **msg_memory;
@@ -2051,21 +2051,21 @@ Scheme_Place_Async_Channel *scheme_place_async_channel_create() {
   return ch;
 }
 
-Scheme_Place_Bi_Channel *scheme_place_bi_channel_create() {
+Scheme_Place_Bi_Channel *place_bi_channel_create() {
   Scheme_Place_Async_Channel *tmp;
   Scheme_Place_Bi_Channel *ch;
 
   ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Bi_Channel));
   ch->so.type = scheme_place_bi_channel_type;
 
-  tmp = scheme_place_async_channel_create();
+  tmp = place_async_channel_create();
   ch->sendch = tmp;
-  tmp = scheme_place_async_channel_create();
+  tmp = place_async_channel_create();
   ch->recvch = tmp;
   return ch;
 }
 
-Scheme_Place_Bi_Channel *scheme_place_bi_peer_channel_create(Scheme_Place_Bi_Channel *orig) {
+Scheme_Place_Bi_Channel *place_bi_peer_channel_create(Scheme_Place_Bi_Channel *orig) {
   Scheme_Place_Bi_Channel *ch;
 
   ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Bi_Channel));
@@ -2076,13 +2076,13 @@ Scheme_Place_Bi_Channel *scheme_place_bi_peer_channel_create(Scheme_Place_Bi_Cha
   return ch;
 }
 
-static Scheme_Object *scheme_place_channel(int argc, Scheme_Object *args[]) {
+static Scheme_Object *place_channel(int argc, Scheme_Object *args[]) {
   if (argc == 0) {
     Scheme_Place_Bi_Channel *ch;
     Scheme_Object *a[2];
-    ch = scheme_place_bi_channel_create();
+    ch = place_bi_channel_create();
     a[0] = (Scheme_Object *) ch;
-    a[1] = (Scheme_Object *) scheme_place_bi_peer_channel_create(ch);
+    a[1] = (Scheme_Object *) place_bi_peer_channel_create(ch);
     return scheme_values(2, a);
   }
   else {
@@ -2091,12 +2091,12 @@ static Scheme_Object *scheme_place_channel(int argc, Scheme_Object *args[]) {
   return scheme_true;
 }
 
-static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[])
+static Scheme_Object *place_channel_p(int argc, Scheme_Object *args[])
 {
   return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type) ? scheme_true : scheme_false;
 }
 
-static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) {
+static void place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *uo) {
   void *msg_memory = NULL;
   Scheme_Object *o;
   int cnt;
@@ -2188,7 +2188,7 @@ static int scheme_place_async_ch_ready(Scheme_Place_Async_Channel *ch) {
   return ready;
 }
 
-static int scheme_place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
+static int place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *sinfo) {
   Scheme_Place_Bi_Channel *ch;
   Scheme_Object *msg = NULL;
   if (SAME_TYPE(SCHEME_TYPE(so), scheme_place_type)) {
@@ -2206,7 +2206,7 @@ static int scheme_place_channel_ready(Scheme_Object *so, Scheme_Schedule_Info *s
   return 0;
 }
 
-static Scheme_Object *scheme_place_async_receive(Scheme_Place_Async_Channel *ch) {
+static Scheme_Object *place_async_receive(Scheme_Place_Async_Channel *ch) {
   Scheme_Object *msg = NULL;
   while(1) {
     msg = scheme_place_async_try_receive(ch);
