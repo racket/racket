@@ -135,6 +135,7 @@ MZ_EXTERN void scheme_cancel_sleep(void);
 
 MZ_EXTERN void scheme_start_sleeper_thread(void (*mzsleep)(float seconds, void *fds), float secs, void *fds, int hit_fd);
 MZ_EXTERN void scheme_end_sleeper_thread();
+MZ_EXTERN void scheme_set_place_sleep(Scheme_Sleep_Proc slp);
 
 MZ_EXTERN void scheme_notify_sleep_progress();
 

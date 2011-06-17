@@ -830,8 +830,7 @@
     
 ;; --------------------------------------------------
 
-;; Check that commit-based reading counts against a port limit:
-
+;; check that commit-based reading counts against a port limit:
 (let* ([p (make-limited-input-port
            (open-input-string "A\nB\nC\nD\n") 
            4)]

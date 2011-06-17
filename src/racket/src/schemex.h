@@ -93,6 +93,7 @@ int (*scheme_in_main_thread)(void);
 void (*scheme_cancel_sleep)(void);
 void (*scheme_start_sleeper_thread)(void (*mzsleep)(float seconds, void *fds), float secs, void *fds, int hit_fd);
 void (*scheme_end_sleeper_thread)();
+void (*scheme_set_place_sleep)(Scheme_Sleep_Proc slp);
 void (*scheme_notify_sleep_progress)();
 Scheme_Object *(*scheme_make_thread_cell)(Scheme_Object *def_val, int inherited);
 Scheme_Object *(*scheme_thread_cell_get)(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells);

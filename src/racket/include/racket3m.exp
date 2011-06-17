@@ -51,6 +51,7 @@ scheme_in_main_thread
 scheme_cancel_sleep
 scheme_start_sleeper_thread
 scheme_end_sleeper_thread
+scheme_set_place_sleep
 scheme_notify_sleep_progress
 scheme_make_thread_cell
 scheme_thread_cell_get

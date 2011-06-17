@@ -59,6 +59,7 @@
 #define scheme_cancel_sleep (scheme_extension_table->scheme_cancel_sleep)
 #define scheme_start_sleeper_thread (scheme_extension_table->scheme_start_sleeper_thread)
 #define scheme_end_sleeper_thread (scheme_extension_table->scheme_end_sleeper_thread)
+#define scheme_set_place_sleep (scheme_extension_table->scheme_set_place_sleep)
 #define scheme_notify_sleep_progress (scheme_extension_table->scheme_notify_sleep_progress)
 #define scheme_make_thread_cell (scheme_extension_table->scheme_make_thread_cell)
 #define scheme_thread_cell_get (scheme_extension_table->scheme_thread_cell_get)

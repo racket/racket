@@ -103,6 +103,8 @@ struct gmp_tmp_stack
 typedef intptr_t objhead;
 #endif
 
+typedef void (*Scheme_Sleep_Proc)(float seconds, void *fds);
+
 /* **************************************** */
 
 #ifndef USE_THREAD_LOCAL
@@ -323,6 +325,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Prefix *scheme_prefix_finalize_;
   struct Scheme_Hash_Table *loaded_extensions_;
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
+  Scheme_Sleep_Proc scheme_place_sleep_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -651,6 +654,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_prefix_finalize XOA (scheme_get_thread_local_variables()->scheme_prefix_finalize_)
 #define loaded_extensions XOA (scheme_get_thread_local_variables()->loaded_extensions_)
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
+#define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
 
 /* **************************************** */
 

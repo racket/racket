@@ -387,6 +387,7 @@
 (define-mz scheme_end_sleeper_thread (_fun -> _void))
 
 (define-mz scheme_sleep _pointer)
+(define-mz scheme_set_place_sleep (_fun _pointer -> _void))
 
 ;; Called through an atomic callback:
 (define (sleep-until-event secs fds)
@@ -399,6 +400,5 @@
 
 (define (cocoa-install-event-wakeup)
   (post-dummy-event) ; why do we need this? 'nextEventMatchingMask:' seems to hang if we don't use it
-  (set-ffi-obj! 'scheme_sleep #f _pointer (function-ptr sleep-until-event 
-                                                        (_fun #:atomic? #t 
-                                                              _float _gcpointer -> _void))))
+  (scheme_set_place_sleep (function-ptr sleep-until-event 
+                                        (_fun #:atomic? #t _float _gcpointer -> _void))))

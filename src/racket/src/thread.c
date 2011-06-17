@@ -204,6 +204,7 @@ static void inform_GC(int master_gc, int major_gc, intptr_t pre_used, intptr_t p
 THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
 THREAD_LOCAL_DECL(static Scheme_Thread *main_break_target_thread);
 
+THREAD_LOCAL_DECL(Scheme_Sleep_Proc scheme_place_sleep_);
 HOOK_SHARED_OK void (*scheme_sleep)(float seconds, void *fds);
 HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
@@ -3375,7 +3376,7 @@ static int check_sleep(int need_activity, int sleep_now)
       && !end_with_act 
       && (do_atomic 
 	  || (!p && ((!sleep_now && scheme_wakeup_on_input)
-		     || (sleep_now && scheme_sleep))))) {
+		     || (sleep_now && (scheme_sleep || scheme_place_sleep)))))) {
     double max_sleep_time = 0;
 
     /* Poll from top-level process, and all subprocesses are blocked. */
@@ -3460,7 +3461,15 @@ static int check_sleep(int need_activity, int sleep_now)
 	mst = 100000000.0;
       }
 
-      scheme_sleep(mst, fds);
+      {
+        Scheme_Sleep_Proc slp;
+        if (scheme_place_sleep)
+          slp = scheme_place_sleep;
+        else
+          slp = scheme_sleep;
+
+        slp(mst, fds);
+      }
     } else if (scheme_wakeup_on_input)
       scheme_wakeup_on_input(fds);
 
@@ -3474,6 +3483,11 @@ void scheme_set_wakeup_time(void *fds, double end_time)
 {
   /* should be called only during a needs_wakeup callback */
   needs_sleep_time_end = end_time;
+}
+
+void scheme_set_place_sleep(Scheme_Sleep_Proc slp)
+{
+  scheme_place_sleep = slp;
 }
 
 static int post_system_idle()
