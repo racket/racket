@@ -15,7 +15,8 @@
 	 "window.rkt"
          "wndclass.rkt"
          "hbitmap.rkt"
-         "cursor.rkt")
+         "cursor.rkt"
+	 "menu-item.rkt")
 
 (provide 
  (protect-out frame%
@@ -250,7 +251,10 @@
       0]
      [(and (= msg WM_COMMAND)
            (zero? (HIWORD wParam)))
-      (queue-window-event this (lambda () (on-menu-command (LOWORD wParam))))
+      (let ([id (LOWORD wParam)])
+	(let ([item (id-to-menu-item id)])
+	  (when item (send item auto-check)))
+	(queue-window-event this (lambda () (on-menu-command id))))
       0]
      [(= msg WM_INITMENU)
       (constrained-reply (get-eventspace)

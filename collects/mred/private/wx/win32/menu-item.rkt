@@ -67,6 +67,10 @@
     (let ([s (GetMenuState hmenu pos MF_BYPOSITION)])
       (not (zero? (bitwise-and s MF_CHECKED)))))
 
+  (define/public (auto-check)
+    (when checkable?
+      (send parent auto-check id)))
+
   (public [get-id id])
   (define (get-id) id)
 

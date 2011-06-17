@@ -126,6 +126,12 @@
      (lambda (i pos)
        (send i get-check hmenu pos))))
 
+  (define/public (auto-check id)
+    (with-item
+     id
+     (lambda (i pos)
+       (send i set-check hmenu pos (not (send i get-check hmenu pos))))))
+
   (define/private (remove-item! pos)
     (set! items 
           (append (take items pos)
