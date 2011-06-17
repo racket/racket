@@ -1,10 +1,8 @@
 #lang scribble/manual
 
-@begin[(require (for-label (only-meta-in 0 typed/racket)) scribble/eval
+@begin[(require (for-label (only-meta-in 0 typed/racket))
+                scribble/eval racket/sandbox
 		"../utils.rkt" (only-in "quick.scrbl" typed-mod))]
-
-@(define the-eval (make-base-eval))
-@(the-eval '(require typed/racket))
 
 @title[#:tag "optimization"]{Optimization in Typed Racket}
 
@@ -159,3 +157,67 @@ In many such cases, however, @seclink[#:doc '(lib
 "scribblings/guide/guide.scrbl") "define-struct"]{structs} are
 preferable to vectors. Typed Racket can optimize struct access in all
 cases.
+
+
+@subsection{Performance Debugging}
+
+Typed Racket provides performance debugging support to help you get the
+most of its optimizer.
+
+Setting the racket @seclink[#:doc '(lib
+"scribblings/reference/reference.scrbl") "logging"]{logging} facilities to the
+@racket['warning] level when compiling a Typed Racket program causes
+the optimizer to log each optimization it performs. Setting the Racket
+logging level can be done on the command line with the @racket[-W]
+flag:
+
+@commandline{racket -W warning my-typed-program.rkt}
+
+@(define log (open-output-string))
+@(define the-eval (make-base-eval))
+@(for-each the-eval
+           '((define sandbox-receiver
+	      (make-log-receiver (current-logger) 'warning))
+             (thread
+              (lambda ()
+                (let loop ()
+                  (printf "~a\n" (vector-ref (sync sandbox-receiver) 1))
+                  (loop))))
+	     (require typed/racket)))
+
+For example, the addition in the following program can be optimized:
+@(racketmod+eval #:eval the-eval typed/racket
+   (: add-two-floats : Float Float -> Float)
+   (define (add-two-floats x y) (+ x y)))
+
+@; This is very ugly, but necessary to let the log-receiver thread
+@; catch up before we ask for the sandbox's output.
+@; Suggestions for better solutions welcome.
+@(sleep 1)
+
+With optimizer logging turned on, the optimization is reported:
+@(commandline (get-output the-eval))
+@; TODO doing this in a sandbox breaks source location
+
+In addition, the optimizer also reports cases where an optimization was
+close to happening, but was not ultimately safe to perform. Such missed
+optimization warnings usually provide explanations as to why an
+optimization could not be performed, pointing to changes to your
+program that would make it more amenable to optimization.
+
+For example, the multiplication below cannot be safely optimized (see
+above discussion about mixing reals and floats), although it may look
+like it can.
+@(racketmod+eval #:eval the-eval typed/racket
+   (: mul-int-float : Integer Float -> Real)
+   (define (mul-int-float x y) (* x y)))
+
+@; Again.
+@(sleep 1)
+
+With optimizer logging turned on, the missed optimization is reported:
+@(commandline (get-output the-eval))
+@; TODO sandboxing also breaks "unexpansion" for printing
+
+
+@(close-eval the-eval)
