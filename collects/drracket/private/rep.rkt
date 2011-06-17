@@ -751,6 +751,14 @@ TODO
             (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
             
             (when first-loc
+              
+              (when (eq? first-file definitions-text)
+                ;; when we're highlighting something in the defs window,
+                ;; make sure it is visible
+                (let ([tlw (send first-file get-top-level-window)]) 
+                  (when (is-a? tlw drracket:unit:frame<%>)
+                    (send tlw ensure-defs-shown))))
+              
               (send first-file set-caret-owner (get-focus-snip) 'global)))))
       
       (define highlights-can-be-reset (make-parameter #t))
