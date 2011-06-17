@@ -868,33 +868,59 @@
 
 (define make-limited-input-port
   (lambda (port limit [close-orig? #t])
-    (let ([got 0])
+    (let ([got 0]
+          [lock-semaphore (make-semaphore 1)])
+      (define (do-read str)
+        (let ([count (min (- limit got) (bytes-length str))])
+          (if (zero? count)
+              eof
+              (let ([n (read-bytes-avail!* str port 0 count)])
+                (cond [(eq? n 0) (wrap-evt port (lambda (x) 0))]
+                      [(number? n) (set! got (+ got n)) n]
+                      [(procedure? n) (set! got (add1 got)) n]
+                      [else n])))))
+      (define (do-peek str skip progress-evt)
+        (let ([count (max 0 (min (- limit got skip) (bytes-length str)))])
+          (if (zero? count)
+              eof
+              (let ([n (peek-bytes-avail!* str skip progress-evt port 0 count)])
+                (if (eq? n 0)
+                    (wrap-evt port (lambda (x) 0))
+                    n)))))
+      (define (try-again)
+        (wrap-evt
+         (semaphore-peek-evt lock-semaphore)
+         (lambda (x) 0)))
       (make-input-port
        (object-name port)
        (lambda (str)
-         (let ([count (min (- limit got) (bytes-length str))])
-           (if (zero? count)
-             eof
-             (let ([n (read-bytes-avail!* str port 0 count)])
-               (cond [(eq? n 0) (wrap-evt port (lambda (x) 0))]
-                     [(number? n) (set! got (+ got n)) n]
-                     [(procedure? n) (set! got (add1 got)) n]
-                     [else n])))))
+         (call-with-semaphore 
+          lock-semaphore
+          do-read
+          try-again
+          str))
        (lambda (str skip progress-evt)
-         (let ([count (max 0 (min (- limit got skip) (bytes-length str)))])
-           (if (zero? count)
-             eof
-             (let ([n (peek-bytes-avail!* str skip progress-evt port 0 count)])
-               (if (eq? n 0)
-                 (wrap-evt port (lambda (x) 0))
-                 n)))))
+         (call-with-semaphore 
+          lock-semaphore
+          do-peek
+          try-again
+          str skip progress-evt))
        (lambda ()
          (when close-orig?
            (close-input-port port)))
        (and (port-provides-progress-evts? port)
             (lambda () (port-progress-evt port)))
        (and (port-provides-progress-evts? port)
-            (lambda (n evt target-evt) (port-commit-peeked n evt target-evt port)))
+            (lambda (n evt target-evt) 
+              (let loop ()
+                (if (semaphore-try-wait? lock-semaphore)
+                    (let ([ok? (port-commit-peeked n evt target-evt port)])
+                      (when ok? (set! got (+ got n)))
+                      (semaphore-post lock-semaphore)
+                      ok?)
+                    (sync (handle-evt evt (lambda (v) #f))
+                          (handle-evt (semaphore-peek-evt lock-semaphore)
+                                      (lambda (v) (loop))))))))
        (lambda () (port-next-location port))
        (lambda () (port-count-lines! port))
        (add1 (file-position port))))))

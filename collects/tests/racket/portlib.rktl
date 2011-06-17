@@ -812,5 +812,62 @@
   (check-all port-count-lines!))
 
 ;; --------------------------------------------------
+;; Check that commit-based reading counts against the limit:
+
+(let ([p (make-limited-input-port
+          (open-input-string "A\nB\nC\nD\n") 
+          4)])
+  (test `((#"A" 2) (#"B" 4) (,eof 4) (,eof 4))
+        list
+        (list (sync (read-bytes-line-evt p))
+              (file-position p))
+        (list (sync (read-bytes-line-evt p))
+              (file-position p))
+        (list (sync (read-bytes-line-evt p))
+              (file-position p))
+        (list (sync (read-bytes-line-evt p))
+              (file-position p))))
+    
+;; --------------------------------------------------
+
+;; Check that commit-based reading counts against a port limit:
+
+(let* ([p (make-limited-input-port
+           (open-input-string "A\nB\nC\nD\n") 
+           4)]
+       [N 6]
+       [chs (for/list ([i N])
+              (let ([ch (make-channel)])
+                (thread
+                 (lambda ()
+                   (channel-put ch (list (sync (read-bytes-line-evt p))
+                                         (file-position p)))))
+                ch))]
+       [r (for/list ([ch chs])
+            (channel-get ch))])
+  r)
+
+;; check proper locking for concurrent access:    
+(let* ([p (make-limited-input-port
+           (open-input-string "A\nB\nC\nD\n") 
+           4)]
+       [N 6]
+       [chs (for/list ([i N])
+              (let ([ch (make-channel)])
+                (thread
+                 (lambda ()
+                   (when (even? i) (sleep))
+                   (channel-put ch (list (sync (read-bytes-line-evt p))
+                                         (file-position p)))))
+                ch))]
+       [rs (for/list ([ch chs])
+             (channel-get ch))])
+  (test 2 apply + (for/list ([r rs]) (if (bytes? (car r)) 1 0)))
+  (test #t values (for/and ([r rs]) 
+                    (if (eof-object? (car r))
+                        (eq? (cadr r) 4)
+                        (memq (cadr r) '(2 4))))))
+
+;; --------------------------------------------------
 
 (report-errs)
