@@ -123,6 +123,31 @@ static MZ_INLINE int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val)
         : "m"(*addr), "r" (new_val), "a"(old)
         : "memory");
     return (int) result;
+# elif defined(__POWERPC__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)  \
+  || defined(__powerpc64__) || defined(__ppc64__)
+    size_t oldval;
+    int result = 0;
+#  if defined(__powerpc64__) || defined(__ppc64__) || defined(__64BIT__)
+#   define CAS_I_SIZE "d"
+#  else
+#   define CAS_I_SIZE "w"
+#  endif
+    /* This code is based on Boehm GC's libatomic */
+    __asm__ __volatile__(
+                         "1:l" CAS_I_SIZE "arx %0,0,%2\n" /* load and reserve */
+                         "cmpw %0, %4\n"                  /* if load is not equal to  */
+                         "bne 2f\n"                       /*   old, fail */
+                         "st" CAS_I_SIZE "cx. %3,0,%2\n"  /* else store conditional */
+                         "bne- 1b\n"                      /* retry if lost reservation */
+                         "li %1,1\n"                      /* result = 1;     */
+                         "2:\n"
+                         : "=&r"(oldval), "=&r"(result)
+                         : "r"(addr), "r"(new_val), "r"(old), "1"(result)
+                         : "memory", "cc");
+    
+    return result;
+# else
+#  error mzrt_cas not defined on this platform
 # endif
 
 #elif defined(__GNUC__) && !defined(__INTEL_COMPILER)

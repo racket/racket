@@ -1578,7 +1578,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
       CHECK_LIMIT();
       if (i == 2) {
         refno = _jit.x.pc;
-        jit_movi_p(JIT_R0, scheme_false);
+        (void)jit_movi_p(JIT_R0, scheme_false);
         mz_epilog(JIT_V1);
         CHECK_LIMIT();
       } else
@@ -1637,13 +1637,13 @@ static int common4b(mz_jit_state *jitter, void *_data)
       ref3 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
     
       mz_get_local_p(JIT_V1, JIT_LOCAL3);
-      jit_jmpi(refloop);
+      (void)jit_jmpi(refloop);
 
       /* Success! */
       mz_patch_branch(ref3);
 
       if (i == 2) {
-        jit_movi_p(JIT_R0, scheme_true);
+        (void)jit_movi_p(JIT_R0, scheme_true);
       } else {
         if (i == 1) {
           /* pop second argument, which we don't need */
@@ -2278,7 +2278,7 @@ static int common10(mz_jit_state *jitter, void *_data)
     mz_epilog(JIT_R2);
 
     refno = _jit.x.pc;
-    jit_movi_p(JIT_R0, scheme_false);
+    (void)jit_movi_p(JIT_R0, scheme_false);
     mz_epilog(JIT_R2);
 
     /* R1 has fixnum ... check non-negative and them proc type */
@@ -2309,7 +2309,7 @@ static int common10(mz_jit_state *jitter, void *_data)
     (void)jit_finish(sjc.check_arity_code);
     jit_retval(JIT_R0);
     (void)jit_beqi_i(refno, JIT_R0, 0);
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);
     CHECK_LIMIT();
 
@@ -2321,14 +2321,14 @@ static int common10(mz_jit_state *jitter, void *_data)
     jit_ldxi_s(JIT_R0, JIT_R0, &SCHEME_CLOSURE_DATA_FLAGS(((Scheme_Closure_Data *)0x0)));
     ref_nc = jit_bmsi_i(jit_forward(), JIT_R0, CLOS_HAS_REST);
     (void)jit_bner_i(refno, JIT_V1, JIT_R2);
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);
     CHECK_LIMIT();
     /* has rest arg: */
     mz_patch_branch(ref_nc);
     jit_subi_i(JIT_R2, JIT_R2, 1);
     (void)jit_bltr_i(refno, JIT_V1, JIT_R2);
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);
     CHECK_LIMIT();
 
@@ -2342,7 +2342,7 @@ static int common10(mz_jit_state *jitter, void *_data)
     (void)jit_bgtr_i(refno, JIT_V1, JIT_R2);
     CHECK_LIMIT();
 
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);
 
     __END_SHORT_JUMPS__(1);

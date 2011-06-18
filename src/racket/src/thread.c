@@ -204,7 +204,7 @@ static void inform_GC(int master_gc, int major_gc, intptr_t pre_used, intptr_t p
 THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
 THREAD_LOCAL_DECL(static Scheme_Thread *main_break_target_thread);
 
-THREAD_LOCAL_DECL(Scheme_Sleep_Proc scheme_place_sleep_);
+THREAD_LOCAL_DECL(Scheme_Sleep_Proc scheme_place_sleep);
 HOOK_SHARED_OK void (*scheme_sleep)(float seconds, void *fds);
 HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
