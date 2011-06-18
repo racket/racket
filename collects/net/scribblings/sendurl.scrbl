@@ -22,14 +22,14 @@ manner. For some platforms and configurations, the
 @scheme[separate-window?] parameter determines if the browser creates
 a new window to display the URL or not.
 
-Under Windows, @scheme[send-url] normally uses @scheme[shell-execute]
+On Windows, @scheme[send-url] normally uses @scheme[shell-execute]
 to launch a browser. (If the URL appears to contain a fragment, it may
 use an intermediate redirecting file due to a bug in IE7.)
 
-Under Mac OS X, @scheme[send-url] runs @exec{osascript} to start the
+On Mac OS X, @scheme[send-url] runs @exec{osascript} to start the
 user's chosen browser.
 
-Under Unix, @scheme[send-url] uses a user-preference, or when none is
+On Unix, @scheme[send-url] uses a user-preference, or when none is
 set, it will look for a known browser.  See the description of
 @scheme[external-browser] for details.
 
@@ -76,7 +76,7 @@ old temporary files are still deleted as described above.}
 A parameter that can hold a procedure to override how a browser is
 started, or @scheme[#f] to use the default platform-dependent command.
 
-Under Unix, the command that is used depends on the
+On Unix, the command that is used depends on the
 @scheme['external-browser] preference.  If the preference is unset,
 @scheme[send-url] uses the first of the browsers from
 @scheme[unix-browser-list] for which the executable is found.

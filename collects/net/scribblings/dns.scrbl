@@ -51,8 +51,8 @@ for @scheme["ollie.cs.rice.edu"] might be @scheme["cs.rice.edu"].}
 @defproc[(dns-find-nameserver) (or/c string? false/c)]{
 
 Attempts to find the address of a nameserver on the present system.
-Under Unix, this procedure parses @filepath{/etc/resolv.conf} to
-extract the first nameserver address. Under Windows, it runs
+On Unix and Mac OS X, this procedure parses @filepath{/etc/resolv.conf} to
+extract the first nameserver address. On Windows, it runs
 @exec{nslookup.exe}.}
 
 @; ----------------------------------------
