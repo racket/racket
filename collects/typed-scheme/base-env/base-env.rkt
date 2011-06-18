@@ -572,7 +572,6 @@
 [unsafe-struct*-set! top-func]
 
 [continuation-mark-set-first (-> (-opt -Cont-Mark-Set) Univ Univ)]
-[current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
 
 ;; Section 3.7
@@ -1086,8 +1085,25 @@
 [current-memory-use (-> -Nat)]
 [dump-memory-stats (-> Univ)]
 
-
+;Section 14.7
 [getenv (-> -String (Un -String (-val #f)))]
+[putenv (-> -String -String B)]
+[system-type
+ (cl->*
+  (-> (-val 'os) (Un (-val 'unix) (-val 'windows) (-val 'macosx)))
+  (-> (-val 'gc) (Un (-val 'cgc) (-val '3m)))
+  (-> (-val 'link) (Un (-val 'static) (-val 'shared) (-val 'dll) (-val 'framework)))
+  (-> (-val 'so-suffix) -Bytes)
+  (-> (-val 'machine) -String))]
+[system-language+country (-> -String)]
+[system-library-subpath (->opt [(Un (-val #f) (-val 'cgc) (-val '3m))] -Path)]
+
+[version (-> -String)]
+[banner (-> -String)]
+
+[current-command-line-arguments (-Param (-vec -String) (-vec -String))]
+[current-thread-initial-stack-size (-Param -PosInt -PosInt)]
+;vector-set-performance-stats! TODO complicated
 
 ;; syntax operations
 
