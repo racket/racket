@@ -1107,11 +1107,25 @@
 
 ;; syntax operations
 
-[expand (-> (-Syntax Univ) (-Syntax Univ))]
-[expand-once (-> (-Syntax Univ) (-Syntax Univ))]
+
+
+
+;Section 11.2
+[syntax? (make-pred-ty (-Syntax Univ))]
 
 [syntax-source (-> (-Syntax Univ) Univ)]
-[syntax-position (-> (-Syntax Univ) (-opt N))]
+[syntax-line (-> (-Syntax Univ) (-opt -PosInt))]
+[syntax-column (-> (-Syntax Univ) (-opt -Nat))]
+[syntax-position (-> (-Syntax Univ) (-opt -PosInt))]
+[syntax-span (-> (-Syntax Univ) (-opt -Nat))]
+
+[syntax-original? (-poly (a) (-> (-Syntax a) B))]
+[syntax-source-module (->opt (-Syntax Univ) [Univ] (Un (-val #f) -Path Sym -Module-Path-Index))]
+[syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
+[syntax->list (-poly (a) (-> (-Syntax (-lst a)) (-lst (-Syntax a))))]
+[syntax->datum (cl->* (-> Any-Syntax -Sexp)
+                      (-> (-Syntax Univ) Univ))]
+
 [datum->syntax
  (let* ([Pre Syntax-Sexp]
         [I (-Syntax Sym)]
@@ -1132,14 +1146,184 @@
     (->opt ctxt Pre  [srcloc prop cert] A)
     (->opt ctxt Univ [srcloc prop cert] S)))]
 
-[syntax->datum (cl->* (-> Any-Syntax -Sexp)
-                      (-> (-Syntax Univ) Univ))]
-[syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
-[syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [identifier? (make-pred-ty (-Syntax Sym))]
-[syntax? (make-pred-ty (-Syntax Univ))]
+
+[generate-temporaries (-> (Un (-Syntax (-lst Univ)) (-lst Univ)) (-lst (-Syntax Sym)))]
+[identifier-prune-lexical-context (->opt (-Syntax Sym) [(-lst Sym)] (-Syntax Sym))]
+[identifier-prune-to-source-module (-> (-Syntax Sym) (-Syntax Sym))]
+
+;Section 11.3
+
+[bound-identifier=? (Ident Ident [(-opt -Integer)] . ->opt . B)]
+
+[free-identifier=? (Ident Ident [(-opt -Integer)] . ->opt . B)]
+[free-label-identifier=? (Ident Ident . -> . B)]
+[free-transformer-identifier=? (Ident Ident . -> . B)]
+[free-template-identifier=? (Ident Ident . -> . B)]
+
+[check-duplicate-identifier ((-lst (-Syntax Sym)) . -> . (-opt (-Syntax Sym)))]
+
+
+[identifier-binding
+ (Ident [(-opt -Integer)]. ->opt .
+  (*Un (-val 'lexical) (-val #f)
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair (*Un (-val 0) (-val 1))
+   (-pair (-opt -Integer)
+   (-pair (-opt -Integer) (-val '()))))))))))]
+
+[identifier-transformer-binding
+ (Ident . -> .
+  (*Un (-val 'lexical) (-val #f)
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair (*Un (-val 0) (-val 1))
+   (-pair (-opt -Integer)
+   (-pair (-opt -Integer) (-val '()))))))))))]
+[identifier-template-binding
+ (Ident . -> .
+  (*Un (-val 'lexical) (-val #f)
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair (*Un (-val 0) (-val 1))
+   (-pair (-opt -Integer)
+   (-pair (-opt -Integer) (-val '()))))))))))]
+[identifier-label-binding
+ (Ident . -> .
+  (*Un (-val 'lexical) (-val #f)
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair -Module-Path-Index
+   (-pair -Symbol
+   (-pair (*Un (-val 0) (-val 1))
+   (-pair (-opt -Integer)
+   (-pair (-opt -Integer) (-val '()))))))))))]
+
+;Section 11.4
+[set!-transformer? (-> Univ B)]
+[make-set!-transformer (-> (-> (-Syntax Univ) (-Syntax Univ)) Univ)]
+[set!-transformer-procedure (-> Univ (-> (-Syntax Univ) (-Syntax Univ)))]
+[prop:set!-transformer -Struct-Type-Property]
+
+
+[rename-transformer? (-> Univ B)]
+[make-rename-transformer (->opt (-Syntax Sym) [(-> (-Syntax Sym) (-Syntax Sym))] Univ)]
+[rename-transformer-target (-> Univ (-Syntax Sym))]
+[prop:rename-transformer -Struct-Type-Property]
+
+
+[local-expand
+ (->opt (-Syntax Univ)
+        (Un (-val 'expression)
+            (-val 'top-level)
+            (-val 'module)
+            (-val 'module-begin)
+            (-lst Univ))
+        (-opt (-lst (-Syntax Sym)))
+        [(Un -Internal-Definition-Context (-pair -Internal-Definition-Context (-lst -Internal-Definition-Context)) (-val #f))]
+        (-Syntax Univ))]
+
+[syntax-local-expand-expression (-> (-Syntax Univ) (-values (list (-Syntax Univ) (-Syntax Univ))))]
+
+[local-expand/capture-lifts
+ (->opt (-Syntax Univ)
+        (Un (-val 'expression)
+            (-val 'top-level)
+            (-val 'module)
+            (-val 'module-begin)
+            (-lst Univ))
+        (-opt (-lst (-Syntax Sym)))
+        [(Un -Internal-Definition-Context (-pair -Internal-Definition-Context (-lst -Internal-Definition-Context)) (-val #f))
+         Univ]
+        (-Syntax Univ))]
+
+[local-transformer-expand
+ (->opt (-Syntax Univ)
+        (Un (-val 'expression)
+            (-val 'top-level)
+            (-val 'module)
+            (-val 'module-begin)
+            (-lst Univ))
+        (-opt (-lst (-Syntax Sym)))
+        [(Un -Internal-Definition-Context (-pair -Internal-Definition-Context (-lst -Internal-Definition-Context)) (-val #f))]
+        (-Syntax Univ))]
+
+
+[local-transformer-expand/capture-lifts
+ (->opt (-Syntax Univ)
+        (Un (-val 'expression)
+            (-val 'top-level)
+            (-val 'module)
+            (-val 'module-begin)
+            (-lst Univ))
+        (-opt (-lst (-Syntax Sym)))
+        [(Un -Internal-Definition-Context (-pair -Internal-Definition-Context (-lst -Internal-Definition-Context)) (-val #f))
+         Univ]
+        (-Syntax Univ))]
+
+
+[internal-definition-context? (make-pred-ty -Internal-Definition-Context)]
+[syntax-local-make-definition-context (->opt [(-opt -Internal-Definition-Context)] -Internal-Definition-Context)]
+[syntax-local-bind-syntaxes (-> (-lst (-Syntax Sym)) (-opt (-Syntax Univ)) -Internal-Definition-Context -Void)]
+[internal-definition-context-seal (-> -Internal-Definition-Context -Void)]
+[identifier-remove-from-definition-context (-> (-Syntax Sym) (Un -Internal-Definition-Context (-lst -Internal-Definition-Context)) (-Syntax Sym))]
+
+[syntax-local-value (->opt (-Syntax Sym) [(-opt (-> Univ)) (-opt -Internal-Definition-Context)] Univ)]
+[syntax-local-value/immediate (->opt (-Syntax Sym) [(-opt (-> (-values (list Univ Univ)))) (-opt -Internal-Definition-Context)]
+                                     (-values (list Univ Univ)))]
+[syntax-local-lift-expression (-> (-Syntax Univ) (-Syntax Sym))]
+[syntax-local-lift-values-expression (-> -Nat (-Syntax Univ) (-lst (-Syntax Sym)))]
+[syntax-local-lift-context (-> Univ)]
+[syntax-local-lift-module-end-declaration (-> (-Syntax Univ) -Void)]
+[syntax-local-lift-require (-poly (a) (-> Univ (-Syntax a) (-Syntax a)))]
+[syntax-local-lift-provide (-> Univ -Void)]
+[syntax-local-name (-> Univ)]
+[syntax-local-context (-> (Un (-val 'expression) (-val 'top-level) (-val 'module) (-val 'module-begin) (-lst Univ)))]
+[syntax-local-phase-level (-> (-opt -Int))]
+[syntax-local-module-exports (-> -Module-Path (-values (list (-lst Sym) (-lst Sym) (-lst Sym))))]
+[syntax-local-get-shadower (-> (-Syntax Sym) (-Syntax Sym))]
+[syntax-local-certifier (->opt [B] (-poly (a) (->opt (-Syntax a) [Univ (-opt (-poly (b) (-> (-Syntax b) (-Syntax b))))] (-Syntax a))))]
+[syntax-transforming? (-> B)]
+
+[syntax-local-introduce (-poly (a) (-> (-Syntax a) (-Syntax a)))]
+[make-syntax-introducer (-> (-poly (a) (-> (-Syntax a) (-Syntax a))))]
+[make-syntax-delta-introducer (->opt (-Syntax Univ) [(-opt (-Syntax Univ)) (-opt -Int)] (-poly (a) (-> (-Syntax a) (-Syntax a))))]
+[syntax-local-make-delta-introducer (-> (-Syntax Sym) (-> (-Syntax Sym) (-Syntax Sym)))]
+
+[syntax-local-transforming-module-provides? (-> B)]
+[syntax-local-module-defined-identifiers (-> (-values (list (-Syntax Sym) (-Syntax Sym))))]
+[syntax-local-module-required-identifiers (-> (-opt -Module-Path) (Un B -Int) (-lst (-pair (-opt -Int) (-lst (-Syntax Sym)))))]
+
+;Section 11.5
+
+;Section 11.6
+
+;Section 11.7
 [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                    (-> (-Syntax Univ) Univ Univ)))]
+[syntax-property-symbol-keys (-> (-Syntax Univ) (-lst Sym))]
+[syntax-track-origin (-poly (a) (-> (-Syntax a) (-Syntax Univ) (-Syntax Univ) (-Syntax a)))]
+
+;Section 11.8
+[syntax-recertify (-poly (a) (-> (-Syntax a) (-Syntax Univ) -Inspector Univ (-Syntax a)))]
+
+;Section 11.9
+[expand (-> Univ (-Syntax Univ))]
+[expand-syntax (-> (-Syntax Univ) (-Syntax Univ))]
+[expand-once (-> Univ (-Syntax Univ))]
+[expand-syntax-once (-> (-Syntax Univ) (-Syntax Univ))]
+[expand-to-top-form (-> Univ (-Syntax Univ))]
+[expand-syntax-to-top-form (-> (-Syntax Univ) (-Syntax Univ))]
+
+
+
 
 [values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
 [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
@@ -1228,9 +1412,6 @@
 [tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
 
 
-;; with-stx.rkt
-[generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]
-[check-duplicate-identifier ((-lst (-Syntax Sym)) . -> . (-opt (-Syntax Sym)))]
 
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
