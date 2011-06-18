@@ -2,7 +2,7 @@
 #| -*- scheme -*-
 exec racket -um "$0" "$@"
 |#
-#lang scheme/base
+#lang racket/base
 
 #|
 
@@ -236,8 +236,8 @@ path/s is either such a string or a list of them.
 ;; ----------------------------------------------------------------------------
 ;; Reading and writing
 
-(require scheme/file scheme/path scheme/list scheme/string
-         (for-syntax scheme/base))
+(require racket/file racket/path racket/list racket/string
+         (for-syntax racket/base))
 
 (define-syntax (this-file stx)
   (let ([src (syntax-source stx)])
@@ -372,7 +372,7 @@ path/s is either such a string or a list of them.
     (printf "\nKnown properties:\n")
     (for ([p (in-list known-props)])
       (printf "  ~s: ~a\n" (prop-name p) (prop-description p)))
-    (para "See in-script comments for a scheme interface"))
+    (para "See in-script comments for a racket interface"))
   (define (verbs)
     `([("help" "h" "-h" "--help") "help: show this help" ,help]
       [("get") "get <prop> <path/s>" ,get]
@@ -474,8 +474,9 @@ path/s is either such a string or a list of them.
   ;; --------------------
   (make-prop
    'drdr:command-line
-   (string-append "command-line string (space-separated,"
-                  " empty => no execution, \"~s\" => the file)")
+   (string-append
+    "command-line string (space-separated, missing => default execution,"
+    " empty => no execution, \"~s\" => the file)")
    (lambda (str)
      (define (bad) (error "expecting an empty string, or one with `~s'"))
      (if (equal? str "")
@@ -1823,7 +1824,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/pathlib.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/pconvert.rktl" drdr:command-line #f
 "collects/tests/racket/place-chan-rand-help.rkt" responsible (tewk)
-"collects/tests/racket/place-chan-rand.rkt" responsible (tewk) drdr:command-line (racket *)
+"collects/tests/racket/place-chan-rand.rkt" responsible (tewk)
 "collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:command-line (racket "-tm" *)
 "collects/tests/racket/place.rktl" responsible (tewk) drdr:command-line (racket "-f" *)
 "collects/tests/racket/port.rktl" drdr:command-line #f
