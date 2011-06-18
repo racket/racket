@@ -10,11 +10,12 @@
          racket/function
          racket/pretty
          unstable/function
+         racket/udp
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
-         racket/pretty
+         racket/pretty racket/udp
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
@@ -170,6 +171,7 @@
 (define -Output-Port (make-Base 'Output-Port #'output-port? output-port? #'-Output-Port))
 (define -Input-Port (make-Base 'Input-Port #'input-port? input-port? #'-Input-Port))
 (define -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener? tcp-listener? #'-TCP-Listener))
+(define -UDP-Socket (make-Base 'UDP-Socket #'udp? udp? #'-UDP-Socket))
 
 (define -FlVector (make-Base 'FlVector #'flvector? flvector? #'-FlVector))
 

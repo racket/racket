@@ -1397,19 +1397,59 @@
 [argmin (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 [argmax (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 
-;; scheme/tcp
-[tcp-listener? (make-pred-ty -TCP-Listener)]
-[tcp-abandon-port (-Port . -> . -Void)]
+;;Section 14.3.1
+;;racket/tcp
+
+[tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
+[tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
+[tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-accept (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
 [tcp-accept/enable-break (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
+
 [tcp-accept-ready? (-TCP-Listener . -> . B )]
+[tcp-close (-TCP-Listener . -> . -Void )]
+[tcp-listener? (make-pred-ty -TCP-Listener)]
+
+[tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
 		(-Port [(-val #f)] . ->opt . (-values (list -String -String)))
 		(-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
-[tcp-close (-TCP-Listener . -> . -Void )]
-[tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
-[tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
-[tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
+
+[tcp-port? (-> Univ B)]
+
+
+;;Section 14.3.2
+;;racket/udp
+
+[udp-open-socket (->opt [(-opt -String) (-opt -String)] -UDP-Socket)]
+[udp-bind! (-> -UDP-Socket (-opt -String) -PosInt)]
+[udp-connect! (-> -UDP-Socket (-opt -String) -PosInt)]
+
+[udp-send-to (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat] -Void)]
+[udp-send (->opt -UDP-Socket -Bytes [-Nat -Nat] -Void)]
+[udp-send-to* (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat] B)]
+[udp-send* (->opt -UDP-Socket -Bytes [-Nat -Nat] B)]
+[udp-send-to/enable-break (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat] -Void)]
+[udp-send/enable-break (->opt -UDP-Socket -Bytes [-Nat -Nat] -Void)]
+
+
+[udp-receive! (->opt -UDP-Socket -Bytes [-Nat -Nat] (-values (list -Nat -String -Nat)))]
+[udp-receive!* (->opt -UDP-Socket -Bytes [-Nat -Nat] (-values (list (-opt -Nat) (-opt -String) (-opt -Nat))))]
+[udp-receive!/enable-break (->opt -UDP-Socket -Bytes [-Nat -Nat] (-values (list -Nat -String -Nat)))]
+
+[udp-close (-> -UDP-Socket -Void)]
+[udp? (make-pred-ty -UDP-Socket)]
+[udp-bound? (-> -UDP-Socket B)]
+[udp-connected? (-> -UDP-Socket B)]
+
+[udp-addresses
+ (cl->*
+  (->opt -UDP-Socket [(-val #f)] (-values (list -String -String)))
+  (-> -UDP-Socket (-values (list -String -Nat -String -Nat))))]
+
+
+
+
 
 
 
