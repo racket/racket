@@ -15,6 +15,10 @@
   (i (cons i i)
      (vector-immutable i ...)
      (string->immutable-string str) 
+     (make-prefab-struct pf-type legal-message ...)
+     (string->path (string-append string "x"))
+     (let-values ([(a b) (place-channel)]) a)
+     (let-values ([(a b) (place-channel)]) b)
      f)
   
   (f '()
@@ -22,7 +26,15 @@
      #t
      num
      (string-ref one-len-str 0))
+  
+  (pf-type sym
+           ;; these ones place constraints on the number of fields (why?)
+           ;; so the generator needs to be smarter here
+           #;(list sym byte (list byte legal-message) (vector))
+           #;(list* sym byte (list byte legal-message) (vector) pf-type))
+  
   (str (string-append one-len-str ...))
+  (sym (string->symbol str))
   (one-len-str "a" "b" "λ" "龍")
   (num fx
        fl
@@ -51,7 +63,8 @@
 (define ns (make-base-namespace))
 (parameterize ([current-namespace ns])
   (namespace-require 'racket/flonum)
-  (namespace-require 'racket/fixnum))
+  (namespace-require 'racket/fixnum)
+  (namespace-require 'racket/place))
 
 (define (try-message msg-code)
   ;; (printf "trying ~s\n" msg-code) ;; helpful when crashing ...
