@@ -219,6 +219,13 @@
 (define -Variable-Reference (make-Base 'Variable-Reference #'variable-reference? variable-reference? #'-Variable-Reference))
 
 
+(define -Internal-Definition-Context (make-Base 'Internal-Definition-Context
+                                      #'internal-definition-context?
+                                      internal-definition-context?
+                                      #'-Internal-Definition-Context))
+
+
+
 
 
 (define -top (make-Top))
