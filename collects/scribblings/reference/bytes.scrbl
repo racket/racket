@@ -439,9 +439,9 @@ Certain encoding combinations are always available:
    @secref["encodings"]).}
 
  @item{@scheme[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")]
-   --- converts UTF-8 to UTF-16 under @|AllUnix|, where each UTF-16
+   --- converts UTF-8 to UTF-16 on @|AllUnix|, where each UTF-16
    code unit is a sequence of two bytes ordered by the current
-   platform's endianness. Under Windows, the input can include
+   platform's endianness. On Windows, the input can include
    encodings that are not valid UTF-8, but which naturally extend the
    UTF-8 encoding to support unpaired surrogate code units, and the
    output is a sequence of UTF-16 code units (as little-endian byte
@@ -450,15 +450,15 @@ Certain encoding combinations are always available:
  @item{@scheme[(bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")]
    --- like @scheme[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")],
    but an input byte that is not part of a valid UTF-8 encoding
-   sequence (or valid for the unpaired-surrogate extension under
+   sequence (or valid for the unpaired-surrogate extension on
    Windows) is effectively replaced with @scheme[(char->integer #\?)].}
 
  @item{@scheme[(bytes-open-converter "platform-UTF-16" "platform-UTF-8")]
    --- converts UTF-16 (bytes orderd by the current platform's
-   endianness) to UTF-8 under @|AllUnix|. Under Windows, the input can
+   endianness) to UTF-8 on @|AllUnix|. On Windows, the input can
    include UTF-16 code units that are unpaired surrogates, and the
    corresponding output includes an encoding of each surrogate in a
-   natural extension of UTF-8. Under @|AllUnix|, surrogates are
+   natural extension of UTF-8. On @|AllUnix|, surrogates are
    assumed to be paired: a pair of bytes with the bits @scheme[#xD800]
    starts a surrogate pair, and the @scheme[#x03FF] bits are used from
    the pair and following pair (independent of the value of the
@@ -471,8 +471,8 @@ A newly opened byte converter is registered with the current custodian
 (see @secref["custodians"]), so that the converter is closed when
 the custodian is shut down. A converter is not registered with a
 custodian (and does not need to be closed) if it is one of the
-guaranteed combinations not involving @scheme[""] under Unix, or if it
-is any of the guaranteed combinations (including @scheme[""]) under
+guaranteed combinations not involving @scheme[""] on Unix, or if it
+is any of the guaranteed combinations (including @scheme[""]) on
 Windows and Mac OS X.
 
 @margin-note{In the Racket software distributions for Windows, a suitable
@@ -481,7 +481,7 @@ Windows and Mac OS X.
 The set of available encodings and combinations varies by platform,
 depending on the @exec{iconv} library that is installed; the
 @scheme[from-name] and @scheme[to-name] arguments are passed on to
-@tt{iconv_open}. Under Windows, @filepath{iconv.dll} or
+@tt{iconv_open}. On Windows, @filepath{iconv.dll} or
 @filepath{libiconv.dll} must be in the same directory as
 @filepath{libmzsch@italic{VERS}.dll} (where @italic{VERS} is a version
 number), in the user's path, in the system directory, or in the

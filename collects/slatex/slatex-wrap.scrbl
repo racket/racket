@@ -12,7 +12,7 @@
 @defmodule[slatex/slatex-wrapper]
 
 To use SLaTeX as a standalone program, either drag your
-@filepath{.tex} file onto SLaTeX (under Windows or MacOS X), or type
+@filepath{.tex} file onto SLaTeX (on Windows or MacOS X), or type
 @exec{slatex file} in a command shell.
 
 @emph{NOTE:} If you compile your @filepath{.tex} file without using

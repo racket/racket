@@ -15,7 +15,7 @@ system.
 After the @exec{raco distribute} command, supply a directory to
 contain the combined files for a distribution. Each command-line
 argument is an executable to include in the distribution, so multiple
-executables can be packaged together. For example, under Windows,
+executables can be packaged together. For example, on Windows,
 
 @commandline{raco distribute greetings hello.exe goodbye.exe}
 
@@ -31,11 +31,11 @@ platform-specific:
 
 @itemize[
 
-@item{Under Windows, executables are put directly into the
+@item{On Windows, executables are put directly into the
       distribution directory, and DLLs and other run-time files go
       into a @filepath{lib} sub-directory.}
 
-@item{Under Mac OS X, GUI executables go into the distribution
+@item{On Mac OS X, GUI executables go into the distribution
       directory, other executables go into a @filepath{bin}
       subdirectory, and frameworks (i.e., shared libraries) go into a
       @filepath{lib} sub-directory along with other run-time files. As
@@ -43,7 +43,7 @@ platform-specific:
       executable, then the @filepath{lib} directory is hidden inside
       the application bundle.}
 
-@item{Under Unix, executables go into a @filepath{bin} subdirectory,
+@item{On Unix, executables go into a @filepath{bin} subdirectory,
       shared libraries (if any) go into a @filepath{lib} subdirectory
       along with other run-time files, and wrapped executables are
       placed into a @filepath{lib/plt} subdirectory with

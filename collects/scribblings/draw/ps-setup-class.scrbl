@@ -34,8 +34,9 @@ filename unless @racket[copy-filename?] is true.
 @defmethod[(get-command)
            string?]{
 
-Gets the printer command used to print a file in X. The default is
- @scheme["lpr"]. This value is not used by other platforms.
+Historically, gets the printer command used to print a file on
+ Unix. The default is @scheme["lpr"]. This value is not currently used
+ by any platforms.
 
 }
 
@@ -164,8 +165,8 @@ The translation is not scaled by the numbers returned from
 @defmethod[(set-command [command string?])
            void?]{
 
-Sets the printer command used to print a file under X. See
- @method[ps-setup% get-command].
+Historically, sets the printer command that was used to print a file
+ on Unix. See @method[ps-setup% get-command].
 
 }
 
@@ -227,7 +228,7 @@ The margins are in unscaled @scheme[post-script-dc%] units, which
 Sets the printing mode controlling where output is sent. See
  @method[ps-setup% get-mode].
 
-Under Windows and Mac OS X, if @scheme['preview] or @scheme['printer]
+On Windows and Mac OS X, if @scheme['preview] or @scheme['printer]
  is provided, @|MismatchExn|.
 
 }
@@ -250,7 +251,7 @@ Sets the name of the current paper type. See @method[ps-setup%
 @defmethod[(set-preview-command [command string?])
            void?]{
 
-Sets the command used to view a PostScript file under X.  See
+Sets the command used to view a PostScript file on Unix.  See
 @method[ps-setup% get-preview-command].
 
 }

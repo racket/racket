@@ -108,8 +108,8 @@ Produces a list of paths as follows:
   default collection path list (as constructed by the first three
   bullets above) is used directly.
 
-  Note that under @|AllUnix|, paths are separated by @litchar{:}, and
-  under Windows by @litchar{;}.  Also,
+  Note that on @|AllUnix|, paths are separated by @litchar{:}, and
+  on Windows by @litchar{;}.  Also,
   @racket[path-list-string->path-list] splices the default paths at an
   empty path, for example, with many Unix shells you can set
   @envvar{PLTCOLLECTS} to @tt{":`pwd`"}, @tt{"`pwd`:"}, or

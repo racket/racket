@@ -31,7 +31,7 @@ outputting the same format as the @exec{gzip} utility. The
 the compressed stream. The @scheme[timestamp] number is also embedded
 in the output stream, as the modification date of the original file
 (in Unix seconds, as @scheme[file-or-directory-modify-seconds] would
-report under Unix).}
+report on Unix).}
 
 
 @defproc[(deflate [in input-port?]

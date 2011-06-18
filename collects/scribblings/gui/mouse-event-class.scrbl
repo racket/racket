@@ -134,7 +134,7 @@ Returns @scheme[#t] if the Caps Lock key was on for the event.
 
 Returns @scheme[#t] if the Control key was down for the event.
 
-Under Mac OS X, if a control-key press is combined with a mouse button
+On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
  @method[mouse-event% get-control-down] for the event reports
  @scheme[#f].
@@ -161,7 +161,7 @@ Returns @scheme[#t] if the left mouse button was down (but not pressed) during t
 @defmethod[(get-meta-down)
            boolean?]{
 
-Returns @scheme[#t] if the Meta (X), Alt (Windows), or Command (Mac OS
+Returns @scheme[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
  X) key was down for the event.
 
 }
@@ -170,7 +170,7 @@ Returns @scheme[#t] if the Meta (X), Alt (Windows), or Command (Mac OS
            boolean?]{
 
 Returns @scheme[#t] if the middle mouse button was down (but not
- pressed) for the event.  Under Mac OS X, a middle-button click is
+ pressed) for the event.  On Mac OS X, a middle-button click is
  impossible.
 
 }
@@ -179,7 +179,7 @@ Returns @scheme[#t] if the middle mouse button was down (but not
            boolean?]{
 
 Returns @scheme[#t] if the right mouse button was down (but not
- pressed) for the event. Under Mac OS X, a control-click combination
+ pressed) for the event. On Mac OS X, a control-click combination
  is treated as a right-button click.
 
 }
@@ -247,7 +247,7 @@ Sets whether the Caps Lock key was on for the event.
 
 Sets whether the Control key was down for the event.
 
-Under Mac OS X, if a control-key press is combined with a mouse button
+On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
  @method[mouse-event% get-control-down] for the event reports
  @scheme[#f].
@@ -275,7 +275,7 @@ the event.
 @defmethod[(set-meta-down [down? any/c])
            void?]{
 
-Sets whether the Meta (X), Alt (Windows), or Command (Mac OS X) key
+Sets whether the Meta (Unix), Alt (Windows), or Command (Mac OS X) key
  was down for the event.
 
 }
@@ -284,7 +284,7 @@ Sets whether the Meta (X), Alt (Windows), or Command (Mac OS X) key
            void?]{
 
 Sets whether the middle mouse button was down (but not pressed) for
- the event.  Under Mac OS X, a middle-button click is impossible.
+ the event.  On Mac OS X, a middle-button click is impossible.
 
 }
 
@@ -292,7 +292,7 @@ Sets whether the middle mouse button was down (but not pressed) for
            void?]{
 
 Sets whether the right mouse button was down (but not pressed) for the
- event. Under Mac OS X, a control-click combination by the user is
+ event. On Mac OS X, a control-click combination by the user is
  treated as a right-button click.
 
 }

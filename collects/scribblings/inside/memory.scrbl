@@ -51,14 +51,14 @@ The basic collector allocation functions are:
  @item{@cppi{scheme_malloc_tagged} --- Allocates collectable memory
  that contains a mixture of pointers and atomic data. With the
  conservative collector, this function is the same
- as @cppi{scheme_malloc}, but under 3m, the type tag stored at the
+ as @cppi{scheme_malloc}, but on 3m, the type tag stored at the
  start of the block is used to determine the size and shape of the
  object for future garbage collection (as described
  in @secref["im:3m"]).}
 
  @item{@cppi{scheme_malloc_allow_interior} --- Allocates an array of
  pointers such that the array is never moved by the garbage collector
- and references are allowed into the middle of the block under 3m (and
+ and references are allowed into the middle of the block on 3m (and
  pointers to the middle prevent the block from being collected). Use
  this procedure sparingly, because small, non-moving objects are
  handled less efficiently than movable objects by the 3m collector.
@@ -101,7 +101,7 @@ function can be safely called even when it's not needed, but it must
 not be called multiple times for a single memory address.
 
 Collectable memory can be temporarily locked from collection by using
-the reference-counting function @cppi{scheme_dont_gc_ptr}. Under 3m,
+the reference-counting function @cppi{scheme_dont_gc_ptr}. On 3m,
 such locking does not prevent the object from being moved.
 
 Garbage collection can occur during any call into Racket or its
@@ -807,7 +807,7 @@ for CGC:
     }
 }
 
-Under 3m, the above code does not quite work, because @var{stack_addr}
+On 3m, the above code does not quite work, because @var{stack_addr}
 must be the beginning or end of a local-frame registration. Worse, in
 CGC or 3m, if @cpp{real_main} is declared @cpp{static}, the compiler
 may inline it and place variables containing collectable values deeper
@@ -829,8 +829,8 @@ requires a few frames.
 
 If @var{stack_end} is @cpp{NULL}, then the stack end is computed
 automatically: the stack size assumed to be the limit reported by
-@cpp{getrlimit} under Unix and Mac OS X, or it is assumed to be 1 MB
-under Windows; if this size is greater than 8 MB, then 8 MB is
+@cpp{getrlimit} on Unix and Mac OS X, or it is assumed to be 1 MB
+on Windows; if this size is greater than 8 MB, then 8 MB is
 assumed, instead; the size is decremented by 50000 bytes to cover a
 large margin of error; finally, the size is subtracted from (for
 stacks that grow down) or added to (for stacks that grow up) the stack
@@ -844,7 +844,7 @@ overflow.}
            [void* ptr]
            [int   tls_index])]{
 
-Only available under Windows; registers @var{ptr} as the address of a
+Only available on Windows; registers @var{ptr} as the address of a
  thread-local pointer variable that is declared in the main
  executable. The variable's storage will be used to implement
  thread-local storage within the Racket run-time. See
@@ -1106,16 +1106,16 @@ foreign function to be called. The following protocols are supported:
 
  @item{@racket['osapi_ptr_int->void] corresponds to @cpp{void
  (*)(void*, int)}, but using the stdcall calling convention
- under Windows.}
+ on Windows.}
 
  @item{@racket['osapi_ptr_ptr->void] corresponds to @cpp{void
  (*)(void*, void*)}, but using the stdcall calling convention
- under Windows.}
+ on Windows.}
 
  @item{@racket['osapi_ptr_int_int_int_int_ptr_int_int_long->void]
  corresponds to @cpp{void (*)(void*, int, int, int, int, void*,
  int, int, long)}, but using the stdcall calling convention
- under Windows.}
+ on Windows.}
 
 ]
 

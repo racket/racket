@@ -736,10 +736,10 @@ Controls, such as buttons and list boxes, handle keyboard and mouse
  focus-navigation events. See @xmethod[frame% on-subwindow-char] and
  @xmethod[dialog% on-subwindow-char] for details.  Certain OS-specific
  key combinations are captured at a low level, and cannot be
- overridden. For example, under Windows and X, pressing and releasing
+ overridden. For example, on Windows and Unix, pressing and releasing
  Alt always moves the keyboard focus to the menu bar. Similarly,
- Alt-Tab switches to a different application under Windows. (Alt-Space
- invokes the system menu under Windows, but this shortcut is
+ Alt-Tab switches to a different application on Windows. (Alt-Space
+ invokes the system menu on Windows, but this shortcut is
  implemented by @method[top-level-window<%> on-system-menu-char],
  which is called by @xmethod[frame% on-subwindow-char] and
  @xmethod[dialog% on-subwindow-char].)

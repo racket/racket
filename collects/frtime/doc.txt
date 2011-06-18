@@ -209,7 +209,7 @@ numeric keypad; the right paddle moves with the mouse.  The 'r' key
 resets the score.
 
 net-pong-*.ss : A networked version of the pong/air-hockey game.
-Currently known to work under Linux.  To play, open the client on one
+Currently known to work on Linux.  To play, open the client on one
 machine and the server on another.  Execute both (and require if
 necessary, depending on language level).  Evaluate (self) on each.
 Results will be something like:

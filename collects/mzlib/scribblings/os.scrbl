@@ -24,8 +24,8 @@ Truncates or extends the given @scheme[file] so that it is
 does not have sufficient privilege to truncate the file, the
 @scheme[exn:fail] exception is raised.
 
-@bold{WARNING:} under Unix, the implementation assumes that the
-system's @scheme[ftruncate] function accepts a @tt{long long} second
+@bold{WARNING:} on Unix, the implementation assumes that the
+platform's @tt{ftruncate} function accepts a @tt{long long} second
 argument.}
 
 

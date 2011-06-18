@@ -275,9 +275,9 @@ If the canvas was created with the @indexed-scheme['transparent] style,
 @defmethod[(set-resize-corner [on? any/c])
            void?]{
 
-Under Mac OS X, enables or disables space for a resize tab at the
+On Mac OS X, enables or disables space for a resize tab at the
  canvas's lower-right corner when only one scrollbar is visible. This
- method has no effect under Windows or X, and it has no effect when
+ method has no effect on Windows or Unix, and it has no effect when
  both or no scrollbars are visible. The resize corner is disabled by
  default, but it can be enabled when a canvas is created with the
  @scheme['resize-corner] style.

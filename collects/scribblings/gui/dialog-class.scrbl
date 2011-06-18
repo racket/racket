@@ -32,8 +32,8 @@ title bar.  If the dialog's label is changed (see
 @method[window<%> set-label]), the title bar is updated.
 
 The @scheme[parent] argument can be @scheme[#f] or an existing
- frame. Under Windows, if @scheme[parent] is an existing frame, the
- new dialog is always on top of its parent. Under Windows and X, a
+ frame. On Windows, if @scheme[parent] is an existing frame, the
+ new dialog is always on top of its parent. On Windows and Unix, a
  dialog is iconized when its parent is iconized.
 
 If @scheme[parent] is @scheme[#f], then the eventspace for the new
@@ -44,7 +44,7 @@ If @scheme[parent] is @scheme[#f], then the eventspace for the new
 If the @scheme[width] or @scheme[height] argument is not @scheme[#f],
  it specifies an initial size for the dialog (in pixels) assuming that
  it is larger than the minimum size, otherwise the minimum size is
- used. Under Windows and Mac OS X (and with some X window managers)
+ used. On Windows and Mac OS X (and with some Unix window managers)
  dialogs are not resizeable.
 
 If the @scheme[x] or @scheme[y] argument is not @scheme[#f], it

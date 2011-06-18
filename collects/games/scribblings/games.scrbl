@@ -7,7 +7,7 @@
 
 @title{@bold{Games}: Fun Examples}
 
-The @exec{PLT Games} executable (or @exec{plt-games} under Unix) lets
+The @exec{PLT Games} executable (or @exec{plt-games} on Unix) lets
 you select one of the games distributed by PLT or other games
 installed as sub-collections of the @filepath{games} collection (see
 @secref["new-games"]).

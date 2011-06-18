@@ -508,7 +508,7 @@ The lower left of the string begins at @racket[p].}
 @defproc[(((draw-pixmap-posn [file path-string?] 
                              [type (one-of/c 'unknown 'unknown/mask 
                                              'gif 'gif/mask 'jpeg 'png 'png/mask 
-                                             'xbm 'xpm 'bmp 'pict)
+                                             'xbm 'xpm 'bmp)
                                    'unknown/mask])
            [viewport viewport?])
           [p posn?]
@@ -521,8 +521,7 @@ The lower left of the string begins at @racket[p].}
 Draws a pixmap into @racket[viewport] with its upper left corner at
 position @racket[p]. If @racket[type] is @racket['unknown] or
 @racket['unknown/mask], then the content of the file is examined to
-determine the type.  All formats are supported on all platforms,
-except @racket['pict] which is only supported under Mac OS X.  The
+determine the type.  The
 @racket['gif/mask], @racket['png/mask], and @racket['unknown/mask]
 types draw the bitmap with a transparent background if
 @racket[filename] refers to a GIF/PNG file with a transparent

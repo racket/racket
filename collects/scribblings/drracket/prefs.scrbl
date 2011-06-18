@@ -71,7 +71,7 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Treat command key as meta} --- If checked,
             DrRacket will use the command key for some Emacs-like
             keybindings, instead of using it for menu shortcuts.  This
-            option is only available under Mac OS X.}
+            option is only available on Mac OS X.}
       @item{@PrefItem{Color syntax interactively} --- If checked,
             DrRacket colors your syntax as you type.}
       @item{@PrefItem{Search using anchors} --- If checked, DrRacket's

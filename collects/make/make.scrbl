@@ -358,7 +358,7 @@ The arguments are as follows:
     is a thunk.  This procedure should invoke the thunk to make the
     file, but it may add parameterizations before the final build. For
     example, the @filepath{readline} installer used to add an
-    AIX-specific compile flag in this step when compiling under AIX.}
+    AIX-specific compile flag in this step when compiling on AIX.}
 
   @item{@scheme[3m-too?]--- a boolean. If true, when the 3m variant is
     installed, use the equivalent to @exec{raco ctool --xform} to transform

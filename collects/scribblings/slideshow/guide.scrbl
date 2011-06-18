@@ -243,10 +243,11 @@ flags.
 
 @section{Printing}
 
-The @Flag{p} or @DFlag{print} command-line flag causes Slideshow
-to print slides instead of showing them on the screen. Under
-Unix, the result is always PostScript. For all platforms,
-@Flag{P} or @DFlag{ps} generates PostScript.
+The @Flag{p} or @DFlag{print} command-line flag causes Slideshow to
+print slides instead of showing them on the screen using the current
+platform's printing system. The @Flag{P} or @DFlag{ps} generates
+PostScript directly, while @Flag{D} or @DFlag{pdf} generates
+PDF directly.
 
 PS-to-PDF converters vary on how well they handle landscape
 mode. Here's a Ghostscript command that converts slides reliably

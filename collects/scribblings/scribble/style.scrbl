@@ -58,6 +58,15 @@ than a hidden abstraction in the document implementation.
 
 Hyphenate the words ``sub-form'' and ``sub-expression.''
 
+Use ``Windows,'' ``Mac OS X,'' and ``Unix'' for the three
+``platforms'' (as opposed to ``systems'') on which Racket runs. Use
+``Unix'' as a generic term for Unix-like operating systems---notably
+including Linux---other than Mac OS X. Use ``Unix'' even when ``Gtk''
+or ``the X11 windowing system'' would be more precisely correct, but
+use ``X11'' as adjective when necessary, such as ``X11 display.''
+Racket runs ``on'' a platform, as opposed to ``under'' a platform.
+
+
 @section{Typesetting Code}
 
 Use @racketidfont{id} or a name that ends @racketidfont{-id} in

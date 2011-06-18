@@ -186,7 +186,7 @@ As an example, the following C code defines an extension that returns
 }
 
 Assuming that this code is in the file @filepath{hw.c}, the extension
-is compiled under Unix with the following two commands:
+is compiled on Unix with the following two commands:
 
 @commandline{raco ctool --cgc --cc hw.c}
 @commandline{raco ctool --cgc --ld hw.so hw.o}
@@ -223,7 +223,7 @@ must be extended as follows:
 ]
 
 For a relatively simple extension @filepath{hw.c}, the extension is
-compiled under Unix for 3m with the following three commands:
+compiled on Unix for 3m with the following three commands:
 
 @commandline{raco ctool --xform hw.c}
 @commandline{raco ctool --3m --cc hw.3m.c}
@@ -298,7 +298,7 @@ To embed Racket CGC in a program, follow these steps:
   standard distribution provides 3m libraries, only, you will most
   likely have to build from source.
 
-  Under Unix, the libraries are @as-index{@filepath{libracket.a}}
+  On Unix, the libraries are @as-index{@filepath{libracket.a}}
   and @as-index{@filepath{libmzgc.a}} (or
   @as-index{@filepath{libracket.so}} and
   @as-index{@filepath{libmzgc.so}} for a dynamic-library build, with
@@ -308,7 +308,7 @@ To embed Racket CGC in a program, follow these steps:
   libraries into the installation's @filepath{lib} directory. Be sure
   to build the CGC variant, since the default is 3m.
 
-  Under Windows, stub libraries for use with Microsoft tools are
+  On Windows, stub libraries for use with Microsoft tools are
   @filepath{libracket@italic{x}.lib} and
   @filepath{libmzgc@italic{x}.lib} (where @italic{x} represents the
   version number) are in a compiler-specific directory in
@@ -325,7 +325,7 @@ To embed Racket CGC in a program, follow these steps:
   use. (@filepath{Racket.exe} and @filepath{GRacket.exe} use the latter
   strategy.)
 
-  Under Mac OS X, dynamic libraries are provided by the
+  On Mac OS X, dynamic libraries are provided by the
   @filepath{Racket} framework, which is typically installed in
   @filepath{lib} sub-directory of the installation. Supply
   @exec{-framework Racket} to @exec{gcc} when linking, along
@@ -363,7 +363,7 @@ To embed Racket CGC in a program, follow these steps:
   @cpp{scheme_main_stack_setup} trampoline registers the C stack with
   the memory manager without creating a namespace.)
 
-  Under 32-bit Windows, when support for parallelism is enabled in the Racket
+  On 32-bit Windows, when support for parallelism is enabled in the Racket
   build (as is the default), then before calling
   @cpp{scheme_main_setup}, your embedding application must first call
   @cppi{scheme_register_tls_space}:
@@ -476,12 +476,12 @@ int main(int argc, char *argv[])
 }
 }
 
-Under Mac OS X, or under Windows when Racket is compiled to a DLL
+On Mac OS X, or on Windows when Racket is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
 automatically. In that case, @cppi{scheme_main_setup} must be called with a
 non-zero first argument.
 
-Under Windows (for any other build mode), the garbage collector finds
+On Windows (for any other build mode), the garbage collector finds
 static variables in an embedding program by examining all memory
 pages. This strategy fails if a program contains multiple Windows
 threads; a page may get unmapped by a thread while the collector is
@@ -516,21 +516,21 @@ In addition, some library details are different:
 
 @itemize[
 
- @item{Under Unix, the library is just
+ @item{On Unix, the library is just
   @as-index{@filepath{libracket3m.a}} (or
   @as-index{@filepath{libracket3m.so}} for a dynamic-library build,
   with @as-index{@filepath{libracket3m.la}} for use with
   @exec{libtool}). There is no separate library for 3m analogous to
   CGC's @filepath{libmzgc.a}.}
 
- @item{Under Windows, the stub library for use with Microsoft tools is
+ @item{On Windows, the stub library for use with Microsoft tools is
   @filepath{libracket3m@italic{x}.lib} (where @italic{x} represents the
   version number). This library identifies the bindings that are
   provided by @filepath{libracket3m@italic{x}.dll}.  There is no
   separate library for 3m analogous to CGC's
   @filepath{libmzgc@italic{x}.lib}.}
 
-  @item{Under Mac OS X, 3m dynamic libraries are provided by the
+  @item{On Mac OS X, 3m dynamic libraries are provided by the
   @filepath{Racket} framework, just as for CGC, but as a version
   suffixed with @filepath{_3m}.}
 
@@ -642,8 +642,8 @@ for the original place.
 
 Racket implements threads for Racket programs without aid from the
 operating system, so that Racket threads are cooperative from the
-perspective of C code. Under Unix, stand-alone Racket uses a single
-OS-implemented thread. Under Windows and Mac OS X, stand-alone
+perspective of C code. On Unix, stand-alone Racket uses a single
+OS-implemented thread. On Windows and Mac OS X, stand-alone
 Racket uses a few private OS-implemented threads for background
 tasks, but these OS-implemented threads are never exposed by the
 Racket API.

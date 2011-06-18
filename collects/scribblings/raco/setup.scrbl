@@ -985,7 +985,7 @@ An @deftech{unpackable} is one of the following:
 
 @defproc[(find-dll-dir) (or/c path? false/c)]{
   Returns a path to the directory that contains DLLs for use with the
-  current executable (e.g., @filepath{libmzsch.dll} under Windows).
+  current executable (e.g., @filepath{libmzsch.dll} on Windows).
   The result is @racket[#f] if no such directory is available, or if no
   specific directory is available (i.e., other than the platform's normal
   search path).}

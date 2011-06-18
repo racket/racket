@@ -35,4 +35,4 @@ _path)]. Since that is not the case for other platforms, however,
 @racket[path-element->bytes] and @racket[path-element->string] should
 be used when converting individual path elements.
 
-Under Mac OS X, Finder aliases are zero-length files.
+On Mac OS X, Finder aliases are zero-length files.

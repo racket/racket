@@ -45,7 +45,7 @@ accepts only connections to @racket["127.0.0.1"] (the loopback
 interface) from the local machine.
 
 (Racket implements a listener with multiple sockets, if necessary, to
-accommodate multiple addresses with different protocol families. Under
+accommodate multiple addresses with different protocol families. On
 Linux, if @racket[hostname] maps to both IPv4 and IPv6 addresses, then
 the behavior depends on whether IPv6 is supported and IPv6 sockets can
 be configured to listen to only IPv6 connections: if IPv6 is not

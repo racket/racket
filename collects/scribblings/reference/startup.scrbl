@@ -21,19 +21,19 @@ The core Racket run-time system is available in two main variants:
 @itemize[
 
  @item{Racket, which provides the primitives libraries on which
-       @racketmodname[racket/base] is implemented. Under Unix and Mac
+       @racketmodname[racket/base] is implemented. On Unix and Mac
        OS X, the executable is called
-       @as-index{@exec{racket}}. Under Windows, the executable is
+       @as-index{@exec{racket}}. On Windows, the executable is
        called @as-index{@exec{Racket.exe}}.}
 
  @item{GRacket, which is a GUI variant of @exec{racket} to the degree
-       that the system distinguishes them. Under Unix, the executable
+       that the system distinguishes them. On Unix, the executable
        is called @as-index{@exec{gracket}}, and single-instance flags
        and X11-related flags are handled and communicated specially to
-       the @racket[racket/gui/base] library. Under Windows, the
+       the @racket[racket/gui/base] library. On Windows, the
        executable is called @as-index{@exec{GRacket.exe}}, and it is a
        GUI application (as opposed to a console application) that
-       implements singe-instance support. Under Mac OS X, the
+       implements singe-instance support. On Mac OS X, the
        @exec{gracket} script launches @as-index{@exec{GRacket.app}}.}
 
 ]
@@ -316,7 +316,7 @@ If no command-line arguments are supplied other than
 @tech{configuration options}, then the @Flag{i}/@DFlag{repl} flag is
 effectively added.
 
-For GRacket under X11, the follow flags are recognized when they appear
+For GRacket on Unix, the follow flags are recognized when they appear
 at the beginning of the command line, and they count as configuration
 options (i.e., they do not disable the read-eval-print loop or prevent
 the insertion of @Flag{u}/@DFlag{require-script}):
@@ -352,7 +352,7 @@ the insertion of @Flag{u}/@DFlag{require-script}):
 
 ]
 
-Similarly, under Mac OS X, a leading switch starting with
+Similarly, on Mac OS X, a leading switch starting with
 @FlagFirst{psn_} is treated as a special configuration option. It
 indicates that Finder started the application, so the current input,
 output, and error output are redirected to a GUI window.

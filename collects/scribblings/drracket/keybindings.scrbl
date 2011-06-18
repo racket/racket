@@ -38,7 +38,7 @@ key.  Depending on your keyboard, Meta may be called ``Left,''
 ``Right,'' or have a diamond symbol, but it's usually on the bottom
 row next to the space bar. M-@nonterm{key} can also be performed as a
 two-character sequence: first, strike and release the Escape key, then
-strike @nonterm{key}. Under Windows and Mac OS X, Meta is only
+strike @nonterm{key}. On Windows and Mac OS X, Meta is only
 available through the Escape key.
 
 DEL is the Delete key.
@@ -49,7 +49,7 @@ On most keyboards, ``<'' and ``>'' are shifted characters. So, to
 get M->, you actually have to type Meta-Shift->. That is, press and
 hold down both the Meta and Shift keys, and then strike ``>''.
 
-Under Windows, some of these keybindings are actually standard menu
+On Windows, some of these keybindings are actually standard menu
 items.  Those keybindings will behave according to the menus, unless
 the @onscreen{Enable keybindings in menus} preference is unchecked.
 

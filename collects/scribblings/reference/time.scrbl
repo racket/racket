@@ -96,7 +96,7 @@ is in microseconds.}
 
 Returns an amount of processor time in @tech{fixnum} milliseconds
 that has been consumed by the Racket process on the underlying
-operating system. (Under @|AllUnix|, this includes both user and
+operating system. (On @|AllUnix|, this includes both user and
 system time.)  If @racket[thread] is @racket[#f], the reported time
 is for all Racket threads, otherwise the result is specific to the
 time while @racket[thread] ran.

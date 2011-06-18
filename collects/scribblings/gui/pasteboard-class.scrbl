@@ -552,8 +552,8 @@ Pastes.
            void?]{
 @methspec{
 
-Called to paste the current contents of the X selection under X (or
- the clipboard under Windows and Mac OS X) into the editor.  This
+Called to paste the current contents of the X11 selection on Unix (or
+ the clipboard on Windows and Mac OS X) into the editor.  This
  method is provided so that it can be overridden by subclasses.  Do
  not call this method directly; instead, call @method[editor<%>
  paste-x-selection].

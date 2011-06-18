@@ -83,7 +83,7 @@ Before starting a read-eval-print loop, an initialization file is
 loaded, if it exists. The file is the same as the file reported by
 @racket[(find-system-path 'init-file)], but with the characters
 @litchar{racket} in the filename replaced by @litchar{pltr5rs}. For
-example, under Unix, the file is @filepath{~/.pltr5rsrc}.
+example, on Unix, the file is @filepath{~/.pltr5rsrc}.
 
 By default, @exec{plt-r5rs} departs from @|r5rs| conformance in one
 crucial way: the names of pre-defined functions cannot be redefined at

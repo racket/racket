@@ -86,7 +86,7 @@ The @scheme[filters] argument is one of:
    @item{@scheme[#f] --- no patterns and no filter input box.}
 
    @item{@scheme[#t] --- use a generic @scheme["All"] filter, which is
-     @scheme["*.*"] under Windows and @scheme["*"] on other
+     @scheme["*.*"] on Windows and @scheme["*"] on other
      platforms.}
 
 ]

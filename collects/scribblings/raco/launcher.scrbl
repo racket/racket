@@ -40,7 +40,7 @@ platform-specific options (i.e., it is a list of pairs where the first
 element of the pair is a key symbol and the second element is the
 value for that key). See also @racket[build-aux-from-path]. See
 @racket[create-embedding-executable] for a list that applies to both
-stand-alone executables and launchers under Windows and Mac OS X GRacket;
+stand-alone executables and launchers on Windows and Mac OS X GRacket;
 the following additional associations apply to launchers:
 
 @itemize[
@@ -76,7 +76,7 @@ argument) are then appended after the spliced @racket[args].}
                                [aux (listof (cons/c symbol? any/c)) null])
          void?]{
 
-Like @racket[make-gracket-launcher], but for starting Racket. Under Mac
+Like @racket[make-gracket-launcher], but for starting Racket. On Mac
 OS X, the @racket['exe-name] @racket[aux] association is ignored.}
 
 
@@ -309,26 +309,26 @@ The recognized suffixes are as follows:
 
 @itemize[
 
- @item{@filepath{.icns} @'rarr @racket['icns] file for use under Mac
+ @item{@filepath{.icns} @'rarr @racket['icns] file for use on Mac
        OS X}
 
- @item{@filepath{.ico} @'rarr @racket['ico] file for use under
+ @item{@filepath{.ico} @'rarr @racket['ico] file for use on
        Windows}
 
  @item{@filepath{.lch} @'rarr @racket['independent?] as @racket[#t]
-       (the file content is ignored) for use under Windows}
+       (the file content is ignored) for use on Windows}
 
  @item{@filepath{.creator} @'rarr @racket['creator] as the initial
-       four characters in the file for use under Mac OS X}
+       four characters in the file for use on Mac OS X}
 
  @item{@filepath{.filetypes} @'rarr @racket['file-types] as
        @racket[read] content (a single S-expression), and
        @racket['resource-files] as a list constructed by finding
        @racket["CFBundleTypeIconFile"] entries in @racket['file-types]
-       (and filtering duplicates); for use under Mac OS X}
+       (and filtering duplicates); for use on Mac OS X}
 
  @item{@filepath{.utiexports} @'rarr @racket['uti-exports] as
-       @racket[read] content (a single S-expression); for use under
+       @racket[read] content (a single S-expression); for use on
        Mac OS X}
 
 ]}
@@ -337,8 +337,8 @@ The recognized suffixes are as follows:
 
 A parameter that indicates a variant of Racket or GRacket to use for
 launcher creation and for generating launcher names. The default is
-the result of @racket[(system-type 'gc)]. Under Unix and Windows, the
-possibilities are @racket['cgc] and @racket['3m]. Under Mac OS X, the
+the result of @racket[(system-type 'gc)]. On Unix and Windows, the
+possibilities are @racket['cgc] and @racket['3m]. On Mac OS X, the
 @racket['script-3m] and @racket['script-cgc] variants are also
 available for GRacket launchers.}
 
@@ -348,7 +348,7 @@ Returns a list of symbols corresponding to available variants of GRacket
 in the current Racket installation. The list normally includes at
 least one of @racket['3m] or @racket['cgc]--- whichever is the result
 of @racket[(system-type 'gc)]---and may include the other, as well as
-@racket['script-3m] and/or @racket['script-cgc] under Mac OS X.}
+@racket['script-3m] and/or @racket['script-cgc] on Mac OS X.}
 
 @defproc[(available-racket-variants) (listof symbol?)]{
 

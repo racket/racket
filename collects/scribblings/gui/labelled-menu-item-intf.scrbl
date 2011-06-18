@@ -101,15 +101,15 @@ Sets the menu item's label. If the item has a shortcut, the shortcut
  is not affected.
 
 If the label contains @litchar{&} and the window is a control, the
- label is parsed specially; under Windows and X, the character
+ label is parsed specially; on Windows and Unix, the character
  following a @litchar{&} is underlined in the displayed menu to
  indicate a keyboard mnemonic. Pressing the Alt key with an underlined
  character from a menu's name in the menu bar causes the menu to be
  selected (via @method[frame% on-menu-char]). When a menu has the
  focus, the mnemonic characters are used for navigation without Alt. A
  @litchar{&&} in the label is replaced by a literal (non-navigation)
- @litchar{&}. Under Mac OS X, @litchar{&}s in the label are parsed in
- the same way as for X and Windows, but no mnemonic underline is
+ @litchar{&}. On Mac OS X, @litchar{&}s in the label are parsed in
+ the same way as for Unix and Windows, but no mnemonic underline is
  displayed.
  
 A @litchar{&} is always preserved in the label returned by

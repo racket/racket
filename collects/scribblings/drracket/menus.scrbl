@@ -81,10 +81,10 @@
   search are displayed in a separate window.}
 
  @item{@defmenuitem{Close} Closes this DrRacket window. If this window
-  is the only open DrRacket window, then DrRacket quits, except under
+  is the only open DrRacket window, then DrRacket quits, except on
   Mac OS X.}
 
- @item{{@onscreen{Quit} or @onscreen{Exit}} Exits DrRacket. (Under Mac
+ @item{{@onscreen{Quit} or @onscreen{Exit}} Exits DrRacket. (On Mac
   OS X, this menu item is in the Apple menu.)}
 
 ]
@@ -167,7 +167,7 @@ case-sensitive and case-insensitive search.}
 insertion point, using the manuals as a source of completions.}
 
  @item{@defmenuitem{Preferences...} Opens the preferences dialog. See
-  @secref["prefs-explanation"]. (Under Mac OS X, this menu item is in
+  @secref["prefs-explanation"]. (On Mac OS X, this menu item is in
   the Apple menu.)}  ]
 
 @; ----------------------------------------

@@ -82,7 +82,7 @@ prompt; otherwise, it displays a prompt as determined by
 
 Adds @racket[(require readline/rep)] to the result of
 @racket[(find-system-path 'init-file)], which is
-@filepath{~/.racketrc} under Unix. Consequently, @|readline| will be
+@filepath{~/.racketrc} on Unix. Consequently, @|readline| will be
 loaded whenever Racket is started in interactive mode. The
 declaration is added only if it is not already present, as determined
 by @racket[read]ing and checking all top-level expressions in the

@@ -289,7 +289,7 @@ Printing
 ========
 
 The -p or --print command-line flag causes slideshow to print slides
-instead of showing them on the screen. Under Unix, the result is
+instead of showing them on the screen. On Unix, the result is
 always PostScript. For all platforms, -P or --ps generates PostScript.
 
 PS-to-PDF converters vary on how well they handle landscape

@@ -118,7 +118,7 @@ annotations:
        the context the macro is used in.
 
        @index['("alpha renaming")]{Additionally}, right-clicking (or
-       Control-clicking under Mac OS X) on a variable activates a
+       Control-clicking on Mac OS X) on a variable activates a
        pop-up menu that lets you jump from binding location to bound
        location and vice versa, @as-index{@"\u03B1"-rename} the
        variable, or tack the arrows so they do not disappear.}
@@ -130,7 +130,7 @@ annotations:
        expression.}
 
   @item{@bold{Require Annotations:} Right-clicking (or
-        Control-clicking under Mac OS X) on the argument to
+        Control-clicking on Mac OS X) on the argument to
         @racket[require] activates a pop-up menu that lets you open the
         file that contains the @racket[require]d module.
 
@@ -322,7 +322,7 @@ separate tabs} causes DrRacket to open files in new tabs in the
 frontmost window, rather than opening a new window for the file.
 
 The key bindings Control-Pageup and Control-Pagedown move between
-tabs. Under Mac OS X, Command-Shift-Left and Command-Shift-Right also
+tabs. On Mac OS X, Command-Shift-Left and Command-Shift-Right also
 move between tabs.
 
 @; ----------------------------------------------------------------------

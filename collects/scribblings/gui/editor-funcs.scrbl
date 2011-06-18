@@ -134,7 +134,7 @@ The initializer takes a keymap object and returns nothing. The default
  initializer chains the given keymap to an internal keymap that
  implements standard text editor keyboard and mouse bindings for cut,
  copy, paste, undo, and select-all. The right mouse button is mapped
- to popup an edit menu when the button is released. Under X,
+ to popup an edit menu when the button is released. On Unix,
  start-of-line (Ctl-A) and end-of-line (Ctl-E) are also mapped.
 
 }
@@ -142,12 +142,10 @@ The initializer takes a keymap object and returns nothing. The default
 @defproc[(editor-set-x-selection-mode [on any/c])
          void?]{
 
-Under X Windows, editor selections conform to the X Windows selection
-conventions instead of a clipboard-based convention. If @racket[on] is
-@racket[#f], the behavior is switched to the clipboard-based convention
+On Unix, editor selections conform to the X11 Windows selection
+conventions. If @racket[on] is
+@racket[#f], the behavior is switched exclusively to the clipboard-based convention
 (where copy must be explicitly requested before a paste).
-
-
 
 }
 
@@ -174,7 +172,7 @@ Gets the snip class list instance for the current eventspace.
            [(map-command-as-meta-key)
             boolean?])]{
 Determines the interpretation of @litchar{m:} for a @racket[keymap%]
-mapping under Mac OS X. See also
+mapping on Mac OS X. See also
 @xmethod[keymap% map-function].
 
 
@@ -182,7 +180,7 @@ First case:
 
 
 If @racket[on?] is @racket[#t], @litchar{m:} corresponds to the Command key. If
-@racket[on?] is @racket[#f], then @litchar{m:} corresponds to no key under Mac OS
+@racket[on?] is @racket[#f], then @litchar{m:} corresponds to no key on Mac OS
 X.
 
 

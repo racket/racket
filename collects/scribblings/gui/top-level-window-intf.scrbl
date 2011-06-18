@@ -125,7 +125,7 @@ Called when a window is @defterm{activated} or
  @defterm{deactivated}. A top-level window is activated when the
  keyboard focus moves from outside the window to the window or one of
  its children. It is deactivated when the focus moves back out of the
- window. Under Mac OS X, a child of a floating frames can have the
+ window. On Mac OS X, a child of a floating frames can have the
  focus instead of a child of the active non-floating frame; in other
  words, floating frames act as an extension of the active non-frame
  for keyboard focus.
@@ -156,7 +156,7 @@ Called by the default application quit handler (as determined by the
  @scheme[application-quit-handler] parameter) when the operating
  system requests that the application shut down (e.g., when the
  @onscreen{Quit} menu item is selected in the main application menu
- under Mac OS X). In that case, this method is called for the most
+ on Mac OS X). In that case, this method is called for the most
  recently active top-level window in the initial eventspace, but only
  if the window's @method[top-level-window<%> can-exit?]  method first
  returns true.
@@ -218,29 +218,29 @@ If the window that currently owns the focus specifically handles the
 
  @item{@scheme[editor-canvas%] --- tab-exit is disabled (see
 @method[editor-canvas% allow-tab-exit]): all keyboard events, except alphanumeric key events when the Meta
-       (X) or Alt (Windows) key is pressed; when tab-exit is enabled:
+       (Unix) or Alt (Windows) key is pressed; when tab-exit is enabled:
        all keyboard events except Tab, Enter, Escape, and alphanumeric
        Meta/Alt events.}
 
  @item{@scheme[canvas%] --- when tab-focus is disabled (see
 @method[canvas<%> accept-tab-focus]): all keyboard events, except alphanumeric key events when the Meta
-       (X) or Alt (Windows) key is pressed; when tab-focus is enabled:
+       (Unix) or Alt (Windows) key is pressed; when tab-focus is enabled:
        no key events}
 
  @item{@scheme[text-field%], @scheme['single] style --- arrow key
- events and alphanumeric key events when the Meta (X) or Alt
- (Windows) key is not pressed (and all alphanumeric events under
+ events and alphanumeric key events when the Meta (Unix) or Alt
+ (Windows) key is not pressed (and all alphanumeric events on
  Mac OS X)}
 
  @item{@scheme[text-field%], @scheme['multiple] style --- all
- keyboard events, except alphanumeric key events when the Meta (X) or
+ keyboard events, except alphanumeric key events when the Meta (Unix) or
  Alt (Windows) key is pressed}
 
  @item{@scheme[choice%] --- arrow key events and alphanumeric key
- events when the Meta (X) or Alt (Windows) key is not pressed}
+ events when the Meta (Unix) or Alt (Windows) key is not pressed}
 
  @item{@scheme[list-box%] --- arrow key events and alphanumeric key
- events when the Meta (X) or Alt (Windows) key is not pressed}
+ events when the Meta (Unix) or Alt (Windows) key is not pressed}
 
 ]}
 

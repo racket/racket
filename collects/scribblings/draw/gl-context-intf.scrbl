@@ -9,8 +9,8 @@ A @scheme[gl-context<%>] object represents a context for drawing with
  the target drawing context.
 
 Only canvas @scheme[dc<%>] and @scheme[bitmap-dc%] objects containing
- a bitmap from @racket[make-gl-bitmap] support OpenGL (always under
- Windows and Mac OS X, sometimes under X).  Normal @racket[dc<%>]
+ a bitmap from @racket[make-gl-bitmap] support OpenGL (always on
+ Windows and Mac OS X, sometimes on Unix).  Normal @racket[dc<%>]
  drawing and OpenGL drawing can be mixed in a @scheme[bitmap-dc%], but
  a canvas that uses the @racket['gl] style to support OpenGL does not
  reliably support normal @racket[dc<%>] drawing; use a bitmap if you

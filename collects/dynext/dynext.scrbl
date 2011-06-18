@@ -50,9 +50,9 @@ A parameter that determines the executable for the compiler.
 The default is set by searching for an executable using the
 @envvar{PATH} environment variable, or using the @envvar{CC} or
 @envvar{MZSCHEME_DYNEXT_COMPILER} environment variable if either is
-defined (and the latter takes precedence). Under windows, the search
+defined (and the latter takes precedence). On Windows, the search
 looks for @filepath{cl.exe}, then @filepath{gcc.exe}, then
-@filepath{bcc32.exe} (Borland). Under Unix, it looks for
+@filepath{bcc32.exe} (Borland). On Unix, it looks for
 @filepath{gcc}, then @filepath{cc}. A @scheme[#f] value indicates that
 no compiler could be found.}
 
@@ -64,12 +64,12 @@ no compiler could be found.}
 A parameter that determines strings passed to the compiler as flags.
 See also @scheme[expand-for-compile-variant].
 
-Under Windows, the default is @scheme[(list "/c" "/O2" "/MT"
+On Windows, the default is @scheme[(list "/c" "/O2" "/MT"
 _3m-flag-thunk)] for @filepath{cl.exe}, or @scheme[(list "-c" "-O2"
 "-fPIC" _3m-flag-thunk)] for @filepath{gcc.exe} and
 @filepath{bcc32.exe}, where @scheme[_3m-flag-thunk] returns
 @scheme[(list "-DMZ_PRECISE_GC")] for the 3m variant and null for the
-CGC variant. Under Unix, the default is usually @scheme[(list "-c"
+CGC variant. On Unix, the default is usually @scheme[(list "-c"
 "-O2" "-fPIC" _3m-flag-thunk)]. If the @envvar{CFLAGS} or
 @envvar{MZSCHEME_DYNEXT_COMPILER_FLAGS} environment variable is
 defined (the latter takes precedence), then its value is parsed as a
@@ -84,9 +84,9 @@ A parameter the processes include-path inputs to the compiler; the
 parameter values takes an include directory path and returns a list of
 strings for the command line.
 
-Under Windows, the default converts @scheme["dir"] to @scheme[(list
+On Windows, the default converts @scheme["dir"] to @scheme[(list
 "/Idir")] for @filepath{cl.exe}, @scheme[(list "-Idir")] for
-@filepath{gcc.exe} and @filepath{bcc32.exe}. Under Unix, the default
+@filepath{gcc.exe} and @filepath{bcc32.exe}. On Unix, the default
 converts @scheme["dir"] to @scheme[(list "-Idir")]. If the
 @envvar{CFLAGS} environment variable is defined, then its value is
 parsed as a list of flags that is appended before the defaults.}
@@ -109,9 +109,9 @@ A parameter that processes outputs specified for the compiler; the
 parameter's value takes an output file path and returns a list of
 strings for the command line.
 
-Under Windows, the default converts @scheme["file"] to @scheme[(list
+On Windows, the default converts @scheme["file"] to @scheme[(list
 "/Fofile")] for @filepath{cl.exe}, or to @scheme[(list "-o" "file")]
-for @filepath{gcc.exe} and @filepath{bcc32.exe}. Under Unix, the
+for @filepath{gcc.exe} and @filepath{bcc32.exe}. On Unix, the
 default converts @scheme["file"] to @scheme[(list "-o" "file")].}
 
 
@@ -210,10 +210,10 @@ A parameter that determines the executable used as a linker.
 The default is set by searching for an executable using the
 @envvar{PATH} environment variable, or by using the @envvar{LD} or
 @envvar{MZSCHEME_DYNEXT_LINKER} environment variable if it is defined
-(and the latter takes precedence). Under Windows, it looks for
+(and the latter takes precedence). On Windows, it looks for
 @filepath{cl.exe}, then @filepath{ld.exe} (gcc), then
-@filepath{ilink32.exe} (Borland). Under Cygwin, Solaris, FreeBSD 2.x,
-or HP/UX, it looks for @filepath{ld}. Under other Unix variants, it
+@filepath{ilink32.exe} (Borland). On Cygwin, Solaris, FreeBSD 2.x,
+or HP/UX, it looks for @filepath{ld}. On other Unix variants, it
 looks for @filepath{cc}. @scheme[#f] indicates that no linker could be
 found.}
 
@@ -224,9 +224,9 @@ found.}
 A parameter that determines flags provided to the linker. See also
 @scheme[expand-for-link-variant].
 
-Under Windows, default is @scheme[(list "/LD")] for @filepath{cl.exe},
+On Windows, default is @scheme[(list "/LD")] for @filepath{cl.exe},
 @scheme[(list "--dll")] for @filepath{ld.exe}, and @scheme[(list
-"/Tpd" "/c")] for @filepath{ilink32.exe}.  Under Unix, the default
+"/Tpd" "/c")] for @filepath{ilink32.exe}.  On Unix, the default
 varies greatly among platforms.  If the @envvar{LDFLAGS} or
 @envvar{MZSCHEME_DYNEXT_LINKER_FLAGS} (the latter takes precedence)
 environment variable is defined, then its value is parsed as a list of
@@ -248,10 +248,10 @@ A parameter that processes linker output arguments; the parameter
 value takes an output file path and returns a list of strings for the
 command line.
 
-Under Windows, the default converts @scheme["file"] to @scheme[(list
+On Windows, the default converts @scheme["file"] to @scheme[(list
 "/Fefile")] for @filepath{cl.exe}, something like @scheme[(list "-e"
 "_dll_entry@12" "-o" "file")] for @filepath{ld.exe}, and something
-complex for @filepath{ilink32.exe}. Under Unix, the default converts
+complex for @filepath{ilink32.exe}. On Unix, the default converts
 @scheme["file"] to @scheme[(list "-o" "file")].}
 
 @defparam[current-standard-link-libraries

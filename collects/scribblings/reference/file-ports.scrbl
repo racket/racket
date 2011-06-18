@@ -74,13 +74,13 @@ translated on input:
   ]}
 ]
 
-Under Windows, @racket['text] mode works only with regular files;
+On Windows, @racket['text] mode works only with regular files;
 attempting to use @racket['text] with other kinds of files triggers an
 @racket[exn:fail:filesystem] exception.
 
 Otherwise, the file specified by @racket[path] need not be a regular
 file. It might be a device that is connected through the filesystem, such
-as @filepath{aux} under Windows or @filepath{/dev/null} under Unix. In all
+as @filepath{aux} on Windows or @filepath{/dev/null} on Unix. In all
 cases, the port is buffered by default.
 
 The port produced by @racket[open-input-file] should be explicitly
@@ -119,13 +119,13 @@ are translated when written to the file:
  @item{@racket['binary] --- bytes are written to the file exactly
  as written to the port.}
 
- @item{@racket['text] --- under Windows, a linefeed byte (10) written
+ @item{@racket['text] --- on Windows, a linefeed byte (10) written
  to the port is translated to a return-linefeed combination in the
  file; no filtering occurs for returns.}
 
 ]
 
-Under Windows, @racket['text] mode works only with regular files;
+On Windows, @racket['text] mode works only with regular files;
 attempting to use @racket['text] with other kinds of files triggers an
 @racket[exn:fail:filesystem] exception.
 
@@ -160,7 +160,7 @@ files that already exist:
        truncating it, or create the file if it does not exist.}
 
  @item{@indexed-racket['append] --- append to the end of the file,
-       whether it already exists or not; under Windows,
+       whether it already exists or not; on Windows,
        @racket['append] is equivalent to @racket['update], except that
        the file is not required to exist, and the file position is
        immediately set to the end of the file after opening it.}
@@ -169,7 +169,7 @@ files that already exist:
 
 The file specified by @racket[path] need not be a regular file. It
 might be a device that is connected through the filesystem, such as
-@filepath{aux} under Windows or @filepath{/dev/null} under Unix. The output
+@filepath{aux} on Windows or @filepath{/dev/null} on Unix. The output
 port is block-buffered by default, unless the file corresponds to a
 terminal, in which case it is line-buffered by default.
 
@@ -316,12 +316,12 @@ either it is released with @racket[port-file-unlock] or the port is closed
 Depending on the platform, locks may be merely advisory (i.e., locks
 affect only the ability of processes to acquire locks) or they may
 correspond to mandatory locks that prevent reads and writes to the
-locked file. Specifically, locks are mandatory under Windows and
+locked file. Specifically, locks are mandatory on Windows and
 advisory on other platforms.
 
 Typically, locking is supported only for file ports, and attempting to
 acquire a lock with other kinds of file-stream ports raises an
-@racket[exn:fail:filesystem] exception. Locking is not supported under Solaris,
+@racket[exn:fail:filesystem] exception. Locking is not supported on Solaris,
 where the @racket[exn:fail:unsupported] exception is raised.}
 
 
@@ -342,7 +342,7 @@ and only if the ports access the same device and file. For ports whose
 open times do not overlap, no guarantee can be provided for the port
 identities (even if the ports actually access the same file)---except
 as can be inferred through relationships with other ports. If
-@racket[port] is closed, the @exnraise[exn:fail].  Under
+@racket[port] is closed, the @exnraise[exn:fail].  On
 Windows 95, 98, and Me, if @racket[port] is connected to a
 pipe instead of a file, the @exnraise[exn:fail:filesystem].
 

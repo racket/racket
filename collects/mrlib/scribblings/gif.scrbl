@@ -45,8 +45,7 @@ images is collected and quantized at once, to produce a single
 colortable; a drawback to this approach is that it uses more memory,
 and it allows less color variation among animation frames. Even when
 @scheme[one-at-a-time?] is @scheme[#f], the result of each thunk in
-@scheme[bitmaps] is converted to a byte-string one at a time
-(which helps avoid bitmap-count limits under Windows).
+@scheme[bitmaps] is converted to a byte-string one at a time.
 
 If @scheme[one-at-a-time?] is true, then the bitmaps are quantized and
 written to the file one at a time; that is, for each thunk in

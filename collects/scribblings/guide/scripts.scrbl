@@ -5,8 +5,8 @@
 
 @title[#:tag "scripts"]{Scripts}
 
-Racket files can be turned into executable scripts under Unix and Mac
-OS X.  Under Windows, a compatibility layer like Cygwin support the
+Racket files can be turned into executable scripts on Unix and Mac
+OS X.  On Windows, a compatibility layer like Cygwin support the
 same kind of scripts, or scripts can be implemented as batch files.
 
 @section{Unix Scripts}

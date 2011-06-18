@@ -37,7 +37,7 @@ All @scheme[window<%>] classes accept the following named instantiation
 @index["global coordinates"]{Converts} local window coordinates to
 screen coordinates.
 
-Under Mac OS X, the screen coordinates start with @math{(0, 0)} at the
+On Mac OS X, the screen coordinates start with @math{(0, 0)} at the
 upper left of the menu bar. In contrast, @xmethod[top-level-window<%>
 move] considers @math{(0, 0)} to be below the menu bar. See also
 @scheme[get-display-left-top-inset].
@@ -73,7 +73,7 @@ If @scheme[enable?] is true, the window is enabled, otherwise it is
 See also
 @method[window<%> on-focus].
 
-Note that under X, keyboard focus can move to the menu bar
+Note that on Unix, keyboard focus can move to the menu bar
  when the user is selecting a menu item.
 
 @MonitorMethod[@elem{The current keyboard focus window} @elem{the user} @elem{@method[window<%> on-focus]} @elem{focus}]
@@ -93,7 +93,7 @@ on the platform:
 
  @item{Mac OS X: @tt{NSView}}
 
- @item{X: @tt{GtkWidget}}
+ @item{Unix: @tt{GtkWidget}}
 
 ]
 
@@ -140,7 +140,7 @@ platform:
  @item{Mac OS X: @tt{NSWindow} for a @scheme[top-level-window<%>] object,
        @tt{NSView} for other windows}
 
- @item{X: @tt{GtkWidget}}
+ @item{Unix: @tt{GtkWidget}}
 
 ]
 
@@ -177,11 +177,11 @@ Gets a window's label, if any. Control windows generally display their
  string label (along with a position for the bitmap).
 
 A label string may contain @litchar{&}s, which serve as
- keyboard navigation annotations for controls under Windows and X. The
+ keyboard navigation annotations for controls on Windows and Unix. The
  ampersands are not part of the displayed label of a control; instead,
- ampersands are removed in the displayed label (under all platforms),
+ ampersands are removed in the displayed label (on all platforms),
  and any character preceding an ampersand is underlined (Windows and
- X) indicating that the character is a mnemonic for the
+ Unix) indicating that the character is a mnemonic for the
  control. Double ampersands are converted into a single ampersand
  (with no displayed underline). See also
  @method[top-level-window<%> on-traverse-char].
@@ -207,7 +207,7 @@ Like
                    (integer-in 0 10000))]{
 
 Gets the current size of the entire window in pixels, not counting
- horizontal and vertical margins. (Under X, this size does not include
+ horizontal and vertical margins. (On Unix, this size does not include
  a title bar or borders for a frame/dialog.) See also
 @method[window<%> get-client-size].
 
@@ -287,11 +287,11 @@ The result is @scheme[#t] if this window is shown when its ancestors are
            void?]{
 
 @index["drag-and-drop"]{Called} when the user drags a file onto the
- window. (Under X, drag-and-drop is supported via the XDND
+ window. (On Unix, drag-and-drop is supported via the XDND
  protocol.) Drag-and-drop must first be enabled for the window with
  @method[window<%> accept-drop-files].
 
-Under Mac OS X, when the application is running and user
+On Mac OS X, when the application is running and user
  double-clicks an application-handled file or drags a file onto the
  application's icon, the main thread's application file handler is
  called (see
@@ -312,7 +312,7 @@ Under Mac OS X, when the application is running and user
  receives or loses the keyboard focus. If the argument is @scheme[#t],
  the keyboard focus was received, otherwise it was lost.
 
-Note that under X, keyboard focus can move to the menu bar
+Note that on Unix, keyboard focus can move to the menu bar
  when the user is selecting a menu item.
 
 }

@@ -437,11 +437,8 @@ This directory contains the following files and sub-directories:
   will be listed and accessible.}
 ]
 
-The server can be run within either Racket or GRacket, but
-@racketmodname[handin-server/utils] requires GRacket (which means that
-@racket[checker] modules will likely require the server to run under
-GRacket).  Remember that if you're not using the (default) 3m garbage
-collector you don't get memory accounting.
+Remember that if you're not using the (default) 3m variant of Racket,
+you don't get memory accounting.
 
 The server currently provides no mechanism for a graceful shutdown,
 but terminating the server is no worse than a network outage.  (In

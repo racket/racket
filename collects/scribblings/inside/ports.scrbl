@@ -335,7 +335,7 @@ Closes the given output port.}
 Fills @cpp{*@var{fd}} with a file-descriptor value for @var{port} if
 one is available (i.e., the port is a file-stream port and it is not
 closed). The result is non-zero if the file-descriptor value is
-available, zero otherwise. Under Windows, a ``file dscriptor'' is a
+available, zero otherwise. On Windows, a ``file dscriptor'' is a
 file @cpp{HANDLE}.}
 
 @function[(intptr_t scheme_get_port_fd
@@ -352,7 +352,7 @@ Like @cpp{scheme_get_port_file_descriptor}, but a file
 Fills @cpp{*@var{s}} with a socket value for @var{port} if one is
 available (i.e., the port is a TCP port and it is not closed). The
 result is non-zero if the socket value is available, zero
-otherwise. Under Windows, a socket value has type @cpp{SOCKET}.}
+otherwise. On Windows, a socket value has type @cpp{SOCKET}.}
 
 @function[(Scheme_Object* scheme_make_port_type
            [char* name])]{
@@ -512,7 +512,7 @@ The functions are as follows.
     read, one for write, one for exceptions), but manipulate this
     array using @cppi{scheme_get_fdset} to get a particular element of
     the array, and use @cppi{MZ_FD_XXX} instead of @cpp{FD_XXX} to
-    manipulate a single ``@cpp{fd_set}''. Under Windows, the first
+    manipulate a single ``@cpp{fd_set}''. On Windows, the first
     ``@cpp{fd_set}'' can also contain OS-level semaphores or other
     handles via @cpp{scheme_add_fd_handle}.}
 }
@@ -613,7 +613,7 @@ The functions are as follows.
     read, one for write, one for exceptions), but manipulate this
     array using @cppi{scheme_get_fdset} to get a particular element of
     the array, and use @cppi{MZ_FD_XXX} instead of @cpp{FD_XXX} to
-    manipulate a single ``@cpp{fd_set}''. Under Windows, the first
+    manipulate a single ``@cpp{fd_set}''. On Windows, the first
     ``@cpp{fd_set}'' can also contain OS-level semaphores or other
     handles via @cpp{scheme_add_fd_handle}.}
 
@@ -730,7 +730,7 @@ Creates a Racket output file port from an ANSI C file pointer. The
            [int regfile]
            [int win_textmode])]{
 
-Creates a Racket input port for a file descriptor @var{fd}. Under
+Creates a Racket input port for a file descriptor @var{fd}. On
  Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
  never be a file descriptor from the C library or a WinSock socket.
 
@@ -738,7 +738,7 @@ The @var{name} object is used for the port's name. Specify a non-zero
  value for @var{regfile} only if the file descriptor corresponds to a
  regular file (which implies that reading never blocks, for example).
 
-Under Windows, @var{win_textmode} can be non-zero to make trigger
+On Windows, @var{win_textmode} can be non-zero to make trigger
  auto-conversion (at the byte level) of CRLF combinations to LF.
 
 Closing the resulting port closes the file descriptor.
@@ -756,7 +756,7 @@ Instead of calling both @cpp{scheme_make_fd_input_port} and
            [int win_textmode]
            [int read_too])]{
 
-Creates a Racket output port for a file descriptor @var{fd}. Under
+Creates a Racket output port for a file descriptor @var{fd}. On
  Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
  never be a file descriptor from the C library or a WinSock socket.
 
@@ -764,7 +764,7 @@ The @var{name} object is used for the port's name. Specify a non-zero
  value for @var{regfile} only if the file descriptor corresponds to a
  regular file (which implies that reading never blocks, for example).
 
-Under Windows, @var{win_textmode} can be non-zero to make trigger
+On Windows, @var{win_textmode} can be non-zero to make trigger
  auto-conversion (at the byte level) of CRLF combinations to LF.
 
 Closing the resulting port closes the file descriptor.

@@ -45,7 +45,7 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
 
 The @scheme[style] list can contain @scheme['common], a
  platform-independent version of the dialog is used instead of a
- native dialog.  Under Mac OS X, if the @scheme[style] list
+ native dialog.  On Mac OS X, if the @scheme[style] list
  contains @scheme['packages], a user is allowed to select a package
  directory, which is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.  If the list
@@ -53,14 +53,14 @@ The @scheme[style] list can contain @scheme['common], a
  within a package directory. If the list contains both
  @scheme['packages] and @scheme['enter-packages], the former is ignored.
 
-Under Windows and X, @scheme[filters] determines a set of filters from
+On Windows and Unix, @scheme[filters] determines a set of filters from
  which the user can choose in the dialog. Each element of the
  @scheme[filters] list contains two strings: a description of the filter
  as seen by the user, and a filter pattern matched against file names.
  Pattern strings can be a simple ``glob'' pattern, or a number of glob
  patterns separated by a @litchar[";"] character.
- Under X, a @racket["*.*"] pattern is implicitly replaced with @racket["*"].
- Under Mac OS X, suffix names are extracted from all globs that match a
+ On Unix, a @racket["*.*"] pattern is implicitly replaced with @racket["*"].
+ On Mac OS X, suffix names are extracted from all globs that match a
  fixed suffix (e.g., two suffixes of @racket["foo"] and @racket["bar"]
  are extracted from a @racket["*.foo;*.bar;*.baz*"] pattern), and files
  that have any of these suffixes in any filter are selectable; a
@@ -113,7 +113,7 @@ If @scheme[directory] is not @scheme[#f], it is used as the starting
  when appropriate, and it should @italic{not} contain a directory path
  prefix.
 
-Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
+On Windows, if @scheme[extension] is not @scheme[#f], the returned path
  will get a default extension if the user does not supply one. If
  @scheme[extension] is the empty string, then the extension is derived
  from the user's @scheme[filters] choice if the corresponding pattern is
@@ -127,7 +127,7 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
  to have an extension mapping @scheme[extension].
 
-Under Mac OS X 10.5 and later, if @scheme[extension] is not
+On Mac OS X 10.5 and later, if @scheme[extension] is not
  @scheme[#f] or @racket[""], the returned path will get a default extension if the
  user does not supply one.  If @scheme[filters] contains as
  @scheme["*.*"] pattern, then the user can supply any extension that
@@ -139,13 +139,13 @@ Under Mac OS X 10.5 and later, if @scheme[extension] is not
  "*." extension)], then the result pathname is guaranteed to have an
  extension mapping @scheme[extension].
 
-Under Mac OS X versions before 10.5, the returned path will get a
+On Mac OS X versions before 10.5, the returned path will get a
  default extension only if @scheme[extension] is not @scheme[#f], 
  @scheme[extension] is not @racket[""], and
  @scheme[filters] contains only @scheme[(string-append "*."
  extension)].
 
-Under X, @racket[extension] is ignored, and @racket[filters] is used
+On Unix, @racket[extension] is ignored, and @racket[filters] is used
  to filter the visible list of files as in @racket[get-file].
 
 The @scheme[style] list is treated as for @scheme[get-file].
@@ -174,7 +174,7 @@ If @scheme[directory] is not @scheme[#f], it is used on some platforms as
 The @scheme[style] argument is treated as for
 @scheme[get-file], except that only @scheme['common] or @scheme['enter-packages] can be
 specified.  The latter
- matters only under Mac OS X, where @scheme['enter-packages]
+ matters only on Mac OS X, where @scheme['enter-packages]
  enables the user to select package directory or a directory within a
  package. A package is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.
@@ -273,7 +273,7 @@ If @scheme[style] does not include @scheme['number-order], the order of
 
  @item{Button 1 is the normal action, and it is usually the default
  button. For example, if the dialog has an @onscreen{OK} button, it is
- this one. Under Windows, this button is leftmost; under X and Mac OS
+ this one. On Windows, this button is leftmost; on Unix and Mac OS
  X, it is rightmost. (See also
  @scheme[system-position-ok-before-cancel?].) Use this button for
  dialogs that contain only one button.}
@@ -282,7 +282,7 @@ If @scheme[style] does not include @scheme['number-order], the order of
  @onscreen{Cancel} (even when the default action is to cancel, such as
  when confirming a file replacement).}
 
- @item{Button 3 tends to be separated from the other two (under
+ @item{Button 3 tends to be separated from the other two (on
  Mac OS X, it is left-aligned in the dialog). Use this button only
  for three-button dialogs.}
 

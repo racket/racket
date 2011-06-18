@@ -578,7 +578,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defmodule[browser/external]
 
 @defproc[(send-url [str null] [separate-window? void #t]) null]{
-  Like @net-send-url from @racket[net/sendurl], but under Unix, the user
+  Like @net-send-url from @racket[net/sendurl], but on Unix, the user
   is prompted for a browser to use if none is recorded in the
   preferences file.
 }
@@ -588,7 +588,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 }
 
 @defproc[(update-browser-preference [url (or/c string? false/c)]) void?]{
-  Under Unix, prompts the user for a browser preference and records the
+  On Unix, prompts the user for a browser preference and records the
   user choice as a framework preference (even if one is already
   recorded).  If @racket[url] is not @racket[#f], it is used in the
   dialog to explain which URL is to be opened; if it is @racket[#f], the

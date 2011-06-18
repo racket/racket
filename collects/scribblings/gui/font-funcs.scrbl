@@ -7,8 +7,8 @@
 
 This font is the default for @scheme[popup-menu%] objects.
 
-Under Mac OS X, this font is slightly larger than
- @scheme[normal-control-font]. Under Windows and X, it is the same
+On Mac OS X, this font is slightly larger than
+ @scheme[normal-control-font]. On Windows and Unix, it is the same
  size as @scheme[normal-control-font].
 
 }
@@ -27,9 +27,9 @@ This font is the default for @scheme[group-box-panel%] objects, and it is
  a suitable for controls in a floating window and other contexts that
  need smaller controls.
 
-Under Windows, this font is the same size as
+On Windows, this font is the same size as
  @scheme[normal-control-font], since the Windows control font is
- already relatively small. Under X and Mac OS X, this font is slightly
+ already relatively small. On Unix and Mac OS X, this font is slightly
  smaller than @scheme[normal-control-font].
 
 
@@ -47,9 +47,9 @@ This font is for tiny controls, and it is smaller than
 This font is the default for @scheme[list-box%] objects (but not
  list box labels, which use @scheme[normal-control-font]).
 
-Under Mac OS X, this font is slightly smaller than
+On Mac OS X, this font is slightly smaller than
  @scheme[normal-control-font], and slightly larger than
- @scheme[small-control-font]. Under Windows and X, it is the same size
+ @scheme[small-control-font]. On Windows and Unix, it is the same size
  as @scheme[normal-control-font].
 
 }

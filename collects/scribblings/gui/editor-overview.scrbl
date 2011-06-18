@@ -503,7 +503,7 @@ The editor file format provides for adding extra global data in
  conflict with any other header/footer record name in use, and no one
  else should use these names. All names beginning with ``wx'' are
  reserved for internal use. By tagging extra header and footer records
- with a unique name, the file can be safely loaded under a system that
+ with a unique name, the file can be safely loaded in an installation that
  does not support the records.}
 
  @item{Derive a new class from the @scheme[text%] or
@@ -577,8 +577,8 @@ Text can be extracted from an editor in either of two forms:
  mapped to themselves, but more complicated @techlink{item}s can be
  represented with a useful string determined by the @techlink{item}'s
  snip. Newlines are mapped to platform-specific character sequences
- (linefeed under X, carriage return under Mac OS X, and
- linefeed-carriage return under Windows). This form is called
+ (linefeed on Unix and Mac OS X, and
+ linefeed--carriage return on Windows). This form is called
  ``flattened'' because the editor's @techlink{item}s have been reduced
  to a linear sequence of characters.}
 
@@ -637,7 +637,7 @@ Methods of @scheme[editor<%>] that use the clipboard --- including
  paste], and @method[editor<%> do-edit-operation] --- consume a time
  stamp argument. This time stamp is generally extracted from the
  @scheme[mouse-event%] or @scheme[key-event%] object that triggered
- the clipboard action. X uses the time stamp to synchronize clipboard
+ the clipboard action. Unix uses the time stamp to synchronize clipboard
  operations among the clipboard clients.
 
 All instances of @scheme[event%] include a time stamp, which can be
@@ -645,7 +645,7 @@ All instances of @scheme[event%] include a time stamp, which can be
 
 If the time stamp is 0, it defaults to the current time. Using 0 as the
  time stamp almost always works fine, but it is considered bad manners
- under X.
+ on Unix.
 
 
 @section[#:tag "editorclickback"]{Clickbacks}

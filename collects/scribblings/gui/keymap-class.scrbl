@@ -171,7 +171,7 @@ The modifier identifiers are:
 
  @item{@litchar{a:} --- Mac OS X: Option}
 
- @item{@litchar{m:} --- Windows: Alt; X: Meta; Mac OS X: Command, when
+ @item{@litchar{m:} --- Windows: Alt; Unix: Meta; Mac OS X: Command, when
  @scheme[map-command-as-meta-key] produces @scheme[#t]}
 
  @item{@litchar{d:} --- Mac OS X: Command}
@@ -278,11 +278,11 @@ For a special keyword, the capitalization does not matter. However,
  capitalization is important for single-letter keynames. Furthermore,
  single-letter ASCII keynames are treated specially: @litchar{A} and
  @litchar{s:a} are both treated as @litchar{s:A}.  However, when
- @litchar{c:} is included under Windows without @litchar{m:}, or when
- @litchar{d:} is included under Mac OS X, then ASCII letters are not
+ @litchar{c:} is included on Windows without @litchar{m:}, or when
+ @litchar{d:} is included on Mac OS X, then ASCII letters are not
  upcased with @litchar{s:}, since the upcasing behavior of the Shift key
- is cancelled by Control without Alt (under Windows) or by Command
- (under Mac OS X).
+ is cancelled by Control without Alt (on Windows) or by Command
+ (on Mac OS X).
 
 A state can match multiple state strings mapped in a keymap (or keymap
  chain); when a state matches multiple state strings, a mapping is

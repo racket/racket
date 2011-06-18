@@ -63,7 +63,7 @@ result event is ready when @racket[(yield)] for the eventspace
 @defproc[(check-for-break)
          boolean?]{
 Inspects the event queue of the current eventspace, searching for a
- Shift-Ctl-C (X, Windows) or Cmd-. (Mac OS X) key combination. Returns
+ Shift-Ctl-C (Unix, Windows) or Cmd-. (Mac OS X) key combination. Returns
  @scheme[#t] if such an event was found (and the event is dequeued) or
  @scheme[#f] otherwise.
 

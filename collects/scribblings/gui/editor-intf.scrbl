@@ -1087,7 +1087,7 @@ extension and/or contents; when saving a file, this is the same as
 
 @item{@scheme['text] --- read/write a text file (@scheme[text%] only);
  file writing uses the platform's text-mode conventions
- (e.g., newlines as return--linefeed combinations under Windows) when
+ (e.g., newlines as return--linefeed combinations on Windows) when
  not specifically disabled via @method[editor<%> use-file-text-mode]}
 
 @item{@scheme['text-force-cr] --- read/write a text file
@@ -1673,8 +1673,8 @@ See also @method[editor<%> get-paste-text-only].
 @defmethod[(paste-x-selection [time exact-integer? 0])
            void?]{
 
-Like @method[editor<%> paste], but under X, uses the X selection
-instead of the X clipboard.
+Like @method[editor<%> paste], but on Unix, uses the X11 selection
+instead of the clipboard.
 
 See @|timediscuss| for a discussion of the @scheme[time] argument. If
  @scheme[time] is outside the platform-specific range of times,
@@ -1978,7 +1978,7 @@ The filename and format used to save the file can be retrieved with
 See also @method[editor<%> on-save-file], @method[editor<%>
  after-save-file], and @method[editor<%> can-save-file?].
 
-Under Mac OS X, the file's type signature is set to @scheme["TEXT"]
+On Mac OS X, the file's type signature is set to @scheme["TEXT"]
  for a text-format file or @scheme["WXME"] for a standard-format
  (binary) file.
 

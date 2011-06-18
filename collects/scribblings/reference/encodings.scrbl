@@ -58,17 +58,17 @@ the locale's encoding; and, finally, Racket provides functions such as
 encoding.
 
 A Unix user selects a locale by setting environment variables, such as
-@envvar{LC_ALL}. Under Windows and Mac OS X, the operating system
+@envvar{LC_ALL}. On Windows and Mac OS X, the operating system
 provides other mechanisms for setting the locale. Within Racket, the
 current locale can be changed by setting the @racket[current-locale]
 parameter. The locale name within Racket is a string, and the
 available locale names depend on the platform and its configuration,
 but the @racket[""] locale means the current user's default locale;
-under Windows and Mac OS X, the encoding for @racket[""] is always
+on Windows and Mac OS X, the encoding for @racket[""] is always
 UTF-8, and locale-sensitive operations use the operating system's
 native interface. (In particular, setting the @envvar{LC_ALL} and
 @envvar{LC_CTYPE} environment variables does not affect the locale
-@racket[""] under Mac OS X. Use @racket[getenv] and
+@racket[""] on Mac OS X. Use @racket[getenv] and
 @racket[current-locale] to explicitly install the
 environment-specified locale, if desired.) Setting the current locale
 to @racket[#f] makes locale-sensitive operations locale-insensitive,

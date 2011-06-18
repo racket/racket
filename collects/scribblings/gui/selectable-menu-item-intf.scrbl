@@ -51,13 +51,13 @@ Returns a list of symbols that indicates the keyboard prefix used for the menu
 @itemize[
 @item{@scheme['alt] --- Meta (Windows and X only)}
 @item{@scheme['cmd] --- Command (Mac OS X only)}
-@item{@scheme['meta] --- Meta (X only)}
+@item{@scheme['meta] --- Meta (Unix only)}
 @item{@scheme['ctl] --- Control}
 @item{@scheme['shift] --- Shift}
 @item{@scheme['option] --- Option (Mac OS X only)}
 ]
 
-Under X, at most one of @scheme['alt] and @scheme['meta] can be
+On Unix, at most one of @scheme['alt] and @scheme['meta] can be
  supplied; the only difference between @scheme['alt] and
  @scheme['meta] is the key combination's display in a menu.
 
@@ -74,7 +74,7 @@ The shortcut key, as determined by @method[selectable-menu-item<%>
  letters and digits, however, then the shortcut prefix merely
  determines a minimum set of modifier keys, because additional
  modifiers may be needed to access the character; an exception is
- that, under Windows or X, the Alt/Meta key press must match the
+ that, on Windows or Unix, the Alt/Meta key press must match the
  prefix exactly (i.e., included or not). In all cases, the most
  precise match takes precedence; see @xmethod[keymap% map-function]
  for more information on match ranking.

@@ -3,13 +3,13 @@
 
 @title[#:tag "libs"]{Platform Dependencies}
 
-Under Windows and Mac OS X, the Racket distribution includes all
+On Windows and Mac OS X, the Racket distribution includes all
 necessary libraries that are not part of a stock installation of the
 operating system, and the libraries are included in any distribution
 created with @exec{raco distribute} (see @secref[#:doc '(lib
 "scribblings/raco/raco.scrbl") "exe-dist"]).
 
-Under Unix, the following system libraries must be installed. Numbers
+On Unix, the following system libraries must be installed. Numbers
 in square brackets indicate a version that is tried first, and if that
 fails, the name without the version is tried.
 

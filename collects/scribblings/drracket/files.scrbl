@@ -49,10 +49,10 @@ original file's name:
 
 @itemize[
 
- @item{Under Unix and Mac OS X, a @filepath{~} is added to the end of
+ @item{On Unix and Mac OS X, a @filepath{~} is added to the end of
        the file's name.}
 
- @item{Under Windows, the file's extension is replaced with
+ @item{On Windows, the file's extension is replaced with
        @filepath{.bak}.}
 
 ]
@@ -67,13 +67,13 @@ autosave file's name is generated from the original file's name:
 
 @itemize[
 
- @item{Under Unix and Mac OS X, a @filepath{#} is added to the start
+ @item{On Unix and Mac OS X, a @filepath{#} is added to the start
        and end of the file's name, then a number is added after the
        ending @filepath{#}, and then one more @filepath{#} is appended
        after the number. The number is selected to make the autosave
        filename unique.}
 
- @item{Under Windows, the file's extension is replaced with a number
+ @item{On Windows, the file's extension is replaced with a number
        to make the autosave filename unique.}
 
 ]
@@ -96,27 +96,27 @@ depends on the platform and user:
 
 @itemize[
 
- @item{Under Unix, preferences are stored in a
+ @item{On Unix, preferences are stored in a
    @indexed-file{.racket} subdirectory in the user's home
    directory, in a file @indexed-file{racket-prefs.rktd}.}
 
- @item{Under Windows, preferences are stored in a file
+ @item{On Windows, preferences are stored in a file
   @indexed-file{racket-prefs.rktd} in a sub-directory
   @indexed-file{Racket} in the user's application-data folder as
   specified by the Windows registry; the application-data folder is
   usually @indexed-file{Application Data} in the user's profile
   directory, and that directory is usually hidden in the Windows GUI.}
 
- @item{Under Mac OS X, preferences are stored in
+ @item{On Mac OS X, preferences are stored in
   @indexed-file{org.racket-lang.prefs.rktd} in the user's preferences
   folder.}
 
 ]
 
 A lock file is used while modifying the preferences file, and it is
-created in the same directory as the preferences file. Under Windows,
-the lock file is named @indexed-file{_LOCKracket-prefs.rktd}; under Unix,
-it is @indexed-file{.LOCK.racket-prefs.rktd}; under Mac OS X, it is
+created in the same directory as the preferences file. On Windows,
+the lock file is named @indexed-file{_LOCKracket-prefs.rktd}; on Unix,
+it is @indexed-file{.LOCK.racket-prefs.rktd}; on Mac OS X, it is
 @indexed-file{.LOCK.org.racket-lang.prefs.rktd}.
 
 If the user-specific preferences file does not exist, and the file

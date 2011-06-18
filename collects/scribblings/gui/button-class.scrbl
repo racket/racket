@@ -32,9 +32,9 @@ Creates a button with a string label, bitmap label, or both.
  specifies the location of the image relative to the text on the button.
 
 If @litchar{&} occurs in @scheme[label] (when @scheme[label] includes a
-string), it is specially parsed; under Windows and X, the character
+string), it is specially parsed; on Windows and Unix, the character
 following @litchar{&} is underlined in the displayed control to
-indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
+indicate a keyboard mnemonic. (On Mac OS X, mnemonic underlines are
 not shown.)  The underlined mnemonic character must be a letter or a
 digit. The user can effectively click the button by typing the
 mnemonic when the control's top-level-window contains the keyboard
@@ -43,12 +43,12 @@ keyboard focus is currently in a control that handles normal
 alphanumeric input. The @litchar{&} itself is removed from
 @scheme[label] before it is displayed for the control; a @litchar{&&}
 in @scheme[label] is converted to @litchar{&} (with no mnemonic
-underlining). Under Mac OS X, a parenthesized mnemonic character is
+underlining). On Mac OS X, a parenthesized mnemonic character is
 removed (along with any surrounding space) before the label is
 displayed, since a parenthesized mnemonic is often used for non-Roman
 languages. Finally, any text after a tab character is removed on all
 platforms. Mnemonic keyboard events are handled by
-@method[top-level-window<%> on-traverse-char] (but not under Mac OS
+@method[top-level-window<%> on-traverse-char] (but not on Mac OS
 X).
 
 The @scheme[callback] procedure is called (with the event type

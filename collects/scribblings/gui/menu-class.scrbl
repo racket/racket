@@ -17,13 +17,13 @@ A @scheme[menu%] object is a submenu within a @scheme[menu%] or
 Creates a new menu with the given label.
 
 If @scheme[label] contains a @litchar{&}, it is handled specially;
- under Windows, the character following a @litchar{&} is underlined in
+ on Windows, the character following a @litchar{&} is underlined in
  the displayed menu title to indicate a keyboard mnemonic.  Pressing
  and releasing the Alt key switches to menu-selection mode in the menu
  bar where mnemonic characters are used for navigation.  An Alt
  combination might select a specific menu via @method[frame%
  on-menu-char].  A @litchar{&&} in @scheme[label] is replaced by a
- literal (non-navigation) @litchar{&}ampersand. Under X and Mac OS X,
+ literal (non-navigation) @litchar{&}ampersand. On Unix and Mac OS X,
  @litchar{&}s in the label are parsed in the same way as for Windows,
  but no mnemonic underline is displayed.
 

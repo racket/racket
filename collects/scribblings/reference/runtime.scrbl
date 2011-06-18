@@ -69,18 +69,18 @@ platform-specific format.}
 Returns a string to identify the current user's language and
 country.
 
-Under Unix and Mac OS X, the string is five characters: two lowercase
+On Unix and Mac OS X, the string is five characters: two lowercase
 ASCII letters for the language, an underscore, and two uppercase ASCII
-letters for the country. Under Windows, the string can be arbitrarily
+letters for the country. On Windows, the string can be arbitrarily
 long, but the language and country are in English (all ASCII letters
 or spaces) separated by an underscore.
 
-Under Unix, the result is determined by checking the
+On Unix, the result is determined by checking the
 @indexed-envvar{LC_ALL}, @indexed-envvar{LC_TYPE}, and
 @indexed-envvar{LANG} environment variables, in that order (and the
 result is used if the environment variable's value starts with two
 lowercase ASCII letters, an underscore, and two uppercase ASCII
-letters, followed by either nothing or a period). Under Windows and
+letters, followed by either nothing or a period). On Windows and
 Mac OS X, the result is determined by system calls.}
 
 
@@ -90,7 +90,7 @@ Mac OS X, the result is determined by system calls.}
 
 Returns a relative directory path. This string can be used to build
 paths to system-specific files. For example, when Racket is running
-under Solaris on a Sparc architecture, the subpath starts
+on Solaris on a Sparc architecture, the subpath starts
 @racket["sparc-solaris"], while the subpath for Windows on an i386
 architecture starts @racket["win32\\i386"].
 

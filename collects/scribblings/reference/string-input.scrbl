@@ -60,7 +60,7 @@ must be one of the following symbols:
 
 Return and linefeed characters are detected after the conversions that
 are automatically performed when reading a file in text mode. For
-example, reading a file in text mode under Windows automatically
+example, reading a file in text mode on Windows automatically
 changes return-linefeed combinations to a linefeed. Thus, when a file
 is opened in text mode, @scheme['linefeed] is usually the appropriate
 @scheme[read-line] mode.}

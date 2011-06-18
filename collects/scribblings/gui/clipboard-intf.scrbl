@@ -6,15 +6,15 @@
 A single @scheme[clipboard<%>] object, @indexed-scheme[the-clipboard],
  manages the content of the system-wide clipboard for cut and paste.
 
-Under X, a second @scheme[clipboard<%>] object,
+On Unix, a second @scheme[clipboard<%>] object,
  @indexed-scheme[the-x-selection-clipboard], manages the content of the
- system-wide X selection. If the @ResourceFirst{selectionAsClipboard}
+ system-wide X11 selection. If the @ResourceFirst{selectionAsClipboard}
  preference (see @|mrprefsdiscuss|) is set to a non-zero true value,
  however, then @scheme[the-clipboard] is always the same as
- @scheme[the-x-selection-clipboard], and the system-wide X clipboard
+ @scheme[the-x-selection-clipboard], and the system-wide X11 clipboard
  is not used.
 
-Under Windows and Mac OS X, @scheme[the-x-selection-clipboard] is
+On Windows and Mac OS X, @scheme[the-x-selection-clipboard] is
  always the same as @scheme[the-clipboard].
 
 Data can be entered into a clipboard in one of two ways: by setting

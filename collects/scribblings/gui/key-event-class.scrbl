@@ -55,7 +55,7 @@ Returns @scheme[#t] if the Caps Lock key was on for the event.
            boolean?]{
 Returns @scheme[#t] if the Control key was down for the event.
 
-Under Mac OS X, if a control-key press is combined with a mouse button
+On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
 @method[key-event% get-control-down] for the event reports @scheme[#f].
 
@@ -172,13 +172,13 @@ A @scheme['wheel-up], @scheme['wheel-down], @scheme['wheel-left], or
  events based on the location of the mouse pointer instead of the
  keyboard focus.
 
-Under Windows, when the Control key is pressed without Alt, the key
+On Windows, when the Control key is pressed without Alt, the key
  code for ASCII characters is downcased, roughly cancelling the effect
- of the Shift key. Under Mac OS X, the key code is computed without
+ of the Shift key. On Mac OS X, the key code is computed without
  Caps Lock effects when the Control or Command key is pressed; in the
  case of Control, Caps Lock is used normally if special handling is
- disabled for the Control key via @scheme[special-control-key]. Under
- X, the key code is computed with Caps Lock effects when the Control
+ disabled for the Control key via @scheme[special-control-key]. On
+ Unix, the key code is computed with Caps Lock effects when the Control
  key is pressed without Alt.
 
 See also @method[key-event% get-other-shift-key-code].
@@ -197,7 +197,7 @@ Gets the virtual key code for a key-release event; the result is
 @defmethod[(get-meta-down)
            boolean?]{
 
-Returns @scheme[#t] if the Meta (X), Alt (Windows), or Command (Mac OS
+Returns @scheme[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
  X) key was down for the event.
 
 }
@@ -236,7 +236,7 @@ Since keyboard mappings vary, it is sometimes useful in key mappings
 
 The @method[key-event% get-other-altgr-key-code] method provides the
 same information with respect to the AltGr key (i.e., Alt combined
-with Control) under Windows and X, or the Option key under Mac OS
+with Control) on Windows and Unix, or the Option key on Mac OS
 X. The @method[key-event% get-other-shift-altgr-key-code] method
 reports a mapping for in tha case that both Shift and AltGr/Option
 were different from the actual event.
@@ -252,10 +252,10 @@ result. (Caps Lock normally has either no effect or the same effect as
 Shift, so further combinations involving Caps Lock and other modifier
 keys would not normally produce further alternatives.)
 
-Alternate mappings are not available for all events. Under Windows,
+Alternate mappings are not available for all events. On Windows,
  alternate mappings are reported when they produce ASCII letters,
- ASCII digits, and ASCII symbols. Under Mac OS X, alternate mappings are
- available only when the Command key is pressed. Under X, alternate
+ ASCII digits, and ASCII symbols. On Mac OS X, alternate mappings are
+ available only when the Command key is pressed. On Unix, alternate
  mappings are usually available.
 
 }
@@ -304,7 +304,7 @@ Sets whether the Caps Lock key was on for the event.
 
 Sets whether the Control key was down for the event.
 
-Under Mac OS X, if a control-key press is combined with a mouse button
+On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
  @method[key-event% get-control-down] for the event reports
  @scheme[#f].
@@ -331,7 +331,7 @@ Sets the virtual key code for a release event, either a character or
 @defmethod[(set-meta-down [down? any/c])
            void?]{
 
-Sets whether the Meta (X), Alt (Windows), or Command (Mac OS X) key
+Sets whether the Meta (Unix), Alt (Windows), or Command (Mac OS X) key
  was down for the event.
 
 }

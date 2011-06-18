@@ -24,14 +24,14 @@ by @racket[kind], which must be one of the following:
  @item{@indexed-racket['home-dir] --- the current user's home
  directory.
 
- Under Unix and Mac OS X, this directory is determined by expanding
+ On Unix and Mac OS X, this directory is determined by expanding
  the path @filepath{~}, which is expanded by first checking for a
  @indexed-envvar{HOME} environment variable. If none is defined, the
  @indexed-envvar{USER} and @indexed-envvar{LOGNAME} environment
  variables are consulted (in that order) to find a user name, and then
  system files are consulted to locate the user's home directory.
 
- Under Windows, the user's home directory is the user-specific profile
+ On Windows, the user's home directory is the user-specific profile
  directory as determined by the Windows registry. If the registry
  cannot provide a directory for some reason, the value of the
  @indexed-envvar{USERPROFILE} environment variable is used instead, as
@@ -43,27 +43,27 @@ by @racket[kind], which must be one of the following:
  the current executable is used as the home directory.}
 
  @item{@indexed-racket['pref-dir] --- the standard directory for
- storing the current user's preferences. Under Unix, the directory is
- @filepath{.racket} in the user's home directory.  Under Windows, it
+ storing the current user's preferences. On Unix, the directory is
+ @filepath{.racket} in the user's home directory.  On Windows, it
  is @filepath{Racket} in the user's application-data folder as
  specified by the Windows registry; the application-data folder is
  usually @filepath{Application Data} in the user's profile
- directory. Under Mac OS X, it is @filepath{Library/Preferences} in the
+ directory. On Mac OS X, it is @filepath{Library/Preferences} in the
  user's home directory. This directory might not exist.}
 
  @item{@indexed-racket['pref-file] --- a file that contains a
  symbol-keyed association list of preference values. The file's
  directory path always matches the result returned for
- @racket['pref-dir]. The file name is @filepath{racket-prefs.rktd} under Unix
- and Windows, and it is @filepath{org.racket-lang.prefs.rktd} under Mac OS
+ @racket['pref-dir]. The file name is @filepath{racket-prefs.rktd} on Unix
+ and Windows, and it is @filepath{org.racket-lang.prefs.rktd} on Mac OS
  X. The file's directory might not exist. See also
  @racket[get-preference].}
 
  @item{@indexed-racket['temp-dir] --- the standard directory for
- storing temporary files. Under @|AllUnix|, this is the directory
+ storing temporary files. On @|AllUnix|, this is the directory
  specified by the @indexed-envvar{TMPDIR} environment variable, if it
  is defined, otherwise it is the first path that exists among
- @filepath{/var/tmp}, @filepath{/usr/tmp}, and @filepath{/tmp}. Under
+ @filepath{/var/tmp}, @filepath{/usr/tmp}, and @filepath{/tmp}. On
  Windows, the result is the directory specified by the
  @indexed-envvar{TMP} or @indexed-envvar{TEMP} environment variable,
  if it is defined, otherwise it is the current directory.}
@@ -91,27 +91,27 @@ by @racket[kind], which must be one of the following:
  overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
- @filepath{Library/Racket} in the user's home directory under Mac
+ @filepath{Library/Racket} in the user's home directory on Mac
  OS X and @racket['pref-dir] otherwise.  This directory might not
  exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
- storing the current user's documents. Under Unix, it's the same as
- @racket['home-dir]. Under Mac OS X, it's the
- @filepath{Documents} directory in the user's home directory. Under
+ storing the current user's documents. On Unix, it's the same as
+ @racket['home-dir]. On Mac OS X, it's the
+ @filepath{Documents} directory in the user's home directory. On
  Windows, it is the user's documents folder as specified by the
  Windows registry; the documents folder is usually @filepath{My Documents}
  in the user's home directory.}
 
  @item{@indexed-racket['desk-dir] --- the directory for the current user's
- desktop. Under Unix, it's the same as @racket['home-dir]. Under
+ desktop. On Unix, it's the same as @racket['home-dir]. On
  Windows, it is the user's desktop folder as specified by the Windows
  registry; the documents folder is usually @filepath{Desktop} in the
- user's home directory. Under Mac OS X, it is the desktop directory,
- which is specifically @filepath{~/Desktop} under Mac OS X.}
+ user's home directory. On Mac OS X, it is the desktop directory,
+ which is specifically @filepath{~/Desktop} on Mac OS X.}
 
  @item{@indexed-racket['sys-dir] --- the directory containing the
- operating system for Windows. Under @|AllUnix|, the
+ operating system for Windows. On @|AllUnix|, the
  result is @racket["/"].}
 
  @item{@indexed-racket['exec-file] --- the path of the Racket
@@ -152,8 +152,8 @@ by @racket[kind], which must be one of the following:
          (listof path?)]{
 
 Parses a string or byte string containing a list of paths, and returns
-a list of path strings. Under @|AllUnix|, paths in a path list are
-separated by a @litchar{:}; under Windows, paths are separated by a
+a list of path strings. On @|AllUnix|, paths in a path list are
+separated by a @litchar{:}; on Windows, paths are separated by a
 @litchar{;}, and all @litchar{"}s in the string are discarded. Whenever the path 
 list contains an empty path, the list
 @racket[default-path-list] is spliced into the returned list of
@@ -179,7 +179,7 @@ This procedure is used by the Racket executable to find the
 standard library collection directory (see @secref["collects"]).  In
 this case, @racket[program] is the name used to start Racket and
 @racket[related] is @racket["collects"].  The @racket[related-sub]
-argument is used because, under @|AllUnix|, @racket[program-sub] may
+argument is used because, on @|AllUnix|, @racket[program-sub] may
 involve to a sequence of soft links; in this case,
 @racket[related-sub] determines which link in the chain is relevant.
 
@@ -202,10 +202,10 @@ variable is defined, @racket[find-executable-path] tries each path in
 algorithm described above for path-containing
 @racket[program-sub]s. If the @envvar{PATH} environment variable is
 not defined, @racket[program-sub] is prefixed with the current
-directory and used in the search algorithm above. (Under Windows, the
+directory and used in the search algorithm above. (On Windows, the
 current directory is always implicitly the first item in
 @envvar{PATH}, so @racket[find-executable-path] checks the current
-directory first under Windows.)}
+directory first on Windows.)}
 
 @;------------------------------------------------------------------------
 @section[#:tag "fileutils"]{Files}
@@ -215,7 +215,7 @@ directory first under Windows.)}
 Returns @racket[#t] if a file (not a directory) @racket[path] exists,
 @racket[#f] otherwise.
 
-Under Windows, @racket[file-exists?]  reports @racket[#t] for all
+On Windows, @racket[file-exists?]  reports @racket[#t] for all
 variations of the special filenames (e.g., @racket["LPT1"],
 @racket["x:/baddir/LPT1"]).}
 
@@ -257,10 +257,10 @@ a directory. Unless @racket[exists-ok?]  is provided as a true value,
 file when @racket[old] is a directory, and vice versa.
 
 If @racket[new] exists and is replaced, the replacement is atomic
-under Unix and Mac OS X, but it is not guaranteed to be atomic under
+on Unix and Mac OS X, but it is not guaranteed to be atomic on
 Windows. Furthermore, if @racket[new] exists and is opened by any
 process for reading or writing, then attempting to replace it will
-typically fail under Windows.
+typically fail on Windows.
 
 If @racket[old] is a link, the link is renamed rather than the
 destination of the link, and it counts as a file for replacing any
@@ -275,7 +275,7 @@ existing @racket[new].}
 Returns the file or directory's last modification date as
 platform-specific seconds (see also @secref["time"]) when
 @racket[secs-n] is not provided or is @racket[#f]. (For FAT
-filesystems under Windows, directories do not have modification
+filesystems on Windows, directories do not have modification
 dates. Therefore, the creation date is returned for a directory, but
 the modification date is returned for a file.)
 
@@ -294,7 +294,7 @@ called, and the default @racket[fail-thunk] raises
 When given one argument or @racket[#f] as the second argument, returns
 a list containing @indexed-racket['read], @indexed-racket['write],
 and/or @indexed-racket['execute] to indicate permission the given file
-or directory path by the current user and group. Under @|AllUnix|,
+or directory path by the current user and group. On @|AllUnix|,
 permissions are checked for the current effective user instead of the
 real user.
 
@@ -317,9 +317,9 @@ members of the file or directory's group, or other users:
  @item{@racketvalfont{#o004} : others have execute permission}
 ]
 
-See also @racket[user-read-bit], etc. Under Windows, permissions from
+See also @racket[user-read-bit], etc. On Windows, permissions from
 all three (owner, group, and others) are always the same, and read and
-execute permission are always available. Under @|AllUnix|,
+execute permission are always available. On @|AllUnix|,
 higher bits have a platform-specific meaning.
 
 If an integer is supplied as the second argument, its is used as an
@@ -346,7 +346,7 @@ identity of the referenced file or directory (if any).}
 
 @defproc[(file-size [path path-string?]) exact-nonnegative-integer?]{
 
-Returns the (logical) size of the specified file in bytes. Under Mac
+Returns the (logical) size of the specified file in bytes. On Mac
 OS X, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
@@ -356,18 +356,18 @@ such file exists), the @exnraise[exn:fail:filesystem].}
 Creates the file @racket[dest] as a copy of @racket[src]. If the file
 is not successfully copied, the @exnraise[exn:fail:filesystem]. If
 @racket[dest] already exists, the copy will fail. File permissions are
-preserved in the copy. Under Mac OS X, the resource fork is also
+preserved in the copy. On Mac OS X, the resource fork is also
 preserved in the copy. If @racket[src] refers to a link, the target of
 the link is copied, rather than the link itself.}
 
 @defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
          void?]{
 
-Creates a link @racket[path] to @racket[to] under @|AllUnix|. The
+Creates a link @racket[path] to @racket[to] on @|AllUnix|. The
 creation will fail if @racket[path] already exists. The @racket[to]
 need not refer to an existing file or directory, and @racket[to] is
 not expanded before writing the link. If the link is not created
-successfully,the @exnraise[exn:fail:filesystem]. Under Windows, the
+successfully,the @exnraise[exn:fail:filesystem]. On Windows, the
 @exnraise[exn:fail:unsupported] always.}
 
 @;------------------------------------------------------------------------
@@ -424,14 +424,14 @@ directory is not deleted successfully, the
 @margin-note{See also the @scheme[in-directory] sequence constructor.}
 
 Returns a list of all files and directories in the directory specified
-by @racket[path]. Under Windows, an element of the list may start with
+by @racket[path]. On Windows, an element of the list may start with
 @litchar{\\?\REL\\}.}
 
 
 @defproc[(filesystem-root-list) (listof path?)]{
 
 Returns a list of all current root directories. Obtaining this list
-can be particularly slow under Windows.}
+can be particularly slow on Windows.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "runtime-path"]{Declaring Paths Needed at Run Time}
@@ -937,7 +937,7 @@ then the cache is used only if the file has a timestamp that is the
 same as the last time the file was read. Otherwise, the file is
 re-consulted.
 
-Under platforms for which @racket[preferences-lock-file-mode] returns
+On platforms for which @racket[preferences-lock-file-mode] returns
 @racket['file-lock] and when @racket[use-lock?] is true,
 preference-file reading is guarded by a lock; multiple readers can
 share the lock, but writers take the lock exclusively. If the
@@ -1017,7 +1017,7 @@ indicates that a write lock is held, and readers need no lock (because
 the preferences file is atomically updated via
 @racket[rename-file-or-directory]).
 
-The @racket['file-lock] mode is currently used under Windows. In
+The @racket['file-lock] mode is currently used on Windows. In
 @racket['file-lock] mode, shared and exclusive locks (in the sense of
 @racket[port-try-file-lock?]) on the lock file reflect reader and
 writer locks on the preference-file content. (The preference file

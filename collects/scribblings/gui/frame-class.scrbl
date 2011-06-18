@@ -7,7 +7,7 @@ A frame is a top-level container window. It has a title bar (which
  displays the frame's label), an optional menu bar, and an optional
  status line.
 
-Under Windows, both Multiple Document Interface (MDI) and Single
+On Windows, both Multiple Document Interface (MDI) and Single
  Document Interface (SDI) frames are supported.
 
 @defconstructor[([label label-string?]
@@ -36,10 +36,10 @@ bar. If the frame's label is changed (see @method[window<%>
 set-label]), the title bar is updated.
 
 The @scheme[parent] argument can be @scheme[#f] or an existing
-frame. Under Windows, if @scheme[parent] is an existing frame,
+frame. On Windows, if @scheme[parent] is an existing frame,
 the new frame is always on top of its parent. Also, the
 @scheme[parent] frame may be an MDI parent frame from a new MDI
-child frame. Under Windows and X (for many window managers), a
+child frame. On Windows and Unix (for many window managers), a
 frame is iconized when its parent is iconized.
 
 If @scheme[parent] is @scheme[#f], then the eventspace for the
@@ -63,11 +63,11 @@ some platforms:
 @itemize[
 
  @item{@scheme['no-resize-border] --- omits the resizeable border
-  around the window (Windows, X) or grow box in the bottom right
+  around the window (Windows, Unix) or grow box in the bottom right
   corner (Mac OS X)}
 
  @item{@scheme['no-caption] --- omits the title bar for the frame
- (Windows, Mac OS X, X)}
+ (Windows, Mac OS X, Unix)}
 
  @item{@scheme['no-system-menu] --- omits the system menu
  (Windows)}
@@ -85,14 +85,14 @@ some platforms:
  a call to @method[frame% on-toolbar-button-click]}
  @item{@scheme['hide-menu-bar] --- hides the menu bar and dock when
  the frame is active (Mac OS X) or asks the window manager to make
- the frame fullscreen (X)}
+ the frame fullscreen (Unix)}
 
  @item{@scheme['float] --- causes the frame to stay in front of all
- other non-floating windows (Windows, Mac OS X, X); under Mac OS X, a floating frame
+ other non-floating windows (Windows, Mac OS X, Unix); on Mac OS X, a floating frame
  shares the focus with an active non-floating frame; when this style
  is combined with @scheme['no-caption], then showing the frame does
- not cause the keyboard focus to shift to the window, and under X,
- clicking the frame does not move the focus; under Windows, a floating
+ not cause the keyboard focus to shift to the window, and on Unix,
+ clicking the frame does not move the focus; on Windows, a floating
  frame has no taskbar button}
 
  @item{@scheme['metal] --- ignored (formerly supported for Mac OS X)}
@@ -161,8 +161,8 @@ otherwise.
 @defmethod[(is-maximized?)
            boolean?]{
 
-Under Windows and Mac OS X, returns @scheme[#t] if the frame is
-maximized, @scheme[#f] otherwise. Under X, the result is always
+On Windows and Mac OS X, returns @scheme[#t] if the frame is
+maximized, @scheme[#f] otherwise. On Unix, the result is always
 @scheme[#f].
 
 }
@@ -171,8 +171,8 @@ maximized, @scheme[#f] otherwise. Under X, the result is always
            void?]{
 @methspec{
 
-Maximizes or restores the frame under Windows and Mac OS X; the
- frame's show state is not affected. Under Windows, an iconized frame
+Maximizes or restores the frame on Windows and Mac OS X; the
+ frame's show state is not affected. On Windows, an iconized frame
  cannot be maximized or restored.
 
 @MonitorMethod[@elem{A window's maximization} @elem{the user} @elem{@method[window<%> on-size]} @elem{size}]
@@ -193,8 +193,8 @@ If @scheme[maximize?] is @scheme[#f], the window is restored, otherwise
               void?])]{
 
 Gets or sets the frame's modification state as reflected to the user.
- Under Mac OS X, the modification state is reflected as a dot in the
- frame's close button. Under Windows and X, the modification state is
+ On Mac OS X, the modification state is reflected as a dot in the
+ frame's close button. On Windows and Unix, the modification state is
  reflected by an asterisk at the end of the frame's displayed title.
 
 }
@@ -202,7 +202,7 @@ Gets or sets the frame's modification state as reflected to the user.
 @defmethod[(on-mdi-activate [active? any/c])
            void?]{
 
-Called under Windows when a MDI-child frame becomes the active frame
+Called on Windows when a MDI-child frame becomes the active frame
  within its parent (in which case the argument is @scheme[#t]), or when
  the child frame ceases to be the active frame (in which case the
  argument is @scheme[#f]).
@@ -254,7 +254,7 @@ Returns the result of
 @defmethod[(on-toolbar-button-click)
            void?]{
 
-Under Mac OS X, called when the user clicks the toolbar button on a
+On Mac OS X, called when the user clicks the toolbar button on a
  frame created with the @indexed-scheme['toolbar-button] style.
 
 }
@@ -277,7 +277,7 @@ The icon is used in a platform-specific way:
 
  @item{Mac OS X --- both icons are ignored.}
 
- @item{X --- many window managers use the small icon in the same way
+ @item{Unix --- many window managers use the small icon in the same way
        as Windows, and others use the small icon when iconifying the
        frame; the large icon is ignored.}
 

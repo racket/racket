@@ -13,7 +13,7 @@ Returns @scheme[#t] for Mac OS X when the current eventspace is the
 
 This procedure is intended for use in deciding whether to include a
  @onscreen{Quit}, @onscreen{About}, and @onscreen{Preferences} menu
- item in a frame's menu. Under Mac OS X, the application
+ item in a frame's menu. On Mac OS X, the application
  @onscreen{Quit} menu triggers a call to a frame's
 @method[top-level-window<%> on-exit] method, the @onscreen{About} menu item is controlled by
  @scheme[application-about-handler], and the
@@ -41,7 +41,7 @@ This procedure is intended for use in deciding whether to create a
 
 When the current eventspace is the initial eventspace, this
 procedure retrieves or installs a thunk that is called when the
-user selects the application @onscreen{About} menu item in Mac OS
+user selects the application @onscreen{About} menu item on Mac OS
 X.  The thunk is always called in the initial eventspace's
 handler thread (as a callback).
 
@@ -59,7 +59,7 @@ or has no effect (when called with a handler).
             void?])]{
 When the current eventspace is the initial eventspace, this procedure
  retrieves or installs a thunk that is called when the user selects
- the application @onscreen{Preferences} menu item in Mac OS X.  The
+ the application @onscreen{Preferences} menu item on Mac OS X.  The
  thunk is always called in the initial eventspace's handler thread (as
  a callback). If the handler is set to @scheme[#f], the
  @onscreen{Preferences} item is disabled.
@@ -78,11 +78,11 @@ or has no effect (when called with a handler).
 When the current eventspace is the initial eventspace, this procedure
  retrieves or installs a thunk that is called when the user requests
  that the application quit (e.g., through the @onscreen{Quit} menu
- item in Mac OS X, or when shutting down the machine in Windows). The
+ item on Mac OS X, or when shutting down the machine in Windows). The
  thunk is always called in the initial eventspace's handler thread (as
  a callback). If the result of the thunk is @scheme[#f], then the
  operating system is explicitly notified that the application does not
- intend to quit (under Windows).
+ intend to quit (on Windows).
 
 The default handler queues a call to the
  @method[top-level-window<%> can-exit?] method of the most
@@ -104,7 +104,7 @@ or has no effect (when called with a handler).
            [(application-file-handler [handler-proc (path? . -> . any)])
             void?])]{
 When the current eventspace is the initial eventspace, this procedure
- retrieves or installs a procedure that is called under Mac OS X
+ retrieves or installs a procedure that is called on Mac OS X
  and Windows when the application is running and user double-clicks an
  application-handled file or drags a file onto the application's
  icon. The procedure is always called in the initial eventspace's

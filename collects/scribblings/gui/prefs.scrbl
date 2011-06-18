@@ -25,7 +25,7 @@ The following are the preference names used by GRacket:
  an editor.}
 
  @item{@ResourceFirst{defaultMenuPrefix} --- sets the prefix used by
- default for menu item shortcuts under X, one of @scheme['ctl],
+ default for menu item shortcuts on Unix, one of @scheme['ctl],
  @scheme['meta], or @scheme['alt]. The default is
  @scheme['ctl]. When this preference is set to @scheme['meta] or
  @scheme['alt], underlined mnemonics (introduced by @litchar{&} in menu

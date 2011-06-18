@@ -115,7 +115,7 @@ to run, block using @cppi{scheme_block_until}.  This procedure takes
 two functions: a polling function that tests whether the blocking
 operation can be completed, and a prepare-to-sleep function that sets
 bits in @cpp{fd_set}s when Racket decides to sleep (because all Racket
-threads are blocked). Under Windows, an ``@cpp{fd_set}'' can also
+threads are blocked). On Windows, an ``@cpp{fd_set}'' can also
 accommodate OS-level semaphores or other handles via
 @cpp{scheme_add_fd_handle}.
 
@@ -495,7 +495,7 @@ If Racket decides to sleep, then the @var{fdf} function is called to
  @cpp{fd_set}s: one or reading, one for writing, and one for
  exceptions. Use @cpp{scheme_get_fdset} to get elements of this
  array, and manipulate an ``@cpp{fd_set}'' with @cpp{MZ_FD_SET}
- instead of @cpp{FD_SET}, etc. Under Windows, an ``@cpp{fd_set}'' can
+ instead of @cpp{FD_SET}, etc. On Windows, an ``@cpp{fd_set}'' can
  also accommodate OS-level semaphores or other handles via
  @cpp{scheme_add_fd_handle}.
 
@@ -595,7 +595,7 @@ The @cpp{scheme_add_fd_handle} function is useful for implementing
  the second procedure passed to @cpp{scheme_wait_until}, or for
  implementing a custom input port.
 
-Under Unix and Mac OS X, this function has no effect.}
+On Unix and Mac OS X, this function has no effect.}
 
 
 @function[(void scheme_add_fd_eventmask
@@ -612,7 +612,7 @@ The event mask is only used when some handle is installed with
  @cpp{scheme_add_fd_handle}. This awkward restriction may force you
  to create a dummy semaphore that is never posted.
 
-Under Unix, and Mac OS X, this function has no effect.}
+On Unix, and Mac OS X, this function has no effect.}
 
 @function[(void scheme_add_evt
            [Scheme_Type type]

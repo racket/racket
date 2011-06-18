@@ -129,7 +129,7 @@ Windows paths.
 
 If @racket[str] does not correspond to any path element
 (e.g., it is an absolute path, or it can be split), or if it
-corresponds to an up-directory or same-directory indicator under
+corresponds to an up-directory or same-directory indicator on
 @|AllUnix|, then @exnraise[exn:fail:contract].
 
 As for @racket[path->string], information can be lost from
@@ -155,7 +155,7 @@ elements is necessary.}
 @defproc[(path-element->string [path path?]) string?]{
 
 Like @racket[path->string], except that trailing path separators are
-removed (as by @racket[split-path]). Under Windows, any
+removed (as by @racket[split-path]). On Windows, any
 @litchar{\\?\REL} encoding prefix is also removed; see
 @secref["windowspaths"] for more information on Windows paths.
 
@@ -326,7 +326,7 @@ This procedure does not access the filesystem.}
 Returns @racket[path] if @racket[path] syntactically refers to a
 directory and ends in a separator, otherwise it returns an extended
 version of @racket[path] that specifies a directory and ends with a
-separator. For example, under @|AllUnix|, the path @filepath{x/y/}
+separator. For example, on @|AllUnix|, the path @filepath{x/y/}
 syntactically refers to a directory and ends in a separator, but
 @filepath{x/y} would be extended to @filepath{x/y/}, and @filepath{x/..} would be
 extended to @filepath{x/../}. The @racket[path] argument can be a path for
@@ -338,7 +338,7 @@ This procedure does not access the filesystem.}
 @defproc[(resolve-path [path path-string?]) path?]{
 
 @tech{Cleanse}s @racket[path] and returns a path that references the
-same file or directory as @racket[path]. Under @|AllUnix|, if
+same file or directory as @racket[path]. On @|AllUnix|, if
 @racket[path] is a soft link to another path, then the referenced path
 is returned (this may be a relative path with respect to the directory
 owning @racket[path]), otherwise @racket[path] is returned (after
@@ -354,7 +354,7 @@ this chapter) without consulting the filesystem.}
 
 @defproc[(expand-user-path [path path-string?]) path?]{
 
-@techlink{Cleanse}s @racket[path]. In addition, under @|AllUnix|, a
+@techlink{Cleanse}s @racket[path]. In addition, on @|AllUnix|, a
 leading @litchar{~} is treated as user's home directory and expanded;
 the username follows the @litchar{~} (before a @litchar{/} or the end
 of the path), where @litchar{~} by itself indicates the home directory
@@ -373,7 +373,7 @@ accesses the same file or directory (if it exists) as @racket[path].
 
 In general, the pathname is normalized as much as possible---without
 consulting the filesystem if @racket[use-filesystem?] is @racket[#f],
-and (under Windows) without changing the case of letters within the
+and (on Windows) without changing the case of letters within the
 path.  If @racket[path] syntactically refers to a directory, the
 result ends with a directory separator.
 
@@ -451,9 +451,9 @@ directory or file name.  Three values are returned:
    @item{a directory-name path,} 
    @item{a filename,}
    @item{@racket['up] if the last part of @racket[path] specifies the parent
-    directory of the preceding path (e.g., @litchar{..} under Unix), or}
+    directory of the preceding path (e.g., @litchar{..} on Unix), or}
    @item{@racket['same] if the last part of @racket[path] specifies the 
-     same directory as the  preceding path (e.g., @litchar{.} under Unix).}
+     same directory as the  preceding path (e.g., @litchar{.} on Unix).}
   ]}
 
  @item{@racket[must-be-dir?] is @racket[#t] if @racket[path] explicitly

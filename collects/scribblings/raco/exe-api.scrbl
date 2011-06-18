@@ -95,7 +95,7 @@ parameter is true.
 
 Copies the Racket (if @racket[gracket?] and @racket[mred?] are
 @racket[#f]) or GRacket (otherwise) binary, embedding code into the
-copied executable to be loaded on startup.  Under Unix, the binary is
+copied executable to be loaded on startup.  On Unix, the binary is
 actually a wrapper executable that execs the original; see also the
 @racket['original-exe?] tag for @racket[aux].
 
@@ -381,7 +381,7 @@ currently @racket[#f] for all platforms.}
          boolean?]{
 
 Indicates whether Racket/GRacket executables for the current platform
-actually correspond to directories. The result is @racket[#t] under
+actually correspond to directories. The result is @racket[#t] on
 Mac OS X when @racket[mred?] is @racket[#t], @racket[#f] otherwise.}
 
 

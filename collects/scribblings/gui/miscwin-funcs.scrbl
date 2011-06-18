@@ -52,7 +52,7 @@ See @racket[begin-busy-cursor].
 Gets or sets the creator and type of a file in Mac OS X.
 
 The get operation always returns @racket[#"????"] and @racket[#"????"] for
- Unix or Windows. The set operation has no effect under Unix or
+ Unix or Windows. The set operation has no effect on Unix or
  Windows.
 }
 
@@ -80,8 +80,8 @@ The result depends on @racket[what], and a @racket[#f] result is only
   ]}
 
  @item{@racket['x-display] returns a ``path'' whose string identifies
- the X display if specified by either the @Flag{display} flag or the
- @envvar{DISPLAY} environment variable when GRacket starts under X. For
+ the X11 display if specified by either the @Flag{display} flag or the
+ @envvar{DISPLAY} environment variable when GRacket starts on Unix. For
  other platforms, or when neither @Flag{display} nor @envvar{DISPLAY}
  was specified, the result is @racket[#f].}
 
@@ -98,8 +98,8 @@ Returns an immutable list specifying the default prefix for menu
 shortcuts. See also
 @xmethod[selectable-menu-item<%> get-shortcut-prefix].
 
-Under Windows, the default is @racket['(ctl)]. Under Mac OS X, the
-default is @racket['(cmd)]. Under X, the default is normally
+On Windows, the default is @racket['(ctl)]. On Mac OS X, the
+default is @racket['(cmd)]. On Unix, the default is normally
 @racket['(ctl)], but the default can be changed through the
 @Resource{defaultMenuPrefix} low-level preference (see
 @|mrprefsdiscuss|).}
@@ -258,7 +258,7 @@ Creates a bitmap that draws in a way that is the same as drawing to a
 canvas in its default configuration.
 
 A normal @racket[bitmap%] draws in a more platform-independent way and
-may use fewer constrained resources, particularly under Windows.}
+may use fewer constrained resources, particularly on Windows.}
 
 
 @defproc[(play-sound [filename path-string?]
@@ -270,9 +270,9 @@ Plays a sound file. If @racket[async?] is false, the function does not
  The result is @racket[#t] if the sound plays successfully, @racket[#f]
  otherwise.
 
-Under Windows, only @filepath{.wav} files are supported.
+On Windows, only @filepath{.wav} files are supported.
 
-Under X, the function invokes an external sound-playing program;
+On Unix, the function invokes an external sound-playing program;
   looking for a few known programs (@exec{aplay}, @exec{play},
   @exec{esdplay}, @exec{sndfile-play}, @exec{audioplay}). In addition, a
   play command can be defined through the @ResourceFirst{playcmd}
@@ -286,7 +286,7 @@ Under X, the function invokes an external sound-playing program;
   error code---in this case the last part of the error output is
   shown.
 
-Under Mac OS X, Quicktime is used to play sounds; most sound
+On Mac OS X, Quicktime is used to play sounds; most sound
  formats (.wav, .aiff, .mp3) are supported in recent versions of
  Quicktime. In order to play .wav files, Quicktime 3.0 (compatible
  with OS 7.5 and up) is required.}
@@ -351,10 +351,10 @@ Unregisters all blit requests installed for @racket[canvas] with
 
 @defproc[(system-position-ok-before-cancel?) boolean?]{
 
-Returns @racket[#t] under Windows---indicating that a dialog with
+Returns @racket[#t] on Windows---indicating that a dialog with
 @onscreen{OK} and @onscreen{Cancel} buttons should place the
 @onscreen{OK} button on to left of the @onscreen{Cancel} button---and
-returns @racket[#f] under Mac OS X and X.}
+returns @racket[#f] on Mac OS X and Unix.}
 
 
 @defthing[the-clipboard (is-a?/c clipboard<%>)]{

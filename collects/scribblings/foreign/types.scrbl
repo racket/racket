@@ -460,7 +460,7 @@ accessible through @scheme[saved-errno]. If @scheme[save-errno] is
 @scheme['windows], then the value of
 @as-index{@tt{GetLastError}}@tt{()} is saved for later use via
 @scheme[saved-errno]; the @scheme['windows] option is available only
-under Windows (on other platforms @scheme[saved-errno] will return
+on Windows (on other platforms @scheme[saved-errno] will return
 0). If @scheme[save-errno] is @scheme[#f], no error value is saved
 automatically. The error-recording support provided by
 @scheme[save-errno] is needed because the Racket runtime system
