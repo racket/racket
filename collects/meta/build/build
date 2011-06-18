@@ -104,7 +104,7 @@ defbuild "ccs-linux"   "i386-linux-ubuntu-jaunty" "moveto=/proj/racket"
 defbuild "blisses1" "x86_64-linux-debian-lenny"
 defbuild "blisses2" "x86_64-linux-debian-squeeze"
 # And this is from Stephen De Gabrielle <stephen.degabrielle at acm dot org>
-defbuild "osx64" "x86_64-osx-mac"
+defbuild "osx64" "x86_64-osx-mac" "configure_args=--enable-mac64"
 # Start the main build last
 defbuild "$workmachine" "x86_64-linux-f14" "copytobak=$maindir" "test_gui=yes"
 msets "/"
