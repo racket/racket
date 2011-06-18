@@ -23,6 +23,7 @@
   (only-in string-constants/private/only-once maybe-print-message)
   (only-in mzscheme make-namespace)
   (only-in racket/match/runtime match:error matchable? match-equality-test))
+ racket/file
  (only-in racket/private/pre-base new-apply-proc)
  (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
  (only-in (rep type-rep) make-HashtableTop make-MPairTop
@@ -571,7 +572,6 @@
 [unsafe-struct*-set! top-func]
 
 [continuation-mark-set-first (-> (-opt -Cont-Mark-Set) Univ Univ)]
-[current-directory (-Param -Pathlike -Path)]
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
 
@@ -679,20 +679,159 @@
 [current-seconds (-> -Integer)]
 [current-print (-Param (Univ . -> . Univ) (Univ . -> . Univ))]
 
-[link-exists? (-> -Pathlike B)]
-[directory-exists? (-> -Pathlike B)]
+;Section 14.2
+
+;Section 14.2.1
+[find-system-path (Sym . -> . -Path)]
+[path-list-string->path-list ((Un -String -Bytes) (-lst -Path) . -> . (-lst -Path))]
+[find-executable-path (->opt -Pathlike [(-opt -Pathlike) Univ] (-opt -Path))]
+
+;Section 14.2.2
 [file-exists? (-> -Pathlike B)]
-[directory-list (cl-> [() (-lst -Path)]
-                      [(-Pathlike) (-lst -Path)])]
+[link-exists? (-> -Pathlike B)]
+[delete-file (-> -Pathlike -Void)]
+[rename-file-or-directory (->opt -Pathlike -Pathlike [Univ] -Void)]
+
 [file-or-directory-modify-seconds
  (cl->* (-Pathlike . -> . -Nat)
         (-Pathlike (-val #f) . -> . -Nat)
         (-Pathlike -Nat . -> . -Void)
         (-Pathlike (-opt -Nat) (-> Univ) . -> . Univ))]
 
-[file-or-directory-permissions (-> -Pathlike (-lst (one-of/c 'read 'write 'execute)))]
-[file-or-directory-identity (->opt -Pathlike (Univ) -Nat)]
+
+[file-or-directory-permissions
+ (cl->* (-> -Pathlike (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))
+        (-> -Pathlike (-val #f) (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))
+        (-> -Pathlike (-val 'bits) -NonNegFixnum)
+        (-> -Pathlike -NonNegFixnum -Void))]
+
+
+[file-or-directory-identity (->opt -Pathlike [Univ] -Nat)]
 [file-size (-> -Pathlike -Nat)]
+
+[copy-file (-> -Pathlike -Pathlike -Void)]
+[make-file-or-directory-link (-> -Pathlike -Pathlike -Void)]
+
+;Section 14.2.3
+[current-directory (-Param -Pathlike -Path)]
+[current-drive (-> -Path)]
+
+[directory-exists? (-> -Pathlike B)]
+[make-directory (-> -Pathlike -Void)]
+[delete-directory (-> -Pathlike -Void)]
+[directory-list (->opt [-Pathlike] (-lst -Path))]
+[filesystem-root-list (-> (-lst -Path))]
+
+;Section 14.2.4
+
+;Section 14.2.5
+;racket/file
+[file->string (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -String)]
+[file->bytes (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Bytes)]
+[file->value (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f Univ)]
+[file->list
+ (-poly (a)
+  (cl->* (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f (-lst Univ))
+         (->key -Pathlike (-> -Input-Port a) #:mode (Un (-val 'binary) (-val 'text)) #f (-lst a))))]
+
+[file->lines
+ (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f
+        #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f
+        (-lst -String))]
+[file->bytes-lines
+ (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f
+        #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f
+        (-lst -Bytes))]
+
+[display-to-file
+ (->key Univ -Pathlike
+        #:mode (Un (-val 'binary) (-val 'text)) #f
+        #:exists (Un (-val 'error) (-val 'append) (-val 'update) (-val 'replace) (-val 'truncate) (-val 'truncate/replace)) #f
+        -Void)]
+[write-to-file
+ (->key Univ -Pathlike
+        #:mode (Un (-val 'binary) (-val 'text)) #f
+        #:exists (Un (-val 'error) (-val 'append) (-val 'update) (-val 'replace) (-val 'truncate) (-val 'truncate/replace)) #f
+        -Void)]
+[copy-directory/files (-> -Pathlike -Pathlike -Void)]
+[delete-directory/files (-> -Pathlike -Void)]
+
+[find-files (->opt (-> -Path Univ) [(-opt -Pathlike)] (-lst -Path))]
+[pathlist-closure (-> (-lst -Pathlike) (-lst -Path))]
+
+[fold-files
+ (-poly
+  (a)
+  (let ([funarg* (-Path (one-of/c 'file 'dir 'link) a . -> . (-values (list a Univ)))]
+        [funarg (-Path (one-of/c 'file 'dir 'link) a . -> . a)])
+    (cl->*
+     (funarg a [(-opt -Pathlike) Univ]. ->opt . a)
+     (funarg* a [(-opt -Pathlike) Univ]. ->opt . a))))]
+
+[make-directory* (-> -Pathlike -Void)]
+[make-temporary-file (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
+
+
+[get-preference
+ (let ((use-lock-type Univ)
+       (timeout-lock-there-type (-opt (-> -Path Univ)))
+       (lock-there-type (-opt (-> -Path Univ))))
+  (cl->*
+   (->key Sym
+          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
+          Univ)
+   (->key Sym (-> Univ)
+          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
+          Univ)
+   (->key Sym (-> Univ) Univ
+          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
+          Univ)
+   (->key Sym (-> Univ) Univ (-opt -Pathlike)
+          #:use-lock? use-lock-type #f #:timeout-lock-there timeout-lock-there-type #f #:lock-there lock-there-type #f
+          Univ)))]
+
+[put-preferences (->opt (-lst -Symbol) (-lst Univ) [(-> -Path Univ) (-opt -Pathlike)] -Void)]
+[preferences-lock-file-mode (-> (Un (-val 'exists) (-val 'file-lock)))]
+
+
+[make-handle-get-preference-locked
+ (let ((lock-there-type (-opt (-> -Path Univ))) (max-delay-type -Real))
+  (cl->*
+   (->key -Real Sym
+          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
+          (-> -Pathlike Univ))
+   (->key -Real Sym (-> Univ)
+          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
+          (-> -Pathlike Univ))
+   (->key -Real Sym (-> Univ) Univ
+          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
+          (-> -Pathlike Univ))
+   (->key -Real Sym (-> Univ) Univ (-opt -Pathlike)
+          #:lock-there lock-there-type #f #:max-delay max-delay-type #f
+          (-> -Pathlike Univ))))]
+
+[call-with-file-lock/timeout
+ (-poly (a)
+  (->key (-opt -Pathlike)
+         (Un (-val 'shared) (-val 'exclusive))
+         (-> a)
+         (-> a)
+         #:get-lock-file (-> -Pathlike) #f
+         #:delay -Real #f
+         #:max-delay -Real #f
+          a))]
+
+[make-lock-file-name (->opt -Pathlike [-Pathlike] -Pathlike)]
+
+[user-read-bit     (-val user-read-bit)]
+[user-write-bit    (-val user-write-bit)]
+[user-execute-bit  (-val user-execute-bit)]
+[group-read-bit    (-val group-read-bit)]
+[group-write-bit   (-val group-write-bit)]
+[group-execute-bit (-val group-execute-bit)]
+[other-read-bit    (-val other-read-bit)]
+[other-write-bit   (-val other-write-bit)]
+[other-execute-bit (-val other-execute-bit)]
 
 
 ;; path manipulation
@@ -885,14 +1024,11 @@
 [bytes>? (->* (list -Bytes) -Bytes B)]
 [bytes=? (->* (list -Bytes) -Bytes B)]
 
-[copy-file (-> -Pathlike -Pathlike -Void)]
 
 [force (-poly (a) (-> (-Promise a) a))]
 
 
-[make-directory (-> -Pathlike -Void)]
 
-[delete-file (-> -Pathlike -Void)]
 [eval (->opt Univ [-Namespace] Univ)]
 
 
@@ -1003,7 +1139,6 @@
                           #:key (a . -> . b) #t
                           #:cache-keys? B #f
                           . ->key . (-lst a))))]
-[find-system-path (Sym . -> . -Path)]
 
 [object-name (Univ . -> . Univ)]
 
@@ -1098,16 +1233,6 @@
  (-String (one-of/c 'unix 'windows) . -> . -SomeSystemPath)]
 
 
-
-;; scheme/file
-[fold-files
- (-poly
-  (a)
-  (let ([funarg* (-Path (one-of/c 'file 'dir 'link) a . -> . (-values (list a Univ)))]
-        [funarg (-Path (one-of/c 'file 'dir 'link) a . -> . a)])
-    (cl->*
-     (funarg a [(-opt -Pathlike) Univ]. ->opt . a)
-     (funarg* a [(-opt -Pathlike) Univ]. ->opt . a))))]
 
 
 ;; unsafe
