@@ -17,6 +17,8 @@ Local changes:
  * Test ftruncate() result in "closures.c" to avoid a compiler
    warning.
 
+ * Added powerpc .S patches from 2d3fb36420e09304220e
+
 ========== libffi_msvc directory =====================================
 
 This directory is synced from the CTypes repository
