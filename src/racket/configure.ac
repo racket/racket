@@ -23,6 +23,9 @@ AC_INIT([Racket])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
+AC_CONFIG_AUX_DIR(lt)
+AC_CANONICAL_SYSTEM
+
 AC_ARG_ENABLE(gracket, [  --enable-gracket        build GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
 AC_ARG_ENABLE(jit,     [  --enable-jit            support JIT compiler (enabled by default)], , enable_jit=yes)
 AC_ARG_ENABLE(foreign, [  --enable-foreign        support foreign calls (enabled by default)], , enable_foreign=yes)
@@ -68,21 +71,6 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
-###### Get OS Type #######
-
-if test -x "/bin/uname" ; then
-  UNAME=/bin/uname
-elif test -x "/usr/bin/uname" ; then
-  UNAME=/usr/bin/uname
-elif test -x "/usr/local/bin/uname" ; then
-  UNAME=/usr/local/bin/uname
-else
-  echo configure: cannot find uname
-  exit 1
-fi
-
-OS=`$UNAME -s`
-
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then
@@ -110,20 +98,23 @@ if test "${enable_lt}" = "yes" ; then
 fi
 
 if test "${enable_shared}" = "yes" ; then
-  if test "$OS" = "Darwin" ; then
+  case "$host_os" in
+  darwin*)
     if test "${enable_xonx}" != "yes" ; then
        echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS X,"
        echo "       unless you also use --enable-xonx"
        exit 1
     fi
-  fi
+  ;;
+  esac
 fi
 
 enable_quartz=no
 if test "${enable_xonx}" = "yes" ; then
   enable_quartz=no
 else
-  if test "$OS" = "Darwin" ; then
+  case "$host_os" in
+  darwin*)
     enable_quartz=yes
     enable_origtree=yes
     if test "${prefix}" != "NONE" ; then
@@ -137,7 +128,8 @@ else
         exit 1
       fi
     fi
-  fi
+  ;;
+  esac
 fi
 
 if test "${enable_iconv}" = "" ; then
@@ -308,8 +300,6 @@ CGCOPTIONS=
 GC2OPTIONS=
 DYN_CFLAGS=
 
-LIBS=
-
 WXVARIANT="wx_xt"
 
 MROPTIONS=
@@ -468,36 +458,30 @@ OSX=".osx"
 NOT_OSX=""
 CGC_X86_64=""
 
-case $OS in
-  SunOS)
-    case `$UNAME -r` in
-      5.*)
-       STATICLINK="-Wl,-Bstatic" # after -ldl
-       LIBS="$LIBS -lsocket -lnsl -lintl"
-       need_gcc_static_libgcc="yes"
-       check_gcc_dash_e="yes"
-       ;;
-      *)
-       ;;
-    esac
+case "$host_os" in
+  solaris2*)
+    STATICLINK="-Wl,-Bstatic" # after -ldl
+    LIBS="$LIBS -lsocket -lnsl -lintl"
+    need_gcc_static_libgcc="yes"
+    check_gcc_dash_e="yes"
     ;;
-  AIX)
+  aix*)
     enable_cgcdefault="yes"
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../racket/include/racket.exp"
     ;;
-  *FreeBSD)
+  *freebsd*)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
     enable_pthread=yes
     ;;
-  OpenBSD)
+  openbsd*)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
     enable_pthread=yes
     ;;
-  NetBSD)
+  netbsd*)
     LIBS="$LIBS -rdynamic"
     ;;
-  IRIX)
+  irix*)
     enable_cgcdefault="yes"
     STATICLINK="/usr/lib/libC.a /usr/lib/libmalloc.a"
     if test "$X_PRE_LIBS" = " -lSM -lICE" ; then
@@ -505,17 +489,17 @@ case $OS in
       X_PRE_LIBS=""
     fi
     ;;
-  Linux)
+  linux*)
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
     STRIP_DEBUG="strip -S"
-    case `$UNAME -m` in
+    case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
        enable_parallel_by_default=yes
        CGC_X86_64="1"
        ;;
-      ppc)
+      ppc|powerpc)
        ;;
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
@@ -528,7 +512,7 @@ case $OS in
        ;;
     esac
     ;;
-  OSF1)
+  osf1*)
     enable_cgcdefault="yes"
     if test "$CC" = "cc" ; then 
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
@@ -537,7 +521,7 @@ case $OS in
       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
     fi
     ;;
-  HP-UX)
+  hpux*)
     enable_cgcdefault="yes"
     if test "$CC" = "gcc"; then
       COMPFLAGS="$COMPFLAGS -fPIC"
@@ -550,7 +534,7 @@ case $OS in
     fi
     LIBS="$LIBS -Wl,-E"
     ;;
-  CYGWIN*)
+  cygwin*)
     enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
@@ -560,11 +544,11 @@ case $OS in
     fi
     EXE_SUFFIX=".exe"
     ;;
-  BeOS)
+  beos*)
     enable_cgcdefault="yes"
     enable_sgc=yes
     ;;
-  Darwin)
+  darwin*)
 
     if test "${enable_sdk}" != "" ; then 
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
@@ -582,7 +566,7 @@ case $OS in
       need_cc_in_extras=yes
     fi
     
-    case "`$UNAME -m`" in
+    case "$host_cpu" in
       i386|x86_64)
        enable_parallel_by_default=yes
        ;;
@@ -598,7 +582,7 @@ case $OS in
 
     # Force 32-bit build unless mac64 is enabled:
     if test "${enable_mac64}" != "yes" ; then
-      if test "`${UNAME} -m`" != "Power Macintosh" ; then
+      if test "$host_cpu" != "powerpc" ; then
         if test "${ORIG_CC}" = "" ; then
            PREFLAGS="${PREFLAGS} -m32"
            CPPFLAGS="${CPPFLAGS} -m32"
@@ -645,8 +629,7 @@ case $OS in
     ;;
 esac
 
-MACH=`$UNAME -p`
-case "$MACH" in
+case "$host_cpu" in
   alpha | sparc | powerpc)
     if test "$CC" = "gcc" ; then
       if test "$as_was_set" = "no" ; then
