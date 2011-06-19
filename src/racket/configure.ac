@@ -32,6 +32,8 @@ AC_ARG_ENABLE(plot,    [  --enable-plot           support plot libraries (enable
 AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default])
 
+AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
+
 AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
 
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
@@ -42,7 +44,7 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled 
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default)], , enable_libffi=yes)
 
-AC_ARG_ENABLE(enable_sdk,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
@@ -282,6 +284,14 @@ show_explicitly_enabled "${enable_mac64}" "64-bit Mac OS X"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+
+if test "${enable_sdk}" != "" ; then
+   echo "Using Mac OS X SDK directory ${enable_sdk}"
+fi
+
+if test "${enable_racket}" != "" ; then
+   echo "Using Racket executable ${enable_racket}"
+fi
 
 ###### Some defaults #######
 
@@ -1022,6 +1032,20 @@ if test "${enable_docs}" = "no" ; then
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
 fi
 
+############## Racket for Racket ################
+
+if test "${enable_racket}" = "" ; then
+  RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
+  RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
+  RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
+  CGC_IF_NEEDED_FOR_MMM="cgc"
+else
+  RUN_RACKET_CGC="${enable_racket}"
+  RUN_RACKET_MMM="${enable_racket}"
+  RUN_RACKET_MAIN_VARIANT="${enable_racket}"
+  CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
+fi
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -1195,6 +1219,11 @@ AC_SUBST(CGC_CAP_INSTALLED)
 AC_SUBST(MAIN_VARIANT)
 
 AC_SUBST(INSTALL_SETUP_FLAGS)
+
+AC_SUBST(RUN_RACKET_CGC)
+AC_SUBST(RUN_RACKET_MMM)
+AC_SUBST(RUN_RACKET_MAIN_VARIANT)
+AC_SUBST(CGC_IF_NEEDED_FOR_MMM)
 
 mk_needed_dir()
 {

@@ -30,6 +30,13 @@ STRIP_DEBUG = @STRIP_DEBUG@
 
 ARLIBFLAGS = @LDFLAGS@ @LIBS@
 
+RACKET = racket
+
+# See ../../Makefile about RUN_RACKET_<X>, which 
+# typically redirects to RUN_THIS_RACKET_<X>:
+RUN_THIS_RACKET_CGC = ./racket@CGC@
+RUN_THIS_RACKET_MMM = ./racket@MMM@
+
 MZSRC = $(srcdir)/src
 
 FOREIGN_DIR = ../foreign
@@ -75,7 +82,7 @@ cgc:
 	$(MAKE) racket@CGC@ 
 
 3m:
-	$(MAKE) cgc
+	$(MAKE) @CGC_IF_NEEDED_FOR_MMM@
 	cd gc2; $(MAKE) all
 	cd dynsrc; $(MAKE) dynlib3m
 	cd gc2; $(MAKE) ../racket@MMM@
@@ -128,6 +135,14 @@ foreign-stub:
 mzlibrary:
 	cd src; $(MAKE) all 
 	$(MAKE) libracket.@LIBSFX@
+
+# For no-cgc-needed, we don't need to build the gc or link racketcgc, 
+# but gc2 depends on src objects; if building 3m without cgc becomes
+# more common, we could improve things to perform even less cgc-build work
+no-cgc-needed:
+	cd src; $(MAKE) all
+	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) main.@LTO@
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
 FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
@@ -220,17 +235,17 @@ total_startup:
 	$(MAKE) cgc
 
 headers:
-	./racket@CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
+	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
-	./racket@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
+	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
 $(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
-	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
+	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
 
 $(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.rkt
-	racket -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 
+	$(RACKET) -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./racketcgc -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
+	$(RUN_THIS_RACKET_CGC) -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
 
 mark:
 	racket -cu $(srcdir)/src/mkmark.rkt $(srcdir)/src < $(srcdir)/src/mzmarksrc.c
@@ -291,7 +306,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; cp racket/starter "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
-	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -304,7 +319,7 @@ unix-install-cgc:
 	cd ..; $(ICP) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp racket/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
 	$(NOOP)
@@ -313,7 +328,7 @@ unix-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./racket@MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
 	$(NOOP)
@@ -378,4 +393,4 @@ unix-cygwin-install-3m-final:
 # Generate plt-gdbinit ----------------------------------------
 
 mz-gdbinit: $(srcdir)/mk-gdbinit.rkt $(srcdir)/src/stypes.h
-	racket $(srcdir)/mk-gdbinit.rkt
+	$(RACKET) $(srcdir)/mk-gdbinit.rkt

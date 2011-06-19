@@ -31,7 +31,11 @@ ARLIBFLAGS = @LDFLAGS@ $(LIBS)
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.rkt --setup .
+# See ../../Makefile about RUN_RACKET_CGC, which 
+# typically redirects to RUN_THIS_RACKET_CGC:
+RUN_THIS_RACKET_CGC = ../racket@CGC@
+
+XFORM_SETUP = @RUN_RACKET_CGC@ -cqu $(srcdir)/xform.rkt --setup .
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)

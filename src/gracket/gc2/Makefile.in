@@ -42,8 +42,12 @@ CPP = @CPP@
 XFORM_INC_wx_xt = -Dwx_xt @WX_MMD_FLAG@
 XFORM_INC_wx_mac = -Dwx_mac -DOS_X -MMD -DWX_CARBON
 
-MZMMM_wx_xt = ../../racket/racket@MMM@
-MZMMM_wx_mac = ../../racket/racket@MMM@
+# See ../../Makefile about RUN_RACKET_MMM, which 
+# typically redirects to RUN_THIS_RACKET_MMM:
+RUN_THIS_RACKET_MMM = ../../racket/racket@MMM@
+
+MZMMM_wx_xt = @RUN_RACKET_MMM@
+MZMMM_wx_mac = @RUN_RACKET_MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
 XFORM_CMD = $(MZMMM) -cqu $(srcdir)/../../racket/gc2/xform.rkt --setup ../../racket/gc2
@@ -97,7 +101,7 @@ $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ w
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
 $(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt
-	env BUILDBASE=../.. BUILDING_3M=yes ../../racket/racket@CGC@ -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
+	env BUILDBASE=../.. BUILDING_3M=yes @RUN_RACKET_MMM@ -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
 
 ../gracket@MMM@@OSX@ :
 	$(MAKE) ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@

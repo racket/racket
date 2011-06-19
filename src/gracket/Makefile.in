@@ -22,6 +22,11 @@ PLTBUILDDIR = $(builddir)/..
 
 NOOP = :
 
+# See ../Makefile about RUN_RACKET_<X>, which 
+# typically redirects to RUN_THIS_RACKET_<X>:
+RUN_THIS_RACKET_CGC = ../racket/racket@CGC@
+RUN_THIS_RACKET_MMM = ../racket/racket@MMM@
+
 ###########################
 #      Common Macros      #
 ###########################
@@ -95,9 +100,7 @@ GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MZFW) $(MRAPPSKEL) grmain.@LTO@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 
 $(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt
-	env BUILDBASE=.. ../racket/racket@CGC@ -cqu $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
-
-RACKET = ../racket/racket@CGC@
+	env BUILDBASE=.. @RUN_RACKET_CGC@ -cqu $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
 
 ee-app: gracket grmain_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o $(EEAPP) grmain_ee.@LTO@ $(EEOBJECTS) $(GRACKETLDLIBS) $(MRSTATIC_STUB) ; fi
@@ -158,7 +161,7 @@ install-post-collects:
 	$(MAKE) install-@WXVARIANT@-post-collects
 
 install-common:
-	$(RACKET) -c "$(srcdir)/../get-libs.rkt" gui "$(DESTDIR)$(libpltdir)"
+	@RUN_RACKET_CGC@ -c "$(srcdir)/../get-libs.rkt" gui "$(DESTDIR)$(libpltdir)"
 
 # X11 ----------------------------------------
 
@@ -180,7 +183,7 @@ install-lib-cgc-wx_xt:
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
-	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -194,7 +197,7 @@ install-lib-3m-wx_xt:
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
-	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)
@@ -213,9 +216,9 @@ install-wx_mac:
 
 install-wx_mac-cgc:
 	cd ..; $(ICP) -r gracket/GRacket@CGC@.app "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app"
-	$(RACKET) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
+	@RUN_RACKET_CGC@ -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
-	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" ../../../collects
+	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" ../../../collects
 	@STRIP_DEBUG@ "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 
 install-wx_mac-cgc-final:
@@ -223,9 +226,9 @@ install-wx_mac-cgc-final:
 
 install-wx_mac-3m:
 	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app"
-	$(RACKET) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
+	@RUN_RACKET_MMM@ -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
 	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
-	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../collects"
+	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../collects"
 	@STRIP_DEBUG@ "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
 install-wx_mac-3m-final:

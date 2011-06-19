@@ -12,6 +12,10 @@ ICP=@ICP@
 
 CC = @CC@
 
+# See ../Makefile about RUN_RACKET_<X>, which 
+# typically redirects to RUN_THIS_RACKET_<X>:
+RUN_THIS_RACKET_CGC = ../racket/racket@CGC@
+
 WITH_ENV = env CC="@PLAIN_CC@" CFLAGS="@CFLAGS@ @COMPFLAGS@ @PREFLAGS@" LDFLAGS="@LDFLAGS@"
 
 PLPLOT_SRCS = $(srcdir)/plplot/dc_drv.c \
@@ -53,10 +57,10 @@ cgc:
 	$(MAKE) plot-lib
 
 libplplot@SO_SUFFIX@:
-	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
+	$(WITH_ENV) @RUN_RACKET_CGC@ -c $(srcdir)/build.rkt "libplplot" $(PLPLOT_SRCS)
 
 libfit@SO_SUFFIX@:
-	$(WITH_ENV) ../racket/racketcgc -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
+	$(WITH_ENV) @RUN_RACKET_CGC@ -c $(srcdir)/build.rkt "libfit" $(FIT_SRCS)
 
 install:
 	cd ..; $(ICP) plot/libplplot@SO_SUFFIX@ "$(DESTDIR)$(libpltdir)/libplplot@SO_SUFFIX@"

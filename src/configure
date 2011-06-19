@@ -651,6 +651,18 @@ LIBS
 build_alias
 host_alias
 target_alias
+build
+build_cpu
+build_vendor
+build_os
+host
+host_cpu
+host_vendor
+host_os
+target
+target_cpu
+target_vendor
+target_os
 CC
 CFLAGS
 LDFLAGS
@@ -738,6 +750,10 @@ CGC_INSTALLED
 CGC_CAP_INSTALLED
 MAIN_VARIANT
 INSTALL_SETUP_FLAGS
+RUN_RACKET_CGC
+RUN_RACKET_MMM
+RUN_RACKET_MAIN_VARIANT
+CGC_IF_NEEDED_FOR_MMM
 subdirs
 LIBOBJS
 LTLIBOBJS'
@@ -1297,6 +1313,11 @@ Fine tuning of the installation directories:
 _ACEOF
 
   cat <<\_ACEOF
+
+System types:
+  --build=BUILD     configure for building on BUILD [guessed]
+  --host=HOST       cross-compile to build programs to run on HOST [BUILD]
+  --target=TARGET   configure for building compilers for TARGET [HOST]
 _ACEOF
 fi
 
@@ -1315,6 +1336,7 @@ Optional Features:
   --enable-plot           support plot libraries (enabled by default)
   --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   use single-precision by default
+  --enable-racket=<path>  use <path> as Racket executable to build Racket
   --enable-origtree       install with original directory structure
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
@@ -1775,6 +1797,164 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_config_headers="$ac_config_headers racket/mzconfig.h"
 
 
+ac_aux_dir=
+for ac_dir in lt  "$srcdir"/lt ; do
+  if test -f "$ac_dir/install-sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f "$ac_dir/install.sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f "$ac_dir/shtool"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in lt  \"$srcdir\"/lt " >&5
+echo "$as_me: error: cannot find install-sh or install.sh in lt  \"$srcdir\"/lt " >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+# These three variables are undocumented and unsupported,
+# and are intended to be withdrawn in a future Autoconf release.
+# They can cause serious problems if a builder's source tree is in a directory
+# whose full name contains unusual characters.
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
+ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+# Make sure we can run config.sub.
+$SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
+  { { echo "$as_me:$LINENO: error: cannot run $SHELL $ac_aux_dir/config.sub" >&5
+echo "$as_me: error: cannot run $SHELL $ac_aux_dir/config.sub" >&2;}
+   { (exit 1); exit 1; }; }
+
+{ echo "$as_me:$LINENO: checking build system type" >&5
+echo $ECHO_N "checking build system type... $ECHO_C" >&6; }
+if test "${ac_cv_build+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_build_alias=$build_alias
+test "x$ac_build_alias" = x &&
+  ac_build_alias=`$SHELL "$ac_aux_dir/config.guess"`
+test "x$ac_build_alias" = x &&
+  { { echo "$as_me:$LINENO: error: cannot guess build type; you must specify one" >&5
+echo "$as_me: error: cannot guess build type; you must specify one" >&2;}
+   { (exit 1); exit 1; }; }
+ac_cv_build=`$SHELL "$ac_aux_dir/config.sub" $ac_build_alias` ||
+  { { echo "$as_me:$LINENO: error: $SHELL $ac_aux_dir/config.sub $ac_build_alias failed" >&5
+echo "$as_me: error: $SHELL $ac_aux_dir/config.sub $ac_build_alias failed" >&2;}
+   { (exit 1); exit 1; }; }
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_build" >&5
+echo "${ECHO_T}$ac_cv_build" >&6; }
+case $ac_cv_build in
+*-*-*) ;;
+*) { { echo "$as_me:$LINENO: error: invalid value of canonical build" >&5
+echo "$as_me: error: invalid value of canonical build" >&2;}
+   { (exit 1); exit 1; }; };;
+esac
+build=$ac_cv_build
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_build
+shift
+build_cpu=$1
+build_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+build_os=$*
+IFS=$ac_save_IFS
+case $build_os in *\ *) build_os=`echo "$build_os" | sed 's/ /-/g'`;; esac
+
+
+{ echo "$as_me:$LINENO: checking host system type" >&5
+echo $ECHO_N "checking host system type... $ECHO_C" >&6; }
+if test "${ac_cv_host+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "x$host_alias" = x; then
+  ac_cv_host=$ac_cv_build
+else
+  ac_cv_host=`$SHELL "$ac_aux_dir/config.sub" $host_alias` ||
+    { { echo "$as_me:$LINENO: error: $SHELL $ac_aux_dir/config.sub $host_alias failed" >&5
+echo "$as_me: error: $SHELL $ac_aux_dir/config.sub $host_alias failed" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_host" >&5
+echo "${ECHO_T}$ac_cv_host" >&6; }
+case $ac_cv_host in
+*-*-*) ;;
+*) { { echo "$as_me:$LINENO: error: invalid value of canonical host" >&5
+echo "$as_me: error: invalid value of canonical host" >&2;}
+   { (exit 1); exit 1; }; };;
+esac
+host=$ac_cv_host
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_host
+shift
+host_cpu=$1
+host_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+host_os=$*
+IFS=$ac_save_IFS
+case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
+
+
+{ echo "$as_me:$LINENO: checking target system type" >&5
+echo $ECHO_N "checking target system type... $ECHO_C" >&6; }
+if test "${ac_cv_target+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "x$target_alias" = x; then
+  ac_cv_target=$ac_cv_host
+else
+  ac_cv_target=`$SHELL "$ac_aux_dir/config.sub" $target_alias` ||
+    { { echo "$as_me:$LINENO: error: $SHELL $ac_aux_dir/config.sub $target_alias failed" >&5
+echo "$as_me: error: $SHELL $ac_aux_dir/config.sub $target_alias failed" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_target" >&5
+echo "${ECHO_T}$ac_cv_target" >&6; }
+case $ac_cv_target in
+*-*-*) ;;
+*) { { echo "$as_me:$LINENO: error: invalid value of canonical target" >&5
+echo "$as_me: error: invalid value of canonical target" >&2;}
+   { (exit 1); exit 1; }; };;
+esac
+target=$ac_cv_target
+ac_save_IFS=$IFS; IFS='-'
+set x $ac_cv_target
+shift
+target_cpu=$1
+target_vendor=$2
+shift; shift
+# Remember, the first character of IFS is used to create $*,
+# except with old shells:
+target_os=$*
+IFS=$ac_save_IFS
+case $target_os in *\ *) target_os=`echo "$target_os" | sed 's/ /-/g'`;; esac
+
+
+# The aliases save the names the user supplied, while $host etc.
+# will get canonicalized.
+test -n "$target_alias" &&
+  test "$program_prefix$program_suffix$program_transform_name" = \
+    NONENONEs,x,x, &&
+  program_prefix=${target_alias}-
+
 # Check whether --enable-gracket was given.
 if test "${enable_gracket+set}" = set; then
   enableval=$enable_gracket;
@@ -1826,6 +2006,12 @@ if test "${enable_floatinstead+set}" = set; then
 fi
 
 
+# Check whether --enable-racket was given.
+if test "${enable_racket+set}" = set; then
+  enableval=$enable_racket;
+fi
+
+
 # Check whether --enable-origtree was given.
 if test "${enable_origtree+set}" = set; then
   enableval=$enable_origtree;
@@ -1870,9 +2056,9 @@ else
 fi
 
 
-# Check whether --enable-enable_sdk was given.
-if test "${enable_enable_sdk+set}" = set; then
-  enableval=$enable_enable_sdk;
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then
+  enableval=$enable_sdk;
 fi
 
 # Check whether --enable-xonx was given.
@@ -1959,6 +2145,8 @@ fi
 
 
 ###### Get OS Type #######
+
+echo Host is $host
 
 if test -x "/bin/uname" ; then
   UNAME=/bin/uname
@@ -2174,6 +2362,14 @@ show_explicitly_enabled "${enable_mac64}" "64-bit Mac OS X"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+
+if test "${enable_sdk}" != "" ; then
+   echo "Using Mac OS X SDK directory ${enable_sdk}"
+fi
+
+if test "${enable_racket}" != "" ; then
+   echo "Using Racket executable ${enable_racket}"
+fi
 
 ###### Some defaults #######
 
@@ -8291,6 +8487,20 @@ if test "${enable_docs}" = "no" ; then
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-docs"
 fi
 
+############## Racket for Racket ################
+
+if test "${enable_racket}" = "" ; then
+  RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
+  RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
+  RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
+  CGC_IF_NEEDED_FOR_MMM="cgc"
+else
+  RUN_RACKET_CGC="${enable_racket}"
+  RUN_RACKET_MMM="${enable_racket}"
+  RUN_RACKET_MAIN_VARIANT="${enable_racket}"
+  CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
+fi
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -8369,6 +8579,11 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
+
+
+
 
 
 
@@ -9198,6 +9413,18 @@ LIBS!$LIBS$ac_delim
 build_alias!$build_alias$ac_delim
 host_alias!$host_alias$ac_delim
 target_alias!$target_alias$ac_delim
+build!$build$ac_delim
+build_cpu!$build_cpu$ac_delim
+build_vendor!$build_vendor$ac_delim
+build_os!$build_os$ac_delim
+host!$host$ac_delim
+host_cpu!$host_cpu$ac_delim
+host_vendor!$host_vendor$ac_delim
+host_os!$host_os$ac_delim
+target!$target$ac_delim
+target_cpu!$target_cpu$ac_delim
+target_vendor!$target_vendor$ac_delim
+target_os!$target_os$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -9246,18 +9473,6 @@ FRAMEWORK_INSTALL_DIR!$FRAMEWORK_INSTALL_DIR$ac_delim
 FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
 FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
-EXE_SUFFIX!$EXE_SUFFIX$ac_delim
-SO_SUFFIX!$SO_SUFFIX$ac_delim
-OWN_LIBFFI!$OWN_LIBFFI$ac_delim
-LIBSFX!$LIBSFX$ac_delim
-WXLIBS!$WXLIBS$ac_delim
-WXVARIANT!$WXVARIANT$ac_delim
-ICP!$ICP$ac_delim
-MRLIBINSTALL!$MRLIBINSTALL$ac_delim
-LIBFINISH!$LIBFINISH$ac_delim
-MAKE_GRACKET!$MAKE_GRACKET$ac_delim
-MAKE_PLOT!$MAKE_PLOT$ac_delim
-MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -9299,6 +9514,18 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+EXE_SUFFIX!$EXE_SUFFIX$ac_delim
+SO_SUFFIX!$SO_SUFFIX$ac_delim
+OWN_LIBFFI!$OWN_LIBFFI$ac_delim
+LIBSFX!$LIBSFX$ac_delim
+WXLIBS!$WXLIBS$ac_delim
+WXVARIANT!$WXVARIANT$ac_delim
+ICP!$ICP$ac_delim
+MRLIBINSTALL!$MRLIBINSTALL$ac_delim
+LIBFINISH!$LIBFINISH$ac_delim
+MAKE_GRACKET!$MAKE_GRACKET$ac_delim
+MAKE_PLOT!$MAKE_PLOT$ac_delim
+MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
 WXPRECOMP!$WXPRECOMP$ac_delim
 USE_WXPRECOMP!$USE_WXPRECOMP$ac_delim
@@ -9326,12 +9553,16 @@ CGC_INSTALLED!$CGC_INSTALLED$ac_delim
 CGC_CAP_INSTALLED!$CGC_CAP_INSTALLED$ac_delim
 MAIN_VARIANT!$MAIN_VARIANT$ac_delim
 INSTALL_SETUP_FLAGS!$INSTALL_SETUP_FLAGS$ac_delim
+RUN_RACKET_CGC!$RUN_RACKET_CGC$ac_delim
+RUN_RACKET_MMM!$RUN_RACKET_MMM$ac_delim
+RUN_RACKET_MAIN_VARIANT!$RUN_RACKET_MAIN_VARIANT$ac_delim
+CGC_IF_NEEDED_FOR_MMM!$CGC_IF_NEEDED_FOR_MMM$ac_delim
 subdirs!$subdirs$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 46; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
