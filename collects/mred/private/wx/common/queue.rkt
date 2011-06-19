@@ -554,7 +554,7 @@
                 (let ([status (send (car frames) frame-relative-dialog-status win)])
                   (case status
                     [(#f) (loop (cdr frames))]
-                    [(same) #f]
+                    [(same) (loop (cdr frames))]
                     [(other) #t]))))))))
 
 (define (eventspace-adjust-external-modal! es amt)
