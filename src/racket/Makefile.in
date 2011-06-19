@@ -143,6 +143,7 @@ no-cgc-needed:
 	cd src; $(MAKE) all
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) main.@LTO@
+	cd dynsrc; $(MAKE) ../starter
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
 FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
