@@ -252,6 +252,21 @@ For a build without `--prefix' (or with `--enable-origtree') and without
 file references within the installation are relative.
 
 ========================================================================
+ Cross-compiling
+========================================================================
+
+Cross-compilation requires at least two flags to `configure':
+
+ * `--host=OS', where OS is something like `i386-gnu-linux'
+
+ * `--enable-racket=RACKET', where RACKET is a path to a Racket
+   executable for the version being compiled that runs on the build 
+   (i.e., you must compile on the build machine to cross-compile)
+
+The `--enable-racket' flag is needed because building and installing
+Racket requires running (an intermediate version of) Racket.
+
+========================================================================
  CGC versus 3m
 ========================================================================
 
