@@ -993,7 +993,7 @@
 [set-union (-poly (e) (->* (list (-set e)) (-set e) (-set e)))]
 [set-intersect (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
 [set-subtract (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
-[set-symmetric-difference (-poly (a b) (->* (list (-set a)) (-set b) (-set a)))]
+[set-symmetric-difference (-poly (e) (->* (list (-set e)) (-set e) (-set e)))]
 
 [set=? (-poly (a b) (-> (-set a) (-set b) B))]
 
