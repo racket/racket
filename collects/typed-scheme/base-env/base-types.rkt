@@ -107,6 +107,13 @@
 [Special-Comment -Special-Comment]
 [Struct-Type-Property -Struct-Type-Property]
 [Pretty-Print-Style-Table -Pretty-Print-Style-Table]
+[UDP-Socket -UDP-Socket]
+[Custodian -Custodian]
+[Parameterization -Parameterization]
+[Inspector -Inspector]
+[Namespace-Anchor -Namespace-Anchor]
+[Variable-Reference -Variable-Reference]
+[Internal-Definition-Context -Internal-Definition-Context]
 
 
 
@@ -131,4 +138,5 @@
 [MPairof (-poly (a b) (-mpair a b))]
 [MListof (-poly (a) (-mlst a))]
 [Sequenceof (-poly (a) (-seq a))]
+[ThreadCellof (-poly (a) (-thread-cell a))]
 
