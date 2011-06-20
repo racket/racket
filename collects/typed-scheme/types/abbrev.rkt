@@ -214,7 +214,7 @@
 
 (define -Custodian (make-Base 'Custodian #'custodian? custodian? #'Custodian))
 
-(define -Parameterization (make-Base 'Parameterization #'parameterization? parameterization? #'Parameterization))
+(define -Parameterization (make-Base 'Parameterization #'parameterization? parameterization? #'-Parameterization))
 
 
 (define -Inspector (make-Base 'Inspector #'inspector inspector? #'-Inspector))
