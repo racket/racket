@@ -365,15 +365,19 @@ as described with @racket[get-pure-port].}
 
 @defthing[url@ unit?]{
 
-Imports @scheme[tcp^], exports @scheme[url+scheme^].
+Imports @racket[tcp^], exports @racket[url+scheme^].
 
-The @racket[current-connect-scheme] parameter is set to the scheme of
-a URL when @racket[tcp-connect] is called to create a connection. A
+The @racket[url+scheme^] signature contains
+@racket[current-connect-scheme], which @racket[url@] binds to a
+parameter.  The parameter is set to the scheme of a URL when
+@racket[tcp-connect] is called to create a connection.  A
 @racket[tcp-connect] variant linked to @racket[url@] can check this
-parameter to choose the connection mode; in particular,
-@racket[net/url] supplies a @racket[tcp-connect] that actually uses
-@racket[ssl-connect] when @racket[(current-connect-scheme)] produces
-@racket["https"].}
+parameter to choose the connection mode; in particular, @racket[net/url]
+supplies a @racket[tcp-connect] that actually uses @racket[ssl-connect]
+when @racket[(current-connect-scheme)] produces @racket["https"].
+
+Note that @racket[net/url] does not provide the
+@racket[current-connect-scheme] parameter.}
 
 @; ----------------------------------------
 
@@ -384,8 +388,9 @@ parameter to choose the connection mode; in particular,
 @defsignature[url^ ()]{
 
 Includes everything exported by the @schememodname[net/url] module
-except @racket[current-connect-scheme] and
-@racket[current-https-protocol].}
+except @racket[current-https-protocol].  Note that the exports of
+@schememodname[net/url] and the @racket[url^] signature do not include
+@racket[current-connect-scheme].}
 
 @defsignature[url+scheme^ (url^)]{
 
