@@ -26,7 +26,7 @@
  racket/file
  (only-in racket/private/pre-base new-apply-proc)
  (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym])
- (only-in (rep type-rep) make-HashtableTop make-MPairTop
+ (only-in (rep type-rep) make-MPairTop
           make-BoxTop make-ChannelTop make-VectorTop
           make-ThreadCellTop
           make-Ephemeron
@@ -699,8 +699,8 @@
 
 
 [file-or-directory-permissions
- (cl->* (-> -Pathlike (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))
-        (-> -Pathlike (-val #f) (-lst (Un (-val 'read) (-val 'write) (-val 'execute))))
+ (cl->* (-> -Pathlike (-lst (one-of/c 'read 'write 'execute)))
+        (-> -Pathlike (-val #f) (-lst (one-of/c 'read 'write 'execute)))
         (-> -Pathlike (-val 'bits) -NonNegFixnum)
         (-> -Pathlike -NonNegFixnum -Void))]
 
@@ -725,32 +725,32 @@
 
 ;Section 14.2.5
 ;racket/file
-[file->string (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -String)]
-[file->bytes (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Bytes)]
-[file->value (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f Univ)]
+[file->string (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -String)]
+[file->bytes (->key -Pathlike #:mode (one-of/c 'binary 'text) #f -Bytes)]
+[file->value (->key -Pathlike #:mode (one-of/c 'binary 'text) #f Univ)]
 [file->list
  (-poly (a)
-  (cl->* (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f (-lst Univ))
-         (->key -Pathlike (-> -Input-Port a) #:mode (Un (-val 'binary) (-val 'text)) #f (-lst a))))]
+  (cl->* (->key -Pathlike #:mode (one-of/c 'binary 'text) #f (-lst Univ))
+         (->key -Pathlike (-> -Input-Port a) #:mode (one-of/c 'binary 'text) #f (-lst a))))]
 
 [file->lines
- (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f
-        #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f
+ (->key -Pathlike #:mode (one-of/c 'binary 'text) #f
+        #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f
         (-lst -String))]
 [file->bytes-lines
- (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f
-        #:line-mode (Un (-val 'linefeed) (-val 'return) (-val 'return-linefeed) (-val 'any) (-val 'any-one)) #f
+ (->key -Pathlike #:mode (one-of/c 'binary 'text) #f
+        #:line-mode (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one) #f
         (-lst -Bytes))]
 
 [display-to-file
  (->key Univ -Pathlike
-        #:mode (Un (-val 'binary) (-val 'text)) #f
-        #:exists (Un (-val 'error) (-val 'append) (-val 'update) (-val 'replace) (-val 'truncate) (-val 'truncate/replace)) #f
+        #:mode (one-of/c 'binary 'text) #f
+        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
         -Void)]
 [write-to-file
  (->key Univ -Pathlike
-        #:mode (Un (-val 'binary) (-val 'text)) #f
-        #:exists (Un (-val 'error) (-val 'append) (-val 'update) (-val 'replace) (-val 'truncate) (-val 'truncate/replace)) #f
+        #:mode (one-of/c 'binary 'text) #f
+        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
         -Void)]
 [copy-directory/files (-> -Pathlike -Pathlike -Void)]
 [delete-directory/files (-> -Pathlike -Void)]
@@ -763,9 +763,7 @@
   (a)
   (let ([funarg* (-Path (one-of/c 'file 'dir 'link) a . -> . (-values (list a Univ)))]
         [funarg (-Path (one-of/c 'file 'dir 'link) a . -> . a)])
-    (cl->*
-     (funarg a [(-opt -Pathlike) Univ]. ->opt . a)
-     (funarg* a [(-opt -Pathlike) Univ]. ->opt . a))))]
+     ((Un funarg funarg*) a [(-opt -Pathlike) Univ]. ->opt . a)))]
 
 [make-directory* (-> -Pathlike -Void)]
 [make-temporary-file (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
@@ -790,7 +788,7 @@
           Univ)))]
 
 [put-preferences (->opt (-lst -Symbol) (-lst Univ) [(-> -Path Univ) (-opt -Pathlike)] -Void)]
-[preferences-lock-file-mode (-> (Un (-val 'exists) (-val 'file-lock)))]
+[preferences-lock-file-mode (-> (one-of/c 'exists 'file-lock))]
 
 
 [make-handle-get-preference-locked
@@ -812,7 +810,7 @@
 [call-with-file-lock/timeout
  (-poly (a)
   (->key (-opt -Pathlike)
-         (Un (-val 'shared) (-val 'exclusive))
+         (one-of/c 'shared 'exclusive)
          (-> a)
          (-> a)
          #:get-lock-file (-> -Pathlike) #f
@@ -898,8 +896,8 @@
                 B)))
   (-> -SomeSystemPathlike
       (-values (list
-                (Un -SomeSystemPath (-val 'relative) (-val #f))
-                (Un -SomeSystemPath (-val 'up) (-val 'same))
+                (Un -SomeSystemPath (one-of/c 'relative #f))
+                (Un -SomeSystemPath (one-of/c 'up 'same))
                 B))))]
 
 [path-replace-suffix
@@ -915,11 +913,11 @@
 
 
 ;Section 3.13 (Hash Tables)
-[hash? (make-pred-ty (make-HashtableTop))]
-[hash-eq? (-> (make-HashtableTop) B)]
-[hash-eqv? (-> (make-HashtableTop) B)]
-[hash-equal? (-> (make-HashtableTop) B)]
-[hash-weak? (-> (make-HashtableTop) B)]
+[hash? (make-pred-ty -HashTop)]
+[hash-eq? (-> -HashTop B)]
+[hash-eqv? (-> -HashTop B)]
+[hash-equal? (-> -HashTop B)]
+[hash-weak? (-> -HashTop B)]
 [make-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
@@ -1006,7 +1004,7 @@
 
 [bytes (->* (list) -Integer -Bytes)]
 [bytes? (make-pred-ty -Bytes)]
-[make-bytes (cl-> [(-Integer -Byte) -Bytes]
+[make-bytes (cl-> [(-Integer -Integer) -Bytes]
                   [(-Integer) -Bytes])]
 [bytes->immutable-bytes (-> -Bytes -Bytes)]
 [byte? (make-pred-ty -Byte)]
@@ -1036,7 +1034,7 @@
 
 ;Section 13.1 (Namespaces)
 [namespace? (make-pred-ty -Namespace)]
-[make-namespace (->opt [(Un (-val 'empty) (-val 'initial))] -Namespace)]
+[make-namespace (->opt [(one-of/c  'empty 'initial)] -Namespace)]
 [make-empty-namespace (-> -Namespace)]
 [make-base-empty-namespace (-> -Namespace)]
 [make-base-namespace (-> -Namespace)]
@@ -1167,44 +1165,44 @@
 [identifier-binding
  (Ident [(-opt -Integer)]. ->opt .
   (*Un (-val 'lexical) (-val #f)
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair (*Un (-val 0) (-val 1))
-   (-pair (-opt -Integer)
-   (-pair (-opt -Integer) (-val '()))))))))))]
+   (-lst* -Module-Path-Index
+          -Symbol
+          -Module-Path-Index
+          -Symbol
+          (*Un (-val 0) (-val 1))
+          (-opt -Integer)
+          (-opt -Integer))))]
 
 [identifier-transformer-binding
  (Ident . -> .
   (*Un (-val 'lexical) (-val #f)
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair (*Un (-val 0) (-val 1))
-   (-pair (-opt -Integer)
-   (-pair (-opt -Integer) (-val '()))))))))))]
+   (-lst* -Module-Path-Index
+          -Symbol
+          -Module-Path-Index
+          -Symbol
+          (*Un (-val 0) (-val 1))
+          (-opt -Integer)
+          (-opt -Integer))))]
 [identifier-template-binding
  (Ident . -> .
   (*Un (-val 'lexical) (-val #f)
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair (*Un (-val 0) (-val 1))
-   (-pair (-opt -Integer)
-   (-pair (-opt -Integer) (-val '()))))))))))]
+   (-lst* -Module-Path-Index
+          -Symbol
+          -Module-Path-Index
+          -Symbol
+          (*Un (-val 0) (-val 1))
+          (-opt -Integer)
+          (-opt -Integer))))]
 [identifier-label-binding
  (Ident . -> .
   (*Un (-val 'lexical) (-val #f)
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair -Module-Path-Index
-   (-pair -Symbol
-   (-pair (*Un (-val 0) (-val 1))
-   (-pair (-opt -Integer)
-   (-pair (-opt -Integer) (-val '()))))))))))]
+   (-lst* -Module-Path-Index
+          -Symbol
+          -Module-Path-Index
+          -Symbol
+          (*Un (-val 0) (-val 1))
+          (-opt -Integer)
+          (-opt -Integer))))]
 
 ;Section 11.4
 [set!-transformer? (-> Univ B)]
@@ -1406,8 +1404,8 @@
 [tcp-accept (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
 [tcp-accept/enable-break (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
 
-[tcp-accept-ready? (-TCP-Listener . -> . B )]
-[tcp-close (-TCP-Listener . -> . -Void )]
+[tcp-accept-ready? (-TCP-Listener . -> . B)]
+[tcp-close (-TCP-Listener . -> . -Void)]
 [tcp-listener? (make-pred-ty -TCP-Listener)]
 
 [tcp-abandon-port (-Port . -> . -Void)]
@@ -1415,7 +1413,7 @@
 		(-Port [(-val #f)] . ->opt . (-values (list -String -String)))
 		(-Port (-val #t) . -> . (-values (list -String -Index -String -Index))))]
 
-[tcp-port? (-> Univ B)]
+[tcp-port? (asym-pred Univ B (-FS (-filter (Un -Input-Port -Output-Port) 0) -top))]
 
 
 ;;Section 14.3.2
