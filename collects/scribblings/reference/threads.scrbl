@@ -98,9 +98,9 @@ running. If the thread has terminated or is already suspended,
 @racket[thread-suspend] has no effect. The thread remains suspended
 (i.e., it does not execute) until it is resumed with
 @racket[thread-resume]. If the @tech{current custodian} does not
-manage @racket[thd] (and none of its subordinates manages
-@racket[thd]), the @exnraise[exn:fail:contract], and the thread is not
-suspended.}
+solely manage @racket[thd] (i.e., some custodian of @racket[thd]
+is not the current custodian or a subordinate), the 
+@exnraise[exn:fail:contract], and the thread is not suspended.}
 
 @defproc[(thread-resume [thd thread?] [benefactor (or/c thread? custodian? #f) #f]) void?]{
 
