@@ -2351,11 +2351,11 @@ show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
 
 if test "${enable_sdk}" != "" ; then
-   echo "Using Mac OS X SDK directory ${enable_sdk}"
+   echo "=== Using Mac OS X SDK directory ${enable_sdk}"
 fi
 
 if test "${enable_racket}" != "" ; then
-   echo "Using Racket executable ${enable_racket}"
+   echo "=== Using Racket executable ${enable_racket}"
 fi
 
 ###### Some defaults #######
