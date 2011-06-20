@@ -219,6 +219,9 @@
       ;;  grow if it doesn't have to grow to accommodate the menu bar.
       (send this resized))
 
+    (define/public (reset-menu-height h)
+      (adjust-client-delta 0 h))
+
     (define saved-enforcements (vector 0 0 -1 -1))
 
     (define/public (enforce-size min-x min-y max-x max-y inc-x inc-y)

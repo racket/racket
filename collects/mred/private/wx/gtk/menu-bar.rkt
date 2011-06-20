@@ -49,6 +49,13 @@
                                (lambda () (send frame on-menu-click))
                                (void))))))))
 
+(define-signal-handler connect-ubuntu-local "notify::ubuntu-local"
+  (_fun _GtkWidget -> _void)
+  (lambda (gtk)
+    (let ([wx (gtk->wx gtk)])
+      (when wx
+	(send wx reset-menu-height)))))
+
 (define top-menu%
   (class widget%
     (init-field parent)
@@ -82,6 +89,12 @@
   (connect-menu-key-press gtk)
   (connect-menu-button-press gtk)
 
+  ;; Ubuntu patches Gtk so that a menu bar starts
+  ;; as "remote" instead of appearing in a frame.
+  ;; For configurations that put the menu bar in a frame,
+  ;; the "notify::ubuntu-local" signal is issued.
+  (connect-ubuntu-local gtk)
+
   ; (gtk_menu_set_accel_group gtk the-accelerator-group)
 
   (define top-wx #f)
@@ -89,19 +102,28 @@
   (define/public (set-top-window top)
     (set! top-wx top)
     (install-widget-parent top)
-    ;; return initial size; also, add a menu to make sure there is one,
+    (fix-menu-height))
+
+  (define/public (reset-menu-height)
+    (when top-wx
+      (send top-wx reset-menu-height (fix-menu-height))))
+
+  (define/private (fix-menu-height)
+    ;; a menu to make sure there is one,
     ;; and force the menu bar to be at least that tall always
     (atomically
-     (define item (gtk_menu_item_new_with_mnemonic "Xyz"))
-     (gtk_menu_shell_append gtk item)
-     (gtk_widget_show item)
+     (define item 
+       (and (null? menus)
+	    (gtk_menu_item_new_with_mnemonic "Xyz")))
+     (when item
+       (gtk_menu_shell_append gtk item)
+       (gtk_widget_show item))
      (define req (make-GtkRequisition 0 0))
-     (gtk_widget_size_request item req)
-     (define item-height (GtkRequisition-height req))
      (gtk_widget_size_request gtk req)
-     (define height (max (GtkRequisition-height req) item-height))
+     (define height (GtkRequisition-height req))
      (gtk_widget_set_usize gtk -1 height)
-     (gtk_container_remove gtk item)
+     (when item
+       (gtk_container_remove gtk item))
      height))
 
   (define/public (get-top-window)
