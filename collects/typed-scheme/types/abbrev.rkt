@@ -179,6 +179,8 @@
 (define -HT make-Hashtable)
 (define -Promise make-promise-ty)
 
+(define -HashTop (make-HashtableTop))
+
 (define Univ (make-Univ))
 (define Err (make-Error))
 
