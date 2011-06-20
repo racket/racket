@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          racket/sandbox
+@(require "mz.rkt" racket/sandbox
           (for-label racket/sandbox
                      racket/port
                      (only-in racket/gui make-gui-namespace)

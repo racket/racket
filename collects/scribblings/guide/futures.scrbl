@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "guide-utils.ss"
+@(require scribble/manual "guide-utils.rkt"
           (for-label racket/flonum racket/future))
 
 @title[#:tag "effective-futures"]{Parallelism with Futures}

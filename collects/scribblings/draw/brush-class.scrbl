@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval)
+@(require "common.rkt" scribble/eval)
 
 @(define class-eval (make-base-eval))
 @(interaction-eval #:eval class-eval (require racket/class racket/draw))

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label ffi/file))
+@(require "utils.rkt" (for-label ffi/file))
 
 @title[#:tag "file-security-guard-checks"]{File Security-Guard Checks}
 

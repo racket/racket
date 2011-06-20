@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss"
+@(require scribble/manual "common.rkt"
           (for-label racket/base
                      compiler/decompile
                      (only-in compiler/zo-parse compilation-top? req)

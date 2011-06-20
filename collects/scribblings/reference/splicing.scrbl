@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/splicing
-                     racket/stxparam
-                     racket/local))
+@(require "mz.rkt" (for-label racket/splicing racket/stxparam racket/local))
 
 @(define splice-eval (make-base-eval))
 @interaction-eval[#:eval splice-eval (require racket/splicing 

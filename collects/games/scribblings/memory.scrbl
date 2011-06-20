@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @gametitle["Memory" "memory" "Kid's Game"]
 

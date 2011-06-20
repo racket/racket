@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss")
+@(require scribble/manual "common.rkt")
 
 @title[#:tag "planet"]{@exec{raco planet}: Automatic Package Distribution}
 

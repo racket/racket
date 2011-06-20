@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss"
-          (for-label racket/runtime-path))
+@(require scribble/manual "common.rkt" (for-label racket/runtime-path))
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 

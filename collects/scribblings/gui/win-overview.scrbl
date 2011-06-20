@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/eval
-          "common.ss"
-          "diagrams.ss")
+@(require scribble/eval "common.rkt" "diagrams.rkt")
 
 @title[#:tag "windowing-overview"]{Windowing}
 

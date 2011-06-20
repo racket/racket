@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/struct
-          (for-syntax mzscheme)
-          "mz.ss")
+@(require scribble/struct "mz.rkt" (for-syntax mzscheme))
 
 @(define racket-eval (make-base-eval))
 @(interaction-eval #:eval racket-eval (require (for-syntax racket/base)))

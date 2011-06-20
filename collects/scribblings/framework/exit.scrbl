@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Exit}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^exit:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^exit:")

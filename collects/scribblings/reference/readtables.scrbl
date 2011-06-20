@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/bnf
-          "mz.ss")
+@(require scribble/bnf "mz.rkt")
 
 @title[#:style 'toc]{Reader Extension}
 

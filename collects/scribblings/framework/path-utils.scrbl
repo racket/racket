@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Path Utils}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^path-utils:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^path-utils:")

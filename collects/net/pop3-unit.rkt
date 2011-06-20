@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/tcp "pop3-sig.ss")
+(require racket/tcp "pop3-sig.rkt")
 
 (import)
 (export pop3^)

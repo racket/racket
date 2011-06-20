@@ -35,7 +35,7 @@ this table looks like:
 
 @verbatim[#:indent 2]{
                           B [M1] M2%
-  [N1] N2(N3%) N4(N5%)  A ...path/to/source.ss:12:34
+  [N1] N2(N3%) N4(N5%)  A ...path/to/source.rkt:12:34
                           C [M3] M4%}
 
 Where actual numbers appear in the printout.  The meaning of the

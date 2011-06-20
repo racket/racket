@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/unit-exptime))
+@(require "mz.rkt" (for-label racket/unit-exptime))
 
 @(define-syntax defkeywords
    (syntax-rules (*)

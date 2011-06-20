@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/sendmail
-                     net/sendmail-unit
-                     net/sendmail-sig))
+@(require "common.rkt"
+          (for-label net/sendmail net/sendmail-unit net/sendmail-sig))
 
 @title[#:tag "sendmail"]{@exec{sendmail}: Sending E-Mail}
 

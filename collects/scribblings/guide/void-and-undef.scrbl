@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @title[#:tag "void+undefined"]{Void and Undefined}
 

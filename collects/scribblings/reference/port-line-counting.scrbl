@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.rkt")
 
 @title[#:tag "linecol"]{Counting Positions, Lines, and Columns}
 

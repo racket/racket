@@ -407,34 +407,34 @@ To run the following animation/GUI demos, simply set the language
 level to FrTime, open the corresponding file, and Execute.  See the
 demo source code for more information.
 
-@scheme[orbit-mouse.ss] : A collection of balls that move in circles
+@scheme[orbit-mouse.rkt] : A collection of balls that move in circles
 around the mouse pointer.
 
-@scheme[piston.ss] : Simulation of a piston/cylinder.
+@scheme[piston.rkt] : Simulation of a piston/cylinder.
 
-@scheme[rotation.ss] : Balls moving in circles.
+@scheme[rotation.rkt] : Balls moving in circles.
 
-@scheme[delay-mouse.ss] : A trail of balls following the mouse.
+@scheme[delay-mouse.rkt] : A trail of balls following the mouse.
 
-@scheme[ball-on-string.ss] : A ball chasing the mouse.
+@scheme[ball-on-string.rkt] : A ball chasing the mouse.
 
-@scheme[pong.ss] : A simple pong/air-hockey game.  The left paddle moves with
+@scheme[pong.rkt] : A simple pong/air-hockey game.  The left paddle moves with
 numeric keypad; the right paddle moves with the mouse.  The 'r' key
 resets the score.
 
-@scheme[pizza.ss] : A simple "pizza ordering" user interface based on an HtDP
+@scheme[pizza.rkt] : A simple "pizza ordering" user interface based on an HtDP
 exercise.
 
-@scheme[calculator.ss] : A simple calculator interface, also based on an HtDP
+@scheme[calculator.rkt] : A simple calculator interface, also based on an HtDP
 exercise except that the result updates continuously as the arguments
 and operator change.
 
 The next three animation examples are courtesy of Robb Cutler:
 
-@scheme[analog-clock.ss] : An animated real-time clock.  A slider adjusts the radius
-of the face.  Click and drag to move the face around.
+@scheme[analog-clock.rkt] : An animated real-time clock.  A slider adjusts the
+radius of the face.  Click and drag to move the face around.
 
-@scheme[growing-points.ss] : A field of points that grow as the mouse approaches.
+@scheme[growing-points.rkt] : A field of points that grow as the mouse
+approaches.
 
-@scheme[needles.ss] : A field of needles that point at the mouse.
-
+@scheme[needles.rkt] : A field of needles that point at the mouse.

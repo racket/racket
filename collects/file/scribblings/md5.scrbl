@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          (for-label file/md5))
+@(require "common.rkt" scribble/eval (for-label file/md5))
 
 @(define md5-eval (make-base-eval))
 @interaction-eval[#:eval md5-eval (require file/md5)]

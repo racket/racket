@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/toplevel))
+@(require "common.rkt" (for-label syntax/toplevel))
 
 @title[#:tag "toplevel"]{Non-Module Compilation And Expansion}
 

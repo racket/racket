@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "std-grammar.ss"
-          "prim-ops.ss"
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-intermediate))
 
 @(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
@@ -62,7 +60,7 @@
 
 @|prim-nonterms|
 
-@prim-ops['(lib "htdp-intermediate.ss" "lang") #'here]
+@prim-ops['(lib "htdp-intermediate.rkt" "lang") #'here]
 
 @; ----------------------------------------------------------------------
 
@@ -194,7 +192,7 @@ The name of a primitive operation can be used as an expression. If it
 is passed to a function, then it can be used in a function call within
 the function's body.}
 
-@prim-op-defns['(lib "htdp-intermediate.ss" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-intermediate.rkt" "lang") #'here '()]
 
 @; ----------------------------------------------------------------------
 

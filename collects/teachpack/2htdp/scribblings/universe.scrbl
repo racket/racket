@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss" 
+@(require scribble/manual "shared.rkt"
           (for-label scheme
                      (only-in lang/htdp-beginner check-expect)
-		     teachpack/2htdp/universe
-		     2htdp/image))
+                     teachpack/2htdp/universe
+                     2htdp/image))
 @(require scribble/struct)
 
 @(define (table* . stuff)
@@ -32,7 +32,7 @@
    datatypes are currently linked as technical terms --- which is a hack.
    Fix the paragraph when we have a better way to link datatype names.}
 
-This @tt{universe.ss} teachpack implements and provides the functionality
+This @tt{universe.rkt} teachpack implements and provides the functionality
  for creating interactive, graphical programs that consist of plain
  mathematical functions. We refer to such programs as @deftech{world}
  programs. In addition, world programs can also become a part of a
@@ -1342,10 +1342,10 @@ The preceding subsection dictates that our server program starts like this:
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-;; teachpack: universe.ss
-  
+;; teachpack: universe.rkt
+
 ;; UniverseState is '*
-;; StopMessage is 'done. 
+;; StopMessage is 'done.
 ;; GoMessage is 'it-is-your-turn.
 ])
 
@@ -1480,10 +1480,10 @@ The final step is to design the ball @tech{world}. Recall that each world
 
 @(begin #reader scribble/comment-reader
 (schemeblock
-;; teachpack: universe.ss
+;; teachpack: universe.rkt
 
 ;; WorldState is one of:
-;; -- Number	         %% representing the @emph{y} coordinate 
+;; -- Number             %% representing the @emph{y} coordinate 
 ;; -- @scheme['resting]
 
 (define WORLD0 'resting)

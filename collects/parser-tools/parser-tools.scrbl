@@ -236,7 +236,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
     returned.
 
     Each time the scheme code for a lexer is compiled (e.g. when a
-    @filepath{.ss} file containing a @scheme[lexer] form is loaded),
+    @filepath{.rkt} file containing a @scheme[lexer] form is loaded),
     the lexer generator is run.  To avoid this overhead place the
     lexer into a module and compile the module to a @filepath{.zo}
     bytecode file.}
@@ -673,7 +673,7 @@ the right choice when using @scheme[lexer] in other situations.
     @scheme[start] non-terminal,
 
     Each time the scheme code for a @scheme[parser] is compiled
-    (e.g. when a @filepath{.ss} file containing a @scheme[parser] form
+    (e.g. when a @filepath{.rkt} file containing a @scheme[parser] form
     is loaded), the parser generator is run.  To avoid this overhead
     place the parser into a module and compile the module to a
     @filepath{.zo} bytecode file.}

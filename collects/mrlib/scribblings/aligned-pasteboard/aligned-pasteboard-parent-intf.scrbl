@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @definterface/title[aligned-pasteboard-parent<%> ()]{
 
@@ -10,4 +10,3 @@ is an @scheme[aligned-pasteboard<%>].
            void?]{}
 
 }
-

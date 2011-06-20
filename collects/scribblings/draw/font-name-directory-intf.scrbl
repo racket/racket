@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf)
+@(require "common.rkt" scribble/bnf)
 
 @definterface/title[font-name-directory<%> ()]{
 

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label file/gunzip
-                     file/gzip))
+@(require "common.rkt" (for-label file/gunzip file/gzip))
 
 @title[#:tag "gunzip"]{@exec{gzip} Decompression}
 

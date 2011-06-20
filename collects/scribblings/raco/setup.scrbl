@@ -1067,9 +1067,9 @@ An @deftech{unpackable} is one of the following:
    the info procedure is the result of the @racket[_thunk] in that
    case. If the name is not defined and no @racket[_thunk] is
    provided, then an exception is raised.
-   
+
    The @racket[get-info/full] function returns @racket[#f] if there is
-   no @filepath{info.rkt} or @filepath{info.ss} file in the directory. If there is a
+   no @filepath{info.rkt} (or @filepath{info.ss}) file in the directory. If there is a
    @filepath{info.rkt} (or @filepath{info.ss}) file that has the wrong shape (i.e., not a module
    using @racketmodname[setup/infotab] or @racket[(lib "infotab.rkt" "setup")]),
    or if the @filepath{info.rkt} file fails to load, then an exception

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (provide tcp@)
 
-(require scheme/unit scheme/tcp "tcp-sig.ss")
+(require racket/unit racket/tcp "tcp-sig.rkt")
 
 (define-unit-from-context tcp@ tcp^)

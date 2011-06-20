@@ -1,9 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
-
-@(interaction-eval (require (lib "mzlib/for.ss")))
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @title[#:tag "set!"]{Assignment: @racket[set!]}
 

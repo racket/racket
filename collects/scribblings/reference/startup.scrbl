@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/bnf
-          (for-label racket/pretty
-                     racket/gui/base))
+@(require "mz.rkt" scribble/bnf (for-label racket/pretty racket/gui/base))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))

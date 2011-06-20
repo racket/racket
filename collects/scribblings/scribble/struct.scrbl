@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require (except-in "utils.ss"
+@(require (except-in "utils.rkt"
                      make-part make-paragraph make-table make-itemization make-compound-paragraph
                      make-element make-toc-element make-target-element make-toc-target-element
                      make-page-target-element make-redirect-target-element make-link-element
@@ -13,7 +13,7 @@
                      setup/main-collects))
 
 @(define (compat) @italic{For backward compatibility.})
-@(define-syntax-rule (compat/comp id) 
+@(define-syntax-rule (compat/comp id)
    @elem{@compat[] Compared to the normal constructor for @racket[id]})
 
 @title[#:tag "struct"]{Compatibility Structures And Processing}

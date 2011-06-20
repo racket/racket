@@ -1,5 +1,5 @@
 (require (for-syntax mzlib/unit-exptime))
-(require "test-harness.ss"
+(require "test-harness.rkt"
          ;unit
          mzlib/unit)
 

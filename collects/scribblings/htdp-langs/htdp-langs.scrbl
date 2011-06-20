@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
-@(require (for-label lang/htdp-beginner))
+@(require "common.rkt" (for-label lang/htdp-beginner))
 
 @title{@italic{How to Design Programs} Languages}
 

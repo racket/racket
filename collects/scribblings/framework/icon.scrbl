@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Icon}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^icon:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^icon:")

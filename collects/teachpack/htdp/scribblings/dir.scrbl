@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
+@(require scribble/manual "shared.rkt"
           (for-label (except-in scheme/base file-size)
                      teachpack/htdp/dir
                      scheme/contract))
@@ -20,7 +20,7 @@ directories:
 @defproc[(create-dir [path symbol?]) dir?]{
  Turns the directory found at @scheme[path] on your computer into an instance of @scheme[dir?].}
 
-Sample: Set teachpack to @filepath{dir.ss} and click RUN:
+Sample: Set teachpack to @filepath{dir.rkt} and click Run:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
@@ -33,7 +33,7 @@ Sample: Set teachpack to @filepath{dir.ss} and click RUN:
               (cons (make-file 'greenbal.gif 204 empty)
                     (cons (make-file 'redball.gif 203 empty)
                           (cons (make-file 'ufo.gif 1044 empty)
-                                (cons (make-file 'gif-test.ss 5811 empty)
+                                (cons (make-file 'gif-test.rkt 5811 empty)
                                       empty)))))))
 ))
 Using ``.'' usually means the directory in which your program is

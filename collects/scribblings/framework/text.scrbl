@@ -1216,19 +1216,16 @@
   }
 
   @defmethod*[(((show-line-numbers! (show boolean?)) void?))]{
-
     Enables or disables line number drawing.
   }
-  
-  @defmethod*[(((show-line-numbers?) boolean?))]{
 
+  @defmethod*[(((show-line-numbers?) boolean?))]{
     Returns whether or not line drawing is enabled.
   }
-  
-  @defmethod*[(((set-line-numbers-color (color string?)) void?))]{
 
+  @defmethod*[(((set-line-numbers-color (color string?)) void?))]{
     Sets the color of the line numbers.
   }
 }
 
-@(include-previously-extracted "main-extracts.ss" #rx"^text:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^text:")

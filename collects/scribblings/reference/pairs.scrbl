@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/scheme
-          racket/generator
-          racket/list
+@(require "mz.rkt" scribble/scheme racket/generator racket/list
           (for-syntax racket/base))
 
 @(define (generate-c_r-example proc)

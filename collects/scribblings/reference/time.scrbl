@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/date))
+@(require "mz.rkt" (for-label racket/date))
 
 @title[#:tag "time"]{Time}
  

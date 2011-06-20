@@ -1165,7 +1165,7 @@ of the variables @racket[V], ..., that satisfies all of @racket[G],
 ...  If @racket[G], ..., cannot be satisfied, returns @racket[#f].
 Calling the thunk @racket[%more] produces more
 instantiations, if available.}
-                                  
+
 @defproc[(%more) answer?]{
 The thunk @racket[%more] produces more instantiations of the
 variables in the most recent @racket[%which]-form that satisfy the

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          scribble/bnf
-          "guide-utils.ss"
+@(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
           (for-label racket/serialize))
 
 @(define posn-eval (make-base-eval))

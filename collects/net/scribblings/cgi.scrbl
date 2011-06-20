@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/cgi
-                     net/uri-codec
-                     net/cgi-unit
-                     net/cgi-sig))
+@(require "common.rkt"
+          (for-label net/cgi net/uri-codec net/cgi-unit net/cgi-sig))
 
 @title[#:tag "cgi"]{CGI Scripts}
 

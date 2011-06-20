@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/bnf
-          scribble/core
+@(require "mz.rkt" scribble/bnf scribble/core
           (for-label (only-in racket/require-transform
                               make-require-transformer)
                      racket/require-syntax

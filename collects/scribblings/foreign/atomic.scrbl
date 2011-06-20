@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label ffi/unsafe/atomic))
+@(require "utils.rkt" (for-label ffi/unsafe/atomic))
 
 @title{Atomic Execution}
 

@@ -146,9 +146,9 @@ understood by the default module name resolver). The prefix can be a
 symbol, @racket[#f] to indicate no prefix, or @racket[#t] to indicate
 an auto-generated prefix. For example,
 
-@racketblock['((#f "m.ss"))]
+@racketblock['((#f "m.rkt"))]
 
-embeds the module @racket[m] from the file @filepath{m.ss}, without
+embeds the module @racket[m] from the file @filepath{m.rkt}, without
 prefixing the name of the module; the @racket[literal-sexpr] argument
 to go with the above might be @racket['(require m)].
 

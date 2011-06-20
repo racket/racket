@@ -603,7 +603,7 @@ For more information about writing Web applications, see:
 
 When you click on the @onscreen{Run} button in DrRacket, your Web application is launched in the Web server.
 
-The application is available at @italic{http://localhost:8000/servlets/standalone.ss}. 
+The application is available at @italic{http://localhost:8000/servlets/standalone.rkt}.
 
 The @WEB-LANG language will automatically load this URL in your Web browser.
 

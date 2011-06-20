@@ -1,11 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-          "contracts-utils.ss"
-	  (for-label framework/framework)
-          (for-label racket/contract) 
-          (for-label racket/gui))
+@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
+          (for-label framework/framework racket/contract racket/gui))
 
 @title[#:tag "contracts-general-functions"]{Contracts on Functions in General}
 

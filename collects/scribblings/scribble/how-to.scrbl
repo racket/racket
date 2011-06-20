@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          "utils.ss")
+@(require scribble/manual scribble/bnf "utils.rkt")
 
 @title[#:tag "how-to-doc"]{Getting Started with Documentation}
 

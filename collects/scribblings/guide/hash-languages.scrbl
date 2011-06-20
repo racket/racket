@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          scribble/racket
-          "guide-utils.ss"
-          "modfile.rkt"
+@(require scribble/manual scribble/eval scribble/racket
+          "guide-utils.rkt" "modfile.rkt"
           (for-syntax racket/base)
           (for-label setup/dirs
                      syntax/strip-context

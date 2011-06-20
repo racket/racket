@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
-          (for-label racket/sandbox))
+@(require scribble/manual "utils.rkt" (for-label racket/sandbox))
 
 @title[#:tag "eval"]{Evaluation and Examples}
 

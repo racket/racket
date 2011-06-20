@@ -1,10 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (provide tcp-redirect)
 
-(require scheme/unit
-         scheme/tcp
-         scheme/async-channel
-         "tcp-sig.ss")
+(require racket/unit racket/tcp racket/async-channel "tcp-sig.rkt")
 
 (define raw:tcp-abandon-port tcp-abandon-port)
 (define raw:tcp-accept tcp-accept)
@@ -46,7 +43,7 @@
    (define (tcp-accept/enable-break tcp-listener)
      (cond
        [(pipe-listener? tcp-listener)
-        ;; XXX put this into async-channel.ss as async-channel-get/enable-break
+        ;; XXX put this into async-channel.rkt as async-channel-get/enable-break
         (sync/enable-break
          (handle-evt
           (pipe-listener-channel tcp-listener)

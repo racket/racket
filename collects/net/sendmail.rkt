@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "sendmail-sig.ss" "sendmail-unit.ss")
+#lang racket/base
+(require racket/unit "sendmail-sig.rkt" "sendmail-unit.rkt")
 
 (define-values/invoke-unit/infer sendmail@)
 

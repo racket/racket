@@ -150,9 +150,9 @@ This is a restricted form of @racketmodname[racket/contract]'s
                 (->* (contract-dom-expr ...) contract-rest-expr ->*rng)) 
                ([->*rng (contract-rng-expr ...)
                         any])]{
-  The @racket[->*] form matches up to 
+  The @racket[->*] form matches up to
   @racketmodname[racket/contract]'s @r:-> and @r:->*, according
-  to the following rules; each equation on the the
+  to the following rules; each equation on the
   left refers to a @racketmodname[mzlib/contract] combinator;
   on the right are the @racketmodname[racket/contract] equivalents.
   @racketblock[(->* (contract-dom-expr ...) any) =
@@ -179,17 +179,16 @@ This is a restricted form of @racketmodname[racket/contract]'s
 
 @defform*[((opt->* (contract-req-expr ...) (contact-opt-expr ...) any)
            (opt->* (contract-req-expr ...) (contact-opt-expr ...) (contract-rng-expr ...)))]{
-                                                                                  
 
   The @racket[opt->*] form   matches up to
       @racketmodname[racket/contract]'s @r:->*, according
-  to the following rules; each equation on the the
+  to the following rules; each equation on the
   left refers to a @racketmodname[mzlib/contract] combinator;
   on the right are the @racketmodname[racket/contract] equivalents.
-                                       
+
   @racketblock[(opt->* (contract-req-expr ...) (contract-opt-expr ...) any) =
                (#,r:->* (contract-req-expr ...) (contract-opt-expr ...) any)]
-  
+
   @racketblock[(opt->* (contract-req-expr ...)
                        (contract-opt-expr ...)
                        (contract-rng-expr ...)) =

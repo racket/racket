@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          setup/dirs
-          "private/utils.ss")
+@(require scribble/manual setup/dirs "private/utils.rkt")
 
 @(define (rl-link path . content)
    (apply link (apply build-path (find-doc-dir) "release-notes" path)

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "../private/utils.ss"
-          "../private/make-search.ss")
+@(require "../private/utils.rkt" "../private/make-search.rkt")
 
 @main-page['search #f
                    ;; "racket.css" needs to be installed for search results:

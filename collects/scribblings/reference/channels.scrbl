@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
-
+@(require "mz.rkt")
 
 @title[#:tag "channel"]{Channels}
 

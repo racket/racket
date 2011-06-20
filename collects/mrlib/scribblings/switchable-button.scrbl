@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/switchable-button))
+@(require "common.rkt" (for-label mrlib/switchable-button))
 
 @title{Switchable Button}
 

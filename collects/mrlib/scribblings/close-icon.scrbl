@@ -1,9 +1,7 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           (for-label mrlib/close-icon
-                     scheme/gui
-                     scheme/runtime-path
-                     scheme/include))
+                     scheme/gui scheme/runtime-path scheme/include))
 
 @title{Close Icon}
 

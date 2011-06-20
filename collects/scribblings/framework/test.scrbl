@@ -110,8 +110,8 @@ but not in X windows.
 
 In X windows, you must explicitly tell your window manager to set the 
 keyboard focus to the top-most frame, regardless of the position of the 
-actual mouse. 
+actual mouse.
 
 @section{Test Functions}
 
-@(include-extracted (lib "test.ss" "framework"))
+@(include-extracted (lib "test.rkt" "framework"))

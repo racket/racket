@@ -3,7 +3,7 @@
 		 (lambda (exn)
 		   (namespace-set-variable-value!
 		    'flat-load
-		    "mz-tests.ss"))])
+		    "mz-tests.rktl"))])
   (namespace-variable-value 'flat-load))
 
 (with-handlers ([exn:fail:contract:variable?
@@ -25,7 +25,7 @@
 (define line-count 0)
 (define file-count 0)
 
-(define flatp (open-output-file (format "flat~a.ss" flat-number) #:exists 'replace))
+(define flatp (open-output-file (format "flat~a.rkt" flat-number) #:exists 'replace))
 (define old-eval (current-eval))
 (define old-namespace (current-namespace))
 
@@ -43,7 +43,7 @@
     (close-output-port flatp)
     (set! flatp
 	  (open-output-file
-	   (format "flat~a.ss" file-count)
+	   (format "flat~a.rkt" file-count)
 	   #:exists 'replace))))
 
 (define error-test

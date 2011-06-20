@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.rkt")
 
 @title{Byte and String Input}
 

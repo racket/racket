@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label scheme/file))
+@(require "common.rkt" (for-label scheme/file))
 
 @title[#:tag "mredprefs"]{Preferences}
 

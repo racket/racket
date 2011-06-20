@@ -1,9 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          "common.ss"
-          (for-label racket/base
-                     racket/unit
-                     racket/contract
+          "common.rkt"
+          (for-label racket/base racket/unit racket/contract
                      launcher/launcher
                      launcher/launcher-sig
                      launcher/launcher-unit

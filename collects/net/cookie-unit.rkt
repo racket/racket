@@ -1,5 +1,5 @@
 ;;;
-;;; <cookie-unit.ss> ---- HTTP cookies library
+;;; <cookie-unit.rkt> ---- HTTP cookies library
 ;;; Time-stamp: <03/04/25 10:50:05 noel>
 ;;;
 ;;; Copyright (C) 2002 by Francisco Solsona.
@@ -48,9 +48,9 @@
 ;;
 ;; You should think of this procedures as a `format' for cookies.
 
-#lang scheme/unit
+#lang racket/unit
 
-(require srfi/13/string srfi/14/char-set "cookie-sig.ss")
+(require srfi/13/string srfi/14/char-set "cookie-sig.rkt")
 
 (import)
 (export cookie^)
@@ -323,4 +323,4 @@
 (define (valid-path? v)
   (and (string? v) (rfc2109:value? v)))
 
-;;; cookie-unit.ss ends here
+;;; cookie-unit.rkt ends here

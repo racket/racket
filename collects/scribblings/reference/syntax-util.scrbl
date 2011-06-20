@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/syntax))
+@(require "mz.rkt" (for-label racket/syntax))
 
 @title[#:tag "syntax-util"]{Syntax Utilities}
 

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "std-grammar.ss"
-          "prim-ops.ss"
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-beginner))
 
 
@@ -42,7 +40,7 @@
 
 @|prim-nonterms|
 
-@prim-ops['(lib "htdp-beginner.ss" "lang") #'here]
+@prim-ops['(lib "htdp-beginner.rkt" "lang") #'here]
 
 @; ----------------------------------------------------------------------
 
@@ -380,4 +378,4 @@ current file).}
 
 @section[#:tag "beginner-prim-ops"]{Primitive Operations}
 
-@prim-op-defns['(lib "htdp-beginner.ss" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-beginner.rkt" "lang") #'here '()]

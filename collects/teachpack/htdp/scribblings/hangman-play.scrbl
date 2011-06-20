@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/htdp/hangman))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/hangman))
 
 @teachpack["hangman-play"]{Playing Hangman}
 

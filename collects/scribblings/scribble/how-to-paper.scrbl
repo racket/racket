@@ -1,16 +1,11 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          "utils.ss"
-          (for-label scriblib/figure
-                     scribble/base
-                     scribble/sigplan))
+@(require scribble/manual scribble/bnf "utils.rkt"
+          (for-label scriblib/figure scribble/base scribble/sigplan))
 
 @(define-syntax-rule (samplemod . text) (codeblock . text))
-@(define-syntax-rule (sample a . text) (codeblock #:context #'a 
-                                                  #:keep-lang-line? #f 
-                                                  "#lang scribble/base" "\n" 
-                                                  a . text))
+@(define-syntax-rule (sample a . text)
+   (codeblock #:context #'a #:keep-lang-line? #f
+     "#lang scribble/base" "\n" a . text))
 @(define (result . text) (apply nested #:style 'inset text))
 
 @title[#:tag "getting-started"]{Getting Started}

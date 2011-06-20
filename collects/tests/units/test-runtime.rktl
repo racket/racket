@@ -1,4 +1,4 @@
-(require "test-harness.ss"
+(require "test-harness.rkt"
          mzlib/private/unit-runtime)
 
 ;; check-unit

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          racket/list
-          "guide-utils.ss"
+@(require scribble/manual scribble/eval racket/list "guide-utils.rkt"
 
           (for-label racket/list
                      (only-in racket/class is-a?)))

@@ -1,4 +1,4 @@
-(require "test-harness.ss"
+(require "test-harness.rkt"
          scheme/unit
          scheme/contract)
 

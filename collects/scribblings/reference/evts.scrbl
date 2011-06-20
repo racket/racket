@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/struct
-          "mz.ss")
+@(require scribble/struct "mz.rkt")
 
 @(define-syntax-rule (ResultItself x)
    (make-element #f (list "The "

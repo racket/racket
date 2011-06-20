@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require (except-in "mz.ss" set)
-          (for-label racket/control))
+@(require (except-in "mz.rkt" set) (for-label racket/control))
 
 @title{Classical Control Operators}
 

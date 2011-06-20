@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/struct
-          "../private/utils.ss"
-          "../private/manuals.ss")
+@(require scribble/manual scribble/struct
+          "../private/utils.rkt" "../private/manuals.rkt")
 
 @main-page['start #f]
 

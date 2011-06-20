@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/struct))
+@(require "common.rkt" (for-label syntax/struct))
 
 @title[#:tag "struct"]{Expanding @scheme[define-struct]-like Forms}
 

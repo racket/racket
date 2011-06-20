@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          scribble/bnf
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt")
 
 @(define ex-eval (make-base-eval))
 

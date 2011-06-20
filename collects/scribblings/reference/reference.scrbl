@@ -1,9 +1,6 @@
 #lang scribble/manual
-@(require "mz.ss" 
-          scribble/core 
-          scribble/html-properties
-          scribble/latex-properties
-          scribble/core 
+@(require "mz.rkt"
+          scribble/core scribble/html-properties scribble/latex-properties
           racket/list)
 
 @(define (racket-extra-libs)

@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/struct
-          (for-label net/mime
-                     net/mime-unit
-                     net/mime-sig))
+@(require "common.rkt" scribble/struct
+          (for-label net/mime net/mime-unit net/mime-sig))
 
 @(define-syntax-rule (mime-table (type (sub-type0 ref0) (sub-type ref) ...) ...)
   (let ([spacer (hspace 1)]

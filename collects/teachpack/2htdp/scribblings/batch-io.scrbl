@@ -1,11 +1,11 @@
 #lang scribble/doc
 
-@(require (for-label scheme teachpack/2htdp/batch-io))
 @(require scheme/sandbox scribble/manual scribble/eval scribble/core
-          scribble/html-properties scribble/latex-properties)
-@(require "shared.ss")
+          scribble/html-properties scribble/latex-properties
+          2htdp/batch-io
+          "shared.rkt"
+          (for-label scheme teachpack/2htdp/batch-io))
 
-@(require 2htdp/batch-io)
 @(require scheme/runtime-path)
 @(define-runtime-path here ".")
 @(define io-style-extras

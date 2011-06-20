@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "ss.ss"
-          (for-label slideshow/code
-                     racket/gui/base))
+@(require "ss.rkt" (for-label slideshow/code racket/gui/base))
 
 @(define stx-obj
   (tech #:doc '(lib "scribblings/reference/reference.scrbl") "syntax object"))

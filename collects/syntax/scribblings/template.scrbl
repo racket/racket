@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/template))
+@(require "common.rkt" (for-label syntax/template))
 
 @title[#:tag "template"]{Controlling Syntax Templates}
 

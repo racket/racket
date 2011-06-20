@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/struct
-          scribble/racket
-          "mz.ss")
+@(require scribble/struct scribble/racket "mz.rkt")
 
 @(define (cont n)
    (make-element variable-color

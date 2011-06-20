@@ -1,9 +1,7 @@
 #lang scribble/doc
-@(require "mz.ss"
+@(require "mz.rkt" scribble/scheme
           (for-syntax racket/base)
-          scribble/scheme
-          (for-label racket/generator
-                     racket/mpair))
+          (for-label racket/generator racket/mpair))
 
 @(define (info-on-seq where what)
    @margin-note{See @secref[where] for information on using @|what| as

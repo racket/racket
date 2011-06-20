@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.rkt")
 
 @title{Custodians}
 

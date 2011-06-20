@@ -28,7 +28,7 @@
 
 (module test4 mzscheme
   (require mzlib/unit 'test1 'test2 'test3)
-  (require "test-harness.ss")
+  (require "test-harness.rkt")
   (test '(101 100)
    (invoke-unit 
     (compound-unit/infer (import) (export s1) (link u3 u1))))

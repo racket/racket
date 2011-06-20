@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual 
-          scribble/eval
-	  racket/sandbox
-          "guide-utils.ss"
-          "contracts-utils.ss"
+@(require scribble/manual scribble/eval racket/sandbox
+          "guide-utils.rkt" "contracts-utils.rkt"
           (for-label racket/contract))
 
 @title[#:tag "contracts-gotchas"]{Gotchas}

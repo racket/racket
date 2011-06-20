@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/interactive-value-port
-                     scheme/pretty))
+@(require "common.rkt" (for-label mrlib/interactive-value-port scheme/pretty))
 
 @title{Interactive Value Port}
 

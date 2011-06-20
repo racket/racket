@@ -1,11 +1,11 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title[#:tag "documents"]{Documents}
 
- A browser contains one document at a time.  If 
+ A browser contains one document at a time.  If
  hyperlinks are clicked, or the navigation methods
- (navigate, go-forward, go-back) are used, the 
+ (navigate, go-forward, go-back) are used, the
  document changes.
 
 @definterface[mx-document<%> ()]{

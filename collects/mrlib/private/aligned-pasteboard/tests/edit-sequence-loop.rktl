@@ -1,6 +1,4 @@
-(require
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss")
+(require "../aligned-pasteboard.rkt" "../aligned-editor-container.rkt")
 
 (define (converges? x) #t)
 

@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require "ss.ss"
-          "pict-diagram.rkt"
-          (for-label racket/gui
-                     slideshow/code
-                     slideshow/flash
-                     slideshow/face
+@(require "ss.rkt" "pict-diagram.rkt"
+          (for-label racket/gui slideshow/code slideshow/flash slideshow/face
                      slideshow/balloon))
 
 @title[#:style 'toc]{Making Pictures}

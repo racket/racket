@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 ;; To do:
 ;;   Handle HTTP/file errors.
@@ -11,11 +11,11 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-(require scheme/port scheme/string
-         "url-structs.ss"
-         "uri-codec.ss"
-         "url-sig.ss"
-         "tcp-sig.ss")
+(require racket/port racket/string
+         "url-structs.rkt"
+         "uri-codec.rkt"
+         "url-sig.rkt"
+         "tcp-sig.rkt")
 
 (import tcp^)
 (export url^)

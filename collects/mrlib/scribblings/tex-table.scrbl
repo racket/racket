@@ -1,13 +1,12 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/switchable-button))
+@(require "common.rkt" (for-label mrlib/switchable-button))
 
 @title{TeX Table}
 
 @defmodule[mrlib/tex-table]
 
 @defthing[tex-shortcut-table
-          (listof 
+          (listof
             (list/c string? 
                     (lambda (x) 
                       (and (string? x)

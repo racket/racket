@@ -1,12 +1,10 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
-@(define Lambda "\u3BB")
-
-@gametitle["GCalc" "gcalc" "Visual \u3BB-Calculus"]
+@gametitle["GCalc" "gcalc" "Visual λ-Calculus"]
 
 @onscreen{GCalc} is a system for visually demonstrating the
-@|Lambda|-Calculus (not really a game).
+λ-Calculus (not really a game).
 
 See the following for the principles:
 
@@ -60,22 +58,22 @@ undo feature: a right-click on the right cell always splits the main
 cube to two halves and throws the right side.
 
 The colored cubes and the six basic operators make this simple domain,
-which is extended to form a @|Lambda|-Calculus-like language by adding
+which is extended to form a λ-Calculus-like language by adding
 abstractions and applications.  Right-clicking on a basic cube on the
 left panel creates an abstraction which is actually a lambda
 expression except that colors are used instead of syntactic variables.
 For example, if the main cell contains @onscreen{R|G} (red-green on
 the left and right), then right-clicking the green cube on the left
-panel leaves us with @onscreen{@|Lambda| G . R|G}, which is visualized
+panel leaves us with @onscreen{λ G . R|G}, which is visualized
 as @onscreen{R|G} with a green circle.  The last two operator cells
 are used for application of these abstractions: drag a function to the
 top-right to have it applied on the main cube, or to the bottom-left
-to have the main cube applied to it.  As in the @|Lambda|-Calculus,
+to have the main cube applied to it.  As in the λ-Calculus,
 all abstractions have exactly one variable, use currying for multiple
 variables.
 
 So far the result is a domain of colored cubes that can be used in the
-same way as the simple @|Lambda|-Calculus.  There is one last
+same way as the simple λ-Calculus.  There is one last
 extension that goes one step further: function cubes can themselves be
 combined with other functions using the simple operations.  This
 results in a form of "spatial functions" that behave differently in

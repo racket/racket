@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/image-core))
+@(require "common.rkt" (for-label mrlib/image-core))
 
 @title{Image Core}
 

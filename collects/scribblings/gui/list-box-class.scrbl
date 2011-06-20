@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @(define lbnumnote @elem{List box rows are indexed from @scheme[0].})
 @(define lbcnumnote @elem{List box rows and columns are indexed from @scheme[0].})

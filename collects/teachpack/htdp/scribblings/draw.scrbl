@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme 
-                     teachpack/htdp/draw))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/draw))
 
 @teachpack["draw"]{Simple Drawing}
 

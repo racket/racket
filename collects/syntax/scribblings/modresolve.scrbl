@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/modresolve))
+@(require "common.rkt" (for-label syntax/modresolve))
 
 @title{Resolving Module Paths to File Paths}
 

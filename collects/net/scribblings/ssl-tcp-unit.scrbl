@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/ssl-tcp-unit
-                     net/tcp-sig))
+@(require "common.rkt" (for-label net/ssl-tcp-unit net/tcp-sig))
 
 @title[#:tag "ssl-tcp-unit"]{SSL Unit: @scheme[tcp^] via SSL}
 

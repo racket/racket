@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require "utils.ss")
+@(require "utils.rkt")
 
 @title[#:tag "doclang"]{Document Language}
 

@@ -1,9 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/manual
-         (for-label scheme/base
-                    scheme/contract))
+         (for-label racket/base racket/contract))
 
 (provide (all-from-out scribble/manual)
-         (for-label (all-from-out scheme/base
-                                  scheme/contract)))
+         (for-label (all-from-out racket/base racket/contract)))

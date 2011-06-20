@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title[#:tag "overview"]{Using OpenGL}
 
@@ -26,6 +26,6 @@ causes at least some GL implementations to crash.
 
 Some examples are available in the @filepath{examples} directory of
 the @filepath{sgl} collection in the Racket installation.  For
-@filepath{alpha.ss}, try choosing the @filepath{sk.jpg} image distritbuted
+@filepath{alpha.rkt}, try choosing the @filepath{sk.jpg} image distritbuted
 with Racket in the @filepath{icons} collection; you may have to
-press the ``t'' key a few times if the spinning cube is blank.
+press the @tt{t} key a few times if the spinning cube is blank.

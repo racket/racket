@@ -1,14 +1,9 @@
+(require mzlib/etc mzlib/class "test-macro.rkt" mred
+         "../pasteboard-lib.rkt"
+         "../aligned-pasteboard.rkt"
+         "../aligned-editor-container.rkt")
 
-(require
- mzlib/etc
- mzlib/class
- "test-macro.ss"
- mred
- "../pasteboard-lib.ss"
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss")
-
-;; (printf "running tests for pasteboard-lib.ss\n")
+;; (printf "running tests for pasteboard-lib.rkt\n")
 
 ;;pasteboard-root: ((is-a?/c aligned-pasteboard<%>) -> (is-a?/c aligned-pasteboard<%>))
 ;;gets the top most aligned pasteboard in the tree of pasteboards and containers

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-syntax racket/base)
-          (for-label racket/serialize))
+@(require "mz.rkt" (for-syntax racket/base) (for-label racket/serialize))
 
 @(define posn-eval (make-base-eval))
 @(interaction-eval #:eval posn-eval (require (for-syntax racket/base)))

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "ss.ss"
-          (for-label slideshow/play
-                     slideshow/code))
+@(require "ss.rkt" (for-label slideshow/play slideshow/code))
 
 @title[#:tag "play"]{Animations}
 

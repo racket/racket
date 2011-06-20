@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.rkt")
 
 @(define eventspaces @tech[#:doc '(lib "scribblings/gui/gui.scrbl")]{eventspaces})
 

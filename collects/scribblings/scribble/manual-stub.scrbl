@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require "utils.ss"
-          (for-label scribble/sigplan))
+@(require "utils.rkt" (for-label scribble/sigplan))
 
 @title{Racket Manual Format}
 

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
+@(require scribble/manual scribble/eval "guide-utils.rkt"
           (for-label racket/match))
 
 @title[#:tag "case"]{Simple Dispatch: @racket[case]}

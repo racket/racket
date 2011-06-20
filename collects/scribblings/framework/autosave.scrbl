@@ -8,11 +8,8 @@
   Classes that implement this interface can be autosaved.
   @defmethod*[(((do-autosave) void?))]{
     This method is called when the object is registered to be
-    autosaved (see
-    @scheme[autosave:register]).
-
-
+    autosaved (see @scheme[autosave:register]).
   }
 }
 
-@(include-previously-extracted "main-extracts.ss" #rx"^autosave:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^autosave:")

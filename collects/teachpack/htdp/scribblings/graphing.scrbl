@@ -1,6 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss" (for-label scheme teachpack/htdp/graphing))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/graphing))
 
 @teachpack["graphing"]{Graphing Functions}
 

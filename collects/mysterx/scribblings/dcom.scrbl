@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf)
+@(require "common.rkt" scribble/bnf)
 
 @title[#:tag "remote"]{Remote COM servers (DCOM)}
 

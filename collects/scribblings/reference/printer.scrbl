@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/bnf
-          "mz.ss")
+@(require scribble/bnf "mz.rkt")
 
 @title[#:tag "printing" #:style 'quiet]{The Printer}
 

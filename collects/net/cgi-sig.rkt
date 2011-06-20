@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 ;; -- exceptions raised --
 (struct cgi-error ())

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf
-          scribble/eval
-          (for-syntax racket/base))
+@(require "common.rkt" scribble/bnf scribble/eval (for-syntax racket/base))
 
 @title[#:tag "gl"]{C-Style OpenGL}
 

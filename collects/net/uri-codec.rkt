@@ -1,5 +1,5 @@
-#lang scheme/base
-(require mzlib/unit "uri-codec-sig.ss" "uri-codec-unit.ss")
+#lang racket/base
+(require racket/unit "uri-codec-sig.rkt" "uri-codec-unit.rkt")
 
 (provide-signature-elements uri-codec^)
 

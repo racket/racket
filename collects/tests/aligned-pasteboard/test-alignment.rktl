@@ -1,9 +1,5 @@
-(require
- "utils.ss"
- mzlib/etc
- mzlib/list
- mzlib/match
- mrlib/private/aligned-pasteboard/alignment)
+(require "utils.rkt" mzlib/etc mzlib/list mzlib/match
+         mrlib/private/aligned-pasteboard/alignment)
 
 ;; los-equal? ((listof rect?) (listof rect?) . -> . boolean?)
 ;; tests the equality of the list of structures

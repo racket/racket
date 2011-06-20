@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          scribble/eval
-          "utils.ss"
+@(require scribble/manual scribble/bnf scribble/eval "utils.rkt"
           (for-syntax racket/base)
           (for-label (only-in scribble/reader
                               use-at-readtable)))
@@ -196,7 +193,7 @@ for reading.
 These @racketid[-inside] variants parse as if starting inside a
 @litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
 Useful for implementing languages that are textual by default (see
-@filepath{docreader.ss} for example).
+@filepath{docreader.rkt} for example).
 }
 
 @defproc[(make-at-readtable

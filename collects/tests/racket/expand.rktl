@@ -118,11 +118,11 @@
 ; Tests macro expansion by setting the eval handler and
 ;  running all tests
 
-(namespace-variable-value 
+(namespace-variable-value
  'expand-load
  #f
  (lambda ()
-   (namespace-set-variable-value! 'expand-load "mz-tests.ss")))
+   (namespace-set-variable-value! 'expand-load "mz-tests.rktl")))
 
 (let ([orig (current-eval)])
   (dynamic-wind

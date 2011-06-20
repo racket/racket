@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/docprovide))
+@(require "common.rkt" (for-label syntax/docprovide))
 
 @title[#:tag "docprovide"]{Attaching Documentation to Exports}
 

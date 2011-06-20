@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/surrogate
-                     racket/class))
+@(require "mz.rkt" (for-label racket/surrogate racket/class))
 
 @title{Surrogates}
  

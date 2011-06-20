@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label compiler/cm
-                     setup/parallel-build
-                     racket/promise))
+@(require "common.rkt"
+          (for-label compiler/cm setup/parallel-build racket/promise))
 
 @title[#:tag "extending-drracket"]{Extending DrRacket}
 

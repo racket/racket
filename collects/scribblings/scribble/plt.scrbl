@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require "utils.ss")
+@(require "utils.rkt")
 
 @title[#:tag "plt-manuals" #:style 'toc]{Scribbling Documentation}
 

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/struct)
+@(require "common.rkt" scribble/struct)
 
 @(define (atable . l)
    (make-table #f (map (lambda (i)

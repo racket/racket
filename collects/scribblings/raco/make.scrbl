@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          "common.ss"
-          scribble/eval
+@(require scribble/manual scribble/bnf scribble/eval "common.rkt"
           (for-label racket/base
                      racket/include
                      racket/contract

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/struct)
+@(require "common.rkt" scribble/struct)
 
 @(define (defmenuitem . s)
   (let ([mi (apply onscreen s)])

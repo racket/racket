@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/nntp
-                     net/nntp-unit
-                     net/nntp-sig))
+@(require "common.rkt" (for-label net/nntp net/nntp-unit net/nntp-sig))
 
 @title[#:tag "nntp"]{NNTP: Newsgroup Protocol}
 

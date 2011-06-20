@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.rkt")
 
 @title{Bignums, Rationals, and Complex Numbers}
 

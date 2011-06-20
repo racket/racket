@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "guide-utils.ss")
+@(require scribble/manual "guide-utils.rkt")
 
 @title[#:tag "compile"]{Compilation and Configuration}
 

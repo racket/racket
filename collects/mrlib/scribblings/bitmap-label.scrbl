@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/bitmap-label))
+@(require "common.rkt" (for-label mrlib/bitmap-label))
 
 @title{Bitmap Label}
 

@@ -1,5 +1,5 @@
-#lang scheme/unit
-(require "cgi-sig.ss" "uri-codec.ss")
+#lang racket/unit
+(require "cgi-sig.rkt" "uri-codec.rkt")
 
 (import)
 (export cgi^)

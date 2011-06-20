@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label errortrace/errortrace-lib
-                     compiler/cm
-                     planet/config))
+@(require "common.rkt"
+          (for-label errortrace/errortrace-lib compiler/cm planet/config))
 
 @title[#:tag "languages" #:style 'toc]{Languages}
 

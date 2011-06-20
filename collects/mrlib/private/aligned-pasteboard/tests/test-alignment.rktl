@@ -1,10 +1,4 @@
-
-(require
- mzlib/etc
- mzlib/list
- mzlib/match
- "../alignment.ss"
- "test-macro.ss")
+(require mzlib/etc mzlib/list mzlib/match "../alignment.rkt" "test-macro.rkt")
 
 ;;los-equal? ((listof rect?) (listof rect?) . -> . boolean?)
 ;;tests the equality of the list of structures

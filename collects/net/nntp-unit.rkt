@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/tcp "nntp-sig.ss")
+(require racket/tcp "nntp-sig.rkt")
 
 (import)
 (export nntp^)

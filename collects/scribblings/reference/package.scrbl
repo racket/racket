@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/package))
+@(require "mz.rkt" (for-label racket/package))
 
 @(define pack-eval (make-base-eval))
 @interaction-eval[#:eval pack-eval (require racket/package)]

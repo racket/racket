@@ -1,5 +1,5 @@
 ;; --------------------------------------------------------------------------
-;; list-library.ss
+;; list-library.rkt
 ;; export: 
 ;; collect: 
 ;;   (A ((cons B (listof B)) (listof B) (union A C) -> (union A C))

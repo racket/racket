@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss"
-          scribble/eval
-          scribble/racket
-          racket/runtime-path
+@(require scribble/manual scribble/eval scribble/racket racket/runtime-path
+          "common.rkt"
           (for-syntax racket/base)
           (for-label racket/math))
 

@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/htdp/master))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/master))
 
 @teachpack["master"]{MasterMinding}
 

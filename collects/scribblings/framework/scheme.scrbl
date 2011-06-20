@@ -254,4 +254,4 @@
           ()]{}
 @defclass[scheme:text-mode% (scheme:text-mode-mixin color:text-mode%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^scheme:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^scheme:")

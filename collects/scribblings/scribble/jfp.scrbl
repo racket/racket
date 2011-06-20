@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require (except-in "utils.ss" author)
-          (for-label scribble/jfp))
+@(require (except-in "utils.rkt" author) (for-label scribble/jfp))
 
 @(define-syntax-rule (def base-author)
    (begin

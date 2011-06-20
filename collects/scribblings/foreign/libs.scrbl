@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label setup/dirs)
-          (for-syntax setup/dirs))
+@(require "utils.rkt" (for-label setup/dirs) (for-syntax setup/dirs))
 
 @title{Loading Foreign Libraries}
 

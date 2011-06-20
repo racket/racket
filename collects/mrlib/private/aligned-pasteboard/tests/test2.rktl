@@ -1,11 +1,7 @@
-(require
- mzlib/class
- mred
- mzlib/etc
- mzlib/list
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss"
- "snip-dumper.ss")
+(require mzlib/class mred mzlib/etc mzlib/list
+         "../aligned-pasteboard.rkt"
+         "../aligned-editor-container.rkt"
+         "snip-dumper.rkt")
 
 ;                                                          
 ;                                                          
@@ -22,7 +18,7 @@
 ;                              ;;;                         
 ;                                                          
 
-(printf "running test2.ss\n")
+(printf "running test2.rktl\n")
 
 (define frame
   (instantiate frame% ()

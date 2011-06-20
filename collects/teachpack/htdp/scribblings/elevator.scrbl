@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme 
-                     teachpack/htdp/elevator))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/elevator))
 
 @teachpack["elevator"]{Controlling an Elevator}
 
@@ -27,6 +26,6 @@ is a non-sensical definition:
 
 It moves the elevator once, to the 7th floor.
 
-Second, set the teachpack to <code>elevator.ss</code>, click RUN, and
-evaluate 
+Second, set the teachpack to @filepath{elevator.rkt}, click Run, and
+evaluate
 @schemeblock[(run controller)]

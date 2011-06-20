@@ -15,7 +15,7 @@ See more in PR8831.
 
 
 ;;;
-;;; <uri-codec-unit.ss> ---- En/Decode URLs and form-urlencoded data
+;;; <uri-codec-unit.rkt> ---- En/Decode URLs and form-urlencoded data
 ;;; Time-stamp: <03/04/25 10:31:31 noel>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
@@ -86,13 +86,9 @@ See more in PR8831.
 ;; Draws inspiration from encode-decode.scm by Kurt Normark and a code
 ;; sample provided by Eli Barzilay
 
-#lang scheme/unit
+#lang racket/unit
 
-(require mzlib/match
-         mzlib/string
-         mzlib/list
-         mzlib/etc
-         "uri-codec-sig.ss")
+(require racket/match racket/string racket/list "uri-codec-sig.rkt")
 
 (import)
 (export uri-codec^)
@@ -151,7 +147,7 @@ See more in PR8831.
   (let ([encoding-table (build-vector ascii-size number->hex-string)]
         [decoding-table (build-vector ascii-size values)])
     (for-each (match-lambda
-               [(orig . enc)
+               [(cons orig enc)
                 (vector-set! encoding-table
                              (char->integer orig)
                              (string enc))
@@ -188,17 +184,16 @@ See more in PR8831.
 ;; vector string -> string
 (define (decode table str)
   (define internal-decode
-    (match-lambda [() (list)]
-                  [(#\% (? hex-digit? char1) (? hex-digit? char2) . rest)
+    (match-lambda [(list) (list)]
+                  [(list* #\% (? hex-digit? char1) (? hex-digit? char2) rest)
                    ;; This used to consult the table again, but I think that's
                    ;;  wrong. For example %2b should produce +, not a space.
                    (cons (string->number (string char1 char2) 16)
                          (internal-decode rest))]
-                  [((? ascii-char? char) . rest)
-                   (cons
-                    (vector-ref table (char->integer char))
-                    (internal-decode rest))]
-                  [(char . rest)
+                  [(cons (? ascii-char? char) rest)
+                   (cons (vector-ref table (char->integer char))
+                         (internal-decode rest))]
+                  [(cons char rest)
                    (append
                     (bytes->list (string->bytes/utf-8 (string char)))
                     (internal-decode rest))]))
@@ -292,4 +287,4 @@ See more in PR8831.
                           s))
       s)))
 
-;;; uri-codec-unit.ss ends here
+;;; uri-codec-unit.rkt ends here

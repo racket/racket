@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/promise))
+@(require "mz.rkt" (for-label racket/promise))
 
 @title{Delayed Evaluation}
 

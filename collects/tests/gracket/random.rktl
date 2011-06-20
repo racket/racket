@@ -1,5 +1,5 @@
 
-; (require-library "errortrace.ss" "errortrace")
+; (require errortrace)
 (require mzlib/list
 	 mzlib/etc
 	 mzlib/class100
@@ -654,9 +654,9 @@
 
 (define message-label-example-list (choice labelstring-example-list bitmap%-example-list (symbol-in '(app caution stop))))
 
-(load-relative "windowing-classes.ss")
-(load-relative "drawing-classes.ss")
-(load-relative "editor-classes.ss")
+(load-relative "windowing-classes.rkt")
+(load-relative "drawing-classes.rkt")
+(load-relative "editor-classes.rkt")
 
 (define (get-args l)
   (let/ec bad
@@ -976,7 +976,7 @@
 (send image-snip%-example-list add (make-object image-snip%))
 (send editor-snip%-example-list add (make-object editor-snip%))
 
-(require (prefix graph: (lib "graph.ss" "mrdemo")))
+(require (prefix graph: mrdemo/graph))
 (send readable-snip<%>-example-list add (make-object graph:graph-snip% '(lambda (x) x)))
 
 (send snip-class%-example-list add (make-object snip-class%))

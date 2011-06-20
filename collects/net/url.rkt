@@ -1,11 +1,11 @@
 #lang racket/base
 (require racket/unit
          racket/contract
-         "url-structs.ss"
-         "url-sig.ss"
-         "url-unit.ss"
-         "tcp-sig.ss"
-         "tcp-unit.ss")
+         "url-structs.rkt"
+         "url-sig.rkt"
+         "url-unit.rkt"
+         "tcp-sig.rkt"
+         "tcp-unit.rkt")
 
 (define-compound-unit/infer url+tcp@
   (import) (export url^)
@@ -34,16 +34,15 @@
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
  (netscape/string->url (string? . -> . url?))
- (call/input-url  (case->
-                   (-> url?
-                       (-> url? input-port?)
-                       (-> input-port? any)
-                       any)
-                   (-> url?
-                       (-> url? (listof string?) input-port?)
-                       (-> input-port? any)
-                       (listof string?)
-                       any)))
+ (call/input-url (case-> (-> url?
+                             (-> url? input-port?)
+                             (-> input-port? any)
+                             any)
+                         (-> url?
+                             (-> url? (listof string?) input-port?)
+                             (-> input-port? any)
+                             (listof string?)
+                             any)))
  (combine-url/relative (url? string? . -> . url?))
  (url-exception? (any/c . -> . boolean?))
  (current-proxy-servers

@@ -454,23 +454,19 @@
   }
 }
 @definterface[editor:info<%> (editor:basic<%>)]{
-  An
-  @scheme[editor<%>]
+  An @scheme[editor<%>]
   matching this interface provides information about its lock state to its
   @scheme[top-level-window<%>].
 }
 @defmixin[editor:info-mixin (editor:basic<%>) (editor:info<%>)]{
   This editor tells the frame when it is locked and unlocked.
-  See also
-  @scheme[frame:text-info<%>].
+  See also @scheme[frame:text-info<%>].
 
   @defmethod*[#:mode override (((lock (lock? boolean?)) void?))]{
 
-    Uses 
-    @method[editor:basic<%> run-after-edit-sequence]
-    to call
-    @method[frame:info<%> lock-status-changed].
+    Uses @method[editor:basic<%> run-after-edit-sequence]
+    to call @method[frame:info<%> lock-status-changed].
   }
 }
 
-@(include-previously-extracted "main-extracts.ss" #rx"^editor:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^editor:")

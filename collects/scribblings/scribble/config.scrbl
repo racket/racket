@@ -1,10 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/core
-          scribble/decode
-          scribble/html-properties
-          scribble/latex-properties
-          "utils.ss"
+@(require scribble/manual scribble/core scribble/decode
+          scribble/html-properties scribble/latex-properties
+          "utils.rkt"
           (for-label racket/base))
 
 @(define (fake-title . str) (apply bold str))

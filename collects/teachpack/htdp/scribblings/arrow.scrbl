@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme 
-                     teachpack/htdp/arrow))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/arrow))
 
 @teachpack["arrow"]{Managing Control Arrows}
 
@@ -65,7 +64,7 @@ Example:
 (define (draw-it sh)
   (draw-solid-disk sh RAD))
 
-;; RUN: 
+;; Run:
 
 ;; this creates the canvas
 (start 100 50)

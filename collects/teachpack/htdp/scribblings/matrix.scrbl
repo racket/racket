@@ -1,9 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/htdp/matrix
-                     lang/posn))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/matrix lang/posn))
 
 @teachpack["matrix"]{Matrix Operations}
 

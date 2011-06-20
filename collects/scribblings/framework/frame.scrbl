@@ -1049,4 +1049,4 @@
 @defclass[frame:delegate% (frame:delegate-mixin frame:searchable%) ()]{}
 @defclass[frame:pasteboard% (frame:pasteboard-mixin frame:open-here%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^frame:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^frame:")

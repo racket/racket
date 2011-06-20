@@ -1,15 +1,11 @@
-;;; mystests.ss -- test suite for MysterX
+;;; mystests.rkt -- test suite for MysterX
 
-(require mzlib/class)
-(require mysterx)
+(require mzlib/class mysterx)
 
 (define errors? #f)
 
-(define wb 
-  (instantiate mx-browser% ()
-	       (label "MysTest")
-	       (width 230)
-	       (height 250)))
+(define wb
+  (instantiate mx-browser% () (label "MysTest") (width 230) (height 250)))
 
 (define doc (send wb current-document))
 

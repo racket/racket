@@ -7,4 +7,4 @@
 @defmodule*/no-declare[(framework/preferences)]
 @declare-exporting[framework/preferences framework]
 
-@(include-extracted (lib "preferences.ss" "framework"))
+@(include-extracted (lib "preferences.rkt" "framework"))

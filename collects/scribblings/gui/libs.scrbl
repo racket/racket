@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @(define draw-doc '(lib "scribblings/draw/draw.scrbl"))
 

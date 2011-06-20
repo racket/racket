@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Preferences}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^preferences:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^preferences:")

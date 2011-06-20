@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
+@(require "common.rkt" scribble/eval
           (for-label slideshow/pict))
 
 @(define class-eval (make-base-eval))

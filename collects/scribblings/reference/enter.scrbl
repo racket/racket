@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/enter))
+@(require "mz.rkt" (for-label racket/enter))
 
 @title[#:tag "enter"]{Interactive Module Loading}
 

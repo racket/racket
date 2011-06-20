@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/path-spec))
+@(require "common.rkt" (for-label syntax/path-spec))
 
 @title[#:tag "path-spec"]{Resolving @scheme[include]-like Paths}
 

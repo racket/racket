@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Handler}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^handler:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^handler:")

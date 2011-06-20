@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/async-channel))
+@(require "mz.rkt" (for-label racket/async-channel))
 
 @(define async-eval
    (lambda ()

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/strip-context))
+@(require "common.rkt" (for-label syntax/strip-context))
 
 @title[#:tag "strip-context"]{Replacing Lexical Context}
 

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/ftp
-                     net/ftp-unit
-                     net/ftp-sig))
+@(require "common.rkt" (for-label net/ftp net/ftp-unit net/ftp-sig))
 
 @title[#:tag "ftp"]{FTP: Client Downloading}
 

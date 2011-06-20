@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label file/resource))
+@(require "common.rkt" (for-label file/resource))
 
 @(define-syntax-rule (compat file section indexed-racket what)
    @elem{For backward compatibilty, the

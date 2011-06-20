@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/tcp "base64.ss" "smtp-sig.ss")
+(require racket/tcp "base64.rkt" "smtp-sig.rkt")
 
 (import)
 (export smtp^)
@@ -9,9 +9,8 @@
 
 (define debug-via-stdio? #f)
 
-(define (log . args)
-  ;; (apply printf args)
-  (void))
+;; (define log printf)
+(define log void)
 
 (define (starts-with? l n)
   (and (>= (string-length l) (string-length n))

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @(define qq (racket quasiquote))
 @(define uq (racket unquote))

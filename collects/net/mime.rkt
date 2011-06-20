@@ -1,5 +1,5 @@
 ;;;
-;;; <mime.ss> ---- MIME support
+;;; <mime.rkt> ---- MIME support
 ;;;
 ;;; Copyright (C) 2002 by PLT.
 ;;; Copyright (C) 2001 by Wish Computing.
@@ -26,13 +26,9 @@
 ;;
 ;; Commentary:
 
-#lang scheme/base
-(require scheme/unit
-         "mime-sig.ss"
-         "mime-unit.ss"
-         "qp.ss"
-         "base64.ss"
-         "head.ss")
+#lang racket/base
+(require racket/unit
+         "mime-sig.rkt" "mime-unit.rkt" "qp.rkt" "base64.rkt" "head.rkt")
 
 ;(define-unit-from-context base64@ base64^)
 ;(define-unit-from-context qp@ qp^)
@@ -44,4 +40,4 @@
 
 (provide-signature-elements mime^)
 
-;;; mime.ss ends here
+;;; mime.rkt ends here

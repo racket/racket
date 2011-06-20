@@ -1,5 +1,5 @@
 ;; --------------------------------------------------------------------------
-;; tic-func.ss 
+;; tic-func.rkt
 ;; This program plays through all possibilities of a tic-tac-toe
 ;; game, given the first move of a player. It only prints how many
 ;; states are being processed and how many states are terminal at

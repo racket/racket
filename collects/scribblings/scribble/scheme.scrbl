@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
-          (for-label scribble/racket))
+@(require scribble/manual "utils.rkt" (for-label scribble/racket))
 
 @title[#:tag "scheme"]{Racket}
 

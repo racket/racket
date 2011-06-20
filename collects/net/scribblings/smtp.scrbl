@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/smtp
-                     net/smtp-unit
-                     net/smtp-sig
-                     scheme/tcp
-                     openssl))
+@(require "common.rkt"
+          (for-label net/smtp net/smtp-unit net/smtp-sig racket/tcp openssl))
 
 @title[#:tag "smtp"]{SMTP: Sending E-Mail}
 

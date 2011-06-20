@@ -1,4 +1,4 @@
-;;; dhtmltests.ss -- DHTML tests for MysterX
+;;; dhtmltests.rkt -- DHTML tests for MysterX
 
 (require mzlib/class)
 

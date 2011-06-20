@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "std-grammar.ss"
-          "prim-ops.ss"
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-advanced))
 
 @(define-syntax-rule (bdl intm-define intm-lambda)
@@ -126,7 +124,7 @@
 
 @|prim-nonterms|
 
-@prim-ops['(lib "htdp-advanced.ss" "lang") #'here]
+@prim-ops['(lib "htdp-advanced.rkt" "lang") #'here]
 
 @; ----------------------------------------------------------------------
 
@@ -362,7 +360,7 @@ first @scheme[expr] produces @scheme[false] instead of @scheme[true].}
 
 @section[#:tag "advanced-prim-ops"]{Primitive Operations}
 
-@prim-op-defns['(lib "htdp-advanced.ss" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-advanced.rkt" "lang") #'here '()]
 
 @; ----------------------------------------------------------------------
 

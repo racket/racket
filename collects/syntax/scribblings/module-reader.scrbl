@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @(require (for-label syntax/module-reader
                      (only-in scribble/reader

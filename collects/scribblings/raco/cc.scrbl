@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          (for-label scheme/base
-                     compiler/xform
-                     dynext/compile)
-          "common.ss")
+@(require scribble/manual "common.rkt"
+          (for-label scheme/base compiler/xform dynext/compile))
 
 @(define (xflag str) (as-index (DFlag str)))
 @(define (pxflag str) (as-index (DPFlag str)))

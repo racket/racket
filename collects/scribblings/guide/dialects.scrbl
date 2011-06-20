@@ -1,6 +1,5 @@
 #lang scribble/base
-@(require scribble/manual
-          "guide-utils.ss")
+@(require scribble/manual "guide-utils.rkt")
 
 @(define r6rs @elem{R@superscript{6}RS})
 @(define r5rs @elem{R@superscript{5}RS})

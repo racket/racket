@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          (for-label file/sha1))
+@(require "common.rkt" scribble/eval (for-label file/sha1))
 
 @(define sha1-eval (make-base-eval))
 @interaction-eval[#:eval sha1-eval (require file/sha1)]

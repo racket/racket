@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.rkt")
 
 @title[#:tag "for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
 

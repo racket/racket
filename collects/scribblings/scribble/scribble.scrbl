@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require scribble/bnf
-          "utils.ss")
+@(require scribble/bnf "utils.rkt")
 
 @title{@bold{Scribble}: Racket Documentation Tool}
 

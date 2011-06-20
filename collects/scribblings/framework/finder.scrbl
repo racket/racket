@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Finder}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^finder:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^finder:")

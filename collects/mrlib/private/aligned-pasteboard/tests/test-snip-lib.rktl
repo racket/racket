@@ -1,14 +1,9 @@
+(require mzlib/etc mzlib/class mred "test-macro.rkt"
+         "../snip-lib.rkt"
+         "../aligned-pasteboard.rkt"
+         "../aligned-editor-container.rkt")
 
-(require
- mzlib/etc
- mzlib/class
- mred
- "../snip-lib.ss"
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss"
- "test-macro.ss")
-
-;;(printf "running tests for snip-lib.ss\n")
+;;(printf "running tests for snip-lib.rkt\n")
 
 ;;snip-width: ((is-a?/c aligned-pasteboard<%>) (is-a?/c snip%) . -> . number?)
 ;;the width of a snip in the given pasteboard

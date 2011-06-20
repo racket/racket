@@ -207,7 +207,7 @@ strings and numbers, respectively.
 (define (greetings name)
   (inform "Welcome" "Welcome " name " and good bye."))
 
-;; RUN ------------------------------------------------------------------------
+;; Run ------------------------------------------------------------------------
 (login (form-query login-page))
 </pre>
 

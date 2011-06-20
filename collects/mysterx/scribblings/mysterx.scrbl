@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title{@bold{MysterX}: Using Windows COM Objects in Racket}
 

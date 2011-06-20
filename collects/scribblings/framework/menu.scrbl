@@ -45,4 +45,4 @@
 @defclass[menu:can-restore-checkable-menu-item% (menu:can-restore-mixin checkable-menu-item%) ()]{}
 @defclass[menu:can-restore-underscore-menu% (menu:can-restore-underscore-mixin menu%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^menu:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^menu:")

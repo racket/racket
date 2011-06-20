@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/eval)
+@(require "mz.rkt" scribble/eval)
 
 @(define dict-eval (make-base-eval))
 @(interaction-eval #:eval dict-eval (require racket/dict))

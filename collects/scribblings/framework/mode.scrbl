@@ -1,8 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual scribble/extract)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
-@(require (for-syntax "mode-helpers.ss"))
+@(require scribble/manual scribble/extract
+          (for-label framework scheme/gui)
+          (for-syntax "mode-helpers.rkt"))
 @title{Mode}
 
 @(begin
@@ -43,4 +42,4 @@
 (surrogate-methods docs)
 )
 
-@(include-previously-extracted "main-extracts.ss" #rx"^mode:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^mode:")

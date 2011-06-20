@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf
-          scribble/struct)
+@(require "common.rkt" scribble/bnf scribble/struct)
 
 @(define (PrefItem . s) (apply onscreen s))
 

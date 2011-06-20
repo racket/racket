@@ -1,15 +1,9 @@
 ;;note: turns out these tests are window manager specific
 
-(require
- mzlib/class
- mred
- mzlib/etc
- mzlib/list
- mrlib/aligned-pasteboard
- "snip-dumper.ss")
+(require mzlib/class mred mzlib/etc mzlib/list mrlib/aligned-pasteboard
+         "snip-dumper.rkt")
 
-                                                        
-                                                        
+
 ;                                     ;;                 
 ;                                      ;                 
 ;                                      ;                 
@@ -21,8 +15,8 @@
 ;  ;;;;  ;;  ;;  ;;;;;;; ;; ;;; ;;;  ;;;;;   ;;;;  ;;;;  
 ;                             ;                          
 ;                            ;;;                         
-                                                        
-(printf "running test1.ss\n")
+
+(printf "running test1.rkt\n")
 
 (define frame
   (instantiate frame% ()

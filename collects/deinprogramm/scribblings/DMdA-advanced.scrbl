@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribblings/htdp-langs/common
-	  "std-grammar.ss"
-	  "prim-ops.ss"
+@(require scribblings/htdp-langs/common "std-grammar.rkt" "prim-ops.rkt"
           (for-label deinprogramm/DMdA-assignments))
 
 @title[#:style 'toc #:tag "DMdA-advanced"]{Die Macht der Abstraktion fortgeschritten}
@@ -35,7 +33,7 @@ Abstraktion - fortgeschritten} that goes with the German textbook
 
 @|prim-nonterms|
 
-@prim-ops['(lib "DMdA-advanced.ss" "deinprogramm") #'here]
+@prim-ops['(lib "DMdA-advanced.rkt" "deinprogramm") #'here]
 
 @section[#:tag "advanced-quote"]{Quote-Literal}
 
@@ -54,4 +52,4 @@ Signatur für Symbole.
 
 @section[#:tag "advanced-prim-op"]{Primitive Operationen}
 
-@prim-op-defns['(lib "DMdA-advanced.ss" "deinprogramm") #'here '()]
+@prim-op-defns['(lib "DMdA-advanced.rkt" "deinprogramm") #'here '()]

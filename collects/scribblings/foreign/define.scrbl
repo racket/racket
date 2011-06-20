@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label ffi/unsafe/define
-                     ffi/unsafe/alloc))
+@(require "utils.rkt" (for-label ffi/unsafe/define ffi/unsafe/alloc))
 
 @title{Defining Bindings}
 

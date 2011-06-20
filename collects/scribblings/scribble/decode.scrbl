@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss")
+@(require scribble/manual "utils.rkt")
 
 @title[#:tag "decode"]{Decoding Text}
 

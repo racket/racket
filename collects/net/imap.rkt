@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit scheme/contract "imap-sig.ss" "imap-unit.ss")
+#lang racket/base
+(require racket/unit racket/contract "imap-sig.rkt" "imap-unit.rkt")
 
 (define-values/invoke-unit/infer imap@)
 

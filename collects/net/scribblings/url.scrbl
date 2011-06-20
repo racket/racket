@@ -1,11 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf
-          (for-label net/url
-                     net/url-unit
-                     net/url-sig
-                     net/head
-                     net/uri-codec))
+@(require "common.rkt" scribble/bnf
+          (for-label net/url net/url-unit net/url-sig net/head net/uri-codec))
 
 @title[#:tag "url"]{URLs and HTTP}
 

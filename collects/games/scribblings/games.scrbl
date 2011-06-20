@@ -1,9 +1,7 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label scheme/base
-                     scheme/contract
-                     games/show-help
-                     games/show-scribbling))
+@(require "common.rkt"
+          (for-label scheme/base scheme/contract
+                     games/show-help games/show-scribbling))
 
 @title{@bold{Games}: Fun Examples}
 
@@ -24,8 +22,8 @@ installed as sub-collections of the @filepath{games} collection (see
 
 The game-starting console inspects the sub-collections of the
 @filepath{games} collection. If a sub-collection has an
-@filepath{info.ss} module (see @schememodname[setup/infotab]), the
-following fields of the collection's "info.ss" file are used:
+@filepath{info.rkt} module (see @schememodname[setup/infotab]), the
+following fields of the collection's @filepath{info.rkt} file are used:
 
 @itemize[
 

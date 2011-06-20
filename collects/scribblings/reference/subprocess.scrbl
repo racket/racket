@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/system))
+@(require "mz.rkt" (for-label racket/system))
 
 @title[#:tag "subprocess"]{Processes}
 

@@ -1,12 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/struct
-          scribble/eval
-          mzlib/process
-          "guide-utils.ss"
-          (for-label racket/tcp
-                     racket/serialize
-                     racket/port))
+@(require scribble/manual scribble/struct scribble/eval racket/system
+          "guide-utils.rkt"
+          (for-label racket/tcp racket/serialize racket/port))
 
 @(define io-eval (make-base-eval))
 

@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          scribble/struct
-          (for-label net/head
-                     net/head-unit
-                     net/head-sig))
+@(require "common.rkt" scribble/eval scribble/struct
+          (for-label net/head net/head-unit net/head-sig))
 
 @(define head-eval (make-base-eval))
 @interaction-eval[#:eval head-eval (require net/head)]

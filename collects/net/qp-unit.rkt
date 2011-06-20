@@ -1,5 +1,5 @@
 ;;;
-;;; <qp-unit.ss> ---- Quoted Printable Implementation
+;;; <qp-unit.rkt> ---- Quoted Printable Implementation
 ;;;
 ;;; Copyright (C) 2002 by PLT.
 ;;; Copyright (C) 2001 by Francisco Solsona.
@@ -26,9 +26,9 @@
 ;;
 ;; Commentary:
 
-#lang scheme/unit
+#lang racket/unit
 
-(require "qp-sig.ss")
+(require "qp-sig.rkt")
 
 (import)
 (export qp^)
@@ -162,4 +162,4 @@
     (vector-set! hex-bytes (+ 10 i) (+ i 65))
     (loop (add1 i))))
 
-;;; qp-unit.ss ends here
+;;; qp-unit.rkt ends here

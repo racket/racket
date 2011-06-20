@@ -1,11 +1,7 @@
-#lang mzscheme
-(require net/base64
-         net/qp
-         mzlib/string)
+#lang racket/base
+(require net/base64 net/qp racket/string)
 
-(provide encode-for-header
-         decode-for-header
-         generalize-encoding)
+(provide encode-for-header decode-for-header generalize-encoding)
 
 (define re:ascii #rx"^[\u0-\u7F]*$")
 
@@ -51,23 +47,17 @@
 
 ;; ----------------------------------------
 
-(define re:us-ascii #rx#"^(?i:us-ascii)$")
-(define re:iso      #rx#"^(?i:iso-8859-1)$")
-(define re:gb       #rx#"^(?i:gb(?:2312)?)$")
-(define re:ks_c     #rx#"^(?i:ks_c_5601-1987)$")
-(define re:utf-8    #rx#"^(?i:utf-8)$")
-
 (define re:encoded #rx#"^(.*?)=[?]([^?]+)[?]([qQbB])[?](.*?)[?]=(.*)$")
 
 (define (generalize-encoding encoding)
   ;; Treat Latin-1 as Windows-1252 and also threat GB and GB2312
   ;; as GBK, because some mailers are broken.
-  (cond [(or (regexp-match? re:iso encoding)
-             (regexp-match? re:us-ascii encoding))
+  (cond [(or (regexp-match? #rx#"^(?i:iso-8859-1)$" encoding)
+             (regexp-match? #rx#"^(?i:us-ascii)$" encoding))
          (if (bytes? encoding) #"WINDOWS-1252" "WINDOWS-1252")]
-        [(regexp-match? re:gb encoding)
+        [(regexp-match? #rx#"^(?i:gb(?:2312)?)$" encoding)
          (if (bytes? encoding) #"GBK" "GBK")]
-        [(regexp-match? re:ks_c encoding)
+        [(regexp-match? #rx#"^(?i:ks_c_5601-1987)$" encoding)
          (if (bytes? encoding) #"CP949" "CP949")]
         [else encoding]))
 
@@ -88,7 +78,7 @@
               (decode-for-header (bytes->string/latin-1 (cadr m)))
               (let ([encoding (generalize-encoding encoding)])
                 (cond
-                  [(regexp-match? re:utf-8 encoding)
+                  [(regexp-match? #rx#"^(?i:utf-8)$" encoding)
                    (bytes->string/utf-8 s #\?)]
                   [else (let ([c (bytes-open-converter
                                   (bytes->string/latin-1 encoding)

@@ -45,7 +45,7 @@ only a subset of the system is needed.
 @item{An @scheme[echo] mechanism which is an alternative to using
   format strings, and contains many useful features including a list
   iteration construct, and is easy to extend.
-  (@scheme[swindle/misc.ss])}
+  (@scheme[swindle/misc])}
 
 @item{A @scheme[regexp-case] syntax which is similar to a
   @scheme[case] on strings with easy access to submatches.

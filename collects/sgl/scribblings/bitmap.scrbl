@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label racket/class))
+@(require "common.rkt" (for-label racket/class))
 
 @title[#:tag "bitmaps"]{Bitmaps}
 

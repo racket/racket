@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          scribble/core
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval scribble/core "guide-utils.rkt")
 
 @title[#:tag "regexp" #:style 'toc]{Regular Expressions}
 

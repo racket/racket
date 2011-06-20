@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf
-          scribble/decode
-          scribble/struct
+@(require "common.rkt" scribble/bnf scribble/decode scribble/struct
           (for-syntax scheme/base))
 
 @(define-syntax-rule (filter-table (name (option0 contract0) 

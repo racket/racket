@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-          "contracts-utils.ss"
-          (for-label racket/contract)
-          (for-label racket/gui))
+@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
+          (for-label racket/contract racket/gui))
 
 @title[#:tag "contracts-examples"]{Additional Examples}
 

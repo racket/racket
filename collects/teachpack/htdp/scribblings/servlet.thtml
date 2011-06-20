@@ -127,7 +127,7 @@ constrained as follows:
        " We're glad you recalled that your password is "
        ,(extract-binding/single 'Passwd bindings)))))
 
-; RUN:
+; Run:
 (welcome
  (check-login-information
   (get-login-information initial-request)))

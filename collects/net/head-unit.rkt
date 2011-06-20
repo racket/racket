@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require mzlib/date mzlib/string "head-sig.ss")
+(require racket/date racket/string "head-sig.rkt")
 
 (import)
 (export head^)

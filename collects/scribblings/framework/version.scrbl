@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Version}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^version:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^version:")

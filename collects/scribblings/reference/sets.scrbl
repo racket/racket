@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/set))
+@(require "mz.rkt" (for-label racket/set))
 
 @title[#:tag "sets"]{Sets}
 @(define set-eval (make-base-eval))

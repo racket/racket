@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/bnf
-          "common.ss")
+@(require scribble/bnf "common.rkt")
 
 @title[#:tag "editor-overview"]{Editors}
 

@@ -1,5 +1,5 @@
 ;;;
-;;; <mime-util.ss> ---- Extra utilities
+;;; <mime-util.rkt> ---- Extra utilities
 ;;; Time-stamp: <01/05/07 17:41:12 solsona>
 ;;;
 ;;; Copyright (C) 2001 by Francisco Solsona.
@@ -26,7 +26,7 @@
 ;;
 ;; Commentary:
 
-#lang scheme/base
+#lang racket/base
 
 (provide string-tokenizer
          trim-all-spaces
@@ -55,19 +55,17 @@
               (list s))))))
 
 ;; Trim all spaces, except those in quoted strings.
-(define re:quote-start (regexp "\""))
-(define re:space (regexp "[ \t\n\r\v]"))
 (define (trim-all-spaces str)
   ;; Break out alternate quoted and unquoted parts.
   ;; Initial and final string are unquoted.
   (let-values ([(unquoted quoted)
                 (let loop ([str str] [unquoted null] [quoted null])
-                  (let ([m (regexp-match-positions re:quote-start str)])
+                  (let ([m (regexp-match-positions #rx"\"" str)])
                     (if m
                       (let ([prefix (substring str 0 (caar m))]
                             [rest (substring str (add1 (caar m)) (string-length str))])
                         ;; Find closing quote
-                        (let ([m (regexp-match-positions re:quote-start rest)])
+                        (let ([m (regexp-match-positions #rx"\"" rest)])
                           (if m
                             (let ([inside (substring rest 0 (caar m))]
                                   [rest (substring rest (add1 (caar m)) (string-length rest))])
@@ -78,8 +76,8 @@
     ;; Put the pieces back together, stripping spaces for unquoted parts:
     (apply
      string-append
-     (let loop ([unquoted unquoted][quoted quoted])
-       (let ([clean (regexp-replace* re:space (car unquoted) "")])
+     (let loop ([unquoted unquoted] [quoted quoted])
+       (let ([clean (regexp-replace* #rx"[ \t\n\r\v]" (car unquoted) "")])
          (if (null? quoted)
            (list clean)
            (list* clean
@@ -92,15 +90,15 @@
                   (regexp-replace #rx"^[ \t\r\n\v]+" str "")
                   ""))
 
-(define re:comments #rx"^[^\"]*(\"[^\"]*\")*[^\"]*(\\(.*\\))")
 (define (trim-comments str)
-  (let ([positions (regexp-match-positions re:comments str)])
-    (if positions
-      (string-append (substring str 0 (caaddr positions))
-                     (substring str (cdaddr positions) (string-length str)))
-      str)))
+  (define positions
+    (regexp-match-positions #rx"^[^\"]*(\"[^\"]*\")*[^\"]*(\\(.*\\))" str))
+  (if positions
+    (string-append (substring str 0 (caaddr positions))
+                   (substring str (cdaddr positions) (string-length str)))
+    str))
 
-(define (lowercase str) (string-downcase str))
+(define lowercase string-downcase)
 
 (define warning
   void
@@ -119,4 +117,4 @@
       (fprintf out "~a\n" ln)
       (loop (read-line in)))))
 
-;;; mime-util.ss ends here
+;;; mime-util.rkt ends here

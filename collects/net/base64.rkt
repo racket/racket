@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "base64-sig.ss" "base64-unit.ss")
+#lang racket/base
+(require racket/unit "base64-sig.rkt" "base64-unit.rkt")
 
 (define-values/invoke-unit/infer base64@)
 

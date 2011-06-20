@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require "utils.ss" 
-          (for-label (only-in scribble/basic span-class)))
+@(require "utils.rkt" (for-label (only-in scribble/basic span-class)))
 
 @(define (compat)
    @italic{For backward compatibility.})

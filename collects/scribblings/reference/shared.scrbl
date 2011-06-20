@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/struct
-          racket/shared
-          (for-label racket/shared))
+@(require "mz.rkt" scribble/struct racket/shared (for-label racket/shared))
 
 
 @(define shared-eval (make-base-eval))

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/cmdline))
+@(require "mz.rkt" (for-label racket/cmdline))
 
 @title[#:tag "logging"]{Logging}
 

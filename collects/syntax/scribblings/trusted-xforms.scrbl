@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/trusted-xforms))
+@(require "common.rkt" (for-label syntax/trusted-xforms))
 
 @title[#:tag "trusted-xforms"]{Trusting Standard Recertifying Transformers}
 

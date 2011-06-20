@@ -5,7 +5,7 @@
 
 (namespace-variable-value 'parallel-load #f
                           (lambda ()
-                            (namespace-set-variable-value! 'parallel-load "quiet.ss")))
+                            (namespace-set-variable-value! 'parallel-load "quiet.rktl")))
 
 (define in-shared-k #f)
 ;; Some threads start with the

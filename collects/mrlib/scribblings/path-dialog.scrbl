@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           (for-label mrlib/path-dialog))
 
 @title{Path Dialog}
@@ -76,7 +76,7 @@ The @scheme[filters] argument is one of:
 
    @item{@scheme[(list (list _filter-name _filter-glob) ...)] --- a
      list of pattern names (e.g., @scheme["Scheme Files"]) and glob
-     patterns (e.g., @scheme["*.scm;*.ss"]).  Any list, including an
+     patterns (e.g., @scheme["*.rkt;*.scrbl"]).  Any list, including an
      empty list, enables a filter box for the user to enter glob
      patterns, and the given list of choices is available in a
      combo-box drop-down menu.  Glob patterns are the usual Unix ones

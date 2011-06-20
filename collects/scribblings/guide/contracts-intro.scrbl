@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-          "contracts-utils.ss"
+@(require scribble/manual scribble/eval "guide-utils.rkt" "contracts-utils.rkt"
           (for-label racket/contract))
 
 @title[#:tag "contract-boundaries"]{Contracts and Boundaries}
@@ -121,17 +118,17 @@ Of course, this breaks assignment to the provided variable.
 
 <question title="Example" tag="example">
 
-<table src="simple.ss">
+<table src="simple.rkt">
 <tr><td bgcolor="e0e0fa">
 <racket>
 ;; Language: Pretty Big
-(module a racket 
+(module a racket
   (require mzlib/contract)
 
-  (provide/contract 
+  (provide/contract
    [amount positive?])
 
-  (provide 
+  (provide
    ;; -> Void
    ;; effect: sets variable a
    do-it)

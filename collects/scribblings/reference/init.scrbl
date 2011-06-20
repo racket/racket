@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/pretty
-                     racket/gui/base))
+@(require "mz.rkt" (for-label racket/pretty racket/gui/base))
 
 @title{Init Libraries}
 

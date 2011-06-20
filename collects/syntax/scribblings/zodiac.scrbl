@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/zodiac))
+@(require "common.rkt" (for-label syntax/zodiac))
 
 @title[#:tag "zodiac"]{Legacy Zodiac Interface}
 
@@ -8,6 +7,5 @@
 
 The interface is similar to Zodiac---enough to be useful for
 porting---but different in many ways. See the source
-@filepath{zodiac-sig.ss} for details. New software should not use this
+@filepath{zodiac-sig.rkt} for details. New software should not use this
 compatibility layer.
-

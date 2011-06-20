@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "../common.ss"
-          (for-label mrlib/hierlist))
+@(require "../common.rkt" (for-label mrlib/hierlist))
 
 @defclass/title[hierarchical-list% editor-canvas% ()]{
 

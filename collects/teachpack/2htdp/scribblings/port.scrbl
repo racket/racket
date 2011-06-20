@@ -1,13 +1,11 @@
 #lang scribble/doc
 
-@(require "shared.ss" 
-	  "port.ss"
-	  scribble/manual 
+@(require "shared.rkt" "port.rkt" scribble/manual
           (for-label scheme
                      (only-in 2htdp/universe on-tick on-draw)
                      (prefix-in htdp: teachpack/htdp/world)
                      (prefix-in htdp: htdp/image)
-		     (prefix-in 2htdp: teachpack/2htdp/universe)
+                     (prefix-in 2htdp: teachpack/2htdp/universe)
                      (prefix-in 2htdp: 2htdp/image)
                      (only-in lang/htdp-beginner check-expect)))
 

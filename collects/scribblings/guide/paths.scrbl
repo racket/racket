@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @title[#:tag "paths"]{Paths}
 
@@ -28,11 +26,11 @@ form of its string encodings.
 (display (string->path "my-data.txt"))
 ]
 
-Produces that produce references to the filesystem always produce path
+Procedures that produce references to the filesystem always produce path
 values, instead of strings.
 
 @examples[
-(path-replace-suffix "foo.scm" #".ss")
+(path-replace-suffix "foo.scm" #".rkt")
 ]
 
 Although it's sometimes tempting to directly manipulate strings that
@@ -50,6 +48,6 @@ path), use procedures like @scheme[path-element->bytes] and
 @scheme[bytes->path-element].
 
 @examples[
-(build-path "easy" "file.ss")
-(split-path (build-path "easy" "file.ss"))
+(build-path "easy" "file.rkt")
+(split-path (build-path "easy" "file.rkt"))
 ]

@@ -1,6 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss" (for-label scheme teachpack/htdp/guess-gui))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/guess-gui))
 
 @teachpack["guess-gui"]{Guess GUI}
 

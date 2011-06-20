@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/include-bitmap
-                     scheme/runtime-path
-                     scheme/include))
+@(require "common.rkt"
+          (for-label mrlib/include-bitmap scheme/runtime-path scheme/include))
 
 @title{Include Bitmap}
 

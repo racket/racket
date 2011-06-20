@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          "common.ss"
-          (for-label racket/base))
+@(require scribble/manual scribble/bnf "common.rkt" (for-label racket/base))
 
 @title[#:tag "demod"]{@exec{raco demod}: Demodularizing Programs}
 

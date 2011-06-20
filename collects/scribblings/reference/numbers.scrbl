@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          racket/math
-          scribble/extract
+@(require "mz.rkt" racket/math scribble/extract
           (for-label racket/math
                      racket/flonum
                      racket/fixnum

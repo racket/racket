@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          "match-grammar.ss"
-          racket/match)
+@(require "mz.rkt" "match-grammar.rkt" racket/match)
 
 @(define match-eval (make-base-eval))
 @(interaction-eval #:eval match-eval (require racket/match))

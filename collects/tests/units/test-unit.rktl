@@ -1,6 +1,6 @@
 (require (for-syntax mzlib/private/unit-compiletime
                      mzlib/private/unit-syntax))
-(require "test-harness.ss"
+(require "test-harness.rkt"
          ;unit
          scheme/unit)
 

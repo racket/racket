@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme 
-                     teachpack/htdp/arrow-gui))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/arrow-gui))
 
 @teachpack["arrow-gui"]{An Arrow GUI}
 

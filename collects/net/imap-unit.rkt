@@ -1,8 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require scheme/tcp
-         "imap-sig.ss"
-         "private/rbtree.ss")
+(require racket/tcp "imap-sig.rkt" "private/rbtree.rkt")
 
 (import)
 (export imap^)

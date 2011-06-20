@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require scribble/eval
-          "guide-utils.ss")
+@(require scribble/eval "guide-utils.rkt")
 
 @title{@bold{Guide}: Racket}
 

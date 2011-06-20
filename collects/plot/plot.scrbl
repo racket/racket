@@ -199,7 +199,7 @@ To fit a particular function to a curve:
   ]
 
 A more realistic example can be found in
-@filepath{demos/fit-demo-2.ss} in the @filepath{plot} collection.
+@filepath{demos/fit-demo-2.rkt} in the @filepath{plot} collection.
 
 @subsection{Creating Custom Plots}
 

@@ -1,5 +1,4 @@
-
-;; This file has to work for both "shared.ss" and "advanced.ss"
+;; This file has to work for both "shared.rkt" and "advanced.rkt"
 
 ;; this writes values to strings and compares the strings
 ;; to implements an equal? predicate that works for cyclic

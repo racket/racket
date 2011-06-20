@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "ss.ss"
+@(require "ss.rkt"
           (for-label (except-in racket/gui drop)
                      slideshow/step
                      slideshow/slides-to-picts))

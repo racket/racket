@@ -59,8 +59,8 @@ expanded version of @racket[(define (f x) (+ 3 x))] in the beginner
 language [*]:
 
 @racketblock[
-(module #%htdp (lib "lang/htdp-beginner.ss")
-  (#%plain-module-begin 
+(module #%htdp (lib "lang/htdp-beginner.rkt")
+  (#%plain-module-begin
    (define-syntaxes (f)
      (#%app make-first-order-function
             (quote procedure)

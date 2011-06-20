@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
+@(require "utils.rkt"
           (for-label (only-in '#%foreign
                               ffi-obj ffi-obj? ffi-obj-lib ffi-obj-name
                               ctype-basetype ctype-scheme->c ctype-c->scheme

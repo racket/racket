@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "std-grammar.ss"
-          "prim-ops.ss"
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-beginner-abbr))
 
 @(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
@@ -55,7 +53,7 @@
 
 @|prim-nonterms|
 
-@prim-ops['(lib "htdp-beginner-abbr.ss" "lang") #'here]
+@prim-ops['(lib "htdp-beginner-abbr.rkt" "lang") #'here]
 
 @; ----------------------------------------
 
@@ -127,7 +125,7 @@ also be written with @scheme[unquote-splicing].}
 
 @section[#:tag "beginner-abbr-prim-ops"]{Primitive Operations}
 
-@prim-op-defns['(lib "htdp-beginner-abbr.ss" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-beginner-abbr.rkt" "lang") #'here '()]
 
 @; ----------------------------------------------------------------------
 

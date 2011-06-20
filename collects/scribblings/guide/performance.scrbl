@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "guide-utils.ss"
+@(require scribble/manual "guide-utils.rkt"
           (for-label racket/flonum racket/unsafe/ops))
 
 @title[#:tag "performance"]{Performance}

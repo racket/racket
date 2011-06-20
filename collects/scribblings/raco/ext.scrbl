@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss")
+@(require scribble/manual "common.rkt")
 
 @title[#:tag "ext"]{Compiling to Native Code via C}
 

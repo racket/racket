@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss"
-          (for-label racket/base))
+@(require scribble/manual "common.rkt" (for-label racket/base))
 
 @title[#:tag "plt"]{@exec{raco pack}: Packaging Library Collections}
 
@@ -83,7 +81,7 @@ add-ons directory for the archived files, and the collections will be
 set-up after unpacking. In addition, @exec{raco pack} consults each
 collection's @filepath{info.rkt} file, as described below, to
 determine the set of required and conflicting collections. Finally,
-@exec{raco pack} consults the first collection's @filepath{info.ss}
+@exec{raco pack} consults the first collection's @filepath{info.rkt}
 file to obtain a default name for the archive.  For example, the
 following command creates a @filepath{sirmail.plt} archive for
 distributing a @filepath{sirmail} collection:
@@ -103,7 +101,7 @@ of each collection's @filepath{info.rkt} file (see @secref["info.rkt"]):
  version sequence specified in the corresponding @racket[vers].
 
  A collection's version is indicated by a @racket[version] field in
- its @filepath{info.ss} file, and the default version is the empty list.
+ its @filepath{info.rkt} file, and the default version is the empty list.
  The version sequence generalized major and minor version numbers. For
  example, version @racket['(2 5 4 7)] of a collection can be used when
  any of @racket['()], @racket['(2)], @racket['(2 5)], @racket['(2 5
@@ -276,7 +274,7 @@ making @filepath{.plt} archives.}
       at unpacking time, with version sequences that match as much of
       the version sequence specified in the corresponding
       @@racket[_version]. A collection's version is indicated by the
-      @racketidfont{version} field of its @filepath{info.ss} file.
+      @racketidfont{version} field of its @filepath{info.rkt} file.
 
   The @racket[#:conflicts] argument should have the shape
        @racket[(list _coll-path _...)]  where each @racket[_coll-path]

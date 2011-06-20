@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require scribblings/htdp-langs/common
-	  scribble/struct
-	  "std-grammar.ss"
-	  "prim-ops.ss"
+@(require scribblings/htdp-langs/common scribble/struct
+          "std-grammar.rkt" "prim-ops.rkt"
           (for-label deinprogramm/DMdA-beginner))
 
 @title[#:style 'toc #:tag "DMdA-beginner"]{Die Macht der Abstraktion - Anfänger}
@@ -20,7 +18,7 @@ Macht der Abstraktion}.
 
 @|prim-nonterms|
 
-@prim-ops['(lib "DMdA-beginner.ss" "deinprogramm") #'here]
+@prim-ops['(lib "DMdA-beginner.rkt" "deinprogramm") #'here]
 
 @; ----------------------------------------------------------------------
 
@@ -441,4 +439,4 @@ Eigenschaft: @scheme[(==> c p)] legt fest, daß die Eigenschaft
 @section[#:tag "beginner-prim-ops"]{Primitive Operationen}
 
 @declare-exporting[deinprogramm/DMdA-beginner]
-@prim-op-defns['(lib "DMdA-beginner.ss" "deinprogramm") #'here '()]
+@prim-op-defns['(lib "DMdA-beginner.rkt" "deinprogramm") #'here '()]

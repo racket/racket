@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
-          scribble/bnf
+@(require scribble/manual "utils.rkt" scribble/bnf
           (for-label scribble/bnf))
 
 @title[#:tag "bnf"]{BNF Grammars}

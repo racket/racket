@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "diagrams.ss")
+@(require "common.rkt" "diagrams.rkt")
 
 @title[#:style '(toc quiet)]{Snip and Style Classes}
 

@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          "common.ss"
-          (for-label racket/base
-                     raco/command-name
-                     racket/cmdline))
+@(require scribble/manual "common.rkt"
+          (for-label racket/base raco/command-name racket/cmdline))
 
 @title[#:tag "command"]{Adding a @exec{raco} Command}
 

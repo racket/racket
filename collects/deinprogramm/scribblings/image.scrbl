@@ -1,12 +1,11 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/deinprogramm/image))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/deinprogramm/image))
 
 @teachpack["image"]{Bilder konstruieren}
 
-Note: This is documentation for the @tt{image.ss} teachpack that goes
+Note: This is documentation for the @filepath{image.rkt} teachpack that goes
 with the German textbook
 @italic{@link["http://www.deinprogramm.de/dmda/"]{Die Macht der
 Abstraktion}}.

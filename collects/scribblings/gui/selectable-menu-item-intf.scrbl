@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @definterface/title[selectable-menu-item<%> (labelled-menu-item<%>)]{
 

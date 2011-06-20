@@ -8,7 +8,7 @@
  'compile-load
  #f
  (lambda ()
-   (namespace-set-variable-value! 'compile-load "mzq.ss")))
+   (namespace-set-variable-value! 'compile-load "mzq.rktl")))
 
 (define file
   (if #f

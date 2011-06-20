@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 dns-get-address
 dns-get-name

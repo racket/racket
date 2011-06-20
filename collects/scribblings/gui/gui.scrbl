@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title{@bold{GUI}: Racket Graphical Interface Toolkit}
 

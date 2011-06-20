@@ -1,14 +1,12 @@
 #lang scribble/doc
-@(require scribble/manual 
-          scribble/core
-          scribble/html-properties
+@(require scribble/manual scribble/core scribble/html-properties
           scribble/latex-properties
           racket/runtime-path
+          "utils.rkt"
           (prefix-in lp-ex: "lp-ex-doc.scrbl")
-          "utils.ss"
           (for-label scribble/lp-include scribble/lp))
 
-@title[#:tag "lp" 
+@title[#:tag "lp"
        #:style (make-style #f
                            (list (make-css-addition "lp.css")
                                  (make-tex-addition "lp.tex")))

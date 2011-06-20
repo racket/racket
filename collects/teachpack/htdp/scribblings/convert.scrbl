@@ -1,18 +1,17 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/htdp/convert))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/convert))
 
 @teachpack["convert"]{Converting Temperatures}
 
 @;declare-exporting[teachpack/htdp/convert]
 @defmodule[#:require-form beginner-require htdp/convert]
 
-The teachpack @scheme[convert.ss] provides three functions for
+The teachpack @scheme[convert.rkt] provides three functions for
 converting Fahrenheit temperatures to Celsius. It is useful for a single
 exercise in HtDP. Its purpose is to demonstrate the independence of
-``form'' (user interface) and ``function'' (also known as ``model''). 
+``form'' (user interface) and ``function'' (also known as ``model'').
 
 @defproc[(convert-gui [convert (-> number? number?)]) true]{Consumes a
 conversion function from Fahrenheit to Celsius and creates a graphical user
@@ -36,8 +35,8 @@ results to the newly created file @scheme[out].
 
 Example: Create a file with name @scheme["in.dat"] with some numbers in
 it, using your favorite text editor on your computer.  Define a function
-@scheme[f2c] in the Definitions window and set teachpack to ``convert.ss''
-and click RUN. Then evaluate 
+@scheme[f2c] in the Definitions window and set teachpack to
+@filepath{convert.rkt} and click Run.  Then evaluate
 @(begin
 #reader scribble/comment-reader
 (schemeblock

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           (for-label mrlib/matrix-snip
                      (only-in mrlib/cache-image-snip
                               cache-image-snip%)))

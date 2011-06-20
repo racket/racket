@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/name))
+@(require "common.rkt" (for-label syntax/name))
 
 @title[#:tag "name"]{Extracting Inferred Names}
 

@@ -1,4 +1,4 @@
-;; The main client of this module is browser/external.ss
+;; The main client of this module is browser/external.rkt
 ;;   (others just use the (send-url url [new?]) interface.)
 
 #lang racket/base
@@ -188,7 +188,7 @@
     ;; if it's a known browser, then it must be an existing one at this point
     [(not exe) (error 'send-url "internal error")]
     ;; if it's gone throw an error (refiltering will break assumptions of
-    ;; browser/external.ss, and we really mimic the Win/Mac case where there
+    ;; browser/external.rkt, and we really mimic the Win/Mac case where there
     ;; should be some builtin facility that doesn't change)
     [(not (file-exists? exe)) (error 'send-url "executable vanished: ~a" exe)]
     ;; finally, deal with the actual browser process

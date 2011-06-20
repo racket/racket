@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/future))
+@(require "mz.rkt" (for-label racket/future))
 
 @(define future-eval (make-base-eval))
 @(interaction-eval #:eval future-eval (require racket/future))

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/context))
+@(require "common.rkt" (for-label syntax/context))
 
 @title[#:tag "context"]{Support for @scheme[local-expand]}
 

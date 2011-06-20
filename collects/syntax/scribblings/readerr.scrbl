@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/readerr))
+@(require "common.rkt" (for-label syntax/readerr))
 
 @title[#:tag "readerr"]{Raising @scheme[exn:fail:read]}
 

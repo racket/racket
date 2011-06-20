@@ -1,5 +1,5 @@
 
-;; For every test here, make sure the opposite test is in intml-adv.ss
+;; For every test here, make sure the opposite test is in intml-adv.rkt
 
 (htdp-syntax-test #'(1 2 3))
 (htdp-syntax-test #'("hello" 1 2))

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @defclass/title[pen-list% object% ()]{
 
@@ -8,9 +8,6 @@ A @scheme[pen-list%] object maintains a list of @scheme[pen%]
  object in a pen list cannot be mutated.
 
 A global pen list @indexed-scheme[the-pen-list] is created automatically.
-
-
-
 
 
 @defconstructor[()]{

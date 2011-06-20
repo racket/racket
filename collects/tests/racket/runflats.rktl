@@ -1,4 +1,3 @@
-
 (for-each (lambda (f)
 	    (when (regexp-match "^flat-[0-9]+[.]ss$" (path->string f))
               (let ([ns (current-namespace)])
@@ -9,6 +8,5 @@
                   (eval
                    `(begin
                       (define quiet-load ,(path->string f))
-                      (load-relative "quiet.ss")))))))
+                      (load-relative "quiet.rktl")))))))
 	  (directory-list))
-

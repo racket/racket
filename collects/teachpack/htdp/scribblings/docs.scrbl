@@ -1,8 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
-          (for-label scheme 
-                     teachpack/htdp/docs))
+@(require scribble/manual "shared.rkt"
+          (for-label scheme teachpack/htdp/docs))
 
 @teachpack["docs"]{Manipulating Simple HTML Documents}
 
@@ -27,7 +26,7 @@ and produces a matching ending annotation.}
 Consumes a list of symbols and annotations and prints them out as a
 "file".}
 
-Sample session: set teachpack to ``docs.ss''> and click RUN:
+Sample session: set teachpack to @filepath{docs.rkt} and click Run:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
@@ -40,4 +39,3 @@ end-annotation: not an annotation: 0
 > (write-file (list 'a 'b))
 a b 
 ))
-

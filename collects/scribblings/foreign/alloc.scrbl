@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label ffi/unsafe/alloc
-                     ffi/unsafe/define
-                     ffi/unsafe/atomic))
+@(require "utils.rkt"
+          (for-label ffi/unsafe/alloc ffi/unsafe/define ffi/unsafe/atomic))
 
 @title{Allocation and Finalization}
 

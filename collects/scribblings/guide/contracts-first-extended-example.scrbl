@@ -1,11 +1,8 @@
 #lang scribble/doc
 
-@(require scribble/manual
-	  scribble/core
-          scribble/eval
-          "guide-utils.ss"
-          "contracts-utils.ss"
-	  (only-in racket/list argmax)
+@(require scribble/manual scribble/core scribble/eval
+          "guide-utils.rkt" "contracts-utils.rkt"
+          (only-in racket/list argmax)
           (for-label racket/contract))
 
 @;(require "shared.rkt" (only-in racket/list argmax))
@@ -222,7 +219,7 @@ Version 3 may still be too eager when it comes to calling @racket[f]. While
  @racket[lov] contains, let us imagine for illustrative purposes that our
  own implementation first checks whether the list is a singleton.  If so,
  the first element would be the only element of @racket[lov] and in that
- case there would be no need to compute @racket[(f r)].  
+ case there would be no need to compute @racket[(f r)].
 @margin-note*{The @scheme[argmax] of Racket implicitly argues that it not
  only promises the first value that maximizes @scheme[f] over @scheme[lov]
  but also that @scheme[f] produces/produced a value for the result.}

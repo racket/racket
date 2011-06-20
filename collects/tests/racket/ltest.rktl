@@ -58,18 +58,18 @@
 (time (loop 100000))
 
 
-; > (load "ltest.ss")
+; > (load "ltest.rkt")
 ; cpu time: 1820  real time: 1826
 ; cpu time: 1420  real time: 1422
 ; cpu time: 1960  real time: 1957
 ; cpu time: 2630  real time: 2626
-; > (load "ltest.ss")
+; > (load "ltest.rkt")
 ; cpu time: 1790  real time: 1803
 ; cpu time: 1430  real time: 1468
 ; cpu time: 2150  real time: 2159
 ; cpu time: 2820  real time: 2824
 
-; > (load "ltest.ss")
+; > (load "ltest.rkt")
 ; nested loop
 ; cpu time: 1750  real time: 1817
 ; single loop

@@ -1,15 +1,13 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          "shared.ss"
-	  scribble/struct
+@(require scribble/manual scribble/struct "shared.rkt"
           (for-label scheme
                      teachpack/deinprogramm/image
-		     teachpack/deinprogramm/turtle))
+                     teachpack/deinprogramm/turtle))
 
 @teachpack["turtle"]{Turtle-Grafik}
 
-Note: This is documentation for the @tt{turtle.ss} teachpack that goes
+Note: This is documentation for the @filepath{turtle.rkt} teachpack that goes
 with the German textbook
 @italic{@link["http://www.deinprogramm.de/dmda/"]{Die Macht der
 Abstraktion}}.

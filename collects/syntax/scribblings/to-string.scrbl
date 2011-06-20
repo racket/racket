@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/to-string))
+@(require "common.rkt" (for-label syntax/to-string))
 
 @title[#:tag "to-string"]{Rendering Syntax Objects with Formatting}
 

@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/gif
-                     file/gif))
+@(require "common.rkt" (for-label mrlib/gif file/gif))
 
 @title{GIF and Animated GIF Writing}
 

@@ -1,11 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          scribble/eval
-          (for-label racket/match
-                     syntax/readerr)
-          "guide-utils.ss"
-          "modfile.rkt")
+@(require scribble/manual scribble/bnf scribble/eval
+          "guide-utils.rkt" "modfile.rkt"
+          (for-label racket/match syntax/readerr))
 
 @title[#:tag "hash-reader"]{Reader Extensions}
 

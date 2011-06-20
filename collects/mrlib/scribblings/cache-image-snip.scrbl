@@ -1,14 +1,13 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/cache-image-snip))
+@(require "common.rkt" (for-label mrlib/cache-image-snip))
 
 @title{Cache-image Snip}
 
 @defmodule[mrlib/cache-image-snip]{
 
 The @schememodname[mrlib/cache-image-snip] library provides the core
-data structure for DrRacket's @filepath{image.ss} teachpack. Images in
-the @filepath{image.ss} teachpack are instances of the
+data structure for DrRacket's @filepath{image.rkt} teachpack. Images in
+the @filepath{image.rkt} teachpack are instances of the
 @scheme[cache-image-snip%] class.}
 
 The library also defines a new type, @scheme[argb], that represents a

@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          scribble/struct
-          (for-label net/imap
-                     net/imap-unit
-                     net/imap-sig))
+@(require "common.rkt" scribble/eval scribble/struct
+          (for-label net/imap net/imap-unit net/imap-sig))
 
 @(define (just-report)
   @elem{This operation does not communicate with the server. It merely reports

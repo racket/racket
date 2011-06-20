@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-	  scribble/struct
-          scribble/bnf
-          racket/list
-	  mrlib/tex-table
+@(require "common.rkt"
+          scribble/struct scribble/bnf racket/list mrlib/tex-table
           (for-label racket/gui/base))
 
 @(define (keybinding key . desc)

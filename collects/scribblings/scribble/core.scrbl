@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
+@(require scribble/manual "utils.rkt"
           (for-label scribble/manual-struct
                      file/convertible
                      setup/main-collects

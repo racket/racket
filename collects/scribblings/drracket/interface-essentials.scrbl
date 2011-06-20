@@ -1,11 +1,7 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/decode
-          scribble/eval
-          scribble/struct
-          scribble/racket
-          (for-label htdp/convert
-                     racket/gui/base))
+@(require "common.rkt"
+          scribble/decode scribble/eval scribble/struct scribble/racket
+          (for-label htdp/convert racket/gui/base))
 
 @(define (ioinputfont . s)
    (apply tt s))

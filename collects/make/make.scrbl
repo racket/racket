@@ -1,16 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme/base
-                     scheme/contract
-                     scheme/unit
-                     make
-                     make/make-unit
-                     make/make-sig
-                     make/collection
-                     make/collection-sig
-                     make/collection-unit
-                     dynext/file-sig
-                     compiler/sig))
+          (for-label scheme/base scheme/contract scheme/unit
+                     make make/make-unit make/make-sig
+                     make/collection make/collection-sig make/collection-unit
+                     dynext/file-sig compiler/sig))
 
 @(define raco-manual @other-manual['(lib "scribblings/raco/raco.scrbl")])
 
@@ -348,11 +341,12 @@ The arguments are as follows:
     supply @scheme['("wsock32")].}
 
   @item{@scheme[extra-depends] --- a list of relative paths to treat as
-    dependencies for compiling `file.c'. Often this list will include
-    `file.c' with the ".c" suffix replaced by ".ss" or ".scm". For
-    example, the "openssl" installer supplies '("mzssl.ss") to ensure
-    that the stub module "mzssl.ss" is never used when the true
-    extension can be built.}
+    dependencies for compiling @filepath{file.c}. Often this list will
+    include @filepath{file.c} with the @filepath{.c} suffix replaced by
+    @filepath{.rkt}.  For example, the "openssl" installer supplies
+    @scheme['("mzssl.rkt")] to ensure that the stub module
+    @filepath{mzssl.rkt} is never used when the true extension can be
+    built.}
 
   @item{@scheme[last-chance-k] --- a procedure of one argument, which
     is a thunk.  This procedure should invoke the thunk to make the

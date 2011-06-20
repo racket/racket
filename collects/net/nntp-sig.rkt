@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 (struct communicator (sender receiver server port))
 connect-to-server connect-to-server* disconnect-from-server

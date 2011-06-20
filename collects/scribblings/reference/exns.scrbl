@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/bnf
-          "mz.ss"
-          (for-label racket/fixnum))
+@(require scribble/bnf "mz.rkt" (for-label racket/fixnum))
 
 @title[#:tag "exns"]{Exceptions}
 

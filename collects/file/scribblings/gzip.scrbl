@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label file/gzip))
+@(require "common.rkt" (for-label file/gzip))
 
 @title[#:tag "gzip"]{@exec{gzip} Compression and File Creation}
 

@@ -1,9 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual
-          "private/utils.ss"
-          "private/manuals.ss")
+@(require scribble/manual "private/utils.rkt" "private/manuals.rkt")
 
-@main-page['start #t 
+@main-page['start #t
                   ;; "racket.css" needs to be installed so it can be shared:
                   #:force-racket-css? #t]
 

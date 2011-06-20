@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require (except-in "mz.ss" import export)
+@(require (except-in "mz.rkt" import export)
           (for-syntax racket/base)
           (for-label racket/require-transform
                      racket/require-syntax

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
+@(require "mz.rkt"
           (for-label framework/preferences
                      racket/runtime-path
                      launcher/launcher

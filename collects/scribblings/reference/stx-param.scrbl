@@ -1,8 +1,6 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/stxparam
-                     racket/stxparam-exptime
-                     racket/splicing))
+@(require "mz.rkt"
+          (for-label racket/stxparam racket/stxparam-exptime racket/splicing))
 
 @title[#:tag "stxparam"]{Syntax Parameters}
 

@@ -1,4 +1,4 @@
-; test.ss for MzCOM
+; test.rkt for MzCOM
 ; requires MysterX to be installed
 
 (require mysterx)

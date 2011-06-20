@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 cookie-name?
 cookie-value?

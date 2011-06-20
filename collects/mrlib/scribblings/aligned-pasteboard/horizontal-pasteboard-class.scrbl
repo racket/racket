@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @defclass/title[horizontal-pasteboard% pasteboard% (aligned-pasteboard<%>)]{
 
@@ -28,4 +28,3 @@ Passes all arguments to @scheme[super-init].
            (resized [snip (is-a?/c snip%)]
                     [redraw-now? any/c])
            void?]{}}
-

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/free-vars))
+@(require "common.rkt" (for-label syntax/free-vars))
 
 @title[#:tag "free-vars"]{Computing the Free Variables of an Expression}
 

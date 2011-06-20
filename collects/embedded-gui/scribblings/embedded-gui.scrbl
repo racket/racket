@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label framework))
+@(require "common.rkt" (for-label framework))
 
 @title{@bold{Embedded GUI}: Widgets within @scheme[editor<%>]}
 

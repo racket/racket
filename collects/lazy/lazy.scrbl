@@ -160,7 +160,7 @@ Similar to @scheme[!list] but also forces (using @scheme[!]) the
 elements of the list.}
 
 
-@;{ This moved into lazy.ss, and all the other forces will move there too.
+@;{ This moved into lazy.rkt, and all the other forces will move there too.
 
 @subsection{Multiple values}
 

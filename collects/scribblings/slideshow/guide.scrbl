@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "ss.ss"
-          scribble/struct)
+@(require "ss.rkt" scribble/struct)
 
 @(define (control-table . l)
    (make-table

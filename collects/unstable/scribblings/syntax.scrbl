@@ -102,7 +102,7 @@ with a path.
 @defexamples[
 #:eval the-eval
 (define loc
-  (list (build-path "/tmp" "dir" "somewhere.ss")
+  (list (build-path "/tmp" "dir" "somewhere.rkt")
         #f #f #f #f))
 (define stx1 (datum->syntax #f 'somewhere loc))
 (syntax-source-directory stx1)

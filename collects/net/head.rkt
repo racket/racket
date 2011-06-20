@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "head-sig.ss" "head-unit.ss")
+#lang racket/base
+(require racket/unit "head-sig.rkt" "head-unit.rkt")
 
 (define-values/invoke-unit/infer head@)
 

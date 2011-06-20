@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @definterface/title[graph-pasteboard<%> ()]{
 
@@ -121,4 +121,3 @@ of an arrowhead for a line that connects (@scheme[from-x],@scheme[from-y]) to (@
 }
 
 }
-

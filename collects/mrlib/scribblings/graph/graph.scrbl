@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/graph))
+@(require "common.rkt" (for-label mrlib/graph))
 
 @title[#:style 'toc]{Graphs}
 

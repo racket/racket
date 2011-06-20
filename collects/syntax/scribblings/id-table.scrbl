@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/id-table)
-          (for-label scheme/dict))
+@(require "common.rkt" (for-label syntax/id-table scheme/dict))
 
 @title[#:tag "idtable"]{Identifier dictionaries}
 

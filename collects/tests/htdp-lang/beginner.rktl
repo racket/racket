@@ -11,11 +11,11 @@
 ;; Don't try to run other tests from the test suite after loading this
 ;; one into a particular namespace.
 
-;; See also htdp-image.ss, which must be loaded into GRacket (but is in this
+;; See also htdp-image.rkt, which must be loaded into GRacket (but is in this
 ;; directory anyway)
 
-;; Tests that apply to all languages go in beg-adv.ss.
-;; Tests that apply only to beginner through intermediate go in beg-intm.ss,
+;; Tests that apply to all languages go in beg-adv.rkt.
+;; Tests that apply only to beginner through intermediate go in beg-intm.rkt,
 ;;  and so on.
 
 ;; Writing tests:

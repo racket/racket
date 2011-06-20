@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/kerncase))
+@(require "common.rkt" (for-label syntax/kerncase))
 
 @(define-syntax-rule (intro id)
   (begin

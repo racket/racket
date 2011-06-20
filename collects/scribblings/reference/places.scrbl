@@ -4,10 +4,7 @@
 
 @; ----------------------------------------------------------------------
 
-@(require scribble/manual
-          scribble/urls
-          scribble/struct
-          "mz.ss"
+@(require scribble/manual scribble/urls scribble/struct "mz.rkt"
           (for-label racket
                      racket/base
                      racket/contract

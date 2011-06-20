@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/port))
+@(require "mz.rkt" (for-label racket/port))
 
 @title[#:tag "port-lib"]{More Port Constructors, Procedures, and Events}
 

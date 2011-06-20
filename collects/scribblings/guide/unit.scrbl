@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-
-          (for-label racket/unit
-                     racket/class))
+@(require scribble/manual scribble/eval "guide-utils.rkt"
+          (for-label racket/unit racket/class))
 
 @(define toy-eval (make-base-eval))
 

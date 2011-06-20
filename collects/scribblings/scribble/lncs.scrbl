@@ -1,7 +1,6 @@
 #lang scribble/manual
-@(require (except-in "utils.ss" author)
-          (except-in (for-label scribble/lncs/lang)
-                     #%module-begin))
+@(require (except-in "utils.rkt" author)
+          (except-in (for-label scribble/lncs/lang) #%module-begin))
 
 @(define-syntax-rule (def base-author)
    (begin

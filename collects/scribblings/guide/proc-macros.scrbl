@@ -1,15 +1,13 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @(define check-eval (make-base-eval))
 @(interaction-eval #:eval check-eval (require (for-syntax racket/base)))
 
 @(define-syntax-rule (racketblock/eval #:eval e body ...)
    (begin
-    (interaction-eval #:eval e body) ...
-    (racketblock body ...)))
+     (interaction-eval #:eval e body) ...
+     (racketblock body ...)))
 
 @title[#:tag "proc-macros" #:style 'toc]{General Macro Transformers}
 
@@ -382,8 +380,8 @@ functions in one module to be used by macros that reside on other
 modules. In that case, you can write the helper function using
 @racket[define]:
 
-@racketmod[#:file 
-"utils.ss"
+@racketmod[#:file
+"utils.rkt"
 racket
 
 (provide check-ids)
@@ -400,13 +398,13 @@ racket
 ]
 
 Then, in the module that implements macros, import the helper function
-using @racket[(require (for-syntax "utils.ss"))] instead of
-@racket[(require "utils.ss")]:
+using @racket[(require (for-syntax "utils.rkt"))] instead of
+@racket[(require "utils.rkt")]:
 
 @racketmod[
 racket
 
-(require (for-syntax "utils.ss"))
+(require (for-syntax "utils.rkt"))
 
 (define-syntax (swap stx)
   (syntax-case stx ()
@@ -418,10 +416,10 @@ racket
 ]
 
 Since modules are separately compiled and cannot have circular
-dependencies, the @filepath["utils.ss"] module's run-time body can be
+dependencies, the @filepath["utils.rkt"] module's run-time body can be
 compiled before the compiling the module that implements
 @racket[swap].  Thus, the run-time definitions in
-@filepath["utils.ss"] can be used to implement @racket[swap], as long
+@filepath["utils.rkt"] can be used to implement @racket[swap], as long
 as they are explicitly shifted into compile time by @racket[(require
 (for-syntax ....))].
 

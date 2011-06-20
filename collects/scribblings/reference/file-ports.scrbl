@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          racket/file)
+@(require "mz.rkt" racket/file)
 
 @(begin
   ;; ignore expressions at the top-level so that they don't print #<void>

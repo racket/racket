@@ -1,13 +1,13 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
+@(require scribble/manual "shared.rkt"
           (for-label scheme
                      teachpack/deinprogramm/image
-		     teachpack/deinprogramm/line3d))
+                     teachpack/deinprogramm/line3d))
 
 @teachpack["line3d"]{3D-Liniengraphik}
 
-Note: This is documentation for the @tt{line3d.ss} teachpack that goes
+Note: This is documentation for the @filepath{line3d.rkt} teachpack that goes
 with the German textbook
 @italic{@link["http://www.deinprogramm.de/dmda/"]{Die Macht der
 Abstraktion}}.

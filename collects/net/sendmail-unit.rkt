@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require mzlib/process "sendmail-sig.ss")
+(require racket/system "sendmail-sig.rkt")
 
 (import)
 (export sendmail^)

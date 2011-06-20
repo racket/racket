@@ -1,5 +1,5 @@
 ;;;
-;;; <mime-unit.ss> ---- MIME support
+;;; <mime-unit.rkt> ---- MIME support
 ;;;
 ;;; Copyright (C) 2002 by PLT.
 ;;; Copyright (C) 2001 by Wish Computing.
@@ -27,14 +27,11 @@
 ;; Commentary: MIME support for PLT Scheme: an implementation of
 ;; rfc2045, rfc2046, rfc2047, rfc2048, and rfc2049.
 
-#lang scheme/unit
+#lang racket/unit
 
-(require "mime-sig.ss"
-         "qp-sig.ss"
-         "base64-sig.ss"
-         "head-sig.ss"
-         "mime-util.ss"
-         scheme/port)
+(require "mime-sig.rkt" "qp-sig.rkt" "base64-sig.rkt" "head-sig.rkt"
+         "mime-util.rkt"
+         racket/port)
 
 (import base64^ qp^ head^)
 (export mime^)

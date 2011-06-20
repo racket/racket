@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/stx))
+@(require "common.rkt" (for-label syntax/stx))
 
 @title[#:tag "stx"]{Deconstructing Syntax Objects}
 

@@ -69,7 +69,7 @@ Closing the resulting output port does not send a shutdown message to
 the server. See also @scheme[ports->ssl-ports].
 
 @;{
-See `enforce-retry?' in "mzssl.ss", currently set to #f so that this
+See `enforce-retry?' in "mzssl.rkt", currently set to #f so that this
 paragraph does not apply:
 Beware that the SSL protocol allows reading or writing in only one
 direction at a time. If you request data from the input port, then

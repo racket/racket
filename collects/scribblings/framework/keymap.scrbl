@@ -42,4 +42,4 @@
 }
 @defclass[keymap:aug-keymap% (keymap:aug-keymap-mixin keymap%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^keymap:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^keymap:")

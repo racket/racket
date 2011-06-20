@@ -190,9 +190,9 @@
 (htdp-top-pop 1)
 
 ;; Teachpacks with higher-order primitives
-;;  Some further tests are in beg-bega.ss
+;;  Some further tests are in beg-bega.rkt
 (module my-teachpack mzscheme
-  (require (lib "prim.ss" "lang"))
+  (require lang/prim)
   (provide go)
   (define-higher-order-primitive go real-go (_ proc))
   (define (real-go a b) a))
@@ -213,7 +213,7 @@
 (htdp-teachpack-pop)
 
 ;; Check require
-(htdp-top (require (lib "unit.ss" "mzlib")))
+(htdp-top (require (lib "unit.rkt" "mzlib")))
 (htdp-test #f unit? 12)
 (htdp-top-pop 1)
 (htdp-top (require mzlib/unit))

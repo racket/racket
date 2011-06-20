@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mrlib/plot))
+@(require "common.rkt" (for-label mrlib/plot))
 
 @title{Plot}
 

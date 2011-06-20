@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label scheme/tcp))
+@(require "utils.rkt" (for-label scheme/tcp))
 
 @title[#:tag "threads"]{Threads}
 

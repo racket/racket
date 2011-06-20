@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (for-label scheme/match))
+@(require "utils.rkt" (for-label scheme/match))
 
 @title[#:tag "types" #:style 'toc]{C Types}
 

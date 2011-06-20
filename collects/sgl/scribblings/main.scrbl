@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          (for-syntax racket/base))
+@(require "common.rkt" scribble/eval (for-syntax racket/base))
 
 @title[#:tag "main"]{Racket-Style OpenGL}
 

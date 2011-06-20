@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require "base64-sig.ss")
+(require "base64-sig.rkt")
 
 (import)
 (export base64^)

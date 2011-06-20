@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require scribblings/htdp-langs/common
-	  "std-grammar.ss"
-	  "prim-ops.ss"
-          (for-label deinprogramm/DMdA-assignments (only-in deinprogramm/DMdA-beginner define-record-procedures-parametric)))
+@(require scribblings/htdp-langs/common "std-grammar.rkt" "prim-ops.rkt"
+          (for-label deinprogramm/DMdA-assignments
+                     (only-in deinprogramm/DMdA-beginner
+                              define-record-procedures-parametric)))
 
 @title[#:style 'toc #:tag "DMdA-assignments"]{Die Macht der Abstraktion mit Zuweisungen}
 
@@ -28,7 +28,7 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 
 @|prim-nonterms|
 
-@prim-ops['(lib "DMdA-assignments.ss" "deinprogramm") #'here]
+@prim-ops['(lib "DMdA-assignments.rkt" "deinprogramm") #'here]
 
 @section{@scheme[define-record-procedures-2]}
 
@@ -105,4 +105,4 @@ gebunden.}
 
 @section[#:tag "assignments-prim-op"]{Primitive Operationen}
 
-@prim-op-defns['(lib "DMdA-assignments.ss" "deinprogramm") #'here '()]
+@prim-op-defns['(lib "DMdA-assignments.rkt" "deinprogramm") #'here '()]

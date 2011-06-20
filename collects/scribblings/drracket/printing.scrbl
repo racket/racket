@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/struct)
+@(require "common.rkt" scribble/struct)
 
 @(define spacer (hspace 1))
 

@@ -264,7 +264,7 @@ sequence.
 
 The @racket[code] code will appear on a new line in the file for C
 compilation. Multiple @racket[c-include] declarations are concatenated
-(with newlines) in order to produces a sequence of declarations.}
+(with newlines) in order to produce a sequence of declarations.}
 
 @defform[(c-include path-spec)]{
 

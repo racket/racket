@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss" (for-label scheme teachpack/htdp/lkup-gui))
+@(require scribble/manual "shared.rkt" (for-label scheme teachpack/htdp/lkup-gui))
 
 @teachpack["lkup-gui"]{Lookup GUI}
 

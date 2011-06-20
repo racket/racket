@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label racket/gui/dynamic))
+@(require "common.rkt" (for-label racket/gui/dynamic))
 
 @title{Dynamic Loading}
 

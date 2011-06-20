@@ -99,4 +99,4 @@
 @defclass[canvas:delegate% (canvas:delegate-mixin canvas:basic%) ()]{}
 @defclass[canvas:wide-snip% (canvas:wide-snip-mixin canvas:basic%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^canvas:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^canvas:")

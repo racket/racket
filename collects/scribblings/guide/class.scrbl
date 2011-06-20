@@ -1,12 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          racket/class
-          "guide-utils.ss"
-
-          (for-label racket/class
-                     racket/trait
-                     racket/contract))
+@(require scribble/manual scribble/eval racket/class "guide-utils.rkt"
+          (for-label racket/class racket/trait racket/contract))
 
 @(define class-eval
    (let ([e (make-base-eval)])

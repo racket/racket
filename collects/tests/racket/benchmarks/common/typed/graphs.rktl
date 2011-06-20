@@ -12,7 +12,7 @@
 
 ; End of new code.
 
-;;; ==== std.ss ====
+;;; ==== std.rkt ====
 
 ; (define-syntax assert
 ;     (syntax-rules ()
@@ -38,7 +38,7 @@
 ; 		(begin e-first
 ; 		    e-rest ...)))))
 
-;;; ==== util.ss ====
+;;; ==== util.rkt ====
 
 
 ; Fold over list elements, associating to the left.
@@ -200,7 +200,7 @@
 		    (_-*- (cdr lst)))))))
 
 
-;;; ==== ptfold.ss ====
+;;; ==== ptfold.rkt ====
 
 
 ; Fold over the tree of permutations of a universe.
@@ -299,7 +299,7 @@
 			    accross)))))))
 
 
-;;; ==== minimal.ss ====
+;;; ==== minimal.rkt ====
 
 (define-type Graph (Vectorof (Vectorof Boolean)))
 
@@ -428,7 +428,7 @@
 				'more))))))))
 
 
-;;; ==== rdg.ss ====
+;;; ==== rdg.rkt ====
 
 (define-type RDG (Vectorof (Listof Integer)))
 

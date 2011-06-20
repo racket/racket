@@ -1,6 +1,6 @@
 
 ;; Basic checks for the advanced language. See also
-;;  beginner.ss
+;;  beginner.rkt
 
 (load-relative "../racket/loadtest.rktl")
 

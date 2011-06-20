@@ -1,10 +1,6 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/core
-          scribble/html-properties
-          (for-label racket/help
-                     net/url
-                     racket/gui/base))
+@(require "mz.rkt" scribble/core scribble/html-properties
+          (for-label racket/help net/url racket/gui/base))
 
 @; Beware of this hard-wired link to the main doc page:
 @(define main-doc-page

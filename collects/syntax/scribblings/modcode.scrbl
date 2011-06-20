@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/modcode))
+@(require "common.rkt" (for-label syntax/modcode))
 
 @title[#:tag "modcode"]{Getting Module Compiled Code}
 

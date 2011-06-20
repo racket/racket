@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-          "modfile.rkt"
+@(require scribble/manual scribble/eval "guide-utils.rkt" "modfile.rkt"
           (for-label racket/date))
 
 @title[#:tag "module-languages"]{Module Languages}

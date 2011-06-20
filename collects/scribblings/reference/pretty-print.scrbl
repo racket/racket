@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/bnf)
+@(require "mz.rkt" scribble/bnf)
 
 @title[#:tag "pretty-print"]{Pretty Printing}
 

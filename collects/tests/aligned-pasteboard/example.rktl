@@ -1,9 +1,6 @@
-(require
- mzlib/class
- mred
- mzlib/etc
- "../aligned-pasteboard.ss"
- "../aligned-editor-container.ss")
+(require mzlib/class mred mzlib/etc
+         "../aligned-pasteboard.rkt"
+         "../aligned-editor-container.rkt")
 
 ;                                                          
 ;                                                          

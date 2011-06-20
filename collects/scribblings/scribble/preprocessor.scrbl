@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual 
           scribble/core scribble/html-properties scribble/latex-properties
-          "utils.ss"
+          "utils.rkt"
           (for-label racket/base
                      ;; FIXME: need to get this in
                      ;; scribble/text

@@ -1,10 +1,6 @@
-(require
- "utils.ss"
- mzlib/etc
- mzlib/class
- mred
- mrlib/private/aligned-pasteboard/pasteboard-lib
- mrlib/aligned-pasteboard)
+(require "utils.rkt" mzlib/etc mzlib/class mred
+         mrlib/private/aligned-pasteboard/pasteboard-lib
+         mrlib/aligned-pasteboard)
 
 ;; pasteboard-root: ((is-a?/c aligned-pasteboard<%>) -> (is-a?/c aligned-pasteboard<%>))
 ;; gets the top most aligned pasteboard in the tree of pasteboards and containers

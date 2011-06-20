@@ -314,12 +314,12 @@ is the same as when the
 procedure is suitable for use as a compilation handler via
 @scheme[current-compile].}
 
-@defproc[(make-errortrace-compile-handler) 
+@defproc[(make-errortrace-compile-handler)
          (-> any/c any/c compiled-expression)]{
 
 Produces a compile handler that is like
-@scheme[errortrace-compile-handler], except that the code that the
-it produces is instrumented if the value of 
+@scheme[errortrace-compile-handler], except that the code that
+it produces is instrumented if the value of
 @schemeblock[(namespace-module-registry (current-namespace))]
 is the same as when the original thunk is invoked.
 

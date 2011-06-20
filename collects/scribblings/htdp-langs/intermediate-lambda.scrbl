@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          "std-grammar.ss"
-          "prim-ops.ss"
+@(require "common.rkt" "std-grammar.rkt" "prim-ops.rkt"
           (for-label lang/htdp-intermediate-lambda))
 
 @(define-syntax-rule (bd intm-define intm-define-struct intm-local intm-letrec intm-let intm-let* intm-time)
@@ -73,7 +71,7 @@
 
 @|prim-nonterms|
 
-@prim-ops['(lib "htdp-intermediate-lambda.ss" "lang") #'here]
+@prim-ops['(lib "htdp-intermediate-lambda.rkt" "lang") #'here]
 
 @; ----------------------------------------------------------------------
 
@@ -125,7 +123,7 @@ practically never written that way.}
 The name of a primitive operation can be used as an expression. It
 produces a function version of the operation.}
 
-@prim-op-defns['(lib "htdp-intermediate-lambda.ss" "lang") #'here '()]
+@prim-op-defns['(lib "htdp-intermediate-lambda.rkt" "lang") #'here '()]
 
 
 @; ----------------------------------------------------------------------

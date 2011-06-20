@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/define))
+@(require "common.rkt" (for-label syntax/define))
 
 
 @title[#:tag "define"]{Parsing @scheme[define]-like Forms}
@@ -9,10 +8,10 @@
 
 @defproc[(normalize-definition [defn-stx syntax?]
                                [lambda-id-stx identifier?]
-			       
+
                                [check-context? boolean? #t]
-			       [opt+kws? boolean? #t])
-	 (values identifier? syntax?)]{
+                               [opt+kws? boolean? #t])
+         (values identifier? syntax?)]{
 
 Takes a definition form whose shape is like @scheme[define] (though
 possibly with a different name) and returns two values: the defined

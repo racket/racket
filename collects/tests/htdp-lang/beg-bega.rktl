@@ -4,7 +4,7 @@
 
 (htdp-syntax-test #'(define (f78 a) (a))) ; no functions as arguments
 
-;; See htdp-top uses in beg-adv.ss:
+;; See htdp-top uses in beg-adv.rkt:
 (htdp-error-test #'f)
 (htdp-error-test #'(x 1))
 (htdp-error-test #'(+ f 1))
@@ -28,7 +28,7 @@
 (htdp-top-pop 1)
 
 ;; Teachpacks with higher-order primitives
-;;   Builds on tests in beg-adv.ss
+;;   Builds on tests in beg-adv.rkt
 (htdp-teachpack my-teachpack)
 
 (htdp-top (define (my-f x) x))

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @defclass/title[editor-stream-in-bytes-base% editor-stream-in-base% ()]{
 

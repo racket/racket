@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require "utils.ss"
-          (for-label help/search))
+@(require "utils.rkt" (for-label help/search))
 
 @title[#:style 'toc]{Connecting to @filepath{racket}}
 

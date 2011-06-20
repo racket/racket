@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss"
-          (for-label (only-in mzscheme fluid-let)))
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @(define param-eval (make-base-eval))
 
@@ -25,7 +22,7 @@ For example, the @racket[error-print-width] parameter controls how
 many characters of a value are printed in an error message:
 
 @interaction[
-(parameterize ([error-print-width 5]) 
+(parameterize ([error-print-width 5])
   (car (expt 10 1024)))
 (parameterize ([error-print-width 10])
   (car (expt 10 1024)))

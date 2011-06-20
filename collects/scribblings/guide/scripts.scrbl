@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scheme/cmdline
-          "guide-utils.ss")
+@(require scribble/manual scheme/cmdline "guide-utils.rkt")
 
 @title[#:tag "scripts"]{Scripts}
 

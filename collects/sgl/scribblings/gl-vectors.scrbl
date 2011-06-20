@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/bnf
-          (for-syntax racket/base))
+@(require "common.rkt" scribble/bnf (for-syntax racket/base))
 
 @title[#:tag "gl-vectors"]{OpenGL Vectors}
 

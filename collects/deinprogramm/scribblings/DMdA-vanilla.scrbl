@@ -1,9 +1,7 @@
 #lang scribble/doc
-@(require scribblings/htdp-langs/common
-	  "std-grammar.ss"
-	  "prim-ops.ss"
+@(require scribblings/htdp-langs/common "std-grammar.rkt" "prim-ops.rkt"
           (for-label deinprogramm/DMdA-vanilla
-	             (only-in deinprogramm/DMdA-beginner define)))
+                     (only-in deinprogramm/DMdA-beginner define)))
 
 @title[#:style 'toc #:tag "DMdA-vanilla"]{Die Macht der Abstraktion}
 
@@ -20,7 +18,7 @@ Abstraktion}.
 
 @|prim-nonterms|
 
-@prim-ops['(lib "DMdA-vanilla.ss" "deinprogramm") #'here]
+@prim-ops['(lib "DMdA-vanilla.rkt" "deinprogramm") #'here]
 
 @section[#:tag "signatures-vanilla"]{Signaturen}
 
@@ -77,5 +75,4 @@ sich also auf das @scheme[a] aus dem @scheme[let*]-Ausdruck, nicht das
 
 @section[#:tag "vanilla-prim-op"]{Primitive Operationen}
 
-@prim-op-defns['(lib "DMdA-vanilla.ss" "deinprogramm") #'here '()]
-
+@prim-op-defns['(lib "DMdA-vanilla.rkt" "deinprogramm") #'here '()]

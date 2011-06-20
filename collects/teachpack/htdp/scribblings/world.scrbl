@@ -2,7 +2,7 @@
 
 @(require scribble/manual
           (only-in scribble/core make-nested-flow make-style)
-          "shared.ss"
+          "shared.rkt"
 	  scribble/struct
           (for-label scheme
                      teachpack/htdp/image

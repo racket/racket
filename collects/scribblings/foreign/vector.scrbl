@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "utils.ss"
-          (only-in scribble/decode make-splice))
+@(require "utils.rkt" (only-in scribble/decode make-splice))
 
 @title[#:tag "homogeneous-vectors"]{Safe Homogenous Vectors}
 

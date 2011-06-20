@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
-          (for-label scribble/srcdoc
-                     scribble/extract
-                     racket/contract))
+@(require scribble/manual "utils.rkt"
+          (for-label scribble/srcdoc scribble/extract racket/contract))
 
 @title[#:tag "srcdoc"]{In-Source Documentation}
 

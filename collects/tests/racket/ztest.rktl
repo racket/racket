@@ -1,5 +1,5 @@
 ;; rudimentary test harness for complex math routines in
-;; zmath.ss
+;; zmath.rkt
 
 (require mzlib/zmath)
 

@@ -1,11 +1,7 @@
-(require
- mzlib/class
- mzlib/list
- mred
- mzlib/etc
- "../aligned-editor-container.ss"
- "../aligned-pasteboard.ss"
- "../snip-lib.ss")
+(require mzlib/class mzlib/list mred mzlib/etc
+         "../aligned-editor-container.rkt"
+         "../aligned-pasteboard.rkt"
+         "../snip-lib.rkt")
 
 (define f (new frame% (label "test") (width 200) (height 200)))
 (define e (new text%))

@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/struct
-          scribble/racket
-          (for-syntax racket/base)
-          "mz.ss"
-          "prog-steps.ss")
+@(require scribble/struct scribble/racket "mz.rkt" "prog-steps.rkt"
+          (for-syntax racket/base))
 
 @(define reduces (make-element #f (list 'rarr)))
 @(define rspace (make-element "ghost" (list 'rarr)))

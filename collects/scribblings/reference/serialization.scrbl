@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          racket/serialize
-          (for-label racket/serialize
-                     racket/fasl))
+@(require "mz.rkt" racket/serialize (for-label racket/serialize racket/fasl))
 
 @(define ser-eval (make-base-eval))
 @(interaction-eval #:eval ser-eval (require racket/serialize))

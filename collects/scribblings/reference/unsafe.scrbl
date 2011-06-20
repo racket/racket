@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
+@(require "mz.rkt"
           (for-label racket/unsafe/ops
                      racket/flonum
                      (only-in ffi/vector

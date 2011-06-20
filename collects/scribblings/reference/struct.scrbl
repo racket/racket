@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label racket/struct-info))
+@(require "mz.rkt" (for-label racket/struct-info))
 
 @(define struct-eval (make-base-eval))
 @(define struct-copy-eval (make-base-eval))

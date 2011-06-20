@@ -4,5 +4,4 @@
 @(require (for-label scheme/gui))
 @title{Color Prefs}
 
-
-@(include-previously-extracted "main-extracts.ss" #rx"^color-prefs:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^color-prefs:")

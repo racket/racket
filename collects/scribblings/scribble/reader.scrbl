@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/bnf
-          scribble/eval
-          "utils.ss"
+@(require scribble/manual scribble/bnf scribble/eval "utils.rkt"
           (for-syntax racket/base)
           (for-label (only-in scribble/reader
                               use-at-readtable)))

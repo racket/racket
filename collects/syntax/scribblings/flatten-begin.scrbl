@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/flatten-begin))
+@(require "common.rkt" (for-label syntax/flatten-begin))
 
 @title[#:tag "flatten-begin"]{Flattening @scheme[begin] Forms}
 

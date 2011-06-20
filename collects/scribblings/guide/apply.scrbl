@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "guide-utils.ss")
+@(require scribble/manual scribble/eval "guide-utils.rkt")
 
 @title[#:tag "application"]{Function Calls@aux-elem{ (Procedure Applications)}}
 
@@ -56,16 +54,16 @@ by-position arguments. For that case, an @racket[_arg] can be an
 
 For example,
 
-@racketblock[(go "super.ss" #:mode 'fast)]
+@racketblock[(go "super.rkt" #:mode 'fast)]
 
-calls the function bound to @racket[go] with @racket["super.ss"] as a
+calls the function bound to @racket[go] with @racket["super.rkt"] as a
 by-position argument, and with @racket['fast] as an argument
 associated with the @racket[#:mode] keyword. A keyword is implicitly
 paired with the expression that follows it.
 
 Since a keyword by itself is not an expression, then
 
-@racketblock[(go "super.ss" #:mode #:fast)]
+@racketblock[(go "super.rkt" #:mode #:fast)]
 
 is a syntax error. The @racket[#:mode] keyword must be followed by an
 expression to produce an argument value, and @racket[#:fast] is not an
@@ -76,7 +74,7 @@ The order of keyword @racket[_arg]s determines the order in which
 arguments independent of their position in the argument list. The
 above call to @racket[go] can be equivalently written
 
-@racketblock[(go #:mode 'fast "super.ss")]
+@racketblock[(go #:mode 'fast "super.rkt")]
 
 @refdetails["application"]{procedure applications}
 
@@ -136,5 +134,5 @@ list contains by-position function arguments, as for @racket[apply].
 (keyword-apply go
                '(#:mode)
                '(fast)
-               '("super.ss"))
+               '("super.rkt"))
 ]

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/boundmap))
+@(require "common.rkt" (for-label syntax/boundmap))
 
 @title[#:tag "boundmap"]{Hashing on @scheme[bound-identifier=?] and @scheme[free-identifier=?]}
 

@@ -11,4 +11,4 @@
 @defclass[pasteboard:backup-autosave% (editor:backup-autosave-mixin pasteboard:file%) ()]{}
 @defclass[pasteboard:info% (editor:info-mixin pasteboard:backup-autosave%) ()]{}
 
-@(include-previously-extracted "main-extracts.ss" #rx"^pasteboard:")
+@(include-previously-extracted "main-extracts.rkt" #rx"^pasteboard:")

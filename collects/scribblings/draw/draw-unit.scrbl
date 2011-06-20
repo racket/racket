@@ -1,7 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label racket/draw/draw-unit
-                     racket/draw/draw-sig))
+@(require "common.rkt"
+          (for-label racket/draw/draw-unit racket/draw/draw-sig))
 
 @title{Signature and Unit}
 

@@ -1,5 +1,5 @@
 ;; --------------------------------------------------------------------------
-;; tic-bang.ss
+;; tic-bang.rkt
 ;; This is an imperative version.
 
 ;; This program plays through all possibilities of a tic-tac-toe
@@ -9,7 +9,7 @@
 
 ;; This program lacks the capability to print how a situation arose. 
 
-;; It relies on list-library.ss. 
+;; It relies on list-library.rkt.
 
 (load-relative "listlib.rktl")
 

@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/moddep))
+@(require "common.rkt" (for-label syntax/moddep))
 
 @title[#:tag "moddep"]{Inspecting Modules and Module Dependencies}
 

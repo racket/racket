@@ -1,6 +1,6 @@
-#lang scheme/unit
+#lang racket/unit
 
-(require "dns-sig.ss" scheme/system scheme/udp)
+(require "dns-sig.rkt" racket/system racket/udp)
 
 (import)
 (export dns^)

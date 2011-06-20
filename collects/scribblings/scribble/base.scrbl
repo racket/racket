@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
+@(require scribble/manual "utils.rkt"
           (for-syntax racket/base)
           (for-label setup/main-collects))
 

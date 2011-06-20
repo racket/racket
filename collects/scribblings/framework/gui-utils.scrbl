@@ -6,4 +6,4 @@
 @defmodule*/no-declare[(framework/gui-utils)]
 @declare-exporting[framework/gui-utils framework]
 
-@(include-extracted (lib "gui-utils.ss" "framework"))
+@(include-extracted (lib "gui-utils.rkt" "framework"))

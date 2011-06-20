@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label syntax/modcollapse))
+@(require "common.rkt" (for-label syntax/modcollapse))
 
 @title[#:tag "modcollapse"]{Simplifying Module Paths}
 

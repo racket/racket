@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/bnf
-          "reader-example.ss")
+@(require "mz.rkt" scribble/bnf "reader-example.rkt")
 @(begin
    (define (ilitchar s)
      (litchar s))
