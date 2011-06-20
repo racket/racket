@@ -1165,8 +1165,28 @@
         (tc-e (make-lock-file-name "tmp.dir" "tmp.file") -Pathlike)
 
 
+        ;New set operations
+        (tc-e (set-union (set 'one) (set 'two)) (-set (one-of/c 'one 'two)))
+        (tc-e (set-intersect (set 'one) (set 'two)) (-set (-val 'one)))
+        (tc-e (set-subtract (set 'one) (set 'two)) (-set (-val 'one)))
+        (tc-e (set-symmetric-difference (set 'one) (set 'two)) (-set (one-of/c 'one 'two)))
+
+        (tc-e (list->set (list 'one 'two)) (-set (one-of/c 'one 'two)))
+        (tc-e (list->seteq (list 'one 'two)) (-set (one-of/c 'one 'two)))
+        (tc-e (list->seteqv (list 'one 'two)) (-set (one-of/c 'one 'two)))
+        (tc-e (set->list (set 'one 'two)) (-lst (one-of/c 'one 'two)))
 
 
+        ;Syntax
+
+        (tc-e (syntax? #'id) #:ret (ret B (-FS -top -bot)))
+        (tc-e (syntax? 2) #:ret (ret B (-FS -bot -top)))
+
+        (tc-e (syntax-source #'here) Univ)
+        (tc-e (syntax-line #'here) (-opt -PosInt))
+        (tc-e (syntax-column #'here) (-opt -Nat))
+        (tc-e (syntax-position #'here) (-opt -PosInt))
+        (tc-e (syntax-span #'here) (-opt -Nat))
 
 
 
