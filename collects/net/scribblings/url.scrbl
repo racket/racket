@@ -384,7 +384,8 @@ parameter to choose the connection mode; in particular,
 @defsignature[url^ ()]{
 
 Includes everything exported by the @schememodname[net/url] module
-except @racket[current-https-protocol].}
+except @racket[current-connect-scheme] and
+@racket[current-https-protocol].}
 
 @defsignature[url+scheme^ (url^)]{
 
