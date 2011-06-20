@@ -1,7 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/sendurl
-                     scheme/file))
+@(require "common.rkt" (for-label net/sendurl racket/file))
 
 @title[#:tag "sendurl"]{Send URL: Opening a Web Browser}
 
@@ -9,7 +7,7 @@
 in the user's chosen web browser.}
 
 See also @schememodname[browser/external], which requires
-@scheme[scheme/gui], but can prompt the user for a browser if no
+@scheme[racket/gui], but can prompt the user for a browser if no
 browser preference is set.
 
 
@@ -64,7 +62,7 @@ Similar to @scheme[send-url/file], but it consumes the contents of a
 page to show, and displayes it from a temporary file.
 
 If @scheme[delete-at] is a number, the temporary file is removed after
-this many seconds.  The deletion happens in a thread, so if mzscheme
+this many seconds.  The deletion happens in a thread, so if racket
 exits before that it will not happen --- when this function is called
 it scans old generated files (this happens randomly, not on every
 call) and removes them to avoid cluttering the temporary directory.

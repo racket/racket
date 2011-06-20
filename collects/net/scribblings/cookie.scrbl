@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          scribble/eval
-          (for-label net/cookie
-                     net/cookie-unit
-                     net/cookie-sig))
+@(require "common.rkt" scribble/eval
+          (for-label net/cookie net/cookie-unit net/cookie-sig))
 
 @(define cookie-eval (make-base-eval))
 @interaction-eval[#:eval cookie-eval (require net/cookie)]

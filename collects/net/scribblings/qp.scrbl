@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/qp
-                     net/qp-unit
-                     net/qp-sig))
+@(require "common.rkt" (for-label net/qp net/qp-unit net/qp-sig))
 
 @title[#:tag "qp"]{Quoted-Printable: Encoding and Decoding}
 

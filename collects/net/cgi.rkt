@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "cgi-sig.ss" "cgi-unit.ss")
+#lang racket/base
+(require racket/unit "cgi-sig.rkt" "cgi-unit.rkt")
 
 (define-values/invoke-unit/infer cgi@)
 

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/dns
-                     net/dns-unit
-                     net/dns-sig))
+@(require "common.rkt" (for-label net/dns net/dns-unit net/dns-sig))
 
 @title[#:tag "dns"]{DNS: Domain Name Service Queries}
 

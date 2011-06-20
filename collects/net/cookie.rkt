@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "cookie-sig.ss" "cookie-unit.ss")
+#lang racket/base
+(require racket/unit "cookie-sig.rkt" "cookie-unit.rkt")
 
 (provide-signature-elements cookie^)
 

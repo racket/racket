@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "pop3-sig.ss" "pop3-unit.ss")
+#lang racket/base
+(require racket/unit "pop3-sig.rkt" "pop3-unit.rkt")
 
 (define-values/invoke-unit/infer pop3@)
 
@@ -7,7 +7,7 @@
 
 #|
 
-> (require-library "pop3.ss" "net")
+> (require-library "pop3.rkt" "net")
 > (define c (connect-to-server "cs.rice.edu"))
 > (authenticate/plain-text "scheme" "********" c)
 > (get-mailbox-status c)

@@ -1,5 +1,5 @@
 ;;;
-;;; <qp.ss> ---- Quoted Printable Encoding/Decoding
+;;; <qp.rkt> ---- Quoted Printable Encoding/Decoding
 ;;;
 ;;; Copyright (C) 2002 by PLT.
 ;;; Copyright (C) 2001 by Francisco Solsona.
@@ -26,11 +26,11 @@
 ;;
 ;; Commentary:
 
-#lang scheme/base
-(require mzlib/unit "qp-sig.ss" "qp-unit.ss")
+#lang racket/base
+(require racket/unit "qp-sig.rkt" "qp-unit.rkt")
 
 (define-values/invoke-unit/infer qp@)
 
 (provide-signature-elements qp^)
 
-;;; qp.ss ends here
+;;; qp.rkt ends here

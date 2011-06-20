@@ -1,10 +1,7 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           scribble/bnf
-          (for-label net/url
-                     unstable/contract
-                     web-server/http
-                     racket/list
+          (for-label net/url unstable/contract web-server/http racket/list
                      racket/async-channel
                      (prefix-in raw: (for-label net/tcp-unit))
                      net/websocket

@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/pop3
-                     net/pop3-unit
-                     net/pop3-sig))
+@(require "common.rkt" (for-label net/pop3 net/pop3-unit net/pop3-sig))
 
 @(define pt (tt ">"))
 
@@ -150,7 +147,7 @@ Raised when the server does not gracefully disconnect.}
 
 @defstruct[(malformed-server-response pop3) ([communicator communicator?])]{
 
-Raised when the server produces a mal-formed response.}
+Raised when the server produces a malformed response.}
 
 @section{Example Session}
 

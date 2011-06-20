@@ -1,8 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label net/base64
-                     net/base64-unit
-                     net/base64-sig))
+@(require "common.rkt" (for-label net/base64 net/base64-unit net/base64-sig))
 
 @title[#:tag "base64"]{Base 64: Encoding and Decoding}
 
