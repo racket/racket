@@ -29,7 +29,7 @@
  [reduction-relation->pict (->* (reduction-relation?)
                                 (#:style reduction-rule-style/c)
                                 pict?)]
- [render-reduction-relation-rules (parameter/c (or/c false/c (listof (or/c symbol? string?))))]
+ [render-reduction-relation-rules (parameter/c (or/c false/c (listof (or/c symbol? string? exact-nonnegative-integer?))))]
  
  [language->pict (->* (compiled-lang?)
                       (#:nts (or/c false/c (listof (or/c string? symbol?))))

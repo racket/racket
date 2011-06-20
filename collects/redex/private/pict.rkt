@@ -106,16 +106,18 @@
      (map (rr-lws->trees (language-nts (reduction-relation-lang rr)))
           (if rules
               (let ([ht (make-hash)])
-                (for-each (lambda (rp)
-                            (hash-set! ht (rule-pict-label rp) rp))
-                          (reduction-relation-lws rr))
+                (for ([rp (in-list (reduction-relation-lws rr))]
+                      [i (in-naturals)])
+                  (hash-set! ht i rp)
+                  (hash-set! ht (rule-pict-label rp) rp))
                 (map (lambda (label)
                        (hash-ref ht (if (string? label)
                                         (string->symbol label)
                                         label)
                                  (lambda ()
                                    (error what
-                                          "no rule found for label: ~e"
+                                          "no rule found for ~a: ~e"
+                                          (if (number? label) "index" "label")
                                           label))))
                      rules))
               (reduction-relation-lws rr))))))
@@ -175,22 +177,26 @@
     (table 4
            (apply
             append
-            (map (lambda (rp)
-                   (let ([arrow (hbl-append (blank (arrow-space) 0)
-                                            (arrow->pict (rule-pict-arrow rp))
-                                            (blank (arrow-space) 0))]
-                         [lhs (rule-pict-lhs rp)]
-                         [rhs (rule-pict-rhs rp)]
-                         [spc (basic-text " " (default-style))]
-                         [label (hbl-append (blank (label-space) 0) (rp->pict-label rp))]
-                         [sep (blank 4)])
-                     (list lhs arrow rhs label
-                           (blank) (blank)
-                           (let ([sc (rp->side-condition-pict rp max-w)])
-                             (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0))
-                           (blank)
-                           sep (blank) (blank) (blank))))
-                 rps))
+            (let ([len (length rps)])
+              (for/list ([rp (in-list rps)]
+                         [i (in-naturals 1)])
+                (let ([arrow (hbl-append (blank (arrow-space) 0)
+                                         (arrow->pict (rule-pict-arrow rp))
+                                         (blank (arrow-space) 0))]
+                      [lhs (rule-pict-lhs rp)]
+                      [rhs (rule-pict-rhs rp)]
+                      [spc (basic-text " " (default-style))]
+                      [label (hbl-append (blank (label-space) 0) (rp->pict-label rp))]
+                      [sep (blank 4)])
+                  (append 
+                   (list lhs arrow rhs label
+                         (blank) (blank)
+                         (let ([sc (rp->side-condition-pict rp max-w)])
+                           (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0))
+                         (blank))
+                   (if (= len i)
+                       '()
+                       (list sep (blank) (blank) (blank))))))))
            (list* left-column-align ctl-superimpose ltl-superimpose)
            (list* left-column-align ctl-superimpose ltl-superimpose)
            (list* sep sep (+ sep (current-label-extra-space))) 2)))

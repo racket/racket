@@ -2121,9 +2121,11 @@ Note that the @racket[#t] variant can look a little bit strange if
 multi-line right-hand sides.
 }
 
-@defparam[render-reduction-relation-rules rules (or/c false/c (listof (or/c symbol? string?)))]{
+@defparam[render-reduction-relation-rules rules (or/c false/c (listof (or/c symbol? string? exact-nonnegative-integer?)))]{
   This parameter controls which rules in a reduction relation
-  will be rendered.
+  will be rendered. The strings and symbols match the names of
+  the rules and the integers match the position of the rule in
+  the original definition.
 }
 
 @defparam[rule-pict-style style reduction-rule-style/c]{
