@@ -1,9 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "utils.ss"
-          (for-label scribble/manual
-                     scribble/eval))
+@(require scribble/manual scribble/eval "utils.rkt"
+          (for-label scribble/manual scribble/eval))
 
 @title[#:tag "reference-style"]{Style Guide}
 
