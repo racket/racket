@@ -1,11 +1,14 @@
 #lang racket/base
-(require racket/unit
-         racket/contract
-         "url-structs.rkt"
-         "url-sig.rkt"
-         "url-unit.rkt"
-         "tcp-sig.rkt"
-         "tcp-unit.rkt")
+(require racket/unit racket/contract
+         "url-structs.rkt" "url-sig.rkt" "url-unit.rkt"
+         "tcp-sig.rkt")
+
+;; Define `tcp@' as a unit that uses void for `tcp-connect', which will
+;; make the url-unit code dispatch to either the built in tcp functions
+;; or the ssl functions.  (See the "HACK" comment there.)
+(require (except-in racket/tcp tcp-connect))
+(define tcp-connect (void))
+(define-unit-from-context tcp@ tcp^)
 
 (define-compound-unit/infer url+tcp@
   (import) (export url^)
