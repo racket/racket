@@ -371,7 +371,8 @@ the state transitions / contracts are:
         ;; important that this arg only has a flat contract
         ;; so that no wrapper is created, so that
         ;; the weak box stuff works ...
-        (λ (x) (and (procedure? x) (procedure-arity-includes? x 2))))
+        (let ([procedure-with-arity2? (λ (x) (and (procedure? x) (procedure-arity-includes? x 2)))])
+          procedure-with-arity2?))
        (boolean?)
        (-> void?))
   ((p f)
