@@ -692,10 +692,12 @@
 [rename-file-or-directory (->opt -Pathlike -Pathlike [Univ] -Void)]
 
 [file-or-directory-modify-seconds
- (cl->* (-Pathlike . -> . -Nat)
-        (-Pathlike (-val #f) . -> . -Nat)
-        (-Pathlike -Nat . -> . -Void)
-        (-Pathlike (-opt -Nat) (-> Univ) . -> . Univ))]
+ (-poly (a)
+   (cl->* (-Pathlike . -> . -NonNegFixnum)
+          (-Pathlike (-val #f) . -> . -NonNegFixnum)
+          (-Pathlike -Nat . -> . -Void)
+          (-Pathlike (-val #f) (-> a) . -> . (Un a -NonNegFixnum))
+          (-Pathlike -Nat (-> a) . -> . (Un a -Void))))]
 
 
 [file-or-directory-permissions
@@ -705,7 +707,7 @@
         (-> -Pathlike -NonNegFixnum -Void))]
 
 
-[file-or-directory-identity (->opt -Pathlike [Univ] -Nat)]
+[file-or-directory-identity (->opt -Pathlike [Univ] -PosInt)]
 [file-size (-> -Pathlike -Nat)]
 
 [copy-file (-> -Pathlike -Pathlike -Void)]
@@ -752,6 +754,14 @@
         #:mode (one-of/c 'binary 'text) #f
         #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
         -Void)]
+
+[display-lines-to-file
+ (->key (-lst Univ) -Pathlike
+        #:separator Univ #f
+        #:mode (one-of/c 'binary 'text) #f
+        #:exists (one-of/c 'error 'append 'update 'replace 'truncate 'truncate/replace) #f
+        -Void)]
+
 [copy-directory/files (-> -Pathlike -Pathlike -Void)]
 [delete-directory/files (-> -Pathlike -Void)]
 

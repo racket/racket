@@ -25,7 +25,10 @@
 	             (env global-env)
 	             (base-env #;base-env #;base-env-numeric
 			       base-env-indexing base-special-env))
-         (for-template (base-env #;base-env base-types base-types-extra
+         racket/file
+         (for-template
+           
+            (base-env #;base-env base-types base-types-extra
 				 #;base-env-numeric 
                                  base-special-env
 				 base-env-indexing))
@@ -980,6 +983,11 @@
         (tc-e (eq? 1 2) B)
         (tc-e (equal?/recur 'foo 'bar eq?) B)
 
+
+
+        (tc-e (shuffle '("a" "b")) (-lst -String))
+
+
         ;Regexps
         (tc-e (regexp-match "foo" "foobar") (-opt (-pair -String (-lst (-opt -String)))))
         (tc-e (regexp-match #"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
@@ -1036,6 +1044,131 @@
         (tc-e (regexp-replace "foo" #"foobar" (lambda: (args : Bytes *) #"foo")) -Bytes)
         (tc-err (regexp-replace "foo" "foobar" (lambda: (args : Bytes *) #"foo")))
         (tc-err (regexp-replace #"foo" "foobar" (lambda: (args : String *) "foo")))
+
+        ;File System
+        (tc-e (find-system-path 'home-dir) -Path)
+        (tc-e (path-list-string->path-list "/bin:/sbin:/usr/bin" null) (-lst -Path))
+        (tc-e (find-executable-path "racket" "collects" #t) (-opt -Path))
+        
+        (tc-e (file-exists? "/usr") B)
+        (tc-e (link-exists? "/usr") B)
+        (tc-e (delete-file "does-not-exist") -Void)
+
+        (tc-e (rename-file-or-directory "old" "new") -Void)
+        (tc-e (rename-file-or-directory "old" "new" #t) -Void)
+
+        (tc-e (file-or-directory-modify-seconds "dir") -NonNegFixnum)
+        (tc-e (file-or-directory-modify-seconds "dir" #f) -NonNegFixnum)
+        (tc-e (file-or-directory-modify-seconds "dir" 20) -Void)
+        (tc-e (file-or-directory-modify-seconds "dir" #f (lambda () "error")) (t:Un -NonNegFixnum -String))
+        (tc-e (file-or-directory-modify-seconds "dir" 20 (lambda () "error")) (t:Un -Void -String))
+
+        (tc-e (file-or-directory-permissions "tmp") (-lst (one-of/c 'read 'write 'execute)))
+        (tc-e (file-or-directory-permissions "tmp" #f) (-lst (one-of/c 'read 'write 'execute)))
+        (tc-e (file-or-directory-permissions "tmp" 'bits) -NonNegFixnum)
+        (tc-e (file-or-directory-permissions "tmp" 4) -Void)
+
+        (tc-e (file-or-directory-identity "tmp") -PosInt)
+        (tc-e (file-or-directory-identity "tmp" 3) -PosInt)
+
+        (tc-e (file-size "tmp") -Nat)
+
+        (tc-e (copy-file "tmp/src" "tmp/dest") -Void)
+        (tc-e (make-file-or-directory-link "tmp/src" "tmp/dest") -Void)
+
+        (tc-e (current-drive) -Path)
+
+        (tc-e (directory-exists? "e") B)
+        (tc-e (make-directory "e") -Void)
+
+        (tc-e (delete-directory "e") -Void)
+
+        (tc-e (directory-list) (-lst -Path))
+        (tc-e (directory-list "tmp") (-lst -Path))
+        (tc-e (filesystem-root-list) (-lst -Path))
+
+
+        (tc-e (file->string "tmp") -String)
+        (tc-e (file->string "tmp" #:mode 'binary) -String)
+        (tc-e (file->string "tmp" #:mode 'text) -String)
+
+        (tc-e (file->bytes "tmp") -Bytes)
+        (tc-e (file->bytes "tmp" #:mode 'binary) -Bytes)
+        (tc-e (file->bytes "tmp" #:mode 'text) -Bytes)
+
+        (tc-e (file->list "tmp") (-lst Univ))
+        (tc-e ((inst file->list Any) "tmp" #:mode 'binary) (-lst Univ))
+        (tc-e ((inst file->list Any) "tmp" #:mode 'text) (-lst Univ))
+
+        (tc-e (file->list "tmp" (lambda (x) "string")) (-lst -String))
+        (tc-e ((inst file->list String) "tmp" (lambda (x) "string") #:mode 'binary) (-lst -String))
+        (tc-e ((inst file->list String) "tmp" (lambda (x) "string") #:mode 'text) (-lst -String))
+
+        (tc-e (file->lines "tmp") (-lst -String))
+        (tc-e (file->lines "tmp" #:mode 'text) (-lst -String))
+        (tc-e (file->lines "tmp" #:line-mode (first (shuffle '(linefeed return return-linefeed any any-one)))
+                                 #:mode 'binary)  (-lst -String))
+
+
+        (tc-e (file->bytes-lines "tmp") (-lst -Bytes))
+        (tc-e (file->bytes-lines "tmp" #:mode 'text) (-lst -Bytes))
+        (tc-e (file->bytes-lines "tmp" #:line-mode (first (shuffle '(linefeed return return-linefeed any any-one)))
+                                 #:mode 'binary)  (-lst -Bytes))
+
+        (tc-e (display-to-file "a" "tmp" #:mode (if (= 1 2) 'binary 'text)
+                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
+              -Void)
+
+        (tc-e (write-to-file "a" "tmp" #:mode (if (= 1 2) 'binary 'text)
+                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
+              -Void)
+
+
+        (tc-e (display-lines-to-file (list 2 'esha "esht") "tmp" #:separator #f
+                                #:mode (if (= 1 2) 'binary 'text)
+                                #:exists (first (shuffle '(error append update replace truncate truncate/replace))))
+              -Void)
+
+        (tc-e (copy-directory/files "tmp/src" "tmp/dest") -Void)
+        (tc-e (delete-directory/files "tmp/src") -Void)
+
+        (tc-e (find-files (lambda (p) #t)) (-lst -Path))
+        (tc-e (find-files (lambda (p) #t) #f) (-lst -Path))
+        (tc-e (find-files (lambda (p) #t) "start") (-lst -Path))
+
+        (tc-e (pathlist-closure (list "thpm" "htmp")) (-lst -Path))
+        (tc-e (fold-files (lambda: ((p : Path) (type : Symbol) (res : 'res))
+                            (if (eq? type 'dir) (values res #t) (values res 'ignored))) 'res)  (-val 'res))
+        (tc-e (fold-files (lambda: ((p : Path) (type : Symbol) (res : 'res)) res) 'res "tmp" #f)  (-val 'res))
+
+        (tc-e (make-directory* "tmp/a/b/c") -Void)
+
+        (tc-e (make-temporary-file) -Path)
+        (tc-e (make-temporary-file "ee~a") -Path)
+        (tc-e (make-temporary-file "ee~a" 'directory) -Path)
+        (tc-e (make-temporary-file "ee~a" "temp" "here") -Path)
+
+        (tc-e (get-preference 'pref (lambda () 'error) 'timestamp #f #:use-lock? #t #:timeout-lock-there #f #:lock-there #f) Univ)
+        (tc-e (put-preferences (list 'sym 'sym2) (list 'v1 'v2)) -Void)
+
+        (tc-e (preferences-lock-file-mode) (one-of/c 'exists 'file-lock))
+
+        (tc-e (make-handle-get-preference-locked .3 'sym (lambda () 'eseh) 'timestamp #f #:lock-there #f #:max-delay .45)
+              (t:-> -Pathlike ManyUniv))
+
+        (tc-e (call-with-file-lock/timeout #f 'exclusive (lambda () 'res) (lambda () 'err) 
+                #:get-lock-file (lambda () "lock")
+                #:delay .01
+                #:max-delay .2) (one-of/c 'res 'err))
+
+        (tc-e (make-lock-file-name "tmp.file") -Pathlike)
+        (tc-e (make-lock-file-name "tmp.dir" "tmp.file") -Pathlike)
+
+
+
+
+
+
 
         )
   (test-suite
