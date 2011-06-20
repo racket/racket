@@ -77,7 +77,7 @@
           style
           label)
     
-    (inherit set-size get-gtk)
+    (inherit get-gtk set-auto-size set-size)
     
     (define gtk (as-gtk-allocation (gtk_event_box_new)))
     (define client-gtk (atomically
@@ -92,6 +92,9 @@
                [gtk gtk]
                [extra-gtks (list client-gtk)]
                [no-show? (memq 'deleted style)])
+
+    ;; Start with a minimum size:
+    (set-size 0 0 1 1)
     
     (connect-key-and-mouse gtk)
     (gtk_widget_add_events gtk (bitwise-ior GDK_BUTTON_PRESS_MASK
