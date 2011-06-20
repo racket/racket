@@ -1,4 +1,4 @@
-#lang typed/scheme
+#lang typed/racket
 
 (: chan (Channelof Symbol))
 (define chan (make-channel))
@@ -48,3 +48,26 @@
     (channel-put c2 (cons c3 'b))
     (let: ((c4 : JumpingChannel (make-channel)))
       (channel-put c3 (cons c4 'c)))))
+
+
+
+
+(: tc (ThreadCellof Integer))
+(define tc (make-thread-cell 0))
+
+(thread-cell-set! tc 1)
+
+(thread-wait (thread (lambda ()
+ (displayln (thread-cell-ref tc))
+ (thread-cell-set! tc 2)
+ (displayln (thread-cell-ref tc)))))
+
+(thread-cell-ref tc)
+
+(define blocked-thread
+ (thread (lambda ()
+  (channel-get ((inst make-channel 'unused))))))
+
+
+(thread-suspend blocked-thread)
+(kill-thread blocked-thread)
