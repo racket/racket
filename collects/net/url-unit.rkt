@@ -14,11 +14,8 @@
 (require racket/port racket/string
          "url-structs.rkt" "uri-codec.rkt" "url-sig.rkt" "tcp-sig.rkt")
 
-;; See "HACK" below.
-(require (prefix-in r: racket/tcp))
-
 (import tcp^)
-(export url^)
+(export url+scheme^)
 
 (define-struct (url-exception exn:fail) ())
 
@@ -92,25 +89,7 @@
           [(string=? scheme "https") 443]
           [else (url-error "Scheme ~a not supported" (url-scheme url))])))
 
-;; HACK: if `tcp-connect' is void, then instead of using the input unit
-;; we dispatch (based on the url scheme) directly to the built in tcp
-;; functionality or to the ssl functions.  This makes it possible to
-;; have net/url provide an implementation that handles both http and
-;; https, while code that uses this unit directly (like old code that
-;; slaps together an ssl version) continues to work.
-(define dispatch-on-scheme? (void? tcp-connect))
-(define get-ssl
-  (let ([connect #f] [abandon #f])
-    ;; require the ssl code only when needed
-    (lambda (name)
-      (unless connect
-        (define-values/invoke-unit
-          ((dynamic-require 'net/ssl-tcp-unit 'make-ssl-tcp@)
-           #f #f #f #f #f #f #f)
-          (import) (export tcp^))
-        (set! connect tcp-connect)
-        (set! abandon tcp-abandon-port))
-      (case name [(connect) connect] [(abandon) abandon]))))
+(define current-connect-scheme (make-parameter "http"))
 
 ;; make-ports : url -> in-port x out-port
 (define (make-ports url proxy)
@@ -118,11 +97,8 @@
                        (caddr proxy)
                        (or (url-port url) (url->default-port url)))]
         [host (if proxy (cadr proxy) (url-host url))])
-    ((cond
-       [(not dispatch-on-scheme?)           tcp-connect]
-       [(string=? (url-scheme url) "https") (get-ssl 'connect)]
-       [else                                r:tcp-connect])
-     host port-number)))
+    (parameterize ([current-connect-scheme (url-scheme url)])
+      (tcp-connect host port-number))))
 
 ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str) -> in-port
 (define (http://getpost-impure-port get? url post-data strings)
@@ -151,10 +127,7 @@
   (println)
   (when post-data (display post-data client->server))
   (flush-output client->server)
-  ((cond [(not dispatch-on-scheme?)           tcp-abandon-port]
-         [(string=? (url-scheme url) "https") (get-ssl 'abandon)]
-         [else                                r:tcp-abandon-port])
-   client->server)
+  (tcp-abandon-port client->server)
   server->client)
 
 (define (file://->path url [kind (system-path-convention-type)])

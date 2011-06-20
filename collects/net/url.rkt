@@ -1,13 +1,26 @@
 #lang racket/base
 (require racket/unit racket/contract
-         "url-structs.rkt" "url-sig.rkt" "url-unit.rkt"
-         "tcp-sig.rkt")
+         (rename-in racket/tcp 
+                    [tcp-connect plain-tcp-connect]
+                    [tcp-abandon-port plain-tcp-abandon-port])
+         openssl
+         "tcp-sig.rkt"
+         "url-structs.rkt" "url-sig.rkt" "url-unit.rkt")
 
-;; Define `tcp@' as a unit that uses void for `tcp-connect', which will
-;; make the url-unit code dispatch to either the built in tcp functions
-;; or the ssl functions.  (See the "HACK" comment there.)
-(require (except-in racket/tcp tcp-connect))
-(define tcp-connect (void))
+;; Define `tcp-connect' and `tcp-abandon-port' to fit with
+;; `current-connect-scheme' from `url-unt@'
+(define (tcp-connect host port)
+  (cond
+   [(equal? (current-connect-scheme) "https") 
+    (ssl-connect host port (current-https-protocol))]
+   [else 
+    (plain-tcp-connect host port)]))
+
+(define (tcp-abandon-port port)
+  (cond
+   [(ssl-port? port) (ssl-abandon-port port)]
+   [else (plain-tcp-abandon-port port)]))
+
 (define-unit-from-context tcp@ tcp^)
 
 (define-compound-unit/infer url+tcp@
@@ -17,6 +30,9 @@
 (define-values/invoke-unit/infer url+tcp@)
 
 (provide (struct-out url) (struct-out path/param))
+
+(define current-https-protocol (make-parameter 'sslv2-or-v3))
+(provide current-https-protocol)
 
 (provide/contract
  (string->url ((or/c bytes? string?) . -> . url?))

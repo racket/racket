@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
-          (for-label net/url net/url-unit net/url-sig net/head net/uri-codec))
+          (for-label net/url net/url-unit net/url-sig 
+                     net/head net/uri-codec net/tcp-sig
+                     openssl))
 
 @title[#:tag "url"]{URLs and HTTP}
 
@@ -16,8 +18,8 @@ whether or not you wish to examine its MIME headers.  At this point,
 you have a regular input port with which to process the document, as with
 any other file. 
 
-Currently the only supported protocols are @scheme["http"] and
-sometimes @scheme["file"].
+Currently the only supported protocols are @scheme["http"],
+@racket["https"], and sometimes @scheme["file"].
 
 @section{URL Structure}
 
@@ -52,7 +54,7 @@ The basic structure for all URLs, which is explained in RFC 3986
 }|
 
 The strings inside the @scheme[user], @scheme[path], @scheme[query],
-and @scheme[fragment] fields are represented directly as Scheme
+and @scheme[fragment] fields are represented directly as Racket
 strings, without URL-syntax-specific quoting. The procedures
 @scheme[string->url] and @scheme[url->string] translate encodings such
 as @litchar{%20} into spaces and back again.
@@ -212,6 +214,14 @@ request.
 The DELETE method is used to delete the entity identified by
 @scheme[URL].
 
+@bold{Beware:} By default, @scheme["https"] scheme handling does not
+verify a server's certificate (i.e., it's equivalent of clicking
+through a browser's warnings), so communication is safe, but the
+identity of the server is not verified. To validate the server's
+certificate, set @racket[current-https-protocol] to a context created
+with @racket[ssl-make-client-context], and enable certificate validation
+in the context with @racket[ssl-set-verify!].
+
 The @scheme["file"] scheme for URLs is handled only by
 @scheme[get-pure-port], which uses @scheme[open-input-file], does not
 handle exceptions, and ignores the optional strings.}
@@ -246,7 +256,11 @@ port} contains both the returned headers and the body. The
 Initiates a POST/PUT request for @scheme[URL] and sends the
 @scheme[post] byte string.  The result is a @tech{pure port}, which
 contains the body of the response is returned.  The optional list of
-strings can be used to send header lines to the server.}
+strings can be used to send header lines to the server.
+
+@bold{Beware:} See @racket[get-pure-port] for warnings about
+@scheme["https"] certificate validation.}
+
 
 @deftogether[(
 @defproc[(post-impure-port [URL url?]
@@ -335,6 +349,14 @@ connections. Each mapping is a list of three elements:
 Currently, the only proxiable scheme is @scheme["http"]. The default
 mapping is the empty list (i.e., no proxies).}
 
+@defparam[current-https-protocol protocol (or/c ssl-client-context? symbol?)]{
+
+A parameter that determines the connection mode for @racket["https"]
+connections; the parameter value is passed as the third argument to
+@racket[ssl-connect] when creating an @racket["https"] connection.
+Set this parameter to validate a server's certificates, for example,
+as described with @racket[get-pure-port].}
+
 @; ----------------------------------------
 
 @section{URL Unit}
@@ -343,7 +365,15 @@ mapping is the empty list (i.e., no proxies).}
 
 @defthing[url@ unit?]{
 
-Imports @scheme[tcp^], exports @scheme[url^].}
+Imports @scheme[tcp^], exports @scheme[url+scheme^].
+
+The @racket[current-connect-scheme] parameter is set to the scheme of
+a URL when @racket[tcp-connect] is called to create a connection. A
+@racket[tcp-connect] variant linked to @racket[url@] can check this
+parameter to choose the connection mode; in particular,
+@racket[net/url] supplies a @racket[tcp-connect] that actually uses
+@racket[ssl-connect] when @racket[(current-connect-scheme)] produces
+@racket["https"].}
 
 @; ----------------------------------------
 
@@ -353,5 +383,10 @@ Imports @scheme[tcp^], exports @scheme[url^].}
 
 @defsignature[url^ ()]{
 
-Includes everything exported by the @schememodname[net/url] module.}
+Includes everything exported by the @schememodname[net/url] module
+except @racket[current-https-protocol].}
+
+@defsignature[url+scheme^ (url^)]{
+
+Adds @racket[current-connect-scheme] to @racket[url^].}
 
