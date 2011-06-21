@@ -980,6 +980,63 @@
         (tc-e (eq? 1 2) B)
         (tc-e (equal?/recur 'foo 'bar eq?) B)
 
+        ;Regexps
+        (tc-e (regexp-match "foo" "foobar") (-opt (-pair -String (-lst (-opt -String)))))
+        (tc-e (regexp-match #"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #rx"foo" "foobar") (-opt (-pair -String (-lst (-opt -String)))))
+        (tc-e (regexp-match #rx#"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #px"foo" "foobar") (-opt (-pair -String (-lst (-opt -String)))))
+        (tc-e (regexp-match #px#"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+        (tc-e (regexp-match "foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #"foo" "foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #rx"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #rx#"foo" "foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #px"foo" #"foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #px#"foo" "foobar") (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+        (tc-e (regexp-match "foo" (string->path "tmp")) (-opt (-pair -String (-lst (-opt -String)))))
+        (tc-e (regexp-match #"foo" (string->path "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match "foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+        (tc-e (regexp-match #"foo" (open-input-string "tmp")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+        (tc-e (regexp-match* "foo" "foobar") (-lst -String))
+        (tc-e (regexp-match* "foo" #"foobar") (-lst -Bytes))
+        (tc-e (regexp-match* #"foo" "foobar") (-lst -Bytes))
+        (tc-e (regexp-match* #"foo" #"foobar") (-lst -Bytes))
+
+
+        (tc-err (regexp-try-match "foo" "foobar"))
+        (tc-e (regexp-try-match "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+        (tc-err (regexp-match-peek "foo" "foobar"))
+        (tc-e (regexp-match-peek "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+        (tc-err (regexp-match-peek-immediate "foo" "foobar"))
+        (tc-e (regexp-match-peek-immediate "foo" (open-input-string "foobar")) (-opt (-pair -Bytes (-lst (-opt -Bytes)))))
+
+
+
+        [tc-e (regexp-match/end "foo" "foobar") #:ret (ret (list (-opt (-pair -String (-lst (-opt -String)))) (-opt -Bytes)) (list (-FS -top -top) (-FS -top -top)))]
+
+        (tc-e (regexp-split "foo" "foobar") (-pair -String (-lst -String)))
+        (tc-e (regexp-split "foo" #"foobar") (-pair -Bytes (-lst -Bytes)))
+        (tc-e (regexp-split #"foo" "foobar") (-pair -Bytes (-lst -Bytes)))
+        (tc-e (regexp-split #"foo" #"foobar") (-pair -Bytes (-lst -Bytes)))
+
+        (tc-err (regexp-split "foo" (path->string "foobar")))
+
+        (tc-e (regexp-replace "foo" "foobar" "rep") -String)
+        (tc-e (regexp-replace #"foo" "foobar" "rep") -Bytes)
+        (tc-e (regexp-replace "foo" #"foobar" "rep") -Bytes)
+        (tc-e (regexp-replace "foo" #"foobar" #"rep") -Bytes)
+
+        (tc-err (regexp-replace "foo" "foobar" #"rep"))
+        (tc-e (regexp-replace "foo" "foobar" (lambda: (args : String *) "foo")) -String)
+        (tc-e (regexp-replace "foo" #"foobar" (lambda: (args : Bytes *) #"foo")) -Bytes)
+        (tc-err (regexp-replace "foo" "foobar" (lambda: (args : Bytes *) #"foo")))
+        (tc-err (regexp-replace #"foo" "foobar" (lambda: (args : String *) "foo")))
+
         )
   (test-suite
    "check-type tests"

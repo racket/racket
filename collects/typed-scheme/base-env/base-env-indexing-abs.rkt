@@ -75,30 +75,33 @@
           [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))]
           [-StrRx  (Un -String -Regexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
+          [-StrInput (Un -String -Path)]
+          [-BtsInput (Un -Input-Port -Bytes)])
       (cl->*
-       (-StrRx -Input [N ?N ?outp -Bytes] . ->opt . (optlist -String))
-       (-BtsRx -Input [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes))))]
+       (-StrRx -StrInput [N ?N ?outp -Bytes] . ->opt . (optlist -String))
+       (-BtsRx (Un -StrInput -BtsInput) [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes))
+       (-Pattern -BtsInput    [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes))))]
+
    [regexp-match*
     (let ([N       index-type]
           [?N      (-opt index-type)]
           [-StrRx  (Un -String -Regexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
+          [-StrInput (Un -String -Path)]
+          [-BtsInput (Un -Input-Port -Bytes)])
       (cl->*
-       (-StrRx -Input [N ?N -Bytes] . ->opt . (-lst -String))
-       (-BtsRx -Input [N ?N -Bytes] . ->opt . (-lst -Bytes))))]
+       (-StrRx -StrInput [N ?N -Bytes] . ->opt . (-lst -String))
+       (-BtsRx (Un -StrInput -BtsInput) [N ?N -Bytes] . ->opt . (-lst -Bytes))
+       (-Pattern -BtsInput [N ?N -Bytes] . ->opt . (-lst -Bytes))))]
+
    [regexp-try-match
     (let ([?outp   (-opt -Output-Port)]
           [N       index-type]
           [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))]
           [-StrRx  (Un -String -Regexp)]
-          [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
-      (cl->*
-       (-StrRx -Input [N ?N ?outp -Bytes] . ->opt . (optlist -String))
-       (-BtsRx -Input [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes))))]
+          [-BtsRx  (Un -Bytes  -Byte-Regexp)])
+       ((Un -BtsRx -StrRx) -Input-Port [N ?N ?outp -Bytes] . ->opt . (optlist -Bytes)))]
     
 
    [regexp-match-positions
@@ -135,13 +138,8 @@
     (let ([progress (-val #f)]
           [N       index-type]
           [?N      (-opt index-type)]
-          [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))]
-          [-StrRx  (Un -String -Regexp)]
-          [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
-      (cl->*
-       (-StrRx -Input [N ?N progress -Bytes] . ->opt . (optlist -String))
-       (-BtsRx -Input [N ?N progress -Bytes] . ->opt . (optlist -Bytes))))]
+          [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))])
+       (-Pattern -Input-Port [N ?N progress -Bytes] . ->opt . (optlist -Bytes)))]
 
 
    [regexp-match-peek-positions
@@ -149,22 +147,16 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
-           [-Input (Un -String -Input-Port -Bytes -Path)])
-      (->opt -Pattern -Input [N ?N progress -Bytes] output))]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))])
+      (->opt -Pattern -Input-Port [N ?N progress -Bytes] output))]
 
 
    [regexp-match-peek-immediate
     (let ([progress (-val #f)]
           [N       index-type]
           [?N      (-opt index-type)]
-          [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))]
-          [-StrRx  (Un -String -Regexp)]
-          [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
-      (cl->*
-       (-StrRx -Input [N ?N progress -Bytes] . ->opt . (optlist -String))
-       (-BtsRx -Input [N ?N progress -Bytes] . ->opt . (optlist -Bytes))))]
+          [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))])
+       (-Pattern -Input-Port [N ?N progress -Bytes] . ->opt . (optlist -Bytes)))]
 
 
    [regexp-match-peek-positions-immediate
@@ -172,9 +164,8 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
-           [-Input (Un -String -Input-Port -Bytes -Path)])
-      (->opt -Pattern -Input [N ?N progress -Bytes] output))]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))])
+      (->opt -Pattern -Input-Port [N ?N progress -Bytes] output))]
 
 
 
@@ -183,9 +174,8 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-lst ind-pair)]
-           [-Input (Un -String -Input-Port -Bytes -Path)])
-      (->opt -Pattern -Input [N ?N progress -Bytes] output))]
+           [output (-lst ind-pair)])
+      (->opt -Pattern -Input-Port [N ?N progress -Bytes] output))]
 
 
    [regexp-match/end
@@ -195,10 +185,12 @@
           [optlist (lambda (t) (-opt (-pair t (-lst (-opt t)))))]
           [-StrRx  (Un -String -Regexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
+          [-StrInput (Un -String -Path)]
+          [-BtsInput (Un -Input-Port -Bytes)])
       (cl->*
-       (-StrRx -Input [N ?N ?outp -Bytes N] . ->opt . (-values (list (optlist -String) (-opt -Bytes))))
-       (-BtsRx -Input [N ?N ?outp -Bytes N] . ->opt . (-values (list (optlist -Bytes) (-opt -Bytes))))))]
+       (-StrRx -StrInput                [N ?N ?outp -Bytes N] . ->opt . (-values (list (optlist -String) (-opt -Bytes))))
+       (-BtsRx (Un -StrInput -BtsInput) [N ?N ?outp -Bytes N] . ->opt . (-values (list (optlist -Bytes) (-opt -Bytes))))
+       (-Pattern -BtsInput              [N ?N ?outp -Bytes N] . ->opt . (-values (list (optlist -Bytes) (-opt -Bytes))))))]
 
 
    [regexp-match-positions/end
@@ -218,9 +210,8 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
-           [-Input (Un -String -Input-Port -Bytes -Path)])
-      (->opt -Pattern -Input [N ?N progress -Bytes N] (-values (list output (-opt -Bytes)))))]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))])
+      (->opt -Pattern -Input-Port [N ?N progress -Bytes N] (-values (list output (-opt -Bytes)))))]
 
 
    [regexp-match-peek-positions-immediate/end
@@ -228,22 +219,22 @@
            [N       index-type]
            [?N      (-opt index-type)]
            [ind-pair (-pair -Index -Index)]
-           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))]
-           [-Input (Un -String -Input-Port -Bytes -Path)])
-      (->opt -Pattern -Input [N ?N progress -Bytes N] (-values (list output (-opt -Bytes)))))]
+           [output (-opt (-pair ind-pair (-lst (-opt ind-pair))))])
+      (->opt -Pattern -Input-Port [N ?N progress -Bytes N] (-values (list output (-opt -Bytes)))))]
 
 
 
    [regexp-split
     (let ([N       index-type]
           [?N      (-opt index-type)]
-          [output (lambda (t) (-opt (-pair t (-lst t))))]
+          [output (lambda (t) (-pair t (-lst t)))]
           [-StrRx  (Un -String -Regexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp)]
-          [-Input (Un -String -Input-Port -Bytes -Path)])
+          [-BtsInput (Un -Input-Port -Bytes)])
       (cl->*
-       (-StrRx -Input [N ?N -Bytes] . ->opt . (output -String))
-       (-BtsRx -Input [N ?N -Bytes] . ->opt . (output -Bytes))))]
+       (-StrRx -String                [N ?N -Bytes] . ->opt . (output -String))
+       (-BtsRx (Un -String -BtsInput) [N ?N -Bytes] . ->opt . (output -Bytes))
+       (-Pattern -BtsInput            [N ?N -Bytes] . ->opt . (output -Bytes))))]
 
 
 
