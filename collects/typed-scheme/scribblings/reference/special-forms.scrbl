@@ -1,8 +1,8 @@
 #lang scribble/manual
 
 @begin[(require "../utils.rkt" scribble/eval racket/sandbox)
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])
-                           (only-in racket/base for)))]
+       (require (for-label (only-meta-in 0 [except-in typed/racket])
+                           (only-in racket/base)))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
@@ -11,6 +11,15 @@
 
 @(define-syntax-rule (ex . args)
    (examples #:eval the-top-eval . args))
+
+
+@(define-syntax-rule (def-racket for-id for*-id with-handlers-id)
+  (begin
+    (require (for-label (only-in racket/base for for* with-handlers)))
+    (define for-id (racket for))
+    (define for*-id (racket for*))
+    (define with-handlers-id (racket with-handlers))))
+@(def-racket for-id for*-id with-handlers-id)
 
 
 @title[#:tag "special-forms"]{Special Form Reference}
@@ -176,6 +185,12 @@ These behave like their non-annotated counterparts. Unlike the above,
 	   (for:-clause ...)
 	   expr ...+)]]]{
 These behave like their non-annotated counterparts.
+}
+
+@deftogether[[
+@defidform[for]
+@defidform[for*]]]{
+These are identical to @|for-id| and @|for*-id|, but provide additional annotations to help the typechecker.
 }
 
 @defform/subs[(do: : u ([id : t init-expr step-expr-maybe] ...)
@@ -365,5 +380,11 @@ a @racket[require/typed] form. Here is an example of using
 
 @racket[file-or-directory-modify-seconds] has some arguments which are optional, 
 so we need to use @racket[case->].}
+
+@section{Other Forms}
+
+@defidform[with-handlers]{
+Identical to @|with-handlers-id|, but provides additional annotations to help the typechecker.
+}
 
 @(close-eval the-eval)

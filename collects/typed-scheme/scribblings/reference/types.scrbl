@@ -126,6 +126,7 @@ default in Racket.
 @defidform[Port]
 @defidform[Path]
 @defidform[Path-String]
+@defidform[Path-For-Some-System]
 @defidform[Regexp]
 @defidform[PRegexp]
 @defidform[Byte-Regexp]
@@ -141,6 +142,10 @@ default in Racket.
 @defidform[Module-Path-Index]
 @defidform[Compiled-Module-Expression]
 @defidform[Resolved-Module-Path]
+@defidform[Pretty-Print-Style-Table]
+@defidform[Special-Comment]
+@defidform[Struct-Type-Property]
+@defidform[Read-Table]
 @defidform[Thread])]{
 These types represent primitive Racket data.
 
