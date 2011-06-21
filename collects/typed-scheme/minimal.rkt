@@ -24,5 +24,5 @@
              (require (only-in spec id ...) ...)
              (provide id ...) ...
              (provide (rename-out [b* b] ...))
-             (provide (all-from-out ts))
+             (provide (except-out (all-from-out ts) b* ...))
              (provide (all-from-out lb) ...))))))]))
