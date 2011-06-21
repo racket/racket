@@ -1352,6 +1352,7 @@
 
 
 ;; scheme/function
+[identity (-poly (a) (-> a a))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
 (primitive? (-> Univ B))
 (primitive-closure? (-> Univ B))
