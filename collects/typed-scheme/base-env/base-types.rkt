@@ -1,5 +1,7 @@
 #lang s-exp "type-env-lang.rkt"
 
+(provide (rename-out [Path-For-Some-System SomeSystemPath]))
+
 [Complex -Number]
 [Number -Number]
 [Inexact-Complex -InexactComplex]
@@ -77,7 +79,7 @@
 [Any Univ]
 [Port -Port]
 [Path -Path]
-[SomeSystemPath -SomeSystemPath]
+[Path-For-Some-System -SomeSystemPath]
 [Path-String -Pathlike]
 [Regexp -Regexp]
 [PRegexp -PRegexp]
