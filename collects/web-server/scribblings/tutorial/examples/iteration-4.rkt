@@ -21,7 +21,7 @@
   (set-blog-posts! a-blog
                    (cons a-post (blog-posts a-blog))))
 
-;; start: request -> doesn't
+;; start: request -> doesn't return
 ;; Consumes a request and produces a page that displays
 ;; all of the web content.
 (define (start request)
@@ -33,7 +33,7 @@
   (post (extract-binding/single 'title bindings)
         (extract-binding/single 'body bindings)))
 
-;; render-blog-page: request -> doesn't
+;; render-blog-page: request -> doesn't return
 ;; Produces an HTML page of the content of the BLOG.
 (define (render-blog-page request)
   (local [(define (response-generator make-url)  

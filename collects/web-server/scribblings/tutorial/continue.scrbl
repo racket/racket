@@ -393,7 +393,7 @@ web-server/insta
 (define (start request)
   (show-counter 0 request))
 
-@code:comment{show-counter: number request -> doesn't}
+@code:comment{show-counter: number request -> doesn't return}
 @code:comment{Displays a number that's hyperlinked: when the link is pressed,}
 @code:comment{returns a new page with the incremented number.}
 (define (show-counter n request)
@@ -1205,7 +1205,7 @@ And @racket[(formlet-process new-post-formlet _request)] where @racket[_request]
 
 We can use @racket[new-post-formlet] in @racket[render-blog-page] as follows:
 @racketblock[
-@code:comment{render-blog-page: blog request -> doesn't}
+@code:comment{render-blog-page: blog request -> doesn't return}
 @code:comment{Sends an HTML page of the content of the}
 @code:comment{blog.}
 (define (render-blog-page a-blog request)

@@ -3,7 +3,7 @@
 (require web-server/formlets
          "model-3.rkt")
 
-;; start: request -> doesn't
+;; start: request -> doesn't return
 ;; Consumes a request and produces a page that displays
 ;; all of the web content.
 (define (start request)  
@@ -21,7 +21,7 @@
         ,{input-string . => . body})
    (values title body)))
 
-;; render-blog-page: blog request -> doesn't
+;; render-blog-page: blog request -> doesn't return
 ;; Produces an HTML page of the content of the
 ;; blog.
 (define (render-blog-page a-blog request)
@@ -49,7 +49,7 @@
 (define new-comment-formlet
   input-string)
 
-;; render-post-detail-page: post request -> doesn't
+;; render-post-detail-page: post request -> doesn't return
 ;; Consumes a post and produces a detail page of the post.
 ;; The user will be able to either insert new comments
 ;; or go back to render-blog-page.
@@ -83,7 +83,7 @@
     (send/suspend/dispatch response-generator)))
 
 ;; render-confirm-add-comment-page :
-;; blog comment post request -> doesn't
+;; blog comment post request -> doesn't return
 ;; Consumes a comment that we intend to add to a post, as well
 ;; as the request. If the user follows through, adds a comment 
 ;; and goes back to the display page. Otherwise, goes back to 

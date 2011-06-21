@@ -10,7 +10,7 @@
   (list (post "First Post" "This is my first post")
         (post "Second Post" "This is another post")))
 
-;; start: request -> doesn't
+;; start: request -> doesn't return
 ;; Consumes a request and produces a page that displays all of the
 ;; web content.
 (define (start request)
@@ -22,7 +22,7 @@
   (post (extract-binding/single 'title bindings)
         (extract-binding/single 'body bindings)))
 
-;; render-blog-page: blog request -> doesn't
+;; render-blog-page: blog request -> doesn't return
 ;; Consumes a blog and a request, and produces an HTML page
 ;; of the content of the blog.
 (define (render-blog-page a-blog request)

@@ -14,11 +14,11 @@
 
 (define ROSTER (roster '("kathi" "shriram" "dan")))
 
-;; start: request -> doesn't
+;; start: request -> doesn't return
 (define (start request)
   (show-roster request))
 
-;; show-roster: request -> doesn't
+;; show-roster: request -> doesn't return
 (define (show-roster request)
   (local [(define (response-generator make-url)
             (response/xexpr

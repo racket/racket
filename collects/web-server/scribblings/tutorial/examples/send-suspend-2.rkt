@@ -3,7 +3,7 @@
 (define (start request)
   (show-counter 0))
 
-;; show-counter: number -> doesn't
+;; show-counter: number -> doesn't return
 (define (show-counter n)
   (send/suspend/dispatch
    (lambda (make-url)
