@@ -9,13 +9,14 @@
 
 (define-syntax (#%module-begin stx)
   (syntax-case stx (require)
-    [(mb (require . args) [nm ty] ...)
+    [(mb (require . args) (provide . args2) [nm ty] ...)
      (begin
        (unless (andmap identifier? (syntax->list #'(nm ...)))
          (raise-syntax-error #f "not all ids"))
        #'(#%plain-module-begin
           (begin
             (require . args)
+            (provide . args2)
             (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
             (provide nm) ...
             ;(define-syntax provider (lambda (stx) #'(begin (provide nm) ...)))
