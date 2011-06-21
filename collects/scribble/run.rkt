@@ -56,25 +56,22 @@
     (current-dest-directory dir)]
    [("--dest-name") name "write output as <name>"
     (current-dest-name name)]
-   [("--prefix") file "use given .html/.tex prefix (for doctype/documentclass)"
-    (current-prefix-file file)]
+   #:multi
+   [("++style") file "add given .css/.tex file after others"
+    (current-style-extra-files (cons file (current-style-extra-files)))]
+   #:once-each
    [("--style") file "use given base .css/.tex file"
     (current-style-file file)]
-   [("--redirect") url "redirect external links to tag search via <url>"
-    (current-redirect url)]
-   [("--redirect-main") url "redirect main doc links to <url>"
-    (current-redirect-main url)]
-   [("--info-out") file "write format-specific link information to <file>"
-    (current-info-output-file file)]
+   [("--prefix") file "use given .html/.tex prefix (for doctype/documentclass)"
+    (current-prefix-file file)]
    #:multi
    [("++extra") file "add given file"
     (current-extra-files (cons file (current-extra-files)))]
-   [("++style") file "add given .css/.tex file after others"
-    (current-style-extra-files (cons file (current-style-extra-files)))]
-   [("++info-in") file "load format-specific link information from <file>"
-    (current-info-input-files
-     (cons file (current-info-input-files)))]
-   [("++xref-in") module-path proc-id "load format-specific link information by"
+   [("--redirect-main") url "redirect main doc links to <url>"
+    (current-redirect-main url)]
+   [("--redirect") url "redirect external links to tag search via <url>"
+    (current-redirect url)]
+   [("++xref-in") module-path proc-id "load format-specific cross-ref info by"
     "calling <proc-id> as exported by <module-path>"
     (let ([mod (read-one module-path)]
           [id (read-one proc-id)])
@@ -86,6 +83,11 @@
          'scribble "bad procedure identifier for ++ref-in: ~s" proc-id))
       (current-xref-input-modules
        (cons (cons mod id) (current-xref-input-modules))))]
+   [("--info-out") file "write format-specific cross-ref info to <file>"
+    (current-info-output-file file)]
+   [("++info-in") file "load format-specific cross-ref info from <file>"
+    (current-info-input-files
+     (cons file (current-info-input-files)))]
    #:once-each
    [("--quiet") "suppress output-file reporting"
     (current-quiet #t)]

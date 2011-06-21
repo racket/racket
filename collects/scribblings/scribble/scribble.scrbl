@@ -28,5 +28,6 @@ starting with the @filepath{scribble.scrbl} file.
 @include-section["lp.scrbl"]
 @include-section["preprocessor.scrbl"]
 @include-section["internals.scrbl"]
+@include-section["running.scrbl"]
 
 @index-section[]

@@ -41,15 +41,7 @@ for the kind of document that you want as output:
        @itemize[
 
          @item{Run
-                @commandline{scribble --pdf mouse.scrbl}
-               to generate PDF as @filepath{mouse.pdf}. This will
-               work only if you have @exec{pdflatex} installed.
-               If you'd like to see the intermediate Latex, try
-                @commandline{scribble --latex mouse.scrbl}
-               to generate @filepath{mouse.tex}.}
-
-         @item{Run
-               @commandline{scribble --html mouse.scrbl}
+               @commandline{scribble mouse.scrbl}
               to generate HTML as @filepath{mouse.html}.  You may
               notice that the apostrophe in ``he's'' turned into a
               curly apostrophe.}
@@ -60,7 +52,18 @@ for the kind of document that you want as output:
               Sub-sections (which we add next) will appear as separate
               HTML files in the @filepath{mouse} directory.}
 
+         @item{Run
+                @commandline{scribble --pdf mouse.scrbl}
+               to generate PDF as @filepath{mouse.pdf}. This will
+               work only if you have @exec{pdflatex} installed.
+               If you'd like to see the intermediate Latex, try
+                @commandline{scribble --latex mouse.scrbl}
+               to generate @filepath{mouse.tex}.}
+
           ]
+
+See @secref["running"] for more information on the @exec{scribble}
+command-line tool.
 
 @section{Multiple Sections}
 
@@ -604,5 +607,5 @@ Racket, continue with @secref["reader"] and then
 @secref["generic-prose"].  Move on to @secref["internals"] when you
 need more power.
 
-If you are interested in text preprocessing, contiue with
+If you are interested in text preprocessing, continue with
 @secref["reader"], but then skip to @secref["preprocessor"].
