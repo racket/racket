@@ -1453,7 +1453,7 @@
 [udp-addresses
  (cl->*
   (->opt -UDP-Socket [(-val #f)] (-values (list -String -String)))
-  (-> -UDP-Socket (-values (list -String -Nat -String -Nat))))]
+  (-> -UDP-Socket (-val #t) (-values (list -String -NonNegFixnum -String -NonNegFixnum))))]
 
 
 
