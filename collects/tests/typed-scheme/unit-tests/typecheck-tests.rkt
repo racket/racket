@@ -1189,6 +1189,42 @@
         (tc-e (syntax-span #'here) (-opt -Nat))
 
 
+        ;Parameters
+        (tc-e (make-derived-parameter current-input-port
+                                      (lambda: ((s : String)) (open-input-file s))
+                                      object-name) (-Param -String Univ))
+        (tc-e (parameter-procedure=? current-input-port current-output-port) B)
+
+        ;Namespaces
+        (tc-e (namespace? 2) #:ret (ret B (-FS -bot -top)))
+        (tc-e (namespace? (make-empty-namespace)) #:ret (ret B (-FS -top -bot)))
+
+        (tc-e (namespace-anchor? 3) #:ret (ret B (-FS -bot -top)))
+        (tc-e/t (lambda: ((x : Namespace-Anchor)) (namespace-anchor? x)) (t:-> -Namespace-Anchor B : -true-lfilter))
+
+
+        (tc-e (variable-reference? 3) #:ret (ret B (-FS -bot -top)))
+        (tc-e/t (lambda: ((x : Variable-Reference)) (variable-reference? x)) (t:-> -Variable-Reference  B : -true-lfilter))
+
+        (tc-e (system-type 'os) (one-of/c 'unix 'windows 'macosx))
+        (tc-e (system-type 'gc) (one-of/c 'cgc '3m))
+        (tc-e (system-type 'link) (one-of/c 'static 'shared 'dll 'framework))
+        (tc-e (system-type 'so-suffix) -Bytes)
+        (tc-e (system-type 'machine) -String)
+        (tc-err (system-type 'other))
+
+        (tc-e (tcp-listen 49 45) -TCP-Listener)
+        (tc-e (tcp-connect "google.com" 80) (list -Input-Port -Output-Port))
+
+
+        (tc-e (udp-open-socket) -UDP-Socket)
+        (tc-e (udp-close (udp-open-socket)) -Void)
+
+        (tc-e (udp-addresses (udp-open-socket)) (list -String -String))
+        (tc-e (udp-addresses (udp-open-socket) #f) (list -String -String))
+        (tc-e (udp-addresses (udp-open-socket) #t) (list -String -NonNegFixnum -String -NonNegFixnum))
+
+
 
         )
   (test-suite
