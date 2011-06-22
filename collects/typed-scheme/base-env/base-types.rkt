@@ -1,7 +1,5 @@
 #lang s-exp "type-env-lang.rkt"
 
-(provide (rename-out [Path-For-Some-System SomeSystemPath]))
-
 [Complex -Number]
 [Number -Number]
 [Inexact-Complex -InexactComplex]

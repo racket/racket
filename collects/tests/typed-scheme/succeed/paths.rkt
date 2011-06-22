@@ -16,7 +16,7 @@
   ((unix) 'windows)
   ((windows) 'unix)))
 
-(: other-foo-path SomeSystemPath)
+(: other-foo-path Path-For-Some-System)
 (define other-foo-path
  (build-path/convention-type other-system
   (string->some-system-path "foo" other-system) 
