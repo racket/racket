@@ -68,24 +68,27 @@
                       (loop (cdr keys))))))
          ")")))
 
-(define (add-cites group bib-entries)
-  (define groups (for/fold ([h (hash)]) ([b (reverse bib-entries)])
-                   (hash-update h (author-element-names (auto-bib-author b))
-                                (lambda (cur) (cons b cur)) null)))  
+(define (add-cites group bib-entries sort?)
+  (define-values (groups keys)
+    (for/fold ([h (hash)] [ks null]) ([b (reverse bib-entries)])
+      (let ([k (author-element-names (auto-bib-author b))])
+        (values (hash-update h k (lambda (cur) (cons b cur)) null)
+                (cons k (remove k ks))))))
   (make-element
    #f
    (append 
     (list 'nbsp "(")
     (add-between
-     (for/list ([(k v) groups])
-       (make-element 
-        #f 
-        (list* 
-         (add-cite group (car v) 'autobib-author #f)
-         " "
-         (add-between
-          (for/list ([b v]) (add-cite group b 'autobib-date #t))
-          ", "))))
+     (for/list ([k (if sort? (sort keys string-ci<?) keys)])
+       (let ([v (hash-ref groups k)])
+         (make-element 
+          #f 
+          (list* 
+           (add-cite group (car v) 'autobib-author #f)
+           " "
+           (add-between
+            (for/list ([b v]) (add-cite group b 'autobib-date #t))
+            ", ")))))
      "; ")
    (list ")"))))
 
@@ -100,8 +103,8 @@
   (let* ([author/date<? 
           (lambda (a b)
             (or
-             (string<? (extract-bib-key a) (extract-bib-key b))
-             (and (string=? (extract-bib-key a) (extract-bib-key b))
+             (string-ci<? (extract-bib-key a) (extract-bib-key b))
+             (and (string-ci=? (extract-bib-key a) (extract-bib-key b))
                   (extract-bib-year a) (extract-bib-year b)
                   (< (extract-bib-year a) (extract-bib-year b)))))]
          [bibs (sort (hash-map (bib-group-ht group)
@@ -146,8 +149,8 @@
 (define-syntax-rule (define-cite ~cite citet generate-bibliography)
   (begin
     (define group (make-bib-group (make-hasheq)))
-    (define (~cite bib-entry . bib-entries)
-      (add-cites group (cons bib-entry bib-entries)))
+    (define (~cite #:sort? [sort? #t] bib-entry . bib-entries)
+      (add-cites group (cons bib-entry bib-entries) sort?))
     (define (citet bib-entry . bib-entries)
       (add-inline-cite group (cons bib-entry bib-entries)))
     (define (generate-bibliography #:tag [tag "doc-bibliography"] #:sec-title [sec-title "Bibliography"])

@@ -11,7 +11,8 @@
          scheme/list
          setup/main-collects
          file/convertible)
-(provide render-mixin)
+(provide render-mixin
+         make-render-part-mixin)
 
 (define current-table-mode (make-parameter #f))
 (define rendering-tt (make-parameter #f))
@@ -33,6 +34,12 @@
               (/ (car c) 255.0)
               (/ (cadr c) 255.0)
               (/ (caddr c) 255.0))))
+
+(define (make-render-part-mixin n)
+  (lambda (%)
+    (class (render-mixin %)
+      (define/override (render-part-depth) n)
+      (super-new))))
 
 (define (render-mixin %)
   (class %
@@ -56,6 +63,8 @@
     (define/override (auto-extra-files? v) (latex-defaults? v))
     (define/override (auto-extra-files-paths v) (latex-defaults-extra-files v))
 
+    (define/public (render-part-depth) #f)
+
     (define/override (render-one d ri fn)
       (let* ([defaults (ormap (lambda (v) (and (latex-defaults? v) v))
                               (style-properties (part-style d)))]
@@ -72,51 +81,58 @@
                                     (cond
                                      [(bytes? v) v]
                                      [else (main-collects-relative->path v)])))
-                             scribble-style-tex)])
-        (for-each
-         (lambda (style-file)
-           (if (bytes? style-file)
-               (display style-file)
-               (with-input-from-file style-file
-                 (lambda ()
-                   (copy-port (current-input-port) (current-output-port))))))
-         (list* prefix-file 
-                scribble-tex
-                (append (extract-part-style-files
-                         d
-                         ri
-                         'tex
-                         (lambda (p) #f)
-                         tex-addition?
-                         tex-addition-path)
-                        (list style-file)
-                        style-extra-files)))
-        (printf "\\begin{document}\n\\preDoc\n")
-        (when (part-title-content d)
-          (let ([vers (extract-version d)]
-                [date (extract-date d)]
-                [pres (extract-pretitle d)]
-                [auths (extract-authors d)])
-            (for ([pre (in-list pres)])
-              (printf "\n\n")
-              (do-render-paragraph pre d ri #t))
-            (when date (printf "\\date{~a}\n" date))
-            (printf "\\titleAnd~aVersionAnd~aAuthors{" 
-                    (if (equal? vers "") "Empty" "")
-                    (if (null? auths) "Empty" ""))
-            (render-content (part-title-content d) d ri)
-            (printf "}{~a}{" vers)
-            (for/fold ([first? #t]) ([auth (in-list auths)])
-              (unless first? (printf "\\SAuthorSep{}"))
-              (do-render-paragraph auth d ri #t)
-              #f)
-            (printf "}\n")))
+                             scribble-style-tex)]
+             [all-style-files (cons scribble-tex
+                                    (append (extract-part-style-files
+                                             d
+                                             ri
+                                             'tex
+                                             (lambda (p) #f)
+                                             tex-addition?
+                                             tex-addition-path)
+                                            (list style-file)
+                                            style-extra-files))]
+             [whole-doc? (not (render-part-depth))])
+        (if whole-doc?
+            (for ([style-file (in-list (cons prefix-file all-style-files))])
+              (if (bytes? style-file)
+                  (display style-file)
+                  (with-input-from-file style-file
+                    (lambda ()
+                      (copy-port (current-input-port) (current-output-port))))))
+            (for ([style-file (in-list all-style-files)])
+              (install-file style-file)))
+        (when whole-doc?
+          (printf "\\begin{document}\n\\preDoc\n")
+          (when (part-title-content d)
+            (let ([vers (extract-version d)]
+                  [date (extract-date d)]
+                  [pres (extract-pretitle d)]
+                  [auths (extract-authors d)])
+              (for ([pre (in-list pres)])
+                (printf "\n\n")
+                (do-render-paragraph pre d ri #t))
+              (when date (printf "\\date{~a}\n" date))
+              (printf "\\titleAnd~aVersionAnd~aAuthors{" 
+                      (if (equal? vers "") "Empty" "")
+                      (if (null? auths) "Empty" ""))
+              (render-content (part-title-content d) d ri)
+              (printf "}{~a}{" vers)
+              (for/fold ([first? #t]) ([auth (in-list auths)])
+                (unless first? (printf "\\SAuthorSep{}"))
+                (do-render-paragraph auth d ri #t)
+                #f)
+              (printf "}\n"))))
         (render-part d ri)
-        (printf "\n\n\\postDoc\n\\end{document}\n")))
+        (when whole-doc?
+          (printf "\n\n\\postDoc\n\\end{document}\n"))))
 
     (define/override (render-part-content d ri)
       (let ([number (collected-info-number (part-collected-info d ri))])
-        (when (and (part-title-content d) (pair? number))
+        (when (and (part-title-content d) 
+                   (or (pair? number)
+                       (let ([d (render-part-depth)])
+                         (and d (positive? d)))))
           (when (eq? (style-name (part-style d)) 'index)
             (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
           (let ([pres (extract-pretitle d)])
@@ -127,7 +143,7 @@
                                  (or (not (car number))
                                      ((length number) . > . 3)))])
             (printf "\n\n\\~a~a~a"
-                    (case (length number)
+                    (case (+ (length number) (or (render-part-depth) 0))
                       [(0 1) "sectionNewpage\n\n\\section"]
                       [(2) "subsection"]
                       [(3) "subsubsection"]

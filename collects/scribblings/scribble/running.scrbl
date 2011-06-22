@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require "utils.rkt"
+          scribble/bnf
           (for-label setup/xref))
 
 @(define fn (italic "fn"))
@@ -28,6 +29,13 @@ its file suffix:
 
  @item{@DFlag{pdf} --- PDF @filepath{@|fn|.pdf} that is generated
        via @exec{pdflatex}}
+
+ @item{@DFlag{latex-section} @nonterm{n} --- LaTeX source
+       @filepath{@|fn|.tex} plus additional @filepath{.tex} files to
+       be included in the enclosing document's preamble, where the
+       enclosing document must use the UTF-8 input encoding and T1
+       font encoding; use @tt{1} for @nonterm{n} to make the rendered
+       document a section, @tt{2} for a subsection, etc.}
 
  @item{@DFlag{text} --- plain text in a single file
        @filepath{@|fn|.txt}, with non-ASCII content encoded as UTF-8}
@@ -73,7 +81,7 @@ Use @DFlag{prefix} to specify an alternate format-specific to start of
 the output file. For HTML output, the starting file specifies the
 @tt{DOCTYPE} declaration of each output HTML file as a substitute for
 @filepath{scribble-prefix.html} in the @filepath{scribble}
-collection. For Latex (or PDF) output, the the starting file specifies
+collection. For Latex (or PDF) output (but not Latex-section output), the starting file specifies
 the @ltx{documentclass} declaration and initial @ltx{usepackage}
 declarations as a substitute for @filepath{scribble-prefix.tex} in the
 @filepath{scribble} collection. See also @racket[html-defaults],
@@ -84,7 +92,7 @@ to the build destination, such as an image file that is referenced in
 the generated output but not included via @racket[image] (which copies
 the file automatically).
 
-@subsection[#:tag "xref-flags"]{Handling Cross-References}
+@section[#:tag "xref-flags"]{Handling Cross-References}
 
 Cross references within a document or documents rendered together are
 always resolved. When cross references span documents that are

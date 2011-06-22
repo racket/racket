@@ -17,10 +17,11 @@ render citations.
 
 The function bound to @scheme[~cite-id] produces a citation referring
 to one or more bibliography entries with a preceding non-breaking
-space. It has the contract
+space, by default sorting the entries to match the bibliography order.
+It has the contract
 
 @schemeblock[
-(->* (bib?) () #:rest (listof bib?) element?)
+(->* (bib?) (#:sort? any/c) #:rest (listof bib?) element?)
 ]
 
 The function bound to @scheme[citet-id] generates an element suitable

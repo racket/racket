@@ -51,6 +51,11 @@
     (current-render-mixin latex:render-mixin)]
    [("--pdf") "generate PDF-format output (with PDFLaTeX)"
     (current-render-mixin pdf:render-mixin)]
+   [("--latex-section") n "generate LaTeX-format output for section depth <n>"
+    (let ([v (string->number n)])
+      (unless (exact-nonnegative-integer? v)
+        (raise-user-error 'scribble (format "bad section depth: ~a" n)))
+      (current-render-mixin (latex:make-render-part-mixin v)))]
    #:once-each
    [("--dest") dir "write output in <dir>"
     (current-dest-directory dir)]
