@@ -1,8 +1,5 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt")
-       (require (for-label (only-meta-in 0 [except-in typed/racket for])))]
-
 @title[#:tag "top"]{The Typed Racket Reference} 
 
 @author[@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]

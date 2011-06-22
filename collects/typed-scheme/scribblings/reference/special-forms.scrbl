@@ -13,13 +13,14 @@
    (examples #:eval the-top-eval . args))
 
 
-@(define-syntax-rule (def-racket for-id for*-id with-handlers-id)
+@(define-syntax-rule (def-racket for-id for*-id with-handlers-id mod-beg-id)
   (begin
-    (require (for-label (only-in racket/base for for* with-handlers)))
+    (require (for-label (only-in racket/base for for* with-handlers #%module-begin)))
     (define for-id (racket for))
     (define for*-id (racket for*))
+    (define mod-beg-id (racket #%module-begin))
     (define with-handlers-id (racket with-handlers))))
-@(def-racket for-id for*-id with-handlers-id)
+@(def-racket for-id for*-id with-handlers-id mod-beg-id)
 
 
 @title[#:tag "special-forms"]{Special Form Reference}
@@ -386,5 +387,21 @@ so we need to use @racket[case->].}
 @defidform[with-handlers]{
 Identical to @|with-handlers-id|, but provides additional annotations to help the typechecker.
 }
+
+@defform[(#%module-begin form ...)]{
+
+Legal only in a @rtech{module begin context}. 
+The @racket[#%module-begin] form of @racketmodname[typed/racket] checks all the
+forms in the module, using the Typed Racket type checking rules.  All
+@racket[provide] forms are rewritten to insert contracts where appropriate.
+Otherwise, the @racket[#%module-begin] form of @racketmodname[typed/racket]
+behaves like @|mod-beg-id| from @racketmodname[racket].}
+
+@defform[(#%top-interaction . form)]{
+
+Performs type checking of forms entered at the read-eval-print loop.  The
+@racket[#%top-interaction] form also prints the type of @racket[form] after
+type checking.}
+
 
 @(close-eval the-eval)
