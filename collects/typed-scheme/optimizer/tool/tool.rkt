@@ -1,7 +1,10 @@
 #lang racket/base
 
-(require racket/unit racket/class
+(require racket/unit racket/class racket/port
          racket/gui/base mrlib/switchable-button)
+
+(require (prefix-in tr: typed-scheme/typed-reader)
+         typed-scheme/optimizer/logging)
 
 (provide performance-report-drracket-button)
 
@@ -20,10 +23,25 @@
     (send bdc set-bitmap #f)
     bmp))
 
+;; performance-report-callback : drracket:unit:frame<%> -> void
+(define (performance-report-callback drr-frame)
+  (define defs     (send drr-frame get-definitions-text)) ; : text%
+  (define portname (send defs get-filename))
+  (message-box
+   "Performance Report"
+   (with-output-to-string
+     (lambda ()
+       (with-tr-logging-to-port
+        (current-output-port)
+        (lambda ()
+          (parameterize ([current-namespace  (make-base-namespace)]
+                         [read-accept-reader #t])
+            (expand
+             (tr:read-syntax portname
+                             (open-input-string (send defs get-text)))))))))))
+
 (define performance-report-drracket-button
   (list
    "Performance Report"
    reverse-content-bitmap
-   (λ (drs-frame)
-      (message-box "Performance Report"
-                   "Coming Soon!"))))
+   performance-report-callback))
