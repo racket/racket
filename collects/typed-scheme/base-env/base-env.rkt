@@ -1582,7 +1582,8 @@
 [resolved-module-path? (make-pred-ty -Resolved-Module-Path)]
 [make-resolved-module-path (-> (Un -Symbol -Path) -Resolved-Module-Path)]
 [resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
-[module-path? (make-pred-ty -Module-Path)]
+[module-path? (asym-pred Univ B (-FS (-filter -Module-Path 0) -top))]
+
 [current-module-name-resolver (-Param (cl->* (-Resolved-Module-Path . -> . Univ)
                                              ((Un -Module-Path -Path)
                                               (-opt -Resolved-Module-Path)
