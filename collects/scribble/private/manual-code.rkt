@@ -197,9 +197,9 @@
   (cond
    [(regexp-match-positions #rx"(?:\r\n|\r|\n)" s)
     => (lambda (m)
-         (list* (element style (substring s 0 (caar m)))
-                'newline
-                (split-lines style (substring s (cdar m)))))]
+         (append (split-lines style (substring s 0 (caar m)))
+                 (list 'newline)
+                 (split-lines style (substring s (cdar m)))))]
    [(regexp-match-positions #rx" +" s)
     => (lambda (m)
          (append (split-lines style (substring s 0 (caar m)))
