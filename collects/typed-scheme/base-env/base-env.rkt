@@ -1354,6 +1354,8 @@
 ;; scheme/function
 [identity (-poly (a) (-> a a))]
 [const (-poly (a) (-> a (->* '() Univ a)))]
+[negate (-polydots (b) (-> ((list) [b b] . ->... . Univ)
+                           ((list) [b b] . ->... . -Boolean)))]
 (primitive? (-> Univ B))
 (primitive-closure? (-> Univ B))
 
