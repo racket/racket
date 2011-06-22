@@ -73,8 +73,8 @@
           (-> specific general B : (-FS (-filter specific 1) -top))))
 
   (define (exclude-zero non-neg pos [zero -Zero])
-    (list (-> zero non-neg : (-FS (-filter zero 1) (-filter pos 1)))
-          (-> non-neg zero : (-FS (-filter zero 0) (-filter pos 0)))))
+    (list (-> zero non-neg B : (-FS (-filter zero 1) (-filter pos 1)))
+          (-> non-neg zero B : (-FS (-filter zero 0) (-filter pos 0)))))
 
 
   (define round-type ; also used for truncate
@@ -691,7 +691,7 @@
   ;; types
   (map (lambda (t) (commutative-equality/filter -Real t))
        (list -RealZero -PosReal -NonNegReal -NegReal -NonPosReal -Real))
-  (map comp (list -FloatComplex -SingleFlonumComplex -InexactComplex N)))]
+  (->* (list N N) N B))]
 
 [<  (from-cases
      (-> -Pos -One B : (-FS (-filter (Un) 0) -top)) ; can't happen
