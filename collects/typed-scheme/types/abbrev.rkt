@@ -14,7 +14,6 @@
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
-         racket/pretty
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
