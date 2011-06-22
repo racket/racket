@@ -26,7 +26,7 @@
 ;; performance-report-callback : drracket:unit:frame<%> -> void
 (define (performance-report-callback drr-frame)
   (define defs     (send drr-frame get-definitions-text)) ; : text%
-  (define portname (send defs get-filename))
+  (define portname (send defs      get-port-name))
   (message-box
    "Performance Report"
    (with-output-to-string
