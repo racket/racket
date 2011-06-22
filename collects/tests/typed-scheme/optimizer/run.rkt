@@ -1,8 +1,7 @@
 #lang racket
 (require racket/runtime-path
          rackunit rackunit/text-ui
-         typed-scheme/optimizer/logging
-         unstable/logging)
+         typed-scheme/optimizer/logging)
 
 (provide optimization-tests missed-optimization-tests
          test-opt test-missed-optimization test-file?
@@ -12,19 +11,15 @@
   ;; some tests require other tests, so some fiddling is required
   (with-output-to-string
     (lambda ()
-      (with-intercepted-logging ; catch opt logs
-       (lambda (l)
-         (when (eq? (vector-ref l 2) ; look only for optimizer messages
-                    optimization-log-key)
-           (displayln (vector-ref l 1)))) ; print log message
+      (with-tr-logging-to-port
+       (current-output-port)
        (lambda ()
          (parameterize
              ([current-namespace (make-base-empty-namespace)]
               [current-load-relative-directory dir])
            (dynamic-require
             (build-path (current-load-relative-directory) name)
-            #f)))
-       #:level 'warning))))
+            #f)))))))
 
 ;; we log optimizations and compare to an expected log to make sure that all
 ;; the optimizations we expected did indeed happen

@@ -1,12 +1,12 @@
 #lang racket/base
 
 (require racket/set racket/string racket/match racket/list
-         unstable/syntax
+         unstable/syntax unstable/logging
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization
-         optimization-log-key
-         print-log clear-log)
+         print-log clear-log
+         with-tr-logging-to-port)
 
 (define (line+col->string stx)
   (let ([line (syntax-line stx)]
@@ -189,3 +189,12 @@
                                     (or (syntax-position x) 0))))
                  ", "))
         kind)))
+
+(define (with-tr-logging-to-port port thunk)
+  (with-intercepted-logging ; catch opt logs
+   (lambda (l)
+     (when (eq? (vector-ref l 2) ; look only for optimizer messages
+                optimization-log-key)
+       (displayln (vector-ref l 1) port))) ; print log message
+   thunk
+   #:level 'warning))
