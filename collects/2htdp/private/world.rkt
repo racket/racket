@@ -251,10 +251,8 @@
         (begin
           (define/public (name arg ...) 
             (define (last-draw)
-              (define draw0 draw)
-              (dynamic-wind (lambda () (set! draw last-picture))
-                            (lambda () (pdraw))
-                            (lambda () (set! draw draw0))))
+              (set! draw last-picture)
+              (pdraw))
             (queue-callback 
              (lambda ()
                (with-handlers ([exn? (handler #t)])
