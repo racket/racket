@@ -86,3 +86,14 @@
 
 (define Ident (-Syntax -Symbol))
 
+
+(define -Module-Path (*Un -Symbol -String
+                          (-lst* (-val 'quote) -Symbol)
+                          (-lst* (-val 'lib) -String)
+                          (-lst* (-val 'file) -String)
+                          (-pair (-val 'planet)
+                           (*Un (-lst* -Symbol)
+                                (-lst* -String)
+                                (-lst* -String (-lst* -String -String #:tail (make-Listof (*Un -Nat (-lst* (*Un -Nat (one-of/c '= '+ '-)) -Nat)))))))))
+
+

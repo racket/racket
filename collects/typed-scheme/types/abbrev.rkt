@@ -157,7 +157,6 @@
 (define -Char (make-Base 'Char #'char? char? #'-Char))
 (define -Thread (make-Base 'Thread #'thread? thread? #'-Thread))
 (define -Resolved-Module-Path (make-Base 'Resolved-Module-Path #'resolved-module-path? resolved-module-path? #'-Resolved-Module-Path))
-(define -Module-Path (make-Base 'Module-Path #'module-path? module-path? #'-Module-Path))
 (define -Module-Path-Index (make-Base 'Module-Path-Index #'module-path-index? module-path-index? #'-Module-Path-Index))
 (define -Compiled-Module-Expression (make-Base 'Compiled-Module-Expression #'compiled-module-expression? compiled-module-expression? #'-Compiled-Module-Expression))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
