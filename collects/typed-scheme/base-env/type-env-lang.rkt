@@ -3,30 +3,24 @@
 (require "../utils/utils.rkt")
 
 (require (for-syntax (env init-envs)
-                     scheme/base
+                     scheme/base syntax/parse
                      (except-in (rep filter-rep type-rep) make-arr)
                      (rename-in (types union convenience) [make-arr* make-arr])))
 
 (define-syntax (#%module-begin stx)
-  (syntax-case stx (require)
-    [(mb (require . args) (provide . args2) [nm ty] ...)
-     (begin
-       (unless (andmap identifier? (syntax->list #'(nm ...)))
-         (raise-syntax-error #f "not all ids"))
-       #'(#%plain-module-begin
-          (begin
-            (require . args)
-            (provide . args2)
-            (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
-            (provide nm) ...
-            ;(define-syntax provider (lambda (stx) #'(begin (provide nm) ...)))
-            ;(provide provider)
-            (begin-for-syntax
-              ;(printf "running base-types\n")
-              (initialize-type-name-env
-               (list (list #'nm ty) ...))))))]
-    [(mb . rest)
-     #'(mb (require) . rest)]))
+  (syntax-parse stx #:literals (require provide)
+    [(mb (require . args) ... (provide . args2) ... [nm ty] ...)
+     (unless (andmap identifier? (syntax->list #'(nm ...)))
+       (raise-syntax-error #f "not all ids"))
+     #'(#%plain-module-begin
+        (begin
+          (require . args) ...
+          (provide . args2) ...
+          (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
+          (provide nm) ...
+          (begin-for-syntax
+           (initialize-type-name-env
+            (list (list #'nm ty) ...)))))]))
 
 (provide #%module-begin
          require
