@@ -27,6 +27,8 @@
 (define (performance-report-callback drr-frame)
   (define defs     (send drr-frame get-definitions-text)) ; : text%
   (define portname (send defs      get-port-name))
+  (define input    (open-input-text-editor defs))
+  (port-count-lines! input)
   (message-box
    "Performance Report"
    (with-output-to-string
@@ -36,9 +38,7 @@
         (lambda ()
           (parameterize ([current-namespace  (make-base-namespace)]
                          [read-accept-reader #t])
-            (expand
-             (tr:read-syntax portname
-                             (open-input-string (send defs get-text)))))))))))
+            (expand (tr:read-syntax portname input)))))))))
 
 (define performance-report-drracket-button
   (list
