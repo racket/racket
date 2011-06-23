@@ -205,7 +205,6 @@
 
 (define (with-tr-logging-to-port port thunk)
   (with-intercepted-tr-logging
-   #:level 'warning
    (lambda (l)
      (displayln (vector-ref l 1) port)) ; print log message
    thunk))
