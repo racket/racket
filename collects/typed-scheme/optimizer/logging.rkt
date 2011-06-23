@@ -62,7 +62,7 @@
                  (and (> badness 1) badness))))
             missed-optimizations-log)
   (for-each (lambda (x) (log-message logger 'warning (log-entry-msg x)
-                                     optimization-log-key))
+                                     (cons optimization-log-key x)))
             (sort (remove-duplicates log-so-far)
                   (match-lambda*
                    [(list (log-entry msg-x stx-x pos-x)
@@ -193,8 +193,10 @@
 (define (with-tr-logging-to-port port thunk)
   (with-intercepted-logging ; catch opt logs
    (lambda (l)
-     (when (eq? (vector-ref l 2) ; look only for optimizer messages
-                optimization-log-key)
-       (displayln (vector-ref l 1) port))) ; print log message
+     (let ([data (vector-ref l 2)])
+       ;; look only for optimizer messages
+       (when (and (pair? data)
+                  (eq? (car data) optimization-log-key))
+       (displayln (vector-ref l 1) port)))) ; print log message
    thunk
    #:level 'warning))
