@@ -6,7 +6,8 @@
 
 (provide log-optimization log-missed-optimization
          print-log clear-log
-         with-tr-logging-to-port)
+         with-intercepted-tr-logging with-tr-logging-to-port
+         (struct-out log-entry))
 
 (define (line+col->string stx)
   (let ([line (syntax-line stx)]
@@ -15,7 +16,7 @@
         (format "~a:~a" line col)
         "(no location)")))
 
-(struct log-entry (msg stx pos) #:transparent)
+(struct log-entry (msg stx pos) #:prefab)
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
@@ -190,13 +191,21 @@
                  ", "))
         kind)))
 
-(define (with-tr-logging-to-port port thunk)
-  (with-intercepted-logging ; catch opt logs
+;; only intercepts TR log messages
+(define (with-intercepted-tr-logging interceptor thunk)
+  (with-intercepted-logging
+   #:level 'warning
    (lambda (l)
      (let ([data (vector-ref l 2)])
        ;; look only for optimizer messages
        (when (and (pair? data)
                   (eq? (car data) optimization-log-key))
-       (displayln (vector-ref l 1) port)))) ; print log message
-   thunk
-   #:level 'warning))
+         (interceptor l))))
+   thunk))
+
+(define (with-tr-logging-to-port port thunk)
+  (with-intercepted-tr-logging
+   #:level 'warning
+   (lambda (l)
+     (displayln (vector-ref l 1) port)) ; print log message
+   thunk))

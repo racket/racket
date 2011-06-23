@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/unit racket/class racket/port
+(require racket/unit racket/class racket/port racket/list
          racket/gui/base mrlib/switchable-button)
 
 (require (prefix-in tr: typed-scheme/typed-reader)
@@ -29,16 +29,32 @@
   (define portname (send defs      get-port-name))
   (define input    (open-input-text-editor defs))
   (port-count-lines! input)
+  (define log '())
+  (with-intercepted-tr-logging
+   (lambda (l)
+     (set! log (cons (cdr (vector-ref l 2)) ; log-entry struct
+                     log)))
+   (lambda ()
+     (parameterize ([current-namespace  (make-base-namespace)]
+                    [read-accept-reader #t])
+       (expand (tr:read-syntax portname input)))))
+  (set! log (reverse log))
+  ;; highlight
+  (for ([l (in-list log)])
+    (let ([stx (log-entry-stx l)]
+          [pos (sub1 (log-entry-pos l))]
+          ;; opt or missed opt?
+          [opt? (regexp-match #rx"^TR opt:" (log-entry-msg l))])
+      (send defs highlight-range
+            pos
+            (+ pos (syntax-span stx))
+            (if opt? "lightgreen" "pink"))))
   (message-box
    "Performance Report"
    (with-output-to-string
-     (lambda ()
-       (with-tr-logging-to-port
-        (current-output-port)
-        (lambda ()
-          (parameterize ([current-namespace  (make-base-namespace)]
-                         [read-accept-reader #t])
-            (expand (tr:read-syntax portname input)))))))))
+    (lambda ()
+      (for ([l (in-list log)])
+        (displayln (log-entry-msg l)))))))
 
 (define performance-report-drracket-button
   (list
