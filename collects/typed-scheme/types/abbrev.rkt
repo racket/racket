@@ -199,8 +199,6 @@
 (define -PathConventionType (*Un (-val 'unix) (-val 'windows)))
 
 
-(define -Struct-Type-Property
-  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
 
 (define -Pretty-Print-Style-Table
   (make-Base 'Pretty-Print-Style-Table #'pretty-print-style-table? pretty-print-style-table? #'-Pretty-Print-Style-Table))
@@ -227,8 +225,18 @@
                                       #'internal-definition-context?
                                       internal-definition-context?
                                       #'-Internal-Definition-Context))
+
 (define -Subprocess
   (make-Base 'Subprocess #'subprocess? subprocess? #'-Subprocess))
+(define -Security-Guard
+  (make-Base 'Security-Guard #'security-guard? security-guard? #'-Security-Guard))
+(define -Thread-Group
+  (make-Base 'Thread-Group #'thread-group? thread-group? #'-Thread-Group))
+(define -Struct-Type-Property
+  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
+(define -Impersonator-Property
+  (make-Base 'Impersonator-Property #'impersonator-property? impersonator-property? #'-Impersonator-Property))
+
 
 
 
