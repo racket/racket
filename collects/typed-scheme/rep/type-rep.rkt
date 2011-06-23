@@ -140,6 +140,11 @@
 (def-type Ephemeron ([elem Type/c])
   [#:key 'ephemeron])
 
+;; elem is a Type
+(def-type CustodianBox ([elem Type/c])
+  [#:key 'custodian-box])
+
+
 
 ;; elem is a Type
 (def-type Set ([elem Type/c])

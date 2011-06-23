@@ -174,6 +174,7 @@
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(ThreadCell: e) (fp "(ThreadCellof ~a)" e)]
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
+    [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]

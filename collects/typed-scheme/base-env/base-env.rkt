@@ -30,6 +30,7 @@
           make-BoxTop make-ChannelTop make-VectorTop
           make-ThreadCellTop
           make-Ephemeron
+          make-CustodianBox
           make-HeterogenousVector))
 
 ;Section 9.2
@@ -1347,7 +1348,6 @@
                           #:cache-keys? B #f
                           . ->key . (-lst a))))]
 
-[object-name (Univ . -> . Univ)]
 
 
 ;; scheme/function
@@ -1774,6 +1774,60 @@
 
 
 
+;Section 13.5 (Impersonators and Chaperones)
+[impersonator? (Univ . -> . B)]
+[chaperone? (Univ . -> . B)]
+[impersonator-of? (Univ Univ . -> . B)]
+[chaperone-of? (Univ Univ . -> . B)]
+
+[make-impersonator-property (-> Sym (-values (list -Impersonator-Property (-> Univ B) (-> Univ Univ))))]
+[impersonator-property? (make-pred-ty -Impersonator-Property)]
+[impersonator-property-accessor-procedure? (-> Univ B)]
+[impersonator-prop:application-mark -Impersonator-Property]
+
+;Section 13.6 (Security Guards)
+[security-guard? (make-pred-ty -Security-Guard)]
+[make-security-guard
+ (->opt -Security-Guard
+        (-> Sym (-opt -Path) (-lst Sym) ManyUniv)
+        (-> Sym (-opt -String) (-opt -PosInt) (Un (-val 'server) (-val 'client) ManyUniv))
+        [(-opt (-> Sym -Path -Path ManyUniv))]
+        -Security-Guard)]
+[current-security-guard (-Param -Security-Guard -Security-Guard)]
+
+;Section 13.7 (Custodians)
+[custodian? (make-pred-ty -Custodian)]
+[make-custodian (->opt [-Custodian] -Custodian)]
+[custodian-shutdown-all (-> -Custodian -Void)]
+[current-custodian (-Param -Custodian -Custodian)]
+[custodian-managed-list (-> -Custodian -Custodian (-lst Univ))]
+[custodian-memory-accounting-available? (-> B)]
+[custodian-require-memory (-> -Custodian -Nat -Custodian -Void)]
+[custodian-limit-memory (->opt -Custodian -Nat [-Custodian] -Void)]
+
+[make-custodian-box (-poly (a) (-> -Custodian a (make-CustodianBox a)))]
+[custodian-box? (make-pred-ty (-poly (a) (make-CustodianBox a)))]
+[custodian-box-value (-poly (a) (-> (make-CustodianBox a) a))]
+
+;Section 13.8 (Thread Groups)
+[make-thread-group (->opt [-Thread-Group] -Thread-Group)]
+[thread-group? (make-pred-ty -Thread-Group)]
+[current-thread-group (-Param -Thread-Group -Thread-Group)]
+
+;Section 13.9 (Structure Inspectors)
+[inspector? (make-pred-ty -Inspector)]
+[make-inspector (->opt [-Inspector] -Inspector)]
+[make-sibling-inspector (->opt [-Inspector] -Inspector)]
+[current-inspector (-Param -Inspector -Inspector)]
+
+[struct-info (-> Univ (-values (list Univ B)))]
+[struct-type-info (-> Univ (-values (list Sym -Nat -Nat (-> Univ -Nat Univ) (-> Univ -Nat Univ Univ) (-lst -Nat) Univ B)))]
+[struct-type-make-constructor (-> Univ Univ)]
+[struct-type-make-predicate (-> Univ (-> Univ B))]
+[object-name (-> Univ Univ)]
+
+;Section 13.9 (Code Inspectors)
+[current-code-inspector (-Param -Inspector -Inspector)]
 
 
 [compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
