@@ -796,28 +796,9 @@ when the user next clicks Run in this DrRacket window.
 
 }
 
-@defmethod[(get-port-name-identifier)
-           symbol]{
-
-Returns an identifier that can be used as a port's name when
-the editor is not saved. (If it is saved, the filename of
-the editor should be used.)
-
-
-}
-
 @defmethod[(get-tab)
            (is-a?/c drracket:unit:tab%)]{
 Returns the editor's enclosing tab.
-
-}
-
-@defmethod[(port-name-matches? [id any])
-           boolean?]{
-
-Indicates if the name of a port (which is also saved in the
-source field of an exception record) matches this editor.
-
 
 }
 
