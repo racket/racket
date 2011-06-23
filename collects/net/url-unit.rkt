@@ -87,7 +87,7 @@
     (cond [(not scheme) 80]
           [(string=? scheme "http") 80]
           [(string=? scheme "https") 443]
-          [else (url-error "Scheme ~a not supported" (url-scheme url))])))
+          [else (url-error "URL scheme ~s not supported" scheme)])))
 
 (define current-connect-scheme (make-parameter "http"))
 
