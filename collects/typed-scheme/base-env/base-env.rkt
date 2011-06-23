@@ -571,7 +571,6 @@
 [unsafe-struct-set! top-func]
 [unsafe-struct*-set! top-func]
 
-[continuation-mark-set-first (-> (-opt -Cont-Mark-Set) Univ Univ)]
 
 
 ;; Section 3.7
@@ -1465,7 +1464,6 @@
 
 
 
-[current-continuation-marks (-> -Cont-Mark-Set)]
 
 ;; scheme/path
 
@@ -1656,6 +1654,26 @@
 ; syntax/stx (needed for `with-syntax')
 [stx->list (-> (-Syntax Univ) (-lst (-Syntax Univ)))]
 [stx-list? (-> (-Syntax Univ) -Boolean)]
+
+;Section 9.4 (Continuations)
+
+[make-continuation-prompt-tag (->opt [Sym] -Prompt-Tag)]
+[default-continuation-prompt-tag (-> -Prompt-Tag)]
+[continuation-prompt-tag? (make-pred-ty -Prompt-Tag)]
+[dynamic-wind (-poly (a) (-> (-> ManyUniv) (-> a) (-> ManyUniv) a))]
+
+;Section 9.5 (Continuation Marks)
+;continuation-marks needs type for continuations as other possible first argument
+[continuation-marks (->opt (Un (-val #f) -Thread) [-Prompt-Tag] -Cont-Mark-Set)]
+[current-continuation-marks (->opt [-Prompt-Tag]  -Cont-Mark-Set)]
+[continuation-mark-set->list (->opt -Cont-Mark-Set Univ [-Prompt-Tag] (-lst Univ))]
+[continuation-mark-set->list* (->opt -Cont-Mark-Set (-lst Univ) [Univ -Prompt-Tag] (-lst (-vec Univ)))]
+[continuation-mark-set-first (->opt (-opt -Cont-Mark-Set) Univ [Univ -Prompt-Tag] Univ)]
+[call-with-immediate-continuation-mark (-poly (a) (->opt Univ (-> Univ a) [Univ] a))]
+[continuation-mark-set? (make-pred-ty -Cont-Mark-Set)]
+[continuation-mark-set->context (-> -Cont-Mark-Set (-lst (-pair (-opt Sym) Univ)))] ;TODO add srcloc
+
+
 
 ;Section 12
 
