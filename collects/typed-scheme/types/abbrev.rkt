@@ -9,13 +9,14 @@
          racket/match
          racket/function
          racket/pretty
+         racket/place
          unstable/function
          racket/udp
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
-         racket/pretty racket/udp
+         racket/pretty racket/udp racket/place
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
@@ -239,6 +240,27 @@
   (make-Base 'Impersonator-Property #'impersonator-property? impersonator-property? #'-Impersonator-Property))
 
 
+
+
+(define -Semaphore (make-Base 'Semaphore #'semaphore? semaphore? #'-Semaphore))
+(define -BytesConverter (make-Base 'BytesConverter #'bytes-converter? bytes-converter? #'-BytesConverter))
+(define -Pseudo-Random-Generator
+  (make-Base 'Pseudo-Random-Generator #'pseudo-random-generator? pseudo-random-generator? #'-Pseudo-Random-Generator))
+
+
+(define -Logger (make-Base 'Logger #'logger? logger? #'-Logger))
+(define -LogReceiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-LogReceiver))
+
+
+(define -Place
+  (make-Base 'Place #'place? place? #'-Place))
+(define -Base-Place-Channel
+  (make-Base 'Base-Place-Channel #'(and/c place-channel? (not/c place?))  (conjoin place-channel? (negate place?))  #'-Base-Place-Channel))
+
+(define -Place-Channel (*Un -Place -Base-Place-Channel))
+
+(define -Will-Executor
+  (make-Base 'Will-Executor #'will-executor? will-executor? #'-Will-Executor))
 
 
 

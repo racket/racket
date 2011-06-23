@@ -296,7 +296,6 @@
    ;; string.rkt
    [real->decimal-string (-Real [index-type] . ->opt .  -String)]
 
-   [random (cl-> [(index-type) -Nat] [() -Real])]
 
    [raise-type-error
     (cl->*
