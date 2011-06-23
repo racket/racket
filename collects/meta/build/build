@@ -1735,6 +1735,7 @@ do_tgz_to_exe() {
   || exit_error "NSIS build failed"
   _mv "installer.exe" "$tmpexe"
   _cd "$savedpwd"
+  sleep 1 # looks like there are some problems deleting this immediately
   _rm "$tmpdir/tgz-to-exe-$$"
 }
 tgz_to_exe() {
