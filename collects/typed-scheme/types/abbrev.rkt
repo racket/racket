@@ -227,6 +227,8 @@
                                       #'internal-definition-context?
                                       internal-definition-context?
                                       #'-Internal-Definition-Context))
+(define -Subprocess
+  (make-Base 'Subprocess #'subprocess? subprocess? #'-Subprocess))
 
 
 
