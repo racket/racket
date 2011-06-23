@@ -676,7 +676,6 @@
 
 [seconds->date (-Integer . -> . (make-Name #'date))]
 [current-seconds (-> -Integer)]
-[current-print (-Param (Univ . -> . Univ) (Univ . -> . Univ))]
 
 ;Section 14.2
 
@@ -1036,7 +1035,6 @@
 
 
 
-[eval (->opt Univ [-Namespace] Univ)]
 
 
 
@@ -1655,7 +1653,44 @@
 [mreverse! (-poly (a) (-> (-mlst a) (-mlst a)))]
 [mappend (-poly (a) (->* (list) (-mlst a) (-mlst a)))]
 
-;; module names and loading
+;Section 13.2 (Evaluation and Compilation)
+[current-eval (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
+[eval (->opt Univ [-Namespace] ManyUniv)]
+[eval-syntax (->opt (-Syntax Univ) [-Namespace] ManyUniv)]
+
+[current-load (-Param (-> -Path (-opt Sym) ManyUniv) (-> -Path (-opt Sym) ManyUniv))]
+[load (-> -Pathlike ManyUniv)]
+[load-relative (-> -Pathlike ManyUniv)]
+[load/cd (-> -Pathlike ManyUniv)]
+
+[current-load-extension (-Param (-> -Path (-opt Sym) ManyUniv) (-> -Path (-opt Sym) ManyUniv))]
+[load-extension (-> -Pathlike ManyUniv)]
+[load-relative-extension (-> -Pathlike ManyUniv)]
+
+[current-load/use-compiled (-Param (-> -Path (-opt Sym) ManyUniv) (-> -Path (-opt Sym) ManyUniv))]
+[load/use-compiled (-> -Pathlike ManyUniv)]
+
+[current-load-relative-directory (-Param (-opt -Pathlike) (-opt -Path))]
+[use-compiled-file-paths (-Param (-lst -Path) (-lst -Path))]
+
+[read-eval-print-loop (-> -Void)]
+[current-prompt-read (-Param (-> Univ) (-> Univ))]
+[current-get-interaction-input-port (-Param (-> -Input-Port) (-> -Input-Port))]
+[current-read-interaction (-Param (-> Univ -Input-Port Univ) (-> Univ -Input-Port Univ))]
+[current-print (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
+
+[current-compile (-Param (-> Univ B -CompiledExpression) (-> Univ B -CompiledExpression))]
+[compile (-> Univ -CompiledExpression)]
+[compile-syntax (-> (-Syntax Univ) -CompiledExpression)]
+[compiled-expression? (make-pred-ty -CompiledExpression)]
+
+[compile-enforce-module-constants (-Param B B)]
+[compile-allow-set!-undefined (-Param B B)]
+[compile-context-preservation-enabled (-Param B B)]
+[eval-jit-enabled (-Param B B)]
+[load-on-demand-enabled (-Param B B)]
+
+;;Section 13.4 (Module Names and Loading)
 [resolved-module-path? (make-pred-ty -Resolved-Module-Path)]
 [make-resolved-module-path (-> (Un -Symbol -Path) -Resolved-Module-Path)]
 [resolved-module-path-name (-> -Resolved-Module-Path (Un -Path -Symbol))]
