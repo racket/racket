@@ -1532,12 +1532,91 @@
  (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
 
 
+;Section 14.4 (Processes)
 
-;; scheme/system
+[subprocess
+ (let ((ret-type (-values (list -Subprocess (-opt -Input-Port) (-opt -Output-Port) (-opt -Input-Port)))))
+  (cl->*
+   (->* (list (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike)
+                 (Un -Path -String -Bytes) ret-type)
+   (-> (-opt -Output-Port) (-opt -Input-Port) (-opt -Output-Port) -Pathlike (-val 'exact) -String ret-type)))]
+[subprocess-wait (-> -Subprocess -Void)]
+[subprocess-status (-> -Subprocess (Un (-val 'running) -Nat))]
+[subprocess-kill (-> -Subprocess Univ -Void)]
+[subprocess-pid (-> -Subprocess -Nat)]
+[subprocess? (make-pred-ty -Subprocess)]
+[current-subprocess-custodian-mode (-Param (Un (-val #f) (-val 'kill) (-val 'interrupt))
+                                           (Un (-val #f) (-val 'kill) (-val 'interrupt)))]
+[subprocess-group-enabled (-Param Univ B)]
+
+[shell-execute (-> (-opt -String) -String -String -Pathlike Sym (-val #f))]
+
+
+;Section 14.4.1 (racket/system)
 [system ((Un -String -Bytes) . -> . -Boolean)]
 [system* ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Boolean)]
 [system/exit-code ((Un -String -Bytes) . -> . -Byte)]
 [system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Byte)]
+
+[process (-> -String
+             (-values (list -Input-Port -Output-Port -Nat -Input-Port
+              (cl->*
+                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'exit-code) (-opt -Byte))
+                (-> (-val 'wait) ManyUniv)
+                (-> (-val 'interrupt) -Void)
+                (-> (-val 'kill) -Void)))))]
+
+
+[process*
+ (cl->*
+   (->* (list -Pathlike) (Un -Path -String -Bytes)
+             (-values (list -Input-Port -Output-Port -Nat -Input-Port
+              (cl->*
+                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'exit-code) (-opt -Byte))
+                (-> (-val 'wait) ManyUniv)
+                (-> (-val 'interrupt) -Void)
+                (-> (-val 'kill) -Void)))))
+   (-> -Pathlike (-val 'exact) -String
+             (-values (list -Input-Port -Output-Port -Nat -Input-Port
+              (cl->*
+                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'exit-code) (-opt -Byte))
+                (-> (-val 'wait) ManyUniv)
+                (-> (-val 'interrupt) -Void)
+                (-> (-val 'kill) -Void))))))]
+
+[process/ports
+  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -String
+             (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
+              (cl->*
+                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'exit-code) (-opt -Byte))
+                (-> (-val 'wait) ManyUniv)
+                (-> (-val 'interrupt) -Void)
+                (-> (-val 'kill) -Void)))))]
+
+[process*/ports
+ (cl->*
+  (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -Pathlike)
+         (Un -Path -String -Bytes)
+           (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
+            (cl->*
+              (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+              (-> (-val 'exit-code) (-opt -Byte))
+              (-> (-val 'wait) ManyUniv)
+              (-> (-val 'interrupt) -Void)
+              (-> (-val 'kill) -Void)))))
+  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -Pathlike (-val 'exact) -String
+           (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
+            (cl->*
+              (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+              (-> (-val 'exit-code) (-opt -Byte))
+              (-> (-val 'wait) ManyUniv)
+              (-> (-val 'interrupt) -Void)
+              (-> (-val 'kill) -Void))))))]
+
 
 
 ;; probably the most useful cases
