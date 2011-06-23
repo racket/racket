@@ -1,39 +1,39 @@
 #;
 (
-TR opt: float-complex-float-div.rkt 47:52 real-part -- unboxed float complex
+TR opt: float-complex-float-div.rkt 47:51 (real-part x) -- unboxed float complex
 TR opt: float-complex-float-div.rkt 47:62 x -- unbox float-complex
-TR opt: float-complex-float-div.rkt 48:52 imag-part -- unboxed float complex
+TR opt: float-complex-float-div.rkt 48:51 (imag-part x) -- unboxed float complex
 TR opt: float-complex-float-div.rkt 48:62 x -- unbox float-complex
+TR opt: float-complex-float-div.rkt 50:6 (/ 1.0 2.0+4.0i) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 50:6 (/ 1.0 2.0+4.0i) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 50:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 50:9 1.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 50:13 2.0+4.0i -- unboxed literal
+TR opt: float-complex-float-div.rkt 51:6 (/ 1.0+2.0i 2.0) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 51:6 (/ 1.0+2.0i 2.0) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 51:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 51:9 1.0+2.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 51:18 2.0 -- float-arg-expr in complex ops
+TR opt: float-complex-float-div.rkt 52:6 (/ 1.0 2.0+4.0i 3.0+6.0i) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 52:6 (/ 1.0 2.0+4.0i 3.0+6.0i) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 52:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 52:9 1.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 52:13 2.0+4.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 52:22 3.0+6.0i -- unboxed literal
+TR opt: float-complex-float-div.rkt 53:6 (/ 1.0+2.0i 2.0 3.0+6.0i) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 53:6 (/ 1.0+2.0i 2.0 3.0+6.0i) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 53:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 53:9 1.0+2.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 53:18 2.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 53:22 3.0+6.0i -- unboxed literal
+TR opt: float-complex-float-div.rkt 54:6 (/ 1.0+2.0i 2.0+4.0i 3.0) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 54:6 (/ 1.0+2.0i 2.0+4.0i 3.0) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 54:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 54:9 1.0+2.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 54:18 2.0+4.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 54:27 3.0 -- float-arg-expr in complex ops
+TR opt: float-complex-float-div.rkt 55:6 (/ 1.0+2.0i 2.0 3.0) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 55:6 (/ 1.0+2.0i 2.0 3.0) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 55:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 55:9 1.0+2.0i -- unboxed literal
 TR opt: float-complex-float-div.rkt 55:18 2.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 55:22 3.0 -- float-arg-expr in complex ops
+TR opt: float-complex-float-div.rkt 56:6 (/ 1.0 2.0 3.0+6.0i) -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 56:6 (/ 1.0 2.0 3.0+6.0i) -- unboxed float complex
-TR opt: float-complex-float-div.rkt 56:7 / -- unboxed binary float complex
 TR opt: float-complex-float-div.rkt 56:9 1.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 56:13 2.0 -- float-arg-expr in complex ops
 TR opt: float-complex-float-div.rkt 56:17 3.0+6.0i -- unboxed literal

@@ -85,7 +85,7 @@
                                                this-syntax))
                     safe-to-opt?)
            #:with opt
-           (begin (log-optimization "unary float" #'op)
+           (begin (log-optimization "unary float" this-syntax)
                   #'(op.unsafe f.opt)))
   (pattern (#%plain-app (~var op (float-op binary-float-ops))
                         f1:float-arg-expr
@@ -130,50 +130,50 @@
                           [_ #f])))
                     safe-to-opt?)
            #:with opt
-           (begin (log-optimization "binary float" #'op)
+           (begin (log-optimization "binary float" this-syntax)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
   (pattern (#%plain-app (~var op (float-op binary-float-comps))
                         f1:float-expr
                         f2:float-expr
                         fs:float-expr ...)
            #:with opt
-           (begin (log-optimization "binary float comp" #'op)
+           (begin (log-optimization "binary float comp" this-syntax)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
 
   (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" #'op)
+           (begin (log-optimization "unary float" this-syntax)
                   #'(unsafe-fl- 0.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" #'op)
+           (begin (log-optimization "unary float" this-syntax)
                   #'(unsafe-fl/ 1.0 f.opt)))
   (pattern (#%plain-app (~and op (~literal sqr)) f:float-expr)
            #:with opt
-           (begin (log-optimization "unary float" #'op)
+           (begin (log-optimization "unary float" this-syntax)
                   #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-expr)
            #:with opt
-           (begin (log-optimization "int to float" #'op)
+           (begin (log-optimization "int to float" this-syntax)
                   #'(->fl n.opt)))
   ;; we can get rid of it altogether if we're giving it a float
   (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-expr)
            #:with opt
-           (begin (log-optimization "float to float" #'op)
+           (begin (log-optimization "float to float" this-syntax)
                   #'f.opt))
 
   (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
            #:with opt
-           (begin (log-optimization "float zero?" #'op)
+           (begin (log-optimization "float zero?" this-syntax)
                   #'(unsafe-fl= f.opt 0.0)))
 
   (pattern (#%plain-app (~and op (~literal add1)) n:float-expr)
            #:with opt
-           (begin (log-optimization "float add1" #'op)
+           (begin (log-optimization "float add1" this-syntax)
                   #'(unsafe-fl+ n.opt 1.0)))
   (pattern (#%plain-app (~and op (~literal sub1)) n:float-expr)
            #:with opt
-           (begin (log-optimization "float sub1" #'op)
+           (begin (log-optimization "float sub1" this-syntax)
                   #'(unsafe-fl- n.opt 1.0))))

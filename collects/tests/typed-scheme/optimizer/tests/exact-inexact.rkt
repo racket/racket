@@ -1,6 +1,6 @@
 #;
 (
-TR opt: exact-inexact.rkt 10:1 exact->inexact -- int to float
+TR opt: exact-inexact.rkt 10:0 (exact->inexact (expt 10 100)) -- int to float
 1e+100
 )
 

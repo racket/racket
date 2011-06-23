@@ -1,6 +1,6 @@
 #;
 (
-TR opt: flvector-length.rkt 10:1 flvector-length -- flvector-length
+TR opt: flvector-length.rkt 10:0 (flvector-length (flvector 0.0 1.2)) -- flvector-length
 2
 )
 

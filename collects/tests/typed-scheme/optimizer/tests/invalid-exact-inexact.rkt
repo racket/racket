@@ -1,6 +1,6 @@
 #;
 (
-TR opt: invalid-exact-inexact.rkt 9:1 exact->inexact -- float to float
+TR opt: invalid-exact-inexact.rkt 9:0 (exact->inexact 1.0) -- float to float
 1.0
 )
 

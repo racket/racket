@@ -37,7 +37,7 @@
   #:commit
   (pattern e:pair-derived-opt-expr
            #:with opt
-           (begin (log-optimization "derived pair" #'e)
+           (begin (log-optimization "derived pair" this-syntax)
                   #'e.opt))
   (pattern (#%plain-app op:pair-op p:expr)
            #:when (or (has-pair-type? #'p)
@@ -49,7 +49,7 @@
                                                  this-syntax #'p)
                         #f))
            #:with opt
-           (begin (log-optimization "pair" #'op)
+           (begin (log-optimization "pair" this-syntax)
                   #`(op.unsafe #,((optimize) #'p))))
   (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
            #:when (or (has-mpair-type? #'p)
@@ -58,7 +58,7 @@
                                                  this-syntax #'p)
                         #f))
            #:with opt
-           (begin (log-optimization "mutable pair" #'op)
+           (begin (log-optimization "mutable pair" this-syntax)
                   #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))
 
 

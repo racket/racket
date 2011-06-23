@@ -1,7 +1,7 @@
 #;
 (
-TR opt: begin-float.rkt 12:8 - -- binary float
-TR opt: begin-float.rkt 13:8 * -- binary float
+TR opt: begin-float.rkt 12:7 (- 2.0 3.0) -- binary float
+TR opt: begin-float.rkt 13:7 (* 2.0 3.0) -- binary float
 -1.0
 6.0
 )

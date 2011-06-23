@@ -1,34 +1,34 @@
 #;
 (
 TR missed opt: pair.rkt 58:0 (car (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 58:10 (list 1 2 3)
-TR opt: pair.rkt 59:1 car -- pair
+TR opt: pair.rkt 59:0 (car (list 1 2 3)) -- pair
 TR missed opt: pair.rkt 60:0 (cdr (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 60:10 (list 1 2 3)
-TR opt: pair.rkt 61:1 cdr -- pair
-TR opt: pair.rkt 62:1 cdr -- pair
-TR opt: pair.rkt 62:6 cdr -- pair
-TR opt: pair.rkt 63:1 cdr -- pair
-TR opt: pair.rkt 63:6 cdr -- pair
-TR opt: pair.rkt 63:11 cdr -- pair
+TR opt: pair.rkt 61:0 (cdr (list 1 2 3)) -- pair
+TR opt: pair.rkt 62:0 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 62:5 (cdr (list 1 2 3)) -- pair
+TR opt: pair.rkt 63:0 (cdr (cdr (cdr (list 1 2 3)))) -- pair
+TR opt: pair.rkt 63:5 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 63:10 (cdr (list 1 2 3)) -- pair
 TR missed opt: pair.rkt 64:16 (cdr (cdr (cdr (cdr (list 1 2 3))))) -- car/cdr on a potentially empty list -- caused by: 64:21 (cdr (cdr (cdr (list 1 2 3))))
-TR opt: pair.rkt 64:22 cdr -- pair
-TR opt: pair.rkt 64:27 cdr -- pair
-TR opt: pair.rkt 64:32 cdr -- pair
+TR opt: pair.rkt 64:21 (cdr (cdr (cdr (list 1 2 3)))) -- pair
+TR opt: pair.rkt 64:26 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 64:31 (cdr (list 1 2 3)) -- pair
 TR missed opt: pair.rkt 67:0 (mcar (ann (mlist 1) (MListof Byte))) -- mpair op on a potentially empty mlist -- caused by: 67:0 (mcar (ann (mlist 1) (MListof Byte)))
-TR opt: pair.rkt 68:1 mcar -- mutable pair
+TR opt: pair.rkt 68:0 (mcar (mlist 1 2 3)) -- mutable pair
 TR missed opt: pair.rkt 69:0 (mcdr (ann (mlist 1) (MListof Byte))) -- mpair op on a potentially empty mlist -- caused by: 69:0 (mcdr (ann (mlist 1) (MListof Byte)))
-TR opt: pair.rkt 70:1 mcdr -- mutable pair
-TR opt: pair.rkt 71:1 mcdr -- mutable pair
-TR opt: pair.rkt 71:7 mcdr -- mutable pair
-TR opt: pair.rkt 72:1 mcdr -- mutable pair
-TR opt: pair.rkt 72:7 mcdr -- mutable pair
-TR opt: pair.rkt 72:13 mcdr -- mutable pair
+TR opt: pair.rkt 70:0 (mcdr (mlist 1 2 3)) -- mutable pair
+TR opt: pair.rkt 71:0 (mcdr (mcdr (mlist 1 2 3))) -- mutable pair
+TR opt: pair.rkt 71:6 (mcdr (mlist 1 2 3)) -- mutable pair
+TR opt: pair.rkt 72:0 (mcdr (mcdr (mcdr (mlist 1 2 3)))) -- mutable pair
+TR opt: pair.rkt 72:6 (mcdr (mcdr (mlist 1 2 3))) -- mutable pair
+TR opt: pair.rkt 72:12 (mcdr (mlist 1 2 3)) -- mutable pair
 TR missed opt: pair.rkt 73:0 (set-mcar! (ann (mlist 2) (MListof Byte)) 2) -- mpair op on a potentially empty mlist -- caused by: 73:0 (set-mcar! (ann (mlist 2) (MListof Byte)) 2)
-TR opt: pair.rkt 74:1 set-mcar! -- mutable pair
+TR opt: pair.rkt 74:0 (set-mcar! (mlist 2 3 4) 2) -- mutable pair
 TR missed opt: pair.rkt 75:0 (set-mcdr! (ann (mlist 2) (MListof Byte)) (ann (mlist 2) (MListof Byte))) -- mpair op on a potentially empty mlist -- caused by: 75:0 (set-mcdr! (ann (mlist 2) (MListof Byte)) (ann (mlist 2) (MListof Byte)))
-TR opt: pair.rkt 77:1 mcar -- mutable pair
-TR opt: pair.rkt 78:1 mcdr -- mutable pair
-TR opt: pair.rkt 79:1 set-mcar! -- mutable pair
-TR opt: pair.rkt 80:1 set-mcdr! -- mutable pair
+TR opt: pair.rkt 77:0 (mcar (mcons 2 3)) -- mutable pair
+TR opt: pair.rkt 78:0 (mcdr (mcons 2 3)) -- mutable pair
+TR opt: pair.rkt 79:0 (set-mcar! (mcons 2 3) 3) -- mutable pair
+TR opt: pair.rkt 80:0 (set-mcdr! (mcons 2 3) 4) -- mutable pair
 TR missed opt: pair.rkt 81:17 (mcar (quote ())) -- mpair op on a potentially empty mlist -- caused by: 81:23 (quote ())
 TR missed opt: pair.rkt 82:17 (mcdr (quote ())) -- mpair op on a potentially empty mlist -- caused by: 82:23 (quote ())
 TR missed opt: pair.rkt 83:17 (set-mcar! (quote ()) 2) -- mpair op on a potentially empty mlist -- caused by: 83:28 (quote ())

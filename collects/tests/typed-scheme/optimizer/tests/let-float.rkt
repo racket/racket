@@ -1,7 +1,7 @@
 #;
 (
-TR opt: let-float.rkt 11:10 + -- binary float
-TR opt: let-float.rkt 12:3 * -- binary float
+TR opt: let-float.rkt 11:9 (+ 3.0 2.0) -- binary float
+TR opt: let-float.rkt 12:2 (* 9.0 x) -- binary float
 45.0
 )
 

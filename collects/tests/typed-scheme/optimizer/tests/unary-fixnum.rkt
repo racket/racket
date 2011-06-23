@@ -1,6 +1,6 @@
 #;
 (
-TR opt: unary-fixnum.rkt 10:1 bitwise-not -- unary fixnum
+TR opt: unary-fixnum.rkt 10:0 (bitwise-not 4) -- unary fixnum
 -5
 )
 

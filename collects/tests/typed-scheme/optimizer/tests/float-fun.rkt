@@ -1,6 +1,6 @@
 #;
 (
-TR opt: float-fun.rkt 12:3 + -- binary float
+TR opt: float-fun.rkt 12:2 (+ x 1.0) -- binary float
 )
 
 #lang typed/racket

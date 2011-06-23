@@ -1,11 +1,11 @@
 #;
 (
 TR missed opt: precision-loss.rkt 24:0 (+ (* 3/4 2/3) 2.0) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 24:3 (* 3/4 2/3)
-TR opt: precision-loss.rkt 24:1 + -- binary float
-TR opt: precision-loss.rkt 26:1 + -- binary float
+TR opt: precision-loss.rkt 24:0 (+ (* 3/4 2/3) 2.0) -- binary float
+TR opt: precision-loss.rkt 26:0 (+ 3/4 2.0) -- binary float
 TR missed opt: precision-loss.rkt 28:0 (+ (- 3/4) 2.0) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 28:3 (- 3/4)
-TR opt: precision-loss.rkt 28:1 + -- binary float
-TR opt: precision-loss.rkt 30:1 + -- binary float
+TR opt: precision-loss.rkt 28:0 (+ (- 3/4) 2.0) -- binary float
+TR opt: precision-loss.rkt 30:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- binary float
 TR missed opt: precision-loss.rkt 36:0 (* (ann (* 3/4 2/3) Real) 2.0) -- binary, args all float-arg-expr, return type not Float -- caused by: 36:11 3/4, 36:15 2/3 (2 times)
 TR missed opt: precision-loss.rkt 36:0 (* (ann (* 3/4 2/3) Real) 2.0) -- exact arithmetic subexpression inside a float expression, extra precision discarded -- caused by: 36:8 (* 3/4 2/3)
 2.5

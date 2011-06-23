@@ -1,8 +1,7 @@
 #;
 (
-TR opt: unary-fixnum-nested.rkt 12:1 bitwise-not -- unary fixnum
-TR opt: unary-fixnum-nested.rkt 12:14 bitwise-not -- unary fixnum
-TR opt: unary-fixnum-nested.rkt 12:27 length -- known-length list length
+TR opt: unary-fixnum-nested.rkt 11:0 (bitwise-not (bitwise-not (length (quote (1 2 3))))) -- unary fixnum
+TR opt: unary-fixnum-nested.rkt 11:13 (bitwise-not (length (quote (1 2 3)))) -- unary fixnum
 3
 )
 

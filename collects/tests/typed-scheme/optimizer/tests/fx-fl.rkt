@@ -1,6 +1,6 @@
 #;
 (
-TR opt: fx-fl.rkt 10:1 exact->inexact -- fixnum to float
+TR opt: fx-fl.rkt 10:0 (exact->inexact 1) -- fixnum to float
 1.0
 )
 

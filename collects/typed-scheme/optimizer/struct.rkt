@@ -17,8 +17,8 @@
            #:with opt
            (let ([idx (struct-fn-idx #'op)])
              (if (struct-accessor? #'op)
-                 (begin (log-optimization "struct ref" #'op)
+                 (begin (log-optimization "struct ref" this-syntax)
                         #`(unsafe-struct-ref  #,((optimize) #'s) #,idx))
-                 (begin (log-optimization "struct set" #'op)
+                 (begin (log-optimization "struct set" this-syntax)
                         #`(unsafe-struct-set! #,((optimize) #'s) #,idx
                                               #,@(syntax-map (optimize) #'(v ...))))))))

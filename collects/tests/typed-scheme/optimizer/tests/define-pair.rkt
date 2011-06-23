@@ -1,6 +1,6 @@
 #;
 (
-TR opt: define-pair.rkt 9:11 car -- pair
+TR opt: define-pair.rkt 9:10 (car (quote (1 3))) -- pair
 )
 
 #lang typed/scheme

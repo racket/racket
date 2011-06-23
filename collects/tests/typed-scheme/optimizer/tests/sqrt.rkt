@@ -1,6 +1,6 @@
 #;
 (
-TR opt: sqrt.rkt 11:3 sqrt -- unary float
+TR opt: sqrt.rkt 11:2 (sqrt x) -- unary float
 )
 
 #lang typed/scheme

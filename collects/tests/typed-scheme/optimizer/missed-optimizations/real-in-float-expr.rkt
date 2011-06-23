@@ -1,8 +1,8 @@
 #;
 (
 TR missed opt: real-in-float-expr.rkt 17:0 (* (ann 3 Real) 2.3) -- binary, args all float-arg-expr, return type not Float -- caused by: 17:8 3
-TR opt: real-in-float-expr.rkt 22:1 * -- fixnum bounded expr
-TR opt: real-in-float-expr.rkt 23:1 + -- fixnum bounded expr
+TR opt: real-in-float-expr.rkt 22:0 (* 2 3) -- fixnum bounded expr
+TR opt: real-in-float-expr.rkt 23:0 (+ 2 3) -- fixnum bounded expr
 TR missed opt: real-in-float-expr.rkt 26:0 (* (ann 2 Natural) 2.0) -- binary, args all float-arg-expr, return type not Float -- caused by: 26:8 2
 6.8999999999999995
 6

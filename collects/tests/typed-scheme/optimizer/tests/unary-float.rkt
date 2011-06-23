@@ -1,6 +1,6 @@
 #;
 (
-TR opt: unary-float.rkt 10:1 sin -- unary float
+TR opt: unary-float.rkt 10:0 (sin 2.0) -- unary float
 0.9092974268256817
 )
 

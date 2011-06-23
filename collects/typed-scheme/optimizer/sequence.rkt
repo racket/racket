@@ -38,7 +38,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with l*:list-expr #'l
            #:with opt
-           (begin (log-optimization "in-list" #'op)
+           (begin (log-optimization "in-list" this-syntax)
                   #'(let ((i l*.opt))
                       (values unsafe-car unsafe-cdr i
                               (lambda (x) (not (null? x)))
@@ -49,7 +49,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with v*:vector-expr #'v
            #:with opt
-           (begin (log-optimization "in-vector" #'op)
+           (begin (log-optimization "in-vector" this-syntax)
                   #'(let* ((i   v*.opt)
                            (len (unsafe-vector-length i)))
                       (values (lambda (x) (unsafe-vector-ref i x))
@@ -63,7 +63,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with s*:string-expr #'s
            #:with opt
-           (begin (log-optimization "in-string" #'op)
+           (begin (log-optimization "in-string" this-syntax)
                   #'(let* ((i   s*.opt)
                            (len (string-length i)))
                       (values (lambda (x) (string-ref i x))
@@ -76,7 +76,7 @@
            #:when (id-from? #'op 'make-sequence 'racket/private/for)
            #:with s*:bytes-expr #'s
            #:with opt
-           (begin (log-optimization "in-bytes" #'op)
+           (begin (log-optimization "in-bytes" this-syntax)
                   #'(let* ((i   s*.opt)
                            (len (bytes-length i)))
                       (values (lambda (x) (bytes-ref i x))

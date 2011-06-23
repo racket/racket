@@ -1,6 +1,6 @@
 #;
 (
-TR opt: define-float.rkt 9:11 + -- binary float
+TR opt: define-float.rkt 9:10 (+ 1.0 2.0) -- binary float
 )
 
 #lang typed/scheme

@@ -1,7 +1,7 @@
 #;
 (
-TR opt: structs.rkt 13:1 pt-x -- struct ref
-TR opt: structs.rkt 14:1 set-pt-y! -- struct set
+TR opt: structs.rkt 13:0 (pt-x a) -- struct ref
+TR opt: structs.rkt 14:0 (set-pt-y! a 5) -- struct set
 3
 )
 

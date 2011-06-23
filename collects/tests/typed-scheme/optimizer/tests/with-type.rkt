@@ -1,6 +1,6 @@
 #;
 (
-TR opt: with-type.rkt 13:19 + -- binary float
+TR opt: with-type.rkt 13:18 (#%app + x val) -- binary float
 34.6
 )
 

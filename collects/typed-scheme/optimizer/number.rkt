@@ -13,5 +13,5 @@
   (pattern (#%plain-app (~and op (~or (~literal +) (~literal *) (~literal min) (~literal max)))
                         f:expr)
            #:with opt
-           (begin (log-optimization "unary number" #'op)
+           (begin (log-optimization "unary number" this-syntax)
                   ((optimize) #'f))))

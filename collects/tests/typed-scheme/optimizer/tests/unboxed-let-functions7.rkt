@@ -7,15 +7,15 @@ TR opt: unboxed-let-functions7.rkt 26:6 loop -- unboxed let loop
 TR opt: unboxed-let-functions7.rkt 26:31 z -- unboxed var -> table
 TR opt: unboxed-let-functions7.rkt 26:51 0.0+0.0i -- unboxed literal
 TR opt: unboxed-let-functions7.rkt 29:6 z -- unboxed complex variable
-TR opt: unboxed-let-functions7.rkt 30:7 loop -- call to fun with unboxed args
-TR opt: unboxed-let-functions7.rkt 30:7 loop -- unboxed call site
+TR opt: unboxed-let-functions7.rkt 30:6 (loop (+ z (car l)) (cdr l)) -- call to fun with unboxed args
+TR opt: unboxed-let-functions7.rkt 30:6 (loop (+ z (car l)) (cdr l)) -- unboxed call site
+TR opt: unboxed-let-functions7.rkt 30:12 (+ z (car l)) -- unboxed binary float complex
 TR opt: unboxed-let-functions7.rkt 30:12 (+ z (car l)) -- unboxed float complex
-TR opt: unboxed-let-functions7.rkt 30:13 + -- unboxed binary float complex
 TR opt: unboxed-let-functions7.rkt 30:15 z -- leave var unboxed
 TR opt: unboxed-let-functions7.rkt 30:15 z -- unbox float-complex
 TR opt: unboxed-let-functions7.rkt 30:17 (car l) -- float-arg-expr in complex ops
-TR opt: unboxed-let-functions7.rkt 30:18 car -- pair
-TR opt: unboxed-let-functions7.rkt 31:13 cdr -- pair
+TR opt: unboxed-let-functions7.rkt 30:17 (car l) -- pair
+TR opt: unboxed-let-functions7.rkt 31:12 (cdr l) -- pair
 6.0+0.0i
 )
 
