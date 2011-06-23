@@ -1643,6 +1643,60 @@
  (-> -Compiled-Module-Expression
      (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
 
+;Section 13.4.3
+[dynamic-require
+ (let ((mod (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)))
+  (-poly (a)
+   (cl->* (-> mod (Un (-val #f) (-val 0) -Void) -Void)
+          (-> mod (Un (-val #f) (-val 0) -Void) (-> a) (Un -Void a))
+          (->opt mod Sym [(-> Univ)] ManyUniv))))]
+
+
+[dynamic-require-for-syntax
+ (let ((mod (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)))
+  (-poly (a)
+   (cl->* (-> mod (-val #f) -Void)
+          (-> mod (-val #f) (-> a) (Un -Void a))
+          (->opt mod Sym [(-> Univ)] ManyUniv))))]
+
+[module->language-info
+ (->opt (Un -Module-Path -Path -Resolved-Module-Path) [Univ] (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+
+
+[module->imports (-> -Compiled-Module-Expression
+                             (-lst (-pair (-opt -Integer)
+                                          (-lst -Module-Path-Index))))]
+[module->exports
+ (-> -Compiled-Module-Expression
+     (-values
+      (list
+       (-lst (-pair (-opt -Integer)
+                    (-lst (-pair -Symbol
+                                 (-pair
+                                  (-lst
+                                   (Un -Module-Path-Index
+                                       (-pair -Module-Path-Index
+                                              (-pair (-opt -Integer)
+                                                     (-pair -Symbol
+                                                            (-pair (-opt -Integer)
+                                                                   (-val null)))))))
+                                  (-val null))))))
+       (-lst (-pair (-opt -Integer)
+                    (-lst (-pair -Symbol
+                                 (-pair
+                                  (-lst
+                                   (Un -Module-Path-Index
+                                       (-pair -Module-Path-Index
+                                              (-pair (-opt -Integer)
+                                                     (-pair -Symbol
+                                                            (-pair (-opt -Integer)
+                                                                   (-val null)))))))
+                                  (-val null)))))))))]
+
+
+
+
+
 [compose (-poly (a b c) (-> (-> b c) (-> a b) (-> a c)))]
 
 
