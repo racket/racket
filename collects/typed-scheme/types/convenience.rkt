@@ -96,4 +96,5 @@
                                 (-lst* -String)
                                 (-lst* -String (-lst* -String -String #:tail (make-Listof (*Un -Nat (-lst* (*Un -Nat (one-of/c '= '+ '-)) -Nat)))))))))
 
+(define -LogLevel (one-of/c 'fatal 'error 'warning 'info 'debug))
 

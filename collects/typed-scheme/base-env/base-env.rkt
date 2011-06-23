@@ -242,6 +242,7 @@
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
 
 [box (-poly (a) (a . -> . (-box a)))]
+[box-immutable (-poly (a) (a . -> . (-box a)))]
 [unbox (-poly (a) (cl->*
                    ((-box a) . -> . a)
                    ((make-BoxTop) . -> . Univ)))]
@@ -364,7 +365,6 @@
 
 
 
-[keyword? (make-pred-ty -Keyword)]
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
 [procedure? (make-pred-ty top-func)]
@@ -643,7 +643,12 @@
 [number->string (->opt N [N] -String)]
 [string->number (->opt -String [N] (Un (-val #f) N))]
 
-[current-milliseconds (-> -Integer)]
+[floating-point-bytes->real (->opt -Bytes [Univ -Nat -Nat] -Flonum)]
+[real->floating-point-bytes (->opt -Real (Un (-val 4) (-val 8)) [Univ -Bytes -Nat] -Bytes)]
+[system-big-endian? (-> B)]
+
+[order-of-magnitude (-> -PosReal -Int)]
+
 
 ;; errors
 
@@ -651,8 +656,11 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
+;Section 3.8 (Keywords)
+[keyword? (make-pred-ty -Keyword)]
 [string->keyword (-String . -> . -Keyword)]
 [keyword->string (-Keyword . -> . -String)]
+[keyword<? (->* (list -Keyword -Keyword) -Keyword B)]
 
 ;; vectors
 [vector? (make-pred-ty (make-VectorTop))]
@@ -1031,7 +1039,37 @@
 [bytes=? (->* (list -Bytes) -Bytes B)]
 
 
-[force (-poly (a) (-> (-Promise a) a))]
+
+[bytes-open-converter (-> -String -String -BytesConverter)]
+[bytes-close-converter (-> -BytesConverter -Void)]
+[bytes-convert
+ (->opt -BytesConverter
+        -Bytes
+        [-Nat
+         -Nat
+         (-opt -Bytes)
+         -Nat
+         (-opt -Nat)]
+   (-values (list
+             (Un -Bytes -Nat)
+             -Nat
+             (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error)))))]
+
+[bytes-convert-end
+ (->opt -BytesConverter
+        [(-opt -Bytes)
+         -Nat
+         (-opt -Nat)]
+   (-values (list
+             (Un -Bytes -Nat)
+             (Un (-val 'complete) (-val 'continues)))))]
+
+[bytes-converter? (make-pred-ty -BytesConverter)]
+
+[locale-string-encoding (-> -String)]
+
+[bytes-append* ((-lst -Bytes) . -> . -Bytes)]
+[bytes-join ((-lst -Bytes) -Bytes . -> . -Bytes)]
 
 
 
@@ -1529,6 +1567,7 @@
 [vector-split-at-right
  (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
 
+;vector->values
 
 ;Section 14.4 (Processes)
 
@@ -1879,6 +1918,9 @@
 
 ;Section 9.4 (Continuations)
 
+[call-with-continuation-barrier (-poly (a) (-> (-> a) a))]
+[continuation-prompt-available? (-> -Prompt-Tag B)]
+
 [make-continuation-prompt-tag (->opt [Sym] -Prompt-Tag)]
 [default-continuation-prompt-tag (-> -Prompt-Tag)]
 [continuation-prompt-tag? (make-pred-ty -Prompt-Tag)]
@@ -1894,6 +1936,86 @@
 [call-with-immediate-continuation-mark (-poly (a) (->opt Univ (-> Univ a) [Univ] a))]
 [continuation-mark-set? (make-pred-ty -Cont-Mark-Set)]
 [continuation-mark-set->context (-> -Cont-Mark-Set (-lst (-pair (-opt Sym) Univ)))] ;TODO add srcloc
+
+
+;Section 14.6 (Time)
+[current-milliseconds (-> -Fixnum)]
+[current-inexact-milliseconds (-> -Real)]
+[current-gc-milliseconds (-> -Fixnum)]
+[current-process-milliseconds (-> -Fixnum)]
+
+;Section 14.5 (Logging)
+[logger? (make-pred-ty -Logger)]
+[make-logger (->opt [(-opt Sym) (-opt -Logger)] -Logger)]
+[logger-name (-> -Logger (-opt Sym))]
+[current-logger (-Param -Logger -Logger)]
+
+[log-message (-> -Logger -LogLevel -String Univ -Void)]
+[log-level? (-> -Logger -LogLevel  B)]
+
+[log-receiver? (make-pred-ty -LogReceiver)]
+[make-log-receiver (-> -Logger -LogLevel -LogReceiver)]
+
+;Section 10.2.3 Semaphores
+
+[semaphore? (make-pred-ty -Semaphore)]
+[make-semaphore (->opt [-Nat] -Semaphore)]
+[semaphore-post (-> -Semaphore -Void)]
+[semaphore-wait (-> -Semaphore -Void)]
+[semaphore-try-wait? (-> -Semaphore B)]
+[semaphore-wait/enable-break (-> -Semaphore -Void)]
+;[call-with-semaphore ???]
+;[call-with-semaphore/enable-break ???]
+
+
+;Section 17.2 (Libraries and Collections)
+[find-library-collection-paths (->opt [(-lst -Pathlike) (-lst -Pathlike)] (-lst -Path))]
+[collection-file-path (->* (list -Pathlike) -Pathlike -Path)]
+[collection-path (->* (list) -Pathlike -Path)]
+[current-library-collection-paths (-Param -Path -Path)]
+[use-user-specific-search-paths (-Param Univ B)]
+
+;3.2.2.7 (Random Numbers)
+
+[random
+  (cl->* (->opt -PosInt [-Pseudo-Random-Generator] -Nat)
+         (->opt [-Pseudo-Random-Generator] -InexactReal))]
+
+[random-seed (-> -PosInt -Void)]
+[make-pseudo-random-generator (-> -Pseudo-Random-Generator)]
+[pseudo-random-generator? (make-pred-ty -Pseudo-Random-Generator)]
+[current-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
+[pseudo-random-generator->vector
+ (-> -Pseudo-Random-Generator (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))]
+[vector->pseudo-random-generator
+ (-> (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Pseudo-Random-Generator)]
+[vector->pseudo-random-generator!
+ (-> -Pseudo-Random-Generator (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
+
+[current-evt-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
+
+;Section 9.6
+[break-enabled (cl->* (-> B) (-> B -Void))]
+
+
+
+
+;Section 4.3 (Structure Type Properties)
+[make-struct-type-property
+ (->opt Sym
+       [(Un (-val #f) (-val 'can-impersonate) (-> Univ (-lst Univ)))
+        (-lst (-pair -Struct-Type-Property (-> Univ Univ)))]
+       (-values (list -Struct-Type-Property (-> Univ B) (-> Univ Univ))))]
+
+[struct-type-property? (make-pred-ty -Struct-Type-Property)]
+[struct-type-property-accessor-procedure? (-> Univ B)]
+
+
+;Exceptions
+[exn:misc:match? (-> Univ B)]
+[prop:exn:srclocs -Struct-Type-Property]
+[exn:srclocs? (-> Univ B)]
+[exn:srclocs-accessor (-> Univ (-lst Univ))] ;TODO
 
 
 
@@ -2372,3 +2494,30 @@
 
 
 
+;Section 10.5 (Places)
+
+[place? (make-pred-ty -Place)]
+[place-channel? (make-pred-ty -Place-Channel)]
+[dynamic-place (-> -Module-Path Sym -Place)]
+[place-wait (-> -Place -Int)]
+[place-break (-> -Place -Void)]
+[place-kill (-> -Place -Void)]
+[place-channel (-> (-values (list -Place-Channel -Place-Channel)))]
+[place-channel-put (-> -Place-Channel Univ -Void)]
+[place-channel-get (-> -Place-Channel Univ)]
+[place-channel-put/get (-> -Place-Channel Univ Univ)]
+
+
+;Section 9.3 (Delayed Evaluation)
+[promise? (make-pred-ty (-Promise Univ))]
+[force (-poly (a) (-> (-Promise a) a))]
+[promise-forced? (-poly (a) (-> (-Promise a) B))]
+[promise-running? (-poly (a) (-> (-Promise a) B))]
+
+
+;Section 15.3 (Wills and Executors)
+[make-will-executor (-> -Will-Executor)]
+[will-executor? (make-pred-ty -Will-Executor)]
+[will-register (-poly (a) (-> -Will-Executor a (-> a ManyUniv)))]
+[will-execute (-> -Will-Executor ManyUniv)]
+[will-try-execute (-> -Will-Executor ManyUniv)]
