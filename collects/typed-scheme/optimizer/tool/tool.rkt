@@ -46,25 +46,17 @@
   ;; highlight
   (define new-highlights
     (for/list ([l (in-list log)])
-      (let* ([stx (log-entry-stx l)]
-             [pos (sub1 (log-entry-pos l))]
-             [end (+ pos (syntax-span stx))]
-             [msg (log-entry-msg l)]
-             ;; opt or missed opt?
-             [opt? (regexp-match #rx"^TR opt:" msg)]
-             [color (if opt? "lightgreen" "pink")])
-        (send defs highlight-range pos end color)
-        (send defs set-clickback pos end
-              (lambda (ed start end)
-                (message-box "Performance Report" msg)))
-        (list pos end color)))) ; record the highlight, to undo it later
-  (set! highlights (append new-highlights highlights))
-  (message-box
-   "Performance Report"
-   (with-output-to-string
-    (lambda ()
-      (for ([l (in-list log)])
-        (displayln (log-entry-msg l)))))))
+      (match l
+        [(log-entry msg raw-msg stx (app sub1 pos))
+         (let* ([end  (+ pos (syntax-span stx))]
+                [opt? (regexp-match #rx"^TR opt:" msg)] ;; opt or missed opt?
+                [color (if opt? "lightgreen" "pink")])
+           (send defs highlight-range pos end color)
+           (send defs set-clickback pos end
+                 (lambda (ed start end)
+                   (message-box "Performance Report" raw-msg)))
+           (list pos end color))]))) ; record the highlight, to undo it later
+  (set! highlights (append new-highlights highlights)))
 
 (define remove-highlights-mixin
   (mixin ((class->interface text%)) ()

@@ -16,7 +16,7 @@
         (format "~a:~a" line col)
         "(no location)")))
 
-(struct log-entry (msg stx pos) #:prefab)
+(struct log-entry (msg raw-msg stx pos) #:prefab)
 
 ;; to identify log messages that come from the optimizer
 ;; to be stored in the data section of log messages
@@ -45,7 +45,7 @@
                           #:from [from "TR opt"]
                           #:show-badness? [show-badness? #f])
   (let* ([new-message (gen-log-message msg stx from show-badness?)]
-         [new-entry (log-entry new-message stx (syntax-position stx))])
+         [new-entry (log-entry new-message msg stx (syntax-position stx))])
     (set! log-so-far (cons new-entry log-so-far))))
 
 ;; once the optimizer is done, we sort the log according to source
@@ -66,8 +66,8 @@
                                      (cons optimization-log-key x)))
             (sort (remove-duplicates log-so-far)
                   (match-lambda*
-                   [(list (log-entry msg-x stx-x pos-x)
-                          (log-entry msg-y stx-y pos-y))
+                   [(list (log-entry msg-x raw-x stx-x pos-x)
+                          (log-entry msg-y raw-y stx-y pos-y))
                     (cond [(not (or pos-x pos-y))
                            ;; neither have location, sort by message
                            (string<? msg-x msg-y)]
