@@ -54,7 +54,7 @@
 
 (define gui? (gui-available?))
 
-(define-syntax mz/mr ; use a value for mzracket, or pull a mred binding
+(define-syntax mz/mr ; use a value for plain racket, or pull a gui binding
   (syntax-rules ()
     [(mz/mr mzval mrsym)
      (if gui? (gui-dynamic-require 'mrsym) mzval)]))
