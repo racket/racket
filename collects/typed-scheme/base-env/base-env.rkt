@@ -644,7 +644,7 @@
 [string->number (->opt -String [N] (Un (-val #f) N))]
 
 [floating-point-bytes->real (->opt -Bytes [Univ -Nat -Nat] -Flonum)]
-[real->floating-point-bytes (->opt -Real (Un (-val 4) (-val 8)) [Univ -Bytes -Nat] -Bytes)]
+[real->floating-point-bytes (->opt -Real (one-of/c  4 8) [Univ -Bytes -Nat] -Bytes)]
 [system-big-endian? (-> B)]
 
 [order-of-magnitude (-> -PosReal -Int)]
@@ -1054,8 +1054,7 @@
     (-values (list
               -Bytes
               -Nat
-              (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error)))))
-
+              (one-of/c 'complete 'continues  'aborts  'error))))
   (->opt -Bytes-Converter
          -Bytes
          -Nat
@@ -1066,7 +1065,7 @@
     (-values (list
               -Nat
               -Nat
-              (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error))))))]
+              (one-of/c 'complete 'continues  'aborts  'error)))))]
 
 [bytes-convert-end
  (cl->*
@@ -1076,14 +1075,14 @@
           (-opt -Nat)]
     (-values (list
               -Bytes
-              (Un (-val 'complete) (-val 'continues)))))
+              (one-of/c 'complete 'continues))))
   (->opt -Bytes-Converter
          -Bytes
          [-Nat
           (-opt -Nat)]
     (-values (list
               -Nat
-              (Un (-val 'complete) (-val 'continues))))))]
+              (one-of/c 'complete 'continues)))))]
 
 [bytes-converter? (make-pred-ty -Bytes-Converter)]
 
@@ -1603,8 +1602,8 @@
 [subprocess-kill (-> -Subprocess Univ -Void)]
 [subprocess-pid (-> -Subprocess -Nat)]
 [subprocess? (make-pred-ty -Subprocess)]
-[current-subprocess-custodian-mode (-Param (Un (-val #f) (-val 'kill) (-val 'interrupt))
-                                           (Un (-val #f) (-val 'kill) (-val 'interrupt)))]
+[current-subprocess-custodian-mode (-Param (one-of/c #f 'kill 'interrupt)
+                                           (one-of/c #f 'kill 'interrupt))]
 [subprocess-group-enabled (-Param Univ B)]
 
 [shell-execute (-> (-opt -String) -String -String -Pathlike Sym (-val #f))]
@@ -1619,7 +1618,7 @@
 [process (-> -String
              (-values (list -Input-Port -Output-Port -Nat -Input-Port
               (cl->*
-                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                 (-> (-val 'exit-code) (-opt -Byte))
                 (-> (-val 'wait) ManyUniv)
                 (-> (-val 'interrupt) -Void)
@@ -1631,7 +1630,7 @@
    (->* (list -Pathlike) (Un -Path -String -Bytes)
              (-values (list -Input-Port -Output-Port -Nat -Input-Port
               (cl->*
-                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                 (-> (-val 'exit-code) (-opt -Byte))
                 (-> (-val 'wait) ManyUniv)
                 (-> (-val 'interrupt) -Void)
@@ -1639,17 +1638,17 @@
    (-> -Pathlike (-val 'exact) -String
              (-values (list -Input-Port -Output-Port -Nat -Input-Port
               (cl->*
-                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                 (-> (-val 'exit-code) (-opt -Byte))
                 (-> (-val 'wait) ManyUniv)
                 (-> (-val 'interrupt) -Void)
                 (-> (-val 'kill) -Void))))))]
 
 [process/ports
-  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -String
+  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
              (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
               (cl->*
-                (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                 (-> (-val 'exit-code) (-opt -Byte))
                 (-> (-val 'wait) ManyUniv)
                 (-> (-val 'interrupt) -Void)
@@ -1657,19 +1656,19 @@
 
 [process*/ports
  (cl->*
-  (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -Pathlike)
+  (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
          (Un -Path -String -Bytes)
            (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
             (cl->*
-              (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+              (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
               (-> (-val 'exit-code) (-opt -Byte))
               (-> (-val 'wait) ManyUniv)
               (-> (-val 'interrupt) -Void)
               (-> (-val 'kill) -Void)))))
-  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (-val #f) (-val 'stdout)) -Pathlike (-val 'exact) -String
+  (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
            (-values (list (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port)
             (cl->*
-              (-> (-val 'status) (Un (-val 'running) (-val 'done-ok) (-val 'done-error)))
+              (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
               (-> (-val 'exit-code) (-opt -Byte))
               (-> (-val 'wait) ManyUniv)
               (-> (-val 'interrupt) -Void)
@@ -1821,8 +1820,8 @@
 [dynamic-require
  (let ((mod (Un -Module-Path -Resolved-Module-Path -Module-Path-Index)))
   (-poly (a)
-   (cl->* (-> mod (Un (-val #f) (-val 0) -Void) -Void)
-          (-> mod (Un (-val #f) (-val 0) -Void) (-> a) (Un -Void a))
+   (cl->* (-> mod (Un (one-of/c #f 0) -Void) -Void)
+          (-> mod (Un (one-of/c #f 0) -Void) (-> a) (Un -Void a))
           (->opt mod Sym [(-> Univ)] ManyUniv))))]
 
 
@@ -1834,7 +1833,9 @@
           (->opt mod Sym [(-> Univ)] ManyUniv))))]
 
 [module->language-info
- (->opt (Un -Module-Path -Path -Resolved-Module-Path) [Univ] (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
+ (->opt (Un -Module-Path -Path -Resolved-Module-Path)
+        [Univ]
+        (-opt (make-HeterogenousVector (list -Module-Path -Symbol Univ))))]
 
 
 [module->imports (-> -Compiled-Module-Expression
@@ -1845,27 +1846,21 @@
      (-values
       (list
        (-lst (-pair (-opt -Integer)
-                    (-lst (-pair -Symbol
-                                 (-pair
-                                  (-lst
-                                   (Un -Module-Path-Index
-                                       (-pair -Module-Path-Index
-                                              (-pair (-opt -Integer)
-                                                     (-pair -Symbol
-                                                            (-pair (-opt -Integer)
-                                                                   (-val null)))))))
-                                  (-val null))))))
+                    (-lst (-lst* -Symbol
+                                 (-lst
+                                  (Un -Module-Path-Index
+                                      (-lst* -Module-Path-Index
+                                             (-opt -Integer)
+                                             -Symbol
+                                             (-opt -Integer))))))))
        (-lst (-pair (-opt -Integer)
-                    (-lst (-pair -Symbol
-                                 (-pair
-                                  (-lst
-                                   (Un -Module-Path-Index
-                                       (-pair -Module-Path-Index
-                                              (-pair (-opt -Integer)
-                                                     (-pair -Symbol
-                                                            (-pair (-opt -Integer)
-                                                                   (-val null)))))))
-                                  (-val null)))))))))]
+                    (-lst (-lst* -Symbol
+                                 (-lst
+                                  (Un -Module-Path-Index
+                                      (-lst* -Module-Path-Index
+                                             (-opt -Integer)
+                                             -Symbol
+                                             (-opt -Integer)))))))))))]
 
 
 
@@ -1885,7 +1880,7 @@
 [make-security-guard
  (->opt -Security-Guard
         (-> Sym (-opt -Path) (-lst Sym) ManyUniv)
-        (-> Sym (-opt -String) (-opt -PosInt) (Un (-val 'server) (-val 'client) ManyUniv))
+        (-> Sym (-opt -String) (-opt -PosInt) (Un (one-of/c 'server 'client)  ManyUniv))
         [(-opt (-> Sym -Path -Path ManyUniv))]
         -Security-Guard)]
 [current-security-guard (-Param -Security-Guard -Security-Guard)]
@@ -2024,7 +2019,7 @@
 ;Section 4.3 (Structure Type Properties)
 [make-struct-type-property
  (->opt Sym
-       [(Un (-val #f) (-val 'can-impersonate) (-> Univ (-lst Univ)))
+       [(Un (one-of/c #f 'can-impersonate) (-> Univ (-lst Univ)))
         (-lst (-pair -Struct-Type-Property (-> Univ Univ)))]
        (-values (list -Struct-Type-Property (-> Univ B) (-> Univ Univ))))]
 
