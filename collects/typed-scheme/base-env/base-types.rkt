@@ -103,6 +103,7 @@
 [Module-Path -Module-Path]
 [Module-Path-Index -Module-Path-Index]
 [Compiled-Module-Expression -Compiled-Module-Expression]
+[Compiled-Expression -Compiled-Expression]
 [Read-Table -Read-Table]
 [Special-Comment -Special-Comment]
 [Struct-Type-Property -Struct-Type-Property]
@@ -114,7 +115,20 @@
 [Namespace-Anchor -Namespace-Anchor]
 [Variable-Reference -Variable-Reference]
 [Internal-Definition-Context -Internal-Definition-Context]
-
+[Subprocess -Subprocess]
+[Security-Guard -Security-Guard]
+[Thread-Group -Thread-Group]
+[Impersonator-Property -Impersonator-Property]
+[Semaphore -Semaphore]
+[Bytes-Converter -Bytes-Converter]
+[Pseudo-Random-Generator -Pseudo-Random-Generator]
+[Logger -Logger]
+[Log-Receiver -Log-Receiver]
+[Log-Level -Log-Level]
+[Place-Channel -Place-Channel]
+[Place -Place]
+[Will-Executor -Will-Executor]
+[Prompt-Tag -Prompt-Tag]
 
 
 [Listof -Listof]
@@ -139,4 +153,5 @@
 [MListof (-poly (a) (-mlst a))]
 [Sequenceof (-poly (a) (-seq a))]
 [ThreadCellof (-poly (a) (-thread-cell a))]
+[CustodianBoxof (-poly (a) (make-CustodianBox a))]
 
