@@ -5,8 +5,8 @@
 
 (define-type check-ish-ty
   (case-lambda
-    (Any Any -> Void)
-    (Any Any String -> Void)))
+    (Any Any -> Any)
+    (Any Any String -> Any)))
 (define-type (Predicate A) (A -> Boolean))
 (define-type (Thunk A) (-> A))
 
@@ -22,40 +22,40 @@
  [check-pred
   (All (A)
        (case-lambda
-         ((A -> Any) A -> Void)
-         ((A -> Any) A String -> Void)))]
+         ((A -> Any) A -> Any)
+         ((A -> Any) A String -> Any)))]
  [check-=
   (case-lambda
-    (Real Real Real -> Void)
-    (Real Real Real String -> Void))]
+    (Real Real Real -> Any)
+    (Real Real Real String -> Any))]
  [check-true
   (case-lambda
-    (Any -> Void)
-    (Any String -> Void))]
+    (Any -> Any)
+    (Any String -> Any))]
  [check-false
   (case-lambda
-    (Any -> Void)
-    (Any String -> Void))]
+    (Any -> Any)
+    (Any String -> Any))]
  [check-not-false
   (case-lambda
-    (Any -> Void)
-    (Any String -> Void))]
+    (Any -> Any)
+    (Any String -> Any))]
  [check-exn
   (case-lambda 
-    ((U (Predicate Any) Regexp) (Thunk Any) -> Void)
-    ((U (Predicate Any) Regexp) (Thunk Any) String -> Void))]
+    ((U (Predicate Any) Regexp) (Thunk Any) -> Any)
+    ((U (Predicate Any) Regexp) (Thunk Any) String -> Any))]
  [check-not-exn
   (case-lambda
-    ((Thunk Any) -> Void)
-    ((Thunk Any) String -> Void))]
+    ((Thunk Any) -> Any)
+    ((Thunk Any) String -> Any))]
  [check-regexp-match
-  (Regexp String -> Void)]
+  (Regexp String -> Any)]
 
 
  [check (All (A B)
              (case-lambda
-               ((A B -> Any) A B -> Void)
-               ((A B -> Any) A B String -> Void)))]
+               ((A B -> Any) A B -> Any)
+               ((A B -> Any) A B String -> Any)))]
 
  [fail
   (case-lambda
