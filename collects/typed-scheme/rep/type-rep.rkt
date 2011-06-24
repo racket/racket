@@ -517,10 +517,10 @@
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
-                     (*PolyDots n (*Scope (loop (+ n outer) body))))]
+                     (*PolyDots n (add-scopes n (loop (+ n outer) body))))]
        [#:Poly n body*
                (let ([body (remove-scopes n body*)])
-                 (*Poly n (*Scope (loop (+ n outer) body))))])))
+                 (*Poly n (add-scopes n (loop (+ n outer) body))))])))
   (let ([n (length names)])
     (let loop ([ty ty] [names names] [count (sub1 n)])
       (if (zero? count)
@@ -568,10 +568,10 @@
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
-                     (*PolyDots n (*Scope (loop (+ n outer) body))))]
+                     (*PolyDots n (add-scopes n (loop (+ n outer) body))))]
        [#:Poly n body*
                (let ([body (remove-scopes n body*)])
-                 (*Poly n (*Scope (loop (+ n outer) body))))])))
+                 (*Poly n (add-scopes n (loop (+ n outer) body))))])))
   (let ([n (length images)])
     (let loop ([ty (remove-scopes n sc)] [images images] [count (sub1 n)])
       (if (zero? count)
