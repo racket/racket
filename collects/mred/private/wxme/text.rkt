@@ -2368,7 +2368,7 @@
     (set! clickbacks
           (filter (lambda (cb)
                     (not (and (= start (clickback-start cb))
-                              (= end (clickback-start cb)))))
+                              (= end (clickback-end cb)))))
                   clickbacks)))
 
   (def/public (call-clickback [exact-nonnegative-integer? start]
