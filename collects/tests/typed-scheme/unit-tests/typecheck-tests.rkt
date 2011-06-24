@@ -1224,6 +1224,134 @@
         (tc-e (udp-addresses (udp-open-socket) #f) (list -String -String))
         (tc-e (udp-addresses (udp-open-socket) #t) (list -String -NonNegFixnum -String -NonNegFixnum))
 
+        ;Byte converters
+        (tc-e (bytes-open-converter "UTF-8" "UTF-8") (-opt -Bytes-Converter))
+        (tc-e (let ()
+               (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
+               (bytes-convert c #"abcde"))  (list -Bytes -Nat (one-of/c 'complete 'continues 'aborts 'error)))
+        (tc-e (let ()
+               (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
+               (bytes-convert c #"abcde" 0 5 (make-bytes 10)))  (list -Nat -Nat (one-of/c 'complete 'continues 'aborts 'error)))
+
+        (tc-e (let ()
+               (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
+               (bytes-convert-end c))  (list -Bytes (one-of/c 'complete 'continues)))
+
+        (tc-e (let ()
+               (define: c : Bytes-Converter (assert (bytes-open-converter "UTF-8" "UTF-8")))
+               (bytes-convert-end c (make-bytes 10)))  (list -Nat (one-of/c 'complete 'continues)))
+
+        ;Subprocess
+        (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo") "string" (string->path "path") #"bytes")
+              (list
+                -Subprocess
+                (-opt -Input-Port)
+                (-opt -Output-Port)
+                (-opt -Input-Port)))
+
+        (tc-e (subprocess #f #f #f (string->path "/usr/bin/echo") 'exact "arg")
+              (list
+                -Subprocess
+                (-opt -Input-Port)
+                (-opt -Output-Port)
+                (-opt -Input-Port)))
+
+        (tc-e (let ()
+                (: p Subprocess)
+                (: std-out (Option Input-Port))
+                (: std-in  (Option Output-Port))
+                (: std-err (Option Input-Port))
+                (define-values (p std-out std-in std-err)
+                 (subprocess #f #f #f (string->path "/bin/bash")))
+                (subprocess? p))
+              #:ret (ret B (-FS -top -bot)))
+
+        ;Compilation
+        (tc-e (compile-syntax #'(+ 1 2)) -Compiled-Expression)
+        (tc-e (let: ((e : Compiled-Expression (compile #'(+ 1 2))))
+                (compiled-expression? e))
+              #:ret (ret B (-FS -top -bot)))
+        (tc-e (let: ((e : Compiled-Expression (compile #'(module + racket 2))))
+                (compiled-module-expression? e)) B)
+
+        ;Impersonator Property
+        (tc-e (make-impersonator-property 'prop) (list -Impersonator-Property (t:-> Univ B) (t:-> Univ Univ)))
+        (tc-e (let-values: ((((prop : Impersonator-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
+                             (make-impersonator-property 'prop)))
+               (impersonator-property? prop))
+              #:ret (ret B (-FS -top -bot)))
+
+        ;Security Guards
+        (tc-e (make-security-guard (current-security-guard) (lambda args (void)) (lambda args (void))) -Security-Guard)
+        (tc-e (let: ((s : Security-Guard (current-security-guard)))
+                (security-guard? s))
+              #:ret (ret B (-FS -top -bot)))
+
+
+        ;Custodians
+        (tc-e (make-custodian) -Custodian)
+        (tc-e (let: ((c : Custodian (current-custodian)))
+                (custodian? c))
+              #:ret (ret B (-FS -top -bot)))
+        (tc-e (let: ((c : (CustodianBoxof Integer) (make-custodian-box (current-custodian) 1)))
+                (custodian-box-value c)) -Int)
+
+        ;Thread Groups
+        (tc-e (make-thread-group) -Thread-Group)
+        (tc-e (let: ((tg : Thread-Group (current-thread-group)))
+                (thread-group? tg))
+              #:ret (ret B (-FS -top -bot)))
+
+
+        ;Inspector
+        (tc-e (make-inspector) -Inspector)
+        (tc-e (let: ((i : Inspector (current-inspector)))
+                (inspector? i))
+              #:ret (ret B (-FS -top -bot)))
+
+        ;Continuation Prompt Tags ang Continuation Mark Sets
+        (tc-e (default-continuation-prompt-tag) -Prompt-Tag)
+        (tc-e (let: ((pt : Prompt-Tag (make-continuation-prompt-tag)))
+                   (continuation-marks #f pt)) -Cont-Mark-Set)
+        (tc-e (let: ((set : Continuation-Mark-Set (current-continuation-marks)))
+                   (continuation-mark-set? set)) #:ret (ret B (-FS -top -bot)))
+
+        ;Logging
+        (tc-e (make-logger 'name) -Logger)
+        (tc-e (let: ((l : Logger (make-logger)))
+                (let: ((lr : Log-Receiver (make-log-receiver l 'error)))
+                 (log-message l 'error "Message" 'value))) -Void)
+
+        ;Semaphores
+        (tc-e (make-semaphore) -Semaphore)
+        (tc-e (let: ((s : Semaphore (make-semaphore 3)))
+                      (semaphore-post s)) -Void)
+
+        ;Random Numbers
+        (tc-e (make-pseudo-random-generator) -Pseudo-Random-Generator)
+        (tc-e (let: ((pg : Pseudo-Random-Generator (make-pseudo-random-generator)))
+                (pseudo-random-generator->vector pg)) (make-HeterogenousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
+
+        ;Structure Type Properties
+        (tc-e (make-struct-type-property 'prop) (list -Struct-Type-Property (t:-> Univ B) (t:-> Univ Univ)))
+        (tc-e (let-values: ((((prop : Struct-Type-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
+                             (make-struct-type-property 'prop)))
+               (struct-type-property? prop))
+              #:ret (ret B (-FS -top -bot)))
+
+        ;Wills
+        (tc-e (make-will-executor) -Will-Executor)
+        (tc-e (let: ((w : Will-Executor (make-will-executor)))
+                (will-register w 'a (lambda: ((s : Symbol)) (void)))
+                (will-execute w)) ManyUniv)
+
+        ;Promises
+        ;For some reason they are failing in the test suite
+        #|
+        (tc-e (delay 's) (-Promise -Symbol))
+        (tc-e (let: ((p : (Promise Symbol) (delay 's)))
+                  (promise-running? p)) B)
+        |#
 
 
         )

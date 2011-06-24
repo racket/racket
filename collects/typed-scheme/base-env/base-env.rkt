@@ -1040,31 +1040,52 @@
 
 
 
-[bytes-open-converter (-> -String -String -BytesConverter)]
-[bytes-close-converter (-> -BytesConverter -Void)]
+[bytes-open-converter (-> -String -String (-opt -Bytes-Converter))]
+[bytes-close-converter (-> -Bytes-Converter -Void)]
 [bytes-convert
- (->opt -BytesConverter
-        -Bytes
-        [-Nat
+ (cl->*
+  (->opt -Bytes-Converter
+         -Bytes
+         [-Nat
+          -Nat
+          (-val #f)
+          -Nat
+          (-opt -Nat)]
+    (-values (list
+              -Bytes
+              -Nat
+              (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error)))))
+
+  (->opt -Bytes-Converter
+         -Bytes
          -Nat
-         (-opt -Bytes)
          -Nat
-         (-opt -Nat)]
-   (-values (list
-             (Un -Bytes -Nat)
-             -Nat
-             (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error)))))]
+         -Bytes
+         [-Nat
+          (-opt -Nat)]
+    (-values (list
+              -Nat
+              -Nat
+              (Un (-val 'complete) (-val 'continues) (-val 'aborts) (-val 'error))))))]
 
 [bytes-convert-end
- (->opt -BytesConverter
-        [(-opt -Bytes)
-         -Nat
-         (-opt -Nat)]
-   (-values (list
-             (Un -Bytes -Nat)
-             (Un (-val 'complete) (-val 'continues)))))]
+ (cl->*
+  (->opt -Bytes-Converter
+         [(-val #f)
+          -Nat
+          (-opt -Nat)]
+    (-values (list
+              -Bytes
+              (Un (-val 'complete) (-val 'continues)))))
+  (->opt -Bytes-Converter
+         -Bytes
+         [-Nat
+          (-opt -Nat)]
+    (-values (list
+              -Nat
+              (Un (-val 'complete) (-val 'continues))))))]
 
-[bytes-converter? (make-pred-ty -BytesConverter)]
+[bytes-converter? (make-pred-ty -Bytes-Converter)]
 
 [locale-string-encoding (-> -String)]
 
@@ -1718,10 +1739,10 @@
 [current-read-interaction (-Param (-> Univ -Input-Port Univ) (-> Univ -Input-Port Univ))]
 [current-print (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
 
-[current-compile (-Param (-> Univ B -CompiledExpression) (-> Univ B -CompiledExpression))]
-[compile (-> Univ -CompiledExpression)]
-[compile-syntax (-> (-Syntax Univ) -CompiledExpression)]
-[compiled-expression? (make-pred-ty -CompiledExpression)]
+[current-compile (-Param (-> Univ B -Compiled-Expression) (-> Univ B -Compiled-Expression))]
+[compile (-> Univ -Compiled-Expression)]
+[compile-syntax (-> (-Syntax Univ) -Compiled-Expression)]
+[compiled-expression? (make-pred-ty -Compiled-Expression)]
 
 [compile-enforce-module-constants (-Param B B)]
 [compile-allow-set!-undefined (-Param B B)]
@@ -1950,11 +1971,11 @@
 [logger-name (-> -Logger (-opt Sym))]
 [current-logger (-Param -Logger -Logger)]
 
-[log-message (-> -Logger -LogLevel -String Univ -Void)]
-[log-level? (-> -Logger -LogLevel  B)]
+[log-message (-> -Logger -Log-Level -String Univ -Void)]
+[log-level? (-> -Logger -Log-Level  B)]
 
-[log-receiver? (make-pred-ty -LogReceiver)]
-[make-log-receiver (-> -Logger -LogLevel -LogReceiver)]
+[log-receiver? (make-pred-ty -Log-Receiver)]
+[make-log-receiver (-> -Logger -Log-Level -Log-Receiver)]
 
 ;Section 10.2.3 Semaphores
 
@@ -2518,6 +2539,6 @@
 ;Section 15.3 (Wills and Executors)
 [make-will-executor (-> -Will-Executor)]
 [will-executor? (make-pred-ty -Will-Executor)]
-[will-register (-poly (a) (-> -Will-Executor a (-> a ManyUniv)))]
+[will-register (-poly (a) (-> -Will-Executor a (-> a ManyUniv) -Void))]
 [will-execute (-> -Will-Executor ManyUniv)]
 [will-try-execute (-> -Will-Executor ManyUniv)]

@@ -160,7 +160,12 @@
 (define -Resolved-Module-Path (make-Base 'Resolved-Module-Path #'resolved-module-path? resolved-module-path? #'-Resolved-Module-Path))
 (define -Module-Path-Index (make-Base 'Module-Path-Index #'module-path-index? module-path-index? #'-Module-Path-Index))
 (define -Compiled-Module-Expression (make-Base 'Compiled-Module-Expression #'compiled-module-expression? compiled-module-expression? #'-Compiled-Module-Expression))
-(define -CompiledExpression (make-Base 'CompiledExpression #'compiled-expression? compiled-expression? #'-CompiledExpression))
+(define -Compiled-Non-Module-Expression
+  (make-Base 'Compiled-Non-Module-Expression
+             #'(and/c    compiled-expression? (not/c  compiled-module-expression?))
+               (conjoin  compiled-expression? (negate compiled-module-expression?))
+             #'-CompiledExpression))
+(define -Compiled-Expression (*Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
@@ -243,13 +248,13 @@
 
 
 (define -Semaphore (make-Base 'Semaphore #'semaphore? semaphore? #'-Semaphore))
-(define -BytesConverter (make-Base 'BytesConverter #'bytes-converter? bytes-converter? #'-BytesConverter))
+(define -Bytes-Converter (make-Base 'Bytes-Converter #'bytes-converter? bytes-converter? #'-Bytes-Converter))
 (define -Pseudo-Random-Generator
   (make-Base 'Pseudo-Random-Generator #'pseudo-random-generator? pseudo-random-generator? #'-Pseudo-Random-Generator))
 
 
 (define -Logger (make-Base 'Logger #'logger? logger? #'-Logger))
-(define -LogReceiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-LogReceiver))
+(define -Log-Receiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-Log-Receiver))
 
 
 (define -Place
