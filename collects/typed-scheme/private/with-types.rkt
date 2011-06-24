@@ -2,10 +2,10 @@
 
 (require racket/require
          (for-template
-          (except-in racket/base for for*)
+          (except-in racket/base for for* with-handlers)
           "../base-env/prims.rkt"
           (prefix-in c: (combine-in racket/contract/region racket/contract/base)))
-         "../base-env/extra-procs.rkt" "../base-env/prims.rkt"
+         "../base-env/extra-procs.rkt" (except-in "../base-env/prims.rkt" with-handlers)
          "../tc-setup.rkt"
          syntax/parse racket/block racket/match
          unstable/sequence  "../base-env/base-types-extra.rkt"
