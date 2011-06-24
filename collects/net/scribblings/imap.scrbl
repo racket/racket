@@ -39,7 +39,7 @@
 
 @title[#:tag "imap"]{IMAP: Reading Mail}
 
-@defmodule[net/imap]{The @schememodname[net/imap] module provides
+@defmodule[net/imap]{The @racketmodname[net/imap] module provides
 utilities for the client side of Internet Message Access Protocol
 version 4rev1 @cite["RFC2060"].}
 
@@ -49,8 +49,8 @@ version 4rev1 @cite["RFC2060"].}
 
 @defproc[(imap-connection? [v any/c]) boolean?]{
 
-Return @scheme[#t] if @scheme[v] is a IMAP-connection value (which is
-opaque), @scheme[#f] otherwise.}
+Return @racket[#t] if @racket[v] is a IMAP-connection value (which is
+opaque), @racket[#f] otherwise.}
 
 @defproc[(imap-connect [server string?]
                        [username (or/c string? bytes?)]
@@ -66,21 +66,21 @@ The second and third return values indicate the total number of
 messages in the mailbox and the number of recent messages (i.e.,
 messages received since the mailbox was last selected), respectively.
 
-See also @scheme[imap-port-number].
+See also @racket[imap-port-number].
 
 A user's primary mailbox is always called
-@scheme["INBOX"]. (Capitalization doesn't matter for that mailbox
+@racket["INBOX"]. (Capitalization doesn't matter for that mailbox
 name.)
 
 Updated message-count and recent-count values are available through
-@scheme[imap-messages] and @scheme[imap-recent]. See also @scheme[imap-new?] and
-@scheme[imap-reset-new!].}
+@racket[imap-messages] and @racket[imap-recent]. See also @racket[imap-new?] and
+@racket[imap-reset-new!].}
 
 
 @defparam[imap-port-number k (integer-in 0 65535)]{
 
 A parameter that determines the server port number. The initial value
-is @scheme[143].}
+is @racket[143].}
 
 
 @defproc[(imap-connect* [in input-port?]
@@ -90,7 +90,7 @@ is @scheme[143].}
                         [mailbox (or/c string? bytes?)])
          (values imap-connection? exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
-Like @scheme[imap-connect], but given input and output ports (e.g.,
+Like @racket[imap-connect], but given input and output ports (e.g.,
 ports for an SSL session) instead of a server address.}
 
 
@@ -116,15 +116,15 @@ counts for the new mailbox. Expunge and message-state information is
 removed.
 
 Do not use this procedure to poll a mailbox to see whether there are
-any new messages. Use @scheme[imap-noop], @scheme[imap-new?], and
-@scheme[imap-reset-new!]  instead.}
+any new messages. Use @racket[imap-noop], @racket[imap-new?], and
+@racket[imap-reset-new!]  instead.}
 
 
 @defproc[(imap-examine [imap imap-connection?]
                        [mailbox (or/c string? bytes?)])
          (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
-Like @scheme[imap-reselect], but the mailbox is selected as read-only.}
+Like @racket[imap-reselect], but the mailbox is selected as read-only.}
 
 @; ----------------------------------------
 
@@ -135,9 +135,9 @@ Like @scheme[imap-reselect], but the mailbox is selected as read-only.}
 
 Sends a ``no-op'' message to the server, typically to keep the session
 alive. As for many commands, the server may report message-state
-updates or expunges, which are recorded in @scheme[imap].
+updates or expunges, which are recorded in @racket[imap].
 
-The return information is the same as for @scheme[imap-reselect].}
+The return information is the same as for @racket[imap-reselect].}
 
 
 @defproc[(imap-poll [imap imap-connection?]) void?]{
@@ -169,7 +169,7 @@ update this count during most any interaction.
 Returns the number of ``unseen'' messages in the currently selected
 mailbox, as most recently reported by the server. The server can
 update this count during most any interaction. Old IMAP servers might
-not report this value, in which case the result is @scheme[#f].
+not report this value, in which case the result is @racket[#f].
 
 @just-report[]}
 
@@ -179,7 +179,7 @@ not report this value, in which case the result is @scheme[#f].
 Returns the predicted next uid for a message in the currently selected
 mailbox, as most recently reported by the server. The server can
 update this count during most any interaction. Old IMAP servers might
-not report this value, in which case the result is @scheme[#f].
+not report this value, in which case the result is @racket[#f].
 
 @just-report[]}
 
@@ -189,24 +189,24 @@ not report this value, in which case the result is @scheme[#f].
 Returns an id number that changes when all uids become invalid. The
 server @emph{cannot} update this number during a session. Old IMAP
 servers might not report this value, in which case the result is
-@scheme[#f].
+@racket[#f].
 
 @just-report[]}
 
 
 @defproc[(imap-new? [imap imap-connection?]) boolean?]{
 
-Returns @scheme[#t] if the server has reported an increase in the
+Returns @racket[#t] if the server has reported an increase in the
 message count for the currently mailbox since the last call to
-@scheme[imap-reset-new!]. Selecting a mailbox implicitly calls
-@scheme[imap-reset-new!].
+@racket[imap-reset-new!]. Selecting a mailbox implicitly calls
+@racket[imap-reset-new!].
 
 @just-report[]}
 
 
 @defproc[(imap-reset-new! [imap imap-connection?]) void?]{
 
-Resets the new flag for the session; see @scheme[imap-new?].
+Resets the new flag for the session; see @racket[imap-new?].
 This operation does not communicate with the server.}
 
 
@@ -220,25 +220,25 @@ pending notifications. The result list is sorted, ascending.
 
 The server can notify the client of newly deleted messages during most
 other commands, but not asynchronously between commands. Furthermore,
-the server cannot report new deletions during @scheme[imap-get-messages] or
-@scheme[imap-store] operations.
+the server cannot report new deletions during @racket[imap-get-messages] or
+@racket[imap-store] operations.
 
 Before calling any IMAP operation that works in terms of message
 numbers, pending expunge notifications must be handled by calling
-@scheme[imap-get-expunges].}
+@racket[imap-get-expunges].}
 
 
 @defproc[(imap-pending-expunges? [imap imap-connection?]) boolean?]{
 
-Returns @scheme[#f] if @scheme[imap-get-expunges] would return an
-empty list, @scheme[#t] otherwise.}
+Returns @racket[#f] if @racket[imap-get-expunges] would return an
+empty list, @racket[#t] otherwise.}
 
 
 @defproc[(imap-get-updates [imap imap-connection?])
          (listof (cons/c exact-nonnegative-integer?
                          (listof pair?)))]{
 
-Returns information must like @scheme[imap-get-messages], but includes
+Returns information must like @racket[imap-get-messages], but includes
 information reported asynchronously by the server (e.g., to notify a
 client with some other client changes a message attribute).  Instead
 of reporting specific requested information for specific messages, the
@@ -251,18 +251,18 @@ connection after reporting it.
 When a server reports information that supersedes old reported
 information for a message, or if the server reports that a message has
 been deleted, then old information for the message is
-dropped. Similarly, if @scheme[imap-get-messages] is used to
+dropped. Similarly, if @racket[imap-get-messages] is used to
 explicitly obtain information, any redundant (or out-of-date)
 information is dropped.
 
-A client need not use @scheme[imap-get-updates] ever, but accumulated
+A client need not use @racket[imap-get-updates] ever, but accumulated
 information for the connection consumes space.}
 
 
 @defproc[(imap-pending-updates? [imap imap-connection?]) boolean?]{
 
-Returns @scheme[#f] if @scheme[imap-get-updates] would return an 
-list, @scheme[#t] otherwise.}
+Returns @racket[#f] if @racket[imap-get-updates] would return an 
+list, @racket[#t] otherwise.}
 
 
 @; ----------------------------------------
@@ -277,32 +277,32 @@ list, @scheme[#t] otherwise.}
                                                       'flags))])
          (listof list?)]{
 
-Downloads information for a set of messages. The @scheme[msg-nums]
+Downloads information for a set of messages. The @racket[msg-nums]
 argument specifies a set of messages by their message positions (not
-their uids). The @scheme[fields] argument specifies the type of
+their uids). The @racket[fields] argument specifies the type of
 information to download for each message. The available fields are:
 
 @itemize[
 
-  @item{@scheme['uid] --- the value is an integer}
+  @item{@racket['uid] --- the value is an integer}
 
-  @item{@scheme['header] --- the value is a header (a string, but see
-        @schememodname[net/head])}
+  @item{@racket['header] --- the value is a header (a string, but see
+        @racketmodname[net/head])}
 
- @item{@scheme['body] --- the value is a byte string, with
+ @item{@racket['body] --- the value is a byte string, with
        CRLF-separated lines}
 
- @item{@scheme['flags] --- the value is a list of symbols that
-       correspond to IMAP flags; see @scheme[imap-flag->symbol]}
+ @item{@racket['flags] --- the value is a list of symbols that
+       correspond to IMAP flags; see @racket[imap-flag->symbol]}
 
 ]
 
 The return value is a list of entry items in parallel to
-@scheme[msg-nums]. Each entry is itself a list containing value items
-in parallel to @scheme[fields].
+@racket[msg-nums]. Each entry is itself a list containing value items
+in parallel to @racket[fields].
 
 Pending expunges must be handled before calling this function; see
-@scheme[imap-get-expunges].
+@racket[imap-get-expunges].
 
 @examples[
 (eval:alts (imap-get-message imap '(1 3 5) '(uid header))
@@ -318,8 +318,8 @@ Pending expunges must be handled before calling this function; see
 
 An IMAP flag is a symbol, but it is generally not a convenient one to
 use within a Scheme program, because it usually starts with a
-backslash. The @scheme[imap-flag->symbol] and
-@scheme[symbol->imap-flag] procedures convert IMAP flags to convenient
+backslash. The @racket[imap-flag->symbol] and
+@racket[symbol->imap-flag] procedures convert IMAP flags to convenient
 symbols and vice-versa:
 
 @flag-table[
@@ -341,7 +341,7 @@ symbols and vice-versa:
 )
 ]
 
-The @scheme[imap-flag->symbol] and @scheme[symbol->imap-flag]
+The @racket[imap-flag->symbol] and @racket[symbol->imap-flag]
 functions act like the identity function when any other symbol is
 provided.}
 
@@ -357,22 +357,22 @@ flags are set:
 
 @itemize[
 
- @item{@scheme['+] --- add the given flags to each message}
+ @item{@racket['+] --- add the given flags to each message}
 
- @item{@scheme['-] --- remove the given flags from each message}
+ @item{@racket['-] --- remove the given flags from each message}
 
- @item{@scheme['!] --- set each message's flags to the given set}
+ @item{@racket['!] --- set each message's flags to the given set}
 
 ]
 
-The @scheme[msg-nums] argument specifies a set of messages by their
-message positions (not their uids). The @scheme[flags] argument
+The @racket[msg-nums] argument specifies a set of messages by their
+message positions (not their uids). The @racket[flags] argument
 specifies the imap flags to add/remove/install.
 
 Pending expunges must be handled before calling this function; see
-@scheme[imap-get-expunges]. The server will not report back
+@racket[imap-get-expunges]. The server will not report back
 message-state changes (so they will not show up through
-@scheme[imap-get-updates]).
+@racket[imap-get-updates]).
 
 @examples[
 (eval:alts (imap-store imap '+ '(1 2 3) (list (symbol->imap-flag 'deleted)))
@@ -386,7 +386,7 @@ message-state changes (so they will not show up through
 
 @defproc[(imap-expunge [imap imap-connection?]) void?]{
 
-Purges every message currently marked with the @scheme['|\Deleted|]
+Purges every message currently marked with the @racket['|\Deleted|]
 flag from the mailbox.}
 
 @; ----------------------------------------
@@ -402,7 +402,7 @@ Copies the specified messages from the currently selected mailbox to
 the specified mailbox.
 
 Pending expunges must be handled before calling this function; see
-@scheme[imap-get-expunges].}
+@racket[imap-get-expunges].}
 
 
 @defproc[(imap-append [imap imap-connection?]
@@ -410,7 +410,7 @@ Pending expunges must be handled before calling this function; see
                       [message (or/c string? bytes?)])
          void?]{
 
-Adds a new message (containing @scheme[message]) to the given
+Adds a new message (containing @racket[message]) to the given
 mailbox.}
 
 
@@ -418,27 +418,27 @@ mailbox.}
                       [mailbox (or/c string? bytes?)]
                       [statuses (listof symbol?)])
          list?]{
-                      
+
 Requests information about a mailbox from the server, typically
 @emph{not} the currently selected mailbox.
 
-The @scheme[statuses] list specifies the request, and the return value
-includes one value for each symbol in @scheme[statuses]. The allowed
+The @racket[statuses] list specifies the request, and the return value
+includes one value for each symbol in @racket[statuses]. The allowed
 status symbols are:
 
 @itemize[
 
-   @item{@scheme['messages] --- number of messages}
-   @item{@scheme['recent] --- number of recent messages}
-   @item{@scheme['unseen] --- number of unseen messages}
-   @item{@scheme['uidnext] --- uid for next received message}
-   @item{@scheme['uidvalidity] --- id that changes when all uids are changed}
+   @item{@racket['messages] --- number of messages}
+   @item{@racket['recent] --- number of recent messages}
+   @item{@racket['unseen] --- number of unseen messages}
+   @item{@racket['uidnext] --- uid for next received message}
+   @item{@racket['uidvalidity] --- id that changes when all uids are changed}
 
 ]
 
-Use @scheme[imap-messages] to get the message count for the currently
-selected mailbox, etc. Use @scheme[imap-new?] and
-@scheme[imap-reset-new!] to detect when new messages are available in
+Use @racket[imap-messages] to get the message count for the currently
+selected mailbox, etc. Use @racket[imap-new?] and
+@racket[imap-reset-new!] to detect when new messages are available in
 the currently selected mailbox.}
 
 
@@ -446,7 +446,7 @@ the currently selected mailbox.}
                                [mailbox (or/c string? bytes?)])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[mailbox] exists, @scheme[#f]
+Returns @racket[#t] if @racket[mailbox] exists, @racket[#f]
 otherwise.}
 
 
@@ -454,7 +454,7 @@ otherwise.}
                               [mailbox (or/c string? bytes?)])
          void?]{
 
-Creates @scheme[mailbox]. (It must not exist already.)}
+Creates @racket[mailbox]. (It must not exist already.)}
 
 
 @defproc[(imap-list-child-mailboxes [imap imap-connection?]
@@ -463,9 +463,9 @@ Creates @scheme[mailbox]. (It must not exist already.)}
                                                (imap-get-hierarchy-delimiter)])
          (listof (list/c (listof symbol?) bytes?))]{
 
-Returns information about sub-mailboxes of @scheme[mailbox]; if
-@scheme[mailbox] is @scheme[#f], information about all top-level
-mailboxes is returned. The @scheme[delimiter] is used to parse mailbox
+Returns information about sub-mailboxes of @racket[mailbox]; if
+@racket[mailbox] is @racket[#f], information about all top-level
+mailboxes is returned. The @racket[delimiter] is used to parse mailbox
 names from the server to detect hierarchy.
 
 The return value is a list of mailbox-information lists. Each
@@ -491,7 +491,7 @@ mailbox path names.}
          (listof symbol?)]{
 
 Returns a list of IMAP flags for the given mailbox. See also
-@scheme[imap-flag->symbol].}
+@racket[imap-flag->symbol].}
 
 @; ----------------------------------------
 
@@ -501,7 +501,7 @@ Returns a list of IMAP flags for the given mailbox. See also
 
 @defthing[imap@ unit?]{
 
-Imports nothing, exports @scheme[imap^].}
+Imports nothing, exports @racket[imap^].}
 
 @; ----------------------------------------
 
@@ -511,4 +511,4 @@ Imports nothing, exports @scheme[imap^].}
 
 @defsignature[imap^ ()]{}
 
-Includes everything exported by the @schememodname[net/imap] module.
+Includes everything exported by the @racketmodname[net/imap] module.

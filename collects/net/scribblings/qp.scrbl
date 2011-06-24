@@ -3,7 +3,7 @@
 
 @title[#:tag "qp"]{Quoted-Printable: Encoding and Decoding}
 
-@defmodule[net/qp]{The @schememodname[net/qp] library provides
+@defmodule[net/qp]{The @racketmodname[net/qp] library provides
 utilities for quoted-printable (mime-standard) encoding and decoding
 from RFC 2045 section 6.7.
 
@@ -14,7 +14,7 @@ The library was written by Francisco Solsona.}
 @defproc[(qp-encode [bstr bytes?]) bytes?]{
 
 Consumes a byte string and returns its quoted printable representation
-as a new string. The encoded string uses @scheme[#"\r\n"] where
+as a new string. The encoded string uses @racket[#"\r\n"] where
 necessary to create shorter lines.}
 
 
@@ -30,12 +30,12 @@ whatever form they exist (CR, LR, or CRLF) in the input string.}
                            [newline-bstr bytes? #"\n"])
          void?]{
 
-Reads characters from @scheme[in] and writes the quoted printable
-encoded result to @scheme[out].
+Reads characters from @racket[in] and writes the quoted printable
+encoded result to @racket[out].
 
-The @scheme[newline-bstr] argument is used for soft line-breaks (after
-@litchar{=}). Note that the default @scheme[newline-bstr] is just
-@scheme[#"\n"], not @scheme[#"\r\n"].
+The @racket[newline-bstr] argument is used for soft line-breaks (after
+@litchar{=}). Note that the default @racket[newline-bstr] is just
+@racket[#"\n"], not @racket[#"\r\n"].
 
 Other line breaks are preserved in whatever form they exist (CR, LR,
 or CRLF) in the input stream.}
@@ -45,8 +45,8 @@ or CRLF) in the input stream.}
                                [out output-port?])
          void?]{
 
-Reads characters from @scheme[in] and writes de-quoted-printable
-result to @scheme[out].  Non-soft line breaks are preserved in
+Reads characters from @racket[in] and writes de-quoted-printable
+result to @racket[out].  Non-soft line breaks are preserved in
 whatever form they exist (CR, LR, or CRLF) in the input stream.}
 
 @; ----------------------------------------
@@ -70,7 +70,7 @@ backward compatibility.}
 
 @defthing[qp@ unit?]{
 
-Imports nothing, exports @scheme[qp^].}
+Imports nothing, exports @racket[qp^].}
 
 @; ----------------------------------------
 
@@ -80,4 +80,4 @@ Imports nothing, exports @scheme[qp^].}
 
 @defsignature[qp^ ()]{}
 
-Includes everything exported by the @schememodname[net/qp] module.
+Includes everything exported by the @racketmodname[net/qp] module.

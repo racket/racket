@@ -3,7 +3,7 @@
 
 @title[#:tag "ftp"]{FTP: Client Downloading}
 
-@defmodule[net/ftp]{The @schememodname[net/ftp] library provides
+@defmodule[net/ftp]{The @racketmodname[net/ftp] library provides
 utilities for FTP client operations.
 
 The library was written by Micah Flatt.}
@@ -12,8 +12,8 @@ The library was written by Micah Flatt.}
 
 @defproc[(ftp-connection? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] represents an FTP connection as
-returned by @scheme[ftp-establish-connection], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] represents an FTP connection as
+returned by @racket[ftp-establish-connection], @racket[#f] otherwise.}
 
 
 @defproc[(ftp-establish-connection [server string?]
@@ -36,8 +36,8 @@ Closes an FTP connection.}
 
 @defproc[(ftp-cd [ftp-conn ftp-connection?][new-dir string?]) void?]{
 
-Changes the current directory on the FTP server to @scheme[new-dir].
-The @scheme[new-dir] argument is not interpreted at all, but simply
+Changes the current directory on the FTP server to @racket[new-dir].
+The @racket[new-dir] argument is not interpreted at all, but simply
 passed on to the server (encoded using the current locale's
 encoding); it must not contain a newline.}
 
@@ -51,11 +51,11 @@ the server, assuming that the server provides directory information in
 the quasi-standard Unix format.
 
 Each file or directory is represented by a list of three strings. The
-first string is either @scheme["-"], @scheme["d"], or @scheme["l"],
+first string is either @racket["-"], @racket["d"], or @racket["l"],
 depending on whether the items is a file, directory, or link,
 respectively.  The second item is the file's date; to convert this
-value to seconds consistent with @scheme[file-seconds], pass the date
-string to @scheme[ftp-make-file-seconds], below.  The third string is
+value to seconds consistent with @racket[file-seconds], pass the date
+string to @racket[ftp-make-file-seconds], below.  The third string is
 the name of the file or directory.
 
 All strings are decoded from bytes using the current locale's
@@ -64,17 +64,17 @@ encoding.}
 
 @defproc[(ftp-make-file-seconds [ftp-date string?]) exact-integer?]{
 
-Takes a date string produced by @scheme[ftp-directory-list] and
+Takes a date string produced by @racket[ftp-directory-list] and
 converts it to seconds (which can be used with
-@scheme[seconds->date]).}
+@racket[seconds->date]).}
 
 
 @defproc[(ftp-download-file [ftp-conn ftp-connection?]
                             [local-dir path-string?]
                             [file string?]) void?]{
 
-Downloads @scheme[file] from the server's current directory and puts
-it in @scheme[local-dir] using the same name. If the file already
+Downloads @racket[file] from the server's current directory and puts
+it in @racket[local-dir] using the same name. If the file already
 exists in the local directory, it is replaced, but only after the
 transfer succeeds (i.e., the file is first downloaded to a temporary
 file, then moved into place on success).}
@@ -87,7 +87,7 @@ file, then moved into place on success).}
 
 @defthing[ftp@ unit?]{
 
-Imports nothing, exports @scheme[ftp^].}
+Imports nothing, exports @racket[ftp^].}
 
 @; ----------------------------------------
 
@@ -97,4 +97,4 @@ Imports nothing, exports @scheme[ftp^].}
 
 @defsignature[ftp^ ()]{}
 
-Includes everything exported by the @schememodname[net/ftp] module.
+Includes everything exported by the @racketmodname[net/ftp] module.

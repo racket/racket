@@ -7,7 +7,7 @@
 
 @title[#:tag "head"]{Headers: Parsing and Constructing}
 
-@defmodule[net/head]{The @schememodname[net/head] module provides
+@defmodule[net/head]{The @racketmodname[net/head] module provides
 utilities for parsing and constructing RFC 822 headers
 @cite["RFC822"], which are used in protocols such as HTTP, SMTP, and
 NNTP.}
@@ -24,29 +24,29 @@ terminates the header).
 
 @defthing[empty-header string?]{
 
-The string @scheme["\r\n\r\n"], which corresponds to the empty header.
+The string @racket["\r\n\r\n"], which corresponds to the empty header.
 This value is useful for building up headers with
-@scheme[insert-field] and @scheme[append-headers].}
+@racket[insert-field] and @racket[append-headers].}
 
 
 @defproc[(validate-header [candidate (or string? bytes?)]) void?]{
 
-Checks that @scheme[candidate] matches RFC 822. If it does not, an
+Checks that @racket[candidate] matches RFC 822. If it does not, an
 exception is raised.}
 
 
 @defproc[(extract-field [field (or/c string? bytes?)] [header (or/c string? bytes?)])
          (or/c string? bytes? false/c)]{
 
-Returns the header content for the specified field, or @scheme[#f] if
-the field is not in the header. The @scheme[field] string should not
-end with @scheme[":"], and it is used case-insensitively. The returned
+Returns the header content for the specified field, or @racket[#f] if
+the field is not in the header. The @racket[field] string should not
+end with @racket[":"], and it is used case-insensitively. The returned
 string will not contain the field name, color separator, or CRLF
 terminator for the field; however, if the field spans multiple lines,
 the CRLFs separating the lines will be intact.
 
-The @scheme[field] and @scheme[header] arguments must be both strings
-or both byte strings, and the result (if not @scheme[#f]) is of the
+The @racket[field] and @racket[header] arguments must be both strings
+or both byte strings, and the result (if not @racket[#f]) is of the
 same type.
 
 @examples[
@@ -63,8 +63,8 @@ Returns an association-list version of the header; the case of the
 field names is preserved, as well as the order and duplicate uses of a
 field name.
 
-The result provides strings if @scheme[header] is a string, byte
-strings if @scheme[header] is a byte string.}
+The result provides strings if @racket[header] is a string, byte
+strings if @racket[header] is a byte string.}
 
 
 @defproc[(remove-field [field (or/c string? bytes?)]
@@ -72,11 +72,11 @@ strings if @scheme[header] is a byte string.}
           (or/c string? bytes?)]{
 
 Creates a new header by removing the specified field from
-@scheme[header] (or the first instance of the field, if it occurs
-multiple times). If the field is not in @scheme[header], then the
-return value is @scheme[header].
+@racket[header] (or the first instance of the field, if it occurs
+multiple times). If the field is not in @racket[header], then the
+return value is @racket[header].
 
-The @scheme[field] and @scheme[header] arguments must be both strings
+The @racket[field] and @racket[header] arguments must be both strings
 or both byte strings, and the result is of the same type.}
 
 
@@ -85,12 +85,12 @@ or both byte strings, and the result is of the same type.}
                        [header (or/c string? bytes?)])
           (or/c string? bytes?)]{
 
-Creates a new header by prefixing the given @scheme[header] with the
-given @scheme[field]-@scheme[value] pair. The @scheme[value] string
+Creates a new header by prefixing the given @racket[header] with the
+given @racket[field]-@racket[value] pair. The @racket[value] string
 should not contain a terminating CRLF, but a multi-line value (perhaps
-created with @scheme[data-lines->data]) may contain separator CRLFs.
+created with @racket[data-lines->data]) may contain separator CRLFs.
 
-The @scheme[field], @scheme[value], and @scheme[header] arguments must
+The @racket[field], @racket[value], and @racket[header] arguments must
 be all strings or all byte strings, and the result is of the same
 type.}
 
@@ -100,8 +100,8 @@ type.}
                          [header (or/c string? bytes?)])
           (or/c string? bytes?)]{
 
-Composes @scheme[remove-field] and (if @scheme[value] is not
-@scheme[#f]) @scheme[insert-field].}
+Composes @racket[remove-field] and (if @racket[value] is not
+@racket[#f]) @racket[insert-field].}
 
 @defproc[(append-headers [header1 (or/c string? bytes?)]
                          [header2 (or/c string? bytes?)])
@@ -109,7 +109,7 @@ Composes @scheme[remove-field] and (if @scheme[value] is not
 
 Appends two headers.
 
-The @scheme[header1] and @scheme[header2] arguments must be both
+The @racket[header1] and @racket[header2] arguments must be both
 strings or both byte strings, and the result is of the same type.}
 
 
@@ -121,7 +121,7 @@ strings or both byte strings, and the result is of the same type.}
           string?]{
 
 Creates a standard mail header given the sender, various lists of
-recipients, a subject. A @scheme["Date"] field is added to the header
+recipients, a subject. A @racket["Date"] field is added to the header
 automatically, using the current time.
 
 The BCC recipients do not actually appear in the header, but they're
@@ -140,17 +140,17 @@ adding CRLF-TAB separators.}
           (or/c (listof string?)
                 (listof (list/c string? string? string?)))]{
 
-Parses @scheme[string] as a list of comma-delimited mail addresses,
+Parses @racket[string] as a list of comma-delimited mail addresses,
 raising an exception if the list is ill-formed. This procedure can be
 used for single-address strings, in which case the returned list
 contains only one address.
 
-The @scheme[kind] argument specifies which portion of an address
+The @racket[kind] argument specifies which portion of an address
 should be returned:
 
 @itemize[
 
- @item{@scheme['name] --- the free-form name in the address, or the
+ @item{@racket['name] --- the free-form name in the address, or the
        address itself if no name is available.
 
        @examples[
@@ -162,7 +162,7 @@ should be returned:
                           'name)
        ]}
 
- @item{@scheme['address] --- just the mailing address, without any free-form
+ @item{@racket['address] --- just the mailing address, without any free-form
                names.
 
        @examples[
@@ -174,7 +174,7 @@ should be returned:
                           'address)
        ]}
 
- @item{@scheme['full] --- the full address, essentially as it appears in the
+ @item{@racket['full] --- the full address, essentially as it appears in the
        input, but normalized.
 
        @examples[
@@ -186,7 +186,7 @@ should be returned:
                           'full)
        ]}
 
- @item{@scheme['all] --- a list containing each of the three possibilities:
+ @item{@racket['all] --- a list containing each of the three possibilities:
               free-form name, address, and full address (in that
               order).
 
@@ -226,7 +226,7 @@ are comma-separated, and possibly broken into multiple lines.
 
 @defthing[head@ unit?]{
 
-Imports nothing, exports @scheme[head^].}
+Imports nothing, exports @racket[head^].}
 
 @; ----------------------------------------
 
@@ -236,4 +236,4 @@ Imports nothing, exports @scheme[head^].}
 
 @defsignature[head^ ()]{}
 
-Includes everything exported by the @schememodname[net/head] module.
+Includes everything exported by the @racketmodname[net/head] module.
