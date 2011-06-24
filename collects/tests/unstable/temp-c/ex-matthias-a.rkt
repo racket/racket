@@ -1,6 +1,5 @@
 #lang racket
-(require racket/require
-         (path-up "temp-c/dsl.rkt")
+(require unstable/temp-c/dsl
          unstable/match)
 
 (define memory%

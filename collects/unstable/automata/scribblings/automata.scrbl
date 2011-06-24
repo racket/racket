@@ -12,15 +12,15 @@
 
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
-@defmodule[automata]
+@defmodule[unstable/automata]
 
 This package provides macros and functions for writing state machines over @racketmodname[racket/match] patterns (as opposed to concrete characters.)
 
 @section[#:tag "machine"]{Machines}
 
-@defmodule[automata/machine]
-@(require (for-label "../machine.rkt"))
-@interaction-eval[#:eval our-eval (require automata/machine)]
+@defmodule[unstable/automata/machine]
+@(require (for-label unstable/automata/machine))
+@interaction-eval[#:eval our-eval (require unstable/automata/machine)]
 
 Each of the subsequent macros compile to instances of the machines provided by this module. This is a documented feature of the modules, so these functions should be used to, for example, determine if the machine is currently accepting.
 
@@ -88,9 +88,9 @@ Each of the subsequent macros compile to instances of the machines provided by t
 
 @section[#:tag "dfa"]{Deterministic Finite Automata}
 
-@defmodule[automata/dfa]
-@(require (for-label "../dfa.rkt"))
-@interaction-eval[#:eval our-eval (require automata/dfa)]
+@defmodule[unstable/automata/dfa]
+@(require (for-label unstable/automata/dfa))
+@interaction-eval[#:eval our-eval (require unstable/automata/dfa)]
 
 This module provides a macro for deterministic finite automata.
 
@@ -123,9 +123,9 @@ This module provides a macro for deterministic finite automata.
 
 @section[#:tag "nfa"]{Non-Deterministic Finite Automata}
 
-@defmodule[automata/nfa]
-@(require (for-label "../nfa.rkt"))
-@interaction-eval[#:eval our-eval (require automata/nfa)]
+@defmodule[unstable/automata/nfa]
+@(require (for-label unstable/automata/nfa))
+@interaction-eval[#:eval our-eval (require unstable/automata/nfa)]
 
 This module provides a macro for non-deterministic finite automata.
 
@@ -164,9 +164,9 @@ This module provides a macro for non-deterministic finite automata.
 
 @section[#:tag "nfa-ep"]{Non-Deterministic Finite Automata (with epsilon transitions)}
 
-@defmodule[automata/nfa-ep]
-@(require (for-label "../nfa-ep.rkt"))
-@interaction-eval[#:eval our-eval (require automata/nfa-ep)]
+@defmodule[unstable/automata/nfa-ep]
+@(require (for-label unstable/automata/nfa-ep))
+@interaction-eval[#:eval our-eval (require unstable/automata/nfa-ep)]
 
 This module provides a macro for non-deterministic finite automata with epsilon transitions.
 

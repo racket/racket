@@ -1,8 +1,7 @@
 #lang racket
-(require racket/require 
-         (path-up "automata/machine.rkt")
-         (path-up "automata/re.rkt")
-         (path-up "automata/re-ext.rkt")
+(require unstable/automata/machine
+         unstable/automata/re
+         unstable/automata/re-ext
          unstable/match
          tests/eli-tester)
 

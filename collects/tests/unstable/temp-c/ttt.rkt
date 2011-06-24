@@ -137,8 +137,7 @@
         (not os-turn?))])))
 
 (require unstable/match
-         racket/require
-         (path-up "temp-c/dsl.rkt"))
+         unstable/temp-c/dsl)
 (provide
  (rename-out [tic-tac-toe
               tic-tac-toe:raw]))

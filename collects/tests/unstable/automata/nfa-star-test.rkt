@@ -1,7 +1,6 @@
 #lang racket/base
-(require racket/require
-         (path-up "automata/nfa-star.rkt")
-         (path-up "automata/machine.rkt")
+(require unstable/automata/nfa-star
+         unstable/automata/machine
          tests/eli-tester)
 
 (define M

@@ -16,8 +16,7 @@ admin --------------------------------------------------------> player
 ;; -----------------------------------------------------------------------------
 ;; the interface module, defines turn% and how player is called via take-turn 
 (module player-admin-interface racket 
-  (require racket/require
-           (path-up "temp-c/dsl.rkt")
+  (require unstable/temp-c/dsl
            unstable/match)
   
   (define turn%
@@ -66,7 +65,7 @@ admin --------------------------------------------------------> player
 ;; the admin module creates player, admin, and has admin call player 
 
 (module admin racket
-  (require 'player-admin-interface 'player)
+  (require 'player-admin-interface 'player tests/eli-tester)
   
   (define admin%
     (class object%
@@ -78,7 +77,10 @@ admin --------------------------------------------------------> player
         (define value1 (send turn1 observe))
         ;; --- 
         (define turn2 (new turn% [value 10]))
-        (send player take-turn turn2)
+        (test 
+         (send player take-turn turn2)
+         =error>
+         #rx"disallowed call")
         ;; --- 
         (list 'bad-for-turn1: (not (= 2 (send turn1 observe)))
               'bad-for-turn2: (= 10 (send turn2 observe))))

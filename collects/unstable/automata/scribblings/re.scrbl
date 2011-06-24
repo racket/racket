@@ -11,10 +11,10 @@
 
 @title[#:tag "re"]{Regular Expressions}
 
-@defmodule[automata/re]
-@(require (for-label "../re.rkt"
-                     "../machine.rkt"))
-@interaction-eval[#:eval our-eval (require automata/re)]
+@defmodule[unstable/automata/re]
+@(require (for-label unstable/automata/re
+                     unstable/automata/machine))
+@interaction-eval[#:eval our-eval (require unstable/automata/re)]
 
 This module provides a macro for regular expression compilation.
 
@@ -42,13 +42,13 @@ This module provides a macro for regular expression compilation.
  if the expression is initially accepting, this delayed version is never accepting.
  
  The compiler will use an NFA, provided @racket[complement] and @racket[dseq] are not used. Otherwise, 
- many NFAs connected with the machine simulation functions from @racketmodname[automata/machine] are used.
+ many NFAs connected with the machine simulation functions from @racketmodname[unstable/automata/machine] are used.
 }
  
 @(define-syntax-rule (defidforms (id ...) . dat)
    (deftogether ((defidform id) ...) . dat))
                                         
-@defidforms[(complement seq union star epsilon nullset dseq)]{
+@defidforms[(complement seq union star epsilon nullset dseq rec)]{
  Bindings for use in @racket[re]. 
 }
 
@@ -58,9 +58,9 @@ This module provides a macro for regular expression compilation.
 
 @section[#:tag "re-ext"]{Extensions}
 
-@defmodule[automata/re-ext]
-@(require (for-label "../re-ext.rkt"))
-@interaction-eval[#:eval our-eval (require automata/re-ext)]
+@defmodule[unstable/automata/re-ext]
+@(require (for-label unstable/automata/re-ext))
+@interaction-eval[#:eval our-eval (require unstable/automata/re-ext)]
 
 This module provides a few transformers that extend the syntax of regular expression patterns.
 
@@ -73,7 +73,7 @@ This module provides a few transformers that extend the syntax of regular expres
 
 @section[#:tag "re-ex"]{Examples}
 
-@interaction-eval[#:eval our-eval (require automata/machine racket/function)]
+@interaction-eval[#:eval our-eval (require unstable/automata/machine racket/function)]
 
 @defexamples[
 #:eval our-eval

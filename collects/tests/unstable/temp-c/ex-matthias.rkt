@@ -1,7 +1,6 @@
 #lang racket/load
 (module a racket
-  (require racket/require
-           (path-up "temp-c/dsl.rkt")
+  (require unstable/temp-c/dsl
            unstable/match)
   
   (define memory%
@@ -23,13 +22,14 @@
                    (call 'free _ (== addr)))))))]))
 
 (module b racket
- (require 'a)
-
- (define memory (new memory%))
-
- (define a (send memory malloc))
- (send memory free a) (displayln `(freeing ,a))
- (send memory free a) (displayln `(freeing ,a))
- (send memory free a) (displayln `(freeing ,a)))
+  (require 'a tests/eli-tester)
+  
+  (define memory (new memory%))
+  
+  (define a (send memory malloc))
+  (test
+   (send memory free a)
+   (send memory free a)
+   =error> #rx"disallowed call"))
 
 (require 'b)

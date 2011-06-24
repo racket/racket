@@ -12,13 +12,14 @@
              [free (->m number? void)])]))
 
 (module b racket
- (require 'a)
-
- (define memory (new memory%))
-
- (define a (send memory malloc))
- (send memory free a) (displayln `(freeing ,a))
- (send memory free "foo") (displayln `(freeing ,a))
- (send memory free a) (displayln `(freeing ,a)))
+  (require 'a tests/eli-tester)
+  
+  (define memory (new memory%))
+  
+  (define a (send memory malloc))
+  (test
+   (send memory free a) 
+   (send memory free "foo") =error> #rx"expected \\<number"
+   (send memory free a)))
 
 (require 'b)

@@ -1,6 +1,5 @@
 #lang racket
-(require racket/require
-         (path-up "temp-c/dsl.rkt")
+(require unstable/temp-c/dsl
          tests/eli-tester)
 
 (define (test-spec spec f)

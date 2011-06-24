@@ -3,16 +3,16 @@
          racket/stxparam
          (for-syntax racket/base)
          "monitor.rkt"
-         "../automata/machine.rkt"
-         "../automata/re.rkt"
-         "../automata/re-ext.rkt")
+         unstable/automata/machine
+         unstable/automata/re
+         unstable/automata/re-ext)
 (provide call ret with-monitor label
          re->monitor-predicate/concurrent
          re->monitor-predicate/serial
          (all-from-out
           "monitor.rkt"
-          "../automata/re.rkt"
-          "../automata/re-ext.rkt"))
+         unstable/automata/re
+         unstable/automata/re-ext))
 
 (define-syntax-parameter stx-monitor-id 
   (λ (stx) (raise-syntax-error 'label "Used outside monitor" stx)))

@@ -4,7 +4,7 @@
 |#
 
 (module mem racket
-  (require racket/require (path-up "temp-c/monitor.rkt"))
+  (require unstable/temp-c/monitor)
   
   (define free-list empty)
   (define last-addr 0)
@@ -18,7 +18,7 @@
     (set! free-list (cons addr free-list)))
   
   (define allocated (make-weak-hasheq))
-  (define (monitor evt)
+  (define (mem-monitor evt)
     ; Only allow freeing of allocated things, disallow double frees
     ; and track addrs using malloc returns
     (match evt
@@ -34,8 +34,8 @@
        #t]))
   
   (provide/contract
-   [malloc (monitor/c monitor 'malloc (-> number?))]
-   [free (monitor/c monitor 'free (-> number? void))]))
+   [malloc (monitor/c mem-monitor 'malloc (-> number?))]
+   [free (monitor/c mem-monitor 'free (-> number? void))]))
 
 (module mem-test racket
   (require tests/eli-tester

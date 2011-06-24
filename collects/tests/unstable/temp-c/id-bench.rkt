@@ -1,7 +1,6 @@
 #lang racket/base
 (require tests/stress
-         racket/require
-         (path-up "temp-c/dsl.rkt")
+         unstable/temp-c/dsl
          racket/match
          racket/contract)
 

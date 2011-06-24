@@ -9,18 +9,18 @@
 
 @(define our-eval (make-base-eval))
 
-@title{@bold{Temporal Contracts}: Explicit Contract Monitors}
+@title[#:tag "temp-c"]{@bold{Temporal Contracts}: Explicit Contract Monitors}
 
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
-@defmodule[temp-c]
+@defmodule[unstable/temp-c]
 
 The contract system implies the presence of a "monitoring system" that ensures that contracts are not violated. The @racketmodname[racket/contract] system compiles this monitoring system into checks on values that cross a contracted boundary. This module provides a facility to pass contract boundary crossing information to an explicit monitor for approval. This monitor may, for example, use state to enforce temporal constraints, such as a resource is locked before it is accessed.
 
 @section[#:tag "monitor"]{Monitors}
 
-@defmodule[temp-c/monitor]
-@(require (for-label "../monitor.rkt"))
+@defmodule[unstable/temp-c/monitor]
+@(require (for-label unstable/temp-c/monitor))
 
 @deftogether[[
 @defstruct*[monitor ([label symbol?]) #:transparent]
@@ -91,14 +91,14 @@ used correctly.
            
 @section[#:tag "dsl"]{Domain Specific Language}
 
-@defmodule[temp-c/dsl]
+@defmodule[unstable/temp-c/dsl]
 @(require (for-label racket/match
                      racket/contract
-                     "../dsl.rkt"
-                     "../../automata/re.rkt"
-                     "../../automata/re-ext.rkt"))
+                     unstable/temp-c/dsl
+                     unstable/automata/re
+                     unstable/automata/re-ext))
 
-Constructing explicit monitors using only @racket[monitor/c] can be a bit onerous. This module provides some helpful tools for making the definition easier. It provides everything from @racketmodname[temp-c/monitor], as well as all bindings from @racketmodname[automata/re] and @racketmodname[automata/re-ext]. The latter provide a DSL for writing "dependent" regular expression machines over arbitrary @racketmodname[racket/match] patterns.
+Constructing explicit monitors using only @racket[monitor/c] can be a bit onerous. This module provides some helpful tools for making the definition easier. It provides everything from @racketmodname[unstable/temp-c/monitor], as well as all bindings from @racketmodname[unstable/automata/re] and @racketmodname[unstable/automata/re-ext]. The latter provide a DSL for writing "dependent" regular expression machines over arbitrary @racketmodname[racket/match] patterns.
 
 First, a few @racket[match] patterns are available to avoid specify all the details of monitored events (since most of the time the detailed options are unnecessary.)
 

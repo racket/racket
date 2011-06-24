@@ -17,7 +17,7 @@ racket-pth
 (define-syntax-rule (stress-it ver ...)
   (let ([x* 1])
     (printf "Running ~a iterations\n" x*)
-    (stress 100
+    (stress 10
             [(symbol->string 'ver)
              (printf "Running ~a\n" 'ver)
              (for ([i (in-range x*)])

@@ -1,6 +1,5 @@
 #lang racket
-(require racket/require
-         (path-up "temp-c/dsl.rkt")
+(require unstable/temp-c/dsl
          tests/eli-tester)
 
 (define count 0)
@@ -43,7 +42,8 @@
  (test
   (set! count 0)
   (test-spec Race)
-  count => 2)
+  ; This 1 represents the presence of the race
+  count => 1)
  #:failure-prefix "Concurrent"
  (test
   (set! count 0)

@@ -4,7 +4,7 @@
 |#
 
 (module mem racket
-  (require racket/require (path-up "temp-c/monitor.rkt"))
+  (require unstable/temp-c/monitor)
   (define heap%
     (class object%
       (define free-list empty)

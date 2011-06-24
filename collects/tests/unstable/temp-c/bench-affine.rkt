@@ -46,8 +46,7 @@
    (-> (-> aff-> any/c) any/c)
    raw 'pos 'neg))
 
-(require racket/require
-         (path-up "temp-c/dsl.rkt"))
+(require unstable/temp-c/dsl)
 (define (rgx)
   (contract
    (with-monitor 
