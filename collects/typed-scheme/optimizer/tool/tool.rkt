@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/class racket/port racket/list
+(require racket/class racket/port racket/list racket/match
          racket/gui/base mrlib/switchable-button
          racket/unit drracket/tool)
 
@@ -49,10 +49,14 @@
       (let* ([stx (log-entry-stx l)]
              [pos (sub1 (log-entry-pos l))]
              [end (+ pos (syntax-span stx))]
+             [msg (log-entry-msg l)]
              ;; opt or missed opt?
-             [opt? (regexp-match #rx"^TR opt:" (log-entry-msg l))]
+             [opt? (regexp-match #rx"^TR opt:" msg)]
              [color (if opt? "lightgreen" "pink")])
         (send defs highlight-range pos end color)
+        (send defs set-clickback pos end
+              (lambda (ed start end)
+                (message-box "Performance Report" msg)))
         (list pos end color)))) ; record the highlight, to undo it later
   (set! highlights (append new-highlights highlights))
   (message-box
@@ -70,7 +74,10 @@
              get-text)
     (define (clear-highlights)
       (for ([h (in-list highlights)])
-        (send this unhighlight-range . h)))
+        (match h
+          [(list start end color)
+           (send this unhighlight-range . h)
+           (send this remove-clickback start end)])))
     (define/augment (after-insert start len)
       (clear-highlights))
     (define/augment (after-delete start len)
