@@ -5,18 +5,18 @@
 @(begin
   (define-syntax-rule (bind id id2)
     (begin
-     (require (for-label scheme/serialize))
-     (define id (scheme define-serializable-struct))
-     (define id2 (scheme define-serializable-struct/versions))))
-  (bind scheme-define-serializable-struct scheme-define-serializable-struct/versions))
+     (require (for-label racket/serialize))
+     (define id (racket define-serializable-struct))
+     (define id2 (racket define-serializable-struct/versions))))
+  (bind racket-define-serializable-struct racket-define-serializable-struct/versions))
 
 @mzlib[#:mode title serialize]
 
-The @schememodname[mzlib/serialize] library provides the same bindings
-as @schememodname[scheme/serialize], except that
-@scheme[define-serializable-struct] and
-@scheme[define-serializable-struct/versions] are based on the syntax
-of @scheme[define-struct] from @schememodname[mzscheme].
+The @racketmodname[mzlib/serialize] library provides the same bindings
+as @racketmodname[racket/serialize], except that
+@racket[define-serializable-struct] and
+@racket[define-serializable-struct/versions] are based on the syntax
+of @racket[define-struct] from @racketmodname[mzscheme].
 
 @deftogether[(
 @defform[(define-serializable-struct id-maybe-super (field-id ...) maybe-inspector-expr)]
@@ -31,6 +31,6 @@ of @scheme[define-struct] from @schememodname[mzscheme].
                                                  cycle-make-proc-expr)])]
 )]{
 
-Like @scheme-define-serializable-struct and
-@scheme-define-serializable-struct/versions, but with the syntax of
-closer to @scheme[define-struct] of @schememodname[mzscheme].}
+Like @racket-define-serializable-struct and
+@racket-define-serializable-struct/versions, but with the syntax of
+closer to @racket[define-struct] of @racketmodname[mzscheme].}

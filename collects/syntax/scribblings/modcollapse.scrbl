@@ -10,26 +10,26 @@
          (or/c path? module-path?)]{
 
 Returns a ``simplified'' module path by combining
-@scheme[module-path-v] with @scheme[rel-to-module-path-v], where the
-latter must have the form @scheme['(lib ....)] or a symbol,
-@scheme['(file <string>)], @scheme['(planet ....)], a @techlink[#:doc
+@racket[module-path-v] with @racket[rel-to-module-path-v], where the
+latter must have the form @racket['(lib ....)] or a symbol,
+@racket['(file <string>)], @racket['(planet ....)], a @techlink[#:doc
 refman]{path}, or a thunk to generate one of those.
 
-The result can be a path if @scheme[module-path-v] contains a path
+The result can be a path if @racket[module-path-v] contains a path
 element that is needed for the result, or if
-@scheme[rel-to-module-path-v] is a non-string path that is needed for
+@racket[rel-to-module-path-v] is a non-string path that is needed for
 the result; otherwise, the result is a module path in the sense of
-@scheme[module-path?].
+@racket[module-path?].
 
-When the result is a @scheme['lib] or @scheme['planet] module path, it
+When the result is a @racket['lib] or @racket['planet] module path, it
 is normalized so that equivalent module paths are represented by
-@scheme[equal?] results.}
+@racket[equal?] results.}
 
 @defproc[(collapse-module-path-index [module-path-index module-path-index?]
                                      [rel-to-module-path-v any/c])
          (or/c path? module-path?)]{
 
-Like @scheme[collapse-module-path], but the input is a @techlink[#:doc
+Like @racket[collapse-module-path], but the input is a @techlink[#:doc
 refman]{module path index}; in this case, the
-@scheme[rel-to-module-path-v] base is used where the module path index
+@racket[rel-to-module-path-v] base is used where the module path index
 contains the ``self'' index.}

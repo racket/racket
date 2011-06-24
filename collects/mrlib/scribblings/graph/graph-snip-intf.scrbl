@@ -9,7 +9,7 @@
            void?]{
 
   Adds a child of this snip. Instead of calling this method,
-  consider using the @scheme[add-links] function.
+  consider using the @racket[add-links] function.
 
 }
 
@@ -23,7 +23,7 @@
               void?])]{
 
   Adds a parent of this snip. Instead of calling this
-  method, consider using the @scheme[add-links] function.
+  method, consider using the @racket[add-links] function.
 
 }
 
@@ -31,7 +31,7 @@
            (listof snip%)]{
 
 returns a list of snips that implement
-@scheme[graph-snip<%>]. Each of these snips will have a line
+@racket[graph-snip<%>]. Each of these snips will have a line
 drawn from it, pointing at this snip.
 
 }
@@ -40,7 +40,7 @@ drawn from it, pointing at this snip.
 @defmethod[(get-parents)
            (listof graph-snip<%>)]{
 
-Returns a list of snips that implement @scheme[graph-snip<%>]. Each
+Returns a list of snips that implement @racket[graph-snip<%>]. Each
 of these snips will have a line drawn to it, starting from
 this snip.
 }
@@ -52,7 +52,7 @@ this snip.
   Removes a child snip from this snip. Be sure to remove
   this snip as a parent from the argument, too.
   Instead of calling this method, consider using the
-  @scheme[remove-links] function.
+  @racket[remove-links] function.
 }
 
 
@@ -62,7 +62,7 @@ this snip.
   Removes a parent snip from this snip. Be sure to remove this
   snip as a child from the argument, too.
   Instead of calling this method, consider using the
-  @scheme[remove-links] function.
+  @racket[remove-links] function.
 }
 
 
@@ -70,8 +70,8 @@ this snip.
                                   [label (or/c false/c string/)])
            void?]{
 
-  Changes the label on the edge going to the @scheme[parent] to be
-  @scheme[label].  Ignored if no such egde exists.
+  Changes the label on the edge going to the @racket[parent] to be
+  @racket[label].  Ignored if no such egde exists.
 }
 
 }

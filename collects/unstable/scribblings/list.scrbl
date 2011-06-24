@@ -135,8 +135,8 @@ Produces lists of the respective values of @racket[f] applied to the elements in
 @defproc[(map2 [f (-> A ... (values B C))] [lst (listof A)] ...)
          (values (listof B) (listof C))]{
 
-Produces a pair of lists of the respective values of @scheme[f] applied to the
-elements in @scheme[lst ...] sequentially.
+Produces a pair of lists of the respective values of @racket[f] applied to the
+elements in @racket[lst ...] sequentially.
 
 @defexamples[
 #:eval the-eval

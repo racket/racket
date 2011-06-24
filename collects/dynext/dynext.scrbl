@@ -32,9 +32,9 @@ platform-specific C compiler and linker.
          any/c]{
 
 Compiles the given input file (C source) to the given output file (a
-compiled-object file). The @scheme[quiet?] argument indicates whether
+compiled-object file). The @racket[quiet?] argument indicates whether
 command should be echoed to the current output port. The
-@scheme[include-dirs] argument is a list of directories to search for
+@racket[include-dirs] argument is a list of directories to search for
 include files; the Racket installation's @filepath{include}
 directories are added automatically.}
 
@@ -53,7 +53,7 @@ The default is set by searching for an executable using the
 defined (and the latter takes precedence). On Windows, the search
 looks for @filepath{cl.exe}, then @filepath{gcc.exe}, then
 @filepath{bcc32.exe} (Borland). On Unix, it looks for
-@filepath{gcc}, then @filepath{cc}. A @scheme[#f] value indicates that
+@filepath{gcc}, then @filepath{cc}. A @racket[#f] value indicates that
 no compiler could be found.}
 
 @defparam[current-extension-compiler-flags
@@ -62,14 +62,14 @@ no compiler could be found.}
                         (-> (or/c null? (listof string?)))))]{
 
 A parameter that determines strings passed to the compiler as flags.
-See also @scheme[expand-for-compile-variant].
+See also @racket[expand-for-compile-variant].
 
-On Windows, the default is @scheme[(list "/c" "/O2" "/MT"
-_3m-flag-thunk)] for @filepath{cl.exe}, or @scheme[(list "-c" "-O2"
+On Windows, the default is @racket[(list "/c" "/O2" "/MT"
+_3m-flag-thunk)] for @filepath{cl.exe}, or @racket[(list "-c" "-O2"
 "-fPIC" _3m-flag-thunk)] for @filepath{gcc.exe} and
-@filepath{bcc32.exe}, where @scheme[_3m-flag-thunk] returns
-@scheme[(list "-DMZ_PRECISE_GC")] for the 3m variant and null for the
-CGC variant. On Unix, the default is usually @scheme[(list "-c"
+@filepath{bcc32.exe}, where @racket[_3m-flag-thunk] returns
+@racket[(list "-DMZ_PRECISE_GC")] for the 3m variant and null for the
+CGC variant. On Unix, the default is usually @racket[(list "-c"
 "-O2" "-fPIC" _3m-flag-thunk)]. If the @envvar{CFLAGS} or
 @envvar{MZSCHEME_DYNEXT_COMPILER_FLAGS} environment variable is
 defined (the latter takes precedence), then its value is parsed as a
@@ -84,10 +84,10 @@ A parameter the processes include-path inputs to the compiler; the
 parameter values takes an include directory path and returns a list of
 strings for the command line.
 
-On Windows, the default converts @scheme["dir"] to @scheme[(list
-"/Idir")] for @filepath{cl.exe}, @scheme[(list "-Idir")] for
+On Windows, the default converts @racket["dir"] to @racket[(list
+"/Idir")] for @filepath{cl.exe}, @racket[(list "-Idir")] for
 @filepath{gcc.exe} and @filepath{bcc32.exe}. On Unix, the default
-converts @scheme["dir"] to @scheme[(list "-Idir")]. If the
+converts @racket["dir"] to @racket[(list "-Idir")]. If the
 @envvar{CFLAGS} environment variable is defined, then its value is
 parsed as a list of flags that is appended before the defaults.}
 
@@ -98,7 +98,7 @@ parsed as a list of flags that is appended before the defaults.}
 
 A parameter that processes inputs to the compiler; the parameter's
 values takes an input file path and returns a list of strings for the
-command line.  The default is @scheme[list].}
+command line.  The default is @racket[list].}
 
 
 @defparam[current-make-compile-output-strings
@@ -109,10 +109,10 @@ A parameter that processes outputs specified for the compiler; the
 parameter's value takes an output file path and returns a list of
 strings for the command line.
 
-On Windows, the default converts @scheme["file"] to @scheme[(list
-"/Fofile")] for @filepath{cl.exe}, or to @scheme[(list "-o" "file")]
+On Windows, the default converts @racket["file"] to @racket[(list
+"/Fofile")] for @filepath{cl.exe}, or to @racket[(list "-o" "file")]
 for @filepath{gcc.exe} and @filepath{bcc32.exe}. On Unix, the
-default converts @scheme["file"] to @scheme[(list "-o" "file")].}
+default converts @racket["file"] to @racket[(list "-o" "file")].}
 
 
 @defparam[current-extension-preprocess-flags
@@ -121,11 +121,11 @@ default converts @scheme["file"] to @scheme[(list "-o" "file")].}
 
 A parameters that specifies flags to the compiler preprocessor,
 instead of to the compiler proper; use these flags for preprocessing
-instead of @scheme[current-extension-compiler-flags].
+instead of @racket[current-extension-compiler-flags].
 
-The defaults are similar to @scheme[current-extension-compiler-flags],
-but with @scheme["/E"] (Windows @filepath{cl.exe}) or @scheme["-E"]
-and without non-@scheme["-D"] flags.}
+The defaults are similar to @racket[current-extension-compiler-flags],
+but with @racket["/E"] (Windows @filepath{cl.exe}) or @racket["-E"]
+and without non-@racket["-D"] flags.}
 
 
 @defparam[compile-variant
@@ -133,7 +133,7 @@ and without non-@scheme["-D"] flags.}
           (one-of/c 'normal 'cgc '3m)]{
 
 A parameter that indicates the target for compilation, where
-@scheme['normal] is an alias for the result of @scheme[(system-type
+@racket['normal] is an alias for the result of @racket[(system-type
 'gc)]}
 
 
@@ -146,16 +146,16 @@ particular known compiler. The acceptable names are
 platforms-specific:
 
 @itemize[
-@item{Unix: @scheme['cc] or @scheme['gcc]}
-@item{Windows: @scheme['gcc], @scheme['msvc], or @scheme['borland]}
-@item{MacOS: @scheme['cw]}
+@item{Unix: @racket['cc] or @racket['gcc]}
+@item{Windows: @racket['gcc], @racket['msvc], or @racket['borland]}
+@item{MacOS: @racket['cw]}
 ]}
 
 
 @defproc[(get-standard-compilers) (listof symbol?)]{
 
 Returns a list of standard compiler names for the current platform. See
-@scheme[use-standard-compiler].}
+@racket[use-standard-compiler].}
 
 
 @defproc[(expand-for-compile-variant (l (listof (or/c path-string? (-> (listof string?)))))) any]{
@@ -172,7 +172,7 @@ depending on the current compile variant.}
 
 @defsignature[dynext:compile^ ()]
 
-Includes everything exported by the @schememodname[dynext/compile] module.
+Includes everything exported by the @racketmodname[dynext/compile] module.
 
 @subsection[#:tag "compile-unit"]{Unit}
 
@@ -180,7 +180,7 @@ Includes everything exported by the @schememodname[dynext/compile] module.
 
 @defthing[dynext:compile@ unit?]{
 
-Imports nothing, exports @scheme[dynext:compile^].}
+Imports nothing, exports @racket[dynext:compile^].}
 
 @; ----------------------------------------------------------------------
 
@@ -191,11 +191,11 @@ Imports nothing, exports @scheme[dynext:compile^].}
 @defproc[(link-extension (quiet? any/c) (input-files (listof path-string?)) (output-file path-string?)) any]{
 
 Links object files to create an extension (normally of a form that can
-be loaded with @scheme[load-extension]).
+be loaded with @racket[load-extension]).
 
-The @scheme[quiet?] argument indicates whether command should be
-echoed to the current output port. The @scheme[input-files] argument
-is list of compiled object filenames, and @scheme[output-file] is the
+The @racket[quiet?] argument indicates whether command should be
+echoed to the current output port. The @racket[input-files] argument
+is list of compiled object filenames, and @racket[output-file] is the
 destination extension filename.}
 
 
@@ -214,7 +214,7 @@ The default is set by searching for an executable using the
 @filepath{cl.exe}, then @filepath{ld.exe} (gcc), then
 @filepath{ilink32.exe} (Borland). On Cygwin, Solaris, FreeBSD 2.x,
 or HP/UX, it looks for @filepath{ld}. On other Unix variants, it
-looks for @filepath{cc}. @scheme[#f] indicates that no linker could be
+looks for @filepath{cc}. @racket[#f] indicates that no linker could be
 found.}
 
 @defparam[current-extension-linker-flags
@@ -222,10 +222,10 @@ found.}
           (listof (or/c path-string? (-> (listof string?))))]{
 
 A parameter that determines flags provided to the linker. See also
-@scheme[expand-for-link-variant].
+@racket[expand-for-link-variant].
 
-On Windows, default is @scheme[(list "/LD")] for @filepath{cl.exe},
-@scheme[(list "--dll")] for @filepath{ld.exe}, and @scheme[(list
+On Windows, default is @racket[(list "/LD")] for @filepath{cl.exe},
+@racket[(list "--dll")] for @filepath{ld.exe}, and @racket[(list
 "/Tpd" "/c")] for @filepath{ilink32.exe}.  On Unix, the default
 varies greatly among platforms.  If the @envvar{LDFLAGS} or
 @envvar{MZSCHEME_DYNEXT_LINKER_FLAGS} (the latter takes precedence)
@@ -238,7 +238,7 @@ strings that is appended before the defaults.}
 
 A parameter that processes linker input arguments; the parameter value
 takes an input file path and returns a list of strings for the command
-line.  The default is @scheme[list].}
+line.  The default is @racket[list].}
 
 @defparam[current-make-link-output-strings
           proc
@@ -248,28 +248,28 @@ A parameter that processes linker output arguments; the parameter
 value takes an output file path and returns a list of strings for the
 command line.
 
-On Windows, the default converts @scheme["file"] to @scheme[(list
-"/Fefile")] for @filepath{cl.exe}, something like @scheme[(list "-e"
+On Windows, the default converts @racket["file"] to @racket[(list
+"/Fefile")] for @filepath{cl.exe}, something like @racket[(list "-e"
 "_dll_entry@12" "-o" "file")] for @filepath{ld.exe}, and something
 complex for @filepath{ilink32.exe}. On Unix, the default converts
-@scheme["file"] to @scheme[(list "-o" "file")].}
+@racket["file"] to @racket[(list "-o" "file")].}
 
 @defparam[current-standard-link-libraries
           libs
           (listof (or/c path-string? (-> (listof string?))))]{
 
 A parameter that determines libraries supplied to the linker, in
-addition to other inputs.  See also @scheme[expand-for-link-variant].
+addition to other inputs.  See also @racket[expand-for-link-variant].
 
 For most platforms, the default is
 
-@schemeblock[(list (build-path (collection-path "mzscheme" "lib") 
+@racketblock[(list (build-path (collection-path "mzscheme" "lib") 
                                (system-library-subpath)
                                (_mzdyn-thunk)))]
 
-where @scheme[_mzdyn-thunk] produces @scheme[(list "mzdyn.o")] for the
-@scheme['cgc] variant and @scheme[(list "mzdyn3m.o")] for the
-@scheme['3m] variant. See also @scheme[current-use-mzdyn]).}
+where @racket[_mzdyn-thunk] produces @racket[(list "mzdyn.o")] for the
+@racket['cgc] variant and @racket[(list "mzdyn3m.o")] for the
+@racket['3m] variant. See also @racket[current-use-mzdyn]).}
 
 @defparam[current-use-mzdyn
   use-mzdyn?
@@ -277,15 +277,15 @@ where @scheme[_mzdyn-thunk] produces @scheme[(list "mzdyn.o")] for the
 
 A parameter that determines whether the default standard link
 libraries include the @filepath{mzdyn} library which allows the
-resulting file to be loaded via @scheme[load-extension].  Defaults to
-@scheme[#t].}
+resulting file to be loaded via @racket[load-extension].  Defaults to
+@racket[#t].}
 
 @defparam[link-variant
           variant-symbol
           (one-of/c 'normal 'cgc '3m)]{
 
 A parameter that indicates the target for linking, where
-@scheme['normal] is an alias for the result of @scheme[(system-type
+@racket['normal] is an alias for the result of @racket[(system-type
 'gc)].}
 
 
@@ -303,7 +303,7 @@ particular known linker.}
                                                    (-> (listof string?)))))) 
          any]{
 
-The same as @scheme[expand-for-compile-variant].}
+The same as @racket[expand-for-compile-variant].}
 
 
 @subsection[#:tag "link-sig"]{Signature}
@@ -312,7 +312,7 @@ The same as @scheme[expand-for-compile-variant].}
 
 @defsignature[dynext:link^ ()]
 
-Includes everything exported by the @schememodname[dynext/link] module.
+Includes everything exported by the @racketmodname[dynext/link] module.
 
 @subsection[#:tag "link-unit"]{Unit}
 
@@ -320,7 +320,7 @@ Includes everything exported by the @schememodname[dynext/link] module.
 
 @defthing[dynext:link@ unit?]{
 
-Imports nothing, exports @scheme[dynext:link^].}
+Imports nothing, exports @racket[dynext:link^].}
 
 @; ----------------------------------------------------------------------
 
@@ -330,63 +330,63 @@ Imports nothing, exports @scheme[dynext:link^].}
 
 @defproc[(append-zo-suffix (s (or/c string? path?))) path?]{
 
-Appends the @filepath{.zo} file suffix to @scheme[s], returning a
+Appends the @filepath{.zo} file suffix to @racket[s], returning a
 path. The existing suffix, if any, is preserved and converted as with
-@scheme[path-add-suffix].}
+@racket[path-add-suffix].}
 
 @defproc[(append-object-suffix (s path-string?)) path?]{
 
 Appends the platform-standard compiled object file suffix to
-@scheme[s], returning a path.}
+@racket[s], returning a path.}
 
 @defproc[(append-c-suffix (s path-string?)) path?]{
 
-Appends the platform-standard C source-file suffix to @scheme[s],
+Appends the platform-standard C source-file suffix to @racket[s],
 returning a path.}
 
 @defproc[(append-constant-pool-suffix (s (or/c string? path?))) path?]{
 
-Appends the constant-pool file suffix @filepath{.kp} to @scheme[s],
+Appends the constant-pool file suffix @filepath{.kp} to @racket[s],
 returning a path.}
 
 @defproc[(append-extension-suffix (s (or/c string? path?))) path?]{
 
 Appends the platform-standard dynamic-extension file suffix to
-@scheme[s], returning a path.}
+@racket[s], returning a path.}
 
 @defproc[(extract-base-filename/ss (s path-string?) 
                                    (program any/c #f))
          (or/c path? false/c)]{
 
-Strips the Racket file suffix from @scheme[s] and returns a stripped
-path. Unlike the other functions below, when @scheme[program] is not
-@scheme[#f], then any suffix (including no suffix) is allowed. If
-@scheme[s] is not a Racket file and @scheme[program] is @scheme[#f],
-@scheme[#f] is returned.}
+Strips the Racket file suffix from @racket[s] and returns a stripped
+path. Unlike the other functions below, when @racket[program] is not
+@racket[#f], then any suffix (including no suffix) is allowed. If
+@racket[s] is not a Racket file and @racket[program] is @racket[#f],
+@racket[#f] is returned.}
 
 @defproc[(extract-base-filename/c (s path-string?) 
                                   (program any/c #f)) 
          (or/c path? false/c)]{
 
-Strips the Racket file suffix from @scheme[s] and
-returns a stripped path. If @scheme[s] is not a Racket file name and
-@scheme[program] is a symbol, and error is signaled.  If @scheme[s] is
-not a Racket file and @scheme[program] is @scheme[#f], @scheme[#f] is
+Strips the Racket file suffix from @racket[s] and
+returns a stripped path. If @racket[s] is not a Racket file name and
+@racket[program] is a symbol, and error is signaled.  If @racket[s] is
+not a Racket file and @racket[program] is @racket[#f], @racket[#f] is
 returned.}
 
 @defproc[(extract-base-filename/kp (s path-string?) (program any/c #f)) (or/c path? false/c)]{
 
-Same as @scheme[extract-base-filename/c], but for constant-pool
+Same as @racket[extract-base-filename/c], but for constant-pool
 files.}
 
 @defproc[(extract-base-filename/o (s path-string?) (program any/c #f)) (or/c path? false/c)]{
 
-Same as @scheme[extract-base-filename/c], but for compiled-object
+Same as @racket[extract-base-filename/c], but for compiled-object
 files.}
 
 @defproc[(extract-base-filename/ext (s path-string?) (program any/c #f)) (or/c path? false/c)]{
 
-Same as @scheme[extract-base-filename/c], but for extension files.}
+Same as @racket[extract-base-filename/c], but for extension files.}
 
 
 @subsection[#:tag "file-sig"]{Signature}
@@ -395,7 +395,7 @@ Same as @scheme[extract-base-filename/c], but for extension files.}
 
 @defsignature[dynext:file^ ()]
 
-Includes everything exported by the @schememodname[dynext/file] module.
+Includes everything exported by the @racketmodname[dynext/file] module.
 
 @subsection[#:tag "file-unit"]{Unit}
 
@@ -403,5 +403,5 @@ Includes everything exported by the @schememodname[dynext/file] module.
 
 @defthing[dynext:file@ unit?]{
 
-Imports nothing, exports @scheme[dynext:file^].}
+Imports nothing, exports @racket[dynext:file^].}
 

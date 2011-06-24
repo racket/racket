@@ -16,7 +16,7 @@ Tells the alignment that its sizes should be calculated.}
                   [width (and/c real? (not/c negative?))]
                   [height  (and/c real? (not/c negative?))]) void?]{
 Tells itself to align its children on the pasteboard
-in the given rectangle defined by @scheme[width], @scheme[height] and a top
+in the given rectangle defined by @racket[width], @racket[height] and a top
 left corner point given as offsets into the pasteboards top
 left corner.}
 
@@ -30,7 +30,7 @@ The minimum height this alignment must be.}
 
 @defmethod*[([(stretchable-width) boolean?]
              [(stretchable-width [value boolean?]) void?])]{
-             
+
 Gets/sets the property of stretchability in the x dimension.}
 
 @defmethod*[([(stretchable-height) boolean?]

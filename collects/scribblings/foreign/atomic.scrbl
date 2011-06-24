@@ -11,13 +11,13 @@
 )]{
 
 Disables and enables context switches and delivery of break exceptions
-at the level of Racket threads. Calls to @scheme[start-atomic] and
-@scheme[end-atomic] can be nested.
+at the level of Racket threads. Calls to @racket[start-atomic] and
+@racket[end-atomic] can be nested.
 
-Using @scheme[call-as-atomic] is somewhat safer, in that
-@scheme[call-as-atomic] correctly catches exceptions and re-raises
+Using @racket[call-as-atomic] is somewhat safer, in that
+@racket[call-as-atomic] correctly catches exceptions and re-raises
 them after exiting atomic mode. For simple uses where exceptions need
-not be handled, however, @scheme[start-atomic] and @scheme[end-atomic]
+not be handled, however, @racket[start-atomic] and @racket[end-atomic]
 are faster.}
 
 @deftogether[(
@@ -35,22 +35,22 @@ faster than plan @racket[start-atomic] and @racket[end-atomic].}
 
 @defproc[(call-as-atomic [thunk (-> any)]) any]{
 
-Calls @scheme[thunk] in atomic mode. If @scheme[thunk] raises and
+Calls @racket[thunk] in atomic mode. If @racket[thunk] raises and
 exception, the exception is caught and re-raised after exiting atomic
 mode.
 
-When @scheme[call-as-atomic] is used in the dynamic extent of
-@scheme[call-as-atomic], then @scheme[thunk] is simply called directly
+When @racket[call-as-atomic] is used in the dynamic extent of
+@racket[call-as-atomic], then @racket[thunk] is simply called directly
 (as a tail call).}
 
 
 @defproc[(call-as-nonatomic [thunk (-> any)]) any]{
 
-Within the dynamic extent of a @scheme[call-as-atomic], calls
-@scheme[thunk] in non-atomic mode. Beware that the current thread
-maybe suspended or terminated by other threads during @scheme[thunk],
+Within the dynamic extent of a @racket[call-as-atomic], calls
+@racket[thunk] in non-atomic mode. Beware that the current thread
+maybe suspended or terminated by other threads during @racket[thunk],
 in which case the call never returns.
 
-When used not in the dynamic extent of @scheme[call-as-atomic],
-@scheme[call-as-nonatomic] raises @scheme[exn:fail:contract].}
+When used not in the dynamic extent of @racket[call-as-atomic],
+@racket[call-as-nonatomic] raises @racket[exn:fail:contract].}
 

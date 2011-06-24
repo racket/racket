@@ -4,7 +4,7 @@
 @title[#:tag "activex" #:style 'toc]{ActiveX and DHTML}
 
 A MysterX application consists of one or more browsers, which are
-instances of the class @scheme[mx-browser%].
+instances of the class @racket[mx-browser%].
 
 @local-table-of-contents[]
 

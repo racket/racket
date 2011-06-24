@@ -167,7 +167,7 @@ The @racket[test] argument is a test case or test suite.
 
 The @racket[run] argument is a function from a test case name (string)
 and action (thunk) to any values. The values produced by @racket[run]
-are fed into the @scheme[result-fn].
+are fed into the @racket[result-fn].
 
 The @racket[fdown] argument is a function from a test suite name
 (string) and the seed, to a new seed.

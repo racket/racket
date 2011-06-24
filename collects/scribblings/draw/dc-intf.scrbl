@@ -3,7 +3,7 @@
 
 @definterface/title[dc<%> ()]{
 
-A @scheme[dc<%>] object is a drawing context for drawing graphics and
+A @racket[dc<%>] object is a drawing context for drawing graphics and
  text.  It represents output devices in a generic way; e.g., a canvas
  has a drawing context, as does a printer.
 
@@ -11,13 +11,13 @@ A @scheme[dc<%>] object is a drawing context for drawing graphics and
 @defmethod[(cache-font-metrics-key)
            exact-integer?]{
 
-Returns an integer that, if not @scheme[0], corresponds to a
+Returns an integer that, if not @racket[0], corresponds to a
 particular kind of device and scaling factor, such that text-extent
 information (from @method[dc<%> get-text-extent], @method[dc<%>
 get-char-height], etc.) is the same. The key is valid across all
-@scheme[dc<%>] instances, even among different classes.
+@racket[dc<%>] instances, even among different classes.
 
-A @scheme[0] result indicates that the current configuration of
+A @racket[0] result indicates that the current configuration of
 @this-obj[] does not fit into a common category, and so no key is
 available for caching text-extent information.}
 
@@ -56,11 +56,11 @@ overlap.}
            void?]{
 
 Draws a counter-clockwise circular arc, a part of the ellipse
- inscribed in the rectangle specified by @scheme[x] (left), @scheme[y]
- (top), @scheme[width], and @scheme[height]. The arc starts at the angle
- specified by @scheme[start-radians] (@scheme[0] is three o'clock and
+ inscribed in the rectangle specified by @racket[x] (left), @racket[y]
+ (top), @racket[width], and @racket[height]. The arc starts at the angle
+ specified by @racket[start-radians] (@racket[0] is three o'clock and
  half-pi is twelve o'clock) and continues counter-clockwise to
- @scheme[end-radians]. If @scheme[start-radians] and @scheme[end-radians] are
+ @racket[end-radians]. If @racket[start-radians] and @racket[end-radians] are
  the same, a full ellipse is drawn.
 
 The current pen is used for the arc. If the current brush is not
@@ -88,20 +88,20 @@ If both the pen and brush are non-transparent, the wedge is filled
                         [mask (or/c (is-a?/c bitmap%) false/c) #f])
            boolean?]{
 
-Displays the @racket[source] bitmap. The @scheme[dest-x] and @scheme[dest-y] arguments
+Displays the @racket[source] bitmap. The @racket[dest-x] and @racket[dest-y] arguments
  are in DC coordinates.
 
 For color bitmaps, the drawing style and color arguments are
  ignored. For monochrome bitmaps, @method[dc<%> draw-bitmap] uses the
  style and color arguments in the same way that a brush uses its style
- and color settings to draw a monochrome stipple (see @scheme[brush%]
+ and color settings to draw a monochrome stipple (see @racket[brush%]
  for more information).
 
 If a @racket[mask] bitmap is supplied, it must have the same width and height
  as @racket[source], and its @method[bitmap% ok?] must return
  true, otherwise @|MismatchExn|. The @racket[source] bitmap and @racket[mask]
  bitmap can be the same object, but if the drawing context is a
- @scheme[bitmap-dc%] object, both bitmaps must be distinct from the
+ @racket[bitmap-dc%] object, both bitmaps must be distinct from the
  destination bitmap, otherwise @|MismatchExn|.
 
 The effect of @racket[mask] on drawing depends on the type of the
@@ -110,7 +110,7 @@ The effect of @racket[mask] on drawing depends on the type of the
 @itemlist[
 
  @item{If the @racket[mask] bitmap is monochrome, drawing occurs in
-       the target @scheme[dc<%>] only where the mask bitmap contains
+       the target @racket[dc<%>] only where the mask bitmap contains
        black pixels (independent of @racket[style], which controls how
        the white pixels of a monochrome @racket[source] are handled).}
 
@@ -134,13 +134,13 @@ The current brush, current pen, and current text for the DC have no
  any given @racket[mask], and the alpha component of @racket[color] 
  when @racket[source] is monochrome).
 
-For @scheme[post-script-dc%] and @racket[pdf-dc%] output, opacity from
+For @racket[post-script-dc%] and @racket[pdf-dc%] output, opacity from
  an alpha channel in @racket[source], from @racket[mask], or from 
  @racket[color] is rounded to full transparency or opacity.
 
-The result is @scheme[#t] if the bitmap is successfully drawn,
- @scheme[#f] otherwise (possibly because the bitmap's @method[bitmap%
- ok?] method returns @scheme[#f]).
+The result is @racket[#t] if the bitmap is successfully drawn,
+ @racket[#f] otherwise (possibly because the bitmap's @method[bitmap%
+ ok?] method returns @racket[#f]).
 
 See also @method[dc<%> draw-bitmap-section].
 
@@ -162,12 +162,12 @@ See also @method[dc<%> draw-bitmap-section].
 
 Displays part of a bitmap.
 
-The @scheme[src-x], @scheme[src-y], @scheme[src-width], and
- @scheme[src-height] arguments specify a rectangle in the source
+The @racket[src-x], @racket[src-y], @racket[src-width], and
+ @racket[src-height] arguments specify a rectangle in the source
  bitmap to copy into this drawing context.
 
-See @method[dc<%> draw-bitmap] for information about @scheme[dest-x],
- @scheme[dest-y], @scheme[style], @scheme[color], and @scheme[mask].
+See @method[dc<%> draw-bitmap] for information about @racket[dest-x],
+ @racket[dest-y], @racket[style], @racket[color], and @racket[mask].
 
 }
 
@@ -204,11 +204,11 @@ Draws a line from one point to another.  The current pen is used for
 
 In unsmoothed mode, the points correspond to pixels, and the line
  covers both the start and end points. For a pen whose scaled width is
- larger than @scheme[1], the line is drawn centered over the start and
+ larger than @racket[1], the line is drawn centered over the start and
  end points.
 
 See also @method[dc<%> set-smoothing] for information on the
-@scheme['aligned] smoothing mode.
+@racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -220,14 +220,14 @@ See also @method[dc<%> set-smoothing] for information on the
                        [yoffset real? 0])
            void?]{
 
-Draws lines using a list @scheme[points] of points, adding @scheme[xoffset]
- and @scheme[yoffset] to each point. A pair is treated as a point where the
+Draws lines using a list @racket[points] of points, adding @racket[xoffset]
+ and @racket[yoffset] to each point. A pair is treated as a point where the
  @racket[car] of the pair is the x-value and the @racket[cdr] is the y-value.
  The current pen is used for
  drawing the lines.
 
 See also @method[dc<%> set-smoothing] for information on the
- @scheme['aligned] smoothing mode.
+ @racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -239,9 +239,9 @@ See also @method[dc<%> set-smoothing] for information on the
                       [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
            void?]{
 
-Draws the sub-paths of the given @scheme[dc-path%] object, adding
- @scheme[xoffset] and @scheme[yoffset] to each point. (See
- @scheme[dc-path%] for general information on paths and sub-paths.)
+Draws the sub-paths of the given @racket[dc-path%] object, adding
+ @racket[xoffset] and @racket[yoffset] to each point. (See
+ @racket[dc-path%] for general information on paths and sub-paths.)
  The current pen is used for drawing the path as a line, and the
  current brush is used for filling the area bounded by the path.
 
@@ -253,15 +253,15 @@ If both the pen and brush are non-transparent, the path is filled with
  overlap. More generally, the pen is centered over the path, rounding
  left and down in unsmoothed mode.
 
-The @scheme[fill-style] argument specifies the fill rule:
- @scheme['odd-even] or @scheme['winding]. In @scheme['odd-even] mode, a
+The @racket[fill-style] argument specifies the fill rule:
+ @racket['odd-even] or @racket['winding]. In @racket['odd-even] mode, a
  point is considered enclosed within the path if it is enclosed by an
- odd number of sub-path loops. In @scheme['winding] mode, a point is
+ odd number of sub-path loops. In @racket['winding] mode, a point is
  considered enclosed within the path if it is enclosed by more or less
  clockwise sub-path loops than counter-clockwise sub-path loops.
 
 See also @method[dc<%> set-smoothing] for information on the
- @scheme['aligned] smoothing mode.
+ @racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -284,8 +284,8 @@ Plots a single point using the current pen.
                          [fill-style (one-of/c 'odd-even 'winding) 'odd-even])
            void?]{
 
-Draw a filled polygon using a list @scheme[points] of points, adding
- @scheme[xoffset] and @scheme[yoffset] to each point. 
+Draw a filled polygon using a list @racket[points] of points, adding
+ @racket[xoffset] and @racket[yoffset] to each point. 
  A pair is treated as a point where the
  @racket[car] of the pair is the x-value and the @racket[cdr] is the y-value.
  The polygon is
@@ -301,15 +301,15 @@ If both the pen and brush are non-transparent, the polygon is filled
  overlap. More generally, the pen is centered over the polygon lines,
  rounding left and down in unsmoothed mode.
 
-The @scheme[fill-style] argument specifies the fill rule:
- @scheme['odd-even] or @scheme['winding]. In @scheme['odd-even] mode, a
+The @racket[fill-style] argument specifies the fill rule:
+ @racket['odd-even] or @racket['winding]. In @racket['odd-even] mode, a
  point is considered enclosed within the polygon if it is enclosed by
- an odd number of loops. In @scheme['winding] mode, a point is
+ an odd number of loops. In @racket['winding] mode, a point is
  considered enclosed within the polygon if it is enclosed by more or
  less clockwise loops than counter-clockwise loops.
 
 See also @method[dc<%> set-smoothing] for information on the
- @scheme['aligned] smoothing mode.
+ @racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -330,14 +330,14 @@ If both the pen and brush are non-transparent, the rectangle is filled
  with the brush before the outline is drawn with the pen. In
  unsmoothed mode, when the pen is size 0 or 1, the filling precisely
  overlaps the entire outline. As a result, if a rectangle is drawn
- with a size-0 or size-1 @scheme['xor] @scheme[pen%] and an
- @scheme['xor] @scheme[brush%], the outline is xored twice (first by
+ with a size-0 or size-1 @racket['xor] @racket[pen%] and an
+ @racket['xor] @racket[brush%], the outline is xored twice (first by
  the brush, then by the pen), leaving it unchanged. More generally,
  the pen is centered over the outline of the rectangle, rounding
  toward the center in unsmoothed mode.
 
 See also @method[dc<%> set-smoothing] for information on the
-@scheme['aligned] smoothing mode.
+@racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -356,13 +356,13 @@ Draws a rectangle with the given top-left corner, and with the given
  current pen is used for the outline and the current brush for filling
  the shape.
 
-If @scheme[radius] is positive, the value is used as the radius of the
- rounded corner. If @scheme[radius] is negative, the absolute value is
+If @racket[radius] is positive, the value is used as the radius of the
+ rounded corner. If @racket[radius] is negative, the absolute value is
  used as the @italic{proportion} of the smallest dimension of the
- rectangle. 
+ rectangle.
 
-If @scheme[radius] is less than @scheme[-0.5] or more than half of
- @scheme[width] or @scheme[height], @|MismatchExn|.
+If @racket[radius] is less than @racket[-0.5] or more than half of
+ @racket[width] or @racket[height], @|MismatchExn|.
 
 If both the pen and brush are non-transparent, the rectangle is filled
  with the brush before the outline is drawn with the pen. The filling
@@ -374,7 +374,7 @@ If both the pen and brush are non-transparent, the rectangle is filled
  unsmoothed mode.
 
 See also @method[dc<%> set-smoothing] for information on the
-@scheme['aligned] smoothing mode.
+@racket['aligned] smoothing mode.
 
 @|DrawSizeNote|
 
@@ -388,12 +388,12 @@ See also @method[dc<%> set-smoothing] for information on the
                         [y3 real?])
            void?]{
 
-@index['("drawing curves")]{Draws} a spline from (@scheme[x1],
- @scheme[y1]) to (@scheme[x3], @scheme[y3]) using (@scheme[x2],
- @scheme[y2]) as the control point.
+@index['("drawing curves")]{Draws} a spline from (@racket[x1],
+ @racket[y1]) to (@racket[x3], @racket[y3]) using (@racket[x2],
+ @racket[y2]) as the control point.
 
 See also @method[dc<%> set-smoothing] for information on the
- @scheme['aligned] smoothing mode. See also @scheme[dc-path%] and
+ @racket['aligned] smoothing mode. See also @racket[dc-path%] and
  @method[dc<%> draw-path] for drawing more complex curves.
 
 @|DrawSizeNote|
@@ -415,19 +415,19 @@ Draws a text string at a specified point, using the current text font,
  location of the top-left pixel in the ``W''). Rotated text is rotated
  around this point.
 
-The @scheme[text] string is drawn starting from the @scheme[offset]
- character, and continuing until the end of @scheme[text] or the first
+The @racket[text] string is drawn starting from the @racket[offset]
+ character, and continuing until the end of @racket[text] or the first
  null character.
 
-If @scheme[combine?] is @scheme[#t], then @scheme[text] may be
+If @racket[combine?] is @racket[#t], then @racket[text] may be
  measured with adjacent characters combined to ligature glyphs, with
  Unicode combining characters as a single glyph, with kerning, with
- right-to-left rendering of characters, etc. If @scheme[combine?] is
- @scheme[#f], then the result is the same as if each character is
+ right-to-left rendering of characters, etc. If @racket[combine?] is
+ @racket[#f], then the result is the same as if each character is
  measured separately, and Unicode control characters are ignored.
 
-The string is rotated by @scheme[angle] radians counter-clockwise. If
- @scheme[angle] is not zero, then the text is always drawn in
+The string is rotated by @racket[angle] radians counter-clockwise. If
+ @racket[angle] is not zero, then the text is always drawn in
  transparent mode (see @method[dc<%> set-text-mode]).
 
 The current brush and current pen settings for the DC have no effect
@@ -517,7 +517,7 @@ Gets the current brush. See also @method[dc<%> set-brush].
 Gets the height of a character using the current font.
 
 Unlike most methods, this method can be called for a
- @scheme[bitmap-dc%] object without a bitmap installed.
+ @racket[bitmap-dc%] object without a bitmap installed.
 
 }
 
@@ -527,14 +527,14 @@ Unlike most methods, this method can be called for a
 Gets the average width of a character using the current font.
 
 Unlike most methods, this method can be called for a
- @scheme[bitmap-dc%] object without a bitmap installed.
+ @racket[bitmap-dc%] object without a bitmap installed.
 
 }
 
 @defmethod[(get-clipping-region)
            (or/c (is-a?/c region%) false/c)]{
 
-Gets the current clipping region, returning @scheme[#f] if the drawing
+Gets the current clipping region, returning @racket[#f] if the drawing
  context is not clipped (i.e., the clipping region is the entire
  drawing region).
 
@@ -565,10 +565,10 @@ Gets the current font. See also @method[dc<%> set-font].
 @defmethod[(get-gl-context)
            (or/c (is-a?/c gl-context<%>) false/c)]{
 
-Returns a @scheme[gl-context<%>] object for this drawing context
- if it supports OpenGL, @scheme[#f] otherwise.
+Returns a @racket[gl-context<%>] object for this drawing context
+ if it supports OpenGL, @racket[#f] otherwise.
 
-See @scheme[gl-context<%>] for more information.
+See @racket[gl-context<%>] for more information.
 
 }
 
@@ -647,11 +647,11 @@ See also @method[dc<%> set-scale] and @method[dc<%> get-transformation].
            (values (and/c real? (not/c negative?))
                    (and/c real? (not/c negative?)))]{
 
-Gets the size of the destination drawing area. For a @scheme[dc<%>]
- object obtained from a @scheme[canvas<%>], this is the (virtual
- client) size of the destination window; for a @scheme[bitmap-dc%]
+Gets the size of the destination drawing area. For a @racket[dc<%>]
+ object obtained from a @racket[canvas<%>], this is the (virtual
+ client) size of the destination window; for a @racket[bitmap-dc%]
  object, this is the size of the selected bitmap (or 0 if no bitmap is
- selected); for a @scheme[post-script-dc%] or @scheme[printer-dc%]
+ selected); for a @racket[post-script-dc%] or @racket[printer-dc%]
  drawing context, this gets the horizontal and vertical size of the
  drawing area.
 
@@ -682,11 +682,11 @@ set-text-background].
                    (and/c real? (not/c negative?)))]{
 
 
-Returns the size of @scheme[str] at it would be drawn in the drawing
- context, starting from the @scheme[offset] character of @scheme[str],
- and continuing until the end of @scheme[str] or the first null
- character.  The @scheme[font] argument specifies the font to use in
- measuring the text; if it is @scheme[#f], the current font of the
+Returns the size of @racket[str] at it would be drawn in the drawing
+ context, starting from the @racket[offset] character of @racket[str],
+ and continuing until the end of @racket[str] or the first null
+ character.  The @racket[font] argument specifies the font to use in
+ measuring the text; if it is @racket[#f], the current font of the
  drawing area is used. (See also @method[dc<%> set-font].)
 
 The result is four real numbers:
@@ -713,15 +713,15 @@ The returned width and height define a rectangle is that guaranteed to
  depending on the whims of the font designer and the platform-specific
  font-scaling mechanism.
 
-If @scheme[combine?] is @scheme[#t], then @scheme[text] may be drawn
+If @racket[combine?] is @racket[#t], then @racket[text] may be drawn
  with adjacent characters combined to ligature glyphs, with Unicode
  combining characters as a single glyph, with kerning, with
- right-to-left ordering of characters, etc. If @scheme[combine?] is
- @scheme[#f], then the result is the same as if each character is
+ right-to-left ordering of characters, etc. If @racket[combine?] is
+ @racket[#f], then the result is the same as if each character is
  drawn separately, and Unicode control characters are ignored.
 
 Unlike most methods, this method can be called for a
- @scheme[bitmap-dc%] object without a bitmap installed.
+ @racket[bitmap-dc%] object without a bitmap installed.
 
 }
 
@@ -768,15 +768,15 @@ The vector content is as follows:
 @defmethod[(glyph-exists? [c char?])
            boolean?]{
 
-Returns @scheme[#t] if the given character has a corresponding glyph
- for this drawing context, @scheme[#f] otherwise.
+Returns @racket[#t] if the given character has a corresponding glyph
+ for this drawing context, @racket[#f] otherwise.
 
 Due to automatic font substitution when drawing or measuring text, the
  result of this method does not depend on the given font, which merely
- provides a hint for the glyph search. If the font is @scheme[#f], the
+ provides a hint for the glyph search. If the font is @racket[#f], the
  drawing context's current font is used. The result depends on the
- type of the drawing context, but the result for @scheme[canvas%]
- @scheme[dc<%>] instances and @scheme[bitmap-dc%] instances is always
+ type of the drawing context, but the result for @racket[canvas%]
+ @racket[dc<%>] instances and @racket[bitmap-dc%] instances is always
  the same for a given platform and a given set of installed fonts.
 
 See also @method[font% screen-glyph-exists?] .
@@ -786,7 +786,7 @@ See also @method[font% screen-glyph-exists?] .
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if the drawing context is usable.
+Returns @racket[#t] if the drawing context is usable.
 
 }
 
@@ -827,8 +827,8 @@ rotation settings have their identity values.
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
 
-Determines the opacity of drawing. A value of @scheme[0.0] corresponds
-to completely transparent (i.e., invisible) drawing, and @scheme[1.0]
+Determines the opacity of drawing. A value of @racket[0.0] corresponds
+to completely transparent (i.e., invisible) drawing, and @racket[1.0]
 corresponds to completely opaque drawing. For intermediate values,
 drawing is blended with the existing content of the drawing context.
 A color (e.g. for a brush) also has an alpha value; it is combined
@@ -841,8 +841,8 @@ with the drawing context's alpha by multiplying.}
               void?])]{
 
 Sets the background color for drawing in this object (e.g., using
-@method[dc<%> clear] or using a stippled @scheme[brush%] with the mode
-@scheme['opaque]). For monochrome drawing, all non-black colors are
+@method[dc<%> clear] or using a stippled @racket[brush%] with the mode
+@racket['opaque]). For monochrome drawing, all non-black colors are
 treated as white.
 
 }
@@ -891,11 +891,11 @@ get-clipping-region].
            void?]{
 
 Sets the clipping region for the drawing area, turning off all
- clipping within the drawing region if @scheme[#f] is provided.
+ clipping within the drawing region if @racket[#f] is provided.
 
-The clipping region must be reset after changing a @scheme[dc<%>]
- object's origin or scale (unless it is @scheme[#f]); see
- @scheme[region%] for more information.
+The clipping region must be reset after changing a @racket[dc<%>]
+ object's origin or scale (unless it is @racket[#f]); see
+ @racket[region%] for more information.
 
 See also @method[dc<%> set-clipping-rect] and @method[dc<%>
  get-clipping-region].
@@ -1006,27 +1006,27 @@ See also @method[dc<%> scale], which adds a scale to the current
 
 Enables or disables anti-aliased smoothing for drawing. (Text
  smoothing is not affected by this method, and is instead controlled
- through the @scheme[font%] object.)
+ through the @racket[font%] object.)
 
-The smoothing mode is either @scheme['unsmoothed], @scheme['smoothed],
- or @scheme['aligned]. Both @scheme['aligned] and @scheme['smoothed]
+The smoothing mode is either @racket['unsmoothed], @racket['smoothed],
+ or @racket['aligned]. Both @racket['aligned] and @racket['smoothed]
  are smoothing modes.
 
-In @scheme['smoothed] mode for a canvas or bitmap drawing context,
+In @racket['smoothed] mode for a canvas or bitmap drawing context,
  integer drawing coordinates correspond to the boundary between
  pixels, and pen-based drawing is centered over a given line or
- curve. Thus, drawing with pen width @scheme[1] from @math{(0, 10)} to
+ curve. Thus, drawing with pen width @racket[1] from @math{(0, 10)} to
  @math{(10, 10)} draws a 2-pixel wide line with @math{50%} opacity.
 
-The @scheme['aligned] smoothing mode is like @scheme['smoothed], but
- it paints pixels more like @scheme['unsmoothed] mode. Since it aligns
- shapes to pixel boundaries, @scheme['aligned] mode often produces
- better results than @scheme['smoothed], but the results depend on the
- application. The @scheme['aligned] mode is defined in terms of
- @scheme['smoothed] mode, except that drawing coordinates are rounded
- down (via @scheme[floor], after scaling and origin translation). For
+The @racket['aligned] smoothing mode is like @racket['smoothed], but
+ it paints pixels more like @racket['unsmoothed] mode. Since it aligns
+ shapes to pixel boundaries, @racket['aligned] mode often produces
+ better results than @racket['smoothed], but the results depend on the
+ application. The @racket['aligned] mode is defined in terms of
+ @racket['smoothed] mode, except that drawing coordinates are rounded
+ down (via @racket[floor], after scaling and origin translation). For
  line drawing, coordinates are then shifted right and down by the
- @scheme[floor] of half a pen width.  In addition, for pen drawing
+ @racket[floor] of half a pen width.  In addition, for pen drawing
  through @method[dc<%> draw-rectangle], @method[dc<%> draw-ellipse],
  @method[dc<%> draw-rounded-rectangle], and @method[dc<%> draw-arc],
  the given width and height are each decreased by @math{1.0}.
@@ -1040,7 +1040,7 @@ The @scheme['aligned] smoothing mode is like @scheme['smoothed], but
 
 Sets the current text background color for this object. The text
  background color is painted behind text that is drawn with
- @method[dc<%> draw-text], but only for the @scheme['solid] text mode
+ @method[dc<%> draw-text], but only for the @racket['solid] text mode
  (see @method[dc<%> set-text-mode]).
 
 For monochrome drawing, all non-white colors are treated as black.
@@ -1068,11 +1068,11 @@ Determines how text is drawn:
 
 @itemize[
 
- @item{@scheme['solid] --- Before text is drawn, the destination area
+ @item{@racket['solid] --- Before text is drawn, the destination area
        is filled with the text background color (see @method[dc<%>
        set-text-background]).}
 
- @item{@scheme['transparent] --- Text is drawn directly over any
+ @item{@racket['transparent] --- Text is drawn directly over any
        existing image in the destination, as if overlaying text
        written on transparent film.}
 
@@ -1095,7 +1095,7 @@ get-transformation] for information about @racket[t].}
 
 Starts a document, relevant only when drawing to a printer,
  PostScript, PDF, or SVG device.  For some
- platforms, the @scheme[message] string is displayed in a dialog until
+ platforms, the @racket[message] string is displayed in a dialog until
  @method[dc<%> end-doc] is called.
 
 For relevant devices, an exception is raised if
@@ -1117,10 +1117,10 @@ Relevant devices, an exception is raised if
  @method[dc<%> start-doc] has not been called, or when @method[dc<%>
  end-doc] has been called already. In addition, in the case of
  PostScript output, Encapsulated PostScript (EPS) cannot contain
- multiple pages, so calling @scheme[start-page] a second time for a
- @scheme[post-script-dc%] instance raises an exception; to create
- PostScript output with multiple pages, supply @scheme[#f] as the
- @scheme[as-eps] initialization argument for @scheme[post-script-dc%].
+ multiple pages, so calling @racket[start-page] a second time for a
+ @racket[post-script-dc%] instance raises an exception; to create
+ PostScript output with multiple pages, supply @racket[#f] as the
+ @racket[as-eps] initialization argument for @racket[post-script-dc%].
 
 }
 
@@ -1166,8 +1166,8 @@ rotation settings have their identity values.
            void?]{
 
 Determines the actual color used for drawing requests with the given
- color. The @scheme[result] color is set to the RGB values that are
+ color. The @racket[result] color is set to the RGB values that are
  actually produced for this drawing context to draw the color
- @scheme[try].
+ @racket[try].
 
 }}

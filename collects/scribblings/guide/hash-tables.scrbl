@@ -6,9 +6,9 @@
 A @deftech{hash table} implements a mapping from keys to values, where
 both keys and values can be arbitrary Scheme values, and access and
 update to the table are normally constant-time operations. Keys are
-compared using @scheme[equal?], @scheme[eqv?], or @scheme[eq?], depending on whether
-the hash table is created with @scheme[make-hash],
-@scheme[make-hasheqv], or @scheme[make-hasheq].
+compared using @racket[equal?], @racket[eqv?], or @racket[eq?], depending on whether
+the hash table is created with @racket[make-hash],
+@racket[make-hasheqv], or @racket[make-hasheq].
 
 @examples[
 (define ht (make-hash))
@@ -22,7 +22,7 @@ the hash table is created with @scheme[make-hash],
 The @racket[hash], @racket[hasheqv], and @racket[hasheq] functions
 create immutable hash tables from an initial set of keys and values,
 which each value is provided as an argument after its key. Immutable
-hash tables can be extended with @scheme[hash-set], which produces a
+hash tables can be extended with @racket[hash-set], which produces a
 new immutable hash table in constant time.
 
 @examples[
@@ -34,13 +34,13 @@ new immutable hash table in constant time.
 ]
 
 A literal immutable hash table can be written as an expression by using
-@litchar{#hash} (for an @scheme[equal?]-based table),
-@litchar{#hasheqv} (for an @scheme[eqv?]-based table), or
-@litchar{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
+@litchar{#hash} (for an @racket[equal?]-based table),
+@litchar{#hasheqv} (for an @racket[eqv?]-based table), or
+@litchar{#hasheq} (for an @racket[eq?]-based table). A parenthesized
 sequence must immediately follow @litchar{#hash}, @litchar{#hasheq},
 or @litchar{#hasheqv}, where each element is a dotted
 key--value pair. The @litchar{#hash}, etc. forms implicitly
-@scheme[quote] their key and value sub-forms.
+@racket[quote] their key and value sub-forms.
 
 @examples[
 (define ht #hash(("apple" . red)
@@ -53,7 +53,7 @@ key--value pair. The @litchar{#hash}, etc. forms implicitly
 Both mutable and immutable hash tables print like immutable hash
 tables, using a quoted @litchar{#hash}, @litchar{#hasheqv}, or
 @litchar{#hasheq} form if all keys and values can be expressed with
-@scheme[quote] or using @racketresult[hash], @racketresult[hasheq], or
+@racket[quote] or using @racketresult[hash], @racketresult[hasheq], or
 @racketresult[hasheqv] otherwise:
 
 @examples[

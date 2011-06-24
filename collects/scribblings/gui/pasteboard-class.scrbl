@@ -3,18 +3,18 @@
 
 @defclass/title[pasteboard% object% (editor<%>)]{
 
-A @scheme[pasteboard%] object is an editor for displaying snips with
+A @racket[pasteboard%] object is an editor for displaying snips with
  arbitrary @techlink{location}s.
 
 @defconstructor[()]{
 
 The editor will not be displayed until it is attached to an
- @scheme[editor-canvas%] object or some other @techlink{display}.
+ @racket[editor-canvas%] object or some other @techlink{display}.
 
-A new @scheme[keymap%] object is created for the new editor.  See also
+A new @racket[keymap%] object is created for the new editor.  See also
  @method[editor<%> get-keymap] and @method[editor<%> set-keymap].
 
-A new @scheme[style-list%] object is created for the new editor.  See
+A new @racket[style-list%] object is created for the new editor.  See
  also @method[editor<%> get-style-list] and @method[editor<%>
  set-style-list].
 
@@ -115,7 +115,7 @@ Does nothing.
 
 Called after the user stops interactively resizing a snip (the one
  that is currently selected; see @method[pasteboard%
- find-next-selected-snip]). The @scheme[snip] argument is the snip
+ find-next-selected-snip]). The @racket[snip] argument is the snip
  that was resized.
 
 See also @method[pasteboard% can-interactive-resize?] and
@@ -142,7 +142,7 @@ Called after a given snip is moved within the editor (and after the
  and @method[editor<%> begin-edit-sequence] to avoid extra refreshes
  when @method[pasteboard% after-move-to] modifies the editor).
 
-If @scheme[dragging?] is not @scheme[#f], then this move was a temporary
+If @racket[dragging?] is not @racket[#f], then this move was a temporary
  move for dragging.
 
 See also
@@ -172,8 +172,8 @@ Called before a snip is moved in the pasteboard's front-to-back snip
  begin-edit-sequence] to avoid extra refreshes when
  @method[pasteboard% after-reorder] modifies the editor).
 
-If @scheme[before?] is @scheme[#t], then @scheme[snip] was moved before
- @scheme[to-snip], otherwise @scheme[snip] was moved after @scheme[to-snip].
+If @racket[before?] is @racket[#t], then @racket[snip] was moved before
+ @racket[to-snip], otherwise @racket[snip] was moved after @racket[to-snip].
 
 See also @method[pasteboard% can-reorder?] and @method[editor<%>
  on-edit-sequence].
@@ -202,7 +202,7 @@ Called after a given snip is resized (and after the @techlink{display}
  @method[pasteboard% after-resize] modifies the editor), or after an
  unsuccessful resize attempt was made.
 
-If @scheme[resized?] is not @scheme[#f], the snip was successfully
+If @racket[resized?] is not @racket[#f], the snip was successfully
  resized.
 
 See also @method[pasteboard% can-resize?] and @method[editor<%>
@@ -230,8 +230,8 @@ Called after a snip in the pasteboard is selected or deselected. See
  selected snip is deleted (and thus de-selected indirectly); see also
  @method[pasteboard% after-delete].
 
-If @scheme[on?] is @scheme[#t], then @scheme[snip] was just selected,
- otherwise @scheme[snip] was just deselected.
+If @racket[on?] is @racket[#t], then @racket[snip] was just selected,
+ otherwise @racket[snip] was just deselected.
 
 See also @method[pasteboard% can-select?] and @method[editor<%>
  on-edit-sequence].
@@ -253,7 +253,7 @@ Does nothing.
 @methspec{
 
 Called before a snip is deleted from the editor.
- If the return value is @scheme[#f], then the
+ If the return value is @racket[#f], then the
  delete will be aborted.
 
 See also @method[pasteboard% on-delete] and @method[pasteboard%
@@ -265,7 +265,7 @@ The editor is internally locked for writing when this method is called (see
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }
 }
@@ -280,7 +280,7 @@ Returns @scheme[#t].
 @methspec{
 
 Called before a snip is inserted from the editor.  If the return value
- is @scheme[#f], then the insert will be aborted.
+ is @racket[#f], then the insert will be aborted.
 
 See also @method[pasteboard% on-insert] and @method[pasteboard%
  after-insert].
@@ -291,7 +291,7 @@ The editor is internally locked for writing when this method is called (see
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }
 }
@@ -306,7 +306,7 @@ Returns @scheme[#t].
 Called when the user starts interactively dragging snips (the ones
  that are selected; see @method[pasteboard%
  find-next-selected-snip]). All of the selected snips will be
- moved. If @scheme[#f] is returned, the interactive move is
+ moved. If @racket[#f] is returned, the interactive move is
  disallowed. The mouse event that started the move (usually a
  button-down event) is provided.
 
@@ -317,7 +317,7 @@ See also @method[pasteboard% on-interactive-move], @method[pasteboard%
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -329,10 +329,10 @@ Returns @scheme[#t].
 
 Called when the user starts interactively resizing a snip (the one
  that is selected; see @method[pasteboard%
- find-next-selected-snip]). If @scheme[#f] is returned, the
+ find-next-selected-snip]). If @racket[#f] is returned, the
  interactive resize is disallowed.
 
-The @scheme[snip] argument is the snip that will be resized.
+The @racket[snip] argument is the snip that will be resized.
 
 See also @method[pasteboard% after-interactive-resize],
  @method[pasteboard% after-interactive-resize], and
@@ -341,7 +341,7 @@ See also @method[pasteboard% after-interactive-resize],
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -355,9 +355,9 @@ Returns @scheme[#t].
 @methspec{
 
 Called before a snip is moved in the editor.  If the return value is
- @scheme[#f], then the move will be aborted.
+ @racket[#f], then the move will be aborted.
 
-If @scheme[dragging?] is not @scheme[#f], then this move is a
+If @racket[dragging?] is not @racket[#f], then this move is a
  temporary move for dragging.
 
 See also @method[pasteboard% on-move-to] and @method[pasteboard%
@@ -369,7 +369,7 @@ The editor is internally locked for writing when this method is called
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -382,12 +382,12 @@ Returns @scheme[#t].
 @methspec{
 
 Called before a snip is moved in the pasteboard's front-to-back snip
- order.  If the return value is @scheme[#f], then the reordering will
+ order.  If the return value is @racket[#f], then the reordering will
  be aborted.
 
-If @scheme[before?] is @scheme[#t], then @scheme[snip] is to be moved before
- @scheme[to-snip], otherwise @scheme[snip] is to be moved after
- @scheme[to-snip].
+If @racket[before?] is @racket[#t], then @racket[snip] is to be moved before
+ @racket[to-snip], otherwise @racket[snip] is to be moved after
+ @racket[to-snip].
 
 See also @method[pasteboard% on-reorder] and @method[pasteboard%
  after-reorder].
@@ -398,7 +398,7 @@ The editor is internally locked for writing when this method is called (see
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -412,7 +412,7 @@ Returns @scheme[#t].
 @methspec{
 
 Called before a snip is resized in the editor.  If the return value is
- @scheme[#f], then the resize will be aborted.
+ @racket[#f], then the resize will be aborted.
 
 See also @method[pasteboard% on-resize] and @method[pasteboard%
  after-resize].
@@ -423,7 +423,7 @@ The editor is internally locked for writing when this method is called (see
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -434,13 +434,13 @@ Returns @scheme[#t].
 @methspec{
 
 This method is called before a snip in the pasteboard is selected or
- deselected. If @scheme[#f] is returned, the selection change is
+ deselected. If @racket[#f] is returned, the selection change is
  disallowed. This method is not called when a selected snip is to be
  deleted (and thus de-selected indirectly); see also
  @method[pasteboard% can-delete?].
 
-If @scheme[on?] is @scheme[#t], then @scheme[snip] will be selected,
-otherwise @scheme[snip] will be deselected.
+If @racket[on?] is @racket[#t], then @racket[snip] will be selected,
+otherwise @racket[snip] will be deselected.
 
 See also @method[pasteboard% on-select] and @method[pasteboard%
  after-select].
@@ -451,7 +451,7 @@ The editor is internally locked for writing when this method is called (see
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -460,19 +460,19 @@ Returns @scheme[#t].
                             [snip (or/c (is-a?/c snip%) #f) #f])
               void?])]{
 
-Changes the style of @scheme[snip] to a specific style or by applying
- a style delta.  If @scheme[snip] is @scheme[#f], then all currently
- selected snips are changed. If @scheme[style] is @scheme[#f], then 
+Changes the style of @racket[snip] to a specific style or by applying
+ a style delta.  If @racket[snip] is @racket[#f], then all currently
+ selected snips are changed. If @racket[style] is @racket[#f], then 
  the default style is used, according to @method[editor<%> default-style-name].
  
 To change a large collection of snips from one style to another style,
- consider providing a @scheme[style<%>] instance rather than a
- @scheme[style-delta%] instance. Otherwise, @method[pasteboard%
- change-style] must convert the @scheme[style-delta%] instance to the
- @scheme[style<%>] instance for every snip; this conversion consumes
+ consider providing a @racket[style<%>] instance rather than a
+ @racket[style-delta%] instance. Otherwise, @method[pasteboard%
+ change-style] must convert the @racket[style-delta%] instance to the
+ @racket[style<%>] instance for every snip; this conversion consumes
  both time and (temporary) memory.
 
-When a @scheme[style] is provided: @InStyleListNote[@scheme[style]]
+When a @racket[style] is provided: @InStyleListNote[@racket[style]]
 
 }
 
@@ -483,7 +483,7 @@ When a @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
 In addition to the default @xmethod[editor<%> copy-self-to] work, the
  dragability, selection visibility state, and scroll step of
- @this-obj[] are installed into @scheme[dest].
+ @this-obj[] are installed into @racket[dest].
 
 }
 
@@ -493,8 +493,8 @@ In addition to the default @xmethod[editor<%> copy-self-to] work, the
              [(delete [snip (is-a?/c snip%)])
               void?])]{
 
-Deletes @scheme[snip] when provided, or deletes the currently selected
- snips from the editor when @scheme[snip] is not provided.
+Deletes @racket[snip] when provided, or deletes the currently selected
+ snips from the editor when @racket[snip] is not provided.
 
 @MonitorMethod[@elem{The content of an editor} @elem{the
  system in response to other method
@@ -514,15 +514,15 @@ Called to copy the editor's current selection into the clipboard.
  Do not call this method directly; instead, call @method[editor<%>
  copy].
 
-See @|timediscuss| for a discussion of the @scheme[time] argument. If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument. If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
 @methimpl{
 
 Copies the current selection, extending the current clipboard contexts
- if @scheme[extend?] is true.
+ if @racket[extend?] is true.
 
 }}
 
@@ -536,8 +536,8 @@ Called to paste the current contents of the clipboard into the editor.
  Do not call this method directly; instead, call @method[editor<%>
  paste].
 
-See @|timediscuss| for a discussion of the @scheme[time] argument. If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument. If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -558,8 +558,8 @@ Called to paste the current contents of the X11 selection on Unix (or
  not call this method directly; instead, call @method[editor<%>
  paste-x-selection].
 
-See @|timediscuss| for a discussion of the @scheme[time] argument. If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument. If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -584,11 +584,11 @@ See also @method[pasteboard% delete].
            (or/c (is-a?/c snip%) false/c)]{
 
 Returns the next selected snip in the editor, starting the search
- after @scheme[start]. (@|seesniporderdiscuss|) If @scheme[start] is @scheme[#f],
+ after @racket[start]. (@|seesniporderdiscuss|) If @racket[start] is @racket[#f],
  then the search starts with the first snip in the editor (and thus
  returns the first selected snip, if any are selected). If no more
- selected snips are available, or if @scheme[start] is not in the
- pasteboard, @scheme[#f] is returned.
+ selected snips are available, or if @racket[start] is not in the
+ pasteboard, @racket[#f] is returned.
 
 }
 
@@ -601,11 +601,11 @@ Returns the next selected snip in the editor, starting the search
 Finds the frontmost snip (after a given snip) that intersects a given
  @techlink{location}.  @|seesniporderdiscuss|
 
-The @scheme[x] and @scheme[y] arguments are in editor coordinates. If
- @scheme[after] is not supplied, the frontmost snip at @scheme[x] and
- @scheme[y] is returned, otherwise the frontmost snip behind @scheme[after]
- is returned. If @scheme[after] is a snip that is not in the pasteboard,
- @scheme[#f] is returned.
+The @racket[x] and @racket[y] arguments are in editor coordinates. If
+ @racket[after] is not supplied, the frontmost snip at @racket[x] and
+ @racket[y] is returned, otherwise the frontmost snip behind @racket[after]
+ is returned. If @racket[after] is a snip that is not in the pasteboard,
+ @racket[#f] is returned.
 
 @|OVD|
 
@@ -626,8 +626,8 @@ the second result is the y-coordinate of the center.
            boolean?]{
 
 Returns whether snips in the editor can be interactively dragged by
- event handling in @method[pasteboard% on-default-event]: @scheme[#t]
- if dragging is allowed, @scheme[#f] otherwise.  By default, dragging
+ event handling in @method[pasteboard% on-default-event]: @racket[#t]
+ if dragging is allowed, @racket[#f] otherwise.  By default, dragging
  is allowed. See also @method[pasteboard% set-dragable].
 
 }
@@ -667,11 +667,11 @@ Returns whether selection dots are drawn around the edge of selected
                       [before (or/c (is-a?/c snip%) false/c)])
               void?])]{
 
-Inserts @scheme[snip] at @techlink{location} @math{(@scheme[x],
- @scheme[y])} just in front of
- @scheme[before]. (@|seesniporderdiscuss|) If @scheme[before] is not
- provided or is @scheme[#f], then @scheme[snip] is inserted behind all
- other snips. If @scheme[x] and @scheme[y] are not provided, the snip
+Inserts @racket[snip] at @techlink{location} @math{(@racket[x],
+ @racket[y])} just in front of
+ @racket[before]. (@|seesniporderdiscuss|) If @racket[before] is not
+ provided or is @racket[#f], then @racket[snip] is inserted behind all
+ other snips. If @racket[x] and @racket[y] are not provided, the snip
  is added at @math{(0, 0)}.
 
 }
@@ -696,8 +696,8 @@ See also
 }
 @methimpl{
 
-A negative value for either @scheme[x] or @scheme[y] is replaced with
- @scheme[0].
+A negative value for either @racket[x] or @racket[y] is replaced with
+ @racket[0].
 
 }}
 
@@ -752,8 +752,8 @@ Does nothing.
 @defmethod[(is-selected? [snip (is-a?/c snip%)])
            boolean?]{
 
-Returns @scheme[#t] if a specified snip is currently selected or
- @scheme[#f] otherwise.
+Returns @racket[#t] if a specified snip is currently selected or
+ @racket[#f] otherwise.
 
 }
 
@@ -777,8 +777,8 @@ See also @method[pasteboard% raise], @method[pasteboard% set-before],
                     [y real?])
               void?])]{
 
-Moves @scheme[snip] right @scheme[x] pixels and down @scheme[y]
- pixels.  If @scheme[snip] is not provided, then all selected snips
+Moves @racket[snip] right @racket[x] pixels and down @racket[y]
+ pixels.  If @racket[snip] is not provided, then all selected snips
  are moved.
 
 @|OnMoveNote|
@@ -791,7 +791,7 @@ Moves @scheme[snip] right @scheme[x] pixels and down @scheme[y]
                     [y real?])
            void?]{
 
-Moves @scheme[snip] to a given @techlink{location} in the editor.
+Moves @racket[snip] to a given @techlink{location} in the editor.
 
 @|OnMoveNote|
 
@@ -865,7 +865,7 @@ This method is called when the user double-clicks on a snip in the
 }
 @methimpl{
 
-If @scheme[snip] accepts events, it is designated as the caret owner
+If @racket[snip] accepts events, it is designated as the caret owner
  and all snips in the editor are unselected.
 
 }}
@@ -926,7 +926,7 @@ Called when the user starts interactively resizing a snip (the one
  after-interactive-resize] method is guaranteed to be called after the
  resize has completed.
 
-The @scheme[snip] argument is the snip that will be resized. 
+The @racket[snip] argument is the snip that will be resized. 
 
 }
 @methimpl{
@@ -949,7 +949,7 @@ Called before a snip is moved in the editor, after @method[pasteboard%
  @method[pasteboard% after-move-to] method is guaranteed to be called
  after the move has completed.
 
-If @scheme[dragging?] is not @scheme[#f], then this move is a
+If @racket[dragging?] is not @racket[#f], then this move is a
  temporary move for dragging.
 
 The editor is internally locked for writing when this method is called
@@ -978,9 +978,9 @@ Called before a snip is moved in the pasteboard's front-to-back snip
  that the reorder is allowed. The @method[pasteboard% after-reorder]
  method is guaranteed to be called after the reorder has completed.
 
-If @scheme[before?] is @scheme[#t], then @scheme[snip] is to be moved
- before @scheme[to-snip], otherwise @scheme[snip] is to be moved after
- @scheme[to-snip].
+If @racket[before?] is @racket[#t], then @racket[snip] is to be moved
+ before @racket[to-snip], otherwise @racket[snip] is to be moved after
+ @racket[to-snip].
 
 The editor is internally locked for writing when this method is called
  (see also @|lockdiscuss|). Use @method[pasteboard% after-reorder] to
@@ -1035,8 +1035,8 @@ Called before a snip in the pasteboard is selected or deselected,
  method is not called when a selected snip is to be deleted (and thus
  de-selected indirectly); see also @method[pasteboard% on-delete] .
 
-If @scheme[on?] is @scheme[#t], then @scheme[snip] will be selected,
- otherwise @scheme[snip] will be deselected.
+If @racket[on?] is @racket[#t], then @racket[snip] will be selected,
+ otherwise @racket[snip] will be deselected.
 
 The editor is internally locked for writing when this method is called
  (see also @|lockdiscuss|). Use @method[pasteboard% after-select] to
@@ -1077,7 +1077,7 @@ See also @method[pasteboard% delete].
 @defmethod[(remove-selected [snip (is-a?/c snip%)])
            void?]{
 
-Deselects @scheme[snip] (if it is currently selected) without
+Deselects @racket[snip] (if it is currently selected) without
  deselecting any other snips.
 
 @|OnSelectNote|
@@ -1091,7 +1091,7 @@ Deselects @scheme[snip] (if it is currently selected) without
            boolean?]{
 
 Attempts to resize a given snip. If the snip allows resizing,
- @scheme[#t] is returned, otherwise @scheme[#f] is returned. Using
+ @racket[#t] is returned, otherwise @racket[#f] is returned. Using
  this method instead of calling the snip's @method[snip% resize]
  method directly will make the resize undo-able.
 
@@ -1102,8 +1102,8 @@ Attempts to resize a given snip. If the snip allows resizing,
                       [after (or/c (is-a?/c snip%) false/c)])
            void?]{
 
-Changes the depth of @scheme[snip] moving it just behind
- @scheme[after].  If @scheme[after] is @scheme[#f], @scheme[snip] is
+Changes the depth of @racket[snip] moving it just behind
+ @racket[after].  If @racket[after] is @racket[#f], @racket[snip] is
  moved to the back. @|seesniporderdiscuss|
 
 See also @method[pasteboard% raise], @method[pasteboard% lower], and
@@ -1116,8 +1116,8 @@ See also @method[pasteboard% raise], @method[pasteboard% lower], and
                        [before (or/c (is-a?/c snip%) false/c)])
            void?]{
 
-Changes the depth of @scheme[snip] moving it just in front of
- @scheme[before].  If @scheme[before] is @scheme[#f], @scheme[snip] is
+Changes the depth of @racket[snip] moving it just in front of
+ @racket[before].  If @racket[before] is @racket[#f], @racket[snip] is
  moved to the front. @|seesniporderdiscuss|
 
 See also @method[pasteboard% raise], @method[pasteboard% lower], and
@@ -1131,7 +1131,7 @@ See also @method[pasteboard% raise], @method[pasteboard% lower], and
 
 Sets whether snips in the editor can be interactively dragged by event
  handling in @method[pasteboard% on-default-event]: a true value
- allows dragging, @scheme[#f] disallows dragging.  See also
+ allows dragging, @racket[#f] disallows dragging.  See also
  @method[pasteboard% get-dragable].
 
 }

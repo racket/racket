@@ -5,21 +5,21 @@
 
 @defmodule[mrlib/cache-image-snip]{
 
-The @schememodname[mrlib/cache-image-snip] library provides the core
+The @racketmodname[mrlib/cache-image-snip] library provides the core
 data structure for DrRacket's @filepath{image.rkt} teachpack. Images in
 the @filepath{image.rkt} teachpack are instances of the
-@scheme[cache-image-snip%] class.}
+@racket[cache-image-snip%] class.}
 
-The library also defines a new type, @scheme[argb], that represents a
+The library also defines a new type, @racket[argb], that represents a
 bitmap, but with alpha values. It has a maker, two selectors, and a
 predicate.
 
 
 @defclass[cache-image-snip% image-snip% ()]{
 
-The @scheme[cache-image-snip%] class is a subclass of
-@scheme[image-snip%] simply so that its instances can be compared with
-@scheme[image-snip%] using @scheme[equal?]. All @scheme[image-snip%]
+The @racket[cache-image-snip%] class is a subclass of
+@racket[image-snip%] simply so that its instances can be compared with
+@racket[image-snip%] using @racket[equal?]. All @racket[image-snip%]
 functionality is overridden or ignored.
 
 @defmethod[#:mode overrride
@@ -28,7 +28,7 @@ functionality is overridden or ignored.
            boolean?]{
 
 Calls the @method[cache-image-snip% other-equal-to?] method of
-@scheme[snip] if it is also a @scheme[cache-image-snip%] instance,
+@racket[snip] if it is also a @racket[cache-image-snip%] instance,
 otherwise calls the @method[cache-image-snip% other-equal-to?] of
 @this-obj[].}
 
@@ -52,7 +52,7 @@ otherwise calls the @method[cache-image-snip% other-equal-to?] of
 @defmethod[(get-argb/no-compute)
            (or/c false/c argb?)]{
 
-    Returns a pixel array for this image or @scheme[#f] if it has not
+    Returns a pixel array for this image or @racket[#f] if it has not
     been computed yet.
 
 
@@ -64,8 +64,8 @@ otherwise calls the @method[cache-image-snip% other-equal-to?] of
     Builds (if not yet built) a bitmap corresponding to
     this snip and returns it.
 
-    If the width or the height of the snip is @scheme[0], 
-    this method return @scheme[#f].
+    If the width or the height of the snip is @racket[0], 
+    this method return @racket[#f].
 }
 
 @defmethod[(get-dc-proc)
@@ -119,20 +119,20 @@ This snipclass is used for saved cache image snips.}
 
 @defproc[(argb-vector [argb argb?]) (vectorof (integer-in 0 255))]{
 
-  Extracts the vector from @scheme[argb].}
+  Extracts the vector from @racket[argb].}
 
 @defproc[(argb-width [argb argb?]) exact-nonnegative-integer?]{
 
-  Extracts the width from @scheme[argb].}
+  Extracts the width from @racket[argb].}
 
 @defproc[(argb-height [argb argb?]) exact-nonnegative-integer?]{
 
-  Extracts the height from @scheme[argb].}
+  Extracts the height from @racket[argb].}
 
 
 @defproc[(argb? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an argb, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an argb, @racket[#f] otherwise.}
 
 
 @defproc[(overlay-bitmap [dest argb?]
@@ -142,8 +142,8 @@ Returns @scheme[#t] if @scheme[v] is an argb, @scheme[#f] otherwise.}
                          [mask (is-a?/c bitmap%)])
          void?]{
 
-Changes @scheme[argb], overlaying @scheme[img] with masking based on
-@scheme[mask] at @math{(@scheme[dx], @scheme[dy])} from the top-left.}
+Changes @racket[argb], overlaying @racket[img] with masking based on
+@racket[mask] at @math{(@racket[dx], @racket[dy])} from the top-left.}
 
 
 @defproc[(build-bitmap [draw ((is-a?/c dc<%>) . -> . any)]
@@ -151,34 +151,34 @@ Changes @scheme[argb], overlaying @scheme[img] with masking based on
                        [height (integer-in 1 10000)])
          (is-a?/c bitmap%)]{
 
-Builds a bitmap of size @scheme[width] by @scheme[height], using the
-procedure @scheme[draw] to render the bitmap content into the given
-@scheme[dc<%>].}
+Builds a bitmap of size @racket[width] by @racket[height], using the
+procedure @racket[draw] to render the bitmap content into the given
+@racket[dc<%>].}
 
 
 @defproc[(flatten-bitmap [bitmap (is-a?/c bitmap%)]) (is-a?/c bitmap%)]{
 
-    Builds a new bitmap that flattens the original @scheme[bitmap]
+    Builds a new bitmap that flattens the original @racket[bitmap]
     with its mask (as determined by @xmethod[bitmap%
     get-loaded-mask]), producing a bitmap that has no mask, and looks
     the way that bitmap would draw (when drawn with the mask) onto a
     white background.}
 
-           
+
 @defproc[(argb->cache-image-snip [argb argb?][dx real?][dy real?])
          (is-a?/c cache-image-snip%)]{
 
- Builds a new @scheme[cache-image-snip%] based on the contents of
- @scheme[argb], using @scheme[dx] and @scheme[dy] as the pinhole.}
+ Builds a new @racket[cache-image-snip%] based on the contents of
+ @racket[argb], using @racket[dx] and @racket[dy] as the pinhole.}
 
 
 @defproc[(argb->bitmap [argb argb?]) (or/c false/c (is-a?/c bitmap%))]{
 
-   Builds a bitmap that draws the same way as @scheme[argb]; the alpha
+   Builds a bitmap that draws the same way as @racket[argb]; the alpha
    pixels are put into the bitmap's @method[bitmap% get-loaded-mask]
    bitmap.
 
-   If the width or height of @scheme[argb] is @scheme[0],
-   this returns @scheme[#f].
+   If the width or height of @racket[argb] is @racket[0],
+   this returns @racket[#f].
 }
 

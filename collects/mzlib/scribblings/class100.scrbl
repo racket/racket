@@ -6,19 +6,19 @@
 
 @mzlib[#:mode title class100]
 
-The @scheme[class100] and @scheme[class100*] forms provide a syntax
-close to that of @scheme[class] and @scheme[class*] in Racket
+The @racket[class100] and @racket[class100*] forms provide a syntax
+close to that of @racket[class] and @racket[class*] in Racket
 versions 100 through 103, but with the semantics of the current
-@schememodname[scheme/class]-based class system. For a class defined
-with @scheme[class100], keyword-based initialization arguments can be
+@racketmodname[scheme/class]-based class system. For a class defined
+with @racket[class100], keyword-based initialization arguments can be
 propagated to the superclass, but by-position arguments are not (i.e.,
-the expansion of @scheme[class100] to @scheme[class] always includes
-an @scheme[init-rest] clause).
+the expansion of @racket[class100] to @racket[class] always includes
+an @racket[init-rest] clause).
 
-The @scheme[class100] form uses keywords (e.g., @scheme[public]) that
-are defined by the @schememodname[mzlib/class] library, so typically
-@schememodname[scheme/class] must be imported into any context that
-imports @schememodname[mzlib/class100].
+The @racket[class100] form uses keywords (e.g., @racket[public]) that
+are defined by the @racketmodname[mzlib/class] library, so typically
+@racketmodname[scheme/class] must be imported into any context that
+imports @racketmodname[mzlib/class100].
 
 
 @defform/subs[
@@ -60,24 +60,24 @@ imports @schememodname[mzlib/class100].
     ...)
 ]{
 
-Like @scheme[class100*], but without @scheme[interface-expr]s.}
+Like @racket[class100*], but without @racket[interface-expr]s.}
 
 
 @defform[(class100-asi superclass instance-id-clause ...)]{
 
-Like @scheme[class100], but all initialization arguments are
+Like @racket[class100], but all initialization arguments are
 automatically passed on to the superclass initialization procedure by
 position.}
 
 
 @defform[(class100*-asi superclass interfaces instance-id-clause ...)]{
 
-Like @scheme[class100*], but all initialization arguments are
+Like @racket[class100*], but all initialization arguments are
 automatically passed on to the superclass initialization procedure by
 position.}
 
 
 @defform[(super-init init-arg-expr ...)]{
 
-An alias for @scheme[super-make-object].}
+An alias for @racket[super-make-object].}
 

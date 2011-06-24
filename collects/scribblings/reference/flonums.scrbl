@@ -192,7 +192,7 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 @defform*[((for*/flvector (for-clause ...) body ...)
            (for*/flvector #:length length-expr (for-clause ...) body ...))])]{
 
-Like @scheme[for/vector] or @scheme[for*/vector], but for
+Like @racket[for/vector] or @racket[for*/vector], but for
 @tech{flvector}s.}
 
 @defproc[(shared-flvector [x flonum?] ...) flvector?]{

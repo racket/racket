@@ -73,7 +73,7 @@ that number to control the gauge along the bottom of the splash screen.
   the initial bitmap, use @racket[start-splash] instead.
 }
 @defproc[(get-splash-canvas) (is-a?/c canvas%)]{
-  Returns the canvas where the splash screen bitmap is drawn (if there is a bitmap; see @racket[start-splash] for how the splash is drawn.
+  Returns the canvas where the splash screen bitmap is drawn (if there is a bitmap); see @racket[start-splash] for how the splash is drawn.
 }
 @defproc[(get-splash-eventspace) eventspace?]{
   Returns the splash screen's eventspace.
@@ -129,5 +129,5 @@ that number to control the gauge along the bottom of the splash screen.
   Triggers a refresh of the splash, handling the details of double buffering
   and doing the drawing on the splash's
   @tech[#:doc '(lib "scribblings/gui/gui.scrbl") #:key "eventspace"]{eventspace's}
-  main thread.                                 
+  main thread.
 }

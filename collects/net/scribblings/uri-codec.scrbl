@@ -8,7 +8,7 @@
 
 @title[#:tag "uri-codec"]{URI Codec: Encoding and Decoding URIs}
 
-@defmodule[net/uri-codec]{The @schememodname[net/uri-codec] module
+@defmodule[net/uri-codec]{The @racketmodname[net/uri-codec] module
 provides utilities for encoding and decoding strings using the URI
 encoding rules given in RFC 2396 @cite["RFC2396"], and to encode and
 decode name/value pairs using the
@@ -54,7 +54,7 @@ given in the HTML 4.0 spec are:
 
 These rules differs slightly from the straight encoding in RFC 2396 in
 that @litchar{+} is allowed, and it represents a space.  The
-@schememodname[net/uri-codec] library follows this convention,
+@racketmodname[net/uri-codec] library follows this convention,
 encoding a space as @litchar{+} and decoding @litchar{+} as a space.
 In addtion, since there appear to be some brain-dead decoders on the
 web, the library also encodes @litchar{!}, @litchar{~}, @litchar{'},
@@ -106,7 +106,7 @@ Decode a string encoded using the
 Encode an association list using the
 @tt{application/x-www-form-urlencoded} encoding rules.
 
-The @scheme[current-alist-separator-mode] parameter determines the
+The @racket[current-alist-separator-mode] parameter determines the
 separator used in the result.}
 
 
@@ -117,7 +117,7 @@ Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules into an
 association list. All keys are case-folded for conversion to symbols.
 
-The @scheme[current-alist-separator-mode] parameter determines the way
+The @racket[current-alist-separator-mode] parameter determines the way
 that separators are parsed in the input.}
 
 
@@ -125,11 +125,11 @@ that separators are parsed in the input.}
           (one-of/c 'amp 'semi 'amp-or-semi 'semi-or-amp)]{
 
 A parameter that determines the separator used/recognized between
-associations in @scheme[form-urlencoded->alist],
-@scheme[alist->form-urlencoded], @scheme[url->string], and
-@scheme[string->url].
+associations in @racket[form-urlencoded->alist],
+@racket[alist->form-urlencoded], @racket[url->string], and
+@racket[string->url].
 
-The default value is @scheme['amp-or-semi], which means that both
+The default value is @racket['amp-or-semi], which means that both
 @litchar{&} and @litchar{;} are treated as separators when parsing,
 and @litchar{&} is used as a separator when encoding. The other modes
 use/recognize only of the separators.
@@ -137,19 +137,19 @@ use/recognize only of the separators.
 @examples[
 #:eval uri-codec-eval
 (define ex '((x . "foo") (y . "bar") (z . "baz")))
-(code:line (current-alist-separator-mode 'amp) (code:comment @#,t{try @scheme['amp]...}))
+(code:line (current-alist-separator-mode 'amp) (code:comment @#,t{try @racket['amp]...}))
 (form-urlencoded->alist "x=foo&y=bar&z=baz")
 (form-urlencoded->alist "x=foo;y=bar;z=baz")
 (alist->form-urlencoded ex)
-(code:line (current-alist-separator-mode 'semi) (code:comment @#,t{try @scheme['semi]...}))
+(code:line (current-alist-separator-mode 'semi) (code:comment @#,t{try @racket['semi]...}))
 (form-urlencoded->alist "x=foo;y=bar;z=baz")
 (form-urlencoded->alist "x=foo&y=bar&z=baz")
 (alist->form-urlencoded ex)
-(code:line (current-alist-separator-mode 'amp-or-semi) (code:comment @#,t{try @scheme['amp-or-semi]...}))
+(code:line (current-alist-separator-mode 'amp-or-semi) (code:comment @#,t{try @racket['amp-or-semi]...}))
 (form-urlencoded->alist "x=foo&y=bar&z=baz")
 (form-urlencoded->alist "x=foo;y=bar;z=baz")
 (alist->form-urlencoded ex)
-(code:line (current-alist-separator-mode 'semi-or-amp) (code:comment @#,t{try @scheme['semi-or-amp]...}))
+(code:line (current-alist-separator-mode 'semi-or-amp) (code:comment @#,t{try @racket['semi-or-amp]...}))
 (form-urlencoded->alist "x=foo&y=bar&z=baz")
 (form-urlencoded->alist "x=foo;y=bar;z=baz")
 (alist->form-urlencoded ex)

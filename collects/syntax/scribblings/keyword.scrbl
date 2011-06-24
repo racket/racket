@@ -3,17 +3,17 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          scheme/sandbox
-          (for-label scheme/base
-                     scheme/contract
-                     scheme/dict
+          racket/sandbox
+          (for-label racket/base
+                     racket/contract
+                     racket/dict
                      syntax/keyword))
 
 @(begin
    (define the-eval
      (parameterize ((sandbox-output 'string)
                     (sandbox-error-output 'string))
-       (make-evaluator 'scheme/base #:requires '(syntax/keyword))))
+       (make-evaluator 'racket/base #:requires '(syntax/keyword))))
    ;;(void (the-eval '(error-print-source-location #f)))
    (define-syntax-rule (myexamples e ...)
      (parameterize (#|(error-print-source-location #f)|#)
@@ -22,15 +22,15 @@
 
 @title[#:tag "stxkeyword"]{Helpers for Processing Keyword Syntax}
 
-The @schememodname[syntax/keyword] module contains procedures for
+The @racketmodname[syntax/keyword] module contains procedures for
 parsing keyword options in macros.
 
 @defmodule[syntax/keyword]
 
-@schemegrammar[#, @deftech{keyword-table}
+@racketgrammar[#, @deftech{keyword-table}
                (dict-of keyword (listof check-procedure))]
 
-A keyword-table is a dictionary (@scheme[dict?]) mapping keywords to
+A keyword-table is a dictionary (@racket[dict?]) mapping keywords to
 lists of @techlink{check-procedures}. (Note that an association list is a
 suitable dictionary.) The keyword's arity is the length of the list of
 procedures.
@@ -41,7 +41,7 @@ procedures.
         (list '#:b check-expression check-expression)))
 ]
 
-@schemegrammar[#, @deftech{check-procedure}
+@racketgrammar[#, @deftech{check-procedure}
                (syntax syntax -> any)]
 
 A check procedure consumes the syntax to check and a context syntax
@@ -55,7 +55,7 @@ syntax or returns a value as its parsed representation.
   stx)
 ]
 
-@schemegrammar[#, @deftech{options}
+@racketgrammar[#, @deftech{options}
                (listof (list keyword syntax-keyword any ...))]
 
 Parsed options are represented as an list of option entries. Each
@@ -85,9 +85,9 @@ times in the input occurs multiple times in the options list.
                                                    (lambda (....) (error ....))])
          (values #, @techlink{options} any/c)]{
 
-Parses the keyword options in the syntax @scheme[stx] (@scheme[stx]
+Parses the keyword options in the syntax @racket[stx] (@racket[stx]
 may be an improper syntax list). The keyword options are described in
-the @scheme[table] association list. Each entry in @scheme[table]
+the @racket[table] association list. Each entry in @racket[table]
 should be a list whose first element is a keyword and whose subsequent
 elements are procedures for checking the arguments following the
 keyword. The keyword's arity (number of arguments) is determined by
@@ -104,18 +104,18 @@ A variety of errors and exceptional conditions can occur during the
 parsing process. The following keyword arguments determine the
 behavior in those situations.
 
-The @scheme[#:context ctx] argument is used to report all errors in
-parsing syntax. In addition, @scheme[ctx] is passed as the final
+The @racket[#:context ctx] argument is used to report all errors in
+parsing syntax. In addition, @racket[ctx] is passed as the final
 argument to all provided handler procedures. Macros using
-@scheme[parse-keyword-options] should generally pass the syntax object
-for the whole macro use as @scheme[ctx].
+@racket[parse-keyword-options] should generally pass the syntax object
+for the whole macro use as @racket[ctx].
 
-If @scheme[no-duplicates?] is a non-false value, then duplicate
+If @racket[no-duplicates?] is a non-false value, then duplicate
 keyword options are not allowed. If a duplicate is seen, the keyword's
 associated check procedures are not called and an @tech{incompatibility} is
 reported.
 
-The @scheme[incompatible] argument is a list of incompatibility
+The @racket[incompatible] argument is a list of incompatibility
 entries, where each entry is a list of @emph{at least two}
 keywords. If any keyword in the entry occurs after any other keyword
 in the entry, an @tech{incompatibility} is reported.
@@ -123,36 +123,36 @@ in the entry, an @tech{incompatibility} is reported.
 Note that including a keyword in an incompatibility entry does not
 prevent it from occurring multiple times. To disallow duplicates of
 some keywords (as opposed to all keywords), include those keywords in
-the @scheme[incompatible] list as being incompatible with
+the @racket[incompatible] list as being incompatible with
 themselves. That is, include them twice:
 
-@schemeblock[
+@racketblock[
 (code:comment "Disallow duplicates of only the #:foo keyword")
 (parse-keyword-options .... #:incompatible '((#:foo #:foo)))
 ]
 
 When an @deftech{incompatibility} occurs, the
-@scheme[incompatible-handler] is tail-called with the two keywords
+@racket[incompatible-handler] is tail-called with the two keywords
 causing the incompatibility (in the order that they occurred in the
 syntax list, so the keyword triggering the incompatibility occurs
 second), the syntax list starting with the occurrence of the second
-keyword, and the context (@scheme[ctx]). If the incompatibility is due
+keyword, and the context (@racket[ctx]). If the incompatibility is due
 to a duplicate, the two keywords are the same.
 
 When a keyword is not followed by enough arguments according to its
-arity in @scheme[table], the @scheme[too-short-handler] is tail-called
+arity in @racket[table], the @racket[too-short-handler] is tail-called
 with the keyword, the @techlink{options} parsed thus far, the syntax list
-starting with the occurrence of the keyword, and @scheme[ctx].
+starting with the occurrence of the keyword, and @racket[ctx].
 
 When a keyword occurs in the syntax list that is not in
-@scheme[table], the @scheme[not-in-table-handler] is tail-called with
+@racket[table], the @racket[not-in-table-handler] is tail-called with
 the keyword, the @techlink{options} parsed thus far, the syntax list
-starting with the occurrence of the keyword, and @scheme[ctx].
+starting with the occurrence of the keyword, and @racket[ctx].
 
 Handlers typically escape---all of the default handlers raise
 errors---but if they return, they should return two values: the parsed
 @techlink{options} and a syntax object; these are returned as the results
-of @scheme[parse-keyword-options].
+of @racket[parse-keyword-options].
 
 @(myexamples
   (parse-keyword-options
@@ -196,10 +196,10 @@ of @scheme[parse-keyword-options].
                                               (lambda (....) (error ....))])
          #, @techlink{options}]{
 
-Like @scheme[parse-keyword-options], but checks that there are no
+Like @racket[parse-keyword-options], but checks that there are no
 terms left over after parsing all of the keyword options. If there
-are, @scheme[not-eol-handler] is tail-called with the @techlink{options}
-parsed thus far, the leftover syntax, and @scheme[ctx].
+are, @racket[not-eol-handler] is tail-called with the @techlink{options}
+parsed thus far, the leftover syntax, and @racket[ctx].
 
 }
 
@@ -219,10 +219,10 @@ the arity of the keyword.
                              [#:default default any/c])
          any]{
 
-Like @scheme[options-select], except that the given keyword must occur
-either zero or one times in @scheme[options]. If the keyword occurs,
+Like @racket[options-select], except that the given keyword must occur
+either zero or one times in @racket[options]. If the keyword occurs,
 the associated list of parsed argument values is returned. Otherwise,
-the @scheme[default] list is returned.
+the @racket[default] list is returned.
 
 }
 
@@ -231,11 +231,11 @@ the @scheme[default] list is returned.
                                [#:default default any/c])
          any]{
 
-Like @scheme[options-select], except that the given keyword must occur
-either zero or one times in @scheme[options]. If the keyword occurs,
+Like @racket[options-select], except that the given keyword must occur
+either zero or one times in @racket[options]. If the keyword occurs,
 the associated list of parsed argument values must have exactly one
 element, and that element is returned. If the keyword does not occur
-in @scheme[options], the @scheme[default] value is returned.
+in @racket[options], the @racket[default] value is returned.
 
 }
 

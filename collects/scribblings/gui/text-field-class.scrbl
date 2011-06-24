@@ -3,7 +3,7 @@
 
 @defclass/title[text-field% object% (control<%>)]{
 
-A @scheme[text-field%] object is an editable text field with an
+A @racket[text-field%] object is an editable text field with an
  optional label displayed in front of it. There are two text field
  styles:
 
@@ -23,8 +23,8 @@ Whenever the user changes the content of a text field, its callback
  procedure is invoked. A callback procedure is provided as an
  initialization argument when each text field is created.
 
-The text field is implemented using a @scheme[text%] editor (with an
- inaccessible display). Thus, whereas @scheme[text-field%] provides
+The text field is implemented using a @racket[text%] editor (with an
+ inaccessible display). Thus, whereas @racket[text-field%] provides
  only @method[text-field% get-value] and @method[text-field%
  set-value] to manipulate the text in a text field, the
  @method[text-field% get-editor] returns the field's editor, which
@@ -33,7 +33,7 @@ The text field is implemented using a @scheme[text%] editor (with an
 
 The keymap for the text field's editor is initialized by calling the
  current keymap initializer procedure, which is determined by the
- @scheme[current-text-keymap-initializer] parameter.
+ @racket[current-text-keymap-initializer] parameter.
 
 
 @defconstructor[([label (or/c label-string? false/c)]
@@ -56,40 +56,40 @@ The keymap for the text field's editor is initialized by calling the
                  [stretchable-width any/c #t]
                  [stretchable-height any/c (memq 'multiple style)])]{
 
-If @scheme[label] is not @scheme[#f], it is used as the text field
+If @racket[label] is not @racket[#f], it is used as the text field
  label.  Otherwise, the text field does not display its label.
 
 @labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the text field}]
 
-The @scheme[callback] procedure is called when the user changes the
+The @racket[callback] procedure is called when the user changes the
  text in the text field or presses the Enter key (and Enter is not
  handled by the text field's frame or dialog; see
  @xmethod[top-level-window<%> on-traverse-char]). If the user presses
  Enter, the type of event passed to the callback is
- @indexed-scheme['text-field-enter], otherwise it is
- @indexed-scheme['text-field].
+ @indexed-racket['text-field-enter], otherwise it is
+ @indexed-racket['text-field].
 
-If @scheme[init-value] is not @scheme[""], the minimum width of the
- text item is made wide enough to show @scheme[init-value]. Otherwise,
+If @racket[init-value] is not @racket[""], the minimum width of the
+ text item is made wide enough to show @racket[init-value]. Otherwise,
  a built-in default width is selected. For a text field in single-line
  mode, the minimum height is set to show one line and only the
  control's width is stretchable. For a multiple-line text field, the
  minimum height shows three lines of text and is stretchable in both
  directions.
 
-The style must contain exactly one of @scheme['single] or
- @scheme['multiple]; the former specifies a single-line field and the
- latter specifies a multiple-line field. The @scheme['hscroll] style
- applies only to multiple-line fields; when @scheme['hscroll] is
+The style must contain exactly one of @racket['single] or
+ @racket['multiple]; the former specifies a single-line field and the
+ latter specifies a multiple-line field. The @racket['hscroll] style
+ applies only to multiple-line fields; when @racket['hscroll] is
  specified, the field has a horizontal scrollbar and autowrapping is
  disabled; otherwise, the field has no horizontal scrollbar and
  autowrapping is enabled. A multiple-line text field always has a
- vertical scrollbar. The @scheme['password] style indicates that the
+ vertical scrollbar. The @racket['password] style indicates that the
  field should draw each character of its content using a generic
- symbol instead of the actual character.  @HVLabelNote[@scheme[style]]{text field}
- @DeletedStyleNote[@scheme[style] @scheme[parent]]{text field}.
+ symbol instead of the actual character.  @HVLabelNote[@racket[style]]{text field}
+ @DeletedStyleNote[@racket[style] @racket[parent]]{text field}.
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 
@@ -99,18 +99,18 @@ The style must contain exactly one of @scheme['single] or
 
 Returns the editor used to implement the text field.
 
-For a text field, the most useful methods of a @scheme[text%] object
+For a text field, the most useful methods of a @racket[text%] object
  are the following:
 @itemize[
  
- @item{@scheme[(send a-text @#,method[text% get-text])] returns
+ @item{@racket[(send a-text @#,method[text% get-text])] returns
  the current text of the editor.}
 
- @item{@scheme[(send a-text @#,method[text% erase])] deletes all text from
+ @item{@racket[(send a-text @#,method[text% erase])] deletes all text from
  the editor.}
 
- @item{@scheme[(send a-text @#,method[text% insert] _str)] inserts
- @scheme[_str] into the editor at the current caret position.}
+ @item{@racket[(send a-text @#,method[text% insert] _str)] inserts
+ @racket[_str] into the editor at the current caret position.}
 
 ]
 }

@@ -20,7 +20,7 @@
          sigelem)
 
 (define-syntax-rule (defsignature name (super ...) body ...)
-  (with-togetherable-scheme-variables
+  (with-togetherable-racket-variables
    ()
    ()
    (*defsignature (quote-syntax name)
@@ -29,7 +29,7 @@
                   #t)))
 
 (define-syntax-rule (defsignature/splice name (super ...) body ...)
-  (with-togetherable-scheme-variables
+  (with-togetherable-racket-variables
    ()
    ()
    (*defsignature (quote-syntax name)

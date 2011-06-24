@@ -16,9 +16,9 @@ DrRacket or commands for @exec{raco} that the collection provides.
 
 Although an @filepath{info.rkt} file contains a module declaration, the
 declaration has a highly constrained form. It must match the following
-grammar of @scheme[_info-module]:
+grammar of @racket[_info-module]:
 
-@schemegrammar*[
+@racketgrammar*[
 #:literals (info lib setup/infotab quote quasiquote
                  cons car cdr list list* reverse append
                  string-append path->string build-path
@@ -50,10 +50,10 @@ grammar of @scheme[_info-module]:
 
 For example, the following declaration could be the @filepath{info.rkt}
 library of the @filepath{games} collection. It contains definitions for
-three info tags, @scheme[name], @scheme[racket-launcher-libraries], and
-@scheme[racket-launcher-names].
+three info tags, @racket[name], @racket[racket-launcher-libraries], and
+@racket[racket-launcher-names].
 
-@schememod[
+@racketmod[
 setup/infotab
 (define name "Games")
 (define gracket-launcher-libraries '("main.rkt"))
@@ -61,7 +61,7 @@ setup/infotab
 ]
 
 As illustrated in this example, an @filepath{info.rkt} file can use
-@hash-lang[] notation, but only with the @schememodname[setup/infotab]
+@hash-lang[] notation, but only with the @racketmodname[setup/infotab]
 language.
 
-See also @scheme[get-info] from @schememodname[setup/getinfo].
+See also @racket[get-info] from @racketmodname[setup/getinfo].

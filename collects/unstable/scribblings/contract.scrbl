@@ -98,14 +98,14 @@ or default value may be used.
 @defthing[nat/c flat-contract?]{
 
 This contract recognizes natural numbers that satisfy
-@scheme[exact-nonnegative-integer?].
+@racket[exact-nonnegative-integer?].
 
 }
 
 @defthing[pos/c flat-contract?]{
 
 This contract recognizes positive integers that satisfy
-@scheme[exact-positive-integer?].
+@racket[exact-positive-integer?].
 
 }
 
@@ -121,22 +121,22 @@ that accept arbitrary truth values that may not be booleans.
 
 @defproc[(syntax-datum/c [datum/c any/c]) flat-contract?]{
 
-Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->datum stx)]
-satisfies @scheme[datum/c].
+Recognizes syntax objects @racket[stx] such that @racket[(syntax->datum stx)]
+satisfies @racket[datum/c].
 
 }
 
 @defproc[(syntax-listof/c [elem/c any/c]) flat-contract?]{
 
-Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->list stx)]
-satisfies @scheme[(listof elem/c)].
+Recognizes syntax objects @racket[stx] such that @racket[(syntax->list stx)]
+satisfies @racket[(listof elem/c)].
 
 }
 
 @defproc[(syntax-list/c [elem/c any/c] ...) flat-contract?]{
 
-Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->list stx)]
-satisfies @scheme[(list/c elem/c ...)].
+Recognizes syntax objects @racket[stx] such that @racket[(syntax->list stx)]
+satisfies @racket[(list/c elem/c ...)].
 
 }
 
@@ -161,12 +161,12 @@ respectively, and produce a single result.
 These contracts recognize predicates: functions of a single argument that
 produce a boolean result.
 
-The first constrains its output to satisfy @scheme[boolean?].  Use
-@scheme[predicate/c] in positive position for predicates that guarantee a result
-of @scheme[#t] or @scheme[#f].
+The first constrains its output to satisfy @racket[boolean?].  Use
+@racket[predicate/c] in positive position for predicates that guarantee a result
+of @racket[#t] or @racket[#f].
 
-The second constrains its output to satisfy @scheme[truth/c].  Use
-@scheme[predicate-like/c] in negative position for predicates passed as
+The second constrains its output to satisfy @racket[truth/c].  Use
+@racket[predicate-like/c] in negative position for predicates passed as
 arguments that may return arbitrary values as truth values.
 
 }
@@ -179,12 +179,12 @@ arguments that may return arbitrary values as truth values.
 These contracts recognize comparisons: functions of two arguments that
 produce a boolean result.
 
-The first constrains its output to satisfy @scheme[boolean?].  Use
-@scheme[comparison/c] in positive position for comparisons that guarantee a
-result of @scheme[#t] or @scheme[#f].
+The first constrains its output to satisfy @racket[boolean?].  Use
+@racket[comparison/c] in positive position for comparisons that guarantee a
+result of @racket[#t] or @racket[#f].
 
-The second constrains its output to satisfy @scheme[truth/c].  Use
-@scheme[comparison-like/c] in negative position for comparisons passed as
+The second constrains its output to satisfy @racket[truth/c].  Use
+@racket[comparison-like/c] in negative position for comparisons passed as
 arguments that may return arbitrary values as truth values.
 
 }
@@ -192,10 +192,10 @@ arguments that may return arbitrary values as truth values.
 @defproc[(sequence/c [elem/c contract?] ...) contract?]{
 
 Wraps a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{sequence},
-obligating it to produce as many values as there are @scheme[elem/c] contracts,
-and obligating each value to satisfy the corresponding @scheme[elem/c].  The
+obligating it to produce as many values as there are @racket[elem/c] contracts,
+and obligating each value to satisfy the corresponding @racket[elem/c].  The
 result is not guaranteed to be the same kind of sequence as the original value;
-for instance, a wrapped list is not guaranteed to satisfy @scheme[list?].
+for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
 
 @defexamples[
 #:eval the-eval
@@ -211,10 +211,10 @@ for instance, a wrapped list is not guaranteed to satisfy @scheme[list?].
 @defproc[(dict/c [key/c contract?] [value/c contract?]) contract?]{
 
 Wraps a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{dictionary},
-obligating its keys to satisfy @scheme[key/c] and their corresponding values to
-satisfy @scheme[value/c].  The result is not guaranteed to be the same kind of
+obligating its keys to satisfy @racket[key/c] and their corresponding values to
+satisfy @racket[value/c].  The result is not guaranteed to be the same kind of
 dictionary as the original value; for instance, a wrapped hash table is not
-guaranteed to satisfy @scheme[hash?].
+guaranteed to satisfy @racket[hash?].
 
 @defexamples[
 #:eval the-eval
@@ -227,10 +227,10 @@ guaranteed to satisfy @scheme[hash?].
 ]
 
 @emph{Warning:} Bear in mind that key and value contracts are re-wrapped on
-every dictionary operation, and dictionaries wrapped in @scheme[dict/c] multiple
+every dictionary operation, and dictionaries wrapped in @racket[dict/c] multiple
 times will perform the checks as many times for each operation.  Especially for
 immutable dictionaries (which may be passed through a constructor that involves
-@scheme[dict/c] on each update), contract-wrapped dictionaries may be much less
+@racket[dict/c] on each update), contract-wrapped dictionaries may be much less
 efficient than the original dictionaries.
 
 }

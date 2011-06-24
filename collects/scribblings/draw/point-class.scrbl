@@ -3,15 +3,15 @@
 
 @defclass/title[point% object% ()]{
 
-A @scheme[point%] is used for certain drawing commands. It
+A @racket[point%] is used for certain drawing commands. It
  encapsulates two real numbers.
 
 @defconstructor*/make[(()
                        ([x real?]
                         [y real?]))]{
 
-Creates a point. If @scheme[x] and @scheme[y] are not supplied, they
- are set to @scheme[0].
+Creates a point. If @racket[x] and @racket[y] are not supplied, they
+ are set to @racket[0].
 }
 
 @defmethod[(get-x)

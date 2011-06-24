@@ -22,7 +22,7 @@
 (define-syntax defmodule*/no-declare
   (syntax-rules ()
     [(_ #:require-form req (name ...) . content)
-     (*defmodule (list (schememodname name) ...)
+     (*defmodule (list (racketmodname name) ...)
                  #f
                  #f
                  (list . content)
@@ -52,19 +52,30 @@
 (define-syntax defmodulelang*/no-declare
   (syntax-rules ()
     [(_ (lang ...) #:module-paths (modpath ...) . content)
-     (*defmodule (list lang ...) (list (schememodname modpath) ...) #t (list . content) #f)]
+     (*defmodule (list lang ...)
+                 (list (racketmodname modpath) ...)
+                 #t (list . content) #f)]
     [(_ (lang ...) . content)
-     (*defmodule (list (schememodname lang) ...) #f #t (list . content) #f)]))
+     (*defmodule (list (racketmodname lang) ...)
+                 #f #t (list . content) #f)]))
 
 (define-syntax defmodulelang*
   (syntax-rules ()
-    [(_ (name ...) #:module-paths (modpath ...) #:use-sources (pname ...) . content)
+    [(_ (name ...) #:module-paths (modpath ...)
+                   #:use-sources (pname ...)
+                   . content)
      (begin (declare-exporting modpath ... #:use-sources (pname ...))
-            (defmodulelang*/no-declare (name ...) #:module-paths (modpath ...) . content))]
+            (defmodulelang*/no-declare (name ...)
+                                       #:module-paths (modpath ...)
+                                       . content))]
     [(_ (name ...) #:module-paths (modpath ...) . content)
-     (defmodulelang* (name ...) #:module-paths (modpath ...) #:use-sources () . content)]
+     (defmodulelang* (name ...)
+                     #:module-paths (modpath ...)
+                     #:use-sources () . content)]
     [(_ (name ...) #:use-sources (pname ...) . content)
-     (defmodulelang* ((schememodname name) ...) #:module-paths (name ...) #:use-sources (pname ...) . content)]
+     (defmodulelang* ((racketmodname name) ...)
+                     #:module-paths (name ...)
+                     #:use-sources (pname ...) . content)]
     [(_ (name ...) . content)
      (defmodulelang* (name ...) #:use-sources () . content)]))
 
@@ -76,7 +87,8 @@
      (defmodulelang* (lang) . content)]))
 
 (define-syntax-rule (defmodulereader*/no-declare (lang ...) . content)
-  (*defmodule (list (schememodname lang) ...) #f 'reader (list . content) #f))
+  (*defmodule (list (racketmodname lang) ...)
+              #f 'reader (list . content) #f))
 
 (define-syntax defmodulereader*
   (syntax-rules ()
@@ -105,13 +117,13 @@
                spacer
                (case lang
                  [(#f)
-                  (list (scheme (#,req #,(make-defschememodname name modpath))))]
+                  (list (racket (#,req #,(make-defracketmodname name modpath))))]
                  [(#t)
-                  (list (hash-lang) spacer (make-defschememodname name modpath))]
+                  (list (hash-lang) spacer (make-defracketmodname name modpath))]
                  [(reader)
-                  (list (schememetafont "#reader") spacer (make-defschememodname name modpath))]
+                  (list (racketmetafont "#reader") spacer (make-defracketmodname name modpath))]
                  [(just-lang)
-                  (list (hash-lang) spacer (make-defschememodname name modpath))])))))))
+                  (list (hash-lang) spacer (make-defracketmodname name modpath))])))))))
         names
         modpaths))
       (append (map (lambda (modpath)
@@ -119,7 +131,7 @@
                    modpaths)
               (flow-paragraphs (decode-flow content)))))))
 
-(define (make-defschememodname mn mp)
+(define (make-defracketmodname mn mp)
   (let ([name-str (element->string mn)]
         [path-str (element->string mp)])
     (make-index-element #f

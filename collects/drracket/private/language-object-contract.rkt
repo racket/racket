@@ -88,5 +88,5 @@
                        #`(provide/doc
                           (thing-doc id
                                      contract?
-                                     ((reconstitute (schemeblock #,ctc) provide?)))))
+                                     ((reconstitute (racketblock #,ctc) provide?)))))
                       '()))))]))

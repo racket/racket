@@ -16,12 +16,12 @@
 
 @author["Greg Cooper"]
 
-The @schememodname[frtime] language supports declarative construction of
+The @racketmodname[frtime] language supports declarative construction of
 reactive systems in a syntax very similar to that of Racket.  To
 interact with FrTime, select @onscreen{FrTime} from the @onscreen{Choose Language} menu.
 You can also make FrTime the language for a module:
 
-@schemeblock[
+@racketblock[
 (module <module-name> frtime
    <module-body>)]
 
@@ -31,45 +31,45 @@ You can also make FrTime the language for a module:
 
 @defthing[undefined any/c]{stands for an undefined value.}
 
-@defproc[(undefined? [val any/c]) boolean?]{return @scheme[#t] iff
-@scheme[val] is @scheme[undefined].}
+@defproc[(undefined? [val any/c]) boolean?]{return @racket[#t] iff
+@racket[val] is @racket[undefined].}
 
-@defproc[(behavior? [val any/c]) boolean?]{returns @scheme[#t] iff
-@scheme[val] is a behavior (a time-varying value whose current value can be
+@defproc[(behavior? [val any/c]) boolean?]{returns @racket[#t] iff
+@racket[val] is a behavior (a time-varying value whose current value can be
 projected at any time).}
 
-@defproc[(event? [val any/c]) boolean?]{returns @scheme[#t] iff
-@scheme[val] is an event (a time-varying stream of values that can occur
+@defproc[(event? [val any/c]) boolean?]{returns @racket[#t] iff
+@racket[val] is an event (a time-varying stream of values that can occur
 at arbitrary times).}
 
-@defproc[(signal? [val any/c]) boolean?]{returns @scheme[#t] iff val
-is a signal.  @scheme[(signal? v)] is equivalent to @scheme[(or
+@defproc[(signal? [val any/c]) boolean?]{returns @racket[#t] iff val
+is a signal.  @racket[(signal? v)] is equivalent to @racket[(or
 (behavior? v) (event? v))].}
 
 @defthing[seconds behavior?]{updates approximately once per second
-with the value of @scheme[(current-seconds)].}
+with the value of @racket[(current-seconds)].}
 
 @defthing[milliseconds behavior?]{updates frequently with the value of
-@scheme[(current-inexact-milliseconds)].}
+@racket[(current-inexact-milliseconds)].}
 
 @defthing[never-e event?]{is an event that never occurs.}
 
 @section{Defining Custom Input Signals}
 
 @defproc[(new-cell [init-expr signal? undefined]) signal? ]{returns a
-signal whose values initially track that of @scheme[init-expr], but
-that may be rewired to a different signal by @scheme[set-cell!].}
+signal whose values initially track that of @racket[init-expr], but
+that may be rewired to a different signal by @racket[set-cell!].}
 
 @defproc[(set-cell! [cell signal?] [val signal?]) void?]{rewires
-@scheme[cell] (which must have been created by @scheme[new-cell]) to
-take on the value(s) of @scheme[val].}
+@racket[cell] (which must have been created by @racket[new-cell]) to
+take on the value(s) of @racket[val].}
 
 @defproc[(event-receiver) event?]{returns an event stream that can be
-triggered imperatively by @scheme[send-event].}
+triggered imperatively by @racket[send-event].}
 
 @defproc[(send-event [rcvr event?] [val any/c]) void?]{emits
-@scheme[val] on @scheme[rcvr] (which must have been created by
-@scheme[event-receiver]).}
+@racket[val] on @racket[rcvr] (which must have been created by
+@racket[event-receiver]).}
 
 @section{Signal-Processing Procedures}
 
@@ -77,32 +77,32 @@ triggered imperatively by @scheme[send-event].}
 a behavior or constant.}
 
 @defproc[(delay-by [val behavior?] [duration number?])
-behavior?]{delays @scheme[val] by @scheme[duration] milliseconds.}
+behavior?]{delays @racket[val] by @racket[duration] milliseconds.}
 
 @defproc[(integral [val (or/c number? behavior?)]) behavior?]{computes
-a numeric approximation of the integral of @scheme[val] with respect
+a numeric approximation of the integral of @racket[val] with respect
 to time (measured in milliseconds).}
 
 @defproc[(derivative [val behavior?]) behavior?]{computes a numeric
-approximation of the derivative of @scheme[val] with respect to time.}
+approximation of the derivative of @racket[val] with respect to time.}
 
 @deftogether[(
 @defproc[(map-e [proc (-> any/c any)] [ev event?]) event?]
 @defproc[([ev event?] . ==> . [proc (-> any/c any)]) event?]
-)]{returns an event stream that fires whenever @scheme[ev] fires, whose
-values are transformed by application of @scheme[proc].}
+)]{returns an event stream that fires whenever @racket[ev] fires, whose
+values are transformed by application of @racket[proc].}
 
 @deftogether[(
 @defproc[(filter-e [pred (-> any/c boolean?)] [ev event?]) event?]
 @defproc[([ev event?] . =#> . [pred (-> any/c boolean?)]) event?])]{
 returns an event stream that passes through only the values from
-@scheme[ev] for which @scheme[pred] returns @scheme[#t].}
+@racket[ev] for which @racket[pred] returns @racket[#t].}
 
 @defproc[(merge-e [ev event?] ...) event?]{merges all of the input
 event sources into a single event source.}
 
 @defproc[(once-e [ev event?]) event?]{returns an event source that
-carries only the first occurrence of @scheme[ev].  (The rest are
+carries only the first occurrence of @racket[ev].  (The rest are
 filtered out.)}
 
 @defproc[(changes [val behavior?]) event?]{returns an event source
@@ -110,12 +110,12 @@ that occurs each time the argument behavior changes.  The value of the
 occurrence is the behavior's new value.}
 
 @defproc[(hold [ev event?] [init any/c undefined]) behavior?]{
-constructs a behavior that starts out as @scheme[init] and then
-takes on the last value produced by @scheme[ev]}
+constructs a behavior that starts out as @racket[init] and then
+takes on the last value produced by @racket[ev]}
 
 @defproc[(switch [ev event?] [init behavior? undefined])
-behavior?]{returns a behavior that starts as @scheme[init].  Each time
-@scheme[ev] yields a (potentially time-varying) value, the behavior
+behavior?]{returns a behavior that starts as @racket[init].  Each time
+@racket[ev] yields a (potentially time-varying) value, the behavior
 switches to that value.}
 
 @defproc[(accum-e [ev event?] [init any/c]) event?]{constructs an event source
@@ -123,34 +123,34 @@ by accumulating changes (carried by the given event source) over an
 initial value.}
 
 @defproc[(accum-b [ev event?] [init any/c]) behavior?]{combines functionality
-from @scheme[accum-e] and @scheme[hold] to construct a behavior.
-@scheme[(accum-b ev init)] is equivalent to @scheme[(hold init
+from @racket[accum-e] and @racket[hold] to construct a behavior.
+@racket[(accum-b ev init)] is equivalent to @racket[(hold init
 (accum-e ev init))].}
 
 @defproc[(collect-e [ev event?] [init any/c] [proc (-> any/c any/c
-any)]) event?]{is similar to @scheme[accum-e], except the transformer
+any)]) event?]{is similar to @racket[accum-e], except the transformer
 function is fixed and is applied to the event occurrence and the
 current accumulator (in that order).}
 
 @defproc[(collect-b [ev event?] [init any/c] [proc (-> any/c any/c any)]) behavior?]{is similar to
-@scheme[collect-e] in the same way as @scheme[accum-b] is similar to
-@scheme[accum-e].}
+@racket[collect-e] in the same way as @racket[accum-b] is similar to
+@racket[accum-e].}
 
 @defproc[(when-e [val behavior?]) event?]{returns an event stream that
-carries an occurrence each time @scheme[val] changes from @scheme[#f] to
+carries an occurrence each time @racket[val] changes from @racket[#f] to
 anything else.}
   
 @defproc[(lift-strict [proc (-> [arg any/c] ... any)] [val any/c] ...)
 any]{provides a mechanism for applying ordinary Scheme primitives to
-behaviors.  If any of the @scheme[val]s are behaviors, returns a
-behavior whose current value is always equal to @scheme[(proc
+behaviors.  If any of the @racket[val]s are behaviors, returns a
+behavior whose current value is always equal to @racket[(proc
 (value-now arg) ...)].  In FrTime, many Racket primitives are
 implicitly lifted.}
 
 The following forms allow importation of lifted procedures that aren't
 included in the basic FrTime language.
 
-@schemeblock[
+@racketblock[
 (require (lifted module-spec proc-name ...) ...)
 (require (lifted:nonstrict module-spec proc-name ...) ...)
 ]
@@ -182,9 +182,9 @@ included in the basic FrTime language.
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t]
 		 [shown any/c #f])]{
-The constructor arguments are as in @scheme[frame%], except that @scheme[shown]
-@scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.}
+The constructor arguments are as in @racket[frame%], except that @racket[shown]
+@racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.}
 }
 
 @defclass[ft-message% message% (control<%>)]{
@@ -194,7 +194,7 @@ The constructor arguments are as in @scheme[frame%], except that @scheme[shown]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'deleted)) null]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled (or/c any/c behavior?) #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -202,9 +202,9 @@ The constructor arguments are as in @scheme[frame%], except that @scheme[shown]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{The constructor
-arguments are the same as in @scheme[message%], except that
-@scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.}}
+arguments are the same as in @racket[message%], except that
+@racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.}}
 
 @defclass[ft-button% button% (control<%>)]{
 
@@ -212,7 +212,7 @@ arguments are the same as in @scheme[message%], except that
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (one-of/c 'border 'deleted) null]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -220,9 +220,9 @@ arguments are the same as in @scheme[message%], except that
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{The constructor
-arguments are the same as in @scheme[message%], except that
-@scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.}
+arguments are the same as in @racket[message%], except that
+@racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.}
 
 @defmethod[(get-value-e) event?]{returns an event stream that yields a
 value whenever the user clicks the button.}
@@ -235,7 +235,7 @@ value whenever the user clicks the button.}
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'deleted)) null]
                  [value any/c #f]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -244,10 +244,10 @@ value whenever the user clicks the button.}
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f]
 		 [value-set event? never-e])]{The constructor arguments
-are the same as in @scheme[check-box%], except that @scheme[label],
-@scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the check box's state to that of the event value.}
+are the same as in @racket[check-box%], except that @racket[label],
+@racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the check box's state to that of the event value.}
 
 @defmethod[(get-value-b) behavior?]{returns a value that always reflects
 the current state of the check box.}
@@ -274,10 +274,10 @@ the current state of the check box.}
                  [stretchable-width any/c (memq 'horizontal style)]
                  [stretchable-height any/c (memq 'vertical style)]
 		 [value-set event? never-e])]{The constructor arguments
-are the same as in @scheme[check-box%], except that @scheme[label],
-@scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the slider's state to that of the event value.}
+are the same as in @racket[check-box%], except that @racket[label],
+@racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the slider's state to that of the event value.}
 
 @defmethod[(get-value-b) behavior?]{returns a value that always reflects
 the current state of the slider.}
@@ -293,7 +293,7 @@ the current state of the slider.}
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(single)]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -302,10 +302,10 @@ the current state of the slider.}
                  [stretchable-width any/c #t]
                  [stretchable-height any/c (memq 'multiple style)]
 		 [value-set event? never-e])]{The
-constructor arguments are the same as in @scheme[check-box%], except
-that @scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the text field's state to that of the event
+constructor arguments are the same as in @racket[check-box%], except
+that @racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the text field's state to that of the event
 value.}
 
 @defmethod[(get-value-b) behavior?]{returns a value that always reflects
@@ -332,10 +332,10 @@ the current state of the text field.}
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f]
 		 [value-set event? never-e])]{The
-constructor arguments are the same as in @scheme[check-box%], except
-that @scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the text field's state to that of the event
+constructor arguments are the same as in @racket[check-box%], except
+that @racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the text field's state to that of the event
 value.}
 @defmethod[(get-selection-b) behavior?]{returns a value that always reflects
 the currently selected element in the radio box.}
@@ -350,7 +350,7 @@ the currently selected element in the radio box.}
                                           'deleted)) 
                    null]
                  [selection exact-nonnegative-integer? 0]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -359,10 +359,10 @@ the currently selected element in the radio box.}
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f]
 		 [value-set event? never-e])]{The
-constructor arguments are the same as in @scheme[check-box%], except
-that @scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the text field's state to that of the event
+constructor arguments are the same as in @racket[check-box%], except
+that @racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the text field's state to that of the event
 value.}
 @defmethod[(get-selection-b) behavior?]{returns a value that always reflects
 the currently selected element in the choice control.}
@@ -378,8 +378,8 @@ the currently selected element in the choice control.}
                                           'deleted)) 
                         '(single)]
                  [selection (or/c exact-nonnegative-integer? false/c) #f]
-                 [font (is-a?/c font%) @scheme[view-control-font]]
-                 [label-font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @racket[view-control-font]]
+                 [label-font (is-a?/c font%) @racket[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -388,10 +388,10 @@ the currently selected element in the choice control.}
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t]
 		 [value-set event? never-e])]{The
-constructor arguments are the same as in @scheme[check-box%], except
-that @scheme[label], @scheme[enabled], @scheme[stretchable-width], and
-@scheme[stretchable-height] may be time-varying.  Also, any occurrence
-on @scheme[value-set] sets the text field's state to that of the event
+constructor arguments are the same as in @racket[check-box%], except
+that @racket[label], @racket[enabled], @racket[stretchable-width], and
+@racket[stretchable-height] may be time-varying.  Also, any occurrence
+on @racket[value-set] sets the text field's state to that of the event
 value.}
 @defmethod[(get-selection-b) behavior?]{returns a value that always reflects
 the primary selection in the list box.}
@@ -407,34 +407,34 @@ To run the following animation/GUI demos, simply set the language
 level to FrTime, open the corresponding file, and Execute.  See the
 demo source code for more information.
 
-@scheme[orbit-mouse.rkt] : A collection of balls that move in circles
+@filepath{orbit-mouse.rkt} : A collection of balls that move in circles
 around the mouse pointer.
 
-@scheme[piston.rkt] : Simulation of a piston/cylinder.
+@filepath{piston.rkt} : Simulation of a piston/cylinder.
 
-@scheme[rotation.rkt] : Balls moving in circles.
+@filepath{rotation.rkt} : Balls moving in circles.
 
-@scheme[delay-mouse.rkt] : A trail of balls following the mouse.
+@filepath{delay-mouse.rkt} : A trail of balls following the mouse.
 
-@scheme[ball-on-string.rkt] : A ball chasing the mouse.
+@filepath{ball-on-string.rkt} : A ball chasing the mouse.
 
-@scheme[pong.rkt] : A simple pong/air-hockey game.  The left paddle moves with
+@filepath{pong.rkt} : A simple pong/air-hockey game.  The left paddle moves with
 numeric keypad; the right paddle moves with the mouse.  The 'r' key
 resets the score.
 
-@scheme[pizza.rkt] : A simple "pizza ordering" user interface based on an HtDP
+@filepath{pizza.rkt} : A simple "pizza ordering" user interface based on an HtDP
 exercise.
 
-@scheme[calculator.rkt] : A simple calculator interface, also based on an HtDP
+@filepath{calculator.rkt} : A simple calculator interface, also based on an HtDP
 exercise except that the result updates continuously as the arguments
 and operator change.
 
 The next three animation examples are courtesy of Robb Cutler:
 
-@scheme[analog-clock.rkt] : An animated real-time clock.  A slider adjusts the
+@filepath{analog-clock.rkt} : An animated real-time clock.  A slider adjusts the
 radius of the face.  Click and drag to move the face around.
 
-@scheme[growing-points.rkt] : A field of points that grow as the mouse
+@filepath{growing-points.rkt} : A field of points that grow as the mouse
 approaches.
 
-@scheme[needles.rkt] : A field of needles that point at the mouse.
+@filepath{needles.rkt} : A field of needles that point at the mouse.

@@ -42,7 +42,7 @@ the Chat Noir game in a
 @section{Overview}
 
 Chat Noir is implemented using @link["http://www.htdp.org/"]{HtDP}'s universe
-library:  @schememodname[2htdp/universe] 
+library:  @racketmodname[2htdp/universe] 
 (although it only uses the ``world'' portions of that library). 
 The program is divided up into
 six parts: the world data definition, an implementation of breadth-first search,
@@ -65,7 +65,7 @@ and some code that builds an initial world and starts the game.
        <go>]
 
 Each section also comes with a series of test cases that are collected into the 
-@scheme[<tests>]
+@racket[<tests>]
 chunk at the end of the program.
 
 @chunk[<tests>
@@ -77,8 +77,8 @@ chunk at the end of the program.
        <drawing-tests>
        <input-tests>]
 
-Each test case uses either @scheme[test], a simple form that accepts two
-arguments and compares them with @scheme[equal?], or @scheme[test/set]
+Each test case uses either @racket[test], a simple form that accepts two
+arguments and compares them with @racket[equal?], or @racket[test/set]
 which accepts two lists and compares them as if they were sets.
 
 In general, most of the test cases are left to the end of the document, organized
@@ -98,7 +98,7 @@ construct empty worlds and test cases for them.
 @chunk[<world-tests>
        <empty-world-test> <empty-board-test> <blocked-cells-tests>]
 
-The main structure definition is the @scheme[world] struct.
+The main structure definition is the @racket[world] struct.
 
 @chunk[<world-struct>
 (define-struct/contract world ([board (listof cell?)]
@@ -121,50 +121,50 @@ It consists of a structure with six fields:
   @tt{cell}s, one for each circle on the game. 
   }
 
-@item{@tt{cat}: a @scheme[posn] indicating the position of the cat
-  (interpreting the @scheme[posn] in the way that they are interpreted
+@item{@tt{cat}: a @racket[posn] indicating the position of the cat
+  (interpreting the @racket[posn] in the way that they are interpreted
   for the @tt{board} field),}
 
 @item{@tt{state}: the state of the game, which can be one of
   @itemize[
-  @item{@scheme['playing], indicating that the game is still going; this is the
+  @item{@racket['playing], indicating that the game is still going; this is the
     initial state.}
-  @item{@scheme['cat-won], indicating that the game is over and the
+  @item{@racket['cat-won], indicating that the game is over and the
     cat won, or}
-  @item{@scheme['cat-lost], indicating that the game is over and the
+  @item{@racket['cat-lost], indicating that the game is over and the
     cat lost.}]}
 
 @item{@tt{size}: an odd natural number indicating the size of the board}
 
-@item{@tt{mouse-posn}: a @scheme[posn] for the location of the
-  mouse (or @scheme[#f] if the mouse is not in the window), and}
+@item{@tt{mouse-posn}: a @racket[posn] for the location of the
+  mouse (or @racket[#f] if the mouse is not in the window), and}
 
 @item{@tt{h-down?}: a boolean indicating if the @tt{h} key is being
   pushed down.}
 ]
 
-A @scheme[cell] is a structure with two fields:
+A @racket[cell] is a structure with two fields:
 
 @chunk[<cell-struct>
        (define-struct/contract cell ([p posn?]
                                      [blocked? boolean?])
          #:transparent)]
-       
+
 The coordinates of
-the @scheme[posn] in the first field
+the @racket[posn] in the first field
 indicate a position on the hexagonal grid. 
 This program reprsents the hexagon grid as a series of rows that
 are offset from each other by 1/2 the size of the each cell.
 The @tt{y} field
-of the @scheme[posn] refers to the row of the cell, and the @tt{x}
+of the @racket[posn] refers to the row of the cell, and the @tt{x}
 coordinate the position in the row.  This means that, for example,
-@scheme[(make-posn 1 0)] is centered above @scheme[(make-posn 1 0)]
-and @scheme[(make-posn 1 1)]. 
+@racket[(make-posn 1 0)] is centered above @racket[(make-posn 1 0)]
+and @racket[(make-posn 1 1)]. 
 
 The boolean in the @tt{blocked?} field indicates if the cell has been
 clicked on, thus blocking the cat from stepping there.
 
-The @scheme[empty-board] function builds a list of @scheme[cell]s
+The @racket[empty-board] function builds a list of @racket[cell]s
 that correspond to an empty board. For example, here's what an empty
 7x7 board looks like, as a list of cells.
 
@@ -189,7 +189,7 @@ their left-most cells.
 And here is how that board looks as a list of cells.
 
 @chunk[<empty-board-test>
-       
+
        (test (empty-board 3)
              (list
               (make-cell (make-posn 0 1) #f)
@@ -200,13 +200,13 @@ And here is how that board looks as a list of cells.
               (make-cell (make-posn 2 1) #f)
               (make-cell (make-posn 2 2) #f)))]
 
-The @scheme[empty-board] function consists
-of two (nested) calls to @scheme[build-list] 
+The @racket[empty-board] function consists
+of two (nested) calls to @racket[build-list] 
 that build a list of lists of cells, one for
-each pair of coordinates between @scheme[0]
-and @scheme[board-size]. Then, @scheme[append]
+each pair of coordinates between @racket[0]
+and @racket[board-size]. Then, @racket[append]
 flattens the nested lists and the
-@scheme[filter] expression removes the corners.
+@racket[filter] expression removes the corners.
 
 @chunk[<empty-board>
        (define/contract (empty-board board-size)
@@ -237,13 +237,13 @@ flattens the nested lists and the
 Building an empty world is simply 
 a matter of building an empty board, finding 
 the initial position of the cat and filling
-in all of the fields of the @scheme[world] struct.
-For example, this is the empty world of size @scheme[3].
-It puts the cat at @scheme[(make-posn 1 1)],
-sets the state to @scheme['playing], records the
-size @scheme[3], and sets the current mouse position
-to @scheme[#f] and the state of the ``h'' key to
-@scheme[#f].
+in all of the fields of the @racket[world] struct.
+For example, this is the empty world of size @racket[3].
+It puts the cat at @racket[(make-posn 1 1)],
+sets the state to @racket['playing], records the
+size @racket[3], and sets the current mouse position
+to @racket[#f] and the state of the ``h'' key to
+@racket[#f].
 
 @chunk[<empty-world-test>
        
@@ -256,7 +256,7 @@ to @scheme[#f] and the state of the ``h'' key to
                          #f))]
 
 
-The @scheme[empty-world] function
+The @racket[empty-world] function
 generalizes the example by computing the
 cats initial position as the center spot on the board.
 
@@ -273,16 +273,16 @@ cats initial position as the center spot on the board.
                      #f
                      #f))]
 
-The @scheme[add-n-random-blocked-cells] function accepts a list of cells
-and returns a new list of cells where @scheme[n] of the unblocked cells
-in @scheme[all-cells] are now blocked.
+The @racket[add-n-random-blocked-cells] function accepts a list of cells
+and returns a new list of cells where @racket[n] of the unblocked cells
+in @racket[all-cells] are now blocked.
 
-If @scheme[n] is zero, of course, no more cells should be blocked,
-so the result is just @scheme[all-cells]. Otherwise, 
-the function computes @scheme[unblocked-cells], a list of all
+If @racket[n] is zero, of course, no more cells should be blocked,
+so the result is just @racket[all-cells]. Otherwise, 
+the function computes @racket[unblocked-cells], a list of all
 of the unblocked cells (except the cat's initial location),
 and then randomly picks a cell from it,
-calling @scheme[block-cell] to actually block that cell.
+calling @racket[block-cell] to actually block that cell.
 
 @chunk[<blocked-cells>
        (define/contract (add-n-random-blocked-cells n all-cells board-size)
@@ -309,9 +309,9 @@ calling @scheme[block-cell] to actually block that cell.
                board-size))]))]
 
 
-The @scheme[block-cell] function accepts a @scheme[posn]
-and a list of @scheme[cell] structs and updates the
-relevant cell, setting its @tt{blocked?} field to @scheme[#t].
+The @racket[block-cell] function accepts a @racket[posn]
+and a list of @racket[cell] structs and updates the
+relevant cell, setting its @tt{blocked?} field to @racket[#t].
 
 @chunk[<block-cell>
        (define/contract (block-cell to-block board)
@@ -325,7 +325,7 @@ relevant cell, setting its @tt{blocked?} field to @scheme[#t].
 
 The cat's move decision is based on a breadth-first search of a graph.
 The graph's nodes are the cells on the board plus a special
-node called @scheme['boundary] that is adjacent to every cell 
+node called @racket['boundary] that is adjacent to every cell 
 on the boundary of the graph. In addition to the boundary edges,
 there are edges
 between each pair of adjacent cells, unless one of the cells is
@@ -343,21 +343,21 @@ details of how the graph connectivity is computed from the board to the next sec
        <lookup-in-table-tests>
        <build-bfs-table-tests>]
 
-The breadth-first function constructs a @scheme[distance-map],
-which is a list of @scheme[dist-cell] structs:
+The breadth-first function constructs a @racket[distance-map],
+which is a list of @racket[dist-cell] structs:
 
 @chunk[<dist-cell-data-definition>
        (define-struct/contract dist-cell ([p (or/c 'boundary posn?)]
                                           [n natural-number/c])
          #:transparent)]
 
-Each @tt{p} field in the @scheme[dist-cell] is a position on the board
+Each @tt{p} field in the @racket[dist-cell] is a position on the board
 and the @tt{n} field is a natural number, indicating
 the distance of the shortest path from the node to some fixed point on
 the board. 
 
-The function @scheme[lookup-in-table] returns the distance from the fixed
-point to the given posn, returning @scheme['∞] if the posn is not in the
+The function @racket[lookup-in-table] returns the distance from the fixed
+point to the given posn, returning @racket['∞] if the posn is not in the
 table.
 
 @chunk[<lookup-in-table>
@@ -372,7 +372,7 @@ table.
                    [else
                     (lookup-in-table (rest t) p)])]))]
 
-The @scheme[build-bfs-table] accepts a world and a cell 
+The @racket[build-bfs-table] accepts a world and a cell 
 (indicating the fixed point) 
 and returns a distance map encoding the distance to that cell.
 For example, here is the distance map for the distance to the boundary.
@@ -397,15 +397,15 @@ The boundary is zero steps away; each of the cells that are on the boundary
 are one step away and the center is two steps away.
 
 The core of the breadth-first search is this function,
-@scheme[bst]. It accepts a queue of the pending nodes to visit
-and a @scheme[dist-table] that records the same information as a
-@scheme[distance-map], but in an immutable hash-table. The
-@scheme[dist-map] is an accumulator, recording the distances
+@racket[bst]. It accepts a queue of the pending nodes to visit
+and a @racket[dist-table] that records the same information as a
+@racket[distance-map], but in an immutable hash-table. The
+@racket[dist-map] is an accumulator, recording the distances
 to all of the nodes that have already been visited in the graph,
 and is used here to speed up the compuation. The queue is
 represented as a list of vectors of length two. Each element
-in the queue contains a @scheme[posn], or the symbol @scheme['boundary]
-and that @scheme[posn]'s  distance.
+in the queue contains a @racket[posn], or the symbol @racket['boundary]
+and that @racket[posn]'s  distance.
 
 @chunk[<bfs>
        
@@ -430,23 +430,23 @@ and that @scheme[posn]'s  distance.
                                (neighbors/w p)))
                   (hash-set dist-table p dist))]))]))]
 
-If the @scheme[queue] is empty, then the accumulator contains
+If the @racket[queue] is empty, then the accumulator contains
 bindings for all of the (reachable) nodes in the graph, so
 we just return it. If it isn't empty, then we extract
 the first element from the queue and name its consituents
-@scheme[p] and @scheme[dist].
+@racket[p] and @racket[dist].
 Next we check to see if the node at the head of the queue
-is in @scheme[dist-table]. If it is, we just move on to the
-next element in the queue. If that node is not in the @scheme[dist-table],
-then we add all of the neighbors to the queue, in the @scheme[append]
-expression, and update the @scheme[dist-table] with the distance to 
+is in @racket[dist-table]. If it is, we just move on to the
+next element in the queue. If that node is not in the @racket[dist-table],
+then we add all of the neighbors to the queue, in the @racket[append]
+expression, and update the @racket[dist-table] with the distance to 
 this node. Because we always add the new children to the end of the queue
 and always look at the front of the queue, we are guaranteed that
 the first time we see a node, it will be with the shortest distance.
 
-The @scheme[build-bfs-table] function packages up @scheme[bfs]
-function. It accepts a @scheme[world] and an initial position
-and returns a @scheme[distance-table].
+The @racket[build-bfs-table] function packages up @racket[bfs]
+function. It accepts a @racket[world] and an initial position
+and returns a @racket[distance-table].
 
 @chunk[<build-bfs-table>
        
@@ -461,16 +461,16 @@ and returns a @scheme[distance-table].
                (make-immutable-hash '()))
           make-dist-cell))]
 
-As you can see, the first thing it does is bind the free variable in @scheme[bfs]
-to the result of calling the @scheme[neighbors] function (defined in the chunk
-@scheme[<neighbors>]) and then it has the @scheme[<bfs>] chunk. In the body
-it calls the @scheme[bfs] function 
+As you can see, the first thing it does is bind the free variable in @racket[bfs]
+to the result of calling the @racket[neighbors] function (defined in the chunk
+@racket[<neighbors>]) and then it has the @racket[<bfs>] chunk. In the body
+it calls the @racket[bfs] function 
 and then transforms the result, using
-@scheme[hash-map], into a list of @scheme[cell]s.
+@racket[hash-map], into a list of @racket[cell]s.
 
 @section{Board to Graph}
 
-As far as the @scheme[build-bfs-table] function goes,
+As far as the @racket[build-bfs-table] function goes,
 all of the information specific to Chat Noir is
 encoded in the neighbors function. 
 It accepts a world and returns a function
@@ -491,11 +491,11 @@ it is implemented.
        <adjacent-tests>
        <neighbors-tests>]
 
-The neighbors functions accepts a @scheme[world] and then
-returns a function that computes the neighbors of a @scheme[posn]
-and of the @scheme['boundary].
+The neighbors functions accepts a @racket[world] and then
+returns a function that computes the neighbors of a @racket[posn]
+and of the @racket['boundary].
 
-For example, @scheme[(make-posn 1 0)] has four
+For example, @racket[(make-posn 1 0)] has four
 neighbors:
 
 @chunk[<neighbors-tests>
@@ -505,7 +505,7 @@ neighbors:
                    (make-posn 0 1)
                    (make-posn 1 1)))]
 
-and @scheme[(make-posn 0 1)] has four neighbors:
+and @racket[(make-posn 0 1)] has four neighbors:
 
 @chunk[<neighbors-tests>
        (test ((neighbors (empty-world 7)) (make-posn 0 1))
@@ -527,7 +527,7 @@ Also, there are 6 neighbors of the boundary in the 3x3 board:
                    (make-posn 2 1)
                    (make-posn 2 2)))]
 
-This is the neighbors function. After it accepts the @scheme[world],
+This is the neighbors function. After it accepts the @racket[world],
 it builds a list of the blocked cells in the world and a
 list of the cells that are on the boundary (and not blocked). Then it
 returns a function that is specialized to those values.
@@ -554,17 +554,17 @@ returns a function that is specialized to those values.
                                 (world-size w)
                                 p)))]
 
-The @scheme[neighbors-blocked/boundary] function is given next.
-If @scheme[p] is blocked, it returns the empty list. If it is
-on the boundary, the function simply returns @scheme[boundary-cells].
-Otherwise, @scheme[neighbors-blocked/boundary] calls
-@scheme[adjacent] to compute the posns that are adjacent to @scheme[p],
-filtering out the blocked @scheme[posn]s and binds that to @scheme[adjacent-posns].
-It then filters out the @scheme[posn]s that would be outside of the board.
-If those two lists are the same, then @scheme[p] is not on the boundary,
-so we just return @scheme[in-bounds]. If the lists are different, then
-we know that @scheme[p] must have been on the boundary, so we add
-@scheme['boundary] to the result list.
+The @racket[neighbors-blocked/boundary] function is given next.
+If @racket[p] is blocked, it returns the empty list. If it is
+on the boundary, the function simply returns @racket[boundary-cells].
+Otherwise, @racket[neighbors-blocked/boundary] calls
+@racket[adjacent] to compute the posns that are adjacent to @racket[p],
+filtering out the blocked @racket[posn]s and binds that to @racket[adjacent-posns].
+It then filters out the @racket[posn]s that would be outside of the board.
+If those two lists are the same, then @racket[p] is not on the boundary,
+so we just return @racket[in-bounds]. If the lists are different, then
+we know that @racket[p] must have been on the boundary, so we add
+@racket['boundary] to the result list.
 
 @chunk[<neighbors-blocked/boundary>
 (define/contract (neighbors-blocked/boundary blocked 
@@ -598,17 +598,17 @@ we know that @scheme[p] must have been on the boundary, so we add
 
 
 There are the three functions that build the basic graph structure
-from a board as used by @scheme[neighbors].
+from a board as used by @racket[neighbors].
 
-The first function is @scheme[adjacent]. It consumes a
-@scheme[posn] and returns six @scheme[posn]s that
+The first function is @racket[adjacent]. It consumes a
+@racket[posn] and returns six @racket[posn]s that
 indicate what the neighbors are, without consideration
 of the size of the board (or the missing corner pieces).
 
-For example, these are the @scheme[posn]s that are adjacent
-to @scheme[(make-posn 0 1)]; note that the first and the third
+For example, these are the @racket[posn]s that are adjacent
+to @racket[(make-posn 0 1)]; note that the first and the third
 are not on the board and do not show up in 
-@scheme[neighbors] function example above.
+@racket[neighbors] function example above.
 
 @chunk[<adjacent-tests>
        (test (adjacent (make-posn 0 1))
@@ -620,7 +620,7 @@ are not on the board and do not show up in
                    (make-posn 1 2)))]
 
 The adjacent function has two main cases; first when the
-@scheme[y] coordinate of the @scheme[posn] is even and 
+@racket[y] coordinate of the @racket[posn] is even and 
 second when it is odd. In each case, it is just a matter
 of looking at the board and calculating coordinate offsets.
 
@@ -647,10 +647,10 @@ of looking at the board and calculating coordinate offsets.
                     (make-posn x (+ y 1))
                     (make-posn (+ x 1) (+ y 1)))])))]
 
-The @scheme[on-boundary?] function returns @scheme[#t] when 
+The @racket[on-boundary?] function returns @racket[#t] when 
 the posn would be on the boundary of a board of size
-@scheme[board-size]. Note that this function does not
-have to special case the missing @scheme[posn]s from the corners.
+@racket[board-size]. Note that this function does not
+have to special case the missing @racket[posn]s from the corners.
 
 @chunk[<on-boundary?>
        (define/contract (on-boundary? p board-size)
@@ -661,10 +661,10 @@ have to special case the missing @scheme[posn]s from the corners.
              (= (posn-x p) (- board-size 1))
              (= (posn-y p) (- board-size 1))))]
 
-The @scheme[in-bounds?] function returns @scheme[#t]
-when the @scheme[posn] is actually on the board, meaning
-that the coordinates of the @scheme[posn] are within the
-board's size, and that the @scheme[posn] is not one
+The @racket[in-bounds?] function returns @racket[#t]
+when the @racket[posn] is actually on the board, meaning
+that the coordinates of the @racket[posn] are within the
+board's size, and that the @racket[posn] is not one
 of the two corners that have been removed.
 
 @chunk[<in-bounds?>
@@ -689,12 +689,12 @@ determines where the shortest paths from the cat's current position to the bound
        <on-cats-path?-tests>
        <+/f-tests>]
 
-The function @scheme[on-cats-path?] accepts a world and returns a predicate
-on the @scheme[posn]s in the world. The predicate indicates if the given
-@scheme[posn] is on the shortest path. 
+The function @racket[on-cats-path?] accepts a world and returns a predicate
+on the @racket[posn]s in the world. The predicate indicates if the given
+@racket[posn] is on the shortest path. 
 
-For example, in a world of size @scheme[7] with the cat at
-@scheme[(make-posn 2 2)], the circles with white centers
+For example, in a world of size @racket[7] with the cat at
+@racket[(make-posn 2 2)], the circles with white centers
 are on the shortest path to the boundary:
 
 @image["chat-noir/cat-distance-example.png"]
@@ -723,7 +723,7 @@ the cat to the boundary.
 
 The code is essentially that, plus two other special cases. Specifically if the
 ``h'' key is not pressed down, then we just consider no cells to be on that shortest
-path. And if the distance to the cat is @scheme['∞], then again no nodes are on the
+path. And if the distance to the cat is @racket['∞], then again no nodes are on the
 path. The second situation happens when the cat is completely boxed in and has
 lost the game.
 
@@ -748,8 +748,8 @@ lost the game.
            [else
             (lambda (p) #f)]))]
 
-Finally, the helper function @scheme[+/f] is just like @scheme[+], except that
-it returns @scheme['∞] if either argument is @scheme['∞].
+Finally, the helper function @racket[+/f] is just like @racket[+], except that
+it returns @racket['∞] if either argument is @racket['∞].
 
 @chunk[<+/f>
        (define (+/f x y)
@@ -762,15 +762,15 @@ it returns @scheme['∞] if either argument is @scheme['∞].
 @section{Drawing the Cat}
 
 This code is three large, similar constants,
-bundled up into the @scheme[cat] function. 
-The @scheme[thinking-cat] is the one that 
+bundled up into the @racket[cat] function. 
+The @racket[thinking-cat] is the one that 
 is visible when the game is being played. It
 differs from the others in that it does not
-have a mouth. The @scheme[mad-cat] is the one
+have a mouth. The @racket[mad-cat] is the one
 that you see when the cat loses. It differs
 from the others in that its pinks turn pink.
-Finally, the @scheme[happy-cat] shows up when
-the cat wins and it is just like the @scheme[thinking-cat]
+Finally, the @racket[happy-cat] shows up when
+the cat wins and it is just like the @racket[thinking-cat]
 except it has a smile.
 
 @chunk[<drawing-the-cat>
@@ -880,9 +880,9 @@ of the circles that are drawn on the board,
 plus the radius of an invisible circle
 that, if they were drawn on top of
 the circles, would touch
-each other. Accordingly, @scheme[circle-spacing]
+each other. Accordingly, @racket[circle-spacing]
 is used when computing the positions of the circles,
-but the circles are drawn using @scheme[circle-radius].
+but the circles are drawn using @racket[circle-radius].
 
 @chunk[<constants>
        (define circle-radius 20)
@@ -896,7 +896,7 @@ The other four constants specify the colors of the circles.
        (define blocked-color 'black)
        (define under-mouse-color 'black)]
 
-The main function for drawing a world is @scheme[render-world].
+The main function for drawing a world is @racket[render-world].
 It is a fairly straightforward composition of helper functions.
 First, it builds the image of a board, and then puts the cat on it.
 Lastly, since the whiskers of the cat might now hang off of the edge
@@ -921,7 +921,7 @@ and that the pinhole is always in the upper-left corner of the window.
 
 Trimming the cat's whiskers amounts to removing any extra
 space in the image that appears to the left or above the pinhole.
-For example, the @scheme[rectangle] function returns
+For example, the @racket[rectangle] function returns
 an image with a pinhole in the middle. So trimming 5x5
 rectangle results in a 3x3 rectangle with the pinhole
 at (0,0).
@@ -930,7 +930,7 @@ at (0,0).
        (test (chop-whiskers (rectangle 5 5 'solid 'black))
              (put-pinhole (rectangle 3 3 'solid 'black) 0 0))]
 
-The function uses @scheme[shrink] to remove all of the material above
+The function uses @racket[shrink] to remove all of the material above
 and to the left of the pinhole.
 
 @chunk[<chop-whiskers>
@@ -942,9 +942,9 @@ and to the left of the pinhole.
           (- (image-width img) (pinhole-x img) 1)
           (- (image-height img) (pinhole-y img) 1)))]
 
-The @scheme[render-board] function uses @scheme[for/fold] to iterate
-over all of the @scheme[cell]s in @scheme[cs]. It starts with
-an empty rectangle and, one by one, puts the cells on @scheme[image].
+The @racket[render-board] function uses @racket[for/fold] to iterate
+over all of the @racket[cell]s in @racket[cs]. It starts with
+an empty rectangle and, one by one, puts the cells on @racket[image].
 
 @chunk[<render-board>
        ;; render-board : board number (posn -> boolean) posn-or-#f -> image
@@ -965,7 +965,7 @@ an empty rectangle and, one by one, puts the cells on @scheme[image].
                                  (and (posn? mouse)
                                       (equal? mouse (cell-p c)))))))]
 
-The @scheme[render-cell] function accepts a @scheme[cell], 
+The @racket[render-cell] function accepts a @racket[cell], 
 a boolean indicating if the cell is on the shortest path between
 the cat and the boundary, and a second boolean indicating
 if the cell is underneath the mouse. It returns an image 
@@ -998,7 +998,7 @@ results in the cell being placed in the right place.
             (- x)
             (- y))))]
 
-The @scheme[world-width] function computes the width of the rendered world,
+The @racket[world-width] function computes the width of the rendered world,
 given the world's size by finding the center of the rightmost posn,
 and then adding an additional radius.
 
@@ -1009,7 +1009,7 @@ and then adding an additional radius.
                 (make-posn (- board-size 1) (- board-size 2))])
            (+ (cell-center-x rightmost-posn) circle-radius)))]
 
-Similarly, the @scheme[world-height] function computest the 
+Similarly, the @racket[world-height] function computest the 
 height of the rendered world, given the world's size.
 
 @chunk[<world-height>
@@ -1020,12 +1020,12 @@ height of the rendered world, given the world's size.
            (ceiling (+ (cell-center-y bottommost-posn) 
                        circle-radius))))]
 
-The @scheme[cell-center-x] function returns the
+The @racket[cell-center-x] function returns the
 @tt{x} coordinate of the center of the cell specified
-by @scheme[p].
+by @racket[p].
 
 For example, the first cell in
-the third row (counting from @scheme[0]) is
+the third row (counting from @racket[0]) is
 flush with the edge of the screen, so its
 center is just the radius of the circle that
 is drawn.
@@ -1037,20 +1037,20 @@ is drawn.
 
 The first cell in the second row, in contrast
 is offset from the third row by
-@scheme[circle-spacing].
+@racket[circle-spacing].
 
 @chunk[<cell-center-x-tests>
        (test (cell-center-x (make-posn 0 1))
              (+ circle-spacing circle-radius))]
 
 
-The definition of @scheme[cell-center-x] 
-multiplies the @scheme[x] coordinate of 
-@scheme[p] by twice @scheme[circle-spacing]
-and then adds @scheme[circle-radius] to move
+The definition of @racket[cell-center-x] 
+multiplies the @racket[x] coordinate of 
+@racket[p] by twice @racket[circle-spacing]
+and then adds @racket[circle-radius] to move
 over for the first circle. In addition
-if the @scheme[y] coordinate is odd, then
-it adds @scheme[circle-spacing], shifting 
+if the @racket[y] coordinate is odd, then
+it adds @racket[circle-spacing], shifting 
 the entire line over.
 
 @chunk[<cell-center-x>
@@ -1064,9 +1064,9 @@ the entire line over.
                   circle-spacing
                   0))))]
 
-The @scheme[cell-center-y] function computes the
-@scheme[y] coordinate of a cell's location on
-the screen. For example, the @scheme[y] 
+The @racket[cell-center-y] function computes the
+@racket[y] coordinate of a cell's location on
+the screen. For example, the @racket[y] 
 coordinate of the first row is 
 the radius of a circle, ensuring that
 the first row is flush against the top of
@@ -1076,10 +1076,10 @@ the screen.
        (test (cell-center-y (make-posn 1 0))
              circle-radius)]
 
-Because the grid is hexagonal, the @scheme[y] coordinates
-of the rows do not have the same spacing as the @scheme[x]
+Because the grid is hexagonal, the @racket[y] coordinates
+of the rows do not have the same spacing as the @racket[x]
 coordinates. In particular, they are off by
-@tt{sin(pi/3)}. We approximate that by @scheme[866/1000]
+@tt{sin(pi/3)}. We approximate that by @racket[866/1000]
 in order to keep the computations and test cases simple
 and using exact numbers.
 A more precise approximation would be
@@ -1123,7 +1123,7 @@ plus various helper functions.
        <update-world-posn-tests>
        <clack-tests>]
 
-The @scheme[change] function handles keyboard input. If the input is @litchar{n} and the
+The @racket[change] function handles keyboard input. If the input is @litchar{n} and the
 game is over, then restart the game. If the input is @litchar{h} then turn on the help 
 and otherwise do nothing.
 
@@ -1144,7 +1144,7 @@ and otherwise do nothing.
                         #t)]
            [else w]))]
 
-The @scheme[release] function adjusts the world for a key release event.
+The @racket[release] function adjusts the world for a key release event.
 
 @chunk[<release>
        ;; release : world key-event -> world
@@ -1159,15 +1159,15 @@ The @scheme[release] function adjusts the world for a key release event.
                          (world-h-down? w))))]
 
 
-The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
+The @racket[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
 @itemize[
-@item{block the clicked cell (@scheme[block-cell/world]),}
-@item{move the cat (@scheme[move-cat]), and}
-@item{update the black dot as the mouse moves around (@scheme[update-world-posn]).}]
-The helper functions are combined in the body of @scheme[clack],
+@item{block the clicked cell (@racket[block-cell/world]),}
+@item{move the cat (@racket[move-cat]), and}
+@item{update the black dot as the mouse moves around (@racket[update-world-posn]).}]
+The helper functions are combined in the body of @racket[clack],
 first checking to see if the mouse event corresponds to a 
-player's move (via the @scheme[player-moved?] function.
+player's move (via the @racket[player-moved?] function.
 
 @chunk[<clack>
        (define/contract (clack world x y evt)
@@ -1187,12 +1187,12 @@ player's move (via the @scheme[player-moved?] function.
                  (not (equal? evt "leave"))
                  (make-posn x y)))))]
 
-The @scheme[player-moved?] predicate returns
-a @scheme[posn] indicating where the player chose
+The @racket[player-moved?] predicate returns
+a @racket[posn] indicating where the player chose
 to move when the mouse event corresponds to a player move,
-and returns @scheme[#f]. It first checks to see if the
+and returns @racket[#f]. It first checks to see if the
 mouse event is a button up event and that the game
-is not over, and then it just calls @scheme[circle-at-point].
+is not over, and then it just calls @racket[circle-at-point].
 
 @chunk[<player-moved?>
        (define/contract (player-moved? world x y evt)
@@ -1202,11 +1202,11 @@ is not over, and then it just calls @scheme[circle-at-point].
               (equal? 'playing (world-state world))
               (circle-at-point (world-board world) x y)))]
 
-The @scheme[circle-at-point] function returns a @scheme[posn] when
-the coordinate (@scheme[x],@scheme[y]) is inside an unblocked circle
+The @racket[circle-at-point] function returns a @racket[posn] when
+the coordinate (@racket[x],@racket[y]) is inside an unblocked circle
 on the given board. Instead of computing the nearest
 circle to the coordinates, it simply iterates over the cells on the
-board and returns the @scheme[posn] of the matching cell.
+board and returns the @racket[posn] of the matching cell.
 
 @chunk[<circle-at-point>
        (define/contract (circle-at-point board x y)
@@ -1219,9 +1219,9 @@ board and returns the @scheme[posn] of the matching cell.
                 board))]
 
 
-The @scheme[point-in-this-circle?] function returns @scheme[#t]
-when the point (@scheme[x],@scheme[y]) on the screen
-falls within the circle located at the @scheme[posn] @scheme[p].
+The @racket[point-in-this-circle?] function returns @racket[#t]
+when the point (@racket[x],@racket[y]) on the screen
+falls within the circle located at the @racket[posn] @racket[p].
 
 This is precise about checking the circles. For example, 
 a point that is (14,14) away from the center of a circle
@@ -1245,15 +1245,15 @@ since it crosses the boundary away from a circle of radius
               (+ (cell-center-y (make-posn 1 0)) 15))
              #f)]
 
-The implementation of @scheme[point-in-this-circle?] uses
+The implementation of @racket[point-in-this-circle?] uses
 complex numbers to represent both points on the screen
 and directional vectors. In particular, the 
-variable @scheme[center] is a complex number whose
+variable @racket[center] is a complex number whose
 real part is the @tt{x} coordinate of the center of
-the cell at @scheme[p], and its imaginary part is 
-@tt{y} coordinate. Similarly, @scheme[mp] is bound
+the cell at @racket[p], and its imaginary part is 
+@tt{y} coordinate. Similarly, @racket[mp] is bound
 to a complex number corresponding to the position of
-the mouse, at (@scheme[x], @scheme[y]). Then, the
+the mouse, at (@racket[x], @racket[y]). Then, the
 function computes the vector between the two points
 by subtracting the complex numbers from each
 other and extracting the magnitude from that vector.
@@ -1268,9 +1268,9 @@ other and extracting the magnitude from that vector.
            (<= (magnitude (- center mp)) 
                circle-radius)))]
 
-In the event that @scheme[player-moved?] returns a @scheme[posn],
-the @scheme[clack] function blocks the clicked on cell using
-@scheme[block-cell/world], which simply calls @scheme[block-cell].
+In the event that @racket[player-moved?] returns a @racket[posn],
+the @racket[clack] function blocks the clicked on cell using
+@racket[block-cell/world], which simply calls @racket[block-cell].
 
 @chunk[<block-cell/world>
        (define/contract (block-cell/world to-block w)
@@ -1282,12 +1282,12 @@ the @scheme[clack] function blocks the clicked on cell using
                      (world-mouse-posn w)
                      (world-h-down? w)))]
 
-The @scheme[move-cat] function uses calls @scheme[build-bfs-table]
+The @racket[move-cat] function uses calls @racket[build-bfs-table]
 to find the shortest distance from all of the cells to the boundary,
-and then uses @scheme[find-best-positions] to compute the
+and then uses @racket[find-best-positions] to compute the
 list of neighbors of the cat that have the shortest distance
-to the boundary. If that list is empty, then @scheme[next-cat-position]
-is @scheme[#f], and otherwise, it is a random element from that list.
+to the boundary. If that list is empty, then @racket[next-cat-position]
+is @racket[#f], and otherwise, it is a random element from that list.
 
 @chunk[<move-cat>
        (define/contract (move-cat world)
@@ -1308,7 +1308,7 @@ is @scheme[#f], and otherwise, it is a random element from that list.
            
            <moved-cat-world>))]
 
-Once @scheme[next-cat-position] has been computed, it is used to update
+Once @racket[next-cat-position] has been computed, it is used to update
 the @tt{cat} and @tt{state} fields of the world, recording the cat's new
 position and whether or not the cat won.
 
@@ -1329,13 +1329,13 @@ position and whether or not the cat won.
                    (world-h-down? world))]
 
 
-The @scheme[find-best-positions] function accepts
-two parallel lists, one of @scheme[posn]s, and one
-of scores for those @scheme[posn]s, and it 
-returns either a non-empty list of @scheme[posn]s
+The @racket[find-best-positions] function accepts
+two parallel lists, one of @racket[posn]s, and one
+of scores for those @racket[posn]s, and it 
+returns either a non-empty list of @racket[posn]s
 that have tied for the best score, or it
-returns @scheme[#f], if the best score is 
-@scheme['∞].
+returns @racket[#f], if the best score is 
+@racket['∞].
 
 @chunk[<find-best-positions>
        (define/contract (find-best-positions posns scores)
@@ -1358,8 +1358,8 @@ returns @scheme[#f], if the best score is
                        (map list scores posns)))])))]
 
 This is a helper function that behaves like
-@scheme[<=], but is extended to deal properly with
-@scheme['∞].
+@racket[<=], but is extended to deal properly with
+@racket['∞].
 
 @chunk[<lt/f>
        (define/contract (<=/f a b)
@@ -1372,13 +1372,13 @@ This is a helper function that behaves like
            [else (<= a b)]))]
 
 
-Finally, to complete the mouse event handling, the @scheme[update-world-posn]
-function is called from @scheme[clack]. It updates the @tt{mouse-down}
-field of the @scheme[world]. If the @scheme[p] argument is a @scheme[posn],
+Finally, to complete the mouse event handling, the @racket[update-world-posn]
+function is called from @racket[clack]. It updates the @tt{mouse-down}
+field of the @racket[world]. If the @racket[p] argument is a @racket[posn],
 it corresponds to the location of the mouse, in graphical coordinates.
 So, the function converts it to a cell position on the board and uses that.
-Otherwise, when @scheme[p] is @scheme[#f], the @tt{mouse-down} field
-is just updated to @scheme[#f].
+Otherwise, when @racket[p] is @racket[#f], the @tt{mouse-down} field
+is just updated to @racket[#f].
 
 @chunk[<update-world-posn>
        (define/contract (update-world-posn w p)
@@ -1415,11 +1415,11 @@ This section consists of some infrastructure for
 maintaining tests, plus a pile of additional tests
 for the other functions in this document.
 
-The @scheme[test] and @scheme[test/set] macros
+The @racket[test] and @racket[test/set] macros
 package up their arguments into thunks and then
-simply call @scheme[test/proc], supplying 
+simply call @racket[test/proc], supplying 
 information about the source location of the test
-case. The @scheme[test/proc] function runs the tests
+case. The @racket[test/proc] function runs the tests
 and reports the results.
 
 @chunk[<test-infrastructure>
@@ -2391,7 +2391,7 @@ First, here is a function to compute state of the world at the start of a game.
                      #f))]
 
 Finally, we can define and provide a function to start the game
-by calling @scheme[big-bang] with the appropriate arguments.
+by calling @racket[big-bang] with the appropriate arguments.
 
 @chunk[<go>
        (provide main)

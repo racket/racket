@@ -3,27 +3,27 @@
 
 @title[#:tag "procedures"]{Procedures}
 
-@defproc[(procedure? [v any/c]) boolean]{ Returns @scheme[#t] if
-@scheme[v] is a procedure, @scheme[#f] otherwise.}
+@defproc[(procedure? [v any/c]) boolean]{ Returns @racket[#t] if
+@racket[v] is a procedure, @racket[#f] otherwise.}
 
 
 @defproc[(apply [proc procedure?] 
                 [v any/c] ... [lst list?]
                 [#:<kw> kw-arg any/c] ...) any]{
 
-@guideintro["apply"]{@scheme[apply]}
+@guideintro["apply"]{@racket[apply]}
 
-Applies @scheme[proc] using the content of @scheme[(list* v ... lst)]
-as the (by-position) arguments. The @scheme[#:<kw> kw-arg] sequence is
-also supplied as keyword arguments to @scheme[proc], where
-@scheme[#:<kw>] stands for any keyword.
+Applies @racket[proc] using the content of @racket[(list* v ... lst)]
+as the (by-position) arguments. The @racket[#:<kw> kw-arg] sequence is
+also supplied as keyword arguments to @racket[proc], where
+@racket[#:<kw>] stands for any keyword.
 
-The given @scheme[proc] must accept as many arguments as the number of
-@scheme[v]s plus length of @scheme[lst], it must accept the supplied
+The given @racket[proc] must accept as many arguments as the number of
+@racket[v]s plus length of @racket[lst], it must accept the supplied
 keyword arguments, and it must not require any other keyword
 arguments; otherwise, the @exnraise[exn:fail:contract]. The given
-@scheme[proc] is called in tail position with respect to the
-@scheme[apply] call.
+@racket[proc] is called in tail position with respect to the
+@racket[apply] call.
 
 @mz-examples[
 (apply + '(1 2 3))
@@ -36,17 +36,17 @@ arguments; otherwise, the @exnraise[exn:fail:contract]. The given
               @defproc[(compose1 [proc procedure?] ...) procedure?])]{
 
 Returns a procedure that composes the given functions, applying the last
-@scheme[proc] first and the first @scheme[proc] last.  @scheme[compose]
+@racket[proc] first and the first @racket[proc] last.  @racket[compose]
 allows the functions to consume and produce any number of values, as
 long as each function produces as many values as the preceding function
-consumes, and @scheme[compose1] restricts the internal value passing to
+consumes, and @racket[compose1] restricts the internal value passing to
 a single value.  In both cases the input arity of the last function and
 the output arity of the first are unrestricted, and become the
 corresponding arity of the resulting composition (including keyword
 arguments for the input side).
 
-When no @scheme[proc] arguments are given, the result is
-@scheme[values].  When exactly one is given, it is returned.
+When no @racket[proc] arguments are given, the result is
+@racket[values].  When exactly one is given, it is returned.
 
 @mz-examples[
 ((compose1 - sqrt) 10)
@@ -54,11 +54,11 @@ When no @scheme[proc] arguments are given, the result is
 ((compose list split-path) (bytes->path #"/a" 'unix))
 ]
 
-Note that in many cases @scheme[compose1] is preferred.  For example,
-using @scheme[compose] with two library functions may lead to problems
+Note that in many cases @racket[compose1] is preferred.  For example,
+using @racket[compose] with two library functions may lead to problems
 when one function is extended to return two values, and the preceding
 one has an optional input with different semantics.  In addition,
-@scheme[compose1] may create faster compositions.
+@racket[compose1] may create faster compositions.
 
 }
 
@@ -66,27 +66,27 @@ one has an optional input with different semantics.  In addition,
                            [name symbol?])
          procedure?]{
 
-Returns a procedure that is like @scheme[proc], except that its name
-as returned by @scheme[object-name] (and as printed for debugging) is
-@scheme[name].
+Returns a procedure that is like @racket[proc], except that its name
+as returned by @racket[object-name] (and as printed for debugging) is
+@racket[name].
 
-The given @scheme[name] is used for printing an error message if the
+The given @racket[name] is used for printing an error message if the
 resulting procedure is applied to the wrong number of arguments.  In
-addition, if @scheme[proc] is an @tech{accessor} or @tech{mutator}
-produced by @scheme[struct],
-@scheme[make-struct-field-accessor], or
-@scheme[make-struct-field-mutator], the resulting procedure also uses
-@scheme[name] when its (first) argument has the wrong type. More
-typically, however, @scheme[name] is not used for reporting errors,
+addition, if @racket[proc] is an @tech{accessor} or @tech{mutator}
+produced by @racket[struct],
+@racket[make-struct-field-accessor], or
+@racket[make-struct-field-mutator], the resulting procedure also uses
+@racket[name] when its (first) argument has the wrong type. More
+typically, however, @racket[name] is not used for reporting errors,
 since the procedure name is typically hard-wired into an internal
 check.}
 
 @defproc[(procedure->method [proc procedure?]) procedure?]{
 
-Returns a procedure that is like @scheme[proc] except that, when applied
+Returns a procedure that is like @racket[proc] except that, when applied
 to the wrong number of arguments, the resulting error hides the first
 argument as if the procedure had been compiled with the
-@indexed-scheme['method-arity-error] syntax property.}
+@indexed-racket['method-arity-error] syntax property.}
 
 @; ----------------------------------------
 @section{Keywords and Arity}
@@ -99,23 +99,23 @@ argument as if the procedure had been compiled with the
                         [#:<kw> kw-arg any/c] ...)
          any]{
 
-@guideintro["apply"]{@scheme[keyword-apply]}
+@guideintro["apply"]{@racket[keyword-apply]}
 
-Like @scheme[apply], but @scheme[kw-lst] and @scheme[kw-val-lst]
+Like @racket[apply], but @racket[kw-lst] and @racket[kw-val-lst]
 supply by-keyword arguments in addition to the by-position arguments
-of the @scheme[v]s and @scheme[lst], and in addition to the directly
-supplied keyword arguments in the @scheme[#:<kw> kw-arg] sequence,
-where @scheme[#:<kw>] stands for any keyword.
+of the @racket[v]s and @racket[lst], and in addition to the directly
+supplied keyword arguments in the @racket[#:<kw> kw-arg] sequence,
+where @racket[#:<kw>] stands for any keyword.
 
-The given @scheme[kw-lst] must be sorted using @scheme[keyword<?].  No
-keyword can appear twice in @scheme[kw-lst] or in both
-@scheme[kw-list] and as a @scheme[#:<kw>], otherwise, the
-@exnraise[exn:fail:contract]. The given @scheme[kw-val-lst] must have
-the same length as @scheme[kw-lst], otherwise, the
-@exnraise[exn:fail:contract]. The given @scheme[proc] must accept all
-of the keywords in @scheme[kw-lst] plus the @scheme[#:<kw>]s, it must
+The given @racket[kw-lst] must be sorted using @racket[keyword<?].  No
+keyword can appear twice in @racket[kw-lst] or in both
+@racket[kw-list] and as a @racket[#:<kw>], otherwise, the
+@exnraise[exn:fail:contract]. The given @racket[kw-val-lst] must have
+the same length as @racket[kw-lst], otherwise, the
+@exnraise[exn:fail:contract]. The given @racket[proc] must accept all
+of the keywords in @racket[kw-lst] plus the @racket[#:<kw>]s, it must
 not require any other keywords, and it must accept as many by-position
-arguments as supplied via the @scheme[v]s and @scheme[lst]; otherwise,
+arguments as supplied via the @racket[v]s and @racket[lst]; otherwise,
 the @exnraise[exn:fail:contract].
 
 @defexamples[
@@ -130,32 +130,32 @@ the @exnraise[exn:fail:contract].
          procedure-arity?]{
 
 Returns information about the number of by-position arguments accepted
-by @scheme[proc]. See also @scheme[procedure-arity?].}
+by @racket[proc]. See also @racket[procedure-arity?].}
 
 @defproc[(procedure-arity? [v any/c]) boolean?]{
 
-A valid arity @scheme[_a] is one of the following:
+A valid arity @racket[_a] is one of the following:
 
 @itemize[
 
   @item{An exact non-negative integer, which means that the procedure
-        accepts @scheme[_a] arguments, only.}
+        accepts @racket[_a] arguments, only.}
 
- @item{A @scheme[arity-at-least] instance, which means that the
-       procedure accepts @scheme[(arity-at-least-value _a)] or more
+ @item{A @racket[arity-at-least] instance, which means that the
+       procedure accepts @racket[(arity-at-least-value _a)] or more
        arguments.}
 
- @item{A list containing integers and @scheme[arity-at-least]
+ @item{A list containing integers and @racket[arity-at-least]
        instances, which means that the procedure accepts any number of
-       arguments that can match one of the elements of @scheme[_a].}
+       arguments that can match one of the elements of @racket[_a].}
 
 ]
 
-Generally, @scheme[procedure-arity] always produces an arity that is normalized. 
+Generally, @racket[procedure-arity] always produces an arity that is normalized. 
 Specifically, it is either the empty list (corresponding to the procedure 
-@scheme[(case-lambda)]), one of the first two cases above, or a list
+@racket[(case-lambda)]), one of the first two cases above, or a list
 that contains at least two elements. If it is a list, there is at most one
-@scheme[arity-at-least] instance that appears as the last element of the list,
+@racket[arity-at-least] instance that appears as the last element of the list,
 all of the other elements are sorted in ascending order, and there are no duplicate
 elements.
 
@@ -173,8 +173,8 @@ elements.
                                     [kws-ok? any/c #f])
          boolean?]{
 
-Returns @scheme[#t] if the procedure can accept @scheme[k] by-position
-arguments, @scheme[#f] otherwise.  If @racket[kws-ok?] is @racket[#f],
+Returns @racket[#t] if the procedure can accept @racket[k] by-position
+arguments, @racket[#f] otherwise.  If @racket[kws-ok?] is @racket[#f],
 the result is @racket[#t] only if @racket[proc] has no required
 keyword arguments.
 
@@ -189,18 +189,18 @@ keyword arguments.
                                  [arity procedure-arity?])
          procedure?]{
 
-Returns a procedure that is the same as @scheme[proc] (including
-the same name returned by @scheme[object-name]), but that accepts
-only arguments consistent with @scheme[arity]. In particular,
-when @scheme[procedure-arity] is applied to the generated
-procedure, it returns a value that is @scheme[equal?] to
-@scheme[arity].
+Returns a procedure that is the same as @racket[proc] (including
+the same name returned by @racket[object-name]), but that accepts
+only arguments consistent with @racket[arity]. In particular,
+when @racket[procedure-arity] is applied to the generated
+procedure, it returns a value that is @racket[equal?] to
+@racket[arity].
 
-If the @scheme[arity] specification allows arguments that are not in
-@scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].  If
-@scheme[proc] accepts keyword argument, either the keyword arguments
+If the @racket[arity] specification allows arguments that are not in
+@racket[(procedure-arity proc)], the @exnraise[exn:fail:contract].  If
+@racket[proc] accepts keyword argument, either the keyword arguments
 must be all optional (and they are not accepted in by the
-arity-reduced procedure) or @scheme[arity] must be the empty list
+arity-reduced procedure) or @racket[arity] must be the empty list
 (which makes a procedure that cannot be called); otherwise, the
 @exnraise[exn:fail:contract].
 
@@ -217,9 +217,9 @@ arity-reduced procedure) or @scheme[arity] must be the empty list
 
 Returns information about the keyword arguments required and accepted
 by a procedure. The first result is a list of keywords (sorted by
-@scheme[keyword<?]) that are required when applying @scheme[proc]. The
+@racket[keyword<?]) that are required when applying @racket[proc]. The
 second result is a list of accepted keywords (sorted by
-@scheme[keyword<?]), or @scheme[#f] to mean that any keyword is
+@racket[keyword<?]), or @racket[#f] to mean that any keyword is
 accepted. When the second result is a list, every element in the first
 list is also in the second list.
 
@@ -236,17 +236,17 @@ list is also in the second list.
 
 Returns a procedure that accepts all keyword arguments (without
 requiring any keyword arguments). See also
-@scheme[procedure-reduce-keyword-arity].
+@racket[procedure-reduce-keyword-arity].
 
-When the result is called with keyword arguments, then @scheme[proc]
+When the result is called with keyword arguments, then @racket[proc]
 is called; the first argument is a list of keywords sorted by
-@scheme[keyword<?], the second argument is a parallel list containing a
+@racket[keyword<?], the second argument is a parallel list containing a
 value for each keyword, and the remaining arguments are the
 by-position arguments.
 
 When the result is called without keyword arguments, then
-@scheme[plain-proc] is called. Furthermore, @scheme[procedure-arity]
-obtains its result from @scheme[plain-proc].
+@racket[plain-proc] is called. Furthermore, @racket[procedure-arity]
+obtains its result from @racket[plain-proc].
 
 @defexamples[
 (define show
@@ -264,16 +264,16 @@ obtains its result from @scheme[plain-proc].
                                                             #f)])
          procedure?]{
 
-Like @scheme[procedure-reduce-arity], but constrains the keyword
-arguments according to @scheme[required-kws] and @scheme[allowed-kws],
-which must be sorted using @scheme[keyword<?]. If @scheme[allowed-kws]
-is @scheme[#f], then the resulting procedure still accepts any
-keyword, otherwise the keywords in @scheme[required-kws] must be a
-subset of those in @scheme[allowed-kws]. The original @scheme[proc]
+Like @racket[procedure-reduce-arity], but constrains the keyword
+arguments according to @racket[required-kws] and @racket[allowed-kws],
+which must be sorted using @racket[keyword<?]. If @racket[allowed-kws]
+is @racket[#f], then the resulting procedure still accepts any
+keyword, otherwise the keywords in @racket[required-kws] must be a
+subset of those in @racket[allowed-kws]. The original @racket[proc]
 must require no more keywords than the ones listed in
-@scheme[required-kws], and it must allow at least the keywords in
-@scheme[allowed-kws] (or it must allow all keywords if
-@scheme[allowed-kws] is @scheme[#f]).
+@racket[required-kws], and it must allow at least the keywords in
+@racket[allowed-kws] (or it must allow all keywords if
+@racket[allowed-kws] is @racket[#f]).
 
 @defexamples[
 (define orig-show
@@ -288,22 +288,22 @@ must require no more keywords than the ones listed in
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
 
-A structure type used for the result of @scheme[procedure-arity].
-See also @scheme[procedure-arity?].}
+A structure type used for the result of @racket[procedure-arity].
+See also @racket[procedure-arity?].}
 
 
 @defthing[prop:procedure struct-type-property?]{
 
 A @tech{structure type property} to identify structure types whose
 instances can be applied as procedures. In particular, when
-@scheme[procedure?] is applied to the instance, the result will be
-@scheme[#t], and when an instance is used in the function position of
+@racket[procedure?] is applied to the instance, the result will be
+@racket[#t], and when an instance is used in the function position of
 an application expression, a procedure is extracted from the instance
 and used to complete the procedure call.
 
-If the @scheme[prop:procedure] property value is an exact non-negative integer, it
+If the @racket[prop:procedure] property value is an exact non-negative integer, it
 designates a field within the structure that should contain a
-procedure. The integer must be between @scheme[0] (inclusive) and the
+procedure. The integer must be between @racket[0] (inclusive) and the
 number of non-automatic fields in the structure type (exclusive, not
 counting supertype fields). The designated field must also be
 specified as immutable, so that after an instance of the structure is
@@ -317,16 +317,16 @@ immutability of procedure fields disallows cycles in the procedure
 graph, so that the procedure call will eventually continue with a
 non-structure procedure.) That procedure receives all of the arguments
 from the application expression. The procedure's name (see
-@scheme[object-name]), arity (see @scheme[procedure-arity]), and
-keyword protocol (see @scheme[procedure-keywords]) are also used for
+@racket[object-name]), arity (see @racket[procedure-arity]), and
+keyword protocol (see @racket[procedure-keywords]) are also used for
 the name, arity, and keyword protocol of the structure. If the value
 in the designated field is not a procedure, then the instance behaves
-like @scheme[(case-lambda)] (i.e., a procedure which does not accept
-any number of arguments). See also @scheme[procedure-extract-target].
+like @racket[(case-lambda)] (i.e., a procedure which does not accept
+any number of arguments). See also @racket[procedure-extract-target].
 
-Providing an integer @scheme[proc-spec] argument to
-@scheme[make-struct-type] is the same as both supplying the value with
-the @scheme[prop:procedure] property and designating the field as
+Providing an integer @racket[proc-spec] argument to
+@racket[make-struct-type] is the same as both supplying the value with
+the @racket[prop:procedure] property and designating the field as
 immutable (so that a property binding or immutable designation is
 redundant and disallowed).
 
@@ -343,7 +343,7 @@ redundant and disallowed).
 (annotated-proc-note plus1)
 ]
 
-When the @scheme[prop:procedure] value is a procedure, it should
+When the @racket[prop:procedure] value is a procedure, it should
 accept at least one non-keyword argument. When an instance of the
 structure is used in an application expression, the property-value
 procedure is called with the instance as the first argument. The
@@ -351,17 +351,17 @@ remaining arguments to the property-value procedure are the arguments
 from the application expression (including keyword arguments). Thus,
 if the application expression provides five non-keyword arguments, the
 property-value procedure is called with six non-keyword arguments. The
-name of the instance (see @scheme[object-name]) and its keyword
-protocol (see @scheme[procedure-keywords]) are unaffected by the
+name of the instance (see @racket[object-name]) and its keyword
+protocol (see @racket[procedure-keywords]) are unaffected by the
 property-value procedure, but the instance's arity is determined by
 subtracting one from every possible non-keyword argument count of the
 property-value procedure. If the property-value procedure cannot
 accept at least one argument, then the instance behaves like
-@scheme[(case-lambda)].
+@racket[(case-lambda)].
 
-Providing a procedure @scheme[proc-spec] argument to
-@scheme[make-struct-type] is the same as supplying the value with the
-@scheme[prop:procedure] property (so that a specific property binding
+Providing a procedure @racket[proc-spec] argument to
+@racket[make-struct-type] is the same as supplying the value with the
+@racket[prop:procedure] property (so that a specific property binding
 is disallowed).
 
 @mz-examples[
@@ -380,27 +380,27 @@ is disallowed).
 (fish-weight wanda)
 ]
 
-If the value supplied for the @scheme[prop:procedure] property is not
+If the value supplied for the @racket[prop:procedure] property is not
 an exact non-negative integer or a procedure, the
 @exnraise[exn:fail:contract].}
 
 @defproc[(procedure-struct-type? [type struct-type?]) boolean?]{
 
-Returns @scheme[#t] if instances of the structure type represented by
-@scheme[type] are procedures (according to @scheme[procedure?]),
-@scheme[#f] otherwise.}
+Returns @racket[#t] if instances of the structure type represented by
+@racket[type] are procedures (according to @racket[procedure?]),
+@racket[#f] otherwise.}
 
 @defproc[(procedure-extract-target [proc procedure?]) (or/c #f procedure?)]{
 
-If @scheme[proc] is an instance of a structure type with property
-@scheme[prop:procedure], and if the property value indicates a field
+If @racket[proc] is an instance of a structure type with property
+@racket[prop:procedure], and if the property value indicates a field
 of the structure, and if the field value is a procedure, then
-@scheme[procedure-extract-target] returns the field value. Otherwise,
-the result is @scheme[#f].
+@racket[procedure-extract-target] returns the field value. Otherwise,
+the result is @racket[#f].
 
-When a @scheme[prop:procedure] property value is a procedure, the
+When a @racket[prop:procedure] property value is a procedure, the
 procedure is @emph{not} returned by
-@scheme[procedure-extract-target]. Such a procedure is different from
+@racket[procedure-extract-target]. Such a procedure is different from
 one accessed through a structure field, because it consumes an extra
 argument, which is always the structure that was applied as a
 procedure. Keeping the procedure private ensures that is it always
@@ -409,15 +409,15 @@ called with a suitable first argument.}
 @defthing[prop:arity-string struct-type-property?]{
 
 A @tech{structure type property} that is used for reporting arity-mismatch errors when a
-structure type with the @scheme[prop:procedure] property is applied to
+structure type with the @racket[prop:procedure] property is applied to
 the wrong number of arguments. The value of the
-@scheme[prop:arity-string] property must be a procedure that takes a
+@racket[prop:arity-string] property must be a procedure that takes a
 single argument, which is the misapplied structure, and returns a
 string. The result string is used after the word ``expects,'' and it
 is followed in the error message by the number of actual arguments.
 
 Arity-mismatch reporting automatically uses
-@scheme[procedure-extract-target] when the @scheme[prop:arity-string]
+@racket[procedure-extract-target] when the @racket[prop:arity-string]
 property is not associated with a procedure structure type.
 
 @examples[
@@ -442,7 +442,7 @@ property is not associated with a procedure structure type.
 @defthing[prop:checked-procedure struct-type-property?]{
 
 A @tech{structure type property} that is used with
-@scheme[checked-procedure-check-and-extract], which is a hook to allow
+@racket[checked-procedure-check-and-extract], which is a hook to allow
 the compiler to improve the performance of keyword arguments. The
 property can only be attached to a @tech{structure type} without a
 supertype and with at least two fields.}
@@ -454,18 +454,18 @@ supertype and with at least two fields.}
                                               [v1 any/c]
                                               [v2 any/c]) any/c]{
 
-Extracts a value from @scheme[v] if it is an instance of
-@scheme[type], which must have the property
-@scheme[prop:checked-procedure]. If @scheme[v] is such an instance,
-then the first field of @scheme[v] is extracted and applied to
-@scheme[v1] and @scheme[v2]; if the result is a true value, the result
-is the value of the second field of @scheme[v].
+Extracts a value from @racket[v] if it is an instance of
+@racket[type], which must have the property
+@racket[prop:checked-procedure]. If @racket[v] is such an instance,
+then the first field of @racket[v] is extracted and applied to
+@racket[v1] and @racket[v2]; if the result is a true value, the result
+is the value of the second field of @racket[v].
 
-If @scheme[v] is not an instance of @scheme[type], or if the first
-field of @scheme[v] applied to @scheme[v1] and @scheme[v2] produces
-@scheme[#f], then @scheme[proc] is applied to @scheme[v], @scheme[v1],
-and @scheme[v2], and its result is returned by
-@scheme[checked-procedure-check-and-extract].}
+If @racket[v] is not an instance of @racket[type], or if the first
+field of @racket[v] applied to @racket[v1] and @racket[v2] produces
+@racket[#f], then @racket[proc] is applied to @racket[v], @racket[v1],
+and @racket[v2], and its result is returned by
+@racket[checked-procedure-check-and-extract].}
 
 @; ----------------------------------------------------------------------
 
@@ -473,27 +473,27 @@ and @scheme[v2], and its result is returned by
 
 A @idefterm{primitive procedure} is a built-in procedure that is
 implemented in low-level language. Not all procedures of
-@schememodname[racket/base] are primitives, but many are. The
+@racketmodname[racket/base] are primitives, but many are. The
 distinction is mainly useful to other low-level code.
 
 @defproc[(primitive? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a primitive procedure,
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a primitive procedure,
+@racket[#f] otherwise.}
 
 @defproc[(primitive-closure? [v any/c]) boolean]{
 
-Returns @scheme[#t] if @scheme[v] is internally implemented as a
+Returns @racket[#t] if @racket[v] is internally implemented as a
 primitive closure rather than a simple primitive procedure,
-@scheme[#f] otherwise.}
+@racket[#f] otherwise.}
 
 
 @defproc[(primitive-result-arity [prim primitive?]) procedure-arity?]{
 
 Returns the arity of the result of the primitive procedure
-@scheme[prim] (as opposed to the procedure's input arity as returned
-by @scheme[procedure-arity]). For most primitives, this procedure
-returns @scheme[1], since most primitives return a single value when
+@racket[prim] (as opposed to the procedure's input arity as returned
+by @racket[procedure-arity]). For most primitives, this procedure
+returns @racket[1], since most primitives return a single value when
 applied.}
 
 @; ----------------------------------------
@@ -504,12 +504,12 @@ applied.}
 @(interaction-eval #:eval fun-eval (require racket/function))
 
 @defproc[(identity [v any/c]) any/c]{
-Returns @scheme[v].
+Returns @racket[v].
 }
 
 @defproc[(const [v any]) procedure?]{
 
-Returns a procedure that accepts any arguments and returns @scheme[v].
+Returns a procedure that accepts any arguments and returns @racket[v].
 
 @mz-examples[#:eval fun-eval
 ((const 'foo) 1 2 3)
@@ -519,8 +519,8 @@ Returns a procedure that accepts any arguments and returns @scheme[v].
 @deftogether[(@defform[(thunk  body ...+)]
               @defform[(thunk* body ...+)])]{
 
-@scheme[thunk] creates a nullary function that evaluates the given body.
-@scheme[thunk*] is similar, except that the resulting function accepts
+@racket[thunk] creates a nullary function that evaluates the given body.
+@racket[thunk*] is similar, except that the resulting function accepts
 any number of inputs and keyword arguments.
 
 @defexamples[
@@ -537,8 +537,8 @@ any number of inputs and keyword arguments.
 
 @defproc[(negate [proc procedure?]) procedure?]{
 
-Returns a procedure that is just like @scheme[proc], except that it
-returns the @scheme[not] of @scheme[proc]'s result.
+Returns a procedure that is just like @racket[proc], except that it
+returns the @racket[not] of @racket[proc]'s result.
 
 @mz-examples[#:eval fun-eval
 (filter (negate symbol?) '(1 a 2 b 3 c))
@@ -548,7 +548,7 @@ returns the @scheme[not] of @scheme[proc]'s result.
 @defproc*[([(curry [proc procedure?]) procedure?]
            [(curry [proc procedure?] [v any/c] ...+) any/c])]{
 
-Returns a procedure that is a curried version of @scheme[proc]. When
+Returns a procedure that is a curried version of @racket[proc]. When
 the resulting procedure is first applied, unless it is given the
 maximum number of arguments that it can accept, the result is a
 procedure to accept additional arguments.
@@ -559,10 +559,10 @@ procedure to accept additional arguments.
 ((curry cons) 1 2)
 ]
 
-After the first application of the result of @scheme[curry], each
+After the first application of the result of @racket[curry], each
 further application accumulates arguments until an acceptable number
 of arguments have been accumulated, at which point the original
-@scheme[proc] is called.
+@racket[proc] is called.
 
 @mz-examples[#:eval fun-eval
 (((curry list) 1 2) 3)
@@ -570,13 +570,13 @@ of arguments have been accumulated, at which point the original
 ((((curry foldl) +) 0) '(1 2 3))
 ]
 
-A function call @scheme[(curry proc v ...)] is equivalent to
-@scheme[((curry proc) v ...)]. In other words, @scheme[curry] itself
+A function call @racket[(curry proc v ...)] is equivalent to
+@racket[((curry proc) v ...)]. In other words, @racket[curry] itself
 is curried.
 
-The @scheme[curry] function provides limited support for keyworded
-functions: only the @scheme[curry] call itself can receive keyworded
-arguments to be propagated eventually to @scheme[proc].
+The @racket[curry] function provides limited support for keyworded
+functions: only the @racket[curry] call itself can receive keyworded
+arguments to be propagated eventually to @racket[proc].
 
 @mz-examples[#:eval fun-eval
   (map ((curry +) 10) '(1 2 3))
@@ -591,7 +591,7 @@ arguments to be propagated eventually to @scheme[proc].
 @defproc*[([(curryr [proc procedure?]) procedure?]
            [(curryr [proc procedure?] [v any/c] ...+) any/c])]{
 
-Like @scheme[curry], except that the arguments are collected in the
+Like @racket[curry], except that the arguments are collected in the
 opposite direction: the first step collects the rightmost group of
 arguments, and following steps add arguments to the left of these.
 

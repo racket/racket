@@ -3,23 +3,23 @@
 
 @definterface/title[clipboard<%> ()]{
 
-A single @scheme[clipboard<%>] object, @indexed-scheme[the-clipboard],
+A single @racket[clipboard<%>] object, @indexed-racket[the-clipboard],
  manages the content of the system-wide clipboard for cut and paste.
 
-On Unix, a second @scheme[clipboard<%>] object,
- @indexed-scheme[the-x-selection-clipboard], manages the content of the
+On Unix, a second @racket[clipboard<%>] object,
+ @indexed-racket[the-x-selection-clipboard], manages the content of the
  system-wide X11 selection. If the @ResourceFirst{selectionAsClipboard}
  preference (see @|mrprefsdiscuss|) is set to a non-zero true value,
- however, then @scheme[the-clipboard] is always the same as
- @scheme[the-x-selection-clipboard], and the system-wide X11 clipboard
+ however, then @racket[the-clipboard] is always the same as
+ @racket[the-x-selection-clipboard], and the system-wide X11 clipboard
  is not used.
 
-On Windows and Mac OS X, @scheme[the-x-selection-clipboard] is
- always the same as @scheme[the-clipboard].
+On Windows and Mac OS X, @racket[the-x-selection-clipboard] is
+ always the same as @racket[the-clipboard].
 
 Data can be entered into a clipboard in one of two ways: by setting
  the current clipboard string or byte string, or by installing a
- @scheme[clipboard-client%] object. When a client is installed,
+ @racket[clipboard-client%] object. When a client is installed,
  requests for clipboard data are directed to the client.
 
 Generic data is always retrieved from the clipboard as a byte
@@ -32,13 +32,13 @@ Generic data is always retrieved from the clipboard as a byte
            (or/c (is-a?/c bitmap%) false/c)]{
 
 Gets the current clipboard contents as a bitmap (Windows, Mac OS X),
- returning @scheme[#f] if the clipboard does not contain a bitmap.
+ returning @racket[#f] if the clipboard does not contain a bitmap.
 
 See
 @method[clipboard<%> get-clipboard-data] for information on eventspaces and the current clipboard client.
 
-See @|timediscuss| for a discussion of the @scheme[time] argument.  If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument.  If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -48,19 +48,19 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
            (or/c bytes? string? false/c)]{
 
 Gets the current clipboard contents in a specific format, returning
- @scheme[#f] if the clipboard does not contain data in the requested
+ @racket[#f] if the clipboard does not contain data in the requested
  format.
 
 If the clipboard client is associated to an eventspace that is not the
  current one, the data is retrieved through a callback event in the
  client's eventspace. If no result is available within one second, the
- request is abandoned and @scheme[#f] is returned.
+ request is abandoned and @racket[#f] is returned.
 
 See @xmethod[clipboard-client% add-type] for information on
-@scheme[format].
+@racket[format].
 
-See @|timediscuss| for a discussion of the @scheme[time] argument.  If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument.  If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -69,13 +69,13 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
            (or/c string false/c)]{
 
 Gets the current clipboard contents as simple text, returning
- @scheme[#f] if the clipboard does not contain any text.
+ @racket[#f] if the clipboard does not contain any text.
 
 See @method[clipboard<%> get-clipboard-data] for information on
 eventspaces and the current clipboard client.
 
-See @|timediscuss| for a discussion of the @scheme[time] argument.  If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument.  If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -84,19 +84,19 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 @defmethod[(same-clipboard-client? [owner (is-a?/c clipboard-client%)])
            boolean?]{
 
-Returns @scheme[#t] if @scheme[owner] currently owns the clipboard,
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[owner] currently owns the clipboard,
+@racket[#f] otherwise.}
 
 
 @defmethod[(set-clipboard-bitmap [new-bitmap (is-a?/c bitmap%)]
                                  [time exact-integer?])
            void?]{
 
-Changes the current clipboard contents to @scheme[new-bitmap] (Windows, Mac OS X)
+Changes the current clipboard contents to @racket[new-bitmap] (Windows, Mac OS X)
  and releases the current clipboard client (if any).
 
 See @|timediscuss| for
- a discussion of the @scheme[time] argument.  If @scheme[time] is outside
+ a discussion of the @racket[time] argument.  If @racket[time] is outside
  the platform-specific range of times, @|MismatchExn|.
 
 }
@@ -106,13 +106,13 @@ See @|timediscuss| for
            void?]{
 
 Changes the clipboard-owning client: sets the client to
- @scheme[new-owner] and associates @scheme[new-owner] with the current
- eventspace (as determined by @scheme[current-eventspace]). The
+ @racket[new-owner] and associates @racket[new-owner] with the current
+ eventspace (as determined by @racket[current-eventspace]). The
  eventspace association is removed when the client is no longer the
  current one.
 
-See @|timediscuss| for a discussion of the @scheme[time] argument. If
- @scheme[time] is outside the platform-specific range of times,
+See @|timediscuss| for a discussion of the @racket[time] argument. If
+ @racket[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
 }
@@ -121,11 +121,11 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
                                  [time exact-integer?])
            void?]{
 
-Changes the current clipboard contents to @scheme[new-text],
+Changes the current clipboard contents to @racket[new-text],
  and releases the current clipboard client (if any).
 
 See @|timediscuss| for
- a discussion of the @scheme[time] argument.  If @scheme[time] is outside
+ a discussion of the @racket[time] argument.  If @racket[time] is outside
  the platform-specific range of times, @|MismatchExn|.
 }
 }

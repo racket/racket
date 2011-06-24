@@ -5,7 +5,7 @@
 
 @defmodule[mrlib/hierlist]
 
-A @scheme[hierarchical-list%] control is a list of items, some of
+A @racket[hierarchical-list%] control is a list of items, some of
 which can themselves be hierarchical lists. Each such sub-list has an
 arrow that the user can click to hide or show the sub-list's items.
 

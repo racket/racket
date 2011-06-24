@@ -3,10 +3,10 @@
 
 @defclass/title[font-list% object% ()]{
 
-A @scheme[font-list%] object maintains a list of @scheme[font%]
+A @racket[font-list%] object maintains a list of @racket[font%]
  objects to avoid repeatedly creating fonts.
 
-A global font list, @scheme[the-font-list], is created automatically.
+A global font list, @racket[the-font-list], is created automatically.
 
 
 @defconstructor[()]{
@@ -37,6 +37,6 @@ Creates an empty font list.
 
 Finds an existing font in the list or creates a new one (that is
  automatically added to the list). The arguments are the same as for
- creating a @scheme[font%] instance.
+ creating a @racket[font%] instance.
 
 }}

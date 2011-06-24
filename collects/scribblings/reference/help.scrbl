@@ -26,69 +26,69 @@
 
 @emph{For general help, see the @|main-doc-page|.}
 
-The @scheme[help] form searches the documentation and opens a web
+The @racket[help] form searches the documentation and opens a web
 browser (using the user's selected browser) to display the results.
 
-@margin-note{See @schememodname[net/sendurl] for information on how
+@margin-note{See @racketmodname[net/sendurl] for information on how
 the user's browser is launched to display help information.}
 
-A simple @scheme[help] or @scheme[(help)] form opens the main
+A simple @racket[help] or @racket[(help)] form opens the main
 documentation page.
 
-The @scheme[(help string ...)] form---using literal strings, as
+The @racket[(help string ...)] form---using literal strings, as
 opposed to expressions that produce strings---performs a
 string-matching search. For example,
 
-@schemeblock[
+@racketblock[
 (help "web browser" "firefox")
 ]
 
 searches the documentation index for references that include the
 phrase ``web browser'' or ``firefox.''
 
-A @scheme[(help id)] form looks for documentation specific to the
-current binding of @scheme[id]. For example, 
+A @racket[(help id)] form looks for documentation specific to the
+current binding of @racket[id]. For example, 
 
-@schemeblock[
+@racketblock[
 (require net/url)
 (help url->string)
 ]
 
-opens a web browser to show the documentation for @scheme[url->string]
-from the @schememodname[net/url] library.
+opens a web browser to show the documentation for @racket[url->string]
+from the @racketmodname[net/url] library.
 
-For the purposes of @scheme[help], a @scheme[for-label] require
+For the purposes of @racket[help], a @racket[for-label] require
 introduces a binding without actually executing the
-@schememodname[net/url] library---for cases when you want to check
+@racketmodname[net/url] library---for cases when you want to check
 documentation, but cannot or do not want to run the providing module.
 
-@schemeblock[
+@racketblock[
 (require racket/gui) (code:comment @#,t{does not work in @exec{racket}})
 (require (for-label racket/gui)) (code:comment @#,t{ok in @exec{racket}})
 (help frame%)
 ]
 
-If @scheme[id] has no for-label and normal binding, then @scheme[help]
+If @racket[id] has no for-label and normal binding, then @racket[help]
 lists all libraries that are known to export a binding for
-@scheme[id].
+@racket[id].
 
-The @scheme[(help id #:from module-path)] variant is similar to
-@scheme[(help id)], but using only the exports of
-@scheme[module-path]. (The @scheme[module-path] module is required
-@scheme[for-label] in a temporary namespace.)
+The @racket[(help id #:from module-path)] variant is similar to
+@racket[(help id)], but using only the exports of
+@racket[module-path]. (The @racket[module-path] module is required
+@racket[for-label] in a temporary namespace.)
 
-@schemeblock[
+@racketblock[
 (help frame% #:from racket/gui) (code:comment @#,t{equivalent to the above})
 ]
 
-The @scheme[(help #:search datum ...)] form is similar to
-@scheme[(help string ...)], where any non-string form of
-@scheme[datum] is converted to a string using @scheme[display]. No
-@scheme[datum] is evaluated as an expression.
+The @racket[(help #:search datum ...)] form is similar to
+@racket[(help string ...)], where any non-string form of
+@racket[datum] is converted to a string using @racket[display]. No
+@racket[datum] is evaluated as an expression.
 
 For example,
 
-@schemeblock[
+@racketblock[
 (help #:search "web browser" firefox)
 ]
 

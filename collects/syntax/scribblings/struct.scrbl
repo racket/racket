@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label syntax/struct))
 
-@title[#:tag "struct"]{Expanding @scheme[define-struct]-like Forms}
+@title[#:tag "struct"]{Expanding @racket[define-struct]-like Forms}
 
 @defmodule[syntax/struct]
 
@@ -11,9 +11,9 @@
                  (listof identifier?)
                  syntax?)]{
 
-Parses @scheme[stx] as a @scheme[define-struct] form, but uses
-@scheme[orig-stx] to report syntax errors (under the assumption that
-@scheme[orig-stx] is the same as @scheme[stx], or that they at least share
+Parses @racket[stx] as a @racket[define-struct] form, but uses
+@racket[orig-stx] to report syntax errors (under the assumption that
+@racket[orig-stx] is the same as @racket[stx], or that they at least share
 sub-forms). The result is four values: an identifier for the struct
 type name, a identifier or #f for the super-name, a list of
 identifiers for fields, and a syntax object for the inspector
@@ -27,25 +27,25 @@ expression.}
 			     [src-stx (or/c syntax? false/c) #f])
           (listof identifier?)]{
 
-Generates the names bound by @scheme[define-struct] given an
+Generates the names bound by @racket[define-struct] given an
 identifier for the struct type name and a list of identifiers for the
 field names. The result is a list of identifiers:
 
 @itemize[
-  @item{@schemeidfont{struct:}@scheme[name-id]}
-  @item{@scheme[ctr-name], or @schemeidfont{make-}@scheme[name-id] if @racket[ctr-name] is @racket[#f]}
-  @item{@scheme[name-id]@schemeidfont{?}}
-  @item{@scheme[name-id]@schemeidfont{-}@scheme[_field], for each
-        @scheme[_field] in @scheme[field-ids].}
-  @item{@schemeidfont{set-}@scheme[name-id]@schemeidfont{-}@scheme[_field]@schemeidfont{!}
+  @item{@racketidfont{struct:}@racket[name-id]}
+  @item{@racket[ctr-name], or @racketidfont{make-}@racket[name-id] if @racket[ctr-name] is @racket[#f]}
+  @item{@racket[name-id]@racketidfont{?}}
+  @item{@racket[name-id]@racketidfont{-}@racket[_field], for each
+        @racket[_field] in @racket[field-ids].}
+  @item{@racketidfont{set-}@racket[name-id]@racketidfont{-}@racket[_field]@racketidfont{!}
         (getter and setter names alternate).}
   @item{....}]
 
-If @scheme[omit-sel?] is true, then the selector names are omitted from the
-result list. If @scheme[omit-set?] is true, then the setter names are omitted
+If @racket[omit-sel?] is true, then the selector names are omitted from the
+result list. If @racket[omit-set?] is true, then the setter names are omitted
 from the result list.
 
-The default @scheme[src-stx] is @scheme[#f]; it is used to provide a
+The default @racket[src-stx] is @racket[#f]; it is used to provide a
 source location to the generated identifiers.}
 
 @defproc[(build-struct-generation [name-id identifier?]
@@ -60,13 +60,13 @@ source location to the generated identifiers.}
                                   [immutable-k-list list? empty])
          (listof identifier?)]{
 
-Takes the same arguments as @scheme[build-struct-names] and generates
-an S-expression for code using @scheme[make-struct-type] to generate
+Takes the same arguments as @racket[build-struct-names] and generates
+an S-expression for code using @racket[make-struct-type] to generate
 the structure type and return values for the identifiers created by
-@scheme[build-struct-names].  The optional @scheme[super-type],
-@scheme[prop-value-list], and @scheme[immutable-k-list] parameters take
+@racket[build-struct-names].  The optional @racket[super-type],
+@racket[prop-value-list], and @racket[immutable-k-list] parameters take
 S-expression values that are used as the corresponding arguments to
-@scheme[make-struct-type].}
+@racket[make-struct-type].}
 
 
 @defproc[(build-struct-generation* [all-name-ids (listof identifier?)]
@@ -80,8 +80,8 @@ S-expression values that are used as the corresponding arguments to
 				   [immutable-k-list list? empty])
 	 (listof identifier?)]{
 
-Like @scheme[build-struct-generation], but given the names produced by
-@scheme[build-struct-names], instead of re-generating them.}
+Like @racket[build-struct-generation], but given the names produced by
+@racket[build-struct-names], instead of re-generating them.}
 
 @defproc[(build-struct-expand-info [name-id identifier?]
                                    [field-ids (listof identifier?)]
@@ -95,9 +95,9 @@ Like @scheme[build-struct-generation], but given the names produced by
                                    [base-setters (listof (or/c identifier? false/c))])
 	 any]{
 
-Takes mostly the same arguments as @scheme[build-struct-names], plus a parent
-identifier/@scheme[#t]/@scheme[#f] and a list of accessor and mutator
-identifiers (possibly ending in @scheme[#f]) for a parent type, and
+Takes mostly the same arguments as @racket[build-struct-names], plus a parent
+identifier/@racket[#t]/@racket[#f] and a list of accessor and mutator
+identifiers (possibly ending in @racket[#f]) for a parent type, and
 generates an S-expression for expansion-time code to be used in the
 binding for the structure name. 
 
@@ -105,15 +105,15 @@ If @racket[no-ctr?] is true, then the constructor name is omitted from
 the expansion-time information. Similarly, if @racket[no-type?] is
 true, then the structure-type name is omitted.
 
-A @scheme[#t] for the @scheme[base-name] means no super-type,
-@scheme[#f] means that the super-type (if any) is unknown, and an
+A @racket[#t] for the @racket[base-name] means no super-type,
+@racket[#f] means that the super-type (if any) is unknown, and an
 identifier indicates the super-type identifier.}
 
 
 @defproc[(struct-declaration-info? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[x] has the shape of expansion-time
-information for structure type declarations, @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[x] has the shape of expansion-time
+information for structure type declarations, @racket[#f] otherwise.
 See @secref[#:doc refman]{structinfo}.}
 
 
@@ -127,37 +127,37 @@ See @secref[#:doc refman]{structinfo}.}
 				      [omit-set? boolean? #f])
 	 syntax?]{
 
-This procedure implements the core of a @scheme[define-struct]
+This procedure implements the core of a @racket[define-struct]
 expansion.
 
-The @scheme[generate-struct-declaration] procedure is called by a
-macro expander to generate the expansion, where the @scheme[name-id],
-@scheme[super-id-or-false], and @scheme[field-id-list] arguments
-provide the main parameters. The @scheme[current-context] argument is
-normally the result of @scheme[syntax-local-context]. The
-@scheme[orig-stx] argument is used for syntax errors. The optional
-@scheme[omit-sel?] and @scheme[omit-set?]  arguments default to
-@scheme[#f]; a @scheme[#t] value suppresses definitions of field
+The @racket[generate-struct-declaration] procedure is called by a
+macro expander to generate the expansion, where the @racket[name-id],
+@racket[super-id-or-false], and @racket[field-id-list] arguments
+provide the main parameters. The @racket[current-context] argument is
+normally the result of @racket[syntax-local-context]. The
+@racket[orig-stx] argument is used for syntax errors. The optional
+@racket[omit-sel?] and @racket[omit-set?]  arguments default to
+@racket[#f]; a @racket[#t] value suppresses definitions of field
 selectors or mutators, respectively.
 
-The @scheme[make-struct-type] procedure is called to generate the
+The @racket[make-struct-type] procedure is called to generate the
 expression to actually create the struct type. Its arguments are
-@scheme[orig-stx], @scheme[name-id-stx], @scheme[defined-name-stxes],
-and @scheme[super-info].  The first two are as provided originally to
-@scheme[generate-struct-declaration], the third is the set of names
-generated by @scheme[build-struct-names], and the last is super-struct
-info obtained by resolving @scheme[super-id-or-false] when it is not
-@scheme[#f], @scheme[#f] otherwise.
+@racket[orig-stx], @racket[name-id-stx], @racket[defined-name-stxes],
+and @racket[super-info].  The first two are as provided originally to
+@racket[generate-struct-declaration], the third is the set of names
+generated by @racket[build-struct-names], and the last is super-struct
+info obtained by resolving @racket[super-id-or-false] when it is not
+@racket[#f], @racket[#f] otherwise.
 
 The result should be an expression whose values are the same as the
-result of @scheme[make-struct-type]. Thus, the following is a basic
-@scheme[make-make-struct-type]:
+result of @racket[make-struct-type]. Thus, the following is a basic
+@racket[make-make-struct-type]:
 
-@SCHEMEBLOCK[
+@RACKETBLOCK[
       (lambda (orig-stx name-stx defined-name-stxes super-info)
-	#`(make-struct-type '#,name-stx 
-			     #,(and super-info (list-ref super-info 0))
-			     #,(/ (- (length defined-name-stxes) 3) 2)
-			     0 #f))]
+        #`(make-struct-type '#,name-stx
+                             #,(and super-info (list-ref super-info 0))
+                             #,(/ (- (length defined-name-stxes) 3) 2)
+                             0 #f))]
 
-but an actual @scheme[make-make-struct-type] will likely do more.}
+but an actual @racket[make-make-struct-type] will likely do more.}

@@ -3,21 +3,21 @@
 
 @defclass/title[ps-setup% object% ()]{
 
-A @scheme[ps-setup%] object contains configuration information for
- producing PostScript files using a @scheme[post-script-dc%] object.
+A @racket[ps-setup%] object contains configuration information for
+ producing PostScript files using a @racket[post-script-dc%] object.
  To a lesser extent, it contains information for printing with a
- @scheme[printer-dc%] object.
+ @racket[printer-dc%] object.
 
-When a @scheme[post-script-dc%] object is created, its configuration
- is determined by the @scheme[current-ps-setup] parameter's
- @scheme[ps-setup%] value. After a @scheme[post-script-dc%] object is
- created, it is unaffected by changes to the @scheme[current-ps-setup]
- parameter or mutations to the @scheme[ps-setup%] object.
+When a @racket[post-script-dc%] object is created, its configuration
+ is determined by the @racket[current-ps-setup] parameter's
+ @racket[ps-setup%] value. After a @racket[post-script-dc%] object is
+ created, it is unaffected by changes to the @racket[current-ps-setup]
+ parameter or mutations to the @racket[ps-setup%] object.
 
 
 @defconstructor[()]{
 
-Creates a new @scheme[ps-setup%] object with the (platform-specific)
+Creates a new @racket[ps-setup%] object with the (platform-specific)
  default configuration.
 
 }
@@ -26,7 +26,7 @@ Creates a new @scheme[ps-setup%] object with the (platform-specific)
                       [copy-filename? any/c #f])
            void?]{
 
-Copies the settings @scheme[copy-from] to @this-obj[], excluding the
+Copies the settings @racket[copy-from] to @this-obj[], excluding the
 filename unless @racket[copy-filename?] is true.
 
 }
@@ -35,7 +35,7 @@ filename unless @racket[copy-filename?] is true.
            string?]{
 
 Historically, gets the printer command used to print a file on
- Unix. The default is @scheme["lpr"]. This value is not currently used
+ Unix. The default is @racket["lpr"]. This value is not currently used
  by any platforms.
 
 }
@@ -45,7 +45,7 @@ Historically, gets the printer command used to print a file on
            void?]{
 
 Returns the current settings for horizontal and vertical margins when
- printing an @scheme[editor<%>]. See also @method[ps-setup%
+ printing an @racket[editor<%>]. See also @method[ps-setup%
  set-editor-margin].
 
 }
@@ -53,9 +53,9 @@ Returns the current settings for horizontal and vertical margins when
 @defmethod[(get-file)
            (or/c path-string? false/c)]{
 
-Gets the PostScript output filename. A @scheme[#f] value (the default)
+Gets the PostScript output filename. A @racket[#f] value (the default)
  indicates that the user should be prompted for a filename when a
- @scheme[post-script-dc%] object is created.
+ @racket[post-script-dc%] object is created.
 
 }
 
@@ -85,18 +85,18 @@ Returns the current settings for horizontal and vertical PostScript
            (one-of/c 'preview 'file 'printer)]{
 
 Gets the printing mode that determines where output is sent:
- @scheme['preview], @scheme['file], or @scheme['printer].  The default
- for X is @scheme['preview]. The value in Windows and Mac OS X is
- always @scheme['file].
+ @racket['preview], @racket['file], or @racket['printer].  The default
+ for X is @racket['preview]. The value in Windows and Mac OS X is
+ always @racket['file].
 
 }
 
 @defmethod[(get-orientation)
            (one-of/c 'portrait 'landscape)]{
 
-Gets the orientation: @scheme['portrait] or @scheme['landscape]. The
- default is @scheme['portrait]. Unlike most other settings, this one
- affects native printing (via @scheme[printer-dc%]) as well as
+Gets the orientation: @racket['portrait] or @racket['landscape]. The
+ default is @racket['portrait]. Unlike most other settings, this one
+ affects native printing (via @racket[printer-dc%]) as well as
  PostScript output.
 
 Landscaped orientation affects the size of the drawing area as
@@ -109,16 +109,16 @@ Landscaped orientation affects the size of the drawing area as
 @defmethod[(get-paper-name)
            string?]{
 
-Returns the name of the current paper type: @scheme["A4 210 x 297 mm"], 
- @scheme["A3 297 x 420 mm"], @scheme["Letter 8 1/2 x 11 in"], or
- @scheme["Legal 8 1/2 x 14 in"]. The default is @scheme["Letter 8 1/2 x 11 in"].
+Returns the name of the current paper type: @racket["A4 210 x 297 mm"], 
+ @racket["A3 297 x 420 mm"], @racket["Letter 8 1/2 x 11 in"], or
+ @racket["Legal 8 1/2 x 14 in"]. The default is @racket["Letter 8 1/2 x 11 in"].
 
 The paper name determines the size of the drawing area as reported by
  @method[dc<%> get-size] (along with landscape transformations from
  @method[ps-setup% get-orientation] and/or the scaling factors of
  @method[ps-setup% get-scaling]). It also determines the bounding box
- of PostScript output when a @scheme[post-script-dc%] context is
- created with a true value for the @scheme[use-paper-bbox?]
+ of PostScript output when a @racket[post-script-dc%] context is
+ created with a true value for the @racket[use-paper-bbox?]
  initialization argument.
 
 }
@@ -127,7 +127,7 @@ The paper name determines the size of the drawing area as reported by
            string?]{
 
 Gets the command used to view a PostScript file for X. The default is
- @scheme["gv"]. This value is not used by other platforms.
+ @racket["gv"]. This value is not used by other platforms.
 
 }
 
@@ -137,11 +137,11 @@ Gets the command used to view a PostScript file for X. The default is
 
 Gets the scaling factor for PostScript output.  @boxisfill[(scheme x)
  @elem{the horizontal scaling factor}] @boxisfill[(scheme y) @elem{the
- vertical scaling factor}] The default is @scheme[0.8] by
- @scheme[0.8].
+ vertical scaling factor}] The default is @racket[0.8] by
+ @racket[0.8].
 
 This scale is in addition to a scale that can be set by @method[dc<%>
- set-scale] in a @scheme[post-script-dc%] context. The size reported
+ set-scale] in a @racket[post-script-dc%] context. The size reported
  by @method[dc<%> get-size] is the size of the selected paper type
  (transposed for landscaped mode) divided by this scale.
 
@@ -152,9 +152,9 @@ This scale is in addition to a scale that can be set by @method[dc<%>
            void?]{
 
 Gets the translation (from the bottom left corner) for PostScript
- output.  @boxisfill[@scheme[x] @elem{the horizontal offset}]
- @boxisfill[@scheme[y] @elem{the vertical offset}] The default is
- @scheme[0.0] and @scheme[0.0].
+ output.  @boxisfill[@racket[x] @elem{the horizontal offset}]
+ @boxisfill[@racket[y] @elem{the vertical offset}] The default is
+ @racket[0.0] and @racket[0.0].
 
 The translation is not scaled by the numbers returned from
  @method[ps-setup% get-scaling] and the translation does not affect
@@ -177,9 +177,9 @@ Historically, sets the printer command that was used to print a file
 Sets the horizontal and vertical margins used when printing an editor
  with the @method[editor<%> print] method. These margins are always
  used for printing, whether the drawing destination is a
- @scheme[post-script-dc%] or @scheme[printer-dc%].  The margins are in
- the units of the destination @scheme[printer-dc%] or
- @scheme[post-script-dc%].  In the case of @scheme[post-script-dc%]
+ @racket[post-script-dc%] or @racket[printer-dc%].  The margins are in
+ the units of the destination @racket[printer-dc%] or
+ @racket[post-script-dc%].  In the case of @racket[post-script-dc%]
  printing, the editor margin is in addition to the PostScript margin
  that is determined by @method[ps-setup% set-margin].
 
@@ -206,18 +206,18 @@ Sets whether Level 2 commands are output in PostScript files.  See
            void?]{
 
 Sets the horizontal and vertical PostScript margins. When drawing to a
- @scheme[post-script-dc%], the page size reported by @method[dc<%>
+ @racket[post-script-dc%], the page size reported by @method[dc<%>
  get-size] subtracts these margins from the normal page area (before
  taking into account scaling affects). In addition, drawing into the
- @scheme[post-script-dc%] produces PostScript output that is offset by
+ @racket[post-script-dc%] produces PostScript output that is offset by
  the margins.
 
-When using the output of a @scheme[post-script-dc%] as
+When using the output of a @racket[post-script-dc%] as
  Encapsulated PostScript, the margin values are effectively
  irrelevant. Changing the margins moves the PostScript image in
  absolute coordinates, but it also moves the bounding box.
 
-The margins are in unscaled @scheme[post-script-dc%] units, which
+The margins are in unscaled @racket[post-script-dc%] units, which
  are points. The default margins are 16 points.
 
 }
@@ -228,7 +228,7 @@ The margins are in unscaled @scheme[post-script-dc%] units, which
 Sets the printing mode controlling where output is sent. See
  @method[ps-setup% get-mode].
 
-On Windows and Mac OS X, if @scheme['preview] or @scheme['printer]
+On Windows and Mac OS X, if @racket['preview] or @racket['printer]
  is provided, @|MismatchExn|.
 
 }

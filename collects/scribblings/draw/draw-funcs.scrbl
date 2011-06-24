@@ -8,7 +8,7 @@
 @defparam[current-ps-setup pss (is-a?/c ps-setup%)]{
 
 A parameter that determines the current PostScript configuration
- settings. See @scheme[post-script-dc%] and @scheme[printer-dc%].
+ settings. See @racket[post-script-dc%] and @racket[printer-dc%].
 
 }
 
@@ -16,7 +16,7 @@ A parameter that determines the current PostScript configuration
          (listof string?)]{
 
 Returns a list of font face names available on the current system. If
- @scheme['mono] is provided as the argument, then only faces that are
+ @racket['mono] is provided as the argument, then only faces that are
  known to correspond to monospace fonts are included in the list.
 
 }
@@ -29,7 +29,7 @@ Returns a list of font face names available on the current system. If
 Returns the built-in default face mapping for a particular font
  family.
 
-See @scheme[font%] for information about @scheme[family].
+See @racket[font%] for information about @racket[family].
 
 }
 
@@ -96,31 +96,31 @@ useful way.}
 
 @defthing[the-brush-list (is-a?/c brush-list%)]{
 
-See @scheme[brush-list%].
+See @racket[brush-list%].
 
 }
 
 @defthing[the-color-database (is-a?/c color-database<%>)]{
 
-See @scheme[color-database<%>].
+See @racket[color-database<%>].
 
 }
 
 @defthing[the-font-list (is-a?/c font-list%)]{
 
-See @scheme[font-list%].
+See @racket[font-list%].
 
 }
 
 @defthing[the-font-name-directory (is-a?/c font-name-directory<%>)]{
 
-See @scheme[font-name-directory<%>].
+See @racket[font-name-directory<%>].
 
 
 }
 
 @defthing[the-pen-list (is-a?/c pen-list%)]{
 
-See @scheme[pen-list%].
+See @racket[pen-list%].
 
 }

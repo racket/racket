@@ -11,7 +11,7 @@
 
 Syntax classes provide an abstraction mechanism for @tech{syntax
 patterns}. Built-in syntax classes are supplied that recognize basic
-classes such as @scheme[identifier] and @scheme[keyword].  Programmers
+classes such as @racket[identifier] and @racket[keyword].  Programmers
 can compose basic syntax classes to build specifications of more
 complex syntax, such as lists of distinct identifiers and formal
 arguments with keywords. Macros that manipulate the same syntactic
@@ -40,14 +40,14 @@ structures can share syntax class definitions.
                  (pattern syntax-pattern pattern-directive ...)])
                #:contracts ([description-expr (or/c string? #f)])]{
 
-Defines @scheme[name-id] as a @deftech{syntax class}, which
+Defines @racket[name-id] as a @deftech{syntax class}, which
 encapsulates one or more @tech{single-term patterns}.
 
 A syntax class may have formal parameters, in which case they are
 bound as variables in the body. Syntax classes support optional
 arguments and keyword arguments using the same syntax as
-@scheme[lambda]. The body of the syntax-class definition contains a
-non-empty sequence of @scheme[pattern] variants.
+@racket[lambda]. The body of the syntax-class definition contains a
+non-empty sequence of @racket[pattern] variants.
 
 The following options are supported:
 
@@ -69,12 +69,12 @@ depths are not included, nor are nested attributes from
 @specsubform[(code:line #:description description-expr)
              #:contracts ([description-expr (or/c string? #f)])]{
 
-The @scheme[description] argument is evaluated in a scope containing
+The @racket[description] argument is evaluated in a scope containing
 the syntax class's parameters. If the result is a string, it is used
 in error messages involving the syntax class. For example, if a term
 is rejected by the syntax class, an error of the form
-@schemevalfont{"expected @scheme[description]"} may be synthesized. If
-the result is @scheme[#f], the syntax class is skipped in the search
+@racketvalfont{"expected @racket[description]"} may be synthesized. If
+the result is @racket[#f], the syntax class is skipped in the search
 for a description to report.
 
 If the option is not given absent, the name of the syntax class is
@@ -91,20 +91,20 @@ internal structure of the syntax class.
 
 Directs the syntax class to ``commit'' to the first successful
 match. When a variant succeeds, all choice points within the syntax
-class are discarded. See also @scheme[~commit].
+class are discarded. See also @racket[~commit].
 }
 
 @specsubform[#:no-delimit-cut]{
 
-By default, a cut (@scheme[~!]) within a syntax class only discards
+By default, a cut (@racket[~!]) within a syntax class only discards
 choice points within the syntax class. That is, the body of the syntax
-class acts as though it is wrapped in a @scheme[~delimit-cut] form. If
-@scheme[#:no-delimit-cut] is specified, a cut may affect choice points
+class acts as though it is wrapped in a @racket[~delimit-cut] form. If
+@racket[#:no-delimit-cut] is specified, a cut may affect choice points
 of the syntax class's calling context (another syntax class's patterns
-or a @scheme[syntax-parse] form).
+or a @racket[syntax-parse] form).
 
-It is an error to use both @scheme[#:commit] and
-@scheme[#:no-delimit-cut].
+It is an error to use both @racket[#:commit] and
+@racket[#:no-delimit-cut].
 }
 
 @specsubform[(code:line #:literals (literal-entry))]
@@ -112,16 +112,16 @@ It is an error to use both @scheme[#:commit] and
 @specsubform[(code:line #:conventions (convention-id ...))]{
 
 Declares the literals and conventions that apply to the syntax class's
-variant patterns and their immediate @scheme[#:with] clauses. Patterns
+variant patterns and their immediate @racket[#:with] clauses. Patterns
 occuring within subexpressions of the syntax class (for example, on
-the right-hand side of a @scheme[#:fail-when] clause) are not
+the right-hand side of a @racket[#:fail-when] clause) are not
 affected.
 
-These options have the same meaning as in @scheme[syntax-parse].
+These options have the same meaning as in @racket[syntax-parse].
 }
 
 Each variant of a syntax class is specified as a separate
-@scheme[pattern]-form whose syntax pattern is a @tech{single-term
+@racket[pattern]-form whose syntax pattern is a @tech{single-term
 pattern}.
 }
 
@@ -131,14 +131,14 @@ pattern}.
            (define-splicing-syntax-class (name-id kw-formals) stxclass-option ... 
              stxclass-variant ...+)]]{
 
-Defines @scheme[name-id] as a @deftech{splicing syntax class},
+Defines @racket[name-id] as a @deftech{splicing syntax class},
 analogous to a @tech{syntax class} but encapsulating @tech{head
 patterns} rather than @tech{single-term patterns}.
 
-The options are the same as for @scheme[define-syntax-class].
+The options are the same as for @racket[define-syntax-class].
 
 Each variant of a splicing syntax class is specified as a separate
-@scheme[pattern]-form whose syntax pattern is a @tech{head pattern}.
+@racket[pattern]-form whose syntax pattern is a @tech{head pattern}.
 }
 
 @defform[#:literals (pattern)
@@ -148,13 +148,13 @@ Used to indicate a variant of a syntax class or splicing syntax
 class. The variant accepts syntax matching the given syntax pattern
 with the accompanying @tech{pattern directives}.
 
-When used within @scheme[define-syntax-class], @scheme[syntax-pattern]
+When used within @racket[define-syntax-class], @racket[syntax-pattern]
 should be a @tech{single-term pattern}; within
-@scheme[define-splicing-syntax-class], it should be a @tech{head
+@racket[define-splicing-syntax-class], it should be a @tech{head
 pattern}.
 
 The attributes of the variant are the attributes of the pattern
-together with all attributes bound by @scheme[#:with] clauses,
+together with all attributes bound by @racket[#:with] clauses,
 including nested attributes produced by syntax classes associated with
 the pattern variables.
 }
@@ -170,7 +170,7 @@ Both the parsing forms and syntax class definition forms support
 specifying side conditions. The grammar for pattern directives
 follows:
 
-@schemegrammar[pattern-directive
+@racketgrammar[pattern-directive
                (code:line #:declare pattern-id syntax-class-id)
                (code:line #:declare pattern-id (syntax-class-id arg ...))
                (code:line #:with syntax-pattern expr)
@@ -188,18 +188,18 @@ The first form is equivalent to using the
 to use both for the same pattern variable).
 
 The second form allows the use of parameterized syntax classes, which
-cannot be expressed using the ``colon'' notation. The @scheme[arg]s
+cannot be expressed using the ``colon'' notation. The @racket[arg]s
 are evaluated outside the scope of any of the attribute bindings from
-pattern that the @scheme[#:declare] directive applies to. Keyword
-arguments are supported, using the same syntax as in @scheme[#%app].
+pattern that the @racket[#:declare] directive applies to. Keyword
+arguments are supported, using the same syntax as in @racket[#%app].
 }
 
 @specsubform[(code:line #:with syntax-pattern stx-expr)]{
 
-Evaluates the @scheme[stx-expr] in the context of all previous
+Evaluates the @racket[stx-expr] in the context of all previous
 attribute bindings and matches it against the pattern. If the match
 succeeds, the pattern's attributes are added to environment for the
-evaluation of subsequent side conditions. If the @scheme[#:with] match
+evaluation of subsequent side conditions. If the @racket[#:with] match
 fails, the matching process backtracks. Since a syntax object may
 match a pattern in several ways, backtracking may cause the same
 clause to be tried multiple times before the next clause is reached.
@@ -207,21 +207,21 @@ clause to be tried multiple times before the next clause is reached.
 
 @specsubform[(code:line #:attr attr-arity-decl expr)]{
 
-Evaluates the @scheme[expr] in the context of all previous attribute
+Evaluates the @racket[expr] in the context of all previous attribute
 bindings and binds it to the given attribute. The value of
-@scheme[expr] need not be syntax.
+@racket[expr] need not be syntax.
 }
 
 @specsubform[(code:line #:fail-when condition-expr message-expr)
              #:contracts ([message-expr (or/c string? #f)])]{
 
-Evaluates the @scheme[condition-expr] in the context of all previous
-attribute bindings. If the value is any true value (not @scheme[#f]),
+Evaluates the @racket[condition-expr] in the context of all previous
+attribute bindings. If the value is any true value (not @racket[#f]),
 the matching process backtracks (with the given message); otherwise,
 it continues. If the value of the condition expression is a syntax
 object, it is indicated as the cause of the error.
 
-If the @scheme[message-expr] produces a string it is used as the
+If the @racket[message-expr] produces a string it is used as the
 failure message; otherwise the failure is reported in terms of the
 enclosing descriptions.
 }
@@ -229,15 +229,15 @@ enclosing descriptions.
 @specsubform[(code:line #:fail-unless condition-expr message-expr)
              #:contracts ([message-expr (or/c string? #f)])]{
 
-Like @scheme[#:fail-when] with the condition negated.
+Like @racket[#:fail-when] with the condition negated.
 }
 
 @specsubform[(code:line #:when condition-expr)]{
 
-Evaluates the @scheme[condition-expr] in the context of all previous
-attribute bindings. If the value is @scheme[#f], the matching process
-backtracks. In other words, @scheme[#:when] is like
-@scheme[#:fail-unless] without the message argument.
+Evaluates the @racket[condition-expr] in the context of all previous
+attribute bindings. If the value is @racket[#f], the matching process
+backtracks. In other words, @racket[#:when] is like
+@racket[#:fail-unless] without the message argument.
 }
 
 @specsubform[(code:line #:do [def-or-expr ...])]{
@@ -247,9 +247,9 @@ intermixed, and evaluates them in the scope of all previous attribute
 bindings. The names bound by the definitions are in scope in
 the expressions of subsequent patterns and clauses.
 
-There is currently no way to bind attributes using a @scheme[#:do]
+There is currently no way to bind attributes using a @racket[#:do]
 block. It is an error to shadow an attribute binding with a definition
-in a @scheme[#:do] block.
+in a @racket[#:do] block.
 }
 
 
@@ -266,20 +266,20 @@ name, separated by a dot (see the example below).
 
 Attribute names cannot be used directly as expressions; that is,
 attributes are not variables. Instead, an attribute's value can be
-gotten using the @scheme[attribute] special form.
+gotten using the @racket[attribute] special form.
 
 @defform[(attribute attr-id)]{
 
 Returns the value associated with the attribute named
-@scheme[attr-id]. If @scheme[attr-id] is not bound as an attribute, an
+@racket[attr-id]. If @racket[attr-id] is not bound as an attribute, an
 error is raised.
 }
 
 The value of an attribute need not be syntax. Non-syntax-valued
 attributes can be used to return a parsed representation of a subterm
 or the results of an analysis on the subterm. A non-syntax-valued
-attribute should be bound using the @scheme[#:attr] directive or a
-@scheme[~bind] pattern.
+attribute should be bound using the @racket[#:attr] directive or a
+@racket[~bind] pattern.
 
 @myexamples[
 (define-syntax-class table
@@ -295,8 +295,8 @@ attribute should be bound using the @scheme[#:attr] directive or a
 
 A syntax-valued attribute is an attribute whose value is a syntax
 object or a syntax list of the appropriate @tech{ellipsis
-depth}. Syntax-valued attributes can be used within @scheme[syntax],
-@scheme[quasisyntax], etc as part of a syntax template. If a
+depth}. Syntax-valued attributes can be used within @racket[syntax],
+@racket[quasisyntax], etc as part of a syntax template. If a
 non-syntax-valued attribute is used in a syntax template, a runtime
 error is signalled.
 
@@ -311,13 +311,13 @@ error is signalled.
 
 Every attribute has an associated @deftech{ellipsis depth} that
 determines how it can be used in a syntax template (see the discussion
-of ellipses in @scheme[syntax]). For a pattern variable, the ellipsis
+of ellipses in @racket[syntax]). For a pattern variable, the ellipsis
 depth is the number of ellipses the pattern variable ``occurs under''
 in the pattern. For a nested attribute the depth is the sum of the
 pattern variable's depth and the depth of the attribute in the syntax
 class. Consider the following code:
 
-@schemeblock[
+@racketblock[
 (define-syntax-class quark
   (pattern (a b ...)))
 (syntax-parse some-term
@@ -325,18 +325,18 @@ class. Consider the following code:
    some-code])
 ]
 
-The syntax class @scheme[quark] exports two attributes: @scheme[a] at
-depth 0 and @scheme[b] at depth 1. The @scheme[syntax-parse] pattern
-has three pattern variables: @scheme[x] at depth 0, @scheme[y] at
-depth 2, and @scheme[z] at depth 0. Since @scheme[x] and @scheme[y]
-are annotated with the @scheme[quark] syntax class, the pattern also
-binds the following nested attributes: @scheme[y.a] at depth 2,
-@scheme[y.b] at depth 3, @scheme[z.a] at depth 0, and @scheme[z.b] at
+The syntax class @racket[quark] exports two attributes: @racket[a] at
+depth 0 and @racket[b] at depth 1. The @racket[syntax-parse] pattern
+has three pattern variables: @racket[x] at depth 0, @racket[y] at
+depth 2, and @racket[z] at depth 0. Since @racket[x] and @racket[y]
+are annotated with the @racket[quark] syntax class, the pattern also
+binds the following nested attributes: @racket[y.a] at depth 2,
+@racket[y.b] at depth 3, @racket[z.a] at depth 0, and @racket[z.b] at
 depth 1.
 
 An attribute's ellipsis nesting depth is @emph{not} a guarantee that
-its value has that level of list nesting. In particular, @scheme[~or]
-and @scheme[~optional] patterns may result in attributes with fewer
+its value has that level of list nesting. In particular, @racket[~or]
+and @racket[~optional] patterns may result in attributes with fewer
 than expected levels of list nesting.
 
 @(myexamples

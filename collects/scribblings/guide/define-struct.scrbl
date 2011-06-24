@@ -8,76 +8,76 @@
 
 @refalso["structures"]{structure types}
 
-New datatypes are normally created with the @scheme[struct]
+New datatypes are normally created with the @racket[struct]
 form, which is the topic of this chapter. The class-based object
 system, which we defer to @secref["classes"], offers an alternate
 mechanism for creating new datatypes, but even classes and objects are
 implemented in terms of structure types.
 
 @; ------------------------------------------------------------
-@section{Simple Structure Types: @scheme[struct]}
+@section{Simple Structure Types: @racket[struct]}
 
-@refalso["define-struct"]{@scheme[struct]}
+@refalso["define-struct"]{@racket[struct]}
 
-To a first approximation, the syntax of @scheme[struct] is
+To a first approximation, the syntax of @racket[struct] is
 
 @specform[
 (struct struct-id (field-id ...))
 ]{}
 
-@as-examples[@schemeblock+eval[
+@as-examples[@racketblock+eval[
 #:eval posn-eval
 (struct posn (x y))
 ]]
 
-The @scheme[struct] form binds @scheme[_struct-id] and a number of
-identifiers that are built from @scheme[_struct-id] and the
-@scheme[_field-id]s:
+The @racket[struct] form binds @racket[_struct-id] and a number of
+identifiers that are built from @racket[_struct-id] and the
+@racket[_field-id]s:
 
 @itemize[
 
- @item{@scheme[_struct-id] : a @deftech{constructor} function that
-       takes as many arguments as the number of @scheme[_field-id]s,
+ @item{@racket[_struct-id] : a @deftech{constructor} function that
+       takes as many arguments as the number of @racket[_field-id]s,
        and returns an instance of the structure type.
 
        @examples[#:eval posn-eval (posn 1 2)]}
 
- @item{@scheme[_struct-id]@schemeidfont{?} : a @deftech{predicate}
-       function that takes a single argument and returns @scheme[#t]
-       if it is an instance of the structure type, @scheme[#f]
+ @item{@racket[_struct-id]@racketidfont{?} : a @deftech{predicate}
+       function that takes a single argument and returns @racket[#t]
+       if it is an instance of the structure type, @racket[#f]
        otherwise.
 
        @examples[#:eval posn-eval (posn? 3) (posn? (posn 1 2))]}
 
- @item{@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id] : for
-       each @scheme[_field-id], an @deftech{accessor} that extracts
+ @item{@racket[_struct-id]@racketidfont{-}@racket[_field-id] : for
+       each @racket[_field-id], an @deftech{accessor} that extracts
        the value of the corresponding field from an instance of the
        structure type.
 
        @examples[#:eval posn-eval 
                  (posn-x (posn 1 2)) (posn-y (posn 1 2))]}
 
- @item{@schemeidfont{struct:}@scheme[_struct-id] : a
+ @item{@racketidfont{struct:}@racket[_struct-id] : a
        @deftech{structure type descriptor}, which is a value that
        represents the structure type as a first-class value (with
-       @scheme[#:super], as discussed later in
+       @racket[#:super], as discussed later in
        @secref["struct-options"]).}
 
 ]
 
-A @scheme[struct] form places no constraints on the kinds of
+A @racket[struct] form places no constraints on the kinds of
 values that can appear for fields in an instance of the structure
-type. For example, @scheme[(posn "apple" #f)] produces an
-instance of @scheme[posn], even though @scheme["apple"] and
-@scheme[#f] are not valid coordinates for the obvious uses of
-@scheme[posn] instances. Enforcing constraints on field values, such
+type. For example, @racket[(posn "apple" #f)] produces an
+instance of @racket[posn], even though @racket["apple"] and
+@racket[#f] are not valid coordinates for the obvious uses of
+@racket[posn] instances. Enforcing constraints on field values, such
 as requiring them to be numbers, is normally the job of a contract, as
 discussed later in @secref["contracts"].
 
 @; ------------------------------------------------------------
 @section[#:tag "struct-copy"]{Copying and Update}
 
-The @scheme[struct-copy] form clones a structure and optionally
+The @racket[struct-copy] form clones a structure and optionally
 updates specified fields in the clone. This process is sometimes
 called a @deftech{functional update}, because the result is a
 structure with updated field values. but the original structure is not
@@ -87,13 +87,13 @@ modified.
 (struct-copy struct-id struct-expr [field-id expr] ...)
 ]
 
-The @scheme[_struct-id] that appears after @scheme[struct-copy] must
-be a structure type name bound by @scheme[struct] (i.e., the
+The @racket[_struct-id] that appears after @racket[struct-copy] must
+be a structure type name bound by @racket[struct] (i.e., the
 name that cannot be used directly as an expression). The
-@scheme[_struct-expr] must produce an instance of the structure type.
+@racket[_struct-expr] must produce an instance of the structure type.
 The result is a new instance of the structure type that is like the old
-one, except that the field indicated by each @scheme[_field-id] gets
-the value of the corresponding @scheme[_expr].
+one, except that the field indicated by each @racket[_field-id] gets
+the value of the corresponding @racket[_expr].
 
 @examples[
 #:eval posn-eval 
@@ -107,7 +107,7 @@ the value of the corresponding @scheme[_expr].
 @; ------------------------------------------------------------
 @section[#:tag "struct-subtypes"]{Structure Subtypes}
 
-An extended form of @scheme[struct] can be used to define a
+An extended form of @racket[struct] can be used to define a
 @defterm{structure subtype}, which is a structure type that extends an
 existing structure type:
 
@@ -115,11 +115,11 @@ existing structure type:
 (struct struct-id super-id (field-id ...))
 ]
 
-The @scheme[_super-id] must be a structure type name bound by
-@scheme[struct] (i.e., the name that cannot be used directly as
+The @racket[_super-id] must be a structure type name bound by
+@racket[struct] (i.e., the name that cannot be used directly as
 an expression).
 
-@as-examples[@schemeblock+eval[
+@as-examples[@racketblock+eval[
 #:eval posn-eval 
 (struct posn (x y))
 (struct 3d-posn posn (z))
@@ -145,7 +145,7 @@ p
 
 With a structure type definition like
 
-@schemeblock[
+@racketblock[
 (struct posn (x y))
 ]
 
@@ -156,7 +156,7 @@ structure type are kept private to a module, then no other module can
 rely on the representation of the type's instances.
 
 To make a structure type @deftech{transparent}, use the
-@scheme[#:transparent] keyword after the field-name sequence:
+@racket[#:transparent] keyword after the field-name sequence:
 
 @def+int[
 #:eval posn-eval
@@ -168,7 +168,7 @@ To make a structure type @deftech{transparent}, use the
 An instance of a transparent structure type prints like a call to the
 constructor, so that it shows the structures field values. A
 transparent structure type also allows reflective operations, such as
-@scheme[struct?] and @scheme[struct-info], to be used on its instances
+@racket[struct?] and @racket[struct-info], to be used on its instances
 (see @secref["reflection"]).
 
 Structure types are opaque by default, because opaque structure
@@ -180,8 +180,8 @@ by the library.
 @; ------------------------------------------------------------
 @section[#:tag "struct-equal"]{Structure Comparisons}
 
-A generic @scheme[equal?] comparison automatically recurs on the
-fields of a transparent structure type, but @scheme[equal?] defaults
+A generic @racket[equal?] comparison automatically recurs on the
+fields of a transparent structure type, but @racket[equal?] defaults
 to mere instance identity for opaque structure types:
 
 @def+int[
@@ -197,9 +197,9 @@ to mere instance identity for opaque structure types:
 (equal? slab (lead 1 2))
 ]
 
-To support instances comparisons via @scheme[equal?] without making
-the structure type transparent, you can use the @scheme[#:property]
-keyword, @scheme[prop:equal+hash], and then a list of three functions:
+To support instances comparisons via @racket[equal?] without making
+the structure type transparent, you can use the @racket[#:property]
+keyword, @racket[prop:equal+hash], and then a list of three functions:
 
 @def+int[
 #:eval posn-eval
@@ -207,23 +207,23 @@ keyword, @scheme[prop:equal+hash], and then a list of three functions:
   #:property
   prop:equal+hash
   (list (lambda (a b equal?-recur) 
-          (code:comment @#,t{compare @scheme[a] and @scheme[b]})
+          (code:comment @#,t{compare @racket[a] and @racket[b]})
           (and (equal?-recur (lead-width a) (lead-width b))
                (equal?-recur (lead-height a) (lead-height b))))
         (lambda (a hash-recur)
-          (code:comment @#,t{compute primary hash code of @scheme[a]})
+          (code:comment @#,t{compute primary hash code of @racket[a]})
           (+ (hash-recur (lead-width a))
              (* 3 (hash-recur (lead-height a)))))
         (lambda (a hash2-recur)
-          (code:comment @#,t{compute secondary hash code of @scheme[a]})
+          (code:comment @#,t{compute secondary hash code of @racket[a]})
           (+ (hash2-recur (lead-width a))
              (hash2-recur (lead-height a))))))
 (equal? (lead 1 2) (lead 1 2))
 ]
 
-The first function in the list implements the @scheme[equal?] test on
-two @scheme[lead]s; the third argument to the function is used instead
-of @scheme[equal?] for recursive equality testing, so that data cycles
+The first function in the list implements the @racket[equal?] test on
+two @racket[lead]s; the third argument to the function is used instead
+of @racket[equal?] for recursive equality testing, so that data cycles
 can be handled correctly. The other two functions compute primary and
 secondary hash codes for use with @tech{hash tables}:
 
@@ -235,7 +235,7 @@ secondary hash codes for use with @tech{hash tables}:
 (hash-ref h (lead 2 1))
 ]
 
-The first function provided with @scheme[prop:equal+hash] is not
+The first function provided with @racket[prop:equal+hash] is not
 required to recursively compare the fields of the structure. For
 example, a structure type representing a set might implement equality
 by checking that the members of the set are the same, independent of
@@ -246,14 +246,14 @@ types that are supposed to be equivalent.
 @; ------------------------------------------------------------
 @section{Structure Type Generativity}
 
-Each time that a @scheme[struct] form is evaluated, it
+Each time that a @racket[struct] form is evaluated, it
 generates a structure type that is distinct from all existing
 structure types, even if some other structure type has the same name
 and fields.
 
 This generativity is useful for enforcing abstractions and
 implementing programs such as interpreters, but beware of placing a
-@scheme[struct] form in positions that are evaluated multiple
+@racket[struct] form in positions that are evaluated multiple
 times.
 
 @defexamples[
@@ -293,10 +293,10 @@ of a prefab structure is similar to a vector, but it starts
 @litchar{#s} instead of just @litchar{#}, and the first element in the
 printed form is the prefab structure type's name.
 
-The following examples show instances of the @schemeidfont{sprout}
+The following examples show instances of the @racketidfont{sprout}
 prefab structure type that has one field. The first instance has a
-field value @scheme['bean], and the second has field value
-@scheme['alfalfa]:
+field value @racket['bean], and the second has field value
+@racket['alfalfa]:
 
 @interaction[
 '#s(sprout bean)
@@ -310,8 +310,8 @@ the quotes above are optional:
 #s(sprout bean)
 ]
 
-When you use the @scheme[#:prefab] keyword with
-@scheme[struct], instead of generating a new structure type,
+When you use the @racket[#:prefab] keyword with
+@racket[struct], instead of generating a new structure type,
 you obtain bindings that work with the existing prefab structure type:
 
 @interaction[
@@ -323,10 +323,10 @@ you obtain bindings that work with the existing prefab structure type:
 (sprout 'garlic)
 ]
 
-The field name @schemeidfont{kind} above does not matter for finding
-the prefab structure type; only the name @schemeidfont{sprout} and the
+The field name @racketidfont{kind} above does not matter for finding
+the prefab structure type; only the name @racketidfont{sprout} and the
 number of fields matters. At the same time, the prefab structure type
-@schemeidfont{sprout} with three fields is a different structure type
+@racketidfont{sprout} with three fields is a different structure type
 than the one with a single field:
 
 @interaction[
@@ -389,13 +389,13 @@ Since the expression reader can generate @tech{prefab} instances, they
 are useful when convenient @tech{serialization} is more important than
 abstraction. @tech{Opaque} and @tech{transparent} structures also can
 be serialized, however, if they are defined with
-@scheme[define-serializable-struct] as described in
+@racket[define-serializable-struct] as described in
 @secref["serialization"].
 
 @; ------------------------------------------------------------
 @section[#:tag "struct-options"]{More Structure Type Options}
 
-The full syntax of @scheme[struct] supports many options, both
+The full syntax of @racket[struct] supports many options, both
 at the structure-type level and at the level of individual fields:
 
 @specform/subs[(struct struct-id maybe-super (field ...)
@@ -405,13 +405,13 @@ at the structure-type level and at the level of individual fields:
                 [field field-id
                        [field-id field-option ...]])]
 
-A @scheme[_struct-option] always starts with a keyword:
+A @racket[_struct-option] always starts with a keyword:
 
  @specspecsubform[#:mutable]{
 
     Causes all fields of the structure to be mutable, and introduces
-    for each @scheme[_field-id] a @deftech{mutator}
-     @schemeidfont{set-}@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id]@schemeidfont{!}
+    for each @racket[_field-id] a @deftech{mutator}
+     @racketidfont{set-}@racket[_struct-id]@racketidfont{-}@racket[_field-id]@racketidfont{!}
     that sets the value of the corresponding field in an instance of
     the structure type.
 
@@ -421,8 +421,8 @@ A @scheme[_struct-option] always starts with a keyword:
                   (set-dot-x! d 10)
                   (dot-x d)]
 
-   The @scheme[#:mutable] option can also be used as a
-   @scheme[_field-option], in which case it makes an individual field
+   The @racket[#:mutable] option can also be used as a
+   @racket[_field-option], in which case it makes an individual field
    mutable.
        
    @defexamples[
@@ -436,7 +436,7 @@ A @scheme[_struct-option] always starts with a keyword:
   in a previous section, @secref["trans-struct"].}
 
  @specspecsubform[(code:line #:inspector inspector-expr)]{
-  Generalizes @scheme[#:transparent] to support more controlled access
+  Generalizes @racket[#:transparent] to support more controlled access
   to reflective operations.}
 
  @specspecsubform[(code:line #:prefab)]{
@@ -447,10 +447,10 @@ A @scheme[_struct-option] always starts with a keyword:
 
   Specifies a value to be used for all automatic fields in the
   structure type, where an automatic field is indicated by the
-  @scheme[#:auto] field option. The constructor procedure does not
+  @racket[#:auto] field option. The constructor procedure does not
   accept arguments for automatic fields. Automatic fields are
   implicitly mutable (via reflective operations), but mutator
-  functions are bound only if @scheme[#:mutator] is also specified.
+  functions are bound only if @racket[#:mutator] is also specified.
 
   @defexamples[
     (struct posn (x y [z #:auto])
@@ -508,7 +508,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @specspecsubform[(code:line #:property prop-expr val-expr)]{
    Associates a @deftech{property} and value with the structure type.
-   For example, the @scheme[prop:procedure] property allows a
+   For example, the @racket[prop:procedure] property allows a
    structure instance to be used as a function; the property value
    determines how a call is implemented when using the structure as a
    function.
@@ -527,11 +527,11 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @specspecsubform[(code:line #:super super-expr)]{
 
-  An alternative to supplying a @scheme[super-id] next to
-  @scheme[struct-id]. Instead of the name of a structure type (which is
-  not an expression), @scheme[super-expr] should produce a
+  An alternative to supplying a @racket[super-id] next to
+  @racket[struct-id]. Instead of the name of a structure type (which is
+  not an expression), @racket[super-expr] should produce a
   @tech{structure type descriptor} value. An advantage of
-  @scheme[#:super] is that structure type descriptors are values, so
+  @racket[#:super] is that structure type descriptors are values, so
   they can be passed to procedures.
 
   @defexamples[

@@ -63,7 +63,7 @@ syntax. Meanwhile, @racketmodname[s-exp] takes care of the
 @tech{reader}-level responsibilities of a @hash-lang[] language.
 
 Unlike @racketmodname[racket], @racketmodname[s-exp] cannot be used as a
-module path with @scheme[require]. Although the syntax of
+module path with @racket[require]. Although the syntax of
 @racket[_language] for @hash-lang[] overlaps with the syntax of module
 paths, a @racket[_language] is not used directly as a module
 path. Instead, a @racket[_language] is suffixed with
@@ -97,7 +97,7 @@ a module path, and the specified module must provide two functions:
 @racketidfont{read} and @racketidfont{read-syntax}. The protocol is
 the same as for a @racketmetafont{#reader} implementation, but for
 @hash-lang[], the @racketidfont{read} and @racketidfont{read-syntax}
-functions must produce a @scheme[module] form that is based on the
+functions must produce a @racket[module] form that is based on the
 rest of the input file for the module.
 
 The following @filepath{literal.rkt} module implements a language that
@@ -259,7 +259,7 @@ information about @|PLaneT| packages.}
 
 A better approach may be to distribute your language as a @|PLaneT|
 package. A drawback of using a @|PLaneT| package is that users must
-type @racket[@#,hash-lang[] @#,schememodname[planet]] followed by a
+type @racket[@#,hash-lang[] @#,racketmodname[planet]] followed by a
 @|PLaneT| path to access the language. The great advantages are that the
 @|PLaneT| package can be installed automatically, it can be versioned,
 and it co-exists more easily with other packages.
@@ -376,7 +376,7 @@ Suppose that the file @filepath{death-list-5.rkt} contains
 
 @racketmodfile["death-list-5.rkt"]
 
-If you @scheme[require] @filepath{death-list-5.rkt} directly, then it
+If you @racket[require] @filepath{death-list-5.rkt} directly, then it
 prints the list in the usual Racket result format:
 
 @interaction[
@@ -595,7 +595,7 @@ racket
 
 With all of the pieces for @racket[literal] in place, try running the
 following variant of @filepath{tuvalu.rkt} directly and through a
-@scheme[require] from another module:
+@racket[require] from another module:
 
 @racketmod[
 #:file "tuvalu.rkt"

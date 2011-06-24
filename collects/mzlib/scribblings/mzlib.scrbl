@@ -6,7 +6,7 @@
 The @filepath{mzlib} collection contains wrappers and libraries for
 compatibility with older versions of Racket. In many ways, the
 libraries of the @filepath{mzlib} collection go with the
-@schememodname[mzscheme] legacy language. Newer variants of many
+@racketmodname[mzscheme] legacy language. Newer variants of many
 libraries reside in the @filepath{scheme} collection.
 
 @table-of-contents[]
@@ -15,23 +15,23 @@ libraries reside in the @filepath{scheme} collection.
 
 @mzlib[a-signature]
 
-Like @schememodname[scheme/signature] in @hash-lang[] form for
+Like @racketmodname[scheme/signature] in @hash-lang[] form for
 defining a single signature within a module, but based on
-@schememodname[mzscheme] instead of @schememodname[scheme/base].
+@racketmodname[mzscheme] instead of @racketmodname[scheme/base].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[a-unit]
 
-Like @schememodname[scheme/unit] in @hash-lang[] form for defining a
-single unit within a module, but based on @schememodname[mzscheme]
-instead of @schememodname[scheme/base].
+Like @racketmodname[scheme/unit] in @hash-lang[] form for defining a
+single unit within a module, but based on @racketmodname[mzscheme]
+instead of @racketmodname[scheme/base].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[async-channel]
 
-Re-exports @schememodname[scheme/async-channel].
+Re-exports @racketmodname[scheme/async-channel].
 
 @; ----------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ Re-exports @schememodname[scheme/async-channel].
 
 @mzlib[class]
 
-Re-exports @schememodname[scheme/class], except for the contract
+Re-exports @racketmodname[scheme/class], except for the contract
 constructors.
 
 @; ----------------------------------------------------------------------
@@ -52,13 +52,13 @@ constructors.
 
 @mzlib[cm]
 
-Re-exports @schememodname[compiler/cm].
+Re-exports @racketmodname[compiler/cm].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[cm-accomplice]
 
-Re-exports @schememodname[compiler/cm-accomplice].
+Re-exports @racketmodname[compiler/cm-accomplice].
 
 @; ----------------------------------------------------------------------
 
@@ -84,19 +84,19 @@ Re-exports @schememodname[compiler/cm-accomplice].
 
 @mzlib[control]
 
-Re-exports @schememodname[scheme/control].
+Re-exports @racketmodname[scheme/control].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[date]
 
-Re-exports @schememodname[scheme/date].
+Re-exports @racketmodname[scheme/date].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[deflate]
 
-Re-exports @schememodname[file/gzip].
+Re-exports @racketmodname[file/gzip].
 
 @; ----------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ Re-exports @schememodname[file/gzip].
 
 @mzlib[foreign]
 
-Re-exports @schememodname[scheme/foreign].
+Re-exports @racketmodname[scheme/foreign].
 
 @; ----------------------------------------------------------------------
 
@@ -128,7 +128,7 @@ Re-exports @schememodname[scheme/foreign].
 
 @mzlib[inflate]
 
-Re-exports @schememodname[file/gunzip].
+Re-exports @racketmodname[file/gunzip].
 
 @; ----------------------------------------------------------------------
 
@@ -154,7 +154,7 @@ Re-exports @schememodname[file/gunzip].
 
 @mzlib[md5]
 
-Re-exports @schememodname[file/md5].
+Re-exports @racketmodname[file/md5].
 
 @; ----------------------------------------------------------------------
 
@@ -184,13 +184,13 @@ Re-exports @schememodname[file/md5].
 
 @mzlib[pretty]
 
-Re-exports @schememodname[scheme/pretty].
+Re-exports @racketmodname[scheme/pretty].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[process]
 
-Re-exports @schememodname[scheme/system].
+Re-exports @racketmodname[scheme/system].
 
 @; ----------------------------------------------------------------------
 
@@ -200,7 +200,7 @@ Re-exports @schememodname[scheme/system].
 
 @mzlib[runtime-path]
 
-Re-exports @schememodname[scheme/runtime-path].
+Re-exports @racketmodname[scheme/runtime-path].
 
 @; ----------------------------------------------------------------------
 
@@ -218,7 +218,7 @@ Re-exports @schememodname[scheme/runtime-path].
 
 @mzlib[shared]
 
-Re-exports @schememodname[scheme/shared].
+Re-exports @racketmodname[scheme/shared].
 
 @; ----------------------------------------------------------------------
 
@@ -232,20 +232,20 @@ Re-exports @schememodname[scheme/shared].
 
 @mzlib[stxparam]
 
-Re-exports @schememodname[scheme/stxparam] and
-@schememodname[scheme/stxparam-exptime] (both at phase level 0).
+Re-exports @racketmodname[scheme/stxparam] and
+@racketmodname[scheme/stxparam-exptime] (both at phase level 0).
 
 @; ----------------------------------------------------------------------
 
 @mzlib[surrogate]
 
-Re-exports @schememodname[scheme/surrogate].
+Re-exports @racketmodname[scheme/surrogate].
 
 @; ----------------------------------------------------------------------
 
 @mzlib[tar]
 
-Re-exports @schememodname[file/tar].
+Re-exports @racketmodname[file/tar].
 
 @; ----------------------------------------------------------------------
 
@@ -255,7 +255,7 @@ Re-exports @schememodname[file/tar].
 
 @mzlib[trace]
 
-Re-exports @schememodname[racket/trace].
+Re-exports @racketmodname[racket/trace].
 
 @; ----------------------------------------------------------------------
 
@@ -265,7 +265,7 @@ Re-exports @schememodname[racket/trace].
 
 @mzlib[trait]
 
-Re-exports @schememodname[scheme/trait].
+Re-exports @racketmodname[scheme/trait].
 
 @; ----------------------------------------------------------------------
 
@@ -279,13 +279,13 @@ Re-exports @schememodname[scheme/trait].
 
 @mzlib[unit-exptime]
 
-Re-exports @schememodname[scheme/unit-exptime].
+Re-exports @racketmodname[scheme/unit-exptime].
 
 @; ----------------------------------------
 
 @mzlib[unit200]
 
-The @schememodname[mzlib/unit200] library provides an old
+The @racketmodname[mzlib/unit200] library provides an old
 implementation of units. See archived version 360 documentation on the
 @filepath{unit.ss} library of the @filepath{mzlib} collection for
 information about this library.
@@ -294,7 +294,7 @@ information about this library.
 
 @mzlib[unitsig200]
 
-The @schememodname[mzlib/unit200] library provides an old
+The @racketmodname[mzlib/unit200] library provides an old
 implementation of units. See archived version 360 documentation on the
 @filepath{unitsig.ss} library of the @filepath{mzlib} collection for
 information about this library.
@@ -303,7 +303,7 @@ information about this library.
 
 @mzlib[zip]
 
-Re-exports @schememodname[file/zip].
+Re-exports @racketmodname[file/zip].
 
 @; ----------------------------------------------------------------------
 

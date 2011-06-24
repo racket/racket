@@ -19,7 +19,7 @@
 
 @defmodule[lang/htdp-beginner]
 
-The @schememodname[lang/htdp-beginner] module provides the Beginning
+The @racketmodname[lang/htdp-beginner] module provides the Beginning
 Student language for @|htdp|; see @htdp-ref["beginner"].
 
 @; ------------------------------------------------------------
@@ -27,7 +27,7 @@ Student language for @|htdp|; see @htdp-ref["beginner"].
 
 @defmodule[lang/htdp-beginner-abbr]
 
-The @schememodname[lang/htdp-beginner-abbr] module provides the
+The @racketmodname[lang/htdp-beginner-abbr] module provides the
 Beginning Student with Abbreviations language for @|htdp|; see
 @htdp-ref["beginner-abbr"].
 
@@ -36,7 +36,7 @@ Beginning Student with Abbreviations language for @|htdp|; see
 
 @defmodule[lang/htdp-intermediate]
 
-The @schememodname[lang/htdp-intermediate] module provides the
+The @racketmodname[lang/htdp-intermediate] module provides the
 Intermediate Student language for @|htdp|; see
 @htdp-ref["intermediate"].
 
@@ -45,7 +45,7 @@ Intermediate Student language for @|htdp|; see
 
 @defmodule[lang/htdp-intermediate-lambda]
 
-The @schememodname[lang/htdp-intermediate-lambda] module provides the
+The @racketmodname[lang/htdp-intermediate-lambda] module provides the
 Intermediate Student with Lambda language for @|htdp|; see
 @htdp-ref["intermediate-lam"].
 
@@ -54,7 +54,7 @@ Intermediate Student with Lambda language for @|htdp|; see
 
 @defmodule[lang/htdp-advanced]
 
-The @schememodname[lang/htdp-advanced] module provides the Advanced
+The @racketmodname[lang/htdp-advanced] module provides the Advanced
 Student language for @|htdp|; see @htdp-ref["advanced"].
 
 @; ------------------------------------------------------------
@@ -62,17 +62,17 @@ Student language for @|htdp|; see @htdp-ref["advanced"].
 
 @defmodule[lang/plt-pretty-big-text]
 
-The @schememodname[lang/plt-pretty-big-text] module is similar to the
+The @racketmodname[lang/plt-pretty-big-text] module is similar to the
 @italic{HtDP} Advanced Student language, but with more of Racket's
 libraries in legacy form. It provides the bindings of 
-@schememodname[mzscheme],
-@schememodname[mzlib/etc], @schememodname[mzlib/file],
-@schememodname[mzlib/list], @schememodname[mzlib/class],
-@schememodname[mzlib/unit], @schememodname[mzlib/include],
-@schememodname[mzlib/defmacro], @schememodname[mzlib/pretty],
-@schememodname[mzlib/string], @schememodname[mzlib/thread],
-@schememodname[mzlib/math], @schememodname[mzlib/match],
-@schememodname[mzlib/shared], and @schememodname[lang/posn].
+@racketmodname[mzscheme],
+@racketmodname[mzlib/etc], @racketmodname[mzlib/file],
+@racketmodname[mzlib/list], @racketmodname[mzlib/class],
+@racketmodname[mzlib/unit], @racketmodname[mzlib/include],
+@racketmodname[mzlib/defmacro], @racketmodname[mzlib/pretty],
+@racketmodname[mzlib/string], @racketmodname[mzlib/thread],
+@racketmodname[mzlib/math], @racketmodname[mzlib/match],
+@racketmodname[mzlib/shared], and @racketmodname[lang/posn].
 
 @; ------------------------------------------------------------
 
@@ -80,21 +80,21 @@ libraries in legacy form. It provides the bindings of
 
 @defmodule[lang/plt-pretty-big]
 
-The @schememodname[lang/plt-pretty-big] module extends
-@scheme[lang/plt-pretty-big-text] with @schememodname[scheme/gui/base]
-and @schememodname[lang/imageeq].  This language corresponds to the
+The @racketmodname[lang/plt-pretty-big] module extends
+@racket[lang/plt-pretty-big-text] with @racketmodname[scheme/gui/base]
+and @racketmodname[lang/imageeq].  This language corresponds to the
 @onscreen{Pretty Big} legacy language in DrRacket.
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[posn]s in @italic{HtDP} Languages}
+@section{@racket[posn]s in @italic{HtDP} Languages}
 
 @defmodule[lang/posn]
 
 @defstruct[posn ([x any/c] [y any/c])]{
 
-The @scheme[posn] structure type that is also provided by
-@scheme[lang/htdp-beginner].}
+The @racket[posn] structure type that is also provided by
+@racket[lang/htdp-beginner].}
 
 
 @; ----------------------------------------------------------------------
@@ -108,7 +108,7 @@ The @scheme[posn] structure type that is also provided by
          boolean?]{
 
 The image-comparison operator that is also provided by
-@scheme[lang/htdp-beginner].}
+@racket[lang/htdp-beginner].}
 
 @; ----------------------------------------------------------------------
 
@@ -116,7 +116,7 @@ The image-comparison operator that is also provided by
 
 @defmodule[lang/prim]
 
-The @schememodname[lang/prim] module several syntactic forms for
+The @racketmodname[lang/prim] module several syntactic forms for
 use by the implementors of teachpacks, when the teachpack is to be
 used with the @|htdp| Beginner Student
 languages. In Beginner Student, primitive names (for built-in
@@ -125,49 +125,49 @@ they can be syntactically restricted to application positions.
 
 @defform[(define-primitive id proc-id)]{
 
-  Defines @scheme[id] to be a primitive operator whose implementation
-  is @scheme[proc-id], and that takes no procedures as
-  arguments. Normally, @scheme[id] is exported from the teachpack and
-  @scheme[proc-id] is not.}
+  Defines @racket[id] to be a primitive operator whose implementation
+  is @racket[proc-id], and that takes no procedures as
+  arguments. Normally, @racket[id] is exported from the teachpack and
+  @racket[proc-id] is not.}
 
 @defform[(provide-primitive id)]{
 
-  Like @scheme[define-primitive], but the existing function @scheme[id] is
-  exported as the primitive operator named @scheme[id]. An alternative
-  to @scheme[define-primitive].}
+  Like @racket[define-primitive], but the existing function @racket[id] is
+  exported as the primitive operator named @racket[id]. An alternative
+  to @racket[define-primitive].}
 
 @defform[(provide-primitives id ...)]{
 
-  Multiple-identifier version of @scheme[provide-primitive].}
+  Multiple-identifier version of @racket[provide-primitive].}
 
 @defform[(define-higher-order-primitive id proc-id (arg ...))]{
 
-  Defines @scheme[id] to be a primitive operator whose implementation is
-  @scheme[proc-id]. Normally, @scheme[id] is exported from the teachpack and
-  @scheme[proc-id] is not.
+  Defines @racket[id] to be a primitive operator whose implementation is
+  @racket[proc-id]. Normally, @racket[id] is exported from the teachpack and
+  @racket[proc-id] is not.
 
-  For each non-procedure argument, the corresponding @scheme[arg] should be
-  an underscore. For each procedure argument, the corresponding @scheme[arg]
+  For each non-procedure argument, the corresponding @racket[arg] should be
+  an underscore. For each procedure argument, the corresponding @racket[arg]
   should be the usual name of the procedure.
 
   @as-examples[
-  @schemeblock[
+  @racketblock[
    (define-higher-order-primitive convert-gui convert-gui/proc (f2c))
   ]]
 }
 
 @defform[(provide-higher-order-primitive id (arg ...))]{
 
-  Like @scheme[define-higher-order-primitive], but the existing function
-  @scheme[id] is exported as the primitive operator named
-  @scheme[id]. An alternative to @scheme[define-higher-order-primitive].}
+  Like @racket[define-higher-order-primitive], but the existing function
+  @racket[id] is exported as the primitive operator named
+  @racket[id]. An alternative to @racket[define-higher-order-primitive].}
 
 @defform[(first-order->higher-order expr)]{
 
-If @scheme[expr] is an identifier for a first-order function (either a
+If @racket[expr] is an identifier for a first-order function (either a
 primitive or a function defined within Beginner Student), produces the
 function as a value; otherwise, the form is equivalent to
-@scheme[expr].
+@racket[expr].
 
 This form is mainly useful for implementing syntactic forms that, like
 the application of a higher-order primitive, allow first-order bindings

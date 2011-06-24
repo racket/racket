@@ -7,10 +7,10 @@
 
 @defproc[(syntax-local-infer-name [stx syntax?]) any/c]{
 
-Similar to @scheme[syntax-local-name] except that @scheme[stx] is
-checked for an @scheme['inferred-name] property (which overrides any
-inferred name). If neither @scheme[syntax-local-name] nor
-@scheme['inferred-name] produce a name, or if the
-@scheme['inferred-name] property value is @|void-const|, then a name
-is constructed from the source-location information in @scheme[stx],
-if any. If no name can be constructed, the result is @scheme[#f].}
+Similar to @racket[syntax-local-name] except that @racket[stx] is
+checked for an @racket['inferred-name] property (which overrides any
+inferred name). If neither @racket[syntax-local-name] nor
+@racket['inferred-name] produce a name, or if the
+@racket['inferred-name] property value is @|void-const|, then a name
+is constructed from the source-location information in @racket[stx],
+if any. If no name can be constructed, the result is @racket[#f].}

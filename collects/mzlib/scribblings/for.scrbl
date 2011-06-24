@@ -4,10 +4,10 @@
 
 @mzlib[#:mode title for]
 
-The @schememodname[mzlib/for] library re-exports from
-@schememodname[scheme/base]:
+The @racketmodname[mzlib/for] library re-exports from
+@racketmodname[scheme/base]:
 
-@schemeblock[
+@racketblock[
 for/fold for*/fold
 for for*
 for/list for*/list

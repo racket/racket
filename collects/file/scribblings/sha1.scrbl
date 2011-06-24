@@ -13,10 +13,10 @@ See @racketmodname[openssl/sha1] for a faster implementation.
 @defproc[(sha1 [in input-port]) string?]{
 
 Returns a 40-character string that represents the SHA-1 hash (in
-hexadecimal notation) of the content from @scheme[in], consuming all
-of the input from @scheme[in] until an end-of-file.
+hexadecimal notation) of the content from @racket[in], consuming all
+of the input from @racket[in] until an end-of-file.
 
-The @scheme[sha1] function composes @scheme[bytes->hex-string] with
+The @racket[sha1] function composes @racket[bytes->hex-string] with
 @racket[sha1-bytes].
 
 @examples[
@@ -27,7 +27,7 @@ The @scheme[sha1] function composes @scheme[bytes->hex-string] with
 @defproc[(sha1-bytes [in input-port]) bytes?]{
 
 Returns a 20-byte byte string that represents the SHA-1 hash of the
-content from @scheme[in], consuming all of the input from @scheme[in]
+content from @racket[in], consuming all of the input from @racket[in]
 until an end-of-file.
 
 @examples[
@@ -38,5 +38,5 @@ until an end-of-file.
 @defproc[(bytes->hex-string [bstr bytes?]) string?]{
 
 Converts the given byte string to a string representation, where each
-byte in @scheme[bstr] is converted to its two-digit hexadecimal
+byte in @racket[bstr] is converted to its two-digit hexadecimal
 representation in the resulting string.}

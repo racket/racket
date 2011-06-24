@@ -3,7 +3,7 @@
 
 @defclass/title[tab-snip% string-snip% ()]{
 
-An instance of @scheme[tab-snip%] is created automatically when a
+An instance of @racket[tab-snip%] is created automatically when a
  tab is inserted into an editor.
 
 
@@ -11,7 +11,7 @@ An instance of @scheme[tab-snip%] is created automatically when a
 
 Creates a snip for a single tab, though the tab is initially empty.
 
-Normally, a single tab is inserted into a @scheme[tab-snip%] object
+Normally, a single tab is inserted into a @racket[tab-snip%] object
  using the @method[string-snip% insert] method.
 
 The tab's content is not drawn, through it is used when determining

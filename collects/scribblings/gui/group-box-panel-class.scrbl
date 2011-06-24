@@ -8,7 +8,7 @@ A group-box panel arranges its subwindows in a single column, but also
  the panel content.
 
 Unlike most panel classes, a group-box panel's horizontal and vertical
- margins default to @scheme[2].
+ margins default to @racket[2].
 
 
 @defconstructor[([label label-string?]
@@ -29,11 +29,11 @@ Unlike most panel classes, a group-box panel's horizontal and vertical
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-Creates a group pane whose title is @scheme[label].
+Creates a group pane whose title is @racket[label].
 
-@DeletedStyleNote[@scheme[style] @scheme[parent]]{group panel}
+@DeletedStyleNote[@racket[style] @racket[parent]]{group panel}
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 }}

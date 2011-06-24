@@ -9,9 +9,9 @@
 
 @declare-exporting['#%foreign]
 
-Parts of the @schememodname[ffi/unsafe] library are implemented by
-the Racket built-in @schememodname['#%foreign] module.  The
-@schememodname['#%foreign] module is not intended for direct use, but
+Parts of the @racketmodname[ffi/unsafe] library are implemented by
+the Racket built-in @racketmodname['#%foreign] module.  The
+@racketmodname['#%foreign] module is not intended for direct use, but
 it exports the following procedures.  If you find any of these useful,
 please let us know.
 
@@ -21,7 +21,7 @@ please let us know.
 
 Pulls out a foreign object from a library, returning a Racket value
 that can be used as a pointer.  If a name is provided instead of a
-foreign-library value, @scheme[ffi-lib] is used to create a library
+foreign-library value, @racket[ffi-lib] is used to create a library
 object.}
 
 
@@ -29,7 +29,7 @@ object.}
            [(ffi-obj-lib [obj ffi-obj?]) ffi-lib?]
            [(ffi-obj-name [obj ffi-obj?]) string?])]{
 
-A predicate for objects returned by @scheme[ffi-obj], and accessor
+A predicate for objects returned by @racket[ffi-obj], and accessor
 functions that return its corresponding library object and name.
 These values can also be used as C pointer objects.}
 
@@ -39,7 +39,7 @@ These values can also be used as C pointer objects.}
            [(ctype-c->scheme [type ctype?]) procedure?])]{
 
 Accessors for the components of a C type object, made by
-@scheme[make-ctype].  The @scheme[ctype-basetype] selector returns a
+@racket[make-ctype].  The @racket[ctype-basetype] selector returns a
 symbol for primitive types that names the type, a list of ctypes for
 cstructs, and another ctype for user-defined ctypes.}
 
@@ -49,16 +49,16 @@ cstructs, and another ctype for user-defined ctypes.}
          any]{
 
 The primitive mechanism that creates Racket ``callout'' values.  The
-given @scheme[ptr] (any pointer value, including @scheme[ffi-obj]
+given @racket[ptr] (any pointer value, including @racket[ffi-obj]
 values) is wrapped in a Racket-callable primitive function that uses
 the types to specify how values are marshaled.
 
-The optional @scheme[abi] argument determines the foreign ABI that is
-used.  @scheme[#f] or @scheme['default] will use a platform-dependent
-default; other possible values are @scheme['stdcall] and
-@scheme['sysv] (the latter corresponds to ``cdecl'').  This is
+The optional @racket[abi] argument determines the foreign ABI that is
+used.  @racket[#f] or @racket['default] will use a platform-dependent
+default; other possible values are @racket['stdcall] and
+@racket['sysv] (the latter corresponds to ``cdecl'').  This is
 especially important on Windows, where most system functions are
-@scheme['stdcall], which is not the default.}
+@racket['stdcall], which is not the default.}
 
 
 @defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
@@ -66,14 +66,14 @@ especially important on Windows, where most system functions are
                        [atomic? any/c #f])
          ffi-callback?]{
 
-The symmetric counterpart of @scheme[ffi-call].  It receives a Racket
+The symmetric counterpart of @racket[ffi-call].  It receives a Racket
 procedure and creates a callback object, which can also be used as a
 pointer.  This object can be used as a C-callable function, which
-invokes @scheme[proc] using the types to specify how values are
+invokes @racket[proc] using the types to specify how values are
 marshaled.}
 
 
 @defproc[(ffi-callback? [x any/c]) boolean?]{
 
-A predicate for callback values that are created by @scheme[ffi-callback].
+A predicate for callback values that are created by @racket[ffi-callback].
 }

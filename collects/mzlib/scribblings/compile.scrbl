@@ -13,22 +13,22 @@
                        [filter (any/c . -> . any/c) values])
          path?]{
 
-Compiles the Scheme file @scheme[src] and saves the compiled code to
-@scheme[dest].  If @scheme[dest] is not provided and the
+Compiles the Scheme file @racket[src] and saves the compiled code to
+@racket[dest].  If @racket[dest] is not provided and the
 @filepath{compiled} subdirectory does not already exist, the
-subdirectory is created. The result of @scheme[compile-file] is the
+subdirectory is created. The result of @racket[compile-file] is the
 destination file's path.
 
-If the @scheme[filter] procedure is provided, it is applied to each
+If the @racket[filter] procedure is provided, it is applied to each
 source expression, and the result is compiled. 
 
-The @scheme[compile-file] procedure is designed for compiling modules
-files, in that each expression in @scheme[src] is compiled
-independently. If @scheme[src] does not contain a single
-@scheme[module] expression, then earlier expressions can affect the
-compilation of later expressions when @scheme[src] is loaded
-directly. An appropriate @scheme[filter] can make compilation behave
+The @racket[compile-file] procedure is designed for compiling modules
+files, in that each expression in @racket[src] is compiled
+independently. If @racket[src] does not contain a single
+@racket[module] expression, then earlier expressions can affect the
+compilation of later expressions when @racket[src] is loaded
+directly. An appropriate @racket[filter] can make compilation behave
 like evaluation, but the problem is also solved (as much as possible)
-by the @scheme[compile-zos] procedure.
+by the @racket[compile-zos] procedure.
 
-See also @scheme[managed-compile-zo].}
+See also @racket[managed-compile-zo].}

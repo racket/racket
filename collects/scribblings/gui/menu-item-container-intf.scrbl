@@ -3,8 +3,8 @@
 
 @definterface/title[menu-item-container<%> ()]{
 
-A @scheme[menu-item-container<%>] object is a @scheme[menu%],
- @scheme[popup-menu%], or @scheme[menu-bar%].
+A @racket[menu-item-container<%>] object is a @racket[menu%],
+ @racket[popup-menu%], or @racket[menu-bar%].
 
 
 @defmethod[(get-items)
@@ -37,7 +37,7 @@ If the container is not a menu bar or a popup menu, this method is
 }
 @methimpl{
 
-Calls the @scheme[demand-callback] procedure that was provided when
+Calls the @racket[demand-callback] procedure that was provided when
  the object was created, then calls the @method[labelled-menu-item<%>
  on-demand] method of the contained items.
 

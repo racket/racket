@@ -24,9 +24,9 @@ Macros can apply contracts to their sub-expressions using the
                  [#:context ctx #f])
          (attributes c)]{
 
-Accepts an expression (@scheme[expr]) and computes an attribute
-@scheme[c] that represents the expression wrapped with the contract
-represented by @scheme[contract-expr].
+Accepts an expression (@racket[expr]) and computes an attribute
+@racket[c] that represents the expression wrapped with the contract
+represented by @racket[contract-expr].
 
 See @secref{exprc} for an example.
 }
@@ -46,13 +46,13 @@ See @secref{exprc} for an example.
               #:contracts ([contract-expr contract?])]{
 
 Provides the syntax class (or splicing syntax class)
-@scheme[syntax-class-id] with the given contracts imposed on its
+@racket[syntax-class-id] with the given contracts imposed on its
 formal parameters.
 }
 
 @defidform[syntax-class/c]{
 
-Keyword recognized by @scheme[provide-syntax-class/contract].
+Keyword recognized by @racket[provide-syntax-class/contract].
 }
 
 @section{Reflection}
@@ -60,21 +60,21 @@ Keyword recognized by @scheme[provide-syntax-class/contract].
 @defmodule[syntax/parse/experimental/reflect]
 
 A syntax class can be reified into a run-time value, and a reified
-syntax class can be used in a pattern via the @scheme[~reflect] and
-@scheme[~splicing-reflect] pattern forms.
+syntax class can be used in a pattern via the @racket[~reflect] and
+@racket[~splicing-reflect] pattern forms.
 
 @defform[(reify-syntax-class syntax-class-id)]{
 
-Reifies the syntax class named @scheme[syntax-class-id] as a run-time
+Reifies the syntax class named @racket[syntax-class-id] as a run-time
 value. The same form also handles splicing syntax classes. Syntax
-classes with the @scheme[#:no-delimit-cut] option cannot be reified.
+classes with the @racket[#:no-delimit-cut] option cannot be reified.
 }
 
 @deftogether[(
 @defproc[(reified-syntax-class? [x any/c]) boolean?]
 @defproc[(reified-splicing-syntax-class? [x any/c]) boolean?])]{
 
-Returns @scheme[#t] if @scheme[x] is a reified (normal) syntax class
+Returns @racket[#t] if @racket[x] is a reified (normal) syntax class
 or a reified splicing syntax class, respectively.
 }
 
@@ -94,8 +94,8 @@ Returns the reified syntax class's attributes.
          (values (listof keyword?) (listof keyword?))]]]{
 
 Returns the reified syntax class's arity and keywords,
-respectively. Compare with @scheme[procedure-arity] and
-@scheme[procedure-keywords].
+respectively. Compare with @racket[procedure-arity] and
+@racket[procedure-keywords].
 }
 
 @defproc[(reified-syntax-class-curry
@@ -109,7 +109,7 @@ more arguments are given than the reified syntax class accepts, an
 error is raised.
 }
 
-@schemegrammar*[#:literals (~reflect ~splicing-reflect)
+@racketgrammar*[#:literals (~reflect ~splicing-reflect)
                 [S-pattern ....
                            (~reflect var-id (reified-expr arg-expr ...) maybe-attrs)]
                 [H-pattern ....
@@ -120,7 +120,7 @@ error is raised.
                   ([maybe-attrs (code:line)
                                 (code:line #:attributes (attr-arity-decl ...))])]{
 
-Like @scheme[~var], except that the syntax class position is an
+Like @racket[~var], except that the syntax class position is an
 expression evaluating to a reified syntax object, not a syntax class
 name, and the attributes bound by the reified syntax class (if any)
 must be specified explicitly.
@@ -128,7 +128,7 @@ must be specified explicitly.
 
 @specsubform[(@#,(defhere ~splicing-reflect) var-id (reified-expr arg-expr ...) maybe-attrs)]{
 
-Like @scheme[~reflect] but for reified splicing syntax classes.
+Like @racket[~reflect] but for reified splicing syntax classes.
 }
 
 @myexamples[
@@ -182,7 +182,7 @@ Defines a splicing syntax via a procedural parser.
 
 The parser procedure is given two arguments, the syntax to parse and a
 failure procedure. To signal a successful parse, the parser procedure
-returns a list of @scheme[N]+1 elements, where @scheme[N] is the
+returns a list of @racket[N]+1 elements, where @racket[N] is the
 number of attributes declared by the splicing syntax class. The first
 element is the size of the prefix consumed. The rest of the list
 contains the values of the attributes.
@@ -208,24 +208,24 @@ reusable encapsulations of @|EHpatterns|.
               (define-eh-alternative-set name eh-alternative ...)
               ([alternative (pattern EH-pattern)])]{
 
-Defines @scheme[name] as an ellipsis-head alternative set. Using
-@scheme[name] (via @scheme[~eh-var]) in an ellipsis-head pattern is
+Defines @racket[name] as an ellipsis-head alternative set. Using
+@racket[name] (via @racket[~eh-var]) in an ellipsis-head pattern is
 equivalent to including each of the alternatives in the pattern via
 @ref[~or eh], except that the attributes bound by the alternatives are
-prefixed with the name given to @scheme[~eh-var].
+prefixed with the name given to @racket[~eh-var].
 
 Unlike syntax classes, ellipsis-head alternative sets must be defined
 before they are referenced.
 }
 
-@schemegrammar*[#:literals (~eh-var)
+@racketgrammar*[#:literals (~eh-var)
                 [EH-pattern ....
                             (~eh-var name eh-alternative-set-id)]]
 
 @specsubform[(@#,(defhere ~eh-var) name eh-alternative-set-id)]{
 
-Includes the alternatives of @scheme[eh-alternative-set-id], prefixing
-their attributes with @scheme[name].
+Includes the alternatives of @racket[eh-alternative-set-id], prefixing
+their attributes with @racket[name].
 }
 
 @myexamples[

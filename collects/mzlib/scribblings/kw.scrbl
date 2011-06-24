@@ -19,8 +19,8 @@
 @mzlib[#:mode title kw]
 
 @margin-note{The @base-lambda and procedure-application forms of
-             @scheme[scheme/base] support keyword arguments, and it is
-             @emph{not} compatible with the @scheme[mzlib/kw]
+             @racket[scheme/base] support keyword arguments, and it is
+             @emph{not} compatible with the @racket[mzlib/kw]
              library.}
 
 @deftogether[(
@@ -54,39 +54,39 @@
         (head . kw-formals)])
 ])]{
 
-Like @scheme[lambda], but with optional and keyword-based argument
+Like @racket[lambda], but with optional and keyword-based argument
 processing.  This form is similar to an extended version of Common
 Lisp procedure arguments (but note the differences below).  When used
-with plain variable names, @scheme[lambda/kw] expands to a plain
-@scheme[lambda], so @scheme[lambda/kw] is suitable for a language
-module that will use it to replace @scheme[lambda].  Also, when used
+with plain variable names, @racket[lambda/kw] expands to a plain
+@racket[lambda], so @racket[lambda/kw] is suitable for a language
+module that will use it to replace @racket[lambda].  Also, when used
 with only optionals, the resulting procedure is similar to
-@scheme[opt-lambda] (but a bit faster).
+@racket[opt-lambda] (but a bit faster).
 
-In addition to @scheme[lambda/kw], @scheme[define/kw] is similar to
-@scheme[define], except that the @scheme[formals] are as in
-@scheme[lambda/kw].  Like @scheme[define], this form can be used with
+In addition to @racket[lambda/kw], @racket[define/kw] is similar to
+@racket[define], except that the @racket[formals] are as in
+@racket[lambda/kw].  Like @racket[define], this form can be used with
 nested parenthesis for curried functions (the MIT-style generalization
-of @scheme[define]).
+of @racket[define]).
 
-The syntax of @scheme[lambda/kw] is the same as @scheme[lambda],
+The syntax of @racket[lambda/kw] is the same as @racket[lambda],
 except for the list of formal argument specifications.  These
 specifications can hold (zero or more) plain argument names, then an
 optionals (and defaults) section that begins after an
-@scheme[#:optional] marker, then a keyword section that is marked by
-@scheme[#:keyword], and finally a section holding rest and
+@racket[#:optional] marker, then a keyword section that is marked by
+@racket[#:keyword], and finally a section holding rest and
 ``rest''-like arguments which are described below, together with
 argument processing flag directives.  Each section is optional, but
 the order of the sections must be as listed. Of course, all binding
-@scheme[id]s must be unique.
+@racket[id]s must be unique.
 
-The following sections describe each part of the @scheme[kw-formals].}
+The following sections describe each part of the @racket[kw-formals].}
 
 @; ----------------------------------------
 
 @section{Required Arguments}
 
-Required arguments correspond to @scheme[id]s that appear before any
+Required arguments correspond to @racket[id]s that appear before any
 keyword marker in the argument list. They determine the minimum arity
 of the resulting procedure.
 
@@ -95,11 +95,11 @@ of the resulting procedure.
 @section{Optional Arguments}
 
 The optional-arguments section follows an
-@as-index{@scheme[#:optional]} marker in the @scheme[_kw-formals].
+@as-index{@racket[#:optional]} marker in the @racket[_kw-formals].
 Each optional argument can take the form of a parenthesized variable
 and a default expression; the latter is used if a value is not given
 at the call site.  The default expression can be omitted (along with
-the parentheses), in which case @scheme[#f] is the default.
+the parentheses), in which case @racket[#f] is the default.
 
 The default expression's environment includes all previous arguments,
 both required and optional names.  With @math{k} optionals after
@@ -109,12 +109,12 @@ and @math{n+k} arguments, inclusive.
 
 The treatment of optionals is efficient, with an important caveat:
 default expressions appear multiple times in the resulting
-@scheme[case-lambda]. For example, the default expression for the last
+@racket[case-lambda]. For example, the default expression for the last
 optional argument appears @math{k-1} times (but no expression is ever
 evaluated more than once in a procedure call). This expansion risks
-exponential blow-up is if @scheme[lambda/kw] is used in a default
-expression of a @scheme[lambda/kw], etc.  The bottom line, however, is
-that @scheme[lambda/kw] is a sensible choice, due to its enhanced
+exponential blow-up is if @racket[lambda/kw] is used in a default
+expression of a @racket[lambda/kw], etc.  The bottom line, however, is
+that @racket[lambda/kw] is a sensible choice, due to its enhanced
 efficiency, even when you need only optional arguments.
 
 Using both optional and keyword arguments is possible, but note that
@@ -126,7 +126,7 @@ details.
 
 @section{Keyword Arguments}
 
-A keyword argument section is marked by a @as-index{@scheme[#:key]}.
+A keyword argument section is marked by a @as-index{@racket[#:key]}.
 If it is used with optional arguments, then the keyword specifications
 must follow the optional arguments (which mirrors the use in call
 sites; where optionals are given before keywords).
@@ -139,20 +139,20 @@ arguments have been provided before the keyword.  This convention
 restricts the procedure's non-keyword optional arguments to
 non-keyword values, but it also avoids confusion when mixing optional
 arguments and keywords.  For example, when a procedure that takes two
-optional arguments and a keyword argument @scheme[#:x] is called with
-@scheme[#:x 1], then the optional arguments get their default values
-and the keyword argument is bound to @scheme[1]. (The traditional
-behavior would bind @scheme[#:x] and @scheme[1] to the two optional
-arguments.) When the same procedure is called with @scheme[1 #:x 2],
-the first optional argument is bound to @scheme[1], the second
+optional arguments and a keyword argument @racket[#:x] is called with
+@racket[#:x 1], then the optional arguments get their default values
+and the keyword argument is bound to @racket[1]. (The traditional
+behavior would bind @racket[#:x] and @racket[1] to the two optional
+arguments.) When the same procedure is called with @racket[1 #:x 2],
+the first optional argument is bound to @racket[1], the second
 optional argument is bound to its default, and the keyword argument is
-bound to @scheme[2]. (The traditional behavior would report an error,
-because @scheme[2] is provided where @scheme[#:x] is expected.)
+bound to @racket[2]. (The traditional behavior would report an error,
+because @racket[2] is provided where @racket[#:x] is expected.)
 
 Like optional arguments, each keyword argument is specified as a
 parenthesized variable name and a default expression.  The default
 expression can be omitted (with the parentheses), in which case
-@scheme[#f] is the default value. The keyword used at a call site for
+@racket[#f] is the default value. The keyword used at a call site for
 the corresponding variable has the same name as the variable; a third
 form of keyword arguments has three parts---a variable name, a
 keyword, and a default expression---to allow the name of the locally
@@ -186,52 +186,52 @@ unknown keywords are allowed at a call site.
 
 @section{Rest and Rest-like Arguments}
 
-The last @scheme[_kw-formals] section---after the required, optional,
+The last @racket[_kw-formals] section---after the required, optional,
 and keyword arguments---may contain specifications for rest-like
 arguments and/or mode keywords.  Up to five rest-like arguments can be
-declared, each with an @scheme[_id] to bind:
+declared, each with an @racket[_id] to bind:
 
 @itemize[
 
- @item{@as-index{@scheme[#:rest]} --- The variable is bound to the
+ @item{@as-index{@racket[#:rest]} --- The variable is bound to the
   list of ``rest'' arguments, which is the list of all values after
   the required and the optional values.  This list includes all
   keyword-value pairs, exactly as they are specified at the call site.
 
-  Scheme's usual dot-notation is accepted in @scheme[_kw-formals] only
+  Scheme's usual dot-notation is accepted in @racket[_kw-formals] only
   if no other meta-keywords are specified, since it is not clear
-  whether it should specify the same binding as a @scheme[#:rest] or
-  as a @scheme[#:body].  The dot notation is allowed without
-  meta-keywords to make the @scheme[lambda/kw] syntax compatible with
-  @scheme[lambda].}
+  whether it should specify the same binding as a @racket[#:rest] or
+  as a @racket[#:body].  The dot notation is allowed without
+  meta-keywords to make the @racket[lambda/kw] syntax compatible with
+  @racket[lambda].}
 
- @item{@as-index{@scheme[#:body]} --- The variable is bound to all
+ @item{@as-index{@racket[#:body]} --- The variable is bound to all
   arguments after keyword--value pairs.  (This is different from
-  Common Lisp's @scheme[&body], which is a synonym for
-  @scheme[&rest].)  More generally, a @scheme[#:body] specification
-  can be followed by another @scheme[_kw-formals], not just a single
-  @scheme[_id]; see @secref["kw-body"] for more information.}
+  Common Lisp's @racket[&body], which is a synonym for
+  @racket[&rest].)  More generally, a @racket[#:body] specification
+  can be followed by another @racket[_kw-formals], not just a single
+  @racket[_id]; see @secref["kw-body"] for more information.}
 
- @item{@as-index{@scheme[#:all-keys]} --- the variable is bound to the
+ @item{@as-index{@racket[#:all-keys]} --- the variable is bound to the
   list of all keyword-values from the call site, which is always a
-  proper prefix of a @scheme[#:rest] argument.  (If no @scheme[#:body]
-  arguments are declared, then @scheme[#:all-keys] binds the same as
-  @scheme[#:rest].) See also @scheme[keyword-get].}
+  proper prefix of a @racket[#:rest] argument.  (If no @racket[#:body]
+  arguments are declared, then @racket[#:all-keys] binds the same as
+  @racket[#:rest].) See also @racket[keyword-get].}
 
- @item{@scheme[#:other-keys] --- The variable is bound like an
-  @scheme[#:all-keys] variable, except that all keywords specified in
-  the @scheme[kw-formals] are removed from the list.  When a keyword
+ @item{@racket[#:other-keys] --- The variable is bound like an
+  @racket[#:all-keys] variable, except that all keywords specified in
+  the @racket[kw-formals] are removed from the list.  When a keyword
   is used multiple times at a call cite (and this is allowed), only
-  the first instances is removed for the @scheme[#:other-keys]
+  the first instances is removed for the @racket[#:other-keys]
   binding.}
 
- @item{@scheme[#:other-keys+body] --- the variable is bound like a
-  @scheme[#:rest] variable, except that all keywords specified in the
-  @scheme[_kw-formals] are removed from the list.  When a keyword is
+ @item{@racket[#:other-keys+body] --- the variable is bound like a
+  @racket[#:rest] variable, except that all keywords specified in the
+  @racket[_kw-formals] are removed from the list.  When a keyword is
   used multiple times at a call site (and this is allowed), only the
-  first instance us removed for the @scheme[#:other-keys+body]
-  binding.  (When no @scheme[#:body] variables are specified, then
-  @scheme[#:other-keys+body] is the same as @scheme[#:other-keys].)}
+  first instance us removed for the @racket[#:other-keys+body]
+  binding.  (When no @racket[#:body] variables are specified, then
+  @racket[#:other-keys+body] is the same as @racket[#:other-keys].)}
 
 ]
 
@@ -253,32 +253,32 @@ bindings:
 Note that the following invariants always hold:
 
 @itemize[
-@item{@scheme[_rest] = @scheme[(append _all-keys _body)]}
-@item{@scheme[_other-keys+body] = @scheme[(append _other-keys _body)]}
+@item{@racket[_rest] = @racket[(append _all-keys _body)]}
+@item{@racket[_other-keys+body] = @racket[(append _other-keys _body)]}
 ]
 
 To write a procedure that uses a few keyword argument values, and that
 also calls another procedure with the same list of arguments
-(including all keywords), use @scheme[#:other-keys] (or
-@scheme[#:other-keys+body]).  The Common Lisp approach is to specify
-@scheme[:allow-other-keys], so that the second procedure call will not
+(including all keywords), use @racket[#:other-keys] (or
+@racket[#:other-keys+body]).  The Common Lisp approach is to specify
+@racket[:allow-other-keys], so that the second procedure call will not
 cause an error due to unknown keywords, but the
-@scheme[:allow-other-keys] approach risks confusing the two layers of
+@racket[:allow-other-keys] approach risks confusing the two layers of
 keywords.
 
 @; ----------------------------------------
 
 @section[#:tag "kw-body"]{Body Argument}
 
-The most notable divergence from Common Lisp in @scheme[lambda/kw] is
-the @scheme[#:body] argument, and the fact that it is possible at a
+The most notable divergence from Common Lisp in @racket[lambda/kw] is
+the @racket[#:body] argument, and the fact that it is possible at a
 call site to pass plain values after the keyword-value pairs.  The
-@scheme[#:body] binding is useful for procedure calls that use
+@racket[#:body] binding is useful for procedure calls that use
 keyword-value pairs as sort of an attribute list before the actual
 arguments to the procedure.  For example, consider a procedure that
 accepts any number of numeric arguments and will apply a procedure to
 them, but the procedure can be specified as an optional keyword
-argument. It is easily implemented with a @scheme[#:body] argument:
+argument. It is easily implemented with a @racket[#:body] argument:
 
 @examples[
 #:eval kw-eval
@@ -290,11 +290,11 @@ argument. It is easily implemented with a @scheme[#:body] argument:
 
 (Note that the first body value cannot itself be a keyword.)
 
-A @scheme[#:body] declaration works as an arbitrary
-@scheme[kw-formals], not just a single variable like @scheme[b] in the
-above example. For example, to make the above @scheme[mathop] work
-only on three arguments that follow the keyword, use @scheme[(x y z)]
-instead of @scheme[b]:
+A @racket[#:body] declaration works as an arbitrary
+@racket[kw-formals], not just a single variable like @racket[b] in the
+above example. For example, to make the above @racket[mathop] work
+only on three arguments that follow the keyword, use @racket[(x y z)]
+instead of @racket[b]:
 
 @examples[
 #:eval kw-eval
@@ -302,8 +302,8 @@ instead of @scheme[b]:
   (op x y z))
 ]
 
-In general, @scheme[#:body] handling is compiled to a sub procedure
-using @scheme[lambda/kw], so that a procedure can use more then one
+In general, @racket[#:body] handling is compiled to a sub procedure
+using @racket[lambda/kw], so that a procedure can use more then one
 level of keyword arguments. For example:
 
 @examples[
@@ -318,7 +318,7 @@ Obviously, nested keyword arguments works only when non-keyword
 arguments separate the sets.
 
 Run-time errors during such calls report a mismatch for a procedure
-with a name that is based on the original name plus a @schemeidfont{~body}
+with a name that is based on the original name plus a @racketidfont{~body}
 suffix:
 
 @examples[
@@ -330,48 +330,48 @@ suffix:
 
 @section[#:tag "mode-keywords"]{Mode Keywords}
 
-Finally, the argument list of a @scheme[lambda/kw] can contain
+Finally, the argument list of a @racket[lambda/kw] can contain
 keywords that serve as mode flags to control error reporting.
 
 @itemize[
 
- @item{@as-index{@scheme[#:allow-other-keys]} --- The keyword-value
+ @item{@as-index{@racket[#:allow-other-keys]} --- The keyword-value
   sequence at the call site @italic{can} include keywords that are not
-  listed in the keyword part of the @scheme[lambda/kw] form.}
+  listed in the keyword part of the @racket[lambda/kw] form.}
 
- @item{@as-index{@scheme[#:forbid-other-keys]} --- The keyword-value
+ @item{@as-index{@racket[#:forbid-other-keys]} --- The keyword-value
   sequence at the call site @italic{cannot} include keywords that are
-  not listed in the keyword part of the @scheme[lambda/kw] form,
-  otherwise the @scheme[exn:fail:contract] exception is raised.}
+  not listed in the keyword part of the @racket[lambda/kw] form,
+  otherwise the @racket[exn:fail:contract] exception is raised.}
 
- @item{@as-index{@scheme[#:allow-duplicate-keys]} --- The
+ @item{@as-index{@racket[#:allow-duplicate-keys]} --- The
   keyword-value list at the call site @emph{can} include duplicate
   values associated with same keyword, the first one is used.}
 
- @item{@as-index{@scheme[#:forbid-duplicate-keys]} --- The
+ @item{@as-index{@racket[#:forbid-duplicate-keys]} --- The
   keyword-value list at the call site @italic{cannot} include
   duplicate values for keywords, otherwise the
-  @scheme[exn:fail:contract] exception is raised. This restriction
+  @racket[exn:fail:contract] exception is raised. This restriction
   applies only to keywords that are listed in the keyword part of the
-  @scheme[lambda/kw] form --- if other keys are allowed, this
+  @racket[lambda/kw] form --- if other keys are allowed, this
   restriction does not apply to them.}
 
- @item{@as-index{@scheme[#:allow-body]} --- Body arguments
+ @item{@as-index{@racket[#:allow-body]} --- Body arguments
   @italic{can} be specified at the call site after all keyword-value
   pairs.}
 
- @item{@as-index{@scheme[#:forbid-body]} --- Body arguments
+ @item{@as-index{@racket[#:forbid-body]} --- Body arguments
   @italic{cannot} be specified at the call site after all
   keyword-value pairs.}
 
- @item{@as-index{@scheme[#:allow-anything]} --- Allows all of the
+ @item{@as-index{@racket[#:allow-anything]} --- Allows all of the
   above, and treat a single keyword at the end of an argument list as
-  a @scheme[#:body], a situation that is usually an error.  When this
-  is used and no rest-like arguments are used except @scheme[#:rest],
+  a @racket[#:body], a situation that is usually an error.  When this
+  is used and no rest-like arguments are used except @racket[#:rest],
   an extra loop is saved and calling the procedures is faster (around
   20%).}
 
- @item{@as-index{@scheme[#:forbid-anything]} --- Forbids all of the
+ @item{@as-index{@racket[#:forbid-anything]} --- Forbids all of the
   above, ensuring that calls are as restricted as possible.}
 
 ]
@@ -381,17 +381,17 @@ are determined by the declared rest-like arguments:
 
 @itemize[
 
- @item{The default is to allow other keys if a @scheme[#:rest],
-  @scheme[#:other-keys+body], @scheme[#:all-keys], or
-  @scheme[#:other-keys] variable is declared (and an
-  @scheme[#:other-keys] declaration requires allowing other keys).}
+ @item{The default is to allow other keys if a @racket[#:rest],
+  @racket[#:other-keys+body], @racket[#:all-keys], or
+  @racket[#:other-keys] variable is declared (and an
+  @racket[#:other-keys] declaration requires allowing other keys).}
 
- @item{The default is to allow duplicate keys if a @scheme[#:rest] or
-  @scheme[#:all-keys] variable is declared.}
+ @item{The default is to allow duplicate keys if a @racket[#:rest] or
+  @racket[#:all-keys] variable is declared.}
 
- @item{The default is to allow body arguments if a @scheme[#:rest],
-  @scheme[#:body], or @scheme[#:other-keys+body] variable is declared
-  (and a @scheme[#:body] argument requires allowing them).}
+ @item{The default is to allow body arguments if a @racket[#:rest],
+  @racket[#:body], or @racket[#:other-keys+body] variable is declared
+  (and a @racket[#:body] argument requires allowing them).}
 
 ]
 
@@ -400,26 +400,26 @@ the behavior that they imply:
 
 @itemize[
 
- @item{@scheme[#:rest]: Everything is allowed (a body, other keys,
+ @item{@racket[#:rest]: Everything is allowed (a body, other keys,
   and duplicate keys);}
 
- @item{@scheme[#:other-keys+body]: Other keys and body are allowed,
+ @item{@racket[#:other-keys+body]: Other keys and body are allowed,
   but duplicates are not;}
 
- @item{@scheme[#:all-keys]: Other keys and duplicate keys are allowed,
+ @item{@racket[#:all-keys]: Other keys and duplicate keys are allowed,
   but a body is not;}
 
- @item{@scheme[#:other-keys]: Other keys must be allowed (on by
-   default, cannot use with @scheme[#:forbid-other-keys]), and
+ @item{@racket[#:other-keys]: Other keys must be allowed (on by
+   default, cannot use with @racket[#:forbid-other-keys]), and
    duplicate keys and body are not allowed;}
 
- @item{@scheme[#:body]: Body must be allowed (on by default, cannot use
-   with @scheme[#:forbid-body]) and other keys and duplicate keys and
+ @item{@racket[#:body]: Body must be allowed (on by default, cannot use
+   with @racket[#:forbid-body]) and other keys and duplicate keys and
    body are not allowed;}
 
  @item{Except for the previous two ``must''s, defaults can be
-   overridden by an explicit @scheme[#:allow-...] or a
-   @scheme[#:forbid-...] mode.}
+   overridden by an explicit @racket[#:allow-...] or a
+   @racket[#:forbid-...] mode.}
 
 ]
 
@@ -433,15 +433,15 @@ the behavior that they imply:
 
 Searches a list of keyword arguments (a ``property list'' or ``plist''
 in Lisp jargon) for the given keyword, and returns the associated
-value.  It is the facility that is used by @scheme[lambda/kw] to
+value.  It is the facility that is used by @racket[lambda/kw] to
 search for keyword values.
 
-The @scheme[args] list is scanned from left to right, if the keyword
-is found, then the next value is returned.  If the @scheme[kw] was not
-found, then the @scheme[not-found] thunk is used to produce a value by
-applying it.  If the @scheme[kw] was not found, and @scheme[not-found]
-thunk is not given, @scheme[#f] is returned.  (No exception is raised
-if the @scheme[args] list is imbalanced, and the search stops at a
+The @racket[args] list is scanned from left to right, if the keyword
+is found, then the next value is returned.  If the @racket[kw] was not
+found, then the @racket[not-found] thunk is used to produce a value by
+applying it.  If the @racket[kw] was not found, and @racket[not-found]
+thunk is not given, @racket[#f] is returned.  (No exception is raised
+if the @racket[args] list is imbalanced, and the search stops at a
 non-keyword value.)}
 
 

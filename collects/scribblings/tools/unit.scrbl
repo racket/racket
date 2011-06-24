@@ -47,9 +47,9 @@ Enables the Run button, and the Run menu item and unlocks
 This text is initially the top half of the DrRacket window and
 contains the users program.
 
-This text defaults to a @scheme[text%]
+This text defaults to a @racket[text%]
 object, but if you change
-@scheme[drracket:get/extend:extend-definitions-text] procedure, it will use the extended class to create the text.
+@racket[drracket:get/extend:extend-definitions-text] procedure, it will use the extended class to create the text.
 
 }
 
@@ -83,9 +83,9 @@ Returns the frame that this tab is inside.
 This text is initially the bottom half of the DrRacket window and
 contains the users interactions with the REPL.
 
-This text defaults to a @scheme[drracket:rep:text%]
+This text defaults to a @racket[drracket:rep:text%]
 object, but if you use the
-@scheme[drracket:get/extend:extend-interactions-text] procedure,
+@racket[drracket:get/extend:extend-interactions-text] procedure,
 it will use the extended class to create the text.
 
 }
@@ -196,7 +196,7 @@ Resets an error highlighting.
 
 
 @defconstructor/auto-super[()]{
-Passes all arguments to @scheme[super-init].
+Passes all arguments to @racket[super-init].
 }}
 
 
@@ -208,11 +208,11 @@ This frame inserts the @onscreen{Racket} and @onscreen{Language} menus into the 
 
 
 @defconstructor/auto-super[()]{
-Passes all arguments to @scheme[super-init].
+Passes all arguments to @racket[super-init].
 }
 
 @defconstructor[()]{
-Passes all arguments to @scheme[super-init].
+Passes all arguments to @racket[super-init].
 }
 
 @defmethod[#:mode override 
@@ -257,7 +257,7 @@ safe to call this at anytime, however.
            (edit-menu:between-select-all-and-find)
            void?]{
 
-Adds the @scheme["Split"] and @scheme["Collapse"] menu items.
+Adds the @racket["Split"] and @racket["Collapse"] menu items.
 
 
 }
@@ -287,7 +287,7 @@ It calls
            void?]{
 
 Calls the super method and adds a
-@scheme[separator-menu-item%] to the menu.
+@racket[separator-menu-item%] to the menu.
 
 
 }
@@ -322,7 +322,7 @@ and adds a separator item.
            (file-menu:print-string)
            void?]{
 
-returns @scheme["Definitions"]
+returns @racket["Definitions"]
 
 
 }
@@ -331,7 +331,7 @@ returns @scheme["Definitions"]
            (file-menu:save-as-string)
            void?]{
 
-Returns @scheme["Definitions"].
+Returns @racket["Definitions"].
 
 
 }
@@ -340,7 +340,7 @@ Returns @scheme["Definitions"].
            (file-menu:save-string)
            void?]{
 
-Returns @scheme["Definitions"].
+Returns @racket["Definitions"].
 
 
 }
@@ -359,7 +359,7 @@ for important actions the user frequently executes.
 A tool can add a button to this panel to make some new functionality
 easily accessible to the user.
 
-See also mrlib's @scheme[switchable-button%].
+See also mrlib's @racket[switchable-button%].
 
 }
 
@@ -378,7 +378,7 @@ Returns the result of
            (is-a?/c canvas%)]{
 
 Returns the result of
-@scheme[drracket:get/extend:get-definitions-canvas].
+@racket[drracket:get/extend:get-definitions-canvas].
 
 
 }
@@ -390,7 +390,7 @@ Returns the result of
 @methspec{
 
 This method is provided so that tools can add 
-@scheme[area-container<%>]s to the DrRacket frame. Override this method so that it
+@racket[area-container<%>]s to the DrRacket frame. Override this method so that it
 returns a child of the super-classes's result and insert new 
 children in between.
 
@@ -427,7 +427,7 @@ Returns the result of
            (is-a?/c editor<%>)]{
 
 Returns the result of
-@scheme[drracket:get/extend:get-definitions-text].
+@racket[drracket:get/extend:get-definitions-text].
 
 
 }
@@ -493,7 +493,7 @@ modified. Used in conjunction with
 
 @methimpl{
 
-Returns @scheme[#t] if the buffer is empty, it has not been
+Returns @racket[#t] if the buffer is empty, it has not been
 saved and it is unmodified.
 
 
@@ -503,10 +503,10 @@ saved and it is unmodified.
            void?]{
 
 This method hides or shows the save button, based on
-the @scheme[modified?] argument. 
+the @racket[modified?] argument. 
 
 If the save button has not been created yet, it remembers
-the @scheme[modified?] argument as an initial visibility for
+the @racket[modified?] argument as an initial visibility for
 the save button.
 
 This method is called by the
@@ -541,8 +541,8 @@ items based on the contents of the windows.
 @defmethod[(get-language-menu) (is-a?/c menu%)]{ Returns the
   language-specific menu. This menu is called the
   @onscreen{Racket} menu in the Racket language but is, in general,
-  controlled by the @scheme['drscheme:language-menu-title] 
-  capability (see @scheme[drracket:language:register-capability]
+  controlled by the @racket['drscheme:language-menu-title] 
+  capability (see @racket[drracket:language:register-capability]
   for details on capabilities).
  }
 
@@ -576,7 +576,7 @@ Returns the currently active tab.
 }
 
 @defmethod[(get-tab-filename [i (<=/c 0 (#,(method drracket:unit:frame<%> get-tab-count)))]) string?]{
-  Returns a string naming the file in the @scheme[i]th tab or, if
+  Returns a string naming the file in the @racket[i]th tab or, if
   the file is not saved, something like ``Untitled''.
 }
 
@@ -585,7 +585,7 @@ Returns the currently active tab.
 }
 
 @defmethod[(open-in-new-tab [filename (or/c path-string? #f)]) void?]{
-  Opens a new tab in this frame. If @scheme[filename] is a @scheme[path-string?],
+  Opens a new tab in this frame. If @racket[filename] is a @racket[path-string?],
   It loads that file in the definitions window of the new tab.
 }
 
@@ -600,9 +600,9 @@ Returns the currently active tab.
 This canvas is the canvas containing the 
 @method[drracket:unit:frame<%> get-definitions-text]. It is initially the top half of the DrRacket window.
 
-This canvas defaults to a @scheme[drracket:unit:definitions-canvas%]
+This canvas defaults to a @racket[drracket:unit:definitions-canvas%]
 object, but if you change the
-@scheme[drracket:get/extend:extend-definitions-canvas] procedure, it will use the class in the parameter to create the canvas.
+@racket[drracket:get/extend:extend-definitions-canvas] procedure, it will use the class in the parameter to create the canvas.
 
 
 }
@@ -631,9 +631,9 @@ Returns the Insert menu.
 This canvas is the canvas containing the 
 @method[drracket:unit:frame<%> get-interactions-text]. It is initially the bottom half of the DrRacket window.
 
-This canvas defaults to a @scheme[drracket:unit:interactions-canvas%]
+This canvas defaults to a @racket[drracket:unit:interactions-canvas%]
 object, but if you use the
-@scheme[drracket:get/extend:extend-interactions-canvas] procedure,
+@racket[drracket:get/extend:extend-interactions-canvas] procedure,
 it will use the extended class to create the canvas.
 
 
@@ -667,8 +667,8 @@ Called after a new tab becomes the selected tab in the frame.
 
 @methimpl{
 
-The @scheme[from-tab] argument is the previously selected tab, and the
- @scheme[to-tab] argument is the newly selected tab.
+The @racket[from-tab] argument is the previously selected tab, and the
+ @racket[to-tab] argument is the newly selected tab.
 
 
 
@@ -678,7 +678,7 @@ The @scheme[from-tab] argument is the previously selected tab, and the
                                           [menu (is-a? menu%)])
            void?]{
 Registers the menu item that was most recently added as
-being controlled by the capability @scheme[key]. This means
+being controlled by the capability @racket[key]. This means
 that the (boolean) value of the capability determines if the
 menu item is present in the menu (the capability is checked
 when the menus are cliked on).
@@ -688,25 +688,25 @@ around, except by the this capability. If they are, things
 can go funny (i.e., no good checks are in place).
 
 Note that the capability must be registered separately, via
-@scheme[drracket:language:register-capability].
+@racket[drracket:language:register-capability].
 
 
 }
 
 @defmethod[(register-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
-Registers the toolbar button @scheme[tb]. This is required
+Registers the toolbar button @racket[tb]. This is required
 so that the toolbar buttons properly switch orientation when 
 the toolbar's position is moved.
 }
 
 @defmethod[(register-toolbar-buttons [tbs (listof (is-a?/c switchable-button%))]) void?]{
-Simultaneously registers the toolbar buttons @scheme[tbs]. This is required
+Simultaneously registers the toolbar buttons @racket[tbs]. This is required
 so that the toolbar buttons properly switch orientation when 
 the toolbar's position is moved.
 }
 
 @defmethod[(unregister-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
-Unregisters the toolbar button @scheme[tb]. Use this method to ensure
+Unregisters the toolbar button @racket[tb]. Use this method to ensure
 that the button is not referenced by this frame and thus can be gc'd.
 }
 
@@ -719,7 +719,7 @@ that the button is not referenced by this frame and thus can be gc'd.
           (drracket:unit:definitions-text<%>)]{
 
 @defconstructor[()]{
-Passes all arguments to @scheme[super-init].
+Passes all arguments to @racket[super-init].
 }
 
 @defmethod[#:mode override 
@@ -771,8 +771,8 @@ need to ignore changes that occur after this method is
 called, and before
 @method[drracket:unit:definitions-text<%> end-metadata-changes] is called.
 
-A call to @scheme[begin-metadata-changes] will always be
-followed with a call to @scheme[end-metadata-changes] (ie,
+A call to @racket[begin-metadata-changes] will always be
+followed with a call to @racket[end-metadata-changes] (ie,
 the calls cannot be nested).
 
 }
@@ -783,8 +783,8 @@ Called when the changes to insert metadata are done, and the
 editor is back to its state at the time of the call to
 @method[drracket:unit:definitions-text<%> begin-metadata-changes].
 
-A call to @scheme[begin-metadata-changes] will always be
-followed with a call to @scheme[end-metadata-changes] (ie,
+A call to @racket[begin-metadata-changes] will always be
+followed with a call to @racket[end-metadata-changes] (ie,
 the calls cannot be nested).
 
 }
@@ -815,7 +815,7 @@ the program is next Run.
 
 @methimpl{
 
-Records @scheme[msg] and uses it the next time the user submits
+Records @racket[msg] and uses it the next time the user submits
 an interaction (unless the Runs first).
 
 
@@ -826,7 +826,7 @@ an interaction (unless the Runs first).
            void?]{
 
 Changes the language settings for this window. If
-@scheme[update-prefs?] is a true value, the preference is
+@racket[update-prefs?] is a true value, the preference is
 changed, which affects newly created windows.
 
 See also

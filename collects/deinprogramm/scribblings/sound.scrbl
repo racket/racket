@@ -19,12 +19,12 @@ Rechner.
 
 @defthing[play-sound-file (string -> unspecific)]{ 
 Der Aufruf
-@scheme[(play-sound-file f)] spielt die Audio-Datei mit dem Namen
-@scheme[f] ab.}
+@racket[(play-sound-file f)] spielt die Audio-Datei mit dem Namen
+@racket[f] ab.}
 
 @defthing[background-play-sound-file (string -> unspecific)]{ 
 Der Aufruf
-@scheme[(background-play-sound-file f)] spielt die Audio-Datei mit dem Namen
-@scheme[f] im Hintergrund ab, also ohne dass das Scheme-Programm anhält.}
+@racket[(background-play-sound-file f)] spielt die Audio-Datei mit dem Namen
+@racket[f] im Hintergrund ab, also ohne dass das Scheme-Programm anhält.}
 
 

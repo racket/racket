@@ -376,13 +376,13 @@ nested lists.
   pattern matching and metafunction evaluation. There is a separate cache for
   each pattern and metafunction; when one fills (see @racket[set-cache-size!]),
   Redex evicts all of the entries in that cache.
-                                         
+
   Caching should be disabled when matching a pattern that depends on values
   other than the in-scope pattern variables or evaluating a metafunction
   that reads or writes mutable external state.
 }
 
-@defproc[(set-cache-size! [size positive-integer?]) void?]{                                                           
+@defproc[(set-cache-size! [size positive-integer?]) void?]{
 Changes the size of the per-pattern and per-metafunction caches. The default size is @racket[350].
 }
 
@@ -630,7 +630,7 @@ variables, @racket[c] for the evaluation contexts and @racket[v] for values.
 A non-terminal's names and productions may be separated by the keyword @racket[::=].
 Use of the @racket[::=] keyword outside a language definition is a syntax error.
 }
-                                                                                
+
 @defform/subs[(define-extended-language extended-lang base-lang 
                 non-terminal-def ...)
               ([non-terminal-def (non-terminal-name ...+ ::= @#,ttpattern ...+)
@@ -914,7 +914,7 @@ it is traversing through the reduction graph.
   and @racket[test-->>]'s cycle checking. See @racket[apply-reduction-relation*]
   for more details.
 }
-                        
+
 @examples[
 #:eval redex-eval
        (define-language empty-lang)
@@ -926,7 +926,7 @@ it is traversing through the reduction graph.
           (--> 2 3)
           (--> 3 3)))
        (apply-reduction-relation R 0)
-       (apply-reduction-relation* R 0)]                        
+       (apply-reduction-relation* R 0)]
 
 @defidform[-->]{ Recognized specially within
   @racket[reduction-relation]. A @racket[-->] form is an
@@ -1164,7 +1164,7 @@ Tests to see if the term @racket[e1-expr],
 reduces to the terms @racket[e2-expr] in a single @racket[rel-expr]
 step, using @racket[pred-expr] to determine equivalence.
 }
-                                            
+
 @examples[
 #:eval redex-eval
        (define-language L
@@ -1286,7 +1286,7 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
               #:contracts ([size-expr natural-number/c]
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-                                                             
+
 In its first form, @racket[generate-term] produces a random term according
 to @racket[term-spec], which is either a language and a pattern, the name
 of a metafunction, or an expression producing a reduction relation. In the
@@ -1329,7 +1329,7 @@ The argument @racket[size-expr] bounds the height of the generated term
        (define-metafunction L
          [(F one-clause n) ()]
          [(F another-clause n) ()])
-                                   
+
        (generate-term #:source F 5)]
 
 The optional keyword argument @racket[attempt-num-expr] 
@@ -1349,7 +1349,7 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
 @racket[generate-term] is unable to produce a satisfying term after 
 @racket[retries-expr] attempts, it raises an exception recognized by
 @racket[exn:fail:redex:generation-failure?].}
-                                                            
+
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
@@ -1518,7 +1518,7 @@ produces and consumes argument lists.}
           (Σ ,(+ (term number_1) (term number_2)) number_3 ...)])
        
        (check-metafunction Σ (λ (args) (printf "~s\n" args)) #:attempts 2)]
-                                                            
+
 @defproc[(default-attempt-size [n natural-number/c]) natural-number/c]{
 The default value of the @racket[#:attempt-size] argument to 
 @racket[redex-check] and the other randomized testing forms, this 
@@ -1899,7 +1899,7 @@ color used to draw the label on the edge.
   parameters to adjust how printing happens.
 
 }
-                                                                       
+
 @defproc[(default-pretty-printer [v any/c] [port output-port?] [width exact-nonnegative-integer?] [text (is-a?/c text%)]) void?]{
 
 This is the default value of @racket[pp] used by @racket[traces] and
@@ -1960,7 +1960,7 @@ sets @racket[dc-for-text-size] and the latter does not.
   @racket[render-language] for details on the construction of the pict.
   }
 
-                               
+
 @defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
  Produces a pict like @racket[render-term], but without
  adjusting @racket[dc-for-text-size].
@@ -1969,7 +1969,7 @@ sets @racket[dc-for-text-size] and the latter does not.
  Slideshow or with other tools that combine picts together.
 }
 
-                               
+
 @defproc[(render-language [lang compiled-lang?]
                           [file (or/c false/c path-string?) #f]
                           [#:nts nts (or/c false/c (listof (or/c string? symbol?)))
@@ -2203,8 +2203,8 @@ This parameter controls the typesetting of metafunction definitions
 and applications. When it is non-@racket[#f] (the default), commas
 precede ellipses that represent argument sequences; when it is 
 @racket[#f] no commas appear in those positions.
-}                                                                            
-                                                                            
+}
+
 @defparam[linebreaks breaks (or/c #f (listof boolean?))]{
   This parameter controls which cases in the metafunction 
   are rendered on two lines and which are rendered on one.
@@ -2215,7 +2215,7 @@ precede ellipses that represent argument sequences; when it is
   
   This influences the @racket['left/right] styles only.
 }
-                                                                            
+
 @defparam[metafunction-cases 
           cases
           (or/c #f (and/c (listof (and/c integer?

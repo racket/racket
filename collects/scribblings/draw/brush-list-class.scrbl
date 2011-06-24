@@ -3,11 +3,11 @@
 
 @defclass/title[brush-list% object% ()]{
 
-A @scheme[brush-list%] object maintains a list of @scheme[brush%]
- objects to avoid creating brushes repeatedly. A @scheme[brush%]
+A @racket[brush-list%] object maintains a list of @racket[brush%]
+ objects to avoid creating brushes repeatedly. A @racket[brush%]
  object in a brush list cannot be mutated.
 
-A global brush list, @scheme[the-brush-list], is created
+A global brush list, @racket[the-brush-list], is created
  automatically.
 
 
@@ -33,8 +33,8 @@ Creates an empty brush list.
               (or/c (is-a?/c brush%) false/c)])]{
 
 Finds a brush of the given specification, or creates one and adds it
- to the list. See @scheme[brush%] for a further explanation of the
- arguments, which are the same as @scheme[brush%]'s initialization
+ to the list. See @racket[brush%] for a further explanation of the
+ arguments, which are the same as @racket[brush%]'s initialization
  arguments.
 
 }}

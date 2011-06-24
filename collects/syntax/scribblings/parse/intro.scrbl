@@ -16,14 +16,14 @@
 @declare-exporting[syntax/scribblings/parse/parse-dummy-bindings]
 
 This section provides an introduction to writing robust macros with
-@scheme[syntax-parse] and syntax classes.
+@racket[syntax-parse] and syntax classes.
 
 As a running example we use the following task: write a macro named
-@scheme[mylet] that has the same syntax and behavior as Racket's
-@scheme[let] form. The macro should produce good error messages when
+@racket[mylet] that has the same syntax and behavior as Racket's
+@racket[let] form. The macro should produce good error messages when
 used incorrectly.
 
-Here is the specification of @scheme[mylet]'s syntax:
+Here is the specification of @racket[mylet]'s syntax:
 
 @;{bleh!}
 @specform[#:literals (mylet)
@@ -44,7 +44,7 @@ The macro can be implemented very simply using
 When used correctly, the macro works, but it behaves very badly in the
 presence of errors. In some cases, the macro merely fails with an
 uninformative error message; in others, it blithely accepts illegal
-syntax and passes it along to @scheme[lambda], with strange
+syntax and passes it along to @racket[lambda], with strange
 consequences:
 
 @myinteraction[
@@ -56,16 +56,16 @@ consequences:
 
 These examples of illegal syntax are not to suggest that a typical
 programmer would make such mistakes attempting to use
-@scheme[mylet]. At least, not often, not after an initial learning
+@racket[mylet]. At least, not often, not after an initial learning
 curve. But macros are also used by inexpert programmers and as targets
 of other macros (or code generators), and many macros are far more
-complex than @scheme[mylet]. Macros must validate their syntax and
+complex than @racket[mylet]. Macros must validate their syntax and
 report appropriate errors. Furthermore, the macro writer benefits from
 the @emph{machine-checked} specification of syntax in the form of more
 readable, maintainable code.
 
 We can improve the error behavior of the macro by using
-@racket[syntax-parse]. First, we import @scheme[syntax-parse] into the
+@racket[syntax-parse]. First, we import @racket[syntax-parse] into the
 @tech[#:doc '(lib
 "scribblings/reference/reference.scrbl")]{transformer environment},
 since we will use it to implement a macro transformer.
@@ -83,20 +83,20 @@ version using @racket[define-syntax-rule] above.
      #'((lambda (var-id ...) body ...) rhs-expr ...)]))
 ]
 
-One minor difference is the use of @scheme[...+] in the pattern;
-@scheme[...] means match zero or more repetitions of the preceding
-pattern; @scheme[...+] means match one or more. Only @scheme[...] may
+One minor difference is the use of @racket[...+] in the pattern;
+@racket[...] means match zero or more repetitions of the preceding
+pattern; @racket[...+] means match one or more. Only @racket[...] may
 be used in the template, however.
 
 The first step toward validation and high-quality error reporting is
 annotating each of the macro's pattern variables with the @tech{syntax
-class} that describes its acceptable syntax. In @scheme[mylet], each
-variable must be an @scheme[identifier] (@scheme[id] for short) and
-each right-hand side must be an @scheme[expr] (expression). An
+class} that describes its acceptable syntax. In @racket[mylet], each
+variable must be an @racket[identifier] (@racket[id] for short) and
+each right-hand side must be an @racket[expr] (expression). An
 @tech{annotated pattern variable} is written by concatenating the
 pattern variable name, a colon character, and the syntax class
 name.@margin-note*{For an alternative to the ``colon'' syntax, see the
-@scheme[~var] pattern form.}
+@racket[~var] pattern form.}
 
 @myinteraction[
 (define-syntax (mylet stx)
@@ -105,20 +105,20 @@ name.@margin-note*{For an alternative to the ``colon'' syntax, see the
      #'((lambda (var ...) body ...) rhs ...)]))
 ]
 Note that the syntax class annotations do not appear in the template
-(i.e., @scheme[var], not @scheme[var:id]).
+(i.e., @racket[var], not @racket[var:id]).
 
 The syntax class annotations are checked when we use the macro.
 @myinteraction[
 (mylet ([a 1] [b 2]) (+ a b))
 (mylet (["a" 1]) (add1 a))
 ]
-The @scheme[expr] syntax class does not actually check that the term
+The @racket[expr] syntax class does not actually check that the term
 it matches is a valid expression---that would require calling that
-macro expander. Instead, @scheme[expr] just means not a keyword.
+macro expander. Instead, @racket[expr] just means not a keyword.
 @myinteraction[
 (mylet ([a #:whoops]) 1)
 ]
-Also, @scheme[syntax-parse] knows how to report a few kinds of errors
+Also, @racket[syntax-parse] knows how to report a few kinds of errors
 without any help:
 @myinteraction[
 (mylet ([a 1 2]) (* a a))
@@ -129,15 +129,15 @@ handle gracefully:
 (mylet (a 1) (+ a 2))
 ]
 It's too much to ask for the macro to respond, ``This expression is
-missing a pair of parentheses around @scheme[(a 1)].'' The pattern
+missing a pair of parentheses around @racket[(a 1)].'' The pattern
 matcher is not that smart. But it can pinpoint the source of the
-error: when it encountered @scheme[a] it was expecting what we might
+error: when it encountered @racket[a] it was expecting what we might
 call a ``binding pair,'' but that term is not in its vocabulary yet.
 
-To allow @scheme[syntax-parse] to synthesize better errors, we must
+To allow @racket[syntax-parse] to synthesize better errors, we must
 attach @emph{descriptions} to the patterns we recognize as discrete
 syntactic categories. One way of doing that is by defining new syntax
-classes:@margin-note*{Another way is the @scheme[~describe] pattern
+classes:@margin-note*{Another way is the @racket[~describe] pattern
 form.}
 
 @myinteraction[
@@ -152,10 +152,10 @@ form.}
      #'((lambda (b.var ...) body ...) b.rhs ...)]))
 ]
 
-Note that we write @scheme[b.var] and @scheme[b.rhs] now. They are the
+Note that we write @racket[b.var] and @racket[b.rhs] now. They are the
 @tech{nested attributes} formed from the annotated pattern variable
-@scheme[b] and the attributes @scheme[var] and @scheme[rhs] of the
-syntax class @scheme[binding].
+@racket[b] and the attributes @racket[var] and @racket[rhs] of the
+syntax class @racket[binding].
 
 Now the error messages can talk about ``binding pairs.''
 @myinteraction[
@@ -167,9 +167,9 @@ Errors are still reported in more specific terms when possible:
 ]
 
 There is one other constraint on the legal syntax of
-@scheme[mylet]. The variables bound by the different binding pairs
+@racket[mylet]. The variables bound by the different binding pairs
 must be distinct. Otherwise the macro creates an illegal
-@scheme[lambda] form:
+@racket[lambda] form:
 @myinteraction[
 (mylet ([a 1] [a 2]) (+ a a))
 ]
@@ -193,9 +193,9 @@ conditions, thus:
 @myinteraction[
 (mylet ([a 1] [a 2]) (+ a a))
 ]
-The @scheme[#:fail-when] keyword is followed by two expressions: the
+The @racket[#:fail-when] keyword is followed by two expressions: the
 condition and the error message. When the condition evaluates to
-anything but @scheme[#f], the pattern fails. Additionally, if the
+anything but @racket[#f], the pattern fails. Additionally, if the
 condition evaluates to a syntax object, that syntax object is used to
 pinpoint the cause of the failure.
 
@@ -222,20 +222,20 @@ distinct binding pairs.''
     [(_ bs:distinct-bindings . body)
      #'((lambda (bs.var ...) . body) bs.rhs ...)]))
 ]
-Here we've introduced the @scheme[#:with] clause. A @scheme[#:with]
+Here we've introduced the @racket[#:with] clause. A @racket[#:with]
 clause matches a pattern with a computed term. Here we use it to bind
-@scheme[var] and @scheme[rhs] as attributes of
-@scheme[distinct-bindings]. By default, a syntax class only exports
+@racket[var] and @racket[rhs] as attributes of
+@racket[distinct-bindings]. By default, a syntax class only exports
 its patterns' pattern variables as attributes, not their nested
 attributes.@margin-note*{The alternative would be to explicitly declare
-the attributes of @scheme[distinct-bindings] to include the nested
-attributes @scheme[b.var] and @scheme[b.rhs], using the
-@scheme[#:attribute] option. Then the macro would refer to
-@scheme[bs.b.var] and @scheme[bs.b.rhs].}
+the attributes of @racket[distinct-bindings] to include the nested
+attributes @racket[b.var] and @racket[b.rhs], using the
+@racket[#:attribute] option. Then the macro would refer to
+@racket[bs.b.var] and @racket[bs.b.rhs].}
 
 Alas, so far the macro only implements half of the functionality
-offered by Racket's @scheme[let]. We must add the
-``named-@scheme[let]'' form.  That turns out to be as simple as adding
+offered by Racket's @racket[let]. We must add the
+``named-@racket[let]'' form.  That turns out to be as simple as adding
 a new clause:
 
 @myinteraction[
@@ -261,11 +261,11 @@ a new clause:
      #'(letrec ([loop (lambda (bs.var ...) body ...)])
          (loop bs.rhs ...))]))
 ]
-We are able to reuse the @scheme[distinct-bindings] syntax class, so
-the addition of the ``named-@scheme[let]'' syntax requires only three
+We are able to reuse the @racket[distinct-bindings] syntax class, so
+the addition of the ``named-@racket[let]'' syntax requires only three
 lines.
 
-But does adding this new case affect @scheme[syntax-parse]'s ability
+But does adding this new case affect @racket[syntax-parse]'s ability
 to pinpoint and report errors?
 @myinteraction[
 (mylet ([a 1] [b 2]) (+ a b))
@@ -276,8 +276,8 @@ to pinpoint and report errors?
 (mylet ([a 1] [a 2]) (+ a a))
 ]
 The error reporting for the original syntax seems intact. We should
-verify that the named-@scheme[let] syntax is working, that
-@scheme[syntax-parse] is not simply ignoring that clause.
+verify that the named-@racket[let] syntax is working, that
+@racket[syntax-parse] is not simply ignoring that clause.
 @myinteraction[
 (mylet loop ([a 1] [b 2]) (+ a b))
 (mylet loop (["a" 1]) (add1 a))
@@ -287,24 +287,24 @@ verify that the named-@scheme[let] syntax is working, that
 (mylet loop ([a 1] [a 2]) (+ a a))
 ]
 
-How does @scheme[syntax-parse] decide which clause the programmer was
+How does @racket[syntax-parse] decide which clause the programmer was
 attempting, so it can use it as a basis for error reporting? After
-all, each of the bad uses of the named-@scheme[let] syntax are also
+all, each of the bad uses of the named-@racket[let] syntax are also
 bad uses of the normal syntax, and vice versa. And yet the macro doen
-not produce errors like ``@scheme[mylet]: expected sequence of
-distinct binding pairs at: @scheme[loop].''
+not produce errors like ``@racket[mylet]: expected sequence of
+distinct binding pairs at: @racket[loop].''
 
-The answer is that @scheme[syntax-parse] records a list of all the
-potential errors (including ones like @scheme[loop] not matching
-@scheme[distinct-binding]) along with the @emph{progress} made before
+The answer is that @racket[syntax-parse] records a list of all the
+potential errors (including ones like @racket[loop] not matching
+@racket[distinct-binding]) along with the @emph{progress} made before
 each error. Only the error with the most progress is reported.
 
 For example, in this bad use of the macro,
 @myinteraction[
 (mylet loop (["a" 1]) (add1 a))
 ]
-there are two potential errors: expected @scheme[distinct-bindings] at
-@scheme[loop] and expected @scheme[identifier] at @scheme["a"]. The
+there are two potential errors: expected @racket[distinct-bindings] at
+@racket[loop] and expected @racket[identifier] at @racket["a"]. The
 second error occurs further in the term than the first, so it is
 reported. 
 
@@ -312,9 +312,9 @@ For another example, consider this term:
 @myinteraction[
 (mylet (["a" 1]) (add1 a))
 ]
-Again, there are two potential errors: expected @scheme[identifier] at
-@scheme[(["a" 1])] and expected @scheme[identifier] at
-@scheme["a"]. They both occur at the second term (or first argument,
+Again, there are two potential errors: expected @racket[identifier] at
+@racket[(["a" 1])] and expected @racket[identifier] at
+@racket["a"]. They both occur at the second term (or first argument,
 if you prefer), but the second error occurs deeper in the
 term. Progress is based on a left-to-right traversal of the syntax.
 
@@ -322,13 +322,13 @@ A final example: consider the following:
 @myinteraction[
 (mylet ([a 1] [a 2]) (+ a a))
 ]
-There are two errors again: duplicate variable name at @scheme[([a 1]
-[a 2])] and expected @scheme[identifier] at @scheme[([a 1] [a
-2])]. Note that as far as @scheme[syntax-parse] is concerned, the
+There are two errors again: duplicate variable name at @racket[([a 1]
+[a 2])] and expected @racket[identifier] at @racket[([a 1] [a
+2])]. Note that as far as @racket[syntax-parse] is concerned, the
 progress associated with the duplicate error message is the second
-term (first argument), not the second occurrence of @scheme[a]. That's
+term (first argument), not the second occurrence of @racket[a]. That's
 because the check is associated with the entire
-@scheme[distinct-bindings] pattern. It would seem that both errors
+@racket[distinct-bindings] pattern. It would seem that both errors
 have the same progress, and yet only the first one is reported. The
 difference between the two is that the first error is from a
 @emph{post-traversal} check, whereas the second is from a normal
@@ -342,24 +342,24 @@ the same progress. Here's one example:
 @myinteraction[
 (mylet "not-even-close")
 ]
-In this case @scheme[syntax-parse] reports both errors.
+In this case @racket[syntax-parse] reports both errors.
 
 Even with all of the annotations we have added to our macro, there are
-still some misuses that defy @scheme[syntax-parse]'s error reporting
+still some misuses that defy @racket[syntax-parse]'s error reporting
 capabilities, such as this example:
 @myinteraction[
 (mylet)
 ]
-The philosophy behind @scheme[syntax-parse] is that in these
+The philosophy behind @racket[syntax-parse] is that in these
 situations, a generic error such as ``bad syntax'' is justified. The
-use of @scheme[mylet] here is so far off that the only informative
+use of @racket[mylet] here is so far off that the only informative
 error message would include a complete recapitulation of the syntax of
-@scheme[mylet]. That is not the role of error messages, however; it is
+@racket[mylet]. That is not the role of error messages, however; it is
 the role of documentation.
 
 This section has provided an introduction to syntax classes, side
 conditions, and progress-ordered error reporting. But
-@scheme[syntax-parse] has many more features. Continue to the
+@racket[syntax-parse] has many more features. Continue to the
 @secref{stxparse-examples} section for samples of other features in
 working code, or skip to the subsequent sections for the complete
 reference documentation.

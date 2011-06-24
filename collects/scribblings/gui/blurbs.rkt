@@ -35,8 +35,8 @@
  @method[top-level-window<%> on-traverse-char]).})
 
   (define (labelstripped where detail what)
-    @elem{If @litchar{&} occurs in @|where|@|detail|, it 
- is specially parsed as for @scheme[button%].})
+    @elem{If @litchar{&} occurs in @|where|@|detail|, it
+ is specially parsed as for @racket[button%].})
 
   (define (bitmapuseinfo pre what thing and the)
    @elem{@|pre| @|what| is @|thing|,@|and| if @|the|
@@ -62,7 +62,7 @@
   (define (popupmenuinfo what other more)
    (make-splice
     (list*
-     @p{Pops up the given @scheme[popup-menu%] object at the specified
+     @p{Pops up the given @racket[popup-menu%] object at the specified
         coordinates (in this window's coordinates), and returns after
         handling an unspecified number of events; the menu may still be
         popped up when this method returns. If a menu item is selected from
@@ -105,7 +105,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
 
   (define FCA (FCAX "C" ""))
   (define FCAMW (FCAX "C" " if a maximum width is set for the editor"))
-  (define (FCAME) (FCAX @elem{For @scheme[text%] objects, c} " if a maximum width is set for the editor"))
+  (define (FCAME) (FCAX @elem{For @racket[text%] objects, c} " if a maximum width is set for the editor"))
   
   (define EVD
     @elem{If the editor is not displayed and the editor has a
@@ -158,20 +158,20 @@ information@|details|, even if the editor currently has delayed refreshing (see
   
   (define DrawSizeNote "")
 
-  (define LineNumbering @elem{Lines are numbered starting with @scheme[0].})
-  (define ParagraphNumbering @elem{Paragraphs are numbered starting with @scheme[0].})
+  (define LineNumbering @elem{Lines are numbered starting with @racket[0].})
+  (define ParagraphNumbering @elem{Paragraphs are numbered starting with @racket[0].})
 
   (define (italicptyStyleNote style)
     @elem{The @|style| argument is provided for future extensions. Currently, @|style| must be the empty list.})
 
   (define (HVLabelNote style what)
-    @elem{If @|style| includes @scheme['vertical-label], then the @|what| is
+    @elem{If @|style| includes @racket['vertical-label], then the @|what| is
           created with a label above the control; if @|style| does not include
-          @scheme['vertical-label] (and optionally includes @scheme['horizontal-label]), then the
+          @racket['vertical-label] (and optionally includes @racket['horizontal-label]), then the
           label is created to the left of the @|what|.})
 
   (define (DeletedStyleNote style parent what)
-    @elem{If @|style| includes @scheme['deleted], then the @|what| is created as hidden,
+    @elem{If @|style| includes @racket['deleted], then the @|what| is created as hidden,
           and it does not affect its parent's geometry; the @|what| can be made active later by calling
           @|parent|'s @method[area-container<%> add-child] method.})
 
@@ -183,18 +183,18 @@ information@|details|, even if the editor currently has delayed refreshing (see
   (define (FontLabelKWs font label-font) @elem{The @|font| argument determines the font for the control content, 
                                and @|label-font| determines the font for the control label.})
 
-  (define (WindowKWs enabled) @elem{For information about the @|enabled| argument, see @scheme[window<%>].})
+  (define (WindowKWs enabled) @elem{For information about the @|enabled| argument, see @racket[window<%>].})
   (define-inline (SubareaKWs)
-    @elem{For information about the @scheme[horiz-margin] and @scheme[vert-margin]
-              arguments, see @scheme[subarea<%>].})
+    @elem{For information about the @racket[horiz-margin] and @racket[vert-margin]
+              arguments, see @racket[subarea<%>].})
   (define-inline (AreaContKWs) 
-    @elem{For information about the @scheme[border], @scheme[spacing], and @scheme[alignment]
-              arguments, see @scheme[area-container<%>].})
+    @elem{For information about the @racket[border], @racket[spacing], and @racket[alignment]
+              arguments, see @racket[area-container<%>].})
 
   (define-inline (AreaKWs) 
     @elem{For information about the
-              @scheme[min-width], @scheme[min-height], @scheme[stretchable-width], and 
-              @scheme[stretchable-height] arguments, see @scheme[area<%>].})
+              @racket[min-width], @racket[min-height], @racket[stretchable-width], and 
+              @racket[stretchable-height] arguments, see @racket[area<%>].})
 
   (define AFM @elem{Adobe Font Metrics})
   
@@ -246,7 +246,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
                         (bytes->string/latin-1 name))))
   
   (define (edsnipsize a b c)
-    @elem{An @scheme[editor-snip%] normally stretches to wrap around the size
+    @elem{An @racket[editor-snip%] normally stretches to wrap around the size
           of the editor it contains. This method @|a| of the snip
           (and if the editor is @|b|, @|c|).})
   (define (edsnipmax n)

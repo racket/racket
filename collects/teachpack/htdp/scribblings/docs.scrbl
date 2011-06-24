@@ -29,7 +29,7 @@ Consumes a list of symbols and annotations and prints them out as a
 Sample session: set teachpack to @filepath{docs.rkt} and click Run:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 > (annotation? 0)
 false
 > (annotation? '<bold>)

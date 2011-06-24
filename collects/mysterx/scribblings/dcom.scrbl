@@ -3,9 +3,9 @@
 
 @title[#:tag "remote"]{Remote COM servers (DCOM)}
 
-For the MysterX procedures @scheme[cocreate-instance-from-coclass] and
-@scheme[cocreate-instance-from-progid], the optional @scheme[_where]
-argument can be @scheme['remote].  In that case, the server instance
+For the MysterX procedures @racket[cocreate-instance-from-coclass] and
+@racket[cocreate-instance-from-progid], the optional @racket[_where]
+argument can be @racket['remote].  In that case, the server instance
 is run at the location given by the Registry key
 
 @centerline{@tt{HKEY_CLASSES_ROOT\AppID\@nonterm{CLSID}\RemoteServerName}}

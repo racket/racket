@@ -16,7 +16,7 @@ Despite the occasional encoding problems, most paths can be converted
 to and from strings. Thus, procedures that accept a path argument
 always accept a string, and the printed form of a path uses the string
 decoding of the path inside @litchar{#<path:} and @litchar{>}. The
-@scheme[display] form of a path is the same as the @scheme[display]
+@racket[display] form of a path is the same as the @racket[display]
 form of its string encodings.
 
 @examples[
@@ -41,11 +41,11 @@ meanings.
 
 @refdetails/gory["windows-path"]{Windows filesystem paths}
 
-Use procedures like @scheme[split-path] and @scheme[build-path] to
+Use procedures like @racket[split-path] and @racket[build-path] to
 deconstruct and construct paths. When you must manipulate the name of
 a specific path element (i.e., a file or directory component in a
-path), use procedures like @scheme[path-element->bytes] and
-@scheme[bytes->path-element].
+path), use procedures like @racket[path-element->bytes] and
+@racket[bytes->path-element].
 
 @examples[
 (build-path "easy" "file.rkt")

@@ -3,12 +3,11 @@
 
 @definterface/title[labelled-menu-item<%> (menu-item<%>)]{
 
-A @scheme[labelled-menu-item<%>] object is a @scheme[menu-item<%>] with
+A @racket[labelled-menu-item<%>] object is a @racket[menu-item<%>] with
  a string label (i.e., any menu item other than a separator).  More
- specifically, it is an instance of either @scheme[menu-item%] (a
- plain menu item), @scheme[checkable-menu-item%] (a checkable menu
- item), or @scheme[menu%] (a submenu).
-
+ specifically, it is an instance of either @racket[menu-item%] (a
+ plain menu item), @racket[checkable-menu-item%] (a checkable menu
+ item), or @racket[menu%] (a submenu).
 
 
 @defmethod[(enable [enabled? any/c])
@@ -16,7 +15,7 @@ A @scheme[labelled-menu-item<%>] object is a @scheme[menu-item<%>] with
 
 Enables or disables the menu item. If the item is a submenu (or menu
  in a menu bar), the entire menu is disabled, but each submenu item's
- @method[labelled-menu-item<%> is-enabled?] method returns @scheme[#f]
+ @method[labelled-menu-item<%> is-enabled?] method returns @racket[#f]
  only if the item is specifically disabled (in addition to the
  submenu).
 
@@ -25,10 +24,10 @@ Enables or disables the menu item. If the item is a submenu (or menu
 @defmethod[(get-help-string)
            (or/c label-string? false/c)]{
 
-Returns the help string for the menu item, or @scheme[#f] if the item
+Returns the help string for the menu item, or @racket[#f] if the item
  has no help string.
 
-When an item has a @scheme[help], the string may be used to
+When an item has a @racket[help], the string may be used to
  display help information to the user.
 
 }
@@ -57,7 +56,7 @@ Like @method[labelled-menu-item<%> get-label], except that
 @defmethod[(is-enabled?)
            boolean?]{
 
-Returns @scheme[#t] if the menu item is enabled, @scheme[#f]
+Returns @racket[#t] if the menu item is enabled, @racket[#f]
 otherwise.
 
 See also
@@ -81,7 +80,7 @@ in such a way that the container does not call the
 }
 @methimpl{
 
-Calls the @scheme[demand-callback] procedure that was provided when the
+Calls the @racket[demand-callback] procedure that was provided when the
  object was created.
 
 }}
@@ -89,7 +88,7 @@ Calls the @scheme[demand-callback] procedure that was provided when the
 @defmethod[(set-help-string [help (or/c label-string? false/c)])
            void?]{
 
-Sets the help string for the menu item. Use @scheme[#f] to remove the
+Sets the help string for the menu item. Use @racket[#f] to remove the
  help string for an item.
 
 }
@@ -111,7 +110,7 @@ If the label contains @litchar{&} and the window is a control, the
  @litchar{&}. On Mac OS X, @litchar{&}s in the label are parsed in
  the same way as for Unix and Windows, but no mnemonic underline is
  displayed.
- 
+
 A @litchar{&} is always preserved in the label returned by
 @method[labelled-menu-item<%> get-label], but never preserved in the
 label returned by @method[labelled-menu-item<%> get-plain-label].

@@ -41,7 +41,7 @@ embedded:
  set. The default is zero.}
 
  @item{@cppdef{scheme_allow_set_undefined} --- This flag determines
- the initial value of @scheme[compile-allow-set!-undefined]. The default
+ the initial value of @racket[compile-allow-set!-undefined]. The default
  is zero.}
 
  @item{@cppdef{scheme_console_printf} --- This function pointer was
@@ -53,14 +53,14 @@ embedded:
 @function[(void scheme_set_collects_path
            [Scheme_Object* path])]{
 
-Sets the path to be returned by @scheme[(find-system-path
+Sets the path to be returned by @racket[(find-system-path
 'collects-dir)].}
 
 
 @function[(void scheme_set_addon_path
            [Scheme_Object* path])]{
 
-Sets the path to be returned by @scheme[(find-system-path
+Sets the path to be returned by @racket[(find-system-path
 'addon-dir)].}
 
 
@@ -69,10 +69,10 @@ Sets the path to be returned by @scheme[(find-system-path
            [Scheme_Object* pre_extra_paths]
            [Scheme_Object* post_extra_paths])]{
 
-Initializes the @scheme[current-library-collection-paths] parameter
-using @scheme[find-library-collection-paths]. The
+Initializes the @racket[current-library-collection-paths] parameter
+using @racket[find-library-collection-paths]. The
 @var{pre_extra_paths} and @var{post_extra-paths} arguments are
-propagated to @scheme[find-library-collection-paths].
+propagated to @racket[find-library-collection-paths].
 
 The function calls @cpp{scheme_seal_parameters} automatically.}
 
@@ -80,7 +80,7 @@ The function calls @cpp{scheme_seal_parameters} automatically.}
            [Scheme_Env* env]
            [Scheme_Object* pre_extra_paths])]{
 
-Like @cpp{scheme_init_collection_paths_post}, but with @scheme[null]
+Like @cpp{scheme_init_collection_paths_post}, but with @racket[null]
 as the last argument.}
 
 

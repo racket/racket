@@ -11,9 +11,9 @@
 After collecting the profile samples and analyzing the data, the last
 aspect of profiling is to render the results.  The profile collection
 provides several renderers, each providing a rendering function that
-consumes a @scheme[profile] instance.  See the
+consumes a @racket[profile] instance.  See the
 @seclink["analyzer"]{analyzer} section for a description of the
-@scheme[profile] struct if you want to implement your own renderer.
+@racket[profile] struct if you want to implement your own renderer.
 
 @;--------------------------------------------------------------------
 @section{Textual Rendering}
@@ -27,7 +27,7 @@ consumes a @scheme[profile] instance.  See the
           [#:hide-subs hide-subs% (between/c 0 1) 2/100])
          void?]{
 
-Prints the given @scheme[profile] results as a textual table.
+Prints the given @racket[profile] results as a textual table.
 
 The printout begins with some general facts about the profile, and
 then a table that represents the call-graph is printed.  Each row in
@@ -52,7 +52,7 @@ numbers and labels is as follows:
 @item{@tt{N2} --- the time (in milliseconds) that this function has
   been anywhere in a stack snapshot.  This is the total time that the
   execution was somewhere in this function or in its callees.
-  (Corresponds to the @scheme[node-total] field.)}
+  (Corresponds to the @racket[node-total] field.)}
 @item{@tt{N3} --- this is the percentage of the node's total time
   (@tt{N2}) from the total observed time of the profile.  An entry
   with a 100% refers to a function that was active throughout the
@@ -60,7 +60,7 @@ numbers and labels is as follows:
 @item{@tt{N4} --- the time (in milliseconds) that this function has
   been at the top of the stack snapshot.  This is the time that this
   function consumed doing work itself rather than calling other
-  functions.  (Corresponds to the @scheme[node-self] field.)}
+  functions.  (Corresponds to the @racket[node-self] field.)}
 @item{@tt{N5} --- this is the percentage of @tt{N4} out of the total
   observed time of the profile.  Functions with high values here can
   be good candidates for optimization, But, of course, they can
@@ -84,22 +84,22 @@ numbers and labels is as follows:
   The total percentages for the all caller and for all callees should
   be close to 100% minus the time @tt{A} was the leaf or the root.
 
-  These values correspond to the @scheme[edge-caller-time] and
-  @scheme[edge-callee-time] fields; see the documentation for further
+  These values correspond to the @racket[edge-caller-time] and
+  @racket[edge-callee-time] fields; see the documentation for further
   details.}
 ]
 
 The function has a few keyword arguments to customize its output:
 @itemize[
 
-@item{The @scheme[truncate-source] argument determines the length that
+@item{The @racket[truncate-source] argument determines the length that
   the source string should take (together with its label).}
 
-@item{@scheme[hide-self%] and @scheme[hide-subs%] control hiding some
+@item{@racket[hide-self%] and @racket[hide-subs%] control hiding some
   of the nodes.  A node is hidden if its self time (@tt{N3} in the
-  above example) is smaller than @scheme[hide-self%] @emph{and} if all
+  above example) is smaller than @racket[hide-self%] @emph{and} if all
   places where it occurs as a caller or a callee have percentages that
-  are smaller than @scheme[hide-subs%].  The reason for requiring both
+  are smaller than @racket[hide-subs%].  The reason for requiring both
   conditions is to avoid having ``dangling references'' to hidden
   nodes.}
 
@@ -117,7 +117,7 @@ The function has a few keyword arguments to customize its output:
           [#:hide-subs hide-subs% (between/c 0 1) 2/100])
          void?]{
 
-Prints the given @scheme[profile] results as a Graphviz directed
+Prints the given @racket[profile] results as a Graphviz directed
 graph.
 
 This is an experimental module, provided mostly as a proof-of-concept.

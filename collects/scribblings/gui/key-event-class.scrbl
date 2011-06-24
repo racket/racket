@@ -3,14 +3,14 @@
 
 @defclass/title[key-event% event% ()]{
 
-A @scheme[key-event%] object contains information about a key press
+A @racket[key-event%] object contains information about a key press
 or release event. Key events are primarily processed by
 @xmethod[window<%> on-subwindow-char] and
 @xmethod[canvas<%> on-char].
 
 For a key-press event, a virtual key code is provided by
 @method[key-event% get-key-code]. For a key-release event, 
-@method[key-event% get-key-code] reports @scheme['release], and a virtual key code is provided by
+@method[key-event% get-key-code] reports @racket['release], and a virtual key code is provided by
 @method[key-event% get-key-release-code].
 
 See also @|mousekeydiscuss|.
@@ -26,19 +26,19 @@ See also @|mousekeydiscuss|.
                  [time-stamp exact-integer? 0]
                  [caps-down any/c #f])]{
 
-See the corresponding @schemeidfont{get-} and @schemeidfont{set-}
- methods for information about @scheme[key-code], @scheme[shift-down],
- @scheme[control-down], @scheme[meta-down], @scheme[alt-down],
- @scheme[x], @scheme[y], @scheme[time-stamp], @scheme[caps-down].
+See the corresponding @racketidfont{get-} and @racketidfont{set-}
+ methods for information about @racket[key-code], @racket[shift-down],
+ @racket[control-down], @racket[meta-down], @racket[alt-down],
+ @racket[x], @racket[y], @racket[time-stamp], @racket[caps-down].
 
 The release key code, as returned by @method[key-event%
-get-key-release-code], is initialized to @scheme['press].
+get-key-release-code], is initialized to @racket['press].
 
 }
 
 @defmethod[(get-alt-down)
            boolean?]{
-Returns @scheme[#t] if the Option (Mac OS X) key was down for
+Returns @racket[#t] if the Option (Mac OS X) key was down for
  the event. When the Alt key is pressed in Windows, it is reported as
  a Meta press (see
 @method[key-event% get-meta-down]).
@@ -47,17 +47,17 @@ Returns @scheme[#t] if the Option (Mac OS X) key was down for
 
 @defmethod[(get-caps-down)
            boolean?]{
-Returns @scheme[#t] if the Caps Lock key was on for the event.
+Returns @racket[#t] if the Caps Lock key was on for the event.
 
 }
 
 @defmethod[(get-control-down)
            boolean?]{
-Returns @scheme[#t] if the Control key was down for the event.
+Returns @racket[#t] if the Control key was down for the event.
 
 On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
-@method[key-event% get-control-down] for the event reports @scheme[#f].
+@method[key-event% get-control-down] for the event reports @racket[#f].
 
 }
 
@@ -68,78 +68,78 @@ Gets the virtual key code for the key event. The virtual key code is
  either a character or a special key symbol, one of the following:
 
 @itemize[
-@item{@indexed-scheme['start]}
-@item{@indexed-scheme['cancel]}
-@item{@indexed-scheme['clear]}
-@item{@indexed-scheme['shift]}
-@item{@indexed-scheme['control]}
-@item{@indexed-scheme['menu]}
-@item{@indexed-scheme['pause]}
-@item{@indexed-scheme['capital]}
-@item{@indexed-scheme['prior]}
-@item{@indexed-scheme['next]}
-@item{@indexed-scheme['end]}
-@item{@indexed-scheme['home]}
-@item{@indexed-scheme['left]}
-@item{@indexed-scheme['up]}
-@item{@indexed-scheme['right]}
-@item{@indexed-scheme['down]}
-@item{@indexed-scheme['escape]}
-@item{@indexed-scheme['select]}
-@item{@indexed-scheme['print]}
-@item{@indexed-scheme['execute]}
-@item{@indexed-scheme['snapshot]}
-@item{@indexed-scheme['insert]}
-@item{@indexed-scheme['help]}
-@item{@indexed-scheme['numpad0]}
-@item{@indexed-scheme['numpad1]}
-@item{@indexed-scheme['numpad2]}
-@item{@indexed-scheme['numpad3]}
-@item{@indexed-scheme['numpad4]}
-@item{@indexed-scheme['numpad5]}
-@item{@indexed-scheme['numpad6]}
-@item{@indexed-scheme['numpad7]}
-@item{@indexed-scheme['numpad8]}
-@item{@indexed-scheme['numpad9]}
-@item{@indexed-scheme['numpad-enter]}
-@item{@indexed-scheme['multiply]}
-@item{@indexed-scheme['add]}
-@item{@indexed-scheme['separator]}
-@item{@indexed-scheme['subtract]}
-@item{@indexed-scheme['decimal]}
-@item{@indexed-scheme['divide]}
-@item{@indexed-scheme['f1]}
-@item{@indexed-scheme['f2]}
-@item{@indexed-scheme['f3]}
-@item{@indexed-scheme['f4]}
-@item{@indexed-scheme['f5]}
-@item{@indexed-scheme['f6]}
-@item{@indexed-scheme['f7]}
-@item{@indexed-scheme['f8]}
-@item{@indexed-scheme['f9]}
-@item{@indexed-scheme['f10]}
-@item{@indexed-scheme['f11]}
-@item{@indexed-scheme['f12]}
-@item{@indexed-scheme['f13]}
-@item{@indexed-scheme['f14]}
-@item{@indexed-scheme['f15]}
-@item{@indexed-scheme['f16]}
-@item{@indexed-scheme['f17]}
-@item{@indexed-scheme['f18]}
-@item{@indexed-scheme['f19]}
-@item{@indexed-scheme['f20]}
-@item{@indexed-scheme['f21]}
-@item{@indexed-scheme['f22]}
-@item{@indexed-scheme['f23]}
-@item{@indexed-scheme['f24]}
-@item{@indexed-scheme['numlock]}
-@item{@indexed-scheme['scroll]}
-@item{@indexed-scheme['wheel-up] --- @index["wheel on mouse"]{mouse} wheel up one notch}
-@item{@indexed-scheme['wheel-down] --- mouse wheel down one notch}
-@item{@indexed-scheme['wheel-left] --- mouse wheel left one notch}
-@item{@indexed-scheme['wheel-right] --- mouse wheel right one notch}
-@item{@indexed-scheme['release] --- indicates a key-release event}
-@item{@indexed-scheme['press] --- indicates a key-press event; usually only from @scheme[get-key-release-code]}
+@item{@indexed-racket['start]}
+@item{@indexed-racket['cancel]}
+@item{@indexed-racket['clear]}
+@item{@indexed-racket['shift]}
+@item{@indexed-racket['control]}
+@item{@indexed-racket['menu]}
+@item{@indexed-racket['pause]}
+@item{@indexed-racket['capital]}
+@item{@indexed-racket['prior]}
+@item{@indexed-racket['next]}
+@item{@indexed-racket['end]}
+@item{@indexed-racket['home]}
+@item{@indexed-racket['left]}
+@item{@indexed-racket['up]}
+@item{@indexed-racket['right]}
+@item{@indexed-racket['down]}
+@item{@indexed-racket['escape]}
+@item{@indexed-racket['select]}
+@item{@indexed-racket['print]}
+@item{@indexed-racket['execute]}
+@item{@indexed-racket['snapshot]}
+@item{@indexed-racket['insert]}
+@item{@indexed-racket['help]}
+@item{@indexed-racket['numpad0]}
+@item{@indexed-racket['numpad1]}
+@item{@indexed-racket['numpad2]}
+@item{@indexed-racket['numpad3]}
+@item{@indexed-racket['numpad4]}
+@item{@indexed-racket['numpad5]}
+@item{@indexed-racket['numpad6]}
+@item{@indexed-racket['numpad7]}
+@item{@indexed-racket['numpad8]}
+@item{@indexed-racket['numpad9]}
+@item{@indexed-racket['numpad-enter]}
+@item{@indexed-racket['multiply]}
+@item{@indexed-racket['add]}
+@item{@indexed-racket['separator]}
+@item{@indexed-racket['subtract]}
+@item{@indexed-racket['decimal]}
+@item{@indexed-racket['divide]}
+@item{@indexed-racket['f1]}
+@item{@indexed-racket['f2]}
+@item{@indexed-racket['f3]}
+@item{@indexed-racket['f4]}
+@item{@indexed-racket['f5]}
+@item{@indexed-racket['f6]}
+@item{@indexed-racket['f7]}
+@item{@indexed-racket['f8]}
+@item{@indexed-racket['f9]}
+@item{@indexed-racket['f10]}
+@item{@indexed-racket['f11]}
+@item{@indexed-racket['f12]}
+@item{@indexed-racket['f13]}
+@item{@indexed-racket['f14]}
+@item{@indexed-racket['f15]}
+@item{@indexed-racket['f16]}
+@item{@indexed-racket['f17]}
+@item{@indexed-racket['f18]}
+@item{@indexed-racket['f19]}
+@item{@indexed-racket['f20]}
+@item{@indexed-racket['f21]}
+@item{@indexed-racket['f22]}
+@item{@indexed-racket['f23]}
+@item{@indexed-racket['f24]}
+@item{@indexed-racket['numlock]}
+@item{@indexed-racket['scroll]}
+@item{@indexed-racket['wheel-up] --- @index["wheel on mouse"]{mouse} wheel up one notch}
+@item{@indexed-racket['wheel-down] --- mouse wheel down one notch}
+@item{@indexed-racket['wheel-left] --- mouse wheel left one notch}
+@item{@indexed-racket['wheel-right] --- mouse wheel right one notch}
+@item{@indexed-racket['release] --- indicates a key-release event}
+@item{@indexed-racket['press] --- indicates a key-press event; usually only from @racket[get-key-release-code]}
 ]
 
 The special key symbols attempt to capture useful keys that have no
@@ -148,26 +148,26 @@ The special key symbols attempt to capture useful keys that have no
 
 @itemize[
 
- @item{@scheme[#\space] --- the space bar}
+ @item{@racket[#\space] --- the space bar}
 
- @item{@scheme[#\return] --- the Enter or Return key (on all
+ @item{@racket[#\return] --- the Enter or Return key (on all
       platforms), but not necessarily the Enter key near the numpad
-      (which is reported as @scheme['numpad-enter] if the platform
+      (which is reported as @racket['numpad-enter] if the platform
       distinguishes the two Enter keys)}
 
- @item{@scheme[#\tab] --- the tab key}
+ @item{@racket[#\tab] --- the tab key}
 
- @item{@scheme[#\backspace] --- the backspace key}
+ @item{@racket[#\backspace] --- the backspace key}
 
- @item{@scheme[#\rubout] --- the delete key}
+ @item{@racket[#\rubout] --- the delete key}
 
 ]
 
 If a suitable special key symbol or ASCII representation is not
- available, @scheme[#\nul] (the NUL character) is reported.
+ available, @racket[#\nul] (the NUL character) is reported.
 
-A @scheme['wheel-up], @scheme['wheel-down], @scheme['wheel-left], or
- @scheme['wheel-right] event may be sent to a window other than the
+A @racket['wheel-up], @racket['wheel-down], @racket['wheel-left], or
+ @racket['wheel-right] event may be sent to a window other than the
  one with the keyboard focus, because some platforms generate wheel
  events based on the location of the mouse pointer instead of the
  keyboard focus.
@@ -177,7 +177,7 @@ On Windows, when the Control key is pressed without Alt, the key
  of the Shift key. On Mac OS X, the key code is computed without
  Caps Lock effects when the Control or Command key is pressed; in the
  case of Control, Caps Lock is used normally if special handling is
- disabled for the Control key via @scheme[special-control-key]. On
+ disabled for the Control key via @racket[special-control-key]. On
  Unix, the key code is computed with Caps Lock effects when the Control
  key is pressed without Alt.
 
@@ -189,7 +189,7 @@ See also @method[key-event% get-other-shift-key-code].
            (or/c char? key-code-symbol?)]{
 
 Gets the virtual key code for a key-release event; the result is
- @scheme['press] for a key-press event. See @method[key-event%
+ @racket['press] for a key-press event. See @method[key-event%
  get-key-code] for the list of virtual key codes.
 
 }
@@ -197,7 +197,7 @@ Gets the virtual key code for a key-release event; the result is
 @defmethod[(get-meta-down)
            boolean?]{
 
-Returns @scheme[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
+Returns @racket[#t] if the Meta (Unix), Alt (Windows), or Command (Mac OS
  X) key was down for the event.
 
 }
@@ -230,7 +230,7 @@ Since keyboard mappings vary, it is sometimes useful in key mappings
  for a program to know the result that the keyboard would have
  produced for an event if the Shift key had been toggled
  differently. The @method[key-event% get-other-shift-key-code]
- produces that other mapping, returning @scheme[#f] if the alternate
+ produces that other mapping, returning @racket[#f] if the alternate
  mapping is unavailable, otherwise returning the same kind of result
  as @method[key-event% get-key-code].
 
@@ -263,7 +263,7 @@ Alternate mappings are not available for all events. On Windows,
 @defmethod[(get-shift-down)
            boolean?]{
 
-Returns @scheme[#t] if the Shift key was down for the event.
+Returns @racket[#t] if the Shift key was down for the event.
 
 }
 
@@ -307,7 +307,7 @@ Sets whether the Control key was down for the event.
 On Mac OS X, if a control-key press is combined with a mouse button
  click, the event is reported as a right-button click and
  @method[key-event% get-control-down] for the event reports
- @scheme[#f].
+ @racket[#f].
 
 }
 

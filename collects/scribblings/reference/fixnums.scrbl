@@ -174,7 +174,7 @@ elements of @racket[vec] from @racket[start] (inclusive) to
 @defform*[((for*/fxvector (for-clause ...) body ...)
            (for*/fxvector #:length length-expr (for-clause ...) body ...))])]{
 
-Like @scheme[for/vector] or @scheme[for*/vector], but for
+Like @racket[for/vector] or @racket[for*/vector], but for
 @tech{fxvector}s.}
 
 @defproc[(shared-fxvector [x fixnum?] ...) fxvector?]{

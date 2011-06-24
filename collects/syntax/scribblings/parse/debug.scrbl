@@ -22,15 +22,15 @@ consists of the attribute's name and ellipsis depth.
 @defform[(syntax-class-keywords syntax-class-id)]]]{
 
 Returns the syntax class's arity and keywords, respectively. Compare
-with @scheme[procedure-arity] and @scheme[procedure-keywords].
+with @racket[procedure-arity] and @racket[procedure-keywords].
 }
 
 @defform[(syntax-class-parse syntax-class-id stx-expr arg ...)
          #:contracts ([stx-expr syntax?])]{
 
 Runs the parser for the syntax class (parameterized by the
-@scheme[arg-expr]s) on the syntax object produced by
-@scheme[stx-expr]. On success, the result is a list of vectors
+@racket[arg-expr]s) on the syntax object produced by
+@racket[stx-expr]. On success, the result is a list of vectors
 representing the attribute bindings of the syntax class. Each vector
 contains the attribute name, depth, and associated value. On failure,
 the result is some internal representation of the failure.
@@ -39,8 +39,8 @@ the result is some internal representation of the failure.
 @defform[(debug-parse stx-expr S-pattern ...+)
          #:contracts ([stx-expr syntax?])]{
 
-Tries to match @scheme[stx-expr] against the @scheme[S-pattern]s. If
-matching succeeds, the symbol @scheme['success] is
+Tries to match @racket[stx-expr] against the @racket[S-pattern]s. If
+matching succeeds, the symbol @racket['success] is
 returned. Otherwise, an S-expression describing the failure is returned.
 
 The failure S-expression shows both the raw set of failures (unsorted)
@@ -49,8 +49,8 @@ divided into equivalence classes based on their progress (progress is
 a partial order); that is, failures within an equivalence class have
 the same progress and, in principle, pinpoint the same term as the
 problematic term. Multiple equivalence classes only arise from
-@scheme[~parse] patterns (or equivalently, @scheme[#:with] clauses)
-that match computed terms or @scheme[~fail] (@scheme[#:fail-when],
+@racket[~parse] patterns (or equivalently, @racket[#:with] clauses)
+that match computed terms or @racket[~fail] (@racket[#:fail-when],
 etc) clauses that allow a computed term to be pinpointed.
 
 }

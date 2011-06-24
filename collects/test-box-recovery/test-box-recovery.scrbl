@@ -8,12 +8,12 @@ The text-box recovery tool allows DrRacket or DrScheme v370 and later to read
 programs created using v360 and earlier that include test-case boxes.
 
 When opened using this tool, test-case boxes are turned into
-@scheme[check-expect] forms.
+@racket[check-expect] forms.
 
 Test boxes plain-text tests and expected results are converted to
-plain-text @scheme[check-expect] forms. 
+plain-text @racket[check-expect] forms. 
 
 If either the test or expected-result expression contains non-text
 (e.g., an image), the converted form is a comment box containing a
-@scheme[check-expect] form. The box should be easy to remove using the
+@racket[check-expect] form. The box should be easy to remove using the
 @menuitem["Racket" "Uncomment"] menu item in DrRacket.

@@ -17,37 +17,37 @@ For buffered asynchronous channels, see @secref["async-channel"].
 
 @defproc[(channel? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{channel}, 
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{channel}, 
+@racket[#f] otherwise.}
 
 @defproc[(make-channel) channel?]{
 
 Creates and returns a new channel. The channel can be used with
-@scheme[channel-get], with @scheme[channel-try-get], or as a
+@racket[channel-get], with @racket[channel-try-get], or as a
 @tech{synchronizable event} (see @secref["sync"]) to receive a value
-through the channel. The channel can be used with @scheme[channel-put]
-or through the result of @scheme[channel-put-evt] to send a value
+through the channel. The channel can be used with @racket[channel-put]
+or through the result of @racket[channel-put-evt] to send a value
 through the channel.}
 
 @defproc[(channel-get [ch channel?]) any]{
 
 Blocks until a sender is ready to provide a value through
-@scheme[ch]. The result is the sent value.}
+@racket[ch]. The result is the sent value.}
 
 @defproc[(channel-try-get [ch channel?]) any]{
 
-Receives and returns a value from @scheme[ch] if a sender is
-immediately ready, otherwise returns @scheme[#f].}
+Receives and returns a value from @racket[ch] if a sender is
+immediately ready, otherwise returns @racket[#f].}
 
 @defproc[(channel-put [ch channel?] [v any/c]) void?]{
 
-Blocks until a receiver is ready to accept the value @scheme[v]
-through @scheme[ch].}
+Blocks until a receiver is ready to accept the value @racket[v]
+through @racket[ch].}
 
 
 @defproc[(channel-put-evt [ch channel?] [v any/c]) evt?]{
 
 Returns a fresh @tech{synchronizable event} for use with
-@scheme[sync]. The event is ready when @scheme[(channel-put ch v)]
+@racket[sync]. The event is ready when @racket[(channel-put ch v)]
 would not block, and the event's synchronization result is the event
 itself.}

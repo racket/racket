@@ -218,9 +218,9 @@
                         (car content)))
                     spacer ":" spacer
                     (case kind
-                      [(class) (scheme class?)]
-                      [(interface) (scheme interface?)]
-                      [(mixin) (schemeblockelem (class? . -> . class?))])))))))
+                      [(class) (racket class?)]
+                      [(interface) (racket interface?)]
+                      [(mixin) (racketblockelem (class? . -> . class?))])))))))
     (if super
       (list
        (list (make-flow

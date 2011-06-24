@@ -168,8 +168,8 @@ Several environment variables can affect DrRacket's behavior:
        variable, and then run @exec{setup-plt} again.}
 
  @item{@indexed-envvar{PLTDRXREFDELAY} : When this environment variable
-        is set, DrRacket uses an ordinary @scheme[delay] (instead of
-        @scheme[delay/idle]) delay the computation of the searching
+        is set, DrRacket uses an ordinary @racket[delay] (instead of
+        @racket[delay/idle]) delay the computation of the searching
         indicies. This means that Check Syntax will start more slowly
         the first time, but that the startup performance is more
         predictable. In addition, when the environment variable is

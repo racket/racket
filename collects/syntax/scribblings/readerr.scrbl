@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label syntax/readerr))
 
-@title[#:tag "readerr"]{Raising @scheme[exn:fail:read]}
+@title[#:tag "readerr"]{Raising @racket[exn:fail:read]}
 
 @defmodule[syntax/readerr]
 
@@ -13,18 +13,18 @@
                            [span (or/c number? false/c)]) 
          any]{
 
-Creates and raises an @scheme[exn:fail:read] exception, using
-@scheme[msg-string] as the base error message.
+Creates and raises an @racket[exn:fail:read] exception, using
+@racket[msg-string] as the base error message.
 
 Source-location information is added to the error message using the
-last five arguments (if the @scheme[error-print-source-location]
-parameter is set to @scheme[#t]). The @scheme[source] argument is an
+last five arguments (if the @racket[error-print-source-location]
+parameter is set to @racket[#t]). The @racket[source] argument is an
 arbitrary value naming the source location---usually a file path
-string. Each of the @scheme[line], @scheme[pos] arguments is
-@scheme[#f] or a positive exact integer representing the location
-within @scheme[source-name] (as much as known), @scheme[col] is a
+string. Each of the @racket[line], @racket[pos] arguments is
+@racket[#f] or a positive exact integer representing the location
+within @racket[source-name] (as much as known), @racket[col] is a
 non-negative exact integer for the source column (if known), and
-@scheme[span] is @scheme[#f] or a non-negative exact integer for an
+@racket[span] is @racket[#f] or a non-negative exact integer for an
 item range starting from the indicated position.
 
 The usual location values should point at the beginning of whatever it
@@ -39,5 +39,5 @@ was discovered.}
                                [span (or/c number? false/c)]) 
          any]{
 
-Like @scheme[raise-read-error], but raises @scheme[exn:fail:read:eof]
-instead of @scheme[exn:fail:read].}
+Like @racket[raise-read-error], but raises @racket[exn:fail:read:eof]
+instead of @racket[exn:fail:read].}

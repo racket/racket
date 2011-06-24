@@ -7,10 +7,10 @@
 
 @mzlib[#:mode title string]
 
-The @schememodname[mzlib/string] library re-exports several functions
-from @schememodname[scheme/base]:
+The @racketmodname[mzlib/string] library re-exports several functions
+from @racketmodname[scheme/base]:
 
-@schemeblock[
+@racketblock[
 real->decimal-string
 regexp-quote
 regexp-replace-quote
@@ -21,8 +21,8 @@ regexp-split
 regexp-match-exact?
 ]
 
-It also re-exports @scheme[regexp-try-match] as
-@scheme[regexp-match/fail-without-reading].
+It also re-exports @racket[regexp-try-match] as
+@racket[regexp-match/fail-without-reading].
 
 
 @defproc[(glob->regexp [str (or/c string bytes?)?]
@@ -31,33 +31,33 @@ It also re-exports @scheme[regexp-try-match] as
                        [simple? any/c #f])
          (or/c regexp? byte-regexp?)]{
 
-Produces a regexp for a an input ``glob pattern'' @scheme[str].  A
+Produces a regexp for a an input ``glob pattern'' @racket[str].  A
 glob pattern is one that matches @litchar{*} with any string,
 @litchar{?} with a single character, and character ranges are the same
-as in regexps (unless @scheme[simple?] is true). In addition, the
+as in regexps (unless @racket[simple?] is true). In addition, the
 resulting regexp does not match strings that begin with @litchar{.},
-unless @scheme[str] begins with @litchar{.} or @scheme[hide-dots?] is
-@scheme[#f].  The resulting regexp can be used with string file names
+unless @racket[str] begins with @litchar{.} or @racket[hide-dots?] is
+@racket[#f].  The resulting regexp can be used with string file names
 to check the glob pattern.  If the glob pattern is provided as a byte
 string, the result is a byte regexp.
 
-The @scheme[case-sensitive?] argument determines whether the resulting
+The @racket[case-sensitive?] argument determines whether the resulting
 regexp is case-sensitive.
 
-If @scheme[simple?] is true, then ranges with
-@litchar{[}...@litchar{]} in @scheme[str] are treated as literal
+If @racket[simple?] is true, then ranges with
+@litchar{[}...@litchar{]} in @racket[str] are treated as literal
 character sequences.}
 
 
 @defproc[(string-lowercase! [str (and/c string? (not/c immutable?))]) void?]{
 
-Destructively changes @scheme[str] to contain only lowercase
+Destructively changes @racket[str] to contain only lowercase
 characters.}
 
 
 @defproc[(string-uppercase! [str (and/c string? (not/c immutable?))]) void?]{
 
-Destructively changes @scheme[str] to contain only uppercase
+Destructively changes @racket[str] to contain only uppercase
 characters.}
 
 
@@ -69,16 +69,16 @@ characters.}
                                    #f])
          list?]{
 
-Reads and evaluates S-expressions from @scheme[str], returning results
+Reads and evaluates S-expressions from @racket[str], returning results
 for all of the expressions in the string. If any expression produces
 multiple results, the results are spliced into the resulting list.  If
-@scheme[str] contains only whitespace and comments, an empty list is
-returned, and if @scheme[str] contains multiple expressions, the
+@racket[str] contains only whitespace and comments, an empty list is
+returned, and if @racket[str] contains multiple expressions, the
 result will be contain multiple values from all subexpressions.
 
-The @scheme[err-handler] argument can be:
+The @racket[err-handler] argument can be:
 @itemize[
-@item{@scheme[#f] (the default) which means that errors are not
+@item{@racket[#f] (the default) which means that errors are not
       caught;}
 @item{a one-argument procedure, which will be used with an exception
       (when an error occurs) and its result will be returned}
@@ -88,7 +88,7 @@ The @scheme[err-handler] argument can be:
 
 @defproc[(expr->string [expr any/c]) string?]{
 
-Prints @scheme[expr] into a string and returns the string.}
+Prints @racket[expr] into a string and returns the string.}
 
 
 @defproc[(read-from-string [str (or/c string? bytes?)]
@@ -98,8 +98,8 @@ Prints @scheme[expr] into a string and returns the string.}
                                         #f])
           any/c]{
 
-Reads the first S-expression from @scheme[str] and returns it.  The
-@scheme[err-handler] is as in @scheme[eval-string].}
+Reads the first S-expression from @racket[str] and returns it.  The
+@racket[err-handler] is as in @racket[eval-string].}
 
 
 @defproc[(read-from-string-all [str (or/c string? bytes?)]
@@ -109,6 +109,6 @@ Reads the first S-expression from @scheme[str] and returns it.  The
                                             #f])
           list?]{
 
-Reads all S-expressions from the string (or byte string) @scheme[str]
-and returns them in a list.  The @scheme[err-handler] is as in
-@scheme[eval-string].}
+Reads all S-expressions from the string (or byte string) @racket[str]
+and returns them in a list.  The @racket[err-handler] is as in
+@racket[eval-string].}

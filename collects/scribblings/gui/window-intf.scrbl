@@ -4,15 +4,15 @@
 
 @definterface/title[window<%> (area<%>)]{
 
-A @scheme[window<%>] object is an @scheme[area<%>] with a graphical
+A @racket[window<%>] object is an @racket[area<%>] with a graphical
  representation that can respond to events.
 
-All @scheme[window<%>] classes accept the following named instantiation
+All @racket[window<%>] classes accept the following named instantiation
  arguments:
 @itemize[
 
- @item{@indexed-scheme[enabled] --- default is @scheme[#t]; passed to
-@method[window<%> enable] if @scheme[#f]}
+ @item{@indexed-racket[enabled] --- default is @racket[#t]; passed to
+@method[window<%> enable] if @racket[#f]}
 
 ]
 
@@ -40,7 +40,7 @@ screen coordinates.
 On Mac OS X, the screen coordinates start with @math{(0, 0)} at the
 upper left of the menu bar. In contrast, @xmethod[top-level-window<%>
 move] considers @math{(0, 0)} to be below the menu bar. See also
-@scheme[get-display-left-top-inset].
+@racket[get-display-left-top-inset].
 
 }
 
@@ -54,7 +54,7 @@ Enables or disables a window so that input events are ignored. (Input
 
 @MonitorMethod[@elem{The enable state of a window} @elem{enabling a parent window} @elem{@method[window<%> on-superwindow-enable]} @elem{enable state}]
 
-If @scheme[enable?] is true, the window is enabled, otherwise it is
+If @racket[enable?] is true, the window is enabled, otherwise it is
  disabled.
 
 }
@@ -120,7 +120,7 @@ See also
 @defmethod[(get-cursor)
            (or/c (is-a?/c cursor%) #f)]{
 
-Returns the window's cursor, or @scheme[#f] if this window's cursor
+Returns the window's cursor, or @racket[#f] if this window's cursor
  defaults to the parent's cursor.  See
 @method[window<%> set-cursor] for more information.
 
@@ -137,7 +137,7 @@ platform:
 
  @item{Windows: @tt{HWND}}
 
- @item{Mac OS X: @tt{NSWindow} for a @scheme[top-level-window<%>] object,
+ @item{Mac OS X: @tt{NSWindow} for a @racket[top-level-window<%>] object,
        @tt{NSView} for other windows}
 
  @item{Unix: @tt{GtkWidget}}
@@ -172,8 +172,8 @@ Gets a window's label, if any. Control windows generally display their
  for identification purposes. Messages, buttons, and check boxes can
  have bitmap labels (only when they are created with bitmap labels),
  but all other windows have string labels. In addition, a message
- label can be an icon symbol @scheme['app], @scheme['caution], or
- @scheme['stop], and a button can have both a bitmap label and a
+ label can be an icon symbol @racket['app], @racket['caution], or
+ @racket['stop], and a button can have both a bitmap label and a
  string label (along with a position for the bitmap).
 
 A label string may contain @litchar{&}s, which serve as
@@ -186,7 +186,7 @@ A label string may contain @litchar{&}s, which serve as
  (with no displayed underline). See also
  @method[top-level-window<%> on-traverse-char].
 
-If the window does not have a label, @scheme[#f] is returned.
+If the window does not have a label, @racket[#f] is returned.
 
 }
 
@@ -197,7 +197,7 @@ If the window does not have a label, @scheme[#f] is returned.
 Like
 @method[window<%> get-label], except that ampersands in the label are removed. If the window has
  no label or the window's
- label is not a string, @scheme[#f] is returned.
+ label is not a string, @racket[#f] is returned.
 
 }
 
@@ -264,8 +264,8 @@ Indicates whether the window currently has the keyboard focus. See
 @defmethod[(is-enabled?)
            boolean?]{
 
-Returns @scheme[#t] if the window is enabled when all of its ancestors
- are enabled, @scheme[#f] otherwise.
+Returns @racket[#t] if the window is enabled when all of its ancestors
+ are enabled, @racket[#f] otherwise.
 
 }
 
@@ -276,8 +276,8 @@ Returns @scheme[#t] if the window is enabled when all of its ancestors
 Indicates whether the window is currently shown or not (when
  all of its ancestors are also shown).
 
-The result is @scheme[#t] if this window is shown when its ancestors are
- shown, or @scheme[#f] if this window remains hidden when its ancestors
+The result is @racket[#t] if this window is shown when its ancestors are
+ shown, or @racket[#f] if this window remains hidden when its ancestors
  are shown.
 
 }
@@ -295,7 +295,7 @@ On Mac OS X, when the application is running and user
  double-clicks an application-handled file or drags a file onto the
  application's icon, the main thread's application file handler is
  called (see
-@scheme[application-file-handler]). The default handler calls the
+@racket[application-file-handler]). The default handler calls the
 @method[window<%> on-drop-file] method of the most-recently activated frame if drag-and-drop is
  enabled for that frame, independent of the frame's eventspace (but
  the method is called in the frame's eventspace's handler
@@ -309,7 +309,7 @@ On Mac OS X, when the application is running and user
 @methspec{
 
 @index['("keyboard focus" "notification")]{Called} when a window
- receives or loses the keyboard focus. If the argument is @scheme[#t],
+ receives or loses the keyboard focus. If the argument is @racket[#t],
  the keyboard focus was received, otherwise it was lost.
 
 Note that on Unix, keyboard focus can move to the menu bar
@@ -368,14 +368,14 @@ Does nothing.
 Called when this window or a child window receives a keyboard event.
  The
 @method[window<%> on-subwindow-char] method of the receiver's top-level window is called first (see
-@method[area<%> get-top-level-window]); if the return value is @scheme[#f], then the
+@method[area<%> get-top-level-window]); if the return value is @racket[#f], then the
 @method[window<%> on-subwindow-char] method is called for the next child in the path to the receiver, and
  so on. Finally, if the receiver's
-@method[window<%> on-subwindow-char] method returns @scheme[#f], the event is passed on to the receiver's
+@method[window<%> on-subwindow-char] method returns @racket[#f], the event is passed on to the receiver's
  normal key-handling mechanism.
 
-The @scheme[event] argument is the event that was generated for the
- @scheme[receiver] window.
+The @racket[event] argument is the event that was generated for the
+ @racket[receiver] window.
 
 The atomicity limitation @method[window<%> on-subwindow-event] applies
  to @method[window<%> on-subwindow-char] as well. That is, an insufficiently cooperative
@@ -393,7 +393,7 @@ BEWARE: The default
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -405,14 +405,14 @@ Returns @scheme[#f].
 Called when this window or a child window receives a mouse event.
  The
 @method[window<%> on-subwindow-event] method of the receiver's top-level window is called first (see
-@method[area<%> get-top-level-window]); if the return value is @scheme[#f], the
+@method[area<%> get-top-level-window]); if the return value is @racket[#f], the
 @method[window<%> on-subwindow-event] method is called for the next child in the path to the receiver, and
  so on. Finally, if the receiver's
-@method[window<%> on-subwindow-event] method returns @scheme[#f],  the event is passed on to the
+@method[window<%> on-subwindow-event] method returns @racket[#f],  the event is passed on to the
  receiver's normal mouse-handling mechanism. 
 
-The @scheme[event] argument is the event that was generated for the
- @scheme[receiver] window.
+The @racket[event] argument is the event that was generated for the
+ @racket[receiver] window.
 
 If the @method[window<%> on-subwindow-event] method chain does not complete
  atomically (i.e., without requiring other threads to run) or does not complete
@@ -424,7 +424,7 @@ If the @method[window<%> on-subwindow-event] method chain does not complete
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -478,8 +478,8 @@ This method is not called when the window is initially created; it is
 
 @popupmenuinfo["window" "window" ""]
 
-The @scheme[menu] is popped up within the window at position
- (@scheme[x], @scheme[y]).
+The @racket[menu] is popped up within the window at position
+ (@racket[x], @racket[y]).
 
 }
 
@@ -496,7 +496,7 @@ Enqueues an event to repaint the window.
                    (integer-in -10000 10000))]{
 
 @index["global coordinates"]{Converts} global coordinates to window
- local coordinates. See also @scheme[client->screen] for information
+ local coordinates. See also @racket[client->screen] for information
  on screen coordinates.
 
 }
@@ -505,7 +505,7 @@ Enqueues an event to repaint the window.
 @defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) #f)])
            void?]{
 
-Sets the window's cursor. Providing @scheme[#f] instead of a cursor
+Sets the window's cursor. Providing @racket[#f] instead of a cursor
  value removes the window's cursor.
 
 If a window does not have a cursor, it uses the cursor of its parent.
@@ -524,7 +524,7 @@ Sets a window's label. The window's natural minimum size might be
  is not recomputed.
 
 If the window was not created with a label, or if the window was
- created with a non-string label, @scheme[l] is ignored.
+ created with a non-string label, @racket[l] is ignored.
 
 See
 @method[window<%> get-label] for more information.
@@ -538,7 +538,7 @@ Shows or hides a window.
 
 @MonitorMethod[@elem{The visibility of a window} @elem{the user clicking the window's close box, for example} @elem{@method[window<%> on-superwindow-show] or @method[top-level-window<%> on-close]} @elem{visibility}]
 
-If @scheme[show?] is @scheme[#f], the window is hidden. Otherwise, the
+If @racket[show?] is @racket[#f], the window is hidden. Otherwise, the
 window is shown.
 
 }

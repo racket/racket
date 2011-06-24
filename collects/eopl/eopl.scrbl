@@ -37,14 +37,14 @@
 
 The @italic{Essentials of Programming Languages} language in DrRacket
 provides a subset of functions and syntactic forms of
-@schememodname[mzscheme]---mostly the ones that correspond to
-@scheme[r5rs] forms. See below for a complete list. The
+@racketmodname[mzscheme]---mostly the ones that correspond to
+@racket[r5rs] forms. See below for a complete list. The
 language is intended for use with the textbook @cite["EoPL"].
 
 @defmodulelang[eopl #:use-sources (eopl/eopl)]
 
-The following bindings are re-@scheme[provide]d from
-@schememodname[mzscheme]:
+The following bindings are re-@racket[provide]d from
+@racketmodname[mzscheme]:
 
 @reprovide[
            make-parameter
@@ -111,22 +111,22 @@ The following bindings are re-@scheme[provide]d from
            (variant-id (field-id predicate-expr) ...) 
            ...)]{
 
-  Defines the datatype @scheme[id] and a function
-  @scheme[predicate-id] that returns @scheme[#t] for instances of the
-  datatype, and @scheme[#f] for any other value.
+  Defines the datatype @racket[id] and a function
+  @racket[predicate-id] that returns @racket[#t] for instances of the
+  datatype, and @racket[#f] for any other value.
 
-  Each @scheme[variant-id] is defined as a constructor function that
+  Each @racket[variant-id] is defined as a constructor function that
   creates an instance of the datatype; the constructor takes as many
-  arguments as the variant's @scheme[field-id]s, and each argument is
+  arguments as the variant's @racket[field-id]s, and each argument is
   checked by applying the function produced by the variant's
-  @scheme[predicate-expr].
+  @racket[predicate-expr].
 
   In DrScheme v209 and older, when constructor-based printing was
-  used, variant instances were printed with a @scheme[make-] prefix
+  used, variant instances were printed with a @racket[make-] prefix
   before the variant name.  Thus, for compatibility, in addition to
-  @scheme[variant-id], @scheme[make-variant-id] is also defined for
-  each @scheme[variant-id] (to the same constructor as
-  @scheme[variant-id]).}
+  @racket[variant-id], @racket[make-variant-id] is also defined for
+  each @racket[variant-id] (to the same constructor as
+  @racket[variant-id]).}
 
 @defform*[#:literals (else)
          [(cases datatype-id expr 
@@ -137,9 +137,9 @@ The following bindings are re-@scheme[provide]d from
             ... 
             (else result-expr ...))]]{
 
-  Branches on the datatype instance produced by @scheme[expr], which
-  must be an instance of the specified @scheme[datatype-id] that is
-  defined with @scheme[define-datatype].}
+  Branches on the datatype instance produced by @racket[expr], which
+  must be an instance of the specified @racket[datatype-id] that is
+  defined with @racket[define-datatype].}
 
 @deftogether[(
 @defidform[sllgen:make-string-scanner]
@@ -167,7 +167,7 @@ The following bindings are re-@scheme[provide]d from
   @defproc[(eopl:printf (form string?) (v any/c) ...) void?]
   @defproc[(eopl:pretty-print (v any/c) (port output-port? (current-output-port))) void?])]{
 
-  Same as @schememodname[scheme/base]'s @scheme[printf] and @scheme[pretty-print].}
+  Same as @racketmodname[scheme/base]'s @racket[printf] and @racket[pretty-print].}
 
 @deftogether[(
   @defproc[((list-of (pred (any/c . -> . any)) ...+) (x any/c)) boolean?]
@@ -182,7 +182,7 @@ The following bindings are re-@scheme[provide]d from
 
 @defform[(time expr)]{
 
-  Evaluates @scheme[expr], and prints timing information before returning the
+  Evaluates @racket[expr], and prints timing information before returning the
   result.}
 
 @defproc[(collect-garbage) void?]{
@@ -193,19 +193,19 @@ The following bindings are re-@scheme[provide]d from
   @defform[(trace id ...)]
   @defform[(untrace id ...)])]{
 
-  For debugging: @scheme[trace] redefines each @scheme[id] at the top
+  For debugging: @racket[trace] redefines each @racket[id] at the top
   level (bound to a procedure) so that it prints arguments on entry
-  and results on exit. The @scheme[untrace] form reverses the action
-  of @scheme[trace] for the given @scheme[id]s.
+  and results on exit. The @racket[untrace] form reverses the action
+  of @racket[trace] for the given @racket[id]s.
 
   Tracing a function causes tail-calls in the original function to
   become non-tail calls.}
 
 @defform[(provide provide-spec ...)]{
 
-  Useful only with a module that uses @schememodname[eopl] as a
+  Useful only with a module that uses @racketmodname[eopl] as a
   language: exports identifiers from the module. See @mzscheme-provide
-  from @schememodname[mzscheme] for more information.}
+  from @racketmodname[mzscheme] for more information.}
 
 @defthing[eopl:error-stop (-> any/c)]{
 
@@ -213,15 +213,15 @@ The following bindings are re-@scheme[provide]d from
   mutate this variable to install an exception-handling
   thunk. Typically, the handler thunk escapes through a continuation.
 
-  The @schememodname[eopl] library sets this variable to
-  @scheme[#f] in the current namespace when it executes.}
+  The @racketmodname[eopl] library sets this variable to
+  @racket[#f] in the current namespace when it executes.}
 
 @defproc[(install-eopl-exception-handler) void?]{
 
   Sets an exception handler to one that checks
-  @scheme[eopl:error-stop].
+  @racket[eopl:error-stop].
 
-  The @schememodname[eopl] library calls this function when it
+  The @racketmodname[eopl] library calls this function when it
   executes.}
 
 @(bibliography

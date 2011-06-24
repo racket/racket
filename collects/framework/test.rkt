@@ -854,7 +854,7 @@
                       (λ (c) (eq? c btn))))))
       void?)
   (button)
-  @{Simulates pushing @scheme[button].  If a string is supplied, the
+  @{Simulates pushing @racket[button].  If a string is supplied, the
   primitive searches for a button labelled with that string in the
   active frame. Otherwise, it pushes the button argument.})
  
@@ -862,52 +862,52 @@
   test:set-radio-box!
   (-> (or/c string? regexp? (is-a?/c radio-box%)) (or/c string? number?) void?)
   (radio-box state)
-  @{Sets the radio-box to the label matching @scheme[state]. If @scheme[state] is a
+  @{Sets the radio-box to the label matching @racket[state]. If @racket[state] is a
          string, this function finds the choice with that label. 
          If it is a regexp, this function finds the first choice whose label matches the regexp.
          If it is a number, it uses the number as an index into the
          state. If the number is out of range or if the label isn't
          in the radio box, an exception is raised.
 
-         If @scheme[radio-box] is a string, this function searches for a
-         @scheme[radio-box%] object with a label matching that string,
-         otherwise it uses @scheme[radio-box] itself.})
+         If @racket[radio-box] is a string, this function searches for a
+         @racket[radio-box%] object with a label matching that string,
+         otherwise it uses @racket[radio-box] itself.})
  
  (proc-doc/names
   test:set-radio-box-item!
   (-> (or/c string? regexp?) void?)
   (entry)
-  @{Finds a @scheme[radio-box%] that has a label matching @scheme[entry]
-          and sets the radio-box to @scheme[entry].})
+  @{Finds a @racket[radio-box%] that has a label matching @racket[entry]
+          and sets the radio-box to @racket[entry].})
  
  (proc-doc/names
   test:set-check-box!
   (-> (or/c string? (is-a?/c check-box%)) boolean? void?)
   (check-box state)
-  @{Clears the @scheme[check-box%] item if @scheme[state] is @scheme[#f], and sets it
+  @{Clears the @racket[check-box%] item if @racket[state] is @racket[#f], and sets it
   otherwise.
   
-  If @scheme[check-box] is a string,
-  this function searches for a @scheme[check-box%] with a label matching that string,
-  otherwise it uses @scheme[check-box] itself.})
+  If @racket[check-box] is a string,
+  this function searches for a @racket[check-box%] with a label matching that string,
+  otherwise it uses @racket[check-box] itself.})
  
  (proc-doc/names
   test:set-choice!
   (-> (or/c string? (is-a?/c choice%)) (or/c string? (and/c number? exact? integer? positive?))
       void?)
   (choice str)
-  @{Selects @scheme[choice]'s item @scheme[str]. If @scheme[choice] is a string,
-  this function searches for a @scheme[choice%] with a label matching
-  that string, otherwise it uses @scheme[choice] itself.})
+  @{Selects @racket[choice]'s item @racket[str]. If @racket[choice] is a string,
+  this function searches for a @racket[choice%] with a label matching
+  that string, otherwise it uses @racket[choice] itself.})
  
  (proc-doc/names
   test:set-list-box!
   (-> (or/c string? (is-a?/c list-box%)) (or/c string? (and/c number? exact? integer? positive?)) 
       void?)
   (choice str)
-  @{Selects @scheme[list-box]'s item @scheme[str]. If @scheme[list-box] is a string,
-  this function searches for a @scheme[list-box%] with a label matching
-  that string, otherwise it uses @scheme[list-box] itself.})
+  @{Selects @racket[list-box]'s item @racket[str]. If @racket[list-box] is a string,
+  this function searches for a @racket[list-box%] with a label matching
+  that string, otherwise it uses @racket[list-box] itself.})
  
  (proc-doc/names
   test:keystroke
@@ -916,19 +916,19 @@
        void?)
   ((key)
    ((modifier-list null)))
-  @{This function simulates a user pressing a key. The argument, @scheme[key],
+  @{This function simulates a user pressing a key. The argument, @racket[key],
   is just like the argument to the
   @method[key-event% get-key-code]
-  method of the @scheme[key-event%] class. 
+  method of the @racket[key-event%] class. 
   
   @italic{Note:}
-  To send the ``Enter'' key, use @scheme[#\return],
-  not @scheme[#\newline].
+  To send the ``Enter'' key, use @racket[#\return],
+  not @racket[#\newline].
   
-  The @scheme['shift] or @scheme['noshift] modifier is implicitly set from @scheme[key],
-  but is overridden by the argument list. The @scheme['shift] modifier is
+  The @racket['shift] or @racket['noshift] modifier is implicitly set from @racket[key],
+  but is overridden by the argument list. The @racket['shift] modifier is
   set for any capitol alpha-numeric letters and any of the following characters:
-  @schemeblock[
+  @racketblock[
    #\? #\: #\~ #\\ #\|
    #\< #\> #\{ #\} #\[ #\] #\( #\)
    #\! #\@ #\# #\$ #\% #\^ #\& #\* #\_ #\+
@@ -940,7 +940,7 @@
   test:menu-select
   (string? string? . -> . void?)
   (menu item)
-  @{Selects the menu-item named @scheme[item] in the menu named @scheme[menu].
+  @{Selects the menu-item named @racket[item] in the menu named @racket[menu].
   
   @italic{Note:}
   The string for the menu item does not include its keyboard equivalent.
@@ -958,17 +958,17 @@
   ((button x y)
    ((modifiers null)))
   @{Simulates a mouse click at the coordinate (x,y) in the currently
-  focused @scheme[window], assuming that it supports the 
+  focused @racket[window], assuming that it supports the 
   @method[canvas<%> on-event] method.
-  Use @scheme[test:button-push] to click on a button.
+  Use @racket[test:button-push] to click on a button.
   
-  On the Macintosh, @scheme['right] corresponds to holding down the command
-  modifier key while clicking and @scheme['middle] cannot be generated.
+  On the Macintosh, @racket['right] corresponds to holding down the command
+  modifier key while clicking and @racket['middle] cannot be generated.
   
-  Under Windows, @scheme['middle] can only be generated if the user has a
+  Under Windows, @racket['middle] can only be generated if the user has a
   three button mouse.
   
-  The modifiers later in the list @scheme[modifiers] take precedence over
+  The modifiers later in the list @racket[modifiers] take precedence over
   ones that appear earlier.})
 
  (proc-doc/names
@@ -979,7 +979,7 @@
   ((msec) ())
   @{See also @secref{test:actions-completeness}.
   The first case in the case-lambda sets
-  the run interval to @scheme[msec] milliseconds and the second
+  the run interval to @racket[msec] milliseconds and the second
   returns the current setting.})
  
  (parameter-doc
@@ -991,7 +991,7 @@
          (see also @secref[#:doc '(lib "scribblings/gui/gui.scrbl") "eventspaceinfo"])
   are considered when finding the frontmost frame.
   The first case
-  sets the parameter to @scheme[func]. The procedure @scheme[func] will be
+  sets the parameter to @racket[func]. The procedure @racket[func] will be
   invoked with no arguments to determine the eventspaces to consider
   when finding the frontmost frame for simulated user events.
   The second case
@@ -1011,8 +1011,8 @@
   (-> (is-a?/c top-level-window<%>) void?)
   (tlw)
   @{Use this function to simulate clicking on the close box of a frame.
-  Closes @scheme[tlw] with this expression:
-  @schemeblock[
+  Closes @racket[tlw] with this expression:
+  @racketblock[
    (when (send tlw can-close?)
      (send tlw on-close)
      (send tlw show #f))]})
@@ -1021,10 +1021,10 @@
   test:top-level-focus-window-has?
   (-> (-> (is-a?/c area<%>) boolean?) boolean?)
   (test)
-  @{Calls @scheme[test] for each child of the top-level-focus-frame
-          and returns @scheme[#t] if @scheme[test] ever does, otherwise
-          returns @scheme[#f]. If there
-          is no top-level-focus-window, returns @scheme[#f].})
+  @{Calls @racket[test] for each child of the top-level-focus-frame
+          and returns @racket[#t] if @racket[test] ever does, otherwise
+          returns @racket[#f]. If there
+          is no top-level-focus-window, returns @racket[#f].})
  
  
  (proc-doc
@@ -1041,6 +1041,4 @@
   test:run-one
   (-> (-> void?) void?)
   (f)
-  @{Runs the function @scheme[f] as if it was a simulated event.}))
-
-
+  @{Runs the function @racket[f] as if it was a simulated event.}))

@@ -3,8 +3,8 @@
 
 @definterface/title[selectable-menu-item<%> (labelled-menu-item<%>)]{
 
-A @scheme[selectable-menu-item<%>] object is a
- @scheme[labelled-menu-item<%>] that the user can select. It may also
+A @racket[selectable-menu-item<%>] object is a
+ @racket[labelled-menu-item<%>] that the user can select. It may also
  have a keyboard shortcut; the shortcut is displayed in the menu, and
  the default @method[frame% on-subwindow-char] method in the menu's
  frame dispatches to the menu item when the shortcut key combination
@@ -16,8 +16,8 @@ A @scheme[selectable-menu-item<%>] object is a
 
 Invokes the menu item's callback procedure, which is supplied when an
  instance of
-@scheme[menu-item%] or
-@scheme[checkable-menu-item%] is created.
+@racket[menu-item%] or
+@racket[checkable-menu-item%] is created.
 
 }
 
@@ -29,16 +29,16 @@ Gets the keyboard shortcut character or virtual key for the menu
  which is reported by @method[selectable-menu-item<%>
  get-shortcut-prefix].
 
-If the menu item has no shortcut, @scheme[#f] is returned.
+If the menu item has no shortcut, @racket[#f] is returned.
 
 The shortcut part of a menu item name is not included in the label
  returned by @method[labelled-menu-item<%> get-label].
 
 For a list of allowed key symbols, see @xmethod[key-event%
  get-key-code], except that the following are disallowed: 
- @scheme['shift], @scheme['control], @scheme['numlock],
- @scheme['scroll], @scheme['wheel-up], @scheme['wheel-down],
- @scheme['release], and @scheme['press].
+ @racket['shift], @racket['control], @racket['numlock],
+ @racket['scroll], @racket['wheel-up], @racket['wheel-down],
+ @racket['release], and @racket['press].
 
 }
 
@@ -49,20 +49,20 @@ Returns a list of symbols that indicates the keyboard prefix used for the menu
  item's keyboard shortcut. The allowed symbols for the list are the following:
 
 @itemize[
-@item{@scheme['alt] --- Meta (Windows and X only)}
-@item{@scheme['cmd] --- Command (Mac OS X only)}
-@item{@scheme['meta] --- Meta (Unix only)}
-@item{@scheme['ctl] --- Control}
-@item{@scheme['shift] --- Shift}
-@item{@scheme['option] --- Option (Mac OS X only)}
+@item{@racket['alt] --- Meta (Windows and X only)}
+@item{@racket['cmd] --- Command (Mac OS X only)}
+@item{@racket['meta] --- Meta (Unix only)}
+@item{@racket['ctl] --- Control}
+@item{@racket['shift] --- Shift}
+@item{@racket['option] --- Option (Mac OS X only)}
 ]
 
-On Unix, at most one of @scheme['alt] and @scheme['meta] can be
- supplied; the only difference between @scheme['alt] and
- @scheme['meta] is the key combination's display in a menu.
+On Unix, at most one of @racket['alt] and @racket['meta] can be
+ supplied; the only difference between @racket['alt] and
+ @racket['meta] is the key combination's display in a menu.
 
 The default shortcut prefix is available from
- @scheme[get-default-shortcut-prefix].
+ @racket[get-default-shortcut-prefix].
 
 The shortcut key, as determined by @method[selectable-menu-item<%>
  get-shortcut], matches a key event using either the normally reported
@@ -94,7 +94,7 @@ An empty list can be used for a shortcut prefix. However, the default
 Sets the keyboard shortcut character for the menu item. See
 @method[selectable-menu-item<%> get-shortcut] for more information.
 
-If the shortcut character is set to @scheme[#f], then menu item has no
+If the shortcut character is set to @racket[#f], then menu item has no
 keyboard shortcut.
 
 }

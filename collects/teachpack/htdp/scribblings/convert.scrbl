@@ -8,7 +8,7 @@
 @;declare-exporting[teachpack/htdp/convert]
 @defmodule[#:require-form beginner-require htdp/convert]
 
-The teachpack @scheme[convert.rkt] provides three functions for
+The teachpack @racket[convert.rkt] provides three functions for
 converting Fahrenheit temperatures to Celsius. It is useful for a single
 exercise in HtDP. Its purpose is to demonstrate the independence of
 ``form'' (user interface) and ``function'' (also known as ``model'').
@@ -25,26 +25,26 @@ converts the number according to the given temperature conversion function.
 A user can exit the loop by entering ``x.''}
 
 @defproc[(convert-file [in string?][convert (-> number? number?)][out string?]) true]{Consumes a
-file name @scheme[in], a
+file name @racket[in], a
 conversion function from Fahrenheit to Celsius, and a string
-@scheme[out]. The program then reads all the number from
-@scheme[in], converts them according to @scheme[convert], and prints the
-results to the newly created file @scheme[out].
+@racket[out]. The program then reads all the number from
+@racket[in], converts them according to @racket[convert], and prints the
+results to the newly created file @racket[out].
 
-@bold{Warning}: If @scheme[out] already exists, it is deleted.}
+@bold{Warning}: If @racket[out] already exists, it is deleted.}
 
-Example: Create a file with name @scheme["in.dat"] with some numbers in
+Example: Create a file with name @racket["in.dat"] with some numbers in
 it, using your favorite text editor on your computer.  Define a function
-@scheme[f2c] in the Definitions window and set teachpack to
+@racket[f2c] in the Definitions window and set teachpack to
 @filepath{convert.rkt} and click Run.  Then evaluate
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
  (convert-gui f2c)
  ;; and 
  (convert-file "in.dat" f2c "out.dat")
  ;; and 
  (convert-repl f2c)
 ))
-Finally inspect the file @scheme["out.dat"] and use the repl to check the
+Finally inspect the file @racket["out.dat"] and use the repl to check the
 answers. 

@@ -20,7 +20,7 @@ always better choices.
 
 A @tech{mutable list} can be used as a single-valued sequence (see
 @secref["sequences"]). The elements of the @tech{mutable list} serve as elements
-of the sequence. See also @scheme[in-mlist].
+of the sequence. See also @racket[in-mlist].
 
 @; ----------------------------------------
 @section{Mutable Pair Constructors and Selectors}

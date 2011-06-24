@@ -3,10 +3,10 @@
 
 @defclass/title[keymap% object% ()]{
 
-A @scheme[keymap%] object is used by @scheme[editor<%>] objects to
+A @racket[keymap%] object is used by @racket[editor<%>] objects to
  map keyboard and mouse sequences to arbitrary functions in an
  extensible way. Keymaps can be used without editors, as well.  A
- @scheme[keymap%] object contains
+ @racket[keymap%] object contains
 
 @itemize[
 
@@ -16,13 +16,13 @@ A @scheme[keymap%] object is used by @scheme[editor<%>] objects to
 
 ]
 
-A handler procedure in a keymap is invoked with a @scheme[key-event%]
- object or a @scheme[mouse-event%] object. It is also given another
+A handler procedure in a keymap is invoked with a @racket[key-event%]
+ object or a @racket[mouse-event%] object. It is also given another
  value that depends on the context in which the keymap is used (or,
  more specifically, the arguments to @method[keymap% handle-key-event]
  or @method[keymap% handle-mouse-event]). For keymaps associated with
- @scheme[editor<%>] objects, the extra parameter is generally the
- @scheme[editor<%>] object that received the keyboard or mouse event.
+ @racket[editor<%>] objects, the extra parameter is generally the
+ @racket[editor<%>] object that received the keyboard or mouse event.
 
 
 @defconstructor[()]{
@@ -72,16 +72,16 @@ A break callback function can be installed with @method[keymap%
            boolean?]{
 
 Calls a named event handler directly. If the function cannot be found
- or the found handler did not want to handle the event, @scheme[#f] is
+ or the found handler did not want to handle the event, @racket[#f] is
  returned. Otherwise, the return value is the boolean return value of
  the event handler.
 
-The @scheme[in] and @scheme[event] arguments are passed on to the keymap
+The @racket[in] and @racket[event] arguments are passed on to the keymap
  handler procedure if one is found.
 
-If @scheme[try-chain?] is not @scheme[#f], keymaps chained to this one
+If @racket[try-chain?] is not @racket[#f], keymaps chained to this one
  are searched for the function name.  If the function is not found and
- @scheme[try-chain?] is @scheme[#f]; an exception is also raised, but
+ @racket[try-chain?] is @racket[#f]; an exception is also raised, but
  the exception handler cannot escape (see
  @secref["evtcontjump"]).
 
@@ -92,9 +92,9 @@ If @scheme[try-chain?] is not @scheme[#f], keymaps chained to this one
                             [prefix? any/c])
            void?]{
 
-Chains @scheme[next] off @this-obj[] The @scheme[next] keymap will be
+Chains @racket[next] off @this-obj[] The @racket[next] keymap will be
  used to handle events which are not handled by @this-obj[]. If
- @scheme[prefix?] is a true value, then @scheme[next] will take
+ @racket[prefix?] is a true value, then @racket[next] will take
  precedence over other keymaps already chained to @this-obj[].
 
 Multiple keymaps can be chained off one keymap using @method[keymap%
@@ -130,9 +130,9 @@ The default interval is determined in a platform-specific way, but it
                              [event (is-a?/c key-event%)])
            boolean?]{
 
-Attempts to handle a keyboard event, returning @scheme[#t] if the event
+Attempts to handle a keyboard event, returning @racket[#t] if the event
  was handled (i.e., a handler was found and it returned a true value),
- @scheme[#f] otherwise.
+ @racket[#f] otherwise.
 
 See also @method[keymap% call-function].
 
@@ -143,9 +143,9 @@ See also @method[keymap% call-function].
                                [event (is-a?/c mouse-event%)])
            boolean?]{
 
-Attempts to handle a mouse event, returning @scheme[#t] if the event
+Attempts to handle a mouse event, returning @racket[#t] if the event
  was handled (i.e., a handler was found and it returned a true value),
- @scheme[#f] otherwise.
+ @racket[#f] otherwise.
 
 See also @method[keymap% call-function].
 
@@ -157,7 +157,7 @@ See also @method[keymap% call-function].
            void?]{
 
 Maps an input state sequence to a function name using a string-encoded
- sequence in @scheme[keyname]. The format of @scheme[keyname] is a
+ sequence in @racket[keyname]. The format of @racket[keyname] is a
  sequence of semicolon-delimited input states; each state is made up
  of a sequence of modifier identifiers followed by a key identifier.
 
@@ -172,7 +172,7 @@ The modifier identifiers are:
  @item{@litchar{a:} --- Mac OS X: Option}
 
  @item{@litchar{m:} --- Windows: Alt; Unix: Meta; Mac OS X: Command, when
- @scheme[map-command-as-meta-key] produces @scheme[#t]}
+ @racket[map-command-as-meta-key] produces @racket[#t]}
 
  @item{@litchar{d:} --- Mac OS X: Command}
 
@@ -300,27 +300,27 @@ A state can match multiple state strings mapped in a keymap (or keymap
 Examples:
 
 @itemize[
- 
- @item{@scheme["space"] --- matches whenever the space bar is pressed,
+
+ @item{@racket["space"] --- matches whenever the space bar is pressed,
  regardless of the state of modifiers keys.}
 
- @item{@scheme["~c:space"] --- matches whenever the space bar is pressed
+ @item{@racket["~c:space"] --- matches whenever the space bar is pressed
  and the Control key is not pressed.}
 
- @item{@scheme["a"] --- matches whenever @litchar{a} is typed, regardless of
+ @item{@racket["a"] --- matches whenever @litchar{a} is typed, regardless of
  the state of modifiers keys (other than Shift).}
 
- @item{@scheme[":a"] --- matches only when @litchar{a} is typed with no
+ @item{@racket[":a"] --- matches only when @litchar{a} is typed with no
  modifier keys pressed.}
 
- @item{@scheme["~c:a"] --- matches whenever @litchar{a} is typed and neither
+ @item{@racket["~c:a"] --- matches whenever @litchar{a} is typed and neither
  the Shift key nor the Control key is pressed.}
 
- @item{@scheme[":esc;:c:c"] --- matches an Escape key press (no
+ @item{@racket[":esc;:c:c"] --- matches an Escape key press (no
  modifiers) followed by a Control-C press (no modifiers other than
  Control).}
 
- @item{@scheme["?:d:+"] --- matches when Command is pressed with key
+ @item{@racket["?:d:+"] --- matches when Command is pressed with key
   that produces @litchar{+}, even if producing @litchar{+} normally requires
   pressing Shift.}
 
@@ -343,7 +343,7 @@ A function name does not have to be mapped to a handler before input
 @defmethod[(remove-chained-keymap [keymap (is-a?/c keymap%)])
            void?]{
 
-If @scheme[keymap] was previously chained from this keymap (through
+If @racket[keymap] was previously chained from this keymap (through
  @method[keymap% chain-to-keymap]), then it is removed from the
  chain-to list.
 
@@ -406,18 +406,18 @@ If a grab callback returns a true value for a matching or non-matching
  true value for a matching callback, then the matching keymap function
  is not called by the keymap.
 
-The callback procedure @scheme[f] will be invoked as:
+The callback procedure @racket[f] will be invoked as:
 
-@schemeblock[
+@racketblock[
 (f _str _keymap _editor _event)
 ]
 
-The @scheme[_str] argument is the name of a function for a matching
- callback, or @scheme[#f] for a non-matching callback.  The
- @scheme[_keymap] argument is the keymap that matched (possibly a
+The @racket[_str] argument is the name of a function for a matching
+ callback, or @racket[#f] for a non-matching callback.  The
+ @racket[_keymap] argument is the keymap that matched (possibly a
  keymap chained to the one in which the callback was installed) or the
- keymap in which the callback was installed. The @scheme[_editor] and
- @scheme[_event] arguments are the same as passed on to the matching
+ keymap in which the callback was installed. The @racket[_editor] and
+ @racket[_event] arguments are the same as passed on to the matching
  keymap function.
 
 Key grab callback functions are de-installed with @method[keymap%

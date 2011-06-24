@@ -9,7 +9,7 @@
 
 @title{@bold{Make}: Dependency Manager}
 
-The @schememodname[make] library provides a Racket version of the
+The @racketmodname[make] library provides a Racket version of the
 popular @exec{make} utility.  Its syntax is intended to imitate the
 syntax of @exec{make}, only in Racket.
 
@@ -24,7 +24,7 @@ dependency tracking, just use @exec{raco make} as described in
 @|raco-manual|.}
 
 If you are already familiar with @exec{make}, skip to the precise
-details of the @schememodname[make] library in @secref["make"]. This
+details of the @racketmodname[make] library in @secref["make"]. This
 section contains a brief overview of @exec{make} for everyone
 else.
 
@@ -69,13 +69,13 @@ files to determine when a certain step is necessary.  The @exec{make}
 utility uses existing programs to build your project --- each rule has
 a shell command line.
 
-The @schememodname[make] library provides similar functionality,
+The @racketmodname[make] library provides similar functionality,
 except that the description is in Racket, and the steps that are
 needed to build target files are implemented as Racket functions.
 
 Here's a Racket program that is equivalent to the above:
 
-@schemeblock[
+@racketblock[
 (require make)
 
 (define (make-output in out)
@@ -93,14 +93,14 @@ Here's a Racket program that is equivalent to the above:
 ]
 
 If you were to fill in the ellipses above with calls to
-@scheme[system], you'd have the exact same functionality as the
+@racket[system], you'd have the exact same functionality as the
 original @filepath{Makefile}.  In addition, you can use
-@scheme[make/proc] to abstract over the various lines.  For example,
+@racket[make/proc] to abstract over the various lines.  For example,
 the @filepath{a.output}, @filepath{b.output}, and @filepath{c.output}
 lines are very similar so you can write the code that generates those
 lines:
 
-@schemeblock[
+@racketblock[
 (require make)
 
 (define (make-output in out)
@@ -138,7 +138,7 @@ lines:
 
 Expands to
 
-@schemeblock[
+@racketblock[
   (make/proc
    (list (list target-expr (list depend-expr ...)
                (lambda () command-expr ...))
@@ -154,17 +154,17 @@ Expands to
                     [argv (or/c string? (vectorof string?) (listof string?))])
          void?]
 
-Performs a make according to @scheme[spec] and using @scheme[argv] as
+Performs a make according to @racket[spec] and using @racket[argv] as
 command-line arguments selecting one or more targets.
 
-Each element of the @scheme[spec] list is a target. A target element
+Each element of the @racket[spec] list is a target. A target element
 that starts with a list of strings is the same as multiple elements,
 one for each string. The second element of each target is a list of
 dependencies, and the third element (if any) of a target is the
 optional command thunk.
 
-To make a target, @scheme[make/proc] is first called recursively on
-each of the target's dependencies. If a target is not in @scheme[spec]
+To make a target, @racket[make/proc] is first called recursively on
+each of the target's dependencies. If a target is not in @racket[spec]
 and it exists as a file, then the target is considered made. If a
 target's modification date is older than any of its dependencies'
 modification dates, the corresponding command thunk is called. If the
@@ -172,36 +172,36 @@ dependency has no command thunk then no action is taken; such a target
 is useful for triggering the make of other targets (i.e., the
 dependencies).
 
-While running a command thunk, @scheme[make/proc] catches exceptions
-and wraps them in an @scheme[exn:fail:make] structure, the raises the
+While running a command thunk, @racket[make/proc] catches exceptions
+and wraps them in an @racket[exn:fail:make] structure, the raises the
 resulting structure.}
 
 @defstruct[(exn:fail:make exn:fail)
            ([targets (listof path-string?)]
             [orig-exn any/c])]{
 
-The @scheme[targets] field is a list of strings naming the
-target(s), and the @scheme[orig-exn] field is the original raised
+The @racket[targets] field is a list of strings naming the
+target(s), and the @racket[orig-exn] field is the original raised
 value.}
 
 
 @defboolparam[make-print-checking on?]{
 
-A parameter that controls whether @scheme[make/proc] prints a message
-when making a target. The default is @scheme[#t].}
+A parameter that controls whether @racket[make/proc] prints a message
+when making a target. The default is @racket[#t].}
 
 
 @defboolparam[make-print-dep-no-line on?]{
 
-A parameter that controls whether @scheme[make/proc] prints
+A parameter that controls whether @racket[make/proc] prints
 ``checking...'' lines for dependencies that have no target in the
-given k@scheme[_spec]. The default is @scheme[#f].}
+given k@racket[_spec]. The default is @racket[#f].}
 
 
 @defboolparam[make-print-reasons on?]{
 
-A parameter that controls whether @scheme[make/proc] prints the reason
-that a command thunk is called. The default is @scheme[#t].}
+A parameter that controls whether @racket[make/proc] prints the reason
+that a command thunk is called. The default is @racket[#t].}
 
 @; ----------------------------------------
 
@@ -211,7 +211,7 @@ that a command thunk is called. The default is @scheme[#t].}
 
 @defsignature[make^ ()]{
 
-Includes all of the names provided by @schememodname[make].}
+Includes all of the names provided by @racketmodname[make].}
 
 @; ----------------------------------------
 
@@ -221,7 +221,7 @@ Includes all of the names provided by @schememodname[make].}
 
 @defthing[make@ unit?]{
 
-A unit that imports nothing and exports @scheme[make^].}
+A unit that imports nothing and exports @racket[make^].}
 
 @; ----------------------------------------------------------------------
 
@@ -229,19 +229,19 @@ A unit that imports nothing and exports @scheme[make^].}
 
 @defmodule[make/setup-extension]
 
-The @schememodname[make/setup-extension] library helps compile C code
+The @racketmodname[make/setup-extension] library helps compile C code
 via Setup PLT's ``pre-install'' phase (triggered by a
-@schemeidfont{pre-install-collection} item in @filepath{info.rkt}; see
+@racketidfont{pre-install-collection} item in @filepath{info.rkt}; see
 also @secref[#:doc '(lib "scribblings/raco/raco.scrbl")
 "setup-info"]).
 
-The @scheme[pre-install] function takes a number of arguments that
+The @racket[pre-install] function takes a number of arguments that
 describe how the C code is compiled---mainly the libraries that it
 depends on. It then drives a C compiler via the
-@schememodname[dynext/compile] and @schememodname[dynext/link]
+@racketmodname[dynext/compile] and @racketmodname[dynext/link]
 functions.
 
-Many issues can complicate C compilation, and the @scheme[pre-install]
+Many issues can complicate C compilation, and the @racket[pre-install]
 function helps with a few:
 
 @itemize[
@@ -263,9 +263,9 @@ issues manually, however. For example, an old @filepath{readline}
 installer used to pick whether to link to @filepath{libcurses} or
 @filepath{libncurses} heuristically by inspecting
 @filepath{/usr/lib}. More generally, the ``last chance'' argument to
-@scheme[pre-install] allows an installer to patch compiler and linker
-options (see @schememodname[dynext/compile] and
-@schememodname[dynext/link]) before the C code is compiled or linked.
+@racket[pre-install] allows an installer to patch compiler and linker
+options (see @racketmodname[dynext/compile] and
+@racketmodname[dynext/link]) before the C code is compiled or linked.
 
 @defproc[(pre-install 
                [plthome-dir path-string?]
@@ -286,75 +286,75 @@ The arguments are as follows:
 
 @itemize[
 
-  @item{@scheme[plthome-dir] --- the directory provided to a `pre-installer'
+  @item{@racket[plthome-dir] --- the directory provided to a `pre-installer'
     function.}
 
-  @item{@scheme[collection-dir] --- a directory to use as the current directory
+  @item{@racket[collection-dir] --- a directory to use as the current directory
     while building.}
 
-  @item{@scheme[c-file] --- the name of the source file (relative to
-    @scheme[collection-dir]). The output file will be the same, except
-    with a @filepath{.c} suffix replaced with @scheme[(system-type
-    'so-suffix)], and the path changed to @scheme[(build-path
+  @item{@racket[c-file] --- the name of the source file (relative to
+    @racket[collection-dir]). The output file will be the same, except
+    with a @filepath{.c} suffix replaced with @racket[(system-type
+    'so-suffix)], and the path changed to @racket[(build-path
     "compiled" "native" (system-library-subpath))].
 
-    If @scheme[(build-path "precompiled" "native"
+    If @racket[(build-path "precompiled" "native"
     (system-library-subpath) (path-replace-suffix c-file (system-type
-    'so-suffix)))] exists, then @scheme[c-file] is not used at all,
+    'so-suffix)))] exists, then @racket[c-file] is not used at all,
     and the file in the @filepath{precompiled} directory is simply
     copied.}
 
-  @item{@scheme[default-lib-dir] --- a default directory for finding
+  @item{@racket[default-lib-dir] --- a default directory for finding
     supporting libraries, often a subdirectory of
     @filepath{collection-dir}. The user can supplement this path by
     setting the @indexed-envvar{PLT_EXTENSION_LIB_PATHS} environment
     variable, which applies to all extensions manged by
-    @scheme[pre-install].}
+    @racket[pre-install].}
 
-  @item{@scheme[include-subdirs] --- a list of relative paths in which
+  @item{@racket[include-subdirs] --- a list of relative paths in which
     @tt{#include} files will be found; the path will be determined
     through a search, in case it's not in a standard place like
     @filepath{/usr/include}.
 
-    For example, the list used to be @scheme['("openssl")] for the
+    For example, the list used to be @racket['("openssl")] for the
     @filepath{openssl} collection, because the source uses
     @tt{#include <openssl/ssl.h>} and @tt{#include <openssl/err.h>}.}
 
-  @item{@scheme[find-unix-libs] --- like @scheme[include-subdirs], but
+  @item{@racket[find-unix-libs] --- like @racket[include-subdirs], but
     a list of library bases. Leave off the @filepath{lib} prefix and
     any suffix (such as @filepath{.a} or @filepath{.so}). For
-    @filepath{openssl}, the list used to be @scheme['("ssl"
+    @filepath{openssl}, the list used to be @racket['("ssl"
     "crypto")]. Each name will essentially get a @tt{-l} prefix for
     the linker command line.}
 
-  @item{@scheme[find-windows-libs] --- like @scheme[find-unix-libs],
+  @item{@racket[find-windows-libs] --- like @racket[find-unix-libs],
     but for Windows.  The library name will be suffixed with
     @filepath{.lib} and supplied directly to the linker.}
 
-  @item{@scheme[unix-libs] --- like @scheme[find-unix-libs], except
+  @item{@racket[unix-libs] --- like @racket[find-unix-libs], except
     that the installer makes no attempt to find the libraries in a
     non-standard place. For example, the @filepath{readline} installer
-    used to supply @scheme['("curses")].}
+    used to supply @racket['("curses")].}
 
-  @item{@scheme[windows-libs] --- like @scheme[unix-libs], but for
+  @item{@racket[windows-libs] --- like @racket[unix-libs], but for
     Windows. For example, the @filepath{openssl} installer used to
-    supply @scheme['("wsock32")].}
+    supply @racket['("wsock32")].}
 
-  @item{@scheme[extra-depends] --- a list of relative paths to treat as
+  @item{@racket[extra-depends] --- a list of relative paths to treat as
     dependencies for compiling @filepath{file.c}. Often this list will
     include @filepath{file.c} with the @filepath{.c} suffix replaced by
     @filepath{.rkt}.  For example, the "openssl" installer supplies
-    @scheme['("mzssl.rkt")] to ensure that the stub module
+    @racket['("mzssl.rkt")] to ensure that the stub module
     @filepath{mzssl.rkt} is never used when the true extension can be
     built.}
 
-  @item{@scheme[last-chance-k] --- a procedure of one argument, which
+  @item{@racket[last-chance-k] --- a procedure of one argument, which
     is a thunk.  This procedure should invoke the thunk to make the
     file, but it may add parameterizations before the final build. For
     example, the @filepath{readline} installer used to add an
     AIX-specific compile flag in this step when compiling on AIX.}
 
-  @item{@scheme[3m-too?]--- a boolean. If true, when the 3m variant is
+  @item{@racket[3m-too?]--- a boolean. If true, when the 3m variant is
     installed, use the equivalent to @exec{raco ctool --xform} to transform
     the source file and then compile and link for 3m. Otherwise, the
     extension is built only for CGC when the CGC variant is installed.}
@@ -372,10 +372,10 @@ The arguments are as follows:
                           [argv (or/c string? (vectorof string?))])
          void?]{
 
-Builds bytecode files for each file in @scheme[collection-files],
+Builds bytecode files for each file in @racket[collection-files],
 writing each to a @filepath{compiled} subdirectory and automatically
-managing dependencies. Supply @scheme['#("zo")] as @scheme[argv] to
-compile all files. The @scheme[collection-name] argument is used only
+managing dependencies. Supply @racket['#("zo")] as @racket[argv] to
+compile all files. The @racket[collection-name] argument is used only
 for printing status information.
 
 Compilation is performed as with @exec{raco make} (see
@@ -387,7 +387,7 @@ Compilation is performed as with @exec{raco make} (see
 
 @defsignature[make:collection^ ()]{
 
-Provides @schemeidfont{make-collection}.}
+Provides @racketidfont{make-collection}.}
 
 @subsection{Unit}
 
@@ -395,5 +395,5 @@ Provides @schemeidfont{make-collection}.}
 
 @defthing[make:collection@ unit?]{
 
-Imports @scheme[make^], @scheme[dynext:file^], and @scheme[compiler^],
-and exports @scheme[make:collection^].}
+Imports @racket[make^], @racket[dynext:file^], and @racket[compiler^],
+and exports @racket[make:collection^].}

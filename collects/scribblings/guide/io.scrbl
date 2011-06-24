@@ -277,7 +277,7 @@ text. In the format string supplied to @racket[printf], @litchar{~a}
 After using @racket[write], as opposed to @racket[display] or
 @racket[print], many forms of data can be read back in using
 @racket[read]. The same values @racket[print]ed can also be parsed by
-@scheme[read], but the result may have extra quote forms, since a
+@racket[read], but the result may have extra quote forms, since a
 @racket[print]ed form is meant to be read like an expression.
 
 @examples[

@@ -23,52 +23,52 @@ Parameter values for built-in parameters are obtained and modified
 through the following indices:
 
 @itemize[
-@item{@cppdef{MZCONFIG_ENV} --- @scheme[current-namespace] (use @cpp{scheme_get_env})}
-@item{@cppdef{MZCONFIG_INPUT_PORT} --- @scheme[current-input-port]}
-@item{@cppdef{MZCONFIG_OUTPUT_PORT} ---  @scheme[current-output-port]}
-@item{@cppdef{MZCONFIG_ERROR_PORT} ---  @scheme[current-error-port]}
+@item{@cppdef{MZCONFIG_ENV} --- @racket[current-namespace] (use @cpp{scheme_get_env})}
+@item{@cppdef{MZCONFIG_INPUT_PORT} --- @racket[current-input-port]}
+@item{@cppdef{MZCONFIG_OUTPUT_PORT} ---  @racket[current-output-port]}
+@item{@cppdef{MZCONFIG_ERROR_PORT} ---  @racket[current-error-port]}
 
-@item{@cppdef{MZCONFIG_ERROR_DISPLAY_HANDLER} --- @scheme[error-display-handler]}
-@item{@cppdef{MZCONFIG_ERROR_PRINT_VALUE_HANDLER} --- @scheme[error-value->string-handler]}
+@item{@cppdef{MZCONFIG_ERROR_DISPLAY_HANDLER} --- @racket[error-display-handler]}
+@item{@cppdef{MZCONFIG_ERROR_PRINT_VALUE_HANDLER} --- @racket[error-value->string-handler]}
 
-@item{@cppdef{MZCONFIG_EXIT_HANDLER} --- @scheme[exit-handler]}
+@item{@cppdef{MZCONFIG_EXIT_HANDLER} --- @racket[exit-handler]}
 
-@item{@cppdef{MZCONFIG_INIT_EXN_HANDLER} ---  @scheme[uncaught-exception-handler]}
+@item{@cppdef{MZCONFIG_INIT_EXN_HANDLER} ---  @racket[uncaught-exception-handler]}
 
-@item{@cppdef{MZCONFIG_EVAL_HANDLER} --- @scheme[current-eval]}
-@item{@cppdef{MZCONFIG_LOAD_HANDLER} --- @scheme[current-load]}
+@item{@cppdef{MZCONFIG_EVAL_HANDLER} --- @racket[current-eval]}
+@item{@cppdef{MZCONFIG_LOAD_HANDLER} --- @racket[current-load]}
 
-@item{@cppdef{MZCONFIG_PRINT_HANDLER} --- @scheme[current-print]}
-@item{@cppdef{MZCONFIG_PROMPT_READ_HANDLER} --- @scheme[current-prompt-read]}
+@item{@cppdef{MZCONFIG_PRINT_HANDLER} --- @racket[current-print]}
+@item{@cppdef{MZCONFIG_PROMPT_READ_HANDLER} --- @racket[current-prompt-read]}
 
-@item{@cppdef{MZCONFIG_CAN_READ_GRAPH} --- @scheme[read-accept-graph]}
-@item{@cppdef{MZCONFIG_CAN_READ_COMPILED} --- @scheme[read-accept-compiled]}
-@item{@cppdef{MZCONFIG_CAN_READ_BOX} --- @scheme[read-accept-box]}
-@item{@cppdef{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @scheme[read-accept-bar-quote]}
+@item{@cppdef{MZCONFIG_CAN_READ_GRAPH} --- @racket[read-accept-graph]}
+@item{@cppdef{MZCONFIG_CAN_READ_COMPILED} --- @racket[read-accept-compiled]}
+@item{@cppdef{MZCONFIG_CAN_READ_BOX} --- @racket[read-accept-box]}
+@item{@cppdef{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @racket[read-accept-bar-quote]}
 
-@item{@cppdef{MZCONFIG_PRINT_GRAPH} --- @scheme[print-graph]}
-@item{@cppdef{MZCONFIG_PRINT_STRUCT} --- @scheme[print-struct]}
-@item{@cppdef{MZCONFIG_PRINT_BOX} --- @scheme[print-box]}
+@item{@cppdef{MZCONFIG_PRINT_GRAPH} --- @racket[print-graph]}
+@item{@cppdef{MZCONFIG_PRINT_STRUCT} --- @racket[print-struct]}
+@item{@cppdef{MZCONFIG_PRINT_BOX} --- @racket[print-box]}
 
-@item{@cppdef{MZCONFIG_CASE_SENS} --- @scheme[read-case-sensitive]}
-@item{@cppdef{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @scheme[read-square-brackets-as-parens]}
-@item{@cppdef{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @scheme[read-curly-braces-as-parens]}
+@item{@cppdef{MZCONFIG_CASE_SENS} --- @racket[read-case-sensitive]}
+@item{@cppdef{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @racket[read-square-brackets-as-parens]}
+@item{@cppdef{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @racket[read-curly-braces-as-parens]}
 
-@item{@cppdef{MZCONFIG_ERROR_PRINT_WIDTH} --- @scheme[error-print-width]}
+@item{@cppdef{MZCONFIG_ERROR_PRINT_WIDTH} --- @racket[error-print-width]}
 
-@item{@cppdef{MZCONFIG_ALLOW_SET_UNDEFINED} --- @scheme[allow-compile-set!-undefined]}
+@item{@cppdef{MZCONFIG_ALLOW_SET_UNDEFINED} --- @racket[allow-compile-set!-undefined]}
 
-@item{@cppdef{MZCONFIG_CUSTODIAN} --- @scheme[current-custodian]}
+@item{@cppdef{MZCONFIG_CUSTODIAN} --- @racket[current-custodian]}
 
-@item{@cppdef{MZCONFIG_USE_COMPILED_KIND} --- @scheme[use-compiled-file-paths]}
+@item{@cppdef{MZCONFIG_USE_COMPILED_KIND} --- @racket[use-compiled-file-paths]}
 
-@item{@cppdef{MZCONFIG_LOAD_DIRECTORY} --- @scheme[current-load-relative-directory]}
+@item{@cppdef{MZCONFIG_LOAD_DIRECTORY} --- @racket[current-load-relative-directory]}
 
-@item{@cppdef{MZCONFIG_COLLECTION_PATHS} --- @scheme[current-library-collection-paths]}
+@item{@cppdef{MZCONFIG_COLLECTION_PATHS} --- @racket[current-library-collection-paths]}
 
-@item{@cppdef{MZCONFIG_PORT_PRINT_HANDLER} --- @scheme[global-port-print-handler]}
+@item{@cppdef{MZCONFIG_PORT_PRINT_HANDLER} --- @racket[global-port-print-handler]}
 
-@item{@cppdef{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @scheme[current-load-extension]}
+@item{@cppdef{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @racket[current-load-extension]}
 
 ]
 
@@ -82,7 +82,7 @@ When installing a new parameter with @cpp{scheme_set_param}, no check
 is performed on the supplied value to ensure that it is a legal value
 for the parameter; this is the responsibility of the caller of
 @cpp{scheme_set_param}. Note that Boolean parameters should only be
-set to the values @scheme[#t] and @scheme[#f].
+set to the values @racket[#t] and @racket[#f].
 
 New primitive parameter indices are created with
 @cppi{scheme_new_param} and implemented with

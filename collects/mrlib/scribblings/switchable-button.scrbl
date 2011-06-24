@@ -7,7 +7,7 @@
 
 @defclass[switchable-button% canvas% ()]{
   
-  A @scheme[switchable-button%] control displays
+  A @racket[switchable-button%] control displays
   and icon and a string label. It toggles between
   display of just the icon and a display with the 
   label and the icon side-by-side. 
@@ -17,15 +17,15 @@
                               [bitmap (is-a?/c bitmap%)]
                               [alternate-bitmap (is-a?/c bitmap%) bitmap]	
                               [vertical-tight? boolean? #f])]{
-    The @scheme[callback] is called when the button
-    is pressed. The @scheme[string] and @scheme[bitmap] are
+    The @racket[callback] is called when the button
+    is pressed. The @racket[string] and @racket[bitmap] are
     used as discussed above.
     
-    If @scheme[alternate-bitmap] is supplied, then it is used
+    If @racket[alternate-bitmap] is supplied, then it is used
     when the button is switched to the view that just shows the bitmap.
     If it is not supplied, both modes show the same bitmap.
     
-    If the @scheme[vertical-tight?] argument is @scheme[#t], then the button takes up
+    If the @racket[vertical-tight?] argument is @racket[#t], then the button takes up
     as little as possible vertical space.
   }
   

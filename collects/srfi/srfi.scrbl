@@ -40,7 +40,7 @@
    (case-lambda
      [() (in-core ".")]
      [(k) @elem{This SRFI's bindings are also available in
-                @schememodname[scheme/base]@|k|}]))
+                @racketmodname[scheme/base]@|k|}]))
 
 @(begin
   (define-syntax-rule (def-mz mz-if)
@@ -62,8 +62,8 @@ Racket is distributed with implementations of many SRFIs, most of
 which can be implemented as libraries. To import the bindings of SRFI
 @math{n}, use
 
-@schemeblock[
-(require @#,elem{@schemeidfont{srfi/}@math{n}})
+@racketblock[
+(require @#,elem{@racketidfont{srfi/}@math{n}})
 ]
 
 This document lists the SRFIs that are supported by Racket and
@@ -76,11 +76,11 @@ distributed as part of Racket's documentation).
 
 @srfi[1]{List Library}
 
-This SRFI works with pairs and lists as in @schememodname[scheme] and
-@schememodname[mzscheme], which are immutable, so it does not export
-@schemeidfont{set-car!} and @schemeidfont{set-cdr!}. The other
-provided bindings that end in @schemeidfont{!} are equivalent to the
-corresponding bindings without @schemeidfont{!}.
+This SRFI works with pairs and lists as in @racketmodname[scheme] and
+@racketmodname[mzscheme], which are immutable, so it does not export
+@racketidfont{set-car!} and @racketidfont{set-cdr!}. The other
+provided bindings that end in @racketidfont{!} are equivalent to the
+corresponding bindings without @racketidfont{!}.
 
 @redirect[1 '(
  (cons #f "cons")
@@ -230,7 +230,7 @@ corresponding bindings without @schemeidfont{!}.
 )]
 
 This SRFI's reader and printer syntax is not supported. The bindings
-are also available from @schememodname[scheme/foreign].
+are also available from @racketmodname[scheme/foreign].
 
 @; ----------------------------------------
 
@@ -566,7 +566,7 @@ are also available from @schememodname[scheme/foreign].
 )]
 
 Take care NOT to confuse the internal date structure with the
-Racket @scheme[date]; they are not the same, and all procedures
+Racket @racket[date]; they are not the same, and all procedures
 from the SRFI library expect the former.
 
 @; ----------------------------------------
@@ -717,7 +717,7 @@ This SRFI's syntax is part of Racket's default reader and printer.
  (stream-filter #f "stream-filter")
 )]
 
-Superceded by @schememodname[srfi/41].
+Superceded by @racketmodname[srfi/41].
 
 @; ----------------------------------------
 
@@ -812,9 +812,9 @@ same as from @racketmodname[racket/stream].
  (:until #t ":until")
 )]
 
-Forms that syntactically detect @scheme[if] recognize both @scheme[if]
-from @schememodname[scheme/base] and @mz-if from
-@schememodname[mzscheme].
+Forms that syntactically detect @racket[if] recognize both @racket[if]
+from @racketmodname[scheme/base] and @mz-if from
+@racketmodname[mzscheme].
 
 @; ----------------------------------------
 
@@ -873,7 +873,7 @@ from @schememodname[scheme/base] and @mz-if from
 Additional binding:
 
 @defproc[(promise? [v any/c]) boolean?]{
-Returns @scheme[#t] if @scheme[v] is a promise, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a promise, @racket[#f] otherwise.}
 
 @; ----------------------------------------
 
@@ -924,7 +924,7 @@ Returns @scheme[#t] if @scheme[v] is a promise, @scheme[#f] otherwise.}
 Original specification: @link["../srfi-std/srfi-62.html"]{SRFI 62}
 
 This SRFI's syntax is part of Racket's default reader (no
-@scheme[require] is needed).
+@racket[require] is needed).
 
 @; ----------------------------------------
 

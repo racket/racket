@@ -9,7 +9,7 @@
       (let ([mods (append-map
                    (lambda (k) (list ", " (resolve-get p ri k)))
                    (sort (resolve-get-keys
-                          p ri (lambda (v) (eq? (car v) 'scheme-extra-lib)))
+                          p ri (lambda (v) (eq? (car v) 'racket-extra-lib)))
                          string<?
                          #:key (lambda (k) (symbol->string (cadr k)))
                          #:cache-keys? #t))])

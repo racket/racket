@@ -3,7 +3,7 @@
 
 @defclass/title[bitmap% object% ()]{
 
-A @scheme[bitmap%] object is a pixel-based image, either
+A @racket[bitmap%] object is a pixel-based image, either
  monochrome, color, or color with an alpha channel. See also
  @racket[make-screen-bitmap] and @xmethod[canvas% make-bitmap].
 
@@ -34,25 +34,25 @@ The @racket[make-bitmap], @racket[make-monochrome-bitmap], and
  @racket[make-object] with @racket[bitmap%], because the functions are
  less overloaded and provide more useful defaults.
 
-When @scheme[width] and @scheme[height] are provided: Creates a new
- bitmap. If @scheme[monochrome?] is true, the bitmap is monochrome; if
- @scheme[monochrome?] is @scheme[#f] and @racket[alpha?] is true, the
+When @racket[width] and @racket[height] are provided: Creates a new
+ bitmap. If @racket[monochrome?] is true, the bitmap is monochrome; if
+ @racket[monochrome?] is @racket[#f] and @racket[alpha?] is true, the
  bitmap has an alpha channel; otherwise, the bitmap is color without
  an alpha channel.
 
 The initial content of the bitmap is ``empty'': all white, and with
  zero alpha in the case of a bitmap with an alpha channel.
 
-When @scheme[in] is provided: Creates a bitmap from a file format,
- where @scheme[kind] specifies the format. See @method[bitmap%
+When @racket[in] is provided: Creates a bitmap from a file format,
+ where @racket[kind] specifies the format. See @method[bitmap%
  load-file] for details.
 
-When a @scheme[bits] byte string is provided: Creates a monochrome
- bitmap from an array of bit values, where each byte in @scheme[bits]
+When a @racket[bits] byte string is provided: Creates a monochrome
+ bitmap from an array of bit values, where each byte in @racket[bits]
  specifies eight bits, and padding bits are added so that each bitmap
- line starts on a character boundary. A @scheme[1] bit value indicates
- black, and @scheme[0] indicates white. If @scheme[width] times
- @scheme[height] is larger than 8 times the length of @scheme[bits],
+ line starts on a character boundary. A @racket[1] bit value indicates
+ black, and @racket[0] indicates white. If @racket[width] times
+ @racket[height] is larger than 8 times the length of @racket[bits],
  @|MismatchExn|.
 
 
@@ -94,24 +94,24 @@ Gets the height of the bitmap in pixels.
 
 Returns a mask bitmap that is stored with this bitmap.
 
-When a GIF file is loaded with @scheme['gif/mask] or
- @scheme['unknown/mask] and the file contains a transparent ``color,''
+When a GIF file is loaded with @racket['gif/mask] or
+ @racket['unknown/mask] and the file contains a transparent ``color,''
  a mask bitmap is generated to identify the transparent pixels. The
  mask bitmap is monochrome, with white pixels where the loaded bitmap
  is transparent and black pixels everywhere else.
 
-When a PNG file is loaded with @scheme['png/mask] or
- @scheme['unknown/mask] and the file contains a mask or alpha channel,
+When a PNG file is loaded with @racket['png/mask] or
+ @racket['unknown/mask] and the file contains a mask or alpha channel,
  a mask bitmap is generated to identify the mask or alpha channel.  If
  the file contains a mask or an alpha channel with only extreme
  values, the mask bitmap is monochrome, otherwise it is grayscale
  (representing the alpha channel inverted).
 
-When an XPM file is loaded with @scheme['xpm/mask] or
- @scheme['unknown/mask], a mask bitmap is generated to indicate which
+When an XPM file is loaded with @racket['xpm/mask] or
+ @racket['unknown/mask], a mask bitmap is generated to indicate which
  pixels are set.
 
-When @scheme['unknown/alpha] and similar modes are used to load a
+When @racket['unknown/alpha] and similar modes are used to load a
  bitmap, transparency information is instead represented by an alpha
  channel, not by a mask bitmap.
 
@@ -119,7 +119,7 @@ Unlike an alpha channel, the mask bitmap is @italic{not} used
  automatically by drawing routines. The mask bitmap can be extracted
  and supplied explicitly as a mask (e.g., as the sixth argument to
  @method[dc<%> draw-bitmap]). The mask bitmap is used by
- @method[bitmap% save-file] when saving a bitmap as @scheme['png] if
+ @method[bitmap% save-file] when saving a bitmap as @racket['png] if
  the mask has the same dimensions as the saved bitmap. The mask bitmap
  is also used automatically when the bitmap is a control label.
 
@@ -135,7 +135,7 @@ Gets the width of the bitmap in pixels.
 @defmethod[(is-color?)
            boolean?]{
 
-Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
+Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
 
 }
 
@@ -155,35 +155,46 @@ Loads a bitmap from a file format that read from @racket[in], unless
  the bitmap was produced by @racket[make-screen-bitmap] or 
  @xmethod[canvas% make-bitmap] (in which case @|MismatchExn|).
  If the bitmap is in use by a
- @scheme[bitmap-dc%] object or a control, the image data is not
+ @racket[bitmap-dc%] object or a control, the image data is not
  loaded. The bitmap changes its size and depth to match that of 
  the loaded image. If an error is encountered when reading the file format,
  an exception is raised only if @racket[complain-on-failure?] is true (which is
  @emph{not} the default).
 
-The @scheme[kind] argument specifies the file's format:
+The @racket[kind] argument specifies the file's format:
 
 @itemize[
-@item{@scheme['unknown] --- examine the file to determine its format; creates either a monochrome
-                            or color bitmap without an alpha channel}
-@item{@scheme['unknown/mask] --- like @scheme['unknown], but see @method[bitmap% get-loaded-mask]}
-@item{@scheme['unknown/alpha] --- like @scheme['unknown], but if the bitmap is color, it has an
-                                  alpha channel, and transparency in the image file is recorded
-                                  in the alpha channel}
-@item{@scheme['gif] --- load a @as-index{GIF} bitmap file, creating a color bitmap}
-@item{@scheme['gif/mask] --- like @scheme['gif], but see @method[bitmap% get-loaded-mask]}
-@item{@scheme['gif/alpha] --- like @scheme['gif], but with an alpha channel}
-@item{@scheme['jpeg] --- load a @as-index{JPEG} bitmap file, creating a color bitmap}
-@item{@scheme['jpeg/alpha] --- like @racket['jpeg], but with an alpha channel}
-@item{@scheme['png] --- load a @as-index{PNG} bitmap file, creating a color or monochrome bitmap}
-@item{@scheme['png/mask] --- like @scheme['png], but see @method[bitmap% get-loaded-mask]}
-@item{@scheme['png/alpha] --- like @scheme['png], but always color and with an alpha channel}
-@item{@scheme['xbm] --- load an X bitmap (@as-index{XBM}) file; creates a monochrome bitmap}
-@item{@scheme['xbm/alpha] --- like @racket['xbm], but creates a color bitmap with an alpha channel}
-@item{@scheme['xpm] --- load an @as-index{XPM} bitmap file, creating a color bitmap}
-@item{@scheme['xpm/alpha] --- like @racket['xpm], but with an alpha channel}
-@item{@scheme['bmp] --- load a Windows bitmap file, creating a color bitmap}
-@item{@scheme['bmp/alpha] --- like @racket['bmp], but with an alpha channel}
+
+@item{@racket['unknown] --- examine the file to determine its format; creates
+  either a monochrome or color bitmap without an alpha channel}
+@item{@racket['unknown/mask] --- like @racket['unknown], but see
+  @method[bitmap% get-loaded-mask]}
+@item{@racket['unknown/alpha] --- like @racket['unknown], but if the bitmap is
+  color, it has an alpha channel, and transparency in the image file is
+  recorded in the alpha channel}
+@item{@racket['gif] --- load a @as-index{GIF} bitmap file, creating a color
+  bitmap}
+@item{@racket['gif/mask] --- like @racket['gif], but see
+  @method[bitmap% get-loaded-mask]}
+@item{@racket['gif/alpha] --- like @racket['gif], but with an alpha channel}
+@item{@racket['jpeg] --- load a @as-index{JPEG} bitmap file, creating a color
+  bitmap}
+@item{@racket['jpeg/alpha] --- like @racket['jpeg], but with an alpha channel}
+@item{@racket['png] --- load a @as-index{PNG} bitmap file, creating a color or
+  monochrome bitmap}
+@item{@racket['png/mask] --- like @racket['png], but see
+  @method[bitmap% get-loaded-mask]}
+@item{@racket['png/alpha] --- like @racket['png], but always color and with an
+  alpha channel}
+@item{@racket['xbm] --- load an X bitmap (@as-index{XBM}) file; creates a
+  monochrome bitmap}
+@item{@racket['xbm/alpha] --- like @racket['xbm], but creates a color bitmap
+  with an alpha channel}
+@item{@racket['xpm] --- load an @as-index{XPM} bitmap file, creating a color
+  bitmap}
+@item{@racket['xpm/alpha] --- like @racket['xpm], but with an alpha channel}
+@item{@racket['bmp] --- load a Windows bitmap file, creating a color bitmap}
+@item{@racket['bmp/alpha] --- like @racket['bmp], but with an alpha channel}
 ]
 
 An XBM image is always loaded as a monochrome bitmap. A 1-bit
@@ -191,12 +202,12 @@ An XBM image is always loaded as a monochrome bitmap. A 1-bit
  monochrome bitmap. An image in any other format is always loaded as a
  color bitmap.
 
-For PNG loading, if @scheme[bg-color] is not @scheme[#f], then it is
+For PNG loading, if @racket[bg-color] is not @racket[#f], then it is
  combined with the file's alpha channel or mask (if any) while loading
  the image; in this case, no separate mask bitmap is generated and the
- alpha channel fills the bitmap, even if @scheme['unknown/mask],
- @scheme['png/mask] is specified for the format. If the format is
- specified as @scheme['unknown] or @scheme['png] and @scheme[bg-color]
+ alpha channel fills the bitmap, even if @racket['unknown/mask],
+ @racket['png/mask] is specified for the format. If the format is
+ specified as @racket['unknown] or @racket['png] and @racket[bg-color]
  is not specified, the PNG file is consulted for a background color to
  use for loading, and white is used if no background color is
  indicated in the file.
@@ -213,7 +224,7 @@ For PNG loading, if @scheme[bg-color] is not @scheme[#f], then it is
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if the bitmap is valid in the sense that an image
+Returns @racket[#t] if the bitmap is valid in the sense that an image
  file was loaded successfully. If @method[bitmap% ok?] returns
  @racket[#f], then drawing to or from the bitmap has no effect.
 
@@ -227,35 +238,35 @@ Returns @scheme[#t] if the bitmap is valid in the sense that an image
 
 Writes a bitmap to the named file or output stream.
 
-The @scheme[kind] argument determined the type of file that is created,
+The @racket[kind] argument determined the type of file that is created,
  one of:
 
 @itemize[
 
- @item{@scheme['png] --- save a @as-index{PNG} file}
+ @item{@racket['png] --- save a @as-index{PNG} file}
 
- @item{@scheme['jpeg] --- save a @as-index{JPEG} file}
+ @item{@racket['jpeg] --- save a @as-index{JPEG} file}
 
- @item{@scheme['xbm] --- save an X bitmap (@as-index{XBM}) file}
+ @item{@racket['xbm] --- save an X bitmap (@as-index{XBM}) file}
 
- @item{@scheme['xpm] --- save an @as-index{XPM} bitmap file}
+ @item{@racket['xpm] --- save an @as-index{XPM} bitmap file}
 
- @item{@scheme['bmp] --- save a Windows bitmap file}
+ @item{@racket['bmp] --- save a Windows bitmap file}
 
 ]
 
-The @scheme[quality] argument is used only for saving as @scheme['jpeg], in
+The @racket[quality] argument is used only for saving as @racket['jpeg], in
  which case it specifies the trade-off between image precision (high
- quality matches the content of the @scheme[bitmap%] object more
+ quality matches the content of the @racket[bitmap%] object more
  precisely) and size (low quality is smaller).
 
-When saving as @scheme['png], if @method[bitmap% get-loaded-mask]
+When saving as @racket['png], if @method[bitmap% get-loaded-mask]
  returns a bitmap of the same size as this one, a grayscale version is
  included in the PNG file as the alpha channel.
 
-A monochrome bitmap saved as @scheme['png] without a mask bitmap
+A monochrome bitmap saved as @racket['png] without a mask bitmap
  produces a 1-bit grayscale PNG file (which, when read with
- @method[bitmap% load-file], creates a monochrome @scheme[bitmap%]
+ @method[bitmap% load-file], creates a monochrome @racket[bitmap%]
  object.)
 
 }

@@ -7,17 +7,17 @@
 
 @title{Parsing syntax}
 
-This section describes @scheme[syntax-parse], the
-@schememodname[syntax/parse] library's facility for parsing
-syntax. Both @scheme[syntax-parse] and the specification facility,
+This section describes @racket[syntax-parse], the
+@racketmodname[syntax/parse] library's facility for parsing
+syntax. Both @racket[syntax-parse] and the specification facility,
 @seclink["stxparse-specifying"]{syntax classes}, use a common language
 of @tech{syntax patterns}, which is described in detail in
 @secref{stxparse-patterns}.
 
 @declare-exporting[syntax/parse]
 
-Two parsing forms are provided: @scheme[syntax-parse] and
-@scheme[syntax-parser].
+Two parsing forms are provided: @racket[syntax-parse] and
+@racket[syntax-parser].
 
 @defform/subs[(syntax-parse stx-expr parse-option ... clause ...+)
               ([parse-option (code:line #:context context-expr)
@@ -38,11 +38,11 @@ Two parsing forms are provided: @scheme[syntax-parse] and
                            [context-expr syntax?]
                            [phase-expr (or/c exact-integer? #f)])]{
 
-Evaluates @scheme[stx-expr], which should produce a syntax object, and
-matches it against the @scheme[clause]s in order. If some clause's
+Evaluates @racket[stx-expr], which should produce a syntax object, and
+matches it against the @racket[clause]s in order. If some clause's
 pattern matches, its attributes are bound to the corresponding
 subterms of the syntax object and that clause's side conditions and
-@scheme[expr] is evaluated. The result is the result of @scheme[expr].
+@racket[expr] is evaluated. The result is the result of @racket[expr].
 
 Each clause consists of a @tech{syntax pattern}, an optional sequence
 of @tech{pattern directives}, and a non-empty sequence of body
@@ -57,8 +57,8 @@ The following options are supported:
 @specsubform[(code:line #:context context-expr)
              #:contracts ([context-expr syntax?])]{
 
-When present, @scheme[context-expr] is used in reporting parse
-failures; otherwise @scheme[stx-expr] is used.
+When present, @racket[context-expr] is used in reporting parse
+failures; otherwise @racket[stx-expr] is used.
 
 @(myexamples
   (syntax-parse #'(a b 3)
@@ -74,23 +74,23 @@ failures; otherwise @scheme[stx-expr] is used.
                             (pattern-id literal-id #:phase phase-expr)])
                   #:contracts ([phase-expr (or/c exact-integer? #f)])]{
 @margin-note*{
-  Unlike @scheme[syntax-case], @scheme[syntax-parse] requires all
+  Unlike @racket[syntax-case], @racket[syntax-parse] requires all
   literals to have a binding. To match identifiers by their symbolic
-  names, use the @scheme[~datum] pattern form instead.
+  names, use the @racket[~datum] pattern form instead.
 }
 @;
-The @scheme[#:literals] option specifies identifiers that should be
+The @racket[#:literals] option specifies identifiers that should be
 treated as @tech{literals} rather than @tech{pattern variables}. An
 entry in the literals list has two components: the identifier used
 within the pattern to signify the positions to be matched
-(@scheme[pattern-id]), and the identifier expected to occur in those
-positions (@scheme[literal-id]). If the entry is a single identifier,
+(@racket[pattern-id]), and the identifier expected to occur in those
+positions (@racket[literal-id]). If the entry is a single identifier,
 that identifier is used for both purposes.
 
-If the @scheme[#:phase] option is given, then the literal is compared
-at phase @scheme[phase-expr]. Specifically, the binding of the
-@scheme[literal-id] at phase @scheme[phase-expr] must match the
-input's binding at phase @scheme[phase-expr].
+If the @racket[#:phase] option is given, then the literal is compared
+at phase @racket[phase-expr]. Specifically, the binding of the
+@racket[literal-id] at phase @racket[phase-expr] must match the
+input's binding at phase @racket[phase-expr].
 }
 
 @specsubform/subs[(code:line #:literal-sets (literal-set ...))
@@ -101,7 +101,7 @@ input's binding at phase @scheme[phase-expr].
                   #:contracts ([phase-expr (or/c exact-integer? #f)])]{
 
 Many literals can be declared at once via one or more @tech{literal
-sets}, imported with the @scheme[#:literal-sets] option. See
+sets}, imported with the @racket[#:literal-sets] option. See
 @tech{literal sets} for more information.
 
 If the @racket[#:at] keyword is given, the lexical context of the
@@ -119,7 +119,7 @@ variables that do not explicitly specify a syntax class.
 @specsubform[(code:line #:local-conventions (convention-rule ...))]{
 
 Uses the @tech{conventions} specified. The advantage of
-@scheme[#:local-conventions] over @scheme[#:conventions] is that local
+@racket[#:local-conventions] over @racket[#:conventions] is that local
 conventions can be in the scope of syntax-class parameter
 bindings. See the section on @tech{conventions} for examples.
 }
@@ -139,7 +139,7 @@ Suppresses the ``colon notation'' for annotated pattern variables.
 
 @defform[(syntax-parser parse-option ... clause ...+)]{
 
-Like @scheme[syntax-parse], but produces a matching procedure. The
+Like @racket[syntax-parse], but produces a matching procedure. The
 procedure accepts a single argument, which should be a syntax object.
 }
 

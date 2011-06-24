@@ -29,7 +29,7 @@ A @as-index{module}'s set of top-level bindings is implemented using
 the same machinery as a namespace. Use @cppi{scheme_primitive_module}
 to create a new @cpp{Scheme_Env*} that represents a primitive
 module. The name provided to @cppi{scheme_primitive_module} is subject
-to change through the @scheme[current-module-declare-name] parameter
+to change through the @racket[current-module-declare-name] parameter
 (which is normally set by the module name resolver when auto-loading
 module files). After installing variables into the module with
 @cppi{scheme_add_global}, etc., call
@@ -37,9 +37,9 @@ module files). After installing variables into the module with
 to make the module declaration available. All defined variables are
 exported from the primitive module.
 
-The Racket @indexed-scheme[#%variable-reference] form produces a value
+The Racket @indexed-racket[#%variable-reference] form produces a value
 that is opaque to Racket code. Use @cpp{SCHEME_PTR_VAL} on the result
-of @scheme[#%variable-reference] to obtain the same kind of value as
+of @racket[#%variable-reference] to obtain the same kind of value as
 returned by @cpp{scheme_global_bucket} (i.e., a bucket containing the
 variable's value, or @cpp{NULL} if the variable is not yet defined).
 
@@ -95,7 +95,7 @@ The @cppi{Scheme_Bucket} structure is defined as:
 
 Like @cpp{scheme_global_bucket}, but finds a variable in a
  module. The @var{mod} and @var{symbol} arguments are as for
- @scheme[dynamic-require] in Racket. The @var{pos} argument should be
+ @racket[dynamic-require] in Racket. The @var{pos} argument should be
  @cpp{-1} always. The @var{env} argument represents the namespace in
  which the module is declared.}
 
@@ -109,7 +109,7 @@ Changes the value of a global variable. The @var{procname} argument is
 used to report errors (in case the global variable is constant, not
 yet bound, or bound as syntax). If @var{set_undef} is not 1, then the
 global variable must already have a binding. (For example,
-@scheme[set!] cannot set unbound variables, while @scheme[define]
+@racket[set!] cannot set unbound variables, while @racket[define]
 can.)}
 
 @function[(Scheme_Object* scheme_builtin_value
@@ -130,7 +130,7 @@ available as @cppi{scheme_config}.}
            [Scheme_Env* for_env])]{
 
 Prepares a new primitive module whose name is the symbol @var{name} (or an
- alternative that is active via @scheme[current-module-declare-name]). The
+ alternative that is active via @racket[current-module-declare-name]). The
  module will be declared within the namespace @var{for_env}. The
  result is a @cpp{Scheme_Env *} value that can be used with
  @cpp{scheme_add_global}, etc., but it represents a module instead

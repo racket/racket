@@ -3,18 +3,18 @@
 
 @defclass/title[event% object% ()]{
 
-An @scheme[event%] object contains information about a control,
+An @racket[event%] object contains information about a control,
 keyboard, mouse, or scroll event. See also
-@scheme[control-event%], 
-@scheme[key-event%],
-@scheme[mouse-event%], and
-@scheme[scroll-event%].
+@racket[control-event%], 
+@racket[key-event%],
+@racket[mouse-event%], and
+@racket[scroll-event%].
 
 
 @defconstructor[([time-stamp exact-integer? 0])]{
 
 See @method[event% get-time-stamp] for information about
- @scheme[time-stamp].
+ @racket[time-stamp].
 
 }
 
@@ -23,7 +23,7 @@ See @method[event% get-time-stamp] for information about
 
 Returns the time, in milliseconds, when the event occurred. This time
  is compatible with times reported by Racket's
- @scheme[current-milliseconds] procedure.
+ @racket[current-milliseconds] procedure.
 
 }
 
@@ -31,7 +31,7 @@ Returns the time, in milliseconds, when the event occurred. This time
            void?]{
 
 Set the time, in milliseconds, when the event occurred. See also
- Racket's @scheme[current-milliseconds].
+ Racket's @racket[current-milliseconds].
 
 If the supplied value is outside the platform-specific range of time
  values, @|MismatchExn|.

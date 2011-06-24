@@ -71,7 +71,7 @@ saying that there is no file name until the file is saved.}
   the label is determined by
   the @method[name-message% set-message].
 }
-                 
+
 @defmethod[(get-background-color) (or/c #f (is-a/c color%) string?)]{
 
 The result of this method is used for the background color

@@ -27,13 +27,13 @@ whether a complex number should be treated as a real number.
 @function[(int scheme_is_exact
            [Scheme_Object* n])]{
 
-Returns @cpp{1} if @var{n} is an exact number, @scheme[0] otherwise
+Returns @cpp{1} if @var{n} is an exact number, @racket[0] otherwise
 (@var{n} need not be a number).}
 
 @function[(int scheme_is_inexact
            [Scheme_Object* n])]{
 
-Returns @cpp{1} if @var{n} is an inexact number, @scheme[0] otherwise
+Returns @cpp{1} if @var{n} is an inexact number, @racket[0] otherwise
 (@var{n} need not be a number).}
 
 @function[(Scheme_Object* scheme_make_bignum

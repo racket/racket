@@ -5,36 +5,36 @@
          (for-label lang/htdp-beginner-abbr))
 
 (provide prim-nonterms
-         schemegrammar*+library
-         schemegrammar*+qq)
+         racketgrammar*+library
+         racketgrammar*+qq)
 
 (define ex-str "This is a string with \" inside")
 
-(define-syntax-rule (schemegrammar*+library 
+(define-syntax-rule (racketgrammar*+library
                      #:literals lits
                      (check-expect check-within check-error require)
                      form ...)
-  (schemegrammar*
+  (racketgrammar*
    #:literals lits
    form ...
-   [test-case @#,scheme[(check-expect expr expr)]
-              @#,scheme[(check-within expr expr expr)]
-	      @#,scheme[(check-member-of expr expr (... ...))]
-	      @#,scheme[(check-range expr expr expr)]
-              @#,scheme[(check-error expr expr)]
-              @#,scheme[(check-error expr)]]
+   [test-case @#,racket[(check-expect expr expr)]
+              @#,racket[(check-within expr expr expr)]
+              @#,racket[(check-member-of expr expr (... ...))]
+              @#,racket[(check-range expr expr expr)]
+              @#,racket[(check-error expr expr)]
+              @#,racket[(check-error expr)]]
    (...
-    [library-require @#,scheme[(require string)]
-                     @#,scheme[(require (lib string string ...))]
-                     @#,scheme[(require (planet string package))]])
+    [library-require @#,racket[(require string)]
+                     @#,racket[(require (lib string string ...))]
+                     @#,racket[(require (planet string package))]])
    (...
-    [package @#,scheme[(string string number number)]])))
+    [package @#,racket[(string string number number)]])))
 
-(define-syntax-rule (schemegrammar*+qq 
+(define-syntax-rule (racketgrammar*+qq 
                      #:literals lits
                      (check-expect check-within check-error require)
                      form ...)
-  (schemegrammar*+library
+  (racketgrammar*+library
    #:literals lits
    (check-expect check-within check-error require)
    form ...
@@ -43,27 +43,27 @@
             number
             string
             character
-            @#,scheme[(quoted ...)]
-            @#,elem{@schemevalfont{'}@scheme[quoted]}
-            @#,elem{@schemevalfont{`}@scheme[quoted]}
-            @#,elem{@schemefont{,}@scheme[quoted]}
-            @#,elem{@schemefont[",@"]@scheme[quoted]}])
+            @#,racket[(quoted ...)]
+            @#,elem{@racketvalfont{'}@racket[quoted]}
+            @#,elem{@racketvalfont{`}@racket[quoted]}
+            @#,elem{@racketfont{,}@racket[quoted]}
+            @#,elem{@racketfont[",@"]@racket[quoted]}])
    (...
     [quasiquoted id
                  number
                  string
                  character
-                 @#,scheme[(quasiquoted ...)]
-                 @#,elem{@schemevalfont{'}@scheme[quasiquoted]}
-                 @#,elem{@schemevalfont{`}@scheme[quasiquoted]}
-                 @#,elem{@schemefont{,}@scheme[expr]}
-                 @#,elem{@schemefont[",@"]@scheme[expr]}])))
+                 @#,racket[(quasiquoted ...)]
+                 @#,elem{@racketvalfont{'}@racket[quasiquoted]}
+                 @#,elem{@racketvalfont{`}@racket[quasiquoted]}
+                 @#,elem{@racketfont{,}@racket[expr]}
+                 @#,elem{@racketfont[",@"]@racket[expr]}])))
 
 (define prim-nonterms
   (make-splice
    (list
 
-@t{An @scheme[_id] is a sequence of characters not including a
+@t{An @racket[_id] is a sequence of characters not including a
 space or one of the following:}
 
 @t{@hspace[2] @litchar{"} @litchar{,} @litchar{'} @litchar{`} 
@@ -71,16 +71,16 @@ space or one of the following:}
 @litchar["{"] @litchar["}"] @litchar{|} @litchar{;}
 @litchar{#}}
 
-@t{A @scheme[_number] is a number such as @scheme[123], @scheme[3/2], or
-@scheme[5.5].}
+@t{A @racket[_number] is a number such as @racket[123], @racket[3/2], or
+@racket[5.5].}
 
-@t{A @scheme[_string] is enclosed by a pair of @litchar{"}. Unlike
+@t{A @racket[_string] is enclosed by a pair of @litchar{"}. Unlike
 symbols, strings may be split into characters and manipulated by a
-variety of primitive functions.  For example, @scheme["abcdef"],
-@scheme["This is a string"], and @scheme[#,ex-str] are all strings.}
+variety of primitive functions.  For example, @racket["abcdef"],
+@racket["This is a string"], and @racket[#,ex-str] are all strings.}
 
-@t{A @scheme[_character] begins with @litchar{#\} and has the
-name of the character. For example, @scheme[#\a], @scheme[#\b],
-and @scheme[#\space] are characters.}
+@t{A @racket[_character] begins with @litchar{#\} and has the
+name of the character. For example, @racket[#\a], @racket[#\b],
+and @racket[#\space] are characters.}
 
 )))

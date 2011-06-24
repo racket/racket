@@ -44,7 +44,7 @@
                                          (make-element 'italic '("nothing"))]
                                         [(string? v)
                                          (make-element value-color
-                                                       (list (schemefont 
+                                                       (list (racketfont
                                                               (regexp-replace* #rx"[\\]\""
                                                                                (regexp-replace*
                                                                                 #rx"[\\][\\]"
@@ -74,7 +74,7 @@
                                                      [(and (pair? v)
                                                            (eq? v (cdr v))
                                                            (eq? 1 (car v)))
-                                                      (schemeblock0 (let ([v (cons 1 #f)]) 
+                                                      (racketblock0 (let ([v (cons 1 #f)]) 
                                                                       (set-cdr! v v) v))]
                                                      [(pair? v) `(cons ,(loop (car v)) ,(loop (cdr v)))]
                                                      [(bytes? v) `(bytes ,@(map loop (bytes->list v)))]

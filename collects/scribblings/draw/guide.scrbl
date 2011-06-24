@@ -82,12 +82,12 @@ filling, bitmap copying, alpha blending, and affine transformations
 interfaces in Racket.}
 
 Drawing with @racketmodname[racket/draw] requires a @deftech{drawing context}
-(@deftech{DC}), which is an instance of the @scheme[dc<%>]
+(@deftech{DC}), which is an instance of the @racket[dc<%>]
 interface. For example, the @racket[post-script-dc%] class implements
 a @racket[dc<%>] for drawing to a PostScript file, while @racket[bitmap-dc%] 
 draws to a bitmap. When using the @racketmodname[racket/gui] library for GUIs,
 the @method[canvas<%> get-dc] method of a
-canvas returns a @scheme[dc<%>] instance for drawing into the canvas
+canvas returns a @racket[dc<%>] instance for drawing into the canvas
 window.
 
 @margin-note{See @secref["canvas-drawing" #:doc '(lib
@@ -206,10 +206,10 @@ pixels:
 @section{Pen, Brush, and Color Objects}
 
 The @racket[set-pen] and @racket[set-brush] methods of a @tech{DC}
- accept @scheme[pen%] and @scheme[brush%] objects, which group
+ accept @racket[pen%] and @racket[brush%] objects, which group
  together pen and brush settings.
 
-@schemeblock+eval[
+@racketblock+eval[
 #:eval draw-eval
 (require racket/math)
 
@@ -264,7 +264,7 @@ make the eval below work. }
 then it can be loaded with @racket[read-bitmap] and installed as the
 stipple for @racket[blue-brush]:
 
-@schemeblock+eval[
+@racketblock+eval[
 #:eval draw-eval
 (send blue-brush set-stipple (read-bitmap "water.png"))
 (send dc erase)
@@ -279,7 +279,7 @@ color name. Due to the way that @racket[color%] initialization is
 overloaded, use @racket[make-object%] instead of @racket[new] to
 instantiate @racket[color%]:
 
-@schemeblock+eval[
+@racketblock+eval[
 #:eval draw-eval
 (define red-pen 
   (new pen% [color (make-object color% 200 100 150)] [width 2]))
@@ -300,7 +300,7 @@ rotate all drawing. The transformation can be set directly, or the
 current transformation can be transformed further with methods like
 @racket[scale], @racket[translate], or @racket[rotate]:
 
-@schemeblock+eval[
+@racketblock+eval[
 #:eval draw-eval
 (send dc erase)
 (send dc scale 0.5 0.5)

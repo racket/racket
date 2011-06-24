@@ -3,18 +3,18 @@
 
 @definterface/title[area-container<%> (area<%>)]{
 
-An @scheme[area-container<%>] is a container @scheme[area<%>].
+An @racket[area-container<%>] is a container @racket[area<%>].
 
-All @scheme[area-container<%>] classes accept the following named
- instantiation arguments:
+All @racket[area-container<%>] classes accept the following named
+instantiation arguments:
 @itemize[
 
- @item{@indexed-scheme[border] --- default is @scheme[0]; passed to
+ @item{@indexed-racket[border] --- default is @racket[0]; passed to
 @method[area-container<%> border]} 
- @item{@indexed-scheme[spacing] --- default is @scheme[0]; passed to
+ @item{@indexed-racket[spacing] --- default is @racket[0]; passed to
 @method[area-container<%> spacing]} 
- @item{@indexed-scheme[alignment] --- default is class-specific, such as
- @scheme['(center top)] for @scheme[vertical-panel%]; the list
+ @item{@indexed-racket[alignment] --- default is class-specific, such as
+ @racket['(center top)] for @racket[vertical-panel%]; the list
  elements are passed to
 @method[area-container<%> set-alignment]} 
 ]
@@ -200,15 +200,15 @@ Sets the alignment specification for a container, which determines how
  it positions its children when the container has leftover space (when
  a child was not stretchable in a particular dimension).
 
-When the container's horizontal alignment is @scheme['left], the
+When the container's horizontal alignment is @racket['left], the
  children are left-aligned in the container and whitespace is inserted
  to the right.  When the container's horizontal alignment is
- @scheme['center], each child is horizontally centered in the
+ @racket['center], each child is horizontally centered in the
  container. When the container's horizontal alignment is
- @scheme['right], leftover whitespace is inserted to the left.
+ @racket['right], leftover whitespace is inserted to the left.
 
-Similarly, a container's vertical alignment can be @scheme['top],
- @scheme['center], or @scheme['bottom].
+Similarly, a container's vertical alignment can be @racket['top],
+ @racket['center], or @racket['bottom].
 
 }
 

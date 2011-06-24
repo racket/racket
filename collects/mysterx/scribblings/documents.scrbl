@@ -37,9 +37,9 @@
                                        [size (one-of/c 'pixels 'percent) 'pixels])
            com-object?]{
 
-  Inserts a COM object with class @scheme[coclass] at the beginning of
-  the document.  The optional @scheme[size] argument gives an
-  interpretation for the width and height, where @scheme['percent]
+  Inserts a COM object with class @racket[coclass] at the beginning of
+  the document.  The optional @racket[size] argument gives an
+  interpretation for the width and height, where @racket['percent]
   indicates that the width and height are a fixed percentage of the
   document window size.}
 
@@ -83,13 +83,13 @@
            (is-a?/c mx-element%)]{
 
   Returns an object that encapsulates an HTML element, where
-  @scheme[tag] names an HTML tag, and @scheme[id] names the @scheme["id"]
-  attribute of the HTML element.  The @scheme[index] is a nonnegative
+  @racket[tag] names an HTML tag, and @racket[id] names the @racket["id"]
+  attribute of the HTML element.  The @racket[index] is a nonnegative
   integer indicating the zero-based index of the element among all
-  elements with the same @scheme[tag] and @scheme[id].  The ordering
+  elements with the same @racket[tag] and @racket[id].  The ordering
   of elements is defined by Internet Explorer.  The requested element
-  must be within the document's @scheme["body"] tags or the
-  @scheme["body"] element itself.}
+  must be within the document's @racket["body"] tags or the
+  @racket["body"] element itself.}
 
 @defmethod[(find-element-by-id-or-name
                          [id string?]
@@ -97,19 +97,19 @@
            (is-a?/c mx-element%)]{
 
   Returns an object that encapsulates an HTML element, where
-  @scheme[id] names either the @scheme["id"] or @scheme["name"]
-  attribute of the HTML element.  The @scheme[index] is a nonnegative
+  @racket[id] names either the @racket["id"] or @racket["name"]
+  attribute of the HTML element.  The @racket[index] is a nonnegative
   integer indicating the zero-based index of the element among all
-  elements with the same @scheme["id"] or @scheme["name"].  The ordering
+  elements with the same @racket["id"] or @racket["name"].  The ordering
   of elements is defined by Internet Explorer.  The requested element
-  must be within the document's @scheme["body"] tags or the
-  @scheme["body"] element itself.}
+  must be within the document's @racket["body"] tags or the
+  @racket["body"] element itself.}
 
 @defmethod[(elements-with-tag [tag string?])
            (listof (is-a?/c mx-element%))]{
 
-  Returns a list of elements with the HTML tag given by @scheme[tag].
-  The requested elements must be within the document's @scheme["body"]
-  tags or the @scheme["body"] element itself.}
+  Returns a list of elements with the HTML tag given by @racket[tag].
+  The requested elements must be within the document's @racket["body"]
+  tags or the @racket["body"] element itself.}
 
 }

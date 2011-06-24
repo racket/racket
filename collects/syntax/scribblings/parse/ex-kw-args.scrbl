@@ -9,16 +9,16 @@
 @title{Optional keyword arguments}
 
 This section explains how to write a macro that accepts (simple)
-optional keyword arguments. We use the example @scheme[mycond], which
-is like Racket's @scheme[cond] except that it takes an optional
+optional keyword arguments. We use the example @racket[mycond], which
+is like Racket's @racket[cond] except that it takes an optional
 keyword argument that controls what happens if none of the clauses
 match.
 
 Optional keyword arguments are supported via @tech{head
 patterns}. Unlike normal patterns, which match one term, head patterns
 can match a variable number of subterms in a list. Some important
-head-pattern forms are @scheme[~seq], @scheme[~or], and
-@scheme[~optional].
+head-pattern forms are @racket[~seq], @racket[~or], and
+@racket[~optional].
 
 Here's one way to do it:
 
@@ -41,10 +41,10 @@ Here's one way to do it:
      (void)]))
 ]
 
-We cannot write @scheme[#'who] in the macro's right-hand side, because
-the @scheme[who] attribute does not receive a value if the keyword
-argument is omitted. Instead we must write @scheme[(attribute who)],
-which produces @scheme[#f] if matching did not assign a value to the
+We cannot write @racket[#'who] in the macro's right-hand side, because
+the @racket[who] attribute does not receive a value if the keyword
+argument is omitted. Instead we must write @racket[(attribute who)],
+which produces @racket[#f] if matching did not assign a value to the
 attribute.
 
 @myinteraction[
@@ -55,8 +55,8 @@ attribute.
         [(odd? 4) 'red])
 ]
 
-There's a simpler way of writing the @scheme[~or] pattern above:
-@schemeblock[
+There's a simpler way of writing the @racket[~or] pattern above:
+@racketblock[
 (~optional (~seq #:error-on-fallthrough who:expr))
 ]
 
@@ -78,9 +78,9 @@ is like an ordinary syntax class but for head patterns.
 ]
 
 Defining a splicing syntax class also makes it easy to eliminate the
-case analysis we did before using @scheme[attribute] by defining
-@scheme[error?] and @scheme[who] as attributes within both of the
+case analysis we did before using @racket[attribute] by defining
+@racket[error?] and @racket[who] as attributes within both of the
 syntax class's variants. (This is possible to do in the inline pattern
-version too, using @scheme[~and] and @scheme[~parse], just less
+version too, using @racket[~and] and @racket[~parse], just less
 convenient.) Splicing syntax classes also closely parallel the style
 of grammars in macro documentation.

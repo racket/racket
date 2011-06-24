@@ -223,7 +223,7 @@ corresponding compiled and/or declared module. The third component of
 the vector should be printable and @racket[read]able, so that it can
 be preserved in marshaled bytecode. The @racketmodname[racket/base]
 and @racketmodname[racket] languages attach
-@scheme['#(racket/language-info get-info #f)] to a @racket[module]
+@racket['#(racket/language-info get-info #f)] to a @racket[module]
 form. See also @racket[module-compiled-language-info],
 @racket[module->language-info], and
 @racketmodname[racket/language-info].}
@@ -673,7 +673,7 @@ an identifier can be either imported or defined for a given
 
 @defform[(local-require require-spec ...)]{
 
-Like @scheme[require], but for use in a @tech{internal-definition context} to
+Like @racket[require], but for use in a @tech{internal-definition context} to
 import just into the local context. Only bindings from @tech{phase
 level} 0 are imported.}
 
@@ -1111,7 +1111,7 @@ aliens
 @defform[(filtered-in proc-expr require-spec)]{ 
 
   Applies an arbitrary transformation on the import names (as strings)
-  of @scheme[require-spec]. The @racket[proc-expr] must evaluate at
+  of @racket[require-spec]. The @racket[proc-expr] must evaluate at
   expansion time to a single-argument procedure, which is applied on
   each of the names from @racket[require-spec].  For each name, the
   procedure must return either a string for the import's new name or
@@ -1125,7 +1125,7 @@ aliens
                      (regexp-replace #rx"-" (string-titlecase name) "")))
               racket/base))]
   imports only bindings from @racketmodname[racket/base] that match the
-  pattern @scheme[#rx"^[a-z-]+$"], and it converts the names to ``camel case.''}
+  pattern @racket[#rx"^[a-z-]+$"], and it converts the names to ``camel case.''}
 
 @defform[(path-up rel-string ...)]{
 
@@ -1196,7 +1196,7 @@ is equivalent to @racket[(sub-path)]. All @racket[sub-path]s in a given
 Examples:
 
 @subeqivs[
-[(require (multi-in racket (dict @#,schemeidfont{list})))
+[(require (multi-in racket (dict @#,racketidfont{list})))
  (require racket/dict racket/list)]
 [(require (multi-in "math" "matrix" "utils.rkt"))
  (require "math/matrix/utils.rkt")]
@@ -1205,7 +1205,7 @@ Examples:
 [(require (multi-in ("math" "matrix") "utils.rkt"))
  (require "math/utils.rkt" "matrix/utils.rkt")]
 [(require (multi-in ("math" "matrix") ("utils.rkt" "helpers.rkt")))
- (require "math/utils.rkt" "math/helpers.rkt" 
+ (require "math/utils.rkt" "math/helpers.rkt"
           "matrix/utils.rkt" "matrix/helpers.rkt")]
 ]}
 
@@ -1222,7 +1222,7 @@ Examples:
 
 @defform[(filtered-out proc-expr provide-spec)]{
 
- Analogous to @scheme[filtered-in], but for filtering and renaming
+ Analogous to @racket[filtered-in], but for filtering and renaming
  exports.
 
   For example,
@@ -1234,7 +1234,7 @@ Examples:
                       #rx"-" (string-titlecase name) "")))
               (all-defined-out)))]
   exports only bindings that match the
-  pattern @scheme[#rx"^[a-z-]+$"], and it converts the names to ``camel case.''}
+  pattern @racket[#rx"^[a-z-]+$"], and it converts the names to ``camel case.''}
 
 @;------------------------------------------------------------------------
 @section[#:tag "quote"]{Literals: @racket[quote] and @racket[#%datum]}

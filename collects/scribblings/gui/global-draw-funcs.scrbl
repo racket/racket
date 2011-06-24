@@ -24,16 +24,16 @@ Returns the depth of the main display (a value of 1 denotes a monochrome display
 @defproc[(get-display-left-top-inset [avoid-bars? any/c #f])
          (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
-When the optional argument is @scheme[#f] (the default), this function
+When the optional argument is @racket[#f] (the default), this function
  returns the offset of the main screen's origin from the
  top-left of the physical screen. On Unix and Windows, the result is
- always @scheme[0] and @scheme[0]; on Mac OS X, the result is
- @scheme[0] and the height of the menu bar.
+ always @racket[0] and @racket[0]; on Mac OS X, the result is
+ @racket[0] and the height of the menu bar.
 
 When the optional argument is true, this function returns the amount
  space at the left and top of the main screen that is occupied by the
  task bar (Windows) or menu bar and dock (Mac OS X). On Unix, the
- result is always @scheme[0] and @scheme[0].
+ result is always @racket[0] and @racket[0].
 
 }
 
@@ -55,7 +55,7 @@ Returns the screen's width and height.
 @defproc[(is-color-display?)
          boolean?]{
 
-Returns @scheme[#t] if the main display has color, @scheme[#f]
+Returns @racket[#t] if the main display has color, @racket[#f]
 otherwise.
 
 }

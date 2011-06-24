@@ -10,24 +10,24 @@
           (the-eval '(require racket/control))
           the-eval))
 
-The @scheme[racket/control] library provides various control operators
+The @racket[racket/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
-in terms of @scheme[call-with-continuation-prompt],
-@scheme[call-with-composable-continuations], @|etc|, and they generally
+in terms of @racket[call-with-continuation-prompt],
+@racket[call-with-composable-continuations], @|etc|, and they generally
 work sensibly together. Many are redundant; for example,
-@scheme[reset] and @scheme[prompt] are aliases.
+@racket[reset] and @racket[prompt] are aliases.
  
 @; ----------------------------------------------------------------------
 
 @defproc[(abort [v any/c] ...) any]{
 
-Returns the @scheme[v]s to a prompt using the default continuation
+Returns the @racket[v]s to a prompt using the default continuation
 prompt tag and the default abort handler.
 
-That is, @scheme[(abort v ...)] is equivalent to
+That is, @racket[(abort v ...)] is equivalent to
 
-@schemeblock[
+@racketblock[
 (abort-current-continuation
  (default-continuation-prompt-tag)
  (lambda () (values v ...)))
@@ -52,14 +52,14 @@ Sitaram's operators @cite["Sitaram93"].
 
 The essential reduction rules are:
 
-@schemeblock[
+@racketblock[
 (% _val proc) => _val
 (% _E[(fcontrol _val)] _proc) => (_proc _val (lambda (_x) _E[_x]))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[%]})
+  (code:comment @#,t{where @racket[_E] has no @racket[%]})
 ]
 
-When @scheme[handler-expr] is omitted, @scheme[%] is the same as 
-@scheme[prompt].
+When @racket[handler-expr] is omitted, @racket[%] is the same as 
+@racket[prompt].
 
 @examples[#:eval control-eval
 (% (+ 2 (fcontrol 5))
@@ -81,11 +81,11 @@ Among the earliest operators for higher-order control
 @cite["Felleisen88a" "Felleisen88" "Sitaram90"].
 
 The essential reduction rules are:
-@schemeblock[
+@racketblock[
 (prompt _val) => _val
 (prompt _E[(control _k _expr)]) => (prompt ((lambda (_k) _expr)
                                             (lambda (_v) _E[_v])))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt]})
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt]})
 ]
 
 @examples[#:eval control-eval
@@ -108,15 +108,15 @@ The essential reduction rules are:
 @defform[(control-at prompt-tag-expr id expr ...+)]
 )]{
 
-Like @scheme[prompt] and @scheme[control], but using specific prompt
+Like @racket[prompt] and @racket[control], but using specific prompt
 tags:
 
-@schemeblock[
+@racketblock[
 (prompt-at _tag _val) => _val
 (prompt-at _tag _E[(control-at _tag _k _expr)]) => (prompt-at _tag 
                                                     ((lambda (_k) _expr)
                                                      (lambda (_v) _E[_v])))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -130,14 +130,14 @@ Danvy and Filinski's operators @cite["Danvy90"].
 
 The essential reduction rules are:
 
-@schemeblock[
+@racketblock[
 (reset _val) => _val
 (reset _E[(shift _k _expr)]) => (reset ((lambda (_k) _expr) 
                                         (lambda (_v) (reset _E[_v]))))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[reset]})
+  (code:comment @#,t{where @racket[_E] has no @racket[reset]})
 ]
 
-The @scheme[reset] and @scheme[prompt] forms are interchangeable.}
+The @racket[reset] and @racket[prompt] forms are interchangeable.}
 
 
 @; ----------------------------------------------------------------------
@@ -147,7 +147,7 @@ The @scheme[reset] and @scheme[prompt] forms are interchangeable.}
 @defform[(shift-at prompt-tag-expr identifer expr ...+)]
 )]{
 
-Like @scheme[reset] and @scheme[shift], but using the specified prompt
+Like @racket[reset] and @racket[shift], but using the specified prompt
 tags.}
 
 @; ----------------------------------------------------------------------
@@ -159,11 +159,11 @@ tags.}
 @defform[(shift0 id expr ...+)]
 )]{
 
-Generalizations of @scheme[prompt], @|etc| @cite["Shan04"].
+Generalizations of @racket[prompt], @|etc| @cite["Shan04"].
 
 The essential reduction rules are:
 
-@schemeblock[
+@racketblock[
 (prompt0 _val) => _val
 (prompt0 _E[(control0 _k _expr)]) => ((lambda (_k) _expr)
                                       (lambda (_v) _E[_v]))
@@ -172,10 +172,10 @@ The essential reduction rules are:
                                    (lambda (_v) (reset0 _E[_v])))
 ]
 
-The @scheme[reset0] and @scheme[prompt0] forms are interchangeable.
+The @racket[reset0] and @racket[prompt0] forms are interchangeable.
 Furthermore, the following reductions apply:
 
-@schemeblock[
+@racketblock[
 (prompt _E[(control0 _k _expr)]) => (prompt ((lambda (_k) _expr)
                                              (lambda (_v) _E[_v])))
 (reset _E[(shift0 _k _expr)]) => (reset ((lambda (_k) _expr)
@@ -186,9 +186,9 @@ Furthermore, the following reductions apply:
                                           (lambda (_v) (reset _E[_v]))))
 ]
 
-That is, both the @scheme[prompt]/@scheme[reset] and
-@scheme[control]/@scheme[shift] sites must agree for @scheme[0]-like
-behavior, otherwise the non-@scheme[0] behavior applies.}
+That is, both the @racket[prompt]/@racket[reset] and
+@racket[control]/@racket[shift] sites must agree for @racket[0]-like
+behavior, otherwise the non-@racket[0] behavior applies.}
 
 @; ----------------------------------------------------------------------
 
@@ -199,7 +199,7 @@ behavior, otherwise the non-@scheme[0] behavior applies.}
 @defform[(shift0-at prompt-tag-expr id expr ...+)]
 )]{
 
-Variants of @scheme[prompt0], @|etc|, that accept a prompt tag.}
+Variants of @racket[prompt0], @|etc|, that accept a prompt tag.}
 
 @; ----------------------------------------------------------------------
 
@@ -209,12 +209,12 @@ The operators of Hieb and Dybvig @cite["Hieb90"].
 
 The essential reduction rules are:
 
-@schemeblock[
+@racketblock[
 (prompt-at _tag _obj) => _obj
 (spawn _proc) => (prompt _tag (_proc (lambda (_x) (abort _tag _x))))
 (prompt-at _tag _E[(abort _tag _proc)])
   => (_proc (lambda (_x) (prompt-at _tag _E[_x])))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -227,17 +227,17 @@ The essential reduction rules are:
 The operator of Queinnec and Serpette @cite["Queinnec91"].
 
 The essential reduction rules are:
-@schemeblock[
+@racketblock[
 (splitter _proc) => (prompt-at _tag
                      (_proc (lambda (_thunk) 
                               (abort _tag _thunk))
                             (lambda (_proc)
                               (control0-at _tag _k (_proc _k)))))
 (prompt-at _tag _E[(abort _tag _thunk)]) => (_thunk)
-  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
 (prompt-at _tag _E[(control0-at _tag _k _expr)]) => ((lambda (_k) _expr)
                                                      (lambda (_x) _E[_x]))
-  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @racket[_E] has no @racket[prompt-at] for @racket[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -250,9 +250,9 @@ The essential reduction rules are:
 
 The operators of Gunter et al. @cite["Gunter95"].
 
-In this library, @scheme[new-prompt] is an alias for
-@scheme[make-continuation-prompt-tag], @scheme[set] is an alias for
-@scheme[prompt0-at], and @scheme[cupto] is an alias for @scheme[control0-at].
+In this library, @racket[new-prompt] is an alias for
+@racket[make-continuation-prompt-tag], @racket[set] is an alias for
+@racket[prompt0-at], and @racket[cupto] is an alias for @racket[control0-at].
 
 }
 

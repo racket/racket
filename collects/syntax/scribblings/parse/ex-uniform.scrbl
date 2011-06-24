@@ -22,10 +22,10 @@ information, that information can be cleanly represented via
 attributes, and it can be concisely processed using ellipses.
 
 One example of a syntax class with uniform meaning: the
-@scheme[init-decl] syntax of the @scheme[class] macro. Here is the
-specification of @scheme[init-decl]:
+@racket[init-decl] syntax of the @racket[class] macro. Here is the
+specification of @racket[init-decl]:
 
-@schemegrammar*[[init-decl
+@racketgrammar*[[init-decl
                  id
                  (maybe-renamed)
                  (maybe-renamed default-expr)]
@@ -33,19 +33,19 @@ specification of @scheme[init-decl]:
                  id
                  (internal-id external-id)]]
 
-The @scheme[init-decl] syntax class has three variants, plus an
+The @racket[init-decl] syntax class has three variants, plus an
 auxiliary syntax class that has two variants of its own. But all forms
-of @scheme[init-decl] ultimately carry just three pieces of
+of @racket[init-decl] ultimately carry just three pieces of
 information: an internal name, an external name, and a default
 configuration of some sort. The simpler syntactic variants are just
 abbreviations for the full information.
 
 The three pieces of information determine the syntax class's
 attributes. It is useful to declare the attributes explicitly using
-the @scheme[#:attributes] keyword; the declaration acts both as
+the @racket[#:attributes] keyword; the declaration acts both as
 in-code documentation and as a check on the variants.
 
-@schemeblock[
+@racketblock[
 (define-syntax-class init-decl
   #:attributes (internal external default)
   ___)
@@ -54,7 +54,7 @@ in-code documentation and as a check on the variants.
 Next we fill in the syntactic variants, deferring the computation of
 the attributes:
 
-@schemeblock[
+@racketblock[
 (define-syntax-class init-decl
   #:attributes (internal external default)
   (pattern ???:id
@@ -65,8 +65,8 @@ the attributes:
            ___))
 ]
 
-We perform a similar analysis of @scheme[maybe-renamed]:
-@schemeblock[
+We perform a similar analysis of @racket[maybe-renamed]:
+@racketblock[
 (define-syntax-class maybe-renamed
   #:attributes (internal external)
   (pattern ???:id
@@ -76,9 +76,9 @@ We perform a similar analysis of @scheme[maybe-renamed]:
 ]
 
 Here's one straightforward way of matching syntactic structure with
-attributes for @scheme[maybe-renamed]:
+attributes for @racket[maybe-renamed]:
 
-@schemeblock[
+@racketblock[
 (define-syntax-class maybe-renamed
   #:attributes (internal external)
   (pattern internal:id
@@ -86,10 +86,10 @@ attributes for @scheme[maybe-renamed]:
   (pattern (internal:id external:id)))
 ]
 
-Given that definition of @scheme[maybe-renamed], we can fill in most
-of the definition of @scheme[init-decl]:
+Given that definition of @racket[maybe-renamed], we can fill in most
+of the definition of @racket[init-decl]:
 
-@schemeblock[
+@racketblock[
 (define-syntax-class init-decl
   #:attributes (internal external default)
   (pattern internal:id
@@ -119,7 +119,7 @@ argument is mandatory. We represent the variants as a (syntax) list
 containing the default expression and as the empty (syntax) list,
 respectively. More precisely:
 
-@schemeblock[
+@racketblock[
 (define-syntax-class init-decl
   #:attributes (internal external default)
   (pattern internal:id

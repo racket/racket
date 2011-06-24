@@ -4,14 +4,14 @@
 @title[#:tag "values"]{Multiple Values}
 
 See @secref["values-model"] for general information about multiple
-result values. In addition to @scheme[call-with-values] (described in
-this section), the @scheme[let-values], @scheme[let*-values],
-@scheme[letrec-values], and @scheme[define-values] forms (among
+result values. In addition to @racket[call-with-values] (described in
+this section), the @racket[let-values], @racket[let*-values],
+@racket[letrec-values], and @racket[define-values] forms (among
 others) create continuations that receive multiple values.
 
 @defproc[(values [v any/c] ...) any]{
 
-Returns the given @scheme[v]s. That is, @scheme[values] returns as
+Returns the given @racket[v]s. That is, @racket[values] returns as
 provided arguments.
 
 @examples[
@@ -22,12 +22,12 @@ provided arguments.
 
 @defproc[(call-with-values [generator (-> any)] [receiver procedure?]) any]{
 
-Calls @scheme[generator], and passes the values that
-@scheme[generator] produces as arguments to @scheme[receiver]. Thus,
-@scheme[call-with-values] creates a continuation that accepts any
-number of values that @scheme[receiver] can accept. The
-@scheme[receiver] procedure is called in tail position with respect to
-the @scheme[call-with-values] call.
+Calls @racket[generator], and passes the values that
+@racket[generator] produces as arguments to @racket[receiver]. Thus,
+@racket[call-with-values] creates a continuation that accepts any
+number of values that @racket[receiver] can accept. The
+@racket[receiver] procedure is called in tail position with respect to
+the @racket[call-with-values] call.
 
 @examples[
 (call-with-values (lambda () (values 1 2)) +)

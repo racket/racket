@@ -5,13 +5,13 @@
 
 @mzlib[#:mode title pregexp]
 
-The @schememodname[mzlib/pregexp] library provides wrappers around
-@scheme[regexp-match], @|etc| that coerce string and byte-string
-arguments to @scheme[pregexp] matchers instead of @scheme[regexp]
+The @racketmodname[mzlib/pregexp] library provides wrappers around
+@racket[regexp-match], @|etc| that coerce string and byte-string
+arguments to @racket[pregexp] matchers instead of @racket[regexp]
 matchers.
 
-The library also re-exports: @scheme[pregexp], and it re-exports
-@scheme[regexp-quote] as @scheme[pregexp-quote].
+The library also re-exports: @racket[pregexp], and it re-exports
+@racket[regexp-quote] as @racket[pregexp-quote].
 
 @deftogether[(
 @defproc[(pregexp-match [pattern (or/c string? bytes? regexp? byte-regexp?)]
@@ -51,6 +51,6 @@ The library also re-exports: @scheme[pregexp], and it re-exports
          (or/c string? bytes?)]
 )]{
 
-Like @scheme[regexp-match], @|etc|, but a string @scheme[pattern]
-argument is compiled via @scheme[pregexp], and a byte string
-@scheme[pattern] argument is compiled via @scheme[byte-pregexp].}
+Like @racket[regexp-match], @|etc|, but a string @racket[pattern]
+argument is compiled via @racket[pregexp], and a byte string
+@racket[pattern] argument is compiled via @racket[byte-pregexp].}

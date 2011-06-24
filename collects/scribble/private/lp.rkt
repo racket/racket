@@ -66,7 +66,7 @@
                      (list (smaller (elemref '(chunk tag) #:underline? #f
                                              str
                                              rest ...))))
-                    (schemeblock expr ...))))))]))
+                    (racketblock expr ...))))))]))
 
 (define-syntax (chunkref stx)
   (syntax-case stx ()

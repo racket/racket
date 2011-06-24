@@ -9,22 +9,22 @@ a character-based operation, the port's bytes are decoded; see
 
 When a port corresponds to a file, network connection, or some other
 system resource, it must be explicitly closed via
-@scheme[close-input-port] or @scheme[close-output-port] (or indirectly
-via @scheme[custodian-shutdown-all]) to release low-level resources
+@racket[close-input-port] or @racket[close-output-port] (or indirectly
+via @racket[custodian-shutdown-all]) to release low-level resources
 associated with the port. For any kind of port, after it is closed,
-attempting to read from or write to the port raises @scheme[exn:fail].
+attempting to read from or write to the port raises @racket[exn:fail].
 
-The global variable @scheme[eof] is bound to the end-of-file value,
-and @scheme[eof-object?] returns @scheme[#t] only when applied to this
+The global variable @racket[eof] is bound to the end-of-file value,
+and @racket[eof-object?] returns @racket[#t] only when applied to this
 value. Reading from a port produces an end-of-file result when the
 port has no more data, but some ports may also return end-of-file
 mid-stream. For example, a port connected to a Unix terminal returns
 an end-of-file when the user types control-D; if the user provides
 more input, the port returns additional bytes after the end-of-file.
 
-Every port has a name, as reported by @scheme[object-name]. The name
+Every port has a name, as reported by @racket[object-name]. The name
 can be any value, and it is used mostly for error-reporting
-purposes. The @scheme[read-syntax] procedure uses the name of an input
+purposes. The @racket[read-syntax] procedure uses the name of an input
 port as the default source location for the @tech{syntax objects} that
 it produces.
 

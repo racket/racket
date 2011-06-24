@@ -32,7 +32,7 @@ Like @xmethod[hierarchical-list% new-list].}
 
 @defmethod[(delete-item [i (is-a?/c hierarchical-list-item<%>)]) void?]{
 
-Deletes immediate item or sub-list @scheme[i] from the sub-list.}
+Deletes immediate item or sub-list @racket[i] from the sub-list.}
 
 
 @defmethod[(get-items) (listof (is-a?/c hierarchical-list-item<%>))]{

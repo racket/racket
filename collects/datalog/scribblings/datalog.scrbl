@@ -109,7 +109,7 @@ The following BNF describes the syntax of Datalog.
        (nonterm "constant"))
  (list (nonterm "constant")
        (nonterm "IDENTIFIER")
-       (nonterm "STRING"))                
+       (nonterm "STRING"))
 ]
 
 The effect of running a Datalog program is to modify the database as directed
@@ -143,7 +143,7 @@ All identifiers in @racketmodname[racket/base] are available for use as predicat
 
 The following is a program:
 @racketmod[datalog/sexp
-           
+
 (! (edge a b))
 (! (edge b c))
 (! (edge c d))

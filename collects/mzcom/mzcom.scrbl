@@ -65,16 +65,16 @@ building from the Racket source distribution. The above C/C++ code
 is for illustration; your actual code should check return values, of
 course.
 
-Using @schememodname[mysterx] to manipulate COM objects within Racket,
+Using @racketmodname[mysterx] to manipulate COM objects within Racket,
 you can load MzCOM with either
 
-@schemeblock[
+@racketblock[
   (cci/coclass "MzObj Class")
 ]
 
 or
 
-@schemeblock[
+@racketblock[
   (cci/progid "MzCOM.MzObj.<version>")
 ]
 
@@ -158,7 +158,7 @@ means to obtain COM error information.
 The Racket evaluator runs in a Win32 thread created when MzCOM is
 loaded.  If an expression kills the primary Racket thread, as in
 
-@schemeblock[
+@racketblock[
   (kill-thread (current-thread))
 ]
 

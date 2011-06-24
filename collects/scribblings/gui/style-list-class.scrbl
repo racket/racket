@@ -3,11 +3,11 @@
 
 @defclass/title[style-list% object% ()]{
 
-A @scheme[style-list%] object contains a set of @scheme[style<%>]
+A @racket[style-list%] object contains a set of @racket[style<%>]
  objects and maintains the hierarchical relationships between them. A
- @scheme[style<%>] object can only be created through the methods of a
- @scheme[style-list%] object. There is a global style list object,
- @indexed-scheme[the-style-list], but any number of independent lists can be
+ @racket[style<%>] object can only be created through the methods of a
+ @racket[style-list%] object. There is a global style list object,
+ @indexed-racket[the-style-list], but any number of independent lists can be
  created for separate style hierarchies.  Each editor creates its own
  private style list.
 
@@ -17,7 +17,7 @@ See @|stylediscuss| for more information.
 
 @defconstructor[()]{
 
-The root style, named @scheme["Basic"], is automatically created.
+The root style, named @racket["Basic"], is automatically created.
 
 }
 
@@ -36,12 +36,12 @@ See also @|mrprefsdiscuss| for information about the
 @defmethod[(convert [style (is-a?/c style<%>)])
            (is-a?/c style<%>)]{
 
-Converts @scheme[style], which can be from another style list, to a style
-in this list. If @scheme[style] is already in this list, then @scheme[ style]
-is returned. If @scheme[style] is named and a style by that name is
+Converts @racket[style], which can be from another style list, to a style
+in this list. If @racket[style] is already in this list, then @racket[ style]
+is returned. If @racket[style] is named and a style by that name is
 already in this list, then the existing named style is returned.
 Otherwise, the style is converted by converting its base style
-(and shift style if @scheme[style] is a join style) and then creating
+(and shift style if @racket[style] is a join style) and then creating
 a new style in this list.
 
 }
@@ -49,7 +49,7 @@ a new style in this list.
 @defmethod[(find-named-style [name string?])
            (or/c (is-a?/c style<%>) false/c)]{
 
-Finds a style by name. If no such style can be found, @scheme[#f] is
+Finds a style by name. If no such style can be found, @racket[#f] is
 returned.
 
 }
@@ -62,7 +62,7 @@ Creates a new join style, or finds an appropriate existing one. The
 returned style is always unnamed.  See @|stylediscuss| for more
 information. 
 
-The @scheme[base-style] argument must be a style within this style
+The @racket[base-style] argument must be a style within this style
  list.
 
 }
@@ -76,12 +76,12 @@ Creates a new derived style, or finds an appropriate existing one.
 The returned style is always unnamed.  See @|stylediscuss| for more
 information.
 
-The @scheme[base-style] argument must be a style within this style
-list.  If @scheme[base-style] is not a join style, if it has no name,
-and if its delta can be collapsed with @scheme[delta] (see
+The @racket[base-style] argument must be a style within this style
+list.  If @racket[base-style] is not a join style, if it has no name,
+and if its delta can be collapsed with @racket[delta] (see
 @xmethod[style-delta% collapse]), then the collapsed delta is used in
-place of @scheme[delta], and the base style of @scheme[base-style] is
-used in place of @scheme[base-style]; this collapsing and substitution
+place of @racket[delta], and the base style of @racket[base-style] is
+used in place of @racket[base-style]; this collapsing and substitution
 of base styles is performed recursively.}
 
 
@@ -90,7 +90,7 @@ of base styles is performed recursively.}
 
 See @method[style-list% notify-on-change].
 
-The @scheme[key] argument is the value returned by @method[style-list%
+The @racket[key] argument is the value returned by @method[style-list%
 notify-on-change].
 
 }
@@ -99,7 +99,7 @@ notify-on-change].
 @defmethod[(index-to-style [i exact-nonnegative-integer?])
            (or/c (is-a?/c style<%>) false/c)]{
 
-Returns the style associated with the given index, or @scheme[#f] for
+Returns the style associated with the given index, or @racket[#f] for
  a bad index. See also @method[style-list% style-to-index].
 
 }
@@ -111,13 +111,13 @@ Returns the style associated with the given index, or @scheme[#f] for
 
 Creates a new named style, unless the name is already being used. 
 
-If @scheme[name] is already being used, then @scheme[like-style] is
+If @racket[name] is already being used, then @racket[like-style] is
  ignored and the old style associated to the name is
- returned. Otherwise, a new style is created for @scheme[name] with
+ returned. Otherwise, a new style is created for @racket[name] with
  the same characteristics (i.e., the same base style and same style
- delta or shift style) as @scheme[like-style].
+ delta or shift style) as @racket[like-style].
 
-The @scheme[like-style] style must be in this style list, otherwise
+The @racket[like-style] style must be in this style list, otherwise
  the named style is derived from the basic style with an empty style
  delta.
 
@@ -132,7 +132,7 @@ Attaches a callback to the style list, retaining the callback only weakly (in
 
 Often, a change in one style will trigger a change in several other
  derived styles; to allow clients to handle all the changes in a
- batch, @scheme[#f] is passed in as the changing style after a set of
+ batch, @racket[#f] is passed in as the changing style after a set of
  styles has been processed.
 
 The return value from @method[style-list% notify-on-change] is an
@@ -163,11 +163,11 @@ Like @method[style-list% new-named-style], except that if the name is
 Returns the index for a particular style. The index for a style's base
  style (and shift style, if it is a join style) is guaranteed to be
  lower than the style's own index. (As a result, the root style's
- index is always @scheme[0].) A style's index can change whenever a new
+ index is always @racket[0].) A style's index can change whenever a new
  style is added to the list, or the base style or shift style of
  another style is changed.
 
-If the given style is not in this list, @scheme[#f] is returned.
+If the given style is not in this list, @racket[#f] is returned.
 
 }}
 

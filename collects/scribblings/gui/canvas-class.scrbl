@@ -3,7 +3,7 @@
 
 @defclass/title[canvas% object% (canvas<%>)]{
 
-A @scheme[canvas%] object is a general-purpose window for drawing and
+A @racket[canvas%] object is a general-purpose window for drawing and
  handling events. See @racket[canvas<%>] for information about drawing
  onto a canvas.
 
@@ -25,77 +25,77 @@ A @scheme[canvas%] object is a general-purpose window for drawing and
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-The @scheme[style] argument indicates one or more of the following styles:
+The @racket[style] argument indicates one or more of the following styles:
 
 @itemize[
 
- @item{@scheme['border] --- gives the canvas a thin border}
+ @item{@racket['border] --- gives the canvas a thin border}
 
- @item{@scheme['control-border] --- gives the canvas a border that is
- like a @scheme[text-field%] control}
+ @item{@racket['control-border] --- gives the canvas a border that is
+ like a @racket[text-field%] control}
 
- @item{@scheme['combo] --- gives the canvas a combo button that is like
- a @scheme[combo-field%] control; this style is intended for use
- with @scheme['control-border] and not with @scheme['hscroll] or
- @scheme['vscroll]}
+ @item{@racket['combo] --- gives the canvas a combo button that is like
+ a @racket[combo-field%] control; this style is intended for use
+ with @racket['control-border] and not with @racket['hscroll] or
+ @racket['vscroll]}
 
- @item{@scheme['hscroll] --- enables horizontal scrolling (initially visible but inactive)}
+ @item{@racket['hscroll] --- enables horizontal scrolling (initially visible but inactive)}
 
- @item{@scheme['vscroll] --- enables vertical scrolling (initially visible but inactive)}
+ @item{@racket['vscroll] --- enables vertical scrolling (initially visible but inactive)}
 
- @item{@scheme['resize-corner] --- leaves room for a resize control at the canvas's
+ @item{@racket['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
 
- @item{@scheme['gl] --- creates a canvas for OpenGL drawing instead of
+ @item{@racket['gl] --- creates a canvas for OpenGL drawing instead of
        normal @racket[dc<%>] drawing; call the @method[dc<%>
        get-gl-context] method on the result of @method[canvas<%>
        get-dc]; this style is usually combined with
        @racket['no-autoclear]}
 
- @item{@scheme['no-autoclear] --- prevents automatic erasing of the
+ @item{@racket['no-autoclear] --- prevents automatic erasing of the
        canvas by the windowing system; see @racket[canvas<%>] for
        information on canvas refresh}
 
- @item{@scheme['transparent] --- the canvas is ``erased'' by the
+ @item{@racket['transparent] --- the canvas is ``erased'' by the
  windowing system by letting its parent show through; see
  @racket[canvas<%>] for information on window refresh and on the
  interaction of @racket['transparent] and offscreen buffering; the
  result is undefined if this flag is combined with
- @scheme['no-autoclear]}
+ @racket['no-autoclear]}
  
- @item{@scheme['no-focus] --- prevents the canvas from accepting the
+ @item{@racket['no-focus] --- prevents the canvas from accepting the
  keyboard focus when the canvas is clicked, or when the
 @method[window<%> focus]   method is called}
 
- @item{@scheme['deleted] --- creates the canvas as initially hidden and without affecting
-                             @scheme[parent]'s geometry; the canvas can be made active
-                             later by calling @scheme[parent]'s @method[area-container<%> add-child]
+ @item{@racket['deleted] --- creates the canvas as initially hidden and without affecting
+                             @racket[parent]'s geometry; the canvas can be made active
+                             later by calling @racket[parent]'s @method[area-container<%> add-child]
                              method}
  
 ]
 
-The @scheme['hscroll] and @scheme['vscroll] styles create a
+The @racket['hscroll] and @racket['vscroll] styles create a
  canvas with an initially inactive scrollbar. The scrollbars are
  activated with either
 @method[canvas% init-manual-scrollbars] or
 @method[canvas% init-auto-scrollbars], and they can be hidden and re-shown with
 @method[canvas% show-scrollbars].
 
-The @scheme[paint-callback] argument is called by the default
+The @racket[paint-callback] argument is called by the default
 @method[canvas% on-paint] method, using the canvas and the DC returned by
 @method[canvas<%> get-dc] as the argument.
 
-The @scheme[label] argument names the canvas for
+The @racket[label] argument names the canvas for
 @method[window<%> get-label], but it is not displayed with the canvas.
 
-The @scheme[gl-config] argument determines properties of an OpenGL
+The @racket[gl-config] argument determines properties of an OpenGL
  context for this canvas, as obtained through the canvas's drawing
  context. See also
 @method[canvas<%> get-dc] and
 @xmethod[dc<%> get-gl-context].
 
 
-@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 
@@ -104,10 +104,10 @@ The @scheme[gl-config] argument determines properties of an OpenGL
            (integer-in 1 1000000)]{
 
 Get the current page step size of a manual scrollbar. The result is
- @scheme[0] if the scrollbar is not active or it is automatic.
+ @racket[0] if the scrollbar is not active or it is automatic.
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to get the page step size of
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating whether to get the page step size of
  the horizontal or vertical scrollbar, respectively.
 
 See also
@@ -119,10 +119,10 @@ See also
            (integer-in 0 1000000)]{
 
 Gets the current value of a manual scrollbar. The result is always
- @scheme[0] if the scrollbar is not active or it is automatic.
+ @racket[0] if the scrollbar is not active or it is automatic.
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating that the value of the horizontal or
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating that the value of the horizontal or
  vertical scrollbar should be returned, respectively.
 
 See also
@@ -134,10 +134,10 @@ See also
            (integer-in 0 1000000)]{
 
 Gets the current maximum value of a manual scrollbar. The result is
- always @scheme[0] if the scrollbar is not active or it is automatic.
+ always @racket[0] if the scrollbar is not active or it is automatic.
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to get the maximum value of the
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating whether to get the maximum value of the
  horizontal or vertical scrollbar, respectively.
 
 See also
@@ -157,7 +157,7 @@ efficiently redraw only the visible portion of the canvas.  The
 values are in pixels.
 
 If the scrollbars are disabled or initialized as manual (see
-@method[canvas% init-manual-scrollbars]), the result is @scheme[(values 0 0)].
+@method[canvas% init-manual-scrollbars]), the result is @racket[(values 0 0)].
 
 }
 
@@ -181,8 +181,8 @@ Gets the size in device units of the scrollable canvas area (as
 
 Enables and initializes automatic scrollbars for the canvas.  A
  horizontal or vertical scrollbar can be activated only in a canvas
- that was created with the @indexed-scheme['hscroll] or
- @indexed-scheme['vscroll] style flag, respectively.
+ that was created with the @indexed-racket['hscroll] or
+ @indexed-racket['vscroll] style flag, respectively.
 
 With automatic scrollbars, the programmer specifies the desired
  virtual size of the canvas, and the scrollbars are automatically
@@ -196,15 +196,15 @@ See also
  are independently enabled. Automatic scrollbars can be
  re-initialized as manual, and vice versa.
 
-If either @scheme[horiz-pixels] or @scheme[vert-pixels] is
- @scheme[#f], the scrollbar is not enabled in the corresponding
+If either @racket[horiz-pixels] or @racket[vert-pixels] is
+ @racket[#f], the scrollbar is not enabled in the corresponding
  direction, and the canvas's virtual size in that direction is the
  same as its client size.
 
-The @scheme[h-value] and @scheme[v-value] arguments specify the initial
+The @racket[h-value] and @racket[v-value] arguments specify the initial
  values of the scrollbars as a fraction of the scrollbar's range.  A
- @scheme[0.0] value initializes the scrollbar to its left/top, while a
- @scheme[1.0] value initializes the scrollbar to its right/bottom.
+ @racket[0.0] value initializes the scrollbar to its left/top, while a
+ @racket[1.0] value initializes the scrollbar to its right/bottom.
 
 See also
 @method[canvas% on-scroll] and
@@ -222,8 +222,8 @@ See also
 
 Enables and initializes manual scrollbars for the canvas.  A
  horizontal or vertical scrollbar can be activated only in a canvas
- that was created with the @indexed-scheme['hscroll] or
- @indexed-scheme['vscroll] style flag, respectively.
+ that was created with the @indexed-racket['hscroll] or
+ @indexed-racket['vscroll] style flag, respectively.
 
 With manual scrollbars, the programmer is responsible for managing all
  details of the scrollbars, and the scrollbar state has no effect on
@@ -236,20 +236,20 @@ See also
  are independently enabled. Automatic scrollbars can be re-initialized
  as manual, and vice versa.
 
-The @scheme[h-length] and @scheme[v-length] arguments specify the length of
+The @racket[h-length] and @racket[v-length] arguments specify the length of
  each scrollbar in scroll steps (i.e., the maximum value of each
- scrollbar). If either is @scheme[#f], the scrollbar is disabled in the
+ scrollbar). If either is @racket[#f], the scrollbar is disabled in the
 corresponding direction.
 
-The @scheme[h-page] and @scheme[v-page] arguments set the number of
+The @racket[h-page] and @racket[v-page] arguments set the number of
  scrollbar steps in a page, i.e., the amount moved when pressing above
  or below the value indicator in the scrollbar control.
 
-The @scheme[h-value] and @scheme[v-value] arguments specify the initial
+The @racket[h-value] and @racket[v-value] arguments specify the initial
  values of the scrollbars.
 
-If @scheme[h-value] is greater than @scheme[h-length] or @scheme[v-value] is
- greater than @scheme[v-length], @|MismatchExn|. (The page step may be
+If @racket[h-value] is greater than @racket[h-length] or @racket[v-value] is
+ greater than @racket[v-length], @|MismatchExn|. (The page step may be
  larger than the total size of a scrollbar.)
 
 See also
@@ -270,16 +270,15 @@ canvas. See also @racket[make-screen-bitmap].}
            (on-paint)
            void?]{
 
-Calls the procedure supplied as the @scheme[paint-callback] argument when
- the @scheme[canvas%] was created.
-
+Calls the procedure supplied as the @racket[paint-callback] argument when
+ the @racket[canvas%] was created.
 }
 
 
 @defmethod[(on-scroll [event (is-a?/c scroll-event%)])
            void?]{
 Called when the user changes one of the canvas's scrollbars. A
- @scheme[scroll-event%] argument provides information about the
+ @racket[scroll-event%] argument provides information about the
  scroll action.
 
 This method is called only when manual
@@ -313,16 +312,16 @@ flushing is enabled, and if @racket[flush?] is true, then
 Sets the values of automatic scrollbars. (This method has no effect on
  manual scrollbars.)
 
-If either argument is @scheme[#f], the scrollbar value is not changed in
+If either argument is @racket[#f], the scrollbar value is not changed in
  the corresponding direction.
 
-The @scheme[h-value] and @scheme[v-value] arguments each specify a fraction
- of the scrollbar's movement.  A @scheme[0.0] value sets the scrollbar to
- its left/top, while a @scheme[1.0] value sets the scrollbar to its
- right/bottom. A @scheme[0.5] value sets the scrollbar to its middle. In
- general, if the canvas's virtual size is @scheme[_v], its client size is
- @scheme[_c], and @scheme[(> _v _c)], then scrolling to @scheme[_p]
- sets the view start to @scheme[(floor (* _p (- _v _c)))].
+The @racket[h-value] and @racket[v-value] arguments each specify a fraction
+ of the scrollbar's movement.  A @racket[0.0] value sets the scrollbar to
+ its left/top, while a @racket[1.0] value sets the scrollbar to its
+ right/bottom. A @racket[0.5] value sets the scrollbar to its middle. In
+ general, if the canvas's virtual size is @racket[_v], its client size is
+ @racket[_c], and @racket[(> _v _c)], then scrolling to @racket[_p]
+ sets the view start to @racket[(floor (* _p (- _v _c)))].
 
 See also
 @method[canvas% init-auto-scrollbars] and
@@ -338,8 +337,8 @@ See also
 Set the current page step size of a manual scrollbar. (This method has
  no effect on automatic scrollbars.)
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to set the page step size of
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating whether to set the page step size of
  the horizontal or vertical scrollbar, respectively.
 
 See also
@@ -355,8 +354,8 @@ See also
 Sets the current value of a manual scrollbar. (This method has no
  effect on automatic scrollbars.)
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to set the value of the
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating whether to set the value of the
  horizontal or vertical scrollbar set, respectively.
 
 @MonitorMethod[@elem{The value of the canvas's scrollbar} @elem{the user scrolling} @elem{@method[canvas% on-scroll]} @elem{scrollbar value}]
@@ -375,8 +374,8 @@ See also
 Sets the current maximum value of a manual scrollbar. (This method has
  no effect on automatic scrollbars.)
 
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to set the maximum value of the
+The @racket[which] argument is either @racket['horizontal] or
+ @racket['vertical], indicating whether to set the maximum value of the
  horizontal or vertical scrollbar, respectively.
 
 See also
@@ -389,17 +388,17 @@ See also
            void?]{
 
 Shows or hides the scrollbars as indicated by
-@scheme[show-horiz?] and @scheme[show-vert?]. If
-@scheme[show-horiz?] is true and the canvas was not created with
-the @scheme['hscroll] style, @|MismatchExn|.  Similarly, if
-@scheme[show-vert?] is true and the canvas was not created with
-the @scheme['vscroll] style, @|MismatchExn|.
+@racket[show-horiz?] and @racket[show-vert?]. If
+@racket[show-horiz?] is true and the canvas was not created with
+the @racket['hscroll] style, @|MismatchExn|.  Similarly, if
+@racket[show-vert?] is true and the canvas was not created with
+the @racket['vscroll] style, @|MismatchExn|.
 
 
 The horizontal scrollbar can be shown only if the canvas was
-created with the @scheme['hscroll] style, and the vertical
+created with the @racket['hscroll] style, and the vertical
 scrollbar can be shown only if the canvas was created with the
-@scheme['vscroll] style. See also @method[canvas%
+@racket['vscroll] style. See also @method[canvas%
 init-auto-scrollbars] and @method[canvas%
 init-manual-scrollbars].
 

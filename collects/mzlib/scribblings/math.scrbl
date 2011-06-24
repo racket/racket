@@ -4,7 +4,7 @@
 
 @mzlib[#:mode title math]
 
-Re-exports @schememodname[scheme/math], and also exports @scheme[e].
+Re-exports @racketmodname[scheme/math], and also exports @racket[e].
 
 @defthing[e real?]{
 

@@ -1,24 +1,24 @@
 #lang scribble/doc
 @(require "common.rkt"
           (for-label mzlib/sandbox
-                     (only-in scheme/sandbox make-module-evaluator)))
+                     (only-in racket/sandbox make-module-evaluator)))
 
 @(begin
   (define-syntax-rule (bind id)
     (begin
-     (require (for-label scheme/sandbox))
-     (define id (scheme make-evaluator))))
-  (bind scheme-make-evaluator))
+     (require (for-label racket/sandbox))
+     (define id (racket make-evaluator))))
+  (bind racket-make-evaluator))
 
 @mzlib[#:mode title sandbox]
 
-The @schememodname[mzlib/sandbox] library mostly re-exports
-@schememodname[scheme/sandbox], but it provides a slightly different
-@scheme[make-evaluator] function.
+The @racketmodname[mzlib/sandbox] library mostly re-exports
+@racketmodname[racket/sandbox], but it provides a slightly different
+@racket[make-evaluator] function.
 
 The library re-exports the following bindings:
 
-@schemeblock[
+@racketblock[
 sandbox-init-hook
 sandbox-reader
 sandbox-input
@@ -59,24 +59,24 @@ exn:fail:resource-resource
            [(make-evaluator [module-decl (or/c syntax? pair?)])
             (any/c . -> . any)])]{
 
-Like @scheme-make-evaluator or @scheme[make-module-evaluator], but
+Like @racket-make-evaluator or @racket[make-module-evaluator], but
 with several differences:
 
 @itemize[
 
- @item{The @scheme[language] argument can be one of a fixed set of
-       symbols: @scheme['r5rs], etc. They are converted by adding a
-       @scheme[(list 'special ....)] wrapper.}
+ @item{The @racket[language] argument can be one of a fixed set of
+       symbols: @racket['r5rs], etc. They are converted by adding a
+       @racket[(list 'special ....)] wrapper.}
 
- @item{If @scheme[requires] starts with @scheme['begin], then each
+ @item{If @racket[requires] starts with @racket['begin], then each
        element in the remainder of the list is effectively evaluated
        as a prefix to the program. Otherwise, it corresponds to the
-       @scheme[#:requires] argument of @|scheme-make-evaluator|.}
+       @racket[#:requires] argument of @|racket-make-evaluator|.}
 
- @item{For each of @scheme[language] and @scheme[requires] that starts
-       with @scheme['begin], the expressions are inspected to find
-       top-level @scheme[require] forms (using symbolic equality to
-       detect @scheme[require]), and the @scheme[require]d modules are
-       added to the @scheme[#:allow] list for @|scheme-make-evaluator|.}
+ @item{For each of @racket[language] and @racket[requires] that starts
+       with @racket['begin], the expressions are inspected to find
+       top-level @racket[require] forms (using symbolic equality to
+       detect @racket[require]), and the @racket[require]d modules are
+       added to the @racket[#:allow] list for @|racket-make-evaluator|.}
 
 ]}

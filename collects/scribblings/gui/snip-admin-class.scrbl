@@ -4,19 +4,19 @@
 @defclass/title[snip-admin% object% ()]{
 
 See @|admindiscuss| for information about the role of administrators.
- The @scheme[snip-admin%] class is never instantiated directly. It
+ The @racket[snip-admin%] class is never instantiated directly. It
  is not even instantiated through derived classes by most programmers;
- each @scheme[text%] or @scheme[pasteboard%] object
+ each @racket[text%] or @racket[pasteboard%] object
  creates its own administrator. However, it may be useful to derive a
  new instance of this class to display snips in a new context. Also,
  it may be useful to call the methods of an existing administrator
  from an owned snip.
 
-To create a new @scheme[snip-admin%] class, all methods described here
+To create a new @racket[snip-admin%] class, all methods described here
  must be overridden. They are all invoked by the administrator's snip.
 
-Because a @scheme[snip-admin%] object typically owns more than one
- snip, many methods require a @scheme[snip%] object as an argument.
+Because a @racket[snip-admin%] object typically owns more than one
+ snip, many methods require a @racket[snip%] object as an argument.
 
 
 
@@ -30,7 +30,7 @@ Creates a (useless) editor administrator.
            (or/c (is-a?/c dc<%>) false/c)]{
 
 Gets a drawing context suitable for determining display size
- information. If the snip is not displayed, @scheme[#f] is returned.
+ information. If the snip is not displayed, @racket[#f] is returned.
 
 }
 
@@ -54,16 +54,16 @@ Gets the @techlink{location} and size of the visible region of a snip in snip
  coordinates. The result is undefined if the given snip is not managed
  by this administrator.
 
-If @scheme[snip] is not @scheme[#f], the current visible region of the
- snip is installed in the boxes @scheme[x], @scheme[y], @scheme[w],
- and @scheme[h].  The @scheme[x] and @scheme[y] values are relative to
- the snip's top-left corner. The @scheme[w] and @scheme[h] values may
+If @racket[snip] is not @racket[#f], the current visible region of the
+ snip is installed in the boxes @racket[x], @racket[y], @racket[w],
+ and @racket[h].  The @racket[x] and @racket[y] values are relative to
+ the snip's top-left corner. The @racket[w] and @racket[h] values may
  be larger than the snip itself.
 
-If @scheme[snip] is @scheme[#f], the total visible region of the
+If @racket[snip] is @racket[#f], the total visible region of the
  snip's top-level @techlink{display} is returned in editor
- coordinates. Using @scheme[#f] for @scheme[snip] is analogous to
- using @scheme[#t] for @scheme[full?] in @xmethod[editor-admin%
+ coordinates. Using @racket[#f] for @racket[snip] is analogous to
+ using @racket[#t] for @racket[full?] in @xmethod[editor-admin%
  get-view].
 
 If no snip is specified, then the @techlink{location} and size of the snip's
@@ -74,7 +74,7 @@ See also @xmethod[editor-admin% get-view].
 }
 @methimpl{
 
-Fills all boxes with @scheme[0.0].
+Fills all boxes with @racket[0.0].
 
 }}
 
@@ -92,7 +92,7 @@ If the @techlink{display} is an editor canvas, see also
 }
 @methimpl{
 
-Fills all boxes with @scheme[0.0].
+Fills all boxes with @racket[0.0].
 
 }
 }
@@ -124,7 +124,7 @@ Called by the snip to request that the snip's display needs to be
  updated. The administrator determines when to actually update the
  snip; the snip's @method[snip% draw] method is eventually called.
 
-The @scheme[localx], @scheme[localy], @scheme[w], and @scheme[h]
+The @racket[localx], @racket[localy], @racket[w], and @racket[h]
  arguments specify a region of the snip to be refreshed (in snip
  coordinates).
 
@@ -146,10 +146,10 @@ Does nothing.
 @methspec{
 
 Opens a popup menu in the @techlink{display} for this snip's editor.  The result
- is @scheme[#t] if the popup succeeds, @scheme[#f] otherwise (independent
+ is @racket[#t] if the popup succeeds, @racket[#f] otherwise (independent
  of whether the user selects an item in the popup menu).
 
-The menu is placed at @scheme[x] and @scheme[y] in @scheme[snip]
+The menu is placed at @racket[x] and @racket[y] in @racket[snip]
  coordinates.
 
 While the menu is popped up, its target is set to the top-level editor
@@ -159,7 +159,7 @@ While the menu is popped up, its target is set to the top-level editor
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -173,7 +173,7 @@ Called by a snip to notify the administrator that the specified snip
  changing its @techlink{count}, but the snip decides whether the update should
  occur immediately.
 
-If @scheme[refresh?] is not @scheme[#f], then the snip is requesting
+If @racket[refresh?] is not @racket[#f], then the snip is requesting
  to be updated immediately. Otherwise, @method[snip-admin%
  needs-update] must eventually be called as well.
 
@@ -194,18 +194,18 @@ Does nothing.
 
 Requests that the specified snip be released. If this administrator is
  not the snip's owner or if the snip cannot be released, then
- @scheme[#f] is returned. Otherwise, @scheme[#t] is returned and the
+ @racket[#f] is returned. Otherwise, @racket[#t] is returned and the
  snip is no longer owned.
 
 See also @xmethod[editor<%> release-snip] .
 
-The result is @scheme[#f] if the given snip is not managed by this
+The result is @racket[#f] if the given snip is not managed by this
  administrator.
 
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -220,7 +220,7 @@ Called by a snip to notify the administrator that the specified snip
  after a resize, but the snip decides whether the update should occur
  immediately.
 
-If @scheme[refresh?] is not @scheme[#f], then the snip is requesting
+If @racket[refresh?] is not @racket[#f], then the snip is requesting
  to be updated immediately, as if calling @method[snip-admin%
  needs-update].  Otherwise, @method[snip-admin% needs-update] must
  eventually be called as well.
@@ -251,34 +251,34 @@ Called by the snip to request scrolling so that the given region is
  visible. The snip generally needs to be updated after a scroll, but
  the snip decides whether the update should occur immediately.
 
-The @scheme[localx], @scheme[localy], @scheme[w], and @scheme[h] arguments specify
+The @racket[localx], @racket[localy], @racket[w], and @racket[h] arguments specify
  a region of the snip to be made visible by the scroll (in snip
  coordinates).
 
-If @scheme[refresh?] is not @scheme[#f], then the editor is requesting to
+If @racket[refresh?] is not @racket[#f], then the editor is requesting to
  be updated immediately.
 
-The @scheme[bias] argument is one of:
+The @racket[bias] argument is one of:
 @itemize[
 
- @item{@scheme['start] --- if the range doesn't fit in the visible area, show the top-left region}
+ @item{@racket['start] --- if the range doesn't fit in the visible area, show the top-left region}
 
- @item{@scheme['none] --- no special scrolling instructions}
+ @item{@racket['none] --- no special scrolling instructions}
 
- @item{@scheme['end] --- if the range doesn't fit in the visible area, show the bottom-right region}
+ @item{@racket['end] --- if the range doesn't fit in the visible area, show the bottom-right region}
 
 ]
 
-The result is @scheme[#t] if the editor is scrolled, @scheme[#f]
+The result is @racket[#t] if the editor is scrolled, @racket[#f]
  otherwise.
 
-The method call is ignored (and the result is @scheme[#f]) if the given
+The method call is ignored (and the result is @racket[#f]) if the given
  snip is not managed by this administrator.
 
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -292,7 +292,7 @@ Requests that the keyboard focus is assigned to the specified snip.
  snip is called.
 
 See @method[editor<%> set-caret-owner] for information about the
- possible values of @scheme[domain].
+ possible values of @racket[domain].
 
 
 The method call is ignored if the given snip is not managed by this
@@ -333,7 +333,7 @@ line.
 }
 @methimpl{
 
-Returns @scheme[0.0]
+Returns @racket[0.0]
 
 }}
 
@@ -342,12 +342,12 @@ Returns @scheme[0.0]
 
 @methspec{
 
-Returns the color that is used to draw selected text or @scheme[#f] if
+Returns the color that is used to draw selected text or @racket[#f] if
 selected text is drawn with its usual color.
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 }}
 
 
@@ -356,7 +356,7 @@ Returns @scheme[#f].
 
 @methspec{
 
-Calls @scheme[thunk] while changing the cursor to a watch cursor for
+Calls @racket[thunk] while changing the cursor to a watch cursor for
 all windows in the current eventspace.
 
 }
@@ -378,12 +378,12 @@ Returns the current tab-position array as a list.
 list)}]
 @boxisfillnull[(scheme tab-width) @elem{the width used for tabs past the 
 end of the tab array}]
-@boxisfillnull[(scheme in-units) @elem{@scheme[#t] if the tabs are specified in
-canvas units or @scheme[#f] if they are specified in space-widths}]
+@boxisfillnull[(scheme in-units) @elem{@racket[#t] if the tabs are specified in
+canvas units or @racket[#f] if they are specified in space-widths}]
 }
 
 @methimpl{
-Returns @scheme[null].
+Returns @racket[null].
 }
 }
 }

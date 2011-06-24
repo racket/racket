@@ -32,7 +32,7 @@
 
 @declare-exporting[lang/htdp-intermediate-lambda]
 
-@schemegrammar*+qq[
+@racketgrammar*+qq[
 #:literals (define define-struct lambda λ cond else if and or empty true false require lib planet
             local let let* letrec time check-expect check-within check-error)
 (check-expect check-within check-error require)
@@ -60,8 +60,8 @@
       empty
       (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment @#,seclink["intermediate-lambda-prim-op"]{primitive operation}))
-      (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false
@@ -75,7 +75,7 @@
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-lambda-define"]{@scheme[define]}
+@section[#:tag "intermediate-lambda-define"]{@racket[define]}
 
 @deftogether[(
 @defform[(define (id id id ...) expr)]
@@ -84,20 +84,20 @@
 )]{
 
 The same as Intermediate's @|intm-define|. No special case is needed
-for @scheme[lambda], since a @scheme[lambda] form is an expression.}
+for @racket[lambda], since a @racket[lambda] form is an expression.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-lambda"]{@scheme[lambda]}
+@section[#:tag "intermediate-lambda"]{@racket[lambda]}
 
 @defform[(lambda (id id ...) expr)]{
 
-Creates a function that takes as many arguments as given @scheme[id]s,
-and whose body is @scheme[expr].}
+Creates a function that takes as many arguments as given @racket[id]s,
+and whose body is @racket[expr].}
 
 @defform[(λ (id id ...) expr)]{
 
-The Greek letter @scheme[λ] is a synonym for @scheme[lambda].}
+The Greek letter @racket[λ] is a synonym for @racket[lambda].}
 
 @; ----------------------------------------------------------------------
 
@@ -107,11 +107,11 @@ The Greek letter @scheme[λ] is a synonym for @scheme[lambda].}
 
 Like a Beginning @seclink["beginner-call"]{function call}, except that
 the function position can be an arbitrary expression---perhaps a
-@scheme[lambda] expression or a @scheme[_prim-op].}
+@racket[lambda] expression or a @racket[_prim-op].}
 
 @defform[(#%app expr expr expr ...)]{
 
-A function call can be written with @scheme[#%app], though it's
+A function call can be written with @racket[#%app], though it's
 practically never written that way.}
 
 @; ----------------------------------------------------------------------

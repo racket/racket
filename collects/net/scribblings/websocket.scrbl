@@ -34,7 +34,7 @@ This module provides the exports from @racketmodname[net/websocket/client] and @
  Connects to the WebSocket server specified by @racket[u], providing @racket[headers] as additional headers.
  Returns the connection handle.
 }
-                  
+
 This module also provides the exports from @racketmodname[net/websocket/conn].
 
 @section{Server API}
@@ -64,7 +64,7 @@ This module also provides the exports from @racketmodname[net/websocket/conn].
  sole control until the WebSocket connection completes.
  
  All other arguments are used as in a @secref["dispatch-server-unit" #:doc '(lib "web-server/scribblings/web-server-internal.scrbl")].
-                    
+
  The @racket[#:tcp@] keyword is provided for building an SSL server.
 }
        

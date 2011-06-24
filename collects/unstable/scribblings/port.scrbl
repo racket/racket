@@ -17,8 +17,8 @@ This module provides tools for port I/O.
          list?]{
 
 This function produces a list of all the values produced by calling
-@scheme[(reader)] while @scheme[current-input-port] is set to @scheme[port], up
-until it produces @scheme[eof].
+@racket[(reader)] while @racket[current-input-port] is set to @racket[port], up
+until it produces @racket[eof].
 
 @defexamples[
 #:eval the-eval
@@ -34,8 +34,8 @@ until it produces @scheme[eof].
          (syntax/c list?)]{
 
 This function produces a syntax object containing a list of all the syntax
-objects produced by calling @scheme[(reader)] while @scheme[current-input-port]
-is set to @scheme[port], up until it produces @scheme[eof].  The source location
+objects produced by calling @racket[(reader)] while @racket[current-input-port]
+is set to @racket[port], up until it produces @racket[eof].  The source location
 of the result spans the entire portion of the port that was read.
 
 @defexamples[
@@ -56,10 +56,10 @@ of the result spans the entire portion of the port that was read.
                        [span exact-nonnegative-integer? 0])
          srcloc?]{
 
-Produces a @scheme[srcloc] structure representing the current position of a
-port, using the provided @scheme[source] and @scheme[span] values to fill in
-missing fields.  This function relies on @scheme[port-next-location], so line
-counting must be enabled for @scheme[port] to get meaningful results.
+Produces a @racket[srcloc] structure representing the current position of a
+port, using the provided @racket[source] and @racket[span] values to fill in
+missing fields.  This function relies on @racket[port-next-location], so line
+counting must be enabled for @racket[port] to get meaningful results.
 
 @defexamples[
 #:eval the-eval

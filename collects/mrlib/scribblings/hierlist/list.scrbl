@@ -17,9 +17,9 @@ Creates a hierarchical-list control.
 
 Creates the control.
 
-If the style @scheme['transparent] is passed, then the
+If the style @racket['transparent] is passed, then the
 @method[editor-snip% use-style-background] method will be
-called with @scheme[#t] when editor snips are created as part of
+called with @racket[#t] when editor snips are created as part of
 the hierarchical list, ensuring that the entire control is 
 transparent.
 
@@ -39,11 +39,11 @@ Returns the currently selected item, if any.}
            (is-a?/c hierarchical-list-item<%>)]{
 
 Creates and returns a new (empty) item in the list. See
-@scheme[hierarchical-list-item<%>] for methods to fill in the item's
+@racket[hierarchical-list-item<%>] for methods to fill in the item's
 label.
 
-The @scheme[mixin] argument is applied to a class implementing
-@scheme[hierarchical-list-item<%>], and the resulting class is
+The @racket[mixin] argument is applied to a class implementing
+@racket[hierarchical-list-item<%>], and the resulting class is
 instantiated as the list item.}
 
 
@@ -62,17 +62,17 @@ list is empty.}
            (is-a?/c hierarchical-list-compound-item<%>)]{
 
 Creates and returns a new (empty) sub-list in the list. See
-@scheme[hierarchical-list-compound-item<%>] for methods to fill in the
+@racket[hierarchical-list-compound-item<%>] for methods to fill in the
 item's label and content.
 
-The @scheme[mixin] argument is applied to a class implementing
-@scheme[hierarchical-list-compound-item<%>], and the resulting class
+The @racket[mixin] argument is applied to a class implementing
+@racket[hierarchical-list-compound-item<%>], and the resulting class
 is instantiated as the sub-list.}
 
 
 @defmethod[(delete-item [i (is-a?/c hierarchical-list-item<%>)]) void?]{
 
-Deletes immediate item or sub-list @scheme[i] from the list.}
+Deletes immediate item or sub-list @racket[i] from the list.}
 
 
 @defmethod[(get-items) (listof (is-a?/c hierarchical-list-item<%>))]{
@@ -89,7 +89,7 @@ selection.}
 
 @defmethod[(on-select [i (or/c (is-a?/c hierarchical-list-item<%>) false/c)]) any]{
 
-Called for new select of @scheme[i], where @scheme[i] is @scheme[#f]
+Called for new select of @racket[i], where @racket[i] is @racket[#f]
 if no item is now selected.}
 
 
@@ -103,17 +103,17 @@ set-allow-selection].}
 
 @defmethod[(on-double-select [i (is-a?/c hierarchical-list-item<%>)]) any]{
 
-Called for a double-click on @scheme[i].}
+Called for a double-click on @racket[i].}
 
 
 @defmethod[(on-item-opened [i (is-a?/c hierarchical-list-compound-item<%>)]) any]{
 
-Called when the arrow for @scheme[i] is turned down.}
+Called when the arrow for @racket[i] is turned down.}
 
 
 @defmethod[(on-item-closed [i (is-a?/c hierarchical-list-compound-item<%>)]) any]{
 
-Called when the arrow for @scheme[i] is turned up.}
+Called when the arrow for @racket[i] is turned up.}
 
 
 @defmethod[(sort [less-than-proc ((is-a?/c hierarchical-list-item<%>)
@@ -122,8 +122,8 @@ Called when the arrow for @scheme[i] is turned up.}
                  [recur? any/c #t])
            void?]{
 
-Sorts items in the list by calling @scheme[less-than-proc] on pairs of
-items. If @scheme[recur?] is true, items in sub-lists are sorted
+Sorts items in the list by calling @racket[less-than-proc] on pairs of
+items. If @racket[recur?] is true, items in sub-lists are sorted
 recursively.}
 
 
@@ -131,7 +131,7 @@ recursively.}
            boolean?]{
 
 Like @xmethod[editor<%> can-do-edit-operation?]. The default
-implementation always returns @scheme[#f].}
+implementation always returns @racket[#f].}
 
 
 @defmethod[(do-edit-operation [op symbol?] [recursive? any/c #t])
@@ -161,7 +161,7 @@ Moves the selection, scrolls as necessary to show it, and calls
 @method[hierarchical-list% on-select-always].
 
 The @method[hierarchical-list% allow-deselect] method controls whether
-@scheme[i] is allowed to be @scheme[#f] to deselect the currently
+@racket[i] is allowed to be @racket[#f] to deselect the currently
 selected item.}
 
 
@@ -199,7 +199,7 @@ This is initially disabled, by default.}
 
 
 Gets/sets whether the @method[hierarchical-list% on-select] can be
-called with a @scheme[#f] argument to deselect the current item
+called with a @racket[#f] argument to deselect the current item
 (leaving none selected).
 
 The initial mode does not allow deselection.}

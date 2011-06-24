@@ -4,7 +4,7 @@
 @definterface/title[editor-snip-editor-admin<%> ()]{
 
 An instance of this administrator interface is created with each
- @scheme[editor-snip%] object; new instances cannot be
+ @racket[editor-snip%] object; new instances cannot be
  created directly.
 
 

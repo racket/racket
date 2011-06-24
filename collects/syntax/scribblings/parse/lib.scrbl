@@ -39,8 +39,8 @@ actually a valid expression.
 Match syntax satisfying the corresponding predicates.
 }
 
-@defstxclass[id]{ Alias for @scheme[identifier]. }
-@defstxclass[nat]{ Alias for @scheme[exact-nonnegative-integer]. }
+@defstxclass[id]{ Alias for @racket[identifier]. }
+@defstxclass[nat]{ Alias for @racket[exact-nonnegative-integer]. }
 
 @defproc[(static [predicate (-> any/c any/c)]
                  [description (or/c string? #f)])
@@ -48,12 +48,12 @@ Match syntax satisfying the corresponding predicates.
 
 The @racket[static] syntax class matches an
 identifier that is bound in the syntactic environment to static
-information (see @scheme[syntax-local-value]) satisfying the given
-@scheme[predicate]. If the term does not match, the
-@scheme[description] argument is used to describe the expected syntax.
+information (see @racket[syntax-local-value]) satisfying the given
+@racket[predicate]. If the term does not match, the
+@racket[description] argument is used to describe the expected syntax.
 
 When used outside of the dynamic extent of a macro transformer (see
-@scheme[syntax-transforming?]), matching fails.
+@racket[syntax-transforming?]), matching fails.
 
 The attribute @var[value] contains the value the name is bound to.
 }
@@ -66,10 +66,10 @@ The attribute @var[value] contains the value the name is bound to.
 Literal set containing the identifiers for fully-expanded code
 (@secref[#:doc '(lib "scribblings/reference/reference.scrbl")
 "fully-expanded"]). The set contains all of the forms listed by
-@scheme[kernel-form-identifier-list], plus @scheme[module],
-@scheme[#%plain-module-begin], @scheme[#%require], and
-@scheme[#%provide].
+@racket[kernel-form-identifier-list], plus @racket[module],
+@racket[#%plain-module-begin], @racket[#%require], and
+@racket[#%provide].
 
-Note that the literal-set uses the names @scheme[#%plain-lambda] and
-@scheme[#%plain-app], not @scheme[lambda] and @scheme[#%app].
+Note that the literal-set uses the names @racket[#%plain-lambda] and
+@racket[#%plain-app], not @racket[lambda] and @racket[#%app].
 }

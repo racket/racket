@@ -155,7 +155,7 @@
              The result of this method is used as the class for creating
              the menu items in this frame.
 
-             Defaultly returns @scheme[menu:can-restore-menu-item].}))
+             Defaultly returns @racket[menu:can-restore-menu-item].}))
         (make-generic-method 
          'get-checkable-menu-item% '(λ () menu:can-restore-checkable-menu-item%)
          (list
@@ -163,7 +163,7 @@
              The result of this method is used as the class for creating
              checkable menu items in this class.
 
-             Defaultly returns @scheme[menu:can-restore-checkable-menu-item].}))
+             Defaultly returns @racket[menu:can-restore-checkable-menu-item].}))
         
         (make-generic-method 
          'get-file-menu

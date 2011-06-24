@@ -3,29 +3,29 @@
 
 @definterface/title[gl-context<%> ()]{
 
-A @scheme[gl-context<%>] object represents a context for drawing with
- @as-index{OpenGL} to a specific @scheme[dc<%>] instance. To obtain a
- @scheme[gl-context<%>] object, call @method[dc<%> get-gl-context] of
+A @racket[gl-context<%>] object represents a context for drawing with
+ @as-index{OpenGL} to a specific @racket[dc<%>] instance. To obtain a
+ @racket[gl-context<%>] object, call @method[dc<%> get-gl-context] of
  the target drawing context.
 
-Only canvas @scheme[dc<%>] and @scheme[bitmap-dc%] objects containing
+Only canvas @racket[dc<%>] and @racket[bitmap-dc%] objects containing
  a bitmap from @racket[make-gl-bitmap] support OpenGL (always on
  Windows and Mac OS X, sometimes on Unix).  Normal @racket[dc<%>]
- drawing and OpenGL drawing can be mixed in a @scheme[bitmap-dc%], but
+ drawing and OpenGL drawing can be mixed in a @racket[bitmap-dc%], but
  a canvas that uses the @racket['gl] style to support OpenGL does not
  reliably support normal @racket[dc<%>] drawing; use a bitmap if you
  need to mix drawing modes, and use a canvas to maximize OpenGL
  performance.
 
-When the target bitmap for a @scheme[bitmap-dc%] context is changed
+When the target bitmap for a @racket[bitmap-dc%] context is changed
  via @method[bitmap-dc% set-bitmap], the associated
- @scheme[gl-context<%>] changes. Canvas contexts are normally double
+ @racket[gl-context<%>] changes. Canvas contexts are normally double
  buffered, and bitmap contexts are single buffered.
 
-The @schememodname[racket/gui/base] library provides no OpenGL
+The @racketmodname[racket/gui/base] library provides no OpenGL
  routines. Instead, they must be obtained from a separate library,
- such as @schememodname[sgl]. The facilities in
- @schememodname[racket/gui/base] merely manage the current OpenGL
+ such as @racketmodname[sgl]. The facilities in
+ @racketmodname[racket/gui/base] merely manage the current OpenGL
  context, connecting it to windows and bitmaps.
 
 Only one OpenGL context can be active at a time across all threads and
@@ -56,35 +56,35 @@ The method blocks to obtain a lock that protects the global OpenGL
 The lock prevents interference among OpenGL-using threads.  If a
  thread is terminated while holding the context lock, the lock is
  released. Continuation jumps into the thunk do not grab the lock or
- set the OpenGL context. See @scheme[gl-context<%>] for more
+ set the OpenGL context. See @racket[gl-context<%>] for more
  information on interference.
 
 The method accepts an alternate @tech[#:doc
  reference-doc]{synchronizable event} for use while blocking for the
- context lock; see also @scheme[sync].
+ context lock; see also @racket[sync].
 
 The result of the method call is the result of the thunk if it is
  called, or the result of the alternate event if it is chosen instead
  of the context lock.
 
-If @method[gl-context<%> ok?] returns @scheme[#f] at the time that
+If @method[gl-context<%> ok?] returns @racket[#f] at the time that
  this method is called, then @|MismatchExn|.
 
-If @scheme[enable-breaks?] is true, then the method uses
- @scheme[sync/enable-break] while blocking for the context-setting
- lock instead of @scheme[sync].
+If @racket[enable-breaks?] is true, then the method uses
+ @racket[sync/enable-break] while blocking for the context-setting
+ lock instead of @racket[sync].
 
 }
 
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if this context is available OpenGL drawing,
- @scheme[#f] otherwise.
+Returns @racket[#t] if this context is available OpenGL drawing,
+ @racket[#f] otherwise.
 
 A context is unavailable if OpenGL support is disabled at compile time
  or run time, if the context is associated with a
- @scheme[bitmap-dc%] with no selected bitmap or with a monochrome
+ @racket[bitmap-dc%] with no selected bitmap or with a monochrome
  selected bitmap, if the context is for a canvas that no longer
  exists, or if there was a low-level error when preparing the context.
 

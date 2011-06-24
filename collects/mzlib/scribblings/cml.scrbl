@@ -4,7 +4,7 @@
 
 @mzlib[#:mode title cml]
 
-The @schememodname[mzlib/cml] library defines a number of procedures
+The @racketmodname[mzlib/cml] library defines a number of procedures
 that wrap Racket concurrency procedures. The wrapper procedures
 have names and interfaces that more closely match those of Concurrent
 ML @cite["Reppy99"].
@@ -12,34 +12,34 @@ ML @cite["Reppy99"].
 
 @defproc[(spawn [thunk (-> any)]) thread?]{
 
-Equivalent to @scheme[(thread/suspend-to-kill thunk)].}
+Equivalent to @racket[(thread/suspend-to-kill thunk)].}
 
 
 @defproc[(channel) channel?]{
 
-Equivalent to @scheme[(make-channel)].}
+Equivalent to @racket[(make-channel)].}
 
 
 @defproc[(channel-recv-evt [ch channel?]) evt?]{
 
-Equivalent to @scheme[ch].}
+Equivalent to @racket[ch].}
 
 
 @defproc[(channel-send-evt [ch channel?][v any/c]) evt?]{
 
-Equivalent to @scheme[(channel-put-evt ch v)].}
+Equivalent to @racket[(channel-put-evt ch v)].}
 
 
 @defproc[(thread-done-evt [thd thread?]) any]{
 
-Equivalent to @scheme[(thread-dead-evt thread)].}
+Equivalent to @racket[(thread-dead-evt thread)].}
 
 
 @defproc[(current-time) real?]{
 
-Equivalent to @scheme[(current-inexact-milliseconds)].}
+Equivalent to @racket[(current-inexact-milliseconds)].}
 
 
 @defproc[(time-evt [tm real?]) evt?]{
 
-Equivalent to @scheme[(alarm-evt tm)].}
+Equivalent to @racket[(alarm-evt tm)].}

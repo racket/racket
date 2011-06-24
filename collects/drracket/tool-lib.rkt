@@ -96,7 +96,7 @@ all of the names in the tools library, for use defining keybindings
     
     See @racket[read-language] for more details on how language's specify how to opt out.
     DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with
-    @indexed-scheme['drscheme:opt-out-toolbar-buttons]. If the result is a list of symbols, the
+    @indexed-racket['drscheme:opt-out-toolbar-buttons]. If the result is a list of symbols, the
     listed symbols are opted out. If the result is @racket[#f], all buttons are opted
     out. The default is the empty list, meaning that all opt-out buttons appear.
     })
@@ -425,7 +425,7 @@ all of the names in the tools library, for use defining keybindings
     
     It looks for both stack trace information in the continuation
     marks both via the
-    @schememodname[errortrace/errortrace-key] 
+    @racketmodname[errortrace/errortrace-key] 
     module and via 
     @racket[continuation-mark-set->context].
     
@@ -1139,9 +1139,8 @@ all of the names in the tools library, for use defining keybindings
     is initialized to.
     If unsure of a default, the currently set language
     in the user's preferences can be obtained via:
-    @schemeblock[
-                 (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))
-                                                                                                    ]
+    @racketblock[
+      (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))]
     
     The @racket[parent] argument is used as the parent
     to the dialog.

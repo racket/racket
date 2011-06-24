@@ -10,7 +10,7 @@ parameter model. Parameters correspond to @defterm{preserved thread
 fluids} in Scsh @cite["Gasbichler02"].
 
 To parameterize code in a thread- and continuation-friendly manner,
-use @scheme[parameterize]. The @scheme[parameterize] form introduces a
+use @racket[parameterize]. The @racket[parameterize] form introduces a
 fresh @tech{thread cell} for the dynamic extent of its body
 expressions.
 
@@ -19,7 +19,7 @@ thread's initial continuation is the @tech{parameterization} of the
 creator thread.  Since each parameter's @tech{thread cell} is
 @tech{preserved}, the new thread ``inherits'' the parameter values of
 its creating thread. When a continuation is moved from one thread to
-another, settings introduced with @scheme[parameterize] effectively
+another, settings introduced with @racket[parameterize] effectively
 move with the continuation.
 
 In contrast, direct assignment to a parameter (by calling the
@@ -27,7 +27,7 @@ parameter procedure with a value) changes the value in a thread cell,
 and therefore changes the setting only for the current
 thread. Consequently, as far as the memory manager is concerned, the
 value originally associated with a parameter through
-@scheme[parameterize] remains reachable as long the continuation is
+@racket[parameterize] remains reachable as long the continuation is
 reachable, even if the parameter is mutated.
 
 @defproc[(make-parameter [v any/c]
@@ -35,40 +35,40 @@ reachable, even if the parameter is mutated.
          parameter?]{
 
 Returns a new parameter procedure. The value of the parameter is
-initialized to @scheme[v] in all threads.  If @scheme[guard] is
+initialized to @racket[v] in all threads.  If @racket[guard] is
 supplied, it is used as the parameter's guard procedure.  A guard
 procedure takes one argument. Whenever the parameter procedure is
 applied to an argument, the argument is passed on to the guard
 procedure. The result returned by the guard procedure is used as the
 new parameter value.  A guard procedure can raise an exception to
-reject a change to the parameter's value. The @scheme[guard] is not
-applied to the initial @scheme[v].}
+reject a change to the parameter's value. The @racket[guard] is not
+applied to the initial @racket[v].}
 
 @defform[(parameterize ((parameter-expr value-expr) ...)
            body ...+)
          #:contracts
          ([parameter-expr parameter?])]{
 
-@guideintro["parameterize"]{@scheme[parameterize]}
+@guideintro["parameterize"]{@racket[parameterize]}
 
-The result of a @scheme[parameterize] expression is the result of the
-last @scheme[body]. The @scheme[parameter-expr]s determine the
-parameters to set, and the @scheme[value-expr]s determine the
+The result of a @racket[parameterize] expression is the result of the
+last @racket[body]. The @racket[parameter-expr]s determine the
+parameters to set, and the @racket[value-expr]s determine the
 corresponding values to install while evaluating the
-@scheme[body-expr]s. All of the @scheme[parameter-expr]s are evaluated
-first (and checked with @scheme[parameter?]), then all
-@scheme[value-expr]s are evaluated, and then the parameters are bound
+@racket[body-expr]s. All of the @racket[parameter-expr]s are evaluated
+first (and checked with @racket[parameter?]), then all
+@racket[value-expr]s are evaluated, and then the parameters are bound
 in the continuation to preserved thread cells that contain the values
-of the @scheme[value-expr]s. The last @scheme[body-expr] is in tail
-position with respect to the entire @scheme[parameterize] form.
+of the @racket[value-expr]s. The last @racket[body-expr] is in tail
+position with respect to the entire @racket[parameterize] form.
 
-Outside the dynamic extent of a @scheme[parameterize] expression,
+Outside the dynamic extent of a @racket[parameterize] expression,
 parameters remain bound to other thread cells. Effectively, therefore,
 old parameters settings are restored as control exits the
-@scheme[parameterize] expression.
+@racket[parameterize] expression.
 
 If a continuation is captured during the evaluation of
-@scheme[parameterize], invoking the continuation effectively
+@racket[parameterize], invoking the continuation effectively
 re-introduces the @tech{parameterization}, since a parameterization is
 associated to a continuation via a continuation mark (see
 @secref["contmarks"]) using a private key.}
@@ -121,8 +121,8 @@ associated to a continuation via a continuation mark (see
 @defform[(parameterize* ((parameter-expr value-expr) ...)
            body ...+)]{
 
-Analogous to @scheme[let*] compared to @scheme[let], @scheme[parameterize*]
-is the same as a nested series of single-parameter @scheme[parameterize]
+Analogous to @racket[let*] compared to @racket[let], @racket[parameterize*]
+is the same as a nested series of single-parameter @racket[parameterize]
 forms.}
 
 
@@ -132,32 +132,32 @@ forms.}
          parameter?]{
 
 Returns a parameter procedure that sets or retrieves the same value as
-@scheme[parameter], but with:
+@racket[parameter], but with:
 
 @itemize[
 
- @item{@scheme[guard] applied when setting the parameter (before any
-       guard associated with @scheme[parameter]), and}
+ @item{@racket[guard] applied when setting the parameter (before any
+       guard associated with @racket[parameter]), and}
 
- @item{@scheme[wrap] applied when obtaining the parameter's value.}
+ @item{@racket[wrap] applied when obtaining the parameter's value.}
 
 ]
 
-See also @scheme[chaperone-procedure], which can also be used to guard
+See also @racket[chaperone-procedure], which can also be used to guard
 parameter procedures.}
 
 
 @defproc[(parameter? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a parameter procedure,
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a parameter procedure,
+@racket[#f] otherwise.}
 
 
 @defproc[(parameter-procedure=? [a parameter?] [b parameter?]) boolean?]{
 
-Returns @scheme[#t] if the parameter procedures @scheme[a] and
-@scheme[b] always modify the same parameter with the same guards
-(although possibly with different @tech{chaperones}), @scheme[#f]
+Returns @racket[#t] if the parameter procedures @racket[a] and
+@racket[b] always modify the same parameter with the same guards
+(although possibly with different @tech{chaperones}), @racket[#f]
 otherwise.}
 
 
@@ -167,9 +167,9 @@ current continuation's @tech{parameterization}.}
 @defproc[(call-with-parameterization [parameterization parameterization?]
                                      [thunk (-> any)]) 
          any]{
-Calls @scheme[thunk] (via a tail call) with @scheme[parameterization]
+Calls @racket[thunk] (via a tail call) with @racket[parameterization]
 as the current @tech{parameterization}.}
 
 @defproc[(parameterization? [v any/c]) boolean?]{
-Returns @scheme[#t] if @scheme[v] is a @tech{parameterization}
-returned by @scheme[current-parameterization], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{parameterization}
+returned by @racket[current-parameterization], @racket[#f] otherwise.}

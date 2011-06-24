@@ -17,71 +17,71 @@ you to use the world teachpack instead; see @secref{world}.}
 
 @section[#:tag "drawing"]{Drawing on a Canvas}
 
-@deftech{DrawColor}: @scheme[(and/c symbol? (one-of/c 'white 'yellow 'red 'blue 'green 'black))]
+@deftech{DrawColor}: @racket[(and/c symbol? (one-of/c 'white 'yellow 'red 'blue 'green 'black))]
 These six colors are definitely provided. If you want other colors,
-guess! For example, @scheme['orange] works, but @scheme['mauve]
+guess! For example, @racket['orange] works, but @racket['mauve]
 doesn't. If you apply the function to a symbol that it doesn't recognize as
 a color, it raises an error.
 
 @defproc[(start [width number?][height number?]) true]{Opens a
-@scheme[width] x @scheme[height] canvas.} 
+@racket[width] x @racket[height] canvas.} 
 
 @defproc[(start/cartesian-plane [width number?][height number?])
          true]{
-Opens a @scheme[width] x @scheme[height] canvas and draws a Cartesian
+Opens a @racket[width] x @racket[height] canvas and draws a Cartesian
 plane.}
 
 @defproc[(stop) true]{Closes the canvas.}
 
 @defproc[(draw-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
          true]{
-Draws a @scheme[c] circle at @scheme[p] with radius @scheme[r].}
+Draws a @racket[c] circle at @racket[p] with radius @racket[r].}
 
 @defproc[(draw-solid-disk [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
          true]{
-Draws a @scheme[c] disk at @scheme[p] with radius @scheme[r].}
+Draws a @racket[c] disk at @racket[p] with radius @racket[r].}
 
 @defproc[(draw-solid-rect [ul posn?] [width number?] [height number?]
                           [c (unsyntax @tech{DrawColor})])
          true]{
-Draws a @scheme[width] x @scheme[height], @scheme[c] rectangle with the
-upper-left corner at @scheme[ul].}
+Draws a @racket[width] x @racket[height], @racket[c] rectangle with the
+upper-left corner at @racket[ul].}
 
 @defproc[(draw-solid-line [strt posn?] [end posn?]
                           [c (unsyntax @tech{DrawColor})])
          true]{
-Draws a @scheme[c] line from @scheme[strt] to @scheme[end].}
+Draws a @racket[c] line from @racket[strt] to @racket[end].}
 
 @defproc[(draw-solid-string [p posn?] [s string?]) true]{
-Draws @scheme[s] at @scheme[p].}
+Draws @racket[s] at @racket[p].}
 
 @defproc[(sleep-for-a-while [s number?]) true]{
-Suspends evaluation for @scheme[s] seconds.}
+Suspends evaluation for @racket[s] seconds.}
 
-The teachpack also provides @scheme[clear-] operations for each
-@scheme[draw-] operation:
+The teachpack also provides @racket[clear-] operations for each
+@racket[draw-] operation:
 
 @defproc[(clear-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
          true]{
-clears a @scheme[c] circle at @scheme[p] with radius @scheme[r].}
+clears a @racket[c] circle at @racket[p] with radius @racket[r].}
 
 @defproc[(clear-solid-disk [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
          true]{
-clears a @scheme[c] disk at @scheme[p] with radius @scheme[r].}
+clears a @racket[c] disk at @racket[p] with radius @racket[r].}
 
 @defproc[(clear-solid-rect [ul posn?] [width number?] [height number?]
                           [c (unsyntax @tech{DrawColor})])
          true]{
-clears a @scheme[width] x @scheme[height], @scheme[c] rectangle with the
-upper-left corner at @scheme[ul].}
+clears a @racket[width] x @racket[height], @racket[c] rectangle with the
+upper-left corner at @racket[ul].}
 
 @defproc[(clear-solid-line [strt posn?] [end posn?]
                           [c (unsyntax @tech{DrawColor})])
          true]{
-clears a @scheme[c] line from @scheme[strt] to @scheme[end].}
+clears a @racket[c] line from @racket[strt] to @racket[end].}
 
 @defproc[(clear-solid-string [p posn?] [s string?]) true]{
- clears @scheme[s] at @scheme[p].}
+ clears @racket[s] at @racket[p].}
 
 @defproc[(clear-all) true]{
  clears the entire screen.}
@@ -92,16 +92,16 @@ clears a @scheme[c] line from @scheme[strt] to @scheme[end].}
 @defproc[(wait-for-mouse-click) posn?]{
 Waits for the user to click on the mouse, within the canvas.}
 
-@deftech{DrawKeyEvent}: @scheme[(or/c char? symbol?)] A
+@deftech{DrawKeyEvent}: @racket[(or/c char? symbol?)] A
 @tech{DrawKeyEvent} represents keyboard events: 
 @itemize[
- @item{@scheme[char?], if the user pressed an alphanumeric key;}
- @item{@scheme[symbol?], if the user pressed, for example, an arror key:
- @scheme['up] @scheme['down]  @scheme['left] @scheme['right]}
+ @item{@racket[char?], if the user pressed an alphanumeric key;}
+ @item{@racket[symbol?], if the user pressed, for example, an arror key:
+ @racket['up] @racket['down]  @racket['left] @racket['right]}
 ]
 
 @defproc[(get-key-event) (or/c false (unsyntax @tech{DrawKeyEvent}))]{Checks whether the
-user has pressed a key within the window; @scheme[false] if not.}
+user has pressed a key within the window; @racket[false] if not.}
 
 @deftech{DrawWorld}: For proper interactions, using the teachpack
  requires that you provide a data definition for @tech{DrawWorld} . In
@@ -111,13 +111,13 @@ user has pressed a key within the window; @scheme[false] if not.}
 The following functions allow programs to react to events from the canvas.
 
 @defproc[(big-bang [n number?] [w (unsyntax @tech{DrawWorld})]) true]{Starts the clock, one tick every
-@scheme[n] (fractal) seconds; @scheme[w] becomes the first ``current'' world.}
+@racket[n] (fractal) seconds; @racket[w] becomes the first ``current'' world.}
 
 @defproc[(on-key-event [change (-> (unsyntax @tech{DrawKeyEvent}) (unsyntax @tech{DrawWorld}) (unsyntax @tech{DrawWorld}))])
-true]{Adds @scheme[change] to the world. The function reacts to keyboard
-events and creates a new @scheme[@#,tech{DrawWorld}].}
+true]{Adds @racket[change] to the world. The function reacts to keyboard
+events and creates a new @racket[@#,tech{DrawWorld}].}
 
-@defproc[(on-tick-event [tock (-> (unsyntax @tech{DrawWorld}) (unsyntax @tech{DrawWorld}))]) true]{Adds @scheme[tock]
+@defproc[(on-tick-event [tock (-> (unsyntax @tech{DrawWorld}) (unsyntax @tech{DrawWorld}))]) true]{Adds @racket[tock]
 to the world. The function reacts to clock tick events, creating a new
 current world.}
 

@@ -108,7 +108,7 @@ calls top-level evaluation functions (@cpp{scheme_eval},
 @cpp{scheme_apply}, etc., as opposed to @cpp{_scheme_apply},
 @cpp{_scheme_eval_compiled}, etc.).  Otherwise, use
 @cppi{scheme_dynamic_wind} to protect your code against full
-continuation jumps in the same way that @scheme[dynamic-wind] is used
+continuation jumps in the same way that @racket[dynamic-wind] is used
 in Racket.
 
 The above solution simply traps the escape; it doesn't report the
@@ -217,10 +217,10 @@ that occur during while evaluating source code from a string.
 
 When embedding Racket, asynchronous break exceptions are disabled by
 default. Call @cpp{scheme_set_can_break} (which is the same as calling
-the Racket function @scheme[break-enabled]) to enable or disable
+the Racket function @racket[break-enabled]) to enable or disable
 breaks. To enable or disable breaks during the dynamic extent of
 another evaluation (where you would use
-@scheme[with-break-parameterization] in Racket), use
+@racket[with-break-parameterization] in Racket), use
 @cppi{scheme_push_break_enable} before and
 @cppi{scheme_pop_break_enable} after, instead.
 
@@ -297,7 +297,7 @@ garbage collection.)}
 Raises a specific primitive exception. The @var{exnid} argument
 specifies the exception to be raised. If an instance of that exception
 has @math{n} fields, then the next @math{n-2} arguments are values for
-those fields (skipping the @scheme[message] and @scheme[debug-info]
+those fields (skipping the @racket[message] and @racket[debug-info]
 fields). The remaining arguments start with an error string and
 proceed roughly as for @cpp{printf}; see @cpp{scheme_signal_error}
 above for more details.
@@ -447,7 +447,7 @@ the first example in @secref["imz:tempcatch"]).}
            [int on])]{
 
 Enables or disables breaks in the same way as
-calling @scheme[break-enabled].}
+calling @racket[break-enabled].}
 
 @function[(void scheme_push_break_enable
            [Scheme_Cont_Frame_Data* cframe]
@@ -456,7 +456,7 @@ calling @scheme[break-enabled].}
 
 Use this function with @cpp{scheme_pop_break_enable} to enable or
 disable breaks in the same way as
-@scheme[with-break-parameterization]; this function writes to
+@racket[with-break-parameterization]; this function writes to
 @var{cframe} to initialize it, and @cpp{scheme_pop_break_enable} reads
 from @var{cframe}. If @var{pre_check} is non-zero and breaks are
 currently enabled, any pending break exception is raised.}
@@ -472,7 +472,7 @@ the previous state, then any pending break exception is raised.}
 @function[(Scheme_Object* scheme_current_continuation_marks
            [Scheme_Object* prompt_tag])]{
 
-Like @scheme[current-continuation-marks]. Passing @cpp{NULL} as
+Like @racket[current-continuation-marks]. Passing @cpp{NULL} as
 @var{prompt_tag} is the same as providing the default continuation
 prompt tag.}
 

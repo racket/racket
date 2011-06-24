@@ -4,10 +4,10 @@
 
 @title[#:tag "cgi"]{CGI Scripts}
 
-@defmodule[net/cgi]{The @schememodname[net/cgi] module provides tools
+@defmodule[net/cgi]{The @racketmodname[net/cgi] module provides tools
 for scripts that follow the Common Gateway Interface @cite["CGI"].}
 
-The @schememodname[net/cgi] library expects to be run in a certain
+The @racketmodname[net/cgi] library expects to be run in a certain
 context as defined by the CGI standard.  This means, for instance,
 that certain environment variables will be bound.
 
@@ -18,7 +18,7 @@ bind @envvar{REQUEST_METHOD} and possibly also @envvar{QUERY_STRING}
 to successfully employ the CGI library.  The FastCGI library ought to
 provide a way to extract the values bound to these variables; the user
 can then put these into the CGI program's environment using the
-@scheme[putenv] function.
+@racket[putenv] function.
 
 A CGI @deftech{binding} is an association of a form item with its
 value.  Some form items, such as checkboxes, may correspond to
@@ -36,12 +36,12 @@ symbol or a string.
 )]{
 
 Returns the bindings that corresponding to the options specified by
-the user.  The @scheme[get-bindings/post] and
-@scheme[get-bindings/get] variants work only when POST and GET forms
-are used, respectively, while @scheme[get-bindings] determines the
+the user.  The @racket[get-bindings/post] and
+@racket[get-bindings/get] variants work only when POST and GET forms
+are used, respectively, while @racket[get-bindings] determines the
 kind of form that was used and invokes the appropriate function.
 
-These functions respect @scheme[current-alist-separator-mode].
+These functions respect @racket[current-alist-separator-mode].
 }
 
 
@@ -58,15 +58,15 @@ key.}
                                  [bindings (listof (cons/c (or/c symbol? string?) string?))])
          string?]{
 
-Like @scheme[extract-bindings], but for a key that has exactly one
+Like @racket[extract-bindings], but for a key that has exactly one
 association.}
 
 
 @defproc[(output-http-headers) void?]{
 
 Outputs all the HTTP headers needed for a normal response.  Only
-call this function if you are not using @scheme[generate-html-output] or
-@scheme[generate-error-output].}
+call this function if you are not using @racket[generate-html-output] or
+@racket[generate-error-output].}
 
 
 @defproc[(generate-html-output [title string?]
@@ -101,12 +101,12 @@ text, and generates HTML corresponding to an anchor.}
 
 The procedure takes a list of HTML strings representing the body,
 prints them with the subject line "Internal error", and exits via
-@scheme[exit].}
+@racket[exit].}
 
 
 @defproc[(get-cgi-method) (one-of/c "GET" "POST")]{
 
-Returns either @scheme["GET"] or @scheme["POST"] when invoked inside a
+Returns either @racket["GET"] or @racket["POST"] when invoked inside a
 CGI script, unpredictable otherwise.}
 
 
@@ -119,7 +119,7 @@ useful for debugging.}
 
 @defstruct[cgi-error ()]{
 
-A supertype for all exceptions thrown by the @schememodname[net/cgi]
+A supertype for all exceptions thrown by the @racketmodname[net/cgi]
 library.}
 
 
@@ -144,7 +144,7 @@ query is invalid.}
 
 @defthing[cgi@ unit?]{
 
-Imports nothing, exports @scheme[cgi^].}
+Imports nothing, exports @racket[cgi^].}
 
 @; ----------------------------------------
 
@@ -154,4 +154,4 @@ Imports nothing, exports @scheme[cgi^].}
 
 @defsignature[cgi^ ()]{}
 
-Includes everything exported by the @schememodname[net/cgi] module.
+Includes everything exported by the @racketmodname[net/cgi] module.

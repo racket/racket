@@ -70,8 +70,8 @@ different nodes.
   graph pasteboard, and is expected to draw the edges between the
   snips. The argments are a subset of those passed to
   @method[editor<%> on-paint] and it is only called when the
-  @scheme[before?] argument to   @method[editor<%> on-paint] 
-  is @scheme[#t].
+  @racket[before?] argument to   @method[editor<%> on-paint] 
+  is @racket[#t].
 }
 
 @defmethod[(draw-single-edge [dc (is-a?/c dc<%>)]
@@ -88,25 +88,25 @@ different nodes.
 This method is called to draw each edge in the graph, except
 for the edges that connect a node to itself.
 
-The @scheme[dc], @scheme[dx], and @scheme[dy] arguments are
+The @racket[dc], @racket[dx], and @racket[dy] arguments are
 the same as in @method[editor<%> on-paint]. 
 
 The
-@scheme[from-x], @scheme[from-y], @scheme[to-x], and
-@scheme[to-y] arguments specify points on the source and
+@racket[from-x], @racket[from-y], @racket[to-x], and
+@racket[to-y] arguments specify points on the source and
 destination snip's bounding box where a straight line
 between the centers of the snip would intersect.
 
-The @scheme[arrow-point-ok?] function returns @scheme[#t]
+The @racket[arrow-point-ok?] function returns @racket[#t]
 when the point specified by its arguments is inside the
 smallest rectangle that covers both the source and
 destination snips, but is outside of both of the rectangles
 that surround the source and destination snips themselves.
 
-This default implementation uses @scheme[update-polygon] to compute
+This default implementation uses @racket[update-polygon] to compute
 the arrowheads and otherwise draws a straight line between the two
 points and then the arrowheads, unless the arrowhead points
-are not ok according to @scheme[arrow-point-ok?], in which case
+are not ok according to @racket[arrow-point-ok?], in which case
 it just draws the line.
 }
 
@@ -116,8 +116,8 @@ it just draws the line.
                                      [point3 (is-a?/c point%)]
                                      [point4 (is-a?/c point%)]) void?]{
 
-Updates the arguments @scheme[point1], @scheme[point2], @scheme[point3], @scheme[point4] with the coordinates
-of an arrowhead for a line that connects (@scheme[from-x],@scheme[from-y]) to (@scheme[to-x],@scheme[to-y]).
+Updates the arguments @racket[point1], @racket[point2], @racket[point3], @racket[point4] with the coordinates
+of an arrowhead for a line that connects (@racket[from-x],@racket[from-y]) to (@racket[to-x],@racket[to-y]).
 }
 
 }

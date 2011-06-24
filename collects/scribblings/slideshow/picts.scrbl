@@ -989,7 +989,7 @@ dividing the gap between the RGB components and 255 by the factor.}
 Calls a @racket[proc] multiple times, gradually changing the pen
 and/or brush color for each call. For the first call, the current pen
 and/or brush color matches @racket[start]; for the last call, it
-matches racket[end]; and for intermediate calls, the color is an
+matches @racket[end]; and for intermediate calls, the color is an
 intermediate color.
 
 The @racket[max-step] and @racket[step-delta] arguments should be

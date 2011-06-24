@@ -3,13 +3,13 @@
 
 @defclass/title[editor-stream-out-base% object% ()]{
 
-An @scheme[editor-stream-out-base%] object is used by an
- @scheme[editor-stream-out%] object to perform low-level writing of
+An @racket[editor-stream-out-base%] object is used by an
+ @racket[editor-stream-out%] object to perform low-level writing of
  data.
 
-The @scheme[editor-stream-out-base%] class is never instantiated
+The @racket[editor-stream-out-base%] class is never instantiated
  directly, but the derived class
- @scheme[editor-stream-out-bytes-base%] can be instantiated.  New
+ @racket[editor-stream-out-bytes-base%] can be instantiated.  New
  derived classes must override all of the methods described in this
  section.
 
@@ -17,8 +17,8 @@ The @scheme[editor-stream-out-base%] class is never instantiated
 @defmethod[(bad?)
            boolean?]{
 
-Returns @scheme[#t] if there has been an error writing to the stream,
- @scheme[#f] otherwise.
+Returns @racket[#t] if there has been an error writing to the stream,
+ @racket[#f] otherwise.
 
 }
 

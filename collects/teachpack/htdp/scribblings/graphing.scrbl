@@ -13,10 +13,10 @@ The teachpack provides two operations for graphing functions in the regular
 directions): 
 
 @defproc[(graph-fun [f (-> number?  number?)][color symbol?]) true]{
-Draws the graph of @scheme[f] with the given @scheme[color].}
+Draws the graph of @racket[f] with the given @racket[color].}
 
 @defproc[(graph-line [line (-> number? number?)][color symbol?]) true]{
-Draws @scheme[line], a function representing a straight line, with a given
+Draws @racket[line], a function representing a straight line, with a given
 color.} 
 
 For color symbols, see @secref{draw}. 

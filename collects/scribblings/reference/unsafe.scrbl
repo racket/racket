@@ -17,23 +17,23 @@
 
 @defmodule[racket/unsafe/ops]
 
-All fuctions and forms provided by @schememodname[racket/base] and
-@schememodname[racket] check their arguments to ensure that the
+All fuctions and forms provided by @racketmodname[racket/base] and
+@racketmodname[racket] check their arguments to ensure that the
 arguments conform to contracts and other constraints. For example,
-@scheme[vector-ref] checks its arguments to ensure that the first
+@racket[vector-ref] checks its arguments to ensure that the first
 argument is a vector, that the second argument is an exact integer,
-and that the second argument is between @scheme[0] and one less than
+and that the second argument is between @racket[0] and one less than
 the vector's length, inclusive.
 
-Functions provided by @schememodname[racket/unsafe/ops] are
+Functions provided by @racketmodname[racket/unsafe/ops] are
 @deftech{unsafe}. They have certain constraints, but the constraints
 are not checked, which allows the system to generate and execute
 faster code. If arguments violate an unsafe function's constraints,
 the function's behavior and result is unpredictable, and the entire
 system can crash or become corrupted.
 
-All of the exported bindings of @schememodname[racket/unsafe/ops] are
-protected in the sense of @scheme[protect-out], so access to unsafe
+All of the exported bindings of @racketmodname[racket/unsafe/ops] are
+protected in the sense of @racket[protect-out], so access to unsafe
 operations can be prevented by adjusting the code inspector (see
 @secref["modprotect"]).
 
@@ -49,13 +49,13 @@ operations can be prevented by adjusting the code inspector (see
 @defproc[(unsafe-fxabs       [a fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @scheme[+], @scheme[-], @scheme[*],
-@scheme[quotient], @scheme[remainder], @scheme[modulo], and
-@scheme[abs], but constrained to consume @tech{fixnums} and produce a
-@tech{fixnum} result. The mathematical operation on @scheme[a] and
-@scheme[b] must be representable as a @tech{fixnum}. In the case of
-@scheme[unsafe-fxquotient], @scheme[unsafe-fxremainder], and
-@scheme[unsafe-fxmodulo], @scheme[b] must not be @scheme[0].}
+For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
+@racket[quotient], @racket[remainder], @racket[modulo], and
+@racket[abs], but constrained to consume @tech{fixnums} and produce a
+@tech{fixnum} result. The mathematical operation on @racket[a] and
+@racket[b] must be representable as a @tech{fixnum}. In the case of
+@racket[unsafe-fxquotient], @racket[unsafe-fxremainder], and
+@racket[unsafe-fxmodulo], @racket[b] must not be @racket[0].}
 
 
 @deftogether[(
@@ -67,16 +67,16 @@ For @tech{fixnums}: Like @scheme[+], @scheme[-], @scheme[*],
 @defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @scheme[bitwise-and], @scheme[bitwise-ior],
-@scheme[bitwise-xor], @scheme[bitwise-not], and
-@scheme[arithmetic-shift], but constrained to consume @tech{fixnums};
-the result is always a @tech{fixnum}. The @scheme[unsafe-fxlshift] and
-@scheme[unsafe-fxrshift] operations correspond to
-@scheme[arithmetic-shift], but require non-negative arguments;
-@scheme[unsafe-fxlshift] is a positive (i.e., left) shift, and
-@scheme[unsafe-fxrshift] is a negative (i.e., right) shift, where the
+For @tech{fixnums}: Like @racket[bitwise-and], @racket[bitwise-ior],
+@racket[bitwise-xor], @racket[bitwise-not], and
+@racket[arithmetic-shift], but constrained to consume @tech{fixnums};
+the result is always a @tech{fixnum}. The @racket[unsafe-fxlshift] and
+@racket[unsafe-fxrshift] operations correspond to
+@racket[arithmetic-shift], but require non-negative arguments;
+@racket[unsafe-fxlshift] is a positive (i.e., left) shift, and
+@racket[unsafe-fxrshift] is a negative (i.e., right) shift, where the
 number of bits to shift must be less than the number of bits used to
-represent a @tech{fixnum}. In the case of @scheme[unsafe-fxlshift],
+represent a @tech{fixnum}. In the case of @racket[unsafe-fxlshift],
 bits in the result beyond the number of bits used to represent a
 @tech{fixnum} are effectively replaced with a copy of the high bit.}
 
@@ -91,8 +91,8 @@ bits in the result beyond the number of bits used to represent a
 @defproc[(unsafe-fxmax [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
-For @tech{fixnums}: Like @scheme[=], @scheme[<], @scheme[>],
-@scheme[<=], @scheme[>=], @scheme[min], and @scheme[max], but
+For @tech{fixnums}: Like @racket[=], @racket[<], @racket[>],
+@racket[<=], @racket[>=], @racket[min], and @racket[max], but
 constrained to consume @tech{fixnums}.}
 
 
@@ -104,8 +104,8 @@ constrained to consume @tech{fixnums}.}
 @defproc[(unsafe-flabs [a inexact-real?]) inexact-real?]
 )]{
 
-For @tech{flonums}: Unchecked versions of @scheme[fl+], @scheme[fl-],
-@scheme[fl*], @scheme[fl/], and @scheme[flabs].}
+For @tech{flonums}: Unchecked versions of @racket[fl+], @racket[fl-],
+@racket[fl*], @racket[fl/], and @racket[flabs].}
 
 
 @deftogether[(
@@ -118,9 +118,9 @@ For @tech{flonums}: Unchecked versions of @scheme[fl+], @scheme[fl-],
 @defproc[(unsafe-flmax [a inexact-real?]) inexact-real?]
 )]{
 
-For @tech{flonums}: Unchecked versions of @scheme[fl=], @scheme[fl<],
-@scheme[fl>], @scheme[fl<=], @scheme[fl>=], @scheme[flmin], and
-@scheme[flmax].}
+For @tech{flonums}: Unchecked versions of @racket[fl=], @racket[fl<],
+@racket[fl>], @racket[fl<=], @racket[fl>=], @racket[flmin], and
+@racket[flmax].}
 
 
 @deftogether[(
@@ -131,8 +131,8 @@ For @tech{flonums}: Unchecked versions of @scheme[fl=], @scheme[fl<],
 )]{
 
 For @tech{flonums}: Unchecked (potentially) versions of
-@scheme[flround], @scheme[flfloor], @scheme[flceiling], and
-@scheme[fltruncate]. Currently, these bindings are simply aliases for
+@racket[flround], @racket[flfloor], @racket[flceiling], and
+@racket[fltruncate]. Currently, these bindings are simply aliases for
 the corresponding safe bindings.}
 
 
@@ -149,9 +149,9 @@ the corresponding safe bindings.}
 )]{
 
 For @tech{flonums}: Unchecked (potentially) versions of
-@scheme[flsin], @scheme[flcos], @scheme[fltan], @scheme[flasin],
-@scheme[flacos], @scheme[flatan], @scheme[fllog], @scheme[flexp], and
-@scheme[flsqrt]. Currently, some of these bindings are simply aliases
+@racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
+@racket[flacos], @racket[flatan], @racket[fllog], @racket[flexp], and
+@racket[flsqrt]. Currently, some of these bindings are simply aliases
 for the corresponding safe bindings.}
 
 
@@ -171,7 +171,7 @@ For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],
 @defproc[(unsafe-fl->fx [a inexact-real?]) fixnum?]
 )]{
 Unchecked conversion of a fixnum to an integer flonum and vice versa.
-These are similar to the safe bindings @scheme[->fl] and @scheme[fl->exact-integer],
+These are similar to the safe bindings @racket[->fl] and @racket[fl->exact-integer],
 but further constrained to consume or produce a fixnum.
 }
 
@@ -187,8 +187,8 @@ but further constrained to consume or produce a fixnum.
 @defproc[(unsafe-set-mcdr! [p mpair?] [v any/c]) void?]
 )]{
 
-Unsafe variants of @scheme[car], @scheme[cdr], @scheme[mcar],
-@scheme[mcdr], @scheme[set-mcar!], and @scheme[set-mcdr!].}
+Unsafe variants of @racket[car], @racket[cdr], @racket[mcar],
+@racket[mcdr], @racket[set-mcar!], and @racket[set-mcdr!].}
 
 
 @deftogether[(
@@ -198,7 +198,7 @@ Unsafe variants of @scheme[car], @scheme[cdr], @scheme[mcar],
 @defproc[(unsafe-set-box*! [v (and/c box? (not/c impersonator?))] [val any/c]) void?]
 )]{
 
-Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
+Unsafe versions of @racket[unbox] and @racket[set-box!].}
 
 
 @deftogether[(
@@ -210,9 +210,9 @@ Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
 @defproc[(unsafe-vector*-set! [v (and/c vector? (not/c impersonator?))] [k fixnum?] [val any/c]) void?]
 )]{
 
-Unsafe versions of @scheme[vector-length], @scheme[vector-ref], and
-@scheme[vector-set!]. A vector's size can never be larger than a
-@tech{fixnum} (so even @scheme[vector-length] always returns a
+Unsafe versions of @racket[vector-length], @racket[vector-ref], and
+@racket[vector-set!]. A vector's size can never be larger than a
+@tech{fixnum} (so even @racket[vector-length] always returns a
 fixnum).}
 
 
@@ -223,10 +223,10 @@ fixnum).}
 @defproc[(unsafe-string-set! [str (and/c string? (not/c immutable?))] [k fixnum?] [ch char?]) void?]
 )]{
 
-Unsafe versions of @scheme[string-length], @scheme[string-ref], and
-@scheme[string-set!]. The @scheme[unsafe-string-ref] procedure can be used
+Unsafe versions of @racket[string-length], @racket[string-ref], and
+@racket[string-set!]. The @racket[unsafe-string-ref] procedure can be used
 only when the result will be a Latin-1 character. A string's size can
-never be larger than a @tech{fixnum} (so even @scheme[string-length]
+never be larger than a @tech{fixnum} (so even @racket[string-length]
 always returns a fixnum).}
 
 
@@ -236,9 +236,9 @@ always returns a fixnum).}
 @defproc[(unsafe-bytes-set! [bstr (and/c bytes? (not/c immutable?))] [k fixnum?] [b byte?]) void?]
 )]{
 
-Unsafe versions of @scheme[bytes-length], @scheme[bytes-ref], and
-@scheme[bytes-set!]. A bytes's size can never be larger than a
-@tech{fixnum} (so even @scheme[bytes-length] always returns a
+Unsafe versions of @racket[bytes-length], @racket[bytes-ref], and
+@racket[bytes-set!]. A bytes's size can never be larger than a
+@tech{fixnum} (so even @racket[bytes-length] always returns a
 fixnum).}
 
 
@@ -248,9 +248,9 @@ fixnum).}
 @defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x inexact-real?]) void?]
 )]{
 
-Unsafe versions of @scheme[flvector-length], @scheme[flvector-ref], and
-@scheme[flvector-set!]. A @tech{flvector}'s size can never be larger than a
-@tech{fixnum} (so even @scheme[flvector-length] always returns a
+Unsafe versions of @racket[flvector-length], @racket[flvector-ref], and
+@racket[flvector-set!]. A @tech{flvector}'s size can never be larger than a
+@tech{fixnum} (so even @racket[flvector-length] always returns a
 fixnum).}
 
 
@@ -259,8 +259,8 @@ fixnum).}
 @defproc[(unsafe-f64vector-set! [vec f64vector?] [k fixnum?] [n inexact-real?]) void?]
 )]{
 
-Unsafe versions of @scheme[f64vector-ref] and
-@scheme[f64vector-set!].}
+Unsafe versions of @racket[f64vector-ref] and
+@racket[f64vector-set!].}
 
 
 @deftogether[(
@@ -268,8 +268,8 @@ Unsafe versions of @scheme[f64vector-ref] and
 @defproc[(unsafe-s16vector-set! [vec s16vector?] [k fixnum?] [n (integer-in -32768 32767)]) void?]
 )]{
 
-Unsafe versions of @scheme[s16vector-ref] and
-@scheme[s16vector-set!].}
+Unsafe versions of @racket[s16vector-ref] and
+@racket[s16vector-set!].}
 
 
 @deftogether[(
@@ -277,8 +277,8 @@ Unsafe versions of @scheme[s16vector-ref] and
 @defproc[(unsafe-u16vector-set! [vec u16vector?] [k fixnum?] [n (integer-in 0 65535)]) void?]
 )]{
 
-Unsafe versions of @scheme[u16vector-ref] and
-@scheme[u16vector-set!].}
+Unsafe versions of @racket[u16vector-ref] and
+@racket[u16vector-set!].}
 
 
 @deftogether[(
@@ -289,7 +289,7 @@ Unsafe versions of @scheme[u16vector-ref] and
 )]{
 
 Unsafe field access and update for an instance of a structure
-type. The index @scheme[k] must be between @scheme[0] (inclusive) and
+type. The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the struture (exclusive). In the case of
-@scheme[unsafe-struct-set!], the field must be mutable.}
+@racket[unsafe-struct-set!], the field must be mutable.}
 

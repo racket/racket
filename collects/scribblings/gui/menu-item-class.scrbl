@@ -3,8 +3,8 @@
 
 @defclass/title[menu-item% object% (selectable-menu-item<%>)]{
 
-A @scheme[menu-item%] is a plain string-labelled menu item. Its
- parent must be a @scheme[menu%] or @scheme[popup-menu%]. When the
+A @racket[menu-item%] is a plain string-labelled menu item. Its
+ parent must be a @racket[menu%] or @racket[popup-menu%]. When the
  user selects the menu item, its callback procedure is called.
 
 
@@ -20,26 +20,26 @@ A @scheme[menu-item%] is a plain string-labelled menu item. Its
                                                     'shift 'option)) 
                                   (get-default-shortcut-prefix)])]{
 
-Creates a new menu item in @scheme[parent]. The item is initially
- shown, appended to the end of its parent. The @scheme[callback]
- procedure is called (with the event type @indexed-scheme['menu]) when
+Creates a new menu item in @racket[parent]. The item is initially
+ shown, appended to the end of its parent. The @racket[callback]
+ procedure is called (with the event type @indexed-racket['menu]) when
  the user selects the menu item (either via a menu bar,
  @xmethod[window<%> popup-menu], or @xmethod[editor-admin%
  popup-menu]).
 
 See @method[labelled-menu-item<%> set-label] for information about
-mnemonic @litchar{&}s in @scheme[label].
+mnemonic @litchar{&}s in @racket[label].
 
-If @scheme[shortcut] is not @scheme[#f], the item has a shortcut. See
+If @racket[shortcut] is not @racket[#f], the item has a shortcut. See
 @method[selectable-menu-item<%> get-shortcut] for more information.
-The @scheme[shortcut-prefix] argument determines the set of modifier
+The @racket[shortcut-prefix] argument determines the set of modifier
 keys for the shortcut; see @method[selectable-menu-item<%>
 get-shortcut-prefix].
 
-If @scheme[help] is not @scheme[#f], the item has a help string. See
+If @racket[help] is not @racket[#f], the item has a help string. See
 @method[labelled-menu-item<%> get-help-string] for more information.
 
-The @scheme[demand-callback] procedure is called by the default
+The @racket[demand-callback] procedure is called by the default
 @method[menu-item-container<%> on-demand] method with the object itself.
 
 }}

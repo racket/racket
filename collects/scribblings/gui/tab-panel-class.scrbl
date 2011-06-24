@@ -5,9 +5,9 @@
 
 A tab panel arranges its subwindows in a single column, but also
  includes a horizontal row of tabs at the top of the panel. See
- also @scheme[panel%].
+ also @racket[panel%].
 
-The @scheme[tab-panel%] class does not implement the virtual
+The @racket[tab-panel%] class does not implement the virtual
  swapping of the panel content when a new tab is selected. Instead, it
  merely invokes a callback procedure to indicate that a user changed
  the tab selection.
@@ -36,20 +36,20 @@ The @scheme[tab-panel%] class does not implement the virtual
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-Creates a tab pane, where the @scheme[choices] list specifies the tab
+Creates a tab pane, where the @racket[choices] list specifies the tab
  labels.
 
-Each string in @scheme[choices] can contain an ampersand, which (in the
+Each string in @racket[choices] can contain an ampersand, which (in the
  future) may create a mnemonic for clicking the corresponding tab. A
  double ampersand is converted to a single ampersand.
 
-The @scheme[callback] procedure is called (with the event type
- @indexed-scheme['tab-panel]) when the user changes the tab selection.
+The @racket[callback] procedure is called (with the event type
+ @indexed-racket['tab-panel]) when the user changes the tab selection.
 
-If the @scheme[style] list includes @scheme['no-border], no border is
- drawn around the panel content. @DeletedStyleNote[@scheme[style] @scheme[parent]]{tab panel}
+If the @racket[style] list includes @racket['no-border], no border is
+ drawn around the panel content. @DeletedStyleNote[@racket[style] @racket[parent]]{tab panel}
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 
@@ -60,7 +60,7 @@ If the @scheme[style] list includes @scheme['no-border], no border is
 
 Adds a tab to the right end of panel's top row of tabs.
 
-The label string @scheme[choice] can contain @litchar{&}, which (in
+The label string @racket[choice] can contain @litchar{&}, which (in
  the future) may create a mnemonic for clicking the new tab. A
  @litchar{&&} is converted to @litchar{&}.
 
@@ -69,7 +69,7 @@ The label string @scheme[choice] can contain @litchar{&}, which (in
 @defmethod[(delete [n exact-nonnegative-integer?])
            void?]{
 
-Deletes an existing tab. If @scheme[n] is equal to or larger than the
+Deletes an existing tab. If @racket[n] is equal to or larger than the
  number of tabs on the panel, @|MismatchExn|.
 
 }
@@ -77,8 +77,8 @@ Deletes an existing tab. If @scheme[n] is equal to or larger than the
 @defmethod[(get-item-label [n exact-nonnegative-integer?])
            string?]{
 
-Gets the label of a tab by position. Tabs are numbered from @scheme[0].
-If @scheme[n] is equal to or larger than the number of tabs in the panel,
+Gets the label of a tab by position. Tabs are numbered from @racket[0].
+If @racket[n] is equal to or larger than the number of tabs in the panel,
  @|MismatchExn|.
 
 }
@@ -94,7 +94,7 @@ Returns the number of tabs on the panel.
            (or/c exact-nonnegative-integer? false/c)]{
 
 Returns the index (counting from 0) of the currently selected tab.  If
- the panel has no tabs, the result is @scheme[#f].
+ the panel has no tabs, the result is @racket[#f].
 
 }
 
@@ -110,7 +110,7 @@ Removes all tabs from the panel and installs tabs with the given
                            [label label-string?])
            void?]{
 
-Set the label for tab @scheme[n] to @scheme[label]. If @scheme[n] is equal to
+Set the label for tab @racket[n] to @racket[label]. If @racket[n] is equal to
  or larger than the number of tabs in the panel, @|MismatchExn|.
 
 }
@@ -119,7 +119,7 @@ Set the label for tab @scheme[n] to @scheme[label]. If @scheme[n] is equal to
            void?]{
 
 Sets the currently selected tab by index (counting from 0).
-If @scheme[n] is equal to or larger than the number of tabs in the panel,
+If @racket[n] is equal to or larger than the number of tabs in the panel,
  @|MismatchExn|.
 
 }}

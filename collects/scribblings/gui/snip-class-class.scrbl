@@ -4,11 +4,11 @@
 @defclass/title[snip-class% object% ()]{
 
 Useful snip classes are defined by instantiating derived subclasses of
- @scheme[snip-class%]. A class derived from @scheme[snip-class%]
+ @racket[snip-class%]. A class derived from @racket[snip-class%]
  serves as a kind of ``meta-class'' for snips; each snip is associated
- with an instance of @scheme[snip-class%] as its snip class.
+ with an instance of @racket[snip-class%] as its snip class.
 
-In deriving a new @scheme[snip-class%] class, override the
+In deriving a new @racket[snip-class%] class, override the
  @method[snip-class% read] method. Then, for each instance of the
  derived class (where each instance corresponds to a single snip
  class):
@@ -21,7 +21,7 @@ In deriving a new @scheme[snip-class%] class, override the
        @method[snip-class% set-version].} 
 
  @item{Install the class into the list returned by
-       @scheme[get-the-snip-class-list] using the
+       @racket[get-the-snip-class-list] using the
        @method[snip-class-list<%> add] method. Note that if the same
        name is inserted into the same class list multiple times, all
        but the first insertion is ignored.}
@@ -42,9 +42,9 @@ Creates a (useless) snip class.
 
 Returns the class's name, a string uniquely designating this snip
  class. For example, the standard text snip classname is
- @scheme["wxtext"]. Names beginning with @litchar{wx} are reserved.
+ @racket["wxtext"]. Names beginning with @litchar{wx} are reserved.
 
-A snip class name should usually have the form @scheme["((lib ...)
+A snip class name should usually have the form @racket["((lib ...)
 (lib ...))"]  to enable on-demand loading of the class. See
 @|snipclassdiscuss| for details.
 
@@ -65,12 +65,12 @@ Returns the version of this snip class. When attempting to load a file
 @methspec{
 
 Reads a snip from a given stream, returning a newly created snip as
- the result or @scheme[#f] if there is an error.
+ the result or @racket[#f] if there is an error.
 
 }
 @methimpl{
 
-Returns @scheme[#f].
+Returns @racket[#f].
 
 }}
 
@@ -84,7 +84,7 @@ Called to read header information that may be useful for every snip
  session, and only if the stream contains header information for this
  class.
 
-The return value is @scheme[#f] if a read error occurs or anything else
+The return value is @racket[#f] if a read error occurs or anything else
  otherwise.
 
 See also @method[snip-class% write-header].
@@ -92,7 +92,7 @@ See also @method[snip-class% write-header].
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 
@@ -134,13 +134,13 @@ When reading the snips back in, @method[snip-class% read-header] will
  only be called if @method[snip-class% write-header] writes some data
  to the stream.
 
-The return value is @scheme[#f] if a write error occurs or anything else
+The return value is @racket[#f] if a write error occurs or anything else
  otherwise.
 
 }
 @methimpl{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 }}
 }

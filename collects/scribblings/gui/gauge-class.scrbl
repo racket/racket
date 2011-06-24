@@ -27,19 +27,20 @@ of the gauge.
                  [stretchable-width any/c (memq 'horizontal style)]
                  [stretchable-height any/c (memq 'vertical style)])]{
 
-If @scheme[label] is a string, it is used as the gauge label; otherwise
+If @racket[label] is a string, it is used as the gauge label; otherwise
  the gauge does not display a label.
 
 @labelsimplestripped[(scheme label) @elem{gauge}]
 
-The @scheme[range] argument is an integer specifying the maximum value of
- the gauge (inclusive). The minimum gauge value is always @scheme[0].
+The @racket[range] argument is an integer specifying the maximum value of
+ the gauge (inclusive). The minimum gauge value is always @racket[0].
 
-The @scheme[style] list must include either @scheme['horizontal],
- specifying a horizontal gauge, or @scheme['vertical], specifying
- a vertical gauge. @HVLabelNote[@scheme[style]]{gauge} @DeletedStyleNote[@scheme[style] @scheme[parent]]{gauge}
+The @racket[style] list must include either @racket['horizontal],
+ specifying a horizontal gauge, or @racket['vertical], specifying a vertical
+ gauge. @HVLabelNote[@racket[style]]{gauge} @DeletedStyleNote[@racket[style]
+ @racket[parent]]{gauge}
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 

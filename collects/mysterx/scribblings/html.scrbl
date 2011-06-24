@@ -5,15 +5,15 @@
 
 @title[#:tag "html" #:style 'toc]{HTML and Dynamic HTML}
 
-  The @scheme[mx-element%] class encapsulates HTML elements.  By
+  The @racket[mx-element%] class encapsulates HTML elements.  By
   calling the methods of the class, you can change the appearance of
   elements, and place new HTML before or after the element.  While the
   methods are described here, a good DHTML reference, such as
   Goodman's @italic{Dynamic HTML} will have more complete information.
 
-  Many of the @scheme[mx-element%] methods have two variants, a
+  Many of the @racket[mx-element%] methods have two variants, a
   version that takes or returns Racket data, and another
-  @schemeidfont{-native} version that takes or returns a string.  For
+  @racketidfont{-native} version that takes or returns a string.  For
   methods that return values of element properties, we assume two
   characteristics, which we do not mention in the methods'
   documentation: 1) Native methods return the empty string for
@@ -43,18 +43,18 @@
 
   Returns a string containing HTML which when inserted into a document
   loads the COM object with the COM class or ProgID given by
-  @scheme[name].  This procedure is suitable for placing ActiveX
-  controls within complex HTML.  The optional @scheme[size] argument
-  gives an interpretation for the @scheme[width] and @scheme[height]
-  arguments; by default, @scheme[size] is @scheme['pixels], but may
-  also be @scheme['percent], indicating that the width and height are
+  @racket[name].  This procedure is suitable for placing ActiveX
+  controls within complex HTML.  The optional @racket[size] argument
+  gives an interpretation for the @racket[width] and @racket[height]
+  arguments; by default, @racket[size] is @racket['pixels], but may
+  also be @racket['percent], indicating that the width and height are
   a fixed percentage of the document window size.}
 
 @; ----------------------------------------
 
 @section{CSS}
 
-  In the @scheme[mx-element%] method descriptions, ``CSS'' refers to
+  In the @racket[mx-element%] method descriptions, ``CSS'' refers to
   the Cascading Style Sheets specification.  A CSS length is string
   consisting of a decimal integer number followed by one of the units
   @litchar{px} (pixels), @litchar{em} (font height), @litchar{ex}
@@ -62,9 +62,9 @@
   (centimeters), @litchar{mm} (millimeters), @litchar{pc} (picas), or
   @litchar{pt} (points).  A CSS percentage is a string consisting of a
   decimal real number followed by @litchar{%}.  When using
-  @schemeidfont{-native} methods, CSS lengths and percentages are
+  @racketidfont{-native} methods, CSS lengths and percentages are
   given as strings.  For use by non-native methods, the
-  @scheme[css-percentage] and @scheme[css-length] structures have been
+  @racket[css-percentage] and @racket[css-length] structures have been
   defined.
 
 @deftogether[(
@@ -82,13 +82,13 @@
  (@litchar{0}-@litchar{9} and @litchar{a}-@litchar{f} or
  @litchar{A}-@litchar{F}); the first two digits are for the red
  component of the color, the middle two for the green component, and
- the last two for the blue component.  For example, @scheme["#FFFFFF"]
- is white, @scheme["#000000"] is black, and @scheme["#00FF00"] is
+ the last two for the blue component.  For example, @racket["#FFFFFF"]
+ is white, @racket["#000000"] is black, and @racket["#00FF00"] is
  green.
 
- There are also predefined color names.  The @schemeidfont{-native}
+ There are also predefined color names.  The @racketidfont{-native}
  methods use these names in strings, while their nonnative counterpart
- methods use the names as symbols.  
+ methods use the names as symbols.
 
  The predefined color names are:
 

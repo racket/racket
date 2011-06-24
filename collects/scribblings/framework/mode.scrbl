@@ -12,32 +12,32 @@
    [(_ spec ...)
    #`(begin
     @definterface[mode:surrogate-text<%> ()]{
-     @defmethod[(on-enable-surrogate) any]{
-       Called by @method[mode:host-text<%> set-surrogate] to
-       notify the surrogate that it has just become active.
-     }
-     @defmethod[(on-disable-surrogate) any]{
-       Called by @method[mode:host-text<%> set-surrogate] to
-       notify the surrogate that it has just been disabled.
-     }
-   }
+      @defmethod[(on-enable-surrogate) any]{
+        Called by @method[mode:host-text<%> set-surrogate] to notify the
+        surrogate that it has just become active.
+      }
+      @defmethod[(on-disable-surrogate) any]{
+        Called by @method[mode:host-text<%> set-surrogate] to notify the
+        surrogate that it has just been disabled.
+      }
+    }
     @defclass[mode:surrogate-text% object% (mode:surrogate-text<%>)]{
-    @#,@(map spec->surrogate-method (syntax->list #'(spec ...)))
+      @#,@(map spec->surrogate-method (syntax->list #'(spec ...)))
     }
     @definterface[mode:host-text<%> ()]{
-     @defmethod[(get-surrogate) 
-                (or/c false/c (is-a?/c mode:surrogate-text<%>))]{
-      Returns the currently active surrogate.
-     }
-     @defmethod[(set-surrogate 
-                 [surrogate (or/c false/c (is-a?/c mode:surrogate-text<%>))])
-                void?]{
-      Sets the current surrogate to @scheme[surrogate].
-     }
+      @defmethod[(get-surrogate)
+                 (or/c false/c (is-a?/c mode:surrogate-text<%>))]{
+       Returns the currently active surrogate.
+      }
+      @defmethod[(set-surrogate
+                  [surrogate (or/c false/c (is-a?/c mode:surrogate-text<%>))])
+                 void?]{
+        Sets the current surrogate to @racket[surrogate].
+      }
     }
     @defmixin[mode:host-text-mixin () (mode:host-text<%>)]{
-    @#,@(map spec->host-method (syntax->list #'(spec ...)))
-})]))
+      @#,@(map spec->host-method (syntax->list #'(spec ...)))
+    })]))
 
 (surrogate-methods docs)
 )

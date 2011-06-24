@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require "mz.rkt")
 
-@title[#:tag "for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
+@title[#:tag "for"]{Iterations and Comprehensions: @racket[for], @racket[for/list], ...}
 
 @guideintro["for"]{iterations and comprehensions}
 
-The @scheme[for] iteration forms are based on SRFI-42
+The @racket[for] iteration forms are based on SRFI-42
 @cite["SRFI-42"].
 
 
@@ -18,45 +18,45 @@ The @scheme[for] iteration forms are based on SRFI-42
                            (code:line #:unless guard-expr)])
               #:contracts ([seq-expr sequence?])]{
 
-Iteratively evaluates @scheme[body]. The @scheme[for-clause]s
-introduce bindings whose scope includes @scheme[body] and that
-determine the number of times that @scheme[body] is evaluated.
+Iteratively evaluates @racket[body]. The @racket[for-clause]s
+introduce bindings whose scope includes @racket[body] and that
+determine the number of times that @racket[body] is evaluated.
 
-In the simple case, each @scheme[for-clause] has one of its first two
-forms, where @scheme[[id seq-expr]] is a shorthand for @scheme[[(id)
-seq-expr]].  In this simple case, the @scheme[seq-expr]s are evaluated
+In the simple case, each @racket[for-clause] has one of its first two
+forms, where @racket[[id seq-expr]] is a shorthand for @racket[[(id)
+seq-expr]].  In this simple case, the @racket[seq-expr]s are evaluated
 left-to-right, and each must produce a sequence value (see
 @secref["sequences"]).
 
-The @scheme[for] form iterates by drawing an element from each
+The @racket[for] form iterates by drawing an element from each
 sequence; if any sequence is empty, then the iteration stops, and
-@|void-const| is the result of the @scheme[for] expression. Otherwise
-a location is created for each @scheme[id] to hold the values of each
-element; the sequence produced by a @scheme[seq-expr] must return as
-many values for each iteration as corresponding @scheme[id]s.
+@|void-const| is the result of the @racket[for] expression. Otherwise
+a location is created for each @racket[id] to hold the values of each
+element; the sequence produced by a @racket[seq-expr] must return as
+many values for each iteration as corresponding @racket[id]s.
 
-The @scheme[id]s are then bound in the @scheme[body], which is
+The @racket[id]s are then bound in the @racket[body], which is
 evaluated, and whose results are ignored. Iteration continues with the
 next element in each sequence and with fresh locations for each
-@scheme[id].
+@racket[id].
 
-A @scheme[for] form with zero @scheme[for-clause]s is equivalent to a
-single @scheme[for-clause] that binds an unreferenced @scheme[id] to
-a sequence containing a single element. All of the @scheme[id]s must
-be distinct according to @scheme[bound-identifier=?].
+A @racket[for] form with zero @racket[for-clause]s is equivalent to a
+single @racket[for-clause] that binds an unreferenced @racket[id] to
+a sequence containing a single element. All of the @racket[id]s must
+be distinct according to @racket[bound-identifier=?].
 
-If any @scheme[for-clause] has the form @scheme[#:when guard-expr],
-then only the preceding clauses (containing no @scheme[#:when] or @scheme[#:unless])
-determine iteration as above, and the @scheme[body] is effectively
+If any @racket[for-clause] has the form @racket[#:when guard-expr],
+then only the preceding clauses (containing no @racket[#:when] or @racket[#:unless])
+determine iteration as above, and the @racket[body] is effectively
 wrapped as
 
-@schemeblock[
+@racketblock[
 (when guard-expr
   (for (for-clause ...) body ...+))
 ]
 
-using the remaining @scheme[for-clauses]. A @scheme[for-clause] of
-the form @scheme[#:unless guard-expr] corresponds to the same transformation
+using the remaining @racket[for-clauses]. A @racket[for-clause] of
+the form @racket[#:unless guard-expr] corresponds to the same transformation
 with @racket[unless] in place of @racket[when].
 
 @examples[
@@ -74,10 +74,10 @@ with @racket[unless] in place of @racket[when].
 ]}
 
 @defform[(for/list (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but that the last expression in the @scheme[body]s must
-produce a single value, and the result of the @scheme[for/list]
+@racket[for], but that the last expression in the @racket[body]s must
+produce a single value, and the result of the @racket[for/list]
 expression is a list of the results in order.
-When evaluation of a @scheme[body] is skipped due to a @racket[#:when]
+When evaluation of a @racket[body] is skipped due to a @racket[#:when]
 or @racket[#:unless] clause, the result list includes no corresponding
 element.
 
@@ -95,17 +95,17 @@ element.
 @defform*[((for/vector (for-clause ...) body ...+)
            (for/vector #:length length-expr (for-clause ...) body ...+))]{
 
-Iterates like @scheme[for/list], but the result are accumulated into
-a vector instead of a list.  If the optional @scheme[#:length]
-form is used, then @scheme[length-expr] must evaluate to an
-@scheme[exact-nonnegative-integer?], and the result vector is
+Iterates like @racket[for/list], but the result are accumulated into
+a vector instead of a list.  If the optional @racket[#:length]
+form is used, then @racket[length-expr] must evaluate to an
+@racket[exact-nonnegative-integer?], and the result vector is
 constructed with this length.  In this case, the iteration can be
 performed more efficiently, and terminates when the vector is full or
 the requested number of iterations have been performed, whichever
-comes first.  If the provided @scheme[length-expr] evaluates to a
+comes first.  If the provided @racket[length-expr] evaluates to a
 length longer than the number of iterations then the remaining slots
 of the vector are intialized to the default argument of
-@scheme[make-vector].}
+@racket[make-vector].}
 
 @deftogether[(
 @defform[(for/hash (for-clause ...) body ...+)]
@@ -113,11 +113,11 @@ of the vector are intialized to the default argument of
 @defform[(for/hasheqv (for-clause ...) body ...+)]
 )]{
 
-Like @scheme[for/list], but the result is an immutable @tech{hash
-table}; @scheme[for/hash] creates a table using @scheme[equal?] to
-distinguish keys, @scheme[for/hasheq] produces a table using
-@scheme[eq?], and @scheme[for/hasheqv] produces a table using
-@scheme[eqv?]. The last expression in the @scheme[body]s must return
+Like @racket[for/list], but the result is an immutable @tech{hash
+table}; @racket[for/hash] creates a table using @racket[equal?] to
+distinguish keys, @racket[for/hasheq] produces a table using
+@racket[eq?], and @racket[for/hasheqv] produces a table using
+@racket[eqv?]. The last expression in the @racket[body]s must return
 two values: a key and a value to extend the hash table accumulated by
 the iteration.
 
@@ -128,12 +128,12 @@ the iteration.
 
 
 @defform[(for/and (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but when last expression of @scheme[body] produces
-@scheme[#f], then iteration terminates, and the result of the
-@scheme[for/and] expression is @scheme[#f]. If the @scheme[body]
-is never evaluated, then the result of the @scheme[for/and]
-expression is @scheme[#t]. Otherwise, the result is the (single)
-result from the last evaluation of @scheme[body].
+@racket[for], but when last expression of @racket[body] produces
+@racket[#f], then iteration terminates, and the result of the
+@racket[for/and] expression is @racket[#f]. If the @racket[body]
+is never evaluated, then the result of the @racket[for/and]
+expression is @racket[#t]. Otherwise, the result is the (single)
+result from the last evaluation of @racket[body].
 
 @examples[
 (for/and ([i '(1 2 3 "x")])
@@ -145,12 +145,12 @@ result from the last evaluation of @scheme[body].
 ]}
 
 @defform[(for/or (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but when last expression of @scheme[body] produces
-a value other than @scheme[#f], then iteration terminates, and
-the result of the @scheme[for/or] expression is the same
-(single) value. If the @scheme[body] is never evaluated, then the
-result of the @scheme[for/or] expression is
-@scheme[#f]. Otherwise, the result is @scheme[#f].
+@racket[for], but when last expression of @racket[body] produces
+a value other than @racket[#f], then iteration terminates, and
+the result of the @racket[for/or] expression is the same
+(single) value. If the @racket[body] is never evaluated, then the
+result of the @racket[for/or] expression is
+@racket[#f]. Otherwise, the result is @racket[#f].
 
 @examples[
 (for/or ([i '(1 2 3 "x")])
@@ -164,19 +164,19 @@ result of the @scheme[for/or] expression is
 
 @defform[(for/lists (id ...) (for-clause ...) body ...+)]{
 
-Similar to @scheme[for/list], but the last @scheme[body] expression
-should produce as many values as given @scheme[id]s, and the result is
-as many lists as supplied @scheme[id]s. The @scheme[id]s are bound to
-the lists accumulated so far in the @scheme[for-clause]s and
-@scheme[body]s.}
+Similar to @racket[for/list], but the last @racket[body] expression
+should produce as many values as given @racket[id]s, and the result is
+as many lists as supplied @racket[id]s. The @racket[id]s are bound to
+the lists accumulated so far in the @racket[for-clause]s and
+@racket[body]s.}
 
 
 @defform[(for/first (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but after @scheme[body] is evaluated the first
-time, then the iteration terminates, and the @scheme[for/first]
-result is the (single) result of @scheme[body]. If the
-@scheme[body] is never evaluated, then the result of the
-@scheme[for/first] expression is @scheme[#f].
+@racket[for], but after @racket[body] is evaluated the first
+time, then the iteration terminates, and the @racket[for/first]
+result is the (single) result of @racket[body]. If the
+@racket[body] is never evaluated, then the result of the
+@racket[for/first] expression is @racket[#f].
 
 @examples[
 (for/first ([i '(1 2 3 "x")]
@@ -187,10 +187,10 @@ result is the (single) result of @scheme[body]. If the
 ]}
 
 @defform[(for/last (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but the @scheme[for/last] result is the (single)
-result of the last evaluation of @scheme[body]. If the
-@scheme[body] is never evaluated, then the result of the
-@scheme[for/last] expression is @scheme[#f].
+@racket[for], but the @racket[for/last] result is the (single)
+result of the last evaluation of @racket[body]. If the
+@racket[body] is never evaluated, then the result of the
+@racket[for/last] expression is @racket[#f].
 
 @examples[
 (for/last ([i '(1 2 3 4 5)]
@@ -202,14 +202,14 @@ result of the last evaluation of @scheme[body]. If the
 
 @defform[(for/fold ([accum-id init-expr] ...) (for-clause ...) . body)]{
 
-Iterates like @scheme[for]. Before iteration starts, the
-@scheme[init-expr]s are evaluated to produce initial accumulator
+Iterates like @racket[for]. Before iteration starts, the
+@racket[init-expr]s are evaluated to produce initial accumulator
 values. At the start of each iteration, a location is generated
-for each @scheme[accum-id], and the corresponding current accumulator
+for each @racket[accum-id], and the corresponding current accumulator
 value is placed into the location. The last expression in
-@scheme[body] must produce as many values as @scheme[accum-id]s, and
+@racket[body] must produce as many values as @racket[accum-id]s, and
 those values become the current accumulator values. When iteration
-terminates, the results of the @scheme[fold/for] expression are the
+terminates, the results of the @racket[fold/for] expression are the
 accumulator values.
 
 @examples[
@@ -220,8 +220,8 @@ accumulator values.
 ]}
 
 @defform[(for* (for-clause ...) body ...+)]{
-Like @scheme[for], but with an implicit @scheme[#:when #t] between
-each pair of @scheme[for-clauses], so that all sequence iterations are
+Like @racket[for], but with an implicit @racket[#:when #t] between
+each pair of @racket[for-clauses], so that all sequence iterations are
 nested.
 
 @examples[
@@ -245,8 +245,8 @@ nested.
 @defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) body ...+)]
 )]{
 
-Like @scheme[for/list], etc., but with the implicit nesting of
-@scheme[for*].
+Like @racket[for/list], etc., but with the implicit nesting of
+@racket[for*].
 
 @examples[
 (for*/list ([i '(1 2)]
@@ -259,7 +259,7 @@ Like @scheme[for/list], etc., but with the implicit nesting of
 
 @defform[(for/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
-Like @scheme[for/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+Like @racket[for/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
 @mz-examples[
 (define-syntax (for/digits stx)
@@ -287,7 +287,7 @@ Like @scheme[for/fold], but the extra @scheme[orig-datum] is used as the source 
 
 @defform[(for*/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
-Like @scheme[for*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
 @mz-examples[
 (define-syntax (for*/digits stx)
@@ -322,29 +322,29 @@ Like @scheme[for*/fold], but the extra @scheme[orig-datum] is used as the source
                                      (syntax? . -> . syntax?))]
           [clause-transform-expr (syntax? . -> . syntax?)])]{
 
-Defines @scheme[id] as syntax. An @scheme[(id . _rest)] form is
+Defines @racket[id] as syntax. An @racket[(id . _rest)] form is
 treated specially when used to generate a sequence in a
-@scheme[_clause] of @scheme[for] (or one of its variants). In that
-case, the procedure result of @scheme[clause-transform-expr] is called
+@racket[_clause] of @racket[for] (or one of its variants). In that
+case, the procedure result of @racket[clause-transform-expr] is called
 to transform the clause.
 
-When @scheme[id] is used in any other expression position, the result
-of @scheme[expr-transform-expr] is used. If it is a procedure of zero
-arguments, then the result must be an identifier @scheme[_other-id],
-and any use of @scheme[id] is converted to a use of
-@scheme[_other-id]. Otherwise,@scheme[expr-transform-expr] must
+When @racket[id] is used in any other expression position, the result
+of @racket[expr-transform-expr] is used. If it is a procedure of zero
+arguments, then the result must be an identifier @racket[_other-id],
+and any use of @racket[id] is converted to a use of
+@racket[_other-id]. Otherwise,@racket[expr-transform-expr] must
 produce a procedure (of one argument) that is used as a macro
 transformer.
 
-When the @scheme[clause-transform-expr] transformer is used, it is
-given a @scheme[_clause] as an argument, where the clause's form is
+When the @racket[clause-transform-expr] transformer is used, it is
+given a @racket[_clause] as an argument, where the clause's form is
 normalized so that the left-hand side is a parenthesized sequence of
-identifiers. The right-hand side is of the form @scheme[(id . _rest)].
-The result can be either @scheme[#f], to indicate that the forms
+identifiers. The right-hand side is of the form @racket[(id . _rest)].
+The result can be either @racket[#f], to indicate that the forms
 should not be treated specially (perhaps because the number of bound
-identifiers is inconsistent with the @scheme[(id . _rest)] form), or a
-new @scheme[_clause] to replace the given one. The new clause might
-use @scheme[:do-in].}
+identifiers is inconsistent with the @racket[(id . _rest)] form), or a
+new @racket[_clause] to replace the given one. The new clause might
+use @racket[:do-in].}
 
 @mz-examples[
 (define-sequence-syntax in-digits
@@ -381,13 +381,13 @@ use @scheme[:do-in].}
                  post-guard
                  (loop-arg ...))]{
 
-A form that can only be used as a @scheme[_seq-expr] in a
-@scheme[_clause] of @scheme[for] (or one of its variants).
+A form that can only be used as a @racket[_seq-expr] in a
+@racket[_clause] of @racket[for] (or one of its variants).
 
-Within a @scheme[for], the pieces of the @scheme[:do-in] form are
+Within a @racket[for], the pieces of the @racket[:do-in] form are
 spliced into the iteration essentially as follows:
 
-@schemeblock[
+@racketblock[
 (let-values ([(outer-id ...) outer-expr] ...)
   outer-check
   (let loop ([loop-id loop-expr] ...)
@@ -402,13 +402,13 @@ spliced into the iteration essentially as follows:
          _done-expr)))
 ]
 
-where @scheme[_body-bindings] and @scheme[_done-expr] are from the
-context of the @scheme[:do-in] use. The identifiers bound by the
-@scheme[for] clause are typically part of the @scheme[([(inner-id ...)
+where @racket[_body-bindings] and @racket[_done-expr] are from the
+context of the @racket[:do-in] use. The identifiers bound by the
+@racket[for] clause are typically part of the @racket[([(inner-id ...)
 inner-expr] ...)] section.
 
-The actual @scheme[loop] binding and call has additional loop
-arguments to support iterations in parallel with the @scheme[:do-in]
+The actual @racket[loop] binding and call has additional loop
+arguments to support iterations in parallel with the @racket[:do-in]
 form, and the other pieces are similarly accompanied by pieces from
 parallel iterations.}
 
@@ -422,25 +422,25 @@ For an example of @racket[:do-in], see @racket[define-sequence-syntax] above.
               ([step-expr-maybe code:blank
                                 step-expr])]{
 
-Iteratively evaluates the @scheme[expr]s for as long as
-@scheme[stop?-expr] returns @scheme[#f].
+Iteratively evaluates the @racket[expr]s for as long as
+@racket[stop?-expr] returns @racket[#f].
 
-To initialize the loop, the @scheme[init-expr]s are evaluated in order
-and bound to the corresponding @scheme[id]s. The @scheme[id]s are
+To initialize the loop, the @racket[init-expr]s are evaluated in order
+and bound to the corresponding @racket[id]s. The @racket[id]s are
 bound in all expressions within the form other than the
-@scheme[init-expr]s.
+@racket[init-expr]s.
 
-After the @scheme[id]s have been bound, the @scheme[stop?-expr] is
-evaluated. If it produces @scheme[#f], each @scheme[expr] is evaluated
-for its side-effect. The @scheme[id]s are then effectively updated
-with the values of the @scheme[step-expr]s, where the default
-@scheme[step-expr] for @scheme[id] is just @scheme[id]; more
+After the @racket[id]s have been bound, the @racket[stop?-expr] is
+evaluated. If it produces @racket[#f], each @racket[expr] is evaluated
+for its side-effect. The @racket[id]s are then effectively updated
+with the values of the @racket[step-expr]s, where the default
+@racket[step-expr] for @racket[id] is just @racket[id]; more
 precisely, iteration continues with fresh locations for the
-@scheme[id]s that are initialized with the values of the corresponding
-@scheme[step-expr]s.
+@racket[id]s that are initialized with the values of the corresponding
+@racket[step-expr]s.
 
-When @scheme[stop?-expr] produces a true value, then the
-@scheme[finish-expr]s are evaluated in order, and the last one is
+When @racket[stop?-expr] produces a true value, then the
+@racket[finish-expr]s are evaluated in order, and the last one is
 evaluated in tail position to produce the overall value for the
-@scheme[do] form. If no @scheme[finish-expr] is provided, the value of
-the @scheme[do] form is @|void-const|.}
+@racket[do] form. If no @racket[finish-expr] is provided, the value of
+the @racket[do] form is @|void-const|.}

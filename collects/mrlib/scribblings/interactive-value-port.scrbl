@@ -8,8 +8,8 @@
 
 @defproc[(set-interactive-display-handler [port output-port?]) void?]{
 
-Sets @scheme[port]'s display handler (via
-@scheme[port-display-handler]) so that when it encounters these
+Sets @racket[port]'s display handler (via
+@racket[port-display-handler]) so that when it encounters these
 values:
 
 @itemize[
@@ -20,21 +20,21 @@ values:
 
 ]
 
-it uses @scheme[write-special] to send snips to the port,
+it uses @racket[write-special] to send snips to the port,
 instead of those values. Otherwise, it behaves like the
 default handler.
 
 To show values embedded in lists and other compound object, it uses
-@scheme[pretty-print].}
+@racket[pretty-print].}
 
 
 @defproc[(set-interactive-write-handler [port output-port?]) void?]{
 
-Like @scheme[set-interactive-display-handler], but sets the
-@scheme[port-write-handler].}
+Like @racket[set-interactive-display-handler], but sets the
+@racket[port-write-handler].}
 
 
 @defproc[(set-interactive-print-handler [port output-port?]) void?]{
 
-Like @scheme[set-interactive-display-handler], but sets the
-@scheme[port-print-handler].}
+Like @racket[set-interactive-display-handler], but sets the
+@racket[port-print-handler].}

@@ -3,8 +3,8 @@
 
 @defclass/title[menu-bar% object% (menu-item-container<%>)]{
 
-A @scheme[menu-bar%] object is created for a particular
- @scheme[frame%] object. A frame can have at most one menu bar;
+A @racket[menu-bar%] object is created for a particular
+ @racket[frame%] object. A frame can have at most one menu bar;
  @|MismatchExn| when a new menu bar is created for a frame that
  already has a menu bar.
 
@@ -14,14 +14,14 @@ A @scheme[menu-bar%] object is created for a particular
                  [demand-callback ((is-a?/c menu-bar%) . -> . any) (lambda (m) (void))])]{
 
 Creates a menu bar in the specified frame. The menu bar is initially
- empty. If @indexed-scheme['root] is supplied as @scheme[parent], the
+ empty. If @indexed-racket['root] is supplied as @racket[parent], the
  menu bar becomes active only when no other frames are shown. A
- @scheme['root] @scheme[parent] is allowed only when
- @scheme[current-eventspace-has-menu-root?] returns @scheme[#t], and
+ @racket['root] @racket[parent] is allowed only when
+ @racket[current-eventspace-has-menu-root?] returns @racket[#t], and
  only if no such menu bar has been created before, otherwise
  @|MismatchExn|.
 
-The @scheme[demand-callback] procedure is called by the default
+The @racket[demand-callback] procedure is called by the default
 @method[menu-item-container<%> on-demand] method with the object itself.
 
 }
@@ -32,7 +32,7 @@ The @scheme[demand-callback] procedure is called by the default
 
 Enables or disables the menu bar (i.e., all of its menus).  Each
  menu's @method[labelled-menu-item<%> is-enabled?] method returns
- @scheme[#f] only if the menu is specifically disabled (in addition to
+ @racket[#f] only if the menu is specifically disabled (in addition to
  the menu bar).
 
 }
@@ -49,6 +49,6 @@ Returns the menu bar's frame.
 @defmethod[(is-enabled?)
            boolean?]{
 
-Returns @scheme[#t] if the menu bar is enabled, @scheme[#f] otherwise.
+Returns @racket[#t] if the menu bar is enabled, @racket[#f] otherwise.
 
 }}

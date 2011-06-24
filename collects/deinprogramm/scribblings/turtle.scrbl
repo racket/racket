@@ -20,9 +20,9 @@ Zeichnen wird dabei durch das Bewegen einer virtuellen Schildkröte
 Befehle bewegt werden:
 
 @itemize[
- @item{@scheme[(move n)] Bewegt die Schildkröte um @scheme[n] Pixel ohne zu zeichnen.}
- @item{@scheme[(draw n)] Bewegt die Schildkröte um @scheme[n] Pixel und zeichnet dabei.}
- @item{@scheme[(turn n)] Dreht die Schildkröte um n Grad im Uhrzeigersinn.}
+ @item{@racket[(move n)] Bewegt die Schildkröte um @racket[n] Pixel ohne zu zeichnen.}
+ @item{@racket[(draw n)] Bewegt die Schildkröte um @racket[n] Pixel und zeichnet dabei.}
+ @item{@racket[(turn n)] Dreht die Schildkröte um n Grad im Uhrzeigersinn.}
 ]
 
 Wir stellen jetzt ein Teachpack für DrRacket vor, mit dessen Hilfe
@@ -32,9 +32,9 @@ solche Turtle-Grafiken erstellt werden können.
 
 Unser Ziel ist es, in diesem Tutorial ein Quadrat mithilfe der
 Prozeduren des Teachpacks zu zeichnen. Aus diesem Grund müssen wir
-zunächst mit der Prozedur @scheme[draw] eine Linie nach rechts malen. Die
+zunächst mit der Prozedur @racket[draw] eine Linie nach rechts malen. Die
 initiale Ausgansposition der Turtle ist in der Bildmitte mit Blick
-nach rechts. Mit @scheme[(draw 20)] bewegen wir die Turtle dann 20 Pixel nach
+nach rechts. Mit @racket[(draw 20)] bewegen wir die Turtle dann 20 Pixel nach
 rechts und zeichnen dabei. Um das resultierende Bild zu sehen ist,
 müssen wir die Turtle mittels der Prozedur run laufen lassen. Die
 restlichen Parameter für run sind die Höhe und die Breite des Bildes
@@ -42,7 +42,7 @@ sowie die Farbe, in der gezeichnet werden soll. Geben Sie also
 folgenden Befehl in die REPL ein, um Ihre erste Turtle-Grafik zu
 erstellen:
 
-@schemeblock[
+@racketblock[
 (run (draw 20) 100 100 "red")
 ]
 
@@ -53,14 +53,14 @@ Sie erhalten dann eine Ausgabe wie die folgende:
 Nun vervollständigen wir die Linie zu einem rechten Winkel: wir drehen
 die Turtle um 90° nach rechts und zeichnen dann eine Line der Länge 20
 Pixel nach unten. Zum Drehen einer Turtle verwenden wir die Prozedur
-@scheme[turn].
+@racket[turn].
 
 Da wir ein Quadrat aus zwei rechten Winkeln zusammensetzen können,
 abstrahieren wir über das Zeichnen des rechten Winkels. Dazu schreiben
-wir eine Prozedur @scheme[right-angle] die als Parameter eine Turtle
+wir eine Prozedur @racket[right-angle] die als Parameter eine Turtle
 erhält:
 
-@schemeblock[
+@racketblock[
 (: right-angle (turtle -> turtle))
 (define right-angle 
   (lambda (t1)
@@ -78,7 +78,7 @@ Um das Quadrat komplett zu zeichnen, sollen nun zwei rechte Winkel
 verwendet werden. Wir zeichnen also einen rechten Winkel, drehen uns
 um 90° nach rechts, und zeichnen einen zweiten rechten Winkel.
 
-@schemeblock[
+@racketblock[
 (: square (turtle -> turtle))
 (define square  
   (lambda (t1)
@@ -95,27 +95,27 @@ So sieht das Ergebnis aus:
 @subsection{Verbesserungen}
 
 An dem Beispiel ist leicht zu sehen, dass es zum Zeichnen mit Hilfe
-von Turtle-Grafik oft erforderlich ist, Zwischenwerte wie @scheme[t1],
-@scheme[t2] etc., an die nächste Prozedur weiterzureichen, die Werte
+von Turtle-Grafik oft erforderlich ist, Zwischenwerte wie @racket[t1],
+@racket[t2] etc., an die nächste Prozedur weiterzureichen, die Werte
 ansonsten aber nicht weiterverwendet werden. Beispielsweise werden in
-der obigen Definition von square die Variablen @scheme[t1], ...,
-@scheme[t4] nur gebraucht, um die Prozeduren @scheme[right-angle],
-@scheme[(turn -90)] und @scheme[right-angle] hintereinander
+der obigen Definition von square die Variablen @racket[t1], ...,
+@racket[t4] nur gebraucht, um die Prozeduren @racket[right-angle],
+@racket[(turn -90)] und @racket[right-angle] hintereinander
 auszuführen.
 
 Um solche Fälle einfach programmieren zu können, enthält das
-Turtle-Teachpack die Prozedur @scheme[sequence]. Damit können wir eine
-zu @scheme[right-angle] äquivalente Version wesentlicher einfacher
+Turtle-Teachpack die Prozedur @racket[sequence]. Damit können wir eine
+zu @racket[right-angle] äquivalente Version wesentlicher einfacher
 aufschreiben:
 
-@schemeblock[
+@racketblock[
 (define right-angle2 
   (sequence (draw 20) (turn -90) (draw 20)))
 ]
 
-Ebenso wie @scheme[right-angle] können wir square leichter schreiben als: 
+Ebenso wie @racket[right-angle] können wir square leichter schreiben als: 
 
-@schemeblock[
+@racketblock[
 (define square2  
   (sequence right-angle (turn -90) right-angle))
 ]
@@ -135,7 +135,7 @@ so ändert dies die Farbe mit der gezeichnet wird.
 
 Folgender Code 
 
-@schemeblock[
+@racketblock[
 (define square3
   (sequence right-angle (turn -90) (set-color "blue") right-angle))
 ]
@@ -173,6 +173,6 @@ der gezeichnet wird.
 
 @defthing[sequence ((turtle -> turtle) ... -> (turtle -> turtle))]{
 Diese Prozedur nimmt eine beliebige Anzahl von Turtle-Veränderungen
-(d.h. Prozeduren mit Signatur @scheme[turtle -> turtle]) und erstellt
+(d.h. Prozeduren mit Signatur @racket[turtle -> turtle]) und erstellt
 eine neue Prozedur, die die Veränderungen der Reihe nach von links
 nach rechts abarbeitet.}

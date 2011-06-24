@@ -213,7 +213,7 @@ In more detail, patterns match as follows:
        @racket[(#,(racketidfont "struct") _struct-id (_pat ...))] ---
        matches an instance of a structure type named
        @racket[_struct-id], where each field in the instance matches
-       the corresponding @racket[_pat]. See also @scheme[struct*].
+       the corresponding @racket[_pat]. See also @racket[struct*].
 
        Usually, @racket[_struct-id] is defined with
        @racket[struct].  More generally, @racket[_struct-id]
@@ -477,7 +477,7 @@ instead of @racket[match].}
 @section{Library Extensions}
 
 @defform[(struct* struct-id ([field pat] ...))]{
- A @scheme[match] pattern form that matches an instance of a structure
+ A @racket[match] pattern form that matches an instance of a structure
  type named @racket[struct-id], where the field @racket[field] in the
  instance matches the corresponding @racket[pat].
                                                 

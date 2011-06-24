@@ -4,7 +4,7 @@
 @defclass/title[vertical-panel% panel% ()]{
 
 A vertical panel arranges its subwindows in a single column. See
- also @scheme[panel%].
+ also @racket[panel%].
 
 
 
@@ -29,17 +29,17 @@ A vertical panel arranges its subwindows in a single column. See
 
 The @racket[style] flags are the same as for @racket[panel%].
 
-@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
+@WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
 }
 
 @defmethod[(set-orientation [horizontal? boolean?]) void?]{
   Sets the orientation of the panel, switching it between
-  the behavior of the @scheme[vertical-panel%] and that of
-  the @scheme[horizontal-panel%].
+  the behavior of the @racket[vertical-panel%] and that of
+  the @racket[horizontal-panel%].
 }
 
 @defmethod[(get-orientation) boolean?]{
-  Initially returns @scheme[#f], but if 
+  Initially returns @racket[#f], but if 
   @method[vertical-panel% set-orientation] is called,
   this method returns whatever the last value passed to it was.
 }

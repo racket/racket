@@ -59,7 +59,7 @@ can be used to create patterns that match pairs, lists, and vectors:
   [(vector 1 2) 'vector])
 ]
 
-A constructor bound with @scheme[struct] also can be used as a pattern
+A constructor bound with @racket[struct] also can be used as a pattern
 constructor:
 
 @interaction[

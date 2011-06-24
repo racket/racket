@@ -19,10 +19,10 @@ operating system.}
 @defproc[(truncate-file [file path-string?][n-bytes exact-nonnegative-integer? 0])
          void?]{
 
-Truncates or extends the given @scheme[file] so that it is
-@scheme[n-bytes] long. If the file does not exist, or if the process
+Truncates or extends the given @racket[file] so that it is
+@racket[n-bytes] long. If the file does not exist, or if the process
 does not have sufficient privilege to truncate the file, the
-@scheme[exn:fail] exception is raised.
+@racket[exn:fail] exception is raised.
 
 @bold{WARNING:} on Unix, the implementation assumes that the
 platform's @tt{ftruncate} function accepts a @tt{long long} second

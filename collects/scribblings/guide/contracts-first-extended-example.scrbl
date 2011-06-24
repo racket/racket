@@ -35,22 +35,22 @@ racket
   [argmax (-> (-> any/c real?) (and/c pair? list?) any/c)])
 ]
  This contract captures two essential conditions of the informal
- description of @scheme[argmax]: 
+ description of @racket[argmax]: 
 @itemlist[
 
 @item{the given function must produce numbers that are comparable according
-to @scheme[<]. In particular, the contract @scheme[(-> any/c number?)]
-would not do, because @scheme[number?] also recognizes complex numbers in
+to @racket[<]. In particular, the contract @racket[(-> any/c number?)]
+would not do, because @racket[number?] also recognizes complex numbers in
 Racket.}
 
 @item{the given list must contain at least one item.}
 ]
  When combined with the name, the contract explains the behavior of 
- @scheme[argmax] at the same level as an ML function type in a
+ @racket[argmax] at the same level as an ML function type in a
  module signature (except for the non-empty list aspect). 
 
 Contracts may communicate significantly more than a type signature,
- however. Take a look at this second contract for @scheme[argmax]:
+ however. Take a look at this second contract for @racket[argmax]:
 @racketmod[#:file @tt{version 2}
 racket
 
@@ -66,12 +66,12 @@ racket
 ]
  It is a @emph{dependent} contract that names the two arguments and uses
  the names to impose a predicate on the result. This predicate computes
- @scheme[(f r)] -- where @racket[r] is the result of @scheme[argmax] -- and
+ @racket[(f r)] -- where @racket[r] is the result of @racket[argmax] -- and
  then validates that this value is greater than or equal to all values
  of @racket[f] on the items of @racket[lov].
 
-Is it possible that @scheme[argmax] could cheat by returning a random value
- that accidentally maximizes @scheme[f] over all elements of @scheme[lov]? 
+Is it possible that @racket[argmax] could cheat by returning a random value
+ that accidentally maximizes @racket[f] over all elements of @racket[lov]? 
  With a contract, it is possible to rule out this possibility: 
 @racketmod[#:file @tt{version 2 rev. a}
 racket
@@ -88,16 +88,16 @@ racket
 		(memq r lov)
 		(for/and ((v lov)) (>= f@r (f v)))))))])
 ]
- The @scheme[memq] function ensures that @scheme[r] is @emph{intensionally equal}
+ The @racket[memq] function ensures that @racket[r] is @emph{intensionally equal}
  @margin-note*{That is, "pointer equality" for those who prefer to think at
- the hardware level.} to one of the members of @scheme[lov]. Of course, a
+ the hardware level.} to one of the members of @racket[lov]. Of course, a
  moment's worth of reflection shows that it is impossible to make up such a
  value. Functions are opaque values in Racket and without applying a
  function, it is impossible to determine whether some random input value
  produces an output value or triggers some exception. So we ignore this
  possibility from here on. 
 
-Version 2 formulates the overall sentiment of @scheme[argmax]'s
+Version 2 formulates the overall sentiment of @racket[argmax]'s
  documentation, but it fails to bring across that the result is the
  @emph{first} element of the given list that maximizes the given function
  @racket[f]. Here is a version that communicates this second aspect of
@@ -117,10 +117,10 @@ racket
                    (eq? (first (memf (lambda (v) (= (f v) f@r)) lov)) 
                         r)))))])
 ]
- That is, the @scheme[memf] function determines the first element of
+ That is, the @racket[memf] function determines the first element of
  @racket[lov] whose value under @racket[f] is equal to @racket[r]'s value
  under @racket[f]. If this element is intensionally equal to @racket[r],
- the result of @scheme[argmax] is correct.  
+ the result of @racket[argmax] is correct.  
 
 This second refinement step introduces two problems. First, both conditions
  recompute the values of @racket[f] for all elements of @racket[lov]. Second,
@@ -131,11 +131,11 @@ This second refinement step introduces two problems. First, both conditions
 
 @(define dominates1
   @multiarg-element['tt]{@list{
-   @racket[f@r] is greater or equal to all @scheme[(f v)] for @racket[v] in @racket[lov]}})
+   @racket[f@r] is greater or equal to all @racket[(f v)] for @racket[v] in @racket[lov]}})
 
 @(define first?1
   @multiarg-element['tt]{
-   @list{@racket[r] is @scheme[eq?] to the first element @racket[v] of @racket[lov] 
+   @list{@racket[r] is @racket[eq?] to the first element @racket[v] of @racket[lov] 
          for which @racket[(pred? v)]}})
 
 @; ---------------------------------------------------------------------------------------------------
@@ -178,7 +178,7 @@ This step leaves us with the problem of the newly introduced inefficiency.
 @(define first?2
   @multiarg-element['tt]{
    @list{@racket[r] is @racket[(second x)] for the first
-         @racket[x] in @racket[flov+lov] s.t. @scheme[(= (first x) f@r)]}})
+         @racket[x] in @racket[flov+lov] s.t. @racket[(= (first x) f@r)]}})
 
 @racketmod[#:file @tt{version 3 rev. b} 
 racket
@@ -215,16 +215,16 @@ racket
  of contracts.}
 
 Version 3 may still be too eager when it comes to calling @racket[f]. While
- Racket's @scheme[argmax] always calls @racket[f] no matter how many items
+ Racket's @racket[argmax] always calls @racket[f] no matter how many items
  @racket[lov] contains, let us imagine for illustrative purposes that our
  own implementation first checks whether the list is a singleton.  If so,
  the first element would be the only element of @racket[lov] and in that
  case there would be no need to compute @racket[(f r)].
-@margin-note*{The @scheme[argmax] of Racket implicitly argues that it not
- only promises the first value that maximizes @scheme[f] over @scheme[lov]
- but also that @scheme[f] produces/produced a value for the result.}
+@margin-note*{The @racket[argmax] of Racket implicitly argues that it not
+ only promises the first value that maximizes @racket[f] over @racket[lov]
+ but also that @racket[f] produces/produced a value for the result.}
  As a matter of fact, since @racket[f] may diverge or raise an exception
- for some inputs, @scheme[argmax] should avoid calling @racket[f] when
+ for some inputs, @racket[argmax] should avoid calling @racket[f] when
  possible.
 
 The following contract demonstrates how a higher-order dependent contract
@@ -266,8 +266,8 @@ racket
 The problem of diverging or exception-raising functions should alert the
  reader to the even more general problem of functions with side-effects. If
  the given function @racket[f] has visible effects -- say it logs its calls
- to a file -- then the clients of @scheme[argmax] will be able to observe
- two sets of logs for each call to @scheme[argmax]. To be precise, if the
+ to a file -- then the clients of @racket[argmax] will be able to observe
+ two sets of logs for each call to @racket[argmax]. To be precise, if the
  list of values contains more than one element, the log will contain two
  calls of @racket[f] per value on @racket[lov]. If @racket[f] is expensive
  to compute, doubling the calls imposes a high cost.

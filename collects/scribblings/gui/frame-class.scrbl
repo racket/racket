@@ -31,83 +31,83 @@ On Windows, both Multiple Document Interface (MDI) and Single
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-The @scheme[label] string is displayed in the frame's title
+The @racket[label] string is displayed in the frame's title
 bar. If the frame's label is changed (see @method[window<%>
 set-label]), the title bar is updated.
 
-The @scheme[parent] argument can be @scheme[#f] or an existing
-frame. On Windows, if @scheme[parent] is an existing frame,
+The @racket[parent] argument can be @racket[#f] or an existing
+frame. On Windows, if @racket[parent] is an existing frame,
 the new frame is always on top of its parent. Also, the
-@scheme[parent] frame may be an MDI parent frame from a new MDI
+@racket[parent] frame may be an MDI parent frame from a new MDI
 child frame. On Windows and Unix (for many window managers), a
 frame is iconized when its parent is iconized.
 
-If @scheme[parent] is @scheme[#f], then the eventspace for the
+If @racket[parent] is @racket[#f], then the eventspace for the
 new frame is the current eventspace, as determined by
-@scheme[current-eventspace]. Otherwise, @scheme[parent]'s
+@racket[current-eventspace]. Otherwise, @racket[parent]'s
 eventspace is the new frame's eventspace.
 
-If the @scheme[width] or @scheme[height] argument is not
-@scheme[#f], it specifies an initial size for the frame (in
+If the @racket[width] or @racket[height] argument is not
+@racket[#f], it specifies an initial size for the frame (in
 pixels) assuming that it is larger than the minimum size,
 otherwise the minimum size is used.
 
-If the @scheme[x] or @scheme[y] argument is not @scheme[#f], it
+If the @racket[x] or @racket[y] argument is not @racket[#f], it
 specifies an initial location for the frame. Otherwise, a
 location is selected automatically (tiling frames and dialogs as
 they are created).
 
-The @scheme[style] flags adjust the appearance of the frame on
+The @racket[style] flags adjust the appearance of the frame on
 some platforms:
 
 @itemize[
 
- @item{@scheme['no-resize-border] --- omits the resizeable border
+ @item{@racket['no-resize-border] --- omits the resizeable border
   around the window (Windows, Unix) or grow box in the bottom right
   corner (Mac OS X)}
 
- @item{@scheme['no-caption] --- omits the title bar for the frame
+ @item{@racket['no-caption] --- omits the title bar for the frame
  (Windows, Mac OS X, Unix)}
 
- @item{@scheme['no-system-menu] --- omits the system menu
+ @item{@racket['no-system-menu] --- omits the system menu
  (Windows)}
 
- @item{@scheme['mdi-child] --- creates the frame as a MDI
+ @item{@racket['mdi-child] --- creates the frame as a MDI
  (multiple document interface) child frame, mutually exclusive with
- @scheme['mdi-parent] (Windows)}
+ @racket['mdi-parent] (Windows)}
 
- @item{@scheme['mdi-parent] --- creates the frame as a MDI
+ @item{@racket['mdi-parent] --- creates the frame as a MDI
  (multiple document interface) parent frame, mutually exclusive with
- @scheme['mdi-child] (Windows)}
+ @racket['mdi-child] (Windows)}
 
- @item{@scheme['toolbar-button] --- includes a toolbar button on the
+ @item{@racket['toolbar-button] --- includes a toolbar button on the
  frame's title bar (Mac OS X); a click on the toolbar button triggers
  a call to @method[frame% on-toolbar-button-click]}
- @item{@scheme['hide-menu-bar] --- hides the menu bar and dock when
+ @item{@racket['hide-menu-bar] --- hides the menu bar and dock when
  the frame is active (Mac OS X) or asks the window manager to make
  the frame fullscreen (Unix)}
 
- @item{@scheme['float] --- causes the frame to stay in front of all
+ @item{@racket['float] --- causes the frame to stay in front of all
  other non-floating windows (Windows, Mac OS X, Unix); on Mac OS X, a floating frame
  shares the focus with an active non-floating frame; when this style
- is combined with @scheme['no-caption], then showing the frame does
+ is combined with @racket['no-caption], then showing the frame does
  not cause the keyboard focus to shift to the window, and on Unix,
  clicking the frame does not move the focus; on Windows, a floating
  frame has no taskbar button}
 
- @item{@scheme['metal] --- ignored (formerly supported for Mac OS X)}
+ @item{@racket['metal] --- ignored (formerly supported for Mac OS X)}
 
 ]
 
-If the @scheme['mdi-child] style is specified, the @scheme[parent] must be
- a frame with the @scheme['mdi-parent] style, otherwise @|MismatchExn|.
+If the @racket['mdi-child] style is specified, the @racket[parent] must be
+ a frame with the @racket['mdi-parent] style, otherwise @|MismatchExn|.
 
 Even if the frame is not shown, a few notification events may be
  queued for the frame on creation. Consequently, the new frame's
  resources (e.g., memory) cannot be reclaimed until some events are
  handled, or the frame's eventspace is shut down.
 
-@WindowKWs[@scheme[enabled]] @AreaContKWs[] @AreaKWs[]
+@WindowKWs[@racket[enabled]] @AreaContKWs[] @AreaKWs[]
 
 }
 
@@ -126,7 +126,7 @@ See also @method[frame% set-status-text].
 @defmethod[(get-menu-bar)
            (or/c (is-a?/c menu-bar%) false/c)]{
 
-Returns the frame's menu bar, or @scheme[#f] if none has been created
+Returns the frame's menu bar, or @racket[#f] if none has been created
  for the frame.
 
 }
@@ -134,8 +134,8 @@ Returns the frame's menu bar, or @scheme[#f] if none has been created
 @defmethod[(has-status-line?)
            boolean?]{
 
-Returns @scheme[#t] if the frame's status line has been created,
- @scheme[#f] otherwise. See also @method[frame% create-status-line].
+Returns @racket[#t] if the frame's status line has been created,
+ @racket[#f] otherwise. See also @method[frame% create-status-line].
 
 }
 
@@ -153,7 +153,7 @@ frame has been iconized} @elem{@method[frame% is-iconized?]}]
 @defmethod[(is-iconized?)
            boolean?]{
 
-Returns @scheme[#t] if the frame is iconized (minimized), @scheme[#f]
+Returns @racket[#t] if the frame is iconized (minimized), @racket[#f]
 otherwise.
 
 }
@@ -161,9 +161,9 @@ otherwise.
 @defmethod[(is-maximized?)
            boolean?]{
 
-On Windows and Mac OS X, returns @scheme[#t] if the frame is
-maximized, @scheme[#f] otherwise. On Unix, the result is always
-@scheme[#f].
+On Windows and Mac OS X, returns @racket[#t] if the frame is
+maximized, @racket[#f] otherwise. On Unix, the result is always
+@racket[#f].
 
 }
 
@@ -180,7 +180,7 @@ Maximizes or restores the frame on Windows and Mac OS X; the
 }
 @methimpl{
 
-If @scheme[maximize?] is @scheme[#f], the window is restored, otherwise
+If @racket[maximize?] is @racket[#f], the window is restored, otherwise
  it is maximized.
 
 
@@ -203,9 +203,9 @@ Gets or sets the frame's modification state as reflected to the user.
            void?]{
 
 Called on Windows when a MDI-child frame becomes the active frame
- within its parent (in which case the argument is @scheme[#t]), or when
+ within its parent (in which case the argument is @racket[#t]), or when
  the child frame ceases to be the active frame (in which case the
- argument is @scheme[#f]).
+ argument is @racket[#f]).
 
 
 MDI activation is different from keyboard-focus activation. If the
@@ -221,8 +221,8 @@ MDI activation is different from keyboard-focus activation. If the
 If the frame has a menu bar with keyboard shortcuts, and if the key
 event includes a Control, Alt, Option, Meta, Command, Shift, or
 Function key, then @method[frame% on-menu-char] attempts to match the
-given event to a menu item. If a match is found, @scheme[#t] is
-returned, otherwise @scheme[#f] is returned.
+given event to a menu item. If a match is found, @racket[#t] is
+returned, otherwise @racket[#f] is returned.
 
 When the match corresponds to a complete shortcut combination, the
  menu item's callback is called (before
@@ -233,7 +233,7 @@ If the event does not correspond to a complete shortcut combination,
  menu bar (i.e., an underlined letter in a menu's title, which is
  installed by including an ampersand in the menu's label). If a
  mnemonic match is found, the keyboard focus is moved to the menu bar
- (selecting the menu with the mnemonic), and @scheme[#t] is returned.
+ (selecting the menu with the mnemonic), and @racket[#t] is returned.
 
 }
 
@@ -244,7 +244,7 @@ If the event does not correspond to a complete shortcut combination,
 
 Returns the result of
 
-@schemeblock[
+@racketblock[
 (or (send this @#,method[frame% on-menu-char] event)
     (send this @#,method[top-level-window<%> on-system-menu-char] event)
     (send this @#,method[top-level-window<%> on-traverse-char] event))
@@ -255,7 +255,7 @@ Returns the result of
            void?]{
 
 On Mac OS X, called when the user clicks the toolbar button on a
- frame created with the @indexed-scheme['toolbar-button] style.
+ frame created with the @indexed-racket['toolbar-button] style.
 
 }
 

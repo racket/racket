@@ -11,15 +11,15 @@
 @defform[(block defn-or-expr ...)]{
 
 Supports a mixture of expressions and mutually recursive definitions,
-as in a @scheme[module] body. Unlike an @tech{internal-definition
+as in a @racket[module] body. Unlike an @tech{internal-definition
 context}, the last @racket[defn-or-expr] need not be an expression.
 
-The result of the @scheme[block] form is the result
-of the last @scheme[defn-or-expr] if it is an expression,
-@|void-const| otherwise. If no @scheme[defn-or-expr] is provided
-(after flattening @scheme[begin] forms), the result is @|void-const|.
+The result of the @racket[block] form is the result
+of the last @racket[defn-or-expr] if it is an expression,
+@|void-const| otherwise. If no @racket[defn-or-expr] is provided
+(after flattening @racket[begin] forms), the result is @|void-const|.
 
-The final @scheme[defn-or-expr] is executed in tail position, if it is
+The final @racket[defn-or-expr] is executed in tail position, if it is
 an expression.  
 
 

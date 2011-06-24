@@ -184,7 +184,7 @@ following grammar:
 expanded program may not match the symbolic names in the grammar. Only
 the binding (according to @racket[free-identifier=?]) matters.}
 
-@schemegrammar*[
+@racketgrammar*[
 #:literals (#%expression module #%plain-module-begin begin #%provide
             define-values define-syntaxes define-values-for-syntax
             #%require

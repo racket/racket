@@ -4,8 +4,7 @@
 @defclass/title[horizontal-pane% pane% ()]{
 
 A horizontal pane arranges its subwindows in a single row. See also
- @scheme[pane%].
-
+ @racket[pane%].
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]

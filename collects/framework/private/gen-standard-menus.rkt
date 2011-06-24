@@ -155,7 +155,7 @@
                     [(an-item? x)
                      (pop-out
                       `@defmethod[(,(an-item->get-item-name x)) (or/c false/c (is-a?/c menu-item%))]{
-                          This method returns the @scheme[menu-item%] object corresponding
+                          This method returns the @racket[menu-item%] object corresponding
                           to this menu item, if it has been created (as controlled by
                           @method[frame:standard-menus<%> ,(an-item->create-menu-item-name x)]).})
                      
@@ -163,8 +163,8 @@
                       `@defmethod[(,(an-item->create-menu-item-name x)) boolean?]{ 
                          The result of this method determines if the corresponding 
                          menu item is created. Override it to control the creation of the menu item. 
-                                                                                       
-                         Defaults to @scheme[,(an-item-create x)].})
+
+                         Defaults to @racket[,(an-item-create x)].})
                      
                      (match (an-item-proc x)
                        [`(λ (,item-name ,evt-name) ,bodies ...)
@@ -173,7 +173,7 @@
                                       [,item-name (is-a?/c menu-item%)]
                                       [,evt-name (is-a?/c control-event%)])
                                      void?]{ 
-                             Defaults to @schemeblock[,(if (= 1 (length bodies))
+                             Defaults to @racketblock[,(if (= 1 (length bodies))
                                                            (car bodies)
                                                            `(begin ,@bodies))] })])
 
@@ -182,21 +182,21 @@
                         (pop-out
                          `@defmethod[(,(an-item->on-demand-name x) [,item-name (is-a?/c menu-item%)]) void?]{
                              The menu item's on-demand proc calls this method. 
-                                                                                                                  
-                             Defaults to @schemeblock[,body]})])
+
+                             Defaults to @racketblock[,body]})])
                      
                      (pop-out
-                      `@defmethod[(,(an-item->string-name x)) string?]{ 
-                         The result of this method is used as the name of the @scheme[menu-item%].
-                                                                            
-                         Defaults to @scheme[,(an-item-menu-string x)].})
+                      `@defmethod[(,(an-item->string-name x)) string?]{
+                         The result of this method is used as the name of the @racket[menu-item%].
+
+                         Defaults to @racket[,(an-item-menu-string x)].})
                      
                      (pop-out
                       `@defmethod[(,(an-item->help-string-name x)) string?]{ 
                          The result of this method is used as the help string
-                         when the @scheme[menu-item%] object is created.
-                                                                            
-                         Defaults to @scheme[,(an-item-help-string x)].})]))
+                         when the @racket[menu-item%] object is created.
+
+                         Defaults to @racket[,(an-item-help-string x)].})]))
 
                 items)
       (display docs-footer-text port))
@@ -282,6 +282,7 @@
 ;; THIS FILE IS GENERATED. DO NOT EDIT.
 
 @definterface[frame:standard-menus<%> (frame:basic<%>)]{
- 
+
+
 --
 )

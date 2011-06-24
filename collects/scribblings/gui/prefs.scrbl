@@ -5,9 +5,9 @@
 
 The @racketmodname[racket/gui/base] library supports a number of preferences for global configuration. The
  preferences are stored in the common file reported by
- @scheme[find-system-path] for @indexed-scheme['pref-file], and
+ @racket[find-system-path] for @indexed-racket['pref-file], and
  preference values can be retrieved and changed through
- @scheme[get-preference] and @scheme[put-preferences]. Except for the except the
+ @racket[get-preference] and @racket[put-preferences]. Except for the except the
  @Resource{playcmd} preference, the @racketmodname[racket/gui/base] library
  reads each of the preferences below once at startup.
 
@@ -24,10 +24,10 @@ The following are the preference names used by GRacket:
  an editor.}
 
  @item{@ResourceFirst{defaultMenuPrefix} --- sets the prefix used by
- default for menu item shortcuts on Unix, one of @scheme['ctl],
- @scheme['meta], or @scheme['alt]. The default is
- @scheme['ctl]. When this preference is set to @scheme['meta] or
- @scheme['alt], underlined mnemonics (introduced by @litchar{&} in menu
+ default for menu item shortcuts on Unix, one of @racket['ctl],
+ @racket['meta], or @racket['alt]. The default is
+ @racket['ctl]. When this preference is set to @racket['meta] or
+ @racket['alt], underlined mnemonics (introduced by @litchar{&} in menu
  labels) are suppressed.}
 
  @item{@ResourceFirst{emacs-undo} --- a true value makes undo in
@@ -35,14 +35,14 @@ The following are the preference names used by GRacket:
  in the undo stack).}
 
  @item{@ResourceFirst{wheelStep} --- sets the default mouse-wheel step
- size of @scheme[editor-canvas%] objects.}
+ size of @racket[editor-canvas%] objects.}
 
  @item{@ResourceFirst{outline-inactive-selection} --- a true value
  causes selections in text editors to be shown with an outline of the
  selected region when the editor does no have the keyboard focus.}
 
  @item{@ResourceFirst{playcmd} --- used to format a sound-playing
- command; see @scheme[play-sound] for details.}
+ command; see @racket[play-sound] for details.}
 
  @item{@ResourceFirst{doubleClickTime} --- overrides the
  platform-specific default interval (in milliseconds) for double-click
@@ -51,6 +51,5 @@ The following are the preference names used by GRacket:
 ]
 
 In each of the above cases, if no preference value is found using the
-@schemeidfont{GRacket}-prefixed name, a @schemeidfont{MrEd}-prefixed
+@racketidfont{GRacket}-prefixed name, a @racketidfont{MrEd}-prefixed
 name is tried for backward compatibility.
-

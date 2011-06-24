@@ -5,16 +5,16 @@
                      version/check
                      version/tool
                      version/utils
-                     scheme/base
-                     scheme/contract))
+                     racket/base
+                     racket/contract))
 
 @(define (selflink s) (link s (tt s)))
 
 @title{@bold{Version}: Racket Version Checking}
 
 The version collection contains several version-related pieces that
-are used by Racket. See also @scheme[version] from
-@schememodname[scheme/base].
+are used by Racket. See also @racket[version] from
+@racketmodname[racket/base].
 
 @; ----------------------------------------------------------------------
 
@@ -41,29 +41,29 @@ indicates the current state of the curent installation:
 
   @itemize[
 
-    @item{@scheme[`ok] --- You're fine.}
+    @item{@racket[`ok] --- You're fine.}
 
-    @item{@scheme[`(ok-but ,_version)] --- You have a fine stable
+    @item{@racket[`(ok-but ,_version)] --- You have a fine stable
       version, but note that there is a newer alpha version available
-      numbered @scheme[_version].}
+      numbered @racket[_version].}
 
-    @item{@scheme[`(newer ,_version)] --- You have an old
-      version.  Please upgrade to @scheme[_version].}
+    @item{@racket[`(newer ,_version)] --- You have an old
+      version.  Please upgrade to @racket[_version].}
 
-    @item{@scheme[`(newer ,_version ,_alpha)] --- You have an
-      old-but-stable version, please upgrade to @scheme[_version]; you
+    @item{@racket[`(newer ,_version ,_alpha)] --- You have an
+      old-but-stable version, please upgrade to @racket[_version]; you
       may consider also the newer alpha version numbered
-      @scheme[_alpha].}
+      @racket[_alpha].}
 
-    @item{@scheme[`(error ,_message)] --- An error occurred, and
-      @scheme[_message] is a string that indicates the error.}
+    @item{@racket[`(error ,_message)] --- An error occurred, and
+      @racket[_message] is a string that indicates the error.}
 
-    @item{@scheme[`(error ,_message ,_additional-info)] --- An error
-       occurred; @scheme[_message] is a string that indicates the
-       error, and @scheme[_additional-info] is a string containing a
-       system error.  The @scheme[_additional-info] content is always
-       parenthesizes, so @scheme[message] is a short error and
-       @scheme[(string-append message " " additional-info)] is a
+    @item{@racket[`(error ,_message ,_additional-info)] --- An error
+       occurred; @racket[_message] is a string that indicates the
+       error, and @racket[_additional-info] is a string containing a
+       system error.  The @racket[_additional-info] content is always
+       parenthesizes, so @racket[message] is a short error and
+       @racket[(string-append message " " additional-info)] is a
        verbose one.}
 
   ]
@@ -76,13 +76,13 @@ indicates the current state of the curent installation:
 
 @defmodule[version/tool]
 
-The @scheme[version/tool] library implements a DrRacket tool that
+The @racket[version/tool] library implements a DrRacket tool that
 
 @itemize[
 
   @item{makes the patchlevel display as a version @tt{p}@nonterm{N}
   suffix in DrRacket (though the base verion reported by
-  @scheme[(version)] is not changed);}
+  @racket[(version)] is not changed);}
 
   @item{if enabled by the user, periodically checks whether a
   new Racket distribution is available for download.}
@@ -95,47 +95,47 @@ The @scheme[version/tool] library implements a DrRacket tool that
 
 @defmodule[version/utils]{
 
-The @schememodname[version/utils] library provides a few of convenient
+The @racketmodname[version/utils] library provides a few of convenient
 utilities for dealing with version strings.  Unless explicitly noted,
 these functions do not handle legacy versions of Racket.}
 
 @defproc[(valid-version? [str string?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[str] is a valid Racket version
-string, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[str] is a valid Racket version
+string, @racket[#f] otherwise.}
 
 @defproc[(version->list [str valid-version?])
          (list integer? integer? integer? integer?)]{
 
 Returns a list of four numbers that the given version string
-represent.  @scheme[str] is assumed to be a valid version.}
+represent.  @racket[str] is assumed to be a valid version.}
 
 @defproc[(version<? [str1 valid-version?] [str2 valid-version?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[str1] represents a version that is
-strictly smaller than @scheme[str2], @scheme[#f] otherwise.
-@scheme[str1] and @scheme[str2] are assumed to be valid versions.}
+Returns @racket[#t] if @racket[str1] represents a version that is
+strictly smaller than @racket[str2], @racket[#f] otherwise.
+@racket[str1] and @racket[str2] are assumed to be valid versions.}
 
 @defproc[(version<=? [str1 valid-version?] [str2 valid-version?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[str1] represents a version that is
-smaller than or equal to @scheme[str2], @scheme[#f] otherwise.
-@scheme[str1] and @scheme[str2] are assumed to be valid versions.}
+Returns @racket[#t] if @racket[str1] represents a version that is
+smaller than or equal to @racket[str2], @racket[#f] otherwise.
+@racket[str1] and @racket[str2] are assumed to be valid versions.}
 
 @defproc[(alpha-version? [str valid-version?]) boolean?]{
 
-Returns @scheme[#t] if the version that @scheme[str] represents is an
-alpha version.  @scheme[str] is assumed to be a valid version.}
+Returns @racket[#t] if the version that @racket[str] represents is an
+alpha version.  @racket[str] is assumed to be a valid version.}
 
 @defproc[(version->integer [str string?]) (or/c integer? false/c)]{
 
 Converts the version string into an integer.  For version
-@scheme["X.YY.ZZZ.WWW"], the result will be @schemevalfont{XYYZZZWWW}.
+@racket["X.YY.ZZZ.WWW"], the result will be @racketvalfont{XYYZZZWWW}.
 This function works also for legacy Racket versions, by
-translating @scheme["XYY.ZZZ"] to @schemevalfont{XYYZZZ000}.  The
+translating @racket["XYY.ZZZ"] to @racketvalfont{XYYZZZ000}.  The
 resulting integer can thefore be used to conveniently compare any two
 (valid) version strings.  If the version string is invalid the
-resulting value is @scheme[#f].
+resulting value is @racket[#f].
 
 Note that this is the only function that deals with legacy version
 strings.}

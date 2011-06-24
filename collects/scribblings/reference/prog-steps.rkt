@@ -18,26 +18,26 @@
        (*prog-steps
         #f
         #f
-        (list (schemeblock0 def ...) ...)
-        (list (schemeblock0 prog) ...))]))
+        (list (racketblock0 def ...) ...)
+        (list (racketblock0 prog) ...))]))
 
   (define-syntax prog-steps
     (syntax-rules ()
       [(_ [{obj ...} {def ...} prog] ...)
        (*prog-steps
         #f
-        (list (schemeblock0 obj ...) ...)
-        (list (schemeblock0 def ...) ...)
-        (list (schemeblock0 prog) ...))]))
+        (list (racketblock0 obj ...) ...)
+        (list (racketblock0 def ...) ...)
+        (list (racketblock0 prog) ...))]))
 
   (define-syntax prog-steps/cont
     (syntax-rules ()
       [(_ [{obj ...} {def ...} prog] ...)
        (*prog-steps
         #t
-        (list (schemeblock0 obj ...) ...)
-        (list (schemeblock0 def ...) ...)
-        (list (schemeblock0 prog) ...))]))
+        (list (racketblock0 obj ...) ...)
+        (list (racketblock0 def ...) ...)
+        (list (racketblock0 prog) ...))]))
 
   (define (to-flow e) (make-flow (list (make-paragraph (list e)))))
 

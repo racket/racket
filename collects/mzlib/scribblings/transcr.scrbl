@@ -3,11 +3,11 @@
 
 @mzlib[#:mode title transcr]
 
-The @scheme[transcript-on] and @scheme[transcript-off] procedures of
-@schememodname[mzscheme] always raise
-@scheme[exn:fail:unsupported]. The @schememodname[mzlib/transcr]
-library provides working versions of @scheme[transcript-on] and
-@scheme[transcript-off].
+The @racket[transcript-on] and @racket[transcript-off] procedures of
+@racketmodname[mzscheme] always raise
+@racket[exn:fail:unsupported]. The @racketmodname[mzlib/transcr]
+library provides working versions of @racket[transcript-on] and
+@racket[transcript-off].
 
 @(define-syntax-rule (go)
   (begin
@@ -18,5 +18,5 @@ library provides working versions of @scheme[transcript-on] and
    @defproc[(transcript-off) any]
    )]{
 
-   Starts/stops recording a transcript at @scheme[filename].}))
+   Starts/stops recording a transcript at @racket[filename].}))
 @(go)

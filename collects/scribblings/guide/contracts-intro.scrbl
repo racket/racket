@@ -46,7 +46,7 @@ racket/base
 
 @ctc-section[#:tag "amount0"]{Contract Violations}
 
-If we bind @scheme[amount] to a number that is not positive,
+If we bind @racket[amount] to a number that is not positive,
 
 @racketmod[
 racket

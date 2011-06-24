@@ -47,7 +47,7 @@
 @(define-syntax-rule (additionals racket/base id ...)
    (begin
      (require (for-label (only-in racket/base id ...)))
-     (schemeblock id ...)))
+     (racketblock id ...)))
 
 @(define old-vers @elem{version 372})
 
@@ -55,21 +55,21 @@
 
 @defmodule[mzscheme]{
 
-The @schememodname[mzscheme] language provides nearly the same
-bindings as the @schememodname[mzscheme] module of PLT Scheme
+The @racketmodname[mzscheme] language provides nearly the same
+bindings as the @racketmodname[mzscheme] module of PLT Scheme
 @|old-vers| and earlier.}
 
-Unlike @|old-vers|, the @schememodname[mzscheme] language does not
-include @scheme[set-car!]  or @scheme[set-cdr!], and @scheme[cons]
-makes immutable pairs, as in @scheme[scheme/base]; those changes make
-modules built on @schememodname[mzscheme] reasonably compatible with
-modules built on @schememodname[scheme/base].
+Unlike @|old-vers|, the @racketmodname[mzscheme] language does not
+include @racket[set-car!]  or @racket[set-cdr!], and @racket[cons]
+makes immutable pairs, as in @racket[scheme/base]; those changes make
+modules built on @racketmodname[mzscheme] reasonably compatible with
+modules built on @racketmodname[scheme/base].
 
-Otherwise, the @schememodname[mzscheme] language shares many bindings
-with @schememodname[scheme/base]. It renames a few bindings, such as
-@scheme[syntax-object->datum] instead of @scheme[syntax->datum], and
+Otherwise, the @racketmodname[mzscheme] language shares many bindings
+with @racketmodname[scheme/base]. It renames a few bindings, such as
+@racket[syntax-object->datum] instead of @racket[syntax->datum], and
 it provides old versions of some syntactic forms, such as
-@scheme[lambda] without support for keyword and optional arguments.
+@racket[lambda] without support for keyword and optional arguments.
 
 @table-of-contents[]
 
@@ -79,25 +79,25 @@ it provides old versions of some syntactic forms, such as
 
 @defform[(#%module-begin form ...)]{
 
-Like @scheme[#%plain-module-begin] from @schememodname[scheme/base],
-but @scheme[(require-for-syntax mzscheme)] is added to the beginning
-of the @scheme[form] sequence, thus importing @schememodname[mzscheme]
+Like @racket[#%plain-module-begin] from @racketmodname[scheme/base],
+but @racket[(require-for-syntax mzscheme)] is added to the beginning
+of the @racket[form] sequence, thus importing @racketmodname[mzscheme]
 into the transformer environment for the module body. (In contrast,
-@schememodname[scheme/base] exports @scheme[for-syntax] minimal
-transformer support, while @schememodname[scheme] exports all of
-@schememodname[scheme/base] @scheme[for-syntax].}
+@racketmodname[scheme/base] exports @racket[for-syntax] minimal
+transformer support, while @racketmodname[scheme] exports all of
+@racketmodname[scheme/base] @racket[for-syntax].}
 
 
 @defform[(#%plain-module-begin form ...)]{
 
-The same binding as @scheme[#%plain-module-begin] from
-@schememodname[scheme/base].}
+The same binding as @racket[#%plain-module-begin] from
+@racketmodname[scheme/base].}
 
 
 @defform[(#%plain-lambda formals body ...+)]{
 
-The same binding as @scheme[#%plain-lambda] in
-@schememodname[scheme/base].  (This binding was not present in
+The same binding as @racket[#%plain-lambda] in
+@racketmodname[scheme/base].  (This binding was not present in
 @|old-vers| and earlier.)}
 
 
@@ -106,19 +106,19 @@ The same binding as @scheme[#%plain-lambda] in
 @defform[(λ formals body ...+)]
 )]{
 
-The same bindings as @scheme[#%plain-lambda].}
+The same bindings as @racket[#%plain-lambda].}
 
 
 @defform*[[(#%app proc-expr arg-expr ...)
            (#%app)]]{
 
-The same binding as @scheme[#%plain-app] from
-@schememodname[scheme/base].}
+The same binding as @racket[#%plain-app] from
+@racketmodname[scheme/base].}
 
 @defform*[[(#%plain-app proc-expr arg-expr ...)
            (#%plain-app)]]{
 
-The same binding as @scheme[#%app].  (This binding was not present in
+The same binding as @racket[#%app].  (This binding was not present in
 @|old-vers| and earlier.)}
 
 @defform*/subs[[(define id expr)
@@ -126,9 +126,9 @@ The same binding as @scheme[#%app].  (This binding was not present in
                 ([head id
                        (head args)]
                  [args (code:line arg-id ...)
-                       (code:line arg-id ... @#,schemeparenfont{.} rest-id)])]{
+                       (code:line arg-id ... @#,racketparenfont{.} rest-id)])]{
 
-Like @|base-define| in @schememodname[scheme/base], but without
+Like @|base-define| in @racketmodname[scheme/base], but without
 support for keyword arguments or optional arguments.}
 
 @deftogether[(
@@ -139,49 +139,49 @@ support for keyword arguments or optional arguments.}
 )]{
 
 Like @|base-define-syntax| and @|base-define-for-syntax| in
-@schememodname[scheme/base], but without support for keyword arguments
-or optional arguments (i.e., @scheme[head] is as for @scheme[define]).}
+@racketmodname[scheme/base], but without support for keyword arguments
+or optional arguments (i.e., @racket[head] is as for @racket[define]).}
 
 @defform*[[(if test-expr then-expr else-expr)
            (if test-expr then-expr)]]{
 
-Like @|base-if| in @schememodname[scheme/base], but @scheme[else-expr]
-defaults to @scheme[(void)].}
+Like @|base-if| in @racketmodname[scheme/base], but @racket[else-expr]
+defaults to @racket[(void)].}
 
 @deftogether[(
 @defform[(cond cond-clause ...)]
 @defform[(case val-expr case-clause ...)]
 )]{
 
-Like @|base-cond| and @|base-case| in @schememodname[scheme/base], but
-@scheme[else] and @scheme[=>] are recognized as unbound identifiers,
-instead of as the @schememodname[scheme/base] bindings. }
+Like @|base-cond| and @|base-case| in @racketmodname[scheme/base], but
+@racket[else] and @racket[=>] are recognized as unbound identifiers,
+instead of as the @racketmodname[scheme/base] bindings. }
 
 @defform[(fluid-let ([id expr] ...) body ...+)]{
 
-Provides a kind of dynamic binding via mutation of the @scheme[id]s.
+Provides a kind of dynamic binding via mutation of the @racket[id]s.
 
-The @scheme[fluid-let] form first evaluates each @scheme[expr] to
-obtain an @defterm{entry value} for each @scheme[id]. As evaluation
-moves into @scheme[body], either though normal evaluation or a
-continuation jump, the current value of each @scheme[id] is swapped
-with the entry value. On exit from @scheme[body], then the current
+The @racket[fluid-let] form first evaluates each @racket[expr] to
+obtain an @defterm{entry value} for each @racket[id]. As evaluation
+moves into @racket[body], either though normal evaluation or a
+continuation jump, the current value of each @racket[id] is swapped
+with the entry value. On exit from @racket[body], then the current
 value and entry value are swapped again.}
 
 @defform/subs[(define-struct id-maybe-super (field-id ...) maybe-inspector-expr)
               ([maybe-inspector-expr code:blank
                                      expr])]{
 
-Like @base-define-struct from @scheme[scheme/base], but with fewer
+Like @base-define-struct from @racket[scheme/base], but with fewer
 options. Each field is implicitly mutable, and the optional
-@scheme[expr] is analogous to supplying an @scheme[#:inspector]
+@racket[expr] is analogous to supplying an @racket[#:inspector]
 expression.}
 
 @defform[(let-struct id-maybe-super (field-id ...) body ...+)]{
 
 Expands to 
 
-@schemeblock[
+@racketblock[
 (let ()
   (define-struct id-maybe-super (field-id ...))
   body ...+)
@@ -197,21 +197,21 @@ Expands to
 @defform[(provide-for-label raw-provide-spec)]
 )]{
 
-Like @scheme[#%require] and @scheme[#%provide]. The
-@schemeidfont{-for-syntax}, @schemeidfont{-for-template}, and
-@schemeidfont{-for-label} forms are translated to @scheme[#%require]
-and @scheme[#%provide] using @schemeidfont{for-syntax},
-@schemeidfont{for-template}, and @schemeidfont{for-label} sub-forms,
+Like @racket[#%require] and @racket[#%provide]. The
+@racketidfont{-for-syntax}, @racketidfont{-for-template}, and
+@racketidfont{-for-label} forms are translated to @racket[#%require]
+and @racket[#%provide] using @racketidfont{for-syntax},
+@racketidfont{for-template}, and @racketidfont{for-label} sub-forms,
 respectively.}
 
 @defform[(#%datum . datum)]{
 
-Expands to @scheme[(quote datum)], even if @scheme[datum] is a
+Expands to @racket[(quote datum)], even if @racket[datum] is a
 keyword.}
 
 @defform[(#%top-interaction . form)]{
 
-The same as @|base-top-interaction| in @schememodname[scheme/base].}
+The same as @|base-top-interaction| in @racketmodname[scheme/base].}
 
 @; ----------------------------------------
 
@@ -219,12 +219,12 @@ The same as @|base-top-interaction| in @schememodname[scheme/base].}
 
 @defproc[(apply [proc procedure?] [v any/c] ... [lst list?]) any]{
 
-Like @base-apply from @schememodname[scheme/base], but without support
+Like @base-apply from @racketmodname[scheme/base], but without support
 for keyword arguments.}
 
 @defthing[prop:procedure struct-type-property?]{
 
-Like @base-prop:procedure from @schememodname[scheme/base], but even
+Like @base-prop:procedure from @racketmodname[scheme/base], but even
 if the property's value for a structure type is a procedure that
 accepts keyword arguments, then instances of the structure type still
 do not accept keyword arguments. (In contrast, if the property's value
@@ -267,9 +267,9 @@ arguments.)}
          any]
 )]{
 
-Like @base-open-input-file, etc. from @schememodname[scheme/base], but
-@scheme[mode] and @scheme[exists] arguments are not keyword
-arguments. When both @scheme[mode] and @scheme[exists] are accepted,
+Like @base-open-input-file, etc. from @racketmodname[scheme/base], but
+@racket[mode] and @racket[exists] arguments are not keyword
+arguments. When both @racket[mode] and @racket[exists] are accepted,
 they are accepted in either order.}
 
 
@@ -293,7 +293,7 @@ they are accepted in either order.}
           syntax?]
 )]{
 
-The same as @scheme[syntax->datum] and @scheme[datum->syntax].}
+The same as @racket[syntax->datum] and @racket[datum->syntax].}
 
 @deftogether[(
 @defproc[(module-identifier=? [a-id syntax?][b-id syntax?]) boolean?]
@@ -303,12 +303,12 @@ The same as @scheme[syntax->datum] and @scheme[datum->syntax].}
 @defproc[(free-identifier=? [a-id syntax?][b-id syntax?]) boolean?]
 )]{
 
-The @scheme[module-identifier=?], @|etc| functions are the same as
-@base-free-identifier=?, @|etc| in @schememodname[scheme/base].
+The @racket[module-identifier=?], @|etc| functions are the same as
+@base-free-identifier=?, @|etc| in @racketmodname[scheme/base].
 
-The @scheme[free-identifier=?] procedure returns
+The @racket[free-identifier=?] procedure returns
 
-@schemeblock[
+@racketblock[
 (and (eq? (syntax-e a) (syntax-e b)) 
      (module-identifier=? a b))
 ]}
@@ -316,24 +316,24 @@ The @scheme[free-identifier=?] procedure returns
 
 @defproc[(make-namespace [mode (one-of/c 'initial 'empty) 'initial]) namespace?]{
 
-Creates a namespace with @schememodname[mzscheme] attached. If the
-@scheme[mode] is empty, the namespace's top-level environment is left
-empty. If @scheme[mode] is @scheme['initial], then the namespace's
+Creates a namespace with @racketmodname[mzscheme] attached. If the
+@racket[mode] is empty, the namespace's top-level environment is left
+empty. If @racket[mode] is @racket['initial], then the namespace's
 top-level environment is initialized with
-@scheme[(namespace-require/copy 'mzscheme)]. See also
-@scheme[make-base-empty-namespace].}
+@racket[(namespace-require/copy 'mzscheme)]. See also
+@racket[make-base-empty-namespace].}
 
 
 @defproc[(namespace-transformer-require [req any/c]) void?]{
 
-Equivalent to @scheme[(namespace-require `(for-syntax ,req))].}
+Equivalent to @racket[(namespace-require `(for-syntax ,req))].}
 
 @deftogether[(
 @defproc[(transcript-on [filename any/c]) any]
 @defproc[(transcript-off) any]
 )]{
 
-Raises @scheme[exn:fail], because the operations are not supported.}
+Raises @racket[exn:fail], because the operations are not supported.}
 
 
 @defproc*[([(hash-table? [v any/c]) 
@@ -345,11 +345,11 @@ Raises @scheme[exn:fail], because the operations are not supported.}
                          [flag (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?])]{
 
-Returns @scheme[#t] if @scheme[v] like a hash table created by
-@scheme[make-hash-table] or @scheme[make-immutable-hash-table] with
-the given @scheme[flag]s (or more), @scheme[#f] otherwise. Each
-provided @scheme[flag] must be distinct and @scheme['equal] cannot be
-used with @scheme['eqv], otherwise the @scheme[exn:fail:contract]
+Returns @racket[#t] if @racket[v] like a hash table created by
+@racket[make-hash-table] or @racket[make-immutable-hash-table] with
+the given @racket[flag]s (or more), @racket[#f] otherwise. Each
+provided @racket[flag] must be distinct and @racket['equal] cannot be
+used with @racket['eqv], otherwise the @racket[exn:fail:contract]
 exception is raised.}
 
 
@@ -361,29 +361,29 @@ exception is raised.}
                              [flag (one-of/c 'weak 'equal 'eqv)]) 
             hash-table?])]{
 
-Creates and returns a new hash table. If provided, each @scheme[flag]
+Creates and returns a new hash table. If provided, each @racket[flag]
 must one of the following:
 
  @itemize[
 
-  @item{@indexed-scheme['weak] --- creates a hash table with
-   weakly-held keys via @scheme[make-weak-hash],
-   @scheme[make-weak-hasheq], or @scheme[make-weak-hasheqv].}
+  @item{@indexed-racket['weak] --- creates a hash table with
+   weakly-held keys via @racket[make-weak-hash],
+   @racket[make-weak-hasheq], or @racket[make-weak-hasheqv].}
 
-  @item{@indexed-scheme['equal] --- creates a hash table that compares
-   keys using @scheme[equal?] instead of @scheme[eq?] using
-   @scheme[make-hash] or @scheme[make-weak-hash].}
+  @item{@indexed-racket['equal] --- creates a hash table that compares
+   keys using @racket[equal?] instead of @racket[eq?] using
+   @racket[make-hash] or @racket[make-weak-hash].}
 
-  @item{@indexed-scheme['eqv] --- creates a hash table that compares
-   keys using @scheme[eqv?] instead of @scheme[eq?] using
-   @scheme[make-hasheqv] or @scheme[make-weak-hasheqv].}
+  @item{@indexed-racket['eqv] --- creates a hash table that compares
+   keys using @racket[eqv?] instead of @racket[eq?] using
+   @racket[make-hasheqv] or @racket[make-weak-hasheqv].}
 
  ]
 
-By default, key comparisons use @scheme[eq?] (i.e., the hash table is
-created with @scheme[make-hasheq]). If the second @scheme[flag] is
-redundant or @scheme['equal] is provided with @scheme['eqv], the
-@scheme[exn:fail:contract] exception is raised.}
+By default, key comparisons use @racket[eq?] (i.e., the hash table is
+created with @racket[make-hasheq]). If the second @racket[flag] is
+redundant or @racket['equal] is provided with @racket['eqv], the
+@racket[exn:fail:contract] exception is raised.}
 
 
 @defproc*[([(make-immutable-hash-table [assocs (listof pair?)])
@@ -392,9 +392,9 @@ redundant or @scheme['equal] is provided with @scheme['eqv], the
                                        [flag (one-of/c 'equal 'eqv)])
             (and/c hash-table? immutable?)])]{
 
-Like @scheme[make-immutable-hash], @scheme[make-immutable-hasheq], or
-@scheme[make-immutable-hasheqv], depending on whether an
-@scheme['equal] or @scheme['eqv] @scheme[flag] is provided.}
+Like @racket[make-immutable-hash], @racket[make-immutable-hasheq], or
+@racket[make-immutable-hasheqv], depending on whether an
+@racket['equal] or @racket['eqv] @racket[flag] is provided.}
 
 @; ----------------------------------------
 

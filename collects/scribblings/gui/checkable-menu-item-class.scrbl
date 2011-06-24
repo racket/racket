@@ -3,9 +3,9 @@
 
 @defclass/title[checkable-menu-item% object% (selectable-menu-item<%>)]{
 
-A @scheme[checkable-menu-item%] is a string-labelled menu item that
- maintains a check mark. Its parent must be a @scheme[menu%] or
- @scheme[popup-menu%]. When the user selects the menu item, the
+A @racket[checkable-menu-item%] is a string-labelled menu item that
+ maintains a check mark. Its parent must be a @racket[menu%] or
+ @racket[popup-menu%]. When the user selects the menu item, the
  item's check mark is toggled and its callback procedure is called.
 
 
@@ -22,29 +22,29 @@ A @scheme[checkable-menu-item%] is a string-labelled menu item that
                                                     'shift 'option)) 
                                   (get-default-shortcut-prefix)])]{
 
-Creates a new menu item in @scheme[parent]. The item is initially
+Creates a new menu item in @racket[parent]. The item is initially
  shown, appended to the end of its parent, and unchecked. The
- @scheme[callback] procedure is called (with the event type
- @indexed-scheme['menu]) when the menu item is selected (either via a
+ @racket[callback] procedure is called (with the event type
+ @indexed-racket['menu]) when the menu item is selected (either via a
  menu bar, @xmethod[window<%> popup-menu], or @xmethod[editor-admin%
  popup-menu]).
 
 See @method[labelled-menu-item<%> set-label] for information about
-mnemonic @litchar{&}s in @scheme[label].
+mnemonic @litchar{&}s in @racket[label].
 
-If @scheme[shortcut] is not @scheme[#f], the item has a shortcut. See
+If @racket[shortcut] is not @racket[#f], the item has a shortcut. See
 @method[selectable-menu-item<%> get-shortcut] for more information.
-The @scheme[shortcut-prefix] argument determines the set of modifier
+The @racket[shortcut-prefix] argument determines the set of modifier
 keys for the shortcut; see @method[selectable-menu-item<%>
 get-shortcut-prefix].
 
-If @scheme[help] is not @scheme[#f], the item has a help string. See
+If @racket[help] is not @racket[#f], the item has a help string. See
 @method[labelled-menu-item<%> get-help-string] for more information.
 
-The @scheme[demand-callback] procedure is called by the default
+The @racket[demand-callback] procedure is called by the default
 @method[labelled-menu-item<%> on-demand] method with the object itself.
 
-By default, the menu item is initially unchecked. If @scheme[checked]
+By default, the menu item is initially unchecked. If @racket[checked]
  is true, then @method[checkable-menu-item% check] is called so that
  the menu item is initially checked.
 
@@ -62,7 +62,7 @@ Checks or unchecks the menu item.
 @defmethod[(is-checked?)
            boolean?]{
 
-Returns @scheme[#t] if the item is checked, @scheme[#f] otherwise.
+Returns @racket[#t] if the item is checked, @racket[#f] otherwise.
 
 }}
 

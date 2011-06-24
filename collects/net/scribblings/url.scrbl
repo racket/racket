@@ -6,28 +6,28 @@
 
 @title[#:tag "url"]{URLs and HTTP}
 
-@defmodule[net/url]{The @schememodname[net/url] library provides
+@defmodule[net/url]{The @racketmodname[net/url] library provides
 utilities to parse and manipulate URIs, as specified in RFC 2396
 @cite["RFC2396"], and to use the HTTP protocol.}
 
 To access the text of a document from the web, first obtain its URL as
-a string. Convert the address into a @scheme[url] structure using
-@scheme[string->url]. Then, open the document using
-@scheme[get-pure-port] or @scheme[get-impure-port], depending on
+a string. Convert the address into a @racket[url] structure using
+@racket[string->url]. Then, open the document using
+@racket[get-pure-port] or @racket[get-impure-port], depending on
 whether or not you wish to examine its MIME headers.  At this point,
 you have a regular input port with which to process the document, as with
-any other file. 
+any other file.
 
-Currently the only supported protocols are @scheme["http"],
-@racket["https"], and sometimes @scheme["file"].
+Currently the only supported protocols are @racket["http"],
+@racket["https"], and sometimes @racket["file"].
 
 @section{URL Structure}
 
 @declare-exporting[net/url-structs net/url]
 
 @defmodule*/no-declare[(net/url-structs)]{The URL structure types are
-provided by the @schememodname[net/url-structs] library, and
-re-exported by @schememodname[net/url].}
+provided by the @racketmodname[net/url-structs] library, and
+re-exported by @racketmodname[net/url].}
 
 @; ----------------------------------------
 
@@ -53,30 +53,30 @@ The basic structure for all URLs, which is explained in RFC 3986
   7 = query, 8 = fragment
 }|
 
-The strings inside the @scheme[user], @scheme[path], @scheme[query],
-and @scheme[fragment] fields are represented directly as Racket
+The strings inside the @racket[user], @racket[path], @racket[query],
+and @racket[fragment] fields are represented directly as Racket
 strings, without URL-syntax-specific quoting. The procedures
-@scheme[string->url] and @scheme[url->string] translate encodings such
+@racket[string->url] and @racket[url->string] translate encodings such
 as @litchar{%20} into spaces and back again.
 
 By default, query associations are parsed with either @litchar{;} or
 @litchar{&} as a separator, and they are generated with @litchar{&} as
-a separator. The @scheme[current-alist-separator-mode] parameter
+a separator. The @racket[current-alist-separator-mode] parameter
 adjusts the behavior.
 
-An empty string at the end of the @scheme[path] list corresponds to a
+An empty string at the end of the @racket[path] list corresponds to a
 URL that ends in a slash. For example, the result of
-@scheme[(string->url "http://racket-lang.org/a/")] has a
-@scheme[path] field with strings @scheme["a"] and @scheme[""], while
-the result of @scheme[(string->url "http://racket-lang.org/a")] has a
-@scheme[path] field with only the string @scheme["a"].
+@racket[(string->url "http://racket-lang.org/a/")] has a
+@racket[path] field with strings @racket["a"] and @racket[""], while
+the result of @racket[(string->url "http://racket-lang.org/a")] has a
+@racket[path] field with only the string @racket["a"].
 
-When a @scheme["file"] URL is represented by a @scheme[url] structure,
-the @scheme[path] field is mostly a list of path elements. For Unix
-paths, the root directory is not included in @scheme[path]; its
-presence or absence is implicit in the @scheme[path-absolute?] flag.
+When a @racket["file"] URL is represented by a @racket[url] structure,
+the @racket[path] field is mostly a list of path elements. For Unix
+paths, the root directory is not included in @racket[path]; its
+presence or absence is implicit in the @racket[path-absolute?] flag.
 For Windows paths, the first element typically represents a drive, but
-a UNC path is represented by a first element that is @scheme[""] and
+a UNC path is represented by a first element that is @racket[""] and
 then successive elements complete the drive components that are
 separated by @litchar{/} or @litchar{\}.}
 
@@ -96,28 +96,28 @@ fragment. An impure port is one that still has its MIME headers.
 
 @defproc[(string->url [str string?]) url?]{
 
-Parses the URL specified by @scheme[str] into a @scheme[url]
-struct. The @scheme[string->url] procedure uses
-@scheme[form-urlencoded->alist] when parsing the query, so it is
-sensitive to the @scheme[current-alist-separator-mode] parameter for
+Parses the URL specified by @racket[str] into a @racket[url]
+struct. The @racket[string->url] procedure uses
+@racket[form-urlencoded->alist] when parsing the query, so it is
+sensitive to the @racket[current-alist-separator-mode] parameter for
 determining the association separator.
 
-If @scheme[str] starts with @scheme["file:"], then the path is always
+If @racket[str] starts with @racket["file:"], then the path is always
 parsed as an absolute path, and the parsing details depend on
-@scheme[file-url-path-convention-type]:
+@racket[file-url-path-convention-type]:
 
 @itemize[
 
- @item{@scheme['unix] : If @scheme["file:"] is followed by
+ @item{@racket['unix] : If @racket["file:"] is followed by
        @litchar{//} and a non-@litchar{/}, then the first element
        after the @litchar{//} is parsed as a host (and maybe port);
        otherwise, the first element starts the path, and the host is
-       @scheme[""].}
+       @racket[""].}
 
- @item{@scheme['windows] : If @scheme["file:"] is followed by
+ @item{@racket['windows] : If @racket["file:"] is followed by
        @litchar{//}, then the @litchar{//} is stripped; the remainder
-       parsed as a Windows path. The host is always @scheme[""] and
-       the port is always @scheme[#f].}
+       parsed as a Windows path. The host is always @racket[""] and
+       the port is always @racket[#f].}
 
 ]}
 
@@ -135,33 +135,33 @@ This function does not raise any exceptions.}
 
 Turns a string into a URL, applying (what appear to be) Netscape's
 conventions on automatically specifying the scheme: a string starting
-with a slash gets the scheme @scheme["file"], while all others get the
-scheme @scheme["http"].}
+with a slash gets the scheme @racket["file"], while all others get the
+scheme @racket["http"].}
 
 
 @defproc[(url->string [URL url?]) string?]{
 
-Generates a string corresponding to the contents of a @scheme[url]
-struct.  For a @scheme["file:"] URL, the URL must not be relative, the
+Generates a string corresponding to the contents of a @racket[url]
+struct.  For a @racket["file:"] URL, the URL must not be relative, the
 result always starts @litchar{file://}, and the interpretation of the
-path depends on the value of @scheme[file-url-path-convention-type]:
+path depends on the value of @racket[file-url-path-convention-type]:
 
 @itemize[
 
- @item{@scheme['unix] : Elements in @scheme[URL] are treated as path
+ @item{@racket['unix] : Elements in @racket[URL] are treated as path
        elements. Empty strings in the path list are treated like
-       @scheme['same].}
+       @racket['same].}
 
- @item{@scheme['windows] : If the first element is @scheme[""] then
+ @item{@racket['windows] : If the first element is @racket[""] then
        the next two elements define the UNC root, and the rest of the
        elements are treated as path elements. Empty strings in the
-       path list are treated like @scheme['same].}
+       path list are treated like @racket['same].}
 
 ]
 
-The @scheme[url->string] procedure uses
-@scheme[alist->form-urlencoded] when formatting the query, so it is
-sensitive to the @scheme[current-alist-separator-mode] parameter for
+The @racket[url->string] procedure uses
+@racket[alist->form-urlencoded] when formatting the query, so it is
+sensitive to the @racket[current-alist-separator-mode] parameter for
 determining the association separator. The default is to separate
 associations with a @litchar{&}.}
 
@@ -169,21 +169,21 @@ associations with a @litchar{&}.}
 @defproc[(path->url [path (or/c path-string? path-for-some-system?)])
          url?]{
 
-Converts a path to a @scheme[url].}
+Converts a path to a @racket[url].}
 
 
 @defproc[(url->path [URL url?]
                     [kind (one-of/c 'unix 'windows) (system-path-convention-type)])
          path-for-some-system?]{
 
-Converts @scheme[URL], which is assumed to be a @scheme["file"] URL,
+Converts @racket[URL], which is assumed to be a @racket["file"] URL,
 to a path.}
 
 
 @defparam[file-url-path-convention-type kind (one-of/c 'unix 'windows)]{
 
 Determines the default conversion to and from strings for
-@scheme["file"] URLs. See @scheme[string->url] and @scheme[url->string].}
+@racket["file"] URLs. See @racket[string->url] and @racket[url->string].}
 
 
 @deftogether[(
@@ -198,13 +198,13 @@ Determines the default conversion to and from strings for
          input-port?]
 )]{
 
-Initiates a GET/HEAD/DELETE request for @scheme[URL] and returns a
+Initiates a GET/HEAD/DELETE request for @racket[URL] and returns a
 @tech{pure port} corresponding to the body of the response. The
 optional list of strings can be used to send header lines to the
 server.
 
 The GET method is used to retrieve whatever information is identified
-by @scheme[URL].
+by @racket[URL].
 
 The HEAD method is identical to GET, except the server must not return
 a message body. The meta-information returned in a response to a HEAD
@@ -212,9 +212,9 @@ request should be identical to the information in a response to a GET
 request.
 
 The DELETE method is used to delete the entity identified by
-@scheme[URL].
+@racket[URL].
 
-@bold{Beware:} By default, @scheme["https"] scheme handling does not
+@bold{Beware:} By default, @racket["https"] scheme handling does not
 verify a server's certificate (i.e., it's equivalent of clicking
 through a browser's warnings), so communication is safe, but the
 identity of the server is not verified. To validate the server's
@@ -222,8 +222,8 @@ certificate, set @racket[current-https-protocol] to a context created
 with @racket[ssl-make-client-context], and enable certificate validation
 in the context with @racket[ssl-set-verify!].
 
-The @scheme["file"] scheme for URLs is handled only by
-@scheme[get-pure-port], which uses @scheme[open-input-file], does not
+The @racket["file"] scheme for URLs is handled only by
+@racket[get-pure-port], which uses @racket[open-input-file], does not
 handle exceptions, and ignores the optional strings.}
 
 @deftogether[(
@@ -238,9 +238,9 @@ handle exceptions, and ignores the optional strings.}
          input-port?]
 )]{
 
-Like @scheme[get-pure-port], etc., but the resulting @tech{impure
+Like @racket[get-pure-port], etc., but the resulting @tech{impure
 port} contains both the returned headers and the body. The
-@scheme["file"] URL scheme is not handled by these functions.}
+@racket["file"] URL scheme is not handled by these functions.}
 
 @deftogether[(
 @defproc[(post-pure-port [URL url?]
@@ -253,13 +253,13 @@ port} contains both the returned headers and the body. The
          input-port?]
 )]{
 
-Initiates a POST/PUT request for @scheme[URL] and sends the
-@scheme[post] byte string.  The result is a @tech{pure port}, which
+Initiates a POST/PUT request for @racket[URL] and sends the
+@racket[post] byte string.  The result is a @tech{pure port}, which
 contains the body of the response is returned.  The optional list of
 strings can be used to send header lines to the server.
 
 @bold{Beware:} See @racket[get-pure-port] for warnings about
-@scheme["https"] certificate validation.}
+@racket["https"] certificate validation.}
 
 
 @deftogether[(
@@ -273,7 +273,7 @@ strings can be used to send header lines to the server.
          input-port?]
 )]{
 
-Like @scheme[post-pure-port] and @scheme[put-pure-port], but the
+Like @racket[post-pure-port] and @racket[put-pure-port], but the
 resulting @tech{impure port} contains both the returned headers and
 body.}
 
@@ -292,15 +292,15 @@ something like @litchar{1.0} or @litchar{1.1}, @nonterm{code} is an
 exact integer for the response code, and @nonterm{message} is
 arbitrary text without a return or newline.
 
-The @schememodname[net/head] library provides procedures, such as
-@scheme[extract-field] for manipulating the header.
+The @racketmodname[net/head] library provides procedures, such as
+@racket[extract-field] for manipulating the header.
 
 Since web servers sometimes return mis-formatted replies,
-@scheme[purify-port] is liberal in what it accepts as a header. as a
+@racket[purify-port] is liberal in what it accepts as a header. as a
 result, the result string may be ill formed, but it will either be the
 empty string, or it will be a string matching the following regexp:
 
-@schemeblock[
+@racketblock[
 #rx"^HTTP/.*?(\r\n\r\n|\n\n|\r\r)"
 ]}
 
@@ -315,18 +315,18 @@ empty string, or it will be a string matching the following regexp:
                             [header (listof string?)])
             any])]{
 
-Given a URL and a @scheme[connect] procedure like
-@scheme[get-pure-port] to convert the URL to an input port (either a
-@tech{pure port} or @tech{impure port}), calls the @scheme[handle]
+Given a URL and a @racket[connect] procedure like
+@racket[get-pure-port] to convert the URL to an input port (either a
+@tech{pure port} or @tech{impure port}), calls the @racket[handle]
 procedure on the port and closes the port on return. The result of the
-@scheme[handle] procedure is the result of @scheme[call/input-url].
+@racket[handle] procedure is the result of @racket[call/input-url].
 
-When a @scheme[header] argument is supplied, it is passed along to the
-@scheme[connect] procedure.
+When a @racket[header] argument is supplied, it is passed along to the
+@racket[connect] procedure.
 
 The connection is made in such a way that the port is closed before
-@scheme[call/input-url] returns, no matter how it returns. In
-particular, it is closed if @scheme[handle] raises an exception, or if
+@racket[call/input-url] returns, no matter how it returns. In
+particular, it is closed if @racket[handle] raises an exception, or if
 the connection process is interruped by an asynchronous break
 exception.}
 
@@ -338,7 +338,7 @@ connections. Each mapping is a list of three elements:
 
 @itemize[
 
- @item{the URL scheme, such as @scheme["http"];}
+ @item{the URL scheme, such as @racket["http"];}
 
  @item{the proxy server address; and}
 
@@ -346,7 +346,7 @@ connections. Each mapping is a list of three elements:
 
 ]
 
-Currently, the only proxiable scheme is @scheme["http"]. The default
+Currently, the only proxiable scheme is @racket["http"]. The default
 mapping is the empty list (i.e., no proxies).}
 
 @defparam[current-https-protocol protocol (or/c ssl-client-context? symbol?)]{
@@ -387,9 +387,9 @@ Note that @racket[net/url] does not provide the
 
 @defsignature[url^ ()]{
 
-Includes everything exported by the @schememodname[net/url] module
+Includes everything exported by the @racketmodname[net/url] module
 except @racket[current-https-protocol].  Note that the exports of
-@schememodname[net/url] and the @racket[url^] signature do not include
+@racketmodname[net/url] and the @racket[url^] signature do not include
 @racket[current-connect-scheme].}
 
 @defsignature[url+scheme^ (url^)]{

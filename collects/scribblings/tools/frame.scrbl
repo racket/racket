@@ -21,9 +21,9 @@ Sets the names that the button shows.
 }
 @methimpl{
 
-The string @scheme[short-name] is the name that is shown on the button
-and @scheme[name] is shown when the button is clicked on, in a separate
-window. If @scheme[name] is @scheme[#f], a message indicating that the file
+The string @racket[short-name] is the name that is shown on the button
+and @racket[name] is shown when the button is clicked on, in a separate
+window. If @racket[name] is @racket[#f], a message indicating that the file
 hasn't been saved is shown.
 
 
@@ -34,7 +34,7 @@ hasn't been saved is shown.
 @defmixin[drracket:frame:mixin (drracket:frame:basics<%> frame:text-info<%> frame:editor<%>) (drracket:frame:<%>)]{
 
 Provides an implementation of 
-@scheme[drracket:frame:<%>] 
+@racket[drracket:frame:<%>] 
 }
 
 
@@ -49,11 +49,11 @@ Use this mixin to establish some common menu items across various DrRacket windo
            void?]{
 
 Adds a
-@scheme[separator-menu-item%]. Next, adds the
-@scheme["Keybindings"] menu item to the edit menu. Finally,
+@racket[separator-menu-item%]. Next, adds the
+@racket["Keybindings"] menu item to the edit menu. Finally,
 if the 
-@scheme[current-eventspace-has-standard-menus?] procedure returns @scheme[#f], creates another 
-@scheme[separator-menu-item%].
+@racket[current-eventspace-has-standard-menus?] procedure returns @racket[#f], creates another 
+@racket[separator-menu-item%].
 
 
 
@@ -78,7 +78,7 @@ method.
 Calls the super method. Then, creates a menu item for
 multi-file searching. Finally,
 adds a
-@scheme[separator-menu-item%].
+@racket[separator-menu-item%].
 
 
 }
@@ -108,7 +108,7 @@ Returns the empty string.
            void?]{
 
 Calls 
-@scheme[handler:edit-file].
+@racket[handler:edit-file].
 
 
 }
@@ -154,7 +154,7 @@ Opens an about box for DrRacket.
            (help-menu:about-string)
            string?]{
 
-Returns the string @scheme["DrRacket"].
+Returns the string @racket["DrRacket"].
 
 
 }
@@ -170,7 +170,7 @@ Adds the Help Desk menu item and the Welcome to DrRacket menu item.
            (help-menu:create-about?)
            boolean?]{
 
-Returns @scheme[#t].
+Returns @racket[#t].
 
 
 }}
@@ -178,7 +178,7 @@ Returns @scheme[#t].
 
 @definterface[drracket:frame:basics<%> (frame:standard-menus<%>)]{
 
-This interface is the result of the @scheme[drracket:frame:basics-mixin]
+This interface is the result of the @racket[drracket:frame:basics-mixin]
 
 }
 
@@ -242,10 +242,10 @@ that evaluation is taking place in the user's program.
 @methspec{
 
 This method is intended to be overridden. It's job is to
-update the @scheme["View"] menu to match the state of the
+update the @racket["View"] menu to match the state of the
 visible windows. In the case of the standard DrRacket
 window, it change the menu items to reflect the visibility of
-the definitions and interaction @scheme[editor-canvas%]s.
+the definitions and interaction @racket[editor-canvas%]s.
 
 Call this method whenever the state of the show menu might
 need to change.

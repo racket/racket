@@ -3,17 +3,17 @@
 
 @definterface/title[menu-item<%> ()]{
 
-A @scheme[menu-item<%>] object is an element within a @scheme[menu%],
- @scheme[popup-menu%], or @scheme[menu-bar%]. Operations that affect
+A @racket[menu-item<%>] object is an element within a @racket[menu%],
+ @racket[popup-menu%], or @racket[menu-bar%]. Operations that affect
  the parent --- such as renaming the item, deleting the item, or
  adding a check beside the item --- are accomplished via the
- @scheme[menu-item<%>] object.
+ @racket[menu-item<%>] object.
 
-A menu item is either a @scheme[separator-menu-item%] object (merely
- a separator), of a @scheme[labelled-menu-item<%>] object; the latter
- is more specifically an instance of either @scheme[menu-item%] (a
- plain menu item), @scheme[checkable-menu-item%] (a checkable menu
- item), or @scheme[menu%] (a submenu).
+A menu item is either a @racket[separator-menu-item%] object (merely
+ a separator), of a @racket[labelled-menu-item<%>] object; the latter
+ is more specifically an instance of either @racket[menu-item%] (a
+ plain menu item), @racket[checkable-menu-item%] (a checkable menu
+ item), or @racket[menu%] (a submenu).
 
 
 @defmethod[(delete)
@@ -39,8 +39,8 @@ Returns the menu, popup menu, or menu bar containing the item. The
 @defmethod[(is-deleted?)
            boolean?]{
 
-Returns @scheme[#t] if the menu item is deleted from its parent,
- @scheme[#f] otherwise.
+Returns @racket[#t] if the menu item is deleted from its parent,
+ @racket[#f] otherwise.
 
 }
 

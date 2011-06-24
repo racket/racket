@@ -697,7 +697,7 @@ Copies the null-terminated string @var{str}; the copy will never be freed.}
            [size_t size])]{
 
 Attempts to allocate @var{size} bytes using @var{mallocf}. If the
-allocation fails, the @scheme[exn:misc:out-of-memory] exception is
+allocation fails, the @racket[exn:misc:out-of-memory] exception is
 raised.}
 
 @function[(void** scheme_malloc_immobile_box
@@ -939,7 +939,7 @@ To remove an added finalizer, use @cpp{scheme_subtract_finalizer}.}
            [fnl_proc f]
            [void* data])]{
 
-Installs a ``will''-like finalizer, similar to @scheme[will-register].
+Installs a ``will''-like finalizer, similar to @racket[will-register].
  Will-like finalizers are called one at a time, requiring the collector
  to prove that a value has become inaccessible again before calling
  the next will-like finalizer. Finalizers registered with
@@ -981,7 +981,7 @@ Removes a finalizer that was installed with
            [void* p])]{
 
 Removes all finalization (``will''-like or not) for @var{p}, including
- wills added in Scheme with @scheme[will-register] and finalizers used
+ wills added in Scheme with @racket[will-register] and finalizers used
  by custodians.}
 
 @function[(void scheme_dont_gc_ptr

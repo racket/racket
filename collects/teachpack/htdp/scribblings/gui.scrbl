@@ -19,31 +19,31 @@ window on your computer screen.
 component of a window on your computer screen.
 
 @defproc[(create-window [g (listof (listof (unsyntax @tech{GUI-ITEM})))])  Window]{
-Creates a window from the ``matrix'' of gui items @scheme[g].}
+Creates a window from the ``matrix'' of gui items @racket[g].}
 
 @defproc[(window? [x any/c]) boolean?]{Is the given value a window?}
 
-@defproc[(show-window [w Window]) true]{Shows @scheme[w].}
+@defproc[(show-window [w Window]) true]{Shows @racket[w].}
 
-@defproc[(hide-window [w window]) true]{Hides @scheme[w].}
+@defproc[(hide-window [w window]) true]{Hides @racket[w].}
 
 @defproc[(make-button [label string>][callback (-> event%  boolean)])  (unsyntax @tech{GUI-ITEM})]{Creates a
-button with @scheme[label] and @scheme[callback] function. The latter
+button with @racket[label] and @racket[callback] function. The latter
 receives an argument that it may safely ignore.}
 
-@defproc[(make-message [msg string?]) (unsyntax @tech{GUI-ITEM})]{Creates a message item from @scheme[msg].}
+@defproc[(make-message [msg string?]) (unsyntax @tech{GUI-ITEM})]{Creates a message item from @racket[msg].}
 
-@defproc[(draw-message [g (unsyntax @tech{GUI-ITEM})][m string?])  true]{Displays @scheme[m]
-in message item @scheme[g] and erases the current message.}
+@defproc[(draw-message [g (unsyntax @tech{GUI-ITEM})][m string?])  true]{Displays @racket[m]
+in message item @racket[g] and erases the current message.}
 
 @defproc[(make-text [txt string?]) (unsyntax @tech{GUI-ITEM})]{Creates an text editor (with
-label @scheme[txt]) that allows users to enter text.}
+label @racket[txt]) that allows users to enter text.}
 
 @defproc[(text-contents [g (unsyntax @tech{GUI-ITEM})])  string?]{
 Determines the current contents of a text @tech{GUI-ITEM}.}
 
 @defproc[(make-choice [choices (listof string?)]) (unsyntax @tech{GUI-ITEM})]{
-Creates a choice menu from @scheme[choices] that permits users to choose
+Creates a choice menu from @racket[choices] that permits users to choose
 from some alternatives.}
 
 @defproc[(choice-index [g (unsyntax @tech{GUI-ITEM})]) natural-number/c]{Determines the
@@ -53,7 +53,7 @@ is the 0-based index in the choice menu}
 Example 1:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 > (define w
     (create-window
       (list (list (make-button "QUIT" (lambda (e) (hide-window w)))))))
@@ -66,7 +66,7 @@ Example 1:
 Example 2:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; text1 : GUI-ITEM
 (define text1
   (make-text "Please enter your name"))

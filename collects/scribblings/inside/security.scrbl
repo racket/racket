@@ -40,7 +40,7 @@ bitwise combination of the following:
 ]
 
 The @var{filename} argument can be @cpp{NULL} (in which case
-@scheme[#f] is sent to the security manager's procedure), and
+@racket[#f] is sent to the security manager's procedure), and
 @var{guards} should be @cppi{SCHEME_GUARD_FILE_EXISTS} in that case.
 
 If access is denied, an exception is raised.}

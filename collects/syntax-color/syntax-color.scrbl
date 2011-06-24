@@ -15,7 +15,7 @@
 @author["Scott Owens"]
 
 The @filepath{syntax-color} collection provides the underlying data
-structures and some helpful utilities for the @scheme[color:text%]
+structures and some helpful utilities for the @racket[color:text%]
 class of the @other-manual['(lib
 "scribblings/framework/framework.scrbl")].
 
@@ -27,7 +27,7 @@ class of the @other-manual['(lib
 
 @defclass[paren-tree% object% ()]
 
-Parenthesis matching code built on top of @scheme[token-tree%].
+Parenthesis matching code built on top of @racket[token-tree%].
 
 @; ----------------------------------------------------------------------
 
@@ -44,23 +44,23 @@ Parenthesis matching code built on top of @scheme[token-tree%].
 
 A lexer for Scheme, including reader extensions (@secref[#:doc'(lib
 "scribblings/reference/reference.scrbl")]{Reader_Extension}), built
-specifically for @scheme[color:text%].
+specifically for @racket[color:text%].
 
-The @scheme[scheme-lexer] function returns 5 values:
+The @racket[scheme-lexer] function returns 5 values:
 
 @itemize[
   @item{Either a string containing the matching text or the eof object.  
    Block comments and specials currently return an empty string.  
    This may change in the future to other string or non-string data.}
 
-  @item{A symbol in @scheme['(error comment sexp-comment 
+  @item{A symbol in @racket['(error comment sexp-comment 
    white-space constant string no-color parenthesis other symbol eof)].}
 
-  @item{A symbol in @scheme['(|(| |)| |[| |]| |{| |}|)] or @scheme[#f].}
+  @item{A symbol in @racket['(|(| |)| |[| |]| |{| |}|)] or @racket[#f].}
 
-  @item{A number representing the starting position of the match (or @scheme[#f] if eof).}
+  @item{A number representing the starting position of the match (or @racket[#f] if eof).}
 
-  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
+  @item{A number representing the ending position of the match (or @racket[#f] if eof).}]
 
 }
 
@@ -72,7 +72,7 @@ The @scheme[scheme-lexer] function returns 5 values:
                  (or/c number? false/c)
                  (or/c 'datum 'open 'close 'continue))]{
 
-Like @scheme[scheme-lexer], but returns an extra value. The last
+Like @racket[scheme-lexer], but returns an extra value. The last
 return value indicates whether the consumed token should count as a
 datum, an opening parenthesis (or similar starting token to group
 other tokens), a closing parenthesis (or similar), or a prefix (such
@@ -86,9 +86,9 @@ as whitespace) on a datum.}
                  (or/c number? false/c)
                  (or/c 'datum 'open 'close 'continue))]{
 
-Like @scheme[scheme-lexer/status], but for a dialect of Scheme where
+Like @racket[scheme-lexer/status], but for a dialect of Scheme where
 @litchar{|} is a delimiter instead of quoting syntax for a symbol.
-This function is used by @scheme[scribble-lexer].}
+This function is used by @racket[scribble-lexer].}
 
 
 @section{Default lexer}
@@ -103,24 +103,24 @@ This function is used by @scheme[scribble-lexer].}
 
 A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 @litchar{]}, @litchar["{"], and @litchar["}"] built specifically for
-@scheme[color:text%].
+@racket[color:text%].
 
-@scheme[default-lexer] returns 5 values:
+@racket[default-lexer] returns 5 values:
 
 @itemize[
   @item{Either a string containing the matching text or the eof object.  
    Block specials currently return an empty string.  
    This may change in the future to other string or non-string data.}
 
-  @item{A symbol in @scheme['(comment white-space no-color eof)].}
+  @item{A symbol in @racket['(comment white-space no-color eof)].}
 
-  @item{A symbol in @scheme['(|(| |)| |[| |]| |{| |}|)] or @scheme[#f].}
+  @item{A symbol in @racket['(|(| |)| |[| |]| |{| |}|)] or @racket[#f].}
 
-  @item{A number representing the starting position of the match (or @scheme[#f] if eof).}
+  @item{A number representing the starting position of the match (or @racket[#f] if eof).}
 
-  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
+  @item{A number representing the ending position of the match (or @racket[#f] if eof).}]
 
-                     
+
 @section{Module Lexer}
 
 @defmodule[syntax-color/module-lexer]
@@ -140,44 +140,44 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
                        (-> input-port? any)
                        (cons/c (-> input-port? any/c any) any/c)))]{
 
-Like @scheme[scheme-lexer], but with several differences:
+Like @racket[scheme-lexer], but with several differences:
 
 @itemize[
 
- @item{The @scheme[module-lexer] function accepts an offset and lexer
+ @item{The @racket[module-lexer] function accepts an offset and lexer
        mode, instead of just an input port.}
 
  @item{In addition to the results of @racket[scheme-lexer],
-       @scheme[module-lexer] returns a backup distance and a new lexer
+       @racket[module-lexer] returns a backup distance and a new lexer
        mode.}
 
- @item{When @scheme[mode] is @scheme[#f] (indicating the start of the
-       stream), the lexer checks @scheme[in] for a @hash-lang[]
+ @item{When @racket[mode] is @racket[#f] (indicating the start of the
+       stream), the lexer checks @racket[in] for a @hash-lang[]
        specification.
 
        If a @hash-lang[] line is present but the specified
-       language does not exist, the entire @scheme[in] input is
-       consumed and colored as @scheme['error].
+       language does not exist, the entire @racket[in] input is
+       consumed and colored as @racket['error].
 
        If the language exists and the language provides a
-       @scheme[get-info] function, then it is called with
-       @scheme['color-lexer]. If the result is not @scheme[#f], then
+       @racket[get-info] function, then it is called with
+       @racket['color-lexer]. If the result is not @racket[#f], then
        it should be a lexer function for use with
-       @scheme[color:text%]. The result mode is the lexer---paired
-       with @scheme[#f] if the lexer is a procedure arity 3---so that
+       @racket[color:text%]. The result mode is the lexer---paired
+       with @racket[#f] if the lexer is a procedure arity 3---so that
        future calls will dispatch to the language-supplied lexer.
 
        If the language is specified but it provides no
-       @scheme[get-info] or @scheme['color-lexer] result, then
-       @scheme[scheme-lexer] is returned as the mode.}
+       @racket[get-info] or @racket['color-lexer] result, then
+       @racket[scheme-lexer] is returned as the mode.}
 
- @item{When @scheme[mode] is a lexer procedure, the lexer is applied
-       to @scheme[in]. The lexer's results are returned, plus the
+ @item{When @racket[mode] is a lexer procedure, the lexer is applied
+       to @racket[in]. The lexer's results are returned, plus the
        lexer again as the mode.}
 
- @item{When @scheme[mode] is a pair, then the lexer procedure in the
-       @scheme[car] is applied to @scheme[in], @scheme[offset], and the mode in the
-       @scheme[cdr]. The lexer's results are returned, except that its
+ @item{When @racket[mode] is a pair, then the lexer procedure in the
+       @racket[car] is applied to @racket[in], @racket[offset], and the mode in the
+       @racket[cdr]. The lexer's results are returned, except that its
        mode result is paired back with the lexer procedure.}
 
 ]}
@@ -197,7 +197,7 @@ Like @scheme[scheme-lexer], but with several differences:
                  exact-nonnegative-integer?
                  any/c)]{
 
-Like @scheme[scheme-lexer], but for Scheme extended with Scribbles
+Like @racket[scheme-lexer], but for Scheme extended with Scribbles
 @"@" notation (see @secref[#:doc '(lib
 "scribblings/scribble/scribble.scrbl") "reader"]).}
 
@@ -212,7 +212,7 @@ Like @scheme[scheme-lexer], but for Scheme extended with Scribbles
                  exact-nonnegative-integer?
                  any/c)]{
 
-Like @scheme[scribble-lexer], but starting in ``text'' mode instead of
+Like @racket[scribble-lexer], but starting in ``text'' mode instead of
 Scheme mode.}
 
 @; ----------------------------------------------------------------------
@@ -240,8 +240,8 @@ FIXME: many methods are not yet documented.
 
  @defmethod[(search! [key-position natural-number/c]) void?]{
   Splays, setting the root node to be the closest node to
-  offset @scheme[key-position] (i.e., making the total length of
-  the left tree at least @scheme[key-position], if possible).
+  offset @racket[key-position] (i.e., making the total length of
+  the left tree at least @racket[key-position], if possible).
  }
 
 }
@@ -255,26 +255,26 @@ FIXME: many methods are not yet documented.
 @defproc[(node-right [n node?]) (or/c node? false/c)]
 )]{
 
-Functions for working with nodes in a @scheme[token-tree%].}
+Functions for working with nodes in a @racket[token-tree%].}
 
 
 @defproc[(insert-first! [tree1 (is-a?/c token-tree%)] 
                         [tree2 (is-a?/c token-tree%)]) 
           void?]{
 
-Inserts @scheme[tree1] into @scheme[tree2] as the first thing, setting
-@scheme[tree2]'s root to @scheme[#f].}
+Inserts @racket[tree1] into @racket[tree2] as the first thing, setting
+@racket[tree2]'s root to @racket[#f].}
 
 
 @defproc[(insert-last! [tree1 (is-a?/c token-tree%)] 
                        [tree2 (is-a?/c token-tree%)]) 
           void?]{
 
-Inserts @scheme[tree1] into @scheme[tree2] as the last thing, setting
-@scheme[tree2]'s root to @scheme[#f].}
+Inserts @racket[tree1] into @racket[tree2] as the last thing, setting
+@racket[tree2]'s root to @racket[#f].}
 
 
 @defproc[(insert-last-spec! [tree (is-a?/c token-tree%)] [n natural-number/c] [v any/c]) void?]{
 
-Same as @scheme[(insert-last! tree (new token-tree% [length n] [data
+Same as @racket[(insert-last! tree (new token-tree% [length n] [data
 v]))]. This optimization is important for the colorer.}

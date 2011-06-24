@@ -3,8 +3,8 @@
 
 @definterface/title[snip-class-list<%> ()]{
 
-Each eventspace has its own instance of @scheme[snip-class-list<%>],
- obtained with @scheme[(get-the-snip-class-list)]. New instances
+Each eventspace has its own instance of @racket[snip-class-list<%>],
+ obtained with @racket[(get-the-snip-class-list)]. New instances
  cannot be created directly. Each instance keeps a list of snip
  classes. This list is needed for loading snips from a file. See also
  @|snipclassdiscuss|.
@@ -22,7 +22,7 @@ Adds a snip class to the list. If a class with the same name already
            (or/c (is-a?/c snip-class%) false/c)]{
 
 Finds a snip class from the list with the given name, returning
- @scheme[#f] if none is found.
+ @racket[#f] if none is found.
 
 }
 
@@ -36,8 +36,8 @@ Returns an index into the list for the specified class.
 @defmethod[(nth [n exact-nonnegative-integer?])
            (or/c (is-a?/c snip-class%) false/c)]{
 
-Returns the @scheme[n]th class in the list, or @scheme[#f] if
- the list has @scheme[n] classes or less.
+Returns the @racket[n]th class in the list, or @racket[#f] if
+ the list has @racket[n] classes or less.
 
 }
 

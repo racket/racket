@@ -12,17 +12,17 @@
 @defproc[(print-converter-proc [v print-converter?]) (any/c (any/c . -> . any/c) . -> . any/c)]
 )]{
 
-The @scheme[prop:print-converter] property can be given a procedure
+The @racket[prop:print-converter] property can be given a procedure
 value for a structure type. In that case, for constructor-style print
-conversion via @scheme[print-convert], instances of the structure are
+conversion via @racket[print-convert], instances of the structure are
 converted by calling the procedure that is the property's value. The
 procedure is called with the value to convert and a procedure to
 recursively convert nested values. The result should be an
 S-expression for the converted value.
 
-The @scheme[print-converter?] predicate recognizes instances of
-structure types that have the @scheme[prop:print-converter] property,
-and @scheme[print-converter-proc] extracts the property value.}
+The @racket[print-converter?] predicate recognizes instances of
+structure types that have the @racket[prop:print-converter] property,
+and @racket[print-converter-proc] extracts the property value.}
 
 
 @deftogether[(
@@ -31,19 +31,19 @@ and @scheme[print-converter-proc] extracts the property value.}
 @defproc[(print-convert-constructor-name [v print-convert-named-constructor?]) any]
 )]{
 
-The @scheme[prop:print-convert-constructor-name] property can be given
+The @racket[prop:print-convert-constructor-name] property can be given
 a symbol value for a structure type. In that case, for
-constructor-style print conversion via @scheme[print-convert],
+constructor-style print conversion via @racket[print-convert],
 instances of the structure are shown using the symbol as the
 constructor name. 
 
-The @scheme[prop:print-converter] property takes precedence over
-@scheme[prop:print-convert-constructor-name]. If neither is attached
+The @racket[prop:print-converter] property takes precedence over
+@racket[prop:print-convert-constructor-name]. If neither is attached
 to a structure type, its instances are converted using a constructor
-name that is @schemeidfont{make-} prefixed onto the result of
-@scheme[object-name].
+name that is @racketidfont{make-} prefixed onto the result of
+@racket[object-name].
 
-The @scheme[print-convert-named-constructor?] predicate recognizes
+The @racket[print-convert-named-constructor?] predicate recognizes
 instances of structure types that have the
-@scheme[prop:print-convert-constructor-name] property, and
-@scheme[print-convert-constructor-name] extracts the property value.}
+@racket[prop:print-convert-constructor-name] property, and
+@racket[print-convert-constructor-name] extracts the property value.}

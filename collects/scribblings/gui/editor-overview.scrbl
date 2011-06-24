@@ -28,10 +28,10 @@ Both kinds of applications need an extensible editor that can handle
 
 @itemize[
 
- @item{@scheme[text%] --- in a @deftech{text editor}, items are
+ @item{@racket[text%] --- in a @deftech{text editor}, items are
  automatically positioned in a paragraph flow.}
 
- @item{@scheme[pasteboard%] --- in a @deftech{pasteboard editor},
+ @item{@racket[pasteboard%] --- in a @deftech{pasteboard editor},
  items are explicitly positioned and dragable.}
 
 ]
@@ -47,10 +47,10 @@ This editor architecture addresses the full range of real-world
  and the learning investment required to use it.
 
 A brief example illustrates how editors work. To start, an editor
- needs an @scheme[editor-canvas%] to display its contents. Then, we
+ needs an @racket[editor-canvas%] to display its contents. Then, we
  can create a text editor and install it into the canvas:
 
-@schemeblock[
+@racketblock[
 (define f (new frame% [label "Simple Edit"]
                       [width 200]
                       [height 200]))
@@ -65,7 +65,7 @@ At this point, the editor is fully functional: the user can type text
  can support all of the standard operations on an editor via the
  menu bar:
 
-@schemeblock[
+@racketblock[
 (define mb (new menu-bar% [parent f]))
 (define m-edit (new menu% [label "Edit"] [parent mb]))
 (define m-font (new menu% [label "Font"] [parent mb]))
@@ -89,7 +89,7 @@ The content of an editor is made up of @defterm{@tech{snips}}. An
  on the same line. The @method[text% find-snip] method extracts a snip
  from a text editor:
 
-@schemeblock[
+@racketblock[
 (send t #,(:: text% find-snip) 0 'after)
 ]
 
@@ -101,7 +101,7 @@ An editor is not permanently attached to any display. We can take the
  text editor out of our canvas and put a pasteboard editor in the
  canvas, instead:
 
-@schemeblock[
+@racketblock[
 (define pb (new pasteboard%))
 (send c #,(:: editor-canvas% set-editor) pb)
 ]
@@ -118,34 +118,34 @@ We can insert the old text editor (which we recently removed from the
  canvas) as an embedded editor in the pasteboard by explicitly
  creating an editor snip:
 
-@schemeblock[
-(define s (make-object editor-snip% t)) (code:comment @#,t{@scheme[t] is the old text editor})
+@racketblock[
+(define s (make-object editor-snip% t)) (code:comment @#,t{@racket[t] is the old text editor})
 (send pb #,(:: editor<%> insert) s)
 ]
 
 An individual snip cannot be inserted into different editors at the
  same time, or inserted multiple times in the same editor:
 
-@schemeblock[
+@racketblock[
 (send pb #,(:: editor<%> insert) s) (code:comment @#,t{no effect})
 ]
 
 However, we can make a deep copy of the snip and insert the copy into
  the pasteboard:
 
-@schemeblock[
+@racketblock[
 (send pb #,(:: editor<%> insert) (send s #,(:: snip% copy)))
 ]
 
 Applications that use the editor classes typically derive new versions
- of the @scheme[text%] and @scheme[pasteboard%] classes. For
+ of the @racket[text%] and @racket[pasteboard%] classes. For
  example, to implement an append-only editor (which allows insertions
  only at the end and never allows deletions), derive a new class from
- @scheme[text%] and override the
+ @racket[text%] and override the
  @method[text% can-insert?] and
  @method[text% can-delete?] methods:
 
-@schemeblock[
+@racketblock[
 (define append-only-text% 
   (class text%
     (inherit #,(:: text% last-position))
@@ -163,23 +163,23 @@ The editor toolbox supports extensible and nestable editors by
 
  @item{The @deftech{editor} itself stores the state of the text or
  pasteboard and handles most events and editing operations. The
- @scheme[editor<%>] interface defines the core editor functionality,
- but editors are created as instances of @scheme[text%] or
- @scheme[pasteboard%].}
+ @racket[editor<%>] interface defines the core editor functionality,
+ but editors are created as instances of @racket[text%] or
+ @racket[pasteboard%].}
 
  @item{A @deftech{snip} is a segment of information within the
  editor.  Each snip can contain a sequence of characters, a picture,
  or an interactive object (such as an embedded editor). In a text
  editor, snips are constrained to fit on a single line and generally
- contain data of a single type. The @scheme[snip%] class implements a
- basic snip. Other snip classes include @scheme[string-snip%] for
- managing text, @scheme[image-snip%] for managing pictures, and
- @scheme[editor-snip%] for managing embedded editors.}
+ contain data of a single type. The @racket[snip%] class implements a
+ basic snip. Other snip classes include @racket[string-snip%] for
+ managing text, @racket[image-snip%] for managing pictures, and
+ @racket[editor-snip%] for managing embedded editors.}
 
  @item{A @deftech{display} presents the editor on the screen. The
  display lets the user scroll around an editor or change editors. Most
- displays are instances of the @scheme[editor-canvas%] class, but the
- @scheme[editor-snip%] class also acts as a display for embedded
+ displays are instances of the @racket[editor-canvas%] class, but the
+ @racket[editor-snip%] class also acts as a display for embedded
  editors.}
 
 ]
@@ -226,16 +226,16 @@ When an editor is drawn into a display, each snip and position has a
 Two extra layers of administration manage the @techlink{display}-editor and
  editor-snip connections. An editor never communicates directly with
  a @techlink{display}; instead, it always communicates with an @deftech{editor
- administrator}, an instance of the @scheme[editor-admin%] class,
+ administrator}, an instance of the @racket[editor-admin%] class,
  which relays information to the @techlink{display}. Similarly, a snip
  communicates with a @deftech{snip administrator}, an instance of the
- @scheme[snip-admin%] class.
+ @racket[snip-admin%] class.
 
 The administrative layers make the editor hierarchy flexible without
  forcing every part of an editor assembly to contain the functionality
  of several parts. For example, a text editor can be a single
  @techlink{item} within another editor; without administrators, the
- @scheme[text%] class would also have to contain all the functionality
+ @racket[text%] class would also have to contain all the functionality
  of a @techlink{display} (for the containing editor) and a snip (for
  the embedded editor). Using administrators, an editor class can serve
  as both a containing and an embedded editor without directly
@@ -246,9 +246,9 @@ A snip belongs to at most one editor via a single administrator. An
  administrator that connects the an editor to the standard
  @techlink{display} (i.e., an editor canvas) can work with other such
  administrators. In particular, the administrator of an
- @scheme[editor-canvas%] (each one has its own administrator) can work
- with other @scheme[editor-canvas%] administrators, allowing an editor
- to be displayed in multiple @scheme[editor-canvas%] windows at the
+ @racket[editor-canvas%] (each one has its own administrator) can work
+ with other @racket[editor-canvas%] administrators, allowing an editor
+ to be displayed in multiple @racket[editor-canvas%] windows at the
  same time.
 
 When an editor is displayed by multiple canvases, one of the canvases'
@@ -261,15 +261,15 @@ When an editor is displayed by multiple canvases, one of the canvases'
 
 @subsection[#:tag "editorstyles"]{Styles}
 
-A @deftech{style}, an instance of the @scheme[style<%>] interface,
+A @deftech{style}, an instance of the @racket[style<%>] interface,
  parameterizes high-level display information that is common to all
  snip classes. This includes the font, color, and alignment for
  drawing the item. A single style is attached to each snip.
 
 Styles are hierarchical: each style is defined in terms of another
- style. @index*['("Basic style") (list @elem{@scheme["Basic"]
+ style. @index*['("Basic style") (list @elem{@racket["Basic"]
  style})]{There} is a single @deftech{root style}, named
- @scheme["Basic"], from which all other styles in an editor are
+ @racket["Basic"], from which all other styles in an editor are
  derived. The difference between a base style and each of its derived
  style is encoded in a @deftech{style delta} (or simply
  @deftech{delta}). A delta encodes changes such as
@@ -288,10 +288,10 @@ Styles are hierarchical: each style is defined in terms of another
 
 Style objects are never created separately; rather, they are always
  created through a @deftech{style list}, an instance of the
- @scheme[style-list%] class. A style list manages the styles,
+ @racket[style-list%] class. A style list manages the styles,
  servicing external requests to find a particular style, and it
  manages the hierarchical relationship between styles.  A global style
- list is available, @indexed-scheme[the-style-list], but new style
+ list is available, @indexed-racket[the-style-list], but new style
  lists can be created for managing separate style hierarchies. For
  example, each editor will typically have its own style list.
 
@@ -318,11 +318,11 @@ Each new style is defined in one of two ways:
 
 ]
 
-@index*['("Standard style") (list @elem{@scheme["Standard"]
+@index*['("Standard style") (list @elem{@racket["Standard"]
  style})]{Usually}, when text is inserted into a text editor, it
  inherits the style of the preceding snip. If text is inserted into an
  empty editor, the text is usually assigned a style called
- @scheme["Standard"]. By default, the @scheme["Standard"] style is
+ @racket["Standard"]. By default, the @racket["Standard"] style is
  unmodified from the root style. The default style name can be changed
  by overriding @method[editor<%> default-style-name].
 
@@ -347,20 +347,20 @@ To allow editor content to be saved to a file, the editor classes
  define the format internally. The file format is the same for text
  and pasteboard editors. When a pasteboard saves its content to a
  file, it saves the snips from front to back, and also includes extra
- location information. The @schememodname[wxme] library provides
+ location information. The @racketmodname[wxme] library provides
  utilities for manipulating WXME files.
 
-Editor data is read and written using @scheme[editor-stream-in%] and
-@scheme[editor-stream-out%] objects.  Editor information can only be
+Editor data is read and written using @racket[editor-stream-in%] and
+@racket[editor-stream-out%] objects.  Editor information can only be
  read from or written to one stream at a time. To write one or more
  editors to a stream, first call the function
- @scheme[write-editor-global-header] to write initialization data into
+ @racket[write-editor-global-header] to write initialization data into
  an output stream. When all editors are written to the stream, call
- @scheme[write-editor-global-footer]. Similarly, reading editors from
- a stream is initialized with @scheme[read-editor-global-header] and
- finalized with @scheme[read-editor-global-footer]. Optionally, to
+ @racket[write-editor-global-footer]. Similarly, reading editors from
+ a stream is initialized with @racket[read-editor-global-header] and
+ finalized with @racket[read-editor-global-footer]. Optionally, to
  support streams that span versions of Racket, use
- @scheme[write-editor-version] and @scheme[read-editor-version] before
+ @racket[write-editor-version] and @racket[read-editor-version] before
  the header operations.
 
 The editor file data format can be embedded within another file, and
@@ -390,7 +390,7 @@ Graceful and extensible encoding of snips requires that
  provided for each type of snip. Furthermore, a list of such decoders
  must be available to the high-level decoding process. This decoding
  mapping is defined by associating a @deftech{snip class} object to
- every snip. A snip class is an instance of the @scheme[snip-class%]
+ every snip. A snip class is an instance of the @racket[snip-class%]
  class.}
 
  @item{Some editors may require additional information to be stored
@@ -402,9 +402,9 @@ Graceful and extensible encoding of snips requires that
  @techlink{location}s needs to be maintained, but this information
  should not inhibit pasting into an editor. Extra data is associated
  with a snip through @deftech{editor data} objects, which are
- instances of the @scheme[editor-data%] class; decoding requires that
+ instances of the @racket[editor-data%] class; decoding requires that
  each editor data object has an @deftech{editor data class}, which is
- an instance of the @scheme[editor-data-class%] class.}
+ an instance of the @racket[editor-data-class%] class.}
 
 ]
 
@@ -422,7 +422,7 @@ Each snip can be associated to a @tech{snip class}. This ``class''
 
 Snip class objects can be added to the eventspace-specific
  @deftech{snip class list}, which is returned by
- @scheme[get-the-snip-class-list]. When a snip is encoded, the snip's
+ @racket[get-the-snip-class-list]. When a snip is encoded, the snip's
  class name is associated with the encoding; when the snip needs to be
  decoded, then the snip class list is searched by name to find the
  snip's class. The snip class will then provide a decoding function
@@ -430,24 +430,24 @@ Snip class objects can be added to the eventspace-specific
 
 If a snip class's name is of the form
 @;-
-@scheme["((lib ...) (lib ...))"], 
+@racket["((lib ...) (lib ...))"], 
 @;-
  then the snip class implementation can be loaded on
- demand. The name is parsed using @scheme[read]; if the result has the
- form @scheme[((lib _string ...) (lib _string ...))], then the first
- element used with @scheme[dynamic-require] along with
- @scheme['snip-class]. If the @scheme[dynamic-require] result is a
- @scheme[snip-class%] object, then it is inserted into the current
+ demand. The name is parsed using @racket[read]; if the result has the
+ form @racket[((lib _string ...) (lib _string ...))], then the first
+ element used with @racket[dynamic-require] along with
+ @racket['snip-class]. If the @racket[dynamic-require] result is a
+ @racket[snip-class%] object, then it is inserted into the current
  eventspace's snip class list, and loading or saving continues using
  the new class.
 
-The second @scheme[lib] form in @scheme["((lib ...) (lib ...))"]
+The second @racket[lib] form in @racket["((lib ...) (lib ...))"]
  supplies a reader for a text-only version of the snip. See
- @schememodname[wxme] for more information.
+ @racketmodname[wxme] for more information.
 
-A snip class's name can also be just @scheme["(lib ...)"], which is
- used like the first part of the two-@scheme[lib] form. However, this
- form provides no information for the text-only @schememodname[wxme]
+A snip class's name can also be just @racket["(lib ...)"], which is
+ used like the first part of the two-@racket[lib] form. However, this
+ form provides no information for the text-only @racketmodname[wxme]
  reader.
 
 @subsubsection[#:tag "editordata"]{Editor Data}
@@ -463,21 +463,21 @@ Just as a snip must be associated with a snip class to be decoded (see
  @|snipclassdiscuss|), an editor data object needs an @tech{editor
  data class} for decoding. Every editor data class object can be added
  to the eventspace-specific @deftech{editor data class list}, returned
- by @scheme[get-the-editor-data-class-list]. Alternatively, like snip
+ by @racket[get-the-editor-data-class-list]. Alternatively, like snip
  classes (see @secref["editorsnipclasses"]), editor data class names
- can use the form @scheme["((lib ...)  (lib ...))"]  to enable
+ can use the form @racket["((lib ...)  (lib ...))"]  to enable
  on-demand loading. The corresponding module should export an
- @scheme[editor-data-class%] object named @scheme['editor-data-class].
+ @racket[editor-data-class%] object named @racket['editor-data-class].
 
 To store and load information about a snip or region in an editor:
 
 @itemize[
 
- @item{derive new classes from @scheme[editor-data%] and
- @scheme[editor-data-class%].}
+ @item{derive new classes from @racket[editor-data%] and
+ @racket[editor-data-class%].}
 
-@item{derive a new class from the @scheme[text%] or
-  @scheme[pasteboard%] class, and override the @method[editor<%>
+@item{derive a new class from the @racket[text%] or
+  @racket[pasteboard%] class, and override the @method[editor<%>
   get-snip-data] and @method[editor<%> set-snip-data] methods and/or the
   @method[text% get-region-data] and @method[text% set-region-data]
   methods.
@@ -487,7 +487,7 @@ To store and load information about a snip or region in an editor:
   not for file-saving encoding; see @|globaleditordatadiscuss| for
   information on extending the file format.}
 
-] 
+]
 
 
 @subsection[#:tag "globaleditordata"]{Global Data: Headers and Footers}
@@ -505,8 +505,8 @@ The editor file format provides for adding extra global data in
  with a unique name, the file can be safely loaded in an installation that
  does not support the records.}
 
- @item{Derive a new class from the @scheme[text%] or
- @scheme[pasteboard%] class, and override the @method[editor<%>
+ @item{Derive a new class from the @racket[text%] or
+ @racket[pasteboard%] class, and override the @method[editor<%>
  write-headers-to-file], @method[editor<%> write-footers-to-file],
  @method[editor<%> read-header-from-file] and/or @method[editor<%>
  read-footer-from-file] methods.}
@@ -515,8 +515,8 @@ The editor file format provides for adding extra global data in
 
 When an editor is saved, the methods @method[editor<%>
  write-headers-to-file] and @method[editor<%> write-footers-to-file]
- are invoked; at this time, the derived @scheme[text%] or
- @scheme[pasteboard%] object has a chance to save records.  To write a
+ are invoked; at this time, the derived @racket[text%] or
+ @racket[pasteboard%] object has a chance to save records.  To write a
  header/footer record, first invoke the @method[editor<%>
  begin-write-header-footer-to-file] method, at which point the record
  name is provided. Once the record is written, call @method[editor<%>
@@ -548,16 +548,16 @@ For this reason, @techlink{position}-setting and
  the case of a @techlink{position}-setting method, the argument
  specifies whether the caret should be drawn at the left or right side
  of the page (in the event that the @techlink{location} is doubly
- defined); @scheme[#t] means that the caret should be drawn on the
+ defined); @racket[#t] means that the caret should be drawn on the
  right side. Similarly, methods which calculate a @techlink{position}
  from a @techlink{location} will take an extra boxed boolean; the box
- is filled with @scheme[#t] if the position is ambiguous and it came
- from a right-side location, or @scheme[#f] otherwise.
+ is filled with @racket[#t] if the position is ambiguous and it came
+ from a right-side location, or @racket[#f] otherwise.
 
 @section[#:tag "editorflattened"]{Flattened Text}
 
 In plain text editors, there is a simple correlation between
- @techlink{position}s and characters. In an @scheme[editor<%>] object,
+ @techlink{position}s and characters. In an @racket[editor<%>] object,
  this is not true much of the time, but it is still sometimes useful
  to just ``get the text'' of an editor.
 
@@ -605,14 +605,14 @@ When an editor or snip is drawn, an argument to the drawing method
 
 @itemize[
 
- @item{@indexed-scheme['no-caret] --- The caret should not be drawn at
+ @item{@indexed-racket['no-caret] --- The caret should not be drawn at
  all.}
 
- @item{@indexed-scheme['show-inactive-caret] --- The caret should be drawn
+ @item{@indexed-racket['show-inactive-caret] --- The caret should be drawn
  as inactive; items may be identified as the local current selection,
  but the keyboard focus is elsewhere.}
 
- @item{@indexed-scheme['show-caret] --- The caret should be drawn to show
+ @item{@indexed-racket['show-caret] --- The caret should be drawn to show
  keyboard focus ownership.}
 
  @item{@racket[(cons _start _end)] --- The caret is owned by an
@@ -622,24 +622,24 @@ When an editor or snip is drawn, an argument to the drawing method
 
 ]
 
-The @scheme['show-inactive-caret] display mode is useful for showing
+The @racket['show-inactive-caret] display mode is useful for showing
  selection ranges in text editors that do not have the focus. This
- @scheme['show-inactive-caret] mode is distinct from @scheme['no-caret]
+ @racket['show-inactive-caret] mode is distinct from @racket['no-caret]
  mode; when editors are embedded, only the locally active editor shows
  its selection.
 
 
 @section[#:tag "editorcutandpastetime"]{Cut and Paste Time Stamps}
 
-Methods of @scheme[editor<%>] that use the clipboard --- including
+Methods of @racket[editor<%>] that use the clipboard --- including
  @method[editor<%> copy], @method[editor<%> cut], @method[editor<%>
  paste], and @method[editor<%> do-edit-operation] --- consume a time
  stamp argument. This time stamp is generally extracted from the
- @scheme[mouse-event%] or @scheme[key-event%] object that triggered
+ @racket[mouse-event%] or @racket[key-event%] object that triggered
  the clipboard action. Unix uses the time stamp to synchronize clipboard
  operations among the clipboard clients.
 
-All instances of @scheme[event%] include a time stamp, which can be
+All instances of @racket[event%] include a time stamp, which can be
  obtained using @method[event% get-time-stamp].
 
 If the time stamp is 0, it defaults to the current time. Using 0 as the
@@ -649,7 +649,7 @@ If the time stamp is 0, it defaults to the current time. Using 0 as the
 
 @section[#:tag "editorclickback"]{Clickbacks}
 
-@deftech{Clickbacks} in a @scheme[text%] editor facilitate the
+@deftech{Clickbacks} in a @racket[text%] editor facilitate the
  creation of simple interactive objects, such as hypertext. A
  clickback is defined by associating a callback function with a range
  of @techlink{item}s in the editor. When a user clicks on the
@@ -669,7 +669,7 @@ Note that there is no attempt to save clickback information when a
 
 @section[#:tag "lockinfo"]{Internal Editor Locks}
 
-Instances of @scheme[editor<%>] have three levels of internal
+Instances of @racket[editor<%>] have three levels of internal
  locking:
 
 @itemize[
@@ -754,7 +754,7 @@ An editor supports certain concurrent patterns
 
 ]
 
-Thus, disabling an @scheme[editor-canvas%] object (using
+Thus, disabling an @racket[editor-canvas%] object (using
  @method[window<%> enable]) is sufficient to ensure that a
  background thread can modify an editor displayed by the canvas, as
  long as all modifications are in edit sequences. The background

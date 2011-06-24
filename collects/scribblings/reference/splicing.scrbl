@@ -23,12 +23,12 @@
 @defidform[splicing-local]
 )]{
 
-Like @scheme[let], @scheme[letrec], @scheme[let-values],
-@scheme[letrec-values], @scheme[let-syntax], @scheme[letrec-syntax],
-@scheme[let-syntaxes], @scheme[letrec-syntaxes],
-@scheme[letrec-syntaxes+values], and @scheme[local], except that in a
+Like @racket[let], @racket[letrec], @racket[let-values],
+@racket[letrec-values], @racket[let-syntax], @racket[letrec-syntax],
+@racket[let-syntaxes], @racket[letrec-syntaxes],
+@racket[letrec-syntaxes+values], and @racket[local], except that in a
 definition context, the body forms are spliced into the enclosing
-definition context (in the same way as for @scheme[begin]).
+definition context (in the same way as for @racket[begin]).
 
 @examples[
 #:eval splice-eval
@@ -45,7 +45,7 @@ form's bound variables is evaluated before the variable is
 initialized, an unbound variable error is raised, instead of the
 variable evaluating to the undefined value.  Also, syntax bindings are
 evaluated every time the module is @tech{visit}ed, instead of only
-once during compilation as in @scheme[let-syntax], etc.
+once during compilation as in @racket[let-syntax], etc.
 
 @examples[
 #:eval splice-eval
@@ -56,16 +56,16 @@ once during compilation as in @scheme[let-syntax], etc.
 
 @defidform[splicing-syntax-parameterize]{
 
-Like @scheme[syntax-parameterize], except that in a definition context, the body
+Like @racket[syntax-parameterize], except that in a definition context, the body
 forms are spliced into the enclosing definition context (in the same way as for
-@scheme[begin]). In a definition context, the body of
-@scheme[splicing-syntax-parameterize] can be empty.
+@racket[begin]). In a definition context, the body of
+@racket[splicing-syntax-parameterize] can be empty.
 
 Note that @tech{require transformers} and @tech{provide transformers} are not
-affected by syntax parameterization.  While all uses of @scheme[require] and
-@scheme[provide] will be spliced into the enclosing context, derived import or
+affected by syntax parameterization.  While all uses of @racket[require] and
+@racket[provide] will be spliced into the enclosing context, derived import or
 export specifications will expand as if they had not been inside of the
-@scheme[splicing-syntax-parameterize].
+@racket[splicing-syntax-parameterize].
 
 @examples[
 #:eval splice-eval

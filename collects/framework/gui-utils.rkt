@@ -39,9 +39,7 @@
 ;; quote-literal-label: string -> string
 (define (quote-literal-label a-str)
   (trim-string (regexp-replace* #rx"(&)" a-str "\\1\\1")
-               maximum-string-label-length))  
-
-
+               maximum-string-label-length))
 
 ;; selected-text-color : color
 (define selected-text-color (send the-color-database find-color "black"))
@@ -302,7 +300,7 @@
                    (λ (str)
                      ((string-length str) . <= . size)))])
   @{Constructs a string whose size is less
-    than @scheme[size] by trimming the @scheme[str]
+    than @racket[size] by trimming the @racket[str]
     and inserting an ellispses into it.})
 
  (proc-doc
@@ -334,12 +332,12 @@
   gui-utils:cancel-on-right?
   (-> boolean?)
   ()
-  @{Returns @scheme[#t] if cancel should be on the right-hand side (or below)
-    in a dialog and @scheme[#f] otherwise.
+  @{Returns @racket[#t] if cancel should be on the right-hand side (or below)
+    in a dialog and @racket[#f] otherwise.
     
-    Just returns what @scheme[system-position-ok-before-cancel?] does.
+    Just returns what @racket[system-position-ok-before-cancel?] does.
     
-    See also @scheme[gui-utils:ok/cancel-buttons].})
+    See also @racket[gui-utils:ok/cancel-buttons].})
  (proc-doc/names
   gui-utils:ok/cancel-buttons
   (->* ((is-a?/c area-container<%>)
@@ -365,12 +363,12 @@
     The first result is be the OK button and the second is
     the cancel button.
     
-    By default, the confirmation action button has the @scheme['(border)] style,
+    By default, the confirmation action button has the @racket['(border)] style,
     meaning that hitting return in the dialog will trigger the confirmation action.
     The @racket[confirm-style] argument can override this behavior, tho.
     See @racket[button%] for the precise list of allowed styles.
     
-    See also @scheme[gui-utils:cancel-on-right?].})
+    See also @racket[gui-utils:cancel-on-right?].})
  
  (proc-doc/names
   gui-utils:next-untitled-name
@@ -390,13 +388,13 @@
     
     The first case in the case lambda
     returns the current delay in seconds before a watch cursor is shown,
-    when either @scheme[gui-utils:local-busy-cursor] or
-    @scheme[gui-utils:show-busy-cursor] is called.
+    when either @racket[gui-utils:local-busy-cursor] or
+    @racket[gui-utils:show-busy-cursor] is called.
     
     The second case in the case lambda
     Sets the delay, in seconds, before a watch cursor is shown, when
-    either @scheme[gui-utils:local-busy-cursor] or
-    @scheme[gui-utils:show-busy-cursor] is called.})
+    either @racket[gui-utils:local-busy-cursor] or
+    @racket[gui-utils:show-busy-cursor] is called.})
  (proc-doc/names
   gui-utils:show-busy-cursor
   (->* ((-> any/c))
@@ -404,12 +402,12 @@
        any/c)
   ((thunk)
    ((delay (gui-utils:cursor-delay))))
-  @{Evaluates @scheme[(thunk)] with a watch cursor. The argument
-    @scheme[delay] specifies the amount of time before the watch cursor is
-    opened. Use @scheme[gui-utils:cursor-delay] to set this value
+  @{Evaluates @racket[(thunk)] with a watch cursor. The argument
+    @racket[delay] specifies the amount of time before the watch cursor is
+    opened. Use @racket[gui-utils:cursor-delay] to set this value
     to all calls.
     
-    This function returns the result of @scheme[thunk].})
+    This function returns the result of @racket[thunk].})
  (proc-doc/names
   gui-utils:delay-action
   (real?
@@ -424,7 +422,7 @@
     to appear after 2 seconds and the action may or may not take more than
     two seconds, use this pattern:
     
-    @schemeblock[(let ([close-down
+    @racketblock[(let ([close-down
                         (gui-utils:delay-action
                          2
                          (λ () .. init watch cursor ...)
@@ -432,11 +430,11 @@
                    ;; .. do action ...
                    (close-down))]
     
-    Creates a thread that waits @scheme[delay-time]. After @scheme[delay-time]
+    Creates a thread that waits @racket[delay-time]. After @racket[delay-time]
     has elapsed, if the result thunk has @italic{not} been called, call
-    @scheme[open]. Then, when the result thunk is called, call
-    @scheme[close]. The function @scheme[close] will only be called if
-    @scheme[open] has been called.})
+    @racket[open]. Then, when the result thunk is called, call
+    @racket[close]. The function @racket[close] will only be called if
+    @racket[open] has been called.})
  
  (proc-doc/names
   gui-utils:local-busy-cursor
@@ -447,13 +445,13 @@
    any/c)
   ((window thunk)
    ((delay (gui-utils:cursor-delay))))
-  @{Evaluates @scheme[(thunk)] with a watch cursor in @scheme[window]. If
-    @scheme[window] is @scheme[#f], the watch cursor is turned on globally.
-    The argument @scheme[delay] specifies the amount of time before the watch
-    cursor is opened. Use @scheme[gui-utils:cursor-delay]
+  @{Evaluates @racket[(thunk)] with a watch cursor in @racket[window]. If
+    @racket[window] is @racket[#f], the watch cursor is turned on globally.
+    The argument @racket[delay] specifies the amount of time before the watch
+    cursor is opened. Use @racket[gui-utils:cursor-delay]
     to set this value for all uses of this function.
     
-    The result of this function is the result of @scheme[thunk].})
+    The result of this function is the result of @racket[thunk].})
  
  (proc-doc/names
   gui-utils:unsaved-warning
@@ -473,17 +471,17 @@
   
   @{This displays a dialog that warns the user of a unsaved file.
     
-    The string, @scheme[action], indicates what action is about to
+    The string, @racket[action], indicates what action is about to
     take place, without saving. For example, if the application
-    is about to close a file, a good action is @scheme["Close" "Anyway"].
+    is about to close a file, a good action is @racket["Close" "Anyway"].
     The result symbol indicates the user's choice. If
-    @scheme[can-save-now?] is @scheme[#f], this function does not
+    @racket[can-save-now?] is @racket[#f], this function does not
     give the user the ``Save'' option and thus will not return
-    @scheme['save].
+    @racket['save].
     
-    If @scheme[cancel?] is @scheme[#t] there is a cancel button
-    in the dialog and the result may be @scheme['cancel]. If it
-    is @scheme[#f], then there is no cancel button, and @scheme['cancel]
+    If @racket[cancel?] is @racket[#t] there is a cancel button
+    in the dialog and the result may be @racket['cancel]. If it
+    is @racket[#f], then there is no cancel button, and @racket['cancel]
     will not be the result of the function.
     
     })
@@ -514,30 +512,30 @@
     dialog opens a message box asking the user to actually choose one of the
     two options.
     
-    The dialog will contain the string @scheme[message] and two buttons,
-    labeled with the @scheme[true-choice] and the @scheme[false-choice].  If the
-    user clicks on @scheme[true-choice] @scheme[#t] is returned. If the user
-    clicks on @scheme[false-choice], @scheme[#f] is returned.
+    The dialog will contain the string @racket[message] and two buttons,
+    labeled with the @racket[true-choice] and the @racket[false-choice].  If the
+    user clicks on @racket[true-choice] @racket[#t] is returned. If the user
+    clicks on @racket[false-choice], @racket[#f] is returned.
     
-    The argument @scheme[default-result] determines how closing the window is
-    treated. If the argument is @scheme['disallow-close], closing the window
+    The argument @racket[default-result] determines how closing the window is
+    treated. If the argument is @racket['disallow-close], closing the window
     is not allowed. If it is anything else, that value is returned when
     the user closes the window.
     
-    If @scheme[gui-utils:cancel-on-right?]
-    returns @scheme[#t], the false choice is on the right.
+    If @racket[gui-utils:cancel-on-right?]
+    returns @racket[#t], the false choice is on the right.
     Otherwise, the true choice is on the right.
     
-    The @scheme[style] parameter is (eventually) passed to
-    @scheme[message]
+    The @racket[style] parameter is (eventually) passed to
+    @racket[message]
     as an icon in the dialog.
     
-    If @scheme[checkbox-proc] is given, it should be a procedure that behaves
+    If @racket[checkbox-proc] is given, it should be a procedure that behaves
     like a parameter for getting/setting a boolean value.  The intention for
     this value is that it can be used to disable the dialog.  When it is
-    given, a checkbox will appear with a @scheme[checkbox-label] label
-    (defaults to the @scheme[dont-ask-again] string constant), and that
-    checkbox value will be sent to the @scheme[checkbox-proc] when the dialog
+    given, a checkbox will appear with a @racket[checkbox-label] label
+    (defaults to the @racket[dont-ask-again] string constant), and that
+    checkbox value will be sent to the @racket[checkbox-proc] when the dialog
     is closed.  Note that the dialog will always pop-up --- it is the
     caller's responsibility to avoid the dialog if not needed.})
  
@@ -550,13 +548,13 @@
    ((white-on-black? #f)))
   @{This delta is designed for use with
     @method[text set-clickback].
-    Use it as one of the @scheme[style-delta%] argument to
+    Use it as one of the @racket[style-delta%] argument to
     @method[text% set-clickback].
     
-    If @scheme[white-on-black?] is true, the function returns
+    If @racket[white-on-black?] is true, the function returns
     a delta suitable for use on a black background.
     
-    See also @scheme[gui-utils:get-clickback-delta].})
+    See also @racket[gui-utils:get-clickback-delta].})
  
  (proc-doc/names
   gui-utils:get-clickback-delta
@@ -569,8 +567,8 @@
     Use the result of this function as the style
     for the region text where the clickback is set.
     
-    If @scheme[white-on-black?] is true, the function returns
+    If @racket[white-on-black?] is true, the function returns
     a delta suitable for use on a black background.
     
     See also
-    @scheme[gui-utils:get-clicked-clickback-delta].}))
+    @racket[gui-utils:get-clicked-clickback-delta].}))

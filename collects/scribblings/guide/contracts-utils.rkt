@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket
 
 (require scribble/basic
-         (for-syntax scheme/port)
-         scheme/include
+         (for-syntax racket/port)
+         racket/include
          (except-in scribble/manual link))
 
 (provide ctc-section
@@ -35,7 +35,7 @@
     [(_ filename)
      (call-with-input-file (build-path "contracts-examples" (format "~a.rkt" (syntax-e #'filename)))
        (λ (port)
-         (define prefix "#reader scribble/comment-reader\n[schememod\nscheme\n")
+         (define prefix "#reader scribble/comment-reader\n[racketmod\nracket\n")
          (define suffix "]")
          (with-syntax ([s (parameterize ([read-accept-reader #t])
                             (read-syntax 'contract-examples
@@ -46,13 +46,13 @@
            #'s)))]))
 
 (require (for-syntax (only-in scribble/comment-reader [read-syntax comment-reader])))
-(define-for-syntax (comment-schememod-reader path port)
+(define-for-syntax (comment-racketmod-reader path port)
   (let ([pb (peek-byte port)])
     (if (eof-object? pb)
         pb
         (let ([m (regexp-match #rx"^#lang " port)])
           (unless m
-            (raise-syntax-error 'comment-scheme-reader "expected a #lang to begin file ~s" path))
+            (raise-syntax-error 'comment-racket-reader "expected a #lang to begin file ~s" path))
           (let ([np (let-values ([(line col pos) (port-next-location port)])
                       (relocate-input-port port line 0 pos))])
             (port-count-lines! np)
@@ -60,7 +60,7 @@
               (let ([next (comment-reader path np)])
                 (cond
                   [(eof-object? next)
-                   #`(schememod #,@(reverse objects))]
+                   #`(racketmod #,@(reverse objects))]
                   [else
                    (loop (cons next objects))]))))))))
 
@@ -68,4 +68,4 @@
   (syntax-case stx ()
     [(_ filename)
      #`(include/reader #,(format "contracts-examples/~a.rkt" (syntax-e #'filename))
-                       comment-schememod-reader)]))
+                       comment-racketmod-reader)]))

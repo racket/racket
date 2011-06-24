@@ -24,65 +24,66 @@ only a subset of the system is needed.
 @itemize[
 
 @item{Some basic syntax extensions, including lambda &-keywords, and
-  improved @scheme[define] and @scheme[let] forms.  (Available
-  separately using @scheme[swindle/base])}
+  improved @racket[define] and @racket[let] forms.  (Available
+  separately using @racket[swindle/base])}
 
-@item{Generic setters with @scheme[set!], additional useful mutation
-  forms: @scheme[pset!], @scheme[shift!], @scheme[rotate!], and some
-  simple ones like @scheme[inc!], and @scheme[push!].  (Available
-  separately using @scheme[swindle/setf], where the names
-  @scheme[setf!] and @scheme[psetf!] are used to avoid changing the
+@item{Generic setters with @racket[set!], additional useful mutation
+  forms: @racket[pset!], @racket[shift!], @racket[rotate!], and some
+  simple ones like @racket[inc!], and @racket[push!].  (Available
+  separately using @racket[swindle/setf], where the names
+  @racket[setf!] and @racket[psetf!] are used to avoid changing the
   Racket form)}
 
-@item{Easy macro-defining macros --- simple @scheme[syntax-rules] macros with
-  @scheme[defsubst], and a generic @scheme[defmacro] utility, all with a local
-  @scheme[let...] form, and extended to easily create symbol macros.
-  (@scheme[swindle/misc])}
+@item{Easy macro-defining macros --- simple @racket[syntax-rules] macros with
+  @racket[defsubst], and a generic @racket[defmacro] utility, all with a local
+  @racket[let...] form, and extended to easily create symbol macros.
+  (@racket[swindle/misc])}
 
-@item{A @scheme[collect] macro that provides very sophisticated list
-  comprehensions and much more.  (@scheme[swindle/misc])}
+@item{A @racket[collect] macro that provides very sophisticated list
+  comprehensions and much more.  (@racket[swindle/misc])}
 
-@item{An @scheme[echo] mechanism which is an alternative to using
+@item{An @racket[echo] mechanism which is an alternative to using
   format strings, and contains many useful features including a list
   iteration construct, and is easy to extend.
-  (@scheme[swindle/misc])}
+  (@racket[swindle/misc])}
 
-@item{A @scheme[regexp-case] syntax which is similar to a
-  @scheme[case] on strings with easy access to submatches.
-  (@scheme[swindle/misc])}
+@item{A @racket[regexp-case] syntax which is similar to a
+  @racket[case] on strings with easy access to submatches.
+  (@racket[swindle/misc])}
 
 @item{A CLOS-like object system -- based on Tiny CLOS, but with many
   extensions that bring it much closer to CLOS, and heavily optimized.
   Some added features include singleton and struct classes, applicable
   stand-alone methods, method-combination, and some MOP extensions.
-  (Available without syntax bindings in @scheme[swindle/tiny-clos])}
+  (Available without syntax bindings in @racket[swindle/tiny-clos])}
 
 @item{Good integration with the Racket implementation: primitive
   values have corresponding Swindle classes, and struct types can also
   be used as type specializers.  A Swindle class will be made when
   needed, and it will reflect the struct hierarchy.  In addition,
-  structs can be defined with a Swindle-line @scheme[defstruct] syntax which
+  structs can be defined with a Swindle-line @racket[defstruct] syntax which
   will also make it possible to create these structs with
-  @scheme[make] using keyword arguments.  (@scheme[swindle/tiny-clos]
-  and @scheme[swindle/extra])}
+  @racket[make] using keyword arguments.  (@racket[swindle/tiny-clos]
+  and @racket[swindle/extra])}
 
 @item{Many hairy macros that make the object system much more convenient
   (CLOS has also a lot of macro code).  Some of the macros (especially
-  @scheme[defclass]) can be customized.  (@scheme[swindle/clos])}
+  @racket[defclass]) can be customized.  (@racket[swindle/clos])}
 
-@item{Useful generic functions, including @scheme[print-object] which
-  is used to display all objects.  (@scheme[swindle/extra])}
+@item{Useful generic functions, including @racket[print-object] which
+  is used to display all objects.  (@racket[swindle/extra])}
 
-@item{A @scheme[match] mechanism with a generic-like interface.
- (@scheme[swindle/extra])}
+@item{A @racket[match] mechanism with a generic-like interface.
+ (@racket[swindle/extra])}
 
-@item{The fun @scheme[amb] toy.  (@scheme[swindle/extra])}
+@item{The fun @racket[amb] toy.  (@racket[swindle/extra])}
 
 @item{A language that can easily create HTML, where the result is
-  human-editable.  (@scheme[swindle/html])}
+  human-editable.  (@racket[swindle/html])}
 
 @item{Customizable syntax: easy to add customized languages to DrRacket.
-  (@scheme[custom])}
+  (@racket[custom])}
+
 
 ]
 
@@ -97,50 +98,50 @@ whole Swindle environment.
 
 @itemize[
 
-@item{@scheme[swindle/base] (language module) ---
+@item{@racket[swindle/base] (language module) ---
   Basic syntax extensions, mainly Lisp-like lambda argument &-keywords.}
 
-@item{@scheme[swindle/setf] (module) ---
-  Generic setters similar to @scheme[setf] in Lisp, and a few more useful
+@item{@racket[swindle/setf] (module) ---
+  Generic setters similar to @racket[setf] in Lisp, and a few more useful
   macros.}
 
-@item{@scheme[swindle/misc] (module) --- Lots of useful functionality
+@item{@racket[swindle/misc] (module) --- Lots of useful functionality
   bits, including everything from frequently useful Racket legacy
-  libraries (@schememodname[mzlib/list], @schememodname[mzlib/etc],
-  and @schememodname[mzlib/string]).}
+  libraries (@racketmodname[mzlib/list], @racketmodname[mzlib/etc],
+  and @racketmodname[mzlib/string]).}
 
-@item{@scheme[swindle/turbo] (language module) --- A module that
-  packages functionality from @scheme[swindle/base],
-  @scheme[swindle/setf] (overriding @scheme[set!] with
-  @scheme[setf!]), and @scheme[swindle/misc].}
+@item{@racket[swindle/turbo] (language module) --- A module that
+  packages functionality from @racket[swindle/base],
+  @racket[swindle/setf] (overriding @racket[set!] with
+  @racket[setf!]), and @racket[swindle/misc].}
 
-@item{@scheme[swindle/tiny-clos] (module) ---
+@item{@racket[swindle/tiny-clos] (module) ---
   The core object system, based on Tiny CLOS from Xerox, but heavily
   modified, optimized and extended.}
 
-@item{@scheme[swindle/clos] (module) --- Convenient macro wrappers for
-  @scheme[swindle/tiny-clos].}
+@item{@racket[swindle/clos] (module) --- Convenient macro wrappers for
+  @racket[swindle/tiny-clos].}
 
-@item{@scheme[swindle/extra] (module) --- Extra functionality on top
-  of @scheme[swindle/clos].}
+@item{@racket[swindle/extra] (module) --- Extra functionality on top
+  of @racket[swindle/clos].}
 
-@item{@scheme[swindle/swindle] (language module) --- The main Swindle
-  environment module: packages @scheme[swindle/tiny-clos],
-  @scheme[swindle/clos], and @scheme[swindle/extra] on top of
-  @scheme[swindle/turbo], and some more general definitions.}
+@item{@racket[swindle/swindle] (language module) --- The main Swindle
+  environment module: packages @racket[swindle/tiny-clos],
+  @racket[swindle/clos], and @racket[swindle/extra] on top of
+  @racket[swindle/turbo], and some more general definitions.}
 
-@item{@scheme[swindle/info] (module) ---
+@item{@racket[swindle/info] (module) ---
   Compilation definitions.}
 
-@item{@scheme[swindle/tool] (module) ---
+@item{@racket[swindle/tool] (module) ---
   Setup for Swindle in DrRacket: makes some languages available in
   DrRacket, including custom Swindle-based languages.}
 
-@item{@scheme[swindle/custom] (module) ---
+@item{@racket[swindle/custom] (module) ---
   A sample file that demonstrates how to create a Swindle-based
   customized language; see the source for instructions.}
 
-@item{@scheme[swindle/html] (module) ---
+@item{@racket[swindle/html] (module) ---
   A language for creating HTML.}
 
 ]

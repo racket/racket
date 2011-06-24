@@ -14,7 +14,7 @@
   Mixins that implement this interface initialize the
   background color of the canvas to the value of the
   @index{'framework:basic-canvas-background}
-  @scheme['framework:basic-canvas-background] preference.
+  @racket['framework:basic-canvas-background] preference.
   Adds a callback so that when that preference is modified,
   the background color changes.
 
@@ -26,7 +26,7 @@
 }
 @defmixin[canvas:delegate-mixin (canvas:basic<%>) (canvas:delegate<%>)]{
   Provides an implementation of
-  @scheme[canvas:delegate<%>].
+  @racket[canvas:delegate<%>].
   @defmethod*[#:mode override (((on-superwindow-show (shown? boolean?)) void?))]{
 
     Notifies the delegate window when the original window is
@@ -51,7 +51,7 @@
 }
 @definterface[canvas:wide-snip<%> (canvas:basic<%>)]{
   Any
-  @scheme[canvas%]
+  @racket[canvas%]
   that matches this interface will automatically
   resize selected snips when its size changes. Use
   @method[canvas:wide-snip<%> add-tall-snip]
@@ -66,14 +66,11 @@
     Snips passed to this method will be resized when the canvas's size
     changes. Their width will be set so they take up all of the space
     from their lefts to the right edge of the canvas.
-
-
   }
   @defmethod*[(((add-tall-snip (snip (is-a?/c snip%))) void?))]{
     Snips passed to this method will be resized when the canvas's size
     changes. Their height will be set so they take up all of the space
     from their tops to the bottom of the canvas.
-
   }
 }
 @defmixin[canvas:wide-snip-mixin (canvas:basic<%>) (canvas:wide-snip<%>)]{

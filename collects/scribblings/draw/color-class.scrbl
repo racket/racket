@@ -11,7 +11,7 @@ A color is an object representing a red-green-blue (RGB) combination
  255, 1.0) is solid white, (255, 0, 0, 1.0) is solid red, and (255, 0,
  0, 0.5) is translucent red.
 
-See @scheme[color-database<%>] for information about obtaining a color
+See @racket[color-database<%>] for information about obtaining a color
 object using a color name.
 
 
@@ -24,7 +24,7 @@ object using a color name.
 
 Creates a new color with the given RGB values and alpha, or matching
  the given color name (using ``black'' if no color is given or if the
- name is not recognized). See @scheme[color-database<%>] for more
+ name is not recognized). See @racket[color-database<%>] for more
  information on color names.
 
 }
@@ -61,7 +61,7 @@ Returns the green component of the color.
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if the color object is valid.
+Returns @racket[#t] if the color object is valid.
 
 }
 

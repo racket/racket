@@ -246,7 +246,7 @@ seteq lst)], and @racket[(apply seteqv lst)], respectively.
 
 @defproc[(set->list [st set?]) list?]{
 
-Produces a list containing the elements of @scheme[st].}
+Produces a list containing the elements of @racket[st].}
 
 
 @close-eval[set-eval]

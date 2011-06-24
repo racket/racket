@@ -3,22 +3,22 @@
 
 @definterface/title[area<%> ()]{
 
-An @scheme[area<%>] object is either a window or a windowless
+An @racket[area<%>] object is either a window or a windowless
  container for managing the position and size of other areas. An
- @scheme[area<%>] can be a container, a containee, or both. The only
+ @racket[area<%>] can be a container, a containee, or both. The only
  areas without a parent are top-level windows.
 
-All @scheme[area<%>] classes accept the following named instantiation
+All @racket[area<%>] classes accept the following named instantiation
  arguments:
 @itemize[
 
- @item{@indexed-scheme[min-width] --- default is the initial graphical minimum width; passed to
+ @item{@indexed-racket[min-width] --- default is the initial graphical minimum width; passed to
 @method[area<%> min-width]} 
- @item{@indexed-scheme[min-height] --- default is the initial graphical minimum height; passed to
+ @item{@indexed-racket[min-height] --- default is the initial graphical minimum height; passed to
 @method[area<%> min-height]} 
- @item{@indexed-scheme[stretchable-width] --- default is class-specific; passed to
+ @item{@indexed-racket[stretchable-width] --- default is class-specific; passed to
 @method[area<%> stretchable-width]} 
- @item{@indexed-scheme[stretchable-height] --- default is class-specific; passed to
+ @item{@indexed-racket[stretchable-height] --- default is class-specific; passed to
 @method[area<%> stretchable-height]} 
 ]
 
@@ -42,7 +42,7 @@ See @|geomdiscuss| for more information. Note that the return value
            (or/c (is-a?/c area-container<%>) false/c)]{
 
 Returns the area's parent. A top-level window may have no parent (in
- which case @scheme[#f] is returned), or it may have another top-level
+ which case @racket[#f] is returned), or it may have another top-level
  window as its parent.
 
 }
@@ -72,7 +72,7 @@ An area's initial minimum width is its graphical minimum width. See
  also
 @method[area<%> get-graphical-min-size] .
 
-When setting the minimum width, if @scheme[w] is smaller than the
+When setting the minimum width, if @racket[w] is smaller than the
  internal hard minimum, @|MismatchExn|.
 
 }
@@ -93,7 +93,7 @@ An area's initial minimum height is its graphical minimum height. See
  also
 @method[area<%> get-graphical-min-size] .
 
-When setting the minimum height (in pixels); if @scheme[h] is smaller
+When setting the minimum height (in pixels); if @racket[h] is smaller
  than the internal hard minimum, @|MismatchExn|.
 
 }

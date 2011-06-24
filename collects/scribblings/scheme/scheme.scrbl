@@ -43,44 +43,44 @@
 
 @(define-syntax-rule (compat-except sid rid . rest)
    (begin
-     @section[@schememodname[sid]]
+     @section[@racketmodname[sid]]
      @defmodule[sid]
-     "The " @schememodname[sid] " library re-exports " @racketmodname[rid] (begin . rest) "."))
+     "The " @racketmodname[sid] " library re-exports " @racketmodname[rid] (begin . rest) "."))
 @(define-syntax-rule (compat sid rid)
    (compat-except sid rid))
 
 @title{@bold{Scheme}: Compatibility Libraries and Executables}
 
 Racket was once called ``PLT Scheme,'' and a number of libraries with
-names starting @schemeidfont{scheme} provide compatibility with the
+names starting @racketidfont{scheme} provide compatibility with the
 old name. A few @seclink["compat-exe"]{old executables} are also provided.
 
 @table-of-contents[]
 
-@compat-except[scheme racket]{, except based on @schememodname[scheme/base]
-instead of @schememodname[racket/base], the @|unit-struct| from
-@schememodname[scheme/unit] is exported, @schememodname[scheme/set] is
-not re-exported, @schememodname[scheme/system] is
+@compat-except[scheme racket]{, except based on @racketmodname[scheme/base]
+instead of @racketmodname[racket/base], the @|unit-struct| from
+@racketmodname[scheme/unit] is exported, @racketmodname[scheme/set] is
+not re-exported, @racketmodname[scheme/system] is
 not re-exported, @racket[pretty-print] is re-directed in as
-@racketmodname[scheme/pretty], and @schememodname[scheme/nest] is
+@racketmodname[scheme/pretty], and @racketmodname[scheme/nest] is
 re-exported}
 
 @compat-except[scheme/base racket/base]{, except that
-@schememodname[racket]'s @scheme[struct], @scheme[hash],
-@scheme[hasheq], @scheme[hasheqv], @scheme[in-directory], and
-@scheme[local-require] are not exported, and
-@scheme[make-base-namespace] and @scheme[make-base-empty-namespace]
+@racketmodname[racket]'s @racket[struct], @racket[hash],
+@racket[hasheq], @racket[hasheqv], @racket[in-directory], and
+@racket[local-require] are not exported, and
+@racket[make-base-namespace] and @racket[make-base-empty-namespace]
 are different}
 
 @defproc[(make-base-empty-namespace) namespace?]{
 
-Like @|make-base-empty-namespace-id| from @schememodname[racket/base],
-but with @schememodname[scheme/base] attached.}
+Like @|make-base-empty-namespace-id| from @racketmodname[racket/base],
+but with @racketmodname[scheme/base] attached.}
 
 @defproc[(make-base-namespace) namespace?]{
 
-Like @|make-base-namespace-id| from @schememodname[racket/base], but
-with @schememodname[scheme/base] attached.}
+Like @|make-base-namespace-id| from @racketmodname[racket/base], but
+with @racketmodname[scheme/base] attached.}
 
 
 @compat[scheme/async-channel racket/async-channel]
@@ -90,7 +90,7 @@ with @schememodname[scheme/base] attached.}
 
 @compat-except[scheme/class racket/class]{, except that
 @racket[writable<%>] is exported under the name @racket[printable<%>]
-(and @|printable<%>-id| from @schememodname[racket/class] is not
+(and @|printable<%>-id| from @racketmodname[racket/class] is not
 exported)}
 
 @defthing[printable<%> interface?]{
@@ -113,9 +113,9 @@ An alias for @racket[writable<%>].
 @; ----------------------------------------------------------------------
 
 @compat-except[scheme/foreign ffi/unsafe]{,
-@schememodname[ffi/unsafe/cvector], and @schememodname[ffi/vector],
-except that @scheme[unsafe!]  must be used to import the unsafe
-bindings of @schememodname[ffi/unsafe] and @schememodname[ffi/unsafe/cvector]}
+@racketmodname[ffi/unsafe/cvector], and @racketmodname[ffi/vector],
+except that @racket[unsafe!]  must be used to import the unsafe
+bindings of @racketmodname[ffi/unsafe] and @racketmodname[ffi/unsafe/cvector]}
 
 @defform[(unsafe!)]{
 
@@ -128,16 +128,16 @@ Makes unsafe bindings available.}
                                   (unsafe (rename-out [id external-id]))
                                   provide-spec])]{
 
-Like @scheme[provide], but @scheme[id]s under @scheme[unsafe] are not
+Like @racket[provide], but @racket[id]s under @racket[unsafe] are not
 actually provided. Instead, they are collected for introduction into
-an importing module via a macro created by @scheme[define-unsafer].}
+an importing module via a macro created by @racket[define-unsafer].}
 
 @defform[(define-unsafer id)]{
 
-Cooperates with @scheme[provide*] to define @scheme[id] as a
-@scheme[unsafe!]-like form that introduces definitions for each
-binding provided as @scheme[unsafe].  The @scheme[define-unsafer] form
-must occur after all the @scheme[provide*] forms to which it refers.}
+Cooperates with @racket[provide*] to define @racket[id] as a
+@racket[unsafe!]-like form that introduces definitions for each
+binding provided as @racket[unsafe].  The @racket[define-unsafer] form
+must occur after all the @racket[provide*] forms to which it refers.}
 
 @; ----------------------------------------------------------------------
 
@@ -148,10 +148,10 @@ must occur after all the @scheme[provide*] forms to which it refers.}
 @; ----------------------------------------------------------------------
 
 @compat-except[scheme/gui racket/gui]{, except that it builds on
-@schememodname[scheme/gui/base] instead of @schememodname[racket/gui/base]}
+@racketmodname[scheme/gui/base] instead of @racketmodname[racket/gui/base]}
 
 @compat-except[scheme/gui/base racket/gui/base]{, except that it builds on
-@schememodname[scheme] instead of @schememodname[racket]}
+@racketmodname[scheme] instead of @racketmodname[racket]}
 
 @defproc[(make-gui-empty-namespace) namespace?]{
 
@@ -177,13 +177,13 @@ environment of the result namespace.}
 
 @;------------------------------------------------------------------------
 
-@section[#:tag "scheme/language-info"]{@schememodname[scheme/language-info]}
+@section[#:tag "scheme/language-info"]{@racketmodname[scheme/language-info]}
 
 @defmodule[scheme/language-info]{
-The @schememodname[scheme/language-info] library is like
-@schememodname[racket/language-info], except that it produces
-@scheme['(#(scheme/runtime-config configure #f))] for the
-@scheme['configure-runtime] information key.}
+The @racketmodname[scheme/language-info] library is like
+@racketmodname[racket/language-info], except that it produces
+@racket['(#(scheme/runtime-config configure #f))] for the
+@racket['configure-runtime] information key.}
 
 See also @racketmodname[scheme/runtime-config].
 
@@ -197,7 +197,7 @@ See also @racketmodname[scheme/runtime-config].
 @compat[scheme/mpair racket/mpair]
 
 @;------------------------------------------------------------------------
-@section[#:tag "nest"]{@schememodname[scheme/nest]}
+@section[#:tag "nest"]{@racketmodname[scheme/nest]}
 
 @defmodule[scheme/nest]
 
@@ -254,7 +254,7 @@ than a precise prose description:
 
 @compat-except[scheme/pretty racket/pretty]{, except that
 @racket[pretty-write] is exported under the name @racket[pretty-print]
-(and @|pretty-print-id| from @schememodname[racket/pretty] is not
+(and @|pretty-print-id| from @racketmodname[racket/pretty] is not
 exported)}
 
 @defproc[(pretty-print [v any/c] [port output-port? (current-output-port)])
@@ -274,13 +274,13 @@ An alias for @racket[pretty-write].}
 
 @;------------------------------------------------------------------------
 
-@section[#:tag "scheme/runtime-config"]{@schememodname[scheme/runtime-config]}
+@section[#:tag "scheme/runtime-config"]{@racketmodname[scheme/runtime-config]}
 
 @defmodule[scheme/runtime-config]{
-The @schememodname[scheme/runtime-config] library is like
-@schememodname[racket/runtime-config], except that the result of its
-@schemeidfont{configure} function is a procedure that sets
-@racket[print-as-expression] to @scheme[#f].}
+The @racketmodname[scheme/runtime-config] library is like
+@racketmodname[racket/runtime-config], except that the result of its
+@racketidfont{configure} function is a procedure that sets
+@racket[print-as-expression] to @racket[#f].}
 
 @; ----------------------------------------
 
@@ -343,23 +343,23 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 
 @; ----------------------------------------
 
-@section[@schememodname[mred]]
+@section[@racketmodname[mred]]
 @defmodule[mred]
 
-The @schememodname[mred] library is like
-@schememodname[scheme/gui/base], except that it provides variants of
+The @racketmodname[mred] library is like
+@racketmodname[scheme/gui/base], except that it provides variants of
 @racket[make-gui-namespace] and @racket[make-gui-empty-namespace] that
-attach @schememodname[mred] instead of
-@schememodname[scheme/gui/base].
+attach @racketmodname[mred] instead of
+@racketmodname[scheme/gui/base].
 
-Both @schememodname[scheme/gui/base] and
-@schememodname[racket/gui/base] depend on @schememodname[mred], so it
+Both @racketmodname[scheme/gui/base] and
+@racketmodname[racket/gui/base] depend on @racketmodname[mred], so it
 is attached by all variants of @racket[make-gui-empty-namespace].
 
 @defmodule*/no-declare[(mred/mred)]
 
-The @schememodname[mred] library actually just re-exports
-@schememodname[mred/mred], which is an even older name for the
+The @racketmodname[mred] library actually just re-exports
+@racketmodname[mred/mred], which is an even older name for the
 library.
 
 @; ----------------------------------------

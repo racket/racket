@@ -11,7 +11,7 @@
          (is-a?/c bitmap%)]{
 
 Constructs a bitmap label suitable for use a button that contains the
-image specified by @scheme[img] followed by the text in @scheme[str].}
+image specified by @racket[img] followed by the text in @racket[str].}
 
 
 @defproc[((bitmap-label-maker [str string?]
@@ -19,5 +19,5 @@ image specified by @scheme[img] followed by the text in @scheme[str].}
           [future-parent (is-a?/c area-container<%>)])
          (is-a?/c bitmap%)]{
 
-And older variant of @scheme[make-bitmap-label] that obtains a
-font to use from a container @scheme[future-parent].}
+And older variant of @racket[make-bitmap-label] that obtains a
+font to use from a container @racket[future-parent].}

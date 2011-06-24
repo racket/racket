@@ -5,16 +5,16 @@
          (for-label deinprogramm/DMdA-beginner))
 
 (provide prim-nonterms
-         schemegrammar*-DMdA)
+         racketgrammar*-DMdA)
 
 (define ex-str "Dies ist eine Zeichenkette, die \" enthält.")
 
-(define-syntax-rule (schemegrammar*-DMdA
+(define-syntax-rule (racketgrammar*-DMdA
                      #:literals (lit ...)
-		     (def-rule ...)
-		     (prod ...)
+                     (def-rule ...)
+                     (prod ...)
                      (expr-rule ...))
-  (schemegrammar*
+  (racketgrammar*
    #:literals (define define-record-procedures lambda cond if and or let letrec let* begin 
 		#;require lib planet
 		check-expect check-within check-error
@@ -24,7 +24,7 @@
    (... [program (code:line def-or-expr ...)])
    [def-or-expr definition
      expr
-     test-case             
+     test-case
      #;library-require]
    [definition @#,scheme[(define id expr)]
      @#,scheme[(define-record-procedures id id id (id (... ...)))]
@@ -80,7 +80,7 @@
   (make-splice
    (list
 
-@t{Ein @scheme[_id] ist eine Folge von Zeichen, die weder Leerzeichen
+@t{Ein @racket[_id] ist eine Folge von Zeichen, die weder Leerzeichen
 noch eins der folgenden Zeichen enthält:}
 
 @t{@hspace[2] @litchar{"} @litchar{,} @litchar{'} @litchar{`} 
@@ -88,10 +88,10 @@ noch eins der folgenden Zeichen enthält:}
 @litchar["{"] @litchar["}"] @litchar{|} @litchar{;}
 @litchar{#}}
 
-@t{Ein @scheme[_number] ist eine Zahl wie z.B. @scheme[123], @scheme[3/2] oder
-@scheme[5.5].}
+@t{Ein @racket[_number] ist eine Zahl wie z.B. @racket[123], @racket[3/2] oder
+@racket[5.5].}
 
-@t{Ein @scheme[_string] ist eine Zeichenkette, und durch ein Paar von @litchar{"} umschlossen. 
-So sind z.B. @scheme["abcdef"],
-@scheme["This is a string"] und @scheme[#,ex-str] Zeichenketten.}
+@t{Ein @racket[_string] ist eine Zeichenkette, und durch ein Paar von @litchar{"} umschlossen. 
+So sind z.B. @racket["abcdef"],
+@racket["This is a string"] und @racket[#,ex-str] Zeichenketten.}
 )))

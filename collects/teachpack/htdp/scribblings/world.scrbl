@@ -18,7 +18,7 @@
 		 (width . "70%")))
              (list (list (list (make-paragraph
                                 (list "This teachpack is deprecated. Use "
-                                      (schememodname 2htdp/universe)
+                                      (racketmodname 2htdp/universe)
                                       " instead. See the"
                                       " " (secref "htdp-port"
                                                   #:tag-prefixes '("2htdp")
@@ -48,8 +48,8 @@ second one generalizes the first by adding interactive GUI features.
 @defproc[(run-movie [r (and/c real? positive?)] [m [Listof image?]]) 
          true]{
 
- @scheme[run-movie] displays the list of images @scheme[m] at the rate of
- @scheme[r] images per second.}
+ @racket[run-movie] displays the list of images @racket[m] at the rate of
+ @racket[r] images per second.}
 
 @defproc[(run-simulation
            [w natural-number/c]
@@ -57,15 +57,15 @@ second one generalizes the first by adding interactive GUI features.
            [r number?]
            [create-image (-> natural-number/c scene)])
          true]{
-   creates and shows a canvas of width @scheme[w] and height @scheme[h] , 
-   starts a clock, making it tick every @scheme[r] (usually fractional)
-   seconds. Every time the clock ticks, drscheme applies @scheme[create-image] to
+   creates and shows a canvas of width @racket[w] and height @racket[h] , 
+   starts a clock, making it tick every @racket[r] (usually fractional)
+   seconds. Every time the clock ticks, drscheme applies @racket[create-image] to
    the number of ticks passed since this function call. The results of
    these applications are displayed in the canvas.
 }
 
 Example:
-@schemeblock[
+@racketblock[
 (define (create-UFO-scene height)
   (place-image UFO 50 height (empty-scene 100 100)))
 
@@ -87,9 +87,9 @@ An animation starts from a given ``world'' and generates new ones in
 
 Your program may deal with such events via the @emph{installation} of
  @emph{handlers}.  The teachpack provides for the installation of three
- event handlers: @scheme[on-tick-event], @scheme[on-key-event], and
- @scheme[on-mouse-event]. In addition, it provides for the installation of
- a @scheme[draw] handler, which is called every time your program should
+ event handlers: @racket[on-tick-event], @racket[on-key-event], and
+ @racket[on-mouse-event]. In addition, it provides for the installation of
+ a @racket[draw] handler, which is called every time your program should
  visualize the current world.
 
 The following picture provides an intuitive overview of the workings of
@@ -97,12 +97,12 @@ The following picture provides an intuitive overview of the workings of
 
 @image["world.png"]
 
- The @scheme[big-bang] function installs @emph{World_0} as the initial
+ The @racket[big-bang] function installs @emph{World_0} as the initial
  world; the callbacks @emph{tock}, @emph{react}, and @emph{click} transform
  one world into another one; @emph{done} checks each time whether the world
  is final; and @emph{draw} renders each world as a scene. 
 
-@deftech{World} @scheme[any/c]
+@deftech{World} @racket[any/c]
 
  For animated worlds and games, using the teachpack requires that you
  provide a data definition for @tech{World}. In principle, there are no
@@ -113,42 +113,42 @@ The following picture provides an intuitive overview of the workings of
 [(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})]) true]
 [(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})][animated-gif? boolean?]) true]
 )]{
-   Creates and displays a @scheme[width] x @scheme[height] canvas,
+   Creates and displays a @racket[width] x @racket[height] canvas,
    starts the clock, 
-   makes it tick every @scheme[r] seconds, 
-   and makes @scheme[world0] the current world. 
+   makes it tick every @racket[r] seconds, 
+   and makes @racket[world0] the current world. 
    If it is called with five instead of four arguments and the last one
-   (@scheme[animated-gif?]) is @scheme[true], the teachpack allows the
+   (@racket[animated-gif?]) is @racket[true], the teachpack allows the
    generation of images from the animation, including an animated GIF image. }
 
 @defproc[(on-tick-event [tock (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]) true]{
-   Tell DrRacket to call @scheme[tock] on the current world every time the
+   Tell DrRacket to call @racket[tock] on the current world every time the
    clock ticks. The result of the call becomes the current world.} 
 
-@deftech{KeyEvent} @scheme[(or/c char? symbol?)]
+@deftech{KeyEvent} @racket[(or/c char? symbol?)]
 
 A @tech{KeyEvent} represents key board events, e.g., keys pressed or
-   released, by the computer's user. A @scheme[char?] @tech{KeyEvent} is
+   released, by the computer's user. A @racket[char?] @tech{KeyEvent} is
    used to signal that the user has hit an alphanumeric key. Symbols such
-   as @scheme['left], @scheme['right], @scheme['up], @scheme['down],
-   @scheme['release] denote arrow keys or special events, such as releasing
+   as @racket['left], @racket['right], @racket['up], @racket['down],
+   @racket['release] denote arrow keys or special events, such as releasing
    the key on the keypad.
 
 @defproc[(key-event? [x any]) boolean?]{
-   is @scheme[x] a @tech{KeyEvent}}
+   is @racket[x] a @tech{KeyEvent}}
 
 @defproc[(key=? [x key-event?][y key-event?]) boolean?]{
    compares two @tech{KeyEvent} for equality}
 
 @defproc[(on-key-event [change (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))]) true]{
-   Tell DrRacket to call @scheme[change] on the current world and a 
+   Tell DrRacket to call @racket[change] on the current world and a 
    @tech{KeyEvent} for every keystroke the user of the computer makes. The result
    of the call becomes the current world.
 
    Here is a typical key-event handler: 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 (define (change w a-key-event)
   (cond
     [(key=? a-key-event 'left)  (world-go w -DELTA)]
@@ -161,30 +161,30 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
 
 }
 
-@deftech{MouseEvent} @scheme[(one-of/c 'button-down 'button-up 'drag 'move 'enter 'leave)]
+@deftech{MouseEvent} @racket[(one-of/c 'button-down 'button-up 'drag 'move 'enter 'leave)]
  
  A @tech{MouseEvent} represents mouse events, e.g., mouse movements or mouse clicks, by the
    computer's user. 
 
 @defproc[(on-mouse-event [clack (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{World}))]) true]{
-   Tell DrRacket to call @scheme[clack] on the current world, the current
-   @scheme[x] and @scheme[y] coordinates of the mouse, and a
+   Tell DrRacket to call @racket[clack] on the current world, the current
+   @racket[x] and @racket[y] coordinates of the mouse, and a
    @tech{MouseEvent} for every action of the mouse by the user of the
    computer. The result of the call becomes the current world.}
 
-@defproc[(on-redraw [to-scene (-> (unsyntax @tech{World}) (unsyntax @tech{Scene}))]) true]{ Tell DrRacket to call @scheme[to-scene]
+@defproc[(on-redraw [to-scene (-> (unsyntax @tech{World}) (unsyntax @tech{Scene}))]) true]{ Tell DrRacket to call @racket[to-scene]
    whenever the canvas must be redrawn. The canvas is usually re-drawn after a tick event, a keyboard
    event, or a mouse event has occurred.  The generated scene is  displayed in the world's canvas.}
 
 @defproc[(stop-when [last-world? (-> (unsyntax @tech{World}) boolean?)]) true]{
-   Tell DrRacket to call @scheme[last-world?] whenever the canvas is
-   drawn. If this call produces @scheme[true], the clock is stopped; no more
+   Tell DrRacket to call @racket[last-world?] whenever the canvas is
+   drawn. If this call produces @racket[true], the clock is stopped; no more
    tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
    the respective handlers. As a result, the canvas isn't updated either.} 
 
-Example: The following examples shows that @scheme[(run-simulation 100 100
+Example: The following examples shows that @racket[(run-simulation 100 100
 (/ 1 28) create-UFO-scene)] is a short-hand for three lines of code:
-@schemeblock[
+@racketblock[
 (define (create-UFO-scene height)
   (place-image UFO 50 height (empty-scene 100 100)))
 
@@ -272,19 +272,19 @@ Second, we must translate the "world" actions---the arrows in the above
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; tick : @tech{D} -> @tech{D}
 ;; deal with the passing of time 
 (define (tick w) ...)
 
-;; click : @tech{D} @scheme[Number] @scheme[Number] @tech{MouseEvent} -> @tech{D}
-;; deal with a mouse click at (x,y) of kind @scheme[me]
-;; in the current world @scheme[w]
+;; click : @tech{D} @racket[Number] @racket[Number] @tech{MouseEvent} -> @tech{D}
+;; deal with a mouse click at (x,y) of kind @racket[me]
+;; in the current world @racket[w]
 (define (click w x y me) ...)
 
 ;; control : @tech{D} @tech{KeyEvent} -> @tech{D}
-;; deal with a key event (symbol, char) @scheme[ke] 
-;; in the current world @scheme[w]
+;; deal with a key event (symbol, char) @racket[ke] 
+;; in the current world @racket[w]
 (define (control w ke) ...)
 ))
 
@@ -309,12 +309,12 @@ Our first and immediate goal is to represent the world as data. In this
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; DATA DEF.
 ;; The state of the door (SD) is one of: 
-;; -- @scheme['locked]
-;; -- @scheme['closed]
-;; -- @scheme['open]
+;; -- @racket['locked]
+;; -- @racket['closed]
+;; -- @racket['open]
 ))
 
 Symbols are particularly well-suited here because they directly express
@@ -327,9 +327,9 @@ Now that we have a data definition, we must also decide which computer
  function that simulates time. For the other three arrows, we could use
  either keyboard events or mouse clicks or both. Our solution uses three
  keystrokes: 
-@scheme[#\u] for unlocking the door, 
-@scheme[#\l] for locking it, and 
-@scheme[#\space] for pushing it open. 
+@racket[#\u] for unlocking the door, 
+@racket[#\l] for locking it, and 
+@racket[#\space] for pushing it open. 
  We can express these choices graphically by translating the above "state
  machine" from the world of information into the world of data: 
 
@@ -342,22 +342,22 @@ Our analysis and data definition leaves us with three functions to design:
 
 @itemize[
 
-@item{@scheme[automatic-closer], which closes the time during one tick;}
+@item{@racket[automatic-closer], which closes the time during one tick;}
 
-@item{@scheme[door-actions], which manipulates the time in response to
+@item{@racket[door-actions], which manipulates the time in response to
 pressing a key; and}
 
-@item{@scheme[render], which translates the current state of the door into
+@item{@racket[render], which translates the current state of the door into
 a visible scene.}
 
 ]
 
-Let's start with @scheme[automatic-closer]. We know its contract and it is
+Let's start with @racket[automatic-closer]. We know its contract and it is
 easy to refine the purpose statement, too: 
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; automatic-closer : SD -> SD
 ;; closes an open door over the period of one tick 
 (define (automatic-closer state-of-door) ...)
@@ -375,7 +375,7 @@ easy to refine the purpose statement, too:
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; automatic-closer : SD -> SD
 ;; closes an open door over the period of one tick 
 
@@ -390,7 +390,7 @@ easy to refine the purpose statement, too:
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 (define (automatic-closer state-of-door)
   (cond
     [(symbol=? 'locked state-of-door) ...]
@@ -403,7 +403,7 @@ easy to refine the purpose statement, too:
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 (define (automatic-closer state-of-door)
   (cond
     [(symbol=? 'locked state-of-door) 'locked]
@@ -419,7 +419,7 @@ For the remaining three arrows of the diagram, we design a function that
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; door-actions : SD Keyevent -> SD
 ;; key events simulate actions on the door 
 (define (door-actions s k) ...)
@@ -438,7 +438,7 @@ For the remaining three arrows of the diagram, we design a function that
 
 From here, it is straightforward to turn this into a complete design:
  
-@schemeblock[
+@racketblock[
 (define (door-actions s k)
   (cond
     [(and (symbol=? 'locked s) (key=? #\u k)) 'closed]
@@ -459,16 +459,16 @@ this purpose:
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-;; render : @tech{SD} -> @scheme[Scene]
+(racketblock
+;; render : @tech{SD} -> @racket[Scene]
 ;; translate the current state of the door into a large text 
 (define (render s)
   (text (symbol->string s) 40 'red))
 
 (check-expecy (render 'closed) (text "closed" 40 'red))
 ))
- The function @scheme[symbol->string] translates a symbol into a string,
- which is needed because @scheme[text] can deal only with the latter, not
+ The function @racket[symbol->string] translates a symbol into a string,
+ which is needed because @racket[text] can deal only with the latter, not
  the former. A look into the language documentation revealed that this
  conversion function exists, and so we use it. 
 
@@ -478,7 +478,7 @@ which function takes care of tick events, key events, and redraws:
 
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 (big-bang 100 100 1 'locked)
 (on-tick-event automatic-closer)
 (on-key-event door-actions)

@@ -16,26 +16,26 @@ values. The following datatypes are all dictionaries:
  @item{@techlink{vectors} (using only exact integers as keys);}
 
  @item{@techlink{lists} of @techlink{pairs} (an @deftech{association
-       list} using @scheme[equal?] to compare keys); and}
+       list} using @racket[equal?] to compare keys); and}
 
- @item{@techlink{structures} whose types have the @scheme[prop:dict]
+ @item{@techlink{structures} whose types have the @racket[prop:dict]
        property.}
 
 ]
 
 A dictionary can be used as a two-valued sequence (see
 @secref["sequences"]). The associations of the dictionary serve as elements
-of the sequence. See also @scheme[in-dict], @scheme[in-dict-keys], and @scheme[in-dict-values].
+of the sequence. See also @racket[in-dict], @racket[in-dict-keys], and @racket[in-dict-values].
 
 @note-lib[racket/dict]
 
 @defproc[(dict? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{dictionary}, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a @tech{dictionary}, @racket[#f]
 otherwise.
 
-Beware that @scheme[dict?] is not a constant-time test on pairs, since
-checking that @scheme[v] is an @tech{association list} may require
+Beware that @racket[dict?] is not a constant-time test on pairs, since
+checking that @racket[v] is an @tech{association list} may require
 traversing the list.
 
 @examples[
@@ -49,8 +49,8 @@ traversing the list.
 
 @defproc[(dict-mutable? [d dict?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[d] is mutable via @scheme[dict-set!]
-and maybe @scheme[dict-remove!], @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[d] is mutable via @racket[dict-set!]
+and maybe @racket[dict-remove!], @racket[#f] otherwise.
 
 @examples[
 #:eval dict-eval
@@ -65,8 +65,8 @@ and maybe @scheme[dict-remove!], @scheme[#f] otherwise.
 
 @defproc[(dict-can-remove-keys? [d dict?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[d] supports removing mappings via
-@scheme[dict-remove!] and/or @scheme[dict-remove], @scheme[#f]
+Returns @racket[#t] if @racket[d] supports removing mappings via
+@racket[dict-remove!] and/or @racket[dict-remove], @racket[#f]
 otherwise.
 
 @examples[
@@ -79,8 +79,8 @@ otherwise.
 
 @defproc[(dict-can-functional-set? [d dict?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[d] supports functional update via
-@scheme[dict-set] and maybe @scheme[dict-remove], @scheme[#f]
+Returns @racket[#t] if @racket[d] supports functional update via
+@racket[dict-set] and maybe @racket[dict-remove], @racket[#f]
 otherwise.
 
 @examples[
@@ -96,11 +96,11 @@ otherwise.
                     [key any/c]
                     [v any/c]) void?]{
 
-Maps @scheme[key] to @scheme[v] in @scheme[dict], overwriting any
-existing mapping for @scheme[key]. The update can fail with a
-@scheme[exn:fail:contract] exception if @scheme[dict] is not mutable
-or if @scheme[key] is not an allowed key for the dictionary (e.g., not
-an exact integer in the appropriate range when @scheme[dict] is a
+Maps @racket[key] to @racket[v] in @racket[dict], overwriting any
+existing mapping for @racket[key]. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] is not mutable
+or if @racket[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @racket[dict] is a
 @tech{vector}).
 
 @examples[
@@ -119,11 +119,11 @@ v
                      ...
                      ...) void?]{
 
-Maps each @scheme[key] to each @scheme[v] in @scheme[dict], overwriting any
-existing mapping for each @scheme[key]. The update can fail with a
-@scheme[exn:fail:contract] exception if @scheme[dict] is not mutable
-or if any @scheme[key] is not an allowed key for the dictionary (e.g., not
-an exact integer in the appropriate range when @scheme[dict] is a
+Maps each @racket[key] to each @racket[v] in @racket[dict], overwriting any
+existing mapping for each @racket[key]. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] is not mutable
+or if any @racket[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @racket[dict] is a
 @tech{vector}). The update takes place from the left, so later mappings overwrite
 earlier mappings.
 
@@ -146,11 +146,11 @@ v2
                    [v any/c])
           (and/c dict? immutable?)]{
 
-Functionally extends @scheme[dict] by mapping @scheme[key] to
-@scheme[v], overwriting any existing mapping for @scheme[key], and
+Functionally extends @racket[dict] by mapping @racket[key] to
+@racket[v], overwriting any existing mapping for @racket[key], and
 returning an extended dictionary. The update can fail with a
-@scheme[exn:fail:contract] exception if @scheme[dict] does not support
-functional extension or if @scheme[key] is not an allowed key for the
+@racket[exn:fail:contract] exception if @racket[dict] does not support
+functional extension or if @racket[key] is not an allowed key for the
 dictionary.
 
 @examples[
@@ -168,11 +168,11 @@ dictionary.
                     ...)
           (and/c dict? immutable?)]{
 
-Functionally extends @scheme[dict] by mapping each @scheme[key] to
-each @scheme[v], overwriting any existing mapping for each @scheme[key], and
+Functionally extends @racket[dict] by mapping each @racket[key] to
+each @racket[v], overwriting any existing mapping for each @racket[key], and
 returning an extended dictionary. The update can fail with a
-@scheme[exn:fail:contract] exception if @scheme[dict] does not support
-functional extension or if any @scheme[key] is not an allowed key for the
+@racket[exn:fail:contract] exception if @racket[dict] does not support
+functional extension or if any @racket[key] is not an allowed key for the
 dictionary. The update takes place from the left, so later mappings overwrite
 earlier mappings.
 
@@ -188,8 +188,8 @@ earlier mappings.
 @defproc[(dict-has-key? [dict dict?] [key any/c])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[dict] contains a value for the given
-@scheme[key], @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[dict] contains a value for the given
+@racket[key], @racket[#f] otherwise.
 
 @examples[
 #:eval dict-eval
@@ -206,16 +206,16 @@ Returns @scheme[#t] if @scheme[dict] contains a value for the given
                    [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
          any]{
 
-Returns the value for @scheme[key] in @scheme[dict]. If no value
-is found for @scheme[key], then @scheme[failure-result] determines the
+Returns the value for @racket[key] in @racket[dict]. If no value
+is found for @racket[key], then @racket[failure-result] determines the
 result: 
 
 @itemize[
 
- @item{If @scheme[failure-result] is a procedure, it is called
+ @item{If @racket[failure-result] is a procedure, it is called
        (through a tail call) with no arguments to produce the result.}
 
- @item{Otherwise, @scheme[failure-result] is returned as the result.}
+ @item{Otherwise, @racket[failure-result] is returned as the result.}
 
 ]
 
@@ -235,11 +235,11 @@ result:
                     [to-set any/c])
          any]{
 
-Returns the value for @scheme[key] in @scheme[dict]. If no value
-is found for @scheme[key], then @scheme[to-set] determines the
-result as in @scheme[dict-ref] (i.e., it is either a thunk that computes a value
-or a plain value), and this result is stored in @scheme[dict] for the
-@scheme[key].  (Note that if @scheme[to-set] is a thunk, it is not
+Returns the value for @racket[key] in @racket[dict]. If no value
+is found for @racket[key], then @racket[to-set] determines the
+result as in @racket[dict-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @racket[dict] for the
+@racket[key].  (Note that if @racket[to-set] is a thunk, it is not
 invoked in tail position.)
 
 @examples[
@@ -257,8 +257,8 @@ invoked in tail position.)
                        [updater (any/c . -> . any/c)]
                        [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
 
-Composes @scheme[dict-ref] and @scheme[dict-set!] to update an
-existing mapping in @scheme[dict], where the optional @racket[failure-result]
+Composes @racket[dict-ref] and @racket[dict-set!] to update an
+existing mapping in @racket[dict], where the optional @racket[failure-result]
 argument is used as in @racket[dict-ref] when no mapping exists for 
 @racket[key] already.
 
@@ -280,8 +280,8 @@ v
                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
           (and/c dict? immutable?)]{
 
-Composes @scheme[dict-ref] and @scheme[dict-set] to functionally
-update an existing mapping in @scheme[dict], where the optional @racket[failure-result]
+Composes @racket[dict-ref] and @racket[dict-set] to functionally
+update an existing mapping in @racket[dict], where the optional @racket[failure-result]
 argument is used as in @racket[dict-ref] when no mapping exists for 
 @racket[key] already.
 
@@ -297,8 +297,8 @@ argument is used as in @racket[dict-ref] when no mapping exists for
                        [key any/c])
          void?]{
 
-Removes any existing mapping for @scheme[key] in @scheme[dict]. The
-update can fail if @scheme[dict] is not mutable or does not support
+Removes any existing mapping for @racket[key] in @racket[dict]. The
+update can fail if @racket[dict] is not mutable or does not support
 removing keys (as is the case for @tech{vectors}, for example).
 
 @examples[
@@ -314,9 +314,9 @@ h]}
                       [key any/c])
          (and/c dict? immutable?)]{
 
-Functionally removes any existing mapping for @scheme[key] in
-@scheme[dict], returning the fresh dictionary.  The update can fail
-if @scheme[dict] does not support functional update or does not
+Functionally removes any existing mapping for @racket[key] in
+@racket[dict], returning the fresh dictionary.  The update can fail
+if @racket[dict] does not support functional update or does not
 support removing keys.
 
 @examples[
@@ -335,9 +335,9 @@ h
                    [proc (any/c any/c . -> . any/c)])
          (listof any/c)]{
 
-Applies the procedure @scheme[proc] to each element in
-@scheme[dict] in an unspecified order, accumulating the results
-into a list. The procedure @scheme[proc] is called each time with a
+Applies the procedure @racket[proc] to each element in
+@racket[dict] in an unspecified order, accumulating the results
+into a list. The procedure @racket[proc] is called each time with a
 key and its value.
 
 @examples[
@@ -350,9 +350,9 @@ key and its value.
                         [proc (any/c any/c . -> . any)])
          void?]{
 
-Applies @scheme[proc] to each element in @scheme[dict] (for the
-side-effects of @scheme[proc]) in an unspecified order. The procedure
-@scheme[proc] is called each time with a key and its value.
+Applies @racket[proc] to each element in @racket[dict] (for the
+side-effects of @racket[proc]) in an unspecified order. The procedure
+@racket[proc] is called each time with a key and its value.
 
 @examples[
 #:eval dict-eval
@@ -365,7 +365,7 @@ side-effects of @scheme[proc]) in an unspecified order. The procedure
 @defproc[(dict-count [dict dict?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @scheme[dict], usually in
+Returns the number of keys mapped by @racket[dict], usually in
 constant time.
 
 @examples[
@@ -377,12 +377,12 @@ constant time.
 
 @defproc[(dict-iterate-first [dict dict?]) any/c]{
 
-Returns @scheme[#f] if @scheme[dict] contains no elements, otherwise
-it returns a non-@scheme[#f] value that is an index to the first
+Returns @racket[#f] if @racket[dict] contains no elements, otherwise
+it returns a non-@racket[#f] value that is an index to the first
 element in the dict table; ``first'' refers to an unspecified ordering
-of the dictionary elements. For a mutable @scheme[dict], this index is
+of the dictionary elements. For a mutable @racket[dict], this index is
 guaranteed to refer to the first item only as long as no mappings are
-added to or removed from @scheme[dict].
+added to or removed from @racket[dict].
 
 @examples[
 #:eval dict-eval
@@ -397,13 +397,13 @@ added to or removed from @scheme[dict].
                             [pos any/c])
          any/c]{
 
-Returns either a non-@scheme[#f] that is an index to the element in
-@scheme[dict] after the element indexed by @scheme[pos] or @scheme[#f]
-if @scheme[pos] refers to the last element in @scheme[dict]. If
-@scheme[pos] is not a valid index, then the
-@exnraise[exn:fail:contract]. For a mutable @scheme[dict], the result
+Returns either a non-@racket[#f] that is an index to the element in
+@racket[dict] after the element indexed by @racket[pos] or @racket[#f]
+if @racket[pos] refers to the last element in @racket[dict]. If
+@racket[pos] is not a valid index, then the
+@exnraise[exn:fail:contract]. For a mutable @racket[dict], the result
 index is guaranteed to refer to its item only as long as no items are
-added to or removed from @scheme[dict]. The @scheme[dict-iterate-next]
+added to or removed from @racket[dict]. The @racket[dict-iterate-next]
 operation should take constant time.
 
 @examples[
@@ -420,9 +420,9 @@ i
                            [pos any/c])
          any]{
 
-Returns the key for the element in @scheme[dict] at index
-@scheme[pos]. If @scheme[pos] is not a valid index for @scheme[dict],
-the @exnraise[exn:fail:contract]. The @scheme[dict-iterate-key]
+Returns the key for the element in @racket[dict] at index
+@racket[pos]. If @racket[pos] is not a valid index for @racket[dict],
+the @exnraise[exn:fail:contract]. The @racket[dict-iterate-key]
 operation should take constant time.
 
 @examples[
@@ -439,9 +439,9 @@ operation should take constant time.
                              [pos any/c])
          any]{
 
-Returns the value for the element in @scheme[dict] at index
-@scheme[pos]. If @scheme[pos] is not a valid index for @scheme[dict],
-the @exnraise[exn:fail:contract]. The @scheme[dict-iterate-key]
+Returns the value for the element in @racket[dict] at index
+@racket[pos]. If @racket[pos] is not a valid index for @racket[dict],
+the @exnraise[exn:fail:contract]. The @racket[dict-iterate-key]
 operation should take constant time.
 
 @examples[
@@ -455,7 +455,7 @@ operation should take constant time.
 
 @defproc[(in-dict [dict dict?]) sequence?]{ Returns a @tech{sequence}
 whose each element is two values: a key and corresponding value from
-@scheme[dict].
+@racket[dict].
 
 @examples[
 #:eval dict-eval
@@ -466,7 +466,7 @@ whose each element is two values: a key and corresponding value from
 
 
 @defproc[(in-dict-keys [dict dict?]) sequence?]{
-Returns a sequence whose elements are the keys of @scheme[dict].
+Returns a sequence whose elements are the keys of @racket[dict].
 
 @examples[
 #:eval dict-eval
@@ -476,7 +476,7 @@ Returns a sequence whose elements are the keys of @scheme[dict].
 ]}
 
 @defproc[(in-dict-values [dict dict?]) sequence?]{
-Returns a sequence whose elements are the values of @scheme[dict].
+Returns a sequence whose elements are the values of @racket[dict].
 
 @examples[
 #:eval dict-eval
@@ -487,7 +487,7 @@ Returns a sequence whose elements are the values of @scheme[dict].
 
 @defproc[(in-dict-pairs [dict dict?]) sequence?]{ Returns a sequence
 whose elements are pairs, each containing a key and its value from
-@scheme[dict] (as opposed to using @scheme[in-dict], which gets the
+@racket[dict] (as opposed to using @racket[in-dict], which gets the
 key and value as separate values for each element).
 
 @examples[
@@ -499,7 +499,7 @@ key and value as separate values for each element).
 
 @defproc[(dict-keys [dict dict?]) list?]{ 
 Returns a list of the keys from
-@scheme[dict] in an unspecified order.
+@racket[dict] in an unspecified order.
 
 @examples[
 #:eval dict-eval
@@ -509,7 +509,7 @@ Returns a list of the keys from
 
 @defproc[(dict-values [dict dict?]) list?]{ 
 Returns a list of the values from
-@scheme[dict] in an unspecified order.
+@racket[dict] in an unspecified order.
 
 @examples[
 #:eval dict-eval
@@ -519,7 +519,7 @@ Returns a list of the values from
 
 @defproc[(dict->list [dict dict?]) list?]{ 
 Returns a list of the associations from
-@scheme[dict] in an unspecified order.
+@racket[dict] in an unspecified order.
 
 @examples[
 #:eval dict-eval
@@ -537,43 +537,43 @@ that has the property:
      
 @itemize[
 
- @item{@scheme[_ref] : a procedure like @scheme[dict-ref] that accepts
+ @item{@racket[_ref] : a procedure like @racket[dict-ref] that accepts
        either two or three arguments}
 
- @item{@scheme[_set!] : a procedure like @scheme[dict-set!] that accepts
-       three arguments, or @scheme[#f] if mutation is not supported}
+ @item{@racket[_set!] : a procedure like @racket[dict-set!] that accepts
+       three arguments, or @racket[#f] if mutation is not supported}
 
- @item{@scheme[_set] : a procedure like @scheme[dict-set] that accepts
+ @item{@racket[_set] : a procedure like @racket[dict-set] that accepts
        three arguments and returns an updated dictionary, or
-       @scheme[#f] if functional update is not supported}
+       @racket[#f] if functional update is not supported}
 
- @item{@scheme[_remove!] : a procedure like @scheme[dict-remove!] that
-       accepts two arguments, or @scheme[#f] if mutation is not
+ @item{@racket[_remove!] : a procedure like @racket[dict-remove!] that
+       accepts two arguments, or @racket[#f] if mutation is not
        supported or if key removal is not supported}
 
- @item{@scheme[_remove] : a procedure like @scheme[dict-remove] that
+ @item{@racket[_remove] : a procedure like @racket[dict-remove] that
        accepts two arguments and returns an updated dictionary, or
-       @scheme[#f] if functional update or key removal is not
+       @racket[#f] if functional update or key removal is not
        supported}
 
- @item{@scheme[_count] : a procedure like @scheme[dict-count] that accepts
+ @item{@racket[_count] : a procedure like @racket[dict-count] that accepts
        one argument}
 
- @item{@scheme[_iterate-first] : a procedure like
-       @scheme[dict-iterate-first] that accepts one argument}
+ @item{@racket[_iterate-first] : a procedure like
+       @racket[dict-iterate-first] that accepts one argument}
 
- @item{@scheme[_iterate-next] : a procedure like
-       @scheme[dict-iterate-next] that accepts two arguments; the
+ @item{@racket[_iterate-next] : a procedure like
+       @racket[dict-iterate-next] that accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
 
- @item{@scheme[_iterate-key] : a procedure like
-       @scheme[dict-iterate-key] that accepts two arguments; the
+ @item{@racket[_iterate-key] : a procedure like
+       @racket[dict-iterate-key] that accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
 
- @item{@scheme[_iterate-value] : a procedure like
-       @scheme[dict-iterate-value] that accepts two arguments; the
+ @item{@racket[_iterate-value] : a procedure like
+       @racket[dict-iterate-value] that accepts two arguments; the
        procedure is responsible for checking that the second argument
        is a valid position for the first argument}
 
@@ -631,23 +631,23 @@ iterators, respectively, if @racket[d] implements the
 )]{
 
 Creates a dictionary that is implemented in terms of a hash table
-where keys are compared with @scheme[eql?] and hashed with
-@scheme[hash-proc] and @scheme[hash2-proc]. See
-@scheme[prop:equal+hash] for information on suitable equality and
+where keys are compared with @racket[eql?] and hashed with
+@racket[hash-proc] and @racket[hash2-proc]. See
+@racket[prop:equal+hash] for information on suitable equality and
 hashing functions.
 
-The @scheme[make-custom-hash] and @scheme[make-weak-custom-hash]
+The @racket[make-custom-hash] and @racket[make-weak-custom-hash]
 functions create a mutable dictionary that does not support functional
-update, while @scheme[make-immutable-custom-hash] creates an immutable
+update, while @racket[make-immutable-custom-hash] creates an immutable
 dictionary that supports functional update. The dictionary created by
-@scheme[make-weak-custom-hash] retains its keys weakly, like the result
-of @scheme[make-weak-hash].
+@racket[make-weak-custom-hash] retains its keys weakly, like the result
+of @racket[make-weak-hash].
 
-Dictionaries created by @scheme[make-custom-hash] and company are
-@scheme[equal?] when they have the same mutability and key strength,
-the associated procedures are @scheme[equal?], and the key--value
+Dictionaries created by @racket[make-custom-hash] and company are
+@racket[equal?] when they have the same mutability and key strength,
+the associated procedures are @racket[equal?], and the key--value
 mappings are the same when keys and values are compared with
-@scheme[equal?].
+@racket[equal?].
 
 @examples[
 #:eval dict-eval

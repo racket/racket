@@ -4,10 +4,10 @@
 
 @title[#:tag "sendmail"]{@exec{sendmail}: Sending E-Mail}
 
-@defmodule[net/sendmail]{The @schememodname[net/sendmail] module
+@defmodule[net/sendmail]{The @racketmodname[net/sendmail] module
 provides tools for sending electronic mail messages using a
 @exec{sendmail} program on the local system. See also the
-@schememodname[net/smtp] package, which sends mail via SMTP.}
+@racketmodname[net/smtp] package, which sends mail via SMTP.}
 
 All strings used in mail messages are assumed to conform to their
 corresponding SMTP specifications, except as noted otherwise.
@@ -30,11 +30,11 @@ which must be provided as lines (not terminated by a linefeed or
 carriage return) to include verbatim in the header.
 
 The return value is an output port into which the client must write
-the message.  Clients are urged to use @scheme[close-output-port] on
+the message.  Clients are urged to use @racket[close-output-port] on
 the return value as soon as the necessary text has been written, so
 that the sendmail process can complete.
 
-The @scheme[from] argument can be any value; of course, spoofing
+The @racket[from] argument can be any value; of course, spoofing
 should be used with care.}
 
 @defproc[(send-mail-message [from string?]
@@ -46,7 +46,7 @@ should be used with care.}
                             [extra-header string?] ...)
          void?]{
 
-Like @scheme[send-mail-message/port], but with @scheme[body] as a list
+Like @racket[send-mail-message/port], but with @racket[body] as a list
 of strings, each providing a line of the message body.
 
 Lines that contain a single period do not need to be quoted.}
@@ -55,7 +55,7 @@ Lines that contain a single period do not need to be quoted.}
 @defstruct[(no-mail-recipients exn) ()]{
 
 Raised when no mail recipients were specified for
-@scheme[send-mail-message/port].}
+@racket[send-mail-message/port].}
 
 
 
@@ -67,7 +67,7 @@ Raised when no mail recipients were specified for
 
 @defthing[sendmail@ unit?]{
 
-Imports nothing, exports @scheme[sendmail^].}
+Imports nothing, exports @racket[sendmail^].}
 
 @; ----------------------------------------
 
@@ -77,4 +77,4 @@ Imports nothing, exports @scheme[sendmail^].}
 
 @defsignature[sendmail^ ()]{}
 
-Includes everything exported by the @schememodname[net/sendmail] module.
+Includes everything exported by the @racketmodname[net/sendmail] module.

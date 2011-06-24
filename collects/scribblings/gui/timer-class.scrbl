@@ -3,18 +3,18 @@
 
 @defclass/title[timer% object% ()]{
 
-A @scheme[timer%] object encapsulates an event-based alarm. To use a
- timer, either instantiate it with a @scheme[timer-callback] thunk to
+A @racket[timer%] object encapsulates an event-based alarm. To use a
+ timer, either instantiate it with a @racket[timer-callback] thunk to
  perform the alarm-based action, to derive a new class and override
  the @method[timer% notify] method to perform the alarm-based
  action. Start a timer with @method[timer% start] and stop it with
- @method[timer% stop]. Supplying an initial @scheme[interval] (in
+ @method[timer% stop]. Supplying an initial @racket[interval] (in
  milliseconds) when creating a timer also starts the timer.
 
 Timers have a relatively high priority in the event queue. Thus, if
  the timer delay is set low enough, repeated notification for a timer
  can preempt user activities (which might be directed at stopping the
- timer). For timers with relatively short delays, call @scheme[yield]
+ timer). For timers with relatively short delays, call @racket[yield]
  within the @method[timer% notify] procedure to allow guaranteed event
  processing.
 
@@ -26,14 +26,14 @@ See @secref["eventspaceinfo"] for more information about event
                  [interval (or/c (integer-in 0 1000000000) false/c) #f]
                  [just-once? any/c #f])]{
 
-The @scheme[notify-callback] thunk is called by the default
+The @racket[notify-callback] thunk is called by the default
 @method[timer% notify] method when the timer expires.
 
-If @scheme[interval] is @scheme[#f] (the default), the timer is not
+If @racket[interval] is @racket[#f] (the default), the timer is not
  started; in that case, @method[timer% start] must be called
- explicitly. If @scheme[interval] is a number (in milliseconds), then
- @method[timer% start] is called with @scheme[interval] and
- @scheme[just-once?].
+ explicitly. If @racket[interval] is a number (in milliseconds), then
+ @method[timer% start] is called with @racket[interval] and
+ @racket[just-once?].
 
 }
 
@@ -56,7 +56,7 @@ Called (on an event boundary) when the timer's alarm expires.
 }
 @methimpl{
 
-Calls the @scheme[notify-callback] procedure that was provided when the
+Calls the @racket[notify-callback] procedure that was provided when the
  object was created.
 
 }}
@@ -68,11 +68,11 @@ Calls the @scheme[notify-callback] procedure that was provided when the
 Starts (or restarts) the timer. If the timer is already running, its
  alarm time is not changed.
 
-The timer's alarm expires after @scheme[msec] milliseconds, at which
+The timer's alarm expires after @racket[msec] milliseconds, at which
 point @method[timer% notify] is called (on an event boundary). If
-@scheme[just-once?] is @scheme[#f], the timer expires @italic{every}
-@scheme[msec] milliseconds until the timer is explicitly
-stopped. (More precisely, the timer expires @scheme[msec]
+@racket[just-once?] is @racket[#f], the timer expires @italic{every}
+@racket[msec] milliseconds until the timer is explicitly
+stopped. (More precisely, the timer expires @racket[msec]
 milliseconds after @method[timer% notify] returns each time.)
 Otherwise, the timer expires only once.
 

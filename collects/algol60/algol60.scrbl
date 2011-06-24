@@ -13,14 +13,14 @@ by Peter Naur.
 @section{Including Algol 60 Programs}
 
 Although Algol 60 is mainly provided as a DrRacket language,
-@scheme[include-algol] supports limited use of Algol 60 programs in
+@racket[include-algol] supports limited use of Algol 60 programs in
 larger programs.
 
 @defmodule[algol60/algol60]
 
 @defform[(include-algol path-string)]{
 
-Includes the Algol 60 program indicated by @scheme[path-string] as an
+Includes the Algol 60 program indicated by @racket[path-string] as an
 expression in a Racket program. The included Algol 60 program is
 closed (i.e., it doesn't see any bindings in the included context),
 and the result is always @|void-const|.}
@@ -28,7 +28,7 @@ and the result is always @|void-const|.}
 
 @section{Language}
 
-The DrRacket and @scheme[include-algol] implementation departs from
+The DrRacket and @racket[include-algol] implementation departs from
 the Algol 60 specification in the following minor ways:
 
 @(itemize (item "Strings are not permitted to contain nested quotes.")

@@ -3,23 +3,21 @@
 
 @definterface/title[subarea<%> (area<%>)]{
 
-A @scheme[subarea<%>] is a containee @scheme[area<%>].
+A @racket[subarea<%>] is a containee @racket[area<%>].
 
-All @scheme[subarea<%>] classes accept the following named
+All @racket[subarea<%>] classes accept the following named
  instantiation arguments:
 @itemize[
 
- @item{@indexed-scheme[horiz-margin] --- default is @scheme[2] for
- @scheme[control<%>] classes and @scheme[group-box-panel%], 
- @scheme[0] for others; passed to
+ @item{@indexed-racket[horiz-margin] --- default is @racket[2] for
+ @racket[control<%>] classes and @racket[group-box-panel%], 
+ @racket[0] for others; passed to
 @method[subarea<%> horiz-margin]} 
- @item{@indexed-scheme[vert-margin] --- default is @scheme[2] for
- @scheme[control<%>] classes and @scheme[group-box-panel%], 
- @scheme[0] for others; passed to
+ @item{@indexed-racket[vert-margin] --- default is @racket[2] for
+ @racket[control<%>] classes and @racket[group-box-panel%], 
+ @racket[0] for others; passed to
 @method[subarea<%> vert-margin]} 
 ]
-
-
 
 
 @defmethod*[([(horiz-margin)

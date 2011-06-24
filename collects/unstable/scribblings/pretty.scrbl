@@ -18,8 +18,8 @@ This module provides tools for pretty-printing.
                                (pretty-print-columns)])
          string?]{
 
-This procedure behaves like @scheme[pretty-format], but it formats values
-consistently with @scheme[write] instead of @scheme[print].
+This procedure behaves like @racket[pretty-format], but it formats values
+consistently with @racket[write] instead of @racket[print].
 
 @examples[#:eval the-eval
 (struct both [a b] #:transparent)
@@ -34,8 +34,8 @@ consistently with @scheme[write] instead of @scheme[print].
                                  (pretty-print-columns)])
          string?]{
 
-This procedure behaves like @scheme[pretty-format], but it formats values
-consistently with @scheme[display] instead of @scheme[print].
+This procedure behaves like @racket[pretty-format], but it formats values
+consistently with @racket[display] instead of @racket[print].
 
 @examples[#:eval the-eval
 (struct both [a b] #:transparent)
@@ -50,9 +50,9 @@ consistently with @scheme[display] instead of @scheme[print].
                                (pretty-print-columns)])
          string?]{
 
-This procedure behaves the same as @scheme[pretty-format], but is named
+This procedure behaves the same as @racket[pretty-format], but is named
 more explicitly to describe how it formats values.  It is included for
-symmetry with @scheme[pretty-format/write] and @scheme[pretty-format/display].
+symmetry with @racket[pretty-format/write] and @racket[pretty-format/display].
 
 @examples[#:eval the-eval
 (struct both [a b] #:transparent)

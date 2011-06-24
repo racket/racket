@@ -112,12 +112,12 @@ The fern functions below demonstrate more advanced use of
 @defproc[(save-turtle-bitmap [name (or/c path-string? output-port?)]
                              [kind (or/c 'png 'jpeg 'xbm 'xpm 'bmp)])
          void?]{
-  Saves the current state of the turtles window in an image file.                
+  Saves the current state of the turtles window in an image file.
 }
-               
+
 @defthing[turtle-window-size exact-positive-integer?]{
-  The size of the turtles window.                                                      
-} 
+  The size of the turtles window.
+}
 
 @; ----------------------------------------
 
@@ -215,7 +215,7 @@ Calls @racket[lorenze] with good initial values.}
 }
 
 @defthing[peano-size exact-nonnegative-integer?]{
-  One size to use with @racket[peano].                                                 
+  One size to use with @racket[peano].
 }
 
 @defthing[fern-size exact-nonnegative-integer?]{

@@ -26,7 +26,7 @@ Racket code, since you have macros to do that.
 
 The preprocessors can be invoked from Racket programs, but the main
 usage should be through the launchers.  Both launchers use code from
-@schememodname[preprocessor/pp-run] that allows a special invocation
+@racketmodname[preprocessor/pp-run] that allows a special invocation
 mode through the @DFlag{run} flag.
 
 The @DFlag{run} is a convenient way of making the preprocessors cooperate
@@ -43,12 +43,12 @@ argument which is a string specifying a command to run:
    as @exec{mzpp foo | pr}.  An error is raised if an output file is
    specified with such an argument.}
 
-@item{2. If the command string contains a @scheme[*] and an output file is specified,
-   then the command will be executed on this output file after it is
+@item{2. If the command string contains a @racket[*] and an output file is
+   specified, then the command will be executed on this output file after it is
    generated.  For example, @exec{mzpp --run 'pr *' -o foo x y z} is the same
    as @exec{mzpp -o foo x y z; pr foo}.}
 
-@item{3. If the command string contains a @scheme[*], and no output file is
+@item{3. If the command string contains a @racket[*], and no output file is
    specified, and there is exactly one input file, then a temporary file
    will be used to save the original while the command is running.  For
    example, @exec{mzpp --run 'pr *' foo} is the same as @exec{mv foo

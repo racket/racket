@@ -22,32 +22,32 @@
  [(dblclick?) boolean?]
  [(error?) boolean?])]{
 
- Exactly one of these methods returns @scheme[#t] to indicate the type
- of a given event, and the others return @scheme[#f] for the event.}
+ Exactly one of these methods returns @racket[#t] to indicate the type
+ of a given event, and the others return @racket[#f] for the event.}
 
 @defmethod[(alt-key) boolean?]{
 
-  Returns @scheme[#t] if the Alt key was pressed when the 
-  event was generated, @scheme[#f] otherwise.}
+  Returns @racket[#t] if the Alt key was pressed when the 
+  event was generated, @racket[#f] otherwise.}
 
 @defmethod[(ctrl-key) boolean?]{
 
-  Returns @scheme[#t] if the Ctrl key was pressed when the 
-  event was generated, @scheme[#f] otherwise. }
+  Returns @racket[#t] if the Ctrl key was pressed when the 
+  event was generated, @racket[#f] otherwise. }
 
 @defmethod[(from-tag) string?]{
 
   Returns a string indicating the tag of the HTML element where the
   mouse is being moved from.  The return value is valid only for
   events for which @method[mx-event<%> mouseover?] or @method[mx-event<%>
-  mouseout?] produces @scheme[#t].}
+  mouseout?] produces @racket[#t].}
 
 @defmethod[(from-id) string?]{
 
   Returns a string indicating the identifier of the HTML element where
   the mouse is being moved from.  Return value is valid only for
   events for which @method[mx-event<%> mouseover?] or @method[mx-event<%>
-  mouseout?] produces @scheme[#t].}
+  mouseout?] produces @racket[#t].}
 
 @defmethod[(id) string?]{
 
@@ -59,12 +59,12 @@
   Returns a number indicating the keycode for the key that generated
   the event.  Return value is valid only for events for which
   @method[mx-event<%> keypress?], @method[mx-event<%> keydown?], or
-  @method[mx-event<%> keyup?] produces @scheme[#t].}
+  @method[mx-event<%> keyup?] produces @racket[#t].}
 
 @defmethod[(shift-key) boolean?]{
 
-  Returns @scheme[#t] if the Shift key was pressed when the 
-  event was generated, @scheme[#f] otherwise.}
+  Returns @racket[#t] if the Shift key was pressed when the 
+  event was generated, @racket[#f] otherwise.}
 
 @defmethod[(tag) string?]{
 
@@ -76,14 +76,14 @@
   Returns a string indicating the tag of the target HTML element where
   the mouse is being moved to.  Return value is valid only for events
   for which @method[mx-event<%> mouseover?] or @method[mx-event<%>
-  mouseout?] produces @scheme[#t].}
+  mouseout?] produces @racket[#t].}
 
 @defmethod[(to-id) boolean?]{
 
   Returns a string indicating the identifier of the target HTML
   element where the mouse is being moved from.  Return value is valid
   only for events for which @method[mx-event<%> mouseover?] or
-  @method[mx-event<%> mouseout?] produces @scheme[#t].}
+  @method[mx-event<%> mouseout?] produces @racket[#t].}
 
 @defmethod[(x) exact-integer?]{
 

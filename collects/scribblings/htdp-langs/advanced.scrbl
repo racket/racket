@@ -39,7 +39,7 @@
 
 @declare-exporting[lang/htdp-advanced]
 
-@schemegrammar*+qq[
+@racketgrammar*+qq[
 #:literals (define define-struct define-datatype lambda λ cond else if and or empty true false require lib planet
             local let let* letrec time begin begin0 set! delay shared recur when case match unless
              ; match
@@ -85,8 +85,8 @@
       empty
       (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment @#,seclink["advanced-prim-ops"]{primitive operation}))
-      (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       
@@ -103,8 +103,8 @@
          false
          string
          character
-         @#,elem{@schemevalfont{'}@scheme[_quoted]}
-         @#,elem{@schemevalfont{`}@scheme[_quasiquoted-pattern]}
+         @#,elem{@racketvalfont{'}@racket[_quoted]}
+         @#,elem{@racketvalfont{`}@racket[_quasiquoted-pattern]}
          (cons pattern pattern)
          (list pattern ...)
          (list* pattern ...)
@@ -116,10 +116,10 @@
                      string
                      character
                      (quasiquoted-pattern ...)
-                     @#,elem{@schemevalfont{'}@scheme[_quasiquoted-pattern]}
-                     @#,elem{@schemevalfont{`}@scheme[_quasiquoted-pattern]}
-                     @#,elem{@schemefont[","]@scheme[_pattern]}
-                     @#,elem{@schemefont[",@"]@scheme[_pattern]}]
+                     @#,elem{@racketvalfont{'}@racket[_quasiquoted-pattern]}
+                     @#,elem{@racketvalfont{`}@racket[_quasiquoted-pattern]}
+                     @#,elem{@racketfont[","]@racket[_pattern]}
+                     @#,elem{@racketfont[",@"]@racket[_pattern]}]
 ]
 
 @|prim-nonterms|
@@ -128,7 +128,7 @@
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-define"]{@scheme[define]}
+@section[#:tag "advanced-define"]{@racket[define]}
 
 @deftogether[(
 @defform[(define (id id ...) expr)]
@@ -141,7 +141,7 @@ function is allowed to accept zero arguments.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-define-struct"]{@scheme[define-struct]}
+@section[#:tag "advanced-define-struct"]{@racket[define-struct]}
 
 @defform[(define-struct structid (fieldid ...))]{
 
@@ -150,7 +150,7 @@ additional set of operations:
 
 @itemize[
 
- @item{@schemeidfont{set-}@scheme[structid]@schemeidfont{-}@scheme[fieldid]@schemeidfont{!}
+ @item{@racketidfont{set-}@racket[structid]@racketidfont{-}@racket[fieldid]@racketidfont{!}
        : takes an instance of the structure and a value, and changes
        the instance's field to the given value.}
 
@@ -158,27 +158,27 @@ additional set of operations:
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-define-datatype"]{@scheme[define-datatype]}
+@section[#:tag "advanced-define-datatype"]{@racket[define-datatype]}
 
 @defform[(define-datatype datatypeid [variantid fieldid ...] ...)]{
-                                                                  
-A short-hand for defining a group of related structures. A @scheme[define-datatype] form
-@schemeblock[
+
+A short-hand for defining a group of related structures. A @racket[define-datatype] form
+@racketblock[
  (define-datatype datatypeid
-   [variantid fieldid (unsyntax @schemeidfont{...})]
-   (unsyntax @schemeidfont{...}))
+   [variantid fieldid (unsyntax @racketidfont{...})]
+   (unsyntax @racketidfont{...}))
 ]
 is equivalent to
-@schemeblock[
- (define ((unsyntax @scheme[datatypeid])? x)
-   (or ((unsyntax @scheme[variantid])? x) (unsyntax @schemeidfont{...})))
- (define-struct variantid (fieldid (unsyntax @schemeidfont{...})))
- (unsyntax @schemeidfont{...})
+@racketblock[
+ (define ((unsyntax @racket[datatypeid])? x)
+   (or ((unsyntax @racket[variantid])? x) (unsyntax @racketidfont{...})))
+ (define-struct variantid (fieldid (unsyntax @racketidfont{...})))
+ (unsyntax @racketidfont{...})
 ]}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-lambda"]{@scheme[lambda]}
+@section[#:tag "advanced-lambda"]{@racket[lambda]}
 
 @deftogether[(
 @defform[(lambda (id ...) expr)]
@@ -200,161 +200,163 @@ arguments are allowed.}
 
 @defform[(#%app expr expr ...)]{
 
-A function call can be written with @scheme[#%app], though it's
+A function call can be written with @racket[#%app], though it's
 practically never written that way.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[begin]}
+@section{@racket[begin]}
 
 @defform[(begin expr expr ...)]{
 
-Evaluates the @scheme[expr]s in order from left to right. The value of
-the @scheme[begin] expression is the value of the last @scheme[expr].}
+Evaluates the @racket[expr]s in order from left to right. The value of
+the @racket[begin] expression is the value of the last @racket[expr].}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[begin0]}
+@section{@racket[begin0]}
 
 @defform[(begin0 expr expr ...)]{
 
-Evaluates the @scheme[expr]s in order from left to right. The value of
-the @scheme[begin] expression is the value of the first @scheme[expr].}
+Evaluates the @racket[expr]s in order from left to right. The value of
+the @racket[begin] expression is the value of the first @racket[expr].}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[set!]}
+@section{@racket[set!]}
 
 @defform[(set! id expr)]{
 
-Evaluates @scheme[expr], and then changes the definition @scheme[id]
-to have @scheme[expr]'s value. The @scheme[id] must be defined or
-bound by @scheme[letrec], @scheme[let], or @scheme[let*].}
+Evaluates @racket[expr], and then changes the definition @racket[id]
+to have @racket[expr]'s value. The @racket[id] must be defined or
+bound by @racket[letrec], @racket[let], or @racket[let*].}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[delay]}
+@section{@racket[delay]}
 
 @defform[(delay expr)]{
 
-Produces a ``promise'' to evaluate @scheme[expr]. The @scheme[expr] is
-not evaluated until the promise is forced through the @scheme[force]
+Produces a ``promise'' to evaluate @racket[expr]. The @racket[expr] is
+not evaluated until the promise is forced through the @racket[force]
 operator; when the promise is forced, the result is recorded, so that
-any further @scheme[force] of the promise always produces the
+any further @racket[force] of the promise always produces the
 remembered value.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[shared]}
+@section{@racket[shared]}
 
 @defform[(shared ([id expr] ...) expr)]{
 
-Like @scheme[letrec], but when an @scheme[expr] next to an @scheme[id]
-is a @scheme[cons], @scheme[list], @scheme[vector], quasiquoted
-expression, or @schemeidfont{make-}@scheme[_structid] from a
-@scheme[define-struct], the @scheme[expr] can refer directly to any
-@scheme[id], not just @scheme[id]s defined earlier. Thus,
-@scheme[shared] can be used to create cyclic data structures.}
+Like @racket[letrec], but when an @racket[expr] next to an @racket[id]
+is a @racket[cons], @racket[list], @racket[vector], quasiquoted
+expression, or @racketidfont{make-}@racket[_structid] from a
+@racket[define-struct], the @racket[expr] can refer directly to any
+@racket[id], not just @racket[id]s defined earlier. Thus,
+@racket[shared] can be used to create cyclic data structures.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "advanced-let"]{@scheme[let]}
+@section[#:tag "advanced-let"]{@racket[let]}
 
 @defform*[[(let ([id expr] ...) expr)
            (let id ([id expr] ...) expr)]]{
 
-The first form of @scheme[let] is the same as Intermediate's
+The first form of @racket[let] is the same as Intermediate's
 @|intm-let|.
 
-The second form is equivalent to a @scheme[recur] form.}
+The second form is equivalent to a @racket[recur] form.}
 
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[recur]}
+@section{@racket[recur]}
 
 @defform[(recur id ([id expr] ...) expr)]{
 
-A short-hand recursion construct. The first @scheme[id] corresponds to
-the name of the recursive function. The parenthesized @scheme[id]s are
-the function's arguments, and each corresponding @scheme[expr] is a
+A short-hand recursion construct. The first @racket[id] corresponds to
+the name of the recursive function. The parenthesized @racket[id]s are
+the function's arguments, and each corresponding @racket[expr] is a
 value supplied for that argument in an initial starting call of the
-function. The last @scheme[expr] is the body of the function.
+function. The last @racket[expr] is the body of the function.
 
-More precisely, a @scheme[recur] form 
+More precisely, a @racket[recur] form 
 
-@schemeblock[
-(recur func-id ([arg-id arg-expr] (unsyntax @schemeidfont{...}))
+@racketblock[
+(recur func-id ([arg-id arg-expr] (unsyntax @racketidfont{...}))
   body-expr)
 ]
 
 is equivalent to
 
-@schemeblock[
-((local [(define (func-id arg-id (unsyntax @schemeidfont{...}))
+@racketblock[
+((local [(define (func-id arg-id (unsyntax @racketidfont{...}))
            body-expr)]
    func-id)
-  arg-expr (unsyntax @schemeidfont{...}))
+  arg-expr (unsyntax @racketidfont{...}))
 ]}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[case]}
+@section{@racket[case]}
 
 @defform[(case expr [(choice ...) expr] ... [(choice ...) expr])]{
 
-A @scheme[case] form contains one or more ``lines'' that are
+A @racket[case] form contains one or more ``lines'' that are
 surrounded by parentheses or square brackets. Each line contains a
 sequence of choices---numbers and names for symbols---and an answer
-@scheme[expr]. The initial @scheme[expr] is evaluated, and the
+@racket[expr]. The initial @racket[expr] is evaluated, and the
 resulting value is compared to the choices in each line, where the
 lines are considered in order. The first line that contains a matching
-choice provides an answer @scheme[expr] whose value is the result of
-the whole @scheme[case] expression. If none of the lines contains a
+choice provides an answer @racket[expr] whose value is the result of
+the whole @racket[case] expression. If none of the lines contains a
 matching choice, it is an error.}
 
 @defform/none[#:literals (case else)
               (case expr [(choice ...) expr] ... [else expr])]{
 
-This form of @scheme[case] is similar to the prior one, except that
-the final @scheme[else] clause is always taken if no prior line
-contains a choice matching the value of the initial @scheme[expr]. In
+This form of @racket[case] is similar to the prior one, except that
+the final @racket[else] clause is always taken if no prior line
+contains a choice matching the value of the initial @racket[expr]. In
 other words, so there is no possibility to ``fall off the end'' of
-the @scheme[case] form.}@; ----------------------------------------------------------------------
+the @racket[case] form.}
 
-@section{@scheme[match]}
+@; ----------------------------------------------------------------------
+
+@section{@racket[match]}
 
 @defform[(match expr [pattern expr] ...)]{
-                                          
-A @scheme[match] form contains one or more ``lines'' that are
+
+A @racket[match] form contains one or more ``lines'' that are
 surrounded by parentheses or square brackets. Each line contains a
-pattern---a description of a value---and an answer @scheme[expr].
-The initial @scheme[expr] is evaluated, and the resulting value
+pattern---a description of a value---and an answer @racket[expr].
+The initial @racket[expr] is evaluated, and the resulting value
 is matched against the pattern in each line, where the lines are
 considered in order. The first line that contains a matching pattern
-provides an answer @scheme[expr] whose value is the result of the
-whole @scheme[match] expression. This @scheme[expr] may reference
+provides an answer @racket[expr] whose value is the result of the
+whole @racket[match] expression. This @racket[expr] may reference
 identifiers bound in the matching pattern. If none of the lines
 contains a matching pattern, it is an error.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[when] and @scheme[unless]}
+@section{@racket[when] and @racket[unless]}
 
 @defform[(when expr expr)]{
 
-The first @scheme[expr] (known as the ``test'' expression) is
-evaluated. If it evaluates to @scheme[true], the result of the
-@scheme[when] expression is the result of evaluating the second
-@scheme[expr], otherwise the result is @scheme[(void)] and the second
-@scheme[expr] is not evaluated. If the result of evaluating the test
-@scheme[expr] is neither @scheme[true] nor @scheme[false], it is an
+The first @racket[expr] (known as the ``test'' expression) is
+evaluated. If it evaluates to @racket[true], the result of the
+@racket[when] expression is the result of evaluating the second
+@racket[expr], otherwise the result is @racket[(void)] and the second
+@racket[expr] is not evaluated. If the result of evaluating the test
+@racket[expr] is neither @racket[true] nor @racket[false], it is an
 error.}
 
 @defform[(unless expr expr)]{
 
-Like @scheme[when], but the second @scheme[expr] is evaluated when the
-first @scheme[expr] produces @scheme[false] instead of @scheme[true].}
+Like @racket[when], but the second @racket[expr] is evaluated when the
+first @racket[expr] produces @racket[false] instead of @racket[true].}
 
 @; ----------------------------------------
 
@@ -381,8 +383,8 @@ The same as Intermediate's @|intm-local|, @|intm-letrec|, and
 @defidform[else]
 )]{
 
-The same as Beginning's @|beg-cond|, except that @scheme[else] can be
-used with @scheme[case].}
+The same as Beginning's @|beg-cond|, except that @racket[else] can be
+used with @racket[case].}
 
 
 

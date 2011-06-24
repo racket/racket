@@ -34,7 +34,7 @@
 
 @(define-syntax-rule (reading name ctc s)
    @defproc[(@name [f (and/c string? file-exists?)]) @ctc ]{
- reads the content of file @scheme[f] and produces it as @s .} )
+ reads the content of file @racket[f] and produces it as @s .} )
 
 @teachpack["batch-io"]{Batch Input/Output}
 
@@ -55,10 +55,10 @@ All functions that read a file consume the name of a file and possibly
 @examples[#:eval (examples-batch-io)
 (read-file "data.txt")
 ]
-assuming the file named @scheme["data.txt"] has this shape: 
+assuming the file named @racket["data.txt"] has this shape: 
 @(file-is "data.txt")
 Note how the leading space in the second line translates into the space
-between the newline indicator and the word @scheme["good"] in the result.}
+between the newline indicator and the word @racket["good"] in the result.}
 
 @item{@reading[read-1strings (listof 1string?)]{a list of one-char strings, one per character}
 
@@ -72,7 +72,7 @@ including spaces and newlines.}
 @examples[#:eval (examples-batch-io)
 (read-lines "data.txt")
 ]
-when @scheme["data.txt"] is the name of the same file as in the preceding
+when @racket["data.txt"] is the name of the same file as in the preceding
 item. And again, the leading space of the second line shows up in the
 second string in the list.}
 
@@ -82,8 +82,8 @@ second string in the list.}
 (read-words "data.txt")
 ]
 This time, however, the extra leading space of the second line of
-@scheme["data.txt"] has disappeared in the result. The space is considered
-a part of the separator that surrounds the word @scheme["good"].
+@racket["data.txt"] has disappeared in the result. The space is considered
+a part of the separator that surrounds the word @racket["good"].
 }
 
 @item{@reading[read-words/line (listof string?)]{a list of lists, one per line; each line is represented as a list of white-space separated tokens}
@@ -91,7 +91,7 @@ a part of the separator that surrounds the word @scheme["good"].
 @examples[#:eval (examples-batch-io)
 (read-words/line "data.txt")
 ]
-The results is similar to the one that @scheme[read-words] produces,
+The results is similar to the one that @racket[read-words] produces,
 except that the organization of the file into lines is preserved. 
 In particular, the empty third line is represented as an empty list of words. 
 }
@@ -101,7 +101,7 @@ In particular, the empty third line is represented as an empty list of words.
 @examples[#:eval (examples-batch-io)
 (read-csv-file "data.csv")
 ]
-where the file named @scheme["data.csv"] has this shape: 
+where the file named @racket["data.csv"] has this shape: 
 @(file-is "data.csv")
 It is important to understand that the rows don't have to have the same
 length. Here the third line of the file turns into a row of three
@@ -109,15 +109,15 @@ elements.
 }
 
 @item{@defproc[(@read-csv-file/rows [f (and/c string? exists?)][s
- (-> (listof any/c) X?)]) (listof X?)]{reads the content of file @scheme[f] and
- produces it as list of rows, each constructed via @scheme[s]}
+ (-> (listof any/c) X?)]) (listof X?)]{reads the content of file @racket[f] and
+ produces it as list of rows, each constructed via @racket[s]}
 
 @examples[#:eval (examples-batch-io)
 (read-csv-file/rows "data.csv" (lambda (x) x))
 (read-csv-file/rows "data.csv" length)
 ]
- The first example shows how @scheme[read-csv-file] is just a short form
- for @scheme[read-csv-file/rows]; the second one simply counts the
+ The first example shows how @racket[read-csv-file] is just a short form
+ for @racket[read-csv-file/rows]; the second one simply counts the
  number of separated tokens and the result is just a list of numbers. 
  In many cases, the function argument is used to construct a structure from
  a row.}
@@ -127,9 +127,9 @@ There is only one writer function at the moment:
 @itemlist[
 
 @item{@defproc[(write-file [f string?] [cntnt string?]) string?]{
- turns @scheme[cntnt] into the content of file @scheme[f], located in the
+ turns @racket[cntnt] into the content of file @racket[f], located in the
  same folder (directory) as the program. If the write succeeds, the
- function produces the name of the file (@scheme[f]); otherwise it signals
+ function produces the name of the file (@racket[f]); otherwise it signals
  an error.}
 
 @examples[#:eval (examples-batch-io)
@@ -137,7 +137,7 @@ There is only one writer function at the moment:
     (write-file "output.txt" "cruel world")
     (write-file "output.txt" "cruel world"))
 ]
- After evaluating this examples, the file named @scheme["output.txt"]
+ After evaluating this examples, the file named @racket["output.txt"]
  looks like this: 
  @(file-is "output.txt")
  Explain why.
@@ -151,7 +151,7 @@ There is only one writer function at the moment:
 @section{Testing}
 
 @defform[(simulate-file process str ...)]{
- simulates a file system for the function @scheme[process], which reads a
+ simulates a file system for the function @racket[process], which reads a
  file and may produce one. Note: this form is under development and will be
  documented in a precise manner after it is finalized and useful for a wide
  audience.} 

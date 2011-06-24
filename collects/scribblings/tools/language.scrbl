@@ -6,12 +6,12 @@
 
 This interface represents the bare essentials when defining a module-based
 language.  Use the
-@scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+@racket[drracket:language:simple-module-based-language->module-based-language-mixin]
 mixin to construct an implementation of
-@scheme[drracket:language:module-based-language<%>] from an implementation of
+@racket[drracket:language:module-based-language<%>] from an implementation of
 this interface.
 
-The class @scheme[drracket:language:simple-module-based-language%] provides an
+The class @racket[drracket:language:simple-module-based-language%] provides an
 implementation of this interface.
 
 @defmethod[(get-language-numbers)
@@ -37,8 +37,8 @@ implementation of this interface.
   @method[drracket:language:language<%> front-end/complete-program] and
   @method[drracket:language:language<%> front-end/interaction].
 
-  The result is expected to be the @scheme[module] (its initial require)
-  except as value, ie @scheme[quote]d.
+  The result is expected to be the @racket[module] (its initial require)
+  except as value, ie @racket[quote]d.
 }
 
 @defmethod[(get-one-line-summary)
@@ -50,7 +50,7 @@ implementation of this interface.
 @defmethod[(get-reader)
            (->* () (any/c input-port?) (or/c syntax? eof-object?))]{
   This method must return a procedure that is used to read syntax from a
-  port in the same manner as @scheme[read-syntax].  It is used as the
+  port in the same manner as @racket[read-syntax].  It is used as the
   reader for this language.
 }}
 
@@ -109,7 +109,7 @@ implementation of this interface.
 
 @index{drracket:language:simple-settings}
 This mixin uses a struct definition for its settings:
-@schemeblock[
+@racketblock[
 (define-struct drracket:language:simple-settings
   (case-sensitive  (code:comment @#,t{boolean?})
    printing-style  (code:comment @#,t{(symbols 'constructor 'quasiquote 'write 'print)})
@@ -124,12 +124,12 @@ This mixin uses a struct definition for its settings:
 The settings in this structure reflect the settings show in the language
 configuration dialog for languages constructed with this mixin.  The
 first controls the input for the language.  The rest specify printing
-controls for the language.  The style @scheme['print] is the default
+controls for the language.  The style @racket['print] is the default
 style, as normally used in the Racket REPL.  The sharing field
 determines if cycles and sharing in values are displayed when the value
 is rendered.  The insert newlines field determines if values in the repl
-are formatted with @scheme[write] style-line printouts, or with
-@scheme[pretty-print] multi-line printouts.
+are formatted with @racket[write] style-line printouts, or with
+@racket[pretty-print] multi-line printouts.
 
 @defmethod[#:mode override
            (config-panel)
@@ -138,9 +138,9 @@ are formatted with @scheme[write] style-line printouts, or with
   the settings for this language.
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixin's
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
@@ -148,16 +148,16 @@ are formatted with @scheme[write] style-line printouts, or with
            settings]{
   The defaults for the settings are
   @itemize[
-  @item{@scheme[case-sensitive] is @scheme[#f]}
-  @item{@scheme[printing-style] is @scheme['write]}
-  @item{@scheme[show-sharing] is @scheme[#f]}
-  @item{@scheme[insert-newlines] is @scheme[#t]}
+  @item{@racket[case-sensitive] is @racket[#f]}
+  @item{@racket[printing-style] is @racket['write]}
+  @item{@racket[show-sharing] is @racket[#f]}
+  @item{@racket[insert-newlines] is @racket[#t]}
   ]
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixins
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
@@ -169,15 +169,15 @@ are formatted with @scheme[write] style-line printouts, or with
            (get-init-code [settings settings])
            sexpression]{
   Creates an s-expression of a module that sets the
-  @scheme[current-inspector], @scheme[read-case-sensitive], and
-  @scheme[error-value->string] parameters.  Additionally, it may load
-  @scheme[errortrace], if debugging is enabled.
+  @racket[current-inspector], @racket[read-case-sensitive], and
+  @racket[error-value->string] parameters.  Additionally, it may load
+  @racket[errortrace], if debugging is enabled.
 }
 
 @defmethod[#:mode override
            (get-transformer-module)
            s-expression]{
-  Returns @scheme['mzscheme].
+  Returns @racket['mzscheme].
 }
 
 @defmethod[#:mode override
@@ -186,9 +186,9 @@ are formatted with @scheme[write] style-line printouts, or with
   Constructs a vector from the structure.
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixins
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
@@ -199,18 +199,18 @@ are formatted with @scheme[write] style-line printouts, or with
   Sets the structure inspector to a new inspector, saving the original
   inspector for use during printing.
 
-  Sets the @scheme[global-port-print-handler] to print based on the
+  Sets the @racket[global-port-print-handler] to print based on the
   settings structure, but without any newlines.
 
-  If debugging is enabled, it sets the @scheme[current-eval] handler to
+  If debugging is enabled, it sets the @racket[current-eval] handler to
   one that annotates each evaluated program with debugging annotations.
-  Additionally, it sets the @scheme[error-display-handler] to show the
+  Additionally, it sets the @racket[error-display-handler] to show the
   debugging annotations when an error is raised.
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixin's
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
@@ -223,9 +223,9 @@ are formatted with @scheme[write] style-line printouts, or with
   @method[drracket:language:simple-module-based-language->module-based-language-mixin% on-execute])
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixin's
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
@@ -238,38 +238,38 @@ are formatted with @scheme[write] style-line printouts, or with
   @method[drracket:language:simple-module-based-language->module-based-language-mixin% on-execute].)
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixin's
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
            (unmarshall-settings)
            (or/c false/c settings)]{
-  Builds a settings structure from the vector, or @scheme[#f] if the
+  Builds a settings structure from the vector, or @racket[#f] if the
   vector doesn't match the types of the structure.
 
   See also
-  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
+  @racket[drracket:language:simple-module-based-language->module-based-language-mixin]
   for details of the simple-settings structure, this mixin's
-  @scheme[settings] type.
+  @racket[settings] type.
 }
 
 @defmethod[#:mode override
            (use-mred-launcher)
            boolean?]{
-  Returns @scheme[#t].
+  Returns @racket[#t].
 }}
 
 
 @definterface[drracket:language:module-based-language<%> ()]{
 
 This interface is for languages that can be implemented with Racket
-@scheme[module]s.
+@racket[module]s.
 
-Use the @scheme[drracket:language:module-based-language->language-mixin]
+Use the @racket[drracket:language:module-based-language->language-mixin]
 mixin to construct an implementation of
-@scheme[drracket:language:language<%>] from an implementation of this
+@racket[drracket:language:language<%>] from an implementation of this
 interface.
 
 @defmethod[(config-panel [parent (is-a?/c panel%)])
@@ -294,10 +294,10 @@ interface.
            sexp]{
   Returns a module in sexpression form that is used for creating
   executables. The module must provide a thunk, called
-  @scheme[init-code].
+  @racket[init-code].
 
   When either a stand-alone executable or a launcher is created, the
-  module is required, and @scheme[init-code] is invoked. This procedure
+  module is required, and @racket[init-code] is invoked. This procedure
   is expected to set up the environment, based on the settings.
 }
 
@@ -318,8 +318,8 @@ interface.
   This method specifies the module that defines the language.  It is
   used to initialize the user's namespace.
 
-  The result is expected to be the @scheme[module] (its initial require)
-  except as value, ie @scheme[quote]d.
+  The result is expected to be the @racket[module] (its initial require)
+  except as value, ie @racket[quote]d.
 
   See also
   @method[drracket:language:module-based-language<%> get-transformer-module].
@@ -334,7 +334,7 @@ interface.
 @defmethod[(get-reader)
            (->* () (any/c input-port?) (or/c syntax? eof-object?))]{
   This method must return a procedure that is used to read syntax from a
-  port in the same manner as @scheme[read-syntax]. It is used as the
+  port in the same manner as @racket[read-syntax]. It is used as the
   reader for this language.
 }
 
@@ -344,10 +344,10 @@ interface.
   language.  It is used to initialize the transformer portion of the
   user's namespace.
 
-  The result is expected to be the @scheme[module] (its initial require)
-  except as value, i.e., @scheme[quote]d or @scheme[#f].
+  The result is expected to be the @racket[module] (its initial require)
+  except as value, i.e., @racket[quote]d or @racket[#f].
 
-  If the result is @scheme[#f], no module is required into the
+  If the result is @racket[#f], no module is required into the
   transformer part of the namespace.
 
   See also
@@ -400,12 +400,12 @@ interface.
            boolean?]{
 @methspec{
   The result of this method controls how the module is attached to the
-  user's namespace. If the method returns @scheme[#t], the Racket
-  primitive @scheme[namespace-require/copy] is used and if it returns
-  @scheme[#f], @scheme[namespace-require] is used.
+  user's namespace. If the method returns @racket[#t], the Racket
+  primitive @racket[namespace-require/copy] is used and if it returns
+  @racket[#f], @racket[namespace-require] is used.
 }
 @methimpl{
-  Defaultly returns @scheme[#f].
+  Defaultly returns @racket[#f].
 }}}
 
 
@@ -414,8 +414,8 @@ interface.
 @defmethod[#:mode override
            (front-end/complete-program)
            (-> (or/c sexp/c syntax? eof-object?))]{
-  Reads a syntax object, from @scheme[input].  Does not use
-  @scheme[settings].
+  Reads a syntax object, from @racket[input].  Does not use
+  @racket[settings].
 
   For languages that use these mixins, there is no difference between
   this method and
@@ -425,8 +425,8 @@ interface.
 @defmethod[#:mode override
            (front-end/interaction)
            (-> (or/c sexp/c syntax? eof-object?))]{
-  Reads a syntax object, from @scheme[input]. Does not use
-  @scheme[settings].
+  Reads a syntax object, from @racket[input]. Does not use
+  @racket[settings].
 
   For languages that use these mixins, there is no difference between
   this method and
@@ -445,9 +445,9 @@ interface.
            void?]{
   Calls the super method.
 
-  Uses @scheme[namespace-require] to install the result of
+  Uses @racket[namespace-require] to install the result of
   @method[drracket:language:module-based-language<%> get-module] and
-  Uses @scheme[namespace-transformer-require] to install the result of
+  Uses @racket[namespace-transformer-require] to install the result of
   @method[drracket:language:module-based-language<%>
   get-transformer-module] into the user's namespace.
 }}
@@ -464,11 +464,11 @@ DrRacket.
            any]{
 @methspec{
   Returns the language-specific value for some capability. See also
-  @scheme[drracket:language:register-capability].
+  @racket[drracket:language:register-capability].
 }
 @methimpl{
   Defaultly returns the value from:
-  @scheme[drracket:language:get-capability-default].
+  @racket[drracket:language:get-capability-default].
 }}
 
 @defmethod[(config-panel [parent (is-a?/c panel%)])
@@ -484,13 +484,13 @@ DrRacket.
                               [program-filename string?])
            void?]{
   This method creates an executable in the given language.  The
-  @scheme[program-filename] is the name of the program to store in the
-  executable and @scheme[executable-filename] is the name of a file
+  @racket[program-filename] is the name of the program to store in the
+  executable and @racket[executable-filename] is the name of a file
   where the executable goes.
 
   See also
-  @scheme[drracket:language:create-module-based-stand-alone-executable]
-  and @scheme[drracket:language:create-module-based-launcher].
+  @racket[drracket:language:create-module-based-stand-alone-executable]
+  and @racket[drracket:language:create-module-based-launcher].
 }
 
 @defmethod[(default-settings)
@@ -500,7 +500,7 @@ DrRacket.
 
 @defmethod[(default-settings? [settings settings])
            boolean?]{
-  Return @scheme[#t] if the input settings matches the default settings
+  Return @racket[#t] if the input settings matches the default settings
   obtained via @method[drracket:language:language<%> default-settings].
 }
 
@@ -535,32 +535,32 @@ DrRacket.
 @defmethod[(front-end/complete-program [port port]
                                        [settings settings])
            (-> (or/c sexp/c syntax? eof-object?))]{
-  @scheme[front-end/complete-program] method reads and parses a program
-  in the language. The @scheme[port] argument contains all of the data
-  to be read (until eof) and the name of the @scheme[port] (obtained via
+  @racket[front-end/complete-program] method reads and parses a program
+  in the language. The @racket[port] argument contains all of the data
+  to be read (until eof) and the name of the @racket[port] (obtained via
   @racket[object-name]) is a value representing the source of the
   program (typically an editor, but may also be a string naming a file
-  or some other value).  The @scheme[settings] argument is the current
+  or some other value).  The @racket[settings] argument is the current
   settings for the language.
 
-  The @scheme[front-end/complete-program] method is expected to return a
+  The @racket[front-end/complete-program] method is expected to return a
   thunk that is called repeatedly to get all of the expressions in the
   program. When all expressions have been read, the thunk is expected to
-  return @scheme[eof].
+  return @racket[eof].
 
   This method is only called for programs in the definitions
   window. Notably, it is not called for programs that are
-  @scheme[load]ed or @scheme[eval]ed.  See @scheme[current-load] and
-  @scheme[current-eval] for those.
+  @racket[load]ed or @racket[eval]ed.  See @racket[current-load] and
+  @racket[current-eval] for those.
 
   This method is expected to raise an appropriate exception if the
-  program is malformed, eg an @scheme[exn:syntax] or @scheme[exn:read].
+  program is malformed, eg an @racket[exn:syntax] or @racket[exn:read].
 
   This is called on the user's thread, as is the thunk it returns.
 
   Implementations of this method should not return fully expanded
   expressions, since there are two forms of expansion, using either
-  @scheme[expand] or @scheme[expand-top-level-with-compile-time-evals]
+  @racket[expand] or @racket[expand-top-level-with-compile-time-evals]
   and the use of the expanded code dictates which applies.
 
   See also @method[drracket:language:language<%> front-end/interaction]
@@ -574,7 +574,7 @@ DrRacket.
   been called.  Specifically, @method[drracket:language:language<%>
   front-end/complete-program] is first called to get a thunk that reads
   from the program.  That thunk is called some number of times,
-  eventually returning @scheme[eof], or raising an exception. Then, this
+  eventually returning @racket[eof], or raising an exception. Then, this
   method is called.
 
   This method is called on the user's main eventspace thread, and
@@ -639,11 +639,11 @@ DrRacket.
   same will be combined into the same turndown entry.
 
   For example, if one language's position is:
-  @schemeblock[
+  @racketblock[
     (list "General Category" "Specific Category" "My Language")
   ]
   and another's is:
-  @schemeblock[
+  @racketblock[
     (list "General Category" "Specific Category" "My Other Language")
   ]
   The language dialog will collapse the first two elements in the list,
@@ -658,7 +658,7 @@ DrRacket.
   Returns a url for the language.
 }
 @methimpl{
-  If the result isn't @scheme[#f], the name of the language is clickable
+  If the result isn't @racket[#f], the name of the language is clickable
   in the interactions window and clicking takes you to this url.
 }}
 
@@ -677,9 +677,9 @@ DrRacket.
   The string is expect to be a prefix to the file that sets up a reader
   for files in this language, using @tt{#reader}.
 
-  The @scheme[modname] argument's printed form is the same as the file's
+  The @racket[modname] argument's printed form is the same as the file's
   name, but without the path, and without an extension. The
-  @scheme[settings] argument is the current language's settings value.
+  @racket[settings] argument is the current language's settings value.
 
   See also @method[drracket:language:language<%> metadata->settings],
   @method[drracket:language:language<%> get-metadata-lines], and
@@ -730,7 +730,7 @@ DrRacket.
   The style delta that this method returns is used in the language
   dialog and the DrRacket REPL when the language's name is printed.
 
-  When it is @scheme[#f], no styling is used.
+  When it is @racket[#f], no styling is used.
 
   If the result is a list, each element is expected to be a list of
   three items, a style-delta, and two numbers. The style delta will be
@@ -761,17 +761,17 @@ DrRacket.
   @method[drracket:language:language<%> get-reader-module] returns an
   sexp, the prefix of the file (the first N lines, where N is the number
   returned by @method[drracket:language:language<%> get-metadata-lines])
-  is scanned for @scheme["#reader"] followed by the result of
+  is scanned for @racket["#reader"] followed by the result of
   @method[drracket:language:language<%> get-reader-module].  If that
   pattern is found, the language is set to this language.  Also, the
   entire prefix is passed, as a string, to this method which returns a
-  @scheme[settings] value, used as the settings for this language.
+  @racket[settings] value, used as the settings for this language.
 }
 
 @defmethod[(on-execute [settings settings]
                        [run-on-user-thread ((-> any) -> any)])
            any]{
-  The @scheme[on-execute] method is called on DrRacket's eventspace's
+  The @racket[on-execute] method is called on DrRacket's eventspace's
   main thread before any evaluation happens when the Run button is
   clicked. It is also called when a new DrRacket tab (or window) is
   created to initialize the empty interactions window.
@@ -782,49 +782,49 @@ DrRacket.
   already been created, as has its custodian.  These parameters have
   been changed from the defaults in Racket:
   @itemize[
-  @item{@scheme[current-custodian] is set to a new custodian.}
-  @item{@scheme[current-namespace] has been set to a newly created empty
+  @item{@racket[current-custodian] is set to a new custodian.}
+  @item{@racket[current-namespace] has been set to a newly created empty
     namespace.  This namespace has the following modules copied (with
-    @scheme[namespace-attach-module]) from DrRacket's original
+    @racket[namespace-attach-module]) from DrRacket's original
     namespace:
     @itemize[
-    @item{@scheme['mzscheme]}
-    @item{@scheme['mred]}
+    @item{@racket['mzscheme]}
+    @item{@racket['mred]}
     ]}
-  @item{@scheme[read-curly-brace-as-paren] is @scheme[#t],}
-  @item{@scheme[read-square-bracket-as-paren] is @scheme[#t],}
-  @item{The @scheme[port-write-handler] and @scheme[port-display-handler]
-    have been set to procedures that call @scheme[pretty-print] and
-    @scheme[pretty-display] instead of @scheme[write] and
-    @scheme[display].  When @scheme[pretty-print] and
-    @scheme[pretty-display] are called by these parameters, the
-    @scheme[pretty-print-columns] parameter is set to
-    @scheme['infinity], so the output looks just like @scheme[write] and
-    @scheme[display].  This is done so that special scheme values can be
+  @item{@racket[read-curly-brace-as-paren] is @racket[#t],}
+  @item{@racket[read-square-bracket-as-paren] is @racket[#t],}
+  @item{The @racket[port-write-handler] and @racket[port-display-handler]
+    have been set to procedures that call @racket[pretty-print] and
+    @racket[pretty-display] instead of @racket[write] and
+    @racket[display].  When @racket[pretty-print] and
+    @racket[pretty-display] are called by these parameters, the
+    @racket[pretty-print-columns] parameter is set to
+    @racket['infinity], so the output looks just like @racket[write] and
+    @racket[display].  This is done so that special scheme values can be
     displayed as snips.}
-  @item{The @scheme[current-print-covert-hook] is to a procedure so that
-    @scheme[snip%]s are just returned directly to be inserted into the
-    interactions @scheme[text%] object.}
+  @item{The @racket[current-print-covert-hook] is to a procedure so that
+    @racket[snip%]s are just returned directly to be inserted into the
+    interactions @racket[text%] object.}
   @item{The output and input ports are set to point to the interactions
-    window with these parameters: @scheme[current-input-port],
-    @scheme[current-output-port], and @scheme[current-error-port].}
-  @item{The @scheme[event-dispatch-handler] is set so that DrRacket can
+    window with these parameters: @racket[current-input-port],
+    @racket[current-output-port], and @racket[current-error-port].}
+  @item{The @racket[event-dispatch-handler] is set so that DrRacket can
     perform some initial setup and close down around the user's code.}
-  @item{The @scheme[current-directory] and
-    @scheme[current-load-relative-directory] are set to the directory
+  @item{The @racket[current-directory] and
+    @racket[current-load-relative-directory] are set to the directory
     where the definitions file is saved, or if it isn't saved, to the
     initial directory where DrRacket started up.}
-  @item{The snip-class-list, returned by @scheme[get-the-snip-class-list]
+  @item{The snip-class-list, returned by @racket[get-the-snip-class-list]
     is initialized with all of the snipclasses in DrRacket's
     eventspace's snip-class-list.}
-  @item{The @scheme[error-print-source-location] parameter is set to
-    @scheme[#f] and the @scheme[error-display-handler] is set to a
+  @item{The @racket[error-print-source-location] parameter is set to
+    @racket[#f] and the @racket[error-display-handler] is set to a
     handler that creates an error message from the exception record,
     with font and color information and inserts that error message into
     the definitions window.}
   ]
 
-  The @scheme[run-on-user-thread] arguments accepts thunks and runs them
+  The @racket[run-on-user-thread] arguments accepts thunks and runs them
   on the user's eventspace's main thread.  The output ports are not yet
   functioning, so print outs should be directed to the original DrRacket
   output port, if necessary.
@@ -869,7 +869,7 @@ DrRacket.
 
 @defmethod[(unmarshall-settings [input writable])
            (or/c settings false/c)]{
-  Translates a Racket value into a settings, returning @scheme[#f] if
+  Translates a Racket value into a settings, returning @racket[#f] if
   that is not possible.
 }}
 

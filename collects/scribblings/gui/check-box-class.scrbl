@@ -30,17 +30,17 @@ Whenever a check box is clicked by the user, the check box's value is
 
 Creates a check box with a string or bitmap label. @bitmaplabeluse[label]
 
-@labelstripped[(scheme label) @elem{ (when @scheme[label] is a string)} @elem{effectively click the check box}]
+@labelstripped[(scheme label) @elem{ (when @racket[label] is a string)} @elem{effectively click the check box}]
 
-The @scheme[callback] procedure is called (with the event type
- @indexed-scheme['check-box]) whenever the user clicks the check box.
+The @racket[callback] procedure is called (with the event type
+ @indexed-racket['check-box]) whenever the user clicks the check box.
 
-@DeletedStyleNote[@scheme[style] @scheme[parent]]{check box}
+@DeletedStyleNote[@racket[style] @racket[parent]]{check box}
 
-If @scheme[value] is true, it is passed to
+If @racket[value] is true, it is passed to
 @method[check-box% set-value] so that the box is initially checked.
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 
@@ -48,7 +48,7 @@ If @scheme[value] is true, it is passed to
 
 @defmethod[(get-value)
            boolean?]{
-Gets the state of the check box: @scheme[#t] if it is checked, @scheme[#f]
+Gets the state of the check box: @racket[#t] if it is checked, @racket[#f]
  otherwise.
 
 }
@@ -57,7 +57,7 @@ Gets the state of the check box: @scheme[#t] if it is checked, @scheme[#f]
            (set-label [label (or/c label-string? (is-a?/c bitmap%))])
            void?]{
 
-The same as @xmethod[window<%> set-label] when @scheme[label] is a
+The same as @xmethod[window<%> set-label] when @racket[label] is a
  string.
 
 Otherwise, sets the bitmap label for a bitmap check box.
@@ -74,7 +74,7 @@ Sets the check box's state. (The control's callback procedure is
 @MonitorCallback[@elem{The check box's state} @elem{the user clicking the control} @elem{state}]
 
 
-If @scheme[state] is @scheme[#f], the box is
+If @racket[state] is @racket[#f], the box is
  unchecked, otherwise it is checked.
 
 }}

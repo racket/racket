@@ -14,11 +14,11 @@ interfaces in Racket.}
 
 @section{Creating Windows}
 
-To create a new top-level window, instantiate the @scheme[frame%]
+To create a new top-level window, instantiate the @racket[frame%]
  class:
 
-@schemeblock[
-(code:comment @#,t{Make a frame by instantiating the @scheme[frame%] class})
+@racketblock[
+(code:comment @#,t{Make a frame by instantiating the @racket[frame%] class})
 (define frame (new frame% [label "Example"]))
  
 (code:comment @#,t{Show the frame by calling its @method[top-level-window<%> show] method})
@@ -26,14 +26,14 @@ To create a new top-level window, instantiate the @scheme[frame%]
 ]
 
 The built-in classes provide various mechanisms for handling GUI
- events. For example, when instantiating the @scheme[button%] class,
+ events. For example, when instantiating the @racket[button%] class,
  supply an event callback procedure to be invoked
  when the user clicks the button. The following example program
  creates a frame with a text message and a button; when the user
  clicks the button, the message changes:
 
-@schemeblock[
-(code:comment @#,t{Make a frame by instantiating the @scheme[frame%] class})
+@racketblock[
+(code:comment @#,t{Make a frame by instantiating the @racket[frame%] class})
 (define frame (new frame% [label "Example"]))
 
 (code:comment @#,t{Make a static text message in the frame})
@@ -47,7 +47,7 @@ The built-in classes provide various mechanisms for handling GUI
              (callback (lambda (button event) 
                          (send msg #,(method message% set-label) "Button click"))))
 
-(code:comment @#,t{Show the frame by calling its @scheme[show] method})
+(code:comment @#,t{Show the frame by calling its @racket[show] method})
 (send frame #,(:: top-level-window<%> show) #t)
 ]
 
@@ -64,14 +64,14 @@ If a window receives multiple kinds of events, the events are
  procedure. For example, a drawing canvas receives update events,
  mouse events, keyboard events, and sizing events; to handle them,
  derive a new class from the built-in
- @scheme[canvas%] class and override the event-handling methods. The
+ @racket[canvas%] class and override the event-handling methods. The
  following expression extends the frame created above with a canvas
  that handles mouse and keyboard events:
 
-@schemeblock[
+@racketblock[
 (code:comment @#,t{Derive a new canvas (a drawing window) class to handle events})
 (define my-canvas%
-  (class canvas% (code:comment @#,t{The base class is @scheme[canvas%]})
+  (class canvas% (code:comment @#,t{The base class is @racket[canvas%]})
     (code:comment @#,t{Define overriding method to handle mouse events})
     (define/override (#,(:: canvas<%> on-event) event)
       (send msg #,(:: message% set-label) "Canvas mouse"))
@@ -98,7 +98,7 @@ The windowing system dispatches GUI events sequentially; that is, after invoking
  sequential nature of events, extend the frame again, adding a
  @onscreen{Pause} button:
 
-@schemeblock[
+@racketblock[
 (new button% [parent frame] 
              [label "Pause"]
              [callback (lambda (button event) (sleep 5))])
@@ -106,7 +106,7 @@ The windowing system dispatches GUI events sequentially; that is, after invoking
 
 After the user clicks @onscreen{Pause}, the entire frame becomes
  unresponsive for five seconds; the windowing system cannot dispatch more events
- until the call to @scheme[sleep] returns. For more information about
+ until the call to @racket[sleep] returns. For more information about
  event dispatching, see @secref["eventspaceinfo"].
 
 In addition to dispatching events, the GUI classes also handle the
@@ -119,7 +119,7 @@ In addition to dispatching events, the GUI classes also handle the
  of another container; for example, to place two buttons side-by-side
  in our frame, create a horizontal panel for the new buttons:
 
-@schemeblock[
+@racketblock[
 (define panel (new horizontal-panel% [parent frame]))
 (new button% [parent panel]
              [label "Left"]
@@ -151,7 +151,7 @@ reflected in the content of the canvas onscreen.
 For example, the following program creates a canvas
 that displays large, friendly letters:
 
-@schemeblock[
+@racketblock[
 (define frame (new frame% 
                    [label "Example"]
                    [width 300]
@@ -190,23 +190,23 @@ The fundamental graphical element in the windowing toolbox is an
 
  @itemize[
 
- @item{@scheme[frame%] --- a @deftech{frame} is a top-level window
+ @item{@racket[frame%] --- a @deftech{frame} is a top-level window
  that the user can move and resize.}
 
- @item{@scheme[dialog%] --- a @deftech{dialog} is a modal top-level
+ @item{@racket[dialog%] --- a @deftech{dialog} is a modal top-level
  window; when a dialog is shown, other top-level windows are disabled
  until the dialog is dismissed.}
 
- @item{@scheme[panel%] --- a @deftech{panel} is a subcontainer
+ @item{@racket[panel%] --- a @deftech{panel} is a subcontainer
  within a container. The toolbox provides three subclasses of
- @scheme[panel%]: @scheme[vertical-panel%],
- @scheme[horizontal-panel%], and @scheme[tab-panel%].}
+ @racket[panel%]: @racket[vertical-panel%],
+ @racket[horizontal-panel%], and @racket[tab-panel%].}
 
- @item{@scheme[pane%] --- a @deftech{pane} is a lightweight panel.
+ @item{@racket[pane%] --- a @deftech{pane} is a lightweight panel.
  It has no graphical representation or event-handling capabilities.
- The @scheme[pane%] class has three subclasses:
- @scheme[vertical-pane%], @scheme[horizontal-pane%], and
- @scheme[grow-box-spacer-pane%].}
+ The @racket[pane%] class has three subclasses:
+ @racket[vertical-pane%], @racket[horizontal-pane%], and
+ @racket[grow-box-spacer-pane%].}
 
  ]}
 
@@ -215,56 +215,56 @@ The fundamental graphical element in the windowing toolbox is an
 
  @itemize[
 
- @item{@scheme[panel%] --- a panel is a containee as well as
+ @item{@racket[panel%] --- a panel is a containee as well as
  a container.}
 
- @item{@scheme[pane%] --- a pane is a containee as well as a
+ @item{@racket[pane%] --- a pane is a containee as well as a
  container.}
 
- @item{@scheme[canvas%] --- a @deftech{canvas} is a subwindow for
+ @item{@racket[canvas%] --- a @deftech{canvas} is a subwindow for
  drawing on the screen.}
 
- @item{@scheme[editor-canvas%] --- an @deftech{editor canvas} is a
+ @item{@racket[editor-canvas%] --- an @deftech{editor canvas} is a
  subwindow for displaying a text editor or pasteboard editor. The
- @scheme[editor-canvas%] class is documented with the editor classes
+ @racket[editor-canvas%] class is documented with the editor classes
  in @secref["editor-overview"].}
 
  @item{@deftech{Controls} --- containees that the user can manipulate:
 
  @itemize[
 
-   @item{@scheme[message%] --- a @deftech{message} is a static
+   @item{@racket[message%] --- a @deftech{message} is a static
    text field or bitmap with no user interaction.}
 
-   @item{@scheme[button%] --- a @deftech{button} is a clickable
+   @item{@racket[button%] --- a @deftech{button} is a clickable
    control.}
 
-   @item{@scheme[check-box%] --- a @deftech{check box} is a
+   @item{@racket[check-box%] --- a @deftech{check box} is a
    clickable control; the user clicks the control to set or remove
    its check mark.}
 
-   @item{@scheme[radio-box%] --- a @deftech{radio box} is a
+   @item{@racket[radio-box%] --- a @deftech{radio box} is a
    collection of mutually exclusive @deftech{radio buttons}; when the
    user clicks a radio button, it is selected and the radio box's
    previously selected radio button is deselected.}
 
-   @item{@scheme[choice%] --- a @deftech{choice item} is a pop-up
+   @item{@racket[choice%] --- a @deftech{choice item} is a pop-up
    menu of text choices; the user selects one item in the control.}
 
-   @item{@scheme[list-box%] --- a @deftech{list box} is a
+   @item{@racket[list-box%] --- a @deftech{list box} is a
    scrollable lists of text choices; the user selects one or more
    items in the list (depending on the style of the list box).}
 
-   @item{@scheme[text-field%] --- a @deftech{text field} is a box
+   @item{@racket[text-field%] --- a @deftech{text field} is a box
    for simple text entry.}
 
-   @item{@scheme[combo-field%] --- a @deftech{combo field} combines
+   @item{@racket[combo-field%] --- a @deftech{combo field} combines
    a text field with a pop-up menu of choices.}
 
-   @item{@scheme[slider%] --- a @deftech{slider} is a dragable
+   @item{@racket[slider%] --- a @deftech{slider} is a dragable
    control that selects an integer value within a fixed range.}
 
-   @item{@scheme[gauge%] --- a @deftech{gauge} is an output-only
+   @item{@racket[gauge%] --- a @deftech{gauge} is an output-only
    control (the user cannot change the value) for reporting an integer
    value within a fixed range.}
 
@@ -287,27 +287,27 @@ Most areas are @deftech{windows}, but some are
  @tech{non-window} does not receive mouse events, and it cannot be
  disabled or hidden.
 
-Every @tech{area} is an instance of the @scheme[area<%>]
+Every @tech{area} is an instance of the @racket[area<%>]
  interface. Each @tech{container} is also an instance of the
- @scheme[area-container<%>] interface, whereas each @tech{containee}
- is an instance of @scheme[subarea<%>]. @tech{Windows} are instances
- of @scheme[window<%>]. The @scheme[area-container<%>],
- @scheme[subarea<%>], and @scheme[window<%>] interfaces are
- subinterfaces of @scheme[area<%>].
+ @racket[area-container<%>] interface, whereas each @tech{containee}
+ is an instance of @racket[subarea<%>]. @tech{Windows} are instances
+ of @racket[window<%>]. The @racket[area-container<%>],
+ @racket[subarea<%>], and @racket[window<%>] interfaces are
+ subinterfaces of @racket[area<%>].
 
 The following diagram shows more of the type hierarchy under
- @scheme[area<%>]:
+ @racket[area<%>]:
 
 @diagram->table[short-windowing-diagram]
 
 The diagram below extends the one above to show the complete type
- hierarchy under @scheme[area<%>]. (Some of the types are represented
+ hierarchy under @racket[area<%>]. (Some of the types are represented
  by interfaces, and some types are represented by classes. In
  principle, every area type should be represented by an interface, but
  whenever the windowing toolbox provides a concrete implementation,
  the corresponding interface is omitted from the toolbox.)  To avoid
  intersecting lines, the hierarchy is drawn for a cylindrical surface;
- lines from @scheme[subarea<%>] and @scheme[subwindow<%>] wrap from
+ lines from @racket[subarea<%>] and @racket[subwindow<%>] wrap from
  the left edge of the diagram to the right edge.
 
 @diagram->table[windowing-diagram]
@@ -323,14 +323,14 @@ Menu bars, menus, and menu items are graphical elements, but not areas
 
   @itemize[
 
-  @item{@scheme[menu-bar%] --- a @deftech{menu bar} is a top-level
+  @item{@racket[menu-bar%] --- a @deftech{menu bar} is a top-level
   collection of menus that are associated with a frame.}
 
-  @item{@scheme[menu%] --- a @deftech{menu} contains a set of menu
+  @item{@racket[menu%] --- a @deftech{menu} contains a set of menu
   items. The menu can appear in a menu bar, in a popup menu, or as a
   submenu in another menu.}
 
-  @item{@scheme[popup-menu%] --- a @deftech{popup menu} is a
+  @item{@racket[popup-menu%] --- a @deftech{popup menu} is a
   top-level menu that is dynamically displayed in a canvas or
   editor canvas.}
 
@@ -340,18 +340,18 @@ Menu bars, menus, and menu items are graphical elements, but not areas
 
   @itemize[
   
-  @item{@scheme[separator-menu-item%] --- a @deftech{separator} is
+  @item{@racket[separator-menu-item%] --- a @deftech{separator} is
   an unselectable line in a menu or popup menu.}
 
-  @item{@scheme[menu-item%] --- a @deftech{plain menu item} is a
+  @item{@racket[menu-item%] --- a @deftech{plain menu item} is a
   selectable text item in a menu. When the item is selected, its
   callback procedure is invoked.}
 
-  @item{@scheme[checkable-menu-item%] --- a @deftech{checkable menu
+  @item{@racket[checkable-menu-item%] --- a @deftech{checkable menu
   item} is a text item in a menu; the user selects a checkable menu
   item to toggle a check mark next to the item.}
 
-  @item{@scheme[menu%] --- a menu is a menu item as well as a menu
+  @item{@racket[menu%] --- a menu is a menu item as well as a menu
   item container.}
 
   ]}
@@ -392,7 +392,7 @@ The built-in container classes include horizontal panels (and panes),
 
 with the following program:
 
-@schemeblock[
+@racketblock[
 (code:comment @#,t{Create a dialog})
 (define dialog (instantiate dialog% ("Example")))
 
@@ -496,12 +496,12 @@ A @deftech{margin} is space surrounding a containee. Each containee's
  margin is independent of its minimum size, but from the container's
  point of view, a margin effectively increases the minimum size of the
  containee. For example, if a button has a vertical margin of
- @scheme[2], then the container must allocate enough room to leave two
+ @racket[2], then the container must allocate enough room to leave two
  pixels of space above and below the button, in addition to the space
  that is allocated for the button's minimum height. A programmer can
  adjust a containee's margin with @method[subarea<%> horiz-margin] and
- @method[subarea<%> vert-margin]. The default margin is @scheme[2] for
- a control, and @scheme[0] for any other type of containee.
+ @method[subarea<%> vert-margin]. The default margin is @racket[2] for
+ a control, and @racket[0] for any other type of containee.
 
 In practice, the @tech{requested minimum size} and @tech{margin} of a
  control are rarely changed, although they are often changed for a
@@ -588,7 +588,7 @@ A container's spacing determines the amount of space left between
  can be placed.  A programmer can adjust a container's border and
  spacing dynamically via the @method[area-container<%> border] and
  @method[area-container<%> spacing] methods. The default border and
- spacing are @scheme[0] for all container types.
+ spacing are @racket[0] for all container types.
 
 Because a panel or pane is a containee as well as a container, it has
  a containee margin in addition to its border margin. For a panel,
@@ -603,7 +603,7 @@ For a top-level-window container, such as a frame or dialog, the
  containers (i.e., panels and panes), the container's stretchability
  is its stretchability as a containee in some other container.  All
  types of containers are initially stretchable in both
- directions---except instances of @scheme[grow-box-spacer-pane%],
+ directions---except instances of @racket[grow-box-spacer-pane%],
  which is intended as a lightweight spacer class rather than a useful
  container class---but a programmer can change the stretchability of
  an area at any time via the @method[area<%> stretchable-width] and
@@ -613,10 +613,10 @@ The alignment specification for a container determines how it
  positions its children when the container has leftover space. (A
  container can only have leftover space in a particular direction when
  none of its children are stretchable in that direction.) For example,
- when the container's horizontal alignment is @indexed-scheme['left],
+ when the container's horizontal alignment is @indexed-racket['left],
  the children are left-aligned in the container and leftover space is
  accumulated to the right.  When the container's horizontal alignment
- is @indexed-scheme['center], each child is horizontally centered in
+ is @indexed-racket['center], each child is horizontally centered in
  the container. A container's alignment is changed with the
  @method[area-container<%> set-alignment] method.
 
@@ -625,7 +625,7 @@ The alignment specification for a container determines how it
 Although nested horizontal and vertical containers can express most
  layout patterns, a programmer can define a new type of container with
  an explicit layout procedure. A programmer defines a new type of
- container by deriving a class from @scheme[panel%] or @scheme[pane%]
+ container by deriving a class from @racket[panel%] or @racket[pane%]
  and overriding the @method[area-container<%> container-size] and
  @method[area-container<%> place-children] methods. The
  @method[area-container<%> container-size] method takes a list of size
@@ -640,7 +640,7 @@ An input size specification is a list of four values:
 @itemize[
  @item{the child's minimum width;}
  @item{the child's minimum height;}
- @item{the child's horizontal stretchability (@scheme[#t] means stretchable, @scheme[#f] means not stretchable); and}
+ @item{the child's horizontal stretchability (@racket[#t] means stretchable, @racket[#f] means not stretchable); and}
  @item{the child's vertical stretchability.}
 ]
 
@@ -703,7 +703,7 @@ Whenever the user moves the mouse, clicks or releases a mouse button,
  target window. A program can use the @method[window<%> focus] method
  to move the focus to a subwindow or to set the initial focus.
 
- A @indexed-scheme['wheel-up] or @indexed-scheme['wheel-down]
+ A @indexed-racket['wheel-up] or @indexed-racket['wheel-down]
  event may be sent to a window other than the one with the keyboard
  focus, depending on how the operating system handles wheel events.
 
@@ -792,7 +792,7 @@ An @deftech{eventspace} is a context for processing GUI
  events. Each eventspace maintains its own queue of events, and events
  in a single eventspace are dispatched sequentially by a designated
  @deftech{handler thread}. An event-handling procedure running in this
- handler thread can yield to the system by calling @scheme[yield], in
+ handler thread can yield to the system by calling @racket[yield], in
  which case other event-handling procedures may be called in a nested
  (but single-threaded) manner within the same handler thread. Events
  from different eventspaces are dispatched asynchronously by separate
@@ -803,7 +803,7 @@ An @deftech{eventspace} is a context for processing GUI
  as described in @secref["currenteventspace"].  Events for a
  top-level window and its descendants are always dispatched in the
  window's eventspace.  Every dialog is modal; a dialog's
- @method[dialog% show] method implicitly calls @scheme[yield] to
+ @method[dialog% show] method implicitly calls @racket[yield] to
  handle events while the dialog is shown. (See also
  @secref["espacethreads"] for information about threads and modal
  dialogs.) Furthermore, when a modal dialog is shown, the system
@@ -824,7 +824,7 @@ In addition to events corresponding to user and windowing actions,
  dispatches two kinds of internal events: @tech{timer events} and
  @tech{explicitly queued events}.
 
-@deftech{Timer events} are created by instances of @scheme[timer%]. When
+@deftech{Timer events} are created by instances of @racket[timer%]. When
  a timer is started and then expires, the timer queues an event to
  call the timer's @method[timer% notify] method. Like a top-level
  window, each timer is associated with a particular eventspace (the
@@ -833,11 +833,11 @@ In addition to events corresponding to user and windowing actions,
  queues the event in its eventspace.
 
 @deftech{Explicitly queued events} are created with
- @scheme[queue-callback], which accepts a callback procedure to handle
+ @racket[queue-callback], which accepts a callback procedure to handle
  the event. The event is enqueued in the current eventspace at the
- time of the call to @scheme[queue-callback], with either a high or
+ time of the call to @racket[queue-callback], with either a high or
  low priority as specified by the (optional) second argument to
- @scheme[queue-callback].
+ @racket[queue-callback].
 
 An eventspace's event queue is actually a priority queue with events
  sorted according to their kind, from highest-priority (dispatched
@@ -846,7 +846,7 @@ An eventspace's event queue is actually a priority queue with events
 @itemize[
 
  @item{The highest-priority events are high-priority events installed
-   with @scheme[queue-callback].}
+   with @racket[queue-callback].}
 
  @item{Timer events have the second-highest priority.}
 
@@ -854,14 +854,14 @@ An eventspace's event queue is actually a priority queue with events
    the second-lowest priority.}
 
  @item{The lowest-priority events are low-priority events installed
-   with @scheme[queue-callback].}
+   with @racket[queue-callback].}
 
 ]
 
 Although a programmer has no direct control over the order in which
  events are dispatched, a programmer can control the timing of
  dispatches by setting the @deftech{event dispatch handler} via the
- @scheme[event-dispatch-handler] parameter. This parameter and other
+ @racket[event-dispatch-handler] parameter. This parameter and other
  eventspace procedures are described in more detail in
  @secref["eventspace-funcs"].
 
@@ -877,27 +877,27 @@ When a new eventspace is created, a corresponding @tech{handler
  eventspace.
 
 When a handler thread shows a dialog, the dialog's @method[dialog%
- show] method implicitly calls @scheme[yield] for as long as the
+ show] method implicitly calls @racket[yield] for as long as the
  dialog is shown. When a non-handler thread shows a dialog, the
  non-handler thread simply blocks until the dialog is
- dismissed. Calling @scheme[yield] with no arguments from a
- non-handler thread has no effect. Calling @scheme[yield] with a
+ dismissed. Calling @racket[yield] with no arguments from a
+ non-handler thread has no effect. Calling @racket[yield] with a
  semaphore from a non-handler thread is equivalent to calling
- @scheme[semaphore-wait].
+ @racket[semaphore-wait].
 
 
 @subsection[#:tag "currenteventspace"]{Creating and Setting the Eventspace}
 
 Whenever a frame, dialog, or timer is created, it is associated with
  the @deftech{current eventspace} as determined by the
- @scheme[current-eventspace] parameter @|SeeMzParam|.
+ @racket[current-eventspace] parameter @|SeeMzParam|.
 
-The @scheme[make-eventspace] procedure creates a new
+The @racket[make-eventspace] procedure creates a new
  eventspace. The following example creates a new eventspace and a new
- frame in the eventspace (the @scheme[parameterize] syntactic form
+ frame in the eventspace (the @racket[parameterize] syntactic form
  temporary sets a parameter value):
 
-@schemeblock[
+@racketblock[
 (let ([new-es (make-eventspace)])
   (parameterize ([current-eventspace new-es])
     (new frame% [label "Example"])))
@@ -910,14 +910,14 @@ When an eventspace is created, it is placed under the management of
  can-close?]  or @xmethod[top-level-window<%> on-close]), all timers
  in the eventspace are stopped, and all enqueued callbacks are
  removed.  Attempting to create a new window, timer, or explicitly
- queued event in a shut-down eventspace raises the @scheme[exn:misc]
+ queued event in a shut-down eventspace raises the @racket[exn:misc]
  exception.
 
 An eventspace is a @techlink[#:doc reference-doc]{synchronizable
  event} (not to be confused with a GUI event), so it can be used with
- @scheme[sync]. As a synchronizable event, an eventspace is in a
+ @racket[sync]. As a synchronizable event, an eventspace is in a
  blocking state when a frame is visible, a timer is active, a callback
- is queued, or a @scheme[menu-bar%] is created with a @scheme['root]
+ is queued, or a @racket[menu-bar%] is created with a @racket['root]
  parent. (Note that the blocking state of an eventspace is unrelated
  to whether an event is ready for dispatching.)
 

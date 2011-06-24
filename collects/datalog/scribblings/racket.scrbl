@@ -16,22 +16,22 @@ The Datalog database can be directly used by Racket programs through this API.
 
 @examples[#:eval the-eval
           (define family (make-theory))
-          
+
           (datalog family
                    (! (parent joseph2 joseph1))
                    (! (parent joseph2 lucy))
                    (! (parent joseph3 joseph2)))
-          
+
           (datalog family
                    (? (parent X joseph2)))
- 
+
           (datalog family
                    (? (parent joseph2 X)))
- 
+
           (datalog family
                    (? (parent joseph2 X))
                    (? (parent X joseph2)))
- 
+
           (datalog family
                    (! (:- (ancestor A B)
                           (parent A B)))
@@ -46,7 +46,7 @@ The Datalog database can be directly used by Racket programs through this API.
           (let ([x 'joseph2])
             (datalog family
                      (? (parent x X))))
-                                       
+
           (datalog family
                    (? (add1 1 :- X)))]
 
@@ -57,11 +57,11 @@ The Datalog database can be directly used by Racket programs through this API.
 @defform[(datalog thy-expr
                   stmt ...)
          #:contracts ([thy-expr theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Returns the answers to the final query as a list of substitution dictionaries or returns @racket[empty]. }
-                                                   
+
 @defform[(datalog! thy-expr
                   stmt ...)
          #:contracts ([thy-expr theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Prints the answers to every query in the list of statements. Returns @racket[(void)]. }     
-              
+
 Statements are either assertions, retractions, or queries.
 
 @defform[(! clause)]{ Asserts the clause. }
@@ -70,7 +70,7 @@ Statements are either assertions, retractions, or queries.
 @defform[(:- literal question ...)]{ A conditional clause. }
 
 @defform[(? question)]{ Queries the literal and prints the result literals. }
-                                                   
+
 Questions are either literals or external queries.
 Literals are represented as @racket[identifier] or @racket[(identifier term ...)].
 External queries are represented as @racket[(identifier term ... :- term ...)], where @racket[identifier] is bound to a procedure that when given the first set of terms as arguments returns the second set of terms as values.

@@ -3,7 +3,7 @@
 
 @title{Plot}
 
-@defmodule[mrlib/plot]{The @schememodname[mrlib/plot] library provides
+@defmodule[mrlib/plot]{The @racketmodname[mrlib/plot] library provides
 a simple tool for plotting data values to a device context.}
 
 @defstruct[data-set ([points (listof (is-a?/c point%))]
@@ -14,9 +14,9 @@ a simple tool for plotting data values to a device context.}
                      [min-y real?]
                      [max-y real?])]{
 
-The @scheme[points] field contains the data values to plot, and
-@scheme[connected?] indicates whether the points are connected by a
-line. The @scheme[pen] field provides a pen for plotting
+The @racket[points] field contains the data values to plot, and
+@racket[connected?] indicates whether the points are connected by a
+line. The @racket[pen] field provides a pen for plotting
 points/lines. The remaining fields determine the plotting area within
 a drawing context.}
 
@@ -30,9 +30,9 @@ a drawing context.}
                        [x-axis-label string?]
                        [y-axis-label string?])]{
 
-Configures a plot. The @scheme[grid?] field determines whether to draw
-a grid at axis markings, and the @scheme[x-axis-marking] and
-@scheme[y-axis-marking] lists supply locations for marks on each
+Configures a plot. The @racket[grid?] field determines whether to draw
+a grid at axis markings, and the @racket[x-axis-marking] and
+@racket[y-axis-marking] lists supply locations for marks on each
 axis. The other fields are self-explanatory.}
 
 @defproc[(plot [dc (is-a?/c dc<%>)]
@@ -40,6 +40,6 @@ axis. The other fields are self-explanatory.}
                [setup plot-setup?])
          void?]{
 
-Draws the @scheme[data-set]s in @scheme[data] into the given
-@scheme[dc]. Uses drawing-context coordinates in @scheme[data-set]s
+Draws the @racket[data-set]s in @racket[data] into the given
+@racket[dc]. Uses drawing-context coordinates in @racket[data-set]s
 that will accommodate all of the data sets.}

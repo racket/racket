@@ -6,12 +6,12 @@
 The FFI is normally used by extracting functions and other objects
 from @as-index{shared objects} (a.k.a. @defterm{@as-index{shared
 libraries}} or @defterm{@as-index{dynamically loaded libraries}}). The
-@scheme[ffi-lib] function loads a shared object.
+@racket[ffi-lib] function loads a shared object.
 
 @defproc[(ffi-lib? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is the result of @racket[ffi-lib],
+@racket[#f] otherwise.}
 
 
 @defproc[(ffi-lib [path (or/c path-string? #f)]
@@ -42,14 +42,14 @@ packages. At the same time, other platforms may require a versionless
 fallback. A list of version strings followed by @racket[#f] is
 typically best for @racket[version].
 
-Assuming that @scheme[path] is not @racket[#f], the result from
+Assuming that @racket[path] is not @racket[#f], the result from
 @racket[ffi-lib] represents the library found by the following search
 process:
 
 @itemlist[
 
  @item{If @racket[path] is not an absolute path, look in each
-       directory reported by @scheme[get-lib-search-dirs]. In each
+       directory reported by @racket[get-lib-search-dirs]. In each
        directory, try @racket[path] with the first version in
        @racket[version], adding a suitable suffix if @racket[path]
        does not already end in the suffix, then try the second version
@@ -82,10 +82,10 @@ unfortunately name the fallback from the second or third bullet, since
 some operating systems offer no way to determine why a given library
 path failed.
 
-If @scheme[path] is @scheme[#f], then the resulting foreign-library
+If @racket[path] is @racket[#f], then the resulting foreign-library
 value represents all libraries loaded in the current process,
-including libraries previously opened with @scheme[ffi-lib].  In
-particular, use @scheme[#f] to access C-level functionality exported
+including libraries previously opened with @racket[ffi-lib].  In
+particular, use @racket[#f] to access C-level functionality exported
 by the run-time system (as described in @|InsideRacket|). The
 @racket[version] argument is ignored when @racket[path] is
 @racket[#f].
@@ -102,22 +102,22 @@ corresponding library.}
                       [failure-thunk (or/c (-> any) #f) #f]) 
          any]{
 
-Looks for the given object name @scheme[objname] in the given
-@scheme[lib] library.  If @scheme[lib] is not a foreign-library value
-produced by @scheme[ffi-lib], it is converted to one by calling
-@scheme[ffi-lib]. If @scheme[objname] is found in @scheme[lib], it is
-converted to Racket using the given @scheme[type]. Types are described
-in @secref["types"]; in particular the @scheme[get-ffi-obj] procedure
-is most often used with function types created with @scheme[_fun].
+Looks for the given object name @racket[objname] in the given
+@racket[lib] library.  If @racket[lib] is not a foreign-library value
+produced by @racket[ffi-lib], it is converted to one by calling
+@racket[ffi-lib]. If @racket[objname] is found in @racket[lib], it is
+converted to Racket using the given @racket[type]. Types are described
+in @secref["types"]; in particular the @racket[get-ffi-obj] procedure
+is most often used with function types created with @racket[_fun].
 
-Keep in mind that @scheme[get-ffi-obj] is an unsafe procedure; see
+Keep in mind that @racket[get-ffi-obj] is an unsafe procedure; see
 @secref["intro"] for details.
 
-If the object is not found, and @scheme[failure-thunk] is provided, it is
+If the object is not found, and @racket[failure-thunk] is provided, it is
 used to produce a return value.  For example, a failure thunk can be
 provided to report a specific error if an object is not found:
 
-@schemeblock[
+@racketblock[
 (define foo
   (get-ffi-obj "foo" foolib (_fun _int -> _int)
     (lambda ()
@@ -125,7 +125,7 @@ provided to report a specific error if an object is not found:
              "installed foolib does not provide \"foo\""))))
 ]
 
-The default (also when @scheme[failure-thunk] is provided as @scheme[#f]) is to
+The default (also when @racket[failure-thunk] is provided as @racket[#f]) is to
 raise an exception.}
 
 
@@ -135,8 +135,8 @@ raise an exception.}
                        [new any/c])
          void?]{
 
-Looks for @scheme[objname] in @scheme[lib] similarly to
-@scheme[get-ffi-obj], but then it stores the given @scheme[new] value
+Looks for @racket[objname] in @racket[lib] similarly to
+@racket[get-ffi-obj], but then it stores the given @racket[new] value
 into the library, converting it to a C value.  This can be used for
 setting library customization variables that are part of its
 interface, including Racket callbacks.}
@@ -150,11 +150,11 @@ interface, including Racket callbacks.}
 
 Returns a parameter-like procedure that can either references the
 specified foreign value, or set it.  The arguments are handled as in
-@scheme[get-ffi-obj].
+@racket[get-ffi-obj].
 
 A parameter-like function is useful in case Racket code and library
 code interact through a library value.  Although
-@scheme[make-c-parameter] can be used with any time, it is not
+@racket[make-c-parameter] can be used with any time, it is not
 recommended to use this for foreign functions, since each reference
 through the parameter will construct the low-level interface before the
 actual call.}
@@ -162,9 +162,9 @@ actual call.}
 
 @defform[(define-c id lib-expr type-expr)]{
 
-Defines @scheme[id] behave like a Racket binding, but @scheme[id] is
+Defines @racket[id] behave like a Racket binding, but @racket[id] is
 actually redirected through a parameter-like procedure created by
-@scheme[make-c-parameter]. The @scheme[id] is used both for the Racket
+@racket[make-c-parameter]. The @racket[id] is used both for the Racket
 binding and for the foreign object's name.}
 
 @defproc[(ffi-obj-ref [objname (or/c string? bytes? symbol?)]
@@ -173,6 +173,6 @@ binding and for the foreign object's name.}
          any]{
 
 Returns a pointer object for the specified foreign object.  This
-procedure is for rare cases where @scheme[make-c-parameter] is
+procedure is for rare cases where @racket[make-c-parameter] is
 insufficient, because there is no type to cast the foreign object to
 (e.g., a vector of numbers).}

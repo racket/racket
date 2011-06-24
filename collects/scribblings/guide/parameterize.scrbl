@@ -39,10 +39,10 @@ parameter as a function returns its current value:
 (location)
 ]
 
-In a @scheme[parameterize] form, each @racket[_parameter-expr] must
-produce a parameter. During the evaluation of the @scheme[body]s, each
+In a @racket[parameterize] form, each @racket[_parameter-expr] must
+produce a parameter. During the evaluation of the @racket[body]s, each
 specified parameter is given the result of the corresponding
-@scheme[_value-expr]. When control leaves the @racket[parameterize]
+@racket[_value-expr]. When control leaves the @racket[parameterize]
 form---either through a normal return, an exception, or some other
 escape---the parameter reverts to its earlier value:
 
@@ -61,11 +61,11 @@ escape---the parameter reverts to its earlier value:
 (location)
 ]
 
-The @scheme[parameterize] form is not a binding form like
-@scheme[let]; each use of @racket[location] above refers directly to
-the original definition. A @scheme[parameterize] form adjusts the
+The @racket[parameterize] form is not a binding form like
+@racket[let]; each use of @racket[location] above refers directly to
+the original definition. A @racket[parameterize] form adjusts the
 value of a parameter during the whole time that the
-@scheme[parameterize] body is evaluated, even for uses of the
+@racket[parameterize] body is evaluated, even for uses of the
 parameter that are textually outside of the @racket[parameterize]
 body:
 
@@ -113,8 +113,8 @@ associated with the active @racket[parameterize]:
 
 Using @racket[parameterize] is generally preferable to updating a
 parameter value imperatively---for much the same reasons that binding
-a fresh variable with @scheme[let] is preferable to using
-@scheme[set!]  (see @secref["set!"]).
+a fresh variable with @racket[let] is preferable to using
+@racket[set!]  (see @secref["set!"]).
 
 It may seem that variables and @racket[set!] can solve many of the
 same problems that parameters solve. For example, @racket[lokation]
@@ -134,14 +134,14 @@ to adjust its value:
 ]
 
 Parameters, however, offer several crucial advantages over
-@scheme[set!]:
+@racket[set!]:
 
 @itemlist[
 
  @item{The @racket[parameterize] form helps automatically reset the
        value of a parameter when control escapes due to an exception.
        Adding exception handlers and other forms to rewind a
-       @scheme[set!] is relatively tedious.}
+       @racket[set!] is relatively tedious.}
 
  @item{Parameters work nicely with tail calls (see
        @secref["tail-recursion"]). The last @racket[_body] in a
@@ -149,7 +149,7 @@ Parameters, however, offer several crucial advantages over
        respect to the @racket[parameterize] form.}
 
  @item{Parameters work properly with threads (see
-       @refsecref["threads"]). The @scheme[parameterize] form adjusts
+       @refsecref["threads"]). The @racket[parameterize] form adjusts
        the value of a parameter only for evaluation in the current
        thread, which avoids race conditions with other threads.}
 

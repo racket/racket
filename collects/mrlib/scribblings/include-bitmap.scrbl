@@ -4,28 +4,28 @@
 
 @title{Include Bitmap}
 
-@defmodule[mrlib/include-bitmap]{The @scheme[include-bitmap] form
+@defmodule[mrlib/include-bitmap]{The @racket[include-bitmap] form
 takes a filename containing a bitmap and ``inlines'' the bitmap into
 the program.}
 
 Historically, the advantage of inlining the bitmap is that a
 stand-alone executable can be created that contains the bitmap and
 does not refer to the original image file. The
-@scheme[define-runtime-path] form, however, now provides a better
+@racket[define-runtime-path] form, however, now provides a better
 alternative.
 
 @defform*[[(include-bitmap path-spec)
            (include-bitmap path-spec type-expr)]]{
 
 
-The @scheme[path-spec] is the same as for @scheme[include] form. The
-@scheme[type-expr] should produce @scheme['unknown],
-@scheme['unknown/mask], etc., as for @scheme[bitmap%], and the default
-is @scheme['unknown/mask].}
+The @racket[path-spec] is the same as for @racket[include] form. The
+@racket[type-expr] should produce @racket['unknown],
+@racket['unknown/mask], etc., as for @racket[bitmap%], and the default
+is @racket['unknown/mask].}
 
 
 @defform*[[(include-bitmap/relative-to source path-spec)
            (include-bitmap/relative-to source path-spec [type-expr])]]{
 
-Analogous to @scheme[include-at/relative-to], though only a source is
+Analogous to @racket[include-at/relative-to], though only a source is
 needed (no context).}

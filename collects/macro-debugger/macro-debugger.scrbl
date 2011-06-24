@@ -52,7 +52,7 @@ stepping through the expansion.
 
 @defmodule[macro-debugger/expand]
 
-This module provides @scheme[expand]-like procedures that allow the
+This module provides @racket[expand]-like procedures that allow the
 user to specify macros whose expansions should be hidden.
 
 Warning: because of limitations in the way macro expansion is
@@ -62,8 +62,8 @@ result as the original syntax.
 @defproc[(expand-only [stx any/c] [transparent-macros (listof identifier?)])
          syntax?]{
 
-  Expands the given syntax @scheme[stx], but only shows the expansion
-  of macros whose names occur in @scheme[transparent-macros].
+  Expands the given syntax @racket[stx], but only shows the expansion
+  of macros whose names occur in @racket[transparent-macros].
 
   @(examples #:eval the-eval
              (syntax->datum
@@ -75,7 +75,7 @@ result as the original syntax.
 @defproc[(expand/hide [stx any/c] [hidden-macros (listof identifier?)])
          syntax?]{
 
-  Expands the given syntax @scheme[stx], but hides the expansion of macros in the
+  Expands the given syntax @racket[stx], but hides the expansion of macros in the
   given identifier list (conceptually, the complement of expand-only).
 
   @(examples #:eval the-eval
@@ -87,8 +87,8 @@ result as the original syntax.
 @defproc[(expand/show-predicate [stx any/c] [show? (-> identifier? boolean?)])
          syntax?]{
 
-  Expands the given syntax @scheme[stx], but only shows the expansion of macros
-  whose names satisfy the predicate @scheme[show?].
+  Expands the given syntax @racket[stx], but only shows the expansion of macros
+  whose names satisfy the predicate @racket[show?].
 
   @(examples #:eval the-eval
              (syntax->datum
@@ -116,12 +116,12 @@ the macro's context. The remark is only displayed if the macro that
 emits it is considered transparent by the hiding policy.
 
 By default, syntax objects in remarks have the transformer's mark
-applied (using @scheme[syntax-local-introduce]) so that their
+applied (using @racket[syntax-local-introduce]) so that their
 appearance in the macro stepper matches their appearance after the
-transformer returns. Unmarking is suppressed if @scheme[unmark?] is
-@scheme[#f].
+transformer returns. Unmarking is suppressed if @racket[unmark?] is
+@racket[#f].
 
-@schemeblock[
+@racketblock[
 (define-syntax (mymac stx)
   (syntax-case stx ()
     [(_ x y)
@@ -141,9 +141,9 @@ transformer returns. Unmarking is suppressed if @scheme[unmark?] is
          void?]{
 
 Emits an event that simulates a local expansion step from
-@scheme[before] to @scheme[after].
+@racket[before] to @racket[after].
 
-The @scheme[id] argument acts as the step's ``macro'' for the purposes
+The @racket[id] argument acts as the step's ``macro'' for the purposes
 of macro hiding.
 }
 
@@ -178,8 +178,8 @@ of macro hiding.
          (symbol? -> void?)]{
 
   Returns a procedure that can be called on the symbol
-  @scheme['next] to print the next step or on the symbol
-  @scheme['all] to print out all remaining steps.
+  @racket['next] to print the next step or on the symbol
+  @racket['all] to print out all remaining steps.
 }
 
 
@@ -197,7 +197,7 @@ of macro hiding.
 @defproc[(browse-syntaxes [stxs (listof syntax?)])
          void?]{
 
-  Like @scheme[browse-syntax], but shows multiple syntax objects in
+  Like @racket[browse-syntax], but shows multiple syntax objects in
   the same frame. The coloring partitions are shared between the two,
   showing the relationships between subterms in different syntax
   objects.
@@ -270,7 +270,7 @@ syntax may be original, or it may be produced by the expansion of a
 nonhygienic macro.
 
 Note: even terms that have the same marks might not be
-@scheme[bound-identifier=?] to each other, because they might occur in
+@racket[bound-identifier=?] to each other, because they might occur in
 different environments.
 
 @;@example[(bound-identifier=? (let ([x 1]) #'x) #'x)]
@@ -284,8 +284,8 @@ selected term are highlighted in yellow.
 
 The available secondary partitionings are:
 @itemize[
-@item{@scheme[bound-identifier=?]}
-@item{@scheme[free-identifier=?]}
+@item{@racket[bound-identifier=?]}
+@item{@racket[free-identifier=?]}
 ]
 
 @subsection{Properties}
@@ -298,12 +298,12 @@ selected syntax object. The properties pane has two tabbed pages:
 
       If the selection is an identifier, shows the binding information
       associated with the syntax object. For more information, see
-      @scheme[identifier-binding], etc.
+      @racket[identifier-binding], etc.
 }
 @item{@bold{Syntax Object}:
 
       Displays source location information and other properties (see
-      @scheme[syntax-property]) carried by the syntax object.
+      @racket[syntax-property]) carried by the syntax object.
 }
 ]
 

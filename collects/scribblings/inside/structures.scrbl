@@ -43,7 +43,7 @@ be restricted by passing any combination of these flags:
  mutator procedure value/name is returned.}
 
  @item{@cppi{SCHEME_STRUCT_NO_MAKE_PREFIX} --- the constructor name
- omits a @schemeidfont{make-} prefix, like @racket[struct] instead of
+ omits a @racketidfont{make-} prefix, like @racket[struct] instead of
  @racket[define-struct].}
 
 ]

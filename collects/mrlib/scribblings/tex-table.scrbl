@@ -17,7 +17,7 @@
   DrRacket uses with its @tt{control-\} (or @tt{command-\}) strings to
   their corresponding unicode characters. For example, it contains
   this mapping:
-  @schemeblock[
+  @racketblock[
     ("alpha" "α")
   ]
   as well as many more.

@@ -93,19 +93,19 @@ Racket tools in their default modes do not conform to @|r5rs|,
 mainly because Racket tools generally expect modules, and @|r5rs|
 does not define a module system. Typical single-file @|r5rs| programs
 can be converted to Racket programs by prefixing them with
-@scheme[@#,hash-lang[] @#,schememodname[r5rs]], but other Scheme
-systems do not recognize @scheme[@#,hash-lang[]
-@#,schememodname[r5rs]]. The @exec{plt-r5rs} executable (see
+@racket[@#,hash-lang[] @#,racketmodname[r5rs]], but other Scheme
+systems do not recognize @racket[@#,hash-lang[]
+@#,racketmodname[r5rs]]. The @exec{plt-r5rs} executable (see
 @secref[#:doc '(lib "r5rs/r5rs.scrbl") "plt-r5rs"]) more directly
 conforms to the @|r5rs| standard.
 
 Aside from the module system, the syntactic forms and functions of
 @|r5rs| and Racket differ. Only simple @|r5rs| become Racket
-programs when prefixed with @scheme[@#,hash-lang[] racket], and
+programs when prefixed with @racket[@#,hash-lang[] racket], and
 relatively few Racket programs become @|r5rs| programs when a
 @hash-lang[] line is removed. Also, when mixing ``@|r5rs| modules''
 with Racket modules, beware that @|r5rs| pairs correspond to
-Racket mutable pairs (as constructed with @scheme[mcons]).
+Racket mutable pairs (as constructed with @racket[mcons]).
 
 See @other-manual['(lib "r5rs/r5rs.scrbl")] for more
 information about running @|r5rs| programs with Racket.
@@ -118,12 +118,12 @@ which extends @|r5rs| with a module system that is similar to the
 Racket module system.
 
 When an @|r6rs| library or top-level program is prefixed with
-@schememetafont{#!}@schememodname[r6rs] (which is valid @|r6rs|
+@racketmetafont{#!}@racketmodname[r6rs] (which is valid @|r6rs|
 syntax), then it can also be used as a Racket program. This works
-because @schememetafont{#!} in Racket is treated as a shorthand
+because @racketmetafont{#!} in Racket is treated as a shorthand
 for @hash-lang[] followed by a space, so
-@schememetafont{#!}@schememodname[r6rs] selects the
-@schememodname[r6rs] module language. As with @|r5rs|, however, beware
+@racketmetafont{#!}@racketmodname[r6rs] selects the
+@racketmodname[r6rs] module language. As with @|r5rs|, however, beware
 that the syntactic forms and functions of @|r6rs| differ from
 Racket, and @|r6rs| pairs are mutable pairs.
 

@@ -17,14 +17,14 @@ A @defterm{font} is an object which determines the appearance of text,
                   designation. The families are:
 
  @itemize[
- @item{@indexed-scheme['default]}
- @item{@indexed-scheme['decorative]}
- @item{@indexed-scheme['roman]}
- @item{@indexed-scheme['script]}
- @item{@indexed-scheme['swiss]}
- @item{@indexed-scheme['modern] (fixed width)}
- @item{@indexed-scheme['symbol] (Greek letters and more)}
- @item{@indexed-scheme['system] (similar to the font to draw control labels,
+ @item{@indexed-racket['default]}
+ @item{@indexed-racket['decorative]}
+ @item{@indexed-racket['roman]}
+ @item{@indexed-racket['script]}
+ @item{@indexed-racket['swiss]}
+ @item{@indexed-racket['modern] (fixed width)}
+ @item{@indexed-racket['symbol] (Greek letters and more)}
+ @item{@indexed-racket['system] (similar to the font to draw control labels,
                                  but see @racket[normal-control-font])}
  ]
 
@@ -34,53 +34,53 @@ A @defterm{font} is an object which determines the appearance of text,
               ``family'' is a kind of abstract font family that is mapped to a
               particular font family on a given platform.}}
 
- @item{face --- A string face name, such as @scheme["Courier"]. The format
+ @item{face --- A string face name, such as @racket["Courier"]. The format
                 and meaning of a face name is platform- and
-                device-specific. If a font's face name is @scheme[#f],
+                device-specific. If a font's face name is @racket[#f],
                 then the font's appearance depends only on the
                 family. If a face is provided but no mapping is
                 available for the face name (for a specific platform
                 or device), then the face name is ignored and the
-                family is used. See @scheme[font-name-directory<%>]
+                family is used. See @racket[font-name-directory<%>]
                 for information about how face names are mapped for
                 drawing text.}
 
 @item{style --- The slant style of the font, one of:
  @itemize[
- @item{@indexed-scheme['normal]}
- @item{@indexed-scheme['slant] (a.k.a ``oblique'')}
- @item{@indexed-scheme['italic]}
+ @item{@indexed-racket['normal]}
+ @item{@indexed-racket['slant] (a.k.a ``oblique'')}
+ @item{@indexed-racket['italic]}
  ]}
 
 @item{weight --- The weight of the font, one of:
  @itemize[
- @item{@indexed-scheme['normal]}
- @item{@indexed-scheme['light]}
- @item{@indexed-scheme['bold]}
+ @item{@indexed-racket['normal]}
+ @item{@indexed-racket['light]}
+ @item{@indexed-racket['bold]}
  ]}
 
-@item{underline? --- @scheme[#t] for underlined, @scheme[#f] for plain.}
+@item{underline? --- @racket[#t] for underlined, @racket[#f] for plain.}
 
 @item{smoothing --- Amount of anti-alias smoothing, one of:
  @itemize[
- @item{@indexed-scheme['default] (platform-specific, sometimes user-configurable)}
- @item{@indexed-scheme['partly-smoothed] (gray anti-aliasing)}
- @item{@indexed-scheme['smoothed] (sub-pixel anti-aliasing)}
- @item{@indexed-scheme['unsmoothed]}
+ @item{@indexed-racket['default] (platform-specific, sometimes user-configurable)}
+ @item{@indexed-racket['partly-smoothed] (gray anti-aliasing)}
+ @item{@indexed-racket['smoothed] (sub-pixel anti-aliasing)}
+ @item{@indexed-racket['unsmoothed]}
  ]}
 
-@item{size-in-pixels? --- @scheme[#t] if the size of the font
+@item{size-in-pixels? --- @racket[#t] if the size of the font
  is in logical drawing units (i.e., pixels for an unscaled screen or
- bitmap drawing context), @scheme[#f] if the size of the font is in
+ bitmap drawing context), @racket[#f] if the size of the font is in
  points (which can depend on screen resolution).}
 
 ]
 
 To avoid creating multiple fonts with the same characteristics, use
- the global @scheme[font-list%] object @indexed-scheme[the-font-list].
+ the global @racket[font-list%] object @indexed-racket[the-font-list].
 
 See also
-@scheme[font-name-directory<%>].
+@racket[font-name-directory<%>].
 
 
 
@@ -111,8 +111,8 @@ When no arguments are provided, creates an instance of the default
  font. If no face name is provided, the font is created without a face
  name.
 
-See @scheme[font%] for information about @scheme[family],
- @scheme[style], and @scheme[weight].  @scheme[font-name-directory<%>].
+See @racket[font%] for information about @racket[family],
+ @racket[style], and @racket[weight].  @racket[font-name-directory<%>].
 
 See also @racket[make-font].
 
@@ -121,7 +121,7 @@ See also @racket[make-font].
 @defmethod[(get-face)
            (or/c string? false/c)]{
 
-Gets the font's face name, or @scheme[#f] if none is specified.
+Gets the font's face name, or @racket[#f] if none is specified.
 
 }
 
@@ -129,7 +129,7 @@ Gets the font's face name, or @scheme[#f] if none is specified.
            (one-of/c 'default 'decorative 'roman 'script 
                      'swiss 'modern 'symbol 'system)]{
 
-Gets the font's family. See @scheme[font%] for information about
+Gets the font's family. See @racket[font%] for information about
 families.
 
 }
@@ -138,7 +138,7 @@ families.
            exact-integer?]{
 
 Gets the font's ID, for use with a
-@scheme[font-name-directory<%>]. The ID is determined by the font's
+@racket[font-name-directory<%>]. The ID is determined by the font's
 face and family specifications, only.
 
 }
@@ -158,8 +158,8 @@ Due to space included in a font by a font designer, a font tends to
 @defmethod[(get-size-in-pixels)
            boolean?]{
 
-Returns @scheme[#t] if the size reported by @method[font%
- get-point-size] is in logical drawing units, @scheme[#f] if it is in
+Returns @racket[#t] if the size reported by @method[font%
+ get-point-size] is in logical drawing units, @racket[#f] if it is in
  points.
 
 For a size in points and a screen or bitmap drawing context, the
@@ -170,7 +170,7 @@ For a size in points and a screen or bitmap drawing context, the
 @defmethod[(get-smoothing)
            (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
 
-Gets the font's anti-alias smoothing mode. See @scheme[font%] for
+Gets the font's anti-alias smoothing mode. See @racket[font%] for
  information about smoothing.
 
 }
@@ -178,7 +178,7 @@ Gets the font's anti-alias smoothing mode. See @scheme[font%] for
 @defmethod[(get-style)
            (one-of/c 'normal 'italic 'slant)]{
 
-Gets the font's slant style. See @scheme[font%] for information about
+Gets the font's slant style. See @racket[font%] for information about
  styles.
 
 }
@@ -186,7 +186,7 @@ Gets the font's slant style. See @scheme[font%] for information about
 @defmethod[(get-underlined)
            boolean?]{
 
-Returns @scheme[#t] if the font is underlined or @scheme[#f]
+Returns @racket[#t] if the font is underlined or @racket[#f]
 otherwise.
 
 }
@@ -194,7 +194,7 @@ otherwise.
 @defmethod[(get-weight)
            (one-of/c 'normal 'bold 'light)]{
 
-Gets the font's weight. See @scheme[font%] for information about
+Gets the font's weight. See @racket[font%] for information about
  weights.
 
 }
@@ -203,14 +203,14 @@ Gets the font's weight. See @scheme[font%] for information about
                                  [for-label? any/c #f])
            boolean?]{
 
-Returns @scheme[#t] if the given character has a corresponding glyph
- when drawing to the screen or a bitmap, @scheme[#f] otherwise.
+Returns @racket[#t] if the given character has a corresponding glyph
+ when drawing to the screen or a bitmap, @racket[#f] otherwise.
 
 If the second argument is true, the result indicates whether the glyph
  is available for control labels. Otherwise, it indicates whether the
- glyph is available for @scheme[dc<%>] drawing.
+ glyph is available for @racket[dc<%>] drawing.
 
-For @scheme[dc<%>] drawing, due to automatic font substitution when
+For @racket[dc<%>] drawing, due to automatic font substitution when
  drawing or measuring text, the result of this method does not depend
  on this font's attributes (size, face, etc.). The font's attributes
  merely provide a hint for the glyph search.

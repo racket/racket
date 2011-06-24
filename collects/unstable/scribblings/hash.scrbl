@@ -22,11 +22,11 @@ This module provides tools for manipulating hash tables.
                                     (lambda (k a b) (combine a b))])
          (and/c hash? hash-can-functional-set?)]{
 
-Computes the union of @scheme[h0] with each hash table @scheme[h] by functional
-update, adding each element of each @scheme[h] to @scheme[h0] in turn.  For each
-key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
-@scheme[v0] already exists, it is replaced with a mapping from @scheme[k] to
-@scheme[(combine/key k v0 v)].
+Computes the union of @racket[h0] with each hash table @racket[h] by functional
+update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
+@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
+@racket[(combine/key k v0 v)].
 
 @defexamples[
 #:eval the-eval
@@ -48,11 +48,11 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
                                      (lambda (k a b) (combine a b))])
          void?]{
 
-Computes the union of @scheme[h0] with each hash table @scheme[h] by mutable
-update, adding each element of each @scheme[h] to @scheme[h0] in turn.  For each
-key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
-@scheme[v0] already exists, it is replaced with a mapping from @scheme[k] to
-@scheme[(combine/key k v0 v)].
+Computes the union of @racket[h0] with each hash table @racket[h] by mutable
+update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
+@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
+@racket[(combine/key k v0 v)].
 
 @defexamples[
 #:eval the-eval

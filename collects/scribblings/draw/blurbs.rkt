@@ -29,7 +29,7 @@
   
   (define DrawSizeNote "")
 
-  (define MismatchExn @elem{an @scheme[exn:fail:contract] exception is raised})
+  (define MismatchExn @elem{an @racket[exn:fail:contract] exception is raised})
 
   (define (colorName name name2 r g b)
     (make-element #f
@@ -47,7 +47,7 @@
   (define (boxisfill which what)
     @elem{The @|which| box is filled with @|what|.})
   (define (boxisfillnull which what)
-    @elem{The @|which| box is filled with @|what|, unless @|which| is @scheme[#f].})
+    @elem{The @|which| box is filled with @|what|, unless @|which| is @racket[#f].})
 
   )
 

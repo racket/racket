@@ -3,8 +3,8 @@
 
 @defclass/title[editor-canvas% object% (canvas<%>)]{
 
-An @scheme[editor-canvas%] object manages and displays a
- @scheme[text%] or @scheme[pasteboard%] object.
+An @racket[editor-canvas%] object manages and displays a
+ @racket[text%] or @racket[pasteboard%] object.
 
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
@@ -29,48 +29,48 @@ An @scheme[editor-canvas%] object manages and displays a
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-If a canvas is initialized with @scheme[#f] for @scheme[editor],
+If a canvas is initialized with @racket[#f] for @racket[editor],
  install an editor later with @method[editor-canvas% set-editor].
 
-The @scheme[style] list can contain the following flags:
+The @racket[style] list can contain the following flags:
 
 @itemize[
 
- @item{@scheme['no-border] --- omits a border around the canvas}
+ @item{@racket['no-border] --- omits a border around the canvas}
 
- @item{@scheme['control-border] --- gives the canvas a border that is
-                              like a @scheme[text-field%] control}
+ @item{@racket['control-border] --- gives the canvas a border that is
+                              like a @racket[text-field%] control}
 
- @item{@scheme['combo] --- gives the canvas a combo button that is like
-                          a @scheme[combo-field%] control; this
+ @item{@racket['combo] --- gives the canvas a combo button that is like
+                          a @racket[combo-field%] control; this
                           style is intended for use with
-                          @scheme['control-border],
-                          @scheme['hide-hscroll], and
-                          @scheme['hide-vscroll]}
+                          @racket['control-border],
+                          @racket['hide-hscroll], and
+                          @racket['hide-vscroll]}
 
- @item{@scheme['no-hscroll] --- disallows horizontal scrolling and hides the horizontal scrollbar}
+ @item{@racket['no-hscroll] --- disallows horizontal scrolling and hides the horizontal scrollbar}
 
- @item{@scheme['no-vscroll] --- disallows vertical scrolling and hides the vertical scrollbar}
+ @item{@racket['no-vscroll] --- disallows vertical scrolling and hides the vertical scrollbar}
 
- @item{@scheme['hide-hscroll] --- allows horizontal scrolling, but hides the horizontal scrollbar}
+ @item{@racket['hide-hscroll] --- allows horizontal scrolling, but hides the horizontal scrollbar}
 
- @item{@scheme['hide-vscroll] --- allows vertical scrolling, but hides the vertical scrollbar}
+ @item{@racket['hide-vscroll] --- allows vertical scrolling, but hides the vertical scrollbar}
 
- @item{@scheme['auto-hscroll] --- automatically hides the horizontal scrollbar when unneeded
-                                 (unless @scheme['no-hscroll] or @scheme['hide-hscroll] is specified)}
+ @item{@racket['auto-hscroll] --- automatically hides the horizontal scrollbar when unneeded
+                                 (unless @racket['no-hscroll] or @racket['hide-hscroll] is specified)}
 
- @item{@scheme['auto-vscroll] --- automatically hides the vertical scrollbar when unneeded
-                                 (unless @scheme['no-vscroll] or @scheme['hide-vscroll] is specified)}
+ @item{@racket['auto-vscroll] --- automatically hides the vertical scrollbar when unneeded
+                                 (unless @racket['no-vscroll] or @racket['hide-vscroll] is specified)}
 
- @item{@scheme['resize-corner] --- leaves room for a resize control at the canvas's
+ @item{@racket['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
 
- @item{@scheme['deleted] --- creates the canvas as initially hidden and without affecting
-                             @scheme[parent]'s geometry; the canvas can be made active
-                             later by calling @scheme[parent]'s @method[area-container<%> add-child]
+ @item{@racket['deleted] --- creates the canvas as initially hidden and without affecting
+                             @racket[parent]'s geometry; the canvas can be made active
+                             later by calling @racket[parent]'s @method[area-container<%> add-child]
                              method}
 
- @item{@scheme['transparent] --- the canvas is ``erased'' before an
+ @item{@racket['transparent] --- the canvas is ``erased'' before an
                              update using its parent window's background; see @racket[canvas<%>]
                              for information on the interaction of @racket['transparent] and 
                              offscreen buffering}
@@ -79,23 +79,23 @@ The @scheme[style] list can contain the following flags:
 
 While vertical scrolling of text editors is based on lines,
  horizontal scrolling and pasteboard vertical scrolling is based on a
- fixed number of steps per horizontal page. The @scheme[scrolls-per-page]
+ fixed number of steps per horizontal page. The @racket[scrolls-per-page]
  argument sets this value.
 
-@index["wheel on mouse"]{If} provided, the @scheme[wheel-step]
+@index["wheel on mouse"]{If} provided, the @racket[wheel-step]
  argument is passed on to the @method[editor-canvas% wheel-step]
  method. The default wheel step can be overridden globally though the
  @ResourceFirst{wheelStep}; see @|mrprefsdiscuss|.
 
-If @scheme[line-count] is not @scheme[#f], it is passed on to the
+If @racket[line-count] is not @racket[#f], it is passed on to the
  @method[editor-canvas% set-line-count] method.
 
-If @scheme[horizontal-inset] is not @scheme[5], it is passed on to the
+If @racket[horizontal-inset] is not @racket[5], it is passed on to the
  @method[editor-canvas% horizontal-inset] method. Similarly, if
- @scheme[vertical-inset] is not @scheme[5], it is passed on to the
+ @racket[vertical-inset] is not @racket[5], it is passed on to the
  @method[editor-canvas% vertical-inset] method.
 
-@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 
@@ -162,7 +162,7 @@ Enables or disables force-focus mode.  In force-focus mode, the caret
 @defmethod[(get-editor)
            (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]{
 
-Returns the editor currently displayed by this canvas, or @scheme[#f]
+Returns the editor currently displayed by this canvas, or @racket[#f]
  if the canvas does not have an editor.
 
 }
@@ -172,7 +172,7 @@ Returns the editor currently displayed by this canvas, or @scheme[#f]
            (or/c (integer-in 1 1000) false/c)]{
 
 Returns a line count installed with @method[editor-canvas%
- set-line-count], or @scheme[#f] if no minimum line count is set.
+ set-line-count], or @racket[#f] if no minimum line count is set.
 
 }
 
@@ -182,7 +182,7 @@ Returns a line count installed with @method[editor-canvas%
               void?])]{
 
 Gets or sets the number of pixels within the canvas reserved to
- the left and right of editor content. The default is @scheme[5].
+ the left and right of editor content. The default is @racket[5].
 
 }
 
@@ -196,7 +196,7 @@ Enables or disables lazy-refresh mode, or gets the current enable
  state. In lazy-refresh mode, the canvas's @method[window<%> refresh]
  method is called when the window needs to be updated, rather than
  @method[editor-canvas% on-paint]. By default, an
- @scheme[editor-canvas%] object is @italic{not} in lazy-refresh mode.
+ @racket[editor-canvas%] object is @italic{not} in lazy-refresh mode.
 
 }
 
@@ -205,7 +205,7 @@ Enables or disables lazy-refresh mode, or gets the current enable
            (on-char [event (is-a?/c key-event%)])
            void?]{
 
-Handles @scheme['wheel-up] and @scheme['wheel-down] events by
+Handles @racket['wheel-up] and @racket['wheel-down] events by
  scrolling vertically. Otherwise, passes the event to the canvas's
  editor, if any, by calling its @method[editor<%> on-char] method.
 
@@ -242,10 +242,10 @@ Repaints the editor, or clears the canvas if no editor is being
 displayed.
 
 This method is called after clearing the margin around the editor,
-unless the canvas is created with the @scheme['transparent] style, but
+unless the canvas is created with the @racket['transparent] style, but
 the editor area is not automatically cleared. In other words,
-@scheme[editor-canvas%] update by default is like @scheme[canvas%]
-update with the @scheme['no-autoclear] style, except that the margin
+@racket[editor-canvas%] update by default is like @racket[canvas%]
+update with the @racket['no-autoclear] style, except that the margin
 around the editor area is always cleared.
 
 }
@@ -271,27 +271,27 @@ on-display-size] method is called.
 Requests scrolling so that the given region in the currently displayed
  editor is made visible.
 
-The @scheme[localx], @scheme[localy], @scheme[w], and @scheme[h] arguments specify
+The @racket[localx], @racket[localy], @racket[w], and @racket[h] arguments specify
  a region of the editor to be made visible by the scroll (in editor
  coordinates).
 
-If @scheme[refresh?] is not @scheme[#f], then the editor is updated
+If @racket[refresh?] is not @racket[#f], then the editor is updated
  immediately after a successful scroll.
 
-The @scheme[bias] argument is one of:
+The @racket[bias] argument is one of:
 @itemize[
 
- @item{@scheme['start] --- if the range doesn't fit in the visible
+ @item{@racket['start] --- if the range doesn't fit in the visible
  area, show the top-left region}
 
- @item{@scheme['none] --- no special scrolling instructions}
+ @item{@racket['none] --- no special scrolling instructions}
 
- @item{@scheme['end] --- if the range doesn't fit in the visible area,
+ @item{@racket['end] --- if the range doesn't fit in the visible area,
  show the bottom-right region}
 
 ]
 
-The return value is @scheme[#t] if the @techlink{display} is scrolled, @scheme[#f]
+The return value is @racket[#t] if the @techlink{display} is scrolled, @racket[#f]
  if not (either because the requested region is already visible,
  because the @techlink{display} has zero size, or because the editor is currently
  printing).
@@ -324,10 +324,10 @@ Enables or disables bottom-base scrolling, or gets the current enable
 
 Sets the editor that is displayed by the canvas, releasing the current
  editor (if any). If the new editor already has an administrator that
- is not associated with an @scheme[editor-canvas%], then the new
+ is not associated with an @racket[editor-canvas%], then the new
  editor is @italic{not} installed into the canvas.
 
-If @scheme[redraw?] is @scheme[#f], then the editor is not immediately
+If @racket[redraw?] is @racket[#f], then the editor is not immediately
  drawn; in this case, something must force a redraw later (e.g., a
  call to the @method[editor-canvas% on-paint] method).
 
@@ -347,7 +347,7 @@ Sets the canvas's graphical minimum height to display a particular
  an editor. When the canvas's editor is changed, the minimum height is
  recalculated.
 
-If the line count is set to @scheme[#f], then the canvas's graphical
+If the line count is set to @racket[#f], then the canvas's graphical
  minimum height is restored to its original value.
 
 }
@@ -359,7 +359,7 @@ If the line count is set to @scheme[#f], then the canvas's graphical
               void?])]{
 
 Gets or sets the number of pixels within the canvas reserved above
- and below editor content. The default is @scheme[5].
+ and below editor content. The default is @racket[5].
 
 }
 
@@ -370,8 +370,8 @@ Gets or sets the number of pixels within the canvas reserved above
               void?])]{
 
 Gets or sets the number of vertical scroll steps taken for one click
- of the mouse wheel via a @scheme['wheel-up] or @scheme['wheel-down]
- @scheme[key-event%]. A @scheme[#f] value disables special handling
+ of the mouse wheel via a @racket['wheel-up] or @racket['wheel-down]
+ @racket[key-event%]. A @racket[#f] value disables special handling
  for wheel events (i.e., wheel events are passed on to the canvas's
  editor).
 

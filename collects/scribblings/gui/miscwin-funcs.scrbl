@@ -16,14 +16,12 @@
 @defproc[(begin-busy-cursor) void?]{
 
 Changes the cursor to a watch cursor for all windows in the current eventspace.
-Use 
-@racket[end-busy-cursor] to revert the cursor back to its previous state. Calls to
-@racket[begin-busy-cursor] and 
-@racket[end-busy-cursor] can be nested arbitrarily.
+Use @racket[end-busy-cursor] to revert the cursor back to its previous
+state. Calls to @racket[begin-busy-cursor] and @racket[end-busy-cursor] can be
+nested arbitrarily.
 
-The cursor installed by 
-@racket[begin-busy-cursor] overrides any window-specific cursors installed with
-@method[window<%> set-cursor].
+The cursor installed by @racket[begin-busy-cursor] overrides any
+window-specific cursors installed with @method[window<%> set-cursor].
 
 See also @racket[is-busy?].
 }
@@ -85,8 +83,6 @@ The result depends on @racket[what], and a @racket[#f] result is only
  was specified, the result is @racket[#f].}
 
 ]
-
-
 
 }
 
@@ -318,18 +314,18 @@ The background behind @racket[on] is unspecified, so @racket[on]
  that is used for drawing, and @racket[off-x] and @racket[off-y]
  similarly specify an offset within @racket[off].
 
-The blit is automatically unregistered if @scheme[canvas] becomes
+The blit is automatically unregistered if @racket[canvas] becomes
  invisible and inaccessible.  Multiple registrations can be installed
- for the same @scheme[canvas].
+ for the same @racket[canvas].
 
-See also @scheme[unregister-collecting-blit].}
+See also @racket[unregister-collecting-blit].}
 
 
 @defproc[(unregister-collecting-blit [canvas (is-a?/c canvas%)])
          void?]{
 
 Unregisters all blit requests installed for @racket[canvas] with
- @scheme[register-collecting-blit].}
+ @racket[register-collecting-blit].}
 
 
 @defproc[(send-message-to-window [x (integer-in -10000 10000)]
@@ -372,7 +368,7 @@ See @racket[clipboard<%>].
 
 @defproc[(label-string? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] is a string whose length is less than or equal to @racket[200].
-          
+
   This predicate is typically used as the contract for strings that 
   appear in GUI objects. In some cases, such as the label in a @racket[button%]
   or @racket[menu-item%] object, the character @litchar{&} is treated specially

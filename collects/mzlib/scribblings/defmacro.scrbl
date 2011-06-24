@@ -16,14 +16,14 @@
                         (id ...+ . id)])]
 )]{
 
-Defines a (non-hygienic) macro @scheme[id] through a procedure that
+Defines a (non-hygienic) macro @racket[id] through a procedure that
 manipulates S-expressions, as opposed to @techlink[#:doc ref]{syntax
 objects}.
 
-In the first form, @scheme[expr] must produce a procedure. In the
-second form, @scheme[formals] determines the formal arguments of the
-procedure, as in @scheme[lambda], and the @scheme[expr]s are the
-procedure body. The last form, with @scheme[defmacro], is like the
+In the first form, @racket[expr] must produce a procedure. In the
+second form, @racket[formals] determines the formal arguments of the
+procedure, as in @racket[lambda], and the @racket[expr]s are the
+procedure body. The last form, with @racket[defmacro], is like the
 second form, but with slightly different parentheses.
 
 In all cases, the procedure is generated in the @techlink[#:doc
@@ -31,14 +31,14 @@ ref]{transformer environment}, not the normal environment.
 
 In a use of the macro,
 
-@schemeblock[
+@racketblock[
 (id datum ...)
 ]
 
-@scheme[syntax->datum] is applied to the expression, and the
-transformer procedure is applied to the @scheme[cdr] of the resulting
-list. If the number of @scheme[datum]s does not match the procedure's
-arity, or if @scheme[id] is used in a context that does not match the
+@racket[syntax->datum] is applied to the expression, and the
+transformer procedure is applied to the @racket[cdr] of the resulting
+list. If the number of @racket[datum]s does not match the procedure's
+arity, or if @racket[id] is used in a context that does not match the
 above pattern, then a syntax error is reported.
 
 After the macro procedure returns, the result is compared to the
@@ -51,17 +51,17 @@ information in many cases, despite the macro procedure's operation on
 raw S-expressions.
 
 After substituting syntax objects for preserved values, the entire
-macro result is converted to syntax with @scheme[datum->syntax]. The
+macro result is converted to syntax with @racket[datum->syntax]. The
 original expression supplies the lexical context and source location
 for converted elements.
 
-@bold{Important:} Although @scheme[define-macro] is non-hygienic, it
+@bold{Important:} Although @racket[define-macro] is non-hygienic, it
 is still restricted by Racket's phase separation rules.  This
 means that a macro cannot access run-time bindings, because it is
 executed in the syntax-expansion phase.  Translating code that
-involves @scheme[define-macro] or @scheme[defmacro] from an
+involves @racket[define-macro] or @racket[defmacro] from an
 implementation without this restriction usually implies separating
-macro related functionality into a @scheme[begin-for-syntax] or a
-module (that will be imported with @scheme[require-for-syntax]) and
+macro related functionality into a @racket[begin-for-syntax] or a
+module (that will be imported with @racket[require-for-syntax]) and
 properly distinguishing syntactic information from run-time
 information.}

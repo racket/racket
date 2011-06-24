@@ -4,17 +4,17 @@
 @title[#:tag "booleans"]{Booleans and Equality}
 
 True and false @deftech{booleans} are represented by the values
-@scheme[#t] and @scheme[#f], respectively, though operations that
-depend on a boolean value typically treat anything other than @scheme[#f]
+@racket[#t] and @racket[#f], respectively, though operations that
+depend on a boolean value typically treat anything other than @racket[#f]
 as true.
 
-See also: @scheme[and], @scheme[or], @scheme[andmap], @scheme[ormap].
+See also: @racket[and], @racket[or], @racket[andmap], @racket[ormap].
 
 
 @defproc[(boolean? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is @scheme[#t] or @scheme[#f],
-@scheme[#f] otherwise.
+Returns @racket[#t] if @racket[v] is @racket[#t] or @racket[#f],
+@racket[#f] otherwise.
 
 @examples[
 (boolean? #f)
@@ -25,7 +25,7 @@ Returns @scheme[#t] if @scheme[v] is @scheme[#t] or @scheme[#f],
 
 @defproc[(not [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is @scheme[#f], @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[v] is @racket[#f], @racket[#f] otherwise.
 
 @examples[
 (not #f)
@@ -36,15 +36,15 @@ Returns @scheme[#t] if @scheme[v] is @scheme[#f], @scheme[#f] otherwise.
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
-Two values are @scheme[equal?] if and only if they are @scheme[eqv?],
+Two values are @racket[equal?] if and only if they are @racket[eqv?],
 unless otherwise specified for a particular datatype.
 
-Datatypes with further specification of @scheme[equal?] include
+Datatypes with further specification of @racket[equal?] include
 strings, byte strings, numbers, pairs, mutable pairs, vectors, boxes, hash
 tables, and inspectable structures. In the last five cases, equality
-is recursively defined; if both @scheme[v1] and @scheme[v2] contain
+is recursively defined; if both @racket[v1] and @racket[v2] contain
 reference cycles, they are equal when the infinite unfoldings of the
-values would be equal. See also @scheme[prop:equal+hash] and @racket[prop:impersonator-of].
+values would be equal. See also @racket[prop:equal+hash] and @racket[prop:impersonator-of].
 
 @examples[
 (equal? 'yes 'yes)
@@ -57,11 +57,11 @@ values would be equal. See also @scheme[prop:equal+hash] and @racket[prop:impers
 
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
 
-Two values are @scheme[eqv?] if and only if they are @scheme[eq?],
+Two values are @racket[eqv?] if and only if they are @racket[eq?],
 unless otherwise specified for a particular datatype.
 
 The @tech{number} and @tech{character} datatypes are the only ones for which
-@scheme[eqv?] differs from @scheme[eq?].
+@racket[eqv?] differs from @racket[eq?].
 
 @examples[
 (eqv? 'yes 'yes)
@@ -75,8 +75,8 @@ The @tech{number} and @tech{character} datatypes are the only ones for which
 
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
-Return @scheme[#t] if @scheme[v1] and @scheme[v2] refer to the same
-object, @scheme[#f] otherwise. See also @secref["model-eq"].
+Return @racket[#t] if @racket[v1] and @racket[v2] refer to the same
+object, @racket[#f] otherwise. See also @secref["model-eq"].
 
 @examples[
 (eq? 'yes 'yes)
@@ -89,11 +89,11 @@ object, @scheme[#f] otherwise. See also @secref["model-eq"].
 
 @defproc[(equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)]) boolean?]{
 
-Like @scheme[equal?], but using @scheme[recur-proc] for recursive
+Like @racket[equal?], but using @racket[recur-proc] for recursive
 comparisons (which means that reference cycles are not handled
-automatically). Non-@scheme[#f] results from @scheme[recur-proc] are
-converted to @scheme[#t] before being returned by
-@scheme[equal?/recur].
+automatically). Non-@racket[#f] results from @racket[recur-proc] are
+converted to @racket[#t] before being returned by
+@racket[equal?/recur].
 
 @examples[
 (equal?/recur 1 1 (lambda (a b) #f))
@@ -105,9 +105,9 @@ converted to @scheme[#t] before being returned by
 
 @defproc[(immutable? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an immutable @tech{string},
+Returns @racket[#t] if @racket[v] is an immutable @tech{string},
 @tech{byte string}, @tech{vector}, @tech{hash table}, or box,
-@scheme[#f] otherwise.
+@racket[#f] otherwise.
 
 @examples[
 (immutable? 'hello)
@@ -126,64 +126,64 @@ type. The property value must be a list of three procedures:
 
 @itemize[
 
- @item{@scheme[_equal-proc : (any/c any/c (any/c any/c . ->
+ @item{@racket[_equal-proc : (any/c any/c (any/c any/c . ->
         . boolean?)  . -> . any/c)] --- tests whether the first two
         arguments are equal, where both values are instances of the
         structure type to which the property is associated (or a
         subtype of the structure type).
 
-        The third argument is an @scheme[equal?]  predicate to use for
+        The third argument is an @racket[equal?]  predicate to use for
         recursive equality checks; use the given predicate instead of
-        @scheme[equal?] to ensure that data cycles are handled
-        properly and to work with @scheme[equal?/recur] (but beware
+        @racket[equal?] to ensure that data cycles are handled
+        properly and to work with @racket[equal?/recur] (but beware
         that an arbitrary function can be provided to
-        @scheme[equal?/recur] for recursive checks, which means that
+        @racket[equal?/recur] for recursive checks, which means that
         arguments provided to the predicate might be exposed to
         arbitrary code).
 
-        The @scheme[_equal-proc] is called for a pair of structures
-        only when they are not @scheme[eq?], and only when they both
-        have a @scheme[prop:equal+hash] value inherited from the same
+        The @racket[_equal-proc] is called for a pair of structures
+        only when they are not @racket[eq?], and only when they both
+        have a @racket[prop:equal+hash] value inherited from the same
         structure type. With this strategy, the order in which
-        @scheme[equal?] receives two structures does not matter. It
+        @racket[equal?] receives two structures does not matter. It
         also means that, by default, a structure sub-type inherits the
         equality predicate of its parent, if any.}
 
- @item{@scheme[_hash-proc : (any/c (any/c . -> . exact-integer?) . ->
+ @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) . ->
        . exact-integer?)] --- computes a hash code for the given
-       structure, like @scheme[equal-hash-code]. The first argument is
+       structure, like @racket[equal-hash-code]. The first argument is
        an instance of the structure type (or one of its subtypes) to
        which the property is associated.
 
-       The second argument is an @scheme[equal-hash-code]-like
+       The second argument is an @racket[equal-hash-code]-like
        procedure to use for recursive hash-code computation; use the
-       given procedure instead of @scheme[equal-hash-code] to ensure
+       given procedure instead of @racket[equal-hash-code] to ensure
        that data cycles are handled properly.}
 
- @item{@scheme[_hash2-proc : (any/c (any/c . -> . exact-integer?) . ->
+ @item{@racket[_hash2-proc : (any/c (any/c . -> . exact-integer?) . ->
        . exact-integer?)] --- computes a secondary hash code for the
-       given structure. This procedure is like @scheme[_hash-proc],
-       but analogous to @scheme[equal-secondary-hash-code].}
+       given structure. This procedure is like @racket[_hash-proc],
+       but analogous to @racket[equal-secondary-hash-code].}
 
 ]
 
-Take care to ensure that @scheme[_hash-proc] and @scheme[_hash2-proc]
-are consistent with @scheme[_equal-proc]. Specifically,
-@scheme[_hash-proc] and @scheme[_hash2-proc] should produce the same
-value for any two structures for which @scheme[_equal-proc] produces a
+Take care to ensure that @racket[_hash-proc] and @racket[_hash2-proc]
+are consistent with @racket[_equal-proc]. Specifically,
+@racket[_hash-proc] and @racket[_hash2-proc] should produce the same
+value for any two structures for which @racket[_equal-proc] produces a
 true value.
 
-When a structure type has no @scheme[prop:equal+hash] property, then
+When a structure type has no @racket[prop:equal+hash] property, then
 transparent structures (i.e., structures with an @tech{inspector} that
-is controlled by the current @tech{inspector}) are @scheme[equal?]
+is controlled by the current @tech{inspector}) are @racket[equal?]
 when they are instances of the same structure type (not counting
-sub-types), and when they have @scheme[equal?] field values.  For
-transparent structures, @scheme[equal-hash-code] and
-@scheme[equal-secondary-hash-code] derive hash code using the field
-values. For opaque structure types, @scheme[equal?] is the same as
-@scheme[eq?], and @scheme[equal-hash-code] and
-@scheme[equal-secondary-hash-code] results are based only on
-@scheme[eq-hash-code]. If a structure has a @racket[prop:impersonator-of]
+sub-types), and when they have @racket[equal?] field values.  For
+transparent structures, @racket[equal-hash-code] and
+@racket[equal-secondary-hash-code] derive hash code using the field
+values. For opaque structure types, @racket[equal?] is the same as
+@racket[eq?], and @racket[equal-hash-code] and
+@racket[equal-secondary-hash-code] results are based only on
+@racket[eq-hash-code]. If a structure has a @racket[prop:impersonator-of]
 property, then the @racket[prop:impersonator-of] property takes precedence over
 @racket[prop:equal+hash] if the property value's procedure returns a
 non-@racket[#f] value when applied to the structure.
@@ -223,18 +223,18 @@ non-@racket[#f] value when applied to the structure.
 
 @note-lib[racket/bool]
 
-@defthing[true boolean?]{An alias for @scheme[#t].}
+@defthing[true boolean?]{An alias for @racket[#t].}
 
-@defthing[false boolean?]{An alias for @scheme[#f].}
+@defthing[false boolean?]{An alias for @racket[#f].}
 
 @defproc[(symbol=? [a symbol?] [b symbol?]) boolean?]{
 
-Returns @scheme[(equal? a b)].}
+Returns @racket[(equal? a b)].}
 
 @defproc[(boolean=? [a boolean?] [b boolean?]) boolean?]{
 
-Returns @scheme[(equal? a b)].}
+Returns @racket[(equal? a b)].}
 
 @defproc[(false? [v any/c]) boolean?]{
 
-Returns @scheme[(not v)].}
+Returns @racket[(not v)].}

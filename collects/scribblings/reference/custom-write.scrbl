@@ -6,29 +6,29 @@
 @defthing[prop:custom-write struct-type-property?]{
 
 Associates a procedure to a structure type used by the default
-printer to @scheme[display], @scheme[write], or @scheme[print]
+printer to @racket[display], @racket[write], or @racket[print]
 instances of the structure type.
 
 @moreref["structprops"]{structure type properties}
 
-The procedure for a @scheme[prop:custom-write] value takes three
+The procedure for a @racket[prop:custom-write] value takes three
 arguments: the structure to be printed, the target port, and an
-argument that is @scheme[#t] for @scheme[write] mode, @scheme[#f] for
-@scheme[display] mode, or @scheme[0] or @scheme[1] indicating
-the current @tech{quoting depth} for @scheme[print] mode.  The
+argument that is @racket[#t] for @racket[write] mode, @racket[#f] for
+@racket[display] mode, or @racket[0] or @racket[1] indicating
+the current @tech{quoting depth} for @racket[print] mode.  The
 procedure should print the value to the given port using
-@scheme[write], @scheme[display], @scheme[print], @scheme[fprintf],
-@scheme[write-special], etc.
+@racket[write], @racket[display], @racket[print], @racket[fprintf],
+@racket[write-special], etc.
 
 The @tech{port write handler}, @tech{port display handler}, 
 and @tech{print handler} are specially
 configured for a port given to a custom-write procedure. Printing to
-the port through @scheme[display], @scheme[write], or @scheme[print]
+the port through @racket[display], @racket[write], or @racket[print]
 prints a value recursively with sharing annotations. To avoid a
 recursive print (i.e., to print without regard to sharing with a value
 currently being printed), print instead to a string or pipe and
-transfer the result to the target port using @scheme[write-string] or
-@scheme[write-special]. To print recursively to a port other than
+transfer the result to the target port using @racket[write-string] or
+@racket[write-special]. To print recursively to a port other than
 the one given to the custom-write procedure, copy the given port's
 write handler, display handler, and print handler to the other port.
 
@@ -42,10 +42,10 @@ custom-write procedure (e.g., for pretty-printing where a tentative
 print attempt overflows the line, or for printing error output of a
 limited width).
 
-The following example definition of a @scheme[tuple] type includes
+The following example definition of a @racket[tuple] type includes
 custom-write procedures that print the tuple's list content using
-angle brackets in @scheme[write] and @scheme[print] mode and no brackets in
-@scheme[display] mode. Elements of the tuple are printed recursively,
+angle brackets in @racket[write] and @racket[print] mode and no brackets in
+@racket[display] mode. Elements of the tuple are printed recursively,
 so that graph and cycle structure can be represented.
 
 @defexamples[
@@ -80,14 +80,14 @@ so that graph and cycle structure can be represented.
 
 @defproc[(custom-write? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] has the @scheme[prop:custom-write]
-property, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] has the @racket[prop:custom-write]
+property, @racket[#f] otherwise.}
 
 
 @defproc[(custom-write-accessor [v custom-write?])
          (custom-write? output-port? boolean? . -> . any)]{
 
-Returns the custom-write procedure associated with @scheme[v].}
+Returns the custom-write procedure associated with @racket[v].}
 
 @deftogether[(
 @defthing[prop:custom-print-quotable struct-type-property?]
@@ -96,11 +96,11 @@ Returns the custom-write procedure associated with @scheme[v].}
 )]{
 
 A property and associated predicate and accessor. The property value
-is one of @scheme['self], @scheme['never], @scheme['maybe], or
-@scheme['always]. When a structure has this property in addition to a
-@scheme[prop:custom-write] property value, then the property value
-affects printing in @scheme[print] mode; see @secref["printing"]. When
-a value does not have the @scheme[prop:custom-print-quotable], it is
-equivalent to having the @scheme['self] property value, which is
+is one of @racket['self], @racket['never], @racket['maybe], or
+@racket['always]. When a structure has this property in addition to a
+@racket[prop:custom-write] property value, then the property value
+affects printing in @racket[print] mode; see @secref["printing"]. When
+a value does not have the @racket[prop:custom-print-quotable], it is
+equivalent to having the @racket['self] property value, which is
 suitable both for self-quoting forms and printed forms that are
 unreadable.}

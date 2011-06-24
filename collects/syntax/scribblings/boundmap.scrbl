@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "common.rkt" (for-label syntax/boundmap))
 
-@title[#:tag "boundmap"]{Hashing on @scheme[bound-identifier=?] and @scheme[free-identifier=?]}
+@title[#:tag "boundmap"]{Hashing on @racket[bound-identifier=?] and @racket[free-identifier=?]}
 
-See also @schememodname[syntax/id-table] for an implementation of
-identifier mappings using the @schememodname[scheme/dict] dictionary
+See also @racketmodname[syntax/id-table] for an implementation of
+identifier mappings using the @racketmodname[scheme/dict] dictionary
 interface.
 
 @defmodule[syntax/boundmap]
@@ -14,7 +14,7 @@ interface.
 Produces a hash-table-like value for storing a mapping from syntax
 identifiers to arbitrary values.
 
-The mapping uses @scheme[bound-identifier=?] to compare mapping keys,
+The mapping uses @racket[bound-identifier=?] to compare mapping keys,
 but also uses a hash table based on symbol equality to make the
 mapping efficient in the common case (i.e., where non-equivalent
 identifiers are derived from different symbolic names).}
@@ -22,8 +22,8 @@ identifiers are derived from different symbolic names).}
 
 @defproc[(bound-identifier-mapping? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] was produced by
-@scheme[make-bound-identifier-mapping], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] was produced by
+@racket[make-bound-identifier-mapping], @racket[#f] otherwise.}
 
 
 @defproc[(bound-identifier-mapping-get [bound-map bound-identifier-mapping?]
@@ -31,7 +31,7 @@ Returns @scheme[#t] if @scheme[v] was produced by
 				       [failure-thunk any/c (lambda () (raise (make-exn:fail ....)))])
          any]{
 
-Like @scheme[hash-table-get] for bound-identifier mappings.}
+Like @racket[hash-table-get] for bound-identifier mappings.}
 
 
 @defproc[(bound-identifier-mapping-put! [bound-map bound-identifier-mapping?]
@@ -39,20 +39,20 @@ Like @scheme[hash-table-get] for bound-identifier mappings.}
                                         [v any/c])
          void?]{
 
-Like @scheme[hash-table-put!] for bound-identifier mappings.}
+Like @racket[hash-table-put!] for bound-identifier mappings.}
 
 @defproc[(bound-identifier-mapping-for-each [bound-map boud-identifier-mapping?]
                                             [proc (identifier? any/c . -> . any)])
          void?]{
 
-Like @scheme[hash-table-for-each].}
+Like @racket[hash-table-for-each].}
 
 
 @defproc[(bound-identifier-mapping-map [bound-map bound-identifier-mapping?] 
                                        [proc (identifier? any/c . -> . any)])
          (listof any?)]{
 
-Like @scheme[hash-table-map].}
+Like @racket[hash-table-map].}
 
 
 @defproc[(make-free-identifier-mapping) free-identifier-mapping?]{
@@ -60,7 +60,7 @@ Like @scheme[hash-table-map].}
 Produces a hash-table-like value for storing a mapping from syntax
 identifiers to arbitrary values.
 
-The mapping uses @scheme[free-identifier=?] to compare mapping keys,
+The mapping uses @racket[free-identifier=?] to compare mapping keys,
 but also uses a hash table based on symbol equality to make the
 mapping efficient in the common case (i.e., where non-equivalent
 identifiers are derived from different symbolic names at their
@@ -69,8 +69,8 @@ definition sites).}
 
 @defproc[(free-identifier-mapping? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] was produced by
-@scheme[make-free-identifier-mapping], @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[v] was produced by
+@racket[make-free-identifier-mapping], @racket[#f] otherwise.
 }
 
 
@@ -79,7 +79,7 @@ Returns @scheme[#t] if @scheme[v] was produced by
                                       [failure-thunk any/c (lambda () (raise (make-exn:fail ....)))])
          any]{
 
-Like @scheme[hash-table-get] for free-identifier mappings.}
+Like @racket[hash-table-get] for free-identifier mappings.}
 
 
 @defproc[(free-identifier-mapping-put! [free-map free-identifier-mapping?]
@@ -87,21 +87,21 @@ Like @scheme[hash-table-get] for free-identifier mappings.}
                                        [v any/c])
          void?]{
 
-Like @scheme[hash-table-put!] for free-identifier mappings.}
+Like @racket[hash-table-put!] for free-identifier mappings.}
 
 
 @defproc[(free-identifier-mapping-for-each [free-map free-identifier-mapping?]
                                            [proc (identifier? any/c . -> . any)])
          void?]{
 
-Like @scheme[hash-table-for-each].}
+Like @racket[hash-table-for-each].}
 
 
 @defproc[(free-identifier-mapping-map [free-map free-identifier-mapping?] 
                                       [proc (identifier? any/c . -> . any)])
          (listof any?)]{
 
-Like @scheme[hash-table-map].}
+Like @racket[hash-table-map].}
 
 
 @deftogether[(
@@ -123,4 +123,4 @@ Like @scheme[hash-table-map].}
          (listof any?)]
 )]{
 
-The same as @scheme[make-free-identifier-mapping], etc.}
+The same as @racket[make-free-identifier-mapping], etc.}

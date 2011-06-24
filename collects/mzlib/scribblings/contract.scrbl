@@ -143,7 +143,7 @@ This is a restricted form of @racketmodname[racket/contract]'s
                              @r:-> contract that does not
                              handle keyword arguments or multiple
                              value results.
-                                                          
+
 }
 
 @defform*/subs[((->* (contract-dom-expr ...) ->*rng)
@@ -165,16 +165,15 @@ This is a restricted form of @racketmodname[racket/contract]'s
                (#,r:->* (contract-expr ...)
                         #:rest contract-rest-expr 
                         (values contract-rng-expr ...))]
-                                
+
 }
-                              
+
 @defform*[((opt-> (contract-req-expr ...) (contact-opt-expr ...) any)
            (opt-> (contract-req-expr ...) (contact-opt-expr ...) contract-rng-expr))]{
-                                                                                  
 
   The @racket[opt->] form is a simplified verison of @racketmodname[racket/contract]'s
       @|r:->*| and appearances of @racket[opt->] can be simply replaced with @|r:->*|.
-                                                                                  
+
 }
 
 @defform*[((opt->* (contract-req-expr ...) (contact-opt-expr ...) any)
@@ -245,7 +244,7 @@ This is a restricted form of @racketmodname[racket/contract]'s
   (and does lax checking; see @r:->d for details).
 
 }
-                                                                                    
+
 @defform*[((->pp ([dom-x contract-dom-expr] ...) pre-cond-expr any)
            (->pp ([dom-x contract-dom-expr] ...)
                  pre-cond-expr
@@ -280,7 +279,7 @@ This is a restricted form of @racketmodname[racket/contract]'s
                       post-cond-expr))]{
   Like @racket[->pp], but with an additional contract for the rest arguments of the function.
 }
-                                  
+
 @defform[(case-> mzlib/contract-arrow-contract-expr ...)]{
    Builds a contract analogous to @racket[case-lambda],
    where each case comes from one of the contract expression arguments

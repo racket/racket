@@ -15,9 +15,9 @@
          racketresultblock racketresultblock0
          RACKETRESULTBLOCK RACKETRESULTBLOCK0
          racketblockelem
-         racketinput RACKETINPUT 
+         racketinput RACKETINPUT
          racketinput0 RACKETINPUT0
-         racketmod 
+         racketmod
          racketmod0
          racket RACKET racket/form racketresult racketid 
          racketmodname

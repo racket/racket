@@ -27,47 +27,47 @@ A dialog is a top-level window that is @defterm{modal}: while the
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
-The @scheme[label] string is used as the dialog's title in its
+The @racket[label] string is used as the dialog's title in its
 title bar.  If the dialog's label is changed (see
 @method[window<%> set-label]), the title bar is updated.
 
-The @scheme[parent] argument can be @scheme[#f] or an existing
- frame. On Windows, if @scheme[parent] is an existing frame, the
+The @racket[parent] argument can be @racket[#f] or an existing
+ frame. On Windows, if @racket[parent] is an existing frame, the
  new dialog is always on top of its parent. On Windows and Unix, a
  dialog is iconized when its parent is iconized.
 
-If @scheme[parent] is @scheme[#f], then the eventspace for the new
+If @racket[parent] is @racket[#f], then the eventspace for the new
  dialog is the current eventspace, as determined by
- @scheme[current-eventspace]. Otherwise, @scheme[parent]'s eventspace
+ @racket[current-eventspace]. Otherwise, @racket[parent]'s eventspace
  is the new dialog's eventspace.
 
-If the @scheme[width] or @scheme[height] argument is not @scheme[#f],
+If the @racket[width] or @racket[height] argument is not @racket[#f],
  it specifies an initial size for the dialog (in pixels) assuming that
  it is larger than the minimum size, otherwise the minimum size is
  used. On Windows and Mac OS X (and with some Unix window managers)
  dialogs are not resizeable.
 
-If the @scheme[x] or @scheme[y] argument is not @scheme[#f], it
+If the @racket[x] or @racket[y] argument is not @racket[#f], it
  specifies an initial location for the dialog. Otherwise, if no
  location is set before the dialog is shown, it is centered (with
- respect @scheme[parent] if not @scheme[#f], the screen otherwise).
+ respect @racket[parent] if not @racket[#f], the screen otherwise).
 
-The @scheme[style] flags adjust the appearance of the dialog on some
+The @racket[style] flags adjust the appearance of the dialog on some
  platforms:
 
 @itemize[
 
- @item{@scheme['no-caption] --- omits the title bar for the dialog
+ @item{@racket['no-caption] --- omits the title bar for the dialog
  (Windows)}
 
- @item{@scheme['resize-border] --- adds a resizeable border
+ @item{@racket['resize-border] --- adds a resizeable border
   around the window (Windows) or grow box in the bottom right corner
   (Mac OS X)}
 
- @item{@scheme['no-sheet] --- uses a movable window for the dialog,
+ @item{@racket['no-sheet] --- uses a movable window for the dialog,
  even if a parent window is provided (Mac OS X)}
 
- @item{@scheme['close-button] --- include a close button in the 
+ @item{@racket['close-button] --- include a close button in the 
  dialog's title bar, which would not normally be included (Mac OS X)}
 
 ]
@@ -77,7 +77,7 @@ Even if the dialog is not shown, a few notification events may be
  resources (e.g., memory) cannot be reclaimed until some events are
  handled, or the dialog's eventspace is shut down.
 
-@WindowKWs[@scheme[enabled]] @AreaContKWs[] @AreaKWs[]
+@WindowKWs[@racket[enabled]] @AreaContKWs[] @AreaKWs[]
 }
 
 @defmethod[#:mode override 
@@ -87,7 +87,7 @@ Even if the dialog is not shown, a few notification events may be
 
 Returns the result of
 
-@schemeblock[
+@racketblock[
 (or (send this #,(:: top-level-window<%> on-system-menu-char) event)
     (send this #,(:: top-level-window<%> on-traverse-char) event))
 ]
@@ -98,16 +98,16 @@ Returns the result of
            (show [show? any/c])
            void?]{
 
-If @scheme[show?] is true, the dialog is shown and all frames (and other
+If @racket[show?] is true, the dialog is shown and all frames (and other
  dialogs) in the eventspace become disabled until the dialog is
- closed.  If @scheme[show?] is false, the dialog is hidden and other
+ closed.  If @racket[show?] is false, the dialog is hidden and other
  frames and dialogs are re-enabled (unless a different, pre-existing
  dialog is still shown).
 
-If @scheme[show?] is true, the method does not immediately return. Instead,
- it loops with @scheme[yield] until the dialog is found to be hidden
- between calls to @scheme[yield]. An internal semaphore is used with
- @scheme[yield] to avoid a busy-wait, and to ensure that the @scheme[show]
+If @racket[show?] is true, the method does not immediately return. Instead,
+ it loops with @racket[yield] until the dialog is found to be hidden
+ between calls to @racket[yield]. An internal semaphore is used with
+ @racket[yield] to avoid a busy-wait, and to ensure that the @racket[show]
   method returns as soon as possible after the dialog is hidden.
 
 }

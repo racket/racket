@@ -421,7 +421,7 @@ directory is not deleted successfully, the
 @defproc[(directory-list [path path-string? (current-directory)]) 
          (listof path?)]{
 
-@margin-note{See also the @scheme[in-directory] sequence constructor.}
+@margin-note{See also the @racket[in-directory] sequence constructor.}
 
 Returns a list of all files and directories in the directory specified
 by @racket[path]. On Windows, an element of the list may start with
@@ -1105,15 +1105,15 @@ to the file portion of the path.
   (make-lock-file-name "/home/george/project/important-file")]}
 
 @deftogether[(
-@defthing[user-read-bit     @#,schemevalfont{#o400}]
-@defthing[user-write-bit    @#,schemevalfont{#o200}]
-@defthing[user-execute-bit  @#,schemevalfont{#o100}]
-@defthing[group-read-bit    @#,schemevalfont{#o040}]
-@defthing[group-write-bit   @#,schemevalfont{#o020}]
-@defthing[group-execute-bit @#,schemevalfont{#o010}]
-@defthing[other-read-bit    @#,schemevalfont{#o004}]
-@defthing[other-write-bit   @#,schemevalfont{#o002}]
-@defthing[other-execute-bit @#,schemevalfont{#o001}]
+@defthing[user-read-bit     @#,racketvalfont{#o400}]
+@defthing[user-write-bit    @#,racketvalfont{#o200}]
+@defthing[user-execute-bit  @#,racketvalfont{#o100}]
+@defthing[group-read-bit    @#,racketvalfont{#o040}]
+@defthing[group-write-bit   @#,racketvalfont{#o020}]
+@defthing[group-execute-bit @#,racketvalfont{#o010}]
+@defthing[other-read-bit    @#,racketvalfont{#o004}]
+@defthing[other-write-bit   @#,racketvalfont{#o002}]
+@defthing[other-execute-bit @#,racketvalfont{#o001}]
 )]{
 
 Constants that are useful with @racket[file-or-directory-permissions]

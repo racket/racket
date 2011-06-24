@@ -25,7 +25,7 @@
 
 @title[#:tag "mime"]{MIME: Decoding Internet Data}
 
-@defmodule[net/mime]{The @schememodname[net/mime] library provides
+@defmodule[net/mime]{The @racketmodname[net/mime] library provides
 utilities for parsing and creating MIME encodings as described in RFC
 2045 through RFC 2049.
 
@@ -39,15 +39,15 @@ The library was written by Francisco Solsona.}
                        [part? any/c])
          message?]{
 
-Parses @scheme[message-in] and returns the parsed result as a
-@scheme[message] instance.}
+Parses @racket[message-in] and returns the parsed result as a
+@racket[message] instance.}
 
 @defstruct[message ([version real?]
                     [entity entity]
                     [fields (listof string?)])]{
 
-A decoded MIME message. The version is @scheme[1.0] by default. The
-@scheme[entity] field represents the message data. The @scheme[fields]
+A decoded MIME message. The version is @racket[1.0] by default. The
+@racket[entity] field represents the message data. The @racket[fields]
 field contains one string for each field in the message header.}
 
 @defstruct[entity ([type symbol?]
@@ -65,12 +65,12 @@ field contains one string for each field in the message header.}
 
 Represents the content of a message or a sub-part.
 
-Standard values for the @scheme[type] field include @scheme['text],
-@scheme['image], @scheme['audio], @scheme['video],
-@scheme['application], @scheme['message], and @scheme['multipart].
+Standard values for the @racket[type] field include @racket['text],
+@racket['image], @racket['audio], @racket['video],
+@racket['application], @racket['message], and @racket['multipart].
 
-Standard values for the @scheme[subtype] field depend on the
-@scheme[type] field, and include the following:
+Standard values for the @racket[subtype] field depend on the
+@racket[type] field, and include the following:
 
 @mime-table[
 (
@@ -123,36 +123,36 @@ Standard values for the @scheme[subtype] field depend on the
                  (quicktime                              "[Lindner]")
 )]
 
-Standard values for the @scheme[charset] field include
-@scheme['us-ascii], which is the default.
+Standard values for the @racket[charset] field include
+@racket['us-ascii], which is the default.
 
-Standard values for the @scheme[encoding] field are @scheme['7bit],
-@scheme['8bit], @scheme['binary], @scheme['quoted-printable], and
-@scheme['base64]. The default is @scheme['7bit].
+Standard values for the @racket[encoding] field are @racket['7bit],
+@racket['8bit], @racket['binary], @racket['quoted-printable], and
+@racket['base64]. The default is @racket['7bit].
 
-The @scheme[params] field contains a list of parameters from other
+The @racket[params] field contains a list of parameters from other
 MIME headers.
 
-The @scheme[id] field is taken from the @scheme["Content-Id"] header
+The @racket[id] field is taken from the @racket["Content-Id"] header
 field.
 
-The @scheme[description] field is taken from the
-@scheme["Content-description"] header field.
+The @racket[description] field is taken from the
+@racket["Content-description"] header field.
 
-The @scheme[other] field contains additional (non-standard) field
-headers whose field names start with @scheme["Content-"].
+The @racket[other] field contains additional (non-standard) field
+headers whose field names start with @racket["Content-"].
 
-The @scheme[fields] field contains additional field headers whose
-field names @emph{do not} start with @scheme["Content-"].
+The @racket[fields] field contains additional field headers whose
+field names @emph{do not} start with @racket["Content-"].
 
-The @scheme[parts] contains sub-parts from multipart MIME
-messages. This list is non-empty only when @scheme[type] is
-@scheme['multipart] or @scheme['message].
+The @racket[parts] contains sub-parts from multipart MIME
+messages. This list is non-empty only when @racket[type] is
+@racket['multipart] or @racket['message].
 
-The @scheme[body] field represents the body as a function that
+The @racket[body] field represents the body as a function that
 consumes an output out and writes the decoded message to the port.  No
-bytes are written if @scheme[type] is @scheme['multipart] or
-@scheme['message].  All of the standard values of @scheme[encoding]
+bytes are written if @racket[type] is @racket['multipart] or
+@racket['message].  All of the standard values of @racket[encoding]
 are supported. The procedure only works once (since the encoded body
 is pulled from a stream).}
 
@@ -164,26 +164,26 @@ is pulled from a stream).}
                         [size (or/c exact-nonnegative-integer? false/c)]
                         [params (listof (cons/c symbol? string?))])]{
 
-Represents a @scheme["Content-Disposition"] header as defined in RFC
+Represents a @racket["Content-Disposition"] header as defined in RFC
 2183.
 
-Standard values for the @scheme[type] field include @scheme['inline]
-and @scheme['attachment].
+Standard values for the @racket[type] field include @racket['inline]
+and @racket['attachment].
 
-The @scheme[filename] field is drawn from the @scheme["filename"]
-parameter of the @scheme["Content-Disposition"] header, if included in
+The @racket[filename] field is drawn from the @racket["filename"]
+parameter of the @racket["Content-Disposition"] header, if included in
 the message.
 
-The @scheme[creation], @scheme[modification], and @scheme[read] fields
-represent file timestamps as drawn from the @scheme["creation-date"],
-@scheme["modification-date"], and @scheme["read-date"] attributes of
-the @scheme["Content-Disposition"] header, if included in the message.
+The @racket[creation], @racket[modification], and @racket[read] fields
+represent file timestamps as drawn from the @racket["creation-date"],
+@racket["modification-date"], and @racket["read-date"] attributes of
+the @racket["Content-Disposition"] header, if included in the message.
 
-The @scheme[size] field is drawn from the @scheme["size"] parameter of
-the @scheme["Content-Disposition"] header, if included in the message.
+The @racket[size] field is drawn from the @racket["size"] parameter of
+the @racket["Content-Disposition"] header, if included in the message.
 
-The @scheme[params] field stores any additional attribute bindings of
-the @scheme["Content-Disposition"] header, if included in the message.}
+The @racket[params] field stores any additional attribute bindings of
+the @racket["Content-Disposition"] header, if included in the message.}
 
 @; ----------------------------------------
 
@@ -201,35 +201,35 @@ to RFC 2045 and friends.}
 
 @defstruct[(missing-multipart-boundary-parameter mime-error) ()]{
 
-Raised when a multipart type is specified, but no @scheme["Boundary"]
+Raised when a multipart type is specified, but no @racket["Boundary"]
 parameter is given or an end-of-file is encountered before the
 boundary.}
 
 @defstruct[(malformed-multipart-entity mime-error) ([msg string?])]{
 
-Similar to @scheme[unexpected-termination], but used only while
+Similar to @racket[unexpected-termination], but used only while
 scanning parts of a multipart message.}
 
 @defstruct[(empty-mechanism mime-error) ()]{
 
 Raised when no transport encoding mechanism was provided with the
-@scheme["Content-Transfer-Encoding"] field.}
+@racket["Content-Transfer-Encoding"] field.}
 
 @defstruct[(empty-type mime-error) ()]{
 
-Raised when no type is specified for @scheme["Content-Type"], or when
+Raised when no type is specified for @racket["Content-Type"], or when
 the specification is incorrectly formatted.}
 
 
 @defstruct[(empty-subtype mime-error) ()]{
 
-Raised when no sub-type is specified for @scheme["Content-Type"], or
+Raised when no sub-type is specified for @racket["Content-Type"], or
 when the specification is incorrectly formatted.}
 
 
 @defstruct[(empty-disposition-type mime-error) ()]{
 
-Raised when type specified for the @scheme["Content-Disposition"]
+Raised when type specified for the @racket["Content-Disposition"]
 field, or when the specification is incorrectly formatted.}
 
 @; ----------------------------------------
@@ -240,7 +240,7 @@ field, or when the specification is incorrectly formatted.}
 
 @defthing[mime@ unit?]{
 
-Imports nothing, exports @scheme[mime^].}
+Imports nothing, exports @racket[mime^].}
 
 @; ----------------------------------------
 
@@ -250,4 +250,4 @@ Imports nothing, exports @scheme[mime^].}
 
 @defsignature[mime^ ()]{}
 
-Includes everything exported by the @schememodname[net/mime] module.
+Includes everything exported by the @racketmodname[net/mime] module.

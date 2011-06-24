@@ -10,14 +10,14 @@
 The teachpack provides operations for creating and manipulating an arrow
 GUI. We recommend using the @seclink["world"]{world teachpack} instead.
 
-@deftech{modelT} @scheme[(-> button% event% true)]
+@deftech{modelT} @racket[(-> button% event% true)]
 
 A @tech{modelT} is a function that accepts and ignores two arguments. 
 
 @defproc[(control) symbol?]{Reads out the current state of the message
 field.} 
 
-@defproc[(view [s (or/c string? symbol?)]) true]{Displays @scheme[s] in the
+@defproc[(view [s (or/c string? symbol?)]) true]{Displays @racket[s] in the
 message field.} 
 
 @defproc[(connect [l (unsyntax @tech{modelT})][r (unsyntax @tech{modelT})][u (unsyntax @tech{modelT})][d (unsyntax @tech{modelT})]) true]{Connects four
@@ -26,7 +26,7 @@ controllers with the four directions in the arrow window.}
 Example:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; Advanced 
 (define (make-model dir)
    (lambda (b e)

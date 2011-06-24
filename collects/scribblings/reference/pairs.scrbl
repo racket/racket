@@ -81,27 +81,27 @@
 @guideintro["pairs"]{pairs and lists}
 
 A @deftech{pair} combines exactly two values. The first value is
-accessed with the @scheme[car] procedure, and the second value is
-accessed with the @scheme[cdr] procedure. Pairs are not mutable (but
+accessed with the @racket[car] procedure, and the second value is
+accessed with the @racket[cdr] procedure. Pairs are not mutable (but
 see @secref["mpairs"]).
 
 A @deftech{list} is recursively defined: it is either the constant
-@scheme[null], or it is a pair whose second value is a list.
+@racket[null], or it is a pair whose second value is a list.
 
 A list can be used as a single-valued sequence (see
 @secref["sequences"]). The elements of the list serve as elements
-of the sequence. See also @scheme[in-list].
+of the sequence. See also @racket[in-list].
 
 Cyclic data structures can be created using only immutable pairs via
-@scheme[read] or @scheme[make-reader-graph]. If starting with a pair
-and using some number of @scheme[cdr]s returns to the starting pair,
+@racket[read] or @racket[make-reader-graph]. If starting with a pair
+and using some number of @racket[cdr]s returns to the starting pair,
 then the pair is not a list.
 
 @; ----------------------------------------
 @section{Pair Constructors and Selectors}
 
-@defproc[(pair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-a pair, @scheme[#f] otherwise.
+@defproc[(pair? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is
+a pair, @racket[#f] otherwise.
 @mz-examples[
 (pair? 1)
 (pair? (cons 1 2))
@@ -110,8 +110,8 @@ a pair, @scheme[#f] otherwise.
 (pair? '())
 ]}
 
-@defproc[(null? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-the empty list, @scheme[#f] otherwise.
+@defproc[(null? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v] is
+the empty list, @racket[#f] otherwise.
 @mz-examples[
 (null? 1)
 (null? '(1 2))
@@ -120,21 +120,21 @@ the empty list, @scheme[#f] otherwise.
 ]}
 
 @defproc[(cons [a any/c] [d any/c]) pair?]{Returns a newly allocated pair whose first
-element is @scheme[a] and second element is @scheme[d].
+element is @racket[a] and second element is @racket[d].
 @mz-examples[
 (cons 1 2)
 (cons 1 '())
 ]}
 
 @defproc[(car [p pair?]) any/c]{Returns the first element of the
-pair @scheme[p].
+pair @racket[p].
 @mz-examples[
 (car '(1 2))
 (car (cons 2 3))
 ]}
 
 @defproc[(cdr [p pair?]) any/c]{Returns the second element of the
-pair @scheme[p].
+pair @racket[p].
 @mz-examples[
 (cdr '(1 2))
 (cdr '(1))
@@ -148,7 +148,7 @@ null
 ]}
 
 
-@defproc[(list? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
+@defproc[(list? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v]
  is a list: either the empty list, or a pair whose second element is a
  list. This procedure effectively takes constant time due to internal caching
  (so that any necessary traversals of pairs can in principle count as an 
@@ -161,7 +161,7 @@ null
 ]}
 
 @defproc[(list [v any/c] ...) list?]{Returns a newly allocated list
-containing the @scheme[v]s as its elements.
+containing the @racket[v]s as its elements.
 @mz-examples[
 (list 1 2 3 4)
 (list (list 1 2) (list 3 4))
@@ -169,7 +169,7 @@ containing the @scheme[v]s as its elements.
 
 @defproc[(list* [v any/c] ... [tail any/c]) any/c]{
 
-Like @scheme[list], but the last argument is used as the tail of
+Like @racket[list], but the last argument is used as the tail of
 the result, instead of the final element. The result is a list
 only if the last argument is a list.
 @mz-examples[
@@ -181,10 +181,10 @@ only if the last argument is a list.
                      [proc (exact-nonnegative-integer? . -> . any)])
          list?]{
 
-Creates a list of @scheme[n] elements by applying @scheme[proc] to the
-integers from @scheme[0] to @scheme[(sub1 n)] in order. If
-@scheme[_lst] is the resulting list, then @scheme[(list-ref _lst _i)]
-is the value produced by @scheme[(proc _i)].
+Creates a list of @racket[n] elements by applying @racket[proc] to the
+integers from @racket[0] to @racket[(sub1 n)] in order. If
+@racket[_lst] is the resulting list, then @racket[(list-ref _lst _i)]
+is the value produced by @racket[(proc _i)].
 
 @mz-examples[
 (build-list 10 values)
@@ -197,7 +197,7 @@ is the value produced by @scheme[(proc _i)].
 @defproc[(length [lst list?])
          exact-nonnegative-integer?]{
 
-Returns the number of elements in @scheme[lst].
+Returns the number of elements in @racket[lst].
 @mz-examples[
 (length (list 1 2 3 4))
 (length '())
@@ -207,13 +207,13 @@ Returns the number of elements in @scheme[lst].
 @defproc[(list-ref [lst any/c] [pos exact-nonnegative-integer?])
          any/c]{
 
-Returns the element of @scheme[lst] at position @scheme[pos], where
-the list's first element is position @scheme[0]. If the list has
-@scheme[pos] or fewer elements, then the
+Returns the element of @racket[lst] at position @racket[pos], where
+the list's first element is position @racket[0]. If the list has
+@racket[pos] or fewer elements, then the
 @exnraise[exn:fail:contract].
 
-The @scheme[lst] argument need not actually be a list; @scheme[lst]
-must merely start with a chain of at least @scheme[pos] pairs.
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely start with a chain of at least @racket[pos] pairs.
 @mz-examples[
 (list-ref (list 'a 'b 'c) 0)
 (list-ref (list 'a 'b 'c) 1)
@@ -224,12 +224,12 @@ must merely start with a chain of at least @scheme[pos] pairs.
 @defproc[(list-tail [lst any/c] [pos exact-nonnegative-integer?])
          any/c]{
 
-Returns the list after the first @scheme[pos] elements of
-@scheme[lst]. If the list has fewer than @scheme[pos] elements, then
+Returns the list after the first @racket[pos] elements of
+@racket[lst]. If the list has fewer than @racket[pos] elements, then
 the @exnraise[exn:fail:contract].
 
-The @scheme[lst] argument need not actually be a list; @scheme[lst]
-must merely start with a chain of at least @scheme[pos] pairs.
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely start with a chain of at least @racket[pos] pairs.
 @mz-examples[
 (list-tail (list 1 2 3 4) 2)
 ]}
@@ -252,7 +252,7 @@ The last argument need not be a list, in which case the result is an
 
 @defproc[(reverse [lst list?]) list?]{
 
-Returns a list that has the same elements as @scheme[lst], but in
+Returns a list that has the same elements as @racket[lst], but in
 reverse order.
 
 @mz-examples[
@@ -266,11 +266,11 @@ reverse order.
 @defproc[(map [proc procedure?] [lst list?] ...+) 
          list?]{
 
-Applies @scheme[proc] to the elements of the @scheme[lst]s from the
- first elements to the last. The @scheme[proc] argument must accept
- the same number of arguments as the number of supplied @scheme[lst]s,
- and all @scheme[lst]s must have the same number of elements.  The
- result is a list containing each result of @scheme[proc] in order.
+Applies @racket[proc] to the elements of the @racket[lst]s from the
+ first elements to the last. The @racket[proc] argument must accept
+ the same number of arguments as the number of supplied @racket[lst]s,
+ and all @racket[lst]s must have the same number of elements.  The
+ result is a list containing each result of @racket[proc] in order.
 
 @mz-examples[
 (map (lambda (number)
@@ -285,22 +285,22 @@ Applies @scheme[proc] to the elements of the @scheme[lst]s from the
 @defproc[(andmap [proc procedure?] [lst list?] ...+)
           any]{
 
-Similar to @scheme[map], except that
+Similar to @racket[map], except that
 
 @itemize[
 
- @item{the result is @scheme[#f] if any application of @scheme[proc] produces
-       @scheme[#f], in which case @scheme[proc] is not applied to later
-       elements of the @scheme[lst]s; and}
+ @item{the result is @racket[#f] if any application of @racket[proc] produces
+       @racket[#f], in which case @racket[proc] is not applied to later
+       elements of the @racket[lst]s; and}
 
- @item{the result is that of @scheme[proc] applied to the last elements
-       of the @scheme[lst]s; more specifically, the application of
-       @scheme[proc] to the last elements in the @scheme[lst]s is in tail
-       position with respect to the @scheme[andmap] call.}
+ @item{the result is that of @racket[proc] applied to the last elements
+       of the @racket[lst]s; more specifically, the application of
+       @racket[proc] to the last elements in the @racket[lst]s is in tail
+       position with respect to the @racket[andmap] call.}
 
 ]
 
-If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
+If the @racket[lst]s are empty, then @racket[#t] is returned.}
 
 @mz-examples[
 (andmap positive? '(1 2 3))
@@ -313,23 +313,23 @@ If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
 @defproc[(ormap [proc procedure?] [lst list?] ...+)
          any]{
 
-Similar to @scheme[map], except that
+Similar to @racket[map], except that
 
 @itemize[
 
- @item{the result is @scheme[#f] if every application of @scheme[proc] produces
-       @scheme[#f]; and}
+ @item{the result is @racket[#f] if every application of @racket[proc] produces
+       @racket[#f]; and}
 
- @item{the result is that of the first application of @scheme[proc] producing a
-       value other than @scheme[#f], in which case @scheme[proc] is not
-       applied to later elements of the @scheme[lst]s;
-       the application of @scheme[proc] to the last elements of the
-       @scheme[lst]s is in tail position with respect to the
-       @scheme[ormap] call.}
+ @item{the result is that of the first application of @racket[proc] producing a
+       value other than @racket[#f], in which case @racket[proc] is not
+       applied to later elements of the @racket[lst]s;
+       the application of @racket[proc] to the last elements of the
+       @racket[lst]s is in tail position with respect to the
+       @racket[ormap] call.}
 
 ]
 
-If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
+If the @racket[lst]s are empty, then @racket[#f] is returned.}
 
 @mz-examples[
 (ormap eq? '(a b c) '(a b c))
@@ -341,7 +341,7 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 @defproc[(for-each [proc procedure?] [lst list?] ...+)
          void?]{
 
-Similar to @scheme[map], but @scheme[proc] is called only for its
+Similar to @racket[map], but @racket[proc] is called only for its
  effect, and its result (which can be any number of values) is
  ignored.
 
@@ -356,24 +356,24 @@ Similar to @scheme[map], but @scheme[proc] is called only for its
 @defproc[(foldl [proc procedure?] [init any/c] [lst list?] ...+)
          any/c]{
 
-Like @scheme[map], @scheme[foldl] applies a procedure to the
- elements of one or more lists. Whereas @scheme[map] combines the return
- values into a list, @scheme[foldl] combines the return values in an
- arbitrary way that is determined by @scheme[proc].  
+Like @racket[map], @racket[foldl] applies a procedure to the
+ elements of one or more lists. Whereas @racket[map] combines the return
+ values into a list, @racket[foldl] combines the return values in an
+ arbitrary way that is determined by @racket[proc].  
 
-If @scheme[foldl] is called with @math{n} lists, then @scheme[proc]
+If @racket[foldl] is called with @math{n} lists, then @racket[proc]
  must take @math{n+1} arguments. The extra argument is the combined
- return values so far. The @scheme[proc] is initially invoked with the
- first item of each list, and the final argument is @scheme[init].  In
- subsequent invocations of @scheme[proc], the last argument is the
- return value from the previous invocation of @scheme[proc]. The input
- @scheme[lst]s are traversed from left to right, and the result of the
- whole @scheme[foldl] application is the result of the last
- application of @scheme[proc]. If the @scheme[lst]s are empty, the
- result is @scheme[init].
+ return values so far. The @racket[proc] is initially invoked with the
+ first item of each list, and the final argument is @racket[init].  In
+ subsequent invocations of @racket[proc], the last argument is the
+ return value from the previous invocation of @racket[proc]. The input
+ @racket[lst]s are traversed from left to right, and the result of the
+ whole @racket[foldl] application is the result of the last
+ application of @racket[proc]. If the @racket[lst]s are empty, the
+ result is @racket[init].
 
-Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
- constant space (plus the space for each call to @scheme[proc]).
+Unlike @racket[foldr], @racket[foldl] processes the @racket[lst]s in
+ constant space (plus the space for each call to @racket[proc]).
 
 @mz-examples[
 (foldl cons '() '(1 2 3 4))
@@ -388,10 +388,10 @@ Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
 @defproc[(foldr [proc procedure?] [init any/c] [lst list?] ...+)
          any/c]{
 
-Like @scheme[foldl], but the lists are traversed from right to left.
- Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
- space proportional to the length of @scheme[lst]s (plus the space for
- each call to @scheme[proc]).
+Like @racket[foldl], but the lists are traversed from right to left.
+ Unlike @racket[foldl], @racket[foldr] processes the @racket[lst]s in
+ space proportional to the length of @racket[lst]s (plus the space for
+ each call to @racket[proc]).
 
 @mz-examples[
 (foldr cons '() '(1 2 3 4))
@@ -404,8 +404,8 @@ Like @scheme[foldl], but the lists are traversed from right to left.
 @defproc[(filter [pred procedure?] [lst list?])
          list?]{
 
-Returns a list with the elements of @scheme[lst] for which
- @scheme[pred] produces a true value. The @scheme[pred] procedure is
+Returns a list with the elements of @racket[lst] for which
+ @racket[pred] produces a true value. The @racket[pred] procedure is
  applied to each element from first to last.
 
 @mz-examples[
@@ -416,9 +416,9 @@ Returns a list with the elements of @scheme[lst] for which
 @defproc[(remove [v any/c] [lst list?] [proc procedure? equal?])
          list?]{
 
-Returns a list that is like @scheme[lst], omitting the first element
- of @scheme[lst] that is equal to @scheme[v] using the comparison
- procedure @scheme[proc] (which must accept two arguments).
+Returns a list that is like @racket[lst], omitting the first element
+ of @racket[lst] that is equal to @racket[v] using the comparison
+ procedure @racket[proc] (which must accept two arguments).
 
 @mz-examples[
 (remove 2 (list 1 2 3 2 4))
@@ -432,7 +432,7 @@ Returns a list that is like @scheme[lst], omitting the first element
 @defproc[(remq [v any/c] [lst list?])
          list?]{
 
-Returns @scheme[(remove v lst eq?)].
+Returns @racket[(remove v lst eq?)].
 @mz-examples[
 (remq 2 (list 1 2 3 4 5))
 (remq '(2) (list '(1) '(2) '(3)))
@@ -444,7 +444,7 @@ Returns @scheme[(remove v lst eq?)].
 @defproc[(remv [v any/c] [lst list?])
          list?]{
 
-Returns @scheme[(remove v lst eqv?)].
+Returns @racket[(remove v lst eqv?)].
 @mz-examples[
 (remv 2 (list 1 2 3 4 5))
 (remv '(2) (list '(1) '(2) '(3)))
@@ -456,8 +456,8 @@ Returns @scheme[(remove v lst eqv?)].
 @defproc[(remove* [v-lst list?] [lst list?] [proc procedure? equal?])
          list?]{
 
-Like @scheme[remove], but removes from @scheme[lst] every instance of
-every element of @scheme[v-lst].
+Like @racket[remove], but removes from @racket[lst] every instance of
+every element of @racket[v-lst].
 @mz-examples[
 (remove* (list 1 2) (list 1 2 3 2 4 5 2))
 ]}
@@ -466,7 +466,7 @@ every element of @scheme[v-lst].
 @defproc[(remq* [v-lst list?] [lst list?])
          list?]{
 
-Returns @scheme[(remove* v-lst lst eq?)].
+Returns @racket[(remove* v-lst lst eq?)].
 
 @mz-examples[
 (remq* (list 1 2) (list 1 2 3 2 4 5 2))
@@ -476,7 +476,7 @@ Returns @scheme[(remove* v-lst lst eq?)].
 @defproc[(remv* [v-lst list?] [lst list?])
          list?]{
 
-Returns @scheme[(remove* v-lst lst eqv?)].
+Returns @racket[(remove* v-lst lst eqv?)].
 @mz-examples[
 (remv* (list 1 2) (list 1 2 3 2 4 5 2))
 ]}
@@ -487,40 +487,40 @@ Returns @scheme[(remove* v-lst lst eqv?)].
                [#:cache-keys? cache-keys? boolean? #f])
          list?]{
 
-Returns a list sorted according to the @scheme[less-than?] procedure,
- which takes two elements of @scheme[lst] and returns a true value if
+Returns a list sorted according to the @racket[less-than?] procedure,
+ which takes two elements of @racket[lst] and returns a true value if
  the first is less (i.e., should be sorted earlier) than the
  second.
 
-The sort is stable; if two elements of @scheme[lst] are ``equal''
- (i.e., @scheme[proc] does not return a true value when given the pair
+The sort is stable; if two elements of @racket[lst] are ``equal''
+ (i.e., @racket[proc] does not return a true value when given the pair
  in either order), then the elements preserve their relative order
- from @scheme[lst] in the output list.  To preserve this guarantee,
- use @scheme[sort] with a strict comparison functions (e.g.,
- @scheme[<] or @scheme[string<?]; not @scheme[<=] or
- @scheme[string<=?]).
+ from @racket[lst] in the output list.  To preserve this guarantee,
+ use @racket[sort] with a strict comparison functions (e.g.,
+ @racket[<] or @racket[string<?]; not @racket[<=] or
+ @racket[string<=?]).
 
-The @scheme[#:key] argument @scheme[extract-key] is used to extract a
+The @racket[#:key] argument @racket[extract-key] is used to extract a
  key value for comparison from each list element.  That is, the full
  comparison procedure is essentially
 
-@schemeblock[
+@racketblock[
   (lambda (x y)
     (less-than? (extract-key x) (extract-key y)))
 ]
 
-By default, @scheme[extract-key] is applied to two list elements for
- every comparison, but if @scheme[cache-keys?] is true, then the
- @scheme[extract-key] function is used exactly once for each list
- item. Supply a true value for @scheme[cache-keys?] when
- @scheme[extract-key] is an expensive operation; for example, if
- @scheme[file-or-directory-modify-seconds] is used to extract a
- timestamp for every file in a list, then @scheme[cache-keys?] should
- be @scheme[#t] to minimize file-system calls, but if
- @scheme[extract-key] is @scheme[car], then @scheme[cache-keys?]
- should be @scheme[#f].  As another example, providing
- @scheme[extract-key] as @scheme[(lambda (x) (random))] and
- @scheme[#t] for @scheme[cache-keys?] effectively shuffles the list.}
+By default, @racket[extract-key] is applied to two list elements for
+ every comparison, but if @racket[cache-keys?] is true, then the
+ @racket[extract-key] function is used exactly once for each list
+ item. Supply a true value for @racket[cache-keys?] when
+ @racket[extract-key] is an expensive operation; for example, if
+ @racket[file-or-directory-modify-seconds] is used to extract a
+ timestamp for every file in a list, then @racket[cache-keys?] should
+ be @racket[#t] to minimize file-system calls, but if
+ @racket[extract-key] is @racket[car], then @racket[cache-keys?]
+ should be @racket[#f].  As another example, providing
+ @racket[extract-key] as @racket[(lambda (x) (random))] and
+ @racket[#t] for @racket[cache-keys?] effectively shuffles the list.}
 
 @mz-examples[
 (sort '(1 3 4 2) <)
@@ -535,10 +535,10 @@ By default, @scheme[extract-key] is applied to two list elements for
 @defproc[(member [v any/c] [lst list?])
          (or/c list? #f)]{
 
-Locates the first element of @scheme[lst] that is @scheme[equal?] to
- @scheme[v]. If such an element exists, the tail of @scheme[lst]
+Locates the first element of @racket[lst] that is @racket[equal?] to
+ @racket[v]. If such an element exists, the tail of @racket[lst]
  starting with that element is returned. Otherwise, the result is
- @scheme[#f].
+ @racket[#f].
 
 @mz-examples[
 (member 2 (list 1 2 3 4))
@@ -549,7 +549,7 @@ Locates the first element of @scheme[lst] that is @scheme[equal?] to
 @defproc[(memv [v any/c] [lst list?])
          (or/c list? #f)]{
 
-Like @scheme[member], but finds an element using @scheme[eqv?].
+Like @racket[member], but finds an element using @racket[eqv?].
 @mz-examples[
 (memv 2 (list 1 2 3 4))
 (memv 9 (list 1 2 3 4))
@@ -559,7 +559,7 @@ Like @scheme[member], but finds an element using @scheme[eqv?].
 @defproc[(memq [v any/c] [lst list?])
          (or/c list? #f)]{
 
-Like @scheme[member], but finds an element using @scheme[eq?].
+Like @racket[member], but finds an element using @racket[eq?].
 
 @mz-examples[
 (memq 2 (list 1 2 3 4))
@@ -570,8 +570,8 @@ Like @scheme[member], but finds an element using @scheme[eq?].
 @defproc[(memf [proc procedure?] [lst list?])
          (or/c list? #f)]{
 
-Like @scheme[member], but finds an element using the predicate
- @scheme[proc]; an element is found when @scheme[proc] applied to the
+Like @racket[member], but finds an element using the predicate
+ @racket[proc]; an element is found when @racket[proc] applied to the
  element returns a true value.
 
 @mz-examples[
@@ -583,8 +583,8 @@ Like @scheme[member], but finds an element using the predicate
 
 @defproc[(findf [proc procedure?] [lst list?]) any/c]{
 
-Like @scheme[memf], but returns the element or @scheme[#f]
- instead of a tail of @scheme[lst] or @scheme[#f].
+Like @racket[memf], but returns the element or @racket[#f]
+ instead of a tail of @racket[lst] or @racket[#f].
 @mz-examples[
 (findf (lambda (arg)
         (> arg 9))
@@ -597,10 +597,10 @@ Like @scheme[memf], but returns the element or @scheme[#f]
                 [is-equal? (any/c any/c -> any/c) equal?])
          (or/c pair? #f)]{
 
-Locates the first element of @scheme[lst] whose @scheme[car] is
- equal to @scheme[v] according to @scheme[is-equal?]. If such an element exists, the pair
- (i.e., an element of @scheme[lst]) is returned. Otherwise, the result
- is @scheme[#f].
+Locates the first element of @racket[lst] whose @racket[car] is
+ equal to @racket[v] according to @racket[is-equal?]. If such an element exists, the pair
+ (i.e., an element of @racket[lst]) is returned. Otherwise, the result
+ is @racket[#f].
 @mz-examples[
 (assoc 3 (list (list 1 2) (list 3 4) (list 5 6)))
 (assoc 9 (list (list 1 2) (list 3 4) (list 5 6)))
@@ -613,7 +613,7 @@ Locates the first element of @scheme[lst] whose @scheme[car] is
 @defproc[(assv [v any/c] [lst (listof pair?)])
          (or/c pair? #f)]{
 
-Like @scheme[assoc], but finds an element using @scheme[eqv?].
+Like @racket[assoc], but finds an element using @racket[eqv?].
 @mz-examples[
 (assv 3 (list (list 1 2) (list 3 4) (list 5 6)))
 ]}
@@ -622,7 +622,7 @@ Like @scheme[assoc], but finds an element using @scheme[eqv?].
 @defproc[(assq [v any/c] [lst (listof pair?)])
          (or/c pair? #f)]{
 
-Like @scheme[assoc], but finds an element using @scheme[eq?].
+Like @racket[assoc], but finds an element using @racket[eq?].
 @mz-examples[
 (assq 3 (list (list 1 2) (list 3 4) (list 5 6)))
 ]}
@@ -631,9 +631,9 @@ Like @scheme[assoc], but finds an element using @scheme[eq?].
 @defproc[(assf [proc procedure?] [lst list?])
          (or/c list? #f)]{
 
-Like @scheme[assoc], but finds an element using the predicate
- @scheme[proc]; an element is found when @scheme[proc] applied to the
- @scheme[car] of an @scheme[lst] element returns a true value.
+Like @racket[assoc], but finds an element using the predicate
+ @racket[proc]; an element is found when @racket[proc] applied to the
+ @racket[car] of an @racket[lst] element returns a true value.
 @mz-examples[
 (assf (lambda (arg)
         (> arg 2))
@@ -690,26 +690,26 @@ empty
 ]}
 
 @defproc[(cons? [v any/c]) boolean?]{
-The same as @scheme[(pair? v)].
+The same as @racket[(pair? v)].
 @mz-examples[#:eval list-eval
 (cons? '(1 2))
 ]}
 
 @defproc[(empty? [v any/c]) boolean?]{
-The same as @scheme[(null? v)].
+The same as @racket[(null? v)].
 @mz-examples[#:eval list-eval
 (empty? '(1 2))
 (empty? '())
 ]}
 
 @defproc[(first [lst list?]) any/c]{
-The same as @scheme[(car lst)], but only for lists (that are not empty).
+The same as @racket[(car lst)], but only for lists (that are not empty).
 @mz-examples[#:eval list-eval
 (first '(1 2 3 4 5 6 7 8 9 10))
 ]}
 
 @defproc[(rest [lst list?]) list?]{
-The same as @scheme[(cdr lst)], but only for lists (that are not empty).
+The same as @racket[(cdr lst)], but only for lists (that are not empty).
 
 @mz-examples[#:eval list-eval
 (rest '(1 2 3 4 5 6 7 8 9 10))
@@ -772,19 +772,19 @@ Returns the last pair of a (possibly improper) list.
 ]}
 
 @defproc[(make-list [k exact-nonnegative-integer?] [v any?]) list?]{
-Returns a newly constructed list of length @scheme[k], holding
-@scheme[v] in all positions.
+Returns a newly constructed list of length @racket[k], holding
+@racket[v] in all positions.
 
 @mz-examples[#:eval list-eval
   (make-list 7 'foo)]}
 
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?]) list?]{
-Returns a fresh list whose elements are the first @scheme[pos] elements of
-@scheme[lst].  If @scheme[lst] has fewer than
-@scheme[pos] elements, the @exnraise[exn:fail:contract].
+Returns a fresh list whose elements are the first @racket[pos] elements of
+@racket[lst].  If @racket[lst] has fewer than
+@racket[pos] elements, the @exnraise[exn:fail:contract].
 
-The @scheme[lst] argument need not actually be a list; @scheme[lst]
-must merely start with a chain of at least @scheme[pos] pairs.
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
  (take '(1 2 3 4) 2)
@@ -792,23 +792,23 @@ must merely start with a chain of at least @scheme[pos] pairs.
 ]}
 
 @defproc[(drop [lst any/c] [pos exact-nonnegative-integer?]) any/c]{
-Just like @scheme[list-tail].}
+Just like @racket[list-tail].}
 
 @defproc[(split-at [lst any/c] [pos exact-nonnegative-integer?])
          (values list? any/c)]{
 Returns the same result as
 
-@schemeblock[(values (take lst pos) (drop lst pos))]
+@racketblock[(values (take lst pos) (drop lst pos))]
 
 except that it can be faster.}
 
 @defproc[(take-right [lst any/c] [pos exact-nonnegative-integer?]) any/c]{
-Returns the @scheme[list]'s @scheme[pos]-length tail. If @scheme[lst]
-has fewer than @scheme[pos] elements, then the
+Returns the @racket[list]'s @racket[pos]-length tail. If @racket[lst]
+has fewer than @racket[pos] elements, then the
 @exnraise[exn:fail:contract].
 
-The @scheme[lst] argument need not actually be a list; @scheme[lst]
-must merely end with a chain of at least @scheme[pos] pairs.
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely end with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
  (take-right '(1 2 3 4) 2)
@@ -816,12 +816,12 @@ must merely end with a chain of at least @scheme[pos] pairs.
 ]}
 
 @defproc[(drop-right [lst any/c] [pos exact-nonnegative-integer?]) list?]{
-Returns a fresh list whose elements are the prefix of @scheme[lst],
-dropping its @scheme[pos]-length tail. If @scheme[lst] has fewer than
-@scheme[pos] elements, then the @exnraise[exn:fail:contract].
+Returns a fresh list whose elements are the prefix of @racket[lst],
+dropping its @racket[pos]-length tail. If @racket[lst] has fewer than
+@racket[pos] elements, then the @exnraise[exn:fail:contract].
 
-The @scheme[lst] argument need not actually be a list; @scheme[lst]
-must merely end with a chain of at least @scheme[pos] pairs.
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely end with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
  (drop-right '(1 2 3 4) 2)
@@ -832,7 +832,7 @@ must merely end with a chain of at least @scheme[pos] pairs.
          (values list? any/c)]{
 Returns the same result as
 
-@schemeblock[(values (drop-right lst pos) (take-right lst pos))]
+@racketblock[(values (drop-right lst pos) (take-right lst pos))]
 
 except that it can be faster.
 
@@ -843,8 +843,8 @@ except that it can be faster.
 
 @defproc[(add-between [lst list?] [v any/c]) list?]{
 
-Returns a list with the same elements as @scheme[lst], but with
-@scheme[v] between each pair of items in @scheme[lst].
+Returns a list with the same elements as @racket[lst], but with
+@racket[v] between each pair of items in @racket[lst].
 
 @mz-examples[#:eval list-eval
   (add-between '(x y z) 'or)
@@ -855,11 +855,11 @@ Returns a list with the same elements as @scheme[lst], but with
            [(append* [lst list?] ... [lsts list?]) any/c])]{
 @; Note: this is exactly the same description as the one for string-append*
 
-Like @scheme[append], but the last argument is used as a list of
-arguments for @scheme[append], so @scheme[(append* lst ... lsts)] is the
-same as @scheme[(apply append lst ... lsts)].  In other words, the
-relationship between @scheme[append] and @scheme[append*] is similar
-to the one between @scheme[list] and @scheme[list*].
+Like @racket[append], but the last argument is used as a list of
+arguments for @racket[append], so @racket[(append* lst ... lsts)] is the
+same as @racket[(apply append lst ... lsts)].  In other words, the
+relationship between @racket[append] and @racket[append*] is similar
+to the one between @racket[list] and @racket[list*].
 
 @mz-examples[#:eval list-eval
   (append* '(a) '(b) '((c) (d)))
@@ -871,9 +871,9 @@ to the one between @scheme[list] and @scheme[list*].
          list?]{
 
 Flattens an arbitrary S-expression structure of pairs into a
-list. More precisely, @scheme[v] is treated as a binary tree where
+list. More precisely, @racket[v] is treated as a binary tree where
 pairs are interior nodes, and the resulting list contains all of the
-non-@scheme[null] leaves of the tree in the same order as an inorder
+non-@racket[null] leaves of the tree in the same order as an inorder
 traversal.
 
 @mz-examples[#:eval list-eval
@@ -887,15 +887,15 @@ traversal.
                                    (lambda (x) x)])
          list?]{
 
-Returns a list that has all items in @scheme[lst], but without
-duplicate items, where @scheme[same?] determines whether two elements
+Returns a list that has all items in @racket[lst], but without
+duplicate items, where @racket[same?] determines whether two elements
 of the list are equivalent.  The resulting list is in the same order
-as @scheme[lst], and for any item that occurs multiple times, the
+as @racket[lst], and for any item that occurs multiple times, the
 first one is kept.
 
-The @scheme[#:key] argument @scheme[extract-key] is used to extract a
+The @racket[#:key] argument @racket[extract-key] is used to extract a
  key value from each list element, so two items are considered equal if
- @scheme[(same? (extract-key x) (extract-key y))] is true.
+ @racket[(same? (extract-key x) (extract-key y))] is true.
 
 @mz-examples[#:eval list-eval
   (remove-duplicates '(a b b a))
@@ -906,7 +906,7 @@ The @scheme[#:key] argument @scheme[extract-key] is used to extract a
 @defproc[(filter-map [proc procedure?] [lst list?] ...+)
          list?]{
 
-Returns @scheme[(filter (lambda (x) x) (map proc lst ...))], but
+Returns @racket[(filter (lambda (x) x) (map proc lst ...))], but
 without building the intermediate list.
 
 @mz-examples[#:eval list-eval
@@ -916,7 +916,7 @@ without building the intermediate list.
 @defproc[(count [proc procedure?] [lst list?] ...+)
          exact-nonnegative-integer?]{
 
-Returns @scheme[(length (filter proc lst ...))], but without building
+Returns @racket[(length (filter proc lst ...))], but without building
 the intermediate list.
 
 @mz-examples[#:eval list-eval
@@ -927,15 +927,15 @@ the intermediate list.
 @defproc[(partition [pred procedure?] [lst list?])
          (values list? list?)]{
 
-Similar to @scheme[filter], except that two values are returned: the
-items for which @scheme[pred] returns a true value, and the items for
-which @scheme[pred] returns @scheme[#f].
+Similar to @racket[filter], except that two values are returned: the
+items for which @racket[pred] returns a true value, and the items for
+which @racket[pred] returns @racket[#f].
 
 The result is the same as
 
-@schemeblock[(values (filter pred lst) (filter (negate pred) lst))]
+@racketblock[(values (filter pred lst) (filter (negate pred) lst))]
 
-but @scheme[pred] is applied to each item in @scheme[lst] only once.
+but @racket[pred] is applied to each item in @racket[lst] only once.
 
 @mz-examples[#:eval list-eval
   (partition even? '(1 2 3 4 5 6))
@@ -945,7 +945,7 @@ but @scheme[pred] is applied to each item in @scheme[lst] only once.
 @defproc[(append-map [proc procedure?] [lst list?] ...+)
          list?]{
 
-Returns @scheme[(append* (map proc lst ...))].
+Returns @racket[(append* (map proc lst ...))].
 
 @mz-examples[#:eval list-eval
  (append-map vector->list '(#(1) #(2 3) #(4)))
@@ -955,9 +955,9 @@ Returns @scheme[(append* (map proc lst ...))].
 @defproc[(filter-not [pred (any/c . -> . any/c)] [lst list?])
          list?]{
 
-Like @scheme[filter], but the meaning of the @scheme[pred] predicate
-is reversed: the result is a list of all items for which @scheme[pred]
-returns @scheme[#f].
+Like @racket[filter], but the meaning of the @racket[pred] predicate
+is reversed: the result is a list of all items for which @racket[pred]
+returns @racket[#f].
 
 @mz-examples[#:eval list-eval
   (filter-not even? '(1 2 3 4 5 6))
@@ -975,8 +975,8 @@ Returns a list with all elements from @racket[lst], randomly shuffled.
 
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-Returns the first element in the list @scheme[lst] that minimizes
-the result of @scheme[proc]. Signals an error on an empty list.
+Returns the first element in the list @racket[lst] that minimizes
+the result of @racket[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmin car '((3 pears) (1 banana) (2 apples)))
@@ -985,8 +985,8 @@ the result of @scheme[proc]. Signals an error on an empty list.
 
 @defproc[(argmax [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
 
-Returns the first element in the list @scheme[lst] that maximizes
-the result of @scheme[proc]. Signals an error on an empty list.
+Returns the first element in the list @racket[lst] that maximizes
+the result of @racket[proc]. Signals an error on an empty list.
 
 @mz-examples[#:eval list-eval
 (argmax car '((3 pears) (1 banana) (2 apples)))
@@ -1000,16 +1000,16 @@ the result of @scheme[proc]. Signals an error on an empty list.
 
 @defproc[(make-reader-graph [v any/c]) any/c]{
 
-Returns a value like @scheme[v], with placeholders created by
-@scheme[make-placeholder] replaced with the values that they contain,
-and with placeholders created by @scheme[make-hash-placeholder]
-with an immutable hash table. No part of @scheme[v] is mutated;
-instead, parts of @scheme[v] are copied as necessary to construct
+Returns a value like @racket[v], with placeholders created by
+@racket[make-placeholder] replaced with the values that they contain,
+and with placeholders created by @racket[make-hash-placeholder]
+with an immutable hash table. No part of @racket[v] is mutated;
+instead, parts of @racket[v] are copied as necessary to construct
 the resulting graph, where at most one copy is created for any given
 value.
 
 Since the copied values can be immutable, and since the copy is also
-immutable, @scheme[make-reader-graph] can create cycles involving only
+immutable, @racket[make-reader-graph] can create cycles involving only
 immutable pairs, vectors, boxes, and hash tables.
 
 Only the following kinds of values are copied and traversed to detect
@@ -1027,13 +1027,13 @@ placeholders:
 
  @item{instances of a @techlink{prefab} structure type}
 
- @item{placeholders created by @scheme[make-placeholder] and
-       @scheme[make-hash-placeholder]}
+ @item{placeholders created by @racket[make-placeholder] and
+       @racket[make-hash-placeholder]}
 
 ]
 
-Due to these restrictions, @scheme[make-reader-graph] creates exactly
-the same sort of cyclic values as @scheme[read].
+Due to these restrictions, @racket[make-reader-graph] creates exactly
+the same sort of cyclic values as @racket[read].
 
 @mz-examples[
 (let* ([ph (make-placeholder #f)]
@@ -1044,45 +1044,45 @@ the same sort of cyclic values as @scheme[read].
 
 @defproc[(placeholder? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a placeholder created by
-@scheme[make-placeholder], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a placeholder created by
+@racket[make-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-placeholder [v any/c]) placeholder?]{
 
-Returns a placeholder for use with @scheme[placeholder-set!]  and
-@scheme[make-reader-graph]. The @scheme[v] argument supplies the
+Returns a placeholder for use with @racket[placeholder-set!]  and
+@racket[make-reader-graph]. The @racket[v] argument supplies the
 initial value for the placeholder.}
 
 @defproc[(placeholder-set! [ph placeholder?] [datum any/c]) void?]{
 
-Changes the value of @scheme[ph] to @scheme[v].}
+Changes the value of @racket[ph] to @racket[v].}
 
 @defproc[(placeholder-get [ph placeholder?]) any/c]{
 
-Returns the value of @scheme[ph].}
+Returns the value of @racket[ph].}
 
 
 @defproc[(hash-placeholder? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a placeholder created by
-@scheme[make-hash-placeholder], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a placeholder created by
+@racket[make-hash-placeholder], @racket[#f] otherwise.}
 
 
 @defproc[(make-hash-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @scheme[make-immutable-hash], but produces a table placeholder
-for use with @scheme[make-reader-graph].}
+Like @racket[make-immutable-hash], but produces a table placeholder
+for use with @racket[make-reader-graph].}
 
 @defproc[(make-hasheq-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @scheme[make-immutable-hasheq], but produces a table placeholder
-for use with @scheme[make-reader-graph].}
+Like @racket[make-immutable-hasheq], but produces a table placeholder
+for use with @racket[make-reader-graph].}
 
 @defproc[(make-hasheqv-placeholder [assocs (listof pair?)])
          hash-placeholder?]{
 
-Like @scheme[make-immutable-hasheqv], but produces a table placeholder
-for use with @scheme[make-reader-graph].}
+Like @racket[make-immutable-hasheqv], but produces a table placeholder
+for use with @racket[make-reader-graph].}

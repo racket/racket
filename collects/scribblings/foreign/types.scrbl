@@ -21,23 +21,23 @@ along with conversion functions to and from the existing types.
          ctype?]{
 
 Creates a new @tech{C type} value whose representation for foreign
-code is the same as @scheme[type]'s. The given conversions functions
-convert to and from the Racket representation of @scheme[type]. Either
-conversion function can be @scheme[#f], meaning that the conversion
+code is the same as @racket[type]'s. The given conversions functions
+convert to and from the Racket representation of @racket[type]. Either
+conversion function can be @racket[#f], meaning that the conversion
 for the corresponding direction is the identity function.  If both
-functions are @scheme[#f], @scheme[type] is returned.}
+functions are @racket[#f], @racket[type] is returned.}
 
 
 @defproc[(ctype? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{C type}, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a @tech{C type}, @racket[#f]
 otherwise.}
 
 
 @defproc*[([(ctype-sizeof [type ctype?]) exact-nonnegative-integer?]
            [(ctype-alignof [type ctype?]) exact-nonnegative-integer?])]{
 
-Returns the size or alignment of a given @scheme[type] for the current
+Returns the size or alignment of a given @racket[type] for the current
 platform.}
 
 
@@ -47,7 +47,7 @@ platform.}
 Returns a value to describe the eventual C representation of the
 type. It can be any of the following symbols:
 
-@schemeblock[
+@racketblock[
   'int8 'uint8 'int16 'uint16 'int32 'uint32 'int64 'uint64
   'float 'double 'bool 'void 'pointer 'fpointer 
   'bytes 'string/ucs-4 'string/utf-16
@@ -59,14 +59,14 @@ element representations are provided in order within the list.}
 
 @defproc[(compiler-sizeof [sym symbol?]) exact-nonnegative-integer?]{
 
-Possible values for @scheme[symbol] are @scheme['int], @scheme['char],
-@scheme['short], @scheme['long], @scheme['*], @scheme['void],
-@scheme['float], @scheme['double]. The result is the size of the
+Possible values for @racket[symbol] are @racket['int], @racket['char],
+@racket['short], @racket['long], @racket['*], @racket['void],
+@racket['float], @racket['double]. The result is the size of the
 correspond type according to the C @cpp{sizeof} operator for the
-current platform. The @scheme[compiler-sizeof] operation should be
+current platform. The @racket[compiler-sizeof] operation should be
 used to gather information about the current platform, such as
-defining alias type like @scheme[_int] to a known type like
-@scheme[_int32].}
+defining alias type like @racket[_int] to a known type like
+@racket[_int32].}
 
 @; ----------------------------------------------------------------------
 
@@ -85,8 +85,8 @@ defining alias type like @scheme[_int] to a known type like
             [_sint64 ctype?]
             [_uint64 ctype?])]{
 
-The basic integer types at various sizes. The @schemeidfont{s} or
-@schemeidfont{u} prefix specifies a signed or an unsigned integer,
+The basic integer types at various sizes. The @racketidfont{s} or
+@racketidfont{u} prefix specifies a signed or an unsigned integer,
 respectively; the ones with no prefix are signed.}
 
 @defthing*[([_byte ctype?]
@@ -111,26 +111,26 @@ respectively; the ones with no prefix are signed.}
             [_sintptr ctype?]
             [_uintptr ctype?])]{
 
-Aliases for basic integer types. The @scheme[_byte] aliases correspond
-to @scheme[_int8]. The @scheme[_short] and @scheme[_word] aliases
-correspond to @scheme[_int16]. The @scheme[_int] aliases correspond to
-@scheme[_int32]. The @scheme[_long] aliases correspond to either
-@scheme[_int32] or @scheme[_int64], depending on the platform. Similarly,
-the @scheme[_intptr] aliases correspond to either
-@scheme[_int32] or @scheme[_int64], depending on the platform.}
+Aliases for basic integer types. The @racket[_byte] aliases correspond
+to @racket[_int8]. The @racket[_short] and @racket[_word] aliases
+correspond to @racket[_int16]. The @racket[_int] aliases correspond to
+@racket[_int32]. The @racket[_long] aliases correspond to either
+@racket[_int32] or @racket[_int64], depending on the platform. Similarly,
+the @racket[_intptr] aliases correspond to either
+@racket[_int32] or @racket[_int64], depending on the platform.}
 
 @defthing*[([_fixnum ctype?]
             [_ufixnum ctype?])]{
 
 For cases where speed matters and where you know that the integer is
-small enough, the types @scheme[_fixnum] and @scheme[_ufixnum] are
-similar to @scheme[_intptr] and @scheme[_uintptr] but assume that the
+small enough, the types @racket[_fixnum] and @racket[_ufixnum] are
+similar to @racket[_intptr] and @racket[_uintptr] but assume that the
 quantities fit in Racket's immediate integers (i.e., not bignums).}
 
 @defthing*[([_fixint ctype?]
             [_ufixint ctype?])]{
 
-Similar to @scheme[_fixnum]/@scheme[_ufixnum], but based on
+Similar to @racket[_fixnum]/@racket[_ufixnum], but based on
 @racket[_int]/@racket[_uint] instead of
 @racket[_intptr]/@racket[_uintptr], and coercions from C are checked
 to be in range.}
@@ -139,12 +139,12 @@ to be in range.}
             [_double ctype?]
             [_double* ctype?])]{
 
-The @scheme[_float] and @scheme[_double] types represent the
+The @racket[_float] and @racket[_double] types represent the
 corresponding C types. Both single- and double-precision Racket
-numbers are accepted for conversion via both @scheme[_float] and 
-@scheme[_double], while both @scheme[_float] and @scheme[_double]
+numbers are accepted for conversion via both @racket[_float] and 
+@racket[_double], while both @racket[_float] and @racket[_double]
 coerce C values to double-precision Racket numbers.
-The type @scheme[_double*]
+The type @racket[_double*]
 coerces any Racket real number to a C @cpp{double}.}
 
 @; ------------------------------------------------------------
@@ -153,8 +153,8 @@ coerces any Racket real number to a C @cpp{double}.}
 
 @defthing[_bool ctype?]{
 
-Translates @scheme[#f] to a @scheme[0] @scheme[_int], and any other
-value to @scheme[1].}
+Translates @racket[#f] to a @racket[0] @racket[_int], and any other
+value to @racket[1].}
 
 @defthing[_void ctype?]{
 
@@ -171,9 +171,9 @@ inputs.}
 The five primitive string types correspond to cases where a C
 representation matches Racket's representation without encodings.
 
-The form @scheme[_bytes] form can be used type for Racket byte
+The form @racket[_bytes] form can be used type for Racket byte
 strings, which corresponds to C's @cpp{char*} type.  In addition to
-translating byte strings, @scheme[#f] corresponds to the @cpp{NULL}
+translating byte strings, @racket[#f] corresponds to the @cpp{NULL}
 pointer.
 
 @deftogether[(
@@ -182,7 +182,7 @@ pointer.
 
 A type for Racket's native Unicode strings, which are in UCS-4 format.
 These correspond to the C @cpp{mzchar*} type used by Racket. As usual, the types
-treat @scheme[#f] as @cpp{NULL} and vice versa.}
+treat @racket[#f] as @cpp{NULL} and vice versa.}
 
 
 @deftogether[(
@@ -190,19 +190,19 @@ treat @scheme[#f] as @cpp{NULL} and vice versa.}
 )]{
 
 Unicode strings in UTF-16 format. As usual, the types treat
-@scheme[#f] as @cpp{NULL} and vice versa.}
+@racket[#f] as @cpp{NULL} and vice versa.}
 
 
 @defthing[_path ctype?]{
 
 Simple @cpp{char*} strings, corresponding to Racket's paths. As usual,
-the types treat @scheme[#f] as @cpp{NULL} and vice versa.
+the types treat @racket[#f] as @cpp{NULL} and vice versa.
 
 Beware that changing the current directory via
-@scheme[current-directory] does not change the OS-level current
+@racket[current-directory] does not change the OS-level current
 directory as seen by foreign library functions. Paths normally should
-be converted to absolute form using @scheme[path->complete-path]
-(which uses the @scheme[current-directory] parameter) before passing
+be converted to absolute form using @racket[path->complete-path]
+(which uses the @racket[current-directory] parameter) before passing
 them to a foreign function.}
 
 
@@ -221,38 +221,38 @@ Return values using this type are interned as symbols.}
 Types that correspond to (character) strings on the Racket side and
 @cpp{char*} strings on the C side.  The bridge between the two requires
 a transformation on the content of the string.  As usual, the types
-treat @scheme[#f] as @cpp{NULL} and vice versa.}
+treat @racket[#f] as @cpp{NULL} and vice versa.}
 
 @defthing*[([_string*/utf-8 ctype?]
             [_string*/latin-1 ctype?]
             [_string*/locale ctype?])]{
 
-Similar to @scheme[_string/utf-8], etc., but accepting a wider range
+Similar to @racket[_string/utf-8], etc., but accepting a wider range
 of values: Racket byte strings are allowed and passed as is, and
-Racket paths are converted using @scheme[path->bytes].}
+Racket paths are converted using @racket[path->bytes].}
 
 
 @subsection{Variable Auto-Converting String Type}
 
-The @scheme[_string/ucs-4] type is rarely useful when interacting with
-foreign code, while using @scheme[_bytes] is somewhat unnatural, since
+The @racket[_string/ucs-4] type is rarely useful when interacting with
+foreign code, while using @racket[_bytes] is somewhat unnatural, since
 it forces Racket programmers to use byte strings. Using
-@scheme[_string/utf-8], etc., meanwhile, may prematurely commit to a
-particular encoding of strings as bytes. The @scheme[_string] type
+@racket[_string/utf-8], etc., meanwhile, may prematurely commit to a
+particular encoding of strings as bytes. The @racket[_string] type
 supports conversion between Racket strings and @cpp{char*} strings
 using a parameter-determined conversion.
 
 @defthing[_string ctype?]{
 
-Expands to a use of the @scheme[default-_string-type] parameter.  The
-parameter's value is consulted when @scheme[_string] is evaluated, so
+Expands to a use of the @racket[default-_string-type] parameter.  The
+parameter's value is consulted when @racket[_string] is evaluated, so
 the parameter should be set before any interface definition that uses
-@scheme[_string].}
+@racket[_string].}
 
 @defparam[default-_string-type type ctype?]{
 
-A parameter that determines the current meaning of @scheme[_string].
-It is initially set to @scheme[_string*/utf-8].  If you change it, do
+A parameter that determines the current meaning of @racket[_string].
+It is initially set to @racket[_string*/utf-8].  If you change it, do
 so @italic{before} interfaces are defined.}
 
 
@@ -260,19 +260,19 @@ so @italic{before} interfaces are defined.}
 
 @defthing[_file ctype?]{
 
-Like @scheme[_path], but when values go from Racket to C,
-@scheme[cleanse-path] is used on the given value.  As an output value,
-it is identical to @scheme[_path].}
+Like @racket[_path], but when values go from Racket to C,
+@racket[cleanse-path] is used on the given value.  As an output value,
+it is identical to @racket[_path].}
 
 @defthing[_bytes/eof ctype?]{
 
-Similar to the @scheme[_bytes] type, except that a foreign return
-value of @cpp{NULL} is translated to a Racket @scheme[eof] value.}
+Similar to the @racket[_bytes] type, except that a foreign return
+value of @cpp{NULL} is translated to a Racket @racket[eof] value.}
 
 @defthing[_string/eof ctype?]{
 
-Similar to the @scheme[_string] type, except that a foreign return
-value of @cpp{NULL} is translated to a Racket @scheme[eof] value.}
+Similar to the @racket[_string] type, except that a foreign return
+value of @cpp{NULL} is translated to a Racket @racket[eof] value.}
 
 @; ------------------------------------------------------------
 
@@ -284,10 +284,10 @@ Corresponds to Racket ``C pointer'' objects.  These pointers can have
 an arbitrary Racket object attached as a type tag.  The tag is ignored
 by built-in functionality; it is intended to be used by interfaces.
 See @secref["foreign:tagged-pointers"] for creating pointer types that
-use these tags for safety. A @scheme[#f] value is converted to
+use these tags for safety. A @racket[#f] value is converted to
 @cpp{NULL} and vice versa.
 
-The address referenced by a @scheme[_pointer] value must not refer to
+The address referenced by a @racket[_pointer] value must not refer to
 memory managed by the garbage collector (unless the address
 corresponds to a value that supports interior pointers and that is
 otherwise referenced to preserve the value from garbage collection).
@@ -300,14 +300,14 @@ refer to the same address.}
 
 @defthing[_gcpointer ctype?]{
 
-Like @scheme[_pointer], but for a value that can refer to memory
+Like @racket[_pointer], but for a value that can refer to memory
 managed by the garbage collector.
 
-Although a @scheme[_gcpointer] can reference to memory that is not
+Although a @racket[_gcpointer] can reference to memory that is not
 managed by the garbage collector, beware of using an address that
 might eventually become managed by the garbage collector. For example,
-if a reference is created by @scheme[malloc] with @scheme['raw] and
-released by @scheme[free], then the @scheme[free] may allow the memory
+if a reference is created by @racket[malloc] with @racket['raw] and
+released by @racket[free], then the @racket[free] may allow the memory
 formerly occupied by the reference to be used later by the garbage
 collector.}
 
@@ -325,33 +325,33 @@ Racket's C API.}
 
 @defthing[_fpointer ctype?]{
 
-Similar to @scheme[_pointer], except that when an @scheme[_fpointer]
-is extracted from a pointer produced by @scheme[ffi-obj-ref], then a
+Similar to @racket[_pointer], except that when an @racket[_fpointer]
+is extracted from a pointer produced by @racket[ffi-obj-ref], then a
 level of indirection is skipped. A level of indirection is similarly
-skipped when extracting a pointer via @scheme[get-ffi-obj]. Like
-@scheme[_pointer], @scheme[_fpointer] treats @scheme[#f] as @cpp{NULL}
+skipped when extracting a pointer via @racket[get-ffi-obj]. Like
+@racket[_pointer], @racket[_fpointer] treats @racket[#f] as @cpp{NULL}
 and vice versa.
 
-A type generated by @scheme[_cprocedure] builds on @scheme[_fpointer],
-and normally @scheme[_cprocedure] should be used instead of
-@scheme[_fpointer].}
+A type generated by @racket[_cprocedure] builds on @racket[_fpointer],
+and normally @racket[_cprocedure] should be used instead of
+@racket[_fpointer].}
 
 
 @defproc[(_or-null [ctype ctype?]) ctype?]{
 
-Creates a type that is like @scheme[ctype], but @scheme[#f] is
-converted to @cpp{NULL} and vice versa. The given @scheme[ctype] must
-have the same C representation as @scheme[_pointer],
-@scheme[_gcpointer], or @scheme[_fpointer].}
+Creates a type that is like @racket[ctype], but @racket[#f] is
+converted to @cpp{NULL} and vice versa. The given @racket[ctype] must
+have the same C representation as @racket[_pointer],
+@racket[_gcpointer], or @racket[_fpointer].}
 
 
 @defproc[(_gcable [ctype ctype?]) ctype?]{
 
-Creates a type that is like @scheme[ctype], but whose base
-representation is like @scheme[_gcpointer] instead of
-@scheme[_pointer]. The given @scheme[ctype] must have a base
-representation like @scheme[_pointer] or @scheme[_gcpointer] (and in
-the later case, the result is the @scheme[ctype]).}
+Creates a type that is like @racket[ctype], but whose base
+representation is like @racket[_gcpointer] instead of
+@racket[_pointer]. The given @racket[ctype] must have a base
+representation like @racket[_pointer] or @racket[_gcpointer] (and in
+the later case, the result is the @racket[ctype]).}
 
 
 @; ------------------------------------------------------------
@@ -372,31 +372,31 @@ the later case, the result is the @scheme[ctype]).}
          any]{
 
 A type constructor that creates a new function type, which is
-specified by the given @scheme[input-types] list and @scheme[output-type].
-Usually, the @scheme[_fun] syntax (described below) should be used
+specified by the given @racket[input-types] list and @racket[output-type].
+Usually, the @racket[_fun] syntax (described below) should be used
 instead, since it manages a wide range of complicated cases.
 
 The resulting type can be used to reference foreign functions (usually
-@scheme[ffi-obj]s, but any pointer object can be referenced with this type),
+@racket[ffi-obj]s, but any pointer object can be referenced with this type),
 generating a matching foreign callout object.  Such objects are new primitive
 procedure objects that can be used like any other Racket procedure.
-As with other pointer types, @scheme[#f] is treated as a @cpp{NULL}
+As with other pointer types, @racket[#f] is treated as a @cpp{NULL}
 function pointer and vice versa.
 
-A type created with @scheme[_cprocedure] can also be used for passing
+A type created with @racket[_cprocedure] can also be used for passing
 Racket procedures to foreign functions, which will generate a foreign
 function pointer that calls the given Racket procedure when it is
 used.  There are no restrictions on the Racket procedure; in
 particular, its lexical context is properly preserved.
 
-The optional @scheme[abi] keyword argument determines the foreign ABI
-that is used. Supplying @scheme[#f] or @scheme['default] indicates the
+The optional @racket[abi] keyword argument determines the foreign ABI
+that is used. Supplying @racket[#f] or @racket['default] indicates the
 platform-dependent default. The other possible
-values---@scheme['stdcall]and @scheme['sysv] (i.e., ``cdecl'')---are
+values---@racket['stdcall]and @racket['sysv] (i.e., ``cdecl'')---are
 currently supported only for 32-bit Windows; using them on other
 platforms raises an exception.
 
-If @scheme[atomic?] is true, then when a Racket procedure is given
+If @racket[atomic?] is true, then when a Racket procedure is given
 this procedure type and called from foreign code, then the Racket
 process is put into atomic mode while evaluating the Racket procedure
 body. In atomic mode, other Racket threads do not run, so the Racket
@@ -408,23 +408,23 @@ must not perform any escaping continuation jumps, and its non-tail
 recursion must be minimal to avoid C-level stack overflow; otherwise,
 the process may crash or misbehave.
 
-If an @scheme[async-apply] procedure is provided, then a Racket
+If an @racket[async-apply] procedure is provided, then a Racket
 procedure with the generated procedure type can be applied in a
 foreign thread (i.e., an OS-level thread other than the one used to
 run Racket). The call in the foreign thread is transferred to the
 OS-level thread that runs Racket, but the Racket-level thread (in the
 sense of @racket[thread]) is unspecified; the job of the provided
-@scheme[async-apply] procedure is to arrange for the callback procedure to be
-run in a suitable Racket thread. The given @scheme[async-apply] procedure is
+@racket[async-apply] procedure is to arrange for the callback procedure to be
+run in a suitable Racket thread. The given @racket[async-apply] procedure is
 applied to a thunk that encapsulates the specific callback invocation,
 and the foreign OS-level thread blocks until the thunk is called and
 completes; the thunk must be called exactly once, and the callback
-invocation must return normally. The given @scheme[async-apply] procedure
-itself is called in atomic mode (see @scheme[atomic?] above). If the
+invocation must return normally. The given @racket[async-apply] procedure
+itself is called in atomic mode (see @racket[atomic?] above). If the
 callback is known to complete quickly, requires no synchronization,
 and works independent of the Racket thread in which it runs, then
 it is safe for the given 
-@scheme[async-apply] procedure to apply the thunk directly. Otherwise,
+@racket[async-apply] procedure to apply the thunk directly. Otherwise,
 the given @racket[async-apply] procedure
 must arrange for the thunk to be applied in a
 suitable Racket thread sometime after the given
@@ -432,17 +432,17 @@ suitable Racket thread sometime after the given
 returns; if the thunk raises an exception or synchronizes within an
 unsuitable Racket-level thread, it can deadlock or otherwise damage
 the Racket process. Foreign-thread detection to trigger
-@scheme[async-apply] works only when Racket is compiled with OS-level
+@racket[async-apply] works only when Racket is compiled with OS-level
 thread support, which is the default for many platforms. If a callback
-with an @scheme[async-apply] is called from foreign code in the same
-OS-level thread that runs Racket, then the @scheme[async-apply] wrapper is
+with an @racket[async-apply] is called from foreign code in the same
+OS-level thread that runs Racket, then the @racket[async-apply] wrapper is
 not used.
 
 @margin-note{The @racket[atomic?] and @racket[async-apply] arguments
-affect callbacks into Racket, while @scheme[in-original-place?]
+affect callbacks into Racket, while @racket[in-original-place?]
 affects calls from Racket into foreign code.}
 
-If @scheme[in-original-place?] is true, then when a foreign procedure
+If @racket[in-original-place?] is true, then when a foreign procedure
 with the generated type is called in any Racket @tech[#:doc '(lib
 "scribblings/reference/reference.scrbl")]{place}, the procedure is
 called from the original Racket place. Use this mode for a foreign
@@ -452,25 +452,25 @@ code back into Racket at a non-original place typically will not work,
 since the place of the Racket code may have a different allocator than
 the original place.
 
-If @scheme[save-errno] is @scheme['posix], then the value of
+If @racket[save-errno] is @racket['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
 immediately after a foreign function returns. The saved value is
-accessible through @scheme[saved-errno]. If @scheme[save-errno] is
-@scheme['windows], then the value of
+accessible through @racket[saved-errno]. If @racket[save-errno] is
+@racket['windows], then the value of
 @as-index{@tt{GetLastError}}@tt{()} is saved for later use via
-@scheme[saved-errno]; the @scheme['windows] option is available only
-on Windows (on other platforms @scheme[saved-errno] will return
-0). If @scheme[save-errno] is @scheme[#f], no error value is saved
+@racket[saved-errno]; the @racket['windows] option is available only
+on Windows (on other platforms @racket[saved-errno] will return
+0). If @racket[save-errno] is @racket[#f], no error value is saved
 automatically. The error-recording support provided by
-@scheme[save-errno] is needed because the Racket runtime system
+@racket[save-errno] is needed because the Racket runtime system
 may otherwise preempt the current Racket thread and itself call
 functions that set error values.
 
-The optional @scheme[wrapper], if provided, is expected to be a
+The optional @racket[wrapper], if provided, is expected to be a
 function that can change a callout procedure: when a callout is
 generated, the wrapper is applied on the newly created primitive
 procedure, and its result is used as the new function.  Thus,
-@scheme[wrapper] is a hook that can perform various argument
+@racket[wrapper] is a hook that can perform various argument
 manipulations before the foreign function is invoked, and return
 different results (for example, grabbing a value stored in an
 ``output'' pointer and returning multiple values).  It can also be
@@ -483,11 +483,11 @@ translating them to a foreign ``closure,'' which foreign code can call
 as plain C functions.  Additional care must be taken in case the
 foreign code might hold on to the callback function.  In these cases
 you must arrange for the callback value to not be garbage-collected,
-or the held callback will become invalid.  The optional @scheme[keep]
+or the held callback will become invalid.  The optional @racket[keep]
 keyword argument is used to achieve this.  It can have the following
 values: @itemize[
 
-@item{@scheme[#t] makes the callback value stay in memory as long as
+@item{@racket[#t] makes the callback value stay in memory as long as
   the converted function is.  In order to use this, you need to hold
   on to the original function, for example, have a binding for it.
   Note that each function can hold onto one callback value (it is
@@ -495,7 +495,7 @@ values: @itemize[
   multiple callbacks you will need to use one of the last two
   options below.  (This is the default, as it is fine in most cases.)}
 
-@item{@scheme[#f] means that the callback value is not held.  This may
+@item{@racket[#f] means that the callback value is not held.  This may
   be useful for a callback that is only used for the duration of the
   foreign call --- for example, the comparison function argument to
   the standard C library @tt{qsort} function is only used while
@@ -503,7 +503,7 @@ values: @itemize[
   comparison function are kept.  Use this option only in such cases,
   when no holding is necessary and you want to avoid the extra cost.}
 
-@item{A box holding @scheme[#f] (or a callback value) --- in this case
+@item{A box holding @racket[#f] (or a callback value) --- in this case
   the callback value will be stored in the box, overriding any value
   that was in the box (making it useful for holding a single callback
   value).  When you know that it is no longer needed, you can
@@ -515,14 +515,14 @@ values: @itemize[
   callback box as a field in new instances or instantiations of the
   unit.}
 
-@item{A box holding @scheme[null] (or any list) -- this is similar to
+@item{A box holding @racket[null] (or any list) -- this is similar to
   the previous case, except that new callback values are consed onto
   the contents of the box.  It is therefore useful in (rare) cases
   when a Racket function is used in multiple callbacks (that is, sent
   to foreign code to hold onto multiple times).}
 
 @item{Finally, if a one-argument function is provided as
-  @scheme[keep], it will be invoked with the callback value when it
+  @racket[keep], it will be invoked with the callback value when it
   is generated.  This allows you to grab the value directly and use it
   in any way.}
 
@@ -548,46 +548,46 @@ values: @itemize[
                [maybe-wrapper code:blank
                                (code:line -> output-expr)])]{
 
-Creates a new function type.  The @scheme[_fun] form is a convenient
-syntax for the @scheme[_cprocedure] type constructor. In its simplest
-form, only the input @scheme[type-expr]s and the output @scheme[type-expr] are
+Creates a new function type.  The @racket[_fun] form is a convenient
+syntax for the @racket[_cprocedure] type constructor. In its simplest
+form, only the input @racket[type-expr]s and the output @racket[type-expr] are
 specified, and each types is a simple expression, which creates a
 straightforward function type.
 
 For instance,
 
-@schemeblock[
+@racketblock[
 (_fun _int _string -> _int)
 ]
 
 specifies a function that receives an integer and a
 string, and returns an integer.
 
-In its full form, the @scheme[_fun] syntax provides an IDL-like
+In its full form, the @racket[_fun] syntax provides an IDL-like
 language that can be used to create a wrapper function around the
 primitive foreign function.  These wrappers can implement complex
 foreign interfaces given simple specifications. The full form of each
 of the type specifications can include an optional label and an
-expression. If a @scheme[= value-expr] is provided, then the resulting
+expression. If a @racket[= value-expr] is provided, then the resulting
 function will be a wrapper that calculates the argument for that
 position itself, meaning that it does not expect an argument for that
 position.  The expression can use previous arguments if they were
-labeled with @scheme[id :].  In addition, the result of a function
+labeled with @racket[id :].  In addition, the result of a function
 call need not be the value returned from the foreign call: if the
-optional @scheme[output-expr] is specified, or if an expression is
+optional @racket[output-expr] is specified, or if an expression is
 provided for the output type, then this specifies an expression that
 will be used as a return value.  This expression can use any of the
 previous labels, including a label given for the output which can be
 used to access the actual foreign return value.
 
 In rare cases where complete control over the input arguments is needed, the
-wrapper's argument list can be specified as @scheme[args], in any form (including
-a ``rest'' argument).  Identifiers in this place are related to type labels, so
-if an argument is there is no need to use an expression.
+wrapper's argument list can be specified as @racket[args], in any form
+(including a ``rest'' argument).  Identifiers in this place are related to type
+labels, so if an argument is there is no need to use an expression.
 
 For example,
 
-@schemeblock[
+@racketblock[
 (_fun (n s) :: (s : _string) (n : _int) -> _int)
 ]
 
@@ -598,17 +598,17 @@ foreign function receives the string first.}
                        [fun-type ctype?])
          cpointer?]{
 
-Casts @scheme[ptr-or-proc] to a function pointer of type @scheme[fun-type].}
+Casts @racket[ptr-or-proc] to a function pointer of type @racket[fun-type].}
 
 @; ----------------------------------------------------------------------
 
 @subsection[#:tag "foreign:custom-types"]{Custom Function Types}
 
-The behavior of the @scheme[_fun] type can be customized via
+The behavior of the @racket[_fun] type can be customized via
 @deftech{custom function types}, which are pieces of syntax that can
 behave as C types and C type constructors, but they can interact with
 function calls in several ways that are not possible otherwise.  When
-the @scheme[_fun] form is expanded, it tries to expand each of the
+the @racket[_fun] form is expanded, it tries to expand each of the
 given type expressions, and ones that expand to certain keyword-value
 lists interact with the generation of the foreign function wrapper.
 This expansion makes it possible to construct a single wrapper
@@ -616,64 +616,64 @@ function, avoiding the costs involved in compositions of higher-order
 functions.
 
 Custom function types are macros that expand to a sequence
-@scheme[(_key: _val ...)], where each @scheme[_key:] is from a short list
+@racket[(_key: _val ...)], where each @racket[_key:] is from a short list
 of known keys.  Each key interacts with generated wrapper functions in
 a different way, which affects how its corresponding argument is
 treated:
 
 @itemize[
 
- @item{@scheme[type:] specifies the foreign type that should be used, if it is
-   @scheme[#f] then this argument does not participate in the foreign call.}
+ @item{@racket[type:] specifies the foreign type that should be used, if it is
+   @racket[#f] then this argument does not participate in the foreign call.}
 
- @item{@scheme[expr:] specifies an expression to be used for arguments of this
+ @item{@racket[expr:] specifies an expression to be used for arguments of this
    type, removing it from wrapper arguments.}
 
- @item{@scheme[bind:] specifies a name that is bound to the original
-   argument if it is required later (e.g., @scheme[_box] converts its
+ @item{@racket[bind:] specifies a name that is bound to the original
+   argument if it is required later (e.g., @racket[_box] converts its
    associated value to a C pointer, and later needs to refer back to
    the original box).}
 
- @item{@scheme[1st-arg:] specifies a name that can be used to refer to
+ @item{@racket[1st-arg:] specifies a name that can be used to refer to
    the first argument of the foreign call (good for common cases where
    the first argument has a special meaning, e.g., for method calls).}
 
- @item{@scheme[prev-arg:] similar to @scheme[1st-arg:], but refers to the
+ @item{@racket[prev-arg:] similar to @racket[1st-arg:], but refers to the
    previous argument.}
 
- @item{@scheme[pre:] a pre-foreign code chunk that is used to change the
+ @item{@racket[pre:] a pre-foreign code chunk that is used to change the
    argument's value.}
 
- @item{@scheme[post:] a similar post-foreign code chunk.}
+ @item{@racket[post:] a similar post-foreign code chunk.}
 
- @item{@scheme[keywords:] specifies keyword/value expressions that will
-   be used with the surrounding @scheme[_fun] form.  (Note: the
-   keyword/value sequence follows @scheme[keywords:], not parenthesized.)}
+ @item{@racket[keywords:] specifies keyword/value expressions that will
+   be used with the surrounding @racket[_fun] form.  (Note: the
+   keyword/value sequence follows @racket[keywords:], not parenthesized.)}
 ]
 
-The @scheme[pre:] and @scheme[post:] bindings can be of the form
-@scheme[(_id => _expr)] to use the existing value.  Note that if the
-@scheme[pre:] expression is not @scheme[(_id => _expr)], then it means
+The @racket[pre:] and @racket[post:] bindings can be of the form
+@racket[(_id => _expr)] to use the existing value.  Note that if the
+@racket[pre:] expression is not @racket[(_id => _expr)], then it means
 that there is no input for this argument to the
-@scheme[_fun]-generated procedure.  Also note that if a custom type is
-used as an output type of a function, then only the @scheme[post:]
+@racket[_fun]-generated procedure.  Also note that if a custom type is
+used as an output type of a function, then only the @racket[post:]
 code is used.
 
-Most custom types are meaningful only in a @scheme[_fun] context, and
+Most custom types are meaningful only in a @racket[_fun] context, and
 will raise a syntax error if used elsewhere.  A few such types can be
-used in non-@scheme[_fun] contexts: types which use only
-@scheme[type:], @scheme[pre:], @scheme[post:], and no others.  Such
-custom types can be used outside a @scheme[_fun] by expanding them
-into a usage of @scheme[make-ctype], using other keywords makes this
+used in non-@racket[_fun] contexts: types which use only
+@racket[type:], @racket[pre:], @racket[post:], and no others.  Such
+custom types can be used outside a @racket[_fun] by expanding them
+into a usage of @racket[make-ctype], using other keywords makes this
 impossible, because it means that the type has specific interaction
 with a function call.
 
 
 @defform[(define-fun-syntax id transformer-expr)]{
 
-Binds @scheme[id] as a @tech{custom function type}. The type is
+Binds @racket[id] as a @tech{custom function type}. The type is
 expanded by applying the procedure produced by
-@scheme[transformer-expr] to a use of the @tech{custom function
+@racket[transformer-expr] to a use of the @tech{custom function
 type}.
 
 For instance, the following defines a new type that automatically coerces
@@ -699,29 +699,29 @@ to specify wrapper arguments that are not sent to the foreign function
               (_ptr mode type-expr)
               ([mode i o io])]{
 
-Creates a C pointer type, where @scheme[mode] indicates input or
-output pointers (or both).  The @scheme[mode] can be one of the
+Creates a C pointer type, where @racket[mode] indicates input or
+output pointers (or both).  The @racket[mode] can be one of the
 following:
 
 @itemize[
 
- @item{@scheme[i] --- indicates an @italic{input} pointer argument:
+ @item{@racket[i] --- indicates an @italic{input} pointer argument:
   the wrapper arranges for the function call to receive a value that
-  can be used with the @scheme[type] and to send a pointer to this
+  can be used with the @racket[type] and to send a pointer to this
   value to the foreign function.  After the call, the value is
   discarded.}
 
- @item{@scheme[o] --- indicates an @italic{output} pointer argument:
+ @item{@racket[o] --- indicates an @italic{output} pointer argument:
   the foreign function expects a pointer to a place where it will save
   some value, and this value is accessible after the call, to be used
-  by an extra return expression.  If @scheme[_ptr] is used in this
+  by an extra return expression.  If @racket[_ptr] is used in this
   mode, then the generated wrapper does not expect an argument since
   one will be freshly allocated before the call.}
 
- @item{@scheme[io] --- combines the above into an
+ @item{@racket[io] --- combines the above into an
   @italic{input/output} pointer argument: the wrapper gets the Racket
   value, allocates and set a pointer using this value, and then
-  references the value after the call.  The ``@scheme[_ptr]'' name can
+  references the value after the call.  The ``@racket[_ptr]'' name can
   be confusing here: it means that the foreign function expects a
   pointer, but the generated wrapper uses an actual value.  (Note that
   if this is used with structs, a struct is created when calling the
@@ -730,11 +730,11 @@ following:
 
 ]
 
-For example, the @scheme[_ptr] type can be used in output mode to create a
+For example, the @racket[_ptr] type can be used in output mode to create a
 foreign function wrapper that returns more than a single argument.  The
 following type:
 
-@schemeblock[
+@racketblock[
 (_fun (i : (_ptr o _int))
       -> (d : _double)
       -> (values d i))
@@ -747,7 +747,7 @@ return value.}
 
 @defidform[_box]{
 
-A @tech{custom function type} similar to a @scheme[(_ptr io _type)]
+A @tech{custom function type} similar to a @racket[(_ptr io _type)]
 argument, where the input is expected to be a box holding an
 appropriate value, which is unboxed on entry and modified accordingly
 on exit.}
@@ -757,16 +757,16 @@ on exit.}
                [maybe-len code:blank
                           len-expr])]{
 
-A @tech{custom function type} that is similar to @scheme[_ptr], except
+A @tech{custom function type} that is similar to @racket[_ptr], except
 that it is used for converting lists to/from C vectors.  The optional
-@scheme[maybe-len] argument is needed for output values where it is used in
+@racket[maybe-len] argument is needed for output values where it is used in
 the post code, and in the pre code of an output mode to allocate the
 block.  In either case, it can refer to a previous binding for the
 length of the list which the C function will most likely require.}
 
 @defform[(_vector mode type maybe-len)]{
 
-A @tech{custom function type} like @scheme[_list], except that it uses
+A @tech{custom function type} like @racket[_list], except that it uses
 Racket vectors instead of lists.}
 
 
@@ -780,8 +780,8 @@ is for a pointer return value, where the size should be explicitly
 specified.
 
 There is no need for other modes: input or input/output would be just
-like @scheme[_bytes], since the string carries its size information
-(there is no real need for the @scheme[o] part of the syntax, but it
+like @racket[_bytes], since the string carries its size information
+(there is no real need for the @racket[o] part of the syntax, but it
 is present for consistency with the above macros).}
 
 
@@ -800,7 +800,7 @@ functions associated.  The corresponding Racket objects that are used
 for structs are pointers, but when these types are used, the value
 that the pointer @italic{refers to} is used, rather than the pointer
 itself.  This value is basically made of a number of bytes that is
-known according to the given list of @scheme[types] list.
+known according to the given list of @racket[types] list.
 
 If @racket[alignment] is @racket[#f], then the natural alignment of
 each type in @racket[types] is used for its alignment within the
@@ -813,11 +813,11 @@ members.}
          ctype?]{
 
 A type constructor that builds a struct type using
-@scheme[make-cstruct-type] function and wraps it in a type that
+@racket[make-cstruct-type] function and wraps it in a type that
 marshals a struct as a list of its components.  Note that space for
 structs must to be allocated; the converter for a
-@scheme[_list-struct] type immediately allocates and uses a list from
-the allocated space, so it is inefficient. Use @scheme[define-cstruct]
+@racket[_list-struct] type immediately allocates and uses a list from
+the allocated space, so it is inefficient. Use @racket[define-cstruct]
 below for a more efficient approach.}
 
 
@@ -827,52 +827,52 @@ below for a more efficient approach.}
                (alignment code:blank
                           (code:line #:alignment alignment-expr))]]{
 
-Defines a new C struct type, but unlike @scheme[_list-struct], the
+Defines a new C struct type, but unlike @racket[_list-struct], the
 resulting type deals with C structs in binary form, rather than
 marshaling them to Racket values.  The syntax is similar to
-@scheme[define-struct], providing accessor functions for raw struct
+@racket[define-struct], providing accessor functions for raw struct
 values (which are pointer objects).  The new type uses pointer tags to
-guarantee that only proper struct objects are used.  The @scheme[_id]
+guarantee that only proper struct objects are used.  The @racket[_id]
 must start with @litchar{_}.
 
 The resulting bindings are as follows:
 
 @itemize[
 
- @item{@scheme[_id] : the new C type for this struct.}
+ @item{@racket[_id] : the new C type for this struct.}
 
- @item{@scheme[_id]@schemeidfont{-pointer}: a pointer type that should
+ @item{@racket[_id]@racketidfont{-pointer}: a pointer type that should
   be used when a pointer to values of this struct are used.}
 
- @item{@schemevarfont{id}@schemeidfont{?}: a predicate for the new type.}
+ @item{@racketvarfont{id}@racketidfont{?}: a predicate for the new type.}
 
- @item{@schemevarfont{id}@schemeidfont{-tag}: the tag string object that is
+ @item{@racketvarfont{id}@racketidfont{-tag}: the tag string object that is
   used with instances.}
 
- @item{@schemeidfont{make-}@schemevarfont{id} : a constructor, which expects
+ @item{@racketidfont{make-}@racketvarfont{id} : a constructor, which expects
   an argument for each type.}
 
- @item{@schemevarfont{id}@schemeidfont{-}@scheme[field-id] : an accessor
-  function for each @scheme[field-id]; if the field has a cstruct type, then
+ @item{@racketvarfont{id}@racketidfont{-}@racket[field-id] : an accessor
+  function for each @racket[field-id]; if the field has a cstruct type, then
   the result of the accessor is a pointer to the field within the
   enclosing structure, rather than a  copy of the field.}
 
- @item{@schemeidfont{set-}@schemevarfont{id}@schemeidfont{-}@scheme[field-id]@schemeidfont{!}
-  : a mutator function for each @scheme[field-id].}
+ @item{@racketidfont{set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
+  : a mutator function for each @racket[field-id].}
 
- @item{@schemevarfont{id}: structure-type information compatible with
-  @scheme[struct-out] or @scheme[match] (but not @scheme[define-struct]);
-  currently, this information is correct only when no @scheme[super-id]
+ @item{@racketvarfont{id}: structure-type information compatible with
+  @racket[struct-out] or @racket[match] (but not @racket[define-struct]);
+  currently, this information is correct only when no @racket[super-id]
   is specified.}
 
 ]
 
 Objects of the new type are actually C pointers, with a type tag that
-is a list that contains the string form of @schemevarfont{id}.  Since
+is a list that contains the string form of @racketvarfont{id}.  Since
 structs are implemented as pointers, they can be used for a
-@scheme[_pointer] input to a foreign function: their address will be
+@racket[_pointer] input to a foreign function: their address will be
 used.  To make this a little safer, the corresponding cpointer type is
-defined as @scheme[_id]@schemeidfont{-pointer}.  The @scheme[_id] type
+defined as @racket[_id]@racketidfont{-pointer}.  The @racket[_id] type
 should not be used when a pointer is expected, since it will cause the
 struct to be copied rather than use the pointer value, leading to
 memory corruption.
@@ -887,18 +887,18 @@ behavior is implemented in Racket; for example, accessors and mutators
 of the super-cstruct can be used with the new sub-cstruct.  See the
 example below.
 
-Providing a @scheme[super-id] is shorthand for using an initial field
-named @scheme[super-id] and using @schemeidfont{_}@scheme[super-id]
+Providing a @racket[super-id] is shorthand for using an initial field
+named @racket[super-id] and using @racketidfont{_}@racket[super-id]
 as its type.  Thus, the new struct will use
-@schemeidfont{_}@scheme[super-id]'s tag in addition to its own tag,
-meaning that instances of @scheme[_id] can be used as instances of
-@schemeidfont{_}@scheme[super-id].  Aside from the syntactic sugar,
+@racketidfont{_}@racket[super-id]'s tag in addition to its own tag,
+meaning that instances of @racket[_id] can be used as instances of
+@racketidfont{_}@racket[super-id].  Aside from the syntactic sugar,
 the constructor function is different when this syntax is used:
 instead of expecting a first argument that is an instance of
-@schemeidfont{_}@scheme[super-id], the constructor will expect
-arguments for each of @schemeidfont{_}@scheme[super-id]'s fields, in
+@racketidfont{_}@racket[super-id], the constructor will expect
+arguments for each of @racketidfont{_}@racket[super-id]'s fields, in
 addition for the new fields.  This adjustment of the constructor is,
-again, in analogy to using a supertype with @scheme[define-struct].
+again, in analogy to using a supertype with @racket[define-struct].
 
 Note that structs are allocated as atomic blocks, which means that the
 garbage collector ignores their content.  Thus, struct fields can hold
@@ -933,72 +933,72 @@ As an example, consider the following C code:
  }
 }
 
-Using the simple @scheme[_list-struct], you might expect this code to
+Using the simple @racket[_list-struct], you might expect this code to
 work:
 
-@schemeblock[
+@racketblock[
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
     (_fun -> (_list-struct (_list-struct _int _byte) _int))))
-(makeB) (code:comment @#,t{should return @scheme['((1 2) 3)]})
+(makeB) (code:comment @#,t{should return @racket['((1 2) 3)]})
 ]
 
 The problem here is that @cpp{makeB} returns a pointer to the struct rather
 than the struct itself.  The following works as expected:
 
-@schemeblock[
+@racketblock[
 (define makeB
   (get-ffi-obj 'makeB "foo.so" (_fun -> _pointer)))
 (ptr-ref (makeB) (_list-struct (_list-struct _int _byte) _int))
 ]
 
-As described above, @scheme[_list-struct]s should be used in cases where
-efficiency is not an issue.  We continue using @scheme[define-cstruct], first
+As described above, @racket[_list-struct]s should be used in cases where
+efficiency is not an issue.  We continue using @racket[define-cstruct], first
 define a type for @cpp{A} which makes it possible to use @cpp{makeA}:
 
-@schemeblock[
-(define-cstruct #,(schemeidfont "_A") ([x _int] [y _byte]))
+@racketblock[
+(define-cstruct #,(racketidfont "_A") ([x _int] [y _byte]))
 (define makeA
   (get-ffi-obj 'makeA "foo.so"
-    (_fun -> #,(schemeidfont "_A-pointer")))) (code:comment @#,t{using @schemeidfont{_A} is a memory-corrupting bug!})
+    (_fun -> #,(racketidfont "_A-pointer")))) (code:comment @#,t{using @racketidfont{_A} is a memory-corrupting bug!})
 (define a (makeA))
 (list a (A-x a) (A-y a))
-(code:comment @#,t{produces an @scheme[A] containing @scheme[1] and @scheme[2]})
+(code:comment @#,t{produces an @racket[A] containing @racket[1] and @racket[2]})
 ]
 
 Using @cpp{gety} is also simple:
 
-@schemeblock[
+@racketblock[
 (define gety
   (get-ffi-obj 'gety "foo.so"
-    (_fun #,(schemeidfont "_A-pointer") -> _byte)))
-(gety a) (code:comment @#,t{produces @scheme[2]})
+    (_fun #,(racketidfont "_A-pointer") -> _byte)))
+(gety a) (code:comment @#,t{produces @racket[2]})
 ]
 
 We now define another C struct for @cpp{B}, and expose @cpp{makeB}
 using it:
 
-@schemeblock[
-(define-cstruct #,(schemeidfont "_B") ([a #,(schemeidfont "_A")] [z _int]))
+@racketblock[
+(define-cstruct #,(racketidfont "_B") ([a #,(racketidfont "_A")] [z _int]))
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
-    (_fun -> #,(schemeidfont "_B-pointer"))))
+    (_fun -> #,(racketidfont "_B-pointer"))))
 (define b (makeB))
 ]
 
-We can access all values of @scheme[b] using a naive approach:
+We can access all values of @racket[b] using a naive approach:
 
-@schemeblock[
+@racketblock[
 (list (A-x (B-a b)) (A-y (B-a b)) (B-z b))
 ]
 
 but this is inefficient as it allocates and copies an instance of
-@cpp{A} on every access.  Inspecting the tags @scheme[(cpointer-tag
+@cpp{A} on every access.  Inspecting the tags @racket[(cpointer-tag
 b)] we can see that @cpp{A}'s tag is included, so we can simply use
 its accessors and mutators, as well as any function that is defined to
 take an @cpp{A} pointer:
 
-@schemeblock[
+@racketblock[
 (list (A-x b) (A-y b) (B-z b))
 (gety b)
 ]
@@ -1006,16 +1006,16 @@ take an @cpp{A} pointer:
 Constructing a @cpp{B} instance in Racket requires allocating a
  temporary @cpp{A} struct:
 
-@schemeblock[
+@racketblock[
 (define b (make-B (make-A 1 2) 3))
 ]
 
 To make this more efficient, we switch to the alternative
-@scheme[define-cstruct] syntax, which creates a constructor that
+@racket[define-cstruct] syntax, which creates a constructor that
 expects arguments for both the super fields and the new ones:
 
-@schemeblock[
- (define-cstruct (#,(schemeidfont "_B") #,(schemeidfont "_A")) ([z _int]))
+@racketblock[
+ (define-cstruct (#,(racketidfont "_B") #,(racketidfont "_A")) ([z _int]))
  (define b (make-B 1 2 3))
 ]}
 
@@ -1034,18 +1034,18 @@ where the syntactic context implies one.
          ctype?]{
 
 Takes a list of symbols and generates an enumeration type.  The
-enumeration maps between a symbol in the given @scheme[symbols] list and
-corresponding integers, counting from @scheme[0].
+enumeration maps between a symbol in the given @racket[symbols] list and
+corresponding integers, counting from @racket[0].
 
-The list @scheme[symbols] can also set the values of symbols by
-putting @scheme['=] and an exact integer after the symbol.  For
-example, the list @scheme['(x y = 10 z)] maps @scheme['x] to
-@scheme[0], @scheme['y] to @scheme[10], and @scheme['z] to
-@scheme[11].
+The list @racket[symbols] can also set the values of symbols by
+putting @racket['=] and an exact integer after the symbol.  For
+example, the list @racket['(x y = 10 z)] maps @racket['x] to
+@racket[0], @racket['y] to @racket[10], and @racket['z] to
+@racket[11].
 
-The @scheme[basetype] argument specifies the base type to use.
+The @racket[basetype] argument specifies the base type to use.
 
-The @scheme[unknown] argument specifies the result of converting an
+The @racket[unknown] argument specifies the result of converting an
 unknown integer from the foreign side: it can be a one-argument function
 to be applied on the integer, or a value to return instead.  The default
 is to throw an exception.}
@@ -1053,8 +1053,8 @@ is to throw an exception.}
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
 
-Similar to @scheme[_enum], but the resulting mapping translates a list
-of symbols to a number and back, using @scheme[bitwise-ior].  A single
+Similar to @racket[_enum], but the resulting mapping translates a list
+of symbols to a number and back, using @racket[bitwise-ior].  A single
 symbol is equivalent to a list containing just the symbol.  The
-default @scheme[basetype] is @scheme[_uint], since high bits are often
+default @racket[basetype] is @racket[_uint], since high bits are often
 used for flags.}

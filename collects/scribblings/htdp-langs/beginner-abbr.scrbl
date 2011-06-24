@@ -20,7 +20,7 @@
 
 @declare-exporting[lang/htdp-beginner-abbr]
 
-@schemegrammar*+qq[
+@racketgrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             check-expect check-within check-error)
 (check-expect check-within check-error require)
@@ -42,8 +42,8 @@
       (or expr expr expr ...)
       empty
       id
-      (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false
@@ -60,22 +60,22 @@
 @section[#:tag "beginner-abbr-quote"]{Quote}
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont{'}@scheme[quoted]})]
+@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[quoted]})]
 @defform[(quote quoted)]
 )]{
 
 Creates symbols and abbreviates nested lists.
 
 Normally, this form is written with a @litchar{'}, like
-@scheme['(apple banana)], but it can also be written with @scheme[quote], like
-@scheme[(@#,scheme[quote] (apple banana))].}
+@racket['(apple banana)], but it can also be written with @racket[quote], like
+@racket[(@#,racket[quote] (apple banana))].}
 
 @; ----------------------------------------
 
 @section[#:tag "beginner-abbr-quasiquote"]{Quasiquote}
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont{`}@scheme[quasiquoted]})]
+@defform/none[(unsyntax @elem{@racketvalfont{`}@racket[quasiquoted]})]
 @defform[(quasiquote quasiquoted)]
 )]{
 
@@ -83,34 +83,34 @@ Creates symbols and abbreviates nested lists, but also allows escaping
 to expression ``unquotes.''
 
 Normally, this form is written with a backquote, @litchar{`}, like
-@scheme[`(apple ,(+ 1 2))], but it can also be written with
-@scheme[quasiquote], like
-@scheme[(@#,scheme[quasiquote] (apple ,(+ 1 2)))].}
+@racket[`(apple ,(+ 1 2))], but it can also be written with
+@racket[quasiquote], like
+@racket[(@#,racket[quasiquote] (apple ,(+ 1 2)))].}
 
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont{,}@scheme[quasiquoted]})]
+@defform/none[(unsyntax @elem{@racketvalfont{,}@racket[quasiquoted]})]
 @defform[(unquote expr)]
 )]{
 
-Under a single quasiquote, @schemefont{,}@scheme[expr] escapes from
+Under a single quasiquote, @racketfont{,}@racket[expr] escapes from
 the quote to include an evaluated expression whose result is inserted
 into the abbreviated list.
 
-Under multiple quasiquotes, @schemefont{,}@scheme[expr] is really
-@schemefont{,}@scheme[quasiquoted], decrementing the quasiquote count
-by one for @scheme[quasiquoted].
+Under multiple quasiquotes, @racketfont{,}@racket[expr] is really
+@racketfont{,}@racket[quasiquoted], decrementing the quasiquote count
+by one for @racket[quasiquoted].
 
 Normally, an unquote is written with @litchar{,}, but it can also be
-written with @scheme[unquote].}
+written with @racket[unquote].}
 
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont[",@"]@scheme[quasiquoted]})]
+@defform/none[(unsyntax @elem{@racketvalfont[",@"]@racket[quasiquoted]})]
 @defform[(unquote-splicing expr)]
 )]{
 
-Under a single quasiquote, @schemefont[",@"]@scheme[expr] escapes from
+Under a single quasiquote, @racketfont[",@"]@racket[expr] escapes from
 the quote to include an evaluated expression whose result is a list to
 splice into the abbreviated list.
 
@@ -118,7 +118,7 @@ Under multiple quasiquotes, a splicing unquote is like an unquote;
 that is, it decrements the quasiquote count by one.
 
 Normally, a splicing unquote is written with @litchar{,}, but it can
-also be written with @scheme[unquote-splicing].}
+also be written with @racket[unquote-splicing].}
 
 
 @; ----------------------------------------

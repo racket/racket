@@ -612,16 +612,16 @@ Consider this sample contract:
                    [y (x) (>=/c x)])
                   [result (x y) (and/c number? (>=/c (+ x y)))])]
 It specifies a function of two arguments, both numbers. The contract on the
-second argument (@scheme[y]) demands that it is greater than the first
+second argument (@racket[y]) demands that it is greater than the first
 argument. The result contract promises a number that is greater than the
-sum of the two arguments. While the dependency specification for @scheme[y] 
+sum of the two arguments. While the dependency specification for @racket[y] 
 signals that the argument contract depends on the value of the first
-argument, the dependency sequence for @scheme[result] indicates that the
+argument, the dependency sequence for @racket[result] indicates that the
 contract depends on both argument values. @margin-note*{In general, an
 empty sequence is (nearly) equivalent to not adding
 a sequence at all except that the former is more expensive than the latter.} 
 Since the contract for @racket[x] does not depend on anything else, it does
-not come with any dependency sequence, not even @scheme[()]. 
+not come with any dependency sequence, not even @racket[()]. 
 
 The contract expressions are not always evaluated in
 order. First, if there is no dependency for a given contract expression,
@@ -676,7 +676,7 @@ called @racket[the-unsupplied-arg] value.
 )]{
    
 This contract is here for backwards compatibility; any new code should
-use @scheme[->i] instead.
+use @racket[->i] instead.
 
 This contract is similar to @racket[->i], but is ``lax'', meaning
 that it does not enforce contracts internally. For example, using
@@ -686,7 +686,7 @@ this contract
                   (zero? (f #f))
                   any)]
 will allow @racket[f] to be called with @racket[#f], trigger whatever bad
-behavior the author of @scheme[f] was trying to prohibit by insisting that
+behavior the author of @racket[f] was trying to prohibit by insisting that
 @racket[f]'s contract accept only integers.
 
 The @racket[#:pre-cond] and @racket[#:post-cond] keywords are aliases for
@@ -989,10 +989,10 @@ contracts. The variables are bound in the remainder of the @racket[provide/contr
 expression to new contracts that hide the values they accept and
 ensure that the exported functions are treated parametrically.
 
-The implementation of @scheme[provide/contract] attaches uses
-@scheme[syntax-property] to attach properties to the code it generates
+The implementation of @racket[provide/contract] attaches uses
+@racket[syntax-property] to attach properties to the code it generates
 that records the syntax of the contracts in the fully expanded program.
-Specifically, the symbol @scheme['provide/contract-original-contract]
+Specifically, the symbol @racket['provide/contract-original-contract]
 is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.

@@ -27,13 +27,13 @@
 
 @defform[(try expr ...+)]{
 
-Executes the first expression @scheme[expr] in the sequence, producing its
+Executes the first expression @racket[expr] in the sequence, producing its
 result value(s) if it returns any.  If it raises an exception instead,
-@scheme[try] continues with the next @scheme[expr].  Exceptions raised by
+@racket[try] continues with the next @racket[expr].  Exceptions raised by
 intermediate expressions are reported to the @tech[#:doc '(lib
-"scribblings/reference/reference.scrbl")]{current logger} at the @scheme['debug]
+"scribblings/reference/reference.scrbl")]{current logger} at the @racket['debug]
 level before continuing.  Exceptions raised by the final expression are not
-caught by @scheme[try].
+caught by @racket[try].
 
 @defexamples[
 #:eval the-eval

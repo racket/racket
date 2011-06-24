@@ -32,27 +32,27 @@ launcher called (PDF-SLaTeX/pdf-slatex).
   @defproc[(pdf-slatex (filename string?)) boolean?])]{
 
 Accepts a string naming a file and runs @slatex and @latex on the
-file. It calls @scheme[filename->latex-filename] on @scheme[filename].
+file. It calls @racket[filename->latex-filename] on @racket[filename].
 
-@scheme[pdf-slatex] is like @scheme[slatex] except that it calls
+@racket[pdf-slatex] is like @racket[slatex] except that it calls
 @pdflatex rather than @latex, and produces PDF output instead of PS
 output.}
 
 @defproc[(slatex/no-latex (filename string?)) void?]{
 
-Runs @slatex on the file named by @scheme[filename], without calling
+Runs @slatex on the file named by @racket[filename], without calling
 @|latex|. That is, it only processes the @filepath{.tex} file to
 produce the @filepath{.Z} files.  It calls
-@scheme[filename->latex-filename] on @scheme[filename].}
+@racket[filename->latex-filename] on @racket[filename].}
 
 @deftogether[(
   @defproc[(latex (filename string?)) boolean?]
   @defproc[(pdf-latex (filename string?)) boolean?])]{
 
-Runs @latex on the file named by @scheme[filename]. It calls
-@scheme[filename->latex-filename] on @scheme[filename].
+Runs @latex on the file named by @racket[filename]. It calls
+@racket[filename->latex-filename] on @racket[filename].
 
-@scheme[pdf-latex] is like @scheme[latex] except that it calls
+@racket[pdf-latex] is like @racket[latex] except that it calls
 @pdflatex rather than @latex, and produces PDF output instead of PS
 output.}
 

@@ -13,7 +13,7 @@ that has the C type @cppi{Scheme_Type}. The rest of the structure,
 following the @cppi{Scheme_Object} header, is type-dependent.
 Racket's C interface gives Racket values the type
 @cpp{Scheme_Object*}. (The ``object'' here does not refer to objects
-in the sense of the @schememodname[racket/class] library.)
+in the sense of the @racketmodname[racket/class] library.)
 
 Examples of @cpp{Scheme_Type} values include @cpp{scheme_pair_type}
 and @cpp{scheme_symbol_type}. Some of these are implemented as
@@ -25,7 +25,7 @@ types.
 
 For most Racket types, a constructor is provided for creating values
 of the type. For example, @cpp{scheme_make_pair} takes two
-@cpp{Scheme_Object*} values and returns the @scheme[cons] of the
+@cpp{Scheme_Object*} values and returns the @racket[cons] of the
 values.
 
 The macro @cppdef{SCHEME_TYPE} takes a @cpp{Scheme_Object *} and returns
@@ -149,12 +149,12 @@ types:
  @cppdef{SCHEME_BOXP}}
 
  @item{@cppdef{scheme_pair_type} --- @cppdef{SCHEME_CAR} extracts/sets
- the @scheme[car] and @cppdef{SCHEME_CDR} extracts/sets the
- @scheme[cdr]; test for this type with @cppdef{SCHEME_PAIRP}}
+ the @racket[car] and @cppdef{SCHEME_CDR} extracts/sets the
+ @racket[cdr]; test for this type with @cppdef{SCHEME_PAIRP}}
 
  @item{@cppdef{scheme_mutable_pair_type} --- @cppdef{SCHEME_MCAR} extracts/sets
- the @scheme[mcar] and @cppdef{SCHEME_MCDR} extracts/sets the
- @scheme[mcdr]; test for this type with @cppdef{SCHEME_MPAIRP}}
+ the @racket[mcar] and @cppdef{SCHEME_MCDR} extracts/sets the
+ @racket[mcdr]; test for this type with @cppdef{SCHEME_MPAIRP}}
 
  @item{@cppdef{scheme_vector_type} --- @cppdef{SCHEME_VEC_SIZE}
  extracts the length and @cppdef{SCHEME_VEC_ELS} extracts the array of
@@ -175,13 +175,13 @@ types:
  extracts/sets the user data pointer; test for just this type with
  @cppdef{SCHEME_INPORTP}, but use @cppdef{SCHEME_INPUT_PORTP} to recognize
  all input ports (including structures with the
- @scheme[prop:input-port] property)}
+ @racket[prop:input-port] property)}
 
  @item{@cppdef{scheme_output_port_type} --- @cppdef{SCHEME_OUTPORT_VAL}
  extracts/sets the user data pointer; test for just this type with
  @cppdef{SCHEME_OUTPORTP}, but use @cppdef{SCHEME_OUTPUT_PORTP} to
  recognize all output ports (including structures with the
- @scheme[prop:output-port] property)}
+ @racket[prop:output-port] property)}
 
  @item{@cppdef{scheme_thread_type} --- thread descriptors; test for
  this type with @cppdef{SCHEME_THREADP}}
@@ -229,7 +229,7 @@ The following are the procedure types:
 
  @item{@cppdef{scheme_escaping_cont_type} --- an escape continuation}
 
- @item{@cppdef{scheme_case_closure_type} --- a @scheme[case-lambda]
+ @item{@cppdef{scheme_case_closure_type} --- a @racket[case-lambda]
  procedure}
 
  @item{@cppdef{scheme_native_closure_type} --- a procedure with
@@ -435,7 +435,7 @@ value.}
            [Scheme_Object* carv]
            [Scheme_Object* cdrv])]{
 
-Makes a @scheme[cons] pair.}
+Makes a @racket[cons] pair.}
 
 @function[(Scheme_Object* scheme_make_byte_string
            [char* bytes])]{
@@ -725,7 +725,7 @@ Such a printer must print a representation of the value using
  @cppi{scheme_print_bytes} and @cppi{scheme_print_string}.  The
  first argument to the printer, @var{v}, is the value to be printed.
  The second argument indicates whether @var{v} is printed via
- @scheme[write] or @scheme[display]. The last argument is to be passed
+ @racket[write] or @racket[display]. The last argument is to be passed
  on to @cppi{scheme_print_bytes} or @cppi{scheme_print_string} to
  identify the printing context.}
 
@@ -776,7 +776,7 @@ follows:
 }
 
 The two hash functions are use to generate primary and secondary keys
-for double hashing in an @scheme[equal?]-based hash table. The result
+for double hashing in an @racket[equal?]-based hash table. The result
 of the primary-key function should depend on both @var{obj} and
 @var{base}.
 

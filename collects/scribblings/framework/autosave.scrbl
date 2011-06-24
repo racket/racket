@@ -8,7 +8,7 @@
   Classes that implement this interface can be autosaved.
   @defmethod*[(((do-autosave) void?))]{
     This method is called when the object is registered to be
-    autosaved (see @scheme[autosave:register]).
+    autosaved (see @racket[autosave:register]).
   }
 }
 

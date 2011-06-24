@@ -4,7 +4,7 @@
 @defclass/title[horizontal-pasteboard% pasteboard% (aligned-pasteboard<%>)]{
 
 @defconstructor/auto-super[()]{
-Passes all arguments to @scheme[super-init].
+Passes all arguments to @racket[super-init].
 }
 
 @defmethod[#:mode override 

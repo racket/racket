@@ -18,7 +18,7 @@ Provides macros for creating and manipulating definitions.
 
 @defform[(at-end expr)]{
 
-When used at the top level of a module, evaluates @scheme[expr] at the end of
+When used at the top level of a module, evaluates @racket[expr] at the end of
 the module.  This can be useful for calling functions before their definitions.
 
 @defexamples[
@@ -47,9 +47,9 @@ the module.  This can be useful for calling functions before their definitions.
 @defform[(define-syntaxes-if-unbound [x ...] e)]
 )]{
 
-Define each @scheme[x] (or @scheme[f]) if no such binding exists, or
+Define each @racket[x] (or @racket[f]) if no such binding exists, or
 do nothing if the name(s) is(are) already bound.  The
-@scheme[define-values-if-unbound] and @scheme[define-syntaxes-if-unbound] forms
+@racket[define-values-if-unbound] and @racket[define-syntaxes-if-unbound] forms
 raise a syntax error if some of the given names are bound and some are not.
 
 These are useful for writing programs that are portable across versions of
@@ -76,8 +76,8 @@ y
 
 Establishes a
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{rename transformer}
-for each @scheme[new] identifier, redirecting it to the corresponding
-@scheme[old] identifier.
+for each @racket[new] identifier, redirecting it to the corresponding
+@racket[old] identifier.
 
 @defexamples[
 #:eval the-eval
@@ -103,9 +103,9 @@ forward references, that may be used at the Racket top level.
 
 @defform[(define-with-parameter name parameter)]{
 
-Defines the form @scheme[name] as a shorthand for setting the parameter
-@scheme[parameter].  Specifically, @scheme[(name value body ...)] is equivalent
-to @scheme[(parameterize ([parameter value]) body ...)].
+Defines the form @racket[name] as a shorthand for setting the parameter
+@racket[parameter].  Specifically, @racket[(name value body ...)] is equivalent
+to @racket[(parameterize ([parameter value]) body ...)].
 
 @defexamples[
 #:eval the-eval
@@ -117,10 +117,10 @@ to @scheme[(parameterize ([parameter value]) body ...)].
 
 @defform[(define-single-definition define-one-name define-many-name)]{
 
-Defines a marco @scheme[define-one-name] as a single identifier
-definition form with function shorthand like @scheme[define] and
-@scheme[define-syntax], based on an existing macro @scheme[define-many-name]
-which works like @scheme[define-values] or @scheme[define-syntaxes].
+Defines a marco @racket[define-one-name] as a single identifier
+definition form with function shorthand like @racket[define] and
+@racket[define-syntax], based on an existing macro @racket[define-many-name]
+which works like @racket[define-values] or @racket[define-syntaxes].
 
 @defexamples[
 #:eval the-eval
@@ -170,7 +170,7 @@ definitions.  Subsumes the behavior of @racket[define-syntax-set].
 
 @defform[(in-phase1 e)]{
 
-Executes @scheme[e] during phase 1 (the syntax transformation phase)
+Executes @racket[e] during phase 1 (the syntax transformation phase)
 relative to its context, during pass 1 if it occurs in a head expansion
 position.
 
@@ -178,7 +178,7 @@ position.
 
 @defform[(in-phase1/pass2 e)]{
 
-Executes @scheme[e] during phase 1 (the syntax transformation phase)
+Executes @racket[e] during phase 1 (the syntax transformation phase)
 relative to its context, during pass 2 (after head expansion).
 
 }

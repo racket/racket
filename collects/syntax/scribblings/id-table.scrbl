@@ -6,15 +6,15 @@
 @defmodule[syntax/id-table]
 
 This module provides functionality like that of
-@schememodname[syntax/boundmap] but with more operations, standard
-names, implementation of the @schememodname[scheme/dict] interface,
+@racketmodname[syntax/boundmap] but with more operations, standard
+names, implementation of the @racketmodname[scheme/dict] interface,
 and immutable (functionally-updating) variants.
 
-@section{Dictionaries for @scheme[bound-identifier=?]}
+@section{Dictionaries for @racket[bound-identifier=?]}
 
 Bound-identifier tables implement the dictionary interface of
-@scheme[scheme/dict]. Consequently, all of the appropriate generic
-functions (@scheme[dict-ref], @scheme[dict-map], etc) can be used on
+@racket[scheme/dict]. Consequently, all of the appropriate generic
+functions (@racket[dict-ref], @racket[dict-map], etc) can be used on
 free-identifier tables.
 
 @deftogether[[
@@ -28,29 +28,29 @@ free-identifier tables.
          immutable-bound-id-table?]]]{
 
 Produces a dictionary mapping syntax identifiers to arbitrary
-values. The mapping uses @scheme[bound-identifier=?] to compare keys,
+values. The mapping uses @racket[bound-identifier=?] to compare keys,
 but also uses a hash table based on symbol equality to make the
 mapping efficient in the common case. The two procedures produce
 mutable and immutable dictionaries, respectively.
 
-The identifiers are compared at phase level @scheme[phase]. The
+The identifiers are compared at phase level @racket[phase]. The
 default value is generally appropriate for identifier tables used by
 macros, but code that analyzes fully-expanded programs may need to
 create identifier tables at multiple different phases.
 
-The optional @scheme[init-dict] argument provides the initial
+The optional @racket[init-dict] argument provides the initial
 mappings. It must be a dictionary, and its keys must all be
-identifiers. If the @scheme[init-dict] dictionary has multiple
-distinct entries whose keys are @scheme[bound-identifier=?], only one
+identifiers. If the @racket[init-dict] dictionary has multiple
+distinct entries whose keys are @racket[bound-identifier=?], only one
 of the entries appears in the new id-table, and it is not specified
 which entry is picked.
 }
 
 @defproc[(bound-id-table? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] was produced by
-@scheme[make-bound-id-table] or
-@scheme[make-immutable-bound-id-table], @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[v] was produced by
+@racket[make-bound-id-table] or
+@racket[make-immutable-bound-id-table], @racket[#f] otherwise.
 }
 
 @deftogether[[
@@ -68,8 +68,8 @@ tables, respectively.
                               (lambda () (raise (make-exn:fail .....)))])
          any]{
 
-Like @scheme[hash-ref] for bound identifier tables. In particular, if
-@scheme[id] is not found, the @scheme[failure] argument is applied if
+Like @racket[hash-ref] for bound identifier tables. In particular, if
+@racket[id] is not found, the @racket[failure] argument is applied if
 it is a procedure, or simply returned otherwise.
 }
 
@@ -78,7 +78,7 @@ it is a procedure, or simply returned otherwise.
                               [v any/c])
          void?]{
 
-Like @scheme[hash-set!] for mutable bound-identifier tables.
+Like @racket[hash-set!] for mutable bound-identifier tables.
 }
 
 @defproc[(bound-id-table-set [table immutable-bound-id-table?]
@@ -86,14 +86,14 @@ Like @scheme[hash-set!] for mutable bound-identifier tables.
                              [v any/c])
          immutable-bound-id-table?]{
 
-Like @scheme[hash-set] for immutable bound-identifier tables.
+Like @racket[hash-set] for immutable bound-identifier tables.
 }
 
 @defproc[(bound-id-table-remove! [table mutable-bound-id-table?]
                               [id identifier?])
          void?]{
 
-Like @scheme[hash-remove!] for mutable bound-identifier tables.
+Like @racket[hash-remove!] for mutable bound-identifier tables.
 }
 
 @defproc[(bound-id-table-remove [table immutable-bound-id-table?]
@@ -101,27 +101,27 @@ Like @scheme[hash-remove!] for mutable bound-identifier tables.
                              [v any/c])
          immutable-bound-id-table?]{
 
-Like @scheme[hash-remove] for immutable bound-identifier tables.
+Like @racket[hash-remove] for immutable bound-identifier tables.
 }
 
 @defproc[(bound-id-table-map [table bound-id-table?]
                              [proc (-> identifier? any/c any)])
          list?]{
 
-Like @scheme[hash-map] for bound-identifier tables.
+Like @racket[hash-map] for bound-identifier tables.
 }
 
 @defproc[(bound-id-table-for-each [table bound-id-table?]
                                   [proc (-> identifier? any/c any)])
          void?]{
 
-Like @scheme[hash-for-each] for bound-identifier tables.
+Like @racket[hash-for-each] for bound-identifier tables.
 }
 
 @defproc[(bound-id-table-count [table bound-id-table?])
          exact-nonnegative-integer?]{
 
-Like @scheme[hash-count] for bound-identifier tables.
+Like @racket[hash-count] for bound-identifier tables.
 
 }
 
@@ -140,16 +140,16 @@ Like @scheme[hash-count] for bound-identifier tables.
          identifier?]]]{
 
 Like the corresponding dictionary procedures from
-@schememodname[scheme/dict] for for bound-identifier tables.
+@racketmodname[scheme/dict] for for bound-identifier tables.
 }
 }
 
 @;{----------}
-@section{Dictionaries for @scheme[free-identifier=?]}
+@section{Dictionaries for @racket[free-identifier=?]}
 
 Free-identifier tables implement the dictionary interface of
-@scheme[scheme/dict]. Consequently, all of the appropriate generic
-functions (@scheme[dict-ref], @scheme[dict-map], etc) can be used on
+@racket[scheme/dict]. Consequently, all of the appropriate generic
+functions (@racket[dict-ref], @racket[dict-map], etc) can be used on
 free-identifier tables.
 
 @deftogether[[
@@ -207,7 +207,7 @@ free-identifier tables.
 }]]{
 
 Like the procedures for bound-identifier tables
-(@scheme[make-bound-id-table], @scheme[bound-id-table-ref], etc), but
-for free-identifier tables, which use @scheme[free-identifier=?] to
+(@racket[make-bound-id-table], @racket[bound-id-table-ref], etc), but
+for free-identifier tables, which use @racket[free-identifier=?] to
 compare keys.
 }

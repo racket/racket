@@ -12,8 +12,7 @@ Whenever the selection of a choice item is changed by the user, the
  provided as an initialization argument when each choice item is
  created.
 
-See also
-@scheme[list-box%].
+See also @racket[list-box%].
 
 
 @defconstructor[([label (or/c label-string? false/c)]
@@ -35,29 +34,30 @@ See also
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{
 
-Creates a choice item. If @scheme[label] is a string, it is used as the
- label for the choice item. 
+Creates a choice item. If @racket[label] is a string, it is used as the
+ label for the choice item.
 
 @labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the choice item}]
 
-The @scheme[choices] list specifies the initial list of user-selectable
+The @racket[choices] list specifies the initial list of user-selectable
  items for the control. The initial set of choices determines the
  control's minimum graphical width (see @|geomdiscuss| for more
  information).
 
-The @scheme[callback] procedure is called (with the event type
- @indexed-scheme['choice]) when the user selects a choice item (or
+The @racket[callback] procedure is called (with the event type
+ @indexed-racket['choice]) when the user selects a choice item (or
  re-selects the currently selected item).
 
-@HVLabelNote[@scheme[style]]{choice item} @DeletedStyleNote[@scheme[style] @scheme[parent]]{choice item}
+@HVLabelNote[@racket[style]]{choice item}
+@DeletedStyleNote[@racket[style] @racket[parent]]{choice item}
 
 By default, the first choice (if any) is initially selected. If
- @scheme[selection] is positive, it is passed to
-@method[list-control<%> set-selection] to set the initial choice selection. Although @scheme[selection] normally
- must be less than the length of @scheme[choices], it can be @scheme[0]
- when @scheme[choices] is empty.
+ @racket[selection] is positive, it is passed to
+@method[list-control<%> set-selection] to set the initial choice selection. Although @racket[selection] normally
+ must be less than the length of @racket[choices], it can be @racket[0]
+ when @racket[choices] is empty.
 
-@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@racket[font]] @WindowKWs[@racket[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }}
 

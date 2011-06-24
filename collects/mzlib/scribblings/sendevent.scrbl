@@ -11,8 +11,8 @@
 
 @mzlib[#:mode title sendevent]
 
-The @schememodname[mzlib/sendevent] library provides a
-@scheme[send-event] function that works only on Mac OS X, and only
+The @racketmodname[mzlib/sendevent] library provides a
+@racket[send-event] function that works only on Mac OS X, and only
 when running in GRacket (though the library can be loaded in Racket).
 
 @defproc[(send-event [receiver-bytes (lambda (s) (and (bytes? s)
@@ -25,5 +25,5 @@ when running in GRacket (though the library can be loaded in Racket).
                      [argument-list list? null])
          any/c]{
 
-Calls @|mred-send-event| @schememodname[scheme/gui/base], if
-available, otherwise raises @scheme[exn:fail:unsupported].}
+Calls @|mred-send-event| @racketmodname[scheme/gui/base], if
+available, otherwise raises @racket[exn:fail:unsupported].}

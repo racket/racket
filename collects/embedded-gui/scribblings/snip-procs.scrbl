@@ -28,8 +28,8 @@ The pasteboard that contains the snip.}
                     [snip (is-a?/c snip%)])
           any/c]{
 
-Applies @scheme[f] to all snips in the parent of @scheme[snip], 
-starting with @scheme[snip].}
+Applies @racket[f] to all snips in the parent of @racket[snip], 
+starting with @racket[snip].}
 
 @defproc[(for-each-snip [f ((is-a?/c snip%) . -> . any/c)]
                         [first-snip (is-a?/c snip%)] 
@@ -37,9 +37,9 @@ starting with @scheme[snip].}
          void?]{
 
 Applies the function to each snip in the parent of
-@scheme[first-snip], starting with @scheme[first-snip]. If
-@scheme[more] lists are supplied, they are used for extra arguments to
-@scheme[f], just like extra lists provided to @scheme[for-each].}
+@racket[first-snip], starting with @racket[first-snip]. If
+@racket[more] lists are supplied, they are used for extra arguments to
+@racket[f], just like extra lists provided to @racket[for-each].}
 
 @defproc[(map-snip [f ((is-a?/c snip%) . -> . any/c)]
                    [first-snip (is-a?/c snip%)] 
@@ -47,10 +47,10 @@ Applies the function to each snip in the parent of
          void?]{
 
 Applies the function to each snip in the parent of
-@scheme[first-snip], starting with @scheme[first-snip], and
-accumulates the results into a list. If @scheme[more] lists are
-supplied, they are used for extra arguments to @scheme[f], just like
-extra lists provided to @scheme[map].}
+@racket[first-snip], starting with @racket[first-snip], and
+accumulates the results into a list. If @racket[more] lists are
+supplied, they are used for extra arguments to @racket[f], just like
+extra lists provided to @racket[map].}
 
 
 @defproc[(stretchable-width? [snip (is-a?/c snip%)]) boolean?]{

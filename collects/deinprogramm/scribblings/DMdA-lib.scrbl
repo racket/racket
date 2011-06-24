@@ -23,7 +23,7 @@ Macht der Abstraktion}}.
 
 @defmodule[deinprogramm/DMdA-beginner]
 
-Das Modul @schememodname[deinprogramm/DMdA-beginner] implementiert die
+Das Modul @racketmodname[deinprogramm/DMdA-beginner] implementiert die
 Anfängersprache für @|DMdA|; siehe @DMdA-ref["DMdA-beginner"].
 
 @; ------------------------------------------------------------
@@ -31,7 +31,7 @@ Anfängersprache für @|DMdA|; siehe @DMdA-ref["DMdA-beginner"].
 
 @defmodule[deinprogramm/DMdA-vanilla]
 
-Das Modul @schememodname[deinprogramm/DMdA-vanilla] implementiert die
+Das Modul @racketmodname[deinprogramm/DMdA-vanilla] implementiert die
 Standardsprache für @|DMdA|; siehe @DMdA-ref["DMdA-vanilla"].
 
 @; ------------------------------------------------------------
@@ -39,7 +39,7 @@ Standardsprache für @|DMdA|; siehe @DMdA-ref["DMdA-vanilla"].
 
 @defmodule[deinprogramm/DMdA-assignments]
 
-Das Modul @schememodname[deinprogramm/DMdA-assignments] implementiert
+Das Modul @racketmodname[deinprogramm/DMdA-assignments] implementiert
 die Sprachebene für @|DMdA| mit Zuweisungen und Mutationen; siehe
 @DMdA-ref["DMdA-assignments"].
 
@@ -48,6 +48,6 @@ die Sprachebene für @|DMdA| mit Zuweisungen und Mutationen; siehe
 
 @defmodule[deinprogramm/DMdA-advanced]
 
-Das Modul @schememodname[deinprogramm/DMdA-advanced] implementiert
+Das Modul @racketmodname[deinprogramm/DMdA-advanced] implementiert
 die fortgeschrittene Sprachebene für @|DMdA|; siehe
 @DMdA-ref["DMdA-advanced"].

@@ -9,8 +9,8 @@ Abstraktion - fortgeschritten} that goes with the German textbook
 @italic{Die Macht der Abstraktion}.
 
 @declare-exporting[deinprogramm/DMdA-advanced]
- 
-@schemegrammar*-DMdA[
+
+@racketgrammar*-DMdA[
 #:literals (define-record-procedures-2 set!)
 (
   (define-record-procedures-2 id id id (field-spec ...))
@@ -23,11 +23,11 @@ Abstraktion - fortgeschritten} that goes with the German textbook
           string
           character
           (quoted ...)
-          @#,elem{@schemevalfont{'}@scheme[quoted]}]
+          @#,elem{@racketvalfont{'}@racket[quoted]}]
 )
 (
   (set! id expr)
-  (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["advanced-quote"]{Quote-Literal}))
+  (code:line @#,elem{@racketvalfont{'}@racket[quoted]} (code:comment @#,seclink["advanced-quote"]{Quote-Literal}))
 )
 ]
 
@@ -38,10 +38,10 @@ Abstraktion - fortgeschritten} that goes with the German textbook
 @section[#:tag "advanced-quote"]{Quote-Literal}
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont{'}@scheme[quoted]})]
+@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[quoted]})]
 @defform[(quote quoted)]
 )]{
-Der Wert eines Quote-Literals hat die gleiche externe Repräsentation wie @scheme[quoted]. 
+Der Wert eines Quote-Literals hat die gleiche externe Repräsentation wie @racket[quoted].
 }
 
 @section[#:tag "advanced-signatures"]{Signaturen}

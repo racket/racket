@@ -79,7 +79,7 @@ Performs @racket[(map f (syntax->list stxl) ...)].
 @defform[(syntax-list template ...)]{
 
 This form constructs a list of syntax objects based on the given templates.  It
-is equivalent to @scheme[(syntax->list (syntax (template ...)))].
+is equivalent to @racket[(syntax->list (syntax (template ...)))].
 
 @defexamples[
 #:eval the-eval
@@ -96,7 +96,7 @@ is equivalent to @scheme[(syntax->list (syntax (template ...)))].
 )]{
 
 These produce the directory and file name, respectively, of the path with which
-@scheme[stx] is associated, or @scheme[#f] if @scheme[stx] is not associated
+@racket[stx] is associated, or @racket[#f] if @racket[stx] is not associated
 with a path.
 
 @defexamples[

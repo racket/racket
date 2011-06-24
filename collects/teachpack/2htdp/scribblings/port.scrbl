@@ -30,20 +30,20 @@ In this document, we explain how to port programs that assume the old world
 @port[
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname htdp/world))
+(racketblock
+(require #,(racketmodname htdp/world))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname 2htdp/universe))
-(require #,(schememodname htdp/image))
+(racketblock
+(require #,(racketmodname 2htdp/universe))
+(require #,(racketmodname htdp/image))
 ))
 ]
  The table shows the old style on the left and the new style on the
  right. If your programs imported teachpacks via the drscheme teachpack
- menu, we recommend that you use the @scheme[require] form from now on; 
+ menu, we recommend that you use the @racket[require] form from now on; 
  alternatively, you use the drscheme menu @emph{twice} to import the 
  functions from two teachpacks. 
 
@@ -63,8 +63,8 @@ In order to distinguish between the various pieces of functionality, we
 Here is the first program from the documentation for the world teachpack:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname htdp/world))
+(racketblock
+(require #,(racketmodname htdp/world))
 
 ;; Number -> Scene 
 (define (create-UFO-scene height)
@@ -83,29 +83,29 @@ Here is the first program from the documentation for the world teachpack:
 (htdp:on-tick-event add1)
 (htdp:on-redraw create-UFO-scene)
 ))
- This program defines a function for placing a @scheme[UFO] into a 100 by
- 100 scene, where @scheme[UFO] is a defined image. The world program itself
+ This program defines a function for placing a @racket[UFO] into a 100 by
+ 100 scene, where @racket[UFO] is a defined image. The world program itself
  consists of three lines: 
 @itemize[
 @item{the first one creates the 100 by 100 scene, specifies a rate of 28
- images per second, and @scheme[0] as the initial world description;}
+ images per second, and @racket[0] as the initial world description;}
 @item{the second one says that for each clock tick, the world (a number) is
- increased by @scheme[1]; and}
-@item{the last line tells drscheme to use @scheme[create-UFO-scene] as the
+ increased by @racket[1]; and}
+@item{the last line tells drscheme to use @racket[create-UFO-scene] as the
  function that renders the current world as a scene.}
 ]
 
 Let us now convert this program into the universe setting, step by
- step, staring with the @scheme[require] specification, which is converted
+ step, staring with the @racket[require] specification, which is converted
  as above: 
 @port[
-@schemeblock[(require #,(schememodname htdp/world))]
+@racketblock[(require #,(racketmodname htdp/world))]
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname 2htdp/universe))
-(require #,(schememodname htdp/image))
+(racketblock
+(require #,(racketmodname 2htdp/universe))
+(require #,(racketmodname htdp/image))
 ))
 ]
 
@@ -113,7 +113,7 @@ The function that renders the world as a scene remains the same:
 @port[
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; Number -> Scene 
 (define (create-UFO-scene height)
   (htdp:place-image
@@ -124,7 +124,7 @@ The function that renders the world as a scene remains the same:
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; Number -> Scene 
 (define (create-UFO-scene height)
   (htdp:place-image
@@ -138,7 +138,7 @@ For the image constant we switch from symbols to strings:
 @port[
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; Scene 
 (define UFO
   (htdp:overlay
@@ -150,7 +150,7 @@ For the image constant we switch from symbols to strings:
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 ;; Scene 
 (define UFO
   (htdp:overlay
@@ -166,13 +166,13 @@ For the image constant we switch from symbols to strings:
 
 The most important change concerns the lines that launch the world program: 
 @port[
-@schemeblock[
+@racketblock[
 (htdp:big-bang 100 100 (/1 28) 0)
 (htdp:on-tick-event add1)
 (htdp:on-redraw create-UFO-scene)
 ]
 @; ---------------------------------
-@schemeblock[
+@racketblock[
 (2htdp:big-bang
   0
   (on-tick add1)
@@ -181,7 +181,7 @@ The most important change concerns the lines that launch the world program:
 ]
  They are turned into a single expression that comes with as many clauses
  as there are lines in the old program. As you can see, the
- @scheme[big-bang] expression from the universe teachpack no longer
+ @racket[big-bang] expression from the universe teachpack no longer
  requires the specification of the size of the scene or the rate at which
  the clock ticks (though it is possible to supply the clock rate if the default
  is not satisfactory). 
@@ -195,7 +195,7 @@ The other big change concerns key event handling and mouse event
  of the world teachpack: 
 
 @port[
-@schemeblock[
+@racketblock[
  (define (change w a-key-event)
     (cond
       [(key=? a-key-event 'left)  
@@ -211,7 +211,7 @@ The other big change concerns key event handling and mouse event
       [else
        w]))]
 @; ---------------------------------
-@schemeblock[
+@racketblock[
  (define (change w a-key-event)
     (cond
       [(key=? a-key-event "left")  
@@ -227,14 +227,14 @@ The other big change concerns key event handling and mouse event
       [else
        w]))
 ]]
- Note how the @scheme[char?] clause changed. Since all chars are now
+ Note how the @racket[char?] clause changed. Since all chars are now
  represented as strings containing one ``letter'', the program on the right
  just checks the length of the string. Otherwise, we simply change all
  symbols into strings. 
 
 If you ever recorded your programs' work via an animated gif, you can still
- do so. Instead of adding a fifth argument to @scheme[big-bang], however,
- you will need to add a clause of the shape @scheme[(record? x)]. 
+ do so. Instead of adding a fifth argument to @racket[big-bang], however,
+ you will need to add a clause of the shape @racket[(record? x)]. 
 
 Finally, the universe teachpack implements a richer functionality than the
  world teachpack. 
@@ -242,11 +242,11 @@ Finally, the universe teachpack implements a richer functionality than the
 @; -----------------------------------------------------------------------------
 @section{Porting Image Programs}
 
-The universe library also comes with a new image library, @schememodname[2htdp/image].
+The universe library also comes with a new image library, @racketmodname[2htdp/image].
 Using the old image
-library still works fine with @schememodname[2htdp/universe], but the
+library still works fine with @racketmodname[2htdp/universe], but the
 new image library provides a number of improvements, including faster 
-image comparison (especially useful in @scheme[check-expect] expressions),
+image comparison (especially useful in @racket[check-expect] expressions),
 rotating images, scaling images, curves, a number of new polygon shapes,
 and more control over line drawing.
 
@@ -255,14 +255,14 @@ To use the new image library in isloation:
 @port[
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname htdp/image))
+(racketblock
+(require #,(racketmodname htdp/image))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname 2htdp/image))
+(racketblock
+(require #,(racketmodname 2htdp/image))
 ))
 ]
 
@@ -271,31 +271,31 @@ and to use the new image library with the universe teachpack:
 @port[
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname htdp/world))
+(racketblock
+(require #,(racketmodname htdp/world))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
-(schemeblock
-(require #,(schememodname 2htdp/universe))
-(require #,(schememodname 2htdp/image))
+(racketblock
+(require #,(racketmodname 2htdp/universe))
+(require #,(racketmodname 2htdp/image))
 ))]
   
 @bold{Overlay vs Underlay}
 
-The @scheme[htdp:overlay] function places its first argument
+The @racket[htdp:overlay] function places its first argument
 under its second (and subsequent) arguments and so in 
-@schememodname[2htdp/image], we decided to call that
-function @scheme[2htdp:underlay].
+@racketmodname[2htdp/image], we decided to call that
+function @racket[2htdp:underlay].
 
-@port[(schemeblock
+@port[(racketblock
        (htdp:overlay
         (htdp:rectangle 
          10 20 "solid" "red")
         (htdp:rectangle
          20 10 "solid" "blue")))
-      (schemeblock
+      (racketblock
        (2htdp:underlay
         (2htdp:rectangle
          10 20 "solid" "red")
@@ -304,63 +304,63 @@ function @scheme[2htdp:underlay].
 
 @bold{No more pinholes}
 
-The concept of pinholes from @schememodname[htdp/image]
-has no correspondance in @schememodname[2htdp/image] 
-(we do expect to bring back pinholes in @schememodname[2htdp/image]
+The concept of pinholes from @racketmodname[htdp/image]
+has no correspondance in @racketmodname[2htdp/image] 
+(we do expect to bring back pinholes in @racketmodname[2htdp/image]
 eventually, but they will not be as pervasive as they are
-in @scheme[htdp/image]).
+in @racket[htdp/image]).
 
 Instead of 
 a special position in the image that overlay operations
 are sensitive to, 
-@schememodname[2htdp/image] has a family of overlay operations,
+@racketmodname[2htdp/image] has a family of overlay operations,
 that overlay images based on their centers or their edges.
 
 Since the default position of the pinhole is in the center
 for most images and the default for overlaying and underlaying
-images in @scheme[2htdp/image] is based on the center, 
+images in @racket[2htdp/image] is based on the center, 
 simple examples (like the one above) behave the same
 in both libraries.
 
 But, consider this expression that overlays two images on
 their upper-left corners, written using both libraries.
 
-@port[@schemeblock[(htdp:overlay
+@port[@racketblock[(htdp:overlay
                     (htdp:put-pinhole
                      (htdp:rectangle 10 20 "solid" "red")
                      0 0)
                     (htdp:put-pinhole
                      (htdp:rectangle 20 10 "solid" "blue")
                      0 0))]
-       @schemeblock[(2htdp:underlay/align
-                     "left"
-                     "top"
-                     (2htdp:rectangle 
-                      10 20 "solid" "red")
-                     (2htdp:rectangle
-                      20 10 "solid" "blue"))]]
+      @racketblock[(2htdp:underlay/align
+                    "left"
+                    "top"
+                    (2htdp:rectangle
+                     10 20 "solid" "red")
+                    (2htdp:rectangle
+                     20 10 "solid" "blue"))]]
 
-In the @schememodname[2htdp/image] version, the programmer
-uses @scheme[2htdp:underlay/align] to specify where
+In the @racketmodname[2htdp/image] version, the programmer
+uses @racket[2htdp:underlay/align] to specify where
 the images should be lined up, instead of using the pinhole.
 
 @bold{Outlines in different places}
 
-The outline style shapes are now shifted by one pixel for @schememodname[2htdp/image] 
-images as compared to @schememodname[htdp/image].
+The outline style shapes are now shifted by one pixel for @racketmodname[2htdp/image]
+images as compared to @racketmodname[htdp/image].
 This means that these two rectangles draw the same sets of pixels.
 
-@port[@schemeblock[(htdp:rectangle 
+@port[@racketblock[(htdp:rectangle 
                     11 11 "outline" "black")]
-       @schemeblock[(2htdp:rectangle
-                     10 10 "outline" "black")]]
+      @racketblock[(2htdp:rectangle
+                    10 10 "outline" "black")]]
 
 See also @secref["nitty-gritty"].
 
 @bold{Star changed}
 
-The @scheme[2htdp:star] function is a completely different
-function from @scheme[htdp:star]. Both produce stars based, 
-on polygons, but @scheme[2htdp:star] always produces a five-pointed
-star. See also @scheme[2htdp:star-polygon] for more general star
+The @racket[2htdp:star] function is a completely different
+function from @racket[htdp:star]. Both produce stars based, 
+on polygons, but @racket[2htdp:star] always produces a five-pointed
+star. See also @racket[2htdp:star-polygon] for more general star
 shapes.

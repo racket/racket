@@ -7,7 +7,7 @@
 
 @defproc[(with-module-reading-parameterization [thunk (-> any)]) any]{
 
-Calls @scheme[thunk] with all reader parameters reset to their default
+Calls @racket[thunk] with all reader parameters reset to their default
 values.}
 
 @defproc[(check-module-form [stx (or/c syntax? eof-object?)] 
@@ -15,24 +15,24 @@ values.}
                             [source-v (or/c string? false/c)])
          (or/c syntax? false/c)]{
 
-Inspects @scheme[stx] to check whether evaluating it will declare a
-module---at least if @scheme[module] is bound in the top-level to
-Racket's @scheme[module]. The syntax object @scheme[stx] can contain a
-compiled expression. Also, @scheme[stx] can be an end-of-file, on the
-grounds that @scheme[read-syntax] can produce an end-of-file.
+Inspects @racket[stx] to check whether evaluating it will declare a
+module---at least if @racket[module] is bound in the top-level to
+Racket's @racket[module]. The syntax object @racket[stx] can contain a
+compiled expression. Also, @racket[stx] can be an end-of-file, on the
+grounds that @racket[read-syntax] can produce an end-of-file.
 
-The @scheme[expected-module-sym] argument is currently ignored. In
-previous versions, the module form @scheme[stx] was obliged to declare
-a module who name matched @scheme[expected-module-sym].
+The @racket[expected-module-sym] argument is currently ignored. In
+previous versions, the module form @racket[stx] was obliged to declare
+a module who name matched @racket[expected-module-sym].
 
-If @scheme[stx] can declare a module in an appropriate top-level, then
-the @scheme[check-module-form] procedure returns a syntax object that
+If @racket[stx] can declare a module in an appropriate top-level, then
+the @racket[check-module-form] procedure returns a syntax object that
 certainly will declare a module (adding explicit context to the
-leading @scheme[module] if necessary) in any top-level. Otherwise, if
-@scheme[source-v] is not @scheme[#f], a suitable exception is raised
-using the @scheme[write] form of the source in the message; if
-@scheme[source-v] is @scheme[#f], @scheme[#f] is returned.
+leading @racket[module] if necessary) in any top-level. Otherwise, if
+@racket[source-v] is not @racket[#f], a suitable exception is raised
+using the @racket[write] form of the source in the message; if
+@racket[source-v] is @racket[#f], @racket[#f] is returned.
 
-If @scheme[stx] is eof or eof wrapped as a syntax object, then an
-error is raised or @scheme[#f] is returned.}
+If @racket[stx] is eof or eof wrapped as a syntax object, then an
+error is raised or @racket[#f] is returned.}
 

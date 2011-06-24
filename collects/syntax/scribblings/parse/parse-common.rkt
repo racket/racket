@@ -61,10 +61,10 @@
 (define Apatterns "action patterns")
 
 (provide Spattern
-         Lpattern 
-         Hpattern 
+         Lpattern
+         Hpattern
          EHpattern
-         Apattern 
+         Apattern
          Spatterns
          Lpatterns
          Hpatterns
@@ -79,7 +79,7 @@
   (syntax-rules ()
     [(ref id suffix ...)
      (elemref (list 'pattern-link (list 'id 'suffix ...))
-              (schemekeywordfont (symbol->string 'id))
+              (racketkeywordfont (symbol->string 'id))
               (superscript (symbol->string 'suffix)) ...
               #:underline? #f)]))
 (define-syntax def

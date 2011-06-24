@@ -3,7 +3,7 @@
 
 @definterface/title[top-level-window<%> (area-container-window<%>)]{
 
-A top-level window is either a @scheme[frame%] or @scheme[dialog%]
+A top-level window is either a @racket[frame%] or @racket[dialog%]
  object.
 
 @defmethod[#:mode pubment 
@@ -11,10 +11,10 @@ A top-level window is either a @scheme[frame%] or @scheme[dialog%]
            boolean?]{
 
 Called just before the window might be closed (e.g., by the window
- manager). If @scheme[#f] is returned, the window is not closed,
+ manager). If @racket[#f] is returned, the window is not closed,
  otherwise @method[top-level-window<%> on-close] is called and the
  window is closed (i.e., the window is hidden, like calling
- @method[window<%> show] with @scheme[#f]).
+ @method[window<%> show] with @racket[#f]).
 
 This method is @italic{not} called by @method[window<%> show].
 }
@@ -40,10 +40,10 @@ Calls @method[top-level-window<%> can-close?] and returns the result.
 Centers the window on the screen if it has no parent. If it has a
  parent, the window is centered with respect to its parent's location.
 
-If @scheme[direction] is @scheme['horizontal], the window is centered
- horizontally.  If @scheme[direction] is @scheme['vertical], the
- window is centered vertically.  If @scheme[direction] is
- @scheme['both], the window is centered in both directions.
+If @racket[direction] is @racket['horizontal], the window is centered
+ horizontally.  If @racket[direction] is @racket['vertical], the
+ window is centered vertically.  If @racket[direction] is
+ @racket['both], the window is centered in both directions.
 
 }
 
@@ -67,7 +67,7 @@ See also @method[top-level-window<%> get-focus-object].
 most recently had the keyboard focus, either the top-level window or
 one of its currently-shown children. If neither the window nor any of
 its currently-shown children has even owned the keyboard focus,
-@scheme[#f] is returned.
+@racket[#f] is returned.
 
 See also @method[top-level-window<%> get-focus-window] and
 @method[top-level-window<%> get-edit-target-object].
@@ -98,7 +98,7 @@ See also @method[top-level-window<%> get-edit-target-object].
 
 @index["keyboard focus"]{Returns} the window that has the keyboard
  focus, either the top-level window or one of its children. If neither
- the window nor any of its children has the focus, @scheme[#f] is
+ the window nor any of its children has the focus, @racket[#f] is
  returned.
 
 See also @method[top-level-window<%> get-edit-target-window] and
@@ -130,8 +130,8 @@ Called when a window is @defterm{activated} or
  words, floating frames act as an extension of the active non-frame
  for keyboard focus.
 
-The method's argument is @scheme[#t] when the window is activated,
- @scheme[#f] when it is deactivated.
+The method's argument is @racket[#t] when the window is activated,
+ @racket[#f] when it is deactivated.
 
 }
 
@@ -153,7 +153,7 @@ See also
 @methspec{
 
 Called by the default application quit handler (as determined by the
- @scheme[application-quit-handler] parameter) when the operating
+ @racket[application-quit-handler] parameter) when the operating
  system requests that the application shut down (e.g., when the
  @onscreen{Quit} menu item is selected in the main application menu
  on Mac OS X). In that case, this method is called for the most
@@ -177,10 +177,10 @@ Calls
 @methspec{
 
 @index["drag-and-drop"]{A} generic message method, usually called by
-@scheme[send-message-to-window].
+@racket[send-message-to-window].
 
-If the method is invoked by @scheme[send-message-to-window], then it
-is invoked in the thread where @scheme[send-message-to-window] was
+If the method is invoked by @racket[send-message-to-window], then it
+is invoked in the thread where @racket[send-message-to-window] was
 called (which is possibly @italic{not} the handler thread of the
 window's eventspace).
 
@@ -199,94 +199,94 @@ Returns @|void-const|.
 
 @index['("keyboard focus" "navigation")]{Attempts} to handle the given
  keyboard event as a navigation event, such as a Tab key event that
- moves the keyboard focus. If the event is handled, @scheme[#t] is
- returned, otherwise @scheme[#f] is returned.
+ moves the keyboard focus. If the event is handled, @racket[#t] is
+ returned, otherwise @racket[#f] is returned.
 
 }
 @methimpl{
 
-The following rules determine, in order, whether and how @scheme[event]
+The following rules determine, in order, whether and how @racket[event]
 is handled:
 
 @itemize[
 
 @item{
 If the window that currently owns the focus specifically handles the
- event, then @scheme[#f] is returned. The following describes window
+ event, then @racket[#f] is returned. The following describes window
  types and the keyboard events they specifically handle:
 @itemize[
 
- @item{@scheme[editor-canvas%] --- tab-exit is disabled (see
+ @item{@racket[editor-canvas%] --- tab-exit is disabled (see
 @method[editor-canvas% allow-tab-exit]): all keyboard events, except alphanumeric key events when the Meta
        (Unix) or Alt (Windows) key is pressed; when tab-exit is enabled:
        all keyboard events except Tab, Enter, Escape, and alphanumeric
        Meta/Alt events.}
 
- @item{@scheme[canvas%] --- when tab-focus is disabled (see
+ @item{@racket[canvas%] --- when tab-focus is disabled (see
 @method[canvas<%> accept-tab-focus]): all keyboard events, except alphanumeric key events when the Meta
        (Unix) or Alt (Windows) key is pressed; when tab-focus is enabled:
        no key events}
 
- @item{@scheme[text-field%], @scheme['single] style --- arrow key
+ @item{@racket[text-field%], @racket['single] style --- arrow key
  events and alphanumeric key events when the Meta (Unix) or Alt
  (Windows) key is not pressed (and all alphanumeric events on
  Mac OS X)}
 
- @item{@scheme[text-field%], @scheme['multiple] style --- all
+ @item{@racket[text-field%], @racket['multiple] style --- all
  keyboard events, except alphanumeric key events when the Meta (Unix) or
  Alt (Windows) key is pressed}
 
- @item{@scheme[choice%] --- arrow key events and alphanumeric key
+ @item{@racket[choice%] --- arrow key events and alphanumeric key
  events when the Meta (Unix) or Alt (Windows) key is not pressed}
 
- @item{@scheme[list-box%] --- arrow key events and alphanumeric key
+ @item{@racket[list-box%] --- arrow key events and alphanumeric key
  events when the Meta (Unix) or Alt (Windows) key is not pressed}
 
 ]}
 
 @item{
-If @scheme[event] is a Tab or arrow key event, the keyboard focus is
- moved within the window and @scheme[#t] is returned. Across platforms,
+If @racket[event] is a Tab or arrow key event, the keyboard focus is
+ moved within the window and @racket[#t] is returned. Across platforms,
  the types of windows that accept the keyboard focus via navigation
- may vary, but @scheme[text-field%] windows always accept the focus,
- and @scheme[message%], @scheme[gauge%], and @scheme[panel%]
+ may vary, but @racket[text-field%] windows always accept the focus,
+ and @racket[message%], @racket[gauge%], and @racket[panel%]
  windows never accept the focus.}
 
 @item{
-If @scheme[event] is a Space key event and the window that currently
- owns the focus is a @scheme[button%], @scheme[check-box%], or
- @scheme[radio-box%] object, the event is handled in the same way as
- a click on the control and @scheme[#t] is returned.}
+If @racket[event] is a Space key event and the window that currently
+ owns the focus is a @racket[button%], @racket[check-box%], or
+ @racket[radio-box%] object, the event is handled in the same way as
+ a click on the control and @racket[#t] is returned.}
 
 @item{
-If @scheme[event] is an Enter key event and the current top-level window
+If @racket[event] is an Enter key event and the current top-level window
  contains a border button, the button's callback is invoked and
- @scheme[#t] is returned. (The @scheme['border] style for a
- @scheme[button%] object indicates to the user that pressing Enter
+ @racket[#t] is returned. (The @racket['border] style for a
+ @racket[button%] object indicates to the user that pressing Enter
  is the same as clicking the button.) If the window does not contain a
- border button, @scheme[#t] is returned if the window with the current
+ border button, @racket[#t] is returned if the window with the current
  focus is not a text field or editor canvas.}
 
 @item{
-In a dialog, if @scheme[event] is an Escape key event, the event is
+In a dialog, if @racket[event] is an Escape key event, the event is
  handled the same as a click on the dialog's close box (i.e., the
  dialog's
 @method[top-level-window<%> can-close?] and
-@method[top-level-window<%> on-close] methods are called, and the dialog is hidden) and @scheme[#t] is
+@method[top-level-window<%> on-close] methods are called, and the dialog is hidden) and @racket[#t] is
  returned.}
 
 @item{
-If @scheme[event] is an alphanumeric key event and the current top-level
+If @racket[event] is an alphanumeric key event and the current top-level
  window contains a control with a mnemonic matching the key (which is
  installed via a label that contains @litchar{&}; see
  @method[window<%> get-label] for more information), then the
  keyboard focus is moved to the matching control. Furthermore, if the
- matching control is a @scheme[button%], @scheme[check-box%], or
- @scheme[radio-box%] button, the keyboard event is handled in the
+ matching control is a @racket[button%], @racket[check-box%], or
+ @racket[radio-box%] button, the keyboard event is handled in the
  same way as a click on the control.}
 
 @item{
-Otherwise, @scheme[#f] is returned.}
+Otherwise, @racket[#f] is returned.}
 
 ]
 }}
@@ -296,7 +296,7 @@ Otherwise, @scheme[#f] is returned.}
 
 Checks whether the given event pops open the system menu in the
  top-left corner of the window (Windows only). If the window's system
- menu is opened, @scheme[#t] is returned, otherwise @scheme[#f] is
+ menu is opened, @racket[#t] is returned, otherwise @racket[#f] is
  returned.
 
 }

@@ -22,9 +22,9 @@ manage the @emph{Hangman} game.}
 	   [draw-next-part (-> symbol? true)]) true]{
 Chooses a ``secret'' word---a list of symbolic letters---and uses the given
 functions to manage the @emph{Hangman} game: 
-@scheme[reveal-for-list] determines how many times the chosen letter occurs
+@racket[reveal-for-list] determines how many times the chosen letter occurs
 in the secret word; 
-@scheme[draw-next-part] is given the symbolic name of a body part and draws
+@racket[draw-next-part] is given the symbolic name of a body part and draws
 it on a separately managed canvas.
 }
 

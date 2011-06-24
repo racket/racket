@@ -14,14 +14,14 @@
 
 @defform[(with-size size expr)]{
 
-Sets @scheme[current-font-size] to @scheme[size] while running @scheme[expr].
+Sets @racket[current-font-size] to @racket[size] while running @racket[expr].
 
 }
 
 @defform[(with-scale scale expr)]{
 
-Multiplies @scheme[current-font-size] by @scheme[scale] while running
-@scheme[expr].
+Multiplies @racket[current-font-size] by @racket[scale] while running
+@racket[expr].
 
 }
 
@@ -30,21 +30,21 @@ Multiplies @scheme[current-font-size] by @scheme[scale] while running
 @defform[(small text)]
 )]{
 
-Scale @scheme[current-font-size] by @scheme[3/2] or @scheme[2/3], respectively,
-while running @scheme[text].
+Scale @racket[current-font-size] by @racket[3/2] or @racket[2/3], respectively,
+while running @racket[text].
 
 }
 
 @defform[(with-font font expr)]{
 
-Sets @scheme[current-main-font] to @scheme[font] while running @scheme[expr].
+Sets @racket[current-main-font] to @racket[font] while running @racket[expr].
 
 }
 
 @defform[(with-style style expr)]{
 
-Adds @scheme[style] to @scheme[current-main-font] (via @scheme[cons]) while
-running @scheme[expr].
+Adds @racket[style] to @racket[current-main-font] (via @racket[cons]) while
+running @racket[expr].
 
 }
 
@@ -57,7 +57,7 @@ running @scheme[expr].
 )]{
 
 Adds the attributes for bold, italic, superscript, subscript, or small caps
-text, respectively, to @scheme[current-main-font] while running @scheme[text].
+text, respectively, to @racket[current-main-font] while running @racket[text].
 
 }
 
@@ -65,7 +65,7 @@ text, respectively, to @scheme[current-main-font] while running @scheme[text].
 
 @defproc[(color [c color/c] [p pict?]) pict?]{
 
-Applies color @scheme[c] to picture @scheme[p].  Equivalent to @scheme[(colorize
+Applies color @racket[c] to picture @racket[p].  Equivalent to @racket[(colorize
 p c)].
 
 }
@@ -85,7 +85,7 @@ p c)].
 @defproc[(magenta [pict pict?]) pict?]
 )]{
 
-These functions apply appropriate colors to picture @scheme[p].
+These functions apply appropriate colors to picture @racket[p].
 
 }
 
@@ -100,7 +100,7 @@ These functions produce ligher or darker versions of a color.
 
 @defthing[color/c flat-contract?]{
 
-This contract recognizes color strings, @scheme[color%] instances, and RGB color
+This contract recognizes color strings, @racket[color%] instances, and RGB color
 lists.
 
 }
@@ -110,8 +110,8 @@ lists.
 @defproc[(fill [pict pict?] [width (or/c real? #f)] [height (or/c real? #f)])
          pict?]{
 
-Extends @scheme[pict]'s bounding box to a minimum @scheme[width] and/or
-@scheme[height], placing the original picture in the middle of the space.
+Extends @racket[pict]'s bounding box to a minimum @racket[width] and/or
+@racket[height], placing the original picture in the middle of the space.
 
 }
 
@@ -129,16 +129,16 @@ argument between slides can control when the transformation occurs.
 )]{
 
 These functions conditionally show or hide an image, essentially choosing
-between @scheme[pict] and @scheme[(ghost pict)].  The only difference between
-the two is the default behavior and the opposite meaning of the @scheme[show?]
-and @scheme[hide?] booleans.  Both functions are provided for mnemonic purposes.
+between @racket[pict] and @racket[(ghost pict)].  The only difference between
+the two is the default behavior and the opposite meaning of the @racket[show?]
+and @racket[hide?] booleans.  Both functions are provided for mnemonic purposes.
 
 }
 
 @defproc[(strike [pict pict?] [strike? truth/c #t]) pict?]{
 
 Displays a strikethrough image by putting a line through the middle of
-@scheme[pict] if @scheme[strike?] is true; produces @scheme[pict] unchanged
+@racket[pict] if @racket[strike?] is true; produces @racket[pict] unchanged
 otherwise.
 
 }
@@ -148,9 +148,9 @@ otherwise.
                 [#:ratio ratio (real-in 0 1) 1/2])
          pict?]{
 
-Shades @scheme[pict] to show with @scheme[ratio] of its normal opacity; if
-@scheme[ratio] is @scheme[1] or @scheme[shade?] is @scheme[#f], shows
-@scheme[pict] unchanged.
+Shades @racket[pict] to show with @racket[ratio] of its normal opacity; if
+@racket[ratio] is @racket[1] or @racket[shade?] is @racket[#f], shows
+@racket[pict] unchanged.
 
 }
 
@@ -158,7 +158,7 @@ Shades @scheme[pict] to show with @scheme[ratio] of its normal opacity; if
 
 These pict control flow operators decide which pict of several to use.  All
 branches are evaluated; the resulting pict is a combination of the pict chosen
-by normal conditional flow with @scheme[ghost] applied to all the other picts.
+by normal conditional flow with @racket[ghost] applied to all the other picts.
 The result is a picture large enough to accommodate each alternative, but showing
 only the chosen one.  This is useful for staged slides, as the pict chosen may
 change with each slide but its size and position will not.
@@ -166,54 +166,54 @@ change with each slide but its size and position will not.
 @defform/subs[(pict-if maybe-combine test-expr then-expr else-expr)
               ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
 
-Chooses either @scheme[then-expr] or @scheme[else-expr] based on
-@scheme[test-expr], similarly to @scheme[if].  Combines the chosen, visible
-image with the other, invisible image using @scheme[combine-expr], defaulting to
-@scheme[pict-combine].
+Chooses either @racket[then-expr] or @racket[else-expr] based on
+@racket[test-expr], similarly to @racket[if].  Combines the chosen, visible
+image with the other, invisible image using @racket[combine-expr], defaulting to
+@racket[pict-combine].
 
 }
 
 @defform/subs[(pict-cond maybe-combine [test-expr pict-expr] ...)
               ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
 
-Chooses a @scheme[pict-expr] based on the first successful @scheme[test-expr],
-similarly to @scheme[cond].  Combines the chosen, visible image with the other,
-invisible images using @scheme[combine-expr], defaulting to
-@scheme[pict-combine].
+Chooses a @racket[pict-expr] based on the first successful @racket[test-expr],
+similarly to @racket[cond].  Combines the chosen, visible image with the other,
+invisible images using @racket[combine-expr], defaulting to
+@racket[pict-combine].
 
 }
 
 @defform/subs[(pict-case test-expr maybe-combine [literals pict-expr] ...)
               ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
 
-Chooses a @scheme[pict-expr] based on @scheme[test-expr] and each list of
-@scheme[literals], similarly to @scheme[case].  Combines the chosen, visible
-image with the other, invisible images using @scheme[combine-expr], defaulting
-to @scheme[pict-combine].
+Chooses a @racket[pict-expr] based on @racket[test-expr] and each list of
+@racket[literals], similarly to @racket[case].  Combines the chosen, visible
+image with the other, invisible images using @racket[combine-expr], defaulting
+to @racket[pict-combine].
 
 }
 
 @defform/subs[(pict-match test-expr maybe-combine [pattern pict-expr] ...)
               ([maybe-combine code:blank (code:line #:combine combine-expr)])]{
 
-Chooses a @scheme[pict-expr] based on @scheme[test-expr] and each
-@scheme[pattern], similarly to @scheme[match].  Combines the chosen, visible
-image with the other, invisible images using @scheme[combine-expr], defaulting
-to @scheme[pict-combine].
+Chooses a @racket[pict-expr] based on @racket[test-expr] and each
+@racket[pattern], similarly to @racket[match].  Combines the chosen, visible
+image with the other, invisible images using @racket[combine-expr], defaulting
+to @racket[pict-combine].
 
 }
 
 @defform[#:id pict-combine pict-combine]{
 
 This syntax parameter determines the default pict combining form used by the
-above macros.  It defaults to @scheme[lbl-superimpose].
+above macros.  It defaults to @racket[lbl-superimpose].
 
 }
 
 @defform[(with-pict-combine combine-id body ...)]{
 
-Sets @scheme[pict-combine] to refer to @scheme[combine-id] within each of the
-@scheme[body] terms, which are spliced into the containing context.
+Sets @racket[pict-combine] to refer to @racket[combine-id] within each of the
+@racket[body] terms, which are spliced into the containing context.
 
 }
 
@@ -221,14 +221,14 @@ Sets @scheme[pict-combine] to refer to @scheme[combine-id] within each of the
 
 @defform[(staged [name ...] body ...)]{
 
-Executes the @scheme[body] terms once for each stage @scheme[name].  The terms
+Executes the @racket[body] terms once for each stage @racket[name].  The terms
 may include expressions and mutually recursive definitions.  Within the body,
-each @scheme[name] is bound to a number from @scheme[1] to the number of stages
-in order.  Furthermore, during execution @scheme[stage] is bound to the number
-of the current stage and @scheme[stage-name] is bound to a symbol representing
-the @scheme[name] of the current stage.  By comparing @scheme[stage] to the
-numeric value of each @scheme[name], or @scheme[stage-name] to quoted symbols of
-the form @scheme['name], the user may compute based on the progression of the
+each @racket[name] is bound to a number from @racket[1] to the number of stages
+in order.  Furthermore, during execution @racket[stage] is bound to the number
+of the current stage and @racket[stage-name] is bound to a symbol representing
+the @racket[name] of the current stage.  By comparing @racket[stage] to the
+numeric value of each @racket[name], or @racket[stage-name] to quoted symbols of
+the form @racket['name], the user may compute based on the progression of the
 stages.
 
 }
@@ -238,20 +238,20 @@ stages.
 @defform[#:id stage-name stage-name]
 )]{
 
-These keywords are bound during the execution of @scheme[staged] and should not
+These keywords are bound during the execution of @racket[staged] and should not
 be used otherwise.
 
 }
 
 @defform[(slide/staged [name ...] arg ...)]{
 
-Creates a staged slide.  Equivalent to @scheme[(staged [name ...] (slide arg
+Creates a staged slide.  Equivalent to @racket[(staged [name ...] (slide arg
 ...))].
 
-Within a staged slide, the boolean arguments to @scheme[hide], @scheme[show],
-@scheme[strike], and @scheme[shade] can be used to determine in which stages to
-perform a transformation.  The macros @scheme[pict-if], @scheme[pict-cond],
-@scheme[pict-case], and @scheme[pict-match] may also be used to create images
+Within a staged slide, the boolean arguments to @racket[hide], @racket[show],
+@racket[strike], and @racket[shade] can be used to determine in which stages to
+perform a transformation.  The macros @racket[pict-if], @racket[pict-cond],
+@racket[pict-case], and @racket[pict-match] may also be used to create images
 which change naturally between stages.
 
 }
@@ -267,11 +267,11 @@ which change naturally between stages.
                   [#:valign valign (->* [] [] #:rest (listof pict?) pict?) align])
          pict?]{
 
-Constructs a table containing the given @scheme[row]s, all of which must be of
-the same length.  Applies @scheme[t] to each string in a @scheme[row] to
-construct a pict.  The @scheme[hgap], @scheme[vgap], @scheme[halign], and
-@scheme[valign] are used to determine the horizontal and vertical gaps and
-alignments as in @scheme[table] (except that every row and column is uniform).
+Constructs a table containing the given @racket[row]s, all of which must be of
+the same length.  Applies @racket[t] to each string in a @racket[row] to
+construct a pict.  The @racket[hgap], @racket[vgap], @racket[halign], and
+@racket[valign] are used to determine the horizontal and vertical gaps and
+alignments as in @racket[table] (except that every row and column is uniform).
 
 }
 
@@ -279,29 +279,29 @@ alignments as in @scheme[table] (except that every row and column is uniform).
 
 @defform[(two-columns one two)]{
 
-Constructs a two-column pict using @scheme[one] and @scheme[two] as the two
-columns.  Sets @scheme[current-para-width] appropriately in each column.
+Constructs a two-column pict using @racket[one] and @racket[two] as the two
+columns.  Sets @racket[current-para-width] appropriately in each column.
 
 }
 
 @defproc[(mini-slide [pict pict?] ...) pict?]{
 
-Appends each @scheme[pict] vertically with space between them, similarly to the
-@scheme[slide] function.
+Appends each @racket[pict] vertically with space between them, similarly to the
+@racket[slide] function.
 
 }
 
 @defproc[(columns [pict pict?] ...) pict?]{
 
-Combines each @scheme[pict] horizontally, aligned at the top, with space in
+Combines each @racket[pict] horizontally, aligned at the top, with space in
 between.
 
 }
 
 @defform[(column width body ...)]{
 
-Sets @scheme[current-para-width] to @scheme[width] during execution of the
-@scheme[body] expressions.
+Sets @racket[current-para-width] to @racket[width] during execution of the
+@racket[body] expressions.
 
 }
 
@@ -309,8 +309,8 @@ Sets @scheme[current-para-width] to @scheme[width] during execution of the
                       [r real? (/ n )])
          real?]{
 
-Computes the width of one column out of @scheme[n] that takes up a ratio of
-@scheme[r] of the available space (according to @scheme[current-para-width]).
+Computes the width of one column out of @racket[n] that takes up a ratio of
+@racket[r] of the available space (according to @racket[current-para-width]).
 
 }
 

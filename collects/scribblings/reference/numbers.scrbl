@@ -549,7 +549,7 @@ Returns the natural logarithm of @racket[z].  The result is normally
 
 Returns the sine of @racket[z], where @racket[z] is in radians. The
  result is normally inexact, but it is exact @racket[0] if @racket[z]
- is exact @scheme[0].
+ is exact @racket[0].
 
 @mz-examples[(sin 3.14159) (sin 1+05.i)]}
 
@@ -565,7 +565,7 @@ Returns the cosine of @racket[z], where @racket[z] is in radians.
 
 Returns the tangent of @racket[z], where @racket[z] is in radians. The
  result is normally inexact, but it is exact @racket[0] if @racket[z]
- is exact @scheme[0].
+ is exact @racket[0].
 
 @mz-examples[(tan 0.7854) (tan 1+05.i)]}
 
@@ -573,7 +573,7 @@ Returns the tangent of @racket[z], where @racket[z] is in radians. The
 @defproc[(asin [z number?]) number?]{
 
 Returns the arcsine in radians of @racket[z]. The result is normally
- inexact, but it is exact @racket[0] if @racket[z] is exact @scheme[0].
+ inexact, but it is exact @racket[0] if @racket[z] is exact @racket[0].
 
 @mz-examples[(asin 0.25) (asin 1+05.i)]}
 

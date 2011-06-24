@@ -77,7 +77,7 @@ return values are ignored.
 
 If the html file is being accessed as a @litchar{file:} url, the
 @racket[current-load-relative-directory] parameter is set to the
-directory during the evaluation of the mzracket code (in both
+directory during the evaluation of the mzscheme code (in both
 examples).  The Racket code is executed through @racket[eval].
 
 The @litchar{MZSCHEME} forms are disabled unless the web page is a

@@ -11,7 +11,7 @@ For many procedures that accept a port argument, the argument is
 optional, and it defaults to either the @defterm{current input port}
 or @defterm{current output port}. For @exec{mzscheme}, the current
 ports are initialized to the process's stdin and stdout. The
-@scheme[current-input-port] and @scheme[current-output-port]
+@racket[current-input-port] and @racket[current-output-port]
 procedures, when called with no arguments, return the current output
 and input port, respectively.
 
@@ -21,9 +21,9 @@ and input port, respectively.
 ]
 
 Ports are created by various procedures that specific to the different
-kinds of streams. For example, @scheme[open-input-file] creates an
+kinds of streams. For example, @racket[open-input-file] creates an
 input port for reading from a file. Procedures like
-@scheme[with-input-from-file] both create a port and install it as the
+@racket[with-input-from-file] both create a port and install it as the
 current port while calling a given body procedure.
 
 See @secref["io"] for information about using ports.

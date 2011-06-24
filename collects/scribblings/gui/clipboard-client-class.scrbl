@@ -3,11 +3,11 @@
 
 @defclass/title[clipboard-client% object% ()]{
 
-A @scheme[clipboard-client%] object allows a program to take over
+A @racket[clipboard-client%] object allows a program to take over
  the clipboard and service requests for clipboard data. See
- @scheme[clipboard<%>] for more information.
+ @racket[clipboard<%>] for more information.
 
-A @scheme[clipboard-client%] object is associated to an eventspace
+A @racket[clipboard-client%] object is associated to an eventspace
  when it becomes the current client; see
 @method[clipboard<%> set-clipboard-client] for more information.
 
@@ -24,9 +24,9 @@ Creates a clipboard client that supports no data formats.
 Adds a new data format name to the list supported by the clipboard
  client.
 
-The @scheme[format] string is typically four capital letters. (On
- Mac OS X, only four characters for @scheme[format] are ever used.)
- For example, @scheme["TEXT"] is the name of the UTF-8-encoded string
+The @racket[format] string is typically four capital letters. (On
+ Mac OS X, only four characters for @racket[format] are ever used.)
+ For example, @racket["TEXT"] is the name of the UTF-8-encoded string
  format. New format names can be used to communicate application- and
  platform-specific data formats.
 
@@ -38,7 +38,7 @@ The @scheme[format] string is typically four capital letters. (On
 Called when a process requests clipboard data while this client is the
  current one for the clipboard. The requested format is passed to the
  method, and the result should be a byte string matching the requested
- format, or @scheme[#f] if the request cannot be fulfilled.
+ format, or @racket[#f] if the request cannot be fulfilled.
 
 Only data format names in the client's list will be passed to this
  method; see @method[clipboard-client% add-type].

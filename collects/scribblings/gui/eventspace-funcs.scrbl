@@ -8,7 +8,7 @@
 Creates and returns a new eventspace value. The new eventspace is
  created as a child of the current eventspace. The eventspace is used
  by making it the current eventspace with the
- @scheme[current-eventspace] parameter.
+ @racket[current-eventspace] parameter.
 
 See @|eventspacediscuss| for more information about eventspaces.
 
@@ -26,7 +26,7 @@ See @|eventspacediscuss| for more information about eventspaces.
 @defproc[(eventspace? [v any/c])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an eventspace value or @scheme[#f]
+Returns @racket[#t] if @racket[v] is an eventspace value or @racket[#f]
  otherwise.
 
 See @|eventspacediscuss| for more information about eventspaces.
@@ -64,8 +64,8 @@ result event is ready when @racket[(yield)] for the eventspace
          boolean?]{
 Inspects the event queue of the current eventspace, searching for a
  Shift-Ctl-C (Unix, Windows) or Cmd-. (Mac OS X) key combination. Returns
- @scheme[#t] if such an event was found (and the event is dequeued) or
- @scheme[#f] otherwise.
+ @racket[#t] if such an event was found (and the event is dequeued) or
+ @racket[#f] otherwise.
 
 }
 
@@ -80,7 +80,7 @@ Returns a list of visible top-level frames and dialogs in the current
          (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c)]{
 Returns the top level window in the current eventspace that has the
  keyboard focus (or contains the window with the keyboard focus), or
- @scheme[#f] if no window in the current eventspace has the focus.
+ @racket[#f] if no window in the current eventspace has the focus.
 
 }
 
@@ -88,7 +88,7 @@ Returns the top level window in the current eventspace that has the
          (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c)]{
 Returns the top level window in the current eventspace that is visible
  and most recently had the keyboard focus (or contains the window that
- had the keyboard focus), or @scheme[#f] if there is no visible window
+ had the keyboard focus), or @racket[#f] if there is no visible window
  in the current eventspace.
 
 }
@@ -104,12 +104,12 @@ Enables or disables special Control key handling (Mac OS X). When Control
  Control key presses must be seen by the system translation, so this
  mode should be turned off, but the default is on.
 
-If @scheme[on?] is provided and @scheme[#f], Control is passed to the system
+If @racket[on?] is provided and @racket[#f], Control is passed to the system
 translation as normal. This setting affects all windows and
 eventspaces.
 
-If no argument is provided, the result is @scheme[#t] if Control is
-currently treated specially, @scheme[#f] otherwise.
+If no argument is provided, the result is @racket[#t] if Control is
+currently treated specially, @racket[#f] otherwise.
 
 }
 
@@ -122,12 +122,12 @@ Enables or disables special Option key handling (Mac OS X). When
  without Option for keyboard translations. By default, Option is not
  special.
 
-If @scheme[on?] is provided @scheme[#f], Option is passed to the
+If @racket[on?] is provided @racket[#f], Option is passed to the
  system translation as normal. This setting affects all windows and
  eventspaces.
 
-If no argument is provided, the result is @scheme[#t] if Option is
- currently treated specially, @scheme[#f] otherwise.
+If no argument is provided, the result is @racket[#t] if Option is
+ currently treated specially, @racket[#f] otherwise.
 }
 
 @defproc[(queue-callback [callback (-> any)]
@@ -152,20 +152,19 @@ Yields control to event dispatching. See
  @secref["eventspaceinfo"] for details.
 
 A handler procedure invoked by the system during a call to
- @scheme[yield] can itself call @scheme[yield], creating
+ @racket[yield] can itself call @racket[yield], creating
  an additional level of nested (but single-threaded) event handling.
 
-See also
-@scheme[sleep/yield] .
+See also @racket[sleep/yield].
 
-If no argument is provided, @scheme[yield] dispatches an unspecified
+If no argument is provided, @racket[yield] dispatches an unspecified
  number of events, but only if the current thread is the current
  eventspace's handler thread (otherwise, there is no effect). The
- result is @scheme[#t] if any events may have been handled,
- @scheme[#f] otherwise.
+ result is @racket[#t] if any events may have been handled,
+ @racket[#f] otherwise.
 
-If @scheme[v] is @indexed-scheme['wait], and @scheme[yield] is called
- in the handler thread of an eventspace, then @scheme[yield] starts
+If @racket[v] is @indexed-racket['wait], and @racket[yield] is called
+ in the handler thread of an eventspace, then @racket[yield] starts
  processing events in that eventspace until
 
 @itemize[
@@ -176,54 +175,54 @@ If @scheme[v] is @indexed-scheme['wait], and @scheme[yield] is called
 
   @item{no callbacks are queued in the eventspace; and}
 
-  @item{no @scheme[menu-bar%] has been created for the eventspace
-        with @scheme['root] (i.e., creating a @scheme['root] menu bar
+  @item{no @racket[menu-bar%] has been created for the eventspace
+        with @racket['root] (i.e., creating a @racket['root] menu bar
         prevents an eventspace from ever unblocking).}
 
 ]
 
-When called in a non-handler thread, @scheme[yield] returns
- immediately. In either case, the result is @scheme[#t].
+When called in a non-handler thread, @racket[yield] returns
+ immediately. In either case, the result is @racket[#t].
 
-Evaluating @scheme[(yield 'wait)] is thus similar to
- @scheme[(yield (current-eventspace))], except that it is
+Evaluating @racket[(yield 'wait)] is thus similar to
+ @racket[(yield (current-eventspace))], except that it is
  sensitive to whether the current thread is a handler thread, instead
- of the value of the @scheme[current-eventspace] parameter.
+ of the value of the @racket[current-eventspace] parameter.
 
-If @scheme[v] is an event in Racket's sense (not to be confused with
- a GUI event), @scheme[yield] blocks on @scheme[v] in the same way as
- @scheme[sync], except that it may start a @scheme[sync] on @scheme[v]
- multiple times (but it will complete a @scheme[sync] on @scheme[v] at
+If @racket[v] is an event in Racket's sense (not to be confused with
+ a GUI event), @racket[yield] blocks on @racket[v] in the same way as
+ @racket[sync], except that it may start a @racket[sync] on @racket[v]
+ multiple times (but it will complete a @racket[sync] on @racket[v] at
  most one time). If the current thread is the current eventspace's
- handler thread, events are dispatched until a @scheme[v] sync
+ handler thread, events are dispatched until a @racket[v] sync
  succeeds on an event boundary. For other threads, calling
- @scheme[yield] with a Racket event is equivalent to calling
- @scheme[sync]. In either case, the result is the same that of
- @scheme[sync]; however, if a wrapper procedure is associated with
- @scheme[v] via @scheme[handle-evt], it is not called in tail position
- with respect to the @scheme[yield].
+ @racket[yield] with a Racket event is equivalent to calling
+ @racket[sync]. In either case, the result is the same that of
+ @racket[sync]; however, if a wrapper procedure is associated with
+ @racket[v] via @racket[handle-evt], it is not called in tail position
+ with respect to the @racket[yield].
 
-Always use @scheme[(yield v)] instead of a busy-wait loop.
+Always use @racket[(yield v)] instead of a busy-wait loop.
 }
 
 @defproc[(sleep/yield [secs (and/c real? (not/c negative?))])
          void?]{
 Blocks for at least the specified number of seconds, handling events
  meanwhile if the current thread is the current eventspace's handler
- thread (otherwise, @scheme[sleep/yield] is equivalent to
- @scheme[sleep]).
+ thread (otherwise, @racket[sleep/yield] is equivalent to
+ @racket[sleep]).
 
 }
 
 @defproc[(eventspace-shutdown? [e eventspace?])
          boolean?]{
-Returns @scheme[#t] if the given eventspace has been shut down by its
- custodian, @scheme[#f] otherwise. Attempting to create a new window,
+Returns @racket[#t] if the given eventspace has been shut down by its
+ custodian, @racket[#f] otherwise. Attempting to create a new window,
  timer, or explicitly queued event in a shut-down eventspace raises
- the @scheme[exn:misc] exception.
+ the @racket[exn:misc] exception.
 
 Attempting to use certain methods of windows and timers in a shut-down
- eventspace also raises the @scheme[exn:misc] exception, but the
+ eventspace also raises the @racket[exn:misc] exception, but the
 @xmethod[area<%> get-top-level-window] and
 @xmethod[top-level-window<%> get-eventspace] methods work even after the area's eventspace is shut down.
 
@@ -233,11 +232,6 @@ Attempting to use certain methods of windows and timers in a shut-down
          (or/c thread? #f)]{
 Returns the handler thread of the given eventspace. If the handler
  thread has terminated (e.g., because the eventspace was shut down), the
- result is @scheme[#f].
-
-
-
-
-
+ result is @racket[#f].
 
 }

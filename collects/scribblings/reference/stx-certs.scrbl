@@ -12,9 +12,9 @@ module name (see @secref["modpathidx"]), an @tech{inspector} (see
 is attached as either an @deftech{active certificate} or an
 @deftech{inactive certificate}.
 
-The @scheme[datum->syntax] procedure never transfers an @tech{active
+The @racket[datum->syntax] procedure never transfers an @tech{active
 certificate} from one syntax object to another. The
-@scheme[syntax-recertify] procedure can be used to transfer a
+@racket[syntax-recertify] procedure can be used to transfer a
 certificate from one syntax object to another, but only if the
 certificate's key is provided, or if a sufficiently powerful inspector
 is provided. Thus, a certificate's inspector serves two roles: it
@@ -28,7 +28,7 @@ certificate's module reference corresponds to the module that defined
 the @tech{transformer binding}, the inspector is the inspector for the
 module's declaration (see @secref["modprotect"]), and the key
 object is hidden. (Applying the result of
-@scheme[syntax-local-certifier] can introduce certificates with other
+@racket[syntax-local-certifier] can introduce certificates with other
 keys.) The certificate's mark is applied to both the input and output
 of the syntax transformer, so that it identifies every piece of syntax
 that was introduced by the transformer (see
@@ -38,48 +38,48 @@ shape and properties of the result:
 
 @itemize[
 
- @item{If the result has a @indexed-scheme['certify-mode] property
+ @item{If the result has a @indexed-racket['certify-mode] property
           (see @secref["stxprops"]) that is
-          @indexed-scheme['opaque], then the certificate is attached
+          @indexed-racket['opaque], then the certificate is attached
           to the immediate syntax object.}
 
- @item{If the result has a @scheme['certify-mode] property that is
-          @indexed-scheme['transparent], then the certificate is also
+ @item{If the result has a @racket['certify-mode] property that is
+          @indexed-racket['transparent], then the certificate is also
           propagated recursively to syntax object that corresponds to
           elements of the syntax object's datum as a list (or, more
-          precisely, to the @scheme[car]s of the datum as reached by
-          any number of @scheme[cdr]s). This recursive propagation
+          precisely, to the @racket[car]s of the datum as reached by
+          any number of @racket[cdr]s). This recursive propagation
           uses syntax properties and shapes, as for the immediate
           attachment.}
 
- @item{If the result has a @scheme['certify-mode] property that is
-          @indexed-scheme['transparent-binding], then the certificate
-          is attached in a way similar to @scheme['transparent], but further
+ @item{If the result has a @racket['certify-mode] property that is
+          @indexed-racket['transparent-binding], then the certificate
+          is attached in a way similar to @racket['transparent], but further
           treating the syntax object corresponding to the second list
-          element as having a @scheme['transparent] value for the
-          @scheme['certify-mode] property if it does not already have
-          a @scheme['certify-mode] property value.}
+          element as having a @racket['transparent] value for the
+          @racket['certify-mode] property if it does not already have
+          a @racket['certify-mode] property value.}
 
- @item{If the result has no @scheme['certify-mode] property value, but
+ @item{If the result has no @racket['certify-mode] property value, but
           its datum is a pair, and if the syntax object corresponding
-          to the @scheme[car] of the pair is an identifier bound to
-          @scheme[begin], @scheme[module], or
-          @scheme[#%plain-module-begin], then the certificate is
+          to the @racket[car] of the pair is an identifier bound to
+          @racket[begin], @racket[module], or
+          @racket[#%plain-module-begin], then the certificate is
           propagated as if the syntax object had the
-          @scheme['transparent] property value.}
+          @racket['transparent] property value.}
 
- @item{If the result has no @scheme['certify-mode] property value,
+ @item{If the result has no @racket['certify-mode] property value,
           but its datum is a pair, and if the syntax object
-          corresponding to the @scheme[car] of the pair is an
-          identifier bound to @scheme[define-values] or
-          @scheme[define-syntaxes], then the certificate is propagated
-          as if the syntax object had the @scheme['transparent-binding]
+          corresponding to the @racket[car] of the pair is an
+          identifier bound to @racket[define-values] or
+          @racket[define-syntaxes], then the certificate is propagated
+          as if the syntax object had the @racket['transparent-binding]
           property value.}
 
 ]
 
-To avoid accidental transfer for a @scheme['certify-mode] property
-value, the expander always removes any @scheme['certify-mode] property
+To avoid accidental transfer for a @racket['certify-mode] property
+value, the expander always removes any @racket['certify-mode] property
 on a syntax object that is passed to a syntax transformer.
 
 As the expander attaches a new active certificate to a syntax object,
@@ -117,7 +117,7 @@ expansion context:
    module (if any) and the certificate key are not used for checking a
    local reference.}
 
- @item{When the expander encounters a @scheme[quote-syntax] form, it
+ @item{When the expander encounters a @racket[quote-syntax] form, it
    attaches all accumulated @tech{active certificates} from the
    expression's context to the quoted syntax objects. A certificate
    for the enclosing module (if any) is also included. The
@@ -128,10 +128,10 @@ expansion context:
 
 ]
 
-Finally, for the result of @scheme[expand] or @scheme[local-expand]
+Finally, for the result of @racket[expand] or @racket[local-expand]
 with an empty stop list, certificates are lifted to the outermost
-result expression, except to the degree that @scheme['certify-mode]
-property values and bindings like @scheme[begin] direct certificates
+result expression, except to the degree that @racket['certify-mode]
+property values and bindings like @racket[begin] direct certificates
 to sub-expressions.
 
 
@@ -141,11 +141,11 @@ to sub-expressions.
                            [key any/c])
          syntax?]{
 
-Copies certain certificates of @scheme[old-stx] to @scheme[new-stx]: a
-certificate is copied if its inspector is either @scheme[inspector] or
-controlled by @scheme[inspector], or if the certificate's key is
-@scheme[key]; otherwise the certificate is not copied.  The result is
-a syntax object like @scheme[new-stx], but with the copied
-certificates. (The @scheme[new-stx] object itself is not modified.)
+Copies certain certificates of @racket[old-stx] to @racket[new-stx]: a
+certificate is copied if its inspector is either @racket[inspector] or
+controlled by @racket[inspector], or if the certificate's key is
+@racket[key]; otherwise the certificate is not copied.  The result is
+a syntax object like @racket[new-stx], but with the copied
+certificates. (The @racket[new-stx] object itself is not modified.)
 Both @tech{active certificates} and @tech{inactive certificates} are
 copied.}

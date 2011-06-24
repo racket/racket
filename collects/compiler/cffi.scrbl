@@ -35,13 +35,12 @@
    (elem "conversions: (obvious and precise)"))
 @(define goesto 'rarr)
 
-   
 
-@title{@scheme[c-lambda]: C FFI via @exec{raco ctool}}
+@title{@racket[c-lambda]: C FFI via @exec{raco ctool}}
 
 @defmodule[compiler/cffi]{
 
-The @schememodname[compiler/cffi] module relies on a C compiler to
+The @racketmodname[compiler/cffi] module relies on a C compiler to
 statically construct an interface to C code through directives
 embedded in a Racket program. The library implements a subset of
 @as-index{Gambit-C}'s foreign-function interface @cite["Feeley98"].}

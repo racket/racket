@@ -29,7 +29,7 @@ with your distribution, and the DLLs will need to be registered on the
 end user's machine. One way to do that is to include the following
 little setup program (as an executable) in your distribution:
 
-@schemeblock[
+@racketblock[
   (module setup scheme/base
     (require mzlib/runtime-path
              mzlib/process)
@@ -51,7 +51,7 @@ little setup program (as an executable) in your distribution:
 
 Try 
 
-@schemeblock[
+@racketblock[
   (require mysterx/mxdemo)
 ]
 
@@ -65,19 +65,19 @@ downloaded from elsewhere; look for @filepath{mscal.ocx}.
 
 Load the MysterX module with 
 
-@schemeblock[
+@racketblock[
   (require mysterx)
 ]
 
-Because some MysterX code relies on the @schememodname[scheme/class]
+Because some MysterX code relies on the @racketmodname[scheme/class]
 class system, you may also need
 
-@schemeblock[
+@racketblock[
   (require mzlib/class)
 ]
 
 Several MysterX procedures take HTML strings as input.  The
-@schememodname[xml] library provides procedures that convert Racket
+@racketmodname[xml] library provides procedures that convert Racket
 syntax into XML strings.  You may find using these procedures useful
 in creating HTML strings for use by MysterX.
 

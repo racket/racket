@@ -18,12 +18,12 @@ directories:
 @defstruct[file ([name symbol?][size integer?][content (listof char?)])]{}
 
 @defproc[(create-dir [path symbol?]) dir?]{
- Turns the directory found at @scheme[path] on your computer into an instance of @scheme[dir?].}
+ Turns the directory found at @racket[path] on your computer into an instance of @racket[dir?].}
 
 Sample: Set teachpack to @filepath{dir.rkt} and click Run:
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 > (create-dir ".")
 (make-dir
   '|.|

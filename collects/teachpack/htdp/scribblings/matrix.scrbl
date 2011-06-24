@@ -29,22 +29,22 @@ elements of the list are lists of equal (non-zero) length.
 determines whether the given object is a matrix?}
 
 @defproc[(matrix-rows [m matrix?]) natural-number/c]{
-determines how many rows this matrix @scheme[m] has} 
+determines how many rows this matrix @racket[m] has} 
 
 @defproc[(matrix-cols [m matrix?]) natural-number/c]{
-determines ow many columns this matrix @scheme[m] has} 
+determines ow many columns this matrix @racket[m] has} 
 
 @defproc[(rectangle->matrix [r (unsyntax @tech{Rectangle})]) matrix?]{
 creates a matrix from the given @tech{Rectangle}}
 
 @defproc[(matrix->rectangle [m matrix?]) (unsyntax @tech{Rectangle})]{
-creates a rectangle from this matrix @scheme[m]}
+creates a rectangle from this matrix @racket[m]}
 
 @defproc[(make-matrix [n natural-number/c][m natural-number/c][l (Listof X)]) matrix?]{
-creates an @scheme[n] by @scheme[m] matrix from @scheme[l] 
+creates an @racket[n] by @racket[m] matrix from @racket[l] 
 
-NOTE: @scheme[make-matrix] would consume an optional number of entries, if
-it were like @scheme[make-vector]}
+NOTE: @racket[make-matrix] would consume an optional number of entries, if
+it were like @racket[make-vector]}
 
 @defproc[(build-matrix 
   [n natural-number/c][m natural-number/c]
@@ -52,31 +52,31 @@ it were like @scheme[make-vector]}
 	 (and/c natural-number/c (</c n))
 	 any/c)])
  matrix?]{
-creates an @scheme[n] by @scheme[m] matrix by applying @scheme[f] to @scheme[(0,0)],
-@scheme[(0,1)], ..., (@scheme[(sub1 m),(sub1 n)])}
+creates an @racket[n] by @racket[m] matrix by applying @racket[f] to @racket[(0,0)],
+@racket[(0,1)], ..., (@racket[(sub1 m),(sub1 n)])}
 
 @defproc[(matrix-ref [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]) any/c]{
-retrieve the item at (@scheme[i],@scheme[j]) in matrix @scheme[m]}
+retrieve the item at (@racket[i],@racket[j]) in matrix @racket[m]}
 
 @defproc[(matrix-set [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))] 
 		     [x any/c]) 
          matrix?]{
-creates a new matrix with @scheme[x] at (@scheme[i],@scheme[j]) and all
-other places the same as in @scheme[m]}
+creates a new matrix with @racket[x] at (@racket[i],@racket[j]) and all
+other places the same as in @racket[m]}
 
 @defproc[(matrix-where? [m matrix?] [pred? (-> any/c boolean?)]) (listof posn?)]{
-@scheme[(matrix-where? M P)] produces a list of @scheme[(make-posn i j)]
-such that @scheme[(P (matrix-ref M i j))] holds}
+@racket[(matrix-where? M P)] produces a list of @racket[(make-posn i j)]
+such that @racket[(P (matrix-ref M i j))] holds}
 
 @defproc[(matrix-render [m matrix?]) (unsyntax @tech{Rectangle})]{
-renders this matrix @scheme[m] as a rectangle of strings}
+renders this matrix @racket[m] as a rectangle of strings}
 
 @defproc[(matrix-minor [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]) 
           matrix?]{ 
-creates a matrix minor from @scheme[m] at (@scheme[i],@scheme[j])}
+creates a matrix minor from @racket[m] at (@racket[i],@racket[j])}
 
 @defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]
 		      [x any/c])
          matrix?]{
-like @scheme[matrix-set] but uses a destructive update}
+like @racket[matrix-set] but uses a destructive update}
 

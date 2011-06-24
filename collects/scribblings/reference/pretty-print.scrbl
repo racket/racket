@@ -9,64 +9,64 @@
                        [quote-depth (or/c 0 1) 0])
          void?]{
 
-Pretty-prints the value @scheme[v] using the same printed form as the
-default @scheme[print] mode, but with newlines and whitespace inserted
-to avoid lines longer than @scheme[(pretty-print-columns)], as
-controlled by @scheme[(pretty-print-current-style-table)]. The printed
-form ends in a newline, unless the @scheme[pretty-print-columns]
-parameter is set to @scheme['infinity].
+Pretty-prints the value @racket[v] using the same printed form as the
+default @racket[print] mode, but with newlines and whitespace inserted
+to avoid lines longer than @racket[(pretty-print-columns)], as
+controlled by @racket[(pretty-print-current-style-table)]. The printed
+form ends in a newline, unless the @racket[pretty-print-columns]
+parameter is set to @racket['infinity].
 
 In addition to the parameters defined in this section,
-@scheme[pretty-print] conforms to the @scheme[print-graph],
-@scheme[print-struct], @scheme[print-hash-table],
-@scheme[print-vector-length], @scheme[print-box], and
-@scheme[print-as-expression] parameters.
+@racket[pretty-print] conforms to the @racket[print-graph],
+@racket[print-struct], @racket[print-hash-table],
+@racket[print-vector-length], @racket[print-box], and
+@racket[print-as-expression] parameters.
 
 The pretty printer detects structures that have the
-@scheme[prop:custom-write] property and calls the corresponding
+@racket[prop:custom-write] property and calls the corresponding
 custom-write procedure. The custom-write procedure can check the
-parameter @scheme[pretty-printing] to cooperate with the
+parameter @racket[pretty-printing] to cooperate with the
 pretty-printer. Recursive printing to the port automatically uses
 pretty printing, but if the structure has multiple recursively printed
 sub-expressions, a custom-write procedure may need to cooperate more
-to insert explicit newlines. Use @scheme[port-next-location] to
-determine the current output column, use @scheme[pretty-print-columns]
+to insert explicit newlines. Use @racket[port-next-location] to
+determine the current output column, use @racket[pretty-print-columns]
 to determine the target printing width, and use
-@scheme[pretty-print-newline] to insert a newline (so that the
-function in the @scheme[pretty-print-print-line] parameter can be
+@racket[pretty-print-newline] to insert a newline (so that the
+function in the @racket[pretty-print-print-line] parameter can be
 called appropriately). Use
-@scheme[make-tentative-pretty-print-output-port] to obtain a port for
+@racket[make-tentative-pretty-print-output-port] to obtain a port for
 tentative recursive prints (e.g., to check the length of the output).}
 
 @defproc[(pretty-write [v any/c] [port output-port? (current-output-port)])
          void?]{
 
-Same as @scheme[pretty-print], but @scheme[v] is printed like
-@scheme[write] instead of like @scheme[print].}
+Same as @racket[pretty-print], but @racket[v] is printed like
+@racket[write] instead of like @racket[print].}
 
 @defproc[(pretty-display [v any/c] [port output-port? (current-output-port)])
          void?]{
 
-Same as @scheme[pretty-print], but @scheme[v] is printed like
-@scheme[display] instead of like @scheme[print].}
+Same as @racket[pretty-print], but @racket[v] is printed like
+@racket[display] instead of like @racket[print].}
 
 
 @defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)])
          string?]{
 
-Like @scheme[pretty-print], except that it returns a string containing
+Like @racket[pretty-print], except that it returns a string containing
 the pretty-printed value, rather than sending the output to a port.
 
-The optional argument @scheme[columns] argument is used to
-parameterize @scheme[pretty-print-columns].}
+The optional argument @racket[columns] argument is used to
+parameterize @racket[pretty-print-columns].}
 
 
 @defproc[(pretty-print-handler [v any/c]) void?]{
 
-Pretty-prints @scheme[v] if @scheme[v] is not @|void-const|, or prints
-nothing if @scheme[v] is @|void-const|. Pass this procedure to
-@scheme[current-print] to install the pretty printer into the REPL run
-by @scheme[read-eval-print-loop].}
+Pretty-prints @racket[v] if @racket[v] is not @|void-const|, or prints
+nothing if @racket[v] is @|void-const|. Pass this procedure to
+@racket[current-print] to install the pretty printer into the REPL run
+by @racket[read-eval-print-loop].}
 
 
 @; ----------------------------------------------------------------------
@@ -77,7 +77,7 @@ by @scheme[read-eval-print-loop].}
 
 A parameter that determines the default width for pretty printing.
 
-If the display width is @scheme['infinity], then pretty-printed output
+If the display width is @racket['infinity], then pretty-printed output
 is never broken into lines, and a newline is not added to the end of
 the output.}
 
@@ -85,19 +85,19 @@ the output.}
 @defparam[pretty-print-depth depth (or/c exact-nonnegative-integer? #f)]{
 
 Parameter that controls the default depth for recursive pretty
-printing. Printing to @scheme[depth] means that elements nested more
-deeply than @scheme[depth] are replaced with ``...''; in particular, a
+printing. Printing to @racket[depth] means that elements nested more
+deeply than @racket[depth] are replaced with ``...''; in particular, a
 depth of @racket[0] indicates that only simple values are printed. A depth of
-@scheme[#f] (the default) allows printing to arbitrary
+@racket[#f] (the default) allows printing to arbitrary
 depths.}
 
 
 @defboolparam[pretty-print-exact-as-decimal as-decimal?]{
 
 A parameter that determines how exact non-integers are printed.  If
-the parameter's value is @scheme[#t], then an exact non-integer with a
+the parameter's value is @racket[#t], then an exact non-integer with a
 decimal representation is printed as a decimal number instead of a
-fraction. The initial value is @scheme[#f].}
+fraction. The initial value is @racket[#f].}
 
 @defboolparam[pretty-print-.-symbol-without-bars on?]{
 
@@ -110,8 +110,8 @@ a period with vertical bars surrounding it.}
 @defboolparam[pretty-print-show-inexactness show?]{
 
 A parameter that determines how inexact numbers are printed.  If the
-parameter's value is @scheme[#t], then inexact numbers are always
-printed with a leading @litchar{#i}. The initial value is @scheme[#f].}
+parameter's value is @racket[#t], then inexact numbers are always
+printed with a leading @litchar{#i}. The initial value is @racket[#f].}
 
 @; ----------------------------------------------------------------------
 
@@ -120,25 +120,25 @@ printed with a leading @litchar{#i}. The initial value is @scheme[#f].}
 
 @defboolparam[pretty-print-abbreviate-read-macros abbrev?]{
 
-A parameter that controls whether or not @schemeidfont{quote},
-@schemeidfont{unquote}, @schemeidfont{unquote-splicing}, @|etc|, are
+A parameter that controls whether or not @racketidfont{quote},
+@racketidfont{unquote}, @racketidfont{unquote-splicing}, @|etc|, are
 abbreviated with @litchar{'}, @litchar{,}, @litchar[",@"], etc. 
 By default, the abbreviations are enabled.
 
-See also @scheme[pretty-print-remap-stylable].
+See also @racket[pretty-print-remap-stylable].
 }
 
 
 @defproc[(pretty-print-style-table? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a style table for use with
-@scheme[pretty-print-current-style-table], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a style table for use with
+@racket[pretty-print-current-style-table], @racket[#f] otherwise.}
 
 
 @defparam[pretty-print-current-style-table style-table pretty-print-style-table?]{
 
 A parameter that holds a table of style mappings. See
-@scheme[pretty-print-extend-style-table].}
+@racket[pretty-print-extend-style-table].}
 
 
 @defproc[(pretty-print-extend-style-table [style-table pretty-print-style-table?]
@@ -147,11 +147,11 @@ A parameter that holds a table of style mappings. See
          pretty-print-style-table?]{
 
 Creates a new style table by extending an existing
-@scheme[style-table], so that the style mapping for each symbol of
-@scheme[like-symbol-list] in the original table is used for the
-corresponding symbol of @scheme[symbol-list] in the new table. The
-@scheme[symbol-list] and @scheme[like-symbol-list] lists must have the
-same length. The @scheme[style-table] argument can be @scheme[#f], in
+@racket[style-table], so that the style mapping for each symbol of
+@racket[like-symbol-list] in the original table is used for the
+corresponding symbol of @racket[symbol-list] in the new table. The
+@racket[symbol-list] and @racket[like-symbol-list] lists must have the
+same length. The @racket[style-table] argument can be @racket[#f], in
 which case the default mappings are used from the original table (see
 below).
 
@@ -164,7 +164,7 @@ same indentation.
 The default style mapping includes mappings for the following symbols,
 so that the output follows popular code-formatting rules:
 
-@schemeblock[
+@racketblock[
 'lambda 'case-lambda
 'define 'define-macro 'define-syntax
 'let 'letrec 'let*
@@ -194,7 +194,7 @@ the reader shorthands.
 This procedure is
 called with each sub-expression that appears as the first element in a
 sequence. If it returns a symbol, the style table is used, as if that
-symbol were at the head of the sequence. If it returns @scheme[#f],
+symbol were at the head of the sequence. If it returns @racket[#f],
 the style table is treated normally.
 Similarly, when determining whether to abbreviate reader macros,
 this parameter is consulted.
@@ -208,12 +208,12 @@ this parameter is consulted.
 @defproc[(pretty-print-newline [port out-port?] [width exact-nonnegative-integer?]) void?]{
 
 Calls the procedure associated with the
-@scheme[pretty-print-print-line] parameter to print a newline to
-@scheme[port], if @scheme[port] is the output port that is redirected
+@racket[pretty-print-print-line] parameter to print a newline to
+@racket[port], if @racket[port] is the output port that is redirected
 to the original output port for printing, otherwise a plain newline is
-printed to @scheme[port]. The @scheme[width] argument should be the
+printed to @racket[port]. The @racket[width] argument should be the
 target column width, typically obtained from
-@scheme[pretty-print-columns].}
+@racket[pretty-print-columns].}
 
 
 @defparam[pretty-print-print-line proc
@@ -228,33 +228,33 @@ A parameter that determines a procedure for printing the newline
 separator between lines of a pretty-printed value. The procedure is
 called with four arguments: a new line number, an output port, the old
 line's length, and the number of destination columns. The return value
-from @scheme[proc] is the number of extra characters it printed at the
+from @racket[proc] is the number of extra characters it printed at the
 beginning of the new line.
 
-The @scheme[proc] procedure is called before any characters are
-printed with @scheme[0] as the line number and @scheme[0] as the old
-line length; @scheme[proc] is called after the last character of a
-value has been printed with @scheme[#f] as the line number and with the
+The @racket[proc] procedure is called before any characters are
+printed with @racket[0] as the line number and @racket[0] as the old
+line length; @racket[proc] is called after the last character of a
+value has been printed with @racket[#f] as the line number and with the
 length of the last line. Whenever the pretty-printer starts a new
-line, @scheme[proc] is called with the new line's number (where the
-first new line is numbered @scheme[1]) and the just-finished line's
-length. The destination-columns argument to @scheme[proc] is always
+line, @racket[proc] is called with the new line's number (where the
+first new line is numbered @racket[1]) and the just-finished line's
+length. The destination-columns argument to @racket[proc] is always
 the total width of the destination printing area, or
-@scheme['infinity] if pretty-printed values are not broken into lines.
+@racket['infinity] if pretty-printed values are not broken into lines.
 
-The default @scheme[proc] procedure prints a newline whenever the line
-number is not @scheme[0] and the column count is not
-@scheme['infinity], always returning @scheme[0]. A custom
-@scheme[proc] procedure can be used to print extra text before each
+The default @racket[proc] procedure prints a newline whenever the line
+number is not @racket[0] and the column count is not
+@racket['infinity], always returning @racket[0]. A custom
+@racket[proc] procedure can be used to print extra text before each
 line of pretty-printed output; the number of characters printed before
-each line should be returned by @scheme[proc] so that the next line
+each line should be returned by @racket[proc] so that the next line
 break can be chosen correctly.
 
-The destination port supplied to @scheme[proc] is generally not the
-port supplied to @scheme[pretty-print] or @scheme[pretty-display] (or
+The destination port supplied to @racket[proc] is generally not the
+port supplied to @racket[pretty-print] or @racket[pretty-display] (or
 the current output port), but output to this port is ultimately
-redirected to the port supplied to @scheme[pretty-print] or
-@scheme[pretty-display].}
+redirected to the port supplied to @racket[pretty-print] or
+@racket[pretty-display].}
 
 
 @; ----------------------------------------------------------------------
@@ -270,18 +270,18 @@ redirected to the port supplied to @scheme[pretty-print] or
 A parameter that determines a sizing hook for pretty-printing.
 
 The sizing hook is applied to each value to be printed. If the hook
-returns @scheme[#f], then printing is handled internally by the
+returns @racket[#f], then printing is handled internally by the
 pretty-printer. Otherwise, the value should be an integer specifying
 the length of the printed value in characters; the print hook will be
 called to actually print the value (see
-@scheme[pretty-print-print-hook]).
+@racket[pretty-print-print-hook]).
 
 The sizing hook receives three arguments. The first argument is the
-value to print.  The second argument is a boolean: @scheme[#t] for
-printing like @scheme[display] and @scheme[#f] for printing like
-@scheme[write]. The third argument is the destination port; the port
-is the one supplied to @scheme[pretty-print] or
-@scheme[pretty-display] (or the current output port).  The sizing hook
+value to print.  The second argument is a boolean: @racket[#t] for
+printing like @racket[display] and @racket[#f] for printing like
+@racket[write]. The third argument is the destination port; the port
+is the one supplied to @racket[pretty-print] or
+@racket[pretty-display] (or the current output port).  The sizing hook
 may be applied to a single value multiple times during
 pretty-printing.}
 
@@ -291,17 +291,17 @@ pretty-printing.}
 
 A parameter that determines a print hook for pretty-printing.  The
 print-hook procedure is applied to a value for printing when the
-sizing hook (see @scheme[pretty-print-size-hook]) returns an integer
+sizing hook (see @racket[pretty-print-size-hook]) returns an integer
 size for the value.
 
 The print hook receives three arguments. The first argument is the
-value to print.  The second argument is a boolean: @scheme[#t] for
-printing like @scheme[display] and @scheme[#f] for printing like
-@scheme[write]. The third argument is the destination port; this port
-is generally not the port supplied to @scheme[pretty-print] or
-@scheme[pretty-display] (or the current output port), but output to
+value to print.  The second argument is a boolean: @racket[#t] for
+printing like @racket[display] and @racket[#f] for printing like
+@racket[write]. The third argument is the destination port; this port
+is generally not the port supplied to @racket[pretty-print] or
+@racket[pretty-display] (or the current output port), but output to
 this port is ultimately redirected to the port supplied to
-@scheme[pretty-print] or @scheme[pretty-display].}
+@racket[pretty-print] or @racket[pretty-display].}
 
 
 @defparam[pretty-print-pre-print-hook proc
@@ -309,8 +309,8 @@ this port is ultimately redirected to the port supplied to
 
 A parameter that determines a hook procedure to be called just before
 an object is printed. The hook receives two arguments: the object and
-the output port. The port is the one supplied to @scheme[pretty-print]
-or @scheme[pretty-display] (or the current output port).}
+the output port. The port is the one supplied to @racket[pretty-print]
+or @racket[pretty-display] (or the current output port).}
 
 
 @defparam[pretty-print-post-print-hook proc
@@ -318,8 +318,8 @@ or @scheme[pretty-display] (or the current output port).}
 
 A parameter that determines a hook procedure to be called just after
 an object is printed. The hook receives two arguments: the object and
-the output port. The port is the one supplied to @scheme[pretty-print]
-or @scheme[pretty-display] (or the current output port).}
+the output port. The port is the one supplied to @racket[pretty-print]
+or @racket[pretty-display] (or the current output port).}
 
 @; ----------------------------------------------------------------------
 
@@ -327,11 +327,11 @@ or @scheme[pretty-display] (or the current output port).}
 
 @defboolparam[pretty-printing on?]{
 
-A parameter that is set to @scheme[#t] when the pretty printer calls a
-custom-write procedure (see @scheme[prop:custom-write]) for output in
+A parameter that is set to @racket[#t] when the pretty printer calls a
+custom-write procedure (see @racket[prop:custom-write]) for output in
 a mode that supports line breaks.  When pretty printer calls a
 custom-write procedure merely to detect cycles or to try to print on a
-single line, it sets this parameter to @scheme[#f].}
+single line, it sets this parameter to @racket[#f].}
 
 
 @defproc[(make-tentative-pretty-print-output-port 
@@ -344,45 +344,45 @@ Produces an output port that is suitable for recursive pretty printing
 without actually producing output. Use such a port to tentatively
 print when proper output depends on the size of recursive
 prints. After printing, determine the size of the tentative output
-using @scheme[file-position].
+using @racket[file-position].
 
-The @scheme[out] argument should be a pretty-printing port, such as
+The @racket[out] argument should be a pretty-printing port, such as
 the one supplied to a custom-write procedure when
-@scheme[pretty-printing] is set to true, or another tentative output
-port. The @scheme[width] argument should be a target column width,
-usually obtained from @scheme[pretty-print-columns], possibly
+@racket[pretty-printing] is set to true, or another tentative output
+port. The @racket[width] argument should be a target column width,
+usually obtained from @racket[pretty-print-columns], possibly
 decremented to leave room for a terminator. The
-@scheme[overflow-thunk] procedure is called if more than
-@scheme[width] items are printed to the port or if a newline is
+@racket[overflow-thunk] procedure is called if more than
+@racket[width] items are printed to the port or if a newline is
 printed to the port via @racket[pretty-print-newline]; it can escape from the
 recursive print through a continuation as a shortcut, but
-@scheme[overflow-thunk] can also return, in which case it is called
+@racket[overflow-thunk] can also return, in which case it is called
 every time afterward that additional output is written to the port.
 
 After tentative printing, either accept the result with
-@scheme[tentative-pretty-print-port-transfer] or reject it with
-@scheme[tentative-pretty-print-port-cancel]. Failure to accept or
+@racket[tentative-pretty-print-port-transfer] or reject it with
+@racket[tentative-pretty-print-port-cancel]. Failure to accept or
 cancel properly interferes with graph-structure printing, calls to
 hook procedures, etc.  Explicitly cancel the tentative print even when
-@scheme[overflow-thunk] escapes from a recursive print.}
+@racket[overflow-thunk] escapes from a recursive print.}
 
  
 @defproc[(tentative-pretty-print-port-transfer 
           [tentative-out output-port?] [orig-out output-port?])
          void?]{
 
-Causes the data written to @scheme[tentative-out] to be transferred as
-if written to @scheme[orig-out]. The @scheme[tentative-out] argument
+Causes the data written to @racket[tentative-out] to be transferred as
+if written to @racket[orig-out]. The @racket[tentative-out] argument
 should be a port produced by
-@scheme[make-tentative-pretty-print-output-port], and
-@scheme[orig-out] should be either a pretty-printing port (provided to
+@racket[make-tentative-pretty-print-output-port], and
+@racket[orig-out] should be either a pretty-printing port (provided to
 a custom-write procedure) or another tentative output port.}
 
 
 @defproc[(tentative-pretty-print-port-cancel [tentative-out output-port?]) void?]{
 
-Cancels the content of @scheme[tentative-out], which was produced by
-@scheme[make-tentative-pretty-print-output-port]. The main effect of
+Cancels the content of @racket[tentative-out], which was produced by
+@racket[make-tentative-pretty-print-output-port]. The main effect of
 canceling is that graph-reference definitions are undone, so that a
 future print of a graph-referenced object includes the defining
 @litchar{#}@nonterm{n}@litchar{=}.}

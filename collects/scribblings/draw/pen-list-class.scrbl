@@ -3,11 +3,11 @@
 
 @defclass/title[pen-list% object% ()]{
 
-A @scheme[pen-list%] object maintains a list of @scheme[pen%]
- objects to avoid repeatedly creating pen objects. A @scheme[pen%]
+A @racket[pen-list%] object maintains a list of @racket[pen%]
+ objects to avoid repeatedly creating pen objects. A @racket[pen%]
  object in a pen list cannot be mutated.
 
-A global pen list @indexed-scheme[the-pen-list] is created automatically.
+A global pen list @indexed-racket[the-pen-list] is created automatically.
 
 
 @defconstructor[()]{
@@ -37,11 +37,11 @@ Creates an empty pen list.
               (or/c (is-a?/c pen%) false/c)])]{
 
 Finds a pen of the given specification, or creates one and adds it to
-the list.  The arguments are the same as for creating a @scheme[pen%]
+the list.  The arguments are the same as for creating a @racket[pen%]
 instance plus a cap and join style as for @method[pen% set-cap] and
-@method[pen% set-join]. When @scheme[color-name] is provided, however, the return
-value is @scheme[#f] when no color matching @scheme[color-name] can be
-found in @scheme[the-color-database].
+@method[pen% set-join]. When @racket[color-name] is provided, however, the return
+value is @racket[#f] when no color matching @racket[color-name] can be
+found in @racket[the-color-database].
 
 }}
 

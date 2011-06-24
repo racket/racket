@@ -13,7 +13,7 @@ array of @cpp{Scheme_Object *} arguments. The return value is the
 result of the application. There is also a function
 @cppi{scheme_apply_to_list}, which takes a procedure and a list
 (constructed with @cppi{scheme_make_pair}) and performs the Racket
-@scheme[apply] operation.
+@racket[apply] operation.
 
 The @cppi{scheme_eval} function actually calls @cppi{scheme_compile}
 followed by @cppi{scheme_eval_compiled}.
@@ -54,8 +54,8 @@ postpones the procedure application until control returns to the
 Racket evaluation loop.
 
 For example, consider the following implementation of a
-@scheme[thunk-or] primitive, which takes any number of thunks and
-performs @scheme[or] on the results of the thunks, evaluating only as
+@racket[thunk-or] primitive, which takes any number of thunks and
+performs @racket[or] on the results of the thunks, evaluating only as
 many thunks as necessary.
 
 @verbatim{
@@ -76,8 +76,8 @@ thunk_or (int argc, Scheme_Object **argv)
 }
 }
 
-This @scheme[thunk-or] properly implements tail-recursion: if the
-final thunk is applied, then the result of @scheme[thunk-or] is the
+This @racket[thunk-or] properly implements tail-recursion: if the
+final thunk is applied, then the result of @racket[thunk-or] is the
 result of that application, so @cppi{scheme_tail_apply} is used for
 the final application.
 
@@ -281,7 +281,7 @@ Applies the procedure as a tail-call.}
 Compiles the S-expression @var{form} in the given namespace. The
 returned value can be used with @cpp{scheme_eval_compiled} et al.
 Provide a non-zero value for @var{writable} if the resulting compiled
-object will be marshalled via @scheme[write] instead of evaluated.}
+object will be marshalled via @racket[write] instead of evaluated.}
 
 @function[(Scheme_Object* scheme_expand
            [Scheme_Object* form]

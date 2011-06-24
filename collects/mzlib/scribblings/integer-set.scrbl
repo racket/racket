@@ -4,7 +4,7 @@
 
 @mzlib[#:mode title integer-set]
 
-The @schememodname[mzlib/integer-set] library provides functions for
+The @racketmodname[mzlib/integer-set] library provides functions for
 working with finite sets of integers.  This module is designed for
 sets that are compactly represented as groups of intervals, even when
 their cardinality is large.  For example, the set of integers from
@@ -19,9 +19,9 @@ In addition to the @defterm{integer set} abstract type, a
 each pair represents a closed range of integers, and the entire set is
 the union of the ranges.  The ranges must be disjoint and increasing.
 Further, adjacent ranges must have at least one integer between them.
-For example: @scheme['((-1 . 2) (4 . 10))] is a well-formed-set as is
-@scheme['((1 . 1) (3 . 3))], but @scheme['((1 . 5) (6 . 7))],
-@scheme['((1 . 5) (-3 . -1))], @scheme['((5 . 1))], and @scheme['((1
+For example: @racket['((-1 . 2) (4 . 10))] is a well-formed-set as is
+@racket['((1 . 1) (3 . 3))], but @racket['((1 . 5) (6 . 7))],
+@racket['((1 . 5) (-3 . -1))], @racket['((5 . 1))], and @racket['((1
 . 5) (3 . 6))] are not.
 
 
@@ -42,12 +42,12 @@ Mutates an integer set.}
 
 @defproc[(integer-set? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an integer set, @scheme[#f]
+Returns @racket[#t] if @racket[v] is an integer set, @racket[#f]
 otherwise.}
 
 @defproc[(well-formed-set? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a well-formed set, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a well-formed set, @racket[#f]
 otherwise.}
 
 @defproc*[([(make-range) integer-set?]
@@ -56,9 +56,9 @@ otherwise.}
                         [end exact-integer?]) integer-set?])]{
 
 Produces, respectively, an empty integer set, an integer set
-containing only @scheme[elem], or an integer set containing the
-integers from @scheme[start] to @scheme[end] inclusive, where
-@scheme[(start . <= . end)].}
+containing only @racket[elem], or an integer set containing the
+integers from @racket[start] to @racket[end] inclusive, where
+@racket[(start . <= . end)].}
 
 
 @defproc[(intersect [x integer-set?][y integer-set?]) integer-set?]{
@@ -68,8 +68,8 @@ Returns the intersection of the given sets.}
 
 @defproc[(difference [x integer-set?][y integer-set?]) integer-set?]{
 
-Returns the difference of the given sets (i.e., elements in @scheme[x]
-that are not in @scheme[y]).}
+Returns the difference of the given sets (i.e., elements in @racket[x]
+that are not in @racket[y]).}
 
 
 @defproc[(union [x integer-set?][y integer-set?]) integer-set?]{
@@ -79,36 +79,36 @@ Returns the union of the given sets.}
 
 @defproc[(split [x integer-set?][y integer-set?]) integer-set?]{
 
-Produces three values: the first is the intersection of @scheme[x] and
-@scheme[y], the second is the difference @scheme[x] remove @scheme[y],
-and the third is the difference @scheme[y] remove @scheme[x].}
+Produces three values: the first is the intersection of @racket[x] and
+@racket[y], the second is the difference @racket[x] remove @racket[y],
+and the third is the difference @racket[y] remove @racket[x].}
 
 
 @defproc[(complement [s integer-set?]
                      [start exact-integer?]
                      [end exact-integer?]) any]
 
-Returns the a set containing the elements between @scheme[start] to
-@scheme[end] inclusive that are not in @scheme[s], where
-@scheme[(start-k . <= . end-k)].}
+Returns the a set containing the elements between @racket[start] to
+@racket[end] inclusive that are not in @racket[s], where
+@racket[(start-k . <= . end-k)].}
 
 
 @defproc[(xor [x integer-set?][y integer-set?]) integer-set?]{
 
-Returns an integer set containing every member of @scheme[x]
-and @scheme[y] that is not in both sets.}
+Returns an integer set containing every member of @racket[x]
+and @racket[y] that is not in both sets.}
 
 
 @defproc[(member? [k exact-integer?][s integer-set?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[k] is in @scheme[s], @scheme[#f]
+Returns @racket[#t] if @racket[k] is in @racket[s], @racket[#f]
 otherwise.}
 
 
 @defproc[(get-integer [integer-set any/c]) (or/c exact-integer? false/c)]{
 
-Returns a member of @scheme[integer-set], or @scheme[#f] if
-@scheme[integer-set] is empty.}
+Returns a member of @racket[integer-set], or @racket[#f] if
+@racket[integer-set] is empty.}
 
 
 @defproc[(foldr [proc (exact-integer? any/c . -> . any/c)]
@@ -116,21 +116,21 @@ Returns a member of @scheme[integer-set], or @scheme[#f] if
                 [s integer-set?])
          any/c]{
 
-Applies @scheme[proc] to each member of @scheme[s] in ascending order,
-where the first argument to @scheme[proc] is the set member, and the
-second argument is the fold result starting with @scheme[base-v]. For
-example, @scheme[(foldr cons null s)] returns a list of all the
-integers in @scheme[s], sorted in increasing order.}
+Applies @racket[proc] to each member of @racket[s] in ascending order,
+where the first argument to @racket[proc] is the set member, and the
+second argument is the fold result starting with @racket[base-v]. For
+example, @racket[(foldr cons null s)] returns a list of all the
+integers in @racket[s], sorted in increasing order.}
 
 
 @defproc[(partition [s integer-set-list?]) (listof integer-set?)]{
 
-Returns the coarsest refinement of the sets in @scheme[s] such that
+Returns the coarsest refinement of the sets in @racket[s] such that
 the sets in the result list are pairwise disjoint.  For example,
-partitioning the sets that represent @scheme['((1 . 2) (5 . 10))] and
-@scheme['((2 . 2) (6 . 6) (12 . 12))] produces the a list containing
-the sets for @scheme['((1 . 1) (5 . 5) (7 . 10))] @scheme['((2 . 2) (6
-. 6))], and @scheme['((12 . 12))].}
+partitioning the sets that represent @racket['((1 . 2) (5 . 10))] and
+@racket['((2 . 2) (6 . 6) (12 . 12))] produces the a list containing
+the sets for @racket['((1 . 1) (5 . 5) (7 . 10))] @racket['((2 . 2) (6
+. 6))], and @racket['((12 . 12))].}
 
 
 @defproc[(card [s integer-set?]) exact-nonnegative-integer?]{
@@ -140,6 +140,6 @@ Returns the number of integers in the given integer set.}
 
 @defproc[(subset? [x integer-set?][y integer-set?]) boolean?]{
 
-Returns true if every integer in @scheme[x] is also in
-@scheme[y], otherwise @scheme[#f].}
+Returns true if every integer in @racket[x] is also in
+@racket[y], otherwise @racket[#f].}
 

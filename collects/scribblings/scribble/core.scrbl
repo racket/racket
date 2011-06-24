@@ -629,7 +629,7 @@ for Latex output (see @secref["extra-style"]). The following
 
 Produces another block during the @tech{traverse pass}, eventually.
 
-The @scheme[traverse] procedure is called with @racket[_get] and
+The @racket[traverse] procedure is called with @racket[_get] and
 @racket[_set] procedures to get and set symbol-keyed information; the
 @racket[traverse] procedure should return either a @tech{block} (which
 effectively takes the @racket[traverse-block]'s place) or a procedure
@@ -640,10 +640,10 @@ All @racket[traverse-element] and @racket[traverse-block]s that have
 not been replaced are forced in document order relative to each other
 during an iteration of the @tech{traverse pass}.
 
-The @racket[_get] procedure passed to @scheme[traverse] takes a symbol
+The @racket[_get] procedure passed to @racket[traverse] takes a symbol
 and any value to act as a default; it returns information registered
 for the symbol or the given default if no value has been
-registered. The @racket[_set] procedure passed to @scheme[traverse]
+registered. The @racket[_set] procedure passed to @racket[traverse]
 takes a symbol and a value to registered for the symbol.
 
 @margin-note*{See also @racket[cond-block] in @racketmodname[scriblib/render-cond].}
@@ -1204,7 +1204,7 @@ Produces the content that replaces @racket[e].}
 
 Defined as
 
-@schemeblock[
+@racketblock[
   (recursive-contract
    ((symbol? any/c . -> . any/c)
     (symbol? any/c . -> . any)
@@ -1216,7 +1216,7 @@ Defined as
 
 Defined as
 
-@schemeblock[
+@racketblock[
   (recursive-contract
    ((symbol? any/c . -> . any/c)
     (symbol? any/c . -> . any)

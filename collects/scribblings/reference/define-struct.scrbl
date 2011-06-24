@@ -126,8 +126,8 @@ cannot have a guard or properties, so using @racket[#:prefab] with
 must also be a @tech{prefab} structure type.
 
 If @racket[constructor-id] is supplied, then the @tech{transformer
-binding} of @scheme[id] records @scheme[constructor-id] as the
-constructor binding; as a result, for example, @scheme[struct-out]
+binding} of @racket[id] records @racket[constructor-id] as the
+constructor binding; as a result, for example, @racket[struct-out]
 includes @racket[constructor-id] as an export. If
 @racket[constructor-id] is supplied via
 @racket[#:extra-constructor-name] and it is not @racket[id], applying

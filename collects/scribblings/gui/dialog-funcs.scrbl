@@ -19,42 +19,42 @@ These functions get input from the user and/or display
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
- standard (modal) dialog, using @scheme[parent] as the parent window if
- it is specified, and using @scheme[message] as a message at the top of
- the dialog if it is not @scheme[#f].
+ standard (modal) dialog, using @racket[parent] as the parent window if
+ it is specified, and using @racket[message] as a message at the top of
+ the dialog if it is not @racket[#f].
 
-The result is @scheme[#f] if the user cancels the dialog, the selected
+The result is @racket[#f] if the user cancels the dialog, the selected
  pathname otherwise. The returned pathname may or may not exist,
  although the style of the dialog is directed towards selecting
  existing files.
 
-If @scheme[directory] is not @scheme[#f], it is used as the starting
+If @racket[directory] is not @racket[#f], it is used as the starting
  directory for the file selector (otherwise the starting directory is
  chosen automatically in a platform-specific manner, usually based on
  the current directory and the user's interactions in previous calls
- to @scheme[get-file], @scheme[put-file], etc.). If
- @scheme[filename] is not @scheme[#f], it is used as the default filename
+ to @racket[get-file], @racket[put-file], etc.). If
+ @racket[filename] is not @racket[#f], it is used as the default filename
  when appropriate, and it should @italic{not} contain a directory path
  prefix.
 
-Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
+Under Windows, if @racket[extension] is not @racket[#f], the returned path
  will use the extension if the user does not supply one; the
- @scheme[extension] string should not contain a period. The extension is
+ @racket[extension] string should not contain a period. The extension is
  ignored on other platforms.
 
-The @scheme[style] list can contain @scheme['common], a
+The @racket[style] list can contain @racket['common], a
  platform-independent version of the dialog is used instead of a
- native dialog.  On Mac OS X, if the @scheme[style] list
- contains @scheme['packages], a user is allowed to select a package
+ native dialog.  On Mac OS X, if the @racket[style] list
+ contains @racket['packages], a user is allowed to select a package
  directory, which is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.  If the list
- contains @scheme['enter-packages], a user is allowed to select a file
+ contains @racket['enter-packages], a user is allowed to select a file
  within a package directory. If the list contains both
- @scheme['packages] and @scheme['enter-packages], the former is ignored.
+ @racket['packages] and @racket['enter-packages], the former is ignored.
 
-On Windows and Unix, @scheme[filters] determines a set of filters from
+On Windows and Unix, @racket[filters] determines a set of filters from
  which the user can choose in the dialog. Each element of the
- @scheme[filters] list contains two strings: a description of the filter
+ @racket[filters] list contains two strings: a description of the filter
  as seen by the user, and a filter pattern matched against file names.
  Pattern strings can be a simple ``glob'' pattern, or a number of glob
  patterns separated by a @litchar[";"] character.
@@ -65,7 +65,7 @@ On Windows and Unix, @scheme[filters] determines a set of filters from
  that have any of these suffixes in any filter are selectable; a
  @racket["*.*"] glob makes all files available for selection.
 
-See also @scheme[path-dialog%].
+See also @racket[path-dialog%].
 
 
 }
@@ -79,8 +79,8 @@ See also @scheme[path-dialog%].
                         [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c (listof path?) #f)]{
 Like
-@scheme[get-file], except that the user can select multiple files, and the
- result is either a list of file paths of @scheme[#f].
+@racket[get-file], except that the user can select multiple files, and the
+ result is either a list of file paths of @racket[#f].
 
 }
 
@@ -94,62 +94,62 @@ Like
          (or/c path? #f)]{
 
 Obtains a file pathname from the user via the platform-specific
- standard (modal) dialog, using @scheme[parent] as the parent window if
- it is specified, and using @scheme[message] as a message at the top of
- the dialog if it is not @scheme[#f].
+ standard (modal) dialog, using @racket[parent] as the parent window if
+ it is specified, and using @racket[message] as a message at the top of
+ the dialog if it is not @racket[#f].
 
-The result is @scheme[#f] if the user cancels the dialog, the selected
+The result is @racket[#f] if the user cancels the dialog, the selected
  pathname otherwise. The returned pathname may or may not exist,
  although the style of the dialog is directed towards creating a new
  file.
 
-If @scheme[directory] is not @scheme[#f], it is used as the starting
+If @racket[directory] is not @racket[#f], it is used as the starting
  directory for the file selector (otherwise the starting directory is
  chosen automatically in a platform-specific manner, usually based on
  the current directory and the user's interactions in previous calls
- to @scheme[get-file], @scheme[put-file], etc.). If
- @scheme[filename] is not @scheme[#f], it is used as the default filename
+ to @racket[get-file], @racket[put-file], etc.). If
+ @racket[filename] is not @racket[#f], it is used as the default filename
  when appropriate, and it should @italic{not} contain a directory path
  prefix.
 
-On Windows, if @scheme[extension] is not @scheme[#f], the returned path
+On Windows, if @racket[extension] is not @racket[#f], the returned path
  will get a default extension if the user does not supply one. If
- @scheme[extension] is the empty string, then the extension is derived
- from the user's @scheme[filters] choice if the corresponding pattern is
- of the form @scheme[(string-append "*." extension)]; if the pattern is
- @scheme["*.*"], then no default extension is added. Finally, if
- @scheme[extension] is any string other than the empty string,
- @scheme[extension] is used as the default extension when the user's
- @scheme[filters] choice has the pattern @scheme["*.*"].  Meanwhile, the
- @scheme[filters] argument has the same format and auxiliary role as for
- @scheme[get-file]. In particular, if the only pattern in @scheme[filters]
- is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
- to have an extension mapping @scheme[extension].
+ @racket[extension] is the empty string, then the extension is derived
+ from the user's @racket[filters] choice if the corresponding pattern is
+ of the form @racket[(string-append "*." extension)]; if the pattern is
+ @racket["*.*"], then no default extension is added. Finally, if
+ @racket[extension] is any string other than the empty string,
+ @racket[extension] is used as the default extension when the user's
+ @racket[filters] choice has the pattern @racket["*.*"].  Meanwhile, the
+ @racket[filters] argument has the same format and auxiliary role as for
+ @racket[get-file]. In particular, if the only pattern in @racket[filters]
+ is @racket[(string-append "*." extension)], then the result pathname is guaranteed
+ to have an extension mapping @racket[extension].
 
-On Mac OS X 10.5 and later, if @scheme[extension] is not
- @scheme[#f] or @racket[""], the returned path will get a default extension if the
- user does not supply one.  If @scheme[filters] contains as
- @scheme["*.*"] pattern, then the user can supply any extension that
+On Mac OS X 10.5 and later, if @racket[extension] is not
+ @racket[#f] or @racket[""], the returned path will get a default extension if the
+ user does not supply one.  If @racket[filters] contains as
+ @racket["*.*"] pattern, then the user can supply any extension that
  is recognized by the system; otherwise, the extension on the returned
- path will be either @scheme[extension] or @scheme[_other-extension]
- for any @scheme[(string-append "*."  _other-extension)] pattern in
- @scheme[filters]. In particular, if the only pattern in
- @scheme[filters] is empty or contains only @scheme[(string-append
+ path will be either @racket[extension] or @racket[_other-extension]
+ for any @racket[(string-append "*."  _other-extension)] pattern in
+ @racket[filters]. In particular, if the only pattern in
+ @racket[filters] is empty or contains only @racket[(string-append
  "*." extension)], then the result pathname is guaranteed to have an
- extension mapping @scheme[extension].
+ extension mapping @racket[extension].
 
 On Mac OS X versions before 10.5, the returned path will get a
- default extension only if @scheme[extension] is not @scheme[#f], 
- @scheme[extension] is not @racket[""], and
- @scheme[filters] contains only @scheme[(string-append "*."
+ default extension only if @racket[extension] is not @racket[#f], 
+ @racket[extension] is not @racket[""], and
+ @racket[filters] contains only @racket[(string-append "*."
  extension)].
 
 On Unix, @racket[extension] is ignored, and @racket[filters] is used
  to filter the visible list of files as in @racket[get-file].
 
-The @scheme[style] list is treated as for @scheme[get-file].
+The @racket[style] list is treated as for @racket[get-file].
 
-See also @scheme[path-dialog%].
+See also @racket[path-dialog%].
 
 }
 
@@ -160,25 +160,25 @@ See also @scheme[path-dialog%].
          (or/c path #f)]{
 
 Obtains a directory pathname from the user via the platform-specific
- standard (modal) dialog, using @scheme[parent] as the parent window if
+ standard (modal) dialog, using @racket[parent] as the parent window if
  it is specified.
 
-If @scheme[directory] is not @scheme[#f], it is used on some platforms as
+If @racket[directory] is not @racket[#f], it is used on some platforms as
  the starting directory for the directory selector (otherwise the
  starting directory is chosen automatically in a platform-specific
  manner, usually based on the current directory and the user's
- interactions in previous calls to @scheme[get-file],
- @scheme[put-file], etc.).
+ interactions in previous calls to @racket[get-file],
+ @racket[put-file], etc.).
 
-The @scheme[style] argument is treated as for
-@scheme[get-file], except that only @scheme['common] or @scheme['enter-packages] can be
+The @racket[style] argument is treated as for
+@racket[get-file], except that only @racket['common] or @racket['enter-packages] can be
 specified.  The latter
- matters only on Mac OS X, where @scheme['enter-packages]
+ matters only on Mac OS X, where @racket['enter-packages]
  enables the user to select package directory or a directory within a
  package. A package is a directory with a special suffix (e.g.,
  ``.app'') that the Finder normally displays like a file.
 
-See also @scheme[path-dialog%].
+See also @racket[path-dialog%].
 }
 
 @defproc[(message-box [title label-string?]
@@ -187,45 +187,45 @@ See also @scheme[path-dialog%].
                       [style (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
          (or/c 'ok 'cancel 'yes 'no)]{
 
-See also @scheme[message-box/custom].
+See also @racket[message-box/custom].
 
 Displays a message to the user in a (modal) dialog, using
- @scheme[parent] as the parent window if it is specified. The dialog's
- title is @scheme[title]. The @scheme[message] string can be arbitrarily
+ @racket[parent] as the parent window if it is specified. The dialog's
+ title is @racket[title]. The @racket[message] string can be arbitrarily
  long, and can contain explicit linefeeds or carriage returns for
  breaking lines.
 
 The style must include exactly one of the following:
 @itemize[
 
- @item{@scheme['ok] --- the dialog only has an @onscreen{OK} button
- and always returns @scheme['ok].}
+ @item{@racket['ok] --- the dialog only has an @onscreen{OK} button
+ and always returns @racket['ok].}
 
- @item{@scheme['ok-cancel] --- the message dialog has
+ @item{@racket['ok-cancel] --- the message dialog has
  @onscreen{Cancel} and @onscreen{OK} buttons. If the user clicks
- @onscreen{Cancel}, the result is @scheme['cancel], otherwise the
- result is @scheme['ok].}
+ @onscreen{Cancel}, the result is @racket['cancel], otherwise the
+ result is @racket['ok].}
 
- @item{@scheme['yes-no] --- the message dialog has @onscreen{Yes} and
+ @item{@racket['yes-no] --- the message dialog has @onscreen{Yes} and
  @onscreen{No} buttons. If the user clicks @onscreen{Yes}, the result
- is @scheme['yes], otherwise the result is @scheme['no]. Note: instead
+ is @racket['yes], otherwise the result is @racket['no]. Note: instead
  of a @onscreen{Yes}/@onscreen{No} dialog, best-practice GUI design is
- to use @scheme[message-box/custom] and give the buttons meaningful
+ to use @racket[message-box/custom] and give the buttons meaningful
  labels, so that the user does not have to read the message text
  carefully to make a selection.}
 
 ]
 
-In addition, @scheme[style] can contain @scheme['caution] to make the
+In addition, @racket[style] can contain @racket['caution] to make the
  dialog use a caution icon instead of the application (or generic
- ``info'') icon. Alternately, it can contain @scheme['stop] to make the
- dialog use a stop icon. If @scheme[style] contains both @scheme['caution]
- and @scheme['stop], then @scheme['caution] is ignored.
+ ``info'') icon. Alternately, it can contain @racket['stop] to make the
+ dialog use a stop icon. If @racket[style] contains both @racket['caution]
+ and @racket['stop], then @racket['caution] is ignored.
 
-The class that implements the dialog provides a @scheme[get-message]
+The class that implements the dialog provides a @racket[get-message]
  method that takes no arguments and returns the text of the message as
  a string. (The dialog is accessible through the
- @scheme[get-top-level-windows] function.)
+ @racket[get-top-level-windows] function.)
 
 The @racket[message-box] function can be called int a thread other
  than the handler thread of the relevant eventspace (i.e., the eventspace of
@@ -246,26 +246,26 @@ The @racket[message-box] function can be called int a thread other
          (or/c 1 2 3 close-result)]{
 
 Displays a message to the user in a (modal) dialog, using
- @scheme[parent] as the parent window if it is specified. The dialog's
- title is @scheme[title]. The @scheme[message] string can be arbitrarily
+ @racket[parent] as the parent window if it is specified. The dialog's
+ title is @racket[title]. The @racket[message] string can be arbitrarily
  long, and can contain explicit linefeeds or carriage returns for
  breaking lines.
 
 The dialog contains up to three buttons for the user to click. The
- buttons have the labels @scheme[button1-label],
- @scheme[button2-label], and @scheme[button3-label], where @scheme[#f] for a
+ buttons have the labels @racket[button1-label],
+ @racket[button2-label], and @racket[button3-label], where @racket[#f] for a
  label indicates that the button should be hidden.
 
-If the user clicks the button labelled @scheme[button1-label], a @scheme[1]
- is returned, and so on for @scheme[2] and @scheme[3]. If the user closes
- the dialog some other way---which is only allowed when @scheme[style]
- does not contain @scheme['disallow-close]---then the result is the
- value of @scheme[close-result]. For example, the user can usually close
- a dialog by typing an Escape. Often, @scheme[2] is an appropriate value
- for @scheme[close-result], especially when Button 2 is a @onscreen{Cancel}
+If the user clicks the button labelled @racket[button1-label], a @racket[1]
+ is returned, and so on for @racket[2] and @racket[3]. If the user closes
+ the dialog some other way---which is only allowed when @racket[style]
+ does not contain @racket['disallow-close]---then the result is the
+ value of @racket[close-result]. For example, the user can usually close
+ a dialog by typing an Escape. Often, @racket[2] is an appropriate value
+ for @racket[close-result], especially when Button 2 is a @onscreen{Cancel}
  button.
 
-If @scheme[style] does not include @scheme['number-order], the order of
+If @racket[style] does not include @racket['number-order], the order of
  the buttons is platform-specific, and labels should be assigned to
  the buttons based on their role:
 @itemize[
@@ -274,7 +274,7 @@ If @scheme[style] does not include @scheme['number-order], the order of
  button. For example, if the dialog has an @onscreen{OK} button, it is
  this one. On Windows, this button is leftmost; on Unix and Mac OS
  X, it is rightmost. (See also
- @scheme[system-position-ok-before-cancel?].) Use this button for
+ @racket[system-position-ok-before-cancel?].) Use this button for
  dialogs that contain only one button.}
 
  @item{Button 2 is next to Button 1, and it often plays the role of
@@ -289,28 +289,28 @@ If @scheme[style] does not include @scheme['number-order], the order of
 Despite the above guidelines, any combination of visible buttons is
  allowed in the dialog.
 
-If @scheme[style] includes @scheme['number-order], then the buttons are
+If @racket[style] includes @racket['number-order], then the buttons are
  displayed in the dialog left-to-right with equal spacing between all
  buttons, though aligned within the dialog (centered or right-aligned)
- in a platform-specific manner. Use @scheme['number-order] sparingly.
+ in a platform-specific manner. Use @racket['number-order] sparingly.
 
-The @scheme[style] list must contain exactly one of @scheme['default=1],
- @scheme['default=2], @scheme['default=3], and @scheme['no-default] to
+The @racket[style] list must contain exactly one of @racket['default=1],
+ @racket['default=2], @racket['default=3], and @racket['no-default] to
  determine which button (if any) is the default. The default button is
- ``clicked'' when the user types Return. If @scheme['default=]@scheme[n]
- is supplied but button @scheme[n] has no label, then it is equivalent to
- @scheme['no-default].
+ ``clicked'' when the user types Return. If @racket['default=]@racket[n]
+ is supplied but button @racket[n] has no label, then it is equivalent to
+ @racket['no-default].
 
-In addition, @scheme[style] can contain @scheme['caution] to make the
+In addition, @racket[style] can contain @racket['caution] to make the
  dialog use a caution icon instead of the application (or generic
- ``info'') icon. Alternately, it can contain @scheme['stop] to make the
- dialog use a stop icon. If @scheme[style] contains both @scheme['caution]
- and @scheme['stop], then @scheme['caution] is ignored.
+ ``info'') icon. Alternately, it can contain @racket['stop] to make the
+ dialog use a stop icon. If @racket[style] contains both @racket['caution]
+ and @racket['stop], then @racket['caution] is ignored.
 
-The class that implements the dialog provides a @scheme[get-message]
+The class that implements the dialog provides a @racket[get-message]
  method that takes no arguments and returns the text of the message as
  a string. (The dialog is accessible through the
-@scheme[get-top-level-windows] function.)
+@racket[get-top-level-windows] function.)
 
 The @racket[message-box/custom] function can be called int a thread
  other than the handler thread of the relevant eventspace (i.e., the eventspace of
@@ -326,15 +326,15 @@ The @racket[message-box/custom] function can be called int a thread
                               '(ok)])
          (values (or/c 'ok 'cancel 'yes 'no) boolean?)]{
 
-See also @scheme[message+check-box/custom].
+See also @racket[message+check-box/custom].
 
-Like @scheme[message-box], except that
+Like @racket[message-box], except that
 
 @itemize[
- @item{the dialog contains a check box whose label is @scheme[check-label];}
- @item{the result is two values: the @scheme[message-box] result, and a
+ @item{the dialog contains a check box whose label is @racket[check-label];}
+ @item{the result is two values: the @racket[message-box] result, and a
        boolean indicating whether the box was checked; and}
- @item{@scheme[style] can contain @scheme['checked] to indicate that the check box
+ @item{@racket[style] can contain @racket['checked] to indicate that the check box
        should be initially checked.}
 ]}
 
@@ -352,12 +352,12 @@ Like @scheme[message-box], except that
                                    [close-result any/c #f])
          (or/c 1 2 3 (λ (x) (eq? x close-result)))]{
 
-Like @scheme[message-box/custom], except that
+Like @racket[message-box/custom], except that
 @itemize[
- @item{the dialog contains a check box whose label is @scheme[check-label];}
- @item{the result is two values: the @scheme[message-box] result, and a
+ @item{the dialog contains a check box whose label is @racket[check-label];}
+ @item{the result is two values: the @racket[message-box] result, and a
        boolean indicating whether the box was checked; and}
- @item{@scheme[style] can contain @scheme['checked] to indicate that the check box
+ @item{@racket[style] can contain @racket['checked] to indicate that the check box
        should be initially checked.}
 ]
 
@@ -374,15 +374,15 @@ Like @scheme[message-box/custom], except that
          (or/c string? #f)]{
 
 Gets a text string from the user via a modal dialog, using
- @scheme[parent] as the parent window if it is specified. The dialog's
- title is @scheme[title]. The dialog's text field is labelled with
- @scheme[message] and initialized to @scheme[init-val] (but @scheme[init-val]
+ @racket[parent] as the parent window if it is specified. The dialog's
+ title is @racket[title]. The dialog's text field is labelled with
+ @racket[message] and initialized to @racket[init-val] (but @racket[init-val]
  does not determine the size of the dialog).
 
-The result is @scheme[#f] if the user cancels the dialog, the
+The result is @racket[#f] if the user cancels the dialog, the
  user-provided string otherwise.
 
-If @scheme[style] includes @scheme['password], the dialog's text field
+If @racket[style] includes @racket['password], the dialog's text field
  draws each character of its content using a generic symbol, instead
  of the actual character.
 
@@ -399,18 +399,18 @@ If @scheme[style] includes @scheme['password], the dialog's text field
          (or/c (listof exact-nonnegative-integer?) #f)]{
 
 Gets a list box selection from the user via a modal dialog, using
- @scheme[parent] as the parent window if it is specified. The dialog's
- title is @scheme[title]. The dialog's list box is labelled with
- @scheme[message] and initialized by selecting the items in
- @scheme[init-choices]. 
+ @racket[parent] as the parent window if it is specified. The dialog's
+ title is @racket[title]. The dialog's list box is labelled with
+ @racket[message] and initialized by selecting the items in
+ @racket[init-choices]. 
 
-The style must contain exactly one of @indexed-scheme['single],
- @indexed-scheme['multiple], or @indexed-scheme['extended]. The styles have
- the same meaning as for creating a @scheme[list-box%] object. (For
+The style must contain exactly one of @indexed-racket['single],
+ @indexed-racket['multiple], or @indexed-racket['extended]. The styles have
+ the same meaning as for creating a @racket[list-box%] object. (For
  the single-selection style, only the last selection in
- @scheme[init-choices] matters.)
+ @racket[init-choices] matters.)
 
-The result is @scheme[#f] if the user cancels the dialog, the
+The result is @racket[#f] if the user cancels the dialog, the
  list of selections otherwise.
 
 
@@ -424,14 +424,14 @@ The result is @scheme[#f] if the user cancels the dialog, the
          (or/c (is-a?/c color%) #f)]{
 
 Lets the user select a color though the platform-specific
- (modal) dialog, using @scheme[parent] as the parent window if it is
- specified. The @scheme[message] string is displayed as a prompt in the
- dialog if possible. If @scheme[init-color] is provided, the dialog is
+ (modal) dialog, using @racket[parent] as the parent window if it is
+ specified. The @racket[message] string is displayed as a prompt in the
+ dialog if possible. If @racket[init-color] is provided, the dialog is
  initialized to the given color.
 
-@italicptyStyleNote[@scheme[style]]
+@italicptyStyleNote[@racket[style]]
 
-The result is @scheme[#f] if the user cancels the dialog, the selected
+The result is @racket[#f] if the user cancels the dialog, the selected
  color otherwise.
 
 
@@ -445,14 +445,14 @@ The result is @scheme[#f] if the user cancels the dialog, the selected
          (or/c (is-a?/c font%) #f)]{
 
 Lets the user select a font though the platform-specific
- (modal) dialog, using @scheme[parent] as the parent window if it is
- specified. The @scheme[message] string is displayed as a prompt in the
- dialog if possible. If @scheme[init-font] is provided, the dialog is
+ (modal) dialog, using @racket[parent] as the parent window if it is
+ specified. The @racket[message] string is displayed as a prompt in the
+ dialog if possible. If @racket[init-font] is provided, the dialog is
  initialized to the given font.
 
-@italicptyStyleNote[@scheme[style]]
+@italicptyStyleNote[@racket[style]]
 
-The result is @scheme[#f] if the user cancels the dialog, the selected
+The result is @racket[#f] if the user cancels the dialog, the selected
  font otherwise.
 
 
@@ -466,16 +466,16 @@ The result is @scheme[#f] if the user cancels the dialog, the selected
          (or/c (is-a?/c ps-setup%) #f)]{
 
 Lets the user select a PostScript configuration though a (modal)
- dialog, using @scheme[parent] as the parent window if it is
- specified. The @scheme[message] string is displayed as a prompt in the
- dialog. If @scheme[init-setup] is provided, the dialog is initialized to
+ dialog, using @racket[parent] as the parent window if it is
+ specified. The @racket[message] string is displayed as a prompt in the
+ dialog. If @racket[init-setup] is provided, the dialog is initialized to
  the given configuration, otherwise the current configuration from
-@scheme[current-ps-setup]  is used.
+@racket[current-ps-setup]  is used.
 
-@italicptyStyleNote[@scheme[style]]
+@italicptyStyleNote[@racket[style]]
 
-The result is @scheme[#f] if the user cancels the dialog, , a
- @scheme[ps-setup%] object that encapsulates the selected PostScript
+The result is @racket[#f] if the user cancels the dialog, , a
+ @racket[ps-setup%] object that encapsulates the selected PostScript
  configuration otherwise.
 
 
@@ -489,22 +489,22 @@ The result is @scheme[#f] if the user cancels the dialog, , a
          (or/c (is-a?/c ps-setup%) #f)]{
 
 Like
-@scheme[get-ps-setup-from-user], but the dialog configures page layout for native printing
- with @scheme[printer-dc%]. A dialog is shown only if
-@scheme[can-get-page-setup-from-user?] returns @scheme[#t], otherwise no dialog is shown and the result
- is @scheme[#f].
+@racket[get-ps-setup-from-user], but the dialog configures page layout for native printing
+ with @racket[printer-dc%]. A dialog is shown only if
+@racket[can-get-page-setup-from-user?] returns @racket[#t], otherwise no dialog is shown and the result
+ is @racket[#f].
 
-The @scheme[parent] argument is used as the parent window for a dialog if
- it is specified. The @scheme[message] string might be displayed as a
- prompt in the dialog. If @scheme[init-setup] is provided, the dialog is
+The @racket[parent] argument is used as the parent window for a dialog if
+ it is specified. The @racket[message] string might be displayed as a
+ prompt in the dialog. If @racket[init-setup] is provided, the dialog is
  initialized to the given configuration, otherwise the current
  configuration from
-@scheme[current-ps-setup]  is used.
+@racket[current-ps-setup]  is used.
 
-@italicptyStyleNote[@scheme[style]]
+@italicptyStyleNote[@racket[style]]
 
-The result is @scheme[#f] if the user cancels the dialog, a
- @scheme[ps-setup%] object that encapsulates the selected
+The result is @racket[#f] if the user cancels the dialog, a
+ @racket[ps-setup%] object that encapsulates the selected
  configuration otherwise.
 
 
@@ -513,11 +513,11 @@ The result is @scheme[#f] if the user cancels the dialog, a
 
 @defproc[(can-get-page-setup-from-user?)
          boolean?]{
-Returns @scheme[#t] if the current platform (Mac OS X) supports a
- page-layout dialog for use with @scheme[printer-dc%] printing, and
+Returns @racket[#t] if the current platform (Mac OS X) supports a
+ page-layout dialog for use with @racket[printer-dc%] printing, and
  if the page-layout dialog is different from the print-job dialog that
- is automatically shown when a @scheme[printer-dc%] is
- created. Returns @scheme[#f] if no separate page-layout dialog is
+ is automatically shown when a @racket[printer-dc%] is
+ created. Returns @racket[#f] if no separate page-layout dialog is
  needed (Windows and Unix).
 
 }

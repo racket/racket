@@ -10,19 +10,19 @@
 The teachpack provides three functions:
 
 @defproc[(control [index natural-number?]) symbol?]{
- reads out the @scheme[index]th guess choice, starting with 0}
+ reads out the @racket[index]th guess choice, starting with 0}
 
 @defproc[(view [msg (or/c string? symbol?)]) true/c]{
- displays its @scheme[msg] argument in the message panel}
+ displays its @racket[msg] argument in the message panel}
 
 @defproc[(connect [handler (-> button% event% true/c)]) true/c]{
- connects a controller (@scheme[handler]) with the Check button displays frame}
+ connects a controller (@racket[handler]) with the Check button displays frame}
 
 Example:
 @;%
 @(begin
 #reader scribble/comment-reader
-(schemeblock
+(racketblock
 (connect (lambda (e b)
            (begin
              (printf "0th digit: ~s~n" (control 0))

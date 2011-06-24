@@ -16,8 +16,8 @@
   }
   @defmethod[(get-position) (symbols 'top-right 'left-top)]{
     Returns the location of the image and the clickable
-     region. The symbol @scheme['top-right] indicates top portion is clickable
-     and icon on right. The symbol @scheme['left-top] means left portion is
+     region. The symbol @racket['top-right] indicates top portion is clickable
+     and icon on right. The symbol @racket['left-top] means left portion is
      clickable and icon on top.
   }
   @defmethod[(reset-min-sizes) void?]{
@@ -29,25 +29,25 @@
 
 @defmixin[editor-snip:decorated-mixin (editor-snip%) (editor-snip:decorated<%>)]{
   @defmethod[(get-corner-bitmap) (or/c false/c (is-a?/c bitmap%))]{
-    Returns @scheme[#f].
+    Returns @racket[#f].
   }
   @defmethod[(get-color) (or/c string? (is-a?/c color%))]{
-     Returns @schemeblock[
+     Returns @racketblock[
        (if (preferences:get 'framework:white-on-black?)
            "white" 
            "black")]
   }
   @defmethod[(get-menu) (or/c false/c (is-a?/c popup-menu%))]{
-    Returns @scheme[#f].
+    Returns @racket[#f].
  }
   @defmethod[(get-position) (symbols 'top-right 'left-top)]{
-    Returns @scheme['top-right].
+    Returns @racket['top-right].
   }
 }
 
 @defclass[editor-snip:decorated% (editor-snip:decorated-mixin editor-snip%) ()]{
   @defconstructor/auto-super[()]{
-     Invokes the super constructor with the keyword @scheme[editor] as a call to
+     Invokes the super constructor with the keyword @racket[editor] as a call to
      @method[editor-snip:decorated% make-editor].
   }
 
@@ -64,7 +64,7 @@
     Uses the @method[editor-snip:decorated% make-editor] and
     @method[editor-snip:decorated% make-snip] methods to create a
     copy of this snip, as follows:
-    @schememod[
+    @racketmod[
       (let ([snip (make-snip)])
         (send snip set-editor (send (get-editor) copy-self))
         (send snip set-style (get-style))
@@ -74,13 +74,13 @@
 
 @defclass[editor-snip:decorated-snipclass% snip-class% ()]{
   @defmethod[(make-snip [stream-in (is-a?/c editor-stream-in%)]) (is-a?/c editor-snip:decorated<%>)]{
-   Returns an instance of @scheme[editor-snip:decorated%].
+   Returns an instance of @racket[editor-snip:decorated%].
   }
   @defmethod[(read [stream-in (is-a?/c editor-stream-in%)]) (is-a?/c editor-snip:decorated<%>)]{
    Calls @method[editor-snip:decorated-snipclass% make-snip] to get an object and
-   then invokes its @scheme[editor<%>]'s @method[editor<%> read-from-file] method
-   in order to read a snip from @scheme[stream-in], eg:
-   @schemeblock[
+   then invokes its @racket[editor<%>]'s @method[editor<%> read-from-file] method
+   in order to read a snip from @racket[stream-in], eg:
+   @racketblock[
       (let ([snip (make-snip stream-in)])
         (send (send snip get-editor) read-from-file stream-in #f)
         snip)

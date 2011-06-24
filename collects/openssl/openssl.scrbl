@@ -2,17 +2,17 @@
 @(require scribble/manual
           scribble/bnf
           (for-label openssl
-		     scheme
+                     scheme
                      openssl/sha1))
 
 @title{@bold{OpenSSL}}
 
 @defmodule[openssl]
 
-The @schememodname[openssl] library provides glue for the OpenSSL
+The @racketmodname[openssl] library provides glue for the OpenSSL
 library with the Racket port system. It provides functions nearly
 identically to the standard TCP subsystem in Racket, plus a
-generic @scheme[ports->ssl-ports] interface.
+generic @racket[ports->ssl-ports] interface.
 
 To use this library, you will need OpenSSL installed on your machine,
 but
@@ -33,14 +33,14 @@ but
 @defthing[ssl-available? boolean?]{
 
 A boolean value which says whether the system openssl library was
-successfully loaded. Calling @scheme[ssl-connect], @|etc| when this
-value is @scheme[#f] (library not loaded) will raise an exception.}
+successfully loaded. Calling @racket[ssl-connect], @|etc| when this
+value is @racket[#f] (library not loaded) will raise an exception.}
 
 
 @defthing[ssl-load-fail-reason (or/c false/c string?)]{
 
-Either @scheme[#f] (when @scheme[ssl-available?] is @scheme[#t]) or an
-error string (when @scheme[ssl-available?] is @scheme[#f]).}
+Either @racket[#f] (when @racket[ssl-available?] is @racket[#t]) or an
+error string (when @racket[ssl-available?] is @racket[#f]).}
 
 @; ----------------------------------------------------------------------
 
@@ -52,21 +52,21 @@ error string (when @scheme[ssl-available?] is @scheme[#f]).}
                        (or/c ssl-client-context? symbol?) 'sslv2-or-v3))
          (values input-port? output-port?)]{
 
-Connect to the host given by @scheme[hostname], on the port given by
-@scheme[port-no]. This connection will be encrypted using SSL.  The
-return values are as for @scheme[tcp-connect]: an input port and an
+Connect to the host given by @racket[hostname], on the port given by
+@racket[port-no]. This connection will be encrypted using SSL.  The
+return values are as for @racket[tcp-connect]: an input port and an
 output port.
 
-The optional @scheme[client-protocol] argument determines which
+The optional @racket[client-protocol] argument determines which
 encryption protocol is used, whether the server's certificate is
 checked, etc. The argument can be either a client context created by
-@scheme[ssl-make-client-context], or one of the following symbols:
-@scheme['sslv2-or-v3] (the default), @scheme['sslv2], @scheme['sslv3],
-or @scheme['tls]; see @scheme[ssl-make-client-context] for further
+@racket[ssl-make-client-context], or one of the following symbols:
+@racket['sslv2-or-v3] (the default), @racket['sslv2], @racket['sslv3],
+or @racket['tls]; see @racket[ssl-make-client-context] for further
 details (including the meanings of the protocol symbols).
 
 Closing the resulting output port does not send a shutdown message to
-the server. See also @scheme[ports->ssl-ports].
+the server. See also @racket[ports->ssl-ports].
 
 @;{
 See `enforce-retry?' in "mzssl.rkt", currently set to #f so that this
@@ -76,7 +76,7 @@ direction at a time. If you request data from the input port, then
 data cannot be written to the output port (i.e., attempting to write
 will block) until the other end of the connection responds to the
 read. Even merely checking for input data --- using
-@scheme[byte-ready?], for example --- commits the connection to
+@racket[byte-ready?], for example --- commits the connection to
 reading, and the other end must respond with a (possibly zero-length)
 answer. Protocols that work with SSL, such as IMAP, have a
 well-defined communication pattern, where theres no question of
@@ -92,42 +92,42 @@ whether the other end is supposed to be sending or reading data.
 	   (or/c ssl-client-context? symbol?) 'sslv2-or-v3))
          (values input-port? output-port?)]{
 
-Like @scheme[ssl-connect], but breaking is enabled while trying to
+Like @racket[ssl-connect], but breaking is enabled while trying to
 connect.}
 
 
 @defproc[(ssl-make-client-context (protocol symbol? 'sslv2-or-v3))
          ssl-client-context?]{
 
-Creates a context to be supplied to @scheme[ssl-connect]. The context
+Creates a context to be supplied to @racket[ssl-connect]. The context
 identifies a communication protocol (as selected by
-@scheme[protocol]), and also holds certificate information (i.e., the
+@racket[protocol]), and also holds certificate information (i.e., the
 client's identity, its trusted certificate authorities, etc.). See the
 section @secref["cert-procs"] below for more information on
 certificates.
 
-The @scheme[protocol] must be one of the following:
+The @racket[protocol] must be one of the following:
 @itemize[
-  @item{@scheme['sslv2-or-v3] : SSL protocol versions 2 or 3, as
+  @item{@racket['sslv2-or-v3] : SSL protocol versions 2 or 3, as
   appropriate (this is the default)}
-  @item{@scheme['sslv2] : SSL protocol version 2}
-  @item{@scheme['sslv3] : SSL protocol version 3}
-  @item{@scheme['tls] : the TLS protocol version 1}
+  @item{@racket['sslv2] : SSL protocol version 2}
+  @item{@racket['sslv3] : SSL protocol version 3}
+  @item{@racket['tls] : the TLS protocol version 1}
 ]
 
 Note that SSL protocol version 2 is deprecated on some platforms and may not be
 present in your system libraries. The use of SSLv2 may also compromise security; 
 thus, using SSLv3 is recommended.
 
-By default, the context returned by @scheme[ssl-make-client-context] does not
-request verification of a server's certificate. Use @scheme[ssl-set-verify!]
+By default, the context returned by @racket[ssl-make-client-context] does not
+request verification of a server's certificate. Use @racket[ssl-set-verify!]
 to enable such verification.}
 
 
 @defproc[(ssl-client-context? (v any/c)) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a value produced by
-@scheme[ssl-make-client-context], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a value produced by
+@racket[ssl-make-client-context], @racket[#f] otherwise.}
 
 
 @; ----------------------------------------------------------------------
@@ -143,18 +143,18 @@ Returns @scheme[#t] if @scheme[v] is a value produced by
 	   (or/c ssl-server-context? symbol?) 'sslv2-or-v3])
 	 ssl-listener?]{
 
-Like @scheme[tcp-listen], but the result is an SSL listener. The extra optional
-@scheme[server-protocol] is as for @scheme[ssl-connect], except that a
+Like @racket[tcp-listen], but the result is an SSL listener. The extra optional
+@racket[server-protocol] is as for @racket[ssl-connect], except that a
 context must be a server context instead of a client context.
 
-Call @scheme[ssl-load-certificate-chain!] and
-@scheme[ssl-load-private-key!] to avoid a @emph{no shared cipher}
+Call @racket[ssl-load-certificate-chain!] and
+@racket[ssl-load-private-key!] to avoid a @emph{no shared cipher}
 error on accepting connections. The file @filepath{test.pem} in the
 @filepath{openssl} collection is a suitable argument for both calls
 when testing. Since @filepath{test.pem} is public, however, such a
 test configuration obviously provides no security.
 
-An SSL listener is a synchronizable value (see @scheme[sync]). It is
+An SSL listener is a synchronizable value (see @racket[sync]). It is
 ready---with itself as its value---when the underlying TCP listener is
 ready. At that point, however, accepting a connection with
 @racket[ssl-accept] may not complete immediately, because
@@ -165,7 +165,7 @@ further communication is needed to establish the connection.}
   @defproc[(ssl-close (listener ssl-listener?)) void?]
   @defproc[(ssl-listener? (v any/c)) boolean?])]{
 
-Analogous to @scheme[tcp-close] and @scheme[tcp-listener?].}
+Analogous to @racket[tcp-close] and @racket[tcp-listener?].}
 
 @deftogether[(
   @defproc[(ssl-accept (listener ssl-listener?))
@@ -173,16 +173,16 @@ Analogous to @scheme[tcp-close] and @scheme[tcp-listener?].}
   @defproc[(ssl-accept/enable-break (listener ssl-listener?))
            (values input-port? output-port?)])]{
 
-Analogous to @scheme[tcp-accept].
+Analogous to @racket[tcp-accept].
 
 Closing the resulting output port does not send a shutdown message to
-the client. See also @scheme[ports->ssl-ports].
+the client. See also @racket[ports->ssl-ports].
 
-See also @scheme[ssl-connect] about the limitations of reading and
+See also @racket[ssl-connect] about the limitations of reading and
 writing to an SSL connection (i.e., one direction at a time).
 
-The @scheme[ssl-accept/enable-break] procedure is analogous to
-@scheme[tcp-accept/enable-break].}
+The @racket[ssl-accept/enable-break] procedure is analogous to
+@racket[tcp-accept/enable-break].}
 
 
 @defproc[(ssl-abandon-port [in (and/c ssl-port? output-port?)]) void?]{
@@ -206,12 +206,12 @@ Returns @racket[#t] of @racket[v] is an SSL port produced by
 @defproc[(ssl-make-server-context (protocol symbol?))
          ssl-server-context?]{
 
-Like @scheme[ssl-make-client-context], but creates a server context.}
+Like @racket[ssl-make-client-context], but creates a server context.}
 
 @defproc[(ssl-server-context? (v any/c)) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a value produced by
-@scheme[ssl-make-server-context], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a value produced by
+@racket[ssl-make-server-context], @racket[#f] otherwise.}
 
 
 @; ----------------------------------------------------------------------
@@ -238,43 +238,43 @@ implement the SSL protocol over the given input and output port. (The
 given ports should be connected to another process that runs the SSL
 protocol.)
 
-The @scheme[mode] argument can be @scheme['connect] or
-@scheme['accept]. The mode determines how the SSL protocol is
+The @racket[mode] argument can be @racket['connect] or
+@racket['accept]. The mode determines how the SSL protocol is
 initialized over the ports, either as a client or as a server. As with
-@scheme[ssl-listen], in @scheme['accept] mode, supply a
-@scheme[context] that has been initialized with
-@scheme[ssl-load-certificate-chain!] and
-@scheme[ssl-load-private-key!] to avoid a @emph{no shared cipher}
+@racket[ssl-listen], in @racket['accept] mode, supply a
+@racket[context] that has been initialized with
+@racket[ssl-load-certificate-chain!] and
+@racket[ssl-load-private-key!] to avoid a @emph{no shared cipher}
 error.
 
-The @scheme[context] argument should be a client context for
-@scheme['connect] mode or a server context for @scheme['accept]
+The @racket[context] argument should be a client context for
+@racket['connect] mode or a server context for @racket['accept]
 mode. If it is not supplied, a context is created using the protocol
-specified by a @scheme[protocol] argument.
+specified by a @racket[protocol] argument.
 
-If the @scheme[protocol] argument is not supplied, it defaults to
-@scheme['sslv2-or-v3]. See @scheme[ssl-make-client-context] for
+If the @racket[protocol] argument is not supplied, it defaults to
+@racket['sslv2-or-v3]. See @racket[ssl-make-client-context] for
 further details (including all options and the meanings of the
-protocol symbols).  This argument is ignored if a @scheme[context]
+protocol symbols).  This argument is ignored if a @racket[context]
 argument is supplied.
 
-If @scheme[close-original?] is true, then when both SSL ports are
+If @racket[close-original?] is true, then when both SSL ports are
 closed, the given input and output ports are automatically closed.
 
-If @scheme[shutdown-on-close?] is true, then when the output SSL port
+If @racket[shutdown-on-close?] is true, then when the output SSL port
 is closed, it sends a shutdown message to the other end of the SSL
 connection. When shutdown is enabled, closing the
 output port can fail if the given output port becomes unwritable
 (e.g., because the other end of the given port has been closed by
 another process).
 
-The @scheme[error] argument is an error procedure to use for raising
-communication errors. The default is @scheme[error], which raises
-@scheme[exn:fail]; in contrast, @scheme[ssl-accept] and
-@scheme[ssl-connect] use an error function that raises
-@scheme[exn:fail:network].
+The @racket[error] argument is an error procedure to use for raising
+communication errors. The default is @racket[error], which raises
+@racket[exn:fail]; in contrast, @racket[ssl-accept] and
+@racket[ssl-connect] use an error function that raises
+@racket[exn:fail:network].
 
-See also @scheme[ssl-connect] about the limitations of reading and
+See also @racket[ssl-connect] about the limitations of reading and
 writing to an SSL connection (i.e., one direction at a time).}
 
 @; ----------------------------------------------------------------------
@@ -288,13 +288,13 @@ writing to an SSL connection (i.e., one direction at a time).}
          void?]{
 
 Loads a PEM-format certification chain file for connections to made
-with the given context (created by @scheme[ssl-make-client-context] or
-@scheme[ssl-make-server-context]) or listener (created by
-@scheme[ssl-listen]).
+with the given context (created by @racket[ssl-make-client-context] or
+@racket[ssl-make-server-context]) or listener (created by
+@racket[ssl-listen]).
 
 This chain is used to identify the client or server when it connects
 or accepts connections. Loading a chain overwrites the old chain. Also
-call @scheme[ssl-load-private-key!] to load the certificate's
+call @racket[ssl-load-private-key!] to load the certificate's
 corresponding key.
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
@@ -309,13 +309,13 @@ such a test configuration obviously provides no security.}
 	  [asn1? boolean? #f])
          void?]{
 
-Loads the first private key from @scheme[pathname] for the given
+Loads the first private key from @racket[pathname] for the given
 context or listener. The key goes with the certificate that identifies
 the client or server.
 
-If @scheme[rsa?] is @scheme[#t] (the default), the first RSA key is
-read (i.e., non-RSA keys are skipped). If @scheme[asn1?] is
-@scheme[#t], the file is parsed as ASN1 format instead of PEM.
+If @racket[rsa?] is @racket[#t] (the default), the first RSA key is
+read (i.e., non-RSA keys are skipped). If @racket[asn1?] is
+@racket[#t], the file is parsed as ASN1 format instead of PEM.
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,
@@ -332,7 +332,7 @@ By default, verification is disabled.
 
 Enabling verification also requires, at a minimum, designating trusted
 certificate authorities with
-@scheme[ssl-load-verify-root-certificates!].}
+@racket[ssl-load-verify-root-certificates!].}
 
 @defproc[(ssl-load-verify-root-certificates!
 	  (context-or-listener (or/c ssl-client-context? ssl-server-context?
@@ -361,7 +361,7 @@ server trusts.
 
 Loading the suggested certificates does not imply trust, however; any
 certificate presented by the client will be checked using the trusted
-roots loaded by @scheme[ssl-load-verify-root-certificates!].
+roots loaded by @racket[ssl-load-verify-root-certificates!].
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes where the peer identifies itself using
@@ -393,7 +393,7 @@ is @racket[#f].}
 
 @section{SHA-1 Hashing}
 
-@defmodule[openssl/sha1]{The @schememodname[openssl/sha1] library
+@defmodule[openssl/sha1]{The @racketmodname[openssl/sha1] library
 provides a Racket wrapper for the OpenSSL library's SHA-1 hashing
 functions. If the OpenSSL library cannot be opened, this library logs
 a warning and falls back to the implementation in
@@ -402,39 +402,39 @@ a warning and falls back to the implementation in
 @defproc[(sha1 [in input-port]) string?]{
 
 Returns a 40-character string that represents the SHA-1 hash (in
-hexadecimal notation) of the content from @scheme[in], consuming all
-of the input from @scheme[in] until an end-of-file.
+hexadecimal notation) of the content from @racket[in], consuming all
+of the input from @racket[in] until an end-of-file.
 
-The @scheme[sha1] function composes @scheme[bytes->hex-string] with
+The @racket[sha1] function composes @racket[bytes->hex-string] with
 @racket[sha1-bytes].}
 
 @defproc[(sha1-bytes [in input-port]) bytes?]{
 
 Returns a 20-byte byte string that represents the SHA-1 hash of the
-content from @scheme[in], consuming all of the input from @scheme[in]
+content from @racket[in], consuming all of the input from @racket[in]
 until an end-of-file.}
 
 @defproc[(bytes->hex-string [bstr bytes?]) string?]{
 
 Converts the given byte string to a string representation, where each
-byte in @scheme[bstr] is converted to its two-digit hexadecimal
+byte in @racket[bstr] is converted to its two-digit hexadecimal
 representation in the resulting string.}
 
 @; ----------------------------------------------------------------------
 
 @section{Implementation Notes}
 
-For Windows, @schememodname[openssl] relies on @filepath{libeay32.dll}
+For Windows, @racketmodname[openssl] relies on @filepath{libeay32.dll}
 and @filepath{ssleay32.dll}, where the DLLs are located in the same
 place as @filepath{libmzsch@nonterm{vers}.dll} (where @nonterm{vers}
 is either @tt{xxxxxxx} or a mangling of Racket's version
 number). The DLLs are distributed as part of Racket.
 
-For Unix variants, @schememodname[openssl] relies on
+For Unix variants, @racketmodname[openssl] relies on
 @filepath{libcryto.so} and @filepath{libssl.so}, which must be
 installed in a standard library location, or in a directory listed by
 @envvar{LD_LIBRARY_PATH}.
 
-For Mac OS X, @schememodname[openssl] relies on
+For Mac OS X, @racketmodname[openssl] relies on
 @filepath{libssl.dylib} and @filepath{libcryto.dylib}, which are part
 of the OS distribution for Mac OS X 10.2 and later.

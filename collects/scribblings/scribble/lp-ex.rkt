@@ -13,5 +13,5 @@ and this one:
 
 that, when assembled, produce a complete program, in this case:
 
-@schemeblock[(define (f x)
+@racketblock[(define (f x)
                (* x x))]

@@ -5,7 +5,7 @@
 
 @title{Close Icon}
 
-@defmodule[mrlib/close-icon]{The @scheme[close-icon%] class
+@defmodule[mrlib/close-icon]{The @racket[close-icon%] class
 provides a clickable close button icon.}
 
 @defclass[close-icon% canvas% ()]{
@@ -14,8 +14,8 @@ provides a clickable close button icon.}
                   [bg-color (or/c #f string (is-a?/c color%))]
                   [horizontal-pad positive-integer? 4]
                   [vertical-pad positive-integer? 4])]{
-   The @scheme[callback] is called when the close icon is clicked.
-       
-   If @scheme[bg-color] is specified, it is used as the background color of the icon.
+   The @racket[callback] is called when the close icon is clicked.
+
+   If @racket[bg-color] is specified, it is used as the background color of the icon.
  }
 }

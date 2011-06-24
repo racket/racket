@@ -8,8 +8,8 @@
 Homogenous vectors are similar to C vectors (see
 @secref["foreign:cvector"]), except that they define different types
 of vectors, each with a hard-wired type. An exception is the
-@schemeidfont{u8} family of bindings, which are just aliases for
-byte-string bindings; for example, @scheme[make-u8vector] is an alias
+@racketidfont{u8} family of bindings, which are just aliases for
+byte-string bindings; for example, @racket[make-u8vector] is an alias
 for @racket[make-bytes].
 
 @(begin
@@ -95,8 +95,8 @@ for @racket[make-bytes].
 
 @srfi-4-vector/desc[u8 _uint8 (lambda (x) (make-splice null))]{
 
-Like @scheme[_cvector], but for vectors of @scheme[_byte] elements. These are
-aliases for @schemeidfont{byte} operations, where @racket[u8vector->cpointer]
+Like @racket[_cvector], but for vectors of @racket[_byte] elements. These are
+aliases for @racketidfont{byte} operations, where @racket[u8vector->cpointer]
 is the identity function.}
 
 @srfi-4-vector[s8 _int8]

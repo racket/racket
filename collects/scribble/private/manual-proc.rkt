@@ -34,26 +34,26 @@
   (make-element meta-color (list "...+")))
 
 (define (make-openers n)
-  (schemeparenfont
+  (racketparenfont
    (case n [(1) "("] [(0) ""] [(2) "(("] [else (make-string n #\()])))
 (define (make-closers n)
-  (schemeparenfont
+  (racketparenfont
    (case n [(1) ")"] [(0) ""] [(2) "))"] [else (make-string n #\()])))
 
 (define-syntax (arg-contract stx)
   (syntax-case stx (... ...+ _...superclass-args...)
     [(_ [id contract])
      (identifier? #'id)
-     #'(schemeblock0 contract)]
+     #'(racketblock0 contract)]
     [(_ [id contract val])
      (identifier? #'id)
-     #'(schemeblock0 contract)]
+     #'(racketblock0 contract)]
     [(_ [kw id contract])
      (and (keyword? (syntax-e #'kw)) (identifier? #'id))
-     #'(schemeblock0 contract)]
+     #'(racketblock0 contract)]
     [(_ [kw id contract val])
      (and (keyword? (syntax-e #'kw)) (identifier? #'id))
-     #'(schemeblock0 contract)]
+     #'(racketblock0 contract)]
     [(_ (... ...)) #'#f]
     [(_ (... ...+)) #'#f]
     [(_ _...superclass-args...) #'#f]
@@ -66,13 +66,13 @@
      #'#f]
     [(_ [id contract val])
      (identifier? #'id)
-     #'(schemeblock0 val)]
+     #'(racketblock0 val)]
     [(_ [kw id contract])
      (keyword? (syntax-e #'kw))
      #'#f]
     [(_ [kw id contract val])
      (keyword? (syntax-e #'kw))
-     #'(schemeblock0 val)]
+     #'(racketblock0 val)]
     [_ #'#f]))
 
 (define-syntax (extract-proc-id stx)
@@ -105,12 +105,12 @@
 (define-syntax (result-contract stx)
   (syntax-case stx (values)
     [(_ (values c ...))
-     #'(list (schemeblock0 c) ...)]
+     #'(list (racketblock0 c) ...)]
     [(_ c)
      (if (string? (syntax-e #'c))
        (raise-syntax-error 'defproc
                            "expected a result contract, found a string" #'c)
-       #'(schemeblock0 c))]))
+       #'(racketblock0 c))]))
 
 (define-syntax-rule (defproc (id arg ...) result desc ...)
   (defproc* [[(id arg ...) result]] desc ...))
@@ -120,7 +120,7 @@
     [(_ [[proto result] ...] desc ...)
      (defproc* #:mode procedure #:within #f [[proto result] ...] desc ...)]
     [(_ #:mode m #:within cl [[proto result] ...] desc ...)
-     (with-togetherable-scheme-variables
+     (with-togetherable-racket-variables
       ()
       ([proc proto] ...)
       (*defproc 'm (quote-syntax/loc cl)
@@ -142,11 +142,11 @@
                      (if (arg-kw arg)
                        (if (eq? mode 'new)
                          (make-element
-                          #f (list (schemeparenfont "[")
-                                   (schemeidfont (keyword->string (arg-kw arg)))
+                          #f (list (racketparenfont "[")
+                                   (racketidfont (keyword->string (arg-kw arg)))
                                    spacer
                                    (to-element (make-var-id (arg-id arg)))
-                                   (schemeparenfont "]")))
+                                   (racketparenfont "]")))
                          (make-element
                           #f (list (to-element (arg-kw arg))
                                    spacer
@@ -237,14 +237,14 @@
     (define tagged
       (cond
         [(eq? mode 'new)
-         (make-element #f (list (scheme new) spacer (to-element within-id)))]
+         (make-element #f (list (racket new) spacer (to-element within-id)))]
         [(eq? mode 'make)
          (make-element
-          #f (list (scheme make-object) spacer (to-element within-id)))]
+          #f (list (racket make-object) spacer (to-element within-id)))]
         [(eq? mode 'send)
          (make-element
           #f
-          (list (scheme send) spacer
+          (list (racket send) spacer
                 (name-this-object (syntax-e within-id)) spacer
                 (if first?
                   (let* ([mname (extract-id prototype)]
@@ -350,7 +350,7 @@
                      (append-map (lambda (arg)
                                    (list spacer ((arg->elem #t) arg)))
                                  args))
-                 ,(schemeparenfont ")"))))
+                 ,(racketparenfont ")"))))
              (if result-next-line? null end))))
           ;; The multi-line case:
           (let ([not-end (if result-next-line?
@@ -403,7 +403,7 @@
                             [(null? ((if dots-next? cddr cdr) args))
                              (make-element
                               #f
-                              (list a next (schemeparenfont ")")))]
+                              (list a next (racketparenfont ")")))]
                             [(equal? next "") a]
                             [else
                              (make-element #f (list a next))])))
@@ -544,12 +544,12 @@
 
 (define-syntax-rule (**defstruct name ([field field-contract] ...) immutable?
                                  transparent? prefab? cname extra-cname? desc ...)
-  (with-togetherable-scheme-variables
+  (with-togetherable-racket-variables
    ()
    ()
    (*defstruct (quote-syntax/loc name) 'name (quote-syntax/loc cname) extra-cname?
                '([field field-contract] ...)
-               (list (lambda () (schemeblock0 field-contract)) ...)
+               (list (lambda () (racketblock0 field-contract)) ...)
                immutable? transparent? prefab? (lambda () (list desc ...)))))
 
 (define (*defstruct stx-id name alt-cname-id extra-cname?
@@ -640,7 +640,7 @@
                   (make-omitable-paragraph
                    (list
                     (to-element
-                     `(,(scheme struct)
+                     `(,(racket struct)
                        ,the-name
                        ,(map field-view fields)))))
                   (let* ([one-right-column?
@@ -658,8 +658,8 @@
                        (append
                         (list (to-flow (make-element #f 
                                                      (list
-                                                      (schemeparenfont "(")
-                                                      (scheme struct))))
+                                                      (racketparenfont "(")
+                                                      (racket struct))))
                               flow-spacer)
                         (if one-right-column?
                             (list (to-flow (make-element
@@ -671,11 +671,11 @@
                                                    (if (and immutable?
                                                             (not transparent?)
                                                             (not cname-id))
-                                                       (list (schemeparenfont ")"))
+                                                       (list (racketparenfont ")"))
                                                        null)))))
                             (list (to-flow the-name)
                                   (to-flow (make-element
-                                            #f (list spacer (schemeparenfont "("))))
+                                            #f (list spacer (racketparenfont "("))))
                                   (to-flow (to-element (field-view (car fields))))))))
                       (if (short-width . < . max-proto-width)
                           null
@@ -692,7 +692,7 @@
                                             (if (null? (cdr fields))
                                                 (make-element
                                                  #f
-                                                 (list e (schemeparenfont
+                                                 (list e (racketparenfont
                                                           (if (and immutable?
                                                                    (not transparent?)
                                                                    (not cname-id))
@@ -712,7 +712,7 @@
                                                   (to-element cname-id))
                                             (if (and immutable?
                                                      (not transparent?))
-                                                (list (schemeparenfont ")"))
+                                                (list (racketparenfont ")"))
                                                 null))))))
                           null)
                       (cond
@@ -724,13 +724,13 @@
                                                    (list (if prefab?
                                                              (to-element '#:prefab)
                                                              (to-element '#:transparent))
-                                                         (schemeparenfont ")"))))))]
+                                                         (racketparenfont ")"))))))]
                        [(not immutable?)
                         (list
                          (a-right-column (to-flow (make-element
                                                    #f
                                                    (list (to-element '#:mutable)
-                                                         (schemeparenfont ")"))))))]
+                                                         (racketparenfont ")"))))))]
                        [transparent?
                         (list
                          (a-right-column (to-flow (make-element
@@ -738,7 +738,7 @@
                                                    (list (if prefab?
                                                              (to-element '#:prefab)
                                                              (to-element '#:transparent))
-                                                         (schemeparenfont ")"))))))]
+                                                         (racketparenfont ")"))))))]
                        [else null])))))))))
       (map (lambda (v field-contract)
              (cond
@@ -763,19 +763,19 @@
 ;; ----------------------------------------
 
 (define-syntax-rule (defthing id result desc ...)
-  (with-togetherable-scheme-variables
+  (with-togetherable-racket-variables
    ()
    ()
    (*defthing (list (quote-syntax/loc id)) (list 'id) #f
-              (list (schemeblock0 result))
+              (list (racketblock0 result))
               (lambda () (list desc ...)))))
 
 (define-syntax-rule (defthing* ([id result] ...) desc ...)
-  (with-togetherable-scheme-variables
+  (with-togetherable-racket-variables
    ()
    ()
    (*defthing (list (quote-syntax/loc id) ...) (list 'id ...) #f
-              (list (schemeblock0 result) ...)
+              (list (racketblock0 result) ...)
               (lambda () (list desc ...)))))
 
 (define (*defthing stx-ids names form? result-contracts content-thunk
@@ -887,7 +887,7 @@
                (list content)
                tag
                (list name)
-               (list (schemeidfont (make-element value-link-color
+               (list (racketidfont (make-element value-link-color
                                                  (list name))))
                (with-exporting-libraries
                 (lambda (libs)

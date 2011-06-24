@@ -4,16 +4,16 @@
 
 @(define-syntax-rule (intro id)
    (begin
-    (require (for-label scheme/cmdline))
-    (define id (scheme command-line))))
-@(intro scheme-command-line)
+    (require (for-label racket/cmdline))
+    (define id (racket command-line))))
+@(intro racket-command-line)
 
 @mzlib[#:mode title cmdline]
 
-Provides a @scheme[command-line] from that is similar to the one in
-@schememodname[scheme/cmdline], but without using keywords.  The
-@scheme[parse-command-line] procedure from
-@schememodname[scheme/cmdline] is re-exported directly.
+Provides a @racket[command-line] from that is similar to the one in
+@racketmodname[racket/cmdline], but without using keywords.  The
+@racket[parse-command-line] procedure from
+@racketmodname[racket/cmdline] is re-exported directly.
 
 @defform/subs[
 #:literals (multi once-each once-any final help-labels args =>)
@@ -34,5 +34,5 @@ Provides a @scheme[command-line] from that is similar to the one in
               (id ...)
               (id ...+ . id)])]{
 
-Like @scheme-command-line from @scheme[scheme/cmdline], but without
+Like @racket-command-line from @racket[racket/cmdline], but without
 keywords in the syntax.}

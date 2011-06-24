@@ -18,7 +18,7 @@ up an image.
          void?]{
   Draws @racket[image] in @racket[dc] at the position (@racket[dx],@racket[dy]).
 }
-               
+
 @defproc[(image? [v any/c]) boolean?]{
  Recognizes the images that library handles.
 }

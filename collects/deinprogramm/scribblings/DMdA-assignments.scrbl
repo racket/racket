@@ -12,7 +12,7 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 
 @declare-exporting[deinprogramm/DMdA-assignments]
 
-@schemegrammar*-DMdA[
+@racketgrammar*-DMdA[
 #:literals (define-record-procedures-2 define-record-procedures-parametric-2 set!)
 (
   (define-record-procedures-2 id id id (field-spec ...))
@@ -30,48 +30,48 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 
 @prim-ops['(lib "DMdA-assignments.rkt" "deinprogramm") #'here]
 
-@section{@scheme[define-record-procedures-2]}
+@section{@racket[define-record-procedures-2]}
 
 @declare-exporting[deinprogramm/DMdA]
 
 @defform[(define-record-procedures-2 t c p (field-spec ...))]{
-Die @scheme[define-record-procedures-2]-Form ist eine Definition für
-einen neuen Record-Typ. Dabei ist @scheme[t] der Name der Record-Signatur,
-@scheme[c] der Name des Konstruktors, @scheme[p] der Name des
-Prädikats. Jedes @scheme[field-spec] kann entweder der Name eines Selektors
-oder ein Paar @scheme[(id id)] aus dem Namen eines Selektors und dem Namen eines
+Die @racket[define-record-procedures-2]-Form ist eine Definition für
+einen neuen Record-Typ. Dabei ist @racket[t] der Name der Record-Signatur,
+@racket[c] der Name des Konstruktors, @racket[p] der Name des
+Prädikats. Jedes @racket[field-spec] kann entweder der Name eines Selektors
+oder ein Paar @racket[(id id)] aus dem Namen eines Selektors und dem Namen eines
 Mutators sein.
 }
 
-@section{@scheme[define-record-procedures-parametric-2]}
+@section{@racket[define-record-procedures-parametric-2]}
 
 @declare-exporting[deinprogramm/DMdA]
 
 @defform[(define-record-procedures-parametric-2 t cc c p (field-spec1 ...))]{
-Diese Form ist wie @scheme[define-record-procedures-2], nur parametrisch 
-wie @scheme[define-record-procedures-parametric].  Außerdem
+Diese Form ist wie @racket[define-record-procedures-2], nur parametrisch 
+wie @racket[define-record-procedures-parametric].  Außerdem
 werden die Signaturen für die Feldinhalte, anders als bei
-@scheme[define-record-procedures-parametric], sofort bei der
+@racket[define-record-procedures-parametric], sofort bei der
 Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
 }
 
-@section{@scheme[begin]}
+@section{@racket[begin]}
 
 @declare-exporting[deinprogramm/DMdA]
 
 @defform[(begin expr expr ...)]{
-Bei der Auswertung eines @scheme[begin]-Ausdrucks werden nacheinander
+Bei der Auswertung eines @racket[begin]-Ausdrucks werden nacheinander
 die Operanden ausgewertet. Der Wert des letzten Ausdrucks wird der
-Wert des @scheme[begin]-Ausdrucks.
+Wert des @racket[begin]-Ausdrucks.
 }
 
-@section{@scheme[set!]}
+@section{@racket[set!]}
 
 @declare-exporting[deinprogramm/DMdA]
 
 @defform[(set! id expr)]{
-Ein @scheme[set!]-Ausdruck ist eine Zuweisung, und ändert den Inhalt
-der Zelle, die an @scheme[id] gebunden ist, auf den Wert von @scheme[expr].
+Ein @racket[set!]-Ausdruck ist eine Zuweisung, und ändert den Inhalt
+der Zelle, die an @racket[id] gebunden ist, auf den Wert von @racket[expr].
 }
 
 @section[#:tag "assignments-signatures"]{Signaturen}
@@ -80,21 +80,21 @@ der Zelle, die an @scheme[id] gebunden ist, auf den Wert von @scheme[expr].
 
 @defidform[unspecific]{
 Signatur für unspezifische Werte, die unwichtig sind - typischerweise für die 
-Rückgabewerte von Operationen, die nur Seiteneffekte haben wie @scheme[set!]
-oder @scheme[write-string].
+Rückgabewerte von Operationen, die nur Seiteneffekte haben wie @racket[set!]
+oder @racket[write-string].
 }
 
 @section[#:tag "advanced-definitions"]{Definitionen}
 @declare-exporting[deinprogramm/DMdA-deflam]
 
 @defform[(define id expr)]{Diese Form ist wie in den unteren
-Sprachebenen, mit dem Unterschied, dass an @scheme[id] mit
-@scheme[set!] zugewiesen werden kann.}
+Sprachebenen, mit dem Unterschied, dass an @racket[id] mit
+@racket[set!] zugewiesen werden kann.}
 
-@section[#:tag "advanced-lambda"]{@scheme[lambda]}
+@section[#:tag "advanced-lambda"]{@racket[lambda]}
 @declare-exporting[deinprogramm/DMdA-deflam]
 
-@defform[(lambda (id id ... . id) expr)]{Bei @scheme[lambda] ist in
+@defform[(lambda (id id ... . id) expr)]{Bei @racket[lambda] ist in
 dieser Sprachebene in einer Form zulässig, die es erlaubt, eine
 Prozedur mit einer variablen Anzahl von Paramern zu erzeugen: Alle
 Parameter vor dem Punkt funktionieren wie gewohnt und werden jeweils

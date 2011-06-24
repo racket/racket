@@ -4,8 +4,8 @@
 
 @mzlib[#:mode title plt-match]
 
-The @schememodname[mzlib/plt-match] library mostly re-provides
-@scheme[scheme/match].
+The @racketmodname[mzlib/plt-match] library mostly re-provides
+@racket[scheme/match].
 
 @deftogether[(
 @defform*[((define-match-expander id proc-expr)
@@ -13,4 +13,4 @@ The @schememodname[mzlib/plt-match] library mostly re-provides
            (define-match-expander id proc-expr proc-expr proc-expr))]
 )]{
 
-The same as the form from @schememodname[mzlib/match].}
+The same as the form from @racketmodname[mzlib/match].}

@@ -7,7 +7,7 @@
 
 @declare-exporting[lang/htdp-beginner #:use-sources (lang/htdp-beginner lang/private/teachprims)]
 
-@schemegrammar*+library[
+@racketgrammar*+library[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             check-expect check-within check-error)
 (check-expect check-within check-error require)
@@ -30,7 +30,7 @@
       empty
       id
       (code:line id (code:comment @#,seclink["beginner-id"]{identifier}))
-      (code:line @#,elem{@schemevalfont{'}@scheme[id]} (code:comment @#,seclink["beginner-quote"]{symbol}))
+      (code:line @#,elem{@racketvalfont{'}@racket[id]} (code:comment @#,seclink["beginner-quote"]{symbol}))
       number
       true
       false
@@ -44,64 +44,64 @@
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[define]}
+@section{@racket[define]}
 
 @defform[(define (id id id ...) expr)]{
 
-Defines a function. The first @scheme[id] inside the parentheses is
-the name of the function. All remaining @scheme[id]s are the names of
-the function's arguments. The @scheme[expr] is the body of the
+Defines a function. The first @racket[id] inside the parentheses is
+the name of the function. All remaining @racket[id]s are the names of
+the function's arguments. The @racket[expr] is the body of the
 function, evaluated whenever the function is called. The name of the
 function cannot be that of a primitive or another definition.}
 
 @defform/none[#:literals (define)
               (define id expr)]{
 
-Defines a constant @scheme[id] as a synonym for the value produced by
-@scheme[expr]. The defined name cannot be that of a primitive or
-another definition, and @scheme[id] itself must not appear in
-@scheme[expr].}
+Defines a constant @racket[id] as a synonym for the value produced by
+@racket[expr]. The defined name cannot be that of a primitive or
+another definition, and @racket[id] itself must not appear in
+@racket[expr].}
 
 
 @defform/none[#:literals (define lambda)
               (define id (lambda (id id ...) expr))]{
 
-An alternate form for defining functions. The first @scheme[id] is the
-name of the function. The @scheme[id]s in parentheses are the names of
-the function's arguments, and the @scheme[expr] is the body of the
+An alternate form for defining functions. The first @racket[id] is the
+name of the function. The @racket[id]s in parentheses are the names of
+the function's arguments, and the @racket[expr] is the body of the
 function, which evaluated whenever the function is called.  The name
 of the function cannot be that of a primitive or another definition.}
 
 @defidform[lambda]{
 
-The @scheme[lambda] keyword can only be used with @scheme[define] in
+The @racket[lambda] keyword can only be used with @racket[define] in
 the alternative function-definition syntax.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[define-struct]}
+@section{@racket[define-struct]}
 
 @defform[(define-struct structid (fieldid ...))]{
 
 Define a new type of structure. The structure's fields are named by
-the @scheme[fieldid]s in parentheses. After evaluation of a
+the @racket[fieldid]s in parentheses. After evaluation of a
 define-struct form, a set of new primitives is available for creation,
 extraction, and type-like queries:
 
 @itemize[
 
- @item{@schemeidfont{make-}@scheme[structid] : takes a number of
+ @item{@racketidfont{make-}@racket[structid] : takes a number of
        arguments equal to the number of fields in the structure type,
        and creates a new instance of the structure type.}
 
- @item{@scheme[structid]@schemeidfont{-}@scheme[fieldid] : takes an
+ @item{@racket[structid]@racketidfont{-}@racket[fieldid] : takes an
        instance of the structure and returns the field named by
-       @scheme[structid].}
+       @racket[structid].}
 
- @item{@scheme[structid]@schemeidfont{?} : takes any value, and returns
-       @scheme[true] if the value is an instance of the structure type.}
+ @item{@racket[structid]@racketidfont{?} : takes any value, and returns
+       @racket[true] if the value is an instance of the structure type.}
 
- @item{@scheme[structid] : an identifier representing the structure
+ @item{@racket[structid] : an identifier representing the structure
        type, but never used directly.}
 
 ]
@@ -110,20 +110,20 @@ The created names must not be the same as a primitive or another defined name.}
 
 @; ----------------------------------------------------------------------
 @;{   ------- COMMENTED OUT FOR NOW ---------
-@section{@scheme[define-wish]}
+@section{@racket[define-wish]}
 
-@defform[(define-wish id)]{                           
-                           
+@defform[(define-wish id)]{
+
 Defines a function named @racket[id] that we wish exists but have not implemented yet. 
 The name of the function cannot be that of a primitive or another definition.
-The wished-for function can be called with one argument: @scheme[(id _expr)].
+The wished-for function can be called with one argument: @racket[(id _expr)].
 
 Wished-for functions are reported in the test report for the current program.}
 
 @defform/none[#:literals (define-wish)
               (define-wish id expr)]{
 Similar to the above form, defines a wished-for function named @racket[id]. If the 
-wished-for function is called with one value, the result of @scheme[expr] is
+wished-for function is called with one value, the result of @racket[expr] is
 returned as the default value. }
 }
 @; ----------------------------------------------------------------------
@@ -132,17 +132,17 @@ returned as the default value. }
 
 @defform/none[(id expr expr ...)]{
 
-Calls a function. The @scheme[id] must refer to a defined function,
-and the @scheme[expr]s are evaluated from left to right to produce the
+Calls a function. The @racket[id] must refer to a defined function,
+and the @racket[expr]s are evaluated from left to right to produce the
 values that are passed as arguments to the function. The result of the
 function call is the result of evaluating the function's body with
 every instance of an argument name replaced by the value passed for
-that argument. The number of argument @scheme[expr]s must be the same
+that argument. The number of argument @racket[expr]s must be the same
 as the number of arguments expected by the function.}
 
 @defform[(#%app id expr expr ...)]{
 
-A function call can be written with @scheme[#%app], though it's
+A function call can be written with @racket[#%app], though it's
 practically never written that way.}
 
 @; ----------------------------------------------------------------------
@@ -152,89 +152,89 @@ practically never written that way.}
 @defform/none[(prim-op expr ...)]{
 
 Like a @seclink["beginner-call"]{function call}, but for a primitive
-operation. The @scheme[expr]s are evaluated from left to right, and
+operation. The @racket[expr]s are evaluated from left to right, and
 passed as arguments to the primitive operation named by
-@scheme[prim-op]. A @scheme[define-struct] form creates new
+@racket[prim-op]. A @racket[define-struct] form creates new
 primitives.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[cond]}
+@section{@racket[cond]}
 
 @defform[(cond [expr expr] ... [expr expr])]{
 
-A @scheme[cond] form contains one or more ``lines'' that are
+A @racket[cond] form contains one or more ``lines'' that are
 surrounded by parentheses or square brackets. Each line contains two
-@scheme[expr]s: a question @scheme[expr] and an answer
-@scheme[expr].
+@racket[expr]s: a question @racket[expr] and an answer
+@racket[expr].
 
 The lines are considered in order. To evaluate a line, first evaluate
-the question @scheme[expr]. If the result is @scheme[true], then the
-result of the whole @scheme[cond] expression is the result of
-evaluating the answer @scheme[expr] of the same line. If the result of
-evaluating the question @scheme[expr] is @scheme[false], the line is
+the question @racket[expr]. If the result is @racket[true], then the
+result of the whole @racket[cond] expression is the result of
+evaluating the answer @racket[expr] of the same line. If the result of
+evaluating the question @racket[expr] is @racket[false], the line is
 discarded and evaluation proceeds with the next line.
 
-If the result of a question @scheme[expr] is neither @scheme[true] nor
-@scheme[false], it is an error. If none of the question @scheme[expr]s
-evaluates to @scheme[true], it is also an error.}
+If the result of a question @racket[expr] is neither @racket[true] nor
+@racket[false], it is an error. If none of the question @racket[expr]s
+evaluates to @racket[true], it is also an error.}
 
 @defform/none[#:literals (cond else)
               (cond [expr expr] ... [else expr])]{
 
-This form of @scheme[cond] is similar to the prior one, except that
-the final @scheme[else] clause is always taken if no prior line's test
-expression evaluates to @scheme[true]. In other words, @scheme[else]
-acts like @scheme[true], so there is no possibility to ``fall off the
-end'' of the @scheme[cond] form.}
+This form of @racket[cond] is similar to the prior one, except that
+the final @racket[else] clause is always taken if no prior line's test
+expression evaluates to @racket[true]. In other words, @racket[else]
+acts like @racket[true], so there is no possibility to ``fall off the
+end'' of the @racket[cond] form.}
 
 @defidform[else]{
 
-The @scheme[else] keyword can be used only with @scheme[cond].}
+The @racket[else] keyword can be used only with @racket[cond].}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[if]}
+@section{@racket[if]}
 
 @defform[(if expr expr expr)]{
 
-The first @scheme[expr] (known as the ``test'' @scheme[expr]) is
-evaluated. If it evaluates to @scheme[true], the result of the
-@scheme[if] expression is the result of evaluating the second
-@scheme[expr] (often called the ``then'' @scheme[expr]). If the text
-@scheme[expr] evaluates to @scheme[false], the result of the
-@scheme[if] expression is the result of evaluating the third
-@scheme[expr] (known as the ``else'' @scheme[expr]). If the
-result of evaluating the test @scheme[expr] is neither @scheme[true]
-nor @scheme[false], it is an error.}
+The first @racket[expr] (known as the ``test'' @racket[expr]) is
+evaluated. If it evaluates to @racket[true], the result of the
+@racket[if] expression is the result of evaluating the second
+@racket[expr] (often called the ``then'' @racket[expr]). If the text
+@racket[expr] evaluates to @racket[false], the result of the
+@racket[if] expression is the result of evaluating the third
+@racket[expr] (known as the ``else'' @racket[expr]). If the
+result of evaluating the test @racket[expr] is neither @racket[true]
+nor @racket[false], it is an error.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[and]}
+@section{@racket[and]}
 
 @defform[(and expr expr expr ...)]{
 
-The @scheme[expr]s are evaluated from left to right. If the first
-@scheme[expr] evaluates to @scheme[false], the @scheme[and] expression
-immediately evaluates to @scheme[false]. If the first @scheme[expr]
-evaluates to @scheme[true], the next expression is considered. If all
-@scheme[expr]s evaluate to @scheme[true], the @scheme[and] expression
-evaluates to @scheme[true]. If any of the expressions evaluate to a
-value other than @scheme[true] or @scheme[false], it is an error.}
+The @racket[expr]s are evaluated from left to right. If the first
+@racket[expr] evaluates to @racket[false], the @racket[and] expression
+immediately evaluates to @racket[false]. If the first @racket[expr]
+evaluates to @racket[true], the next expression is considered. If all
+@racket[expr]s evaluate to @racket[true], the @racket[and] expression
+evaluates to @racket[true]. If any of the expressions evaluate to a
+value other than @racket[true] or @racket[false], it is an error.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[or]}
+@section{@racket[or]}
 
 @defform[(or expr expr expr ...)]{
 
-The @scheme[expr]s are evaluated from left to right. If the first
-@scheme[expr] evaluates to @scheme[true], the @scheme[or] expression
-immediately evaluates to @scheme[true]. If the first @scheme[expr]
-evaluates to @scheme[false], the next expression is considered. If all
-@scheme[expr]s evaluate to @scheme[false], the @scheme[or] expression
-evaluates to @scheme[false]. If any of the expressions evaluate to a
-value other than @scheme[true] or @scheme[false], it is an error.}
+The @racket[expr]s are evaluated from left to right. If the first
+@racket[expr] evaluates to @racket[true], the @racket[or] expression
+immediately evaluates to @racket[true]. If the first @racket[expr]
+evaluates to @racket[false], the next expression is considered. If all
+@racket[expr]s evaluate to @racket[false], the @racket[or] expression
+evaluates to @racket[false]. If any of the expressions evaluate to a
+value other than @racket[true] or @racket[false], it is an error.}
 
 @; ----------------------------------------------------------------------
 
@@ -242,39 +242,38 @@ value other than @scheme[true] or @scheme[false], it is an error.}
 
 @defform[(check-expect expr expr)]{
 
-A test case to check that the first @scheme[expr] produces the same
-value as the second @scheme[expr], where the latter is normally an
+A test case to check that the first @racket[expr] produces the same
+value as the second @racket[expr], where the latter is normally an
 immediate value.}
 
 @defform[(check-within expr expr expr)]{
 
-Like @scheme[check-expect], but with an extra expression that produces
-a number @scheme[_delta]. The test case checks that each number in the
-result of the first @scheme[expr] is within @scheme[_delta] of each
-corresponding number from the second @scheme[expr].}
+Like @racket[check-expect], but with an extra expression that produces
+a number @racket[_delta]. The test case checks that each number in the
+result of the first @racket[expr] is within @racket[_delta] of each
+corresponding number from the second @racket[expr].}
 
 @defform*[[(check-error expr expr)
            (check-error expr)]]{
 
-A test case to check that the first @scheme[expr] signals an error,
+A test case to check that the first @racket[expr] signals an error,
 where the error messages matches the string produced by the second
-@scheme[expr], if it is present.}
+@racket[expr], if it is present.}
 
 @defform[(check-member-of expr expr expr ...)]{
 
-A test case to check that the first @scheme[expr] produces an element 
-that is equivalent to one of the following @scheme[expr]s.}
+A test case to check that the first @racket[expr] produces an element 
+that is equivalent to one of the following @racket[expr]s.}
 
 @defform[(check-range expr expr expr)]{
 
-A test case to check that the first @scheme[expr] produces a number
-inbetween the numbers produced by the second and third @scheme[expr]s,
+A test case to check that the first @racket[expr] produces a number
+inbetween the numbers produced by the second and third @racket[expr]s,
 inclusive.}
-                                                               
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[empty]}
+@section{@racket[empty]}
 
 @defthing[empty empty?]{
 
@@ -286,9 +285,9 @@ The empty list.}
 
 @defform/none[id]{
 
-An @scheme[id] refers to a defined constant or argument within a
-function body. If no definition or argument matches the @scheme[id]
-name, an error is reported. Similarly, if @scheme[id] matches the name
+An @racket[id] refers to a defined constant or argument within a
+function body. If no definition or argument matches the @racket[id]
+name, an error is reported. Similarly, if @racket[id] matches the name
 of a defined function or primitive operation, an error is reported.}
 
 @; ----------------------------------------------------------------------
@@ -296,18 +295,18 @@ of a defined function or primitive operation, an error is reported.}
 @section[#:tag "beginner-quote"]{Symbols}
 
 @deftogether[(
-@defform/none[(unsyntax @elem{@schemevalfont{'}@scheme[id]})]
+@defform/none[(unsyntax @elem{@racketvalfont{'}@racket[id]})]
 @defform[(quote id)]
 )]{
 
-A quoted @scheme[id] is a symbol. A symbol is a constant, like
-@scheme[0] and @scheme[empty].
+A quoted @racket[id] is a symbol. A symbol is a constant, like
+@racket[0] and @racket[empty].
 
 Normally, a symbol is written with a @litchar{'}, like
-@scheme['apple], but it can also be written with @scheme[quote], like
-@scheme[(@#,scheme[quote] apple)].
+@racket['apple], but it can also be written with @racket[quote], like
+@racket[(@#,racket[quote] apple)].
 
-The @scheme[id] for a symbol is a sequence of characters not including
+The @racket[id] for a symbol is a sequence of characters not including
 a space or one of the following:}
 
 @t{@hspace[2] @litchar{"} @litchar{,} @litchar{'} @litchar{`} 
@@ -318,7 +317,7 @@ a space or one of the following:}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[true] and @scheme[false]}
+@section{@racket[true] and @racket[false]}
 
 @defthing[true boolean?]{
 
@@ -330,15 +329,15 @@ The false value.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[require]}
+@section{@racket[require]}
 
 @defform[(require string)]{
 
-Makes the definitions of the module specified by @scheme[string]
-available in the current module (i.e., current file), where @scheme[string]
+Makes the definitions of the module specified by @racket[string]
+available in the current module (i.e., current file), where @racket[string]
 refers to a file relative to the enclosing file.
 
-The @scheme[string] is constrained in several ways to avoid problems
+The @racket[string] is constrained in several ways to avoid problems
 with different path conventions on different platforms: a @litchar{/}
 is a directory separator, @litchar{.} always means the current
 directory, @litchar{..} always means the parent directory, path
@@ -360,10 +359,10 @@ with the additional constraint that it must not contain a
 
 Accesses a file in an installed library, making its definitions
 available in the current module (i.e., current file). The first
-@scheme[string] names the library file, and the remaining
-@scheme[string]s name the collection (and sub-collection, and so on)
+@racket[string] names the library file, and the remaining
+@racket[string]s name the collection (and sub-collection, and so on)
 where the file is installed. Each string is constrained in the same
-way as for the @scheme[(require string)] form.}
+way as for the @racket[(require string)] form.}
 
 
 @defform/none[#:literals (require planet)

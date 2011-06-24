@@ -12,19 +12,19 @@ minor version numbers, respectively.
            [Scheme_Object* obj1]
            [Scheme_Object* obj2])]{
 
-Returns 1 if the Scheme values are @scheme[eq?].}
+Returns 1 if the Scheme values are @racket[eq?].}
 
 @function[(int scheme_eqv
            [Scheme_Object* obj1]
            [Scheme_Object* obj2])]{
 
-Returns 1 if the Scheme values are @scheme[eqv?].}
+Returns 1 if the Scheme values are @racket[eqv?].}
 
 @function[(int scheme_equal
            [Scheme_Object* obj1]
            [Scheme_Object* obj2])]{
 
-Returns 1 if the Scheme values are @scheme[equal?].}
+Returns 1 if the Scheme values are @racket[equal?].}
 
 @function[(int scheme_recur_equal
            [Scheme_Object* obj1]
@@ -35,17 +35,17 @@ Like @cpp{scheme_equal}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a procedure
 installed with @cpp{scheme_set_type_equality}.}
 
-Returns 1 if the Racket values are @scheme[equal?].}
+Returns 1 if the Racket values are @racket[equal?].}
 
 @function[(intptr_t scheme_equal_hash_key
            [Scheme_Object* obj])]{
 
-Returns the primary @scheme[equal?]-hash key for @var{obj}.}
+Returns the primary @racket[equal?]-hash key for @var{obj}.}
 
 @function[(intptr_t scheme_equal_hash_key2
            [Scheme_Object* obj])]{
 
-Returns the secondary @scheme[equal?]-hash key for @var{obj}.}
+Returns the secondary @racket[equal?]-hash key for @var{obj}.}
 
 @function[(intptr_t scheme_recur_equal_hash_key
            [Scheme_Object* obj]
@@ -55,7 +55,7 @@ Like @cpp{scheme_equal_hash_key}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a hashing procedure
 installed with @cpp{scheme_set_type_equality}.}
 
-Returns the primary @scheme[equal?]-hash key for @var{obj}.}
+Returns the primary @racket[equal?]-hash key for @var{obj}.}
 
 @function[(intptr_t scheme_recur_equal_hash_key2
            [Scheme_Object* obj]
@@ -76,36 +76,36 @@ Creates and returns a list of length @var{c} with the elements
            [Scheme_Object* list])]{
 
 Returns the length of the list. If @var{list} is not a proper list,
-then the last @scheme[cdr] counts as an item. If there is a cycle in
-@var{list} (involving only @scheme[cdr]s), this procedure will not
+then the last @racket[cdr] counts as an item. If there is a cycle in
+@var{list} (involving only @racket[cdr]s), this procedure will not
 terminate.}
 
 @function[(int scheme_proper_list_length
            [Scheme_Object* list])]{
 
 Returns the length of the list, or -1 if it is not a proper list.  If
-there is a cycle in @var{list} (involving only @scheme[cdr]s), this 
+there is a cycle in @var{list} (involving only @racket[cdr]s), this 
 procedure returns -1.}
 
 @function[(Scheme_Object* scheme_car
            [Scheme_Object* pair])]{
 
-Returns the @scheme[car] of the pair.}
+Returns the @racket[car] of the pair.}
 
 @function[(Scheme_Object* scheme_cdr
            [Scheme_Object* pair])]{
 
-Returns the @scheme[cdr] of the pair.}
+Returns the @racket[cdr] of the pair.}
 
 @function[(Scheme_Object* scheme_cadr
            [Scheme_Object* pair])]{
 
-Returns the @scheme[cadr] of the pair.}
+Returns the @racket[cadr] of the pair.}
 
 @function[(Scheme_Object* scheme_caddr
            [Scheme_Object* pair])]{
 
-Returns the @scheme[caddr] of the pair.}
+Returns the @racket[caddr] of the pair.}
 
 @function[(Scheme_Object* scheme_vector_to_list
            [Scheme_Object* vec])]{
@@ -138,13 +138,13 @@ Sets the contents of the given box.}
            [int argc]
            [Scheme_Object** argv])]{
 
-The same as @scheme[dynamic-require]. The @var{argc} argument must be
-@scheme[2], and @var{argv} contains the arguments.}
+The same as @racket[dynamic-require]. The @var{argc} argument must be
+@racket[2], and @var{argv} contains the arguments.}
 
 @function[(Scheme_Object* scheme_namespace_require
            [Scheme_Object* prim_req_spec])]{
 
-The same as @scheme[namespace-require].}
+The same as @racket[namespace-require].}
 
 
 @function[(Scheme_Object* scheme_load
@@ -212,8 +212,8 @@ that will be encountered.}
 @function[(Scheme_Hash_Table* scheme_make_hash_table_equal)]{
 
 Like @cpp{scheme_make_hash_table}, except that keys are treated as
-Racket values and hashed based on @scheme[equal?] instead of
-@scheme[eq?].}
+Racket values and hashed based on @racket[equal?] instead of
+@racket[eq?].}
 
 @function[(void scheme_hash_set
            [Scheme_Hash_Table* table]
@@ -325,12 +325,12 @@ reported; @var{name} is used for error-reporting.}
 @function[(intptr_t scheme_get_milliseconds)]{
 
 Returns the current ``time'' in milliseconds, just like
-@scheme[current-milliseconds].}
+@racket[current-milliseconds].}
 
 @function[(intptr_t scheme_get_process_milliseconds)]{
 
 Returns the current process ``time'' in milliseconds, just like
-@scheme[current-process-milliseconds].}
+@racket[current-process-milliseconds].}
 
 @function[(char* scheme_banner)]{
 

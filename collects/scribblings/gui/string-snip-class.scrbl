@@ -3,7 +3,7 @@
 
 @defclass/title[string-snip% snip% ()]{
 
-An instance of @scheme[string-snip%] is created automatically when
+An instance of @racket[string-snip%] is created automatically when
  text is inserted into a text editor. See also @xmethod[text%
  on-new-string-snip].
 
@@ -11,9 +11,9 @@ An instance of @scheme[string-snip%] is created automatically when
 @defconstructor*/make[(([allocsize exact-nonnegative-integer? 0])
                        ([s string?]))]{
 
-Creates a string snip whose initial content is @scheme[s], if
+Creates a string snip whose initial content is @racket[s], if
  supplied, empty otherwise. In the latter case, the optional
- @scheme[allocsize] argument is a hint about how much storage space
+ @racket[allocsize] argument is a hint about how much storage space
  for text should be initially allocated by the snip.
 
 }
@@ -24,8 +24,8 @@ Creates a string snip whose initial content is @scheme[s], if
                    [pos exact-nonnegative-integer? 0])
            void?]{
 
-Inserts @scheme[s] (with length @scheme[len]) into the snip at relative
- @techlink{position} @scheme[pos] within the snip.
+Inserts @racket[s] (with length @racket[len]) into the snip at relative
+ @techlink{position} @racket[pos] within the snip.
 
 }
 
@@ -36,7 +36,7 @@ Inserts @scheme[s] (with length @scheme[len]) into the snip at relative
 
 Reads the snip's data from the given stream. 
 
-The @scheme[len] argument specifies the maximum length of the text to
+The @racket[len] argument specifies the maximum length of the text to
  be read.  (When a text snip is written to a file, the very first
  field is the length of the text contained in the snip.)  This method
  is usually invoked by the text snip class's @method[snip-class% read]

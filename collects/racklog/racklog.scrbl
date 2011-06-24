@@ -11,7 +11,8 @@
 
 @author{Dorai Sitaram}
 
-@margin-note{Adapted from Schelog by Dorai Sitaram for Racket by Dorai Sitaram, John Clements, and Jay McCarthy.}
+@margin-note{Adapted from Schelog by Dorai Sitaram for Racket by Dorai Sitaram,
+  John Clements, and Jay McCarthy.}
 
 @defmodule[racklog]
 
@@ -1139,19 +1140,36 @@ The accepted syntax is available in the @secref[#:doc '(lib "datalog/scribblings
 
 @defproc[(logic-var? [x any/c]) boolean?]{Identifies a logic variable.}
 
-@defproc[(atomic-struct? [x any/c]) boolean?]{Identifies structures that the @scheme[(current-inspector)] cannot inspect.}
+@defproc[(atomic-struct? [x any/c]) boolean?]{
+  Identifies structures that the @racket[(current-inspector)] cannot inspect.}
 
-@defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Racklog programs. Equivalent to the contract @racket[(or/c boolean? number? string? bytes? char? symbol? regexp? pregexp? byte-regexp? byte-pregexp? keyword? null? procedure? void? set? atomic-struct?)].}
+@defproc[(atom? [x any/c]) boolean?]{
+  Identifies atomic values that may appear in Racklog programs. Equivalent to
+  the contract @racket[(or/c boolean? number? string? bytes? char? symbol?
+  regexp? pregexp? byte-regexp? byte-pregexp? keyword? null? procedure? void?
+  set? atomic-struct?)].}
 
-@defproc[(compound-struct? [x any/c]) boolean?]{Identifies structures that the @scheme[(current-inspector)] can inspect.}
+@defproc[(compound-struct? [x any/c]) boolean?]{
+  Identifies structures that the @racket[(current-inspector)] can inspect.}
 
-@defproc[(compound? [x any/c]) boolean?]{Identifies compound values that may appear in Racklog programs. Equivalent to the contract @racket[(or/c pair? vector? mpair? box? hash? compound-struct?)].}
+@defproc[(compound? [x any/c]) boolean?]{
+  Identifies compound values that may appear in Racklog programs. Equivalent to
+  the contract
+  @racket[(or/c pair? vector? mpair? box? hash? compound-struct?)].}
 
-@defproc[(unifiable? [x any/c]) boolean?]{Identifies values that may appear in Racklog programs. Essentialy either an @racket[atom?], @racket[logic-var?], or @racket[compound?] that contains @scheme[unifiable?]s.}
+@defproc[(unifiable? [x any/c]) boolean?]{
+  Identifies values that may appear in Racklog programs. Essentialy either an
+  @racket[atom?], @racket[logic-var?], or @racket[compound?] that contains
+  @racket[unifiable?]s.}
 
-@defproc[(answer-value? [x any/c]) boolean?]{Identifies values that may appear in @racket[answer?]. Essentially @racket[unifiable?]s that do not contain @racket[logic-var?]s.}
+@defproc[(answer-value? [x any/c]) boolean?]{
+  Identifies values that may appear in @racket[answer?]. Essentially
+  @racket[unifiable?]s that do not contain @racket[logic-var?]s.}
 
-@defproc[(answer? [x any/c]) boolean?]{Identifies answers returned by @racket[%more] and @racket[%which]. Equivalent to the contract @racket[(or/c false/c (listof (cons/c symbol? answer-value?)))].}
+@defproc[(answer? [x any/c]) boolean?]{
+  Identifies answers returned by @racket[%more] and @racket[%which]. Equivalent
+  to the contract
+  @racket[(or/c false/c (listof (cons/c symbol? answer-value?)))].}
 
 @defthing[goal/c contract?]{A contract for goals.}
 
@@ -1209,7 +1227,7 @@ local logic variables for @racket[clause], ....}
                       [V identifier?])]{
 Like @racket[%assert!], but adds the new clauses to the @emph{front}
 of the existing predicate.}
-                                       
+
 @subsection{Racklog Variables}
 
 @defproc[(_) logic-var?]{
@@ -1223,7 +1241,7 @@ lexical names for the logic variables it creates.)
          #:contracts ([V identifier?])]{
 Introduces @racket[V], ..., as
 lexically scoped logic variables to be used in @racket[expr], ...}
-                                       
+
 @subsection{Cut}
 
 @defform[(%cut-delimiter . any)]{
@@ -1339,7 +1357,7 @@ instantiations of @racket[E1] for which goal @racket[G] succeeds.}
 
 @defpred[(%set-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 Similar to @racket[%set-of], but fails if the set is empty.}
-                                       
+
 @defpred[(%bag-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 The goal @racket[(%bag-of E1 G E2)] unifies with @racket[E2] the @emph{bag}
 (multiset)
@@ -1399,7 +1417,7 @@ new logic variables are used for unbound logic variables in
 @defpred[(%copy [F unifiable?] [S unifiable?])]{
 The goal @racket[(%copy F S)] unifies with @racket[S] a copy of the
 frozen structure in @racket[F].}
-                                       
+
 @bibliography[
  @bib-entry[#:key "aop" 
                   #:author "Leon Sterling and Ehud Shapiro"

@@ -4,8 +4,8 @@
 @definterface/title[stretchable-snip<%> ()]{
 
 Must be implemented by any snip class whose objects will be
-stretchable when inserted into an @scheme[aligned-pasteboard<%>]
-within a @scheme[snip-wrapper%].
+stretchable when inserted into an @racket[aligned-pasteboard<%>]
+within a @racket[snip-wrapper%].
 
 @defmethod[(get-aligned-min-width) (and/c real? (not/c negative?))]{
 

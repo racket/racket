@@ -30,13 +30,13 @@ resolve relative paths.
 @function[(Scheme_Object* scheme_read
            [Scheme_Object* port])]{
 
-@scheme[read]s the next S-expression from the given input port.}
+@racket[read]s the next S-expression from the given input port.}
 
 @function[(void scheme_write
            [Scheme_Object* obj]
            [Scheme_Object* port])]{
 
-@scheme[write]s the Scheme value @var{obj} to the given output port.}
+@racket[write]s the Scheme value @var{obj} to the given output port.}
 
 @function[(void scheme_write_w_max
            [Scheme_Object* obj]
@@ -50,7 +50,7 @@ Like @cpp{scheme_write}, but the printing is truncated to @var{n} bytes.
            [Scheme_Object* obj]
            [Scheme_Object* port])]{
 
-@scheme[display]s the Racket value @var{obj} to the given output
+@racket[display]s the Racket value @var{obj} to the given output
 port.}
 
 @function[(void scheme_display_w_max
@@ -119,7 +119,7 @@ without the non-blocking option.}
            [Scheme_Object* obj]
            [intptr_t* len])]{
 
-Prints the Racket value @var{obj} using @scheme[write] to a newly
+Prints the Racket value @var{obj} using @racket[write] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
 set to the length of the bytes string.}
 
@@ -136,7 +136,7 @@ Like @cpp{scheme_write_to_string}, but the string is truncated to
            [Scheme_Object* obj]
            [intptr_t* len])]{
 
-Prints the Racket value @var{obj} using @scheme[display] to a newly
+Prints the Racket value @var{obj} using @racket[display] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
 set to the length of the string.}
 
@@ -154,7 +154,7 @@ Like @cpp{scheme_display_to_string}, but the string is truncated to
 @function[(void scheme_debug_print
            [Scheme_Object* obj])]{
 
-Prints the Racket value @var{obj} using @scheme[write] to the main
+Prints the Racket value @var{obj} using @racket[write] to the main
 thread's output port.}
 
 @function[(void scheme_flush_output
@@ -377,8 +377,8 @@ Creates a new input port with arbitrary control functions. The
 The pointer @var{data} will be installed as the port's user data,
 which can be extracted/set with the @cppi{SCHEME_INPORT_VAL} macro.
 The @var{name} object is used as the port's name (for
-@scheme[object-name] and as the default source name for
-@scheme[read-syntax]).
+@racket[object-name] and as the default source name for
+@racket[read-syntax]).
 
 If @var{must_close} is non-zero, the new port will be registered with
 the current custodian, and @var{close_fun} is guaranteed to be called
@@ -461,7 +461,7 @@ The functions are as follows.
                [Scheme_Input_Port* port])]{
 
     Called to obtain a progress event for the port, such as for
-    @scheme[port-progress-evt]. This function can be @cpp{NULL} if the
+    @racket[port-progress-evt]. This function can be @cpp{NULL} if the
     port does not support progress events. Use
     @cpp{scheme_progress_evt_via_get} to obtain a default implementation, in
     which case @var{peeked_read_fun} should be
@@ -476,7 +476,7 @@ The functions are as follows.
                [Scheme_Object* target_ch])]{
 
     Called to commit previously peeked bytes, just like the sixth
-    argument to @scheme[make-input-port]. Use
+    argument to @racket[make-input-port]. Use
     @cpp{scheme_peeked_read_via_get} for the default implementation of
     commits when @var{progress_evt_fun} is
     @cpp{scheme_progress_evt_via_get}.
@@ -634,10 +634,10 @@ The functions are as follows.
                [int non_block])]{
 
     Called to write the special value @var{v} for
-    @scheme[write-special] (when @var{non_block} is @cpp{0}) or
-    @scheme[write-special-avail*] (when @var{non_block} is
+    @racket[write-special] (when @var{non_block} is @cpp{0}) or
+    @racket[write-special-avail*] (when @var{non_block} is
     @cpp{1}). If @cpp{NULL} is supplied instead of a function pointer,
-    then @scheme[write-special] and @scheme[write-special-avail*]
+    then @racket[write-special] and @racket[write-special-avail*]
     produce an error for this port.}
 
 }
@@ -714,7 +714,7 @@ Creates a Racket input file port from an ANSI C file pointer. The file
            [const-char* filename]
            [const-char* who])]{
 
-Opens @var{filename} for writing in @scheme['truncate/replace] mode. If
+Opens @var{filename} for writing in @racket['truncate/replace] mode. If
  an exception is raised, the exception message uses @var{who} as the
  name of procedure that raised the exception.}
 
@@ -792,7 +792,7 @@ Creates Racket input and output ports for a TCP socket @var{s}. The
            [char* str])]{
 
 Creates a Racket input port from a byte string; successive
- @scheme[read-char]s on the port return successive bytes in the
+ @racket[read-char]s on the port return successive bytes in the
  string.}
 
 @function[(Scheme_Object* scheme_make_byte_string_output_port)]{
@@ -839,14 +839,14 @@ Like @cpp{scheme_pipe} if @var{limit} is @cpp{0}. If @var{limit} is
 
 Returns the input-port record for @var{port}, which may be either a
 raw-port object with type @cpp{scheme_input_port_type} or a structure
-with the @scheme[prop:input-port] property.}
+with the @racket[prop:input-port] property.}
 
 @function[(Scheme_Output_Port* scheme_output_port_record
            [Scheme_Object* port])]{
 
 Returns the output-port record for @var{port}, which may be either a
 raw-port object with type @cpp{scheme_output_port_type} or a structure
-with the @scheme[prop:output-port] property.}
+with the @racket[prop:output-port] property.}
 
 @function[(int scheme_file_exists
            [char* name])]{
@@ -868,7 +868,7 @@ Returns 1 if a directory by the given name exists, 0 otherwise.  The
            [int* expanded]
            [int checks])]{
 
-Cleanses the pathname @var{name} (see @scheme[cleanse-path]) and
+Cleanses the pathname @var{name} (see @racket[cleanse-path]) and
 resolves relative paths with respect to the current directory
 parameter. The @var{len} argument is the length of the input string;
 if it is -1, the string is assumed to be null-terminated.  The
@@ -989,7 +989,7 @@ fails.}
            [Scheme_Object** argv]
            [intptr_t* rlen])]{
 
-Creates a string like Racket's @scheme[format] procedure, using the
+Creates a string like Racket's @racket[format] procedure, using the
 format string @var{format} (of length @var{flen}) and the extra
 arguments specified in @var{argc} and @var{argv}. If @var{rlen} is not
 @cpp{NULL}, @cpp{*@var{rlen}} is filled with the length of the
@@ -1001,7 +1001,7 @@ resulting string.}
            [int argc]
            [Scheme_Object** argv])]{
 
-Writes to the current output port like Racket's @scheme[printf]
+Writes to the current output port like Racket's @racket[printf]
 procedure, using the format string @var{format} (of length @var{flen})
 and the extra arguments specified in @var{argc} and @var{argv}.}
 

@@ -152,7 +152,7 @@ current platform:
        the process if the process still running.}
 
  @item{@racket[force?] is false, a group, on Unix or Mac OS X: The
-       same as when @racket[force?] is @scheme[#t], but when the group
+       same as when @racket[force?] is @racket[#t], but when the group
        is sent a signal, it is an interrupt signal instead of a kill
        signal.}
 

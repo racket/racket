@@ -3,7 +3,7 @@
 
 @title[#:tag "base64"]{Base 64: Encoding and Decoding}
 
-@defmodule[net/base64]{The @schememodname[net/base64] library provides
+@defmodule[net/base64]{The @racketmodname[net/base64] library provides
 utilities for Base 64 (mime-standard) encoding and decoding.}
 
 @section[#:tag "base64-procs"]{Functions}
@@ -27,20 +27,20 @@ string.}
                                [newline-bstr bytes? #"\n"])
          void?]{
 
-Reads bytes from @scheme[in] and writes the encoded result to
-@scheme[out], breaking the output into 72-character lines separated by
-@scheme[newline-bstr], and ending with @scheme[newline-bstr] unless
-the input stream is empty. Note that the default @scheme[newline-bstr]
-is just @scheme[#"\n"], not @scheme[#"\r\n"]. The procedure returns when
-it encounters an end-of-file from @scheme[in].}
+Reads bytes from @racket[in] and writes the encoded result to
+@racket[out], breaking the output into 72-character lines separated by
+@racket[newline-bstr], and ending with @racket[newline-bstr] unless
+the input stream is empty. Note that the default @racket[newline-bstr]
+is just @racket[#"\n"], not @racket[#"\r\n"]. The procedure returns when
+it encounters an end-of-file from @racket[in].}
 
 @defproc[(base64-decode-stream [in input-port?]
                                [out output-port?])
          void?]{
 
-Reads a Base 64 encoding from @scheme[in] and writes the decoded
-result to @scheme[out]. The procedure returns when it encounters an
-end-of-file or Base 64 terminator @litchar{=} from @scheme[in].}
+Reads a Base 64 encoding from @racket[in] and writes the decoded
+result to @racket[out]. The procedure returns when it encounters an
+end-of-file or Base 64 terminator @litchar{=} from @racket[in].}
 
 @; ----------------------------------------
 
@@ -50,7 +50,7 @@ end-of-file or Base 64 terminator @litchar{=} from @scheme[in].}
 
 @defthing[base64@ unit?]{
 
-Imports nothing, exports @scheme[base64^].}
+Imports nothing, exports @racket[base64^].}
 
 @; ----------------------------------------
 
@@ -60,4 +60,4 @@ Imports nothing, exports @scheme[base64^].}
 
 @defsignature[base64^ ()]{}
 
-Includes everything exported by the @schememodname[net/base64] module.
+Includes everything exported by the @racketmodname[net/base64] module.

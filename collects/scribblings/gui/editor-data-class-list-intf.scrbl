@@ -3,8 +3,8 @@
 
 @definterface/title[editor-data-class-list<%> ()]{
 
-Each eventspace has an instance of @scheme[editor-data-class-list<%>],
- obtained with @scheme[(get-the-editor-data-class-list)]. New
+Each eventspace has an instance of @racket[editor-data-class-list<%>],
+ obtained with @racket[(get-the-editor-data-class-list)]. New
  instances cannot be created directly. This list keeps a list of
  editor data classes; this list is needed for loading snips from a
  file. See also @|editordatadiscuss|.
@@ -20,7 +20,7 @@ exists in the list, this one will not be added.
 @defmethod[(find [name string?])
            (or/c (is-a?/c snip-class%) false/c)]{
 Finds a snip data class from the list with the given name, returning
- @scheme[#f] if none can be found.
+ @racket[#f] if none can be found.
 
 }
 
@@ -32,8 +32,8 @@ Returns an index into the list for the specified class.
 
 @defmethod[(nth [n exact-nonnegative-integer?])
            (or/c (is-a?/c editor-data-class%) false/c)]{
-Returns the @scheme[n]th class in the list (counting from 0), returning
- @scheme[#f] if the list has @scheme[n] or less classes.
+Returns the @racket[n]th class in the list (counting from 0), returning
+ @racket[#f] if the list has @racket[n] or less classes.
 
 }
 

@@ -6,13 +6,13 @@
 In the same way that inspectors control access to structure fields
 (see @secref["inspectors"]), inspectors also control access to
 @tech{module bindings}. The default inspector for @tech{module
-bindings} is determined by the @scheme[current-code-inspector]
-parameter, instead of the @scheme[current-inspector] parameter.
+bindings} is determined by the @racket[current-code-inspector]
+parameter, instead of the @racket[current-inspector] parameter.
 
-When a @scheme[module] declaration is evaluated, the value of the
-@scheme[current-code-inspector] parameter is associated with the
-module declaration. When the module is invoked via @scheme[require] or
-@scheme[dynamic-require], a sub-inspector of the module's
+When a @racket[module] declaration is evaluated, the value of the
+@racket[current-code-inspector] parameter is associated with the
+module declaration. When the module is invoked via @racket[require] or
+@racket[dynamic-require], a sub-inspector of the module's
 declaration-time inspector is created, and this sub-inspector is
 associated with the module invocation. Any inspector that controls the
 sub-inspector (i.e., the declaration-time inspector and its superior)
@@ -22,26 +22,26 @@ Control over a module invocation enables
 
 @itemize[
 
- @item{the use of @scheme[module->namespace] on the module;}
+ @item{the use of @racket[module->namespace] on the module;}
 
  @item{access to the module's protected identifiers, i.e. those
- identifiers exported from the module with @scheme[protect]; and}
+ identifiers exported from the module with @racket[protect]; and}
 
  @item{access to the module's protected and unexported variables
- within compiled code from @scheme[read] (see @scheme[current-compile]).}
+ within compiled code from @racket[read] (see @racket[current-compile]).}
 
 ]
 
-If the value of @scheme[current-code-inspector] never changes, then no
+If the value of @racket[current-code-inspector] never changes, then no
 control is lost for any module invocation, since the module's
 invocation is associated with a sub-inspector of
-@scheme[current-code-inspector].
+@racket[current-code-inspector].
 
 The inspector for a module invocation is specific to a particular
 module registry, in case a module is attached to a new registry via
-@scheme[namespace-attach-module]. The invocation inspector in a
+@racket[namespace-attach-module]. The invocation inspector in a
 particular registry can be changed via
-@scheme[namespace-unprotect-module] (but changing the inspector
+@racket[namespace-unprotect-module] (but changing the inspector
 requires control over the old one).
 
 Control over a module declaration (as opposed to a mere invocation)

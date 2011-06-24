@@ -19,7 +19,7 @@
 
 A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
-via @scheme[equal?], @scheme[eqv?], or @scheme[eq?], and keys are
+via @racket[equal?], @racket[eqv?], or @racket[eq?], and keys are
 retained either strongly or weakly (see @secref["weakbox"]). A hash
 table is also either mutable or immutable. Immutable hash tables
 support effectively constant-time access and update, just like mutable
@@ -37,75 +37,75 @@ A hash table can be used as a two-valued @tech{sequence} (see
 elements of the sequence (i.e., each element is a key and its
 associated value). If a mapping is added to or removed from the hash
 table during iteration, then an iteration step may fail with
-@scheme[exn:fail:contract], or the iteration may skip or duplicate
-keys and values.  See also @scheme[in-hash], @scheme[in-hash-keys],
-@scheme[in-hash-values], and @scheme[in-hash-pairs].
+@racket[exn:fail:contract], or the iteration may skip or duplicate
+keys and values.  See also @racket[in-hash], @racket[in-hash-keys],
+@racket[in-hash-values], and @racket[in-hash-pairs].
 
-Two hash tables cannot be @scheme[equal?] unless they use the same
-key-comparison procedure (@scheme[equal?], @scheme[eqv?], or
-@scheme[eq?]), both hold keys strongly or weakly, and have the same
+Two hash tables cannot be @racket[equal?] unless they use the same
+key-comparison procedure (@racket[equal?], @racket[eqv?], or
+@racket[eq?]), both hold keys strongly or weakly, and have the same
 mutability.
 
 @elemtag['(caveat "concurrency")]{@bold{Caveats concerning concurrent
 modification:}} A mutable hash table can be manipulated with
-@scheme[hash-ref], @scheme[hash-set!], and @scheme[hash-remove!]
+@racket[hash-ref], @racket[hash-set!], and @racket[hash-remove!]
 concurrently by multiple threads, and the operations are protected by
 a table-specific semaphore as needed. Three caveats apply, however:
 
  @itemize[
 
-  @item{If a thread is terminated while applying @scheme[hash-ref],
-  @scheme[hash-set!], @scheme[hash-remove!], @scheme[hash-ref!],
-  or @scheme[hash-update!] to a hash table that
-  uses @scheme[equal?] or @scheme[eqv?] key comparisons, all current
+  @item{If a thread is terminated while applying @racket[hash-ref],
+  @racket[hash-set!], @racket[hash-remove!], @racket[hash-ref!],
+  or @racket[hash-update!] to a hash table that
+  uses @racket[equal?] or @racket[eqv?] key comparisons, all current
   and future operations on the hash table may block indefinitely.}
 
-  @item{The @scheme[hash-map] and @scheme[hash-for-each] procedures do
+  @item{The @racket[hash-map] and @racket[hash-for-each] procedures do
   not use the table's semaphore to guard the traversal as a whole.
   Changes by one thread to a hash table can affect the keys and values
   seen by another thread part-way through its traversal of the same
   hash table.}
 
- @item{The @scheme[hash-update!] and @scheme[hash-ref!] functions 
+ @item{The @racket[hash-update!] and @racket[hash-ref!] functions 
  use a table's semaphore
- independently for the @scheme[hash-ref] and @scheme[hash-set!] parts
+ independently for the @racket[hash-ref] and @racket[hash-set!] parts
  of their functionality, which means that the update as a whole is not
  ``atomic.''}
 
  ]
 
 @elemtag['(caveat "mutable-keys")]{@bold{Caveat concerning mutable
-keys:}} If a key in an @scheme[equal?]-based hash table is mutated
-(e.g., a key string is modified with @scheme[string-set!]), then the
+keys:}} If a key in an @racket[equal?]-based hash table is mutated
+(e.g., a key string is modified with @racket[string-set!]), then the
 hash table's behavior for insertion and lookup operations becomes
 unpredictable.
 
 
 @defproc[(hash? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{hash table}, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a @tech{hash table}, @racket[#f]
 otherwise.}
 
 @defproc[(hash-equal? [hash hash?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[equal?],
-@scheme[#f] if it compares with @scheme[eq?] or @scheme[eqv?].}
+Returns @racket[#t] if @racket[hash] compares keys with @racket[equal?],
+@racket[#f] if it compares with @racket[eq?] or @racket[eqv?].}
 
 @defproc[(hash-eqv? [hash hash?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[eqv?],
-@scheme[#f] if it compares with @scheme[equal?] or @scheme[eq?].}
+Returns @racket[#t] if @racket[hash] compares keys with @racket[eqv?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eq?].}
 
 @defproc[(hash-eq? [hash hash?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[eq?],
-@scheme[#f] if it compares with @scheme[equal?] or @scheme[eqv?].}
+Returns @racket[#t] if @racket[hash] compares keys with @racket[eq?],
+@racket[#f] if it compares with @racket[equal?] or @racket[eqv?].}
 
 
 @defproc[(hash-weak? [hash hash?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[hash] retains its keys weakly,
-@scheme[#f] if it retains keys strongly.}
+Returns @racket[#t] if @racket[hash] retains its keys weakly,
+@racket[#f] if it retains keys strongly.}
 
 @deftogether[(
 @defproc[(hash [key any/c] [val any/c] ... ...) (and/c hash? hash-equal? immutable?)]
@@ -113,18 +113,18 @@ Returns @scheme[#t] if @scheme[hash] retains its keys weakly,
 @defproc[(hasheqv [key any/c] [val any/c] ... ...) (and/c hash? hash-eqv? immutable?)]
 )]{
 
-Creates an immutable hash table with each given @scheme[key] mapped to
-the following @scheme[val]; each @scheme[key] must have a @scheme[val],
-so the total number of arguments to @scheme[hash] must be even.
+Creates an immutable hash table with each given @racket[key] mapped to
+the following @racket[val]; each @racket[key] must have a @racket[val],
+so the total number of arguments to @racket[hash] must be even.
 
-The @scheme[hash] procedure creates a table where keys are compared
-with @scheme[equal?], @scheme[hasheq] procedure creates a table where
-keys are compared with @scheme[eq?], and @scheme[hasheqv] procedure
-creates a table where keys are compared with @scheme[eqv?].
+The @racket[hash] procedure creates a table where keys are compared
+with @racket[equal?], @racket[hasheq] procedure creates a table where
+keys are compared with @racket[eq?], and @racket[hasheqv] procedure
+creates a table where keys are compared with @racket[eqv?].
 
-The @scheme[key] to @scheme[val] mappings are added to the table in
+The @racket[key] to @racket[val] mappings are added to the table in
 the order that they appear in the argument list, so later mappings can
-hide earlier mappings if the @scheme[key]s are equal.}
+hide earlier mappings if the @racket[key]s are equal.}
 
 @deftogether[(
 @defproc[(make-hash [assocs (listof pair?) null]) (and/c hash? hash-equal?)]
@@ -134,19 +134,19 @@ hide earlier mappings if the @scheme[key]s are equal.}
 
 Creates a mutable hash table that holds keys strongly. 
 
-The @scheme[make-hash] procedure creates a table where keys are
-compared with @scheme[equal?], @scheme[make-hasheq] procedure creates
-a table where keys are compared with @scheme[eq?], and
-@scheme[make-hasheqv] procedure creates a table where keys are
-compared with @scheme[eqv?].
+The @racket[make-hash] procedure creates a table where keys are
+compared with @racket[equal?], @racket[make-hasheq] procedure creates
+a table where keys are compared with @racket[eq?], and
+@racket[make-hasheqv] procedure creates a table where keys are
+compared with @racket[eqv?].
 
-The table is initialized with the content of @scheme[assocs].  In each
-element of @scheme[assocs], the @scheme[car] is a key, and the
-@scheme[cdr] is the corresponding value. The mappings are added to the
-table in the order that they appear in @scheme[assocs], so later
+The table is initialized with the content of @racket[assocs].  In each
+element of @racket[assocs], the @racket[car] is a key, and the
+@racket[cdr] is the corresponding value. The mappings are added to the
+table in the order that they appear in @racket[assocs], so later
 mappings can hide earlier mappings.
 
-See also @scheme[make-custom-hash].}
+See also @racket[make-custom-hash].}
 
 @deftogether[(
 @defproc[(make-weak-hash [assocs (listof pair?) null]) (and/c hash? hash-equal? hash-weak?)]
@@ -154,8 +154,8 @@ See also @scheme[make-custom-hash].}
 @defproc[(make-weak-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? hash-weak?)]
 )]{
 
-Like @scheme[make-hash], @scheme[make-hasheq], and
-@scheme[make-hasheqv], but creates a mutable hash table that holds
+Like @racket[make-hash], @racket[make-hasheq], and
+@racket[make-hasheqv], but creates a mutable hash table that holds
 keys weakly.}
 
 @deftogether[(
@@ -167,17 +167,17 @@ keys weakly.}
          (and/c hash? hash-eq? immutable?)]
 )]{
 
-Like @scheme[hash], @scheme[hasheq], and @scheme[hasheqv], but accepts
+Like @racket[hash], @racket[hasheq], and @racket[hasheqv], but accepts
 the key--value mapping in association-list form like
-@scheme[make-hash], @scheme[make-hasheq], and @scheme[make-hasheqv].}
+@racket[make-hash], @racket[make-hasheq], and @racket[make-hasheqv].}
 
 
 @defproc[(hash-set! [hash (and/c hash? (not/c immutable?))]
                     [key any/c]
                     [v any/c]) void?]{
 
-Maps @scheme[key] to @scheme[v] in @scheme[hash], overwriting
-any existing mapping for @scheme[key].
+Maps @racket[key] to @racket[v] in @racket[hash], overwriting
+any existing mapping for @racket[key].
 
 @see-also-caveats[]}
                                      
@@ -187,8 +187,8 @@ any existing mapping for @scheme[key].
                      ...
                      ...) void?]{
 
-Maps each @scheme[key] to each @scheme[v] in @scheme[hash], overwriting
-any existing mapping for each @scheme[key]. Mappings are added from the left, so
+Maps each @racket[key] to each @racket[v] in @racket[hash], overwriting
+any existing mapping for each @racket[key]. Mappings are added from the left, so
 later mappings overwrite earlier mappings.
 
 @see-also-caveats[]}
@@ -199,8 +199,8 @@ later mappings overwrite earlier mappings.
                    [v any/c])
           (and/c hash? immutable?)]{
 
-Functionally extends @scheme[hash] by mapping @scheme[key] to
-@scheme[v], overwriting any existing mapping for @scheme[key], and
+Functionally extends @racket[hash] by mapping @racket[key] to
+@racket[v], overwriting any existing mapping for @racket[key], and
 returning the extended hash table.
 
 @see-also-mutable-key-caveat[]}
@@ -212,8 +212,8 @@ returning the extended hash table.
                     ...)
           (and/c hash? immutable?)]{
 
-Functionally extends @scheme[hash] by mapping each @scheme[key] to
-@scheme[v], overwriting any existing mapping for each @scheme[key], and
+Functionally extends @racket[hash] by mapping each @racket[key] to
+@racket[v], overwriting any existing mapping for each @racket[key], and
 returning the extended hash table. Mappings are added from the left, so
 later mappings overwrite earlier mappings.
 
@@ -225,16 +225,16 @@ later mappings overwrite earlier mappings.
                                            (raise (make-exn:fail:contract ....)))])
          any]{
 
-Returns the value for @scheme[key] in @scheme[hash]. If no value
-is found for @scheme[key], then @scheme[failure-result] determines the
+Returns the value for @racket[key] in @racket[hash]. If no value
+is found for @racket[key], then @racket[failure-result] determines the
 result: 
 
 @itemize[
 
- @item{If @scheme[failure-result] is a procedure, it is called
+ @item{If @racket[failure-result] is a procedure, it is called
        (through a tail call) with no arguments to produce the result.}
 
- @item{Otherwise, @scheme[failure-result] is returned as the result.}
+ @item{Otherwise, @racket[failure-result] is returned as the result.}
 
 ]
 
@@ -243,11 +243,11 @@ result:
 @defproc[(hash-ref! [hash hash?] [key any/c] [to-set any/c])
          any]{
 
-Returns the value for @scheme[key] in @scheme[hash].  If no value is
-found for @scheme[key], then @scheme[to-set] determines the result as
-in @scheme[hash-ref] (i.e., it is either a thunk that computes a value
-or a plain value), and this result is stored in @scheme[hash] for the
-@scheme[key].  (Note that if @scheme[to-set] is a thunk, it is not
+Returns the value for @racket[key] in @racket[hash].  If no value is
+found for @racket[key], then @racket[to-set] determines the result as
+in @racket[hash-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @racket[hash] for the
+@racket[key].  (Note that if @racket[to-set] is a thunk, it is not
 invoked in tail position.)
 
 @see-also-caveats[]}
@@ -256,8 +256,8 @@ invoked in tail position.)
 @defproc[(hash-has-key? [hash hash?] [key any/c])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[hash] contains a value for the given
-@scheme[key], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[hash] contains a value for the given
+@racket[key], @racket[#f] otherwise.}
 
 
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
@@ -267,10 +267,10 @@ Returns @scheme[#t] if @scheme[hash] contains a value for the given
                                                (raise (make-exn:fail:contract ....)))])
          void?]{
 
-Composes @scheme[hash-ref] and @scheme[hash-set!] to update an
-existing mapping in @scheme[hash], where the optional
-@scheme[failure-result] argument is used as in @scheme[hash-ref] when
-no mapping exists for @scheme[key] already. See the caveat above about
+Composes @racket[hash-ref] and @racket[hash-set!] to update an
+existing mapping in @racket[hash], where the optional
+@racket[failure-result] argument is used as in @racket[hash-ref] when
+no mapping exists for @racket[key] already. See the caveat above about
 concurrent updates.
 
 @see-also-caveats[]}
@@ -283,10 +283,10 @@ concurrent updates.
                                               (raise (make-exn:fail:contract ....)))])
           (and/c hash? immutable?)]{
 
-Composes @scheme[hash-ref] and @scheme[hash-set] to functionally
-update an existing mapping in @scheme[hash], where the optional
-@scheme[failure-result] argument is used as in @scheme[hash-ref] when
-no mapping exists for @scheme[key] already.
+Composes @racket[hash-ref] and @racket[hash-set] to functionally
+update an existing mapping in @racket[hash], where the optional
+@racket[failure-result] argument is used as in @racket[hash-ref] when
+no mapping exists for @racket[key] already.
 
 @see-also-mutable-key-caveat[]}
 
@@ -295,7 +295,7 @@ no mapping exists for @scheme[key] already.
                        [key any/c])
          void?]{
 
-Removes any existing mapping for @scheme[key] in @scheme[hash].
+Removes any existing mapping for @racket[key] in @racket[hash].
 
 @see-also-caveats[]}
 
@@ -304,8 +304,8 @@ Removes any existing mapping for @scheme[key] in @scheme[hash].
                       [key any/c])
          (and/c hash? immutable?)]{
 
-Functionally removes any existing mapping for @scheme[key] in
-@scheme[hash], returning the fresh hash table.
+Functionally removes any existing mapping for @racket[key] in
+@racket[hash], returning the fresh hash table.
 
 @see-also-mutable-key-caveat[]}
 
@@ -314,14 +314,14 @@ Functionally removes any existing mapping for @scheme[key] in
                    [proc (any/c any/c . -> . any/c)])
          (listof any/c)]{
 
-Applies the procedure @scheme[proc] to each element in
-@scheme[hash] in an unspecified order, accumulating the results
-into a list. The procedure @scheme[proc] is called each time with a
+Applies the procedure @racket[proc] to each element in
+@racket[hash] in an unspecified order, accumulating the results
+into a list. The procedure @racket[proc] is called each time with a
 key and its value.
 
 If a hash table is extended with new keys (either through
-@scheme[proc] or by another thread) while a @scheme[hash-map] or
-@scheme[hash-for-each] traversal is in process, arbitrary key--value
+@racket[proc] or by another thread) while a @racket[hash-map] or
+@racket[hash-for-each] traversal is in process, arbitrary key--value
 pairs can be dropped or duplicated in the traversal. Key mappings can
 be deleted or remapped (by any thread) with no adverse affects; the
 change does not affect a traversal if the key has been seen already,
@@ -332,98 +332,98 @@ new value.
                         
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
-Returns a list of the keys of @scheme[hash] in an unspecified order.
+Returns a list of the keys of @racket[hash] in an unspecified order.
                               
-See @scheme[hash-map] for information about modifying @scheme[hash]
-during @scheme[hash-keys]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about modifying @racket[hash]
+during @racket[hash-keys]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-values [hash hash?])
          (listof any/c)]{
-Returns a list of the values of @scheme[hash] in an unspecified order.
+Returns a list of the values of @racket[hash] in an unspecified order.
                               
-See @scheme[hash-map] for information about modifying @scheme[hash]
-during @scheme[hash-values]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about modifying @racket[hash]
+during @racket[hash-values]. @see-also-concurrency-caveat[]}
                         
 @defproc[(hash->list [hash hash?])
          (listof (cons/c any/c any/c))]{
-Returns a list of the key--value pairs of @scheme[hash] in an unspecified order.
+Returns a list of the key--value pairs of @racket[hash] in an unspecified order.
                               
-See @scheme[hash-map] for information about modifying @scheme[hash]
-during @scheme[hash->list]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about modifying @racket[hash]
+during @racket[hash->list]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
                         [proc (any/c any/c . -> . any)])
          void?]{
 
-Applies @scheme[proc] to each element in @scheme[hash] (for the
-side-effects of @scheme[proc]) in an unspecified order. The procedure
-@scheme[proc] is called each time with a key and its value.
+Applies @racket[proc] to each element in @racket[hash] (for the
+side-effects of @racket[proc]) in an unspecified order. The procedure
+@racket[proc] is called each time with a key and its value.
 
-See @scheme[hash-map] for information about modifying @scheme[hash]
-within @scheme[proc]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about modifying @racket[hash]
+within @racket[proc]. @see-also-concurrency-caveat[]}
 
 
 @defproc[(hash-count [hash hash?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @scheme[hash]. Unless @scheme[hash]
+Returns the number of keys mapped by @racket[hash]. Unless @racket[hash]
 retains keys weakly, the result is computed in
-constant time and atomically. If @scheme[hash] retains it keys weakly, a
+constant time and atomically. If @racket[hash] retains it keys weakly, a
 traversal is required to count the keys.}
 
 
 @defproc[(hash-iterate-first [hash hash?])
          (or/c #f exact-nonnegative-integer?)]{
 
-Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
+Returns @racket[#f] if @racket[hash] contains no elements, otherwise
 it returns an integer that is an index to the first element in the hash
 table; ``first'' refers to an unspecified ordering of the table
 elements, and the index values are not necessarily consecutive
-integers. For a mutable @scheme[hash], this index is guaranteed to
+integers. For a mutable @racket[hash], this index is guaranteed to
 refer to the first item only as long as no items are added to or
-removed from @scheme[hash].}
+removed from @racket[hash].}
 
 @defproc[(hash-iterate-next [hash hash?]
                             [pos exact-nonnegative-integer?])
          (or/c #f exact-nonnegative-integer?)]{
 
 Returns either an integer that is an index to the element in
-@scheme[hash] after the element indexed by @scheme[pos] (which is not
-necessarily one more than @scheme[pos]) or @scheme[#f] if @scheme[pos]
-refers to the last element in @scheme[hash]. If @scheme[pos] is not a
+@racket[hash] after the element indexed by @racket[pos] (which is not
+necessarily one more than @racket[pos]) or @racket[#f] if @racket[pos]
+refers to the last element in @racket[hash]. If @racket[pos] is not a
 valid index, then the @exnraise[exn:fail:contract]. For a mutable
-@scheme[hash], the result index is guaranteed to refer to its item
-only as long as no items are added to or removed from @scheme[hash].}
+@racket[hash], the result index is guaranteed to refer to its item
+only as long as no items are added to or removed from @racket[hash].}
 
 
 @defproc[(hash-iterate-key [hash hash?]
                            [pos exact-nonnegative-integer?])
          any]{
 
-Returns the key for the element in @scheme[hash] at index
-@scheme[pos]. If @scheme[pos] is not a valid index for
-@scheme[hash], the @exnraise[exn:fail:contract].}
+Returns the key for the element in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
 
 
 @defproc[(hash-iterate-value [hash hash?]
                              [pos exact-nonnegative-integer?])
          any]{
 
-Returns the value for the element in @scheme[hash] at index
-@scheme[pos]. If @scheme[pos] is not a valid index for
-@scheme[hash], the @exnraise[exn:fail:contract].}
+Returns the value for the element in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
 
 
 @defproc[(hash-copy [hash hash?]) 
          (and/c hash? (not/c immutable?))]{
 
 Returns a mutable hash table with the same mappings, same
-key-comparison mode, and same key-holding strength as @scheme[hash].}
+key-comparison mode, and same key-holding strength as @racket[hash].}
 
 
 @defproc[(eq-hash-code [v any/c]) fixnum?]{
 
-Returns a @tech{fixnum}; for any two calls with @scheme[eq?] values,
+Returns a @tech{fixnum}; for any two calls with @racket[eq?] values,
 the returned number is the same.
 
 @margin-note{Equal @tech{fixnums} are always @racket[eq?].}}
@@ -431,19 +431,19 @@ the returned number is the same.
 
 @defproc[(eqv-hash-code [v any/c]) fixnum?]{
 
-Returns a @tech{fixnum}; for any two calls with @scheme[eqv?] values,
+Returns a @tech{fixnum}; for any two calls with @racket[eqv?] values,
 the returned number is the same.}
 
 
 @defproc[(equal-hash-code [v any/c]) fixnum?]{
 
-Returns a @tech{fixnum}; for any two calls with @scheme[equal?] values,
+Returns a @tech{fixnum}; for any two calls with @racket[equal?] values,
 the returned number is the same. A hash code is computed even when
-@scheme[v] contains a cycle through pairs, vectors, boxes, and/or
-inspectable structure fields. See also @scheme[prop:equal+hash].}
+@racket[v] contains a cycle through pairs, vectors, boxes, and/or
+inspectable structure fields. See also @racket[prop:equal+hash].}
 
 
 @defproc[(equal-secondary-hash-code [v any/c]) fixnum?]{
 
-Like @scheme[equal-hash-code], but computes a secondary value suitable
+Like @racket[equal-hash-code], but computes a secondary value suitable
 for use in double hashing.}

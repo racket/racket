@@ -3,14 +3,14 @@
 
 @definterface/title[color-database<%> ()]{
 
-The global @indexed-scheme[the-color-database] object is an instance of
- @scheme[color-database<%>]. It maintains a database of standard RGB
+The global @indexed-racket[the-color-database] object is an instance of
+ @racket[color-database<%>]. It maintains a database of standard RGB
  colors for a predefined set of named colors (such as ``black'' and
  ``light grey'').
 
 The following colors are in the database:
 
-@schemeblock[
+@racketblock[
 @#,colorName[#"Orange Red" #"OrangeRed" 255 69 0]
 @#,colorName[#"OrangeRed" #"OrangeRed" 255 69 0]
 @#,colorName[#"Tomato" #"Tomato" 255 99 71]
@@ -196,7 +196,7 @@ The following colors are in the database:
 
 The names are not case-sensitive.
 
-See also @scheme[color%].
+See also @racket[color%].
 
 
 
@@ -205,7 +205,7 @@ See also @scheme[color%].
            (or/c (is-a?/c color%) false/c)]{
 
 Finds a color by name (character case is ignored). If no color is
- found for the name, @scheme[#f] is returned.
+ found for the name, @racket[#f] is returned.
 
 }}
 

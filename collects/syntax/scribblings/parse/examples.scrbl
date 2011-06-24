@@ -9,7 +9,7 @@
 @title[#:tag "stxparse-examples" #:style '(toc)]{Examples}
 
 This section provides an extended introduction to
-@schememodname[syntax/parse] as a series of worked examples.
+@racketmodname[syntax/parse] as a series of worked examples.
 
 @local-table-of-contents[]
 

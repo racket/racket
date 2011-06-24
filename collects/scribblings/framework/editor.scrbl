@@ -6,10 +6,10 @@
 
 @definterface[editor:basic<%> (editor<%>)]{
   Classes matching this interface support the basic 
-  @scheme[editor<%>]
+  @racket[editor<%>]
   functionality required by the framework.
   @defmethod*[(((has-focus?) boolean?))]{
-    This function returns @scheme[#t] when the editor has the keyboard
+    This function returns @racket[#t] when the editor has the keyboard
     focus. It is implemented using:
     @method[editor<%> on-focus]
 
@@ -30,11 +30,11 @@
     edit-sequence completes.
 
 
-    The procedure @scheme[thunk] will be called immediately if the edit is
+    The procedure @racket[thunk] will be called immediately if the edit is
     not in an edit-sequence. If the edit is in an edit-sequence, it will
     be called when the edit-sequence completes.
 
-    If @scheme[tag] is a symbol, the @scheme[thunk] is keyed on that symbol, and
+    If @racket[tag] is a symbol, the @racket[thunk] is keyed on that symbol, and
     only one thunk per symbol will be called after the
     edit-sequence. Specifically, the last call to 
     @method[editor:basic<%> run-after-edit-sequence]'s argument will be called.
@@ -42,7 +42,7 @@
   }
   @defmethod*[(((get-top-level-window) (or/c #f (is-a?/c top-level-window<%>))))]{
     Returns the 
-    @scheme[top-level-window<%>]
+    @racket[top-level-window<%>]
     currently associated with this buffer.
 
     This does not work for embedded editors.
@@ -50,7 +50,7 @@
 
   }
   @defmethod*[(((save-file-out-of-date?) boolean?))]{
-    Returns @scheme[#t] if the file on disk has been modified, by some other program.
+    Returns @racket[#t] if the file on disk has been modified, by some other program.
 
   }
   @defmethod*[(((save-file/gui-error (filename (or/c path? #f) #f) (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same)) (show-errors? boolean? #t)) boolean?))]{
@@ -59,8 +59,8 @@
     opens a dialog with an error message showing the error.
 
     The result indicates if an error happened (the error has
-    already been shown to the user). It returns @scheme[#t] if
-    no error occurred and @scheme[#f] if an error occurred.
+    already been shown to the user). It returns @racket[#t] if
+    no error occurred and @racket[#f] if an error occurred.
 
   }
   @defmethod*[(((load-file/gui-error (filename (or/c string? #f) #f) (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean? #t)) boolean?))]{
@@ -69,8 +69,8 @@
     opens a dialog with an error message showing the error.
 
     The result indicates if an error happened (the error has
-    already been shown to the user). It returns @scheme[#t] if
-    no error occurred and @scheme[#f] if an error occurred.
+    already been shown to the user). It returns @racket[#t] if
+    no error occurred and @racket[#f] if an error occurred.
 
   }
   @defmethod*[(((on-close) void?))]{
@@ -81,13 +81,9 @@
     editor is considered ``closed'' before the frame it is
     in is closed (e.g., when a tab in DrRacket is closed), and
     thus @method[editor:basic<%> on-close] will be called at that point.
-    
 
-    See also
-    @method[editor:basic<%> can-close?]
-    and
-    @method[editor:basic<%> close].
-
+    See also @method[editor:basic<%> can-close?] and @method[editor:basic<%>
+    close].
 
     Does nothing.
   }
@@ -103,11 +99,11 @@
     @method[editor:basic<%> close].
 
 
-    Returns @scheme[#t].
+    Returns @racket[#t].
   }
   @defmethod*[(((close) boolean?))]{
     This method is merely
-    @schemeblock[
+    @racketblock[
     (if (can-close?)
         (begin (on-close) #t)
         #f)]
@@ -117,27 +113,25 @@
     @method[editor:basic<%> can-close?]
     and 
     @method[editor:basic<%> on-close].
-
   }
   @defmethod*[(((get-filename/untitled-name) string?))]{
     Returns the printed version of the filename for this
     editor. If the editor doesn't yet have a filename, it
     returns a symbolic name (something like "Untitled").
-
   }
 
   @defmethod[(get-pos/text [event (is-a?/c mouse-event%)])
              (values (or/c false/c number?)
                      (or/c false/c (is-a?/c editor<%>)))]{
 
-   This method's first result is @scheme[#f] when the mouse
+   This method's first result is @racket[#f] when the mouse
    event does not correspond to a location in the editor. 
-   
-   If the second result is a @scheme[text%] object, then the
-   first result will be a position in the editor and
-   otherwise the first result will be @scheme[#f]. 
 
-   The @scheme[editor<%>] object will always be the nearest
+   If the second result is a @racket[text%] object, then the
+   first result will be a position in the editor and
+   otherwise the first result will be @racket[#f]. 
+
+   The @racket[editor<%>] object will always be the nearest
    enclosing editor containing the mouse click.
   }
 }
@@ -149,11 +143,11 @@
   mixin's argument.
 
   Each instance of a class created with this mixin contains a private
-  @scheme[keymap%] that is chained to the global keymap via:
-  @scheme[(send keymap chain-to-keymap (keymap:get-global) #f)].
+  @racket[keymap%] that is chained to the global keymap via:
+  @racket[(send keymap chain-to-keymap (keymap:get-global) #f)].
 
-  This installs the global keymap @scheme[keymap:get-global] to
-  handle keyboard and mouse mappings not handled by @scheme[keymap]. The
+  This installs the global keymap @racket[keymap:get-global] to
+  handle keyboard and mouse mappings not handled by @racket[keymap]. The
   global keymap is created when the framework is invoked.
   @defmethod*[#:mode augment (((can-save-file? (filename string?) (format symbol?)) boolean?))]{
 
@@ -166,7 +160,7 @@
   @defmethod*[#:mode augment (((after-save-file (success? boolean?)) void?))]{
 
     If the current filename is not a temporary filename, this method calls
-    @scheme[handler:add-to-recent]with the current filename.
+    @racket[handler:add-to-recent]with the current filename.
 
     to add the new filename to the list of recently opened files.
 
@@ -189,7 +183,7 @@
   }
   @defmethod*[#:mode augment (((on-edit-sequence) boolean?))]{
 
-    Always returns @scheme[#t]. Updates a flag for
+    Always returns @racket[#t]. Updates a flag for
     @method[editor:basic<%> local-edit-sequence?]
   }
   @defmethod*[#:mode augment (((after-edit-sequence) void?))]{
@@ -200,21 +194,21 @@
   @defmethod*[#:mode override (((on-new-box (type (or/c (quote pasteboard) (quote text)))) (is-a?/c editor-snip%)))]{
 
     Creates instances of 
-    @scheme[pasteboard:basic%]
+    @racket[pasteboard:basic%]
     or
-    @scheme[text:basic%]
+    @racket[text:basic%]
     instead of the built in
-    @scheme[pasteboard%]
+    @racket[pasteboard%]
     and
-    @scheme[text%]
-    classes. 
+    @racket[text%]
+    classes.
   }
   @defmethod[#:mode override (on-new-image-snip [filename (or/c path? false/c)]
-  		    	                         [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
+                                                [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
                                                  [relative-path? any/c]
                                                  [inline? any/c])
                              (is-a?/c image-snip%)]{
-    @schemeblock[
+    @racketblock[
         (super on-new-image-snip 
                (if (eq? kind 'unknown) 'unknown/mask kind) 
                relative-path? 
@@ -224,25 +218,25 @@
   @defmethod*[#:mode override (((get-file (directory (or/c path-string? false/c))) string))]{
 
     Uses
-    @scheme[finder:get-file]
+    @racket[finder:get-file]
     to find a filename. Also, sets the parameter
-    @scheme[finder:dialog-parent-parameter]
+    @racket[finder:dialog-parent-parameter]
     to the result of
     @method[editor:basic<%> get-top-level-window].
   }
   @defmethod*[#:mode override (((put-file (directory (or/c path? false/c)) (default-name (or/c path? false/c))) string))]{
 
     Uses
-    @scheme[finder:put-file]
+    @racket[finder:put-file]
     to find a filename. Also, sets the parameter
-    @scheme[finder:dialog-parent-parameter]
+    @racket[finder:dialog-parent-parameter]
     to the result of
     @method[editor:basic<%> get-top-level-window].
   }
 }
 @definterface[editor:standard-style-list<%> (editor<%>)]{
   This interface is implemented by the results of
-  @scheme[editor:standard-style-list-mixin].
+  @racket[editor:standard-style-list-mixin].
 }
 @defmixin[editor:standard-style-list-mixin (editor<%>) (editor:standard-style-list<%>)]{
   The mixin adds code to the initialization
@@ -250,11 +244,11 @@
   list (via
   @method[editor<%> set-style-list])
   to the result of
-  @scheme[editor:get-standard-style-list].
+  @racket[editor:get-standard-style-list].
 
   In addition, it calls
   @method[editor<%> set-load-overwrites-styles]
-  with @scheme[#f].
+  with @racket[#f].
   This ensures that saved files with different
   settings for the style list do not clobber
   the shared style list.
@@ -267,46 +261,46 @@
   method.
 
   This editor is initialized by calling
-  @scheme[add-editor-keymap-functions],
-  @scheme[add-text-keymap-functions], and
-  @scheme[add-pasteboard-keymap-functions].
+  @racket[add-editor-keymap-functions],
+  @racket[add-text-keymap-functions], and
+  @racket[add-pasteboard-keymap-functions].
   @defmethod*[(((get-keymaps) (list-of (is-a?/c keymap%))))]{
     The keymaps returned from this method are chained to this
-    @scheme[editor<%>]'s keymap.
+    @racket[editor<%>]'s keymap.
 
     The result of this method should not change -- that is, it
     should return the same list of keymaps each time it is
     called.
 
-    See also @scheme[editor:add-after-user-keymap].
+    See also @racket[editor:add-after-user-keymap].
 
-    Defaultly returns @scheme[(list (keymap:get-user) (keymap:get-global))]
+    Defaultly returns @racket[(list (keymap:get-user) (keymap:get-global))]
   }
 }
 @defmixin[editor:keymap-mixin (editor:basic<%>) (editor:keymap<%>)]{
   This provides a mixin that implements the
-  @scheme[editor:keymap<%>]
+  @racket[editor:keymap<%>]
   interface.
 }
 @definterface[editor:autowrap<%> (editor:basic<%>)]{
   Classes implementing this interface keep the
   @method[editor<%> auto-wrap]
   state set based on the
-  @scheme['framework:auto-set-wrap?] preference
-  (see @scheme[preferences:get] for more information about preferences).
+  @racket['framework:auto-set-wrap?] preference
+  (see @racket[preferences:get] for more information about preferences).
 
   They install a preferences callback with
-  @scheme[preferences:add-callback]
+  @racket[preferences:add-callback]
   that sets the state when the preference changes and 
   initialize the value of
   @method[editor<%> auto-wrap]
-  to the current value of @scheme['framework:auto-set-wrap?]
+  to the current value of @racket['framework:auto-set-wrap?]
   via
-  @scheme[preferences:get].
+  @racket[preferences:get].
 }
 @defmixin[editor:autowrap-mixin (editor:basic<%>) (editor:autowrap<%>)]{
   See
-  @scheme[editor:autowrap<%>]
+  @racket[editor:autowrap<%>]
 }
 @definterface[editor:file<%> (editor:keymap<%>)]{
   Objects supporting this interface are expected to support files.
@@ -314,8 +308,7 @@
     The result of this method is used as the parent for the
     dialog that asks about closing.
 
-
-    Defaultly returns @scheme[#f].
+    Defaultly returns @racket[#f].
   }
   @defmethod*[(((update-frame-filename) void?))]{
     Attempts to find a frame that displays this editor. If it
@@ -328,15 +321,14 @@
     been saved is a reason to alert the user. See also
     @method[editor:file-mixin can-close?].
 
-
-    Defaultly returns @scheme[#f].
+    Defaultly returns @racket[#f].
   }
   
   @defmethod[(user-saves-or-not-modified? [allow-cancel? #t]) boolean?]{
     If the file has not been saved, this prompts the user about saving and,
     if the user says to save, then it saves the file.
-    
-    The result is @scheme[#t] if the save file is up to date, or if
+
+    The result is @racket[#t] if the save file is up to date, or if
     the user says it is okay to continue without saving. Generally used
     when closing the file or quiting the app.
   }
@@ -351,19 +343,19 @@
 
     Updates the filename on each frame displaying this editor, for each
     frame that matches
-    @scheme[frame:editor<%>].
+    @racket[frame:editor<%>].
   }
   @defmethod*[#:mode augment (((can-close?) boolean?))]{
 
     If the 
     @method[editor:file<%> allow-close-with-no-filename?]
-    method returns @scheme[#f], this method checks to see if the file
+    method returns @racket[#f], this method checks to see if the file
     has been saved at all yet. If not, it asks the user
     about saving (and saves if they ask).
 
     If the 
     @method[editor:file<%> allow-close-with-no-filename?]
-    method returns @scheme[#t], this method does as before,
+    method returns @racket[#t], this method does as before,
     except only asks if the editor's 
     @method[editor<%> get-filename]method returns a path.
 
@@ -373,60 +365,47 @@
 
     This returns a list containing the super-class's keymaps, plus the
     result of
-    @scheme[keymap:get-file]
+    @racket[keymap:get-file]
   }
 }
 @definterface[editor:backup-autosave<%> (editor:basic<%>)]{
   Classes matching this interface support backup files and autosaving.
   @defmethod*[(((backup?) boolean?))]{
     Indicates whether this 
-    @scheme[editor<%>]
+    @racket[editor<%>]
     should be backed up.
 
-
-    Returns the value of the 
-    @scheme[preferences:get]
-    applied to
-    @scheme['framework:backup-files?].
-    @index{'framework:backup-files?}
-
+    Returns the value of the @racket[preferences:get] applied to
+    @racket['framework:backup-files?].  @index{'framework:backup-files?}
   }
   @defmethod*[(((autosave?) boolean?))]{
     Indicates whether this 
-    @scheme[editor<%>]
+    @racket[editor<%>]
     should be autosaved.
 
-
-    Returns @scheme[#t].
+    Returns @racket[#t].
   }
   @defmethod*[(((do-autosave) (or/c #f path?)))]{
-    This method is called to perform the autosaving.
-    See also
-    @scheme[autosave:register]
+    This method is called to perform the autosaving.  See also
+    @racket[autosave:register]
 
+    When the file has been modified since it was last saved and autosaving it
+    turned on (via the @method[editor:backup-autosave<%> autosave?]  method) an
+    autosave file is created for this @racket[editor<%>].
 
-    When the file has been modified since it was last saved and autosaving
-    it turned on (via the
-    @method[editor:backup-autosave<%> autosave?]
-    method) an autosave file is created for this 
-    @scheme[editor<%>].
-
-    Returns the filename where the autosave took place, or
-    @scheme[#f] if none did.
+    Returns the filename where the autosave took place, or @racket[#f] if none
+    did.
   }
   @defmethod*[(((remove-autosave) void?))]{
     This method removes the autosave file associated with this
-    @scheme[editor<%>].
-
-
+    @racket[editor<%>].
   }
 }
 @defmixin[editor:backup-autosave-mixin (editor:basic<%>) (editor:backup-autosave<%> autosave:autosavable<%>)]{
   This mixin adds backup and autosave functionality to an editor.
 
-  During initialization, this object is registered
-  with 
-  @scheme[autosave:register].
+  During initialization, this object is registered with
+  @racket[autosave:register].
 
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
@@ -436,7 +415,7 @@
     If a backup file has not been created this session for this file,
     deletes any existing backup file and copies the old save file into the
     backup file. For the backup file's name, see
-    @scheme[path-utils:generate-backup-name]
+    @racket[path-utils:generate-backup-name]
   }
   @defmethod*[#:mode augment (((on-close) void?))]{
 
@@ -444,7 +423,7 @@
   }
   @defmethod*[#:mode augment (((on-change) void?))]{
 
-    Sets a flag indicating that this @scheme[editor<%>] needs to be autosaved.
+    Sets a flag indicating that this @racket[editor<%>] needs to be autosaved.
   }
   @defmethod*[#:mode override (((set-modified (modified? any/c)) void?))]{
 
@@ -454,13 +433,12 @@
   }
 }
 @definterface[editor:info<%> (editor:basic<%>)]{
-  An @scheme[editor<%>]
-  matching this interface provides information about its lock state to its
-  @scheme[top-level-window<%>].
+  An @racket[editor<%>] matching this interface provides information about its
+  lock state to its @racket[top-level-window<%>].
 }
 @defmixin[editor:info-mixin (editor:basic<%>) (editor:info<%>)]{
   This editor tells the frame when it is locked and unlocked.
-  See also @scheme[frame:text-info<%>].
+  See also @racket[frame:text-info<%>].
 
   @defmethod*[#:mode override (((lock (lock? boolean?)) void?))]{
 

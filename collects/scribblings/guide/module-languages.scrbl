@@ -4,11 +4,11 @@
 
 @title[#:tag "module-languages"]{Module Languages}
 
-When using the longhand @scheme[module] form for writing modules, the
+When using the longhand @racket[module] form for writing modules, the
 module path that is specified after the new module's name provides the
 initial imports for the module. Since the initial-import module
 determines even the most basic bindings that are available in a
-module's body, such as @scheme[require], the initial import can be
+module's body, such as @racket[require], the initial import can be
 called a @deftech{module language}.
 
 The most common @tech{module languages} are @racketmodname[racket] or
@@ -67,7 +67,7 @@ The other implicit forms provided by @racket[racket/base] are
 @interaction[
 (module just-lambda racket
   (provide lambda #%module-begin
-           (code:comment @#,t{@schemeidfont{ten} needs these, too:})
+           (code:comment @#,t{@racketidfont{ten} needs these, too:})
            #%app #%datum))
 (module ten 'just-lambda
   ((lambda (x) x) 10))

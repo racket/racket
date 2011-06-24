@@ -269,7 +269,7 @@ size and shape.  For example,
 ; lose-red : num(x) num(y) color -> color
 (define (lose-red x y old-color)
    (make-color 0 (color-green old-color) (color-blue old-color)))
-             
+
 (map-image lose-red my-picture)}|
 produces a copy of @racket[my-picture] with all the red leached out,
 leaving only the blue and green components.
@@ -289,7 +289,7 @@ Another example:
    (make-color (min (* 3 x) 255)
                0 
                (min (* 3 y) 255)))
-             
+
 (map-image apply-gradient my-picture)}|
 produces a picture the size of @racket[my-picture]'s bounding rectangle,
 with a smooth color gradient with red increasing from left to
@@ -463,7 +463,7 @@ its output into a string, which is returned.  Especially useful for testing:
 ; ask : string -> prints output, waits for text input, returns it
 (define (ask question)
    (begin (display question)
-          (read)))                  
+          (read)))
 ; greet : nothing -> prints output, waits for text input, prints output
 (define (greet)
    (local [(define name (ask "What is your name?"))]

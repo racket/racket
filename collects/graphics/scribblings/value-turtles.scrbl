@@ -26,9 +26,9 @@ initial turtle and the direction in radians (where @racket[0] is to
 the right).}
 
 @defproc[(turtles? [v any/c]) boolean?]{
-  Determines if @racket[v] is a turtles drawing.                                        
+  Determines if @racket[v] is a turtles drawing.
 }
-                          
+
 @defproc[(move [n real?] [turtles turtles?]) turtles?]{
 
 Moves the turtle @racket[n] pixels, returning a new turtles window.}
@@ -108,7 +108,7 @@ same direction as the original turtle.}
                        [radius real?]
                        [turtles turtles?])
          turtles?]{
-                         
+
 Draws a regular poly centered at the turtle with @racket[sides] sides
 and with radius @racket[radius].}
 

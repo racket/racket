@@ -161,27 +161,27 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 
 @defform[(interface (super-interface-expr ...) id ...)]{
 
-Produces an interface. The @scheme[id]s must be mutually distinct.
+Produces an interface. The @racket[id]s must be mutually distinct.
 
-Each @scheme[super-interface-expr] is evaluated (in order) when the
-@scheme[interface] expression is evaluated. The result of each
-@scheme[super-interface-expr] must be an interface value, otherwise
+Each @racket[super-interface-expr] is evaluated (in order) when the
+@racket[interface] expression is evaluated. The result of each
+@racket[super-interface-expr] must be an interface value, otherwise
 the @exnraise[exn:fail:object].  The interfaces returned by the
-@scheme[super-interface-expr]s are the new interface's
+@racket[super-interface-expr]s are the new interface's
 superinterfaces, which are all extended by the new interface. Any
 class that implements the new interface also implements all of the
 superinterfaces.
 
-The result of an @scheme[interface] expression is an interface that
-includes all of the specified @scheme[id]s, plus all identifiers from
+The result of an @racket[interface] expression is an interface that
+includes all of the specified @racket[id]s, plus all identifiers from
 the superinterfaces. Duplicate identifier names among the
 superinterfaces are ignored, but if a superinterface contains one of
-the @scheme[id]s in the @scheme[interface] expression, the
+the @racket[id]s in the @racket[interface] expression, the
 @exnraise[exn:fail:object].
 
-If no @scheme[super-interface-expr]s are provided, then the derivation
+If no @racket[super-interface-expr]s are provided, then the derivation
 requirement of the resulting interface is trivial: any class that
-implements the interface must be derived from @scheme[object%].
+implements the interface must be derived from @racket[object%].
 Otherwise, the implementation requirement of the resulting interface
 is the most specific requirement from its superinterfaces. If the
 superinterfaces specify inconsistent derivation requirements, the
@@ -199,12 +199,12 @@ superinterfaces specify inconsistent derivation requirements, the
                      ([property-expr val-expr] ...)
            id ...)]{
 
-Like @scheme[interface], but also associates to the interface the
-structure-type properties produced by the @scheme[property-expr]s with
-the corresponding @scheme[val-expr]s.
+Like @racket[interface], but also associates to the interface the
+structure-type properties produced by the @racket[property-expr]s with
+the corresponding @racket[val-expr]s.
 
 Whenever the resulting interface (or a sub-interface derived from it)
-is explicitly implemented by a class through the @scheme[class*] form,
+is explicitly implemented by a class through the @racket[class*] form,
 each property is attached with its value to a structure type that
 instantiated by instances of the class. Specifically, the property is
 attached to a structure type with zero immediate fields, which is
@@ -228,9 +228,9 @@ structure type property's guard, if any).
 @defthing[object% class?]{
 
 A built-in class that has no methods fields, implements only its own
-interface @scheme[(class->interface object%)], and is transparent
-(i.e,. its inspector is @scheme[#f], so all immediate instances are
-@scheme[equal?]). All other classes are derived from @scheme[object%].}
+interface @racket[(class->interface object%)], and is transparent
+(i.e,. its inspector is @racket[#f], so all immediate instances are
+@racket[equal?]). All other classes are derived from @racket[object%].}
 
 
 @defform/subs[
@@ -303,72 +303,72 @@ interface @scheme[(class->interface object%)], and is transparent
 
 Produces a class value.
 
-The @scheme[superclass-expr] expression is evaluated when the
-@scheme[class*] expression is evaluated. The result must be a class
-value (possibly @scheme[object%]), otherwise the
+The @racket[superclass-expr] expression is evaluated when the
+@racket[class*] expression is evaluated. The result must be a class
+value (possibly @racket[object%]), otherwise the
 @exnraise[exn:fail:object].  The result of the
-@scheme[superclass-expr] expression is the new class's superclass.
+@racket[superclass-expr] expression is the new class's superclass.
 
-The @scheme[interface-expr] expressions are also evaluated when the
-@scheme[class*] expression is evaluated, after
-@scheme[superclass-expr] is evaluated. The result of each
-@scheme[interface-expr] must be an interface value, otherwise the
+The @racket[interface-expr] expressions are also evaluated when the
+@racket[class*] expression is evaluated, after
+@racket[superclass-expr] is evaluated. The result of each
+@racket[interface-expr] must be an interface value, otherwise the
 @exnraise[exn:fail:object].  The interfaces returned by the
-@scheme[interface-expr]s are all implemented by the class. For each
+@racket[interface-expr]s are all implemented by the class. For each
 identifier in each interface, the class (or one of its ancestors) must
 declare a public method with the same name, otherwise the
 @exnraise[exn:fail:object]. The class's superclass must satisfy the
 implementation requirement of each interface, otherwise the
 @exnraise[exn:fail:object].
 
-An @scheme[inspect] @scheme[class-clause] selects an inspector (see
+An @racket[inspect] @racket[class-clause] selects an inspector (see
 @secref["inspectors"]) for the class extension. The
-@scheme[inspector-expr] must evaluate to an inspector or @scheme[#f]
-when the @scheme[class*] form is evaluated. Just as for structure
+@racket[inspector-expr] must evaluate to an inspector or @racket[#f]
+when the @racket[class*] form is evaluated. Just as for structure
 types, an inspector controls access to the class's fields, including
-private fields, and also affects comparisons using @scheme[equal?]. If
-no @scheme[inspect] clause is provided, access to the class is
+private fields, and also affects comparisons using @racket[equal?]. If
+no @racket[inspect] clause is provided, access to the class is
 controlled by the parent of the current inspector (see
 @secref["inspectors"]). A syntax error is reported if more than one
-@scheme[inspect] clause is specified.
+@racket[inspect] clause is specified.
 
-The other @scheme[class-clause]s define initialization arguments,
+The other @racket[class-clause]s define initialization arguments,
 public and private fields, and public and private methods. For each
-@scheme[id] or @scheme[maybe-renamed] in a @scheme[public],
-@scheme[override], @scheme[augment], @scheme[pubment],
-@scheme[overment], @scheme[augride], @scheme[public-final],
-@scheme[override-final], @scheme[augment-final], or @scheme[private]
-clause, there must be one @scheme[method-definition]. All other
-definition @scheme[class-clause]s create private fields. All remaining
-@scheme[expr]s are initialization expressions to be evaluated when the
+@racket[id] or @racket[maybe-renamed] in a @racket[public],
+@racket[override], @racket[augment], @racket[pubment],
+@racket[overment], @racket[augride], @racket[public-final],
+@racket[override-final], @racket[augment-final], or @racket[private]
+clause, there must be one @racket[method-definition]. All other
+definition @racket[class-clause]s create private fields. All remaining
+@racket[expr]s are initialization expressions to be evaluated when the
 class is instantiated (see @secref["objcreation"]).
 
-The result of a @scheme[class*] expression is a new class, derived
+The result of a @racket[class*] expression is a new class, derived
 from the specified superclass and implementing the specified
 interfaces. Instances of the class are created with the
-@scheme[instantiate] form or @scheme[make-object] procedure, as
+@racket[instantiate] form or @racket[make-object] procedure, as
 described in @secref["objcreation"].
 
-Each @scheme[class-clause] is (partially) macro-expanded to reveal its
-shapes. If a @scheme[class-clause] is a @scheme[begin] expression, its
-sub-expressions are lifted out of the @scheme[begin] and treated as
-@scheme[class-clause]s, in the same way that @scheme[begin] is
+Each @racket[class-clause] is (partially) macro-expanded to reveal its
+shapes. If a @racket[class-clause] is a @racket[begin] expression, its
+sub-expressions are lifted out of the @racket[begin] and treated as
+@racket[class-clause]s, in the same way that @racket[begin] is
 flattened for top-level and embedded definitions.
 
-Within a @scheme[class*] form for instances of the new class,
-@scheme[this] is bound to the object itself;
-@scheme[this%] is bound to the class of the object;
-@scheme[super-instantiate], @scheme[super-make-object], and
-@scheme[super-new] are bound to forms to initialize fields in the
-superclass (see @secref["objcreation"]); @scheme[super] is
+Within a @racket[class*] form for instances of the new class,
+@racket[this] is bound to the object itself;
+@racket[this%] is bound to the class of the object;
+@racket[super-instantiate], @racket[super-make-object], and
+@racket[super-new] are bound to forms to initialize fields in the
+superclass (see @secref["objcreation"]); @racket[super] is
 available for calling superclass methods (see
-@secref["clmethoddefs"]); and @scheme[inner] is available for
+@secref["clmethoddefs"]); and @racket[inner] is available for
 calling subclass augmentations of methods (see
 @secref["clmethoddefs"]).}
 
 @defform[(class superclass-expr class-clause ...)]{
 
-Like @scheme[class*], but omits the @scheme[_interface-expr]s, for the case that none are needed.
+Like @racket[class*], but omits the @racket[_interface-expr]s, for the case that none are needed.
 
 @defexamples[
 #:eval class-eval
@@ -382,9 +382,9 @@ Like @scheme[class*], but omits the @scheme[_interface-expr]s, for the case that
 
 @defidform[this]{
 
-@index['("self")]{Within} a @scheme[class*] form, @scheme[this] refers
+@index['("self")]{Within} a @racket[class*] form, @racket[this] refers
 to the current object (i.e., the object being initialized or whose
-method was called). Use outside the body of a @scheme[class*] form is
+method was called). Use outside the body of a @racket[class*] form is
 a syntax error.
 
 @defexamples[
@@ -401,9 +401,9 @@ a syntax error.
 
 @defidform[this%]{
                   
-Within a @scheme[class*] form, @scheme[this%] refers to the class
+Within a @racket[class*] form, @racket[this%] refers to the class
 of the current object (i.e., the object being initialized or whose
-method was called).  Use outside the body of a @scheme[class*] form is
+method was called).  Use outside the body of a @racket[class*] form is
 a syntax error.
 
 @defexamples[
@@ -478,42 +478,42 @@ a syntax error.
   ...)
 ]{
 
-Like @scheme[class*], but includes a sub-expression to be used as the
+Like @racket[class*], but includes a sub-expression to be used as the
 source for all syntax errors within the class definition. For example,
-@scheme[define-serializable-class] expands to @scheme[class/derived]
+@racket[define-serializable-class] expands to @racket[class/derived]
 so that errors in the body of the class are reported in terms of
-@scheme[define-serializable-class] instead of @scheme[class].
+@racket[define-serializable-class] instead of @racket[class].
 
-The @scheme[original-datum] is the original expression to use for
+The @racket[original-datum] is the original expression to use for
 reporting errors.
 
-The @scheme[name-id] is used to name the resulting class; if it
-is @scheme[#f], the class name is inferred.
+The @racket[name-id] is used to name the resulting class; if it
+is @racket[#f], the class name is inferred.
 
-The @scheme[super-expr], @scheme[interface-expr]s, and
-@scheme[class-clause]s are as for @scheme[class*].
+The @racket[super-expr], @racket[interface-expr]s, and
+@racket[class-clause]s are as for @racket[class*].
 
-If the @scheme[deserialize-id-expr] is not literally @scheme[#f], then
+If the @racket[deserialize-id-expr] is not literally @racket[#f], then
 a serializable class is generated, and the result is two values
 instead of one: the class and a deserialize-info structure produced by
-@scheme[make-deserialize-info]. The @scheme[deserialize-id-expr]
+@racket[make-deserialize-info]. The @racket[deserialize-id-expr]
 should produce a value suitable as the second argument to
-@scheme[make-serialize-info], and it should refer to an export whose
+@racket[make-serialize-info], and it should refer to an export whose
 value is the deserialize-info structure.
 
 Future optional forms may be added to the sequence that currently ends
-with @scheme[deserialize-id-expr].}
+with @racket[deserialize-id-expr].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 @subsection[#:tag "clinitvars"]{Initialization Variables}
 
-A class's initialization variables, declared with @scheme[init],
-@scheme[init-field], and @scheme[init-rest], are instantiated
+A class's initialization variables, declared with @racket[init],
+@racket[init-field], and @racket[init-rest], are instantiated
 for each object of a class. Initialization variables can be used in
 the initial value expressions of fields, default value expressions
 for initialization arguments, and in initialization expressions.  Only
-initialization variables declared with @scheme[init-field] can be
+initialization variables declared with @racket[init-field] can be
 accessed from methods; accessing any other initialization variable
 from a method is a syntax error.
 
@@ -521,8 +521,8 @@ The values bound to initialization variables are
 
 @itemize[
 
- @item{the arguments provided with @scheme[instantiate] or passed to
- @scheme[make-object], if the object is created as a direct instance
+ @item{the arguments provided with @racket[instantiate] or passed to
+ @racket[make-object], if the object is created as a direct instance
  of the class; or,}
 
  @item{the arguments passed to the superclass initialization form or
@@ -532,44 +532,44 @@ The values bound to initialization variables are
 ]
 
 If an initialization argument is not provided for an initialization
-variable that has an associated @scheme[_default-value-expr], then the
-@scheme[_default-value-expr] expression is evaluated to obtain a value
-for the variable. A @scheme[_default-value-expr] is only evaluated when
+variable that has an associated @racket[_default-value-expr], then the
+@racket[_default-value-expr] expression is evaluated to obtain a value
+for the variable. A @racket[_default-value-expr] is only evaluated when
 an argument is not provided for its variable. The environment of
-@scheme[_default-value-expr] includes all of the initialization
+@racket[_default-value-expr] includes all of the initialization
 variables, all of the fields, and all of the methods of the class. If
-multiple @scheme[_default-value-expr]s are evaluated, they are
+multiple @racket[_default-value-expr]s are evaluated, they are
 evaluated from left to right. Object creation and field initialization
 are described in detail in @secref["objcreation"].
 
-If an initialization variable has no @scheme[_default-value-expr], then
+If an initialization variable has no @racket[_default-value-expr], then
 the object creation or superclass initialization call must supply an
 argument for the variable, otherwise the @exnraise[exn:fail:object].
 
 Initialization arguments can be provided by name or by position.  The
 external name of an initialization variable can be used with
-@scheme[instantiate] or with the superclass initialization form. Those
-forms also accept by-position arguments. The @scheme[make-object]
+@racket[instantiate] or with the superclass initialization form. Those
+forms also accept by-position arguments. The @racket[make-object]
 procedure and the superclass initialization procedure accept only
 by-position arguments.
 
 Arguments provided by position are converted into by-name arguments
-using the order of @scheme[init] and @scheme[init-field] clauses and
-the order of variables within each clause. When an @scheme[instantiate]
+using the order of @racket[init] and @racket[init-field] clauses and
+the order of variables within each clause. When an @racket[instantiate]
 form provides both by-position and by-name arguments, the converted
 arguments are placed before by-name arguments. (The order can be
 significant; see also @secref["objcreation"].)
 
-Unless a class contains an @scheme[init-rest] clause, when the number
+Unless a class contains an @racket[init-rest] clause, when the number
 of by-position arguments exceeds the number of declared initialization
 variables, the order of variables in the superclass (and so on, up the
 superclass chain) determines the by-name conversion.
 
-If a class expression contains an @scheme[init-rest] clause, there
+If a class expression contains an @racket[init-rest] clause, there
 must be only one, and it must be last. If it declares a variable, then
 the variable receives extra by-position initialization arguments as a
 list (similar to a dotted ``rest argument'' in a procedure).  An
-@scheme[init-rest] variable can receive by-position initialization
+@racket[init-rest] variable can receive by-position initialization
 arguments that are left over from a by-name conversion for a derived
 class. When a derived class's superclass initialization provides even
 more by-position arguments, they are prefixed onto the by-position
@@ -578,7 +578,7 @@ arguments accumulated so far.
 If too few or too many by-position initialization arguments are
 provided to an object creation or superclass initialization, then the
 @exnraise[exn:fail:object]. Similarly, if extra by-position arguments
-are provided to a class with an @scheme[init-rest] clause, the
+are provided to a class with an @racket[init-rest] clause, the
 @exnraise[exn:fail:object].
 
 Unused (by-name) arguments are to be propagated to the superclass, as
@@ -595,27 +595,27 @@ external names.
 
 @subsection[#:tag "clfields"]{Fields}
 
-Each @scheme[field], @scheme[init-field], and non-method
-@scheme[define-values] clause in a class declares one or more new
-fields for the class. Fields declared with @scheme[field] or
-@scheme[init-field] are public. Public fields can be accessed and
-mutated by subclasses using @scheme[inherit-field]. Public fields are
-also accessible outside the class via @scheme[class-field-accessor]
-and mutable via @scheme[class-field-mutator] (see
-@secref["ivaraccess"]). Fields declared with @scheme[define-values]
+Each @racket[field], @racket[init-field], and non-method
+@racket[define-values] clause in a class declares one or more new
+fields for the class. Fields declared with @racket[field] or
+@racket[init-field] are public. Public fields can be accessed and
+mutated by subclasses using @racket[inherit-field]. Public fields are
+also accessible outside the class via @racket[class-field-accessor]
+and mutable via @racket[class-field-mutator] (see
+@secref["ivaraccess"]). Fields declared with @racket[define-values]
 are accessible only within the class.
 
-A field declared with @scheme[init-field] is both a public field and
+A field declared with @racket[init-field] is both a public field and
 an initialization variable. See @secref["clinitvars"] for
 information about initialization variables.
 
-An @scheme[inherit-field] declaration makes a public field defined by
+An @racket[inherit-field] declaration makes a public field defined by
 a superclass directly accessible in the class expression. If the
 indicated field is not defined in the superclass, the
 @exnraise[exn:fail:object] when the class expression is evaluated.
 Every field in a superclass is present in a derived class, even if it
-is not declared with @scheme[inherit-field] in the derived class. The
-@scheme[inherit-field] clause does not control inheritance, but merely
+is not declared with @racket[inherit-field] in the derived class. The
+@racket[inherit-field] clause does not control inheritance, but merely
 controls lexical scope within a class expression.
 
 When an object is first created, all of its fields have the
@@ -633,191 +633,191 @@ external names.
 
 @subsubsection[#:tag "clmethoddefs"]{Method Definitions}
 
-Each @scheme[public], @scheme[override], @scheme[augment],
-@scheme[pubment], @scheme[overment], @scheme[augride],
-@scheme[public-final], @scheme[override-final],
-@scheme[augment-final], and @scheme[private] clause in a class
+Each @racket[public], @racket[override], @racket[augment],
+@racket[pubment], @racket[overment], @racket[augride],
+@racket[public-final], @racket[override-final],
+@racket[augment-final], and @racket[private] clause in a class
 declares one or more method names. Each method name must have a
-corresponding @scheme[_method-definition]. The order of
-@scheme[public], @|etc|, clauses and their corresponding definitions
+corresponding @racket[_method-definition]. The order of
+@racket[public], @|etc|, clauses and their corresponding definitions
 (among themselves, and with respect to other clauses in the class)
 does not matter.
 
-As shown in the grammar for @scheme[class*], a method definition is
+As shown in the grammar for @racket[class*], a method definition is
 syntactically restricted to certain procedure forms, as defined by the
-grammar for @scheme[_method-procedure]; in the last two forms of
-@scheme[_method-procedure], the body @scheme[id] must be one of the
-@scheme[id]s bound by @scheme[let-values] or @scheme[letrec-values]. A
-@scheme[_method-procedure] expression is not evaluated
+grammar for @racket[_method-procedure]; in the last two forms of
+@racket[_method-procedure], the body @racket[id] must be one of the
+@racket[id]s bound by @racket[let-values] or @racket[letrec-values]. A
+@racket[_method-procedure] expression is not evaluated
 directly. Instead, for each method, a class-specific method procedure
 is created; it takes an initial object argument, in addition to the
-arguments the procedure would accept if the @scheme[_method-procedure]
+arguments the procedure would accept if the @racket[_method-procedure]
 expression were evaluated directly. The body of the procedure is
 transformed to access methods and fields through the object argument.
 
-A method declared with @scheme[public], @scheme[pubment], or
-@scheme[public-final] introduces a new method into a class. The method
+A method declared with @racket[public], @racket[pubment], or
+@racket[public-final] introduces a new method into a class. The method
 must not be present already in the superclass, otherwise the
 @exnraise[exn:fail:object] when the class expression is evaluated. A
-method declared with @scheme[public] can be overridden in a subclass
-that uses @scheme[override], @scheme[overment], or
-@scheme[override-final].  A method declared with @scheme[pubment] can
-be augmented in a subclass that uses @scheme[augment],
-@scheme[augride], or @scheme[augment-final]. A method declared with
-@scheme[public-final] cannot be overridden or augmented in a subclass.
+method declared with @racket[public] can be overridden in a subclass
+that uses @racket[override], @racket[overment], or
+@racket[override-final].  A method declared with @racket[pubment] can
+be augmented in a subclass that uses @racket[augment],
+@racket[augride], or @racket[augment-final]. A method declared with
+@racket[public-final] cannot be overridden or augmented in a subclass.
 
-A method declared with @scheme[override], @scheme[overment], or
-@scheme[override-final] overrides a definition already present in the
+A method declared with @racket[override], @racket[overment], or
+@racket[override-final] overrides a definition already present in the
 superclass. If the method is not already present, the
 @exnraise[exn:fail:object] when the class expression is evaluated.  A
-method declared with @scheme[override] can be overridden again in a
-subclass that uses @scheme[override], @scheme[overment], or
-@scheme[override-final].  A method declared with @scheme[overment] can
-be augmented in a subclass that uses @scheme[augment],
-@scheme[augride], or @scheme[augment-final]. A method declared with
-@scheme[override-final] cannot be overridden further or augmented in a
+method declared with @racket[override] can be overridden again in a
+subclass that uses @racket[override], @racket[overment], or
+@racket[override-final].  A method declared with @racket[overment] can
+be augmented in a subclass that uses @racket[augment],
+@racket[augride], or @racket[augment-final]. A method declared with
+@racket[override-final] cannot be overridden further or augmented in a
 subclass.
 
-A method declared with @scheme[augment], @scheme[augride], or
-@scheme[augment-final] augments a definition already present in the
+A method declared with @racket[augment], @racket[augride], or
+@racket[augment-final] augments a definition already present in the
 superclass. If the method is not already present, the
 @exnraise[exn:fail:object] when the class expression is evaluated.  A
-method declared with @scheme[augment] can be augmented further in a
-subclass that uses @scheme[augment], @scheme[augride], or
-@scheme[augment-final]. A method declared with @scheme[augride] can be
-overridden in a subclass that uses @scheme[override],
-@scheme[overment], or @scheme[override-final]. (Such an override
+method declared with @racket[augment] can be augmented further in a
+subclass that uses @racket[augment], @racket[augride], or
+@racket[augment-final]. A method declared with @racket[augride] can be
+overridden in a subclass that uses @racket[override],
+@racket[overment], or @racket[override-final]. (Such an override
 merely replaces the augmentation, not the method that is augmented.)
-A method declared with @scheme[augment-final] cannot be overridden or
+A method declared with @racket[augment-final] cannot be overridden or
 augmented further in a subclass.
 
-A method declared with @scheme[private] is not accessible outside the
+A method declared with @racket[private] is not accessible outside the
 class expression, cannot be overridden, and never overrides a method
 in the superclass.
 
-When a method is declared with @scheme[override], @scheme[overment],
-or @scheme[override-final], then the superclass implementation of the
-method can be called using @scheme[super] form.
+When a method is declared with @racket[override], @racket[overment],
+or @racket[override-final], then the superclass implementation of the
+method can be called using @racket[super] form.
 
-When a method is declared with @scheme[pubment], @scheme[augment], or
-@scheme[overment], then a subclass augmenting method can be called
-using the @scheme[inner] form. The only difference between
-@scheme[public-final] and @scheme[pubment] without a corresponding
-@scheme[inner] is that @scheme[public-final] prevents the declaration
+When a method is declared with @racket[pubment], @racket[augment], or
+@racket[overment], then a subclass augmenting method can be called
+using the @racket[inner] form. The only difference between
+@racket[public-final] and @racket[pubment] without a corresponding
+@racket[inner] is that @racket[public-final] prevents the declaration
 of augmenting methods that would be ignored.
 
 @defform*[[(super id arg ...)
            (super id arg ... . arg-list-expr)]]{
 
 Always accesses the superclass method, independent of whether the
-method is overridden again in subclasses. Using the @scheme[super]
-form outside of @scheme[class*] is a syntax error. Each @scheme[arg]
-is as for @scheme[#%app]: either @scheme[_arg-expr] or
-@scheme[_keyword _arg-expr].
+method is overridden again in subclasses. Using the @racket[super]
+form outside of @racket[class*] is a syntax error. Each @racket[arg]
+is as for @racket[#%app]: either @racket[_arg-expr] or
+@racket[_keyword _arg-expr].
 
-The second form is analogous to using @scheme[apply] with a procedure;
-the @scheme[arg-list-expr] must not be a parenthesized expression.}
+The second form is analogous to using @racket[apply] with a procedure;
+the @racket[arg-list-expr] must not be a parenthesized expression.}
 
 @defform*[[(inner default-expr id arg ...)
            (inner default-expr id arg ... . arg-list-expr)]]{
 
 If the object's class does not supply an augmenting method, then
-@scheme[default-expr] is evaluated, and the @scheme[arg] expressions
+@racket[default-expr] is evaluated, and the @racket[arg] expressions
 are not evaluated. Otherwise, the augmenting method is called with the
-@scheme[arg] results as arguments, and @scheme[default-expr] is not
-evaluated. If no @scheme[inner] call is evaluated for a particular
+@racket[arg] results as arguments, and @racket[default-expr] is not
+evaluated. If no @racket[inner] call is evaluated for a particular
 method, then augmenting methods supplied by subclasses are never
-used. Using the @scheme[inner] form outside of @scheme[class*] is an
+used. Using the @racket[inner] form outside of @racket[class*] is an
 syntax error.
 
-The second form is analogous to using @scheme[apply] with a procedure;
-the @scheme[arg-list-expr] must not be a parenthesized expression.}
+The second form is analogous to using @racket[apply] with a procedure;
+the @racket[arg-list-expr] must not be a parenthesized expression.}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 @subsubsection[#:tag "classinherit"]{Inherited and Superclass Methods}
 
-Each @scheme[inherit], @scheme[inherit/super], @scheme[inherit/inner],
-@scheme[rename-super], and @scheme[rename-inner] clause declares one
+Each @racket[inherit], @racket[inherit/super], @racket[inherit/inner],
+@racket[rename-super], and @racket[rename-inner] clause declares one
 or more methods that are defined in the class, but must be present in
-the superclass. The @scheme[rename-super] and @scheme[rename-inner]
-declarations are rarely used, since @scheme[inherit/super] and
-@scheme[inherit/inner] provide the same access. Also, superclass and
-augmenting methods are typically accessed through @scheme[super] and
-@scheme[inner] in a class that also declares the methods, instead of
-through @scheme[inherit/super], @scheme[inherit/inner],
-@scheme[rename-super], or @scheme[rename-inner].
+the superclass. The @racket[rename-super] and @racket[rename-inner]
+declarations are rarely used, since @racket[inherit/super] and
+@racket[inherit/inner] provide the same access. Also, superclass and
+augmenting methods are typically accessed through @racket[super] and
+@racket[inner] in a class that also declares the methods, instead of
+through @racket[inherit/super], @racket[inherit/inner],
+@racket[rename-super], or @racket[rename-inner].
 
-Method names declared with @scheme[inherit], @scheme[inherit/super],
-or @scheme[inherit/inner] access overriding declarations, if any, at
-run time. Method names declared with @scheme[inherit/super] can also
-be used with the @scheme[super] form to access the superclass
-implementation, and method names declared with @scheme[inherit/inner]
-can also be used with the @scheme[inner] form to access an augmenting
+Method names declared with @racket[inherit], @racket[inherit/super],
+or @racket[inherit/inner] access overriding declarations, if any, at
+run time. Method names declared with @racket[inherit/super] can also
+be used with the @racket[super] form to access the superclass
+implementation, and method names declared with @racket[inherit/inner]
+can also be used with the @racket[inner] form to access an augmenting
 method, if any.
  
-Method names declared with @scheme[rename-super] always access the
+Method names declared with @racket[rename-super] always access the
 superclass's implementation at run-time. Methods declared with
-@scheme[rename-inner] access a subclass's augmenting method, if any,
+@racket[rename-inner] access a subclass's augmenting method, if any,
 and must be called with the form
 
-@schemeblock[
+@racketblock[
 (_id (lambda () _default-expr) _arg ...)
 ]
 
-so that a @scheme[default-expr] is available to evaluate when no
-augmenting method is available. In such a form, @scheme[lambda] is a
-literal identifier to separate the @scheme[default-expr] from the
-@scheme[arg]. When an augmenting method is available, it receives the
-results of the @scheme[arg] expressions as arguments.
+so that a @racket[default-expr] is available to evaluate when no
+augmenting method is available. In such a form, @racket[lambda] is a
+literal identifier to separate the @racket[default-expr] from the
+@racket[arg]. When an augmenting method is available, it receives the
+results of the @racket[arg] expressions as arguments.
 
 Methods that are present in the superclass but not declared with
-@scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner] or
-@scheme[rename-super] are not directly accessible in the class
-(though they can be called with @scheme[send]).  Every public method
+@racket[inherit], @racket[inherit/super], or @racket[inherit/inner] or
+@racket[rename-super] are not directly accessible in the class
+(though they can be called with @racket[send]).  Every public method
 in a superclass is present in a derived class, even if it is not
-declared with @scheme[inherit] in the derived class; the
-@scheme[inherit] clause does not control inheritance, but merely
+declared with @racket[inherit] in the derived class; the
+@racket[inherit] clause does not control inheritance, but merely
 controls lexical scope within a class expression.
 
-If a method declared with @scheme[inherit], @scheme[inherit/super],
-@scheme[inherit/inner], @scheme[rename-super], or
-@scheme[rename-inner] is not present in the superclass, the
+If a method declared with @racket[inherit], @racket[inherit/super],
+@racket[inherit/inner], @racket[rename-super], or
+@racket[rename-inner] is not present in the superclass, the
 @exnraise[exn:fail:object] when the class expression is evaluated.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 @subsubsection[#:tag "extnames"]{Internal and External Names}
 
-Each method declared with @scheme[public], @scheme[override],
-@scheme[augment], @scheme[pubment], @scheme[overment],
-@scheme[augride], @scheme[public-final], @scheme[override-final],
-@scheme[augment-final], @scheme[inherit], @scheme[inherit/super],
-@scheme[inherit/inner], @scheme[rename-super], and
-@scheme[rename-inner] can have separate internal and external names
-when @scheme[(internal-id external-id)] is used for declaring the
+Each method declared with @racket[public], @racket[override],
+@racket[augment], @racket[pubment], @racket[overment],
+@racket[augride], @racket[public-final], @racket[override-final],
+@racket[augment-final], @racket[inherit], @racket[inherit/super],
+@racket[inherit/inner], @racket[rename-super], and
+@racket[rename-inner] can have separate internal and external names
+when @racket[(internal-id external-id)] is used for declaring the
 method. The internal name is used to access the method directly within
-the class expression (including within @scheme[super] or
-@scheme[inner] forms), while the external name is used with
-@scheme[send] and @scheme[generic] (see @secref["ivaraccess"]).  If
-a single @scheme[id] is provided for a method declaration, the
+the class expression (including within @racket[super] or
+@racket[inner] forms), while the external name is used with
+@racket[send] and @racket[generic] (see @secref["ivaraccess"]).  If
+a single @racket[id] is provided for a method declaration, the
 identifier is used for both the internal and external names.
 
 Method inheritance, overriding, and augmentation are based on external
 names only.  Separate internal and external names are required for
-@scheme[rename-super] and @scheme[rename-inner] (for historical
+@racket[rename-super] and @racket[rename-inner] (for historical
 reasons, mainly).
 
-Each @scheme[init], @scheme[init-field], @scheme[field], or
-@scheme[inherit-field] variable similarly has an internal and an
+Each @racket[init], @racket[init-field], @racket[field], or
+@racket[inherit-field] variable similarly has an internal and an
 external name. The internal name is used within the class to access
 the variable, while the external name is used outside the class when
-providing initialization arguments (e.g., to @scheme[instantiate]),
+providing initialization arguments (e.g., to @racket[instantiate]),
 inheriting a field, or accessing a field externally (e.g., with
-@scheme[class-field-accessor]). As for methods, when inheriting a
-field with @scheme[inherit-field], the external name is matched to an
+@racket[class-field-accessor]). As for methods, when inheriting a
+field with @racket[inherit-field], the external name is matched to an
 external field name in the superclass, while the internal name is
-bound in the @scheme[class] expression.
+bound in the @racket[class] expression.
 
 A single identifier can be used as an internal identifier and an
 external identifier, and it is possible to use the same identifier as
@@ -832,39 +832,39 @@ be distinct from all other initialization argument names.
 
 By default, external names have no lexical scope, which means, for
 example, that an external method name matches the same syntactic
-symbol in all uses of @scheme[send]. The
-@scheme[define-local-member-name] and @scheme[define-member-name] forms
+symbol in all uses of @racket[send]. The
+@racket[define-local-member-name] and @racket[define-member-name] forms
 introduce scoped external names.
 
-When a @scheme[class] expression is compiled, identifiers used in
+When a @racket[class] expression is compiled, identifiers used in
 place of external names must be symbolically distinct (when the
 corresponding external names are required to be distinct), otherwise a
 syntax error is reported. When no external name is bound by
-@scheme[define-member-name], then the actual external names are
-guaranteed to be distinct when @scheme[class] expression is evaluated.
-When any external name is bound by @scheme[define-member-name], the
-@exnraise[exn:fail:object] by @scheme[class] if the actual external
+@racket[define-member-name], then the actual external names are
+guaranteed to be distinct when @racket[class] expression is evaluated.
+When any external name is bound by @racket[define-member-name], the
+@exnraise[exn:fail:object] by @racket[class] if the actual external
 names are not distinct.
 
 
 @defform[(define-local-member-name id ...)]{
 
-Unless it appears as the top-level definition, binds each @scheme[id]
+Unless it appears as the top-level definition, binds each @racket[id]
 so that, within the scope of the definition, each use of each
-@scheme[id] as an external name is resolved to a hidden name generated
-by the @scheme[define-local-member-name] declaration. Thus, methods,
+@racket[id] as an external name is resolved to a hidden name generated
+by the @racket[define-local-member-name] declaration. Thus, methods,
 fields, and initialization arguments declared with such external-name
-@scheme[id]s are accessible only in the scope of the
-@scheme[define-local-member-name] declaration.  As a top-level
-definition, @scheme[define-local-member-name] binds @scheme[id] to its
+@racket[id]s are accessible only in the scope of the
+@racket[define-local-member-name] declaration.  As a top-level
+definition, @racket[define-local-member-name] binds @racket[id] to its
 symbolic form.
 
-The binding introduced by @scheme[define-local-member-name] is a
+The binding introduced by @racket[define-local-member-name] is a
 syntax binding that can be exported and imported with
-@scheme[module]s. Each evaluation of a
-@scheme[define-local-member-name] declaration generates a distinct
+@racket[module]s. Each evaluation of a
+@racket[define-local-member-name] declaration generates a distinct
 hidden name (except as a top-level definition). The
-@scheme[interface->method-names] procedure does not expose hidden
+@racket[interface->method-names] procedure does not expose hidden
 names.
 
 @defexamples[
@@ -888,38 +888,38 @@ r
 @defform[(define-member-name id key-expr)]{
 
 Maps a single external name to an external name that is determined by
-an expression. The value of @scheme[key-expr] must be the result of either a
-@scheme[member-name-key] expression or a @scheme[generate-member-key] call.}
+an expression. The value of @racket[key-expr] must be the result of either a
+@racket[member-name-key] expression or a @racket[generate-member-key] call.}
 
 
 @defform[(member-name-key identifier)]{
 
-Produces a representation of the external name for @scheme[id] in the
-environment of the @scheme[member-name-key] expression.}
+Produces a representation of the external name for @racket[id] in the
+environment of the @racket[member-name-key] expression.}
 
 @defproc[(generate-member-key) member-name-key?]{
 
 Produces a hidden name, just like the binding for
-@scheme[define-local-member-name].}
+@racket[define-local-member-name].}
 
 @defproc[(member-name-key? [v any/c]) boolean?]{
 
-Returns @scheme[#t] for values produced by @scheme[member-name-key]
-and @scheme[generate-member-key], @scheme[#f]
+Returns @racket[#t] for values produced by @racket[member-name-key]
+and @racket[generate-member-key], @racket[#f]
 otherwise.}
 
 @defproc[(member-name-key=? [a-key member-name-key?] [b-key member-name-key?]) boolean?]{
 
-Produces @scheme[#t] if member-name keys @scheme[a-key] and
-@scheme[b-key] represent the same external name, @scheme[#f]
+Produces @racket[#t] if member-name keys @racket[a-key] and
+@racket[b-key] represent the same external name, @racket[#f]
 otherwise.}
 
 
 @defproc[(member-name-key-hash-code [a-key member-name-key?]) integer?]{
 
 Produces an integer hash code consistent with
-@scheme[member-name-key=?]  comparisons, analogous to
-@scheme[equal-hash-code].}
+@racket[member-name-key=?]  comparisons, analogous to
+@racket[equal-hash-code].}
 
 @defexamples[
 #:eval class-eval
@@ -953,10 +953,10 @@ Produces an integer hash code consistent with
 
 @section[#:tag "objcreation"]{Creating Objects}
 
-The @scheme[make-object] procedure creates a new object with
-by-position initialization arguments, the @scheme[new] form
+The @racket[make-object] procedure creates a new object with
+by-position initialization arguments, the @racket[new] form
 creates a new object with by-name initialization arguments, and
-the @scheme[instantiate] form creates a new object with both
+the @racket[instantiate] form creates a new object with both
 by-position and by-name initialization arguments.
 
 
@@ -965,28 +965,28 @@ special @|undefined-const| value (see
 @secref["void"]). Initialization variables with default value
 expressions (and no provided value) are also initialized to
 @|undefined-const|. After argument values are assigned to
-initialization variables, expressions in @scheme[field] clauses,
-@scheme[init-field] clauses with no provided argument,
-@scheme[init] clauses with no provided argument, private field
+initialization variables, expressions in @racket[field] clauses,
+@racket[init-field] clauses with no provided argument,
+@racket[init] clauses with no provided argument, private field
 definitions, and other expressions are evaluated. Those
 expressions are evaluated as they appear in the class expression,
 from left to right.
 
 Sometime during the evaluation of the expressions,
 superclass-declared initializations must be evaluated once by
-using the @scheme[super-make-object] procedure,
-@scheme[super-new] form, or @scheme[super-instantiate] form.
+using the @racket[super-make-object] procedure,
+@racket[super-new] form, or @racket[super-instantiate] form.
 
 By-name initialization arguments to a class that have no matching
 initialization variable are implicitly added as by-name arguments
-to a @scheme[super-make-object], @scheme[super-new], or
-@scheme[super-instantiate] invocation, after the explicit
+to a @racket[super-make-object], @racket[super-new], or
+@racket[super-instantiate] invocation, after the explicit
 arguments.  If multiple initialization arguments are provided for
 the same name, the first (if any) is used, and the unused
 arguments are propagated to the superclass. (Note that converted
 by-position arguments are always placed before explicit by-name
 arguments.)  The initialization procedure for the
-@scheme[object%] class accepts zero initialization arguments; if
+@racket[object%] class accepts zero initialization arguments; if
 it receives any by-name initialization arguments, then
 @exnraise[exn:fail:object].
 
@@ -1005,26 +1005,26 @@ initialization (unlike objects in C++).
 
 @defproc[(make-object [class class?] [init-v any/c] ...) object?]{
 
-Creates an instance of @scheme[class]. The @scheme[init-v]s are
+Creates an instance of @racket[class]. The @racket[init-v]s are
 passed as initialization arguments, bound to the initialization
-variables of @scheme[class] for the newly created object as
-described in @secref["clinitvars"]. If @scheme[class] is not a
+variables of @racket[class] for the newly created object as
+described in @secref["clinitvars"]. If @racket[class] is not a
 class, the @exnraise[exn:fail:contract].}
 
 @defform[(new class-expr (id by-name-expr) ...)]{
 
-Creates an instance of the value of @scheme[class-expr] (which
-must be a class), and the value of each @scheme[by-name-expr] is
+Creates an instance of the value of @racket[class-expr] (which
+must be a class), and the value of each @racket[by-name-expr] is
 provided as a by-name argument for the corresponding
-@scheme[id].}
+@racket[id].}
 
 @defform[(instantiate class-expr (by-pos-expr ...) (id by-name-expr) ...)]{
 
-Creates an instance of the value of @scheme[class-expr] (which
-must be a class), and the values of the @scheme[by-pos-expr]s are
+Creates an instance of the value of @racket[class-expr] (which
+must be a class), and the values of the @racket[by-pos-expr]s are
 provided as by-position initialization arguments. In addition,
-the value of each @scheme[by-name-expr] is provided as a by-name
-argument for the corresponding @scheme[id].}
+the value of each @racket[by-name-expr] is provided as a by-name
+argument for the corresponding @racket[id].}
 
 @defidform[super-make-object]{
 
@@ -1056,7 +1056,7 @@ environment. Within a method body, only the fields and other methods
 of the class can be referenced; a reference to any other
 class-introduced identifier is a syntax error.  Elsewhere within the
 class, all class-introduced identifiers are available, and fields and
-initialization variables can be mutated with @scheme[set!].
+initialization variables can be mutated with @racket[set!].
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1072,30 +1072,30 @@ application can have the following form:
 (method-id arg ... . arg-list-expr)
 ]
 
-This form calls the method in a way analogous to @scheme[(apply
-_method-id _arg ... _arg-list-expr)]. The @scheme[arg-list-expr]
+This form calls the method in a way analogous to @racket[(apply
+_method-id _arg ... _arg-list-expr)]. The @racket[arg-list-expr]
 must not be a parenthesized expression.
 
-Methods are called from outside a class with the @scheme[send] and 
-@scheme[send/apply] forms.
+Methods are called from outside a class with the @racket[send] and 
+@racket[send/apply] forms.
 
 @defform*[[(send obj-expr method-id arg ...)
            (send obj-expr method-id arg ... . arg-list-expr)]]{
 
-Evaluates @scheme[obj-expr] to obtain an object, and calls the method
-with (external) name @scheme[method-id] on the object, providing the
-@scheme[arg] results as arguments. Each @scheme[arg] is as for
-@scheme[#%app]: either @scheme[_arg-expr] or @scheme[_keyword
-_arg-expr]. In the second form, @scheme[arg-list-expr] cannot be a
+Evaluates @racket[obj-expr] to obtain an object, and calls the method
+with (external) name @racket[method-id] on the object, providing the
+@racket[arg] results as arguments. Each @racket[arg] is as for
+@racket[#%app]: either @racket[_arg-expr] or @racket[_keyword
+_arg-expr]. In the second form, @racket[arg-list-expr] cannot be a
 parenthesized expression.
 
-If @scheme[obj-expr] does not produce an object, the
+If @racket[obj-expr] does not produce an object, the
 @exnraise[exn:fail:contract]. If the object has no public method named
-@scheme[method-id], the @exnraise[exn:fail:object].}
+@racket[method-id], the @exnraise[exn:fail:object].}
 
 @defform[(send/apply obj-expr method-id arg ... arg-list-expr)]{
 
-Like the dotted form of @scheme[send], but @scheme[arg-list-expr] can
+Like the dotted form of @racket[send], but @racket[arg-list-expr] can
 be any expression.}
 
 
@@ -1104,11 +1104,11 @@ be any expression.}
                     (method-id arg ... . arg-list-expr)])]{
 
 Calls multiple methods (in order) of the same object. Each
-@scheme[msg] corresponds to a use of @scheme[send].
+@racket[msg] corresponds to a use of @racket[send].
 
 For example,
 
-@schemeblock[
+@racketblock[
 (send* edit (begin-edit-sequence)
             (insert "Hello")
             (insert #\newline)
@@ -1117,7 +1117,7 @@ For example,
 
 is the same as
 
-@schemeblock[
+@racketblock[
 (let ([o edit])
   (send o begin-edit-sequence)
   (send o insert "Hello")
@@ -1130,14 +1130,14 @@ is the same as
 
 Extracts methods from an object and binds a local name that can be
 applied directly (in the same way as declared methods within a class)
-for each method. Each @scheme[obj-expr] must produce an object,
+for each method. Each @racket[obj-expr] must produce an object,
 which must have a public method named by the corresponding
-@scheme[method-id]. The corresponding @scheme[id] is bound so that it
+@racket[method-id]. The corresponding @racket[id] is bound so that it
 can be applied directly (see @secref["methodcalls"]).
 
 Example:
 
-@schemeblock[
+@racketblock[
 (let ([s (new stack%)])
   (with-method ([push (s push!)]
                 [pop (s pop!)])
@@ -1148,7 +1148,7 @@ Example:
 
 is the same as
 
-@schemeblock[
+@racketblock[
 (let ([s (new stack%)])
   (send s push! 10)
   (send s push! 9)
@@ -1161,49 +1161,49 @@ is the same as
 
 @defform[(get-field id obj-expr)]{
 
-Extracts the field with (external) name @scheme[id] from the value of
-@scheme[obj-expr].
+Extracts the field with (external) name @racket[id] from the value of
+@racket[obj-expr].
 
-If @scheme[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract]. If the object has no @scheme[id] method,
+If @racket[obj-expr] does not produce an object, the
+@exnraise[exn:fail:contract]. If the object has no @racket[id] method,
 the @exnraise[exn:fail:object].}
 
 @defform[(set-field! id obj-expr expr)]{
 
-Sets the field with (external) name @scheme[id] from the value of
-@scheme[obj-expr] to the value of @scheme[expr].
+Sets the field with (external) name @racket[id] from the value of
+@racket[obj-expr] to the value of @racket[expr].
 
-If @scheme[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract].  If the object has no @scheme[id] method,
+If @racket[obj-expr] does not produce an object, the
+@exnraise[exn:fail:contract].  If the object has no @racket[id] method,
 the @exnraise[exn:fail:object].}
 
 @defform[(field-bound? id obj-expr)]{
 
-Produces @scheme[#t] if the object result of @scheme[obj-expr] has a
-field with (external) name @scheme[id], @scheme[#f] otherwise.
+Produces @racket[#t] if the object result of @racket[obj-expr] has a
+field with (external) name @racket[id], @racket[#f] otherwise.
 
-If @scheme[obj-expr] does not produce an object, the
+If @racket[obj-expr] does not produce an object, the
 @exnraise[exn:fail:contract].}
 
 @defform[(class-field-accessor class-expr field-id)]{
 
 Returns an accessor procedure that takes an instance of the class
-produced by @scheme[class-expr] and returns the value of the object's
-field with (external) name @scheme[field-id].
+produced by @racket[class-expr] and returns the value of the object's
+field with (external) name @racket[field-id].
 
-If @scheme[class-expr] does not produce a class, the
-@exnraise[exn:fail:contract]. If the class has no @scheme[field-id]
+If @racket[class-expr] does not produce a class, the
+@exnraise[exn:fail:contract]. If the class has no @racket[field-id]
 field, the @exnraise[exn:fail:object].}
 
 @defform[(class-field-mutator class-expr field-id)]{
 
 Returns a mutator procedure that takes an instance of the class
-produced by @scheme[class-expr] and a value, and sets the value of the
-object's field with (external) name @scheme[field-id] to the given
+produced by @racket[class-expr] and a value, and sets the value of the
+object's field with (external) name @racket[field-id] to the given
 value. The result is @|void-const|.
 
-If @scheme[class-expr] does not produce a class, the
-@exnraise[exn:fail:contract]. If the class has no @scheme[field-id]
+If @racket[class-expr] does not produce a class, the
+@exnraise[exn:fail:contract]. If the class has no @racket[field-id]
 field, the @exnraise[exn:fail:object].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1216,36 +1216,36 @@ cost of relocating a method by name within a class.
 @defform[(generic class-or-interface-expr id)]{
 
 Produces a generic that works on instances of the class or interface
-produced by @scheme[class-or-interface-expr] (or an instance of a
-class/interface derived from @scheme[class-or-interface]) to call the
-method with (external) name @scheme[id].
+produced by @racket[class-or-interface-expr] (or an instance of a
+class/interface derived from @racket[class-or-interface]) to call the
+method with (external) name @racket[id].
 
-If @scheme[class-or-interface-expr] does not produce a class or
+If @racket[class-or-interface-expr] does not produce a class or
 interface, the @exnraise[exn:fail:contract]. If the resulting class or
-interface does not contain a method named @scheme[id], the
+interface does not contain a method named @racket[id], the
 @exnraise[exn:fail:object].}
 
 @defform*[[(send-generic obj-expr generic-expr arg ...)
            (send-generic obj-expr generic-expr arg ... . arg-list-expr)]]{
 
-Calls a method of the object produced by @scheme[obj-expr] as
-indicated by the generic produced by @scheme[generic-expr]. Each
-@scheme[arg] is as for @scheme[#%app]: either @scheme[_arg-expr] or
-@scheme[_keyword _arg-expr]. The second form is analogous to calling a
-procedure with @scheme[apply], where @scheme[arg-list-expr] is not a
+Calls a method of the object produced by @racket[obj-expr] as
+indicated by the generic produced by @racket[generic-expr]. Each
+@racket[arg] is as for @racket[#%app]: either @racket[_arg-expr] or
+@racket[_keyword _arg-expr]. The second form is analogous to calling a
+procedure with @racket[apply], where @racket[arg-list-expr] is not a
 parenthesized expression.
 
-If @scheme[obj-expr] does not produce a object, or if
-@scheme[generic-expr] does not produce a generic, the
-@exnraise[exn:fail:contract]. If the result of @scheme[obj-expr] is
+If @racket[obj-expr] does not produce a object, or if
+@racket[generic-expr] does not produce a generic, the
+@exnraise[exn:fail:contract]. If the result of @racket[obj-expr] is
 not an instance of the class or interface encapsulated by the result
-of @scheme[generic-expr], the @exnraise[exn:fail:object].}
+of @racket[generic-expr], the @exnraise[exn:fail:object].}
 
 @defproc[(make-generic [type (or/c class? interface?)]
                        [method-name symbol?])
          generic?]{
 
-Like the @scheme[generic] form, but as a procedure that accepts a
+Like the @racket[generic] form, but as a procedure that accepts a
 symbolic method name.}
 
 @; ------------------------------------------------------------------------
@@ -1261,15 +1261,15 @@ mixin is applied to a specific superclass, it produces a new derived
 class using the encapsulated extension.
 
 The given class must implement interfaces produced by the first set of
-@scheme[interface-expr]s.  The result of the procedure is a subclass
+@racket[interface-expr]s.  The result of the procedure is a subclass
 of the given class that implements the interfaces produced by the
-second set of @scheme[interface-expr]s. The @scheme[class-clause]s are
-as for @scheme[class*], to define the class extension encapsulated by
+second set of @racket[interface-expr]s. The @racket[class-clause]s are
+as for @racket[class*], to define the class extension encapsulated by
 the mixin.
 
-Evaluation of a @scheme[mixin] form checks that the
-@scheme[class-clause]s are consistent with both sets of
-@scheme[interface-expr]s.}
+Evaluation of a @racket[mixin] form checks that the
+@racket[class-clause]s are consistent with both sets of
+@racket[interface-expr]s.}
 
 @; ------------------------------------------------------------------------
 
@@ -1303,36 +1303,36 @@ renamed, and multiple traits can be merged to form a new trait.
                              (field field-declaration ...)
                              (inherit-field maybe-renamed ...)])]{
 
-Creates a @tech{trait}.  The body of a @scheme[trait] form is similar to the
-body of a @scheme[class*] form, but restricted to non-private method
+Creates a @tech{trait}.  The body of a @racket[trait] form is similar to the
+body of a @racket[class*] form, but restricted to non-private method
 definitions.  In particular, the grammar of
-@scheme[maybe-renamed], @scheme[method-definition], and
-@scheme[field-declaration] are the same as for @scheme[class*], and
-every @scheme[method-definition] must have a corresponding declaration
-(one of @scheme[public], @scheme[override], etc.).  As in
-@scheme[class], uses of method names in direct calls, @scheme[super]
-calls, and @scheme[inner] calls depend on bringing method names into
-scope via @scheme[inherit], @scheme[inherit/super],
-@scheme[inherit/inner], and other method declarations in the same
-trait; an exception, compared to @scheme[class] is that
-@scheme[overment] binds a method name only in the corresponding
+@racket[maybe-renamed], @racket[method-definition], and
+@racket[field-declaration] are the same as for @racket[class*], and
+every @racket[method-definition] must have a corresponding declaration
+(one of @racket[public], @racket[override], etc.).  As in
+@racket[class], uses of method names in direct calls, @racket[super]
+calls, and @racket[inner] calls depend on bringing method names into
+scope via @racket[inherit], @racket[inherit/super],
+@racket[inherit/inner], and other method declarations in the same
+trait; an exception, compared to @racket[class] is that
+@racket[overment] binds a method name only in the corresponding
 method, and not in other methods of the same trait. Finally, macros
-such as @scheme[public*] and @scheme[define/public] work in
-@scheme[trait] as in @scheme[class].
+such as @racket[public*] and @racket[define/public] work in
+@racket[trait] as in @racket[class].
 
-External identifiers in @scheme[trait], @scheme[trait-exclude],
-@scheme[trait-exclude-field], @scheme[trait-alias],
-@scheme[trait-rename], and @scheme[trait-rename-field] forms are
-subject to binding via @scheme[define-member-name] and
-@scheme[define-local-member-name]. Although @scheme[private] methods
-or fields are not allowed in a @scheme[trait] form, they can be
-simulated by using a @scheme[public] or @scheme[field] declaration and
-a name whose scope is limited to the @scheme[trait] form.}
+External identifiers in @racket[trait], @racket[trait-exclude],
+@racket[trait-exclude-field], @racket[trait-alias],
+@racket[trait-rename], and @racket[trait-rename-field] forms are
+subject to binding via @racket[define-member-name] and
+@racket[define-local-member-name]. Although @racket[private] methods
+or fields are not allowed in a @racket[trait] form, they can be
+simulated by using a @racket[public] or @racket[field] declaration and
+a name whose scope is limited to the @racket[trait] form.}
 
 
 @defproc[(trait? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a trait, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a trait, @racket[#f] otherwise.}
 
 
 @defproc[(trait->mixin [tr trait?]) (class? . -> . class?)]{
@@ -1340,7 +1340,7 @@ Returns @scheme[#t] if @scheme[v] is a trait, @scheme[#f] otherwise.}
 Converts a @tech{trait} to a @tech{mixin}, which can be applied to a
 @tech{class} to produce a new @tech{class}. An expression of the form
 
-@schemeblock[
+@racketblock[
 (trait->mixin
  (trait
    _trait-clause ...))
@@ -1348,7 +1348,7 @@ Converts a @tech{trait} to a @tech{mixin}, which can be applied to a
 
 is equivalent to
 
-@schemeblock[
+@racketblock[
 (lambda (%)
   (class %
     _trait-clause ...
@@ -1362,9 +1362,9 @@ other traits before converting to a mixin.}
 @defproc[(trait-sum [tr trait?] ...+) trait?]{
 
 Produces a @tech{trait} that combines all of the methods of the given
-@scheme[tr]s. For example,
+@racket[tr]s. For example,
 
-@schemeblock[
+@racketblock[
 (define t1
  (trait
   (define/public (m1) 1)))
@@ -1374,101 +1374,101 @@ Produces a @tech{trait} that combines all of the methods of the given
 (define t3 (trait-sum t1 t2))
 ]
 
-creates a trait @scheme[t3] that is equivalent to
+creates a trait @racket[t3] that is equivalent to
 
-@schemeblock[
+@racketblock[
 (trait
  (define/public (m1) 1)
  (define/public (m2) 2))
 ]
 
-but @scheme[t1] and @scheme[t2] can still be used individually or
+but @racket[t1] and @racket[t2] can still be used individually or
 combined with other traits.
 
-When traits are combined with @scheme[trait-sum], the combination
-drops @scheme[inherit], @scheme[inherit/super],
-@scheme[inherit/inner], and @scheme[inherit-field] declarations when a
+When traits are combined with @racket[trait-sum], the combination
+drops @racket[inherit], @racket[inherit/super],
+@racket[inherit/inner], and @racket[inherit-field] declarations when a
 definition is supplied for the same method or field name by another
-trait. The @scheme[trait-sum] operation fails (the
+trait. The @racket[trait-sum] operation fails (the
 @exnraise[exn:fail:contract]) if any of the traits to combine define a
-method or field with the same name, or if an @scheme[inherit/super] or
-@scheme[inherit/inner] declaration to be dropped is inconsistent with
+method or field with the same name, or if an @racket[inherit/super] or
+@racket[inherit/inner] declaration to be dropped is inconsistent with
 the supplied definition. In other words, declaring a method with
-@scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner],
+@racket[inherit], @racket[inherit/super], or @racket[inherit/inner],
 does not count as defining the method; at the same time, for example,
-a trait that contains an @scheme[inherit/super] declaration for a
-method @scheme[m] cannot be combined with a trait that defines
-@scheme[m] as @scheme[augment], since no class could satisfy the
-requirements of both @scheme[augment] and @scheme[inherit/super] when
+a trait that contains an @racket[inherit/super] declaration for a
+method @racket[m] cannot be combined with a trait that defines
+@racket[m] as @racket[augment], since no class could satisfy the
+requirements of both @racket[augment] and @racket[inherit/super] when
 the trait is later converted to a mixin and applied to a class.}
 
 
 @defform[(trait-exclude trait-expr id)]{
 
 Produces a new @tech{trait} that is like the @tech{trait} result of
-@scheme[trait-expr], but with the definition of a method named by
-@scheme[id] removed; as the method definition is removed, either an
-@scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner]
+@racket[trait-expr], but with the definition of a method named by
+@racket[id] removed; as the method definition is removed, either an
+@racket[inherit], @racket[inherit/super], or @racket[inherit/inner]
 declaration is added:
 
 @itemize[
 
- @item{A method declared with @scheme[public], @scheme[pubment], or
-  @scheme[public-final] is replaced with an @scheme[inherit]
+ @item{A method declared with @racket[public], @racket[pubment], or
+  @racket[public-final] is replaced with an @racket[inherit]
   declaration.}
 
- @item{A method declared with @scheme[override] or @scheme[override-final]
- is replaced with an @scheme[inherit/super] declaration.}
+ @item{A method declared with @racket[override] or @racket[override-final]
+ is replaced with an @racket[inherit/super] declaration.}
 
-  @item{A method declared with @scheme[augment], @scheme[augride], or
-  @scheme[augment-final] is replaced with an @scheme[inherit/inner] declaration.}
+  @item{A method declared with @racket[augment], @racket[augride], or
+  @racket[augment-final] is replaced with an @racket[inherit/inner] declaration.}
 
- @item{A method declared with @scheme[overment] is not replaced
-  with any @scheme[inherit] declaration.}
+ @item{A method declared with @racket[overment] is not replaced
+  with any @racket[inherit] declaration.}
 
 ]
 
-If the trait produced by @scheme[trait-expr] has no method definition for
-@scheme[id], the @exnraise[exn:fail:contract].}
+If the trait produced by @racket[trait-expr] has no method definition for
+@racket[id], the @exnraise[exn:fail:contract].}
 
 
 @defform[(trait-exclude-field trait-expr id)]{
 
 Produces a new @tech{trait} that is like the @tech{trait} result of
-@scheme[trait-expr], but with the definition of a field named by
-@scheme[id] removed; as the field definition is removed, an
-@scheme[inherit-field] declaration is added.}
+@racket[trait-expr], but with the definition of a field named by
+@racket[id] removed; as the field definition is removed, an
+@racket[inherit-field] declaration is added.}
 
 
 @defform[(trait-alias trait-expr id new-id)]{
 
 Produces a new @tech{trait} that is like the @tech{trait} result of
-@scheme[trait-expr], but the definition and declaration of the method
-named by @scheme[id] is duplicated with the name @scheme[new-id]. The
+@racket[trait-expr], but the definition and declaration of the method
+named by @racket[id] is duplicated with the name @racket[new-id]. The
 consistency requirements for the resulting trait are the same as for
-@scheme[trait-sum], otherwise the @exnraise[exn:fail:contract]. This
-operation does not rename any other use of @scheme[id], such as in
-method calls (even method calls to @scheme[identifier] in the cloned
-definition for @scheme[new-id]).}
+@racket[trait-sum], otherwise the @exnraise[exn:fail:contract]. This
+operation does not rename any other use of @racket[id], such as in
+method calls (even method calls to @racket[identifier] in the cloned
+definition for @racket[new-id]).}
 
 
 @defform[(trait-rename trait-expr id new-id)]{
 
 Produces a new @tech{trait} that is like the @tech{trait} result of
-@scheme[trait-expr], but all definitions and references to methods
-named @scheme[id] are replaced by definitions and references to
-methods named by @scheme[new-id]. The consistency requirements for the
-resulting trait are the same as for @scheme[trait-sum], otherwise the
+@racket[trait-expr], but all definitions and references to methods
+named @racket[id] are replaced by definitions and references to
+methods named by @racket[new-id]. The consistency requirements for the
+resulting trait are the same as for @racket[trait-sum], otherwise the
 @exnraise[exn:fail:contract].}
 
 
 @defform[(trait-rename-field trait-expr id new-id)]{
 
 Produces a new @tech{trait} that is like the @tech{trait} result of
-@scheme[trait-expr], but all definitions and references to fields
-named @scheme[id] are replaced by definitions and references to fields
-named by @scheme[new-id]. The consistency requirements for the
-resulting trait are the same as for @scheme[trait-sum], otherwise the
+@racket[trait-expr], but all definitions and references to fields
+named @racket[id] are replaced by definitions and references to fields
+named by @racket[new-id]. The consistency requirements for the
+resulting trait are the same as for @racket[trait-sum], otherwise the
 @exnraise[exn:fail:contract].}
 
 @; ------------------------------------------------------------------------
@@ -1505,7 +1505,7 @@ resulting trait are the same as for @scheme[trait-sum], otherwise the
   (field field-id ...)])]{
 Produces a contract for a class.
 
-There are two major categories of contracts listed in a @scheme[class/c]
+There are two major categories of contracts listed in a @racket[class/c]
 form: external and internal contracts. External contracts govern behavior
 when an object is instantiated from a class or when methods or fields are
 accessed via an object of that class. Internal contracts govern behavior
@@ -1514,101 +1514,116 @@ separation allows for stronger contracts for class clients and weaker
 contracts for subclasses.
 
 Method contracts must contain an additional initial argument which corresponds
-to the implicit @scheme[this] parameter of the method.  This allows for
+to the implicit @racket[this] parameter of the method.  This allows for
 contracts which discuss the state of the object when the method is called
 (or, for dependent contracts, in other parts of the contract).  Alternative
-contract forms, such as @scheme[->m], are provided as a shorthand
+contract forms, such as @racket[->m], are provided as a shorthand
 for writing method contracts.
 
-Methods and fields listed in an @scheme[absent] clause must @emph{not} be present in the class.
+Methods and fields listed in an @racket[absent] clause must @emph{not} be present in the class.
 
 The external contracts are as follows:
 
 @itemize[
  @item{A method contract without a tag describes the behavior
-   of the implementation of @scheme[method-id] on method sends to an object of the
-   contracted class.  This contract will continue to be checked in subclasses until
-   the contracted class's implementation is no longer the entry point for dynamic
-   dispatch.}
- @item{A field contract, tagged with @scheme[field], describes the behavior of the
-   value contained in that field when accessed via an object of that class.  Since
-   fields may be mutated, these contracts are checked on any external access and/or
-   mutation of the field.}
- @item{An initialization argument contract, tagged with @scheme[init], describes the
-   expected behavior of the value paired with that name during class instantiation.
-   The same name can be provided more than once, in which case the first such contract
-   in the @scheme[class/c] form is applied to the first value tagged with that name in
-   the list of initialization arguments, and so on.}
- @item{The contracts listed in an @scheme[init-field] section are treated as if each
-   contract appeared in an @scheme[init] section and a @scheme[field] section.}
+   of the implementation of @racket[method-id] on method sends to an
+   object of the contracted class.  This contract will continue to be
+   checked in subclasses until the contracted class's implementation is
+   no longer the entry point for dynamic dispatch.}
+ @item{A field contract, tagged with @racket[field], describes the
+   behavior of the value contained in that field when accessed via an
+   object of that class.  Since fields may be mutated, these contracts
+   are checked on any external access and/or mutation of the field.}
+ @item{An initialization argument contract, tagged with @racket[init],
+   describes the expected behavior of the value paired with that name
+   during class instantiation.  The same name can be provided more than
+   once, in which case the first such contract in the @racket[class/c]
+   form is applied to the first value tagged with that name in the list
+   of initialization arguments, and so on.}
+ @item{The contracts listed in an @racket[init-field] section are
+   treated as if each contract appeared in an @racket[init] section and
+   a @racket[field] section.}
 ]
 
 The internal contracts are as follows:
 @itemize[
- @item{A method contract, tagged with @scheme[inherit], describes the behavior of the
-   method when invoked directly (i.e., via @scheme[inherit]) in any subclass of the
-   contracted class.  This contract, like external method contracts, applies until
-   the contracted class's method implementation is no longer the entry point for dynamic
-   dispatch.}
- @item{A field contract, tagged with @scheme[inherit-field], describes the behavior of the
-   value contained in that field when accessed directly (i.e., via @scheme[inherit-field])
-   in any subclass of the contracted class.  Since fields may be mutated, these contracts are
-   checked on any access and/or mutation of the field that occurs in such subclasses.}
- @item{A method contract, tagged with @scheme[super], describes the behavior of
-   @scheme[method-id] when called by the @scheme[super] form in a subclass.  This contract
-   only affects @scheme[super] calls in subclasses which call the contract class's
-   implementation of @scheme[method-id].}
- @item{A method contract, tagged with @scheme[inner], describes the behavior the class
-   expects of an augmenting method in a subclass.  This contract affects any implementations
-   of @scheme[method-id] in subclasses which can be called via @scheme[inner] from the
-   contracted class.  This means a subclass which implements @scheme[method-id] via
-   @scheme[augment] or @scheme[overment] stop future subclasses from being affected by
-   the contract, since further extension cannot be reached via the contracted class.}
- @item{A method contract, tagged with @scheme[override], describes the behavior expected by
-   the contracted class for @scheme[method-id] when called directly (i.e. by the application
-   @scheme[(method-id ...)]).  This form can only be used if overriding the method in subclasses
-   will change the entry point to the dynamic dispatch chain (i.e., the method has never been
-   augmentable).}
- @item{A method contract, tagged with either @scheme[augment] or @scheme[augride], describes the
-   behavior provided by the contracted class for @scheme[method-id] when called directly from
-   subclasses.  These forms can only be used if the method has previously been augmentable, which
-   means that no augmenting or overriding implementation will change the entry point to the
-   dynamic dispatch chain.  @scheme[augment] is used when subclasses can augment the method, and
-   @scheme[augride] is used when subclasses can override the current augmentation.}
+ @item{A method contract, tagged with @racket[inherit], describes the
+   behavior of the method when invoked directly (i.e., via
+   @racket[inherit]) in any subclass of the contracted class.  This
+   contract, like external method contracts, applies until the
+   contracted class's method implementation is no longer the entry point
+   for dynamic dispatch.}
+ @item{A field contract, tagged with @racket[inherit-field], describes
+   the behavior of the value contained in that field when accessed
+   directly (i.e., via @racket[inherit-field]) in any subclass of the
+   contracted class.  Since fields may be mutated, these contracts are
+   checked on any access and/or mutation of the field that occurs in
+   such subclasses.}
+ @item{A method contract, tagged with @racket[super], describes the behavior of
+   @racket[method-id] when called by the @racket[super] form in a
+   subclass.  This contract only affects @racket[super] calls in
+   subclasses which call the contract class's implementation of
+   @racket[method-id].}
+ @item{A method contract, tagged with @racket[inner], describes the
+   behavior the class expects of an augmenting method in a subclass.
+   This contract affects any implementations of @racket[method-id] in
+   subclasses which can be called via @racket[inner] from the contracted
+   class.  This means a subclass which implements @racket[method-id] via
+   @racket[augment] or @racket[overment] stop future subclasses from
+   being affected by the contract, since further extension cannot be
+   reached via the contracted class.}
+ @item{A method contract, tagged with @racket[override], describes the
+   behavior expected by the contracted class for @racket[method-id] when
+   called directly (i.e. by the application @racket[(method-id ...)]).
+   This form can only be used if overriding the method in subclasses
+   will change the entry point to the dynamic dispatch chain (i.e., the
+   method has never been augmentable).}
+ @item{A method contract, tagged with either @racket[augment] or
+   @racket[augride], describes the behavior provided by the contracted
+   class for @racket[method-id] when called directly from subclasses.
+   These forms can only be used if the method has previously been
+   augmentable, which means that no augmenting or overriding
+   implementation will change the entry point to the dynamic dispatch
+   chain.  @racket[augment] is used when subclasses can augment the
+   method, and @racket[augride] is used when subclasses can override the
+   current augmentation.}
 ]}
 
 @defform[(absent method-id ...)]{
-See @scheme[class/c]; use outside of a @scheme[class/c] form is a syntax error.
+See @racket[class/c]; use outside of a @racket[class/c] form is a syntax error.
 }
 
 @defform[(->m dom ... range)]{
-Similar to @scheme[->], except that the domain of the resulting contract contains one more element
-than the stated domain, where the first (implicit) argument is contracted with @scheme[any/c].
-This contract is useful for writing simpler method contracts when no properties of @scheme[this]
-need to be checked.}
-                             
+Similar to @racket[->], except that the domain of the resulting contract
+contains one more element than the stated domain, where the first
+(implicit) argument is contracted with @racket[any/c].  This contract is
+useful for writing simpler method contracts when no properties of
+@racket[this] need to be checked.}
+
 @defform[(->*m (mandatory-dom ...) (optional-dom ...) rest range)]{
-Similar to @scheme[->*], except that the mandatory domain of the resulting contract contains one
-more element than the stated domain, where the first (implicit) argument is contracted with
-@scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
-of @scheme[this] need to be checked.}
+Similar to @racket[->*], except that the mandatory domain of the
+resulting contract contains one more element than the stated domain,
+where the first (implicit) argument is contracted with
+@racket[any/c]. This contract is useful for writing simpler method
+contracts when no properties of @racket[this] need to be checked.}
 
 @defform[(case->m (-> dom ... rest range) ...)]{
-Similar to @scheme[case->], except that the mandatory domain of each case of the resulting contract
-contains one more element than the stated domain, where the first (implicit) argument is contracted
-with @scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
-of @scheme[this] need to be checked.}
+Similar to @racket[case->], except that the mandatory domain of each
+case of the resulting contract contains one more element than the stated
+domain, where the first (implicit) argument is contracted with
+@racket[any/c]. This contract is useful for writing simpler method
+contracts when no properties of @racket[this] need to be checked.}
 
 @defform[(->dm (mandatory-dependent-dom ...)
                (optional-dependent-dom ...)
                dependent-rest
                pre-cond
                dep-range)]{
-Similar to @scheme[->d], except that the mandatory domain of the resulting contract
+Similar to @racket[->d], except that the mandatory domain of the resulting contract
 contains one more element than the stated domain, where the first (implicit) argument is contracted
-with @scheme[any/c]. In addition, @scheme[this] is appropriately bound in the body of the contract.
+with @racket[any/c]. In addition, @racket[this] is appropriately bound in the body of the contract.
 This contract is useful for writing simpler method contracts when no properties
-of @scheme[this] need to be checked.}
+of @racket[this] need to be checked.}
 
 @defform/subs[
 #:literals (field)
@@ -1627,17 +1642,17 @@ of @scheme[this] need to be checked.}
   (field-id contract-expr)])]{
 Produces a contract for an object.
 
-Unlike the older form @scheme[object-contract], but like
-@scheme[class/c], arbitrary contract expressions are allowed.
-Also, method contracts for @scheme[object/c] follow those for
-@scheme[class/c].  An object wrapped with @scheme[object/c]
+Unlike the older form @racket[object-contract], but like
+@racket[class/c], arbitrary contract expressions are allowed.
+Also, method contracts for @racket[object/c] follow those for
+@racket[class/c].  An object wrapped with @racket[object/c]
 behaves as if its class had been wrapped with the equivalent
-@scheme[class/c] contract.
+@racket[class/c] contract.
 }
                              
 @defproc[(instanceof/c [class-contract contract?]) contract?]{
 Produces a contract for an object, where the object is an
-instance of a class that conforms to @scheme[class-contract].
+instance of a class that conforms to @racket[class-contract].
 }
                              
 @defform/subs[
@@ -1684,10 +1699,10 @@ method contract must be written directly in the body of the
 object-contract---much like the way that methods in class
 definitions use the same syntax as regular function
 definitions, but cannot be arbitrary procedures.  Unlike the
-method contracts for @scheme[class/c], the implicit @scheme[this]
+method contracts for @racket[class/c], the implicit @racket[this]
 argument is not part of the contract.  To allow for the use of
-@scheme[this] in dependent contracts, @scheme[->d] contracts
-implicitly bind @scheme[this] to the object itself.}
+@racket[this] in dependent contracts, @racket[->d] contracts
+implicitly bind @racket[this] to the object itself.}
 
 
 @defthing[mixin-contract contract?]{
@@ -1699,7 +1714,7 @@ a subclass of the input.}
 @defproc[(make-mixin-contract [type (or/c class? interface?)] ...) contract?]{
 
 Produces a @tech{function contract} that guarantees the input to the
-function is a class that implements/subclasses each @scheme[type], and
+function is a class that implements/subclasses each @racket[type], and
 that the result of the function is a subclass of the input.}
 
 @defproc[(is-a?/c [type (or/c class? interface?)]) flat-contract?]{
@@ -1711,13 +1726,13 @@ recognizes objects that instantiate the class/interface.}
 @defproc[(implementation?/c [interface interface?]) flat-contract?]{
 
 Returns a flat contract that recognizes classes that implement
-@scheme[interface].}
+@racket[interface].}
 
 
 @defproc[(subclass?/c [class class?]) flat-contract?]{
 
 Returns a flat contract that recognizes classes that
-are subclasses of @scheme[class].}
+are subclasses of @racket[class].}
 
 
 @; ------------------------------------------------------------------------
@@ -1725,54 +1740,54 @@ are subclasses of @scheme[class].}
 @section[#:tag "objectequality"]{Object Equality and Hashing}
 
 By default, objects that are instances of different classes or that
-are instances of a non-transparent class are @scheme[equal?] only if
-they are @scheme[eq?]. Like transparent structures, two objects that
+are instances of a non-transparent class are @racket[equal?] only if
+they are @racket[eq?]. Like transparent structures, two objects that
 are instances of the same transparent class (i.e., every superclass of
-the class has @scheme[#f] as its inspector) are @scheme[equal?] when
-their field values are @scheme[equal?].
+the class has @racket[#f] as its inspector) are @racket[equal?] when
+their field values are @racket[equal?].
 
 To customize the way that a class instance is compared to other
-instances by @scheme[equal?], implement the @scheme[equal<%>]
+instances by @racket[equal?], implement the @racket[equal<%>]
 interface.
 
 @definterface[equal<%> ()]{
 
-The @scheme[equal<%>] interface includes three methods, which are
+The @racket[equal<%>] interface includes three methods, which are
 analogous to the functions provided for a structure type with
-@scheme[prop:equal+hash]:
+@racket[prop:equal+hash]:
 
 @itemize[
 
- @item{@scheme[equal-to?] --- Takes two arguments. The first argument
+ @item{@racket[equal-to?] --- Takes two arguments. The first argument
  is an object that is an instance of the same class (or a subclass
- that does not re-declare its implementation of @scheme[equal<%>])
+ that does not re-declare its implementation of @racket[equal<%>])
  and that is being compared to the target object. The second argument
- is an @scheme[equal?]-like procedure of two arguments that should be
+ is an @racket[equal?]-like procedure of two arguments that should be
  used for recursive equality testing. The result should be a true
  value if the object and the first argument of the method are equal,
- @scheme[#f] otherwise.}
+ @racket[#f] otherwise.}
 
- @item{@scheme[equal-hash-code-of] --- Takes one argument, which is a
+ @item{@racket[equal-hash-code-of] --- Takes one argument, which is a
  procedure of one argument that should be used for recursive hash-code
  computation. The result should be an exact integer representing the
  target object's hash code.}
 
- @item{@scheme[equal-secondary-hash-code-of] --- Takes one argument,
+ @item{@racket[equal-secondary-hash-code-of] --- Takes one argument,
  which is a procedure of one argument that should be used for
  recursive hash-code computation. The result should be an exact
  integer representing the target object's secondary hash code.}
 
 ]
 
-The @scheme[equal<%>] interface is unusual in that declaring the
+The @racket[equal<%>] interface is unusual in that declaring the
 implementation of the interface is different from inheriting the
 interface. Two objects can be equal only if they are instances of
 classes whose most specific ancestor to explicitly implement
-@scheme[equal<%>] is the same ancestor.
+@racket[equal<%>] is the same ancestor.
 
-See @scheme[prop:equal+hash] for more information on equality
-comparisons and hash codes. The @scheme[equal<%>] interface is
-implemented with @scheme[interface*] and @scheme[prop:equal+hash].}
+See @racket[prop:equal+hash] for more information on equality
+comparisons and hash codes. The @racket[equal<%>] interface is
+implemented with @racket[interface*] and @racket[prop:equal+hash].}
 
 @; ------------------------------------------------------------------------
 
@@ -1784,13 +1799,13 @@ implemented with @scheme[interface*] and @scheme[prop:equal+hash].}
   class-clause ...)
 ]{
 
-Binds @scheme[class-id] to a class, where @scheme[superclass-expr],
-the @scheme[interface-expr]s, and the @scheme[class-clause]s are as in
-@scheme[class*].
+Binds @racket[class-id] to a class, where @racket[superclass-expr],
+the @racket[interface-expr]s, and the @racket[class-clause]s are as in
+@racket[class*].
 
 This form can only be used at the top level, either within a module
-or outside. The @scheme[class-id] identifier is bound to the new
-class, and @schemeidfont{deserialize-info:}@scheme[class-id] is also
+or outside. The @racket[class-id] identifier is bound to the new
+class, and @racketidfont{deserialize-info:}@racket[class-id] is also
 defined; if the definition is within a module, then the latter is
 provided from the module.
 
@@ -1799,13 +1814,13 @@ Serialization for the class works in one of two ways:
 @itemize[
 
  @item{If the class implements the built-in interface
-       @scheme[externalizable<%>], then an object is serialized by
-       calling its @scheme[externalize] method; the result can be
+       @racket[externalizable<%>], then an object is serialized by
+       calling its @racket[externalize] method; the result can be
        anything that is serializable (but, obviously, should not be
        the object itself). Deserialization creates an instance of the
        class with no initialization arguments, and then calls the
-       object's @scheme[internalize] method with the result of
-       @scheme[externalize] (or, more precisely, a deserialized
+       object's @racket[internalize] method with the result of
+       @racket[externalize] (or, more precisely, a deserialized
        version of the serialized result of a previous call).
 
        To support this form of serialization, the class must be
@@ -1813,9 +1828,9 @@ Serialization for the class works in one of two ways:
        cycles involving only instances of the class (and other such
        classes) cannot be serialized.}
 
- @item{If the class does not implement @scheme[externalizable<%>],
+ @item{If the class does not implement @racket[externalizable<%>],
        then every superclass of the class must be either serializable
-       or transparent (i.e,. have @scheme[#f] as its
+       or transparent (i.e,. have @racket[#f] as its
        inspector). Serialization and deserialization are fully
        automatic, and may involve cycles of instances.
 
@@ -1828,17 +1843,17 @@ Serialization for the class works in one of two ways:
 ]
 
 In the second case, a serializable subclass can implement
-@scheme[externalizable<%>], in which case the @scheme[externalize]
+@racket[externalizable<%>], in which case the @racket[externalize]
 method is responsible for all serialization (i.e., automatic
 serialization is lost for instances of the subclass). In the first
 case, all serializable subclasses implement
-@scheme[externalizable<%>], since a subclass implements all of the
+@racket[externalizable<%>], since a subclass implements all of the
 interfaces of its parent class.
 
 In either case, if an object is an immediate instance of a subclass
 (that is not itself serializable), the object is serialized as if it
 was an immediate instance of the serializable class. In particular,
-overriding declarations of the @scheme[externalize] method are ignored
+overriding declarations of the @racket[externalize] method are ignored
 for instances of non-serializable subclasses.}
 
 
@@ -1847,50 +1862,50 @@ for instances of non-serializable subclasses.}
   class-clause ...)
 ]{
 
-Like @scheme[define-serializable-class*], but without interface
-expressions (analogous to @scheme[class]).}
+Like @racket[define-serializable-class*], but without interface
+expressions (analogous to @racket[class]).}
 
 
 @definterface[externalizable<%> ()]{
 
-The @scheme[externalizable<%>] interface includes only the
-@scheme[externalize] and @scheme[internalize] methods. See
-@scheme[define-serializable-class*] for more information.}
+The @racket[externalizable<%>] interface includes only the
+@racket[externalize] and @racket[internalize] methods. See
+@racket[define-serializable-class*] for more information.}
 
 @; ------------------------------------------------------------------------
 
 @section[#:tag "objectprinting"]{Object Printing}
 
 To customize the way that a class instance is printed by
-@racket[print], @scheme[write] and @scheme[display], implement the
-@scheme[printable<%>] interface.
+@racket[print], @racket[write] and @racket[display], implement the
+@racket[printable<%>] interface.
 
 @defthing[printable<%> interface?]{
 
-The @scheme[printable<%>] interface includes only the
-@scheme[custom-print], @scheme[custom-write], and
-@scheme[custom-display] methods. The @scheme[custom-print] method
+The @racket[printable<%>] interface includes only the
+@racket[custom-print], @racket[custom-write], and
+@racket[custom-display] methods. The @racket[custom-print] method
 accepts two arguments: the destination port and the current
-@scheme[quasiquote] depth as an exact nonnegative integer. The
-@scheme[custom-write] and @scheme[custom-display] methods each accepts
-a single argument, which is the destination port to @scheme[write] or
-@scheme[display] the object.
+@racket[quasiquote] depth as an exact nonnegative integer. The
+@racket[custom-write] and @racket[custom-display] methods each accepts
+a single argument, which is the destination port to @racket[write] or
+@racket[display] the object.
 
-Calls to the @racket[custom-print], @scheme[custom-write], or
-@scheme[custom-display] methods are like calls to a procedure attached
-to a structure type through the @scheme[prop:custom-write]
+Calls to the @racket[custom-print], @racket[custom-write], or
+@racket[custom-display] methods are like calls to a procedure attached
+to a structure type through the @racket[prop:custom-write]
 property. In particular, recursive printing can trigger an escape from
 the call.
 
-See @scheme[prop:custom-write] for more information. The
-@scheme[printable<%>] interface is implemented with
-@scheme[interface*] and @scheme[prop:custom-write].}
+See @racket[prop:custom-write] for more information. The
+@racket[printable<%>] interface is implemented with
+@racket[interface*] and @racket[prop:custom-write].}
 
 @defthing[writable<%> interface?]{
 
-Like @scheme[printable<%>], but includes only the
-@scheme[custom-write] and @scheme[custom-display] methods.
-A @racket[print] request is directed to @scheme[custom-write].}
+Like @racket[printable<%>], but includes only the
+@racket[custom-write] and @racket[custom-display] methods.
+A @racket[print] request is directed to @racket[custom-write].}
 
 @; ------------------------------------------------------------------------
 
@@ -1898,114 +1913,114 @@ A @racket[print] request is directed to @scheme[custom-write].}
 
 @defproc[(object? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an object, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an object, @racket[#f] otherwise.}
 
 
 @defproc[(class? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a class, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a class, @racket[#f] otherwise.}
 
 
 @defproc[(interface? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an interface, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an interface, @racket[#f] otherwise.}
 
 
 @defproc[(generic? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{generic}, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{generic}, @racket[#f] otherwise.}
 
 
 @defproc[(object=? [a object?] [b object?]) boolean?]{
 
 Determines if two objects are the same object, or not; this procedure uses
-@scheme[eq?], but also works properly with contracts.}
+@racket[eq?], but also works properly with contracts.}
 
 
 @defproc[(object->vector [object object?] [opaque-v any/c #f]) vector?]{
 
-Returns a vector representing @scheme[object] that shows its
-inspectable fields, analogous to @scheme[struct->vector].}
+Returns a vector representing @racket[object] that shows its
+inspectable fields, analogous to @racket[struct->vector].}
 
 
 @defproc[(class->interface [class class?]) interface?]{
 
-Returns the interface implicitly defined by @scheme[class].}
+Returns the interface implicitly defined by @racket[class].}
 
 
 @defproc[(object-interface [object object?]) interface?]{
 
 Returns the interface implicitly defined by the class of
-@scheme[object].}
+@racket[object].}
 
  
 @defproc[(is-a? [v any/c] [type (or/c interface? class?)]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an instance of a class
-@scheme[type] or a class that implements an interface @scheme[type],
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an instance of a class
+@racket[type] or a class that implements an interface @racket[type],
+@racket[#f] otherwise.}
 
 
 @defproc[(subclass? [v any/c] [class class?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a class derived from (or equal
-to) @scheme[class], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a class derived from (or equal
+to) @racket[class], @racket[#f] otherwise.}
 
 
 @defproc[(implementation? [v any/c] [interface interface?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a class that implements
-@scheme[interface], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a class that implements
+@racket[interface], @racket[#f] otherwise.}
 
 
 @defproc[(interface-extension? [v any/c] [interface interface?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an interface that extends
-@scheme[interface], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an interface that extends
+@racket[interface], @racket[#f] otherwise.}
 
 
 @defproc[(method-in-interface? [sym symbol?] [interface interface?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[interface] (or any of its ancestor
-interfaces) includes a member with the name @scheme[sym], @scheme[#f]
+Returns @racket[#t] if @racket[interface] (or any of its ancestor
+interfaces) includes a member with the name @racket[sym], @racket[#f]
 otherwise.}
 
 
 @defproc[(interface->method-names [interface interface?]) (listof symbol?)]{
 
-Returns a list of symbols for the method names in @scheme[interface],
+Returns a list of symbols for the method names in @racket[interface],
 including methods inherited from superinterfaces, but not including
 methods whose names are local (i.e., declared with
-@scheme[define-local-member-names]).}
+@racket[define-local-member-names]).}
 
 
 @defproc[(object-method-arity-includes? [object object?] [sym symbol?] [cnt exact-nonnegative-integer?])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[object] has a method named @scheme[sym]
-that accepts @scheme[cnt] arguments, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[object] has a method named @racket[sym]
+that accepts @racket[cnt] arguments, @racket[#f] otherwise.}
 
 
 @defproc[(field-names [object object?]) (listof symbol?)]{
 
 Returns a list of all of the names of the fields bound in
-@scheme[object], including fields inherited from superinterfaces, but
+@racket[object], including fields inherited from superinterfaces, but
 not including fields whose names are local (i.e., declared with
-@scheme[define-local-member-names]).}
+@racket[define-local-member-names]).}
 
 
 @defproc[(object-info [object any/c]) (values (or/c class? #f) boolean?)]{
 
 Returns two values, analogous to the return
-values of @scheme[struct-info]:
+values of @racket[struct-info]:
 @itemize[
 
-  @item{@scheme[_class]: a class or @scheme[#f]; the result is
-  @scheme[#f] if the current inspector does not control any class for
-  which the @scheme[object] is an instance.}
+  @item{@racket[_class]: a class or @racket[#f]; the result is
+  @racket[#f] if the current inspector does not control any class for
+  which the @racket[object] is an instance.}
 
-  @item{@scheme[_skipped?]: @scheme[#f] if the first result corresponds
-  to the most specific class of @scheme[object], @scheme[#t]
+  @item{@racket[_skipped?]: @racket[#f] if the first result corresponds
+  to the most specific class of @racket[object], @racket[#t]
   otherwise.}
 
 ]}
@@ -2021,42 +2036,42 @@ values of @scheme[struct-info]:
                  boolean?)]{
 
 Returns seven values, analogous to the return
-values of @scheme[struct-type-info]:
+values of @racket[struct-type-info]:
 
 @itemize[
 
-  @item{@scheme[_name]: the class's name as a symbol;}
+  @item{@racket[_name]: the class's name as a symbol;}
 
-  @item{@scheme[_field-cnt]: the number of fields (public and private)
+  @item{@racket[_field-cnt]: the number of fields (public and private)
    defined by the class;}
 
-  @item{@scheme[_field-name-list]: a list of symbols corresponding to the
-  class's public fields; this list can be larger than @scheme[_field-cnt]
+  @item{@racket[_field-name-list]: a list of symbols corresponding to the
+  class's public fields; this list can be larger than @racket[_field-cnt]
   because it includes inherited fields;}
 
-  @item{@scheme[_field-accessor]: an accessor procedure for obtaining
+  @item{@racket[_field-accessor]: an accessor procedure for obtaining
   field values in instances of the class; the accessor takes an
-  instance and a field index between @scheme[0] (inclusive)
-  and @scheme[_field-cnt] (exclusive);}
+  instance and a field index between @racket[0] (inclusive)
+  and @racket[_field-cnt] (exclusive);}
 
-  @item{@scheme[_field-mutator]: a mutator procedure for modifying
+  @item{@racket[_field-mutator]: a mutator procedure for modifying
   field values in instances of the class; the mutator takes an
-  instance, a field index between @scheme[0] (inclusive)
-  and @scheme[_field-cnt] (exclusive), and a new field value;}
+  instance, a field index between @racket[0] (inclusive)
+  and @racket[_field-cnt] (exclusive), and a new field value;}
 
-  @item{@scheme[_super-class]: a class for the most specific ancestor of
+  @item{@racket[_super-class]: a class for the most specific ancestor of
    the given class that is controlled by the current inspector,
-   or @scheme[#f] if no ancestor is controlled by the current
+   or @racket[#f] if no ancestor is controlled by the current
    inspector;}
 
-  @item{@scheme[_skipped?]: @scheme[#f] if the sixth result is the most
-   specific ancestor class, @scheme[#t] otherwise.}
+  @item{@racket[_skipped?]: @racket[#f] if the sixth result is the most
+   specific ancestor class, @racket[#t] otherwise.}
 
 ]}
 
 @defstruct[(exn:fail:object exn:fail) ()]{
 
-Raised for @scheme[class]-related failures, such as attempting to call
+Raised for @racket[class]-related failures, such as attempting to call
 a method that is not supplied by an object.
 
 }

@@ -16,7 +16,7 @@ procedure, and an array of @cpp{Scheme_Object*} arguments. The number
 of arguments passed to the function will be checked using the arity
 information.  (The arity information provided to
 @cpp{scheme_make_prim_w_arity} is also used for the Racket
-@scheme[arity] procedure.) The procedure implementation is not allowed
+@racket[arity] procedure.) The procedure implementation is not allowed
 to mutate the input array of arguments; as an exception, the procedure
 can mutate the array if it is the same a the result of
 @cpp{scheme_current_argument_stack}. The procedure may mutate the
@@ -60,7 +60,7 @@ maximum number of arguments that can be supplied to the procedure, or
 -1 if the procedure can take arbitrarily many arguments. The
 @var{mina} and @var{maxa} values are used for automatically checking
 the argument count before the primitive is invoked, and also for the
-Racket @indexed-scheme[arity] procedure. The @var{name} argument is
+Racket @indexed-racket[arity] procedure. The @var{name} argument is
 used to report application arity errors at run-time.}
 
 @function[(Scheme_Object* scheme_make_folding_prim
@@ -72,9 +72,9 @@ used to report application arity errors at run-time.}
 
 Like @cpp{scheme_make_prim_w_arity}, but if @var{folding} is non-zero,
 the compiler assumes that an application of the procedure to constant
-values can be folded to a constant. For example, @scheme[+],
-@scheme[zero?], and @scheme[string-length] are folding primitives, but
-@scheme[display] and @scheme[cons] are not.}
+values can be folded to a constant. For example, @racket[+],
+@racket[zero?], and @racket[string-length] are folding primitives, but
+@racket[display] and @racket[cons] are not.}
 
 @function[(Scheme_Object* scheme_make_prim
            [Scheme_Prim* prim])]{

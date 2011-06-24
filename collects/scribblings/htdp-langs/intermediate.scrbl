@@ -5,21 +5,21 @@
 @(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
    (begin
     (require (for-label lang/htdp-beginner))
-    (define beg-define (scheme define))
-    (define beg-define-struct (scheme define-struct))
-    (define beg-cond (scheme cond))
-    (define beg-if (scheme if))
-    (define beg-and (scheme and))
-    (define beg-or (scheme or))
-    (define beg-check-expect (scheme check-expect))
-    (define beg-require (scheme require))))
+    (define beg-define (racket define))
+    (define beg-define-struct (racket define-struct))
+    (define beg-cond (racket cond))
+    (define beg-if (racket if))
+    (define beg-and (racket and))
+    (define beg-or (racket or))
+    (define beg-check-expect (racket check-expect))
+    (define beg-require (racket require))))
 @(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 @title[#:style 'toc #:tag "intermediate"]{Intermediate Student}
 
 @declare-exporting[lang/htdp-intermediate]
 
-@schemegrammar*+qq[
+@racketgrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             local let let* letrec time check-expect check-within check-error)
 (check-expect check-within check-error require)
@@ -47,8 +47,8 @@
       empty
       (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment @#,seclink["intermediate-prim-op"]{primitive operation}))
-      (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@racketvalfont{'}@racket[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@racketvalfont{`}@racket[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false
@@ -64,7 +64,7 @@
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-define"]{@scheme[define]}
+@section[#:tag "intermediate-define"]{@racket[define]}
 
 @deftogether[(
 @defform[(define (id id id ...) expr)]
@@ -73,40 +73,40 @@
 @defform/none[#:literals (define lambda)
               (define id (lambda (id id ...) expr))]
 )]{
-Besides working in @scheme[local], definition forms are
+Besides working in @racket[local], definition forms are
 the same as Beginning's @|beg-define|.}
 
 @defidform[lambda]{
 
-As in Beginning, @scheme[lambda] keyword can only be used with
-@scheme[define] in the alternative function-definition syntax.}
+As in Beginning, @racket[lambda] keyword can only be used with
+@racket[define] in the alternative function-definition syntax.}
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "intermediate-define-struct"]{@scheme[define-struct]}
+@section[#:tag "intermediate-define-struct"]{@racket[define-struct]}
 
 @defform[(define-struct structid (fieldid ...))]{
 
-Besides working in @scheme[local], this form is the same as Beginning's
+Besides working in @racket[local], this form is the same as Beginning's
 @|beg-define-struct|.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[local]}
+@section{@racket[local]}
 
 @defform[(local [definition ...] expr)]{
 
-Groups related definitions for use in @scheme[expr]. Each
-@scheme[definition] is evaluated in order, and finally the body
-@scheme[expr] is evaluated. Only the expressions within the
-@scheme[local] form (including the right-hand-sides of the
-@scheme[definition]s and the @scheme[expr]) may refer to the names
-defined by the @scheme[definition]s. If a name defined in the
-@scheme[local] form is the same as a top-level binding, the inner one
-``shadows'' the outer one. That is, inside the @scheme[local] form,
+Groups related definitions for use in @racket[expr]. Each
+@racket[definition] is evaluated in order, and finally the body
+@racket[expr] is evaluated. Only the expressions within the
+@racket[local] form (including the right-hand-sides of the
+@racket[definition]s and the @racket[expr]) may refer to the names
+defined by the @racket[definition]s. If a name defined in the
+@racket[local] form is the same as a top-level binding, the inner one
+``shadows'' the outer one. That is, inside the @racket[local] form,
 any references to that name refer to the inner one.
 
-Since @scheme[local] is an expression and may occur anywhere an
+Since @racket[local] is an expression and may occur anywhere an
 expression may occur, it introduces the notion of lexical
 scope. Expressions within the local may ``escape'' the scope of the
 local, but these expressions may still refer to the bindings
@@ -114,26 +114,26 @@ established by the local.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[letrec], @scheme[let], and @scheme[let*]}
+@section{@racket[letrec], @racket[let], and @racket[let*]}
 
 @defform[(letrec ([id expr-for-let] ...) expr)]{
 
-Similar to @scheme[local], but essentially omitting the
-@scheme[define] for each definition.
+Similar to @racket[local], but essentially omitting the
+@racket[define] for each definition.
 
-A @scheme[expr-for-let] can be either an expression for a constant
-definition or a @scheme[lambda] form for a function definition.}
+A @racket[expr-for-let] can be either an expression for a constant
+definition or a @racket[lambda] form for a function definition.}
 
 @defform[(let ([id expr-for-let] ...) expr)]{
 
-Like @scheme[letrec], but the defined @scheme[id]s can be used only in
-the last @scheme[expr], not the @scheme[expr-for-let]s next to the
-@scheme[id]s.}
+Like @racket[letrec], but the defined @racket[id]s can be used only in
+the last @racket[expr], not the @racket[expr-for-let]s next to the
+@racket[id]s.}
 
 @defform[(let* ([id expr-for-let] ...) expr)]{
 
-Like @scheme[let], but each @scheme[id] can be used in any subsequent
-@scheme[expr-for-let], in addition to @scheme[expr].}
+Like @racket[let], but each @racket[id] can be used in any subsequent
+@racket[expr-for-let], in addition to @racket[expr].}
 
 @; ----------------------------------------------------------------------
 
@@ -143,23 +143,23 @@ Like @scheme[let], but each @scheme[id] can be used in any subsequent
 
 A function call in Intermediate is the same as a Beginning
 @seclink["beginner-call"]{function call}, except that it can also call
-@scheme[local]ly defined functions or functions passed as
-arguments. That is, @scheme[id] can be a function defined in
-@scheme[local] or an argument name while in a function.}
+@racket[local]ly defined functions or functions passed as
+arguments. That is, @racket[id] can be a function defined in
+@racket[local] or an argument name while in a function.}
 
 @defform[(#%app id expr expr ...)]{
 
-A function call can be written with @scheme[#%app], though it's
+A function call can be written with @racket[#%app], though it's
 practically never written that way.}
 
 @; ----------------------------------------------------------------------
 
-@section{@scheme[time]}
+@section{@racket[time]}
 
 @defform[(time expr)]{
 
 This form is used to measure the time taken to evaluate
-@scheme[expr]. After evaluating @scheme[expr], Scheme prints out the
+@racket[expr]. After evaluating @racket[expr], Racket prints out the
 time taken by the evaluation (including real time, time taken by the
 cpu, and the time spent collecting free memory) and returns the result
 of the expression.
@@ -177,9 +177,9 @@ numbers depends on the platform.)
 
 @defform/none[id]{
 
-An @scheme[id] refers to a defined constant (possibly local), defined
+An @racket[id] refers to a defined constant (possibly local), defined
 function (possibly local), or argument within a function body. If no
-definition or argument matches the @scheme[id] name, an error is
+definition or argument matches the @racket[id] name, an error is
 reported.}
 
 @; ----------------------------------------------------------------------

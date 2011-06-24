@@ -42,22 +42,22 @@
 
 Lazy Racket is available as both a language level and a module that
 can be used to write lazy code. To write lazy code, simply use
-@schememodname[lazy] as your module's language:
+@racketmodname[lazy] as your module's language:
 
-@schememod[
+@racketmod[
 lazy
 ... @#,elem{lazy code here}...]
 
 Function applications are delayed, and promises are automatically
 forced. The language provides bindings that are equivalent to most of
-the @schememodname[mzscheme] and @schememodname[scheme/list]
+the @racketmodname[mzscheme] and @racketmodname[scheme/list]
 libraries. Primitives are strict in the expected places; struct
-constructors are lazy; @scheme[if], @scheme[and], @scheme[or] @|etc|
+constructors are lazy; @racket[if], @racket[and], @racket[or] @|etc|
 are plain (lazy) functions. Strict functionality is provided as-is:
-@scheme[begin], I/O, mutation, parameterization, etc. To have your
-code make sense, you should chain side effects in @scheme[begin]s,
+@racket[begin], I/O, mutation, parameterization, etc. To have your
+code make sense, you should chain side effects in @racket[begin]s,
 which will sequence things properly. (Note: This is similar to
-threading monads through your code---only use @scheme[begin] where
+threading monads through your code---only use @racket[begin] where
 order matters.)
 
 Mixing lazy and strict code is simple: you just write the lazy code in
@@ -67,11 +67,11 @@ as strict, and on the strict side you only need to force (possibly
 recursively) through promises.
 
 A few side-effect bindings are provided as-is. For example,
-@scheme[read] and @scheme[printf] do the obvious thing---but note that
+@racket[read] and @racket[printf] do the obvious thing---but note that
 the language is a call-by-need, and you need to be aware when promises
-are forced. There are also bindings for @scheme[begin] (delays a
-computation that forces all sub-expressions), @scheme[when],
-@scheme[unless], etc. There are, however, less reliable and might
+are forced. There are also bindings for @racket[begin] (delays a
+computation that forces all sub-expressions), @racket[when],
+@racket[unless], etc. There are, however, less reliable and might
 change (or be dropped) in the future.
 
 There are a few additional bindings, the important ones are special
@@ -133,30 +133,30 @@ input arguments in order.}
 
 @defmodule[lazy/force]
 
-The bindings of @schememodname[lazy/force] are re-provided by
-@schememodname[lazy].
+The bindings of @racketmodname[lazy/force] are re-provided by
+@racketmodname[lazy].
 
 @defproc[(! [expr any/c]) any/c]{
 
-Evaluates @scheme[expr] strictly. The result is always forced, over
+Evaluates @racket[expr] strictly. The result is always forced, over
 and over until it gets a non-promise value.}
 
 
-@defproc[(!![expr any/c]) any/c]{
+@defproc[(!! [expr any/c]) any/c]{
 
-Similar to @scheme[!], but recursively forces a structure (e.g:
+Similar to @racket[!], but recursively forces a structure (e.g:
 lists).}
 
 
 @defproc[(!list [expr (or/c promise? list?)]) list?]{
 
-Forces the @scheme[expr] which is expected to be a list, and forces
-the @scheme[cdr]s recursively to expose a proper list structure.}
+Forces the @racket[expr] which is expected to be a list, and forces
+the @racket[cdr]s recursively to expose a proper list structure.}
 
 
 @defproc[(!!list [expr (or/c promise? list?)]) list?]{
 
-Similar to @scheme[!list] but also forces (using @scheme[!]) the
+Similar to @racket[!list] but also forces (using @racket[!]) the
 elements of the list.}
 
 
@@ -166,7 +166,7 @@ elements of the list.}
 
 To avoid dealing with multiple values, they are treated as a single
 tuple in the lazy language. This is implemented as a
-@scheme[multiple-values] struct, with a @scheme[values] slot.
+@racket[multiple-values] struct, with a @racket[values] slot.
 
 @defproc[(split-values [x multiple-values?]) any]{
 
@@ -176,12 +176,12 @@ in the future.)}
 
 @defproc[(!values [expr (or/c promise? multiple-values?)]) any]{
 
-Forces @scheme[expr] and uses @scheme[split-values] on the result.}
+Forces @racket[expr] and uses @racket[split-values] on the result.}
 
 
 @defproc[(!!values [expr (or/c promise? multiple-values?)]) any]{
 
-Similar to @scheme[!values], but forces each of the values
+Similar to @racket[!values], but forces each of the values
 recursively.}
 
 ;}

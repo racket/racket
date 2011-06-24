@@ -114,7 +114,7 @@ return value, it tells a potential client that the ``server'' module
 even whether it is a single value or multiple values.
 
 The @racket[any/c] contract is similar to @racket[any], in that it
-makes no demands on a value. Unlike @scheme[any], @racket[any/c]
+makes no demands on a value. Unlike @racket[any], @racket[any/c]
 indicates a single value, and it is suitable for use as an argument
 contract. Using @racket[any/c] as a range contract imposes a check
 that the function produces a single value. That is,

@@ -4,30 +4,30 @@
 @title[#:tag "stringport"]{String Ports}
 
 String input and output ports do not need to be explicitly closed. The
-@scheme[file-position] procedure works for string ports in
+@racket[file-position] procedure works for string ports in
 position-setting mode.
 
 @defproc[(open-input-bytes [bstr bytes?] [name any/c 'string]) input-port?]{
 
-Creates an input port that reads characters from @scheme[bstr] (see
-@secref["bytestrings"]). Modifying @scheme[bstr] afterward does not
+Creates an input port that reads characters from @racket[bstr] (see
+@secref["bytestrings"]). Modifying @racket[bstr] afterward does not
 affect the byte stream produced by the port. The optional
-@scheme[name] argument is used as the name for the returned port.}
+@racket[name] argument is used as the name for the returned port.}
 
 @defproc[(open-input-string [str string?] [name any/c 'string]) input-port?]{
 
 Creates an input port that reads bytes from the UTF-8 encoding (see
-@secref["encodings"]) of @scheme[str]. The optional @scheme[name]
+@secref["encodings"]) of @racket[str]. The optional @racket[name]
 argument is used as the name for the returned port.}
 
 @defproc[(open-output-bytes [name any/c 'string]) output-port?]{
 
 Creates an output port that accumulates the output into a byte
-string. The optional @scheme[name] argument is used as the name for
+string. The optional @racket[name] argument is used as the name for
 the returned port.}
 
 @defproc[(open-output-string [name any/c 'string]) output-port?]{The
-same as @scheme[open-output-bytes].}
+same as @racket[open-output-bytes].}
 
 @defproc[(get-output-bytes [out output-port?]
                            [reset? any/c #f]
@@ -35,31 +35,31 @@ same as @scheme[open-output-bytes].}
                            [end-pos exact-nonnegative-integer? #f])
          bytes?]{
 
-Returns the bytes accumulated in @scheme[out] so far in a
+Returns the bytes accumulated in @racket[out] so far in a
 freshly allocated byte string (including any bytes written after the
-port's current position, if any). The @scheme[out] port must be a
-string output port produced by @scheme[open-output-bytes] (or
-@scheme[open-output-string]) or a structure whose
-@scheme[prop:output-port] property refers to such an output port
+port's current position, if any). The @racket[out] port must be a
+string output port produced by @racket[open-output-bytes] (or
+@racket[open-output-string]) or a structure whose
+@racket[prop:output-port] property refers to such an output port
 (transitively).
 
-If @scheme[reset?] is true, then all bytes are removed from the port,
-and the port's position is reset to @scheme[0]; if @scheme[reset?] is
-@scheme[#f], then all bytes remain in the port for further
+If @racket[reset?] is true, then all bytes are removed from the port,
+and the port's position is reset to @racket[0]; if @racket[reset?] is
+@racket[#f], then all bytes remain in the port for further
 accumulation (so they are returned for later calls to
-@scheme[get-output-bytes] or @scheme[get-output-string]), and the
+@racket[get-output-bytes] or @racket[get-output-string]), and the
 port's position is unchanged.
 
-The @scheme[start-pos] and @scheme[end-pos] arguments specify the
-range of bytes in the port to return; supplying @scheme[start-pos] and
-@scheme[end-pos] is the same as using @scheme[subbytes] on the result
-of @scheme[get-output-bytes], but supplying them to
-@scheme[get-output-bytes] can avoid an allocation. The
-@scheme[end-pos] argument can be @scheme[#f], which corresponds to not
-passing a second argument to @scheme[subbytes].}
+The @racket[start-pos] and @racket[end-pos] arguments specify the
+range of bytes in the port to return; supplying @racket[start-pos] and
+@racket[end-pos] is the same as using @racket[subbytes] on the result
+of @racket[get-output-bytes], but supplying them to
+@racket[get-output-bytes] can avoid an allocation. The
+@racket[end-pos] argument can be @racket[#f], which corresponds to not
+passing a second argument to @racket[subbytes].}
 
 @defproc[(get-output-string [out output-port?]) string?]{
-Returns @scheme[(bytes->string/utf-8 (get-output-bytes out) #\?)].}
+Returns @racket[(bytes->string/utf-8 (get-output-bytes out) #\?)].}
 
 @examples[
 (define i (open-input-string "hello world"))

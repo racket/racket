@@ -4,16 +4,16 @@
 @defclass/title[dc-path% object% ()]{
 
 A path is a set of figures defined by curves. A path can be used with
-the @method[dc<%> draw-path] method of a @scheme[dc<%>] object to draw
+the @method[dc<%> draw-path] method of a @racket[dc<%>] object to draw
 the path's curves as lines, fill the region bounded by the path's
 curves, or both. A path can also be used with the @method[region%
-set-path] method of a @scheme[region%] object to generate a region
+set-path] method of a @racket[region%] object to generate a region
 bounded by the path's curves.
 
 A path consists of zero or more @deftech{closed sub-paths}, and
- possibly one @deftech{open sub-path}. Some @scheme[dc-path%] methods
- extend the open sub-path, some @scheme[dc-path%] methods close the
- open sub-path, and some @scheme[dc-path%] methods add closed
+ possibly one @deftech{open sub-path}. Some @racket[dc-path%] methods
+ extend the open sub-path, some @racket[dc-path%] methods close the
+ open sub-path, and some @racket[dc-path%] methods add closed
  sub-paths. This approach to drawing formulation is inherited from
  PostScript @cite["Adobe99"].
 
@@ -24,13 +24,13 @@ When a path is drawn as a line, a closed sub-path is drawn as a closed
 
 When a path is filled or used as a region, the open sub-path (if any)
  is treated as if it were closed. The content of a path is determined
- either through the @scheme['even-odd] rule or the @scheme['winding]
+ either through the @racket['even-odd] rule or the @racket['winding]
  rule, as selected at the time when the path is filled or used to
  generate a region.
 
-A path is not connected to any particular @scheme[dc<%>] object, so
- setting a @scheme[dc<%>] origin or scale does not affect path
- operations. Instead, a @scheme[dc<%>]'s origin and scale apply at the
+A path is not connected to any particular @racket[dc<%>] object, so
+ setting a @racket[dc<%>] origin or scale does not affect path
+ operations. Instead, a @racket[dc<%>]'s origin and scale apply at the
  time that the path is drawn or used to set a region.
 
 @defconstructor[()]{
@@ -44,8 +44,8 @@ sub-path}).
 @defmethod[(append [path (is-a?/c dc-path%)])
            void?]{
 
-Adds the sub-paths of @scheme[path] to @this-obj[]. @tech{Closed
- sub-paths} of @scheme[path] are added as @tech{closed sub-paths} to
+Adds the sub-paths of @racket[path] to @this-obj[]. @tech{Closed
+ sub-paths} of @racket[path] are added as @tech{closed sub-paths} to
  @this-obj[]. If both paths have an @tech{open sub-path}, then this
  path's sub-path is extended by the given path's @tech{open sub-path},
  adding a line from this path's current ending point to the given
@@ -67,9 +67,9 @@ Adds the sub-paths of @scheme[path] to @this-obj[]. @tech{Closed
 Extends or starts the path's @tech{open sub-path} with a curve that
  corresponds to a section of an ellipse. If @racket[width] and @racket[height]
  are non-negative, the ellipse is the one
- bounded by a rectangle whose top-left corner is @math{(@scheme[x],
- @scheme[y])} and whose dimensions are @scheme[width] by
- @scheme[height]; if @racket[width] is negative, then 
+ bounded by a rectangle whose top-left corner is @math{(@racket[x],
+ @racket[y])} and whose dimensions are @racket[width] by
+ @racket[height]; if @racket[width] is negative, then
  the rectangle's right edge is @racket[x], and the ellipse
  width is @racket[(abs width)], while a negative @racket[height]
  similarly makes @racket[y] is the bottom edge of the ellipse and
@@ -80,11 +80,11 @@ Extends or starts the path's @tech{open sub-path} with a curve that
  In contrast, @xmethod[dc<%> draw-arc] can automatically correct for round off,
  since the drawing mode is known immediately.}
  The ellipse section starts a the angle
- @scheme[start-radians] (@scheme[0] is three o'clock and half-π is
- twelve o'clock) and continues to the angle @scheme[end-radians]; if
- @scheme[counter-clockwise?] is true, then the arc runs
- counter-clockwise from @scheme[start-radians] to
- @scheme[end-radians], otherwise it runs clockwise.
+ @racket[start-radians] (@racket[0] is three o'clock and half-π is
+ twelve o'clock) and continues to the angle @racket[end-radians]; if
+ @racket[counter-clockwise?] is true, then the arc runs
+ counter-clockwise from @racket[start-radians] to
+ @racket[end-radians], otherwise it runs clockwise.
 
 If the path has no @tech{open sub-path}, a new one is started with the
  arc's starting point. Otherwise, the arc extends the existing
@@ -110,9 +110,9 @@ Closes the path's @tech{open sub-path}. If the path has no @tech{open
            void?]{
 
 Extends the path's @tech{open sub-path} with a Bezier curve to the
- given point @math{(@scheme[x3],@scheme[y3])}, using the points
- @math{(@scheme[x1], @scheme[y1])} and @math{(@scheme[x2],
- @scheme[y2])} as control points. If the path has no @tech{open
+ given point @math{(@racket[x3],@racket[y3])}, using the points
+ @math{(@racket[x1], @racket[y1])} and @math{(@racket[x2],
+ @racket[y2])} as control points. If the path has no @tech{open
  sub-path}, @|MismatchExn|.
 
 }
@@ -125,8 +125,8 @@ Extends the path's @tech{open sub-path} with a Bezier curve to the
 
 Closes the @tech{open sub-path}, if any, and adds a @tech{closed
  sub-path} that represents an ellipse bounded by a rectangle whose
- top-left corner is @math{(@scheme[x], @scheme[y])} and whose
- dimensions are @scheme[width] by @scheme[height]. (This convenience
+ top-left corner is @math{(@racket[x], @racket[y])} and whose
+ dimensions are @racket[width] by @racket[height]. (This convenience
  method is implemented in terms of @method[dc-path% close] and
  @method[dc-path% arc].)
 
@@ -180,8 +180,8 @@ After closing the @tech{open sub-path}, if any, starts a new
 @defmethod[(open?)
            boolean?]{
 
-Returns @scheme[#t] if the path has an @tech{open sub-path},
-@scheme[#f] otherwise.
+Returns @racket[#t] if the path has an @tech{open sub-path},
+@racket[#f] otherwise.
 
 }
 
@@ -192,9 +192,9 @@ Returns @scheme[#t] if the path has an @tech{open sub-path},
            void?]{
 
 Closes the @tech{open sub-path}, if any, and adds a closed path that
- represents a rectangle whose top-left corner is @math{(@scheme[x],
- @scheme[y])} and whose dimensions are @scheme[width] by
- @scheme[height]. (This convenience method is implemented in terms of
+ represents a rectangle whose top-left corner is @math{(@racket[x],
+ @racket[y])} and whose dimensions are @racket[width] by
+ @racket[height]. (This convenience method is implemented in terms of
  @method[dc-path% close], @method[dc-path% move-to], and
  @method[dc-path% line-to].)
 
@@ -215,7 +215,7 @@ Reverses the order of all points in all sub-paths. If the path has an
  and extensions to the @tech{open sub-path} build on this new ending
  point. Reversing a @tech{closed sub-path} affects how it combines
  with other sub-paths when determining the content of a path in
- @scheme['winding] mode.
+ @racket['winding] mode.
 
 }
 
@@ -223,7 +223,7 @@ Reverses the order of all points in all sub-paths. If the path has an
            void?]{
 
 Adjusts all points within the path (including all sub-paths), rotating
- them @scheme[radians] counter-clockwise around @math{(0, 0)}. Future
+ them @racket[radians] counter-clockwise around @math{(0, 0)}. Future
  additions to the path are not rotated by this call.
 
 }
@@ -237,18 +237,18 @@ Adjusts all points within the path (including all sub-paths), rotating
 
 Closes the @tech{open sub-path}, if any, and adds a @tech{closed
  sub-path} that represents a round-cornered rectangle whose top-left
- corner is @math{(@scheme[x] @scheme[y])} and whose dimensions are
- @scheme[width] by @scheme[height]. (This convenience method is
+ corner is @math{(@racket[x] @racket[y])} and whose dimensions are
+ @racket[width] by @racket[height]. (This convenience method is
  implemented in terms of @method[dc-path% close], @method[dc-path%
  move-to], @method[dc-path% arc], and @method[dc-path% line-to].)
 
-If @scheme[radius] is positive, the value is used as the radius of the
- rounded corner. If @scheme[radius] is negative, the absolute value is
+If @racket[radius] is positive, the value is used as the radius of the
+ rounded corner. If @racket[radius] is negative, the absolute value is
  used as the @italic{proportion} of the smallest dimension of the
  rectangle.
 
-If @scheme[radius] is less than @scheme[-0.5] or more than half of
- @scheme[width] or @scheme[height], @|MismatchExn|.
+If @racket[radius] is less than @racket[-0.5] or more than half of
+ @racket[width] or @racket[height], @|MismatchExn|.
 
 }
 
@@ -258,7 +258,7 @@ If @scheme[radius] is less than @scheme[-0.5] or more than half of
 
 @index['("paths" "flipping")]{Adjusts} all points within the path
  (including all sub-paths), multiplying each x-coordinate by
- @scheme[x] and each y-coordinate by @scheme[y]. Scaling by a negative
+ @racket[x] and each y-coordinate by @racket[y]. Scaling by a negative
  number flips the path over the corresponding axis. Future additions
  to the path are not scaled by this call.
 
@@ -269,7 +269,7 @@ If @scheme[radius] is less than @scheme[-0.5] or more than half of
            void?]{
 
 Adjusts all points within the path (including all sub-paths), shifting
- then @scheme[x] to the right and @scheme[y] down.  Future additions
+ then @racket[x] to the right and @racket[y] down.  Future additions
  to the path are not translated by this call.
 
 }}

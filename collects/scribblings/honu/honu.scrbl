@@ -25,11 +25,11 @@ independent of the Honu language, however, so it is documented here.
 The Racket reader incorporates an H-expression reader, and Racket's
 printer also supports printing values in Honu syntax. The reader can
 be put into H-expression mode either by including @litchar{#hx} in the
-input stream, or by calling @scheme[read-honu] or
-@scheme[read-honu-syntax] instead of @scheme[read] or
-@scheme[read-syntax]. Similarly, @scheme[print] (or, more precisely,
+input stream, or by calling @racket[read-honu] or
+@racket[read-honu-syntax] instead of @racket[read] or
+@racket[read-syntax]. Similarly, @racket[print] (or, more precisely,
 the default print handler) produces Honu output when the
-@scheme[print-honu] parameter is set to @scheme[#t].
+@racket[print-honu] parameter is set to @racket[#t].
 
 When the reader encounters @litchar{#hx}, it reads a single
 H-expression, and it produces an S-expression that encodes the
@@ -75,7 +75,7 @@ Within a sequence of H-expressions, a sub-sequence between angle
 brackets is represented specially (see @secref["honu:parens"]).
 
 Whitespace for H-expressions is as in Racket: any character for which
-@scheme[char-whitespace?] returns true counts as a whitespace.
+@racket[char-whitespace?] returns true counts as a whitespace.
 
 @; ----------------------------------------------------------------------
 
@@ -105,8 +105,8 @@ Racket symbol.
 
 Input is parsed to form maximally long identifiers. For example, the
 input @litchar{int->int;} is parsed as four H-expressions represented
-by symbols: @scheme['int], @scheme['->], @scheme['int], and
-@scheme['|;|].
+by symbols: @racket['int], @racket['->], @racket['int], and
+@racket['|;|].
 
 @; ----------------------------------------------------------------------
 
@@ -132,9 +132,9 @@ obvious Racket character.
 
 A H-expression between @litchar{(} and @litchar{)}, @litchar{[} and
 @litchar{]}, or @litchar["{"] and @litchar["}"] is represented by a
-Racket list. The first element of the list is @scheme['#%parens] for a
-@litchar{(}...@litchar{)} sequence, @scheme['#%brackets] for a
-@litchar{[}...@litchar{]} sequence, or @scheme['#%braces] for a
+Racket list. The first element of the list is @racket['#%parens] for a
+@litchar{(}...@litchar{)} sequence, @racket['#%brackets] for a
+@litchar{[}...@litchar{]} sequence, or @racket['#%braces] for a
 @litchar["{"]...@litchar["}"] sequence. The remaining elements are the
 Racket representations for the grouped H-expressions in order.
 
@@ -142,7 +142,7 @@ In an H-expression sequence, when a @litchar{<} is followed by a
 @litchar{>}, and when nothing between the @litchar{<} and @litchar{>}
 is an immediate symbol containing a @litchar{=}, @litchar{&}, or
 @litchar{|}, then the sub-sequence is represented by a Racket list
-that starts with @scheme['#%angles] and continues with the elements of
+that starts with @racket['#%angles] and continues with the elements of
 the sub-sequence between the @litchar{<} and @litchar{>}
 (exclusive). This representation is applied recursively, so that angle
 brackets can be nested.
@@ -177,11 +177,11 @@ is followed by an H-expression to be treated as whitespace. Note that
 
 Some Racket values have a standard H-expression representation. For
 values with no H-expression representation but with a
-@scheme[read]able S-expression form, the Racket printer produces an
+@racket[read]able S-expression form, the Racket printer produces an
 S-expression prefixed with @litchar{#sx}. For values with neither an
-H-expression form nor a @scheme[read]able S-expression form, then
+H-expression form nor a @racket[read]able S-expression form, then
 printer produces output of the form @litchar{#<}...@litchar{>}, as in
-Racket mode. The @scheme[print-honu] parameter controls whether
+Racket mode. The @racket[print-honu] parameter controls whether
 Racket's printer produces Racket or Honu output.
 
 The values with H-expression forms are as follows:
@@ -191,7 +191,7 @@ The values with H-expression forms are as follows:
  @item{Every real number has an H-expression form, although the
        representation for an exact, non-integer rational number is
        actually three H-expressions, where the middle H-expression is
-       @scheme[/].}
+       @racket[/].}
 
  @item{Every character string is represented the same in H-expression
        form as its S-expression form.}
@@ -214,11 +214,11 @@ The values with H-expression forms are as follows:
        the pair elements.}
 
  @item{A vector's representation depends on the value of the
-       @scheme[print-vector-length] parameter. If it is @scheme[#f],
+       @racket[print-vector-length] parameter. If it is @racket[#f],
        the vector is represented with the H-expression sequence
        @litchar{vectorN(}@nonterm{v}@|lcomma|...@litchar{)}, where
        each @nonterm{v} is the representation of each element of the
-       vector. If @scheme[print-vector-length] is set to @scheme[#t],
+       vector. If @racket[print-vector-length] is set to @racket[#t],
        the vector is represented with the H-expression sequence
        @litchar{vectorN(}@nonterm{n}@|lcomma|@nonterm{v}@|lcomma|...@litchar{)},
        where @nonterm{n} is the length of the vector and each

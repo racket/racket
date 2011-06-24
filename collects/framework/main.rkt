@@ -69,7 +69,7 @@
  
  (proc-doc/names
   text:range? (-> any/c boolean?) (arg)
-  @{Determines if @scheme[arg] is an instance of the @tt{range} struct.})
+  @{Determines if @racket[arg] is an instance of the @tt{range} struct.})
 
  (proc-doc/names
   text:range-start
@@ -108,16 +108,16 @@
   (parameter/c string?)
   suffix
   @{A string that is inserted after a completion is inserted by a
-    @scheme[text:autocomplete] instance.
+    @racket[text:autocomplete] instance.
     
-    Defaults to @scheme[""].})
+    Defaults to @racket[""].})
 
  (parameter-doc
   text:autocomplete-limit
   (parameter/c (and/c integer? exact? positive?))
   count
   @{Controls the number of completions visible at a time in the menu produced
-    by @scheme[text:autocomplete] instances.
+    by @racket[text:autocomplete] instances.
     
     Defaults to 15.})
 
@@ -125,38 +125,38 @@
   text:get-completions/manuals
   (-> (or/c false/c (listof symbol?)) (listof string?))
   (manuals)
-  @{Returns the list of keywords for the manuals from @scheme[manuals] by
+  @{Returns the list of keywords for the manuals from @racket[manuals] by
     extracting all of the documented exports of the manuals.  The symbols are
     meant to be module paths, e.g., the quoted form of the argument to
-    @scheme[require].
+    @racket[require].
 
-    If @scheme[manuals] is false, then all of the documented names are used.})
+    If @racket[manuals] is false, then all of the documented names are used.})
 
  (proc-doc/names
   text:lookup-port-name
   (-> symbol? (or/c (is-a?/c editor:basic<%>) false/c))
   (manuals)
   @{Returns the editor instance whose port-name matches the given symbol.
-    If no editor can be found, then returns @scheme[false].})
+    If no editor can be found, then returns @racket[false].})
 
  (proc-doc/names
   number-snip:make-repeating-decimal-snip
   (number? boolean? . -> . (is-a?/c snip%))
   (num show-prefix?)
-  @{Makes a number snip that shows the decimal expansion for @scheme[number].
+  @{Makes a number snip that shows the decimal expansion for @racket[number].
     The boolean indicates if a @litchar{#e} prefix appears on the number.
     
-    See also @scheme[number-snip:make-fraction-snip].})
+    See also @racket[number-snip:make-fraction-snip].})
 
  (proc-doc/names
   number-snip:make-fraction-snip
   (number? boolean? . -> . (is-a?/c snip%))
   (num show-prefix-in-decimal-view?)
-  @{Makes a number snip that shows a fractional view of @scheme[number].
+  @{Makes a number snip that shows a fractional view of @racket[number].
     The boolean indicates if a @litchar{#e} prefix appears on the number, when
     shown in the decimal state.
     
-    See also @scheme[number-snip:make-repeating-decimal-snip].})
+    See also @racket[number-snip:make-repeating-decimal-snip].})
  
  (thing-doc
   comment-box:snipclass
@@ -167,13 +167,13 @@
   version:add-spec
   (any/c any/c . -> . void?)
   (spec revision)
-  @{The two values are appended to the version string.  @scheme[write] is used
+  @{The two values are appended to the version string.  @racket[write] is used
     to transform them to strings.  For example:
     
-    @scheme[(version:add-spec 's 1)]
+    @racket[(version:add-spec 's 1)]
     
     in version 205 will make the version string be @litchar{205s1}.  The
-    symbols @scheme['f] and @scheme['d] were used internally for framework and
+    symbols @racket['f] and @racket['d] were used internally for framework and
     drscheme revisions in the past.})
 
  (proc-doc/names
@@ -181,17 +181,17 @@
   (-> string?)
   ()
   @{This function returns a string describing the version of this application.
-    See also @scheme[version:add-spec].})
+    See also @racket[version:add-spec].})
 
  (parameter-doc
   application:current-app-name
   (parameter/c string?)
   name
   @{This is a parameter specifying the name of the current application.  It is
-    used in the help menu (see @scheme[frame:standard-menus%]) and in frame
-    titles (see @scheme[frame:editor%]).  The first case in the case-lambda
+    used in the help menu (see @racket[frame:standard-menus%]) and in frame
+    titles (see @racket[frame:editor%]).  The first case in the case-lambda
     returns the current name, and the second case in the case-lambda sets the
-    name of the application to @scheme[name].})
+    name of the application to @racket[name].})
 
  (proc-doc/names
   preferences:put-preferences/gui
@@ -199,7 +199,7 @@
       (listof any/c)
       any)
   (name-list val-list)
-  @{Like @scheme[put-preferences], but has more sophisticated error handling.
+  @{Like @racket[put-preferences], but has more sophisticated error handling.
     In particular, it
     @itemize[
       @item{waits for three consecutive failures before informing the user}
@@ -216,7 +216,7 @@
        any/c)
   ((sym)
    ((default (λ () (error 'get-preference/gui "unknown pref ~s" sym)))))
-  @{Like @scheme[get-preference], but has more sophisticated error handling.
+  @{Like @racket[get-preference], but has more sophisticated error handling.
   In particular, it passes a @racket[#:timeout-lock-there] argument that
   informs the user that the preferences file is locked (and offers the alternative
   of not showing the message again).})
@@ -236,20 +236,20 @@
                                  (send parent get-children)))))])
       void?)
   (labels f)
-  @{@scheme[preferences:add-preference-panel] adds the result of @scheme[f]
-    with name @scheme[labels] to the preferences dialog box.
+  @{@racket[preferences:add-preference-panel] adds the result of @racket[f]
+    with name @racket[labels] to the preferences dialog box.
     
     The labels determine where this preference panel is placed in the dialog.
     If the list is just one string, the preferences panel is placed at the top
     level of the dialog.  If there are more strings, a hierarchy of nested
     panels is created and the new panel is added at the end.  If multiple calls
-    to @scheme[preferences:add-preference-panel] pass the same prefix of
+    to @racket[preferences:add-preference-panel] pass the same prefix of
     strings, those panels are placed in the same children.
     
     When the preference dialog is opened for the first time, the function
-    @scheme[f] is called with a panel, and @scheme[f] is expected to add a new
+    @racket[f] is called with a panel, and @racket[f] is expected to add a new
     child panel to it and add whatever preferences configuration controls it
-    wants to that panel.  Then, @scheme[f]'s should return the panel it added.})
+    wants to that panel.  Then, @racket[f]'s should return the panel it added.})
 
  (proc-doc/names
   preferences:add-editor-checkbox-panel
@@ -279,14 +279,14 @@
   preferences:add-to-warnings-checkbox-panel
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
-  @{Saves @scheme[proc] until the preferences panel is created, when it is
+  @{Saves @racket[proc] until the preferences panel is created, when it is
     called with the Misc. panel to add new children to the panel.})
 
  (proc-doc/names
   preferences:add-to-scheme-checkbox-panel
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
-  @{Saves @scheme[proc] until the preferences panel is created, when it is
+  @{Saves @racket[proc] until the preferences panel is created, when it is
     called with the Racket preferences panel to add new children to the
     panel.})
 
@@ -294,7 +294,7 @@
   preferences:add-to-editor-checkbox-panel
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
-  @{Saves @scheme[proc] until the preferences panel is created, when it is
+  @{Saves @racket[proc] until the preferences panel is created, when it is
     called with the editor preferences panel to add new children to the
     panel.})
 
@@ -302,7 +302,7 @@
   preferences:add-to-general-checkbox-panel
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
-  @{Saves @scheme[proc] until the preferences panel is created, when it is
+  @{Saves @racket[proc] until the preferences panel is created, when it is
     called with the general preferences panel to add new children to the
     panel.})
 
@@ -328,20 +328,20 @@
   preferences:add-on-close-dialog-callback
   ((-> void?) . -> . void?)
   (cb)
-  @{Registers @scheme[cb].  Next time the user clicks the OK button the
-    preferences dialog, all of the @scheme[cb] functions are called, assuming
+  @{Registers @racket[cb].  Next time the user clicks the OK button the
+    preferences dialog, all of the @racket[cb] functions are called, assuming
     that each of the callbacks passed to
-    @scheme[preferences:add-can-close-dialog-callback] succeed.})
+    @racket[preferences:add-can-close-dialog-callback] succeed.})
 
  (proc-doc/names
   preferences:add-can-close-dialog-callback
   ((-> boolean?) . -> . void?)
   (cb)
-  @{Registers @scheme[cb].  Next time the user clicks the OK button the
-    preferences dialog, all of the @scheme[cb] functions are called.  If any of
-    them return @scheme[#f], the dialog is not closed.
+  @{Registers @racket[cb].  Next time the user clicks the OK button the
+    preferences dialog, all of the @racket[cb] functions are called.  If any of
+    them return @racket[#f], the dialog is not closed.
     
-    See also @scheme[preferences:add-on-close-dialog-callback].})
+    See also @racket[preferences:add-on-close-dialog-callback].})
 
  (proc-doc/names
   autosave:register
@@ -350,8 +350,8 @@
    . -> .
    void?)
   (obj)
-  @{Adds @scheme[obj] to the list of objects to be autosaved.  When it is time
-    to autosave, the @scheme[do-autosave] method of the object is called.  This
+  @{Adds @racket[obj] to the list of objects to be autosaved.  When it is time
+    to autosave, the @racket[do-autosave] method of the object is called.  This
     method is responsible for performing the autosave.
     
     There is no need to de-register an object because the autosaver keeps a
@@ -372,18 +372,18 @@
   exit:exiting?
   (-> boolean?)
   ()
-  @{Returns @scheme[#t] to indicate that an exit operation is taking place.
+  @{Returns @racket[#t] to indicate that an exit operation is taking place.
     Does not indicate that the app will actually exit, since the user may
     cancel the exit.
     
-    See also @scheme[exit:insert-on-callback] and
-    @scheme[exit:insert-can?-callback].})
+    See also @racket[exit:insert-on-callback] and
+    @racket[exit:insert-can?-callback].})
 
  (proc-doc/names
   exit:set-exiting
   (boolean? . -> . void?)
   (exiting?)
-  @{Sets a flag that affects the result of @scheme[exit:exiting?].})
+  @{Sets a flag that affects the result of @racket[exit:exiting?].})
 
  (proc-doc/names
   exit:insert-on-callback
@@ -391,7 +391,7 @@
   (callback)
   @{Adds a callback to be called when exiting.  This callback must not fail.
     If a callback should stop an exit from happening, use
-    @scheme[exit:insert-can?-callback].})
+    @racket[exit:insert-can?-callback].})
 
  (proc-doc/names
   exit:insert-can?-callback
@@ -399,7 +399,7 @@
   (callback)
   @{Use this function to add a callback that determines if an attempted exit
     can proceed.  This callback should not clean up any state, since another
-    callback may veto the exit.  Use @scheme[exit:insert-on-callback] for
+    callback may veto the exit.  Use @racket[exit:insert-on-callback] for
     callbacks that clean up state.})
 
  (proc-doc/names
@@ -407,29 +407,29 @@
   (-> boolean?)
   ()
   @{Calls the ``can-callbacks'' and returns their results.  See
-    @scheme[exit:insert-can?-callback] for more information.})
+    @racket[exit:insert-can?-callback] for more information.})
 
  (proc-doc/names
   exit:on-exit
   (-> void?)
   ()
-  @{Calls the ``on-callbacks''.  See @scheme[exit:insert-on-callback] for more
+  @{Calls the ``on-callbacks''.  See @racket[exit:insert-on-callback] for more
     information.})
 
  (proc-doc/names
   exit:exit
   (-> any)
   ()
-  @{@scheme[exit:exit] performs four actions:
+  @{@racket[exit:exit] performs four actions:
     @itemize[
-      @item{sets the result of the @scheme[exit:exiting?] function to
-            @scheme[#t].}
-      @item{invokes the exit-callbacks, with @scheme[exit:can-exit?] if none of
-            the ``can?'' callbacks return @scheme[#f],}
-      @item{invokes @scheme[exit:on-exit] and then}
-      @item{queues a callback that calls @scheme[exit] (a racket procedure)
-            and (if @scheme[exit] returns) sets the result of
-            @scheme[exit:exiting?] back to @scheme[#t].}]})
+      @item{sets the result of the @racket[exit:exiting?] function to
+            @racket[#t].}
+      @item{invokes the exit-callbacks, with @racket[exit:can-exit?] if none of
+            the ``can?'' callbacks return @racket[#f],}
+      @item{invokes @racket[exit:on-exit] and then}
+      @item{queues a callback that calls @racket[exit] (a racket procedure)
+            and (if @racket[exit] returns) sets the result of
+            @racket[exit:exiting?] back to @racket[#t].}]})
 
  (proc-doc/names
   exit:user-oks-exit
@@ -442,43 +442,43 @@
   path-utils:generate-autosave-name
   (string? . -> . string?)
   (filename)
-  @{Generates a name for an autosave file from @scheme[filename].})
+  @{Generates a name for an autosave file from @racket[filename].})
 
  (proc-doc/names
   path-utils:generate-backup-name
   (path? . -> . path?)
   (filename)
-  @{Generates a name for an backup file from @scheme[filename].})
+  @{Generates a name for an backup file from @racket[filename].})
 
  (parameter-doc
   finder:dialog-parent-parameter
   (parameter/c (or/c false/c (is-a?/c dialog%) (is-a?/c frame%)))
   parent
   @{This parameter determines the parent of the dialogs created by
-    @scheme[finder:get-file], @scheme[finder:put-file],
-    @scheme[finder:common-get-file], @scheme[finder:common-put-file],
-    @scheme[finder:common-get-file-list], @scheme[finder:std-get-file],
-    and @scheme[finder:std-put-file].})
+    @racket[finder:get-file], @racket[finder:put-file],
+    @racket[finder:common-get-file], @racket[finder:common-put-file],
+    @racket[finder:common-get-file-list], @racket[finder:std-get-file],
+    and @racket[finder:std-put-file].})
 
  (parameter-doc
   finder:default-extension
   (parameter/c string?)
   extension
   @{This parameter controls the default extension for the framework's
-    @scheme[finder:put-file] dialog.  Its value gets passed as the
-    @scheme[default-extension] argument to @scheme[put-file].
+    @racket[finder:put-file] dialog.  Its value gets passed as the
+    @racket[default-extension] argument to @racket[put-file].
     
-    Its default value is @scheme[""].})
+    Its default value is @racket[""].})
 
  (parameter-doc
   finder:default-filters
   (parameter/c (listof (list/c string? string?)))
   filters
   @{This parameter controls the default filters for the framework's
-    @scheme[finder:put-file] dialog.  Its value gets passed as the
-    @scheme[default-filters] argument to @scheme[put-file].
+    @racket[finder:put-file] dialog.  Its value gets passed as the
+    @racket[default-filters] argument to @racket[put-file].
     
-    Its default value is @scheme['(("Any" "*.*"))].})
+    Its default value is @racket['(("Any" "*.*"))].})
 
  (proc-doc/names
   finder:common-put-file
@@ -500,7 +500,7 @@
     (filter-msg "That filename does not have the right form.")
     (parent (finder:dialog-parent-parameter))))
   @{This procedure queries the user for a single filename, using a
-    platform-independent dialog box.  Consider using @scheme[finder:put-file]
+    platform-independent dialog box.  Consider using @racket[finder:put-file]
     instead of this function.})
 
  (proc-doc/names
@@ -520,7 +520,7 @@
     (parent #f)))
   @{This procedure queries the user for a single filename, using a
     platform-independent dialog box.  Consider using
-    @scheme[finder:get-file] instead of this function.})
+    @racket[finder:get-file] instead of this function.})
 
  (proc-doc/names
   finder:std-put-file
@@ -542,7 +542,7 @@
     (filter-msg "That filename does not have the right form.")
     (parent (finder:dialog-parent-parameter))))
   @{This procedure queries the user for a single filename, using a
-    platform-dependent dialog box.  Consider using @scheme[finder:put-file]
+    platform-dependent dialog box.  Consider using @racket[finder:put-file]
     instead of this function.})
 
  (proc-doc/names
@@ -561,7 +561,7 @@
     (filter-msg "That filename does not have the right form.")
     (parent #f)))
   @{This procedure queries the user for a single filename, using a
-    platform-dependent dialog box.  Consider using @scheme[finder:get-file]
+    platform-dependent dialog box.  Consider using @racket[finder:get-file]
     instead of this function.})
 
  (proc-doc/names
@@ -585,9 +585,9 @@
     (parent (finder:dialog-parent-parameter))))
   @{Queries the user for a filename.
     
-    If the result of @scheme[(preferences:get 'framework:file-dialogs)] is
-    @scheme['std] this calls @scheme[finder:std-put-file], and if it is
-    @scheme['common], @scheme[finder:common-put-file] is called.})
+    If the result of @racket[(preferences:get 'framework:file-dialogs)] is
+    @racket['std] this calls @racket[finder:std-put-file], and if it is
+    @racket['common], @racket[finder:common-put-file] is called.})
 
  (proc-doc/names
   finder:get-file
@@ -606,9 +606,9 @@
     (parent #f)))
   @{Queries the user for a filename.
     
-    If the result of @scheme[(preferences:get 'framework:file-dialogs)] is
-    @scheme['std] this calls @scheme[finder:std-get-file], and if it is
-    @scheme['common], @scheme[finder:common-get-file] is called.})
+    If the result of @racket[(preferences:get 'framework:file-dialogs)] is
+    @racket['std] this calls @racket[finder:std-get-file], and if it is
+    @racket['common], @racket[finder:common-get-file] is called.})
 
  (proc-doc/names
   finder:common-get-file-list
@@ -632,7 +632,7 @@
   frame:setup-size-pref
   (symbol? number? number? . -> . void)
   (size-pref-sym width height)
-  @{Initializes a preference for the @scheme[frame:size-pref] mixin.
+  @{Initializes a preference for the @racket[frame:size-pref] mixin.
     
     The first argument should be the preferences symbol, and the second and
     third should be the default width and height, respectively.})
@@ -644,12 +644,12 @@
        void?)
   ((menu menu-item%)
    ((func void)))
-  @{Inserts three menu items into @scheme[menu], one that inserts a text box,
+  @{Inserts three menu items into @racket[menu], one that inserts a text box,
     one that inserts a pasteboard box, and one that inserts an image into the
-    currently focused editor (if there is one).  Uses @scheme[menu-item%] as
+    currently focused editor (if there is one).  Uses @racket[menu-item%] as
     the class for the menu items.
     
-    Calls @scheme[func] right after inserting each menu item.})
+    Calls @racket[func] right after inserting each menu item.})
 
  (proc-doc/names
   frame:reorder-menus
@@ -677,20 +677,20 @@
                              (is-a?/c bitmap%))))
   icon-spec
   @{The value of this parameter is used by the initialization code of
-    @scheme[frame:basic-mixin].
+    @racket[frame:basic-mixin].
     @itemize[
-      @item{If it is @scheme[#f], then its value is ignored.}
-      @item{If it is a @scheme[bitmap%], then the @method[frame% set-icon] is
+      @item{If it is @racket[#f], then its value is ignored.}
+      @item{If it is a @racket[bitmap%], then the @method[frame% set-icon] is
             called with the bitmap, the result of invoking the
-            @scheme[bitmap% get-loaded-mask] method, and @scheme['both].}
+            @racket[bitmap% get-loaded-mask] method, and @racket['both].}
       @item{If it is a pair of bitmaps, then the @method[frame% set-icon]
             method is invoked twice, once with each bitmap in the pair. The
             first bitmap is passed (along with the result of its
-            @scheme[bitmap% get-loaded-mask]) and @scheme['small], and then the
+            @racket[bitmap% get-loaded-mask]) and @racket['small], and then the
             second bitmap is passed (also along with the result of its
-            @scheme[bitmap% get-loaded-mask]) and @scheme['large].}]
+            @racket[bitmap% get-loaded-mask]) and @racket['large].}]
     
-    Defaults to @scheme[#f].})
+    Defaults to @racket[#f].})
 
  (proc-doc/names
   group:get-the-frame-group
@@ -702,7 +702,7 @@
   group:on-close-action
   (-> void?)
   ()
-  @{See also @scheme[group:can-close-check].
+  @{See also @racket[group:can-close-check].
     
     Call this function from the @method[top-level-window<%> can-close?]
     callback of a frame in order for the group to properly close the
@@ -712,7 +712,7 @@
   group:can-close-check
   (-> boolean?)
   ()
-  @{See also @scheme[group:on-close-action].
+  @{See also @racket[group:on-close-action].
     
     Call this function from the @method[top-level-window<%> can-close?]
     callback of a frame in order for the group to properly close the
@@ -760,12 +760,12 @@
   (name pred handler)
   @{This function inserts a format handler.
     
-    The string, @scheme[name] names the format handler for use with
-    @scheme[handler:find-named-format-handler].  If @scheme[pred] is a string,
+    The string, @racket[name] names the format handler for use with
+    @racket[handler:find-named-format-handler].  If @racket[pred] is a string,
     it is matched with the extension of a filename by
-    @scheme[handler:find-format-handler].  If @scheme[pred] is a list of
+    @racket[handler:find-format-handler].  If @racket[pred] is a list of
     strings, they are each matched with the extension of a filename by
-    @scheme[handler:find-format-handler].  If it is a function, the filename is
+    @racket[handler:find-format-handler].  If it is a function, the filename is
     applied to the function and the functions result determines if this is the
     handler to use.
     
@@ -777,18 +777,18 @@
   (string? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
   (name)
   @{This function selects a format handler.  See also
-    @scheme[handler:insert-format-handler].
+    @racket[handler:insert-format-handler].
     
-    It finds a handler based on @scheme[name].})
+    It finds a handler based on @racket[name].})
 
  (proc-doc/names
   handler:find-format-handler
   (path? . -> . (path? . -> . (is-a?/c frame:editor<%>)))
   (filename)
   @{This function selects a format handler.  See also
-    @scheme[handler:insert-format-handler].
+    @racket[handler:insert-format-handler].
     
-    It finds a handler based on @scheme[filename].})
+    It finds a handler based on @racket[filename].})
 
  (proc-doc/names
   handler:edit-file
@@ -800,29 +800,29 @@
      (λ () ((handler:current-create-new-window) filename)))))
   @{This function creates a frame or re-uses an existing frame to edit a file.
     
-    If the preference @scheme['framework:open-here] is set to @scheme[#t], and
-    @scheme[(send (group:get-the-frame-group) get-open-here-frame)] returns a
+    If the preference @racket['framework:open-here] is set to @racket[#t], and
+    @racket[(send (group:get-the-frame-group) get-open-here-frame)] returns a
     frame, the @method[frame:open-here<%> open-here] method of that frame is
     used to load the file in the existing frame.
     
     Otherwise, it invokes the appropriate format handler to open the file (see
-    @scheme[handler:insert-format-handler]).
+    @racket[handler:insert-format-handler]).
     
     @itemize[
-      @item{If @scheme[filename] is a string, this function checks the result
-            of @scheme[group:get-the-frame-group] to see if the
-            @scheme[filename] is already open by a frame in the group.
+      @item{If @racket[filename] is a string, this function checks the result
+            of @racket[group:get-the-frame-group] to see if the
+            @racket[filename] is already open by a frame in the group.
             @itemize[
               @item{If so, it returns the frame.}
                    @item{If not, this function calls
-                         @scheme[handler:find-format-handler] with
-                         @scheme[filename].
+                         @racket[handler:find-format-handler] with
+                         @racket[filename].
                          @itemize[
                            @item{If a handler is found, it is applied to
-                                 @scheme[filename] and its result is the final
+                                 @racket[filename] and its result is the final
                                  result.}
-                           @item{If not, @scheme[make-default] is used.}]}]}
-      @item{If @scheme[filename] is @scheme[#f], @scheme[make-default] is
+                           @item{If not, @racket[make-default] is used.}]}]}
+      @item{If @racket[filename] is @racket[#f], @racket[make-default] is
             used.}]})
 
  (parameter-doc
@@ -833,7 +833,7 @@
     windows.
     
     The default setting is this:
-    @schemeblock[(λ (filename)
+    @racketblock[(λ (filename)
                    (let ([frame (make-object frame:text-info-file% filename)])
                      (send frame show #t)
                      frame))]})
@@ -846,11 +846,11 @@
   (()
    ((dir #f)))
   @{This function queries the user for a filename and opens the file for
-    editing.  It uses @scheme[handler:edit-file] to open the file, once the
+    editing.  It uses @racket[handler:edit-file] to open the file, once the
     user has chosen it.
     
-    Calls @scheme[finder:get-file] and @scheme[handler:edit-file], passing
-    along @scheme[dir].})
+    Calls @racket[finder:get-file] and @racket[handler:edit-file], passing
+    along @racket[dir].})
 
  (proc-doc/names
   handler:install-recent-items
@@ -858,7 +858,7 @@
   (menu)
   @{This function deletes all of the items in the given menu and adds one menu
     item for each recently opened file.  These menu items, when selected, call
-    @scheme[handler:edit-file] with the filename of the recently opened file.
+    @racket[handler:edit-file] with the filename of the recently opened file.
     
     The menu's size is limited to 10.})
 
@@ -867,7 +867,7 @@
   ((implementation?/c frame:standard-menus<%>) . -> . void?)
   (frame)
   @{Sets the superclass for the recently opened files frame.  It must be
-    derived from @scheme[frame:standard-menus].})
+    derived from @racket[frame:standard-menus].})
 
  (proc-doc/names
   handler:add-to-recent
@@ -879,104 +879,104 @@
   handler:set-recent-position
   (path? number? number? . -> . void?)
   (filename start end)
-  @{Sets the selection of the recently opened file to @scheme[start] and
-    @scheme[end].})
+  @{Sets the selection of the recently opened file to @racket[start] and
+    @racket[end].})
 
  (proc-doc/names
   handler:size-recently-opened-files
   (number? . -> . void?)
   (num)
-  @{Sizes the @scheme['framework:recently-opened-files/pos] preference list
-    length to @scheme[num].})
+  @{Sizes the @racket['framework:recently-opened-files/pos] preference list
+    length to @racket[num].})
 
  (proc-doc/names
   icon:get-paren-highlight-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the parenthesis highlight @scheme[bitmap%].  It is only used
+  @{This returns the parenthesis highlight @racket[bitmap%].  It is only used
     on black and white screens.})
 
  (proc-doc/names
   icon:get-eof-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the @scheme[bitmap%] used for the clickable ``eof'' icon from
-    @scheme[text:ports].})
+  @{This returns the @racket[bitmap%] used for the clickable ``eof'' icon from
+    @racket[text:ports].})
 
  (proc-doc/names
   icon:get-autowrap-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the autowrap's @scheme[bitmap%].
+  @{This returns the autowrap's @racket[bitmap%].
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
   icon:get-lock-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the lock's @scheme[bitmap].
+  @{This returns the lock's @racket[bitmap].
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
   icon:get-unlock-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the reset unlocked @scheme[bitmap].
+  @{This returns the reset unlocked @racket[bitmap].
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
   icon:get-anchor-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns the anchor's @scheme[bitmap].
+  @{This returns the anchor's @racket[bitmap].
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
   icon:get-left/right-cursor
   (-> (is-a?/c cursor%))
   ()
-  @{This function returns a @scheme[cursor%] object that indicates left/right
+  @{This function returns a @racket[cursor%] object that indicates left/right
     sizing is possible, for use with columns inside a window.
     
-    The cursor may not respond @scheme[#t] to the @method[cursor% ok?]
+    The cursor may not respond @racket[#t] to the @method[cursor% ok?]
     method.})
 
  (proc-doc/names
   icon:get-up/down-cursor
   (-> (is-a?/c cursor%))
   ()
-  @{This function returns a @scheme[cursor%] object that indicates up/down
+  @{This function returns a @racket[cursor%] object that indicates up/down
     sizing is possible, for use with columns inside a window.
     
-    The cursor may not respond @scheme[#t] to the @method[cursor% ok?]
+    The cursor may not respond @racket[#t] to the @method[cursor% ok?]
     method.})
 
  (proc-doc/names
   icon:get-gc-on-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns a bitmap to be displayed in an @scheme[frame:info<%>] frame
+  @{This returns a bitmap to be displayed in an @racket[frame:info<%>] frame
     when garbage collection is taking place.
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
   icon:get-gc-off-bitmap
   (-> (is-a?/c bitmap%))
   ()
-  @{This returns a bitmap to be displayed in an @scheme[frame:info<%>] frame
+  @{This returns a bitmap to be displayed in an @racket[frame:info<%>] frame
     when garbage collection is not taking place.
     
-    The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
+    The bitmap may not respond @racket[#t] to the @method[bitmap% ok?]
     method.})
 
  (proc-doc/names
@@ -984,19 +984,19 @@
   (-> any/c any)
   (user-keybindings-path)
   @{Removes the keymap previously added by
-    @scheme[keymap:add-user-keybindings-file].})
+    @racket[keymap:add-user-keybindings-file].})
 
  (proc-doc/names
   keymap:add-user-keybindings-file
   (-> any/c any)
   (user-keybindings-path-or-require-spec)
-  @{Chains the keymap defined by @scheme[user-keybindings-path-or-require-spec]
-    to the global keymap, returned by @scheme[keymap:get-global].
+  @{Chains the keymap defined by @racket[user-keybindings-path-or-require-spec]
+    to the global keymap, returned by @racket[keymap:get-global].
     
-    If @scheme[user-keybindings-path-or-require-spec] is a path, the module is
+    If @racket[user-keybindings-path-or-require-spec] is a path, the module is
     loaded directly from that path.  Otherwise,
-    @scheme[user-keybindings-path-or-require-spec] is treated like an argument
-    to @scheme[require].})
+    @racket[user-keybindings-path-or-require-spec] is treated like an argument
+    to @racket[require].})
 
  (parameter-doc
   keymap:add-to-right-button-menu
@@ -1006,34 +1006,34 @@
        (is-a?/c event%)
        void?))
   proc
-  @{When the keymap that @scheme[keymap:get-global] returns is installed into
+  @{When the keymap that @racket[keymap:get-global] returns is installed into
     an editor, this parameter's value is used for right button clicks.
     
     Before calling this procedure, the function
-    @scheme[append-editor-operation-menu-items] is called.
+    @racket[append-editor-operation-menu-items] is called.
     
-    See also @scheme[keymap:add-to-right-button-menu/before].})
+    See also @racket[keymap:add-to-right-button-menu/before].})
 
  (parameter-doc
   keymap:add-to-right-button-menu/before
   (parameter/c
    (-> (is-a?/c popup-menu%) (is-a?/c editor<%>) (is-a?/c event%) void?))
   proc
-  @{When the keymap that @scheme[keymap:get-global] returns is installed into
+  @{When the keymap that @racket[keymap:get-global] returns is installed into
     an editor, this function is called for right button clicks.
     
     After calling this procedure, the function
-    @scheme[append-editor-operation-menu-items] is called.
+    @racket[append-editor-operation-menu-items] is called.
     
-    See also @scheme[keymap:add-to-right-button-menu].})
+    See also @racket[keymap:add-to-right-button-menu].})
 
  (proc-doc/names
   keymap:call/text-keymap-initializer
   ((-> any/c) . -> . any/c)
   (thunk-proc)
-  @{This function parameterizes the call to @scheme[thunk-proc] by setting the
+  @{This function parameterizes the call to @racket[thunk-proc] by setting the
     keymap-initialization procedure (see
-    @scheme[current-text-keymap-initializer]) to install the framework's
+    @racket[current-text-keymap-initializer]) to install the framework's
     standard text bindings.})
 
  (proc-doc/names
@@ -1042,7 +1042,7 @@
   (keybinding-string)
   @{Returns a string that denotes the same keybindings as the input string,
     except that it is in canonical form; two canonical keybinding strings can
-    be compared with @scheme[string=?].})
+    be compared with @racket[string=?].})
 
  (proc-doc/names
   keymap:get-editor
@@ -1052,16 +1052,16 @@
     these keys:
     
     @itemize[
-      @item{@scheme["z"]: undo}
-      @item{@scheme["y"]: redo}
-      @item{@scheme["x"]: cut}
-      @item{@scheme["c"]: copy}
-      @item{@scheme["v"]: paste}
-      @item{@scheme["a"]: select all}]
+      @item{@racket["z"]: undo}
+      @item{@racket["y"]: redo}
+      @item{@racket["x"]: cut}
+      @item{@racket["c"]: copy}
+      @item{@racket["v"]: paste}
+      @item{@racket["a"]: select all}]
     where each key is prefixed with the menu-shortcut key, based on the
-    platform.  Under Unix, the shortcut is @scheme["a:"]; under windows the
-    shortcut key is @scheme["c:"] and under MacOS, the shortcut key is
-    @scheme["d:"].})
+    platform.  Under Unix, the shortcut is @racket["a:"]; under windows the
+    shortcut key is @racket["c:"] and under MacOS, the shortcut key is
+    @racket["d:"].})
 
  (proc-doc/names
   keymap:get-file
@@ -1074,14 +1074,14 @@
   (-> (is-a?/c keymap%))
   ()
   @{This returns a keymap that contains all of the keybindings in the keymaps
-    loaded via @scheme[keymap:add-user-keybindings-file]})
+    loaded via @racket[keymap:add-user-keybindings-file]})
 
  (proc-doc/names
   keymap:get-global
   (-> (is-a?/c keymap%))
   ()
   @{This returns a keymap for general operations.  See
-    @scheme[keymap:setup-global] for a list of the bindings this keymap
+    @racket[keymap:setup-global] for a list of the bindings this keymap
     contains.})
 
  (proc-doc/names
@@ -1100,8 +1100,8 @@
     Takes a keymap, a base key specification, and a function name; it prefixes
     the base key with all ``meta'' combination prefixes, and installs the new
     combinations into the keymap.  For example,
-    @scheme[(keymap:send-map-function-meta keymap "a" func)] maps
-    @scheme["m:a"] and @scheme["ESC;a"] to @scheme[func].})
+    @racket[(keymap:send-map-function-meta keymap "a" func)] maps
+    @racket["m:a"] and @racket["ESC;a"] to @racket[func].})
 
  (proc-doc/names
   keymap:send-map-function-meta
@@ -1109,43 +1109,43 @@
   (keymap key func)
   @{@index{Meta} Most keyboard and mouse mappings are inserted into a keymap by
     calling the keymap's @method[keymap% map-function] method.  However,
-    ``meta'' combinations require special attention.  The @scheme["m:"] prefix
+    ``meta'' combinations require special attention.  The @racket["m:"] prefix
     recognized by @method[keymap% map-function] applies only to the Meta key
     that exists on some keyboards.  By convention, however, ``meta''
     combinations can also be accessed by using ``ESC'' as a prefix.
     
     This procedure binds all of the key-bindings obtained by prefixing
-    @scheme[key] with a meta-prefix to @scheme[func] in @scheme[keymap].})
+    @racket[key] with a meta-prefix to @racket[func] in @racket[keymap].})
 
  (proc-doc/names
   keymap:setup-editor
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
   @{This sets up the input keymap with the bindings described in
-    @scheme[keymap:get-editor].})
+    @racket[keymap:get-editor].})
 
  (proc-doc/names
   keymap:setup-file
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{This extends a @scheme[keymap%] with the bindings for files.})
+  @{This extends a @racket[keymap%] with the bindings for files.})
 
  (proc-doc/names
   keymap:setup-global
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{This function extends a @scheme[keymap%] with the following functions:
+  @{This function extends a @racket[keymap%] with the following functions:
     @itemize[
-      @item{@mapdesc[ring-bell any] --- Rings the bell (using @scheme[bell])
+      @item{@mapdesc[ring-bell any] --- Rings the bell (using @racket[bell])
             and removes the search panel from the frame, if there.}
       @item{@mapdesc[save-file key] --- Saves the buffer.  If the buffer has no
-            name, then @scheme[finder:put-file]@index["finder:put-file"] is
+            name, then @racket[finder:put-file]@index["finder:put-file"] is
             invoked.}
       @item{@mapdesc[save-file-as key] --- Calls
-            @scheme[finder:put-file]@index["finder:put-file"] to save the
+            @racket[finder:put-file]@index["finder:put-file"] to save the
             buffer.}
       @item{@mapdesc[load-file key] --- Invokes
-            @scheme[finder:open-file]@index["finder:open-file"].}
+            @racket[finder:open-file]@index["finder:open-file"].}
       @item{@mapdesc[find-string key] --- Opens the search buffer at the bottom
             of the frame, unless it is already open, in which case it searches
             for the text in the search buffer.}
@@ -1292,7 +1292,7 @@
   keymap:setup-search
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{This extends a @scheme[keymap%] with the bindings for searching.})
+  @{This extends a @racket[keymap%] with the bindings for searching.})
 
  (proc-doc/names
   keymap:set-chained-keymaps
@@ -1301,8 +1301,8 @@
    . -> .
    void?)
   (keymap children-keymaps)
-  @{Sets @scheme[keymap]'s chained keymaps to @scheme[children-keymaps],
-    unchaining any keymaps that are currently chained to @scheme[keymap].})
+  @{Sets @racket[keymap]'s chained keymaps to @racket[children-keymaps],
+    unchaining any keymaps that are currently chained to @racket[keymap].})
 
  (proc-doc/names
   keymap:remove-chained-keymap
@@ -1311,14 +1311,14 @@
    . -> .
    void?)
   (editor keymap)
-  @{Removes @scheme[keymap] from the keymaps chained to @scheme[editor].
-    Also (indirectly) removes all keymaps chained to @scheme[keymap] from
-    @scheme[editor], since they are removed when unchaining @scheme[keymap]
+  @{Removes @racket[keymap] from the keymaps chained to @racket[editor].
+    Also (indirectly) removes all keymaps chained to @racket[keymap] from
+    @racket[editor], since they are removed when unchaining @racket[keymap]
     itself.
     
-    Each of the keymaps chained to @scheme[editor] must be an
-    @scheme[keymap:aug-keymap%] and @scheme[keymap] cannot be the result of
-    @scheme[(send editor get-keymap)] That is, @scheme[keymap] must be chained
+    Each of the keymaps chained to @racket[editor] must be an
+    @racket[keymap:aug-keymap%] and @racket[keymap] cannot be the result of
+    @racket[(send editor get-keymap)] That is, @racket[keymap] must be chained
     to some keymap attached to the editor.})
 
  (proc-doc/names
@@ -1328,16 +1328,16 @@
        boolean?)
   ((text)
    ((start 0) (end #f)))
-  @{Determines if the range in the editor from @scheme[start] to @scheme[end]
-    in @scheme[text] has at least one complete s-expression and there are no
-    incomplete s-expressions.  If @scheme[end] is @scheme[#f], it defaults to
-    the last position of the @scheme[text]. The designation ``complete'' is
+  @{Determines if the range in the editor from @racket[start] to @racket[end]
+    in @racket[text] has at least one complete s-expression and there are no
+    incomplete s-expressions.  If @racket[end] is @racket[#f], it defaults to
+    the last position of the @racket[text]. The designation ``complete'' is
     defined to be something that does not cause @racket[read] to raise a
     @racket[exn:fail:read:eof?] exception, so there may be all kinds of strange
     read-level (not to speak of parse level) errors in the expressions.
     
     The implementation of this function creates a port with
-    @scheme[open-input-text-editor] and then uses @racket[read] to parse the
+    @racket[open-input-text-editor] and then uses @racket[read] to parse the
     range of the buffer.})
 
  (proc-doc/names
@@ -1367,10 +1367,10 @@
     colorer uses for Racket mode coloring) to their colors.
     
     These symbols are suitable for input to
-    @scheme[scheme:short-sym->pref-name] and
-    @scheme[scheme:short-sym->style-name].
+    @racket[scheme:short-sym->pref-name] and
+    @racket[scheme:short-sym->style-name].
     
-    See also @scheme[scheme:get-white-on-black-color-prefs-table].})
+    See also @racket[scheme:get-white-on-black-color-prefs-table].})
 
  (proc-doc/names
   scheme:get-white-on-black-color-prefs-table
@@ -1380,66 +1380,66 @@
     colorer uses for Racket mode coloring) to their colors when the user
     chooses the white-on-black mode in the preferences dialog.
     
-    See also @scheme[scheme:get-color-prefs-table].})
+    See also @racket[scheme:get-color-prefs-table].})
 
  (proc-doc/names
   scheme:short-sym->pref-name
   (symbol? . -> . symbol?)
   (short-sym)
   @{Builds the symbol naming the preference from one of the symbols in the
-    table returned by @scheme[scheme:get-color-prefs-table].})
+    table returned by @racket[scheme:get-color-prefs-table].})
 
  (proc-doc/names
   scheme:short-sym->style-name
   (symbol? . -> . string?)
   (short-sym)
   @{Builds the symbol naming the editor style from one of the symbols in the
-    table returned by @scheme[scheme:get-color-prefs-table].  This style is a
+    table returned by @racket[scheme:get-color-prefs-table].  This style is a
     named style in the style list returned by
-    @scheme[editor:get-standard-style-list].})
+    @racket[editor:get-standard-style-list].})
 
  (proc-doc/names
   scheme:get-wordbreak-map
   (-> (is-a?/c editor-wordbreak-map%))
   ()
-  @{This method returns a @scheme[editor-wordbreak-map%] that is suitable for
+  @{This method returns a @racket[editor-wordbreak-map%] that is suitable for
     Racket.})
 
  (proc-doc/names
   scheme:init-wordbreak-map
   ((is-a?/c keymap%) . -> . void?)
   (key)
-  @{Initializes the workdbreak map for @scheme[keymap].})
+  @{Initializes the workdbreak map for @racket[keymap].})
 
  (proc-doc/names
   scheme:setup-keymap
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{Initializes @scheme[keymap] with Racket-mode keybindings.})
+  @{Initializes @racket[keymap] with Racket-mode keybindings.})
 
  (proc-doc/names
   editor:set-default-font-color
   (-> (is-a?/c color%) void?)
   (color)
   @{Sets the color of the style named
-    @scheme[editor:get-default-color-style-name].})
+    @racket[editor:get-default-color-style-name].})
 
  (proc-doc/names
   editor:get-default-color-style-name
   (-> string?)
   ()
   @{The name of the style (in the list returned by
-    @scheme[editor:get-standard-style-list]) that holds the default color.})
+    @racket[editor:get-standard-style-list]) that holds the default color.})
 
  (proc-doc/names
   editor:set-standard-style-list-delta
   (string? (is-a?/c style-delta%) . -> . void?)
   (name delta)
-  @{Finds (or creates) the style named by @scheme[name] in the result of
-    @scheme[editor:get-standard-style-list] and sets its delta to
-    @scheme[delta].
+  @{Finds (or creates) the style named by @racket[name] in the result of
+    @racket[editor:get-standard-style-list] and sets its delta to
+    @racket[delta].
     
-    If the style named by @scheme[name] is already in the style list, it must
+    If the style named by @racket[name] is already in the style list, it must
     be a delta style.})
 
  (proc-doc/names
@@ -1447,7 +1447,7 @@
   (-> any)
   ()
   @{Installs the font preference callbacks that update the style list returned
-    by @scheme[editor:get-standard-style-list] based on the font preference
+    by @racket[editor:get-standard-style-list] based on the font preference
     symbols.})
 
  (proc-doc/names
@@ -1455,15 +1455,15 @@
   (-> (is-a?/c style-list%))
   ()
   @{Returns a style list that is used for all instances of
-    @scheme[editor:standard-style-list%].})
+    @racket[editor:standard-style-list%].})
 
  (proc-doc/names
   editor:add-after-user-keymap
   (-> (is-a?/c keymap%) (listof (is-a?/c keymap%)) (listof (is-a?/c keymap%)))
   (keymap keymaps)
-  @{Returns a list that contains all of the keymaps in @scheme[keymaps], in the
-    same relative order, but also with @scheme[keymap], where @scheme[keymap]
-    is now the first keymap after @scheme[keymap:get-user] (if that keymap is
+  @{Returns a list that contains all of the keymaps in @racket[keymaps], in the
+    same relative order, but also with @racket[keymap], where @racket[keymap]
+    is now the first keymap after @racket[keymap:get-user] (if that keymap is
     in the list.)})
 
  (proc-doc/names
@@ -1534,25 +1534,25 @@
   color-model:xyz?
   (any/c . -> . boolean?)
   (val)
-  @{Determines if @scheme[val] an xyz color record.})
+  @{Determines if @racket[val] an xyz color record.})
 
  (proc-doc/names
   color-model:xyz-x
   (color-model:xyz? . -> . number?)
   (xyz)
-  @{Extracts the x component of @scheme[xyz].})
+  @{Extracts the x component of @racket[xyz].})
 
  (proc-doc/names
   color-model:xyz-y
   (color-model:xyz? . -> . number?)
   (xyz)
-  @{Extracts the y component of @scheme[xyz].})
+  @{Extracts the y component of @racket[xyz].})
 
  (proc-doc/names
   color-model:xyz-z
   (color-model:xyz? . -> . number?)
   (xyz)
-  @{Extracts the z component of @scheme[xyz].})
+  @{Extracts the z component of @racket[xyz].})
 
  (proc-doc/names
   color-prefs:set-default/color-scheme
@@ -1564,8 +1564,8 @@
   @{Registers a preference whose value will be updated when the user clicks on
     one of the color scheme default settings in the preferences dialog.
     
-    Also calls @scheme[preferences:set-default] and
-    @scheme[preferences:set-un/marshall] with appropriate arguments to register
+    Also calls @racket[preferences:set-default] and
+    @racket[preferences:set-un/marshall] with appropriate arguments to register
     the preference.})
 
  (proc-doc/names
@@ -1578,26 +1578,26 @@
    ((white-on-black-color #f)
     (background #f)))
   @{This function registers a color preference and initializes the style list
-    returned from @scheme[editor:get-standard-style-list].  In particular, it
-    calls @scheme[preferences:set-default] and
-    @scheme[preferences:set-un/marshall] to install the pref for
-    @scheme[pref-name], using @scheme[color/sd] as the default color.  The
-    preference is bound to a @scheme[style-delta%], and initially the
-    @scheme[style-delta%] changes the foreground color to @scheme[color/sd],
-    unless @scheme[color/sd] is a style delta already, in which case it is just
+    returned from @racket[editor:get-standard-style-list].  In particular, it
+    calls @racket[preferences:set-default] and
+    @racket[preferences:set-un/marshall] to install the pref for
+    @racket[pref-name], using @racket[color/sd] as the default color.  The
+    preference is bound to a @racket[style-delta%], and initially the
+    @racket[style-delta%] changes the foreground color to @racket[color/sd],
+    unless @racket[color/sd] is a style delta already, in which case it is just
     used directly.  Then, it calls
-    @scheme[editor:set-standard-style-list-delta] passing the
-    @scheme[style-name] and the current value of the preference
-    @scheme[pref-name].
+    @racket[editor:set-standard-style-list-delta] passing the
+    @racket[style-name] and the current value of the preference
+    @racket[pref-name].
     
-    Finally, it adds calls @scheme[preferences:add-callback] to set a callback
-    for @scheme[pref-name] that updates the style list when the preference
+    Finally, it adds calls @racket[preferences:add-callback] to set a callback
+    for @racket[pref-name] that updates the style list when the preference
     changes.
     
-    If @scheme[white-on-black-color] is not @scheme[#f], then the color of the
-    @scheme[color/sd] argument is used in combination with
-    @scheme[white-on-black-color] to register this preference with
-    @scheme[color-prefs:set-default/color-scheme].
+    If @racket[white-on-black-color] is not @racket[#f], then the color of the
+    @racket[color/sd] argument is used in combination with
+    @racket[white-on-black-color] to register this preference with
+    @racket[color-prefs:set-default/color-scheme].
     
     If either @racket[background] is
     not @racket[#f], then it is used to construct the default background color
@@ -1610,14 +1610,14 @@
   (-> void?)
   ()
   @{Adds a preferences panel that configures the background color for
-    @scheme[editor:basic-mixin].})
+    @racket[editor:basic-mixin].})
 
  (proc-doc/names
   color-prefs:add-to-preferences-panel
   (string? ((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (name func)
-  @{Calls @scheme[func] with the subpanel of the preferences coloring panel
-    that corresponds to @scheme[name].})
+  @{Calls @racket[func] with the subpanel of the preferences coloring panel
+    that corresponds to @racket[name].})
 
  (proc-doc/names
   color-prefs:build-color-selection-panel
@@ -1628,12 +1628,12 @@
    ((background? #f)))
   @{Builds a panel with a number of controls for configuring a font: its color
     (including a background configuration if @racket[background] is @racket[#t])
-    and check boxes for bold, italic, and underline.  The @scheme[parent]
-    argument specifies where the panel will be placed.  The @scheme[pref-sym]
-    should be a preference (suitable for use with @scheme[preferences:get] and
-    @scheme[preferences:set]).  The @scheme[style-name] specifies the name of a
+    and check boxes for bold, italic, and underline.  The @racket[parent]
+    argument specifies where the panel will be placed.  The @racket[pref-sym]
+    should be a preference (suitable for use with @racket[preferences:get] and
+    @racket[preferences:set]).  The @racket[style-name] specifies the name of a
     style in the style list returned from
-    @scheme[editor:get-standard-style-list] and @scheme[example-text] is shown
+    @racket[editor:get-standard-style-list] and @racket[example-text] is shown
     in the panel so users can see the results of their configuration.})
 
  (proc-doc/names
@@ -1646,19 +1646,19 @@
   color-prefs:unmarshall-style-delta
   (-> printable/c (or/c false/c (is-a?/c style-delta%)))
   (marshalled-style-delta)
-  @{Builds a style delta from its printed representation.  Returns @scheme[#f]
+  @{Builds a style delta from its printed representation.  Returns @racket[#f]
     if the printed form cannot be parsed.})
 
  (proc-doc/names
   color-prefs:white-on-black
   (-> any)
   ()
-  @{Sets the colors registered by @scheme[color-prefs:register-color-preference]
+  @{Sets the colors registered by @racket[color-prefs:register-color-preference]
     to their white-on-black variety.})
 
  (proc-doc/names
   color-prefs:black-on-white
   (-> any)
   ()
-  @{Sets the colors registered by @scheme[color-prefs:register-color-preference]
+  @{Sets the colors registered by @racket[color-prefs:register-color-preference]
     to their black-on-white variety.}))

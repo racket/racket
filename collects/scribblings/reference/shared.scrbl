@@ -7,34 +7,34 @@
 
 @(define maker
    (make-element #f (list
-                     (schemevarfont "prefix:")
-                     (schemeidfont "make-")
-                     (schemevarfont "id"))))
+                     (racketvarfont "prefix:")
+                     (racketidfont "make-")
+                     (racketvarfont "id"))))
 @(define typedef
    (make-element #f (list
-                     (schemevarfont "prefix:")
-                     (schemevarfont "id"))))
+                     (racketvarfont "prefix:")
+                     (racketvarfont "id"))))
 
-@title[#:tag "shared"]{Constructing Graphs: @scheme[shared]}
+@title[#:tag "shared"]{Constructing Graphs: @racket[shared]}
 
 @note-lib[racket/shared]
 
 @defform[(shared ([id expr] ...) body ...+)]{
 
-Binds @scheme[id]s with shared structure according to @scheme[exprs]
-and then evaluates the @scheme[body-expr]s, returning the result of
+Binds @racket[id]s with shared structure according to @racket[exprs]
+and then evaluates the @racket[body-expr]s, returning the result of
 the last expression. 
 
-The @scheme[shared] form is similar to @scheme[letrec], except that
-special forms of @scheme[expr] are recognized (after partial macro
+The @racket[shared] form is similar to @racket[letrec], except that
+special forms of @racket[expr] are recognized (after partial macro
 expansion) to construct graph-structured data, where the corresponding
-@scheme[letrec] would instead produce @|undefined-const|s. 
+@racket[letrec] would instead produce @|undefined-const|s. 
 
-Each @scheme[expr] (after partial expansion) is matched against the
-following @scheme[_shared-expr] grammar, where earlier variants in a
+Each @racket[expr] (after partial expansion) is matched against the
+following @racket[_shared-expr] grammar, where earlier variants in a
 production take precedence over later variants:
 
-@schemegrammar*[
+@racketgrammar*[
 #:literals (cons list list* append vector-immutable box-immutable mcons vector box)
 [shared-expr shell-expr
              plain-expr]
@@ -58,43 +58,43 @@ production take precedence over later variants:
 ]
 
 The @|maker| identifier above matches three kinds of references. The
-first kind is any binding whose name has @schemeidfont{make-} in the
+first kind is any binding whose name has @racketidfont{make-} in the
 middle, and where @|typedef| has a @tech{transformer binding} to
 structure information with a full set of mutator bindings; see
 @secref["structinfo"]. The second kind is an identifier that itself has a
 @tech{transformer binding} to structure information. The third kind is an
 identifier that has a @racket['constructor-for] @tech{syntax property}
 whose value is an identifier with a @tech{transformer binding} to structure
-information. A @scheme[_shell-id], meanwhile, must be one of the
-@scheme[id]s bound by the @scheme[shared] form to a
-@scheme[_shell-expr].
+information. A @racket[_shell-id], meanwhile, must be one of the
+@racket[id]s bound by the @racket[shared] form to a
+@racket[_shell-expr].
 
-When the @scheme[expr]s of the @scheme[shared] form are parsed as
-@scheme[_shared-expr] (taking into account the order of the variants
+When the @racket[expr]s of the @racket[shared] form are parsed as
+@racket[_shared-expr] (taking into account the order of the variants
 for parsing precedence), the sub-expressions that were parsed via
-@scheme[_early-expr] will be evaluated first when the @scheme[shared]
+@racket[_early-expr] will be evaluated first when the @racket[shared]
 form is evaluated. Among such expressions, they are evaluated in the
-order as they appear within the @scheme[shared] form. However, any
-reference to an @scheme[id] bound by @scheme[shared] produces
-@|undefined-const|, even if the binding for the @scheme[id] appears
-before the corresponding @scheme[_early-expr] within the
-@scheme[shared] form.
+order as they appear within the @racket[shared] form. However, any
+reference to an @racket[id] bound by @racket[shared] produces
+@|undefined-const|, even if the binding for the @racket[id] appears
+before the corresponding @racket[_early-expr] within the
+@racket[shared] form.
 
-The @scheme[_shell-ids] and @scheme[_shell-exprs] (not counting
-@scheme[_patchable-expr] and @scheme[_early-expr] sub-expressions) are
-effectively evaluated next.  A @scheme[_shell-id] reference produces
-the same value as the corresponding @scheme[_id] will produce within
-the @scheme[body]s, assuming that @scheme[_id] is never mutated with
-@scheme[set!].  This special handling of a @scheme[_shell-id]
-reference is one way in which @scheme[shared] supports the creation of
+The @racket[_shell-ids] and @racket[_shell-exprs] (not counting
+@racket[_patchable-expr] and @racket[_early-expr] sub-expressions) are
+effectively evaluated next.  A @racket[_shell-id] reference produces
+the same value as the corresponding @racket[_id] will produce within
+the @racket[body]s, assuming that @racket[_id] is never mutated with
+@racket[set!].  This special handling of a @racket[_shell-id]
+reference is one way in which @racket[shared] supports the creation of
 cyclic data, including immutable cyclic data.
 
-Next, the @scheme[_plain-expr]s are evaluated as for @scheme[letrec],
-where a reference to an @scheme[id] produces @|undefined-const| if it
-is evaluated before the right-hand side of the @scheme[id] binding.
+Next, the @racket[_plain-expr]s are evaluated as for @racket[letrec],
+where a reference to an @racket[id] produces @|undefined-const| if it
+is evaluated before the right-hand side of the @racket[id] binding.
 
-Finally, the @scheme[_patchable-expr]s are evaluated. At this point,
-all @scheme[id]s are bound, so @scheme[_patchable-expr]s also creates
+Finally, the @racket[_patchable-expr]s are evaluated. At this point,
+all @racket[id]s are bound, so @racket[_patchable-expr]s also creates
 data cycles (but only with cycles that can be created via mutation).
 
 @examples[
@@ -109,10 +109,10 @@ data cycles (but only with cycles that can be created via mutation).
   a)
 (shared ([a a]) (code:comment @#,t{no indirection...})
   a)
-(shared ([a (cons 1 b)] (code:comment @#,t{@scheme[b] is early...})
+(shared ([a (cons 1 b)] (code:comment @#,t{@racket[b] is early...})
          [b a])
   a)
-(shared ([a (mcons 1 b)] (code:comment @#,t{@scheme[b] is patchable...})
+(shared ([a (mcons 1 b)] (code:comment @#,t{@racket[b] is patchable...})
          [b a])
   a)
 (shared ([a (vector b b b)]
@@ -120,8 +120,8 @@ data cycles (but only with cycles that can be created via mutation).
   (set-box! b 5)
   a)
 (shared ([a (box b)]
-         [b (vector (unbox a)   (code:comment @#,t{@scheme[unbox] after @scheme[a] is patched})
-                    (unbox c))] (code:comment @#,t{@scheme[unbox] before @scheme[c] is patched})
+         [b (vector (unbox a)   (code:comment @#,t{@racket[unbox] after @racket[a] is patched})
+                    (unbox c))] (code:comment @#,t{@racket[unbox] before @racket[c] is patched})
          [c (box b)])
   b)
 ]}

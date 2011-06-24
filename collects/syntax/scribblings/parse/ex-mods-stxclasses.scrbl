@@ -27,14 +27,14 @@ same module; it is defined at the wrong phase.
       [(_ f:foo) #'(+ f.a f.b f.c)])))
 ]
 
-In the module above, the syntax class @scheme[foo] is defined at phase
-level 0. The reference to @scheme[foo] within @scheme[macro], however,
+In the module above, the syntax class @racket[foo] is defined at phase
+level 0. The reference to @racket[foo] within @racket[macro], however,
 is at phase level 1, being the implementation of a macro
-transformer. (Needing to require @schememodname[syntax/parse] twice,
-once normally and once @scheme[for-syntax] is another sign of the
+transformer. (Needing to require @racketmodname[syntax/parse] twice,
+once normally and once @racket[for-syntax] is another sign of the
 phase level incompatibility.) The only way to define reusable syntax
 classes that can be used within macros is to define them in a separate
-module and require that module @scheme[for-syntax].
+module and require that module @racket[for-syntax].
 
 @myinteraction[
 (module stxclass-mod racket
@@ -56,7 +56,7 @@ module and require that module @scheme[for-syntax].
 If the syntax classes refer to keywords, or if they compute
 expressions via syntax templates, then the module containing the
 syntax classes must generally require the keywords or bindings used in
-the syntax templates @scheme[for-template].
+the syntax templates @racket[for-template].
 
 @myinteraction[
 (module arith-keywords-mod racket
@@ -93,15 +93,15 @@ the syntax templates @scheme[for-template].
 (arith-macro (plus 1 (times 2 3)))
 ]
 
-In @scheme['arith-stxclass-mod], the module
-@scheme['arith-keywords-mod] must be required @scheme[for-template]
+In @racket['arith-stxclass-mod], the module
+@racket['arith-keywords-mod] must be required @racket[for-template]
 because the keywords are used in phase-0 expressions. Likewise, the
-module @schememodname[racket] must be required @scheme[for-template]
+module @racketmodname[racket] must be required @racket[for-template]
 because the syntax class contains syntax templates involving
-@scheme[+] and @scheme[*] (and, in fact, the implicit @scheme[#%app]
-syntax). All of these identifiers (the keywords @scheme[plus] and
-@scheme[times]; the procedures @scheme[+] and @scheme[*]; and the
-implicit syntax @scheme[#%app]) must be bound at ``absolute'' phase
-level 0. Since the module @scheme['arith-stxclass-mod] is required
-with a phase level offset of 1 (that is, @scheme[for-syntax]), it must
-compensate with a phase level offset of -1, or @scheme[for-template].
+@racket[+] and @racket[*] (and, in fact, the implicit @racket[#%app]
+syntax). All of these identifiers (the keywords @racket[plus] and
+@racket[times]; the procedures @racket[+] and @racket[*]; and the
+implicit syntax @racket[#%app]) must be bound at ``absolute'' phase
+level 0. Since the module @racket['arith-stxclass-mod] is required
+with a phase level offset of 1 (that is, @racket[for-syntax]), it must
+compensate with a phase level offset of -1, or @racket[for-template].

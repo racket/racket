@@ -8,10 +8,10 @@
 
 @title{More keyword arguments}
 
-This section shows how to express the syntax of @scheme[struct]'s
-optional keyword arguments using @scheme[syntax-parse] patterns.
+This section shows how to express the syntax of @racket[struct]'s
+optional keyword arguments using @racket[syntax-parse] patterns.
 
-The part of @scheme[struct]'s syntax that is difficult to specify is
+The part of @racket[struct]'s syntax that is difficult to specify is
 the sequence of struct options. Let's get the easy part out of the way
 first.
 
@@ -32,7 +32,7 @@ first.
 
 Given those auxiliary syntax classes, here is a first approximation of
 the main pattern, including the struct options:
-@schemeblock[
+@racketblock[
 (struct name:id super:maybe-super (field:field ...)
   (~or (~seq #:mutable)
        (~seq #:super super-expr:expr)
@@ -48,26 +48,26 @@ the main pattern, including the struct options:
        (~seq #:omit-define-values))
   ...)
 ]
-The fact that @scheme[expr] does not match keywords helps in the case
+The fact that @racket[expr] does not match keywords helps in the case
 where the programmer omits a keyword's argument; instead of accepting
-the next keyword as the argument expression, @scheme[syntax-parse]
+the next keyword as the argument expression, @racket[syntax-parse]
 reports that an expression was expected.
 
 There are two main problems with the pattern above:
 @itemize[
 @item{There's no way to tell whether a zero-argument keyword like
-@scheme[#:mutable] was seen.}
-@item{Some options, like @scheme[#:mutable], should appear at most
+@racket[#:mutable] was seen.}
+@item{Some options, like @racket[#:mutable], should appear at most
 once.}
 ]
 
-The first problem can be remedied using @scheme[~and] patterns to bind
+The first problem can be remedied using @racket[~and] patterns to bind
 a pattern variable to the keyword itself, as in this sub-pattern:
-@schemeblock[
+@racketblock[
 (~seq (~and #:mutable mutable-kw))
 ]
 The second problem can be solved using @emph{repetition constraints}:
-@schemeblock[
+@racketblock[
 (struct name:id super:maybe-super (field:field ...)
   (~or (~optional (~seq (~and #:mutable) mutable-kw))
        (~optional (~seq #:super super-expr:expr))
@@ -85,19 +85,19 @@ The second problem can be solved using @emph{repetition constraints}:
        (~optional (~seq (~and #:omit-define-values omit-def-vals-kw))))
   ...)
 ]
-The @scheme[~optional] repetition constraint indicates that an
-alternative can appear at most once. (There is a @scheme[~once] form
-that means it must appear exactly once.) In @scheme[struct]'s keyword
-options, only @scheme[#:property] may occur any number of times.
+The @racket[~optional] repetition constraint indicates that an
+alternative can appear at most once. (There is a @racket[~once] form
+that means it must appear exactly once.) In @racket[struct]'s keyword
+options, only @racket[#:property] may occur any number of times.
 
 There are still some problems, though. Without additional help,
-@scheme[~optional] does not report particularly good errors. We must
+@racket[~optional] does not report particularly good errors. We must
 give it the language to use, just as we had to give descriptions to
 sub-patterns via syntax classes. Also, some related options are
-mutually exclusive, such as @scheme[#:inspector],
-@scheme[#:transparent], and @scheme[#:prefab].
+mutually exclusive, such as @racket[#:inspector],
+@racket[#:transparent], and @racket[#:prefab].
 
-@schemeblock[
+@racketblock[
 (struct name:id super:maybe-super (field:field ...)
   (~or (~optional
          (~or (~seq #:inspector inspector:expr)
@@ -125,13 +125,13 @@ mutually exclusive, such as @scheme[#:inspector],
   ...)
 ]
 Here we have grouped the three incompatible options together under a
-single @scheme[~optional] constraint. That means that at most one of
+single @racket[~optional] constraint. That means that at most one of
 any of those options is allowed. We have given names to the optional
-clauses. See @scheme[~optional] for other customization options.
+clauses. See @racket[~optional] for other customization options.
 
 Note that there are other constraints that we have not represented in
-the pattern. For example, @scheme[#:prefab] is also incompatible with
-both @scheme[#:guard] and @scheme[#:property]. Repetition constraints
+the pattern. For example, @racket[#:prefab] is also incompatible with
+both @racket[#:guard] and @racket[#:property]. Repetition constraints
 cannot express arbitrary incompatibility relations. The best way to
 handle such contraints is with a side condition using
-@scheme[#:fail-when].
+@racket[#:fail-when].

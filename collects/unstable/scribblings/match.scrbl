@@ -34,8 +34,8 @@ not provided, it defaults to @racket[equal?].
 
 @defform[(match? val-expr pat ...)]{
 
-Returns @scheme[#t] if the result of @scheme[val-expr] matches any of
-@scheme[pat], and returns @scheme[#f] otherwise.
+Returns @racket[#t] if the result of @racket[val-expr] matches any of
+@racket[pat], and returns @racket[#f] otherwise.
 
 @defexamples[
 #:eval the-eval
@@ -54,9 +54,9 @@ Returns @scheme[#t] if the result of @scheme[val-expr] matches any of
 
 @defform[(as ([lhs-id rhs-expr] ...) pat ...)]{
 
-As a match expander, binds each @scheme[lhs-id] as a pattern variable with the
-result value of @scheme[rhs-expr], and continues matching each subsequent
-@scheme[pat].
+As a match expander, binds each @racket[lhs-id] as a pattern variable with the
+result value of @racket[rhs-expr], and continues matching each subsequent
+@racket[pat].
 
 @defexamples[
 #:eval the-eval

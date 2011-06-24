@@ -3,12 +3,12 @@
 
 @defclass/title[editor-stream-in-base% object% ()]{
 
-An @scheme[editor-stream-in-base%] object is used by an
- @scheme[editor-stream-in%] object to perform low-level reading of
+An @racket[editor-stream-in-base%] object is used by an
+ @racket[editor-stream-in%] object to perform low-level reading of
  data.
 
-The @scheme[editor-stream-in-base%] class is never instantiated
- directly, but the derived class @scheme[editor-stream-in-bytes-base%]
+The @racket[editor-stream-in-base%] class is never instantiated
+ directly, but the derived class @racket[editor-stream-in-bytes-base%]
  can be instantiated.  New derived classes must override all of the
  methods described in this section.
 
@@ -16,8 +16,8 @@ The @scheme[editor-stream-in-base%] class is never instantiated
 @defmethod[(bad?)
            boolean?]{
 
-Returns @scheme[#t] if there has been an error reading from the
- stream, @scheme[#f] otherwise.
+Returns @racket[#t] if there has been an error reading from the
+ stream, @racket[#f] otherwise.
 
 }
 
@@ -35,11 +35,11 @@ Reads bytes to fill the supplied byte string. The return value is the
  number of bytes read, which may be less than the number
  requested if the stream is emptied. If the stream is emptied, the
  next call to @method[editor-stream-in-base% bad?] must return
- @scheme[#t].}
+ @racket[#t].}
 
 @defmethod[(read-byte) (or/c byte? #f)]{
 
-Reads a single byte and return it, or returns @scheme[#f] if no more
+Reads a single byte and return it, or returns @racket[#f] if no more
 bytes are available. The default implementation of this method uses
 @method[editor-stream-in-base% read-bytes].
 
@@ -55,7 +55,7 @@ Moves to the specified absolute position in the stream.
 @defmethod[(skip [n exact-nonnegative-integer?])
            void?]{
 
-Skips past the next @scheme[n] characters in the stream.
+Skips past the next @racket[n] characters in the stream.
 
 }
 

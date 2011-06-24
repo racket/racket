@@ -3,7 +3,7 @@
 
 @defclass/title[editor-stream-out% object% ()]{
 
-An @scheme[editor-stream-out%] object is used to write editor
+An @racket[editor-stream-out%] object is used to write editor
  information to a file or other output stream (such as the
  clipboard).
 
@@ -12,9 +12,8 @@ An @scheme[editor-stream-out%] object is used to write editor
 @defconstructor/make[([base (is-a?/c editor-stream-out-base%)])]{
 
 An out-stream base---possibly an
-@scheme[editor-stream-out-bytes-base%] object---must be supplied in
-@scheme[base].
-
+@racket[editor-stream-out-bytes-base%] object---must be supplied in
+@racket[base].
 
 }
 
@@ -26,7 +25,7 @@ Jumps to a given position in the stream.
 
 @defmethod[(ok?)
            boolean?]{
-Returns @scheme[#t] if the stream is ready for writing, @scheme[#f] otherwise.
+Returns @racket[#t] if the stream is ready for writing, @racket[#f] otherwise.
 Writing to a bad stream has no effect.
 
 }
@@ -36,7 +35,7 @@ Writing to a bad stream has no effect.
 
 Ensures that the stream ends with a newline.
 This method is called by
-@scheme[write-editor-global-footer].
+@racket[write-editor-global-footer].
 
 }
 
@@ -45,7 +44,7 @@ This method is called by
            void?]{
 
 Writes a ``comment'' into the stream that identifies the file format.
-This method is called by @scheme[write-editor-global-header].
+This method is called by @racket[write-editor-global-header].
 
 }
 
@@ -60,17 +59,17 @@ This method is called by @scheme[write-editor-global-header].
               (is-a?/c editor-stream-out%)])]{
 
 
-Writes @scheme[v], or @scheme[n] bytes of @scheme[v]. 
+Writes @racket[v], or @racket[n] bytes of @racket[v]. 
 
-When @scheme[n] is supplied with a byte-string @scheme[v], use
+When @racket[n] is supplied with a byte-string @racket[v], use
  @method[editor-stream-in% get-unterminated-bytes] to read the bytes
  later. This is the recommended way to write out bytes to 
  be easily read in later; use @method[editor-stream-in%
  get-unterminated-bytes] to read the bytes back in.
 
-If @scheme[n] is not supplied and @scheme[v] is a byte string, then
+If @racket[n] is not supplied and @racket[v] is a byte string, then
  for historical reasons, the actual number of bytes written includes a
- @scheme[#\nul] terminator, so use @method[editor-stream-in%
+ @racket[#\nul] terminator, so use @method[editor-stream-in%
  get-bytes] instead of @method[editor-stream-in%
  get-unterminated-bytes] to read the bytes later.
 
@@ -83,8 +82,8 @@ If @scheme[n] is not supplied and @scheme[v] is a byte string, then
 Puts a fixed-sized integer into the stream. This method is needed
  because numbers are usually written in a way that takes varying
  numbers of bytes. In some cases it is useful to temporary write a
- @scheme[0] to a stream, write more data, and then go back and change
- the @scheme[0] to another number; such a process requires a
+ @racket[0] to a stream, write more data, and then go back and change
+ the @racket[0] to another number; such a process requires a
  fixed-size number.
 
 Numbers written to a stream with @method[editor-stream-out% put-fixed]
@@ -95,7 +94,7 @@ Numbers written to a stream with @method[editor-stream-out% put-fixed]
 @defmethod[(put-unterminated [v bytes?]) (is-a?/c editor-stream-out%)]{
 
 The same as calling @method[editor-stream-out% put] with
-@scheme[(bytes-length v)] and @scheme[v].}
+@racket[(bytes-length v)] and @racket[v].}
 
 
 @defmethod[(tell)

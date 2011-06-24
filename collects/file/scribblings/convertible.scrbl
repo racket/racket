@@ -6,7 +6,7 @@
 
 @defmodule[file/convertible]
 
-The @schememodname[file/convertible] library provides a protocol to
+The @racketmodname[file/convertible] library provides a protocol to
 mediate between providers of data in different possible formats and
 consumers of the formats. For example, a datatype that implements
 @racket[prop:convertible] might be able to convert itself to a GIF or
@@ -19,13 +19,13 @@ should be considered standard:
 @itemlist[
  #:style 'compact
 
- @item{@scheme['text] --- a string for human-readable text}
- @item{@scheme['gif-bytes] --- a byte string containing a GIF image encoding}
- @item{@scheme['png-bytes] --- a byte string containing a PNG image encoding}
- @item{@scheme['ps-bytes] --- a byte string containing a PostScript document}
- @item{@scheme['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
- @item{@scheme['pdf-bytes] --- a byte string containing a PDF document}
- @item{@scheme['pdf-bytes+bounds] --- a list containing a byte string and four numbers; 
+ @item{@racket['text] --- a string for human-readable text}
+ @item{@racket['gif-bytes] --- a byte string containing a GIF image encoding}
+ @item{@racket['png-bytes] --- a byte string containing a PNG image encoding}
+ @item{@racket['ps-bytes] --- a byte string containing a PostScript document}
+ @item{@racket['eps-bytes] --- a byte string containing an Encapsulated PostScript document}
+ @item{@racket['pdf-bytes] --- a byte string containing a PDF document}
+ @item{@racket['pdf-bytes+bounds] --- a list containing a byte string and four numbers; 
         the byte string contains a PDF document and the four numbers are sizing information for the PDF document, 
         namely the width, height, ascent and descent in that order}
 ]

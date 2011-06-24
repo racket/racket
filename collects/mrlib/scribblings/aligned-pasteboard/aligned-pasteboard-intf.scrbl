@@ -25,8 +25,8 @@ fit the widths of all of its children.
              [(realign)
               void?])]{
 
-Realigns the children inside the @scheme[aligned-pasteboard<%>] to
-either a given @scheme[width] and @scheme[height] or the previously
+Realigns the children inside the @racket[aligned-pasteboard<%>] to
+either a given @racket[width] and @racket[height] or the previously
 alloted width and height.}
 
 @defmethod[(set-aligned-min-sizes)

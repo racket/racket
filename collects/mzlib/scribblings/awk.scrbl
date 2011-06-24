@@ -36,12 +36,12 @@
  [id-or-false id
               #f])]{
 
-The @scheme[awk] macro from Scsh @cite["Shivers06"]. In addition to
-@scheme[awk], the Scsh-compatible procedures @scheme[match:start],
-@scheme[match:end], @scheme[match:substring], and @scheme[regexp-exec]
-are defined. These @schemeidfont{match:} procedures must be used to
+The @racket[awk] macro from Scsh @cite["Shivers06"]. In addition to
+@racket[awk], the Scsh-compatible procedures @racket[match:start],
+@racket[match:end], @racket[match:substring], and @racket[regexp-exec]
+are defined. These @racketidfont{match:} procedures must be used to
 extract match information in a regular expression clause when using
-the @scheme[=>] form.  }
+the @racket[=>] form.  }
 
 @deftogether[(
 @defproc[(match:start [rec ....]
@@ -58,12 +58,12 @@ the @scheme[=>] form.  }
 
 Extracts a start position, end position, or substring corresponding to
 a match. The first argument is the value supplied to the procedure
-after @scheme[=>] in a @scheme[awk] clause or the result of
-@scheme[regexp-exec].}
+after @racket[=>] in a @racket[awk] clause or the result of
+@racket[regexp-exec].}
 
 
 @defproc[(regexp-exec [re (or/c string? regexp?)] [s string?])
          (or/c .... false/c)]{
 
 Matches a regexp to a string, returning a record compatible with
-@scheme[match:start], etc.}
+@racket[match:start], etc.}

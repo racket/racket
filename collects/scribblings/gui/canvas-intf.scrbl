@@ -6,14 +6,14 @@
 A canvas is a subwindow onto which graphics and text can be drawn. Canvases also
  receive mouse and keyboard events.
 
-The @scheme[canvas<%>] interface is implemented by two classes:
+The @racket[canvas<%>] interface is implemented by two classes:
 @itemize[
 
- @item{@scheme[canvas%] --- a canvas for arbitrary drawing and
+ @item{@racket[canvas%] --- a canvas for arbitrary drawing and
   event handling; and}
 
- @item{@scheme[editor-canvas%] --- a canvas for displaying
-  @scheme[editor<%>] objects.}
+ @item{@racket[editor-canvas%] --- a canvas for displaying
+  @racket[editor<%>] objects.}
 
 ]
 
@@ -92,19 +92,19 @@ recorded in the canvas's offscreen buffer, however.
 
 @index['("keyboard focus" "navigation")]{Gets} or sets whether
 tab-focus is enabled for the canvas (assuming that the canvas is
-not created with the @scheme['no-focus] style for @scheme[canvas%]). When tab-focus is
+not created with the @racket['no-focus] style for @racket[canvas%]). When tab-focus is
 enabled, the canvas can receive the keyboard focus when the user
 navigates among a frame or dialog's controls with the Tab and
 arrow keys. By default, tab-focus is disabled.
 
-When tab-focus is enabled for a @scheme[canvas%] object, Tab, arrow,
+When tab-focus is enabled for a @racket[canvas%] object, Tab, arrow,
  Enter, and Escape keyboard events are consumed by a frame's default
  @method[top-level-window<%> on-traverse-char] method. (In addition, a
  dialog's default method consumes Escape key events.) Otherwise,
  @method[top-level-window<%> on-traverse-char] allows the keyboard
  events to be propagated to the canvas.
 
-For an @scheme[editor-canvas%] object, handling of Tab, arrow, Enter,
+For an @racket[editor-canvas%] object, handling of Tab, arrow, Enter,
  and Escape keyboard events is determined by the
  @method[editor-canvas% allow-tab-exit] method.
 
@@ -123,17 +123,17 @@ Returns the color currently used to ``erase'' the canvas content before
 @method[canvas<%> on-paint] is called. See also
 @method[canvas<%> set-canvas-background].
 
-The result is @scheme[#f] if the canvas was created with the
- @indexed-scheme['transparent] style, otherwise it is always a
- @scheme[color%] object.
+The result is @racket[#f] if the canvas was created with the
+ @indexed-racket['transparent] style, otherwise it is always a
+ @racket[color%] object.
 
 }
 
 
 @defmethod[(get-dc)
            (is-a?/c dc<%>)]{
-Gets the canvas's device context. See
-@scheme[dc<%>] for more information about drawing.
+Gets the canvas's device context. See @racket[dc<%>] for more information about
+drawing.
 
 }
 
@@ -267,7 +267,7 @@ Sets the color used to ``erase'' the canvas content before
  low level, so that it is used even when a complete refresh of the
  canvas is delayed by other activity.)
 
-If the canvas was created with the @indexed-scheme['transparent] style,
+If the canvas was created with the @indexed-racket['transparent] style,
  @|MismatchExn|.
 
 }
@@ -280,7 +280,7 @@ On Mac OS X, enables or disables space for a resize tab at the
  method has no effect on Windows or Unix, and it has no effect when
  both or no scrollbars are visible. The resize corner is disabled by
  default, but it can be enabled when a canvas is created with the
- @scheme['resize-corner] style.
+ @racket['resize-corner] style.
 
 }
 

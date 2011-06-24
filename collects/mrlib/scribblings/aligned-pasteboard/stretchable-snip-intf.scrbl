@@ -5,7 +5,7 @@
 
 This interface must be implemented by any snip class who's
 objects will be stretchable when inserted into an
-@scheme[aligned-pasteboard<%>].
+@racket[aligned-pasteboard<%>].
 
 
 

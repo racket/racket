@@ -22,13 +22,13 @@
               (to-flow spacer)
               (to-flow (scheme 'option0))
               (to-flow spacer)
-              (make-flow (list (schemeblock0 contract0))))
+              (make-flow (list (racketblock0 contract0))))
         (list (to-flow spacer)
               (to-flow spacer)
               (to-flow spacer)
               (to-flow (scheme 'option))
               (to-flow spacer)
-              (make-flow (list (schemeblock0 contract))))
+              (make-flow (list (racketblock0 contract))))
         ...)
        ...))))
 
@@ -107,30 +107,30 @@
 @defmethod[(insert-html [html string?])
            void?]{
 
-  Places the HTML given by the string @scheme[html] before the element.}
+  Places the HTML given by the string @racket[html] before the element.}
 
 @defmethod[(append-html [html string?])
            void?]{
 
-  Places the HTML given by the string @scheme[html] after the element.}
+  Places the HTML given by the string @racket[html] after the element.}
 
 @defmethod[(replace-html [html string?])
            void?]{
 
-  Replaces the HTML in the element with the string @scheme[html].  You
+  Replaces the HTML in the element with the string @racket[html].  You
   must use the @method[mx-document<%> find-element] or
   @method[mx-document<%> find-element-by-id-or-name] methods of
-  @scheme[mx-document<%>] to retrieve the updated element.}
+  @racket[mx-document<%>] to retrieve the updated element.}
   
 @defmethod[(insert-text [txt string?])
            void?]{
 
-  Places the text given by the string @scheme[txt] before the HTML element.}
+  Places the text given by the string @racket[txt] before the HTML element.}
   
 @defmethod[(append-text [txt string?])
            void?]{
 
-  Places the text given by the string @scheme[txt] after the HTML element.}
+  Places the text given by the string @racket[txt] after the HTML element.}
   
 @defmethod[(insert-object-from-coclass [coclass string?]
                           [width exact-integer?]
@@ -138,7 +138,7 @@
                           [size (one-of/c 'pixels 'percent) 'pixels])
            void?]{
 
-  Composes @scheme[coclass->html] with @method[mx-element% insert-html].}
+  Composes @racket[coclass->html] with @method[mx-element% insert-html].}
 
 @defmethod[(insert-object-from-progid [coclass string?]
                           [width exact-integer?]
@@ -146,7 +146,7 @@
                           [size (one-of/c 'pixels 'percent) 'pixels])
            void?]{
 
-  Composes @scheme[progid->html] with @method[mx-element% insert-html].}
+  Composes @racket[progid->html] with @method[mx-element% insert-html].}
 
 @defmethod[(append-object-from-coclass [coclass string?]
                           [width exact-integer?]
@@ -154,7 +154,7 @@
                           [size (one-of/c 'pixels 'percent) 'pixels])
            void?]{
 
-  Composes @scheme[coclass->html] with @method[mx-element% append-html].}
+  Composes @racket[coclass->html] with @method[mx-element% append-html].}
 
 @defmethod[(append-object-from-progid [coclass string?]
                           [width exact-integer?]
@@ -162,7 +162,7 @@
                           [size (one-of/c 'pixels 'percent) 'pixels])
            void?]{
 
-  Composes @scheme[progid->html] with @method[mx-element% append-html].}
+  Composes @racket[progid->html] with @method[mx-element% append-html].}
 
 @defmethod[(focus)
            void?]{
@@ -173,7 +173,7 @@
 @defmethod[(selection)
            string?]{
 
-  If the element has the @scheme["select"] tag, returns a string
+  If the element has the @racket["select"] tag, returns a string
   indicating the value of the current selection.  Otherwise, an
   exception s raised.  The value of the selection may be different
   from the string visible in the dropdown list.}
@@ -181,23 +181,23 @@
 @defmethod[(set-selection! [val string?])
            void?]{
 
-  If the element has the @scheme["select"] tag, sets the selection to
-  the entry with the value @scheme[val], a string.  Otherwise, an
+  If the element has the @racket["select"] tag, sets the selection to
+  the entry with the value @racket[val], a string.  Otherwise, an
   exception is raised.  The value of the selection may be different
   from the string visible in the dropdown list.}
 
 @defmethod[(attribute [attr string?])
            (or/c string? real? boolean?)]{
 
-  Retrieves the attribute named by the string @scheme[attr].  The return
+  Retrieves the attribute named by the string @racket[attr].  The return
   value has a type that depends on the attribute.}
 
 @defmethod[(set-attribute! [attr string?]
                            [val (or/c string? real? boolean?)])
            void?]{
 
-  Sets the attribute named by the string @scheme[attr].  The new
-  value @scheme[val] has a type that depends on the attribute.}
+  Sets the attribute named by the string @racket[attr].  The new
+  value @racket[val] has a type that depends on the attribute.}
   
 @defmethod[(click)
            void?]{
@@ -246,7 +246,7 @@
 
   Gets or sets the element's CSS @tt{background-color}, @tt{background-image},
   @tt{background-repeat}, @tt{background-attachment}, and @tt{background-position}
-  using the string @scheme[b].}
+  using the string @racket[b].}
 
 
 @defmethods[background-image

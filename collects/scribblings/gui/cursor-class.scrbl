@@ -23,7 +23,7 @@ A cursor is assigned to each window (or the window may use its
 
 The first case creates a cursor using an image bitmap and a mask
 bitmap. Both bitmaps must have depth 1 and size 16 by 16
-pixels. The @scheme[hot-spot-x] and @scheme[hot-spot-y] arguments
+pixels. The @racket[hot-spot-x] and @racket[hot-spot-y] arguments
 determine the focus point of the cursor within the cursor image,
 relative to its top-left corner.
 
@@ -32,38 +32,38 @@ as one of the following:
 
 @itemize[
 
- @item{@scheme['arrow] --- the default cursor}
+ @item{@racket['arrow] --- the default cursor}
 
- @item{@scheme['bullseye] --- concentric circles}
+ @item{@racket['bullseye] --- concentric circles}
 
- @item{@scheme['cross] --- a crosshair}
+ @item{@racket['cross] --- a crosshair}
 
- @item{@scheme['hand] --- an open hand}
+ @item{@racket['hand] --- an open hand}
 
- @item{@scheme['ibeam] --- a vertical line, indicating that clicks
+ @item{@racket['ibeam] --- a vertical line, indicating that clicks
   control a text-selection caret}
 
- @item{@scheme['watch] --- a watch or hourglass, indicating that
+ @item{@racket['watch] --- a watch or hourglass, indicating that
   the user must wait for a computation to complete}
 
- @item{@scheme['arrow+watch] --- the default cursor with a watch or
+ @item{@racket['arrow+watch] --- the default cursor with a watch or
   hourglass, indicating that some computation is in progress, but the
   cursor can still be used}
 
- @item{@scheme['blank] --- invisible}
+ @item{@racket['blank] --- invisible}
 
- @item{@scheme['size-e/w] --- arrows left and right}
+ @item{@racket['size-e/w] --- arrows left and right}
 
- @item{@scheme['size-n/s] --- arrows up and down}
+ @item{@racket['size-n/s] --- arrows up and down}
 
- @item{@scheme['size-ne/sw] --- arrows up-right and down-left}
+ @item{@racket['size-ne/sw] --- arrows up-right and down-left}
 
- @item{@scheme['size-nw/se] --- arrows up-left and down-right}
+ @item{@racket['size-nw/se] --- arrows up-left and down-right}
 
 ]
 
 If the cursor is created successfully, @method[cursor% ok?]
-returns @scheme[#t], otherwise the cursor object cannot be
+returns @racket[#t], otherwise the cursor object cannot be
 assigned to a window.
 
 }
@@ -71,8 +71,8 @@ assigned to a window.
 @defmethod[(ok?)
            boolean?]{
 
-Returns @scheme[#t] if the cursor is can be assigned to a window,
- @scheme[#f] otherwise.
+Returns @racket[#t] if the cursor is can be assigned to a window,
+ @racket[#f] otherwise.
 
 }}
 

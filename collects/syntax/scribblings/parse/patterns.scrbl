@@ -14,7 +14,7 @@
 @title[#:tag "stxparse-patterns"]{Syntax patterns}
 
 The grammar of @deftech{syntax patterns} used by
-@schememodname[syntax/parse] facilities is given in the following
+@racketmodname[syntax/parse] facilities is given in the following
 table. There are four main kinds of syntax pattern:
 @itemize[
 @item{@tech{@Spatterns}, abbreviated @svar[S-pattern]}
@@ -27,10 +27,10 @@ A fifth kind, @tech{@Lpatterns} (abbreviated
 @tech{@Spatterns}.
 
 When a special form in this manual refers to @svar[syntax-pattern]
-(eg, the description of the @scheme[syntax-parse] special form), it
+(eg, the description of the @racket[syntax-parse] special form), it
 means specifically @tech{@Spattern}.
 
-@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
+@racketgrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
                             ~! ~bind ~fail ~parse ~peek ~peek-not ~do)
                 [S-pattern
@@ -100,7 +100,7 @@ means specifically @tech{@Spattern}.
 The following pattern keywords can be used in multiple pattern
 variants:
 
-@defidform[~var]{ 
+@defidform[~var]{
 
 One of @ref[~var s-], @ref[~var s+], or @ref[~var h].
 }
@@ -171,13 +171,13 @@ eh] pattern}
 
 A @deftech{@Spattern} (abbreviated @svar[S-pattern]) is a pattern that
 describes a single term. These are like the traditional patterns used
-in @scheme[syntax-rules] and @scheme[syntax-case], but with additional
+in @racket[syntax-rules] and @racket[syntax-case], but with additional
 variants that make them more expressive.
 
 ``Single-term'' does not mean ``atomic''; a @Spattern can have
 complex structure, and it can match terms that have many parts. For
-example, @scheme[(17 ...)] is a @Spattern that matches any
-term that is a proper list of repeated @schemeresult[17] numerals. 
+example, @racket[(17 ...)] is a @Spattern that matches any
+term that is a proper list of repeated @racketresult[17] numerals.
 
 A @deftech{proper @Spattern} is one that is not an @tech{@Apattern}.
 
@@ -194,9 +194,9 @@ An identifier can be either a @tech{pattern variable}, an
 
 @itemize[
 
-@item{If @scheme[id] is the ``pattern'' name of an entry in the
+@item{If @racket[id] is the ``pattern'' name of an entry in the
   literals list, it is a @tech{literal} pattern that behaves
-  like @scheme[(~literal id)].
+  like @racket[(~literal id)].
 
   @myexamples[
     (syntax-parse #'(define x 12)
@@ -214,10 +214,10 @@ An identifier can be either a @tech{pattern variable}, an
   ]
 }
 
-@item{If @scheme[id] is of the form @scheme[_pvar-id:syntax-class-id]
+@item{If @racket[id] is of the form @racket[_pvar-id:syntax-class-id]
   (that is, two names joined by a colon character), it is an
   @tech{annotated pattern variable}, and the pattern is equivalent to
-  @scheme[(~var pvar-id syntax-class-id)].
+  @racket[(~var pvar-id syntax-class-id)].
 
   @myexamples[
     (syntax-parse #'a
@@ -236,21 +236,21 @@ An identifier can be either a @tech{pattern variable}, an
   ]
 }
 
-@item{Otherwise, @scheme[id] is a @tech{pattern variable}, and the
-pattern is equivalent to @scheme[(~var id)].
+@item{Otherwise, @racket[id] is a @tech{pattern variable}, and the
+pattern is equivalent to @racket[(~var id)].
 }
 ]
 }
 
 @specsubform[(@#,def[~var s-] pvar-id)]{
 
-A @deftech{pattern variable}. If @scheme[pvar-id] has no syntax class
-(by @scheme[#:convention]), the pattern variable matches anything. The
+A @deftech{pattern variable}. If @racket[pvar-id] has no syntax class
+(by @racket[#:convention]), the pattern variable matches anything. The
 pattern variable is bound to the matched subterm, unless the pattern
-variable is the wildcard (@scheme[_]), in which case no binding
+variable is the wildcard (@racket[_]), in which case no binding
 occurs.
 
-If @scheme[pvar-id] does have an associated syntax class, it behaves
+If @racket[pvar-id] does have an associated syntax class, it behaves
 like an @tech{annotated pattern variable} with the implicit syntax
 class inserted.
 }
@@ -261,7 +261,7 @@ class inserted.
 
 An @deftech{annotated pattern variable}. The pattern matches only
 terms accepted by @svar[syntax-class-id] (parameterized by the
-@scheme[arg-expr]s, if present).
+@racket[arg-expr]s, if present).
 
 In addition to binding @svar[pvar-id], an annotated pattern
 variable also binds @deftech{nested attributes} from the syntax
@@ -269,7 +269,7 @@ class. The names of the nested attributes are formed by prefixing
 @svar[pvar-id.] (that is, @svar[pvar-id] followed by a ``dot''
 character) to the name of the syntax class's attribute.
 
-If @svar[pvar-id] is @scheme[_], no attributes are bound.
+If @svar[pvar-id] is @racket[_], no attributes are bound.
 
 @myexamples[
 (syntax-parse #'a
@@ -292,7 +292,7 @@ If @svar[pvar-id] is @scheme[_], no attributes are bound.
 @specsubform[(@#,defhere[~literal] literal-id)]{
 
 A @deftech{literal} identifier pattern. Matches any identifier
-@scheme[free-identifier=?] to @scheme[literal-id].
+@racket[free-identifier=?] to @racket[literal-id].
 
 @myexamples[
 (syntax-parse #'(define x 12)
@@ -318,8 +318,8 @@ literals.
 @specsubform[(@#,defhere[~datum] datum)]{
 
 Matches syntax whose S-expression contents (obtained by
-@scheme[syntax->datum]) is @scheme[equal?] to the given
-@scheme[datum].
+@racket[syntax->datum]) is @racket[equal?] to the given
+@racket[datum].
 
 @myexamples[
 (syntax-parse #'(a #:foo bar)
@@ -328,8 +328,8 @@ Matches syntax whose S-expression contents (obtained by
   [(x (~datum #:foo) y) (syntax->datum #'y)])
 ]
 
-The @scheme[~datum] form is useful for recognizing identifiers
-symbolically, in contrast to the @scheme[~literal] form, which
+The @racket[~datum] form is useful for recognizing identifiers
+symbolically, in contrast to the @racket[~literal] form, which
 recognizes them by binding.
 
 @myexamples[
@@ -345,7 +345,7 @@ recognizes them by binding.
 @specsubform[(H-pattern . S-pattern)]{
 
 Matches any term that can be decomposed into a list prefix matching
-@scheme[H-pattern] and a suffix matching @scheme[S-pattern].
+@racket[H-pattern] and a suffix matching @racket[S-pattern].
 
 Note that the pattern may match terms that are not even improper
 lists; if the head pattern can match a zero-length head, then the
@@ -360,12 +360,12 @@ See @tech{@Hpatterns} for more information.
 
 @specsubform[(A-pattern . S-pattern)]{
 
-Performs the actions specified by @scheme[A-pattern], then matches
-any term that matches @scheme[S-pattern].
+Performs the actions specified by @racket[A-pattern], then matches
+any term that matches @racket[S-pattern].
 
 Pragmatically, one can throw an @tech{@Apattern} into any list
-pattern. Thus, @scheme[(x y z)] is a pattern matching a list of three
-terms, and @scheme[(x y ~! z)] is a pattern matching a list of three
+pattern. Thus, @racket[(x y z)] is a pattern matching a list of three
+terms, and @racket[(x y ~! z)] is a pattern matching a list of three
 terms, with a @tech{cut} performed after the second one. In other
 words, @Apatterns ``don't take up space.''
 
@@ -375,9 +375,9 @@ See @tech{@Apatterns} for more information.
 @specsubform[(EH-pattern #,ellipses . S-pattern)]{
 
 Matches any term that can be decomposed into a list head matching some
-number of repetitions of the @scheme[EH-pattern] alternatives (subject
+number of repetitions of the @racket[EH-pattern] alternatives (subject
 to its repetition constraints) followed by a list tail matching
-@scheme[S-pattern].
+@racket[S-pattern].
 
 In other words, the whole pattern matches either the second pattern
 (which need not be a list) or a term whose head matches one of the
@@ -394,8 +394,8 @@ of the head pattern to be present.
 
 That is, the following patterns are equivalent:
 @itemize[
-@item[@scheme[(H @#,dotsplus . S)]]
-@item[@scheme[((~between H 1 +inf.0) ... . S)]]
+@item[@racket[(H @#,dotsplus . S)]]
+@item[@racket[((~between H 1 +inf.0) ... . S)]]
 ]
 
 @myexamples[
@@ -419,10 +419,10 @@ Attributes bound in subpatterns are available to subsequent
 subpatterns. The whole pattern binds all of the subpatterns'
 attributes.
 
-One use for @scheme[~and]-patterns is preserving a whole
+One use for @racket[~and]-patterns is preserving a whole
 term (including its lexical context, source location, etc) while also
 examining its structure. Syntax classes are useful for the same
-purpose, but @scheme[~and] can be lighter weight.
+purpose, but @racket[~and] can be lighter weight.
 
 @myexamples[
 (define-syntax (import stx)
@@ -449,7 +449,7 @@ alternatives are tried in order.
 
 The whole pattern binds @emph{all} of the subpatterns' attributes. An
 attribute that is not bound by the ``chosen'' subpattern has a value
-of @scheme[#f]. The same attribute may be bound by multiple
+of @racket[#f]. The same attribute may be bound by multiple
 subpatterns, and if it is bound by all of the subpatterns, it is sure
 to have a value if the whole pattern matches.
 
@@ -467,7 +467,7 @@ to have a value if the whole pattern matches.
 
 Matches any term that does not match the subpattern. None of the
 subpattern's attributes are bound outside of the
-@scheme[~not]-pattern.
+@racket[~not]-pattern.
 
 @myexamples[
 (syntax-parse #'(x y z => u v)
@@ -481,7 +481,7 @@ subpattern's attributes are bound outside of the
 
 Matches a term that is a vector whose elements, when considered as a
 list, match the @tech{@Spattern} corresponding to
-@scheme[(pattern-part ...)].
+@racket[(pattern-part ...)].
 
 @myexamples[
 (syntax-parse #'#(1 2 3)
@@ -497,7 +497,7 @@ list, match the @tech{@Spattern} corresponding to
 
 Matches a term that is a prefab struct whose key is exactly the given
 key and whose sequence of fields, when considered as a list, match the
-@tech{@Spattern} corresponding to @scheme[(pattern-part ...)].
+@tech{@Spattern} corresponding to @racket[(pattern-part ...)].
 
 @myexamples[
 (syntax-parse #'#s(point 1 2 3)
@@ -522,7 +522,7 @@ Matches a term that is a box whose contents matches the inner
 
 @specsubform[(#, @defhere[~rest] S-pattern)]{
 
-Matches just like @scheme[S-pattern]. The @scheme[~rest] pattern form
+Matches just like @racket[S-pattern]. The @racket[~rest] pattern form
 is useful in positions where improper (``dotted'') lists are not
 allowed by the reader, such as vector and structure patterns (see
 above).
@@ -540,41 +540,41 @@ above).
                                  (code:line #:opaque)])
                   #:contracts ([expr (or/c string? #f)])]{
 
-The @scheme[~describe] pattern form annotates a pattern with a
+The @racket[~describe] pattern form annotates a pattern with a
 description, a string expression that is evaluated in the scope of all
 prior attribute bindings. If parsing the inner pattern fails, then the
 description is used to synthesize the error message.
 
-A @scheme[~describe] pattern has no effect on backtracking.
+A @racket[~describe] pattern has no effect on backtracking.
 }
 
 @specsubform[(@#,def[~commit s] S-pattern)]{
 
-The @scheme[~commit] pattern form affects backtracking in two ways:
+The @racket[~commit] pattern form affects backtracking in two ways:
 
 @itemize[
 
 @item{If the pattern succeeds, then all choice points created within
 the subpattern are discarded, and a failure @emph{after} the
-@scheme[~commit] pattern backtracks only to choice points
-@emph{before} the @scheme[~commit] pattern, never one @emph{within}
+@racket[~commit] pattern backtracks only to choice points
+@emph{before} the @racket[~commit] pattern, never one @emph{within}
 it.}
 
-@item{A cut (@scheme[~!]) within a @scheme[~commit] pattern only
-eliminates choice-points created within the @scheme[~commit]
-pattern. In this sense, it acts just like @scheme[~delimit-cut].}
+@item{A cut (@racket[~!]) within a @racket[~commit] pattern only
+eliminates choice-points created within the @racket[~commit]
+pattern. In this sense, it acts just like @racket[~delimit-cut].}
 ]
 }
 
 @specsubform[(@#,def[~delimit-cut s] S-pattern)]{
 
-The @scheme[~delimit-cut] pattern form affects backtracking in the
+The @racket[~delimit-cut] pattern form affects backtracking in the
 following way:
 
 @itemize[
 
-@item{A cut (@scheme[~!]) within a @scheme[~delimit-cut] pattern only
-eliminates choice-points created within the @scheme[~delimit-cut]
+@item{A cut (@racket[~!]) within a @racket[~delimit-cut] pattern only
+eliminates choice-points created within the @racket[~delimit-cut]
 pattern.}
 
 ]
@@ -601,7 +601,7 @@ Here are the variants of @elem{@Hpattern}:
 
 @specsubform[pvar-id:splicing-syntax-class-id]{
 
-Equivalent to @scheme[(~var pvar-id splicing-syntax-class-id)].
+Equivalent to @racket[(~var pvar-id splicing-syntax-class-id)].
 
 }
 
@@ -617,7 +617,7 @@ matches a head pattern.
 @specsubform[(@#,defhere[~seq] . L-pattern)]{
 
 Matches a sequence of terms whose elements, if put in a list, would
-match @scheme[L-pattern].
+match @racket[L-pattern].
 
 @myexamples[
 (syntax-parse #'(1 2 3 4)
@@ -625,7 +625,7 @@ match @scheme[L-pattern].
 ]
 
 See also the section on @tech{@EHpatterns} for more interesting
-examples of @scheme[~seq].
+examples of @racket[~seq].
 }
 
 @specsubform[(@#,def[~and h] H-pattern ...)]{
@@ -641,10 +641,10 @@ terms instead.
    (syntax->datum #'((k ...) (e ...) (keyword-stuff ...)))])
 ]
 
-The @Hpattern variant of @scheme[~and] requires that all of the
+The @Hpattern variant of @racket[~and] requires that all of the
 subpatterns be @tech{proper @Hpatterns} (not @tech{@Spatterns}). This
 is to prevent typos like the following, a variant of the previous
-example with the second @scheme[~seq] omitted:
+example with the second @racket[~seq] omitted:
 
 @myexamples[
 (syntax-parse #'(#:a 1 #:b 2 3 4 5)
@@ -685,7 +685,7 @@ terms instead.
                     (attr-id depth)])]{
 
 Matches either the given head subpattern or an empty sequence of
-terms. If the @scheme[#:defaults] option is given, the subsequent
+terms. If the @racket[#:defaults] option is given, the subsequent
 attribute bindings are used if the subpattern does not match. The
 default attributes must be a subset of the subpattern's attributes.
 
@@ -747,7 +747,7 @@ Like @racket[~peek], but succeeds if the subpattern fails and fails if
 the subpattern succeeds. On success, the @racket[~peek-not] resets the
 matching position, so the pattern consumes no input. Used to look
 ahead in a sequence. None of the subpattern's attributes are bound
-outside of the @scheme[~peek-not]-pattern.
+outside of the @racket[~peek-not]-pattern.
 
 @myexamples[
 (define-splicing-syntax-class final (code:comment "final term")
@@ -763,7 +763,7 @@ outside of the @scheme[~peek-not]-pattern.
 @specsubform[S-pattern]{
 
 Matches a sequence of one element, which must be a term matching
-@scheme[S-pattern].
+@racket[S-pattern].
 }
 
 
@@ -790,16 +790,16 @@ alternatives are grouped together via @ref[~or eh].
 (parser1 #'(#:a 1 #:a 2))
 ]
 
-The pattern requires exactly one occurrence of the @scheme[#:a]
-keyword and argument, at most one occurrence of the @scheme[#:b]
-keyword and argument, and any number of @scheme[#:c] keywords and
+The pattern requires exactly one occurrence of the @racket[#:a]
+keyword and argument, at most one occurrence of the @racket[#:b]
+keyword and argument, and any number of @racket[#:c] keywords and
 arguments. The ``pieces'' can occur in any order.
 
 Here are the variants of @elem{@EHpattern}:
 
 @specsubform[(@#,def[~or eh] EH-pattern ...)]{
 
-Matches if any of the inner @scheme[EH-pattern] alternatives match.
+Matches if any of the inner @racket[EH-pattern] alternatives match.
 }
 
 @specsubform/subs[(@#,defhere[~once] H-pattern once-option ...)
@@ -810,18 +810,18 @@ Matches if any of the inner @scheme[EH-pattern] alternatives match.
                                [too-few-message-expr (or/c string? #f)]
                                [too-many-message-expr (or/c string? #f)])]{
 
-Matches if the inner @scheme[H-pattern] matches. This pattern must be
+Matches if the inner @racket[H-pattern] matches. This pattern must be
 matched exactly once in the match of the entire repetition sequence.
 
 If the pattern is not matched in the repetition sequence, then the
 ellipsis pattern fails with the message either
-@scheme[too-few-message-expr] or @schemevalfont{"missing required
-occurrence of @scheme[name-expr]"}.
+@racket[too-few-message-expr] or @racketvalfont{"missing required
+occurrence of @racket[name-expr]"}.
 
 If the pattern is chosen more than once in the repetition sequence,
 then the ellipsis pattern fails with the message either
-@scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
-of @scheme[name-expr]"}.
+@racket[too-many-message-expr] or @racketvalfont{"too many occurrences
+of @racket[name-expr]"}.
 }
 
 @specsubform/subs[(@#,def[~optional eh] H-pattern optional-option ...)
@@ -831,15 +831,15 @@ of @scheme[name-expr]"}.
                   #:contracts ([name-expr (or/c string? #f)]
                                [too-many-message-expr (or/c string? #f)])]{
 
-Matches if the inner @scheme[H-pattern] matches. This pattern may be used at
+Matches if the inner @racket[H-pattern] matches. This pattern may be used at
 most once in the match of the entire repetition.
 
 If the pattern is matched more than once in the repetition sequence,
 then the ellipsis pattern fails with the message either
-@scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
-of @scheme[name-expr]"}.
+@racket[too-many-message-expr] or @racketvalfont{"too many occurrences
+of @racket[name-expr]"}.
 
-If the @scheme[#:defaults] option is given, the following attribute
+If the @racket[#:defaults] option is given, the following attribute
 bindings are used if the subpattern does not match at all in the
 sequence. The default attributes must be a subset of the subpattern's
 attributes.
@@ -852,17 +852,17 @@ attributes.
                   #:contracts ([name-expr (or/c syntax? #f)]
                                [too-few-message-expr (or/c syntax? #f)])]{
 
-Matches if the inner @scheme[H-pattern] matches. This pattern must be
-matched at least @scheme[min-number] and at most @scheme[max-number]
+Matches if the inner @racket[H-pattern] matches. This pattern must be
+matched at least @racket[min-number] and at most @racket[max-number]
 times in the entire repetition.
 
 If the pattern is matched too few times, then the ellipsis pattern
-fails with the message either @scheme[too-few-message-expr] or
-@schemevalfont{"too few occurrences of @scheme[name-expr]"}.
+fails with the message either @racket[too-few-message-expr] or
+@racketvalfont{"too few occurrences of @racket[name-expr]"}.
 
 If the pattern is chosen too many times, then the ellipsis pattern
-fails with the message either @scheme[too-many-message-expr] or
-@schemevalfont{"too few occurrences of @scheme[name-expr]"}.
+fails with the message either @racket[too-many-message-expr] or
+@racketvalfont{"too few occurrences of @racket[name-expr]"}.
 }
 
 
@@ -877,7 +877,7 @@ attributes or the modification of the matching process.
 
 @specsubform[@#,defhere[~!]]{
 
-The @deftech{cut} operator, written @scheme[~!], eliminates
+The @deftech{cut} operator, written @racket[~!], eliminates
 backtracking choice points and commits parsing to the current branch
 of the pattern it is exploring.
 
@@ -891,13 +891,13 @@ forms based on keywords. Consider the following expression:
   [(define-syntaxes (x:id ...) e) 'define-syntaxes]
   [e 'expression])]
 
-Given the ill-formed term @scheme[(define-values a 123)], the
-expression tries the first clause, fails to match @scheme[a] against
-the pattern @scheme[(x:id ...)], and then backtracks to the second
+Given the ill-formed term @racket[(define-values a 123)], the
+expression tries the first clause, fails to match @racket[a] against
+the pattern @racket[(x:id ...)], and then backtracks to the second
 clause and ultimately the third clause, producing the value
-@scheme['expression]. But the term is not an expression; it is an
-ill-formed use of @scheme[define-values]. The proper way to write the
-@scheme[syntax-parse] expression follows:
+@racket['expression]. But the term is not an expression; it is an
+ill-formed use of @racket[define-values]. The proper way to write the
+@racket[syntax-parse] expression follows:
 
 @interaction[#:eval the-eval
 (syntax-parse #'(define-values a 123)
@@ -906,19 +906,19 @@ ill-formed use of @scheme[define-values]. The proper way to write the
   [(define-syntaxes ~! (x:id ...) e) 'define-syntaxes]
   [e 'expression])]
 
-Now, given the same term, @scheme[syntax-parse] tries the first
-clause, and since the keyword @scheme[define-values] matches, the
+Now, given the same term, @racket[syntax-parse] tries the first
+clause, and since the keyword @racket[define-values] matches, the
 cut-pattern commits to the current pattern, eliminating the choice
 points for the second and third clauses. So when the clause fails to
-match, the @scheme[syntax-parse] expression raises an error.
+match, the @racket[syntax-parse] expression raises an error.
 
-The effect of a @scheme[~!] pattern is delimited by the nearest
-enclosing @scheme[~delimit-cut] or @scheme[~commit] pattern. If there
-is no enclosing @scheme[~describe] pattern but the cut occurs within a
+The effect of a @racket[~!] pattern is delimited by the nearest
+enclosing @racket[~delimit-cut] or @racket[~commit] pattern. If there
+is no enclosing @racket[~describe] pattern but the cut occurs within a
 syntax class definition, then only choice points within the syntax
-class definition are discarded. A @scheme[~!]  pattern is not allowed
-within a @scheme[~not] pattern unless there is an intervening
-@scheme[~delimit-cut] or @scheme[~commit] pattern.
+class definition are discarded. A @racket[~!]  pattern is not allowed
+within a @racket[~not] pattern unless there is an intervening
+@racket[~delimit-cut] or @racket[~commit] pattern.
 }
 
 @specsubform/subs[(@#,defhere[~bind] [attr-arity-decl expr] ...)
@@ -926,8 +926,8 @@ within a @scheme[~not] pattern unless there is an intervening
                     attr-name-id
                     (attr-name-id depth)])]{
 
-Evaluates the @scheme[expr]s and binds them to the given
-@scheme[attr-id]s as attributes.
+Evaluates the @racket[expr]s and binds them to the given
+@racket[attr-id]s as attributes.
 }
 
 @specsubform/subs[(@#,defhere[~fail] maybe-fail-condition maybe-message-expr)
@@ -938,10 +938,10 @@ Evaluates the @scheme[expr]s and binds them to the given
                                        (code:line message-expr)])
                   #:contracts ([message-expr (or/c string? #f)])]{
 
-If the condition is absent, or if the @scheme[#:when] condition
-evaluates to a true value, or if the @scheme[#:unless] condition
-evaluates to @scheme[#f], then the pattern fails with the given
-message. If the message is omitted, the default value @scheme[#f] is
+If the condition is absent, or if the @racket[#:when] condition
+evaluates to a true value, or if the @racket[#:unless] condition
+evaluates to @racket[#f], then the pattern fails with the given
+message. If the message is omitted, the default value @racket[#f] is
 used, representing ``no message.''
 
 Fail patterns can be used together with cut patterns to recognize
@@ -952,13 +952,13 @@ messages.
 @specsubform[(@#,defhere[~parse] S-pattern stx-expr)
              #:contracts ([stx-expr syntax?])]{
 
-Evaluates @scheme[stx-expr] to a syntax object and matches it against
-@scheme[S-pattern].
+Evaluates @racket[stx-expr] to a syntax object and matches it against
+@racket[S-pattern].
 }
 
 @specsubform[(@#,def[~and a] A-pattern ...+)]{
 
-Performs the actions of each @scheme[A-pattern].
+Performs the actions of each @racket[A-pattern].
 }
 
 @specsubform[(@#,defhere[~do] defn-or-expr ...)]{
@@ -968,9 +968,9 @@ intermixed, and evaluates them in the scope of all previous attribute
 bindings. The names bound by the definitions are in scope in the
 expressions of subsequent patterns and clauses.
 
-There is currently no way to bind attributes using a @scheme[~do]
+There is currently no way to bind attributes using a @racket[~do]
 pattern. It is an error to shadow an attribute binding with a
-definition in a @scheme[~do] block.
+definition in a @racket[~do] block.
 
 @myexamples[
 (syntax-parse #'(1 2 3)

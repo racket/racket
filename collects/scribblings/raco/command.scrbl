@@ -12,7 +12,7 @@ library of a collection or package (see @secref["info.rkt"]).
 The value bound to @racket[raco-commands] must be a list of command
 specifications, where each specification is a list of four values:
 
-@schemeblock[
+@racketblock[
    (list _command-string
          _implementationmodule-path
          _description-string
@@ -24,7 +24,7 @@ prefix of a command name can be supplied to @exec{raco} to invoke the
 command.
 
 The @racket[_module-path] names the implementation though a module
-path (in the sense of @scheme[module-path?]). The module is loaded and
+path (in the sense of @racket[module-path?]). The module is loaded and
 invoked through @racket[dynamic-require] to run the command. The
 module can access command-line arguments through the
 @racket[current-command-line-arguments] parameter, which is adjusted
@@ -39,7 +39,7 @@ command in response to @exec{raco help}. The description should not be
 capitalized or end with a period.
 
 The @racket[_prominence] value should be a read number or
-@scheme[#f]. A @racket[#f] value means that the command should not be
+@racket[#f]. A @racket[#f] value means that the command should not be
 included in the short list of ``frequently used commands.'' A number
 indicates the relative prominence of the command; the @exec{help}
 command has a value of @racket[110], and probably no command should be
@@ -50,7 +50,7 @@ least-prominent of the frequently used commands, has a value of
 As an example, the @filepath{info.rkt} of the "compiler" collection
 might contain the
 
-@schemeblock[
+@racketblock[
  (define raco-commands
    '(("make" compiler/commands/make "compile source to bytecode" 100)
      ("decompile" compiler/commands/decompile "decompile bytecode" #f)))
@@ -87,7 +87,7 @@ The result of this function is suitable for use with
 @racket[command-line]. For example, the @exec{decompile} tool parses
 command-line arguments with
 
-@schemeblock[
+@racketblock[
  (define source-files
    (command-line
     #:program (short-program+command-name)

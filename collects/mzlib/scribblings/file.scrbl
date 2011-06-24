@@ -6,10 +6,10 @@
 
 @mzlib[#:mode title file]
 
-The @schememodname[mzlib/file] library mostly re-exports from
-@schememodname[scheme/file]:
+The @racketmodname[mzlib/file] library mostly re-exports from
+@racketmodname[scheme/file]:
 
-@schemeblock[
+@racketblock[
 find-relative-path
 explode-path
 normalize-path
@@ -40,9 +40,9 @@ pathlist-closure
          any]
 )]{
 
-Like @scheme[call-with-input-file]and @scheme[call-with-output-file],
+Like @racket[call-with-input-file]and @racket[call-with-output-file],
 except that the opened port is closed if control escapes from the body
-of @scheme[proc].}
+of @racket[proc].}
 
 @deftogether[(
 @defproc[(build-relative-path [base (or/c path-string?
@@ -60,5 +60,5 @@ of @scheme[proc].}
          (and/c path? absolute-path?)]
 )]{
 
-Like @scheme[build-path], but with extra constraints to ensure a
+Like @racket[build-path], but with extra constraints to ensure a
 relative or absolute result.}

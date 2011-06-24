@@ -14,10 +14,10 @@ subject to change.}
 Just as procedures often expect certain kinds of values as arguments,
 macros often have expectations about the expressions they are
 given. And just as procedures express those expectations via
-contracts, so can macros, using the @scheme[expr/c] syntax class.
+contracts, so can macros, using the @racket[expr/c] syntax class.
 
-For example, here is a macro @scheme[myparameterize] that behaves like
-@scheme[parameterize] but enforces the @scheme[parameter?] contract on
+For example, here is a macro @racket[myparameterize] that behaves like
+@racket[parameterize] but enforces the @racket[parameter?] contract on
 the parameter expressions.
 
 @myinteraction[
@@ -34,9 +34,9 @@ the parameter expressions.
   'whatever)
 ]
 
-@bold{Important:} Make sure when using @scheme[expr/c] to use the
-@scheme[c] attribute. If the macro above had used @scheme[p] in the
+@bold{Important:} Make sure when using @racket[expr/c] to use the
+@racket[c] attribute. If the macro above had used @racket[p] in the
 template, the expansion would have used the raw, unchecked
-expressions. The @scheme[expr/c] syntax class does not change how
+expressions. The @racket[expr/c] syntax class does not change how
 pattern variables are bound; it only computes an attribute that
 represents the checked expression.

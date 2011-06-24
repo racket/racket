@@ -3,9 +3,9 @@
 
 @definterface/title[mult-color<%> ()]{
 
-A @scheme[mult-color<%>] object is used to scale the RGB values of a
- @scheme[color%] object. A @scheme[mult-color<%>] object exist only
- within a @scheme[style-delta%] object.
+A @racket[mult-color<%>] object is used to scale the RGB values of a
+ @racket[color%] object. A @racket[mult-color<%>] object exist only
+ within a @racket[style-delta%] object.
 
 See also @method[style-delta% get-foreground-mult] and
  @method[style-delta% get-background-mult].

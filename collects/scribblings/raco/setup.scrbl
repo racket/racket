@@ -76,8 +76,8 @@ The @exec{raco setup} command performs two main services:
    @elemref["clean"]{@racket[clean]} for more information.
 
    The @DFlag{workers} (or @Flag{j}) flag to @exec{raco setup} takes
-   an argument @scheme[_n] to make compilation use up to @scheme[_n]
-   parallel processes.  The default value of @scheme[_n] is
+   an argument @racket[_n] to make compilation use up to @racket[_n]
+   parallel processes.  The default value of @racket[_n] is
    @racket[(processor-count)], which typically uses all the machine's
    processing cores.
 
@@ -266,72 +266,72 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    separated by space if @racket[(truncate (/ _n 10))]and
    @racket[(truncate (/ _m 10))] are different.}
 
- @item{@scheme[racket-launcher-names] : @scheme[(listof string?)]
+ @item{@racket[racket-launcher-names] : @racket[(listof string?)]
    --- @elemtag["racket-launcher-names"] A list of executable names
    to be generated in the installation's executable directory to run
    Racket-based programs implemented by the collection. A parallel
    list of library names must be provided by
-   @scheme[racket-launcher-libraries] or
-   @scheme[racket-launcher-flags].
+   @racket[racket-launcher-libraries] or
+   @racket[racket-launcher-flags].
 
    For each name, a launching executable is set up using
-   @scheme[make-racket-launcher].  The arguments are @Flag{l-} and
+   @racket[make-racket-launcher].  The arguments are @Flag{l-} and
    @tt{@nonterm{colls}/.../@nonterm{file}}, where @nonterm{file} is
-   the file named by @scheme[racket-launcher-libraries] and
+   the file named by @racket[racket-launcher-libraries] and
    @tt{@nonterm{colls}/...}  are the collections (and subcollections)
    of the @filepath{info.rkt} file.
 
    In addition,
 
-   @schemeblock[
+   @racketblock[
     (build-aux-from-path
      (build-path (collection-path #,(nonterm "colls") _...) #,(nonterm "suffixless-file")))
    ]
 
-   is provided for the optional @scheme[_aux] argument (for icons,
-   etc.) to @scheme[make-racket-launcher], where where
+   is provided for the optional @racket[_aux] argument (for icons,
+   etc.) to @racket[make-racket-launcher], where where
    @nonterm{suffixless-file} is @nonterm{file} without its suffix.
 
-   If @scheme[racket-launcher-flags] is provided, it is used as a
+   If @racket[racket-launcher-flags] is provided, it is used as a
    list of command-line arguments passed to @exec{racket} instead of
    the above default, allowing arbitrary command-line arguments. If
-   @scheme[racket-launcher-flags] is specified together with
-   @scheme[racket-launcher-libraries], then the flags will override
+   @racket[racket-launcher-flags] is specified together with
+   @racket[racket-launcher-libraries], then the flags will override
    the libraries, but the libraries can still be used to specify a
-   name for @scheme[build-aux-from-path] (to find related information
+   name for @racket[build-aux-from-path] (to find related information
    like icon files etc).}
 
- @item{@scheme[racket-launcher-libraries] : @scheme[(listof
+ @item{@racket[racket-launcher-libraries] : @racket[(listof
    path-string?)] --- A list of library names in parallel to
-   @elemref["racket-launcher-names"]{@scheme[racket-launcher-names]}.}
+   @elemref["racket-launcher-names"]{@racket[racket-launcher-names]}.}
 
- @item{@scheme[racket-launcher-flags] : @scheme[(listof string?)]
+ @item{@racket[racket-launcher-flags] : @racket[(listof string?)]
    --- A list of command-line flag lists, in parallel to
-   @elemref["racket-launcher-names"]{@scheme[racket-launcher-names]}.}
+   @elemref["racket-launcher-names"]{@racket[racket-launcher-names]}.}
 
- @item{@scheme[mzscheme-launcher-names],
-   @scheme[mzscheme-launcher-libraries], and
-   @scheme[mzscheme-launcher-flags] --- Backward-compatible variant of
+ @item{@racket[mzscheme-launcher-names],
+   @racket[mzscheme-launcher-libraries], and
+   @racket[mzscheme-launcher-flags] --- Backward-compatible variant of
    @racket[racket-launcher-names], etc.}
 
- @item{@scheme[gracket-launcher-names] : @scheme[(listof string?)]  ---
+ @item{@racket[gracket-launcher-names] : @racket[(listof string?)]  ---
    @elemtag["gracket-launcher-names"] Like
-   @elemref["racket-launcher-names"]{@scheme[racket-launcher-names]},
+   @elemref["racket-launcher-names"]{@racket[racket-launcher-names]},
    but for GRacket-based executables. The launcher-name list is treated
-   in parallel to @scheme[gracket-launcher-libraries] and
-   @scheme[gracket-launcher-flags].}
+   in parallel to @racket[gracket-launcher-libraries] and
+   @racket[gracket-launcher-flags].}
 
- @item{@scheme[gracket-launcher-libraries] : @scheme[(listof path-string?)]
+ @item{@racket[gracket-launcher-libraries] : @racket[(listof path-string?)]
    --- A list of library names in parallel to
-   @elemref["gracket-launcher-names"]{@scheme[gracket-launcher-names]}.}
+   @elemref["gracket-launcher-names"]{@racket[gracket-launcher-names]}.}
 
- @item{@scheme[gracket-launcher-flags] : @scheme[(listof string?)] --- A
+ @item{@racket[gracket-launcher-flags] : @racket[(listof string?)] --- A
    list of command-line flag lists, in parallel to
-   @elemref["gracket-launcher-names"]{@scheme[gracket-launcher-names]}.}
+   @elemref["gracket-launcher-names"]{@racket[gracket-launcher-names]}.}
 
- @item{@scheme[mred-launcher-names],
-   @scheme[mred-launcher-libraries], and
-   @scheme[mred-launcher-flags] --- Backward-compatible variant of
+ @item{@racket[mred-launcher-names],
+   @racket[mred-launcher-libraries], and
+   @racket[mred-launcher-flags] --- Backward-compatible variant of
    @racket[gracket-launcher-names], etc.}
 
  @item{@racket[install-collection] : @racket[path-string?]  --- A
@@ -1047,7 +1047,7 @@ An @deftech{unpackable} is one of the following:
           false/c)]{
    Accepts a list of strings naming a collection or sub-collection,
    and calls @racket[get-info/full] with the full path corresponding to the
-   named collection and the @scheme[namespace] argument.}
+   named collection and the @racket[namespace] argument.}
 
 @defproc[(get-info/full [path path?]
                          [#:namespace namespace (or/c namespace? #f) #f])
@@ -1080,7 +1080,7 @@ An @deftech{unpackable} is one of the following:
    or returning the @racket[get-info] function from the @filepath{info.rkt} file.
 
    The @filepath{info.rkt} (or @filepath{info.ss}) module is loaded
-   into @scheme[namespace] if it is not @scheme[#f], or a private,
+   into @racket[namespace] if it is not @racket[#f], or a private,
    weakly-held namespace otherwise.}
 
 @defproc[(find-relevant-directories

@@ -3,18 +3,18 @@
 
 @definterface/title[control<%> (subwindow<%>)]{
 
-The @scheme[control<%>] interface is implemented by the built-in
+The @racket[control<%>] interface is implemented by the built-in
  control window classes:
 @itemize[
-@item{@scheme[message%]}
-@item{@scheme[button%]}
-@item{@scheme[check-box%]}
-@item{@scheme[slider%]}
-@item{@scheme[gauge%]}
-@item{@scheme[text-field%]}
-@item{@scheme[radio-box%]}
-@item{@scheme[choice%]}
-@item{@scheme[list-box%]}
+@item{@racket[message%]}
+@item{@racket[button%]}
+@item{@racket[check-box%]}
+@item{@racket[slider%]}
+@item{@racket[gauge%]}
+@item{@racket[text-field%]}
+@item{@racket[radio-box%]}
+@item{@racket[choice%]}
+@item{@racket[list-box%]}
 ]
 
 
@@ -23,7 +23,7 @@ The @scheme[control<%>] interface is implemented by the built-in
            void?]{
 
 Calls the control's callback function, passing on the given
- @scheme[control-event%] object.
+ @racket[control-event%] object.
 
 }}
 
