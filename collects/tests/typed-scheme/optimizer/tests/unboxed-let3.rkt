@@ -1,15 +1,14 @@
 #;
 (
-TR opt: unboxed-let3.rkt 26:0 (let ((x (+ 1.0+2.0i 2.0+4.0i))) (if (even? 2) x (+ x 2.0+4.0i))) -- unboxed let bindings
-TR opt: unboxed-let3.rkt 26:9 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: unboxed-let3.rkt 26:12 1.0+2.0i -- unboxed literal
-TR opt: unboxed-let3.rkt 26:21 2.0+4.0i -- unboxed literal
-TR opt: unboxed-let3.rkt 28:6 x -- unboxed complex variable
-TR opt: unboxed-let3.rkt 29:6 (+ x 2.0+4.0i) -- unboxed binary float complex
-TR opt: unboxed-let3.rkt 29:6 (+ x 2.0+4.0i) -- unboxed float complex
-TR opt: unboxed-let3.rkt 29:9 x -- leave var unboxed
-TR opt: unboxed-let3.rkt 29:9 x -- unbox float-complex
-TR opt: unboxed-let3.rkt 29:11 2.0+4.0i -- unboxed literal
+TR opt: unboxed-let3.rkt 25:0 (let ((x (+ 1.0+2.0i 2.0+4.0i))) (if (even? 2) x (+ x 2.0+4.0i))) -- unboxed let bindings
+TR opt: unboxed-let3.rkt 25:9 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: unboxed-let3.rkt 25:12 1.0+2.0i -- unboxed literal
+TR opt: unboxed-let3.rkt 25:21 2.0+4.0i -- unboxed literal
+TR opt: unboxed-let3.rkt 27:6 x -- unboxed complex variable
+TR opt: unboxed-let3.rkt 28:6 (+ x 2.0+4.0i) -- unboxed binary float complex
+TR opt: unboxed-let3.rkt 28:9 x -- leave var unboxed
+TR opt: unboxed-let3.rkt 28:9 x -- unbox float-complex
+TR opt: unboxed-let3.rkt 28:11 2.0+4.0i -- unboxed literal
 3.0+6.0i
 )
 

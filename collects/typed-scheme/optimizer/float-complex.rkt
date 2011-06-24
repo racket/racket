@@ -244,9 +244,9 @@
   (pattern e:float-arg-expr
            #:with real-binding (unboxed-gensym 'unboxed-float-)
            #:with imag-binding #f
-           #:when (log-optimization "float-arg-expr in complex ops" this-syntax)
            #:with (bindings ...)
-           #`(((real-binding) e.opt)))
+           (begin (log-optimization "float-arg-expr in complex ops" this-syntax)
+                  #`(((real-binding) e.opt))))
 
 
   ;; we can eliminate boxing that was introduced by the user
@@ -393,7 +393,7 @@
                         c:float-complex-expr)
            #:with c*:unboxed-float-complex-opt-expr #'c
            #:with opt
-           (begin (log-optimization "unboxed float complex" this-syntax)
+           (begin (log-optimization "complex accessor elimination" this-syntax)
                   (reset-unboxed-gensym)
                   #`(let*-values (c*.bindings ...)
                       #,(if (or (free-identifier=? #'op #'real-part)
@@ -440,8 +440,7 @@
            #:with imag-binding #f
            #:with (bindings ...) #'(exp*.bindings ...)
            #:with opt
-           (begin (log-optimization "unboxed float complex->float" this-syntax)
-                  (reset-unboxed-gensym)
+           (begin (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       real-binding)))
 
@@ -452,8 +451,7 @@
            #:with imag-binding #'exp*.imag-binding
            #:with (bindings ...) #'(exp*.bindings ...)
            #:with opt
-           (begin (log-optimization "unboxed float complex" this-syntax)
-                  (reset-unboxed-gensym)
+           (begin (reset-unboxed-gensym)
                   #'(let*-values (exp*.bindings ...)
                       (unsafe-make-flrectangular exp*.real-binding exp*.imag-binding))))
 
