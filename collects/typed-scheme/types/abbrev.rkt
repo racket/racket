@@ -9,13 +9,14 @@
          racket/match
          racket/function
          racket/pretty
+         racket/place
          unstable/function
          racket/udp
          (except-in racket/contract/base ->* ->)
          (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse)
 	 (for-template racket/base racket/contract/base racket/promise racket/tcp racket/flonum)
-         racket/pretty racket/udp
+         racket/pretty racket/udp racket/place
          ;; for base type predicates
          racket/promise racket/tcp racket/flonum)
 
@@ -159,6 +160,12 @@
 (define -Resolved-Module-Path (make-Base 'Resolved-Module-Path #'resolved-module-path? resolved-module-path? #'-Resolved-Module-Path))
 (define -Module-Path-Index (make-Base 'Module-Path-Index #'module-path-index? module-path-index? #'-Module-Path-Index))
 (define -Compiled-Module-Expression (make-Base 'Compiled-Module-Expression #'compiled-module-expression? compiled-module-expression? #'-Compiled-Module-Expression))
+(define -Compiled-Non-Module-Expression
+  (make-Base 'Compiled-Non-Module-Expression
+             #'(and/c    compiled-expression? (not/c  compiled-module-expression?))
+               (conjoin  compiled-expression? (negate compiled-module-expression?))
+             #'-CompiledExpression))
+(define -Compiled-Expression (*Un -Compiled-Module-Expression -Compiled-Non-Module-Expression))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag? continuation-prompt-tag? #'-Prompt-Tag))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set? continuation-mark-set? #'-Cont-Mark-Set))
 (define -Path (make-Base 'Path #'path? path? #'-Path))
@@ -199,8 +206,6 @@
 (define -PathConventionType (*Un (-val 'unix) (-val 'windows)))
 
 
-(define -Struct-Type-Property
-  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
 
 (define -Pretty-Print-Style-Table
   (make-Base 'Pretty-Print-Style-Table #'pretty-print-style-table? pretty-print-style-table? #'-Pretty-Print-Style-Table))
@@ -228,6 +233,39 @@
                                       internal-definition-context?
                                       #'-Internal-Definition-Context))
 
+(define -Subprocess
+  (make-Base 'Subprocess #'subprocess? subprocess? #'-Subprocess))
+(define -Security-Guard
+  (make-Base 'Security-Guard #'security-guard? security-guard? #'-Security-Guard))
+(define -Thread-Group
+  (make-Base 'Thread-Group #'thread-group? thread-group? #'-Thread-Group))
+(define -Struct-Type-Property
+  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
+(define -Impersonator-Property
+  (make-Base 'Impersonator-Property #'impersonator-property? impersonator-property? #'-Impersonator-Property))
+
+
+
+
+(define -Semaphore (make-Base 'Semaphore #'semaphore? semaphore? #'-Semaphore))
+(define -Bytes-Converter (make-Base 'Bytes-Converter #'bytes-converter? bytes-converter? #'-Bytes-Converter))
+(define -Pseudo-Random-Generator
+  (make-Base 'Pseudo-Random-Generator #'pseudo-random-generator? pseudo-random-generator? #'-Pseudo-Random-Generator))
+
+
+(define -Logger (make-Base 'Logger #'logger? logger? #'-Logger))
+(define -Log-Receiver (make-Base 'LogReceiver #'log-receiver? log-receiver? #'-Log-Receiver))
+
+
+(define -Place
+  (make-Base 'Place #'place? place? #'-Place))
+(define -Base-Place-Channel
+  (make-Base 'Base-Place-Channel #'(and/c place-channel? (not/c place?))  (conjoin place-channel? (negate place?))  #'-Base-Place-Channel))
+
+(define -Place-Channel (*Un -Place -Base-Place-Channel))
+
+(define -Will-Executor
+  (make-Base 'Will-Executor #'will-executor? will-executor? #'-Will-Executor))
 
 
 

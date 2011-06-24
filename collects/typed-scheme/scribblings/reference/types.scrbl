@@ -120,6 +120,7 @@ default in Racket.
 @defidform[String]
 @defidform[Keyword]
 @defidform[Symbol]
+@defidform[Char]
 @defidform[Void]
 @defidform[Input-Port]
 @defidform[Output-Port]
@@ -133,20 +134,43 @@ default in Racket.
 @defidform[Byte-PRegexp]
 @defidform[Bytes]
 @defidform[Namespace]
+@defidform[Namespace-Anchor]
+@defidform[Variable-Reference]
 @defidform[Null]
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
-@defidform[Char]
+@defidform[Prompt-Tag]
 @defidform[Undefined]
 @defidform[Module-Path]
 @defidform[Module-Path-Index]
-@defidform[Compiled-Module-Expression]
 @defidform[Resolved-Module-Path]
+@defidform[Compiled-Module-Expression]
+@defidform[Compiled-Expression]
+@defidform[Internal-Definition-Context]
 @defidform[Pretty-Print-Style-Table]
 @defidform[Special-Comment]
 @defidform[Struct-Type-Property]
+@defidform[Impersonator-Property]
 @defidform[Read-Table]
-@defidform[Thread])]{
+@defidform[Bytes-Converter]
+@defidform[Parameterization]
+@defidform[Custodian]
+@defidform[Inspector]
+@defidform[Security-Guard]
+@defidform[UDP-Socket]
+@defidform[TCP-Listener]
+@defidform[Logger]
+@defidform[Log-Receiver]
+@defidform[Log-Level]
+@defidform[Thread]
+@defidform[Thread-Group]
+@defidform[Subprocess]
+@defidform[Place]
+@defidform[Place-Channel]
+@defidform[Semaphore]
+@defidform[Will-Executor]
+@defidform[Pseudo-Random-Generator]
+)]{
 These types represent primitive Racket data.
 
 @ex[
@@ -251,6 +275,10 @@ corresponding to @racket[trest], where @racket[bound]
 
 @defform[(Sequenceof t ...)]{A @rtech{sequence} that produces values of the
 types @racket[_t ...] on each iteration.}
+
+@defform[(CustodianBoxof t)]{A @rtech{custodian box} of @racket[t].}
+@defform[(ThreadCellof t)]{A @rtech{thread cell} of @racket[t].}
+
 
 @section{Syntax Objects}
 
