@@ -17,6 +17,27 @@
 
 The contract system implies the presence of a "monitoring system" that ensures that contracts are not violated. The @racketmodname[racket/contract] system compiles this monitoring system into checks on values that cross a contracted boundary. This module provides a facility to pass contract boundary crossing information to an explicit monitor for approval. This monitor may, for example, use state to enforce temporal constraints, such as a resource is locked before it is accessed.
 
+@section{Warning! Experimental!}
+
+This library is truly experimental and the interface is likely to
+drastically change as we get more experience making use of temporal
+contracts. In particular, the library comes with no advice about
+designing temporal contracts, which are much more subtle than standard
+contracts. This subtlety is compounded because, while temporal
+contract violations have accurate blame information, we cannot yet
+connect violations to sub-pieces of the temporal formula.
+
+For example, applying @racket[f] to @racket["three"] when it is
+contracted to only accept numbers will error by blaming the caller and
+providing the explanation "expected a <number?>, received: "three"".
+In contrast, applying @racket[g] to @racket["even"] and then to
+@racket["odd"] when @racket[g] is contracted to accept strings on
+every odd invocation, but numbers on every even invocation, will error
+by blaming the second (odd) call, but will not provide any explanation
+except "the monitor disallowed the call with arguments: "odd"".
+Translating non-acceptance of an event trace by an automata into a
+palatable user explanation is an open problem.
+
 @section[#:tag "monitor"]{Monitors}
 
 @defmodule[unstable/temp-c/monitor]
